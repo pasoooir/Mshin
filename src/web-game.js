@@ -1,5 +1,5 @@
 import { createGameAudio } from "./audio.js";
-const canvas=document.querySelector("#game"),ctx=canvas.getContext("2d"),$=id=>document.getElementById(id);
+const canvas=document.querySelector("#game");let ctx=canvas.getContext("2d");const $=id=>document.getElementById(id);
 const worlds=[
 ["Green Valley","#83c95f","#65727b","#f5e5b8","#f6d45c","#e8b84f",1,"🌳"],
 ["Desert Storm","#e9b96c","#a77a50","#f8d99b","#d66e36","#55a34c",.88,"🌵"],
