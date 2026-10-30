@@ -2,7 +2,7 @@
 
 Last evidence refresh: 2026-10-30
 Working branch: `feat/game-foundation-and-stage-art`
-Baseline head: `1f1f303f2eac05e46e85fd4827463771b21d8720`
+Validated source head: `13ce2e6915ce0dda795fdb51c1c7e055a6e190ac`
 PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, not merged.
 
 ## Status and progress
@@ -12,7 +12,7 @@ PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, not merged.
 | Repository foundation and 10-world/50-stage catalog | 🟡 | 55% | 50 deterministic definitions and 10 themes validate; all stages still need actual Cocos playtesting and balance. |
 | Portable driving/race core | 🟡 | 60% | Engine-independent TypeScript builds and unit tests pass; adapter/race behavior needs engine tests. |
 | Cocos Creator project/runtime integration | 🔴 | 20% | Project metadata and four Cocos scripts exist; no Editor-created scene, engine type-check, import, preview or runtime evidence. |
-| Visual environments and hazards | 🟡 | 30% | Procedural track and theme decoration source exists; no Creator visual QA. |
+| Visual environments and hazards | 🟡 | 35% | Per-world hazard silhouettes (9 hazard families) and procedural track/decor source exist; no Creator visual QA. |
 | Menus, world/stage selection and HUD | 🟡 | 35% | Runtime-created screens and controls exist; responsive layout and interactions need Editor/device testing. |
 | Audio, animation and polish | ⬜ | 0% | Motor/brake/impact audio, particles and motion polish not implemented. |
 | Persistence and records | 🟡 | 35% | Local progress/best-time source exists; persistence needs engine/runtime verification. |
@@ -22,8 +22,9 @@ PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, not merged.
 | CI/CD and delivery | 🟡 | 30% | Portable validation exists; Editor-backed builds and artifact publishing remain. |
 
 ## GitHub Actions evidence (baseline head)
-- Push run [41056217464](https://github.com/pasoooir/Mshin/actions/runs/41056217464): completed successfully.
-- PR run [41056224354](https://github.com/pasoooir/Mshin/actions/runs/41056224354): completed successfully.
+- Push run [41056898021](https://github.com/pasoooir/Mshin/actions/runs/41056898021): completed successfully for source head `13ce2e69`.
+- PR run [41056907090](https://github.com/pasoooir/Mshin/actions/runs/41056907090): completed successfully for source head `13ce2e69`.
+- Earlier baseline push/PR runs [41056217464](https://github.com/pasoooir/Mshin/actions/runs/41056217464) and [41056224354](https://github.com/pasoooir/Mshin/actions/runs/41056224354) also passed.
 - Both ran data validation, portable TypeScript compilation, Cocos-script syntax transpilation, JavaScript syntax checks and Node tests.
 - `transpileModule` is syntax-only; it is not an engine type-check, scene import, Editor preview or Cocos build.
 
