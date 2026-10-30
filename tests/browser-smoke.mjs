@@ -92,8 +92,7 @@ try {
   assert.match(await economy.locator("#weatherInfo").textContent(), /SAND/, "Desert Storm should select sand weather");
   await economy.getByRole("button", { name: /Thunder EV/ }).click();
   assert.equal(await economy.getByRole("button", { name: /Thunder EV/ }).getAttribute("class").then(v => v.includes("locked")), false, "purchased car should unlock");
-  await economy.getByRole("button", { name: /Thunder EV/ }).click();
-  assert.match(await economy.locator(".carChoice.active").textContent(), /Thunder EV/, "unlocked car should be selectable");
+  assert.match(await economy.locator(".carChoice.active").textContent(), /Thunder EV/, "newly unlocked car should be selected immediately");
   await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
   assert.match(await economy.locator("#upgrades").textContent(), /Engine power · Lv 1\/3/, "engine upgrade should advance its level");
   await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
