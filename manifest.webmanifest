@@ -9,8 +9,17 @@
   "orientation": "landscape",
   "background_color": "#14223a",
   "theme_color": "#18263f",
-  "categories": ["games", "entertainment"],
+  "categories": [
+    "games",
+    "entertainment"
+  ],
   "icons": [
-    { "src": "./icons/mshin.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
-  ]
+    {
+      "src": "./icons/mshin.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "version": "0.4.1"
 }
