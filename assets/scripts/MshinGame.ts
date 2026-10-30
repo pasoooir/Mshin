@@ -115,7 +115,7 @@ export class MshinGame extends Component {
  }
  private holdButton(text:string,x:number,y:number,w:number,h:number,change:(held:boolean)=>void):void {
   const n=this.makeNode(text,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(w,h);
-  const g=n.addComponent(Graphics);g.fillColor=hex(text==="GAS"?"#F18B3B":"#4779C7");g.roundRect(-w/2,-h/2,w,h,18);g.fill();g.strokeColor=hex("#FFFFFF");g.lineWidth=3;g.roundRect(-w/2,-h/2,w,h,18);g.stroke();
+  const g=n.addComponent(Graphics);g.fillColor=hex(text==="گاز"?"#F18B3B":"#4779C7");g.roundRect(-w/2,-h/2,w,h,18);g.fill();g.strokeColor=hex("#FFFFFF");g.lineWidth=3;g.roundRect(-w/2,-h/2,w,h,18);g.stroke();
   const labelNode=this.makeNode("Pedal Label",n);labelNode.getComponent(UITransform)!.setContentSize(w-12,h-8);
   const l=labelNode.addComponent(Label);l.string=text;l.fontSize=22;l.color=hex("#FFFFFF");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
   n.on(Node.EventType.TOUCH_START,()=>change(true),this);n.on(Node.EventType.TOUCH_END,()=>change(false),this);n.on(Node.EventType.TOUCH_CANCEL,()=>change(false),this);this.uiNodes.push(n);
@@ -163,7 +163,7 @@ export class MshinGame extends Component {
   const pos=(name:string,x:number,y:number)=>{const n=this.hudRoot.getChildByName(name);if(n)n.setPosition(x,y,0);};
   pos("HUD Backdrop",0,s.height/2-52);pos("Label brand",0,s.height/2-26);pos("Label world",0,s.height/2-62);
   pos("Label lap",-s.width/2+150,s.height/2-26);pos("Label time",-s.width/2+320,s.height/2-26);pos("Label speed",-s.width/2+485,s.height/2-26);
-  pos("Virtual Joystick",-s.width/2+105,-s.height/2+105);pos("BRAKE",s.width/2-260,-s.height/2+105);pos("GAS",s.width/2-105,-s.height/2+112);
+  pos("Virtual Joystick",-s.width/2+105,-s.height/2+105);pos("ترمز",s.width/2-260,-s.height/2+105);pos("گاز",s.width/2-105,-s.height/2+112);
   pos("Button Ⅱ",s.width/2-60,s.height/2-60);
  }
  private format(seconds:number):string {const m=Math.floor(seconds/60),v=Math.floor(seconds%60);return String(m).padStart(2,"0")+":"+String(v).padStart(2,"0");}
