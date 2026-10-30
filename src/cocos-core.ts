@@ -24,7 +24,7 @@ export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number):
  if (brake) car.speed = Math.max(0, car.speed - 560 * dt);
  else if (throttle) car.speed = clamp(car.speed + 306 * (offRoad ? 0.58 : 1) * performance * dt, 0, maxSpeed);
  else car.speed = Math.max(0, car.speed - (offRoad ? 220 : 95) * dt);
- if (offRoad && car.speed > maxSpeed) car.speed = Math.max(maxSpeed, car.speed - 360 * dt);
+ if (car.speed > maxSpeed) car.speed = Math.max(maxSpeed, car.speed - 360 * dt);
  car.heading -= steer * (1.9 + Math.abs(car.speed) / 155) * grip * dt * Math.sign(car.speed || 1);
  car.x += Math.sin(car.heading) * car.speed * dt; car.y -= Math.cos(car.heading) * car.speed * dt; return car;
 }
