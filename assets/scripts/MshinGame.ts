@@ -105,9 +105,9 @@ export class MshinGame extends Component {
   this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
  }
  private createControls():void {
-  this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.uiNodes.push(this.joystick);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(150,150);
-  const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(255,255,255,50);jg.strokeColor=new Color(255,255,255,180);jg.lineWidth=5;jg.circle(0,0,66);jg.fill();jg.stroke();
-  this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(60,60);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.circle(0,0,27);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.circle(0,0,27);kg.stroke();
+  this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.uiNodes.push(this.joystick);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(184,132);
+  const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(20,38,62,225);jg.strokeColor=new Color(220,238,255,190);jg.lineWidth=4;jg.roundRect(-92,-66,184,132,48);jg.fill();jg.stroke();jg.fontSize=13;jg.fillColor=hex("#DCEBFF");jg.textAlign=Graphics.TextAlign.CENTER;jg.fillText("S T E E R",0,44);jg.fillColor=hex("#DCEBFF99");jg.fillText("◀                 ▶",0,-42);
+  this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(68,52);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.roundRect(-34,-26,68,52,22);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.roundRect(-34,-26,68,52,22);kg.stroke();kg.fontSize=25;kg.fillColor=hex("#34527D");kg.textAlign=Graphics.TextAlign.CENTER;kg.fillText("↔",0,-8);
   this.joystick.on(Node.EventType.TOUCH_START,this.onStickStart,this);this.joystick.on(Node.EventType.TOUCH_MOVE,this.onStickMove,this);this.joystick.on(Node.EventType.TOUCH_END,this.onStickEnd,this);this.joystick.on(Node.EventType.TOUCH_CANCEL,this.onStickEnd,this);
   this.holdButton("BRAKE",350,-250,130,86,(v)=>this.vehicle.input.brake=v);
   this.holdButton("GAS",510,-220,145,112,(v)=>this.vehicle.input.throttle=v);
@@ -121,7 +121,7 @@ export class MshinGame extends Component {
   n.on(Node.EventType.TOUCH_START,()=>change(true),this);n.on(Node.EventType.TOUCH_END,()=>change(false),this);n.on(Node.EventType.TOUCH_CANCEL,()=>change(false),this);this.uiNodes.push(n);
  }
  private onStickStart(e:EventTouch):void {this.stickId=e.getID();this.onStickMove(e);}
- private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),len=Math.hypot(p.x,p.y)||1,scale=Math.min(1,58/len);this.knob.setPosition(p.x*scale,p.y*scale,0);this.vehicle.input.steer=Math.max(-1,Math.min(1,p.x/58));}
+ private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),limit=58,raw=Math.max(-1,Math.min(1,p.x/limit)),m=Math.abs(raw),dead=.07,linear=m<=dead?0:(m-dead)/(1-dead);this.knob.setPosition(Math.max(-limit,Math.min(limit,p.x)),0,0);this.vehicle.input.steer=Math.sign(raw)*Math.pow(linear,1.28);}
  private onStickEnd(e:EventTouch):void {if(e.getID()!==this.stickId)return;this.stickId=-1;this.knob.setPosition(0,0,0);this.vehicle.input.steer=0;}
  private pauseRace():void {
   if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
