@@ -12,7 +12,7 @@ try {
   await page.getByRole("button", { name: /Neon City/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
   await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
-  await page.locator("#startRace").click();
+  await page.locator("#startRace").click();\n  assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");\n  await page.locator("#soundToggle").click();\n  assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");\n  await page.locator("#soundToggle").click();\n  assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
   assert.match(await page.locator("#stageName").textContent(), /WORLD 05.*STAGE 05/);
   await page.keyboard.down("ArrowUp");
