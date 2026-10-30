@@ -4,7 +4,11 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 ## Play the browser edition
 
-Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from **10 themed worlds and 50 playable stages**. The browser edition includes procedural tracks, themed scenery and hazards, touch joystick, gas/brake/nitro controls, keyboard controls, lap timing, pause/finish screens, and local best-time/progress storage.\n\nThe garage offers three cars with different handling profiles: Rally Fox (balanced), Comet GT (top speed), and Lynx 4x4 (high grip). Collect glowing track pickups to recharge nitro, then trigger a temporary speed boost. Vehicle selection and sound preferences are saved locally.\n\nThe browser edition is a landscape installable PWA. Its service worker caches the app shell and game modules so it can launch and remain playable offline after the first successful load. No backend is required for gameplay.
+Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from **10 themed worlds and 50 playable stages**. The browser edition includes procedural tracks, themed scenery and hazards, touch joystick, gas/brake/nitro controls, keyboard controls, lap timing, three AI rivals, live race position, a circuit minimap, pause/finish screens, and local best-time/progress storage.
+
+The garage offers three cars with different handling profiles: Rally Fox (balanced), Comet GT (top speed), and Lynx 4x4 (high grip). Collect glowing track pickups to recharge nitro, then trigger a temporary speed boost. Vehicle selection and sound preferences are saved locally.
+
+The browser edition is a landscape installable PWA. Its service worker caches the app shell and game modules so it can launch and remain playable offline after the first successful load. No backend is required for gameplay.
 
 ## Project implementation
 
@@ -13,7 +17,8 @@ Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from 
 - Engine-independent game logic and deterministic 50-stage catalog: `src/`.
 - World/stage planning metadata: `data/worlds.json`, `data/stages.json`.
 - 50 SVG stage concept previews: `cdn/previews/` (not final in-game art).
-- Offline browser progress and settings: `localStorage`; selected car, mute preference, stage completion and best times remain on the device. Cocos adapter uses `sys.localStorage`.\n- PWA: `manifest.webmanifest`, `service-worker.js`, and `icons/mshin.svg`; offline-first app-shell caching is covered by Playwright.
+- Offline browser progress and settings: `localStorage`; selected car, mute preference, stage completion and best times remain on the device. Cocos adapter uses `sys.localStorage`.
+- PWA: `manifest.webmanifest`, `service-worker.js`, and `icons/mshin.svg`; offline-first app-shell caching is covered by Playwright.
 - Stateless optional Worker API: `workers.js`; see `docs/CLOUDFLARE_WORKER.md`.
 
 ## Cocos Creator 3.8.6 editor build
