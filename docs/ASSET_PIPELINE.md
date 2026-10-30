@@ -37,7 +37,9 @@ The JSON is lightweight vector drawing metadata rather than a bitmap atlas. This
 
 ## Verification and remaining gates
 
-The GitHub Actions workflow validates the asset catalogue, source syntax, unit tests, and desktop/mobile Playwright smoke tests. The 30 October 2026 run `41080916182` completed successfully: 45 Node tests passed, the desktop/mobile browser smoke test passed, and two gameplay preview images were uploaded as the `mshin-gameplay-previews` artifact.
+The GitHub Actions workflow validates the asset catalogue, source syntax, unit tests, and desktop/mobile Playwright smoke tests. The 30 October 2026 run `41083606663` completed successfully: all 45 Node tests passed, the desktop/mobile Playwright smoke test passed, the static-track-cache assertion passed, and four visual previews (home, world selection, desktop race, mobile race) were uploaded as the `mshin-gameplay-previews` artifact. The Cocos syntax guard also checks duplicate class member names; this caught and prevented a duplicate field/method regression in `MshinGame.ts`.
+
+The latest smoke run includes an assertion that static track/world art is rasterized once per race stage and reused between frames; only pickups and obstacles are drawn dynamically. It also verifies that all ten world cards load their own SVG preview.
 
 This CI result does **not** replace the following release gates:
 - Importing the project in Cocos Creator 3.8.6 Editor.
