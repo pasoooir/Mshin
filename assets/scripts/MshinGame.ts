@@ -34,9 +34,9 @@ export class MshinGame extends Component {
   if(this.screen==="race"){
    this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);this.cameraNode.angle=-this.carNode.angle;this.hudCanvas.angle=this.carNode.angle;
    this.hudRefresh+=dt;if(this.hudRefresh>=.1){this.hudRefresh=0;
-    this.setText("speed","SPEED  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
-    this.setText("time","TIME  "+this.format(this.vehicle.race.elapsedSeconds));
-    this.setText("lap","LAP  "+this.vehicle.race.lap+" / "+this.stage.laps);
+    this.setText("speed","سرعت  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
+    this.setText("time","زمان  "+this.format(this.vehicle.race.elapsedSeconds));
+    this.setText("lap","دور  "+this.vehicle.race.lap+" / "+this.stage.laps);
    }
    if(this.vehicle.race.finished&&!this.finishHandled){this.finishHandled=true;this.progress=ProgressStore.complete(this.stage,this.vehicle.race.elapsedSeconds);this.showFinished();}
   }
@@ -92,7 +92,7 @@ export class MshinGame extends Component {
    this.drawStagePreview(s,x,155);
    this.addUiLabel(this.progress.completed.includes(s.id)?"✓ تکمیل‌شده":unlocked?"آماده":"قفل‌شده",x,-42,13);
   }
-  this.addButton("BACK",0,-205,170,54,()=>this.showWorlds());
+  this.addButton("بازگشت",0,-205,170,54,()=>this.showWorlds());
  }
  private startStage(id:number):void {
   this.stage=STAGES[id-1];this.screen="race";this.clearUi();this.finishHandled=false;
@@ -100,7 +100,7 @@ export class MshinGame extends Component {
   const path=renderer.configure(this.stage,this.artLibrary);
   this.carNode.destroy();this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
   this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount,this.stage.world.grip);
-  this.vehicle.onLap=(lap)=>this.setText("lap","LAP  "+lap+" / "+this.stage.laps);
+  this.vehicle.onLap=(lap)=>this.setText("lap","دور  "+lap+" / "+this.stage.laps);
   this.setText("world",this.stage.world.name+"  •  STAGE "+String(id).padStart(2,"0"));
   this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
  }
@@ -130,7 +130,7 @@ export class MshinGame extends Component {
  }
  private showFinished():void {
   this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
-  this.addUiLabel("🏆  پایان مسابقه!",0,85,56);this.addUiLabel("TIME  "+this.format(this.vehicle.race.elapsedSeconds),0,15,24);
+  this.addUiLabel("🏆  پایان مسابقه!",0,85,56);this.addUiLabel("زمان  "+this.format(this.vehicle.race.elapsedSeconds),0,15,24);
   this.addButton("مرحله بعد",0,-75,250,70,()=>this.startStage(Math.min(50,this.stage.id+1)));
   this.addButton("منوی اصلی",0,-165,230,58,()=>this.showHome());
  }
