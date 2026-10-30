@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, Input, input, KeyCode } from "cc";
+import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode } from "cc";
 import { STAGES, WORLD_THEMES, StageDefinition } from "../../src/stage-catalog";
 import { VehicleController } from "./VehicleController";
 import { WorldRenderer } from "./WorldRenderer";
@@ -13,6 +13,7 @@ export class MshinGame extends Component {
  private labels=new Map<string,Label>();private uiNodes:Node[]=[];private joystick!:Node;private knob!:Node;private stickId=-1;
  private lastSize={width:0,height:0};private finishHandled=false;
  start():void {
+  view.setDesignResolutionSize(1280,720,ResolutionPolicy.FIXED_HEIGHT);view.setOrientation(macro.ORIENTATION_LANDSCAPE);
   const scene=this.node.scene;if(!scene)throw new Error("Attach MshinGame to a node in the active Cocos Creator scene.");
   this.cameraNode=new Node("Mshin Camera");scene.addChild(this.cameraNode);this.cameraNode.setPosition(0,0,1000);
   this.camera=this.cameraNode.addComponent(Camera);this.camera.projection=Camera.ProjectionType.ORTHO;this.camera.orthoHeight=720;this.camera.near=1;this.camera.far=2000;this.camera.priority=1;
