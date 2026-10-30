@@ -4,10 +4,12 @@ const {ccclass}=_decorator;
 function color(hex:string):Color{const h=hex.slice(1);return new Color(parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),255);}
 @ccclass("MshinWorldRenderer")
 export class WorldRenderer extends Component {
- path:Point[]=[];
- configure(stage:StageDefinition):Point[] {
+ path:Point[]=[];private artWorld:any=null;
+ configure(stage:StageDefinition,artLibrary?:any):Point[] {
+  this.artWorld=artLibrary?.worlds?.find((world:any)=>world.name===stage.world.name)??null;
   this.path=generateTrackPath(stage);const ui=this.getComponent(UITransform)??this.addComponent(UITransform);ui.setContentSize(3600,2400);const g=this.getComponent(Graphics)??this.addComponent(Graphics);g.clear();
-  g.fillColor=color(stage.world.ground);g.rect(-1800,-1200,3600,2400);g.fill();
+  g.fillColor=color(this.artWorld?.ground??stage.world.ground);g.rect(-1800,-1200,3600,2400);g.fill();
+  this.drawVectorLandmarks(g,stage);
   this.stroke(g,this.path,stage.trackWidth+64,stage.world.shoulder);
   this.stroke(g,this.path,stage.trackWidth,stage.world.road);
   g.lineWidth=4;g.strokeColor=color(stage.world.accent);
@@ -45,6 +47,18 @@ export class WorldRenderer extends Component {
    g.fillColor=color("#30335C");g.rect(x-20,y-22,8,44);g.rect(x+12,y-22,8,44);g.rect(x-20,y+14,40,8);g.fill();g.strokeColor=a;g.lineWidth=4;g.moveTo(x-12,y+18);g.lineTo(x+12,y+18);g.stroke();
   }else{
    g.fillColor=color("#E6E8F0");g.roundRect(x-19,y-15,38,30,5);g.fill();g.strokeColor=a;g.lineWidth=4;g.roundRect(x-19,y-15,38,30,5);g.stroke();g.strokeColor=color("#26313A");g.lineWidth=3;g.moveTo(x-10,y-12);g.lineTo(x-10,y+12);g.moveTo(x,y-12);g.lineTo(x,y+12);g.moveTo(x+10,y-12);g.lineTo(x+10,y+12);g.stroke();
+  }
+ }
+ private drawVectorLandmarks(g:Graphics,stage:StageDefinition):void {
+  const accent=color(this.artWorld?.accent??stage.world.accent),ground=color(this.artWorld?.ground??stage.world.ground);
+  // A layered vector vignette makes each world read differently before the player reaches its hazards.
+  for(let i=0;i<18;i++){
+   const angle=(i/18)*Math.PI*2,r=1050+(i%3)*95,x=Math.cos(angle)*r,y=Math.sin(angle)*r*.68;
+   g.fillColor=ground;g.circle(x,y,42+(i%4)*9);g.fill();
+   g.fillColor=accent;g.circle(x-8,y+9,12+(i%3)*3);g.fill();
+   if(this.artWorld?.decoration==="planet"){g.strokeColor=accent;g.lineWidth=5;g.ellipse(x,y,58,17);g.stroke();}
+   else if(this.artWorld?.decoration==="tower"||this.artWorld?.decoration==="grandstand"||this.artWorld?.decoration==="ruin"){g.fillColor=accent;g.rect(x-12,y-46,24,92);g.fill();}
+   else if(this.artWorld?.decoration==="dune"){g.fillColor=accent;g.ellipse(x,y-12,58,15);g.fill();}
   }
  }
  private drawThemeDecor(g:Graphics,stage:StageDefinition):void {
