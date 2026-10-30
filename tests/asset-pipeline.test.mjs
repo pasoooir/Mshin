@@ -26,7 +26,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.match(html, /src="\.\/src\/boot\.js"/);
+  assert.match(html, /src="\.\/src\/boot\.js(?:\?v=[^"]+)?"/);
   assert.match(boot, /await preloadGameAssets/);
   assert.match(boot, /await import\("\.\/web-game\.js"\)/);
   assert.match(loader, /length: 4/);
