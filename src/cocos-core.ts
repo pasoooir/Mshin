@@ -43,7 +43,7 @@ export function resolveVehicleImpulse(a:CollisionBody,b:CollisionBody,restitutio
  const impulse=closing>0?(1+clamp(restitution,0,.8))*closing/sum:0;
  if(impulse){a.vx-=nx*impulse*ia;a.vy-=ny*impulse*ia;b.vx+=nx*impulse*ib;b.vy+=ny*impulse*ib;}
  if(overlap){const correction=Math.max(0,overlap-.01)*.72/sum;a.x-=nx*correction*ia;a.y-=ny*correction*ia;b.x+=nx*correction*ib;b.y+=ny*correction*ib;}
- return {hit:true,energy:.5*(1/sum)*closing*closing,impulse,closingSpeed:Math.max(0,closing)};
+ return {hit:true,energy:.5*(1/sum)*Math.max(0,closing)*Math.max(0,closing),impulse,closingSpeed:Math.max(0,closing)};
 }
 export function resolveStaticBarrier(body:CollisionBody,nx:number,ny:number,restitution=.12):{hit:boolean;energy:number;closingSpeed:number} {
  const length=Math.hypot(nx,ny)||1;nx/=length;ny/=length;const normal=body.vx*nx+body.vy*ny,closing=-normal;if(closing<=0)return {hit:false,energy:0,closingSpeed:0};
