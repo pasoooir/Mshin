@@ -14,6 +14,7 @@ The browser edition is a landscape installable PWA. Its versioned service worker
 
 - Browser game entry: `index.html` + `src/web-game.js` (Canvas 2D, no external runtime dependency).
 - Cocos Creator runtime components: `assets/scripts/`.
+- Cocos Creator 3.8.6 Editor bootstrap and current scene requirements: [`docs/COCOS_CREATOR_38_SETUP.md`](docs/COCOS_CREATOR_38_SETUP.md).
 - Shared Cocos vector art palette/catalogue: `assets/resources/vector-art.json`; the Cocos runtime loads this `JsonAsset` before displaying the main menu and draws world landmarks and cars through `Graphics`.
 - Browser vector art: `assets/vector/` + `src/asset-manifest.json`; bounded preload/decode loader: `src/asset-loader.js`.
 - Engine-independent game logic and deterministic 50-stage catalog: `src/`.
