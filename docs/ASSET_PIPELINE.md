@@ -58,3 +58,8 @@ The old circular joystick accepted two-axis thumb movement but only consumed the
 The browser boot now preloads ten photographic environment plates from the Unsplash image CDN alongside the 15 local SVG vectors and decodes them before importing the race runtime. Each world has a dedicated photo plate; rain, snow, sand and dust particle/weather overlays remain separate real-time effects. The image loader uses bounded concurrency and a short CDN timeout; if a photo cannot be fetched or decoded, the local vector world illustration remains the fallback. No image request or decode is initiated by the race render loop.
 
 The race camera is zoomed toward the player instead of fitting the complete oval track into one screen. The player car is rendered at 58×90 logical pixels (up from 40×62), rival cars are larger, and the track is revealed progressively as the car follows its bends. This is a browser runtime change; physical Android frame-rate and Cocos Creator Editor validation remain separate checks.
+
+
+## Forward-facing chase camera and vehicle scale
+
+The browser race camera now follows the route tangent and rotates the world around the player so the player's car stays pointed toward the top of the screen while bends flow underneath it. This avoids showing the car sideways merely because the track curves. The player car is rendered at 72×108 logical pixels and rivals at 56×84; the camera still reveals only the nearby track segment rather than fitting the complete circuit into view. Automated desktop/mobile browser smoke coverage asserts the camera transform and vehicle render dimensions.
