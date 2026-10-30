@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, view, EventTouch, Input, input, KeyCode } from "cc";
+import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, Input, input, KeyCode } from "cc";
 import { STAGES, WORLD_THEMES, StageDefinition } from "../../src/stage-catalog";
 import { VehicleController } from "./VehicleController";
 import { WorldRenderer } from "./WorldRenderer";
@@ -9,17 +9,23 @@ const hex=(v:string)=>{const h=v.replace("#","");return new Color(parseInt(h.sli
 @ccclass("MshinGame")
 export class MshinGame extends Component {
  private screen:Screen="home";private stage:StageDefinition=STAGES[0];private progress:PlayerProgress=ProgressStore.load();private selectedWorld=0;
- private cameraNode!:Node;private camera!:Camera;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;
+ private cameraNode!:Node;private camera!:Camera;private worldRoot!:Node;private hudCanvas!:Node;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;
  private labels=new Map<string,Label>();private uiNodes:Node[]=[];private joystick!:Node;private knob!:Node;private stickId=-1;
  private lastSize={width:0,height:0};private finishHandled=false;
  start():void {
   const scene=this.node.scene;if(!scene)throw new Error("Attach MshinGame to a node in the active Cocos Creator scene.");
   this.cameraNode=new Node("Mshin Camera");scene.addChild(this.cameraNode);this.cameraNode.setPosition(0,0,1000);
   this.camera=this.cameraNode.addComponent(Camera);this.camera.projection=Camera.ProjectionType.ORTHO;this.camera.orthoHeight=720;this.camera.near=1;this.camera.far=2000;this.camera.priority=1;
-  this.worldNode=new Node("Generated World");scene.addChild(this.worldNode);
-  this.carNode=new Node("Player Car");scene.addChild(this.carNode);this.drawCar();
+  this.worldRoot=new Node("World Canvas");scene.addChild(this.worldRoot);
+  this.worldRoot.addComponent(UITransform).setContentSize(3600,2400);
+  const worldCanvas=this.worldRoot.addComponent(Canvas);worldCanvas.cameraComponent=this.camera;worldCanvas.alignCanvasWithScreen=false;
+  this.worldNode=new Node("Generated World");this.worldRoot.addChild(this.worldNode);
+  this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
   this.vehicle=this.carNode.addComponent(VehicleController);
-  this.hudRoot=new Node("HUD and Menus");this.cameraNode.addChild(this.hudRoot);this.hudRoot.setPosition(0,0,-900);
+  this.hudCanvas=new Node("HUD Canvas");this.cameraNode.addChild(this.hudCanvas);this.hudCanvas.setPosition(0,0,-900);
+  this.hudCanvas.addComponent(UITransform).setContentSize(1280,720);
+  const uiCanvas=this.hudCanvas.addComponent(Canvas);uiCanvas.cameraComponent=this.camera;uiCanvas.alignCanvasWithScreen=false;
+  this.hudRoot=new Node("HUD and Menus");this.hudCanvas.addChild(this.hudRoot);
   this.createPersistentHud();this.bindKeyboard();this.showHome();this.resizeUi();
  }
  update():void {
@@ -78,7 +84,7 @@ export class MshinGame extends Component {
   this.stage=STAGES[id-1];this.screen="race";this.clearUi();this.finishHandled=false;
   this.worldNode.destroyAllChildren();const rn=new Node("World Renderer");this.worldNode.addChild(rn);const renderer=rn.addComponent(WorldRenderer);
   const path=renderer.configure(this.stage);
-  this.carNode.destroy();this.carNode=new Node("Player Car");this.node.scene!.addChild(this.carNode);this.drawCar();
+  this.carNode.destroy();this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
   this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount,this.stage.world.grip);
   this.vehicle.onLap=(lap)=>this.setText("lap","LAP  "+lap+" / "+this.stage.laps);
   this.setText("world",this.stage.world.name+"  •  STAGE "+String(id).padStart(2,"0"));
