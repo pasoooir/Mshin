@@ -88,6 +88,6 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.match(html, /boot\\.js\\?v=2026\\.10\\.30\\.5/);
   assert.equal(manifest.version, "2026.10.30.5");
   assert.equal(pkg.version, "0.4.2");
-  assert.equal(pwa.version, "0.4.1");
+  assert.equal(pwa.version, "0.4.2");
   assert.equal(cocos.version, "2026.10.30.4");
 });
