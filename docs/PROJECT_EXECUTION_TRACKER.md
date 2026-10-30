@@ -4,14 +4,17 @@ Last evidence refresh: 2026-10-30
 
 ## Repository and delivery state
 
-- Default branch `main` includes merge commit `2dcf18c46f16c8df45b77987f5f3f00f22e7be86` (PR #5), following PR #4.
-- PR #1 (Cocos/game foundation), PR #2 (50-stage browser edition), PR #3 (Playwright browser QA), PR #4 (browser race audio and mute control), and PR #5 (visible car animation, race particles and screenshot QA) are merged.
+- Default branch `main` includes merge commit `722ec96f62a1a78c2832219cb41eb17ac31c7da8` (PR #6), following PR #5.
+- PR #1 (Cocos/game foundation), PR #2 (50-stage browser edition), PR #3 (Playwright browser QA), PR #4 (browser race audio and mute control), PR #5 (visible car animation and particles), and PR #6 (garage, nitro and offline PWA) are merged.
 - PR #4 adds dependency-free Web Audio engine tone, collision and finish effects, lazy AudioContext initialization after user interaction, and an accessible mute toggle.
 - PR #4 validation passed: merged-main run `41064474829`; source-branch push and PR validation runs `41063447733` and `41063457438` also passed.
 - PR #5 adds animated car details, world-accent lighting, exhaust trails, collision bursts and a finish celebration; it also verifies non-blank canvas pixels and captures desktop/mobile gameplay previews.
 - PR #5 push and PR validation run `41065176095` and `41065195236` passed; screenshot artifact `mshin-gameplay-previews` is attached to PR run `41065195236` (expires 2026-11-06).
 - Merged-main validation run `41065496716` passed. Pages build and deploy for the PR #5 merge commit succeeded in run `41065496240`.
-- GitHub Pages build and deployment for merge commit `2dcf18c46f16c8df45b77987f5f3f00f22e7be86` succeeded: run `41065496240`.
+- PR #6 adds a three-car garage (Rally Fox, Comet GT, Lynx 4x4), distinct speed/acceleration/grip profiles, trackside nitro pickups, a charge meter and timed boost; selected car and sound preference persist locally.
+- PR #6 also adds a landscape PWA manifest, vector app icon and offline-first service worker. Playwright verifies reload/offline launch and that all 10 worlds remain selectable without a network connection.
+- PR #6 source push run `41067407332` and PR run `41067417413` passed; screenshot artifact `mshin-gameplay-previews` is attached to run `41067417413` (expires 2026-11-06).
+- Merged-main validation run `41067626291` and Pages build/deployment run `41067626354` both succeeded for merge commit `722ec96f62a1a78c2832219cb41eb17ac31c7da8`.
 - Main contains `index.html`, `src/web-game.js`, `src/audio.js`, and `tests/browser-smoke.mjs`; CI captures desktop and mobile gameplay screenshots.
 - No Cloudflare R2, D1, KV, Durable Objects, paid storage, or paid services are used.
 
@@ -24,36 +27,38 @@ Last evidence refresh: 2026-10-30
 | Cocos Creator project/runtime integration | 🔴 | 20% | Project metadata and runtime scripts are in `assets/scripts/`; no Editor-created startup scene, engine type-check, Editor import, or Cocos preview/build has been verified. |
 | Cocos world visuals and hazards | 🟡 | 38% | Theme-specific decorations, route generation and hazard drawing are implemented in source; Creator visual QA is outstanding. |
 | Cocos menus, selection and HUD | 🟡 | 35% | Runtime-created screens and controls exist; Editor/device responsive QA is outstanding. |
-| Browser playable edition | 🟡 | 89% | Merged browser game has 10 world palettes, 50 stage variants, world/stage selection, touch/keyboard controls, lap timer, pause/finish, local progress, world-specific scenery, distinct hazard silhouettes, synthesized audio, animated vehicle details, exhaust trails and collision/finish particle effects. Full three-lap gameplay balance, device QA and art QA remain. |
-| Browser automated QA | 🟢 | 100% | Playwright/Chromium CI verifies 10 worlds, five stages per world, Neon City stage 5 selection, race start, acceleration, non-blank canvas rendering, desktop/mobile screenshots, pause/resume, return to stage selection, mobile HUD/joystick/pedal sizing, sound mute/unmute state and no uncaught page errors. PR #5 push run `41065176095`, PR run `41065195236`, and merged-main validation run `41065496716` passed. |
-| Audio, animation and polish | 🟡 | 48% | Browser engine tone, collision/finish audio, accessible mute toggle, animated vehicle wheels/body lighting, exhaust particles, collision bursts and finish celebration are merged and covered by Chromium smoke tests. More vehicle animation, persistent audio preference, additional environment effects and final polish remain. |
-| Persistence and records | 🟡 | 65% | Browser localStorage and Cocos localStorage adapter source exist; offline/reload behavior and storage edge cases need additional verification. No server leaderboard. |
+| Browser playable edition | 🟡 | 92% | Merged browser game has 10 world palettes, 50 stages, three selectable cars with different handling profiles, world/stage selection, touch/keyboard controls, lap timer, pause/finish, local records, themed scenery, animated hazards, audio, exhaust/collision/finish particles and collectible nitro boosts. Full race balance, device QA and final art polish remain. |
+| Browser automated QA | 🟢 | 100% | Playwright/Chromium verifies 10 worlds/50 stages, garage selection and persistence, mute preference persistence, nitro pickup/charge/consumption, visible canvas pixels, desktop/mobile screenshots, pause/resume, touch control sizing, offline PWA reload/playability and no uncaught page errors. PR #6 push run `41067407332`, PR run `41067417413`, and merged-main validation run `41067626291` passed. |
+| Audio, animation and polish | 🟡 | 56% | Browser engine tone, collision/finish audio, saved mute setting, animated vehicle wheels/body lighting, exhaust particles, nitro trails, collision bursts and finish celebration are merged and covered by Chromium smoke tests. More car animations, environment effects and final polish remain. |
+| Persistence and records | 🟡 | 76% | Browser localStorage stores completion, best times, selected car and audio preference; Playwright verifies settings survive reload and cached offline startup. Storage quota/private-mode edge cases and Cocos adapter verification remain. No server leaderboard. |
 | Cloudflare Worker backend | 🟡 | 35% | Stateless health/config API and seven tests exist; not deployed or wired to a live game endpoint. |
-| Portable automated tests | 🟢 | 100% | Merged-main validation run `41065496716` completed successfully, including Node tests, JS syntax checks, and Playwright Chromium desktop/mobile smoke tests with canvas pixel checks and screenshot capture. |
-| GitHub Pages delivery | 🟢 | 100% | Pages build and deploy for merge commit `2dcf18c46f16c8df45b77987f5f3f00f22e7be86` both succeeded in run `41065496240`. |
+| Portable automated tests | 🟢 | 100% | Merged-main validation run `41067626291` passed Node tests, syntax checks and Playwright desktop/mobile smoke tests covering the garage, saved settings, nitro gameplay, rendered canvas, screenshots and offline PWA launch. |
+| GitHub Pages delivery | 🟢 | 100% | Pages build and deploy for merge commit `722ec96f62a1a78c2832219cb41eb17ac31c7da8` both succeeded in run `41067626354`. |
+| PWA installability and offline support | 🟡 | 90% | Manifest, vector icon and offline-first service worker are deployed; Playwright verified the game shell and world selector work offline after first visit. Native install prompt and device-specific install UX remain to verify. |
 | Cocos Web build and browser QA | 🔴 | 0% | No Creator-generated Web output; requires Creator 3.8.6 and a real startup scene. Browser Canvas edition is separate from a Cocos build. |
 | Android APK/AAB and device QA | 🔴 | 0% | No APK/AAB; Android SDK/NDK/native toolchain and device testing are unavailable in the inspected runner. |
 
 ## CI and deployment evidence
 
 - PR #4 merged: https://github.com/pasoooir/Mshin/pull/4 — audio and mute control.
-- PR #5 merged: https://github.com/pasoooir/Mshin/pull/5 — animated car, particles, visible canvas assertions and screenshot artifacts; merge commit `2dcf18c46f16c8df45b77987f5f3f00f22e7be86`.
-- PR #5 push validation: https://github.com/pasoooir/Mshin/actions/runs/41065176095 — success.
-- PR #5 browser QA and screenshot artifact: https://github.com/pasoooir/Mshin/actions/runs/41065195236 — success.
-- Merged-main validation: https://github.com/pasoooir/Mshin/actions/runs/41065496716 — success.
+- PR #5 merged: https://github.com/pasoooir/Mshin/pull/5 — animated car, particles and visible canvas assertions.
+- PR #6 merged: https://github.com/pasoooir/Mshin/pull/6 — three-car garage, persistent settings, collectible nitro boost and offline PWA; merge commit `722ec96f62a1a78c2832219cb41eb17ac31c7da8`.
+- PR #6 push validation: https://github.com/pasoooir/Mshin/actions/runs/41067407332 — success.
+- PR #6 browser QA and screenshot artifact: https://github.com/pasoooir/Mshin/actions/runs/41067417413 — success.
+- Merged-main validation: https://github.com/pasoooir/Mshin/actions/runs/41067626291 — success.
 - PR #4 branch push validation: https://github.com/pasoooir/Mshin/actions/runs/41063447733 — success.
 - PR #4 validation: https://github.com/pasoooir/Mshin/actions/runs/41063457438 — success.
-- Pages build and deployment for PR #5 merge commit: https://github.com/pasoooir/Mshin/actions/runs/41065496240 — success.
-- Browser smoke covers 10 worlds, five stages/world, race start, acceleration, non-blank rendered canvas, desktop/mobile screenshots, pause/resume, stage exit, mobile layout and sound toggle state.
+- Pages build and deployment for PR #6 merge commit: https://github.com/pasoooir/Mshin/actions/runs/41067626354 — success.
+- Browser smoke covers 10 worlds, five stages/world, three-car garage and saved car selection, saved mute setting, nitro pickup and boost consumption, non-blank rendered canvas, desktop/mobile screenshots, pause/resume, mobile nitro sizing and offline PWA launch.
 - Cocos syntax transpilation is not an engine type-check, Editor import, scene preview or Creator build.
 
 ## Browser 50-stage edition
 
 - Main entry: `index.html`; runtime: `src/web-game.js`; audio module: `src/audio.js`.
 - 10 themed worlds, 5 stages per world, 5 route styles, world-specific trackside scenery, hazard silhouettes and handling grip.
-- World/stage selection, keyboard steering, touch joystick/pedals, throttle/brake, 3-lap race flow, pause/finish, local completion and best-time records.
+- World/stage selection, three-car garage, keyboard steering, touch joystick/pedals/nitro, throttle/brake, collectible nitro boost, 3-lap race flow, pause/finish, local completion and best-time records.
 - Audio is generated through the Web Audio API without downloaded audio assets or third-party runtime dependencies. AudioContext initializes after user interaction; mute/unmute is available in the HUD.
-- No third-party runtime dependencies; progress is stored locally in the browser.
+- No third-party runtime dependencies; progress and settings are stored locally in the browser. A service worker caches the app shell so the browser edition launches offline after its first successful load.
 - Automated Chromium tests exercise desktop and mobile menu-to-race flow and save `mshin-gameplay-desktop.png` and `mshin-gameplay-mobile.png` as the `mshin-gameplay-previews` workflow artifact. Full race completion, performance on low-end Android, touch gesture ergonomics, audio hardware compatibility, and art quality remain to be tuned.
 
 ## Cocos build feasibility and external gates
