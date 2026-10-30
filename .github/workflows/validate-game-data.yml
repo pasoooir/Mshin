@@ -1,0 +1,24 @@
+name: Validate Mshin game data and portable TypeScript core
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run validate:data
+      - run: npm run build:core
+      - run: npm run check:cocos-syntax
+      - run: npm run check:worker
+      - run: node --check src/physics.js
+      - run: node --check src/game.js
+      - run: npm test
