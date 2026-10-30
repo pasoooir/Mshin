@@ -109,7 +109,10 @@ try {
   await economy.keyboard.up("ArrowUp");
   assert.match(await economy.locator("#finishText").textContent(), /You earned \d+ coins!/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
-  assert.deepEqual(errors, [], "economy and weather flows should not throw runtime exceptions");
+  assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the First Finish achievement");
+  assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "First Finish" }).count(), 1, "achievement board should show the earned badge");
+  assert.match(await economy.locator("#finishText").textContent(), /First Finish/, "finish screen should announce milestone bonus");
+  assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
@@ -119,7 +122,7 @@ try {
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
   await page.context().setOffline(false);
-  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\\n");
+  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\\n");
 } finally {
   await browser.close();
 }
