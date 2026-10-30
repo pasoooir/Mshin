@@ -1,0 +1,144 @@
+{
+  "version": "2026.10.30.2",
+  "renderer": "cocos-graphics-vector",
+  "preloadPolicy": "load-before-main-menu",
+  "cars": {
+    "rally": {
+      "name": "Rally Fox",
+      "body": "#F15D4E",
+      "highlight": "#FFD4A5",
+      "glass": "#BDEEFF",
+      "trim": "#26313A"
+    },
+    "comet": {
+      "name": "Comet GT",
+      "body": "#39A9FF",
+      "highlight": "#C9F2FF",
+      "glass": "#BDEEFF",
+      "trim": "#203B5A"
+    },
+    "lynx": {
+      "name": "Lynx 4x4",
+      "body": "#8BCE65",
+      "highlight": "#EFFFC9",
+      "glass": "#BDEEFF",
+      "trim": "#35583A"
+    },
+    "thunder": {
+      "name": "Thunder EV",
+      "body": "#F4D64E",
+      "highlight": "#FFF8C7",
+      "glass": "#BDEEFF",
+      "trim": "#4B4B3B"
+    },
+    "raptor": {
+      "name": "Desert Raptor",
+      "body": "#D88A45",
+      "highlight": "#FFE0B0",
+      "glass": "#BDEEFF",
+      "trim": "#59402F"
+    }
+  },
+  "worlds": [
+    {
+      "id": 1,
+      "name": "Green Valley",
+      "ground": "#7FC66A",
+      "accent": "#E9F2B0",
+      "decoration": "pine",
+      "sky": "#BDE8F4",
+      "cloud": "#FFFFFF",
+      "landmark": "rolling hills"
+    },
+    {
+      "id": 2,
+      "name": "Desert Storm",
+      "ground": "#E6B66C",
+      "accent": "#F6DF9C",
+      "decoration": "dune",
+      "sky": "#F5C58A",
+      "cloud": "#FFF0C9",
+      "landmark": "sandstone mesa"
+    },
+    {
+      "id": 3,
+      "name": "Frozen World",
+      "ground": "#A9DCE9",
+      "accent": "#F2FBFF",
+      "decoration": "ice",
+      "sky": "#B5D8F1",
+      "cloud": "#FFFFFF",
+      "landmark": "glacier"
+    },
+    {
+      "id": 4,
+      "name": "Tropical Island",
+      "ground": "#53CBB2",
+      "accent": "#FFE2A0",
+      "decoration": "palm",
+      "sky": "#70D7E4",
+      "cloud": "#FFFFFF",
+      "landmark": "palm grove"
+    },
+    {
+      "id": 5,
+      "name": "Neon City",
+      "ground": "#292B60",
+      "accent": "#FF5BD5",
+      "decoration": "tower",
+      "sky": "#24254E",
+      "cloud": "#5BE8FF",
+      "landmark": "neon skyline"
+    },
+    {
+      "id": 6,
+      "name": "Industrial Zone",
+      "ground": "#75838B",
+      "accent": "#E2AD63",
+      "decoration": "pipe",
+      "sky": "#778D9B",
+      "cloud": "#D9E3E9",
+      "landmark": "steelworks"
+    },
+    {
+      "id": 7,
+      "name": "Mountain Rush",
+      "ground": "#83B99C",
+      "accent": "#E5F0DC",
+      "decoration": "pine",
+      "sky": "#B8D5D4",
+      "cloud": "#FFFFFF",
+      "landmark": "alpine peaks"
+    },
+    {
+      "id": 8,
+      "name": "Ancient World",
+      "ground": "#D8BD88",
+      "accent": "#F3DFAD",
+      "decoration": "ruin",
+      "sky": "#EBCB9C",
+      "cloud": "#FFF1D5",
+      "landmark": "temple ruins"
+    },
+    {
+      "id": 9,
+      "name": "Space Racing",
+      "ground": "#171C45",
+      "accent": "#A58CFF",
+      "decoration": "planet",
+      "sky": "#171C45",
+      "cloud": "#57EFFF",
+      "landmark": "ringed planet"
+    },
+    {
+      "id": 10,
+      "name": "Ultimate Championship",
+      "ground": "#D66E70",
+      "accent": "#FFF0B2",
+      "decoration": "grandstand",
+      "sky": "#E5A1A0",
+      "cloud": "#FFFFFF",
+      "landmark": "championship arena"
+    }
+  ]
+}

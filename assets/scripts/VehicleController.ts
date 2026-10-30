@@ -7,7 +7,7 @@ export class VehicleController extends Component {
  readonly car:CarState={x:0,y:0,heading:Math.PI,speed:0};
  readonly race:RaceState=createRaceState();
  input:DriveInput={steer:0,throttle:false,brake:false};
- path:Point[]=[];trackWidth=100;targetLaps=3;surfaceGrip=1;obstacles:Point[]=[];private hitCooldown=0;private lastLap=0;
+ path:Point[]=[];trackWidth=100;targetLaps=3;surfaceGrip=1;obstacles:Point[]=[];private hitCooldown=0;private lastLap=0;private smoothedSteer=0;
  onLap:(lap:number)=>void=()=>{};
  configure(path:Point[],trackWidth:number,laps:number,hazardCount:number,surfaceGrip=1):void {
   this.path=path;this.trackWidth=trackWidth;this.targetLaps=laps;this.surfaceGrip=surfaceGrip;this.obstacles=[];
@@ -19,7 +19,7 @@ export class VehicleController extends Component {
   if(this.race.finished||this.path.length<2)return;
   const nearest=nearestTrackPoint(this.car,this.path);
   this.input.offRoad=nearest.distance>this.trackWidth*.34;this.input.grip=this.surfaceGrip;
-  stepCar(this.car,this.input,dt);
+  const response=1-Math.exp(-Math.max(0,Math.min(dt,.05))*(Math.abs(this.input.steer)<.001?5:8));this.smoothedSteer+=(this.input.steer-this.smoothedSteer)*response;stepCar(this.car,{...this.input,steer:this.smoothedSteer},dt);
   const hit=nearestTrackPoint(this.car,this.path);
   if(hit.distance>this.trackWidth*.46){const dx=this.car.x-hit.point.x,dy=this.car.y-hit.point.y,len=Math.hypot(dx,dy)||1,limit=this.trackWidth*.43;this.car.x=hit.point.x+dx/len*limit;this.car.y=hit.point.y+dy/len*limit;this.car.speed*=-.24;}
   this.hitCooldown=Math.max(0,this.hitCooldown-dt);
@@ -28,5 +28,5 @@ export class VehicleController extends Component {
   updateRace(this.race,this.car.x,this.car.y,dt,this.targetLaps);
   if(this.race.lap!==this.lastLap){this.lastLap=this.race.lap;this.onLap(this.lastLap);}
  }
- resetInput():void {this.input={steer:0,throttle:false,brake:false};}
+ resetInput():void {this.input={steer:0,throttle:false,brake:false};this.smoothedSteer=0;}
 }

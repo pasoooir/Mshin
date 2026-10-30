@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode } from "cc";
+import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode, JsonAsset, resources } from "cc";
 import { STAGES, WORLD_THEMES, StageDefinition, generateTrackPath } from "../../src/stage-catalog";
 import { VehicleController } from "./VehicleController";
 import { WorldRenderer } from "./WorldRenderer";
@@ -11,7 +11,7 @@ export class MshinGame extends Component {
  private screen:Screen="home";private stage:StageDefinition=STAGES[0];private progress:PlayerProgress=ProgressStore.load();private selectedWorld=0;
  private cameraNode!:Node;private camera!:Camera;private worldRoot!:Node;private hudCanvas!:Node;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;
  private labels=new Map<string,Label>();private uiNodes:Node[]=[];private joystick!:Node;private knob!:Node;private stickId=-1;
- private lastSize={width:0,height:0};private finishHandled=false;
+ private lastSize={width:0,height:0};private finishHandled=false;private artLibrary:any=null;private hudRefresh=0;
  start():void {
   view.setDesignResolutionSize(1280,720,ResolutionPolicy.FIXED_HEIGHT);view.setOrientation(macro.ORIENTATION_LANDSCAPE);
   const scene=this.node.scene;if(!scene)throw new Error("Attach MshinGame to a node in the active Cocos Creator scene.");
@@ -27,14 +27,17 @@ export class MshinGame extends Component {
   this.hudCanvas.addComponent(UITransform).setContentSize(1280,720);
   const uiCanvas=this.hudCanvas.addComponent(Canvas);uiCanvas.cameraComponent=this.camera;uiCanvas.alignCanvasWithScreen=false;
   this.hudRoot=new Node("HUD and Menus");this.hudCanvas.addChild(this.hudRoot);
-  this.createPersistentHud();this.bindKeyboard();this.showHome();this.resizeUi();
+  this.createPersistentHud();this.bindKeyboard();this.showLoading();this.resizeUi();
+  resources.load("vector-art",JsonAsset,(error,asset)=>{if(!error&&asset)this.artLibrary=asset.json;else console.warn("Mshin Cocos vector art preload failed; procedural Graphics fallback will be used.",error);this.showHome();});
  }
- update():void {
+ update(dt:number):void {
   if(this.screen==="race"){
-   this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
-   this.setText("speed","SPEED  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
-   this.setText("time","TIME  "+this.format(this.vehicle.race.elapsedSeconds));
-   this.setText("lap","LAP  "+this.vehicle.race.lap+" / "+this.stage.laps);
+   this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);this.cameraNode.angle=-this.carNode.angle;this.hudCanvas.angle=this.carNode.angle;
+   this.hudRefresh+=dt;if(this.hudRefresh>=.1){this.hudRefresh=0;
+    this.setText("speed","SPEED  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
+    this.setText("time","TIME  "+this.format(this.vehicle.race.elapsedSeconds));
+    this.setText("lap","LAP  "+this.vehicle.race.lap+" / "+this.stage.laps);
+   }
    if(this.vehicle.race.finished&&!this.finishHandled){this.finishHandled=true;this.progress=ProgressStore.complete(this.stage,this.vehicle.race.elapsedSeconds);this.showFinished();}
   }
   const s=view.getVisibleSize();if(s.width!==this.lastSize.width||s.height!==this.lastSize.height)this.resizeUi();
@@ -70,6 +73,7 @@ export class MshinGame extends Component {
   g.fillColor=hex(stage.world.accent);for(let i=0;i<path.length;i+=12){g.circle(path[i].x*.1,path[i].y*.1,2.5);g.fill();}
   this.uiNodes.push(n);
  }
+ private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}
  private showHome():void {
   this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("50 TRACKS  •  10 WORLDS  •  ONE CHAMPION",0,35,19);
   this.addButton("RACE NOW",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
@@ -93,7 +97,7 @@ export class MshinGame extends Component {
  private startStage(id:number):void {
   this.stage=STAGES[id-1];this.screen="race";this.clearUi();this.finishHandled=false;
   this.worldNode.destroyAllChildren();const rn=new Node("World Renderer");this.worldNode.addChild(rn);const renderer=rn.addComponent(WorldRenderer);
-  const path=renderer.configure(this.stage);
+  const path=renderer.configure(this.stage,this.artLibrary);
   this.carNode.destroy();this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
   this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount,this.stage.world.grip);
   this.vehicle.onLap=(lap)=>this.setText("lap","LAP  "+lap+" / "+this.stage.laps);
@@ -101,9 +105,9 @@ export class MshinGame extends Component {
   this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
  }
  private createControls():void {
-  this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.uiNodes.push(this.joystick);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(150,150);
-  const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(255,255,255,50);jg.strokeColor=new Color(255,255,255,180);jg.lineWidth=5;jg.circle(0,0,66);jg.fill();jg.stroke();
-  this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(60,60);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.circle(0,0,27);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.circle(0,0,27);kg.stroke();
+  this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.uiNodes.push(this.joystick);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(184,132);
+  const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(20,38,62,225);jg.strokeColor=new Color(220,238,255,190);jg.lineWidth=4;jg.roundRect(-92,-66,184,132,48);jg.fill();jg.stroke();
+  this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(68,52);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.roundRect(-34,-26,68,52,22);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.roundRect(-34,-26,68,52,22);kg.stroke();
   this.joystick.on(Node.EventType.TOUCH_START,this.onStickStart,this);this.joystick.on(Node.EventType.TOUCH_MOVE,this.onStickMove,this);this.joystick.on(Node.EventType.TOUCH_END,this.onStickEnd,this);this.joystick.on(Node.EventType.TOUCH_CANCEL,this.onStickEnd,this);
   this.holdButton("BRAKE",350,-250,130,86,(v)=>this.vehicle.input.brake=v);
   this.holdButton("GAS",510,-220,145,112,(v)=>this.vehicle.input.throttle=v);
@@ -117,7 +121,7 @@ export class MshinGame extends Component {
   n.on(Node.EventType.TOUCH_START,()=>change(true),this);n.on(Node.EventType.TOUCH_END,()=>change(false),this);n.on(Node.EventType.TOUCH_CANCEL,()=>change(false),this);this.uiNodes.push(n);
  }
  private onStickStart(e:EventTouch):void {this.stickId=e.getID();this.onStickMove(e);}
- private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),len=Math.hypot(p.x,p.y)||1,scale=Math.min(1,58/len);this.knob.setPosition(p.x*scale,p.y*scale,0);this.vehicle.input.steer=Math.max(-1,Math.min(1,p.x/58));}
+ private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),limit=58,raw=Math.max(-1,Math.min(1,p.x/limit)),m=Math.abs(raw),dead=.07,linear=m<=dead?0:(m-dead)/(1-dead);this.knob.setPosition(Math.max(-limit,Math.min(limit,p.x)),0,0);this.vehicle.input.steer=Math.sign(raw)*Math.pow(linear,1.28);}
  private onStickEnd(e:EventTouch):void {if(e.getID()!==this.stickId)return;this.stickId=-1;this.knob.setPosition(0,0,0);this.vehicle.input.steer=0;}
  private pauseRace():void {
   if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
@@ -131,8 +135,14 @@ export class MshinGame extends Component {
   this.addButton("MAIN MENU",0,-165,230,58,()=>this.showHome());
  }
  private drawCar():void {
-  const g=this.carNode.addComponent(Graphics);g.fillColor=hex("#26313A");g.rect(-19,-26,10,18);g.fill();g.rect(9,-26,10,18);g.fill();g.rect(-19,8,10,18);g.fill();g.rect(9,8,10,18);g.fill();
-  g.fillColor=hex("#F15D4E");g.roundRect(-15,-34,30,68,9);g.fill();g.fillColor=hex("#BDEEFF");g.roundRect(-11,2,22,17,5);g.fill();g.fillColor=hex("#FFE9A8");g.circle(-8,27,3);g.fill();g.circle(8,27,3);g.fill();
+  this.carNode.setScale(1.25,1.25,1);
+  const g=this.carNode.addComponent(Graphics),paint=this.artLibrary?.cars?.rally??{body:"#F15D4E",highlight:"#FFD4A5",glass:"#BDEEFF",trim:"#26313A"};
+  g.fillColor=new Color(4,12,24,75);g.ellipse(2,-3,22,39);g.fill();
+  g.fillColor=hex(paint.trim);g.roundRect(-22,-27,12,21,4);g.fill();g.roundRect(10,-27,12,21,4);g.fill();g.roundRect(-22,8,12,21,4);g.fill();g.roundRect(10,8,12,21,4);g.fill();
+  g.fillColor=hex(paint.body);g.roundRect(-16,-37,32,74,10);g.fill();g.strokeColor=hex(paint.highlight);g.lineWidth=2;g.roundRect(-16,-37,32,74,10);g.stroke();
+  g.fillColor=hex(paint.trim);g.roundRect(-12,-12,24,31,6);g.fill();g.fillColor=hex(paint.glass);g.roundRect(-11,-10,22,25,5);g.fill();
+  g.fillColor=hex(paint.highlight);g.roundRect(-12,21,24,8,3);g.fill();g.fillColor=hex("#FFF5C8");g.circle(-9,31,3);g.fill();g.circle(9,31,3);g.fill();
+  g.fillColor=hex("#FF665F");g.roundRect(-11,-35,7,4,2);g.fill();g.roundRect(4,-35,7,4,2);g.fill();
  }
  private bindKeyboard():void {
   input.on(Input.EventType.KEY_DOWN,(e)=>{if(this.screen!=="race")return;

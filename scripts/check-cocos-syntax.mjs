@@ -18,6 +18,22 @@ for (const name of files) {
       useDefineForClassFields: false
     }
   });
+  const sourceFile = ts.createSourceFile(fileName, readFileSync(fileName, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const visit = (node) => {
+    if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) {
+      const seen = new Map();
+      for (const member of node.members) {
+        const key = member.name && (ts.isIdentifier(member.name) || ts.isStringLiteral(member.name) || ts.isNumericLiteral(member.name)) ? member.name.text : null;
+        if (key === null) continue;
+        if (seen.has(key)) {
+          errors++;
+          process.stderr.write(fileName + ": duplicate class member \"" + key + "\" (lines " + seen.get(key) + " and " + sourceFile.getLineAndCharacterOfPosition(member.getStart(sourceFile)).line + 1 + ")\\n");
+        } else seen.set(key, sourceFile.getLineAndCharacterOfPosition(member.getStart(sourceFile)).line + 1);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
   for (const diagnostic of result.diagnostics ?? []) {
     if (diagnostic.category !== ts.DiagnosticCategory.Error) continue;
     errors++;

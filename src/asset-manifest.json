@@ -1,0 +1,209 @@
+{
+  "version": "2026.10.30.3",
+  "worlds": [
+    {
+      "id": 1,
+      "name": "Green Valley",
+      "src": "./assets/vector/world-01.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-01.svg"
+    },
+    {
+      "id": 2,
+      "name": "Desert Storm",
+      "src": "./assets/vector/world-02.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-02.svg"
+    },
+    {
+      "id": 3,
+      "name": "Frozen World",
+      "src": "./assets/vector/world-03.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-03.svg"
+    },
+    {
+      "id": 4,
+      "name": "Tropical Island",
+      "src": "./assets/vector/world-04.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-04.svg"
+    },
+    {
+      "id": 5,
+      "name": "Neon City",
+      "src": "./assets/vector/world-05.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-05.svg"
+    },
+    {
+      "id": 6,
+      "name": "Industrial Zone",
+      "src": "./assets/vector/world-06.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-06.svg"
+    },
+    {
+      "id": 7,
+      "name": "Mountain Rush",
+      "src": "./assets/vector/world-07.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-07.svg"
+    },
+    {
+      "id": 8,
+      "name": "Ancient World",
+      "src": "./assets/vector/world-08.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-08.svg"
+    },
+    {
+      "id": 9,
+      "name": "Space Racing",
+      "src": "./assets/vector/world-09.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-09.svg"
+    },
+    {
+      "id": 10,
+      "name": "Ultimate Championship",
+      "src": "./assets/vector/world-10.svg",
+      "type": "image/svg+xml",
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-10.svg"
+    }
+  ],
+  "cars": [
+    {
+      "id": "rally",
+      "name": "Rally Fox",
+      "src": "./assets/vector/car-rally.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-rally.svg"
+    },
+    {
+      "id": "comet",
+      "name": "Comet GT",
+      "src": "./assets/vector/car-comet.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-comet.svg"
+    },
+    {
+      "id": "lynx",
+      "name": "Lynx 4x4",
+      "src": "./assets/vector/car-lynx.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-lynx.svg"
+    },
+    {
+      "id": "thunder",
+      "name": "Thunder EV",
+      "src": "./assets/vector/car-thunder.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-thunder.svg"
+    },
+    {
+      "id": "raptor",
+      "name": "Desert Raptor",
+      "src": "./assets/vector/car-raptor.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-raptor.svg"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-01",
+      "name": "World 1 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 0
+    },
+    {
+      "id": "scene-02",
+      "name": "World 2 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 1
+    },
+    {
+      "id": "scene-03",
+      "name": "World 3 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 2
+    },
+    {
+      "id": "scene-04",
+      "name": "World 4 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 3
+    },
+    {
+      "id": "scene-05",
+      "name": "World 5 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 4
+    },
+    {
+      "id": "scene-06",
+      "name": "World 6 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 5
+    },
+    {
+      "id": "scene-07",
+      "name": "World 7 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 6
+    },
+    {
+      "id": "scene-08",
+      "name": "World 8 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 7
+    },
+    {
+      "id": "scene-09",
+      "name": "World 9 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 8
+    },
+    {
+      "id": "scene-10",
+      "name": "World 10 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 9
+    }
+  ]
+}
