@@ -12,6 +12,12 @@ try {
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable");
+  assert.equal(await page.locator(".carChoice").count(), 3, "garage should offer three distinct cars");
+  await page.getByRole("button", { name: /Comet GT/ }).click();
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator("#play").click();
+  assert.match(await page.locator(".carChoice.active").textContent(), /Comet GT/, "garage should restore the saved car");
   await page.getByRole("button", { name: /Neon City/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
   await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
@@ -19,6 +25,13 @@ try {
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator("#play").click();
+  await page.getByRole("button", { name: /Neon City/ }).click();
+  await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
+  await page.locator("#startRace").click();
+  assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "saved mute preference should survive reload");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
@@ -27,6 +40,14 @@ try {
   await page.waitForTimeout(900);
   await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
+  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, { timeout: 6000 });
+  const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
+  assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
+  await page.keyboard.down("Shift");
+  await page.waitForTimeout(120);
+  await page.keyboard.up("Shift");
+  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) < 50);
+  assert.ok(parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width)) < chargedNitro, "nitro boost should consume stored charge");
   const canvasState = await page.locator("#game").evaluate(canvas => {
     const context = canvas.getContext("2d");
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
