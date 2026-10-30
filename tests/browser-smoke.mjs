@@ -31,8 +31,13 @@ try {
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
   await page.locator("#startRace").click();
   const requestCountAtStart = raceRequests.length;
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1100);
   assert.equal(raceRequests.length, requestCountAtStart, "starting a race must not trigger late asset/network requests");
+  const frameMetrics = await page.evaluate(() => window.MshinPerformance);
+  assert.ok(frameMetrics.samples >= 30, "race loop should publish rolling frame-time samples");
+  assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
+  assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
+  assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 200, "no single game JS frame should exceed 200ms in smoke run");
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
