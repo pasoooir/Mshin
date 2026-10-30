@@ -72,7 +72,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /AI-to-AI contacts/);
   assert.match(game, /cameraShake/);
   assert.match(game, /collisionCooldown/);
-  assert.match(sw, /collision-physics\\.js/);
+  assert.match(sw, /collision-physics\.js/);
   assert.match(game, /lane\(-40,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /lane\(40,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /Three readable lanes/);
@@ -93,7 +93,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰\.۴\.۷/);
+  assert.match(html, /نسخه ۰\.۴\.۸/);
   assert.match(html, /splashCarFront/);
   assert.match(html, /id="assetPercent"/);
   assert.match(html, /id="assetProgress"/);
