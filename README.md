@@ -18,8 +18,11 @@ GitHub Pages alternative: `https://pasoooir.github.io/Mshin/cdn/previews/stage-0
 
 Metadata: `data/stages.json`, `data/worlds.json`. Design brief: `docs/GAME_DESIGN.md`.
 
+## Play the prototype
+Open `index.html` in a modern browser or use the GitHub Pages URL after Pages is configured. The first playable slice is Green Valley / Stage 01. Touch controls and keyboard controls are supported. See `docs/PLAYABLE_VERTICAL_SLICE.md`.
+
 ## Validate
-Run `npm run validate:data` with Node.js 20+.
+Run `npm run check` with Node.js 20+.
 
 ## Cocos Creator
 Open the repository in Cocos Creator 3.8.6 or compatible 3.8.x. The playable vertical slice (car movement, touch controls, collision and race loop) is the next milestone.
