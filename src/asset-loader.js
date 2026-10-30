@@ -1,13 +1,36 @@
 import manifest from "./asset-manifest.json" with { type: "json" };
 
 const imageCache = new Map();
-const timeout = (promise, ms, label) => new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error(`Asset timeout: ${label}`)), ms); Promise.resolve(promise).then(value => { clearTimeout(timer); resolve(value); }, error => { clearTimeout(timer); reject(error); }); });
+const timeout = (promise, ms, label) => new Promise((resolve, reject) => {
+  const timer = setTimeout(() => reject(new Error(`Asset timeout: ${label}`)), ms);
+  Promise.resolve(promise).then(value => { clearTimeout(timer); resolve(value); }, error => { clearTimeout(timer); reject(error); });
+});
+
+async function fetchAsset(asset) {
+  let lastError;
+  // Use the immutable jsDelivr URL first. If it is unavailable (or the player is offline),
+  // fall back immediately to the same-origin copy that the Service Worker precaches.
+  for (const source of [asset.cdn, asset.src].filter(Boolean)) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), source === asset.cdn ? 2200 : 10000);
+    try {
+      const response = await fetch(source, {
+        cache: "force-cache",
+        credentials: source === asset.cdn ? "omit" : "same-origin",
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`Asset request failed (${response.status}): ${source}`);
+      const blob = await response.blob();
+      if (!blob.type.includes("svg")) throw new Error(`Unexpected vector MIME type: ${blob.type}`);
+      return blob;
+    } catch (error) { lastError = error; }
+    finally { clearTimeout(timer); }
+  }
+  throw lastError || new Error(`No asset source available: ${asset.src}`);
+}
 
 async function loadVector(asset) {
-  const response = await timeout(fetch(asset.src, { cache: "force-cache", credentials: "same-origin" }), 12000, asset.src);
-  if (!response.ok) throw new Error(`Asset request failed (${response.status}): ${asset.src}`);
-  const blob = await response.blob();
-  if (!blob.type.includes("svg")) throw new Error(`Unexpected vector MIME type: ${blob.type}`);
+  const blob = await fetchAsset(asset);
   const image = new Image();
   const objectUrl = URL.createObjectURL(blob);
   try {
@@ -22,7 +45,6 @@ export async function preloadGameAssets(onProgress = () => {}) {
   const all = [...manifest.worlds, ...manifest.cars];
   let loaded = 0;
   const failures = [];
-  // Bounded concurrency avoids a burst of simultaneous decodes on mobile devices.
   let cursor = 0;
   const worker = async () => {
     while (cursor < all.length) {
@@ -34,7 +56,6 @@ export async function preloadGameAssets(onProgress = () => {}) {
     }
   };
   await Promise.all(Array.from({ length: 3 }, worker));
-  // Art is non-blocking: if a CDN/cache miss or unsupported SVG decoder occurs, Canvas fallback art remains available.
   window.MshinAssets = {
     version: manifest.version,
     worlds: manifest.worlds.map(item => imageCache.get(item.id) || null),
