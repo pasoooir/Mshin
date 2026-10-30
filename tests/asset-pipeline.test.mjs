@@ -8,6 +8,7 @@ const manifest = JSON.parse(await readFile(path.join(root, "src/asset-manifest.j
 test("all 10 world illustrations and five car sprites are bundled SVG vectors", async () => {
   assert.equal(manifest.worlds.length, 10);
   assert.equal(manifest.cars.length, 5);
+  assert.equal(manifest.scenes.length, 10);
   const assets = [...manifest.worlds, ...manifest.cars];
   assert.equal(new Set(assets.map(asset => asset.src)).size, 15);
   for (const asset of assets) {
@@ -28,7 +29,9 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(html, /src="\.\/src\/boot\.js"/);
   assert.match(boot, /await preloadGameAssets/);
   assert.match(boot, /await import\("\.\/web-game\.js"\)/);
-  assert.match(loader, /length: 3/);
+  assert.match(loader, /length: 4/);
+  assert.match(loader, /manifest\.scenes/);
+  assert.match(loader, /Unexpected image MIME type/);
   assert.match(loader, /image\.decode/);
   assert.ok(loader.includes("asset.cdn"), "loader should try the manifest CDN URL");
   assert.ok(loader.includes("source === asset.cdn ? 2200 : 10000"), "CDN should have a bounded timeout before local fallback");
@@ -36,8 +39,16 @@ test("asset boot waits for bounded preload before starting the game module", asy
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v5/);
+  assert.match(sw, /mshin-arcade-v6/);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
+});
+test("photographic world scenes are CDN-preloaded before the race runtime", async () => {
+  const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
+  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  assert.match(loader, /scenes: Object\.fromEntries/);
+  assert.match(game, /sceneArt/);
+  assert.match(game, /\)\*1\.6/);
+  assert.match(game, /,-29,-45,58,90/);
 });
 test("race hot paths pool particles and use frame-driven collision cooldowns", async () => {
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
