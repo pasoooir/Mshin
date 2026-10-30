@@ -84,7 +84,7 @@ export class MshinGame extends Component {
   this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
  }
  private createControls():void {
-  this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(150,150);
+  this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.uiNodes.push(this.joystick);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(150,150);
   const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(255,255,255,50);jg.strokeColor=new Color(255,255,255,180);jg.lineWidth=5;jg.circle(0,0,66);jg.fill();jg.stroke();
   this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(60,60);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.circle(0,0,27);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.circle(0,0,27);kg.stroke();
   this.joystick.on(Node.EventType.TOUCH_START,this.onStickStart,this);this.joystick.on(Node.EventType.TOUCH_MOVE,this.onStickMove,this);this.joystick.on(Node.EventType.TOUCH_END,this.onStickEnd,this);this.joystick.on(Node.EventType.TOUCH_CANCEL,this.onStickEnd,this);
@@ -130,7 +130,14 @@ export class MshinGame extends Component {
    if(e.keyCode===KeyCode.SPACE||e.keyCode===KeyCode.ARROW_DOWN)this.vehicle.input.brake=false;
   });
  }
- private resizeUi():void {const s=view.getVisibleSize();this.lastSize={width:s.width,height:s.height};}
+ private resizeUi():void {
+  const s=view.getVisibleSize();this.lastSize={width:s.width,height:s.height};this.camera.orthoHeight=s.height;
+  const pos=(name:string,x:number,y:number)=>{const n=this.hudRoot.getChildByName(name);if(n)n.setPosition(x,y,0);};
+  pos("HUD Backdrop",0,s.height/2-52);pos("Label brand",0,s.height/2-26);pos("Label world",0,s.height/2-62);
+  pos("Label lap",-s.width/2+150,s.height/2-26);pos("Label time",-s.width/2+320,s.height/2-26);pos("Label speed",-s.width/2+485,s.height/2-26);
+  pos("Virtual Joystick",-s.width/2+105,-s.height/2+105);pos("BRAKE",s.width/2-260,-s.height/2+105);pos("GAS",s.width/2-105,-s.height/2+112);
+  pos("Button Ⅱ",s.width/2-60,s.height/2-60);
+ }
  private format(seconds:number):string {const m=Math.floor(seconds/60),v=Math.floor(seconds%60);return String(m).padStart(2,"0")+":"+String(v).padStart(2,"0");}
  onDestroy():void {input.off(Input.EventType.KEY_DOWN);input.off(Input.EventType.KEY_UP);}
 }

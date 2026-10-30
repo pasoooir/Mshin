@@ -14,8 +14,9 @@ export function normalizeJoystick(dx: number, dy: number, radius: number): { x: 
 export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number): CarState {
  const dt = clamp(deltaSeconds, 0, 1 / 20); const steer = clamp(input.steer, -1, 1);
  const throttle = input.throttle ? 1 : 0; const brake = input.brake ? 1 : 0; const grip = input.offRoad ? 0.42 : 1;
- car.speed += (throttle * 330 - brake * 560 - (throttle ? 24 : 95)) * dt;
- car.speed = clamp(car.speed, -65, 360);
+ if (brake) car.speed = Math.max(0, car.speed - 560 * dt);
+ else if (throttle) car.speed = clamp(car.speed + 306 * dt, 0, 360);
+ else car.speed = Math.max(0, car.speed - 95 * dt);
  car.heading -= steer * (1.9 + Math.abs(car.speed) / 155) * grip * dt * Math.sign(car.speed || 1);
  car.x += Math.sin(car.heading) * car.speed * dt; car.y -= Math.cos(car.heading) * car.speed * dt; return car;
 }

@@ -23,3 +23,11 @@ test('race increments lap on finish-line wrap and finishes at target', () => {
  updateRace(race, 420 * Math.cos(0.1), 260 * Math.sin(0.1), 1, 1);
  assert.equal(race.lap, 1); assert.equal(race.finished, true); assert.equal(race.elapsedSeconds, 1);
 });
+
+test('idle and brake never push a stopped car into reverse',()=>{
+ const idle={x:0,y:0,heading:0,speed:0};
+ stepCar(idle,{steer:0,throttle:false,brake:false},0.05);
+ assert.equal(idle.speed,0);
+ stepCar(idle,{steer:0,throttle:false,brake:true},0.05);
+ assert.equal(idle.speed,0);
+});

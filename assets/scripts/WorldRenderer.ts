@@ -1,4 +1,4 @@
-import { _decorator, Component, Graphics, Color } from "cc";
+import { _decorator, Component, Graphics, Color, UITransform } from "cc";
 import { StageDefinition, generateTrackPath, Point } from "../../src/stage-catalog";
 const {ccclass}=_decorator;
 function color(hex:string):Color{const h=hex.slice(1);return new Color(parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),255);}
@@ -6,7 +6,7 @@ function color(hex:string):Color{const h=hex.slice(1);return new Color(parseInt(
 export class WorldRenderer extends Component {
  path:Point[]=[];
  configure(stage:StageDefinition):Point[] {
-  this.path=generateTrackPath(stage);const g=this.getComponent(Graphics)??this.addComponent(Graphics);g.clear();
+  this.path=generateTrackPath(stage);const ui=this.getComponent(UITransform)??this.addComponent(UITransform);ui.setContentSize(3600,2400);const g=this.getComponent(Graphics)??this.addComponent(Graphics);g.clear();
   g.fillColor=color(stage.world.ground);g.rect(-1800,-1200,3600,2400);g.fill();
   this.stroke(g,this.path,stage.trackWidth+64,stage.world.shoulder);
   this.stroke(g,this.path,stage.trackWidth,stage.world.road);

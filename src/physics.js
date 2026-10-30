@@ -6,8 +6,9 @@ export function stepCar(car, input, dt) {
   const throttle = input.throttle ? 1 : 0;
   const brake = input.brake ? 1 : 0;
   const grip = input.offRoad ? 0.42 : 1;
-  car.speed += (throttle * 330 - brake * 560 - (throttle ? 24 : 95)) * t;
-  car.speed = clamp(car.speed, -65, 360);
+  if (brake) car.speed = Math.max(0, car.speed - 560 * t);
+  else if (throttle) car.speed = clamp(car.speed + 306 * t, 0, 360);
+  else car.speed = Math.max(0, car.speed - 95 * t);
   car.heading -= input.steer * (1.9 + Math.abs(car.speed) / 155) * grip * t * Math.sign(car.speed || 1);
   car.x += Math.sin(car.heading) * car.speed * t;
   car.y -= Math.cos(car.heading) * car.speed * t;
