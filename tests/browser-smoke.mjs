@@ -35,6 +35,7 @@ try {
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
+  assert.match(await page.locator("#position").textContent(), /^[1-4] \/ 4$/, "live race position should show the player among three AI rivals");
   assert.match(await page.locator("#stageName").textContent(), /WORLD 05.*STAGE 05/);
   await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(2400);
@@ -75,6 +76,8 @@ try {
   assert.ok((await mobile.locator("#stick").boundingBox()).width >= 90, "mobile joystick should remain touch-sized");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
+  assert.ok(await mobile.locator(".stats").evaluate(el => el.getBoundingClientRect().right <= document.querySelector("#soundToggle").getBoundingClientRect().left), "compact mobile race stats should not overlap sound controls");
+  assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
