@@ -2,7 +2,7 @@
 
 Last evidence refresh: 2026-10-30
 Working branch: `feat/game-foundation-and-stage-art`
-Validated source head: `6b775dfe69d1d1d616cbd33a4cdf9f02efb69c92`
+Validated source head: `50f3564bf0bca17a909d67afb254945524d9ceec`
 PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, draft, not merged.
 
 ## Status and progress
@@ -15,21 +15,28 @@ PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, draft, not merged.
 | Visual environments and hazards | 🟡 | 38% | Per-world hazard silhouettes (9 hazard families), procedural track/decor and generated stage-track thumbnails exist; no Creator visual QA. |
 | Menus, world/stage selection and HUD | 🟡 | 35% | Runtime-created screens and controls exist; responsive layout and interactions need Editor/device testing. |
 | Audio, animation and polish | ⬜ | 0% | Motor/brake/impact audio, particles and motion polish not implemented. |
-| Persistence and records | 🟡 | 35% | Local progress/best-time source exists; persistence needs engine/runtime verification. No server-side player data is stored. |
+| Persistence and records | 🟡 | 55% | Pure progress domain logic now normalizes corrupt/invalid records, deduplicates completions, validates stage/time inputs and preserves best times; Cocos localStorage adapter still needs Editor/runtime verification. |
 | Cloudflare Worker backend | 🟡 | 35% | Stateless `workers.js` API provides health/config, exact-origin CORS and 7 tests; not deployed or connected to a live game client. No R2/D1/KV or paid storage. |
-| Portable automated tests | 🟢 | 100% | Latest push and PR Actions passed; 28 Node tests passed (including 7 Worker tests). This does not prove Cocos runtime correctness. |
+| Portable automated tests | 🟢 | 100% | Latest push and PR Actions passed; **36 Node tests passed, 0 failed** (including 8 progress-domain tests and 7 Worker tests). This does not prove Cocos runtime correctness. |
 | Cocos Web build and browser QA | 🔴 | 0% | No real Cocos Web output; requires Creator 3.8.6 and a valid startup scene. |
 | Android APK/AAB and device QA | 🔴 | 0% | No APK/AAB; Android SDK/NDK and native build environment absent in inspected runner. |
-| CI/CD and delivery | 🟡 | 35% | Portable validation now includes Worker syntax and API tests; Editor-backed builds and artifact publishing remain. |
+| CI/CD and delivery | 🟡 | 35% | Portable validation includes Worker syntax/API tests and progress-domain tests; Editor-backed builds and artifact publishing remain. |
 
 ## GitHub Actions evidence (validated source head)
 
-- Push run [41057774225](https://github.com/pasoooir/Mshin/actions/runs/41057774225): completed successfully for `6b775dfe`.
-- PR run [41057783545](https://github.com/pasoooir/Mshin/actions/runs/41057783545): completed successfully for `6b775dfe`.
-- The PR job log reports **28 tests passed, 0 failed**. This includes the seven Worker endpoint/CORS tests.
-- Previous push/PR checks for source head `183fd9c2` also passed: [41057109681](https://github.com/pasoooir/Mshin/actions/runs/41057109681) and [41057116701](https://github.com/pasoooir/Mshin/actions/runs/41057116701).
+- Push run [41058258207](https://github.com/pasoooir/Mshin/actions/runs/41058258207): completed successfully for `50f3564b`.
+- PR run [41058267989](https://github.com/pasoooir/Mshin/actions/runs/41058267989): completed successfully for `50f3564b`.
+- PR job log reports **36 tests passed, 0 failed**.
 - Checks include data validation, portable TypeScript compilation, Cocos-script syntax transpilation, Worker syntax validation, JavaScript syntax checks and Node tests.
 - `transpileModule` is syntax-only; it is not an engine type-check, scene import, Editor preview or Cocos build.
+
+## Recent persistence hardening
+
+- Added engine-independent `src/progress.ts` so player-progress rules can be unit-tested without importing Cocos.
+- Invalid save shapes, duplicate/out-of-range completion IDs, malformed best-time maps and non-finite/non-positive times are rejected or normalized safely.
+- Completing a stage is idempotent; only a faster valid time replaces a stored best time.
+- All 50 stages remain selectable by design; completion and best-time tracking are independent.
+- The Cocos adapter catches localStorage read/write failures so a storage quota or unavailable storage does not crash the race flow.
 
 ## Cloudflare Worker boundary
 
