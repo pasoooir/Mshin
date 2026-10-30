@@ -24,3 +24,8 @@ To bootstrap in Cocos Creator 3.8.6:
 ## Important release boundary
 
 The GitHub Actions Cocos check runs TypeScript transpilation and duplicate-class-member validation. It is not equivalent to Creator's engine-aware type checking, scene import, Editor Preview, Web build, or Android build. Those steps must be run in Creator 3.8.6 before describing the Cocos runtime as editor-verified or release-ready.
+
+
+## Cocos camera and vehicle scale
+
+The Cocos Creator runtime now counter-rotates the HUD while rotating the camera against the player vehicle heading, keeping the car oriented toward the top of the race view through bends without rotating the interface. The Cocos vehicle visual node is scaled 1.25×; simulation position and collision geometry remain unchanged. This is source-level and CI syntax validation only until a serialized scene is opened in Creator 3.8.6.
