@@ -84,3 +84,9 @@ test("Cocos damage state accumulates by local panel and reduces to five levels",
  for(let i=0;i<3;i++)addVehicleDamage(d,5_000_000,"left");
  assert.ok(vehicleDamageLevel(d)>=1);assert.ok(d.left>d.right);
 });
+
+test("sequential impacts transfer momentum through a three-car chain",()=>{
+ const lead=car(0,0,320,0),middle=car(64,0,0,0),tail=car(128,0,0,0);
+ const first=resolveVehicleImpact(lead,middle);assert.ok(first.hit&&middle.vx>0);
+ const second=resolveVehicleImpact(middle,tail);assert.ok(second.hit&&tail.vx>0);
+});
