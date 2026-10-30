@@ -90,3 +90,8 @@ test("sequential impacts transfer momentum through a three-car chain",()=>{
  const first=resolveVehicleImpact(lead,middle);assert.ok(first.hit&&middle.vx>0);
  const second=resolveVehicleImpact(middle,tail);assert.ok(second.hit&&tail.vx>0);
 });
+
+test("overlapping but separating vehicles receive positional correction without false damage energy",()=>{
+ const a=car(0,0,-80,0),b=car(50,0,80,0),r=resolveVehicleImpact(a,b);
+ assert.equal(r.hit,true);assert.equal(r.energy,0);assert.equal(r.closingSpeed,0);assert.ok(b.x-a.x>50);
+});
