@@ -20,7 +20,31 @@ export class WorldRenderer extends Component {
   for(let i=0;i<stage.hazardCount;i++){
    const index=Math.floor((i+.45)*this.path.length/stage.hazardCount),p=this.path[index],n=this.path[(index+2)%this.path.length];
    const dx=n.y-p.y,dy=p.x-n.x,len=Math.hypot(dx,dy)||1,side=i%2?1:-1,x=p.x+dx/len*stage.trackWidth*.18*side,y=p.y+dy/len*stage.trackWidth*.18*side;
-   g.fillColor=color(stage.world.accent);g.circle(x,y,13);g.fill();g.lineWidth=3;g.strokeColor=color("#26313A");g.circle(x,y,13);g.stroke();
+   this.drawHazard(g,stage.world.hazard,x,y,stage.world.accent,stage.world.shoulder);
+  }
+ }
+ private drawHazard(g:Graphics,kind:string,x:number,y:number,accent:string,trim:string):void {
+  const a=color(accent),t=color(trim);g.lineWidth=3;g.strokeColor=color("#26313A");
+  if(kind==="hay bale"){
+   g.fillColor=t;g.roundRect(x-18,y-12,36,24,7);g.fill();g.strokeColor=a;g.moveTo(x-10,y-8);g.lineTo(x+9,y+8);g.stroke();
+  }else if(kind==="cactus"){
+   g.fillColor=color("#438B55");g.roundRect(x-7,y-21,14,42,6);g.fill();g.roundRect(x-19,y-8,13,9,4);g.fill();g.roundRect(x+6,y-1,13,9,4);g.fill();
+  }else if(kind==="ice crystal"){
+   g.fillColor=color("#B9F4FF");g.moveTo(x,y+22);g.lineTo(x+15,y+2);g.lineTo(x+8,y-18);g.lineTo(x-8,y-18);g.lineTo(x-15,y+2);g.close();g.fill();g.strokeColor=a;g.stroke();
+  }else if(kind==="palm stump"){
+   g.fillColor=color("#9C6844");g.circle(x,y,17);g.fill();g.strokeColor=t;g.lineWidth=4;g.circle(x,y,11);g.stroke();
+  }else if(kind==="neon barrier"){
+   g.fillColor=color("#29294B");g.roundRect(x-24,y-9,48,18,5);g.fill();g.strokeColor=a;g.lineWidth=4;g.roundRect(x-24,y-9,48,18,5);g.stroke();g.strokeColor=t;g.lineWidth=3;g.moveTo(x-12,y-6);g.lineTo(x-3,y+6);g.moveTo(x+4,y-6);g.lineTo(x+13,y+6);g.stroke();
+  }else if(kind==="crate"){
+   g.fillColor=color("#A87948");g.rect(x-16,y-16,32,32);g.fill();g.strokeColor=t;g.lineWidth=4;g.rect(x-16,y-16,32,32);g.moveTo(x-12,y-12);g.lineTo(x+12,y+12);g.moveTo(x+12,y-12);g.lineTo(x-12,y+12);g.stroke();
+  }else if(kind==="rock"){
+   g.fillColor=color("#737D7E");g.moveTo(x-19,y-5);g.lineTo(x-8,y-18);g.lineTo(x+9,y-15);g.lineTo(x+20,y+5);g.lineTo(x+7,y+17);g.lineTo(x-15,y+12);g.close();g.fill();g.stroke();
+  }else if(kind==="pillar"){
+   g.fillColor=color("#C9A36B");g.rect(x-11,y-18,22,36);g.fill();g.rect(x-16,y-21,32,7);g.fill();g.rect(x-16,y+14,32,7);g.fill();g.strokeColor=a;g.stroke();
+  }else if(kind==="energy gate"){
+   g.fillColor=color("#30335C");g.rect(x-20,y-22,8,44);g.rect(x+12,y-22,8,44);g.rect(x-20,y+14,40,8);g.fill();g.strokeColor=a;g.lineWidth=4;g.moveTo(x-12,y+18);g.lineTo(x+12,y+18);g.stroke();
+  }else{
+   g.fillColor=color("#E6E8F0");g.roundRect(x-19,y-15,38,30,5);g.fill();g.strokeColor=a;g.lineWidth=4;g.roundRect(x-19,y-15,38,30,5);g.stroke();g.strokeColor=color("#26313A");g.lineWidth=3;g.moveTo(x-10,y-12);g.lineTo(x-10,y+12);g.moveTo(x,y-12);g.lineTo(x,y+12);g.moveTo(x+10,y-12);g.lineTo(x+10,y+12);g.stroke();
   }
  }
  private drawThemeDecor(g:Graphics,stage:StageDefinition):void {
