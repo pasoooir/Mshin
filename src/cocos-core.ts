@@ -17,7 +17,8 @@ export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number):
  const steer = clamp(Number.isFinite(input.steer) ? input.steer : 0, -1, 1);
  const offRoad = Boolean(input.offRoad);
  const surfaceGrip = clamp(Number.isFinite(input.grip) ? (input.grip as number) : 1, 0.35, 1.15);
- const grip = (offRoad ? 0.42 : 1) * surfaceGrip;\n const performance = clamp(Number.isFinite(input.performance) ? (input.performance as number) : 1, 0.3, 1);
+ const grip = (offRoad ? 0.42 : 1) * surfaceGrip;
+ const performance = clamp(Number.isFinite(input.performance) ? (input.performance as number) : 1, 0.3, 1);
  const throttle = input.throttle ? 1 : 0; const brake = input.brake ? 1 : 0;
  const maxSpeed = (offRoad ? 220 : 360) * performance;
  if (brake) car.speed = Math.max(0, car.speed - 560 * dt);
@@ -50,7 +51,8 @@ export function resolveStaticBarrier(body:CollisionBody,nx:number,ny:number,rest
  const tx=-ny,ty=nx,tangent=body.vx*tx+body.vy*ty;body.vx-=tx*tangent*.16;body.vy-=ty*tangent*.16;
  return {hit:true,energy:.5*Math.max(1,body.mass)*closing*closing,closingSpeed:closing};
 }
-\nexport function resolveTrackCollision(car: CarState, track: TrackBounds = GREEN_VALLEY_TRACK): boolean {
+
+export function resolveTrackCollision(car: CarState, track: TrackBounds = GREEN_VALLEY_TRACK): boolean {
  const r = Math.hypot(car.x / track.radiusX, car.y / track.radiusY); if (r >= track.inner && r <= track.outer) return false;
  const a = Math.atan2(car.y / track.radiusY, car.x / track.radiusX); const corrected = clamp(r, track.inner + 0.012, track.outer - 0.012);
  car.x = Math.cos(a) * track.radiusX * corrected; car.y = Math.sin(a) * track.radiusY * corrected; car.speed *= -0.22; return true;
