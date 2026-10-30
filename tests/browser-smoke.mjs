@@ -81,7 +81,7 @@ try {
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  await economy.addInitScript(() => localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })));
+  await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   economy.on("pageerror", error => errors.push(error.message));
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await economy.locator("#play").click();
