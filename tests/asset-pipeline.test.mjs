@@ -11,6 +11,9 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
   const assets = [...manifest.worlds, ...manifest.cars];
   assert.equal(new Set(assets.map(asset => asset.src)).size, 15);
   for (const asset of assets) {
+    assert.match(asset.cdn, /^https:\/\/cdn\\.jsdelivr\\.net\/gh\/pasoooir\/Mshin@[a-f0-9]{40}\//, asset.src + " should use an immutable CDN URL");
+  }
+  for (const asset of assets) {
     const source = await readFile(path.join(root, asset.src.replace(/^\.\//, "")), "utf8");
     assert.match(source, /<svg[\s>]/, asset.src + " should be an SVG vector");
     assert.match(source, /viewBox=/, asset.src + " should define scalable vector bounds");
