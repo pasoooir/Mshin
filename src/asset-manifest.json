@@ -1,0 +1,112 @@
+{
+  "version": "2026.10.30.1",
+  "worlds": [
+    {
+      "id": 1,
+      "name": "Green Valley",
+      "src": "./assets/vector/world-01.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 2,
+      "name": "Desert Storm",
+      "src": "./assets/vector/world-02.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 3,
+      "name": "Frozen World",
+      "src": "./assets/vector/world-03.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 4,
+      "name": "Tropical Island",
+      "src": "./assets/vector/world-04.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 5,
+      "name": "Neon City",
+      "src": "./assets/vector/world-05.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 6,
+      "name": "Industrial Zone",
+      "src": "./assets/vector/world-06.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 7,
+      "name": "Mountain Rush",
+      "src": "./assets/vector/world-07.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 8,
+      "name": "Ancient World",
+      "src": "./assets/vector/world-08.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 9,
+      "name": "Space Racing",
+      "src": "./assets/vector/world-09.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    },
+    {
+      "id": 10,
+      "name": "Ultimate Championship",
+      "src": "./assets/vector/world-10.svg",
+      "type": "image/svg+xml",
+      "group": "world"
+    }
+  ],
+  "cars": [
+    {
+      "id": "rally",
+      "name": "Rally Fox",
+      "src": "./assets/vector/car-rally.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle"
+    },
+    {
+      "id": "comet",
+      "name": "Comet GT",
+      "src": "./assets/vector/car-comet.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle"
+    },
+    {
+      "id": "lynx",
+      "name": "Lynx 4x4",
+      "src": "./assets/vector/car-lynx.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle"
+    },
+    {
+      "id": "thunder",
+      "name": "Thunder EV",
+      "src": "./assets/vector/car-thunder.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle"
+    },
+    {
+      "id": "raptor",
+      "name": "Desert Raptor",
+      "src": "./assets/vector/car-raptor.svg",
+      "type": "image/svg+xml",
+      "group": "vehicle"
+    }
+  ]
+}
