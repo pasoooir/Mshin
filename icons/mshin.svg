@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#1b3d63"/><stop offset="1" stop-color="#111b36"/></linearGradient><linearGradient id="car" x2="0" y2="1"><stop stop-color="#ffe16a"/><stop offset="1" stop-color="#f15d4e"/></linearGradient></defs>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/>
+<path d="M0 345h512v42H0z" fill="#314e69"/><path d="M0 365h512" stroke="#fff" stroke-width="8" stroke-dasharray="34 28"/>
+<g transform="translate(256 244) rotate(-18)"><ellipse cy="20" rx="92" ry="138" fill="#071321" opacity=".55"/><rect x="-85" y="-116" width="38" height="80" rx="12" fill="#101a28"/><rect x="47" y="-116" width="38" height="80" rx="12" fill="#101a28"/><rect x="-85" y="40" width="38" height="80" rx="12" fill="#101a28"/><rect x="47" y="40" width="38" height="80" rx="12" fill="#101a28"/><rect x="-67" y="-148" width="134" height="296" rx="42" fill="url(#car)" stroke="#fff" stroke-width="10"/><rect x="-47" y="-62" width="94" height="76" rx="20" fill="#bdeeff" stroke="#263e5d" stroke-width="10"/><path d="M-42 -118h84" stroke="#fff5c6" stroke-width="16" stroke-linecap="round"/><path d="M-44 112h88" stroke="#8b2631" stroke-width="14" stroke-linecap="round"/></g>
+<path d="M95 85h120v34H95zM95 119h34v34H95zM181 119h34v34h-34z" fill="#fff"/>
+</svg>
