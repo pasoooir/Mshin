@@ -133,10 +133,10 @@ try {
   await economy.getByRole("button", { name: /تندر برقی/ }).click();
   assert.equal(await economy.getByRole("button", { name: /تندر برقی/ }).getAttribute("class").then(v => v.includes("locked")), false, "purchased car should unlock");
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "newly unlocked car should be selected immediately");
-  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
+  await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "engine upgrade should advance its level");
-  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
-  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
+  await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
+  await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
   await economy.reload({ waitUntil: "networkidle" });
   await economy.locator("#play").click();
