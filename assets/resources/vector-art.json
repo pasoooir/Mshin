@@ -4,35 +4,35 @@
   "preloadPolicy": "load-before-main-menu",
   "cars": {
     "rally": {
-      "name": "Rally Fox",
+      "name": "روباه رالی",
       "body": "#F15D4E",
       "highlight": "#FFD4A5",
       "glass": "#BDEEFF",
       "trim": "#26313A"
     },
     "comet": {
-      "name": "Comet GT",
+      "name": "دنباله‌دار GT",
       "body": "#39A9FF",
       "highlight": "#C9F2FF",
       "glass": "#BDEEFF",
       "trim": "#203B5A"
     },
     "lynx": {
-      "name": "Lynx 4x4",
+      "name": "سیاهگوش ۴×۴",
       "body": "#8BCE65",
       "highlight": "#EFFFC9",
       "glass": "#BDEEFF",
       "trim": "#35583A"
     },
     "thunder": {
-      "name": "Thunder EV",
+      "name": "تندر برقی",
       "body": "#F4D64E",
       "highlight": "#FFF8C7",
       "glass": "#BDEEFF",
       "trim": "#4B4B3B"
     },
     "raptor": {
-      "name": "Desert Raptor",
+      "name": "رپتور کویر",
       "body": "#D88A45",
       "highlight": "#FFE0B0",
       "glass": "#BDEEFF",
