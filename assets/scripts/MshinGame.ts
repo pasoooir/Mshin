@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode } from "cc";
+import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode, JsonAsset, resources } from "cc";
 import { STAGES, WORLD_THEMES, StageDefinition, generateTrackPath } from "../../src/stage-catalog";
 import { VehicleController } from "./VehicleController";
 import { WorldRenderer } from "./WorldRenderer";
@@ -11,7 +11,7 @@ export class MshinGame extends Component {
  private screen:Screen="home";private stage:StageDefinition=STAGES[0];private progress:PlayerProgress=ProgressStore.load();private selectedWorld=0;
  private cameraNode!:Node;private camera!:Camera;private worldRoot!:Node;private hudCanvas!:Node;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;
  private labels=new Map<string,Label>();private uiNodes:Node[]=[];private joystick!:Node;private knob!:Node;private stickId=-1;
- private lastSize={width:0,height:0};private finishHandled=false;
+ private lastSize={width:0,height:0};private finishHandled=false;private artLibrary:any=null;private hudRefresh=0;
  start():void {
   view.setDesignResolutionSize(1280,720,ResolutionPolicy.FIXED_HEIGHT);view.setOrientation(macro.ORIENTATION_LANDSCAPE);
   const scene=this.node.scene;if(!scene)throw new Error("Attach MshinGame to a node in the active Cocos Creator scene.");
@@ -27,7 +27,7 @@ export class MshinGame extends Component {
   this.hudCanvas.addComponent(UITransform).setContentSize(1280,720);
   const uiCanvas=this.hudCanvas.addComponent(Canvas);uiCanvas.cameraComponent=this.camera;uiCanvas.alignCanvasWithScreen=false;
   this.hudRoot=new Node("HUD and Menus");this.hudCanvas.addChild(this.hudRoot);
-  this.createPersistentHud();this.bindKeyboard();this.showHome();this.resizeUi();
+  this.createPersistentHud();this.bindKeyboard();this.showLoading();this.resizeUi();\n  resources.load("vector-art",JsonAsset,(error,asset)=>{if(!error&&asset)this.artLibrary=asset.json;else console.warn("Mshin Cocos vector art preload failed; procedural Graphics fallback will be used.",error);this.showHome();});
  }
  update():void {
   if(this.screen==="race"){
@@ -70,7 +70,7 @@ export class MshinGame extends Component {
   g.fillColor=hex(stage.world.accent);for(let i=0;i<path.length;i+=12){g.circle(path[i].x*.1,path[i].y*.1,2.5);g.fill();}
   this.uiNodes.push(n);
  }
- private showHome():void {
+ private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}\n private showHome():void {
   this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("50 TRACKS  •  10 WORLDS  •  ONE CHAMPION",0,35,19);
   this.addButton("RACE NOW",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
   this.addButton("SELECT WORLD",0,-160,270,62,()=>this.showWorlds());
