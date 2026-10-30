@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Mshin — 50 Stage Arcade Racing",
+  "short_name": "Mshin",
+  "description": "A colorful top-down arcade racing game across ten worlds and fifty stages.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#14223a",
+  "theme_color": "#18263f",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "./icons/mshin.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
