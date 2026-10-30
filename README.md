@@ -28,7 +28,11 @@ The browser edition is version 0.4.8, a landscape installable PWA. Its versioned
 - PWA: `manifest.webmanifest`, `service-worker.js`, and `icons/mshin.svg`; offline-first app-shell caching is covered by Playwright.
 - Stateless optional Worker API: `workers.js`; see `docs/CLOUDFLARE_WORKER.md`.
 
-## Vehicle collision and damage\n\nThe browser edition resolves player/AI and AI/AI contacts with a mass-weighted 2D impulse model and static hazard contacts with a barrier solver. Closing speed, contact normal, restitution, tangential friction and overlap correction determine velocity changes. Cumulative front/rear/left/right damage drives body overlays, smoke, handling loss and critical power reduction. See [the collision model notes](docs/VEHICLE_COLLISION_DAMAGE.md).\n\n## Cocos Creator 3.8.6 editor build
+## Vehicle collision and damage
+
+The browser edition resolves player/AI and AI/AI contacts with a mass-weighted 2D impulse model and static hazard contacts with a barrier solver. Closing speed, contact normal, restitution, tangential friction and overlap correction determine velocity changes. Cumulative front/rear/left/right damage drives body overlays, smoke, handling loss and critical power reduction. See [the collision model notes](docs/VEHICLE_COLLISION_DAMAGE.md).
+
+## Cocos Creator 3.8.6 editor build
 
 1. Install Cocos Creator 3.8.6.
 2. Open this repository folder from Cocos Dashboard.
