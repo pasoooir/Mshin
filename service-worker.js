@@ -1,11 +1,19 @@
-const CACHE_NAME = "mshin-arcade-v4";
+const CACHE_NAME = "mshin-arcade-v5";
 const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest",
-  "./icons/mshin.svg",
-  "./src/web-game.js",
-  "./src/audio.js"
+  "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
+  "./src/web-game.js", "./src/audio.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
+  "./assets/vector/world-01.svg",
+  "./assets/vector/world-02.svg",
+  "./assets/vector/world-03.svg",
+  "./assets/vector/world-04.svg",
+  "./assets/vector/world-05.svg",
+  "./assets/vector/world-06.svg",
+  "./assets/vector/world-07.svg",
+  "./assets/vector/world-08.svg",
+  "./assets/vector/world-09.svg",
+  "./assets/vector/world-10.svg",
+  "./assets/vector/car-rally.svg", "./assets/vector/car-comet.svg", "./assets/vector/car-lynx.svg",
+  "./assets/vector/car-thunder.svg", "./assets/vector/car-raptor.svg"
 ];
 
 self.addEventListener("install", event => {
@@ -24,7 +32,7 @@ self.addEventListener("fetch", event => {
     return fetch(request).then(response => {
       if (response.ok && response.type === "basic") {
         const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, copy)));
       }
       return response;
     }).catch(() => {
