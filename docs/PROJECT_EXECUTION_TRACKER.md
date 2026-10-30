@@ -2,7 +2,7 @@
 
 Last evidence refresh: 2026-10-30
 Working branch: `feat/game-foundation-and-stage-art`
-Validated source head: pending gameplay-handling CI on the current branch head.
+Validated source head: `add7771bf98f13cbeda3f64d94cdb123a2deb429`.
 PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, draft, not merged.
 
 ## Status and progress
@@ -17,7 +17,7 @@ PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, draft, not merged.
 | Audio, animation and polish | ⬜ | 0% | Motor/brake/impact audio, particles and motion polish not implemented. |
 | Persistence and records | 🟡 | 55% | Pure progress domain logic now normalizes corrupt/invalid records, deduplicates completions, validates stage/time inputs and preserves best times; Cocos localStorage adapter still needs Editor/runtime verification. |
 | Cloudflare Worker backend | 🟡 | 35% | Stateless `workers.js` API provides health/config, exact-origin CORS and 7 tests; not deployed or connected to a live game client. No R2/D1/KV or paid storage. |
-| Portable automated tests | 🟡 | 90% | Expanded gameplay-core regression tests are committed; fresh push/PR Actions validation is pending. Passing tests do not prove Cocos runtime correctness. |
+| Portable automated tests | 🟢 | 100% | Latest push run [41059220974](https://github.com/pasoooir/Mshin/actions/runs/41059220974) and PR run [41059232563](https://github.com/pasoooir/Mshin/actions/runs/41059232563) passed on `add7771b`; **39 tests passed, 0 failed**. This does not prove Cocos runtime correctness. |
 | Cocos Web build and browser QA | 🔴 | 0% | No real Cocos Web output; requires Creator 3.8.6 and a valid startup scene. |
 | Android APK/AAB and device QA | 🔴 | 0% | No APK/AAB; Android SDK/NDK and native build environment absent in inspected runner. |
 | CI/CD and delivery | 🟡 | 35% | Portable validation includes Worker syntax/API tests and progress-domain tests; Editor-backed builds and artifact publishing remain. |
@@ -56,8 +56,9 @@ PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, draft, not merged.
 
 ## GitHub Actions evidence
 
-- Previous validated head: `c90f58f1070b89ca00ef8b545f8ae964a7e659bf`; previous push/PR runs passed with 36 tests.
-- New gameplay-core changes require fresh push and PR runs. Do not mark this workstream verified until both pass.
+- Push run [41059220974](https://github.com/pasoooir/Mshin/actions/runs/41059220974): completed successfully on `add7771b`.
+- PR run [41059232563](https://github.com/pasoooir/Mshin/actions/runs/41059232563): completed successfully on `add7771b`.
+- Both job logs report **39 tests passed, 0 failed**; all validation steps completed successfully.
 
 ## Cocos build feasibility
 
