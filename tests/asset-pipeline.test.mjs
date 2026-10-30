@@ -57,6 +57,7 @@ test("photographic world scenes are CDN-preloaded before the race runtime", asyn
 });
 test("race hot paths pool particles and use frame-driven collision cooldowns", async () => {
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
   assert.match(game, /particlePool/);\n  assert.match(game, /resolveVehicleImpact/);\n  assert.match(game, /resolveBarrierImpact/);\n  assert.match(game, /applyVehicleDamage/);\n  assert.match(game, /drawDamageOverlay/);\n  assert.match(game, /AI-to-AI contacts/);\n  assert.match(game, /cameraShake/);\n  assert.match(game, /collisionCooldown/);\n  assert.match(sw, /collision-physics\\.js/);
   assert.match(game, /lane\(-40,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /lane\(40,"#ffffff70",3,\[22,30\]\)/);
