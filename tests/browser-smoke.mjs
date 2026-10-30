@@ -11,9 +11,10 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 15000 });
-  const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
+  const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
+  assert.equal(preloadState.scenes, 10, "all ten photographic world environments should be decoded before the menu is interactive");
   assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
   await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
