@@ -6,70 +6,80 @@
       "name": "Green Valley",
       "src": "./assets/vector/world-01.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-01.svg"
     },
     {
       "id": 2,
       "name": "Desert Storm",
       "src": "./assets/vector/world-02.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-02.svg"
     },
     {
       "id": 3,
       "name": "Frozen World",
       "src": "./assets/vector/world-03.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-03.svg"
     },
     {
       "id": 4,
       "name": "Tropical Island",
       "src": "./assets/vector/world-04.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-04.svg"
     },
     {
       "id": 5,
       "name": "Neon City",
       "src": "./assets/vector/world-05.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-05.svg"
     },
     {
       "id": 6,
       "name": "Industrial Zone",
       "src": "./assets/vector/world-06.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-06.svg"
     },
     {
       "id": 7,
       "name": "Mountain Rush",
       "src": "./assets/vector/world-07.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-07.svg"
     },
     {
       "id": 8,
       "name": "Ancient World",
       "src": "./assets/vector/world-08.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-08.svg"
     },
     {
       "id": 9,
       "name": "Space Racing",
       "src": "./assets/vector/world-09.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-09.svg"
     },
     {
       "id": 10,
       "name": "Ultimate Championship",
       "src": "./assets/vector/world-10.svg",
       "type": "image/svg+xml",
-      "group": "world"
+      "group": "world",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-10.svg"
     }
   ],
   "cars": [
@@ -78,35 +88,40 @@
       "name": "Rally Fox",
       "src": "./assets/vector/car-rally.svg",
       "type": "image/svg+xml",
-      "group": "vehicle"
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-rally.svg"
     },
     {
       "id": "comet",
       "name": "Comet GT",
       "src": "./assets/vector/car-comet.svg",
       "type": "image/svg+xml",
-      "group": "vehicle"
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-comet.svg"
     },
     {
       "id": "lynx",
       "name": "Lynx 4x4",
       "src": "./assets/vector/car-lynx.svg",
       "type": "image/svg+xml",
-      "group": "vehicle"
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-lynx.svg"
     },
     {
       "id": "thunder",
       "name": "Thunder EV",
       "src": "./assets/vector/car-thunder.svg",
       "type": "image/svg+xml",
-      "group": "vehicle"
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-thunder.svg"
     },
     {
       "id": "raptor",
       "name": "Desert Raptor",
       "src": "./assets/vector/car-raptor.svg",
       "type": "image/svg+xml",
-      "group": "vehicle"
+      "group": "vehicle",
+      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-raptor.svg"
     }
   ]
 }
