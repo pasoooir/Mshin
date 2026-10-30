@@ -41,8 +41,7 @@ try {
   assert.ok((await mobile.locator("#stick").boundingBox()).width >= 90, "mobile joystick should remain touch-sized");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
-  process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, race start, acceleration, pause/resume, stage exit, and mobile layout.
-");
+  process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, audio toggle, race start, acceleration, pause/resume, stage exit, and mobile layout.\n");
 } finally {
   await browser.close();
 }
