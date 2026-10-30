@@ -1,5 +1,5 @@
 import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode } from "cc";
-import { STAGES, WORLD_THEMES, StageDefinition } from "../../src/stage-catalog";
+import { STAGES, WORLD_THEMES, StageDefinition, generateTrackPath } from "../../src/stage-catalog";
 import { VehicleController } from "./VehicleController";
 import { WorldRenderer } from "./WorldRenderer";
 import { ProgressStore, PlayerProgress } from "./ProgressStore";
@@ -62,6 +62,14 @@ export class MshinGame extends Component {
   n.on(Node.EventType.TOUCH_END,action,this);this.uiNodes.push(n);return n;
  }
  private addButton(text:string,x:number,y:number,w:number,h:number,fn:()=>void):void {this.button(text,x,y,w,h,fn);}
+ private drawStagePreview(stage:StageDefinition,x:number,y:number):void {
+  const n=this.makeNode("Stage Preview "+stage.id,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(180,78);
+  const g=n.addComponent(Graphics);g.fillColor=hex(stage.world.ground);g.roundRect(-90,-39,180,78,10);g.fill();
+  const path=generateTrackPath(stage,48),draw=(width:number,stroke:string)=>{g.lineWidth=width;g.strokeColor=hex(stroke);g.moveTo(path[0].x*.1,path[0].y*.1);for(let i=1;i<path.length;i++)g.lineTo(path[i].x*.1,path[i].y*.1);g.close();g.stroke();};
+  draw(15,stage.world.shoulder);draw(9,stage.world.road);
+  g.fillColor=hex(stage.world.accent);for(let i=0;i<path.length;i+=12){g.circle(path[i].x*.1,path[i].y*.1,2.5);g.fill();}
+  this.uiNodes.push(n);
+ }
  private showHome():void {
   this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("50 TRACKS  •  10 WORLDS  •  ONE CHAMPION",0,35,19);
   this.addButton("RACE NOW",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
@@ -77,6 +85,7 @@ export class MshinGame extends Component {
   this.screen="stages";this.clearUi();const world=WORLD_THEMES[this.selectedWorld];this.addUiLabel(world.name.toUpperCase()+"  •  SELECT STAGE",0,245,29);
   for(let i=0;i<5;i++){const s=STAGES[this.selectedWorld*5+i],unlocked=ProgressStore.isUnlocked(s.id,this.progress),x=(i-2)*230;
    this.addButton((unlocked?"▶ ":"🔒 ")+String(s.stageInWorld).padStart(2,"0")+"  "+s.name,x,35,210,112,()=>{if(unlocked)this.startStage(s.id);});
+   this.drawStagePreview(s,x,155);
    this.addUiLabel(this.progress.completed.includes(s.id)?"✓ COMPLETED":unlocked?"READY":"LOCKED",x,-42,13);
   }
   this.addButton("BACK",0,-205,170,54,()=>this.showWorlds());
