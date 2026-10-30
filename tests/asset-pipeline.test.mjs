@@ -11,7 +11,8 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
   const assets = [...manifest.worlds, ...manifest.cars];
   assert.equal(new Set(assets.map(asset => asset.src)).size, 15);
   for (const asset of assets) {
-    assert.match(asset.cdn, /^https:\/\/cdn\\.jsdelivr\\.net\/gh\/pasoooir\/Mshin@[a-f0-9]{40}\//, asset.src + " should use an immutable CDN URL");
+    assert.ok(asset.cdn.startsWith("https://cdn.jsdelivr.net/gh/pasoooir/Mshin@"), asset.src + " should use jsDelivr");
+    assert.match(asset.cdn.split("@")[1].split("/")[0], /^[a-f0-9]{40}$/, asset.src + " should pin an immutable commit");
   }
   for (const asset of assets) {
     const source = await readFile(path.join(root, asset.src.replace(/^\.\//, "")), "utf8");
