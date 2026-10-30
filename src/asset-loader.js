@@ -12,7 +12,7 @@ async function fetchAsset(asset) {
   // fall back immediately to the same-origin copy that the Service Worker precaches.
   for (const source of [asset.cdn, asset.src].filter(Boolean)) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), source === asset.cdn ? 2200 : 10000);
+    const timer = setTimeout(() => controller.abort(), source === asset.cdn ? (asset.group === "scene" ? 4200 : 2200) : 10000);
     try {
       const response = await fetch(source, {
         cache: "force-cache",
@@ -55,7 +55,7 @@ export async function preloadGameAssets(onProgress = () => {}) {
       onProgress({ loaded, total: all.length, percent: Math.round(loaded / all.length * 100), name: asset.name });
     }
   };
-  await Promise.all(Array.from({ length: 3 }, worker));
+  await Promise.all(Array.from({ length: 4 }, worker));
   window.MshinAssets = {
     version: manifest.version,
     worlds: manifest.worlds.map(item => imageCache.get(item.id) || null),
