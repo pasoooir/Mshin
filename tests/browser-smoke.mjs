@@ -96,8 +96,8 @@ try {
   assert.match(await economy.locator(".carChoice.active").textContent(), /Thunder EV/, "unlocked car should be selectable");
   await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
   assert.match(await economy.locator("#upgrades").textContent(), /Engine power · Lv 1\/3/, "engine upgrade should advance its level");
-  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(1).click();
-  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(1).click();
+  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
+  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
   await economy.reload({ waitUntil: "networkidle" });
   await economy.locator("#play").click();
