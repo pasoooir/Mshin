@@ -30,7 +30,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(boot, /await import\("\.\/web-game\.js"\)/);
   assert.match(loader, /length: 3/);
   assert.match(loader, /image\.decode/);
-  assert.ok(loader.includes("cdn.jsdelivr.net"), "loader should prefer jsDelivr");
+  assert.ok(loader.includes("asset.cdn"), "loader should try the manifest CDN URL");
   assert.ok(loader.includes("source === asset.cdn ? 2200 : 10000"), "CDN should have a bounded timeout before local fallback");
   assert.ok(loader.includes("[asset.cdn, asset.src]"), "local bundled art must remain the fallback");
 });
