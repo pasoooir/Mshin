@@ -3,7 +3,7 @@
   "worlds": [
     {
       "id": 1,
-      "name": "Green Valley",
+      "name": "دره سبز",
       "src": "./assets/vector/world-01.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -11,7 +11,7 @@
     },
     {
       "id": 2,
-      "name": "Desert Storm",
+      "name": "توفان کویر",
       "src": "./assets/vector/world-02.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -19,7 +19,7 @@
     },
     {
       "id": 3,
-      "name": "Frozen World",
+      "name": "سرزمین یخ",
       "src": "./assets/vector/world-03.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -27,7 +27,7 @@
     },
     {
       "id": 4,
-      "name": "Tropical Island",
+      "name": "جزیره استوایی",
       "src": "./assets/vector/world-04.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -35,7 +35,7 @@
     },
     {
       "id": 5,
-      "name": "Neon City",
+      "name": "شهر نئونی",
       "src": "./assets/vector/world-05.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -43,7 +43,7 @@
     },
     {
       "id": 6,
-      "name": "Industrial Zone",
+      "name": "منطقه صنعتی",
       "src": "./assets/vector/world-06.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -51,7 +51,7 @@
     },
     {
       "id": 7,
-      "name": "Mountain Rush",
+      "name": "یورش کوهستان",
       "src": "./assets/vector/world-07.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -59,7 +59,7 @@
     },
     {
       "id": 8,
-      "name": "Ancient World",
+      "name": "دنیای باستان",
       "src": "./assets/vector/world-08.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -67,7 +67,7 @@
     },
     {
       "id": 9,
-      "name": "Space Racing",
+      "name": "مسابقه فضایی",
       "src": "./assets/vector/world-09.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -75,7 +75,7 @@
     },
     {
       "id": 10,
-      "name": "Ultimate Championship",
+      "name": "قهرمانی نهایی",
       "src": "./assets/vector/world-10.svg",
       "type": "image/svg+xml",
       "group": "world",
@@ -85,7 +85,7 @@
   "cars": [
     {
       "id": "rally",
-      "name": "Rally Fox",
+      "name": "روباه رالی",
       "src": "./assets/vector/car-rally.svg",
       "type": "image/svg+xml",
       "group": "vehicle",
@@ -93,7 +93,7 @@
     },
     {
       "id": "comet",
-      "name": "Comet GT",
+      "name": "دنباله‌دار GT",
       "src": "./assets/vector/car-comet.svg",
       "type": "image/svg+xml",
       "group": "vehicle",
@@ -101,7 +101,7 @@
     },
     {
       "id": "lynx",
-      "name": "Lynx 4x4",
+      "name": "سیاهگوش ۴×۴",
       "src": "./assets/vector/car-lynx.svg",
       "type": "image/svg+xml",
       "group": "vehicle",
@@ -109,7 +109,7 @@
     },
     {
       "id": "thunder",
-      "name": "Thunder EV",
+      "name": "تندر برقی",
       "src": "./assets/vector/car-thunder.svg",
       "type": "image/svg+xml",
       "group": "vehicle",
@@ -117,7 +117,7 @@
     },
     {
       "id": "raptor",
-      "name": "Desert Raptor",
+      "name": "رپتور کویر",
       "src": "./assets/vector/car-raptor.svg",
       "type": "image/svg+xml",
       "group": "vehicle",
