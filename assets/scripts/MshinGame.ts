@@ -106,8 +106,8 @@ export class MshinGame extends Component {
  }
  private createControls():void {
   this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.uiNodes.push(this.joystick);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(184,132);
-  const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(20,38,62,225);jg.strokeColor=new Color(220,238,255,190);jg.lineWidth=4;jg.roundRect(-92,-66,184,132,48);jg.fill();jg.stroke();jg.fontSize=13;jg.fillColor=hex("#DCEBFF");jg.textAlign=Graphics.TextAlign.CENTER;jg.fillText("S T E E R",0,44);jg.fillColor=hex("#DCEBFF99");jg.fillText("◀                 ▶",0,-42);
-  this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(68,52);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.roundRect(-34,-26,68,52,22);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.roundRect(-34,-26,68,52,22);kg.stroke();kg.fontSize=25;kg.fillColor=hex("#34527D");kg.textAlign=Graphics.TextAlign.CENTER;kg.fillText("↔",0,-8);
+  const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(20,38,62,225);jg.strokeColor=new Color(220,238,255,190);jg.lineWidth=4;jg.roundRect(-92,-66,184,132,48);jg.fill();jg.stroke();
+  this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(68,52);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.roundRect(-34,-26,68,52,22);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.roundRect(-34,-26,68,52,22);kg.stroke();
   this.joystick.on(Node.EventType.TOUCH_START,this.onStickStart,this);this.joystick.on(Node.EventType.TOUCH_MOVE,this.onStickMove,this);this.joystick.on(Node.EventType.TOUCH_END,this.onStickEnd,this);this.joystick.on(Node.EventType.TOUCH_CANCEL,this.onStickEnd,this);
   this.holdButton("BRAKE",350,-250,130,86,(v)=>this.vehicle.input.brake=v);
   this.holdButton("GAS",510,-220,145,112,(v)=>this.vehicle.input.throttle=v);
