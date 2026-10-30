@@ -14,7 +14,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - run: npm install --no-audit --no-fund
       - run: npm run validate:data
+      - run: npm run build:core
       - run: node --check src/physics.js
       - run: node --check src/game.js
       - run: npm test
