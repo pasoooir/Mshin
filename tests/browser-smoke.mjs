@@ -10,6 +10,12 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 15000 });
+  const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
+  assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
+  assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
+  assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
+  assert.match(preloadState.menuArt, /world-01\\.svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
@@ -21,7 +27,12 @@ try {
   await page.getByRole("button", { name: /Neon City/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
   await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
+  const raceRequests = [];
+  page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
   await page.locator("#startRace").click();
+  const requestCountAtStart = raceRequests.length;
+  await page.waitForTimeout(900);
+  assert.equal(raceRequests.length, requestCountAtStart, "starting a race must not trigger late asset/network requests");
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
