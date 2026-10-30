@@ -25,10 +25,10 @@ const NAMES=[
 ["Moonbase Sprint","Asteroid Belt","Orbital Loop","Nebula Run","Cosmic Grand Prix"],
 ["Rookie Arena","Velocity Stadium","Pro Circuit","Champion's Route","Ultimate Crown"]];
 const STYLES=["oval","sweeper","chicane","hairpin","technical"];
-export const STAGES:readonly StageDefinition[]=Object.freeze(WORLD_THEMES.flatMap((world,wi)=>NAMES[wi].map((name,si)=>({id:wi*5+si+1,name,world,stageInWorld:si+1,seed:(wi+1)*97+(si+1)*31,trackWidth:104-(si%3)*7,trackScale:1+(si-2)*.055,laps:3,hazardCount:5+si*2+wi,routeStyle:STYLES[si]}))));
+export const STAGES:readonly StageDefinition[]=Object.freeze(WORLD_THEMES.flatMap((world,wi)=>NAMES[wi].map((name,si)=>({id:wi*5+si+1,name,world,stageInWorld:si+1,seed:(wi+1)*97+(si+1)*31,trackWidth:224-(si%3)*14,trackScale:1+(si-2)*.055,laps:3,hazardCount:5+si*2+wi,routeStyle:STYLES[si]}))));
 export function getStage(id:number):StageDefinition {const stage=STAGES.find(s=>s.id===id);if(!stage)throw new RangeError("Unknown stage id: "+id);return stage;}
 export function generateTrackPath(stage:StageDefinition,segments=96):Point[] {
- const points:Point[]=[],rx=560*stage.trackScale,ry=340*stage.trackScale;
+ const points:Point[]=[],rx=1500*stage.trackScale,ry=960*stage.trackScale;
  for(let i=0;i<segments;i++){
   const a=i*Math.PI*2/segments,seed=stage.seed,phase=seed*.017;
   const styleAmplitude=stage.routeStyle==="oval"?.025:stage.routeStyle==="sweeper"?.07:stage.routeStyle==="chicane"?.12:stage.routeStyle==="hairpin"?.095:.14;
