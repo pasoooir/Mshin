@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "worlds": [
+    {
+      "id": "green-valley",
+      "name": "Green Valley",
+      "worldNumber": 1,
+      "palette": [
+        "#8bd46b",
+        "#d9f2a5",
+        "#4d9b58"
+      ],
+      "surface": "grass"
+    },
+    {
+      "id": "desert-storm",
+      "name": "Desert Storm",
+      "worldNumber": 2,
+      "palette": [
+        "#f4c16e",
+        "#ffe3a1",
+        "#bd7845"
+      ],
+      "surface": "sand"
+    },
+    {
+      "id": "frozen-world",
+      "name": "Frozen World",
+      "worldNumber": 3,
+      "palette": [
+        "#a8e7f5",
+        "#e8fbff",
+        "#6c9fc4"
+      ],
+      "surface": "ice"
+    },
+    {
+      "id": "tropical-island",
+      "name": "Tropical Island",
+      "worldNumber": 4,
+      "palette": [
+        "#48d5b2",
+        "#ffe18a",
+        "#268e83"
+      ],
+      "surface": "sand"
+    },
+    {
+      "id": "neon-city",
+      "name": "Neon City",
+      "worldNumber": 5,
+      "palette": [
+        "#25265c",
+        "#ff55c8",
+        "#43e9ff"
+      ],
+      "surface": "asphalt"
+    },
+    {
+      "id": "industrial-zone",
+      "name": "Industrial Zone",
+      "worldNumber": 6,
+      "palette": [
+        "#87939d",
+        "#f5a64c",
+        "#49545f"
+      ],
+      "surface": "concrete"
+    },
+    {
+      "id": "mountain-rush",
+      "name": "Mountain Rush",
+      "worldNumber": 7,
+      "palette": [
+        "#80c5a0",
+        "#d8e4c4",
+        "#6585a5"
+      ],
+      "surface": "asphalt"
+    },
+    {
+      "id": "ancient-world",
+      "name": "Ancient World",
+      "worldNumber": 8,
+      "palette": [
+        "#e6bd73",
+        "#f4dfa6",
+        "#a86c48"
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "space-racing",
+      "name": "Space Racing",
+      "worldNumber": 9,
+      "palette": [
+        "#222653",
+        "#9d7bff",
+        "#58d7e8"
+      ],
+      "surface": "metal"
+    },
+    {
+      "id": "ultimate-championship",
+      "name": "Ultimate Championship",
+      "worldNumber": 10,
+      "palette": [
+        "#f06f68",
+        "#f7d66d",
+        "#4b74b9"
+      ],
+      "surface": "asphalt"
+    }
+  ]
+}

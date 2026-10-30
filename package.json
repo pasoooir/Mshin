@@ -1,0 +1,14 @@
+{
+  "name": "mshin-2d-racing",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "validate:data": "node scripts/validate-game-data.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "creator": {
+    "version": "3.8.6"
+  }
+}
