@@ -11,7 +11,7 @@ export class MshinGame extends Component {
  private screen:Screen="home";private stage:StageDefinition=STAGES[0];private progress:PlayerProgress=ProgressStore.load();private selectedWorld=0;
  private cameraNode!:Node;private camera!:Camera;private worldRoot!:Node;private hudCanvas!:Node;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;
  private labels=new Map<string,Label>();private uiNodes:Node[]=[];private joystick!:Node;private knob!:Node;private stickId=-1;
- private lastSize={width:0,height:0};private finishHandled=false;private artLibrary:any=null;private hudRefresh=0;
+ private lastSize={width:0,height:0};private finishHandled=false;private artLibrary:any=null;private hudRefresh=0;private artLibrary:any=null;private hudRefresh=0;
  start():void {
   view.setDesignResolutionSize(1280,720,ResolutionPolicy.FIXED_HEIGHT);view.setOrientation(macro.ORIENTATION_LANDSCAPE);
   const scene=this.node.scene;if(!scene)throw new Error("Attach MshinGame to a node in the active Cocos Creator scene.");
@@ -29,12 +29,14 @@ export class MshinGame extends Component {
   this.hudRoot=new Node("HUD and Menus");this.hudCanvas.addChild(this.hudRoot);
   this.createPersistentHud();this.bindKeyboard();this.showLoading();this.resizeUi();\n  resources.load("vector-art",JsonAsset,(error,asset)=>{if(!error&&asset)this.artLibrary=asset.json;else console.warn("Mshin Cocos vector art preload failed; procedural Graphics fallback will be used.",error);this.showHome();});
  }
- update():void {
+ update(dt:number):void {
   if(this.screen==="race"){
    this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
-   this.setText("speed","SPEED  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
-   this.setText("time","TIME  "+this.format(this.vehicle.race.elapsedSeconds));
-   this.setText("lap","LAP  "+this.vehicle.race.lap+" / "+this.stage.laps);
+   this.hudRefresh+=dt;if(this.hudRefresh>=.1){this.hudRefresh=0;
+    this.setText("speed","SPEED  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
+    this.setText("time","TIME  "+this.format(this.vehicle.race.elapsedSeconds));
+    this.setText("lap","LAP  "+this.vehicle.race.lap+" / "+this.stage.laps);
+   }
    if(this.vehicle.race.finished&&!this.finishHandled){this.finishHandled=true;this.progress=ProgressStore.complete(this.stage,this.vehicle.race.elapsedSeconds);this.showFinished();}
   }
   const s=view.getVisibleSize();if(s.width!==this.lastSize.width||s.height!==this.lastSize.height)this.resizeUi();
@@ -70,7 +72,8 @@ export class MshinGame extends Component {
   g.fillColor=hex(stage.world.accent);for(let i=0;i<path.length;i+=12){g.circle(path[i].x*.1,path[i].y*.1,2.5);g.fill();}
   this.uiNodes.push(n);
  }
- private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}\n private showHome():void {
+ private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}\n private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}
+ private showHome():void {
   this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("50 TRACKS  •  10 WORLDS  •  ONE CHAMPION",0,35,19);
   this.addButton("RACE NOW",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
   this.addButton("SELECT WORLD",0,-160,270,62,()=>this.showWorlds());
@@ -93,7 +96,7 @@ export class MshinGame extends Component {
  private startStage(id:number):void {
   this.stage=STAGES[id-1];this.screen="race";this.clearUi();this.finishHandled=false;
   this.worldNode.destroyAllChildren();const rn=new Node("World Renderer");this.worldNode.addChild(rn);const renderer=rn.addComponent(WorldRenderer);
-  const path=renderer.configure(this.stage);
+  const path=renderer.configure(this.stage,this.artLibrary);
   this.carNode.destroy();this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
   this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount,this.stage.world.grip);
   this.vehicle.onLap=(lap)=>this.setText("lap","LAP  "+lap+" / "+this.stage.laps);
@@ -131,8 +134,13 @@ export class MshinGame extends Component {
   this.addButton("MAIN MENU",0,-165,230,58,()=>this.showHome());
  }
  private drawCar():void {
-  const g=this.carNode.addComponent(Graphics);g.fillColor=hex("#26313A");g.rect(-19,-26,10,18);g.fill();g.rect(9,-26,10,18);g.fill();g.rect(-19,8,10,18);g.fill();g.rect(9,8,10,18);g.fill();
-  g.fillColor=hex("#F15D4E");g.roundRect(-15,-34,30,68,9);g.fill();g.fillColor=hex("#BDEEFF");g.roundRect(-11,2,22,17,5);g.fill();g.fillColor=hex("#FFE9A8");g.circle(-8,27,3);g.fill();g.circle(8,27,3);g.fill();
+  const g=this.carNode.addComponent(Graphics),paint=this.artLibrary?.cars?.rally??{body:"#F15D4E",highlight:"#FFD4A5",glass:"#BDEEFF",trim:"#26313A"};
+  g.fillColor=new Color(4,12,24,75);g.ellipse(2,-3,22,39);g.fill();
+  g.fillColor=hex(paint.trim);g.roundRect(-22,-27,12,21,4);g.fill();g.roundRect(10,-27,12,21,4);g.fill();g.roundRect(-22,8,12,21,4);g.fill();g.roundRect(10,8,12,21,4);g.fill();
+  g.fillColor=hex(paint.body);g.roundRect(-16,-37,32,74,10);g.fill();g.strokeColor=hex(paint.highlight);g.lineWidth=2;g.roundRect(-16,-37,32,74,10);g.stroke();
+  g.fillColor=hex(paint.trim);g.roundRect(-12,-12,24,31,6);g.fill();g.fillColor=hex(paint.glass);g.roundRect(-11,-10,22,25,5);g.fill();
+  g.fillColor=hex(paint.highlight);g.roundRect(-12,21,24,8,3);g.fill();g.fillColor=hex("#FFF5C8");g.circle(-9,31,3);g.fill();g.circle(9,31,3);g.fill();
+  g.fillColor=hex("#FF665F");g.roundRect(-11,-35,7,4,2);g.fill();g.roundRect(4,-35,7,4,2);g.fill();
  }
  private bindKeyboard():void {
   input.on(Input.EventType.KEY_DOWN,(e)=>{if(this.screen!=="race")return;
