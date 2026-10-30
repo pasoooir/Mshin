@@ -51,3 +51,10 @@ This CI result does **not** replace the following release gates:
 ## Touch steering usability update
 
 The old circular joystick accepted two-axis thumb movement but only consumed the horizontal axis, which made the control feel inconsistent. The browser and Cocos controls now present a horizontal steering pad: drag left/right to steer; vertical thumb movement is ignored. A small center dead zone filters accidental drift, response is progressive rather than instantly full-lock, and steering eases smoothly back to center after release. Browser steering also uses a gradual lateral-velocity response instead of instantly shifting the car sideways. The browser smoke test checks rightward input, the center dead zone, release-to-center, accessible instructions, and mobile touch target width. These steering assertions passed in Actions run `41085782040` (45/45 Node tests and desktop/mobile Playwright smoke). This is a usability improvement validated in automated browser tests, not a substitute for hands-on testing on the user's phone.
+
+
+## Photographic environments and zoomed race camera
+
+The browser boot now preloads ten photographic environment plates from the Unsplash image CDN alongside the 15 local SVG vectors and decodes them before importing the race runtime. Each world has a dedicated photo plate; rain, snow, sand and dust particle/weather overlays remain separate real-time effects. The image loader uses bounded concurrency and a short CDN timeout; if a photo cannot be fetched or decoded, the local vector world illustration remains the fallback. No image request or decode is initiated by the race render loop.
+
+The race camera is zoomed toward the player instead of fitting the complete oval track into one screen. The player car is rendered at 58×90 logical pixels (up from 40×62), rival cars are larger, and the track is revealed progressively as the car follows its bends. This is a browser runtime change; physical Android frame-rate and Cocos Creator Editor validation remain separate checks.
