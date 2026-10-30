@@ -16,8 +16,11 @@ const names=[["Meadow Run","Forest Loop","Village Sprint","Canopy Bridge","Valle
 const styles=["oval","sweeper","chicane","hairpin","technical"],stages=worlds.flatMap((w,wi)=>names[wi].map((name,si)=>({id:wi*5+si+1,world:wi,slot:si,name,style:styles[si],seed:(wi+1)*97+(si+1)*31,grip:w[6],hazards:5+si*2+wi})));
 let selectedWorld=0,selectedStage=1,stage=stages[0],progress=loadProgress(),state="home",width=innerWidth,height=innerHeight,dpr=1,zoom=1,last=0;
 const input={steer:0,gas:false,brake:false},car={t:0,lateral:0,speed:0},race={elapsed:0,laps:0,lastT:0,finished:false};
-let obstacles=[];
+let obstacles=[],particles=[],exhaustClock=0;
 const audio=createGameAudio();
+function emitParticle(x,y,vx,vy,color,life=.55,size=4){particles.push({x,y,vx,vy,color,life,maxLife:life,size})}
+function burst(x,y,count,color){for(let i=0;i<count;i++){const a=Math.PI*2*i/count+(Math.random()-.5)*.35,v=35+Math.random()*125;emitParticle(x,y,Math.cos(a)*v,Math.sin(a)*v,color,.35+Math.random()*.55,2+Math.random()*4)}}
+function updateParticles(dt){particles=particles.filter(p=>p.life>0);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt)}}
 function loadProgress(){try{const p=JSON.parse(localStorage.getItem("mshin-progress-v1")||"{}");return {completed:Array.isArray(p.completed)?p.completed.filter(n=>Number.isInteger(n)&&n>=1&&n<=50):[],best:p.best&&typeof p.best==="object"?p.best:{}}}catch{return {completed:[],best:{}}}}
 function saveProgress(){try{localStorage.setItem("mshin-progress-v1",JSON.stringify(progress))}catch{}}
 function resize(){dpr=Math.min(devicePixelRatio||1,2);width=innerWidth;height=innerHeight;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);zoom=Math.min(width/1000,height/650,1);ctx.setTransform(dpr,0,0,dpr,0,0)}
