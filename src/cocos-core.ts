@@ -34,7 +34,7 @@ export function createVehicleDamage():VehicleDamageState { return {total:0,front
 export function vehicleDamageLevel(d:VehicleDamageState):number { return d.total>=82?4:d.total>=58?3:d.total>=30?2:d.total>=8?1:0; }
 export function addVehicleDamage(d:VehicleDamageState,energy:number,zone:"front"|"rear"|"left"|"right"="front"):number {
  const points=Math.min(24,Math.max(0,Number.isFinite(energy)?energy:0)/300000);
- d.total=Math.min(100,d.total+points);d[zone]=Math.min(100,d[zone]+points);d.engine=Math.min(100,d.engine+points*(zone==="front"||zone==="rear"?.72:.24));d.disabled=d.total>=96;return vehicleDamageLevel(d);
+ d.total=Math.min(100,d.total+points);d[zone]=Math.min(100,d[zone]+points);d.engine=Math.min(100,d.engine+points*((zone==="front"||zone==="rear") ? .72 : .24));d.disabled=d.total>=96;return vehicleDamageLevel(d);
 }
 export function resolveVehicleImpulse(a:CollisionBody,b:CollisionBody,restitution=.14):{hit:boolean;energy:number;impulse:number;closingSpeed:number} {
  const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||.0001,nx=dx/len,ny=dy/len,rvx=a.vx-b.vx,rvy=a.vy-b.vy,closing=rvx*nx+rvy*ny,overlap=Math.max(0,a.radius+b.radius-len),ia=1/Math.max(1,a.mass),ib=1/Math.max(1,b.mass),sum=ia+ib;
