@@ -7,8 +7,8 @@ export class WorldRenderer extends Component {
  path:Point[]=[];private artWorld:any=null;
  configure(stage:StageDefinition,artLibrary?:any):Point[] {
   this.artWorld=artLibrary?.worlds?.find((world:any)=>world.name===stage.world.name)??null;
-  this.path=generateTrackPath(stage);const ui=this.getComponent(UITransform)??this.addComponent(UITransform);ui.setContentSize(3600,2400);const g=this.getComponent(Graphics)??this.addComponent(Graphics);g.clear();
-  g.fillColor=color(this.artWorld?.ground??stage.world.ground);g.rect(-1800,-1200,3600,2400);g.fill();
+  this.path=generateTrackPath(stage);const ui=this.getComponent(UITransform)??this.addComponent(UITransform);ui.setContentSize(5200,3600);const g=this.getComponent(Graphics)??this.addComponent(Graphics);g.clear();
+  g.fillColor=color(this.artWorld?.ground??stage.world.ground);g.rect(-2600,-1800,5200,3600);g.fill();
   this.drawVectorLandmarks(g,stage);
   this.stroke(g,this.path,stage.trackWidth+64,stage.world.shoulder);
   this.stroke(g,this.path,stage.trackWidth,stage.world.road);
@@ -53,7 +53,7 @@ export class WorldRenderer extends Component {
   const accent=color(this.artWorld?.accent??stage.world.accent),ground=color(this.artWorld?.ground??stage.world.ground);
   // A layered vector vignette makes each world read differently before the player reaches its hazards.
   for(let i=0;i<18;i++){
-   const angle=(i/18)*Math.PI*2,r=1050+(i%3)*95,x=Math.cos(angle)*r,y=Math.sin(angle)*r*.68;
+   const angle=(i/18)*Math.PI*2,r=1880+(i%3)*125,x=Math.cos(angle)*r,y=Math.sin(angle)*r*.68;
    g.fillColor=ground;g.circle(x,y,42+(i%4)*9);g.fill();
    g.fillColor=accent;g.circle(x-8,y+9,12+(i%3)*3);g.fill();
    if(this.artWorld?.decoration==="planet"){g.strokeColor=accent;g.lineWidth=5;g.ellipse(x,y,58,17);g.stroke();}
@@ -64,7 +64,7 @@ export class WorldRenderer extends Component {
  private drawThemeDecor(g:Graphics,stage:StageDefinition):void {
   let seed=stage.seed;const rand=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
   for(let i=0;i<stage.hazardCount*3;i++){
-   const a=rand()*Math.PI*2,r=850+rand()*330,x=Math.cos(a)*r,y=Math.sin(a)*r*.62;
+   const a=rand()*Math.PI*2,r=1740+rand()*540,x=Math.cos(a)*r,y=Math.sin(a)*r*.62;
    g.fillColor=color(stage.world.shoulder);
    if(stage.world.decoration==="tree"||stage.world.decoration==="palm"||stage.world.decoration==="pine"){
     g.circle(x,y,10+rand()*12);g.fill();g.fillColor=color(stage.world.accent);g.circle(x-3,y+4,4);g.fill();
