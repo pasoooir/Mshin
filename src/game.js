@@ -3,14 +3,14 @@ import { TRACK, clamp, trackRadius, stepCar, resolveTrackCollision, lapProgress,
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const $ = (id) => document.getElementById(id);
-const car = { x: TRACK.rx, y: 0, heading: Math.PI / 2, speed: 0 };
+const car = { x: TRACK.rx, y: 0, heading: Math.PI, speed: 0 };
 const state = { running:false, paused:false, finished:false, elapsed:0, laps:0, lastProgress:0, steer:0, gas:false, brake:false, cameraX:0, cameraY:0 };
 const obstacles = Array.from({length:10},(_,i)=>{const a=(i+0.42)*Math.PI*2/10;return{x:Math.cos(a)*TRACK.rx,y:Math.sin(a)*TRACK.ry,r:22,hit:false};});
-let width=innerWidth,height=innerHeight,dpr=1,last=0;
-function resize(){dpr=Math.min(devicePixelRatio||1,2);width=innerWidth;height=innerHeight;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+"px";canvas.style.height=height+"px";ctx.setTransform(dpr,0,0,dpr,0,0);}
+let width=innerWidth,height=innerHeight,dpr=1,last=0,zoom=1;
+function resize(){dpr=Math.min(devicePixelRatio||1,2);width=innerWidth;height=innerHeight;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);zoom=Math.min(width/(TRACK.rx*2+190),height/(TRACK.ry*2+190),1.05);canvas.style.width=width+"px";canvas.style.height=height+"px";ctx.setTransform(dpr,0,0,dpr,0,0);}
 addEventListener("resize",resize);resize();
 function roundedRect(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r);c.fill();}
-function worldStart(){ctx.save();ctx.translate(width/2-state.cameraX,height/2-state.cameraY);}
+function worldStart(){ctx.save();ctx.translate(width/2,height/2);ctx.scale(zoom,zoom);ctx.translate(-state.cameraX,-state.cameraY);}
 function drawWorld(){
   ctx.fillStyle="#80c85d";ctx.fillRect(-width,-height,width*2,height*2);
   // Grass dots and playful flower patches
@@ -33,7 +33,7 @@ function drawWorld(){
   ctx.restore();
 }
 function drawCar(){
-  ctx.save();ctx.translate(width/2,height/2);ctx.rotate(car.heading);
+  ctx.save();ctx.translate(width/2,height/2);ctx.scale(zoom,zoom);ctx.rotate(car.heading);
   ctx.fillStyle="#25433266";ctx.beginPath();ctx.ellipse(3,7,17,27,0,0,Math.PI*2);ctx.fill();
   // wheels
   ctx.fillStyle="#26313a";[[-14,-15],[14,-15],[-14,15],[14,15]].forEach(([x,y])=>roundedRect(ctx,x-4,y-7,8,14,3));
@@ -46,14 +46,14 @@ function drawCar(){
 function draw(){
   ctx.clearRect(0,0,width,height);
   state.cameraX=car.x;state.cameraY=car.y;
-  worldStart();drawWorld();ctx.restore();drawCar();
+  worldStart();drawWorld();drawCar();
   // small minimap
   const mw=112,mh=72,x=width-128,y=height>500?104:78;
   ctx.fillStyle="#173b2ccc";ctx.beginPath();ctx.roundRect(x,y,mw,mh,12);ctx.fill();
   ctx.strokeStyle="#e7f2c7";ctx.lineWidth=7;ctx.beginPath();ctx.ellipse(x+mw/2,y+mh/2,38,23,0,0,Math.PI*2);ctx.stroke();
   const px=x+mw/2+Math.cos(lapProgress(car.x,car.y)*Math.PI*2)*38,py=y+mh/2+Math.sin(lapProgress(car.x,car.y)*Math.PI*2)*23;ctx.fillStyle="#ff6554";ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
 }
-function reset(){car.x=TRACK.rx;car.y=0;car.heading=Math.PI/2;car.speed=0;state.elapsed=0;state.laps=0;state.lastProgress=0;state.finished=false;obstacles.forEach(o=>o.hit=false);$("lap").textContent="0 / 3";$("time").textContent="00:00";$("result").classList.add("hidden");}
+function reset(){car.x=TRACK.rx;car.y=0;car.heading=Math.PI;car.speed=0;state.elapsed=0;state.laps=0;state.lastProgress=0;state.finished=false;obstacles.forEach(o=>o.hit=false);$("lap").textContent="0 / 3";$("time").textContent="00:00";$("result").classList.add("hidden");}
 function update(dt){
   if(!state.running||state.paused||state.finished)return;
   state.elapsed+=dt;
