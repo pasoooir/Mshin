@@ -12,6 +12,12 @@ try {
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable");
+  assert.equal(await page.locator(".carChoice").count(), 3, "garage should offer three distinct cars");
+  await page.getByRole("button", { name: /Comet GT/ }).click();
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator("#play").click();
+  assert.match(await page.locator(".carChoice.active").textContent(), /Comet GT/, "garage should restore the saved car");
   await page.getByRole("button", { name: /Neon City/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
   await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
@@ -19,14 +25,28 @@ try {
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator("#play").click();
+  await page.getByRole("button", { name: /Neon City/ }).click();
+  await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
+  await page.locator("#startRace").click();
+  assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "saved mute preference should survive reload");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
   assert.match(await page.locator("#stageName").textContent(), /WORLD 05.*STAGE 05/);
   await page.keyboard.down("ArrowUp");
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(2400);
   await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
+  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 6000 });
+  const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
+  assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
+  await page.locator("#nitro").click();
+  await page.waitForTimeout(180);
+  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) < 50, undefined, { timeout: 3000 });
+  assert.ok(parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width)) < chargedNitro, "nitro boost should consume stored charge");
   const canvasState = await page.locator("#game").evaluate(canvas => {
     const context = canvas.getContext("2d");
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
@@ -54,9 +74,19 @@ try {
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
   assert.ok((await mobile.locator("#stick").boundingBox()).width >= 90, "mobile joystick should remain touch-sized");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
+  assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
-  process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, visible canvas frames, desktop/mobile gameplay screenshots, audio toggle, race start, acceleration, pause/resume, stage exit, and mobile layout.\n");
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
+  await page.context().setOffline(true);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  assert.equal(await page.locator("#home").isVisible(), true, "game shell should load while offline after first visit");
+  await page.locator("#play").click();
+  assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
+  await page.context().setOffline(false);
+  process.stdout.write("Browser smoke passed: garage/car persistence, nitro pickups and boost, saved audio, 10 worlds, 50 stages, visible canvas, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\\n");
 } finally {
   await browser.close();
 }
