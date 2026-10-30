@@ -46,3 +46,8 @@ This CI result does **not** replace the following release gates:
 - Building and opening the Creator Web target.
 - Building an Android APK/AAB and testing on a physical device.
 - Measuring sustained frame time and memory on representative low/mid-range phones.
+
+
+## Touch steering usability update
+
+The old circular joystick accepted two-axis thumb movement but only consumed the horizontal axis, which made the control feel inconsistent. The browser and Cocos controls now present a horizontal steering pad: drag left/right to steer; vertical thumb movement is ignored. A small center dead zone filters accidental drift, response is progressive rather than instantly full-lock, and steering eases smoothly back to center after release. Browser steering also uses a gradual lateral-velocity response instead of instantly shifting the car sideways. The browser smoke test checks rightward input, the center dead zone, release-to-center, accessible instructions, and mobile touch target width. This is a usability improvement validated in automated browser tests, not a substitute for hands-on testing on the user's phone.
