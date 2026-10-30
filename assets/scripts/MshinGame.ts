@@ -27,7 +27,8 @@ export class MshinGame extends Component {
   this.hudCanvas.addComponent(UITransform).setContentSize(1280,720);
   const uiCanvas=this.hudCanvas.addComponent(Canvas);uiCanvas.cameraComponent=this.camera;uiCanvas.alignCanvasWithScreen=false;
   this.hudRoot=new Node("HUD and Menus");this.hudCanvas.addChild(this.hudRoot);
-  this.createPersistentHud();this.bindKeyboard();this.showLoading();this.resizeUi();\n  resources.load("vector-art",JsonAsset,(error,asset)=>{if(!error&&asset)this.artLibrary=asset.json;else console.warn("Mshin Cocos vector art preload failed; procedural Graphics fallback will be used.",error);this.showHome();});
+  this.createPersistentHud();this.bindKeyboard();this.showLoading();this.resizeUi();
+  resources.load("vector-art",JsonAsset,(error,asset)=>{if(!error&&asset)this.artLibrary=asset.json;else console.warn("Mshin Cocos vector art preload failed; procedural Graphics fallback will be used.",error);this.showHome();});
  }
  update(dt:number):void {
   if(this.screen==="race"){
@@ -72,7 +73,8 @@ export class MshinGame extends Component {
   g.fillColor=hex(stage.world.accent);for(let i=0;i<path.length;i+=12){g.circle(path[i].x*.1,path[i].y*.1,2.5);g.fill();}
   this.uiNodes.push(n);
  }
- private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}\n private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}
+ private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}
+ private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}
  private showHome():void {
   this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("50 TRACKS  •  10 WORLDS  •  ONE CHAMPION",0,35,19);
   this.addButton("RACE NOW",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
