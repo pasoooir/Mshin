@@ -34,6 +34,19 @@ try {
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
   await page.locator("#startRace").click();
+  const steeringPad = page.locator("#stick");
+  const steeringBox = await steeringPad.boundingBox();
+  const steerCenter = { x: steeringBox.x + steeringBox.width / 2, y: steeringBox.y + steeringBox.height / 2 };
+  await page.mouse.move(steerCenter.x, steerCenter.y);
+  await page.mouse.down();
+  await page.mouse.move(steerCenter.x + 42, steerCenter.y, { steps: 5 });
+  const rightSteer = Number(await steeringPad.getAttribute("aria-valuenow"));
+  assert.ok(rightSteer > 0.25, "dragging the steering pad right should produce progressive right steering");
+  await page.mouse.move(steerCenter.x + 1, steerCenter.y, { steps: 4 });
+  assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "small thumb movements around center should be ignored by the steering dead zone");
+  await page.mouse.up();
+  assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "releasing the steering pad should return the control to center");
+  assert.match(await steeringPad.getAttribute("aria-label"), /release to center/i, "steering instructions should be accessible");
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
   assert.equal(raceRequests.length, requestCountAtStart, "starting a race must not trigger late asset/network requests");
@@ -94,7 +107,7 @@ try {
   await mobile.locator("#play").click();
   await mobile.locator("#startRace").click();
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
-  assert.ok((await mobile.locator("#stick").boundingBox()).width >= 90, "mobile joystick should remain touch-sized");
+  assert.ok((await mobile.locator("#stick").boundingBox()).width >= 120, "mobile steering pad should remain wide enough for comfortable thumb travel");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   assert.ok(await mobile.locator(".stats").evaluate(el => el.getBoundingClientRect().right <= document.querySelector("#soundToggle").getBoundingClientRect().left), "compact mobile race stats should not overlap sound controls");
