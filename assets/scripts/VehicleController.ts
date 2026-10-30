@@ -5,7 +5,8 @@ const {ccclass}=_decorator;
 @ccclass("MshinVehicleController")
 export class VehicleController extends Component {
  readonly car:CarState={x:0,y:0,heading:Math.PI,speed:0};
- readonly race:RaceState=createRaceState();\n readonly damage=createVehicleDamage();
+ readonly race:RaceState=createRaceState();
+ readonly damage=createVehicleDamage();
  input:DriveInput={steer:0,throttle:false,brake:false};
  path:Point[]=[];trackWidth=100;targetLaps=3;surfaceGrip=1;obstacles:Point[]=[];private hitCooldown=0;private lastLap=0;private smoothedSteer=0;
  onLap:(lap:number)=>void=()=>{};
