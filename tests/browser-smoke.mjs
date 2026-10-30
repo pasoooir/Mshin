@@ -1,5 +1,8 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
+
+await mkdir("artifacts", { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
 const errors = [];
@@ -24,6 +27,17 @@ try {
   await page.waitForTimeout(900);
   await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
+  const canvasState = await page.locator("#game").evaluate(canvas => {
+    const context = canvas.getContext("2d");
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let visible = 0;
+    for (let i = 3; i < pixels.length; i += 4 * 32) if (pixels[i] > 0) visible++;
+    return { width: canvas.width, height: canvas.height, visiblePixels: visible, imageBytes: canvas.toDataURL("image/png").length };
+  });
+  assert.ok(canvasState.width > 0 && canvasState.height > 0, "game canvas should have a real drawing surface");
+  assert.ok(canvasState.visiblePixels > 100, "game canvas should contain visible rendered pixels");
+  assert.ok(canvasState.imageBytes > 1000, "gameplay frame should not be a blank image");
+  await page.screenshot({ path: "artifacts/mshin-gameplay-desktop.png" });
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   await page.locator("#resume").click();
@@ -40,8 +54,9 @@ try {
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
   assert.ok((await mobile.locator("#stick").boundingBox()).width >= 90, "mobile joystick should remain touch-sized");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
+  await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
-  process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, audio toggle, race start, acceleration, pause/resume, stage exit, and mobile layout.\n");
+  process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, visible canvas frames, desktop/mobile gameplay screenshots, audio toggle, race start, acceleration, pause/resume, stage exit, and mobile layout.\n");
 } finally {
   await browser.close();
 }

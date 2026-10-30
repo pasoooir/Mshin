@@ -57,3 +57,11 @@ jobs:
           fi
           node --check tests/browser-smoke.mjs
           node tests/browser-smoke.mjs
+      - name: Upload desktop and mobile gameplay previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mshin-gameplay-previews
+          path: artifacts/*.png
+          if-no-files-found: warn
+          retention-days: 7
