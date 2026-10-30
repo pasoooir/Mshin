@@ -48,7 +48,8 @@ test("photographic world scenes are CDN-preloaded before the race runtime", asyn
   assert.match(loader, /scenes: Object\.fromEntries/);
   assert.match(game, /sceneArt/);
   assert.match(game, /\)\*1\.6/);
-  assert.match(game, /,-29,-45,58,90/);
+  assert.match(game, /,-36,-54,72,108/);
+  assert.match(game, /rotate\(-c\.angle-Math\.PI\/2\)/, "race camera should follow the road tangent and keep the player car facing forward");
 });
 test("race hot paths pool particles and use frame-driven collision cooldowns", async () => {
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
