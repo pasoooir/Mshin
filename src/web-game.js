@@ -19,7 +19,9 @@ const carModels=[{id:"rally",name:"Rally Fox",tag:"BALANCED",color:"#f15d4e",acc
 function loadSettings(){try{const v=JSON.parse(localStorage.getItem("mshin-settings-v1")||"{}");return {sound:v.sound!==false,carId:carModels.some(c=>c.id===v.carId)&&progress.unlockedCars.includes(v.carId)?v.carId:"rally"}}catch{return {sound:true,carId:"rally"}}}
 const settings=loadSettings(),input={steer:0,gas:false,brake:false,nitro:false},car={t:0,lateral:0,speed:0},race={elapsed:0,laps:0,lastT:0,finished:false};
 let selectedCar=settings.carId,nitro=25,boostTimer=0,pickups=[];
-let obstacles=[],particles=[],exhaustClock=0,rivals=[];\nconst particlePool=[];\nlet hudClock=0;
+let obstacles=[],particles=[],exhaustClock=0,rivals=[];
+const particlePool=[];
+let hudClock=0;
 const achievementDefs=[{id:"first-finish",name:"First Finish",detail:"Complete your first race",reward:75},{id:"podium",name:"Podium Racer",detail:"Finish in the top three",reward:100},{id:"world-tour",name:"World Tour",detail:"Complete stages in five different worlds",reward:150},{id:"collector",name:"Garage Collector",detail:"Unlock all five cars",reward:200},{id:"fully-tuned",name:"Fully Tuned",detail:"Max all three upgrades on one car",reward:175}];
 const audio=createGameAudio();if(!settings.sound)audio.toggle();
 function emitParticle(x,y,vx,vy,color,life=.55,size=4){if(particles.length>=150)return;const p=particlePool.pop()||{};Object.assign(p,{x,y,vx,vy,color,life,maxLife:life,size});particles.push(p)}
