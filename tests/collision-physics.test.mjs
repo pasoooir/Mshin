@@ -45,7 +45,7 @@ test("mass changes impulse response: heavier vehicle moves less",()=>{
 });
 test("damage accumulates gradually and maps to five damage levels",()=>{
  const d=createDamageState();assert.equal(damageLevel(d),0);
- applyVehicleDamage(d,900000,"front");assert.equal(damageLevel(d),1);
+ applyVehicleDamage(d,1500000,"front");assert.equal(damageLevel(d),1);
  applyVehicleDamage(d,2600000,"rear");assert.ok(d.total>8);assert.ok(d.front>0&&d.rear>0);
  applyVehicleDamage(d,12000000,"left");assert.ok(damageLevel(d)>=2);
 });
