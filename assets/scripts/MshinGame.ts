@@ -45,9 +45,9 @@ export class MshinGame extends Component {
  private makeNode(name:string,parent:Node):Node {const n=new Node(name);parent.addChild(n);n.addComponent(UITransform).setContentSize(120,60);return n;}
  private createPersistentHud():void {
   const bg=this.makeNode("HUD Backdrop",this.hudRoot);const g=bg.addComponent(Graphics);g.fillColor=new Color(18,32,52,220);g.roundRect(-610,300,1220,86,18);g.fill();
-  this.addLabel("brand","MSHIN  •  ARCADE RACING",0,330,26,false);
+  this.addLabel("brand","مِشین • مسابقه آرکید",0,330,26,false);
   this.addLabel("world","",0,294,15,false);
-  this.addLabel("lap","LAP  0 / 3",-420,330,18,false);this.addLabel("time","TIME  00:00",-260,330,18,false);this.addLabel("speed","SPEED  0",-90,330,18,false);
+  this.addLabel("lap","دور  ۰ / ۳",-420,330,18,false);this.addLabel("time","زمان  ۰۰:۰۰",-260,330,18,false);this.addLabel("speed","سرعت  ۰",-90,330,18,false);
  }
  private addLabel(id:string,text:string,x:number,y:number,size:number,transient:boolean):Label {
   const n=this.makeNode("Label "+id,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(390,48);
@@ -73,24 +73,24 @@ export class MshinGame extends Component {
   g.fillColor=hex(stage.world.accent);for(let i=0;i<path.length;i+=12){g.circle(path[i].x*.1,path[i].y*.1,2.5);g.fill();}
   this.uiNodes.push(n);
  }
- private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("PREPARING YOUR RACING WORLDS",0,40,30);this.addUiLabel("Loading vector art and vehicle palettes…",0,-25,18);}
+ private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("در حال آماده‌سازی دنیای مسابقه",0,40,30);this.addUiLabel("در حال بارگذاری تصاویر و رنگ‌بندی خودروها…",0,-25,18);}
  private showHome():void {
-  this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("50 TRACKS  •  10 WORLDS  •  ONE CHAMPION",0,35,19);
-  this.addButton("RACE NOW",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
-  this.addButton("SELECT WORLD",0,-160,270,62,()=>this.showWorlds());
-  this.addUiLabel("NEXT STAGE "+this.progress.unlockedStage+" / 50",0,-245,18);
+  this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("۵۰ پیست • ۱۰ دنیا • یک قهرمان",0,35,19);
+  this.addButton("شروع مسابقه",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
+  this.addButton("انتخاب دنیا",0,-160,270,62,()=>this.showWorlds());
+  this.addUiLabel("مرحله بعدی "+this.progress.unlockedStage+" / ۵۰",0,-245,18);
  }
  private showWorlds():void {
-  this.screen="worlds";this.clearUi();this.addUiLabel("CHOOSE YOUR WORLD",0,245,34);
+  this.screen="worlds";this.clearUi();this.addUiLabel("انتخاب دنیای مسابقه",0,245,34);
   WORLD_THEMES.forEach((world,i)=>{const col=i%5,row=Math.floor(i/5),x=(col-2)*220,y=100-row*170;this.addButton(world.name,x,y,196,110,()=>{this.selectedWorld=i;this.showStages();});});
-  this.addButton("BACK",0,-280,170,54,()=>this.showHome());
+  this.addButton("بازگشت",0,-280,170,54,()=>this.showHome());
  }
  private showStages():void {
-  this.screen="stages";this.clearUi();const world=WORLD_THEMES[this.selectedWorld];this.addUiLabel(world.name.toUpperCase()+"  •  SELECT STAGE",0,245,29);
+  this.screen="stages";this.clearUi();const world=WORLD_THEMES[this.selectedWorld];this.addUiLabel(world.name.toUpperCase()+"  •  انتخاب مرحله",0,245,29);
   for(let i=0;i<5;i++){const s=STAGES[this.selectedWorld*5+i],unlocked=ProgressStore.isUnlocked(s.id,this.progress),x=(i-2)*230;
    this.addButton((unlocked?"▶ ":"🔒 ")+String(s.stageInWorld).padStart(2,"0")+"  "+s.name,x,35,210,112,()=>{if(unlocked)this.startStage(s.id);});
    this.drawStagePreview(s,x,155);
-   this.addUiLabel(this.progress.completed.includes(s.id)?"✓ COMPLETED":unlocked?"READY":"LOCKED",x,-42,13);
+   this.addUiLabel(this.progress.completed.includes(s.id)?"✓ تکمیل‌شده":unlocked?"آماده":"قفل‌شده",x,-42,13);
   }
   this.addButton("BACK",0,-205,170,54,()=>this.showWorlds());
  }
@@ -109,8 +109,8 @@ export class MshinGame extends Component {
   const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(20,38,62,225);jg.strokeColor=new Color(220,238,255,190);jg.lineWidth=4;jg.roundRect(-92,-66,184,132,48);jg.fill();jg.stroke();
   this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(68,52);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.roundRect(-34,-26,68,52,22);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.roundRect(-34,-26,68,52,22);kg.stroke();
   this.joystick.on(Node.EventType.TOUCH_START,this.onStickStart,this);this.joystick.on(Node.EventType.TOUCH_MOVE,this.onStickMove,this);this.joystick.on(Node.EventType.TOUCH_END,this.onStickEnd,this);this.joystick.on(Node.EventType.TOUCH_CANCEL,this.onStickEnd,this);
-  this.holdButton("BRAKE",350,-250,130,86,(v)=>this.vehicle.input.brake=v);
-  this.holdButton("GAS",510,-220,145,112,(v)=>this.vehicle.input.throttle=v);
+  this.holdButton("ترمز",350,-250,130,86,(v)=>this.vehicle.input.brake=v);
+  this.holdButton("گاز",510,-220,145,112,(v)=>this.vehicle.input.throttle=v);
   this.addButton("Ⅱ",560,300,72,54,()=>this.pauseRace());
  }
  private holdButton(text:string,x:number,y:number,w:number,h:number,change:(held:boolean)=>void):void {
@@ -125,14 +125,14 @@ export class MshinGame extends Component {
  private onStickEnd(e:EventTouch):void {if(e.getID()!==this.stickId)return;this.stickId=-1;this.knob.setPosition(0,0,0);this.vehicle.input.steer=0;}
  private pauseRace():void {
   if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
-  this.addUiLabel("PAUSED",0,75,54);this.addButton("RESUME",0,-20,230,70,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;this.createControls();});
-  this.addButton("QUIT TO MENU",0,-115,230,60,()=>{this.vehicle.enabled=false;this.showHome();});
+  this.addUiLabel("مسابقه متوقف شد",0,75,54);this.addButton("ادامه مسابقه",0,-20,230,70,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;this.createControls();});
+  this.addButton("بازگشت به منو",0,-115,230,60,()=>{this.vehicle.enabled=false;this.showHome();});
  }
  private showFinished():void {
   this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
-  this.addUiLabel("🏆  FINISH!",0,85,56);this.addUiLabel("TIME  "+this.format(this.vehicle.race.elapsedSeconds),0,15,24);
-  this.addButton("NEXT STAGE",0,-75,250,70,()=>this.startStage(Math.min(50,this.stage.id+1)));
-  this.addButton("MAIN MENU",0,-165,230,58,()=>this.showHome());
+  this.addUiLabel("🏆  پایان مسابقه!",0,85,56);this.addUiLabel("TIME  "+this.format(this.vehicle.race.elapsedSeconds),0,15,24);
+  this.addButton("مرحله بعد",0,-75,250,70,()=>this.startStage(Math.min(50,this.stage.id+1)));
+  this.addButton("منوی اصلی",0,-165,230,58,()=>this.showHome());
  }
  private drawCar():void {
   this.carNode.setScale(1.25,1.25,1);
