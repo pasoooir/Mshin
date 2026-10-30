@@ -21,7 +21,7 @@ async function fetchAsset(asset) {
       });
       if (!response.ok) throw new Error(`Asset request failed (${response.status}): ${source}`);
       const blob = await response.blob();
-      if (!blob.type.includes("svg")) throw new Error(`Unexpected vector MIME type: ${blob.type}`);
+      if (!blob.type.startsWith("image/")) throw new Error(`Unexpected image MIME type: ${blob.type}`);
       return blob;
     } catch (error) { lastError = error; }
     finally { clearTimeout(timer); }
@@ -42,7 +42,7 @@ async function loadVector(asset) {
 }
 
 export async function preloadGameAssets(onProgress = () => {}) {
-  const all = [...manifest.worlds, ...manifest.cars];
+  const all = [...manifest.worlds, ...manifest.cars, ...(manifest.scenes || [])];
   let loaded = 0;
   const failures = [];
   let cursor = 0;
@@ -60,6 +60,7 @@ export async function preloadGameAssets(onProgress = () => {}) {
     version: manifest.version,
     worlds: manifest.worlds.map(item => imageCache.get(item.id) || null),
     cars: Object.fromEntries(manifest.cars.map(item => [item.id, imageCache.get(item.id) || null])),
+    scenes: Object.fromEntries((manifest.scenes || []).map(item => [item.id, imageCache.get(item.id) || null])),
     failures,
     ready: true
   };
