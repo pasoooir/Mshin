@@ -61,3 +61,19 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.doesNotMatch(game, /setTimeout\(\(\)=>o\.hit=false/);
   assert.match(game, /hudClock>=\.1/);
 });
+
+test("boot experience uses a cinematic game splash and compact one-page mobile menu", async () => {
+  const html = await readFile(path.join(root, "index.html"), "utf8");
+  assert.match(html, /class="splash"/);
+  assert.match(html, /MSHIN STUDIOS/);
+  assert.match(html, /splashCarFront/);
+  assert.match(html, /id="assetPercent"/);
+  assert.match(html, /id="assetProgress"/);
+  assert.match(html, /@keyframes splashDrive/);
+  assert.match(html, /#select \.worlds\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(html, /#select \.upgrades\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(html, /#select \.actions\{position:sticky/);
+  const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
+  assert.match(boot, /assetPercent/);
+  assert.match(boot, /ALL ASSETS READY/);
+});
