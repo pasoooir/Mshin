@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.30.1",
+  "version": "2026.10.30.3",
   "worlds": [
     {
       "id": 1,
@@ -122,6 +122,88 @@
       "type": "image/svg+xml",
       "group": "vehicle",
       "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-raptor.svg"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-01",
+      "name": "World 1 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 0
+    },
+    {
+      "id": "scene-02",
+      "name": "World 2 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 1
+    },
+    {
+      "id": "scene-03",
+      "name": "World 3 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 2
+    },
+    {
+      "id": "scene-04",
+      "name": "World 4 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 3
+    },
+    {
+      "id": "scene-05",
+      "name": "World 5 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 4
+    },
+    {
+      "id": "scene-06",
+      "name": "World 6 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 5
+    },
+    {
+      "id": "scene-07",
+      "name": "World 7 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 6
+    },
+    {
+      "id": "scene-08",
+      "name": "World 8 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 7
+    },
+    {
+      "id": "scene-09",
+      "name": "World 9 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 8
+    },
+    {
+      "id": "scene-10",
+      "name": "World 10 photographic environment",
+      "cdn": "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1600&q=76",
+      "type": "image/jpeg",
+      "group": "scene",
+      "world": 9
     }
   ]
 }
