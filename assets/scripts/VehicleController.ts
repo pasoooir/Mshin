@@ -24,7 +24,7 @@ export class VehicleController extends Component {
   if(hit.distance>this.trackWidth*.46){const dx=this.car.x-hit.point.x,dy=this.car.y-hit.point.y,len=Math.hypot(dx,dy)||1,limit=this.trackWidth*.43;this.car.x=hit.point.x+dx/len*limit;this.car.y=hit.point.y+dy/len*limit;this.car.speed*=-.24;}
   this.hitCooldown=Math.max(0,this.hitCooldown-dt);
   if(this.hitCooldown===0&&this.obstacles.some(o=>Math.hypot(this.car.x-o.x,this.car.y-o.y)<31)){this.car.speed*=.42;this.hitCooldown=.65;}
-  this.node.setPosition(this.car.x,this.car.y,0);this.node.angle=90-this.car.heading*180/Math.PI;
+  this.node.setPosition(this.car.x,this.car.y,0);this.node.angle=180-this.car.heading*180/Math.PI;
   updateRace(this.race,this.car.x,this.car.y,dt,this.targetLaps);
   if(this.race.lap!==this.lastLap){this.lastLap=this.race.lap;this.onLap(this.lastLap);}
  }

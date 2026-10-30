@@ -50,7 +50,8 @@ export class MshinGame extends Component {
  private button(text:string,x:number,y:number,w:number,h:number,action:()=>void):Node {
   const n=this.makeNode("Button "+text,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(w,h);
   const g=n.addComponent(Graphics);g.fillColor=hex("#F8C84E");g.roundRect(-w/2,-h/2,w,h,14);g.fill();g.strokeColor=hex("#FFF4CF");g.lineWidth=3;g.roundRect(-w/2,-h/2,w,h,14);g.stroke();
-  const l=n.addComponent(Label);l.string=text;l.fontSize=Math.min(23,h*.34);l.color=hex("#25334A");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
+  const labelNode=this.makeNode("Button Label",n);labelNode.getComponent(UITransform)!.setContentSize(w-16,h-8);
+  const l=labelNode.addComponent(Label);l.string=text;l.fontSize=Math.min(23,h*.34);l.color=hex("#25334A");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
   n.on(Node.EventType.TOUCH_END,action,this);this.uiNodes.push(n);return n;
  }
  private addButton(text:string,x:number,y:number,w:number,h:number,fn:()=>void):void {this.button(text,x,y,w,h,fn);}
@@ -95,7 +96,8 @@ export class MshinGame extends Component {
  private holdButton(text:string,x:number,y:number,w:number,h:number,change:(held:boolean)=>void):void {
   const n=this.makeNode(text,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(w,h);
   const g=n.addComponent(Graphics);g.fillColor=hex(text==="GAS"?"#F18B3B":"#4779C7");g.roundRect(-w/2,-h/2,w,h,18);g.fill();g.strokeColor=hex("#FFFFFF");g.lineWidth=3;g.roundRect(-w/2,-h/2,w,h,18);g.stroke();
-  const l=n.addComponent(Label);l.string=text;l.fontSize=22;l.color=hex("#FFFFFF");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
+  const labelNode=this.makeNode("Pedal Label",n);labelNode.getComponent(UITransform)!.setContentSize(w-12,h-8);
+  const l=labelNode.addComponent(Label);l.string=text;l.fontSize=22;l.color=hex("#FFFFFF");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
   n.on(Node.EventType.TOUCH_START,()=>change(true),this);n.on(Node.EventType.TOUCH_END,()=>change(false),this);n.on(Node.EventType.TOUCH_CANCEL,()=>change(false),this);this.uiNodes.push(n);
  }
  private onStickStart(e:EventTouch):void {this.stickId=e.getID();this.onStickMove(e);}
@@ -139,5 +141,5 @@ export class MshinGame extends Component {
   pos("Button Ⅱ",s.width/2-60,s.height/2-60);
  }
  private format(seconds:number):string {const m=Math.floor(seconds/60),v=Math.floor(seconds%60);return String(m).padStart(2,"0")+":"+String(v).padStart(2,"0");}
- onDestroy():void {input.off(Input.EventType.KEY_DOWN);input.off(Input.EventType.KEY_UP);}
+ onDestroy():void {input.targetOff(this);}
 }
