@@ -21,4 +21,5 @@ jobs:
       - run: npm run check:worker
       - run: node --check src/physics.js
       - run: node --check src/game.js
+      - run: node --check src/web-game.js
       - run: npm test
