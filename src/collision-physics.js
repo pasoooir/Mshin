@@ -47,7 +47,7 @@ export function resolveVehicleImpact(a, b, options = {}) {
     b.x += nx * correction * invB; b.y += ny * correction * invB;
   }
   const reducedMass = 1 / invSum;
-  const energy = .5 * reducedMass * closing * closing;
+  const energy = .5 * reducedMass * Math.max(0, closing) * Math.max(0, closing);
   const forceProxy = impulse;
   const angle = Math.atan2(ny, nx);
   return { hit: true, normalX: nx, normalY: ny, angle, overlap, closingSpeed: Math.max(0, closing), impulse, forceProxy, energy, relativeTangentSpeed: Math.abs(rvx * -ny + rvy * nx) };
