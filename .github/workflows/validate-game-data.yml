@@ -18,6 +18,7 @@ jobs:
       - run: npm run validate:data
       - run: npm run build:core
       - run: npm run check:cocos-syntax
+      - run: npm run check:worker
       - run: node --check src/physics.js
       - run: node --check src/game.js
       - run: npm test

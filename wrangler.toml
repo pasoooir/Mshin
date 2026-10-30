@@ -1,0 +1,7 @@
+name = "mshin-game-api"
+main = "workers.js"
+compatibility_date = "2026-10-30"
+
+# No paid storage bindings, R2 buckets, secrets, or database are required.
+# Optional comma-separated CORS additions can be set as a Worker variable:
+# ALLOWED_ORIGINS = "https://your-custom-game-domain.example"
