@@ -12,7 +12,7 @@ try {
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable");
-  assert.equal(await page.locator(".carChoice").count(), 3, "garage should offer three distinct cars");
+  assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
   await page.getByRole("button", { name: /Comet GT/ }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   await page.reload({ waitUntil: "networkidle" });
