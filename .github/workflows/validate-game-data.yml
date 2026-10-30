@@ -29,6 +29,31 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run desktop and mobile browser smoke tests
         run: |
+          set -euo pipefail
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/mshin-http.log 2>&1 &
-          for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          ready=false
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ >/dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "Local HTTP server exited before becoming ready."
+              cat /tmp/mshin-http.log
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            echo "Local HTTP server did not become ready on port 4173."
+            cat /tmp/mshin-http.log
+            exit 1
+          fi
+          node --check tests/browser-smoke.mjs
           node tests/browser-smoke.mjs

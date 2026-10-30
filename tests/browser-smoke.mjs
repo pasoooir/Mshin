@@ -13,6 +13,11 @@ try {
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
   await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
   await page.locator("#startRace").click();
+  assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");
+  await page.locator("#soundToggle").click();
+  assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
+  await page.locator("#soundToggle").click();
+  assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
   assert.match(await page.locator("#stageName").textContent(), /WORLD 05.*STAGE 05/);
   await page.keyboard.down("ArrowUp");
@@ -36,7 +41,7 @@ try {
   assert.ok((await mobile.locator("#stick").boundingBox()).width >= 90, "mobile joystick should remain touch-sized");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
-  process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, race start, acceleration, pause/resume, stage exit, and mobile layout.\n");
+  process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, audio toggle, race start, acceleration, pause/resume, stage exit, and mobile layout.\n");
 } finally {
   await browser.close();
 }
