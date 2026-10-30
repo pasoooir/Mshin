@@ -49,7 +49,9 @@ Last evidence refresh: 2026-10-30
 - PR #7 merged: https://github.com/pasoooir/Mshin/pull/7 — AI rivals, live race position, minimap, finishing placement and portrait HUD refinement; merge commit `36fa6d7673ec4fd0f91db73be4487d8d67eef22a`.
 - PR #7 browser QA: https://github.com/pasoooir/Mshin/actions/runs/41070776069 — success.
 - Merged-main validation: https://github.com/pasoooir/Mshin/actions/runs/41071069297 — success.
-- GitHub Pages deployment: https://github.com/pasoooir/Mshin/actions/runs/41071069211 — success.
+- Final-main validation with vehicle-relative AI pace balancing: https://github.com/pasoooir/Mshin/actions/runs/41071431670 — success.
+- Last confirmed successful GitHub Pages deployment: https://github.com/pasoooir/Mshin/actions/runs/41071069211 — success.
+- Latest Pages build: https://github.com/pasoooir/Mshin/actions/runs/41071430943 — build success; deploy step failed twice with GitHub API HTTP 500.
 - PR #7 (awaiting merge): https://github.com/pasoooir/Mshin/pull/7 — three AI rivals, live position indicator, minimap and finish placement.
 - PR #7 validation: https://github.com/pasoooir/Mshin/actions/runs/41070456724 — success; browser QA and desktop/mobile screenshots passed.
 - PR #6 push validation: https://github.com/pasoooir/Mshin/actions/runs/41067407332 — success.
