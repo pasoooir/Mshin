@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v8";
+const CACHE_NAME = "mshin-arcade-v9";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
   "./src/web-game.js", "./src/audio.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
