@@ -76,6 +76,8 @@ try {
   assert.ok((await mobile.locator("#stick").boundingBox()).width >= 90, "mobile joystick should remain touch-sized");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
+  assert.ok(await mobile.locator(".stats").evaluate(el => el.getBoundingClientRect().right <= document.querySelector("#soundToggle").getBoundingClientRect().left), "compact mobile race stats should not overlap sound controls");
+  assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
