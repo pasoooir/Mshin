@@ -20,7 +20,7 @@ export class VehicleController extends Component {
   const nearest=nearestTrackPoint(this.car,this.path);
   this.input.offRoad=nearest.distance>this.trackWidth*.34;this.input.grip=this.surfaceGrip;
   const response=1-Math.exp(-Math.max(0,Math.min(dt,.05))*(Math.abs(this.input.steer)<.001?5:8));this.smoothedSteer+=(this.input.steer-this.smoothedSteer)*response;stepCar(this.car,{...this.input,steer:this.smoothedSteer},dt);
-  const hit=nearestTrackPoint(this.car,this.path);
+  const hit=nearestTrackPoint(this.car,this.path);const next=this.path[(hit.segment+1)%this.path.length],prev=this.path[hit.segment],tangent=Math.atan2(next.x-prev.x,prev.y-next.y),headingError=Math.atan2(Math.sin(tangent-this.car.heading),Math.cos(tangent-this.car.heading)),assist=Math.max(-Math.max(.8,Math.abs(this.car.speed)/180)*dt,Math.min(Math.max(.8,Math.abs(this.car.speed)/180)*dt,headingError));this.car.heading+=assist*.72;
   if(hit.distance>this.trackWidth*.46){const dx=this.car.x-hit.point.x,dy=this.car.y-hit.point.y,len=Math.hypot(dx,dy)||1,limit=this.trackWidth*.43;this.car.x=hit.point.x+dx/len*limit;this.car.y=hit.point.y+dy/len*limit;this.car.speed*=-.24;}
   this.hitCooldown=Math.max(0,this.hitCooldown-dt);
   if(this.hitCooldown===0&&this.obstacles.some(o=>Math.hypot(this.car.x-o.x,this.car.y-o.y)<31)){this.car.speed*=.42;this.hitCooldown=.65;}
