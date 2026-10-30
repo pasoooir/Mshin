@@ -15,7 +15,7 @@ try {
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
-  assert.match(preloadState.menuArt, /world-01\\.svg/, "the home screen should use themed visual art");
+  assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
