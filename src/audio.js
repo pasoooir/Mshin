@@ -40,7 +40,7 @@ export function createGameAudio() {
       engine.frequency.setTargetAtTime(48 + Math.max(0, speed) * 0.48, now, 0.08);
       engineGain.gain.setTargetAtTime(active ? 0.035 + Math.min(speed / 330, 1) * 0.045 : 0, now, 0.12);
     },
-    collision() { tone(105, 0.16, "square", 0.24); tone(72, 0.22, "triangle", 0.16); },
+    collision(intensity = 1) { const level = Math.max(0, Math.min(1.5, intensity)); const severe = level >= 0.85; tone(severe ? 72 : level >= 0.45 ? 96 : 138, severe ? 0.28 : 0.16, "square", 0.12 + level * 0.09); if (severe) tone(48, 0.34, "sawtooth", 0.13); else tone(165 - level * 45, 0.13, "triangle", 0.08 + level * 0.05); },
     finish() { tone(523, 0.12); setTimeout(() => tone(659, 0.12), 110); setTimeout(() => tone(784, 0.22), 220); },
     toggle() {
       enabled = !enabled;
