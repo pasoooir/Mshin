@@ -39,7 +39,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v7/);
+  assert.match(sw, /mshin-arcade-v8/);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
 });
 test("photographic world scenes are CDN-preloaded before the race runtime", async () => {
@@ -50,7 +50,7 @@ test("photographic world scenes are CDN-preloaded before the race runtime", asyn
   assert.match(game, /sceneArt/);
   assert.match(game, /\)\*1\.6/);
   assert.match(game, /,-36,-54,72,108/);
-  assert.ok(game.includes("ctx.rotate(-c.angle)"), "race camera should follow the road tangent and keep the player car facing forward");
+  assert.ok(game.includes("ctx.rotate(-c.angle-Math.PI/2)"), "race camera should follow the road tangent and keep the player car facing forward");
   assert.match(cocos, /cameraNode\.angle=-this\.carNode\.angle/);
   assert.match(cocos, /hudCanvas\.angle=this\.carNode\.angle/);
   assert.match(cocos, /this\.carNode\.setScale\(1\.25,1\.25,1\)/);
@@ -84,10 +84,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
-  assert.match(sw, /mshin-arcade-v7/);
-  assert.match(html, /boot\.js\?v=2026\.10\.30\.4/);
-  assert.equal(manifest.version, "2026.10.30.4");
-  assert.equal(pkg.version, "0.4.1");
+  assert.match(sw, /mshin-arcade-v8/);
+  assert.match(html, /boot\\.js\\?v=2026\\.10\\.30\\.5/);
+  assert.equal(manifest.version, "2026.10.30.5");
+  assert.equal(pkg.version, "0.4.2");
   assert.equal(pwa.version, "0.4.1");
-  assert.equal(cocos.version, "2026.10.30.3");
+  assert.equal(cocos.version, "2026.10.30.4");
 });
