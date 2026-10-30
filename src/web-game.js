@@ -51,7 +51,7 @@ function drawTrack(){
  ctx.drawImage(trackCache,-1600,-1200,3200,2400);
  renderTrackDynamics();
 }
-function renderStaticTrack(){const w=worlds[stage.world];ctx.fillStyle=w[1];ctx.fillRect(-1600,-1200,3200,2400);const worldArt=window.MshinAssets?.worlds?.[stage.world],sceneArt=window.MshinAssets?.scenes?.["scene-"+String(stage.world+1).padStart(2,"0")];if(sceneArt){ctx.save();ctx.globalAlpha=.72;ctx.drawImage(sceneArt,-1600,-1200,3200,2400);ctx.fillStyle=w[1]+"55";ctx.fillRect(-1300,-1000,2600,2000);ctx.restore()}else if(worldArt){ctx.save();ctx.globalAlpha=.24;ctx.drawImage(worldArt,-980,-650,1960,1300);ctx.restore()}
+function renderStaticTrack(){const w=worlds[stage.world];ctx.fillStyle=w[1];ctx.fillRect(-1600,-1200,3200,2400);const worldArt=window.MshinAssets?.worlds?.[stage.world],sceneArt=window.MshinAssets?.scenes?.["scene-"+String(stage.world+1).padStart(2,"0")];if(sceneArt){ctx.save();ctx.globalAlpha=.72;ctx.drawImage(sceneArt,-1600,-1200,3200,2400);ctx.fillStyle=w[1]+"55";ctx.fillRect(-1600,-1200,3200,2400);ctx.restore()}else if(worldArt){ctx.save();ctx.globalAlpha=.24;ctx.drawImage(worldArt,-980,-650,1960,1300);ctx.restore()}
  for(let i=0;i<110;i++){const x=((i*173)%2200)-1100,y=((i*97)%1600)-800;ctx.fillStyle=i%4===0?w[3]:w[5];ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(x,y,2+i%4,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
  const path=[];for(let i=0;i<=240;i++)path.push(center(i/240*Math.PI*2));
  function stroke(col,wide,dash=[]){ctx.beginPath();path.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.strokeStyle=col;ctx.lineWidth=wide;ctx.setLineDash(dash);ctx.lineJoin="round";ctx.stroke();ctx.setLineDash([])}
