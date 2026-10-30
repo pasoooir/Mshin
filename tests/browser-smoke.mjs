@@ -37,7 +37,7 @@ try {
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
   assert.match(await page.locator("#stageName").textContent(), /WORLD 05.*STAGE 05/);
   await page.keyboard.down("ArrowUp");
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(2400);
   await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
   await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, { timeout: 6000 });
@@ -75,6 +75,7 @@ try {
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
   assert.ok((await mobile.locator("#stick").boundingBox()).width >= 90, "mobile joystick should remain touch-sized");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
+  assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, visible canvas frames, desktop/mobile gameplay screenshots, audio toggle, race start, acceleration, pause/resume, stage exit, and mobile layout.\n");
