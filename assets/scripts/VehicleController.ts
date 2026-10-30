@@ -1,5 +1,5 @@
 import { _decorator, Component } from "cc";
-import { CarState, DriveInput, createRaceState, RaceState, stepCar, updateRace, createVehicleDamage, addVehicleDamage, resolveStaticBarrier, vehicleDamageLevel, CollisionBody } from "../../src/cocos-core";
+import { CarState, DriveInput, createRaceState, RaceState, stepCar, updateRace, createVehicleDamage, addVehicleDamage, resolveStaticBarrier, CollisionBody } from "../../src/cocos-core";
 import { nearestTrackPoint, Point } from "../../src/stage-catalog";
 const {ccclass}=_decorator;
 @ccclass("MshinVehicleController")
@@ -19,7 +19,7 @@ export class VehicleController extends Component {
  update(dt:number):void {
   if(this.race.finished||this.path.length<2)return;
   const nearest=nearestTrackPoint(this.car,this.path);
-  this.input.offRoad=nearest.distance>this.trackWidth*.34;this.input.grip=this.surfaceGrip;this.input.performance=this.damage.disabled?.3:Math.max(.38,1-this.damage.total*.0048);
+  this.input.offRoad=nearest.distance>this.trackWidth*.34;this.input.grip=this.surfaceGrip;this.input.performance=this.damage.disabled ? .3 : Math.max(.38,1-this.damage.total*.0048);
   const response=1-Math.exp(-Math.max(0,Math.min(dt,.05))*(Math.abs(this.input.steer)<.001?5:8));this.smoothedSteer+=(this.input.steer-this.smoothedSteer)*response;stepCar(this.car,{...this.input,steer:this.smoothedSteer},dt);
   const hit=nearestTrackPoint(this.car,this.path);const next=this.path[(hit.segment+1)%this.path.length],prev=this.path[hit.segment],tangent=Math.atan2(next.x-prev.x,prev.y-next.y),headingError=Math.atan2(Math.sin(tangent-this.car.heading),Math.cos(tangent-this.car.heading)),assist=Math.max(-Math.max(.8,Math.abs(this.car.speed)/180)*dt,Math.min(Math.max(.8,Math.abs(this.car.speed)/180)*dt,headingError));this.car.heading+=assist*.72;
   if(hit.distance>this.trackWidth*.46){const dx=this.car.x-hit.point.x,dy=this.car.y-hit.point.y,len=Math.hypot(dx,dy)||1,limit=this.trackWidth*.43,nx=dx/len,ny=dy/len;const body:CollisionBody={x:this.car.x,y:this.car.y,vx:Math.sin(this.car.heading)*this.car.speed,vy:-Math.cos(this.car.heading)*this.car.speed,mass:1250,radius:18};const impact=resolveStaticBarrier(body,nx,ny);this.car.x=hit.point.x+nx*limit;this.car.y=hit.point.y+ny*limit;if(impact.hit){this.car.speed=Math.hypot(body.vx,body.vy);this.car.heading=Math.atan2(body.vx,-body.vy);addVehicleDamage(this.damage,impact.energy,Math.abs(nx)>Math.abs(ny)?(nx>0?"right":"left"):"front");}else this.car.speed*=.92;}
