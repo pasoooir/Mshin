@@ -5,12 +5,12 @@
 - Browser edition: 10 hand-authored scalable SVG world illustrations and five vehicle sprites in `assets/vector/`.
 - Browser manifest: `src/asset-manifest.json`, versioned independently from the app shell.
 - Cocos Creator: `assets/resources/vector-art.json`, imported by Creator as a `JsonAsset`. The game reads the palette catalogue before opening the main menu and uses Cocos `Graphics` to draw its vector-style vehicle and themed world landmarks.
-- No third-party CDN is a runtime dependency for required game art. GitHub Pages serves the bundled browser assets through its static CDN edge; the original files remain in this repository as the source of truth. No Cloudflare R2 is used.
+- Browser art is delivered from immutable, commit-pinned jsDelivr URLs first. If the CDN is slow, blocked, or offline, the loader falls back to the same-origin SVGs in the repository. No required art depends solely on a third-party CDN. The local copies remain the source of truth and are precached by the Service Worker. No Cloudflare R2 is used.
 
 ## Browser preload sequence
 
 1. Show the dedicated loading screen.
-2. Fetch the versioned manifest and all 15 SVG assets with a concurrency limit of three.
+2. Fetch the versioned manifest and all 15 SVG assets with a concurrency limit of three; prefer commit-pinned jsDelivr URLs and abort a stalled CDN request after 2.2 seconds before trying the local copy.
 3. Decode each image before adding it to `window.MshinAssets`.
 4. Report progress as each image finishes.
 5. Import `src/web-game.js` only after the preload pass completes.
