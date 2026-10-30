@@ -78,7 +78,16 @@ try {
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
-  process.stdout.write("Browser smoke passed: 10 worlds, 5 stages/world, visible canvas frames, desktop/mobile gameplay screenshots, audio toggle, race start, acceleration, pause/resume, stage exit, and mobile layout.\n");
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
+  await page.context().setOffline(true);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  assert.equal(await page.locator("#home").isVisible(), true, "game shell should load while offline after first visit");
+  await page.locator("#play").click();
+  assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
+  await page.context().setOffline(false);
+  process.stdout.write("Browser smoke passed: garage/car persistence, nitro pickups and boost, saved audio, 10 worlds, 50 stages, visible canvas, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\\n");
 } finally {
   await browser.close();
 }
