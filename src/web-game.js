@@ -44,11 +44,11 @@ function makeObstacles(){obstacles=[];for(let i=0;i<stage.hazards;i++){const t=(
 let trackCache=null,trackCacheStage=0,trackCacheBuilds=0;
 function drawTrack(){
  if(!trackCache||trackCacheStage!==stage.id){
-  const cache=document.createElement("canvas");cache.width=3200;cache.height=2400;trackCacheBuilds++;
-  const previous=ctx;ctx=cache.getContext("2d");ctx.setTransform(.5,0,0,.5,1600,1200);
+  const cache=document.createElement("canvas");cache.width=1600;cache.height=1200;trackCacheBuilds++;
+  const previous=ctx;ctx=cache.getContext("2d");ctx.setTransform(.5,0,0,.5,800,600);
   renderStaticTrack();ctx=previous;trackCache=cache;trackCacheStage=stage.id;
  }
- ctx.drawImage(trackCache,-3200,-2400,6400,4800);
+ ctx.drawImage(trackCache,-1600,-1200,3200,2400);
  renderTrackDynamics();
 }
 function renderStaticTrack(){const w=worlds[stage.world];ctx.fillStyle=w[1];ctx.fillRect(-1600,-1200,3200,2400);const worldArt=window.MshinAssets?.worlds?.[stage.world],sceneArt=window.MshinAssets?.scenes?.["scene-"+String(stage.world+1).padStart(2,"0")];if(sceneArt){ctx.save();ctx.globalAlpha=.72;ctx.drawImage(sceneArt,-1600,-1200,3200,2400);ctx.fillStyle=w[1]+"55";ctx.fillRect(-1600,-1200,3200,2400);ctx.restore()}else if(worldArt){ctx.save();ctx.globalAlpha=.24;ctx.drawImage(worldArt,-980,-650,1960,1300);ctx.restore()}
