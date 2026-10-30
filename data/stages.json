@@ -14,7 +14,8 @@
       "surface": "grass",
       "trackId": "track-01",
       "unlockAfter": null,
-      "gameplayStatus": "not-implemented"
+      "gameplayStatus": "browser-prototype",
+      "engineStatus": "cocos-not-implemented"
     },
     {
       "id": 2,
