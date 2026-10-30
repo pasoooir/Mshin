@@ -31,3 +31,10 @@ test('idle and brake never push a stopped car into reverse',()=>{
  stepCar(idle,{steer:0,throttle:false,brake:true},0.05);
  assert.equal(idle.speed,0);
 });
+
+test('low-grip world reduces steering response',()=>{
+ const normal={x:0,y:0,heading:0,speed:180},ice={x:0,y:0,heading:0,speed:180};
+ stepCar(normal,{steer:1,throttle:false,brake:false,grip:1},0.05);
+ stepCar(ice,{steer:1,throttle:false,brake:false,grip:0.68},0.05);
+ assert.ok(Math.abs(ice.heading)<Math.abs(normal.heading));
+});

@@ -1,6 +1,6 @@
 /** Engine-independent gameplay core for the Cocos Creator 3.8.6 adapter. */
 export interface CarState { x: number; y: number; heading: number; speed: number; }
-export interface DriveInput { steer: number; throttle: boolean; brake: boolean; offRoad?: boolean; }
+export interface DriveInput { steer: number; throttle: boolean; brake: boolean; offRoad?: boolean; grip?: number; }
 export interface TrackBounds { radiusX: number; radiusY: number; inner: number; outer: number; }
 export interface RaceState { lap: number; previousProgress: number; finished: boolean; elapsedSeconds: number; }
 export const GREEN_VALLEY_TRACK: Readonly<TrackBounds> = Object.freeze({ radiusX: 420, radiusY: 260, inner: 0.82, outer: 1.18 });
@@ -13,7 +13,7 @@ export function normalizeJoystick(dx: number, dy: number, radius: number): { x: 
 }
 export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number): CarState {
  const dt = clamp(deltaSeconds, 0, 1 / 20); const steer = clamp(input.steer, -1, 1);
- const throttle = input.throttle ? 1 : 0; const brake = input.brake ? 1 : 0; const grip = input.offRoad ? 0.42 : 1;
+ const throttle = input.throttle ? 1 : 0; const brake = input.brake ? 1 : 0; const grip = (input.offRoad ? 0.42 : 1) * (input.grip ?? 1);
  if (brake) car.speed = Math.max(0, car.speed - 560 * dt);
  else if (throttle) car.speed = clamp(car.speed + 306 * dt, 0, 360);
  else car.speed = Math.max(0, car.speed - 95 * dt);

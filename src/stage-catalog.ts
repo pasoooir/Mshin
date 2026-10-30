@@ -29,7 +29,13 @@ export const STAGES:readonly StageDefinition[]=Object.freeze(WORLD_THEMES.flatMa
 export function getStage(id:number):StageDefinition {const stage=STAGES.find(s=>s.id===id);if(!stage)throw new RangeError("Unknown stage id: "+id);return stage;}
 export function generateTrackPath(stage:StageDefinition,segments=96):Point[] {
  const points:Point[]=[],rx=560*stage.trackScale,ry=340*stage.trackScale;
- for(let i=0;i<segments;i++){const a=i*Math.PI*2/segments,seed=stage.seed,wave=1+.105*Math.sin(2*a+seed*.017)+.055*Math.cos(3*a+seed*.031)+.028*Math.sin(5*a+seed*.013),chicane=stage.stageInWorld===3?.075*Math.sin(7*a+seed*.01):0;points.push({x:Math.cos(a)*rx*(wave+chicane),y:Math.sin(a)*ry*(wave-chicane)});}
+ for(let i=0;i<segments;i++){
+  const a=i*Math.PI*2/segments,seed=stage.seed,phase=seed*.017;
+  const styleAmplitude=stage.routeStyle==="oval"?.025:stage.routeStyle==="sweeper"?.07:stage.routeStyle==="chicane"?.12:stage.routeStyle==="hairpin"?.095:.14;
+  const harmonic=stage.routeStyle==="oval"?2:stage.routeStyle==="sweeper"?2:stage.routeStyle==="chicane"?6:stage.routeStyle==="hairpin"?3:7;
+  const wave=1+styleAmplitude*Math.sin(harmonic*a+phase)+.045*Math.cos(3*a+seed*.031)+.022*Math.sin(5*a+seed*.013);
+  points.push({x:Math.cos(a)*rx*wave,y:Math.sin(a)*ry*(wave-.025*Math.sin(2*a+phase))});
+ }
  return points;
 }
 export function nearestTrackPoint(point:Point,path:readonly Point[]):{point:Point;distance:number;segment:number} {

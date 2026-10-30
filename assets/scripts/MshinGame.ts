@@ -78,7 +78,7 @@ export class MshinGame extends Component {
   this.worldNode.destroyAllChildren();const rn=new Node("World Renderer");this.worldNode.addChild(rn);const renderer=rn.addComponent(WorldRenderer);
   const path=renderer.configure(this.stage);
   this.carNode.destroy();this.carNode=new Node("Player Car");this.node.scene!.addChild(this.carNode);this.drawCar();
-  this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount);
+  this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount,this.stage.world.grip);
   this.vehicle.onLap=(lap)=>this.setText("lap","LAP  "+lap+" / "+this.stage.laps);
   this.setText("world",this.stage.world.name+"  •  STAGE "+String(id).padStart(2,"0"));
   this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
