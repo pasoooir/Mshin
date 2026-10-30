@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v3";
+const CACHE_NAME = "mshin-arcade-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
