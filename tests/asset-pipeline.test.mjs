@@ -45,11 +45,15 @@ test("service worker precaches all vector art before offline races", async () =>
 test("photographic world scenes are CDN-preloaded before the race runtime", async () => {
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  const cocos = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
   assert.match(loader, /scenes: Object\.fromEntries/);
   assert.match(game, /sceneArt/);
   assert.match(game, /\)\*1\.6/);
   assert.match(game, /,-36,-54,72,108/);
   assert.match(game, /rotate\(-c\.angle-Math\.PI\/2\)/, "race camera should follow the road tangent and keep the player car facing forward");
+  assert.match(cocos, /cameraNode\.angle=-this\.carNode\.angle/);
+  assert.match(cocos, /hudCanvas\.angle=this\.carNode\.angle/);
+  assert.match(cocos, /this\.carNode\.setScale\(1\.25,1\.25,1\)/);
 });
 test("race hot paths pool particles and use frame-driven collision cooldowns", async () => {
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
