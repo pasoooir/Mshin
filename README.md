@@ -8,12 +8,14 @@ Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from 
 
 The garage starts with three cars: Rally Fox (balanced), Comet GT (top speed), and Lynx 4x4 (high grip). Two additional cars — Thunder EV and Desert Raptor — can be unlocked with coins earned by finishing races. A local workshop lets players buy up to three engine, tyre-grip and nitro upgrades for each car. Five milestone achievements reward extra coins for a first finish, podiums, exploring worlds, collecting all cars and fully tuning a vehicle. Coins, unlocks, achievements, upgrade levels, best times and vehicle selection persist on the device. Collect glowing track pickups to recharge nitro, then trigger a temporary speed boost.
 
-The browser edition is a landscape installable PWA. Its versioned service worker (`mshin-arcade-v4`) refreshes the app shell and game modules so it can launch and remain playable offline after the first successful load. No backend is required for gameplay.
+The browser edition is a landscape installable PWA. Its versioned service worker (`mshin-arcade-v5`) precaches the complete 15-file vector art pack (10 world illustrations and five vehicle sprites) before the game is considered ready, and serves it offline. The browser boot process decodes art before importing the race runtime; gameplay does not fetch or decode art during a race. No backend is required for gameplay.
 
 ## Project implementation
 
 - Browser game entry: `index.html` + `src/web-game.js` (Canvas 2D, no external runtime dependency).
 - Cocos Creator runtime components: `assets/scripts/`.
+- Shared Cocos vector art palette/catalogue: `assets/resources/vector-art.json`; the Cocos runtime loads this `JsonAsset` before displaying the main menu and draws world landmarks and cars through `Graphics`.
+- Browser vector art: `assets/vector/` + `src/asset-manifest.json`; bounded preload/decode loader: `src/asset-loader.js`.
 - Engine-independent game logic and deterministic 50-stage catalog: `src/`.
 - World/stage planning metadata: `data/worlds.json`, `data/stages.json`.
 - 50 SVG stage concept previews: `cdn/previews/` (not final in-game art).
