@@ -44,6 +44,11 @@ try {
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
   assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 200, "no single game JS frame should exceed 200ms in smoke run");
   assert.equal(frameMetrics.trackCacheBuilds, 1, "static track and world art should be rasterized once per selected stage, not on every frame");
+  assert.equal(frameMetrics.trackRadiusX, 1180, "race should use a large world-space circuit instead of a compact loop");
+  assert.equal(frameMetrics.trackRadiusY, 760, "race should use a deep world-space circuit");
+  assert.ok(frameMetrics.roadWidth >= 230, "road surface should be wide enough to visually anchor the cars");
+  assert.equal(frameMetrics.playerHeadingOffsetDeg, 90, "player sprite nose should be aligned with the road tangent");
+  assert.equal(frameMetrics.cameraChase, true, "camera should keep the player facing forward on screen");
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
