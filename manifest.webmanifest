@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Mshin — 50 Stage Arcade Racing",
+  "name": "مِشین — مسابقه در ۵۰ مرحله",
   "short_name": "Mshin",
-  "description": "A colorful top-down arcade racing game across ten worlds and fifty stages.",
+  "description": "بازی مسابقه‌ای آرکید با نمای از بالا، ۱۰ دنیای متفاوت و ۵۰ مرحله هیجان‌انگیز.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -21,5 +21,5 @@
       "purpose": "any maskable"
     }
   ],
-  "version": "0.4.4"
+  "version": "0.4.5"
 }

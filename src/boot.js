@@ -7,14 +7,14 @@ const percentLabel = document.getElementById("assetPercent");
 try {
   await preloadGameAssets(({ loaded, total, percent, name }) => {
     bar.style.width = percent + "%";
-    label.textContent = `LOADING · ${loaded}/${total} · ${name.toUpperCase()}`;
+    label.textContent = `بارگذاری · ${loaded}/${total} · ${name}`;
     if (percentLabel) percentLabel.textContent = percent + "%";
   });
-  label.textContent = "ALL ASSETS READY · STARTING GAME";
+  label.textContent = "همه منابع آماده‌اند · بازی در حال اجراست";
   if (percentLabel) percentLabel.textContent = "100%";
 } catch (error) {
-  label.textContent = "STARTING WITH BUILT-IN ART";
-  if (percentLabel) percentLabel.textContent = "READY";
+  label.textContent = "بازی با تصاویر داخلی اجرا می‌شود";
+  if (percentLabel) percentLabel.textContent = "آماده";
   console.warn("Mshin asset preload fallback:", error);
 }
 await import("./web-game.js");

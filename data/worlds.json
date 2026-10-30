@@ -3,7 +3,7 @@
   "worlds": [
     {
       "id": "green-valley",
-      "name": "Green Valley",
+      "name": "دره سبز",
       "worldNumber": 1,
       "palette": [
         "#8bd46b",
@@ -14,7 +14,7 @@
     },
     {
       "id": "desert-storm",
-      "name": "Desert Storm",
+      "name": "توفان کویر",
       "worldNumber": 2,
       "palette": [
         "#f4c16e",
@@ -25,7 +25,7 @@
     },
     {
       "id": "frozen-world",
-      "name": "Frozen World",
+      "name": "سرزمین یخ",
       "worldNumber": 3,
       "palette": [
         "#a8e7f5",
@@ -36,7 +36,7 @@
     },
     {
       "id": "tropical-island",
-      "name": "Tropical Island",
+      "name": "جزیره استوایی",
       "worldNumber": 4,
       "palette": [
         "#48d5b2",
@@ -47,7 +47,7 @@
     },
     {
       "id": "neon-city",
-      "name": "Neon City",
+      "name": "شهر نئونی",
       "worldNumber": 5,
       "palette": [
         "#25265c",
@@ -58,7 +58,7 @@
     },
     {
       "id": "industrial-zone",
-      "name": "Industrial Zone",
+      "name": "منطقه صنعتی",
       "worldNumber": 6,
       "palette": [
         "#87939d",
@@ -69,7 +69,7 @@
     },
     {
       "id": "mountain-rush",
-      "name": "Mountain Rush",
+      "name": "یورش کوهستان",
       "worldNumber": 7,
       "palette": [
         "#80c5a0",
@@ -80,7 +80,7 @@
     },
     {
       "id": "ancient-world",
-      "name": "Ancient World",
+      "name": "دنیای باستان",
       "worldNumber": 8,
       "palette": [
         "#e6bd73",
@@ -91,7 +91,7 @@
     },
     {
       "id": "space-racing",
-      "name": "Space Racing",
+      "name": "مسابقه فضایی",
       "worldNumber": 9,
       "palette": [
         "#222653",
@@ -102,7 +102,7 @@
     },
     {
       "id": "ultimate-championship",
-      "name": "Ultimate Championship",
+      "name": "قهرمانی نهایی",
       "worldNumber": 10,
       "palette": [
         "#f06f68",
