@@ -67,3 +67,20 @@ test("barrier impact ignores outward-moving vehicles",()=>{
  const v=car(0,0,-120,0);const r=resolveBarrierImpact(v,-1,0);
  assert.equal(r.hit,false);
 });
+
+import { createVehicleDamage, addVehicleDamage, vehicleDamageLevel, resolveVehicleImpulse, resolveStaticBarrier } from "../.test-build/src/cocos-core.js";
+test("Cocos shared core resolves a frontal vehicle impulse with mass weighting",()=>{
+ const a={x:0,y:0,vx:260,vy:0,mass:1300,radius:18},b={x:36,y:0,vx:30,vy:0,mass:900,radius:18};
+ const hit=resolveVehicleImpulse(a,b);assert.ok(hit.hit);assert.ok(b.vx>30);assert.ok(hit.energy>0);
+});
+test("Cocos shared core reflects static barrier impacts and ignores separating motion",()=>{
+ const inward={x:0,y:0,vx:160,vy:20,mass:1200,radius:18},outward={x:0,y:0,vx:-160,vy:20,mass:1200,radius:18};
+ assert.equal(resolveStaticBarrier(inward,-1,0).hit,true);assert.ok(inward.vx<0);
+ assert.equal(resolveStaticBarrier(outward,-1,0).hit,false);
+});
+test("Cocos damage state accumulates by local panel and reduces to five levels",()=>{
+ const d=createVehicleDamage();assert.equal(vehicleDamageLevel(d),0);
+ addVehicleDamage(d,5_000_000,"rear");assert.ok(d.rear>0);assert.equal(d.front,0);
+ for(let i=0;i<3;i++)addVehicleDamage(d,5_000_000,"left");
+ assert.ok(vehicleDamageLevel(d)>=1);assert.ok(d.left>d.right);
+});
