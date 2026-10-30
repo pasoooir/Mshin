@@ -38,6 +38,7 @@ try {
   assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
   assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 200, "no single game JS frame should exceed 200ms in smoke run");
+  assert.equal(frameMetrics.trackCacheBuilds, 1, "static track and world art should be rasterized once per selected stage, not on every frame");
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
