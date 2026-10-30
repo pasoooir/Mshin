@@ -15,9 +15,13 @@ try {
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
+  await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable");
+  await page.screenshot({ path: "artifacts/mshin-world-select-desktop.png", fullPage: true });
+  const worldCards = await page.locator(".world").evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundImage));
+  assert.ok(worldCards.every((background, index) => background.includes("world-" + String(index + 1).padStart(2, "0") + ".svg")), "each world card should use its own vector artwork");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
   await page.getByRole("button", { name: /Comet GT/ }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
