@@ -15,4 +15,6 @@ jobs:
         with:
           node-version: 22
       - run: npm run validate:data
+      - run: node --check src/physics.js
+      - run: node --check src/game.js
       - run: npm test
