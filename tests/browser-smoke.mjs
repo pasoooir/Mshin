@@ -87,7 +87,7 @@ try {
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "small thumb movements around center should be ignored by the steering dead zone");
   await page.mouse.up();
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "releasing the steering pad should return the control to center");
-  assert.match(await steeringPad.getAttribute("aria-label"), /release to center/i, "steering instructions should be accessible");
+  assert.match(await steeringPad.getAttribute("aria-label"), /برای چرخیدن به چپ یا راست بکشید و رها کنید/, "steering instructions should be accessible in Persian");
   const canvasState = await page.locator("#game").evaluate(canvas => {
     const context = canvas.getContext("2d");
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
