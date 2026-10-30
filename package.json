@@ -12,7 +12,8 @@
     "validate:data": "node scripts/validate-game-data.mjs",
     "build:core": "tsc -p tsconfig.core.json",
     "test": "npm run build:core && node --test tests/*.test.mjs",
-    "check": "npm run validate:data && npm test"
+    "check": "npm run validate:data && npm run build:core && npm run check:cocos-syntax && npm test",
+    "check:cocos-syntax": "node scripts/check-cocos-syntax.mjs"
   },
   "engines": {
     "node": ">=20"
