@@ -80,6 +80,37 @@ try {
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
+  const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await economy.addInitScript(() => localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })));
+  economy.on("pageerror", error => errors.push(error.message));
+  await economy.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  await economy.locator("#play").click();
+  assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
+  assert.equal((await economy.locator("#credits").textContent()).trim(), "1000 🪙", "wallet should load saved coins");
+  assert.match(await economy.locator("#weatherInfo").textContent(), /CLEAR/, "Green Valley should use clear weather");
+  await economy.getByRole("button", { name: /Desert Storm/ }).click();
+  assert.match(await economy.locator("#weatherInfo").textContent(), /SAND/, "Desert Storm should select sand weather");
+  await economy.getByRole("button", { name: /Thunder EV/ }).click();
+  assert.equal(await economy.getByRole("button", { name: /Thunder EV/ }).getAttribute("class").then(v => v.includes("locked")), false, "purchased car should unlock");
+  await economy.getByRole("button", { name: /Thunder EV/ }).click();
+  assert.match(await economy.locator(".carChoice.active").textContent(), /Thunder EV/, "unlocked car should be selectable");
+  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(0).click();
+  assert.match(await economy.locator("#upgrades").textContent(), /Engine power · Lv 1\/3/, "engine upgrade should advance its level");
+  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(1).click();
+  await economy.getByRole("button", { name: /Upgrade · 180/ }).nth(1).click();
+  assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
+  await economy.reload({ waitUntil: "networkidle" });
+  await economy.locator("#play").click();
+  assert.match(await economy.locator(".carChoice.active").textContent(), /Thunder EV/, "unlocked selected car should persist after reload");
+  assert.match(await economy.locator("#upgrades").textContent(), /Engine power · Lv 1\/3/, "car upgrades should persist after reload");
+  await economy.getByRole("button", { name: /Desert Storm/ }).click();
+  await economy.locator("#startRace").click();
+  await economy.keyboard.down("ArrowUp");
+  await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 45000 });
+  await economy.keyboard.up("ArrowUp");
+  assert.match(await economy.locator("#finishText").textContent(), /You earned \d+ coins!/, "finishing a stage should award coins");
+  assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
+  assert.deepEqual(errors, [], "economy and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
@@ -89,7 +120,7 @@ try {
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
   await page.context().setOffline(false);
-  process.stdout.write("Browser smoke passed: garage/car persistence, nitro pickups and boost, saved audio, 10 worlds, 50 stages, visible canvas, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\\n");
+  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\\n");
 } finally {
   await browser.close();
 }
