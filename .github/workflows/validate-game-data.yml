@@ -1,4 +1,4 @@
-name: Validate game data and gameplay core
+name: Validate Mshin game data and portable TypeScript core
 on:
   push:
     branches: [main, "feat/**"]

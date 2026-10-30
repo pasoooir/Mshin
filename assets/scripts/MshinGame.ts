@@ -1,0 +1,136 @@
+import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, view, EventTouch, Input, input, KeyCode } from "cc";
+import { STAGES, WORLD_THEMES, StageDefinition } from "../../src/stage-catalog";
+import { VehicleController } from "./VehicleController";
+import { WorldRenderer } from "./WorldRenderer";
+import { ProgressStore, PlayerProgress } from "./ProgressStore";
+const {ccclass}=_decorator;
+type Screen="home"|"worlds"|"stages"|"race"|"paused"|"finished";
+const hex=(v:string)=>{const h=v.replace("#","");return new Color(parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),255);};
+@ccclass("MshinGame")
+export class MshinGame extends Component {
+ private screen:Screen="home";private stage:StageDefinition=STAGES[0];private progress:PlayerProgress=ProgressStore.load();private selectedWorld=0;
+ private cameraNode!:Node;private camera!:Camera;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;
+ private labels=new Map<string,Label>();private uiNodes:Node[]=[];private joystick!:Node;private knob!:Node;private stickId=-1;
+ private lastSize={width:0,height:0};private finishHandled=false;
+ start():void {
+  const scene=this.node.scene;if(!scene)throw new Error("Attach MshinGame to a node in the active Cocos Creator scene.");
+  this.cameraNode=new Node("Mshin Camera");scene.addChild(this.cameraNode);this.cameraNode.setPosition(0,0,1000);
+  this.camera=this.cameraNode.addComponent(Camera);this.camera.projection=Camera.ProjectionType.ORTHO;this.camera.orthoHeight=720;this.camera.near=1;this.camera.far=2000;this.camera.priority=1;
+  this.worldNode=new Node("Generated World");scene.addChild(this.worldNode);
+  this.carNode=new Node("Player Car");scene.addChild(this.carNode);this.drawCar();
+  this.vehicle=this.carNode.addComponent(VehicleController);
+  this.hudRoot=new Node("HUD and Menus");this.cameraNode.addChild(this.hudRoot);this.hudRoot.setPosition(0,0,-900);
+  this.createPersistentHud();this.bindKeyboard();this.showHome();this.resizeUi();
+ }
+ update():void {
+  if(this.screen==="race"){
+   this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
+   this.setText("speed","SPEED  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
+   this.setText("time","TIME  "+this.format(this.vehicle.race.elapsedSeconds));
+   this.setText("lap","LAP  "+this.vehicle.race.lap+" / "+this.stage.laps);
+   if(this.vehicle.race.finished&&!this.finishHandled){this.finishHandled=true;this.progress=ProgressStore.complete(this.stage,this.vehicle.race.elapsedSeconds);this.showFinished();}
+  }
+  const s=view.getVisibleSize();if(s.width!==this.lastSize.width||s.height!==this.lastSize.height)this.resizeUi();
+ }
+ private makeNode(name:string,parent:Node):Node {const n=new Node(name);parent.addChild(n);n.addComponent(UITransform).setContentSize(120,60);return n;}
+ private createPersistentHud():void {
+  const bg=this.makeNode("HUD Backdrop",this.hudRoot);const g=bg.addComponent(Graphics);g.fillColor=new Color(18,32,52,220);g.roundRect(-610,300,1220,86,18);g.fill();
+  this.addLabel("brand","MSHIN  •  ARCADE RACING",0,330,26,false);
+  this.addLabel("world","",0,294,15,false);
+  this.addLabel("lap","LAP  0 / 3",-420,330,18,false);this.addLabel("time","TIME  00:00",-260,330,18,false);this.addLabel("speed","SPEED  0",-90,330,18,false);
+ }
+ private addLabel(id:string,text:string,x:number,y:number,size:number,transient:boolean):Label {
+  const n=this.makeNode("Label "+id,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(390,48);
+  const l=n.addComponent(Label);l.string=text;l.fontSize=size;l.lineHeight=size+5;l.color=new Color(255,255,255,255);l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
+  this.labels.set(id,l);if(transient)this.uiNodes.push(n);return l;
+ }
+ private setText(id:string,value:string):void {const l=this.labels.get(id);if(l)l.string=value;}
+ private clearUi():void {for(const n of this.uiNodes){this.labels.forEach((v,k)=>{if(v.node===n)this.labels.delete(k);});n.destroy();}this.uiNodes=[];}
+ private addUiLabel(text:string,x:number,y:number,size:number):void {this.addLabel("screen-"+this.uiNodes.length,text,x,y,size,true);}
+ private button(text:string,x:number,y:number,w:number,h:number,action:()=>void):Node {
+  const n=this.makeNode("Button "+text,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(w,h);
+  const g=n.addComponent(Graphics);g.fillColor=hex("#F8C84E");g.roundRect(-w/2,-h/2,w,h,14);g.fill();g.strokeColor=hex("#FFF4CF");g.lineWidth=3;g.roundRect(-w/2,-h/2,w,h,14);g.stroke();
+  const l=n.addComponent(Label);l.string=text;l.fontSize=Math.min(23,h*.34);l.color=hex("#25334A");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
+  n.on(Node.EventType.TOUCH_END,action,this);this.uiNodes.push(n);return n;
+ }
+ private addButton(text:string,x:number,y:number,w:number,h:number,fn:()=>void):void {this.button(text,x,y,w,h,fn);}
+ private showHome():void {
+  this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("50 TRACKS  •  10 WORLDS  •  ONE CHAMPION",0,35,19);
+  this.addButton("RACE NOW",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
+  this.addButton("SELECT WORLD",0,-160,270,62,()=>this.showWorlds());
+  this.addUiLabel("UNLOCKED "+this.progress.unlockedStage+" / 50",0,-245,18);
+ }
+ private showWorlds():void {
+  this.screen="worlds";this.clearUi();this.addUiLabel("CHOOSE YOUR WORLD",0,245,34);
+  WORLD_THEMES.forEach((world,i)=>{const col=i%5,row=Math.floor(i/5),x=(col-2)*220,y=100-row*170;this.addButton(world.name,x,y,196,110,()=>{this.selectedWorld=i;this.showStages();});});
+  this.addButton("BACK",0,-280,170,54,()=>this.showHome());
+ }
+ private showStages():void {
+  this.screen="stages";this.clearUi();const world=WORLD_THEMES[this.selectedWorld];this.addUiLabel(world.name.toUpperCase()+"  •  SELECT STAGE",0,245,29);
+  for(let i=0;i<5;i++){const s=STAGES[this.selectedWorld*5+i],unlocked=ProgressStore.isUnlocked(s.id,this.progress),x=(i-2)*230;
+   this.addButton((unlocked?"▶ ":"🔒 ")+String(s.stageInWorld).padStart(2,"0")+"  "+s.name,x,35,210,112,()=>{if(unlocked)this.startStage(s.id);});
+   this.addUiLabel(this.progress.completed.includes(s.id)?"✓ COMPLETED":unlocked?"READY":"LOCKED",x,-42,13);
+  }
+  this.addButton("BACK",0,-205,170,54,()=>this.showWorlds());
+ }
+ private startStage(id:number):void {
+  this.stage=STAGES[id-1];this.screen="race";this.clearUi();this.finishHandled=false;
+  this.worldNode.destroyAllChildren();const rn=new Node("World Renderer");this.worldNode.addChild(rn);const renderer=rn.addComponent(WorldRenderer);
+  const path=renderer.configure(this.stage);
+  this.carNode.destroy();this.carNode=new Node("Player Car");this.node.scene!.addChild(this.carNode);this.drawCar();
+  this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount);
+  this.vehicle.onLap=(lap)=>this.setText("lap","LAP  "+lap+" / "+this.stage.laps);
+  this.setText("world",this.stage.world.name+"  •  STAGE "+String(id).padStart(2,"0"));
+  this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
+ }
+ private createControls():void {
+  this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(150,150);
+  const jg=this.joystick.addComponent(Graphics);jg.fillColor=new Color(255,255,255,50);jg.strokeColor=new Color(255,255,255,180);jg.lineWidth=5;jg.circle(0,0,66);jg.fill();jg.stroke();
+  this.knob=this.makeNode("Joystick Knob",this.joystick);this.knob.getComponent(UITransform)!.setContentSize(60,60);const kg=this.knob.addComponent(Graphics);kg.fillColor=hex("#EAF6D5");kg.circle(0,0,27);kg.fill();kg.strokeColor=hex("#407B50");kg.lineWidth=4;kg.circle(0,0,27);kg.stroke();
+  this.joystick.on(Node.EventType.TOUCH_START,this.onStickStart,this);this.joystick.on(Node.EventType.TOUCH_MOVE,this.onStickMove,this);this.joystick.on(Node.EventType.TOUCH_END,this.onStickEnd,this);this.joystick.on(Node.EventType.TOUCH_CANCEL,this.onStickEnd,this);
+  this.holdButton("BRAKE",350,-250,130,86,(v)=>this.vehicle.input.brake=v);
+  this.holdButton("GAS",510,-220,145,112,(v)=>this.vehicle.input.throttle=v);
+  this.addButton("Ⅱ",560,300,72,54,()=>this.pauseRace());
+ }
+ private holdButton(text:string,x:number,y:number,w:number,h:number,change:(held:boolean)=>void):void {
+  const n=this.makeNode(text,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(w,h);
+  const g=n.addComponent(Graphics);g.fillColor=hex(text==="GAS"?"#F18B3B":"#4779C7");g.roundRect(-w/2,-h/2,w,h,18);g.fill();g.strokeColor=hex("#FFFFFF");g.lineWidth=3;g.roundRect(-w/2,-h/2,w,h,18);g.stroke();
+  const l=n.addComponent(Label);l.string=text;l.fontSize=22;l.color=hex("#FFFFFF");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
+  n.on(Node.EventType.TOUCH_START,()=>change(true),this);n.on(Node.EventType.TOUCH_END,()=>change(false),this);n.on(Node.EventType.TOUCH_CANCEL,()=>change(false),this);this.uiNodes.push(n);
+ }
+ private onStickStart(e:EventTouch):void {this.stickId=e.getID();this.onStickMove(e);}
+ private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),len=Math.hypot(p.x,p.y)||1,scale=Math.min(1,58/len);this.knob.setPosition(p.x*scale,p.y*scale,0);this.vehicle.input.steer=Math.max(-1,Math.min(1,p.x/58));}
+ private onStickEnd(e:EventTouch):void {if(e.getID()!==this.stickId)return;this.stickId=-1;this.knob.setPosition(0,0,0);this.vehicle.input.steer=0;}
+ private pauseRace():void {
+  if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
+  this.addUiLabel("PAUSED",0,75,54);this.addButton("RESUME",0,-20,230,70,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;this.createControls();});
+  this.addButton("QUIT TO MENU",0,-115,230,60,()=>{this.vehicle.enabled=false;this.showHome();});
+ }
+ private showFinished():void {
+  this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
+  this.addUiLabel("🏆  FINISH!",0,85,56);this.addUiLabel("TIME  "+this.format(this.vehicle.race.elapsedSeconds),0,15,24);
+  this.addButton("NEXT STAGE",0,-75,250,70,()=>this.startStage(Math.min(50,this.stage.id+1)));
+  this.addButton("MAIN MENU",0,-165,230,58,()=>this.showHome());
+ }
+ private drawCar():void {
+  const g=this.carNode.addComponent(Graphics);g.fillColor=hex("#26313A");g.rect(-19,-26,10,18);g.fill();g.rect(9,-26,10,18);g.fill();g.rect(-19,8,10,18);g.fill();g.rect(9,8,10,18);g.fill();
+  g.fillColor=hex("#F15D4E");g.roundRect(-15,-34,30,68,9);g.fill();g.fillColor=hex("#BDEEFF");g.roundRect(-11,2,22,17,5);g.fill();g.fillColor=hex("#FFE9A8");g.circle(-8,27,3);g.fill();g.circle(8,27,3);g.fill();
+ }
+ private bindKeyboard():void {
+  input.on(Input.EventType.KEY_DOWN,(e)=>{if(this.screen!=="race")return;
+   if(e.keyCode===KeyCode.ARROW_LEFT||e.keyCode===KeyCode.KEY_A)this.vehicle.input.steer=-1;
+   if(e.keyCode===KeyCode.ARROW_RIGHT||e.keyCode===KeyCode.KEY_D)this.vehicle.input.steer=1;
+   if(e.keyCode===KeyCode.ARROW_UP||e.keyCode===KeyCode.KEY_W)this.vehicle.input.throttle=true;
+   if(e.keyCode===KeyCode.SPACE||e.keyCode===KeyCode.ARROW_DOWN)this.vehicle.input.brake=true;
+   if(e.keyCode===KeyCode.ESCAPE)this.pauseRace();
+  });
+  input.on(Input.EventType.KEY_UP,(e)=>{if(this.screen!=="race")return;
+   if([KeyCode.ARROW_LEFT,KeyCode.KEY_A,KeyCode.ARROW_RIGHT,KeyCode.KEY_D].includes(e.keyCode))this.vehicle.input.steer=0;
+   if(e.keyCode===KeyCode.ARROW_UP||e.keyCode===KeyCode.KEY_W)this.vehicle.input.throttle=false;
+   if(e.keyCode===KeyCode.SPACE||e.keyCode===KeyCode.ARROW_DOWN)this.vehicle.input.brake=false;
+  });
+ }
+ private resizeUi():void {const s=view.getVisibleSize();this.lastSize={width:s.width,height:s.height};}
+ private format(seconds:number):string {const m=Math.floor(seconds/60),v=Math.floor(seconds%60);return String(m).padStart(2,"0")+":"+String(v).padStart(2,"0");}
+ onDestroy():void {input.off(Input.EventType.KEY_DOWN);input.off(Input.EventType.KEY_UP);}
+}

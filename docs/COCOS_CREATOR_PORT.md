@@ -1,31 +1,30 @@
-# Cocos Creator 3.8.6 gameplay-core port
+# Cocos Creator 3.8.6 project foundation
 
-## What this change establishes
-The deterministic gameplay layer now has a TypeScript implementation in src/cocos-core.ts. It has no Cocos imports, so CI can compile and test the actual TypeScript logic without pretending the Cocos Editor is installed.
+## Project source added
 
-Included contracts:
-- CarState and DriveInput for a Cocos component adapter.
-- Joystick displacement normalization and safe zero-radius handling.
-- Capped-delta arcade acceleration, braking, steering and off-road grip.
-- Track-ring collision correction.
-- Race timer, start/finish crossing and configurable lap completion.
+This branch now contains a Cocos Creator 3.8.6 project configuration (package.json, settings/v2/packages/project.json, tsconfig.json) and native Cocos TypeScript components under assets/scripts/.
 
-## Required Editor integration (not yet verified)
-In Cocos Creator 3.8.6, create a project and scene in the Editor, then add adapters under assets/scripts/:
+- MshinGame.ts: runtime-created home, world and stage selection, race HUD, pause/results flow and touch/keyboard controls.
+- VehicleController.ts: arcade vehicle motion, route-edge correction, obstacle collision and lap/timer state.
+- WorldRenderer.ts: Cocos Graphics rendering for procedural routes and theme decoration.
+- ProgressStore.ts: offline local progress and best-time persistence.
+- src/stage-catalog.ts: 10 themed worlds, 50 stage definitions and procedural route generation.
 
-1. CarController: own a CarState, read the input provider and call stepCar from update(dt); map world coordinates to the chosen track coordinate system.
-2. VirtualJoystick: use touch start/move/end events, convert UI displacement with normalizeJoystick, and release active touch identifiers on cancellation/pause.
-3. PedalInput: expose held-state booleans for accelerator and brake.
-4. RaceManager: call updateRace, render lap/time state and persist completed-stage progress using platform storage.
-5. StageLoader: load JSON metadata and select the matching world theme, track and surface material.
+Scene content is created at runtime with Cocos Node, Graphics, Label, UITransform and Camera components. No hand-authored scene serialization is included.
 
-Do not hand-author serialized scene or prefab files. They must be created and opened by a compatible Cocos Creator Editor and smoke-tested.
+## Editor integration gate
 
-## Build and test status
-- npm run build:core compiles the engine-independent TypeScript core.
-- npm test compiles the core and runs Node tests against emitted JavaScript.
-- GitHub Actions verifies this portable core.
-- This does NOT prove Cocos Editor scene serialization, rendering, native Android builds, touch behavior on device, or Web builds. Those require Cocos Creator 3.8.6 Editor/build tooling and runtime checks.
+Cocos Creator 3.8.6 is not installed in the development container. The repository currently has no verified .scene asset and no generated Cocos library import state. Open the project in Cocos Creator 3.8.6, create a 2D scene under assets/scenes, add an empty root node, attach the MshinGame component and save it as the startup scene in Build Settings. This Editor-created scene is required before preview or build.
 
-## Next implementation gate
-Install/open the project with Cocos Creator 3.8.6, create the actual scene and component adapters, then validate browser and Android builds from the Editor. Until those checks pass, keep the browser Canvas prototype labeled as a prototype and do not mark the Cocos stage complete.
+Do not treat portable Node tests as an Editor build or runtime test. Cocos script compilation, scene import, touch event behavior, rendering and camera configuration still require validation in the actual Editor.
+
+## Verification boundary
+
+The Node suite compiles and tests engine-independent TypeScript stage catalog and driving core. It does not compile files importing cc because the Cocos Editor provides the matching engine declarations and project compiler configuration.
+
+## Targets
+
+- Web: Cocos Creator 3.8.6 Editor -> Project -> Build -> Web Mobile.
+- Android: requires Cocos Creator 3.8.6, Android SDK/NDK and Java toolchain configured in the Editor.
+- No APK/AAB or Cocos Web build is claimed until those tools produce real outputs.
+- Cloudflare R2 is not used.

@@ -1,9 +1,13 @@
 {
   "name": "mshin-2d-racing",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
-  "description": "Colorful 2D top-down arcade racing prototype and Cocos Creator gameplay core",
+  "description": "Mshin 2D top-down arcade racing game; Cocos Creator 3.8.6 and TypeScript",
+  "uuid": "b4f38e2e-9a6c-4c3e-ae8c-56c1d00c38a1",
+  "creator": {
+    "version": "3.8.6"
+  },
   "scripts": {
     "validate:data": "node scripts/validate-game-data.mjs",
     "build:core": "tsc -p tsconfig.core.json",
@@ -15,8 +19,5 @@
   },
   "devDependencies": {
     "typescript": "^5.8.3"
-  },
-  "creator": {
-    "version": "3.8.6"
   }
 }
