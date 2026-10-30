@@ -32,6 +32,7 @@ The JSON is lightweight vector drawing metadata rather than a bitmap atlas. This
 - Collision cooldowns are advanced in the frame update rather than scheduling one timeout per hit.
 - HUD DOM writes are throttled to 10 Hz in the browser runtime.
 - Cocos HUD label updates are throttled to 10 Hz.
+- Browser runtime publishes a rolling 120-frame JS-work telemetry window (`window.MshinPerformance`) with average, p95, max frame work, effective FPS, collisions, and pickups; the Playwright smoke test enforces generous anti-stall ceilings during a live race.
 - World and car vector drawing is done during setup/scene construction, not repeatedly rebuilt every frame.
 
 ## Verification and remaining gates
