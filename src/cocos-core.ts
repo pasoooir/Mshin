@@ -41,7 +41,7 @@ export function resolveVehicleImpulse(a:CollisionBody,b:CollisionBody,restitutio
  const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||.0001,nx=dx/len,ny=dy/len,rvx=a.vx-b.vx,rvy=a.vy-b.vy,closing=rvx*nx+rvy*ny,overlap=Math.max(0,a.radius+b.radius-len),ia=1/Math.max(1,a.mass),ib=1/Math.max(1,b.mass),sum=ia+ib;
  if(closing<=0&&overlap<=0)return {hit:false,energy:0,impulse:0,closingSpeed:0};
  const impulse=closing>0?(1+clamp(restitution,0,.8))*closing/sum:0;
- if(impulse){a.vx+=nx*impulse*ia;a.vy+=ny*impulse*ia;b.vx-=nx*impulse*ib;b.vy-=ny*impulse*ib;}
+ if(impulse){a.vx-=nx*impulse*ia;a.vy-=ny*impulse*ia;b.vx+=nx*impulse*ib;b.vy+=ny*impulse*ib;}
  if(overlap){const correction=Math.max(0,overlap-.01)*.72/sum;a.x-=nx*correction*ia;a.y-=ny*correction*ia;b.x+=nx*correction*ib;b.y+=ny*correction*ib;}
  return {hit:true,energy:.5*(1/sum)*closing*closing,impulse,closingSpeed:Math.max(0,closing)};
 }
