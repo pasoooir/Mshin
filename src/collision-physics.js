@@ -33,8 +33,8 @@ export function resolveVehicleImpact(a, b, options = {}) {
   const impulse = closing > 0 ? (1 + restitution) * closing / invSum : 0;
   if (impulse) {
     const ix = nx * impulse, iy = ny * impulse;
-    a.vx += ix * invA; a.vy += iy * invA;
-    b.vx -= ix * invB; b.vy -= iy * invB;
+    a.vx -= ix * invA; a.vy -= iy * invA;
+    b.vx += ix * invB; b.vy += iy * invB;
     const tx = -ny, ty = nx, tangentSpeed = rvx * tx + rvy * ty;
     const friction = Math.max(0, Math.min(.8, options.tangentialFriction ?? COLLISION_TUNING.tangentialFriction));
     const jt = Math.max(-impulse * friction, Math.min(impulse * friction, -tangentSpeed / invSum));
