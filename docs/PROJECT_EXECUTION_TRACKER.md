@@ -5,7 +5,7 @@ Last evidence refresh: 2026-10-30
 ## Repository and delivery state
 
 - Default branch `main` includes merge commit `36fa6d7673ec4fd0f91db73be4487d8d67eef22a` (PR #7), following PR #6 merge commit `722ec96f62a1a78c2832219cb41eb17ac31c7da8`.
-- PR #1 (Cocos/game foundation), PR #2 (50-stage browser edition), PR #3 (Playwright browser QA), PR #4 (browser race audio and mute control), PR #5 (visible car animation and particles), PR #6 (garage, nitro and offline PWA), and PR #7 (AI rivals, live position, minimap and mobile HUD refinement) are merged. PR #7 adds AI rivals, live race position and a minimap; it is awaiting merge after validation.
+- PR #1 (Cocos/game foundation), PR #2 (50-stage browser edition), PR #3 (Playwright browser QA), PR #4 (browser race audio and mute control), PR #5 (visible car animation and particles), PR #6 (garage, nitro and offline PWA), and PR #7 (AI rivals, live position, minimap and mobile HUD refinement) are merged.
 - PR #4 adds dependency-free Web Audio engine tone, collision and finish effects, lazy AudioContext initialization after user interaction, and an accessible mute toggle.
 - PR #4 validation passed: merged-main run `41064474829`; source-branch push and PR validation runs `41063447733` and `41063457438` also passed.
 - PR #5 adds animated car details, world-accent lighting, exhaust trails, collision bursts and a finish celebration; it also verifies non-blank canvas pixels and captures desktop/mobile gameplay previews.
@@ -18,7 +18,7 @@ Last evidence refresh: 2026-10-30
 - PR #7 adds three AI rival cars with independent progress, live 1–4 race position, a circuit minimap with player/rival markers, finish placement feedback, and compact portrait HUD spacing. PR browser validation run `41070776069` passed; merged-main validation run `41071069297` passed after the service-worker cache version was advanced to `mshin-arcade-v2` so returning offline users receive the updated game.
 - GitHub Pages build and deployment for merge commit `36fa6d7673ec4fd0f91db73be4487d8d67eef22a` succeeded in run `41071069211`.
 - Main contains `index.html`, `src/web-game.js`, `src/audio.js`, and `tests/browser-smoke.mjs`; CI captures desktop and mobile gameplay screenshots.
-- PR #7 adds three AI rival cars with independent progress, colored rival vehicles, a live 1–4 position indicator, a compact circuit minimap with player/rival markers, and finishing-position feedback. Validation run `41070456724` passed syntax checks, Node tests, and desktop/mobile Playwright smoke including the new live-position assertion; screenshot artifacts were uploaded.
+- The next feature branch adds a coin economy with first-clear/replay rewards and placement bonuses, two unlockable cars (Thunder EV and Desert Raptor), persistent per-car engine/grip/nitro upgrades, ten world-specific weather profiles with animated rain/snow/sand/dust/cosmic effects and handling changes, plus a cache-version bump to `mshin-arcade-v3`. Its expanded Playwright suite covers wallet persistence, car unlocks, workshop purchases, weather selection, and a complete rewarded race; this branch is pending CI evidence.
 - No Cloudflare R2, D1, KV, Durable Objects, paid storage, or paid services are used.
 
 ## Evidence-based status
@@ -30,14 +30,14 @@ Last evidence refresh: 2026-10-30
 | Cocos Creator project/runtime integration | 🔴 | 20% | Project metadata and runtime scripts are in `assets/scripts/`; no Editor-created startup scene, engine type-check, Editor import, or Cocos preview/build has been verified. |
 | Cocos world visuals and hazards | 🟡 | 38% | Theme-specific decorations, route generation and hazard drawing are implemented in source; Creator visual QA is outstanding. |
 | Cocos menus, selection and HUD | 🟡 | 35% | Runtime-created screens and controls exist; Editor/device responsive QA is outstanding. |
-| Browser playable edition | 🟡 | 94% | Browser game has 10 world palettes, 50 stages, three selectable cars, three AI rivals, live race position, circuit minimap, touch/keyboard controls, lap timer, pause/finish, local records, themed scenery, animated hazards, audio, particles and nitro boosts. Full race balance, real-device QA and final art polish remain. |
-| Browser automated QA | 🟢 | 100% | Playwright/Chromium verifies 10 worlds/50 stages, garage selection and persistence, mute preference persistence, nitro pickup/charge/consumption, live race position among three AI rivals, visible canvas pixels, desktop/mobile screenshots, pause/resume, touch control sizing, offline PWA reload/playability and no uncaught page errors. PR #7 validation run `41070456724` passed. |
-| Audio, animation and polish | 🟡 | 56% | Browser engine tone, collision/finish audio, saved mute setting, animated vehicle wheels/body lighting, AI rival cars, minimap, exhaust particles, nitro trails, collision bursts and finish celebration are implemented and covered by Chromium smoke tests. More car animations, environment effects and final polish remain. |
-| Persistence and records | 🟡 | 76% | Browser localStorage stores completion, best times, selected car and audio preference; Playwright verifies settings survive reload and cached offline startup. Storage quota/private-mode edge cases and Cocos adapter verification remain. No server leaderboard. |
+| Browser playable edition | 🟡 | 95% | Feature branch adds five-car garage (two coin unlocks), persistent engine/grip/nitro workshop upgrades, first-clear and placement rewards, ten weather profiles with animated effects and weather-dependent handling; three AI rivals, live ranking, minimap, nitro, 50 stages and offline PWA remain intact. Expanded race/economy tests are pending CI. |
+| Browser automated QA | 🟡 | 90% | Existing desktop/mobile Playwright suite passed for the 50-stage game, AI rivals, garage, nitro and offline launch. New assertions now cover coin payouts, unlock purchases, three persistent upgrade types, weather selection and a full race finish; await branch CI before restoring green status. |
+| Audio, animation and polish | 🟡 | 60% | Browser engine tone, collision/finish audio, saved mute setting, animated vehicle details, AI rival cars, minimap, exhaust particles, nitro trails, collision bursts, finish celebration and animated weather overlays are implemented. More vehicle/environment animation and final art polish remain. |
+| Persistence and records | 🟡 | 82% | Browser localStorage now stores completion, best times, selected car, sound, wallet balance, unlocks and per-car engine/grip/nitro levels; backward-compatible migration supplies starter cars and a zero-coin wallet for older saves. Expanded reload/purchase/race-reward checks are pending CI. No server leaderboard. |
 | Cloudflare Worker backend | 🟡 | 35% | Stateless health/config API and seven tests exist; not deployed or wired to a live game endpoint. |
 | Portable automated tests | 🟢 | 100% | PR #7 validation run `41070456724` passed Node tests, syntax checks and Playwright desktop/mobile smoke tests covering AI-rival position HUD, garage, saved settings, nitro gameplay, rendered canvas, screenshots and offline PWA launch. |
 | GitHub Pages delivery | 🟢 | 100% | Pages build and deploy for merge commit `36fa6d7673ec4fd0f91db73be4487d8d67eef22a` succeeded in run `41071069211`. |
-| PWA installability and offline support | 🟡 | 90% | Manifest, vector icon and offline-first service worker are deployed; Playwright verified the game shell and world selector work offline after first visit. Native install prompt and device-specific install UX remain to verify. |
+| PWA installability and offline support | 🟡 | 90% | Manifest and vector icon remain; feature branch advances the app-shell cache to `mshin-arcade-v3` so returning offline users receive economy/workshop/weather changes after deployment. Native install prompt and device-specific install UX remain to verify. |
 | Cocos Web build and browser QA | 🔴 | 0% | No Creator-generated Web output; requires Creator 3.8.6 and a real startup scene. Browser Canvas edition is separate from a Cocos build. |
 | Android APK/AAB and device QA | 🔴 | 0% | No APK/AAB; Android SDK/NDK/native toolchain and device testing are unavailable in the inspected runner. |
 
@@ -52,8 +52,9 @@ Last evidence refresh: 2026-10-30
 - Final-main validation with vehicle-relative AI pace balancing: https://github.com/pasoooir/Mshin/actions/runs/41071431670 — success.
 - Last confirmed successful GitHub Pages deployment: https://github.com/pasoooir/Mshin/actions/runs/41071069211 — success.
 - Latest Pages build: https://github.com/pasoooir/Mshin/actions/runs/41071430943 — build success; deploy step failed twice with GitHub API HTTP 500.
-- PR #7 (awaiting merge): https://github.com/pasoooir/Mshin/pull/7 — three AI rivals, live position indicator, minimap and finish placement.
+- PR #7 merged: https://github.com/pasoooir/Mshin/pull/7 — three AI rivals, live position indicator, minimap and finish placement.
 - PR #7 validation: https://github.com/pasoooir/Mshin/actions/runs/41070456724 — success; browser QA and desktop/mobile screenshots passed.
+- Current feature branch `feat/coin-garage-upgrades-weather` adds coin rewards, two unlockable cars, three upgrade tracks per car, weather effects and handling profiles; awaiting expanded CI.
 - PR #6 push validation: https://github.com/pasoooir/Mshin/actions/runs/41067407332 — success.
 - PR #6 browser QA and screenshot artifact: https://github.com/pasoooir/Mshin/actions/runs/41067417413 — success.
 - Merged-main validation: https://github.com/pasoooir/Mshin/actions/runs/41067626291 — success.
@@ -67,9 +68,9 @@ Last evidence refresh: 2026-10-30
 
 - Main entry: `index.html`; runtime: `src/web-game.js`; audio module: `src/audio.js`.
 - 10 themed worlds, 5 stages per world, 5 route styles, world-specific trackside scenery, hazard silhouettes and handling grip.
-- World/stage selection, three-car garage, three AI rivals, live race ranking, track minimap, keyboard steering, touch joystick/pedals/nitro, throttle/brake, collectible nitro boost, 3-lap race flow, pause/finish, local completion and best-time records.
+- World/stage selection, five-car garage (three starters plus two coin unlocks), per-car engine/grip/nitro workshop upgrades, first-clear/replay coin rewards with placement bonuses, three AI rivals, live race ranking, track minimap, ten world-specific weather profiles and weather-dependent handling, keyboard steering, touch joystick/pedals/nitro, collectible nitro boost, 3-lap race flow, pause/finish, local completion and best-time records.
 - Audio is generated through the Web Audio API without downloaded audio assets or third-party runtime dependencies. AudioContext initializes after user interaction; mute/unmute is available in the HUD.
-- No third-party runtime dependencies; progress and settings are stored locally in the browser. A versioned service worker (`mshin-arcade-v2`) caches the app shell and refreshes old caches so returning offline users receive updated gameplay after deployment.
+- No third-party runtime dependencies; progress and settings are stored locally in the browser. A versioned service worker (`mshin-arcade-v3` on the current feature branch) caches the app shell and refreshes old caches so returning offline users receive updated gameplay after deployment.
 - Automated Chromium tests exercise desktop and mobile menu-to-race flow and save `mshin-gameplay-desktop.png` and `mshin-gameplay-mobile.png` as the `mshin-gameplay-previews` workflow artifact. Full race completion, performance on low-end Android, touch gesture ergonomics, audio hardware compatibility, and art quality remain to be tuned.
 
 ## Cocos build feasibility and external gates
