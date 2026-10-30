@@ -89,8 +89,8 @@ test("all app cache and asset version markers are advanced together", async () =
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   assert.match(sw, /mshin-arcade-v10/);
   assert.match(html, /boot\.js\?v=2026.10.30.7/);
-  assert.equal(manifest.version, "2026.10.30.6");
-  assert.equal(pkg.version, "0.4.3");
-  assert.equal(pwa.version, "0.4.3");
+  assert.equal(manifest.version, "2026.10.30.7");
+  assert.equal(pkg.version, "0.4.4");
+  assert.equal(pwa.version, "0.4.4");
   assert.equal(cocos.version, "2026.10.30.5");
 });
