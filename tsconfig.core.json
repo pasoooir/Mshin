@@ -10,8 +10,5 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": [
-    "src/cocos-core.ts",
-    "src/stage-catalog.ts"
-  ]
+  "include": ["src/cocos-core.ts", "src/stage-catalog.ts", "src/progress.ts"]
 }
