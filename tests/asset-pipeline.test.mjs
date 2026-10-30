@@ -87,7 +87,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /#select \.actions\{position:sticky/);
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   assert.match(boot, /assetPercent/);
-  assert.match(boot, /ALL ASSETS READY/);
+  assert.match(boot, /همه منابع آماده‌اند/);
 });
 
 test("all app cache and asset version markers are advanced together", async () => {
@@ -101,5 +101,5 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(manifest.version, "2026.10.30.8");
   assert.equal(pkg.version, "0.4.5");
   assert.equal(pwa.version, "0.4.5");
-  assert.equal(cocos.version, "2026.10.30.5");
+  assert.equal(cocos.version, "2026.10.30.6");
 });
