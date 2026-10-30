@@ -1,0 +1,9 @@
+# Vehicle collision and damage model
+
+The browser runtime uses a deterministic, engine-independent 2D impulse solver in `src/collision-physics.js`. Vehicles carry world-space velocity, approximate mass and a collision radius. A contact normal is computed from the two centers; only closing relative velocity generates an impulse. Restitution and bounded tangential friction dissipate energy, while inverse-mass positional correction prevents persistent overlap. Static barriers use a one-body normal reflection.
+
+Impact energy is estimated from reduced mass and normal closing speed. Each vehicle has cumulative 0–100 damage with independent front/rear/left/right zones and engine wear. Five presentation bands (0–4) drive performance loss, smoke, localized body overlays and critical disablement. Small impacts are capped and do not instantly destroy a car. Damage persists for the current race only.
+
+The browser integrates the player's longitudinal/lateral velocity with the impulse result and updates rival speed and lateral drift. A short contact cooldown prevents repeated impulses while bodies overlap. Trackside hazard contacts use the static-barrier solver. Vehicle-to-vehicle contacts are resolved for the player and AI rivals; AI-to-AI contacts are not yet part of the browser race simulation.
+
+Validation: `node --test tests/collision-physics.test.mjs` covers rear, head-on, left/right side, oblique, static barrier, overlap correction, closing-direction guard, mass response, cumulative/localized damage and critical state. Browser smoke verifies the race runtime imports the solver and renders damage state. Actual Android-device and Cocos Creator Editor testing still require those environments.
