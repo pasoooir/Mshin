@@ -1,4 +1,4 @@
-name: Validate game data
+name: Validate game data and gameplay core
 on:
   push:
     branches: [main, "feat/**"]
@@ -15,3 +15,4 @@ jobs:
         with:
           node-version: 22
       - run: npm run validate:data
+      - run: npm test
