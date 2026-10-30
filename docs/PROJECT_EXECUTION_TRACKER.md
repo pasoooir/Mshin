@@ -2,7 +2,7 @@
 
 Last evidence refresh: 2026-10-30
 Working branch: `feat/game-foundation-and-stage-art`
-Validated source head: `50f3564bf0bca17a909d67afb254945524d9ceec`
+Validated source head: pending gameplay-handling CI on the current branch head.
 PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, draft, not merged.
 
 ## Status and progress
@@ -10,14 +10,14 @@ PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, draft, not merged.
 | Workstream | Status | Progress | Acceptance evidence / remaining gate |
 |---|---:|---:|---|
 | Repository foundation and 10-world/50-stage catalog | 🟡 | 55% | 50 deterministic definitions and 10 themes validate; all stages still need actual Cocos playtesting and balance. |
-| Portable driving/race core | 🟡 | 60% | Engine-independent TypeScript builds and unit tests pass; adapter/race behavior needs engine tests. |
+| Portable driving/race core | 🟡 | 68% | Off-road driving now has reduced acceleration, lower speed ceiling and stronger coasting drag; race clock and physics share a 50 ms frame cap; invalid input/delta handling is covered by regression tests. Gameplay balance and Cocos adapter verification remain. |
 | Cocos Creator project/runtime integration | 🔴 | 20% | Project metadata and four Cocos scripts exist; no Editor-created scene, engine type-check, import, preview or runtime evidence. |
 | Visual environments and hazards | 🟡 | 38% | Per-world hazard silhouettes (9 hazard families), procedural track/decor and generated stage-track thumbnails exist; no Creator visual QA. |
 | Menus, world/stage selection and HUD | 🟡 | 35% | Runtime-created screens and controls exist; responsive layout and interactions need Editor/device testing. |
 | Audio, animation and polish | ⬜ | 0% | Motor/brake/impact audio, particles and motion polish not implemented. |
 | Persistence and records | 🟡 | 55% | Pure progress domain logic now normalizes corrupt/invalid records, deduplicates completions, validates stage/time inputs and preserves best times; Cocos localStorage adapter still needs Editor/runtime verification. |
 | Cloudflare Worker backend | 🟡 | 35% | Stateless `workers.js` API provides health/config, exact-origin CORS and 7 tests; not deployed or connected to a live game client. No R2/D1/KV or paid storage. |
-| Portable automated tests | 🟢 | 100% | Latest push and PR Actions passed; **36 Node tests passed, 0 failed** (including 8 progress-domain tests and 7 Worker tests). This does not prove Cocos runtime correctness. |
+| Portable automated tests | 🟡 | 90% | Expanded gameplay-core regression tests are committed; fresh push/PR Actions validation is pending. Passing tests do not prove Cocos runtime correctness. |
 | Cocos Web build and browser QA | 🔴 | 0% | No real Cocos Web output; requires Creator 3.8.6 and a valid startup scene. |
 | Android APK/AAB and device QA | 🔴 | 0% | No APK/AAB; Android SDK/NDK and native build environment absent in inspected runner. |
 | CI/CD and delivery | 🟡 | 35% | Portable validation includes Worker syntax/API tests and progress-domain tests; Editor-backed builds and artifact publishing remain. |
@@ -45,6 +45,19 @@ PR: [#1](https://github.com/pasoooir/Mshin/pull/1) — open, draft, not merged.
 - The Worker is stateless. Player progress remains local-first; no leaderboard or server persistence is claimed.
 - No R2, D1, KV, Durable Objects, storage bindings, secrets or paid services are configured.
 - Worker deployment and production endpoint wiring have not been performed.
+
+## Gameplay handling hardening (2026-10-30)
+
+- Off-road driving applies reduced throttle acceleration, a lower speed ceiling and stronger coasting drag, in addition to reduced steering grip.
+- Physics simulation and race elapsed time now use the same 50 ms maximum frame step, preventing dropped-frame spikes from advancing the timer faster than the vehicle simulation.
+- Non-finite joystick coordinates, steering input and frame deltas are handled safely rather than propagating NaN into car/race state.
+- Added regression tests for off-road handling, long-frame timing consistency and invalid input/delta values.
+- These are portable-core checks only; Cocos Editor import, scene, visual handling and device testing remain outstanding.
+
+## GitHub Actions evidence
+
+- Previous validated head: `c90f58f1070b89ca00ef8b545f8ae964a7e659bf`; previous push/PR runs passed with 36 tests.
+- New gameplay-core changes require fresh push and PR runs. Do not mark this workstream verified until both pass.
 
 ## Cocos build feasibility
 
