@@ -40,13 +40,13 @@ try {
   await page.waitForTimeout(2400);
   await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
-  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, { timeout: 6000 });
+  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 6000 });
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
   await page.keyboard.down("Shift");
   await page.waitForTimeout(120);
   await page.keyboard.up("Shift");
-  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) < 50);
+  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) < 50, undefined, { timeout: 3000 });
   assert.ok(parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width)) < chargedNitro, "nitro boost should consume stored charge");
   const canvasState = await page.locator("#game").evaluate(canvas => {
     const context = canvas.getContext("2d");
