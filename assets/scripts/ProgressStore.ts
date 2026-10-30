@@ -13,7 +13,7 @@ export class ProgressStore {
   }catch{return fresh();}
  }
  static save(p:PlayerProgress):void{sys.localStorage.setItem(KEY,JSON.stringify(p));}
- static isUnlocked(id:number,p=ProgressStore.load()):boolean{return id<=p.unlockedStage;}
+ static isUnlocked(id:number,_p=ProgressStore.load()):boolean{return Number.isInteger(id)&&id>=1&&id<=50;}
  static complete(stage:StageDefinition,time:number):PlayerProgress {
   const p=ProgressStore.load();if(!p.completed.includes(stage.id))p.completed.push(stage.id);
   p.unlockedStage=Math.max(p.unlockedStage,Math.min(50,stage.id+1));

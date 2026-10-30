@@ -59,7 +59,7 @@ export class MshinGame extends Component {
   this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("50 TRACKS  •  10 WORLDS  •  ONE CHAMPION",0,35,19);
   this.addButton("RACE NOW",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
   this.addButton("SELECT WORLD",0,-160,270,62,()=>this.showWorlds());
-  this.addUiLabel("UNLOCKED "+this.progress.unlockedStage+" / 50",0,-245,18);
+  this.addUiLabel("NEXT STAGE "+this.progress.unlockedStage+" / 50",0,-245,18);
  }
  private showWorlds():void {
   this.screen="worlds";this.clearUi();this.addUiLabel("CHOOSE YOUR WORLD",0,245,34);
