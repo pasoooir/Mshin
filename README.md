@@ -4,11 +4,11 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 ## Play the browser edition
 
-Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from **10 themed worlds and 50 playable stages**. The browser edition includes procedural tracks, themed scenery and hazards, touch joystick, gas/brake/nitro controls, keyboard controls, lap timing, three AI rivals, live race position, a circuit minimap, weather effects and weather-dependent handling, pause/finish screens, and local best-time/progress storage.
+Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from **10 themed worlds and 50 playable stages**. The browser edition includes large-scale race circuits, a forward-facing chase camera, wider multi-lane road surfaces, tangent-aligned player and rival cars, themed scenery and hazards, touch steering, gas/brake/nitro controls, keyboard controls, lap timing, three AI rivals, live race position, a circuit minimap, weather effects and weather-dependent handling, pause/finish screens, and local best-time/progress storage.
 
 The garage starts with three cars: Rally Fox (balanced), Comet GT (top speed), and Lynx 4x4 (high grip). Two additional cars — Thunder EV and Desert Raptor — can be unlocked with coins earned by finishing races. A local workshop lets players buy up to three engine, tyre-grip and nitro upgrades for each car. Five milestone achievements reward extra coins for a first finish, podiums, exploring worlds, collecting all cars and fully tuning a vehicle. Coins, unlocks, achievements, upgrade levels, best times and vehicle selection persist on the device. Collect glowing track pickups to recharge nitro, then trigger a temporary speed boost.
 
-The browser edition is a landscape installable PWA. Its versioned service worker (`mshin-arcade-v7`) precaches the 15 vector illustrations/sprites and refreshes the complete app shell; photographic world scenes are decoded before the menu appears before the game is considered ready, and serves it offline. The browser boot process decodes art before importing the race runtime; gameplay does not fetch or decode art during a race. No backend is required for gameplay.
+The browser edition is version 0.4.3, a landscape installable PWA. Its versioned service worker (`mshin-arcade-v9`) precaches the 15 vector illustrations/sprites and refreshes the complete app shell; photographic world scenes are decoded before the menu appears before the game is considered ready, and serves it offline. The browser boot process decodes art before importing the race runtime; gameplay does not fetch or decode art during a race. No backend is required for gameplay.
 
 ## Project implementation
 

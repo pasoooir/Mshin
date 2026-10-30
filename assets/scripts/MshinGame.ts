@@ -18,7 +18,7 @@ export class MshinGame extends Component {
   this.cameraNode=new Node("Mshin Camera");scene.addChild(this.cameraNode);this.cameraNode.setPosition(0,0,1000);
   this.camera=this.cameraNode.addComponent(Camera);this.camera.projection=Camera.ProjectionType.ORTHO;this.camera.orthoHeight=720;this.camera.near=1;this.camera.far=2000;this.camera.priority=1;
   this.worldRoot=new Node("World Canvas");scene.addChild(this.worldRoot);
-  this.worldRoot.addComponent(UITransform).setContentSize(3600,2400);
+  this.worldRoot.addComponent(UITransform).setContentSize(5200,3600);
   const worldCanvas=this.worldRoot.addComponent(Canvas);worldCanvas.cameraComponent=this.camera;worldCanvas.alignCanvasWithScreen=false;
   this.worldNode=new Node("Generated World");this.worldRoot.addChild(this.worldNode);
   this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
