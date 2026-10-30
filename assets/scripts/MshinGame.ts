@@ -32,7 +32,7 @@ export class MshinGame extends Component {
  }
  update(dt:number):void {
   if(this.screen==="race"){
-   this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
+   this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);this.cameraNode.angle=-this.carNode.angle;this.hudCanvas.angle=this.carNode.angle;
    this.hudRefresh+=dt;if(this.hudRefresh>=.1){this.hudRefresh=0;
     this.setText("speed","SPEED  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
     this.setText("time","TIME  "+this.format(this.vehicle.race.elapsedSeconds));
@@ -135,6 +135,7 @@ export class MshinGame extends Component {
   this.addButton("MAIN MENU",0,-165,230,58,()=>this.showHome());
  }
  private drawCar():void {
+  this.carNode.setScale(1.25,1.25,1);
   const g=this.carNode.addComponent(Graphics),paint=this.artLibrary?.cars?.rally??{body:"#F15D4E",highlight:"#FFD4A5",glass:"#BDEEFF",trim:"#26313A"};
   g.fillColor=new Color(4,12,24,75);g.ellipse(2,-3,22,39);g.fill();
   g.fillColor=hex(paint.trim);g.roundRect(-22,-27,12,21,4);g.fill();g.roundRect(10,-27,12,21,4);g.fill();g.roundRect(-22,8,12,21,4);g.fill();g.roundRect(10,8,12,21,4);g.fill();
