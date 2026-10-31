@@ -99,6 +99,30 @@
 @media(max-width:700px){#select{padding:6px}#select .gtMenu{width:100%;height:96svh;max-height:96svh;padding:12px;border-radius:18px;gap:9px}.menuHeader h1{font-size:22px}.menuHeader p{font-size:10px}.menuWallet{min-width:95px;padding:7px}.menuTabs{gap:5px}.menuTab{min-width:86px;padding:8px 10px;font-size:10px}.menuTab span{font-size:14px}.sectionHeading h2{font-size:17px}.sectionHeading p{font-size:9px}.sectionCounter{font-size:8px;padding:6px 8px}.tabPanel{gap:8px}.worldCard{width:142px}.worldArt{height:clamp(92px,17vh,130px)}#select .stages{min-height:94px;max-height:112px}.stageCard{width:135px}.stageArt{height:50px}.carChoice{width:165px}.carArt{height:clamp(100px,20vh,145px)}.upgrade{width:170px;min-height:145px;padding:12px}.achievement{width:165px;min-height:145px;padding:12px}.settingsGrid{grid-template-columns:1fr;gap:8px}.settingCard{min-height:0;padding:10px;display:grid;grid-template-columns:35px 1fr auto;align-items:center;gap:8px}.settingIcon{font-size:21px}.menuFooter button{min-width:92px;padding:9px 10px;font-size:10px}.footerSelection{font-size:9px}}
 @media(max-height:620px) and (max-width:900px){#select .gtMenu{height:98svh;max-height:98svh;gap:6px;padding:9px}.menuHeader p{display:none}.menuTab{padding:6px 9px}.sectionHeading p{display:none}.worldArt{height:88px}.carArt{height:105px}.menuFooter{padding-top:6px}.menuFooter button{padding:7px 10px}}
 @media(prefers-reduced-motion:reduce){.menuTab,.worldCard,.worldArt img,.carArt img{transition:none}}
+
+/* 0.8.7 premium 3D showroom */
+#select .gtMenu{perspective:1500px;transform-style:preserve-3d}
+#select .visualRail{perspective:1200px;perspective-origin:center}
+#select .carChoice,#select .worldCard,#select .stageCard,#select .upgrade,#select .achievement{transform-style:preserve-3d;backface-visibility:hidden;will-change:transform}
+#select .carChoice{isolation:isolate;background:linear-gradient(145deg,#29435f,#14283e 48%,#091726);box-shadow:inset 0 1px #ffffff24,0 13px 25px #0005,0 2px 0 #ffffff0b}
+#select .carChoice::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse at 50% 0%,#ffffff30,transparent 48%),linear-gradient(125deg,#ffffff12,transparent 34%,#0003);opacity:.72;transition:opacity .35s ease}
+#select .carArt{height:clamp(125px,25vh,205px);background:radial-gradient(ellipse at 50% 76%,#83c9f45c,#355b7c35 30%,transparent 72%),linear-gradient(155deg,#243f5c,#091827 78%)}
+#select .carArt::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#ffffff12,transparent 38%,#02091455)}
+#select .carArt img{transform:translateZ(24px) scale(1.02);filter:drop-shadow(0 17px 12px #000b) drop-shadow(0 0 13px #79cfff22)}
+#select .carCaption{position:relative;z-index:3;background:linear-gradient(180deg,#13273b,#0c1b2b)}
+#select .carChoice.active{box-shadow:0 0 0 1px #ffe49a88,0 0 26px #54d9ff28,0 19px 35px #0009,inset 0 1px #fff7;background:linear-gradient(145deg,#4a5260,#1d3851 52%,#101d2c)}
+#select .worldCard{box-shadow:0 11px 24px #0005,inset 0 1px #ffffff1a}
+#select .worldArt{isolation:isolate}
+#select .worldArt::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(145deg,#ffffff25,transparent 38%,#02091466)}
+#select .worldCard.active{box-shadow:0 0 0 2px #f1c86d55,0 18px 34px #0009}
+#select .stageCard{box-shadow:0 8px 18px #0004}
+#select .stageArt::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(120deg,#ffffff24,transparent 42%,#02091455)}
+#select .upgrade,#select .achievement{box-shadow:0 13px 28px #0005,inset 0 1px #ffffff20}
+#select .menuTab{box-shadow:inset 0 1px #ffffff15,0 5px 12px #0003}
+#select .menuTab.active{box-shadow:inset 0 1px #ffffff35,0 0 24px #50dfff22,0 9px 20px #0006}
+@media(hover:hover) and (pointer:fine){#select .carChoice:hover{transform:translateY(-7px) rotateX(3deg) rotateY(-3deg) scale(1.025);box-shadow:0 22px 38px #0009,0 0 25px #61dafa22}#select .carChoice:hover::after{opacity:1}#select .worldCard:hover{transform:translateY(-6px) rotateX(2deg) scale(1.025);box-shadow:0 20px 34px #0008}#select .stageCard:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 15px 26px #0008}#select .upgrade:hover,#select .achievement:hover{transform:translateY(-5px) rotateX(2deg);box-shadow:0 19px 34px #0008}}
+@media(max-width:700px){#select .gtMenu{perspective:900px;padding:12px;gap:9px;border-radius:19px}#select .visualRail{gap:10px;scroll-padding-inline:4px}#select .carChoice{width:clamp(158px,54vw,205px);border-radius:14px}#select .carArt{height:clamp(112px,21vh,155px)}#select .carArt img{width:94%;height:94%;transform:translateZ(12px)}#select .worldCard{width:clamp(142px,46vw,180px)}#select .worldArt{height:clamp(92px,15vh,125px)}#select .stageCard{width:clamp(142px,45vw,175px)}#select .menuTab{min-width:88px;padding:9px 10px}#select .menuFooter{gap:7px}#select .footerSelection{font-size:9px}}
+@media(prefers-reduced-motion:reduce){#select .carChoice,#select .worldCard,#select .stageCard,#select .upgrade,#select .achievement,#select .carChoice::after{transition:none!important;will-change:auto}}
 </style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
