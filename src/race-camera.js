@@ -204,7 +204,7 @@ export function drawPerspectiveRace(ctx, options) {
   } = options;
   const palette = world || ["", "#6eae56", "#59636d", "#f3e2b4", "#f4d35e", "#6e9a53"];
   const current = frameAt(car.t);
-  const cameraPoint = current.p;
+  const cameraPoint = { x: current.p.x + current.nx * (car.lateral || 0), y: current.p.y + current.ny * (car.lateral || 0) };
   const cameraAngle = current.angle;
   const horizon = height * (mode === "side" ? .34 : .29);
   const yaw = mode === "side" ? .18 : mode === "southeast" ? .12 : -.12;
