@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v29";
+const CACHE_NAME = "mshin-arcade-v30";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
   "./src/web-game.js", "./src/environment-renderer.js", "./src/tire-physics.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
@@ -21,6 +21,7 @@ const REMOTE_AUDIO = [
   "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/road-roll.wav",
   "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/engine-start.wav",
   "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/engine-stop.wav",
+  "https://cdn.jsdelivr.net/gh/tininsteelian/tininsteelian.github.io@66c5f2415978cec667ab166daf22fb3889f1760b/games/3dfoggydrive/media/151624__qubodup__clank-car-crash-collision.ogg",
   "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/sky_blue_street_bpm165.ogg",
   "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/pure_raceway_bpm160.ogg"
 ];
