@@ -90,6 +90,14 @@ test("Cocos runtime menus use the Mshin motorsport visual system", async () => {
   for (const entry of ["CONTINUE","RETRY","LEAVE EVENT","DRIVER DETAILS","MOST WANTED"]) assert.ok(cocos.includes(entry), `${entry} must appear in the responsive pause menu`);
   assert.match(cocos, /private addWantedRow\(/);
   assert.match(cocos, /private addPauseEntry\(/);
+  const pauseHtml = await readFile(path.join(root, "index.html"), "utf8");
+  assert.match(pauseHtml, /class="pauseScreen"/);
+  assert.match(pauseHtml, /id="retryRace"/);
+  assert.match(pauseHtml, /MOST WANTED/);
+  assert.match(pauseHtml, /height:min\(690px,calc\(100dvh/);
+  assert.match(pauseHtml, /@media\(max-aspect-ratio:1\/1\)/);
+  const webGame = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  assert.match(webGame, /\$\("retryRace"\)\.onclick=\(\)=>\{audio\.unlock\(\);begin\(\)\}/);
   assert.doesNotMatch(cocos, /g\.fillColor=hex\("#F8C84E"\);g\.roundRect\(-w\/2/);
 });
 
