@@ -21,6 +21,7 @@ test("browser renderer exposes panel soot, fire, smoke and one-shot explosion fe
   assert.match(source, /visual\.explosion/);
   assert.match(source, /vehicle\.destructionEffectPlayed/);
   assert.match(source, /emitParticle\(x\+Math\.cos\(h\)\*34/);
+  assert.match(source, /"source-over"\)/);
 });
 
 test("burnt rivals leave traffic, collision, minimap and ranking participation", () => {
