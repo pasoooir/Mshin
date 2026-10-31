@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.31.5",
+  "version": "2026.10.31.6",
   "worlds": [
     {
       "id": 1,
@@ -231,18 +231,58 @@
   ],
   "sounds": [
     {
-      "id": "engineIdle",
-      "name": "Idling race car engine",
-      "src": "https://sfxmint.com/dl/race-car-02.mp3",
-      "type": "audio/mpeg",
-      "group": "audio"
+      "id": "engine0",
+      "name": "Recorded CC0 car engine RPM layer 1",
+      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_0.wav",
+      "type": "audio/wav",
+      "group": "audio",
+      "license": "CC0",
+      "source": "OpenGameArt racing car engine sound loops"
     },
     {
-      "id": "engineRev",
-      "name": "Full throttle race car engine",
-      "src": "https://sfxmint.com/dl/race-car-03.mp3",
-      "type": "audio/mpeg",
-      "group": "audio"
+      "id": "engine1",
+      "name": "Recorded CC0 car engine RPM layer 2",
+      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_1_0.wav",
+      "type": "audio/wav",
+      "group": "audio",
+      "license": "CC0",
+      "source": "OpenGameArt racing car engine sound loops"
+    },
+    {
+      "id": "engine2",
+      "name": "Recorded CC0 car engine RPM layer 3",
+      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_2_0.wav",
+      "type": "audio/wav",
+      "group": "audio",
+      "license": "CC0",
+      "source": "OpenGameArt racing car engine sound loops"
+    },
+    {
+      "id": "engine3",
+      "name": "Recorded CC0 car engine RPM layer 4",
+      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_3_0.wav",
+      "type": "audio/wav",
+      "group": "audio",
+      "license": "CC0",
+      "source": "OpenGameArt racing car engine sound loops"
+    },
+    {
+      "id": "engine4",
+      "name": "Recorded CC0 car engine RPM layer 5",
+      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_4_0.wav",
+      "type": "audio/wav",
+      "group": "audio",
+      "license": "CC0",
+      "source": "OpenGameArt racing car engine sound loops"
+    },
+    {
+      "id": "engine5",
+      "name": "Recorded CC0 car engine RPM layer 6",
+      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_5_0.wav",
+      "type": "audio/wav",
+      "group": "audio",
+      "license": "CC0",
+      "source": "OpenGameArt racing car engine sound loops"
     },
     {
       "id": "brakeSqueal",
