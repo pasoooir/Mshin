@@ -158,11 +158,11 @@ test("all app cache and asset version markers are advanced together", async () =
   const readme = await readFile(path.join(root, "README.md"), "utf8");
   assert.match(sw, /mshin-arcade-v27/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.11");
+  assert.equal(manifest.version, "2026.10.31.12");
   assert.equal(pkg.version, "0.8.8");
   assert.equal(pwa.version, "0.8.8");
-  assert.equal(cocos.version, "2026.10.31.11");
-  assert.ok(readme.includes("live browser release is **version 0.8.8**") && readme.includes("pending deployment after successful unit/integration and Playwright desktop/mobile browser smoke tests"), "README must identify 0.8.7 as the verified live release");
+  assert.equal(cocos.version, "2026.10.31.12");
+  assert.ok(readme.includes("live browser release remains **version 0.8.7**") && readme.includes("while 0.8.8 is under test; deployment will follow successful unit/integration and Playwright desktop/mobile browser smoke tests"), "README must identify 0.8.7 as the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.8.7**"), "README must preserve the latest published release until 0.8.8 deploys");
 });
 
