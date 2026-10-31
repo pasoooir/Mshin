@@ -6,7 +6,9 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 رابط کاربری نسخه مرورگر و منوهای نسخه Cocos به فارسی ایران بومی‌سازی شده‌اند. در صفحه آغازین، نام **Hamed Babaei** به‌عنوان صاحب اثر و توسعه‌دهنده درج شده و به صفحه LinkedIn او پیوند دارد.
 
-## Latest release: 0.8.7
+## Latest release: 0.8.8
+
+The garage now includes a cinematic vehicle studio with pointer/touch rotation, a 360° spin action and per-vehicle engine sound previews.
 
 The GT-inspired menu now features a perspective-lit 3D vehicle showroom, layered reflections and responsive touch rails.
 
