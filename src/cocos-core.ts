@@ -32,10 +32,10 @@ export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number):
  car.heading -= steer * (1.9 + Math.abs(car.speed) / 155) * grip * dt * Math.sign(car.speed || 1);
  // Tire lateral force damps post-impact slip; low-grip surfaces retain more lateral momentum.
  const lateral = Number.isFinite(car.lateralSpeed) ? (car.lateralSpeed as number) : 0;
- car.lateralSpeed = lateral * Math.exp(-(3.5 + 7 * grip) * dt);
+ const lateralAfter = lateral * Math.exp(-(3.5 + 7 * grip) * dt); car.lateralSpeed = lateralAfter;
  const forwardX=Math.sin(car.heading),forwardY=-Math.cos(car.heading),rightX=Math.cos(car.heading),rightY=Math.sin(car.heading);
- car.x += (forwardX*car.speed+rightX*car.lateralSpeed)*dt;
- car.y += (forwardY*car.speed+rightY*car.lateralSpeed)*dt; return car;
+ car.x += (forwardX*car.speed+rightX*lateralAfter)*dt;
+ car.y += (forwardY*car.speed+rightY*lateralAfter)*dt; return car;
 }
 
 /** Decomposes world-space velocity into the vehicle's forward and right axes. */
