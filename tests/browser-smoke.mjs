@@ -203,7 +203,9 @@ try {
   assert.equal(softwareViewport.softwareLandscape, true, "portrait mode must activate the software landscape viewport");
   assert.ok(softwareViewport.width > softwareViewport.height && softwareViewport.canvasWidth > softwareViewport.canvasHeight, "canvas backing dimensions must use landscape coordinates");
   const rotatedMenuBounds = await mobile.locator("#select .gtMenu").boundingBox();
-  assert.ok(rotatedMenuBounds && rotatedMenuBounds.width > rotatedMenuBounds.height, "menu must render as a landscape surface inside a portrait viewport");
+  assert.ok(rotatedMenuBounds && rotatedMenuBounds.height > rotatedMenuBounds.width, "rotated landscape menu must fill the portrait viewport while retaining landscape logical dimensions");
+  const logicalMenuSize = await mobile.locator("#select .gtMenu").evaluate(el => ({ width: parseFloat(getComputedStyle(el).width), height: parseFloat(getComputedStyle(el).height) }));
+  assert.ok(logicalMenuSize.width > logicalMenuSize.height, "menu layout itself must retain landscape width and height");
   assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
   const visibleMobileColumns = await mobile.locator("#select .gtMenu").evaluate(el => ({ tabs: el.querySelector(".menuTabs").getBoundingClientRect(), body: el.querySelector(".menuBody").getBoundingClientRect() }));
   assert.ok(visibleMobileColumns.tabs.width > 0 && visibleMobileColumns.body.width > 0, "mobile navigation and content columns must both remain visible after entering the menu");
