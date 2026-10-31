@@ -239,6 +239,11 @@ try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  await mobile.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 });
+  assert.equal(await mobile.evaluate(() => window.MshinBootError || null), null, "mobile game should boot before the menu is interacted with");
+  await mobile.waitForFunction(() => window.Mshin3D?.ready === true, undefined, { timeout: 10000 });
+  const mobileMenu3d = await mobile.locator("#mshinMenu3DCanvas").evaluate(el => ({ bounds: el.getBoundingClientRect().toJSON(), logicalWidth: el.clientWidth, logicalHeight: el.clientHeight }));
+  assert.ok(mobileMenu3d.logicalWidth > mobileMenu3d.logicalHeight && Math.abs(mobileMenu3d.bounds.width - 390) < 2 && Math.abs(mobileMenu3d.bounds.height - 844) < 2, "WebGL menu canvas must rotate to fill the portrait phone while retaining landscape drawing dimensions: " + JSON.stringify(mobileMenu3d));
   const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
   assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
