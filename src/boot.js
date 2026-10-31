@@ -8,6 +8,7 @@ const percentLabel = document.getElementById("assetPercent");
 window.MshinBootStage = "booting";
 window.MshinBootError = null;
 window.MshinBootReady = false;
+window.MshinRuntimeImported = false;
 window.MshinAssets = null;
 window.MshinPreloadProgress = { loaded: 0, total: 0, percent: 0, name: "" };
 
@@ -34,11 +35,28 @@ try {
   if (percentLabel) percentLabel.textContent = "100%";
 
   window.MshinBootStage = "importing-runtime";
-  await import("./web-game.js");
+  let runtimeImportTimer;
+  await Promise.race([
+    import("./web-game.js"),
+    new Promise((_, reject) => {
+      runtimeImportTimer = setTimeout(() => reject(new Error("Game runtime module import timed out after 20000ms.")), 20000);
+    })
+  ]).finally(() => clearTimeout(runtimeImportTimer));
+  window.MshinRuntimeImported = true;
 
-  // Allow the runtime's initial DOM updates and first paint to complete
-  // before exposing the single authoritative ready signal.
-  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  // Prefer two animation frames, but never leave boot stuck if the browser
+  // throttles RAF during a navigation/background transition.
+  await new Promise(resolve => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(frameFallback);
+      resolve();
+    };
+    const frameFallback = setTimeout(finish, 500);
+    requestAnimationFrame(() => requestAnimationFrame(finish));
+  });
 
   if (!document.querySelector("#home")) {
     throw new Error("Game runtime imported, but the home menu DOM is missing.");
