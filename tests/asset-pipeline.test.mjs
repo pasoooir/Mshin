@@ -162,7 +162,7 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pkg.version, "0.8.7");
   assert.equal(pwa.version, "0.8.7");
   assert.equal(cocos.version, "2026.10.31.11");
-  assert.match(readme, /deployed to GitHub Pages after successful unit\/integration and Playwright desktop\/mobile browser smoke tests/);
+  assert.match(readme, /proposed browser release is \\*\\*version 0\\.8\\.7\\*\\*.*deployment will follow successful unit\/integration and Playwright desktop\/mobile browser smoke tests/);
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.8.6**"), "README must identify 0.8.6 as the deployed release");
 });
 
