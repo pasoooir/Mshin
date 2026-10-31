@@ -1,7 +1,7 @@
 name: Mshin desktop and mobile browser smoke
 on:
   push:
-    branches: [main, "feat/**", "test/**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
