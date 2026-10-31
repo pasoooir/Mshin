@@ -23,8 +23,8 @@ function projectRadius(body, axis, basis) {
 }
 function support(body, dx, dy) {
   const basis=axes(body);
-  return {x:body.x+Math.sign(dx*basis[0].x+dy*basis[0].y||1)*basis[0].x*body.length/2+
-      Math.sign(dx*basis[1].x+dy*basis[1].y||1)*basis[1].x*body.width/2,
+  return {x:body.x+Math.sign(Math.abs(dx*basis[0].x+dy*basis[0].y)<EPS?0:dx*basis[0].x+dy*basis[0].y)*basis[0].x*body.length/2+
+      Math.sign(Math.abs(dx*basis[1].x+dy*basis[1].y)<EPS?0:dx*basis[1].x+dy*basis[1].y)*basis[1].x*body.width/2,
     y:body.y+Math.sign(dx*basis[0].x+dy*basis[0].y||1)*basis[0].y*body.length/2+
       Math.sign(dx*basis[1].x+dy*basis[1].y||1)*basis[1].y*body.width/2};
 }
@@ -58,7 +58,7 @@ export function resolveRigidVehicleImpact(a,b,{positionPercent=.82,slop=.02}={})
     const ix=j*nx,iy=j*ny;
     a.vx-=ix*invA;a.vy-=iy*invA;a.angularVelocity-=cross(raX,raY,ix,iy)*a.invInertia;
     b.vx+=ix*invB;b.vy+=iy*invB;b.angularVelocity+=cross(rbX,rbY,ix,iy)*b.invInertia;
-    energy=.5*(1/(invA+invB))*vn*vn*(1-e*e);
+    energy=.5*vn*vn/Math.max(EPS,denom)*(1-e*e);
     const tx=-ny,ty=nx,vat=velocityAt(a,raX,raY),vbt=velocityAt(b,rbX,rbY);
     const vt=(vbt.x-vat.x)*tx+(vbt.y-vat.y)*ty;
     const rat=cross(raX,raY,tx,ty),rbt=cross(rbX,rbY,tx,ty);
