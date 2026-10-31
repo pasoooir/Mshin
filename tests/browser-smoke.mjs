@@ -25,13 +25,13 @@ try {
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 5, "menu should expose five dedicated tabs");
   assert.ok(await page.locator("#tab-race").evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 14), "Persian menu tab labels must remain comfortably readable");
-  assert.ok(await page.locator(".worldCard").first().evaluate(el => parseFloat(getComputedStyle(el.querySelector(".worldName") || el).fontSize) >= 15), "world-card labels must not fall below readable Persian text sizing");
   assert.equal(await page.locator("link[rel=manifest]").getAttribute("href"), "./manifest.webmanifest", "PWA manifest must remain connected for orientation policy");
   assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "race", "race tab should be selected by default");
   assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".worldCard").count(), 10, "all 10 image-led world cards should be selectable; browser errors: " + errors.join(" | "));
+  assert.ok(await page.locator(".worldCard").first().evaluate(el => parseFloat(getComputedStyle(el.querySelector(".worldName") || el).fontSize) >= 15), "world-card labels must not fall below readable Persian text sizing");
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
