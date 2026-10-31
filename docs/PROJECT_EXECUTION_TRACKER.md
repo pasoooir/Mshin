@@ -141,3 +141,14 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - **Release links:** PR #33 https://github.com/pasoooir/Mshin/pull/33 · CI https://github.com/pasoooir/Mshin/actions/runs/41175066815 · Pages https://github.com/pasoooir/Mshin/actions/runs/41175066541.
 - **Published browser URL:** https://pasoooir.github.io/Mshin/
 - **Limit:** Cocos Creator Editor/device runtime validation is not claimed by browser CI.
+
+
+## Release candidate 0.8.3 — vehicle identity, cinematic intro and traffic variety
+
+- Branch: `feat/vehicle-identity-cinematic-traffic-rewards`.
+- Adds Rally, GT, 4x4 and Desert Raptor-specific recorded-loop processing profiles; Thunder EV switches to a speed-linked electric motor whine.
+- Adds a full-screen close-up race intro behind the 3–2–1–GO overlay; countdown still freezes race movement.
+- Progressively adds pickup, Formula, truck, bus and motorcycle traffic in stages 11, 21, 31 and 41.
+- Strong front impacts initiated by the player award 10–60 persistent coins, rate-limited to prevent farming.
+- Acceptance gates: all Node tests, syntax checks, desktop/mobile Playwright smoke, race intro rendering, later-stage traffic roster, persistent impact rewards, and GitHub Pages deployment.
+- Cocos Creator Editor/device validation remains a separate external gate.
