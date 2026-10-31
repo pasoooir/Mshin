@@ -25,7 +25,7 @@ try {
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 5, "menu should expose five dedicated tabs");
   assert.ok(await page.locator("#tab-race").evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 14), "Persian menu tab labels must remain comfortably readable");
-  assert.ok(await page.locator(".worldCard").first().evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), "world-card labels must not fall below readable Persian text sizing");
+  assert.ok(await page.locator(".worldCard").first().evaluate(el => parseFloat(getComputedStyle(el.querySelector(".worldName") || el).fontSize) >= 15), "world-card labels must not fall below readable Persian text sizing");
   assert.equal(await page.locator("link[rel=manifest]").getAttribute("href"), "./manifest.webmanifest", "PWA manifest must remain connected for orientation policy");
   assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "race", "race tab should be selected by default");
   assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
