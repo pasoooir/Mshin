@@ -36,7 +36,10 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(loader, /image\.decode/);
   assert.ok(loader.includes("asset.cdn"), "loader should try the manifest CDN URL");
   assert.doesNotMatch(audio, /\\\\n/, "audio module must not contain escaped newlines that break browser module parsing");
-  assert.match(audio, /decodeAudioData/);\n  assert.match(audio, /engineGains/);\n  assert.match(audio, /engineSources/);\n  assert.match(audio, /Six pitch layers/);
+  assert.match(audio, /decodeAudioData/);
+  assert.match(audio, /engineGains/);
+  assert.match(audio, /engineSources/);
+  assert.match(audio, /Six pitch layers/);
   assert.match(loader, /manifest\.icons/);
   assert.match(loader, /manifest\.sounds/);
   assert.match(loader, /audioCache\.set/);
