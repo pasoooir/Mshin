@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getHelicopterShadowPose } from "../src/aerial-environment.js";
+import { getHelicopterShadowPose, renderAerialScenery, drawHelicopterShadow } from "../src/aerial-environment.js";
 
 test("helicopter shadow remains attached to a world-space pose, not the viewport",()=>{
  const center={x:120,y:-45}, tangent={x:1,y:0,nx:0,ny:1};
