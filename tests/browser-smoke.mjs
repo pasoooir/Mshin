@@ -126,9 +126,24 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 35000 }).catch(async error => { const state=await page.evaluate(()=>({stage:window.MshinBootStage,error:window.MshinBootError,controller:Boolean(navigator.serviceWorker?.controller),assets:window.MshinAssets?.failures,resources:performance.getEntriesByType("resource").filter(x=>/boot|asset-loader|asset-manifest|web-game/.test(x.name)).map(x=>({name:x.name,duration:x.duration,transfer:x.transferSize})).slice(-12)}));throw new Error("Reload boot diagnostics: "+JSON.stringify(state)+"; "+error.message); });
-  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "reloaded game should finish booting before the home menu is used");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  // The loader overlay is removed only after preload, runtime import, and the
+  // two-frame DOM-ready barrier have completed. This avoids a flaky polling
+  // race against a transient boot-stage string during navigation.
+  await page.locator("#assetLoader").waitFor({ state: "detached", timeout: 45000 });
+  const reloadState = await page.evaluate(() => ({
+    stage: window.MshinBootStage,
+    bootReady: window.MshinBootReady === true,
+    bootError: window.MshinBootError || null,
+    assetsReady: window.MshinAssets?.ready === true,
+    progress: window.MshinPreloadProgress,
+    failures: window.MshinAssets?.failures || [],
+    homePresent: Boolean(document.querySelector("#home"))
+  }));
+  assert.equal(reloadState.bootError, null, "reloaded game must not report a boot error: " + JSON.stringify(reloadState));
+  assert.equal(reloadState.bootReady, true, "reloaded runtime must publish its final ready signal: " + JSON.stringify(reloadState));
+  assert.equal(reloadState.assetsReady, true, "reloaded game assets must be ready: " + JSON.stringify(reloadState));
+  assert.equal(reloadState.homePresent, true, "reloaded game must retain the home menu DOM");
   await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
   await page.locator("#play").waitFor({ state: "visible", timeout: 5000 });
   await page.locator("#play").click();
