@@ -181,12 +181,12 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v28/);
+  assert.match(sw, /mshin-arcade-v30/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.13");
+  assert.equal(manifest.version, "2026.10.31.15");
   assert.equal(pkg.version, "0.8.9");
   assert.equal(pwa.version, "0.8.9");
-  assert.equal(cocos.version, "2026.10.31.13");
+  assert.equal(cocos.version, "2026.10.31.15");
   assert.ok(readme.includes("live browser release is **version 0.8.8**") && readme.includes("deployed to GitHub Pages after successful merged-main validation and desktop/mobile Playwright browser smoke tests"), "README must identify 0.8.7 as the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.8.8**"), "README must preserve the latest published release until 0.8.8 deploys");
 });
