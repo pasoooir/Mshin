@@ -10,7 +10,7 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 The game now renders volumetric 2.5D trackside scenery across all ten world themes: layered tree canopies and trunks, extruded building faces and roofs, human-shaped spectator crowds, faceted rocks, contact shadows and a moving helicopter silhouette. The release also includes the independently controlled CC0 music/SFX system and verified offline audio cache from 0.8.9.
 
-Version 0.9.1 is based on merged commit `3ce9af24e14e71ffdb670260c47a771e0901fb74`; source-branch Node and desktop/mobile Playwright validation passed, and GitHub Pages deployment completed successfully. Merged-main validation is being finalized.
+Version 0.9.1 is based on merged commit `3ce9af24e14e71ffdb670260c47a771e0901fb74`; source-branch Node and desktop/mobile Playwright validation passed, and GitHub Pages deployment completed successfully. Merged-main validation run `41204250381` completed successfully.
 
 ## Play the browser edition
 
@@ -39,7 +39,7 @@ The live browser release is **version 0.9.1**, deployed to GitHub Pages after su
 
 ## Latest published build
 
-The live game is **version 0.9.1**. PR #48 (world-aware aerial lighting) is merged as `3ce9af24e14e71ffdb670260c47a771e0901fb74`; PR browser run `41204067804` and push validation run `41204063528` passed, and GitHub Pages deployment run `41204250314` completed successfully. Merged-main validation run `41204250381` is still running. PR #47 / version 0.9.0 remains the previous published release.
+The live game is **version 0.9.1**. PR #48 (world-aware aerial lighting) is merged as `3ce9af24e14e71ffdb670260c47a771e0901fb74`; PR browser run `41204067804` and push validation run `41204063528` passed, and GitHub Pages deployment run `41204250314` completed successfully. Merged-main validation run `41204250381` completed successfully. PR #47 / version 0.9.0 remains the previous published release.
 
 ## Project implementation
 
