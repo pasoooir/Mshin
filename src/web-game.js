@@ -2,6 +2,7 @@ import { createGameAudio } from "./audio.js";
 import { createDamageState, damageLevel, applyVehicleDamage, resolveVehicleImpact, resolveBarrierImpact, damageSideFromLocalNormal } from "./collision-physics.js";
 import { createRigidVehicle, resolveRigidVehicleImpact, sweptVehicleContact, splitImpactEnergy } from "./rigid-body-physics.js";
 import { resolveTireForces } from "./tire-physics.js";
+import { getDamageVisuals } from "./vehicle-damage-visuals.js";
 const canvas=document.querySelector("#game");let ctx=canvas.getContext("2d");const $=id=>document.getElementById(id);
 const worlds=[
 ["دره سبز","#83c95f","#65727b","#f5e5b8","#f6d45c","#e8b84f",1,"🌳"],
@@ -90,7 +91,65 @@ function renderTrackDynamics(){const w=worlds[stage.world];pickups.forEach(p=>{i
  else{ctx.roundRect(-20,-10,40,20,5);ctx.moveTo(-13,-17);ctx.lineTo(-13,17);ctx.moveTo(13,-17);ctx.lineTo(13,17)}
  ctx.fill();ctx.stroke();ctx.restore()})}
 function drawParticles(){ctx.save();ctx.globalCompositeOperation="lighter";for(const p of particles){const alpha=clamp(p.life/p.maxLife,0,1);ctx.globalAlpha=alpha;ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(p.x,p.y,p.size*alpha,0,Math.PI*2);ctx.fill()}ctx.restore()}
-function drawDamageOverlay(target,damage){const level=damageLevel(damage);if(!level)return;target.save();target.globalCompositeOperation="multiply";target.fillStyle=level>=3?"#4b4140":level===2?"#8a7770":"#b9a9a0";const zones=[["front",0,-31,28,13],["rear",0,31,28,12],["left",-14,0,8,42],["right",14,0,8,42]];for(const [key,x,y,w,h] of zones){if(damage[key]<5)continue;target.globalAlpha=Math.min(.62,damage[key]/150);target.beginPath();target.ellipse(x,y,w,h,0,0,Math.PI*2);target.fill()}target.globalCompositeOperation="source-over";target.globalAlpha=.72;target.strokeStyle="#252b33";target.lineWidth=1.5;for(const [key,x,y] of [["front",0,-30],["rear",0,30],["left",-14,0],["right",14,0]]){if(damage[key]<18)continue;target.beginPath();target.moveTo(x,y);target.lineTo(x+(key==="left"?-7:key==="right"?7:3),y+(key==="front"?-9:key==="rear"?9:0));target.lineTo(x+(key==="left"?-3:key==="right"?3:-5),y+(key==="front"?-14:key==="rear"?14:7));target.stroke()}target.restore()}
+function drawDamageOverlay(target,damage){
+ const visual=getDamageVisuals(damage),now=performance.now();
+ if(!visual.panels.some(panel=>panel.dentCount)||visual.smoke<=0&&!visual.glassCracks)return;
+ target.save();
+ // Localized shallow body dents: dark compression core with a narrow reflected-metal rim.
+ for(const panel of visual.panels){
+  if(!panel.dentCount)continue;
+  const side=panel.side,points=panel.dentCount;
+  for(let i=0;i<points;i++){
+   const offset=(i-(points-1)/2)*8;
+   const x=side==="left"?-25:side==="right"?25:offset;
+   const y=side==="front"?-43:side==="rear"?43:offset;
+   const rx=(side==="left"||side==="right"?4.2:7.2)*(0.75+panel.strength*.35);
+   const ry=(side==="left"||side==="right"?7.4:4.2)*(0.75+panel.strength*.35);
+   target.save();target.translate(x,y);target.rotate(side==="front"||side==="rear"?0:Math.PI/2);
+   target.fillStyle="#111923";target.globalAlpha=.12+panel.strength*.32;
+   target.beginPath();target.ellipse(0,0,rx,ry,0,0,Math.PI*2);target.fill();
+   target.strokeStyle="#f5f8fa";target.globalAlpha=.08+panel.strength*.18;target.lineWidth=1.1;
+   target.beginPath();target.arc(-1,-1,rx*.8,Math.PI*1.08,Math.PI*1.88);target.stroke();
+   target.restore();
+  }
+  // Fine paint transfer and crease scratches grow with impact severity.
+  target.strokeStyle=panel.side==="front"||panel.side==="rear"?"#f5d6c0":"#d9e5ed";
+  target.globalAlpha=.18+panel.strength*.34;target.lineWidth=.8;
+  const baseX=panel.side==="left"?-30:panel.side==="right"?30:0;
+  const baseY=panel.side==="front"?-48:panel.side==="rear"?48:0;
+  for(let i=0;i<panel.dentCount;i++){
+   const x=baseX+(panel.side==="left"||panel.side==="right"?0:(i-1)*5);
+   const y=baseY+(panel.side==="left"||panel.side==="right"?(i-1)*7:0);
+   target.beginPath();target.moveTo(x-2,y-3);target.lineTo(x+3,y+2);target.stroke();
+  }
+ }
+ // Windshield fractures are only drawn after frontal impacts.
+ if(visual.glassCracks>.08){
+  target.save();target.globalAlpha=.2+visual.glassCracks*.65;target.strokeStyle="#e9fbff";target.lineWidth=1;
+  const cx=0,cy=-20;target.beginPath();target.moveTo(cx,cy);target.lineTo(-7,-28);target.lineTo(-4,-34);target.moveTo(cx,cy);target.lineTo(8,-27);target.lineTo(5,-34);target.moveTo(cx,cy);target.lineTo(2,-11);target.lineTo(9,-7);target.stroke();
+  if(visual.glassCracks>.62){target.beginPath();target.moveTo(-7,-28);target.lineTo(-13,-24);target.moveTo(8,-27);target.lineTo(14,-23);target.stroke()}
+  target.restore();
+ }
+ // Bent bumpers and buckled panel seams communicate major deformation.
+ if(visual.heavyDeformation){
+  target.globalAlpha=.72;target.strokeStyle="#202b38";target.lineWidth=2.2;target.beginPath();
+  if((damage.front||0)>35){target.moveTo(-13,-49);target.lineTo(-6,-46);target.lineTo(1,-50);target.lineTo(8,-46);target.lineTo(14,-49)}
+  if((damage.rear||0)>35){target.moveTo(-13,49);target.lineTo(-5,46);target.lineTo(2,50);target.lineTo(9,46);target.lineTo(14,49)}
+  target.stroke();
+ }
+ // Engine-bay smoke is subtle at first and becomes denser as damage accumulates.
+ if(visual.smoke>.02){
+  const pulse=(Math.sin(now*.004)+1)*.5;
+  for(let i=0;i<3;i++){
+   const drift=Math.sin(now*.0017+i*2.1)*2.5;
+   target.globalAlpha=visual.smoke*(.12+pulse*.08)*(1-i*.2);
+   target.fillStyle=i===0?"#26313b":"#7d8790";
+   target.beginPath();target.ellipse(drift+i*2,-48-i*5,3+i*1.8,2.5+i*1.5,0,0,Math.PI*2);target.fill();
+  }
+ }
+ if(visual.disabled){target.globalAlpha=.75;target.strokeStyle="#252b33";target.lineWidth=2;target.beginPath();target.moveTo(-12,-3);target.lineTo(12,3);target.moveTo(12,-3);target.lineTo(-12,3);target.stroke()}
+ target.restore();
+}
 function vehicleVelocity(t,speed,lateralVelocity){const f=frameAt(t);return {vx:Math.cos(f.angle)*speed+f.nx*lateralVelocity,vy:Math.sin(f.angle)*speed+f.ny*lateralVelocity}}
 function projectRigidBodyToTrack(body,seed,vehicle){let bestT=seed,best=Infinity;for(let i=-8;i<=8;i++){const t=seed+i*.0125,p=frameAt(t).p,d=(body.x-p.x)**2+(body.y-p.y)**2;if(d<best){best=d;bestT=t}}const f=frameAt(bestT),dx=body.x-f.p.x,dy=body.y-f.p.y;vehicle.distance!==undefined?(vehicle.distance=bestT):(vehicle.t=bestT);vehicle.lateral=dx*f.nx+dy*f.ny;}
 function applyPlayerImpact(result,otherMass,otherDamage,otherSide){if(!result.hit)return;const f=frameAt(car.t),speedVector=vehicleVelocity(car.t,car.speed,car.lateralVelocity);const player={x:0,y:0,vx:speedVector.vx,vy:speedVector.vy,mass:activeCar().id==="lynx"?1650:activeCar().id==="raptor"?1780:activeCar().id==="comet"?1050:1250};const rival={x:1,y:0,vx:0,vy:0,mass:otherMass};const side=damageSideFromLocalNormal(result.normalX*Math.cos(f.angle)+result.normalY*Math.sin(f.angle),result.normalX*(-Math.sin(f.angle))+result.normalY*Math.cos(f.angle));const applied=applyVehicleDamage(car.damage,result.energy,side);if(otherDamage)applyVehicleDamage(otherDamage,result.energy*.55,otherSide||"front");const along=player.vx*Math.cos(f.angle)+player.vy*Math.sin(f.angle),across=player.vx*f.nx+player.vy*f.ny;car.speed=Math.max(0,along);car.lateralVelocity=across;car.yaw=clamp(car.yaw+(across/(Math.max(90,car.speed)))*.18,-.62,.62);if(applied.level>=2)car.speed*=1-(applied.level-1)*.035;collisionEvents++;audio.collision();const c=carPoint();burst(c.x,c.y,applied.level>=3?22:applied.level>=2?14:8,applied.level>=2?"#ffb35b":"#dcecff");if(applied.level>=3)cameraShake=Math.max(cameraShake,.22);return applied}

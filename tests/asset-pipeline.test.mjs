@@ -39,7 +39,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v16/);
+  assert.match(sw, /mshin-arcade-v17/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
 });
@@ -80,6 +80,8 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /resolveBarrierImpact/);
   assert.match(game, /applyVehicleDamage/);
   assert.match(game, /drawDamageOverlay/);
+  assert.match(game, /getDamageVisuals/);
+  assert.match(sw, /vehicle-damage-visuals\.js/);
   assert.match(game, /AI-to-AI contacts/);
   assert.match(game, /cameraShake/);
   assert.match(game, /collisionCooldown/);
@@ -105,7 +107,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰\.۵\.۰/);
+  assert.match(html, /نسخه ۰.۶.۰/);
   assert.match(html, /splashCarFront/);
   assert.match(html, /id="assetPercent"/);
   assert.match(html, /id="assetProgress"/);
@@ -124,10 +126,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
-  assert.match(sw, /mshin-arcade-v16/);
-  assert.match(html, /boot\.js\?v=2026.10.31.2/);
-  assert.equal(manifest.version, "2026.10.31.2");
-  assert.equal(pkg.version, "0.5.0");
-  assert.equal(pwa.version, "0.5.0");
-  assert.equal(cocos.version, "2026.10.31.2");
+  assert.match(sw, /mshin-arcade-v17/);
+  assert.match(html, /boot\.js\?v=2026.10.31.3/);
+  assert.equal(manifest.version, "2026.10.31.3");
+  assert.equal(pkg.version, "0.6.0");
+  assert.equal(pwa.version, "0.6.0");
+  assert.equal(cocos.version, "2026.10.31.3");
 });
