@@ -145,6 +145,48 @@
 @keyframes showroomLight{from{transform:translateX(-24%) rotate(24deg);opacity:.45}to{transform:translateX(34%) rotate(24deg);opacity:1}}
 @media(max-width:700px){.showroomStage{grid-template-columns:1fr;gap:2px;min-height:0;padding:8px 12px}.showroomVehicle{height:clamp(105px,17vh,145px)}.showroomVehicle img{width:min(86%,240px)}.showroomInfo{text-align:center;gap:3px}.showroomActions{justify-content:center;margin-top:4px}.showroomActions button{font-size:9px;padding:7px 9px}.showroomHint{display:none}.showroomEyebrow{font-size:7px}}
 @media(prefers-reduced-motion:reduce){.showroomSpotlight{animation:none}.showroomVehicle.is-spinning img{animation:none!important;transform:rotateY(12deg)}}
+
+/* Readable Persian typography and landscape-first game menu */
+:root{font-family:Tahoma,"Vazirmatn",Arial,sans-serif}
+body{font-size:16px}
+#select .gtMenu{gap:clamp(10px,1.5vh,16px);padding:clamp(16px,2.2vw,28px)}
+#select .menuHeader h1{font-size:clamp(27px,3.2vw,38px)}
+#select .menuHeader p{font-size:clamp(14px,1.35vw,17px);line-height:1.7}
+#select .menuEyebrow{font-size:12px;letter-spacing:1.2px}
+#select .menuWallet{min-width:145px;padding:11px 16px}
+#select .menuWallet small{font-size:13px}
+#select .menuWallet b{font-size:20px}
+#select .menuTab{min-width:116px;padding:13px 17px;font-size:clamp(15px,1.45vw,18px);gap:9px}
+#select .menuTab span{font-size:20px}
+#select .sectionHeading h2{font-size:clamp(21px,2.3vw,28px)}
+#select .sectionHeading p{font-size:14px;line-height:1.65}
+#select .sectionCounter{font-size:13px;padding:8px 12px}
+#select .menuFooter{font-size:14px}
+#select .menuFooter button{font-size:16px;min-height:48px;padding:12px 20px}
+#select .visualRail button,#select .world,#select .stage,#select .carChoice,
+#select .settingCard,#select .upgrade,#select .achievement{font-size:14px}
+#select .visualRail small,#select .world small,#select .stage small,
+#select .carChoice small,#select .settingCard small,#select .upgrade small,
+#select .achievement small{font-size:12px;line-height:1.55}
+#select .settingCard b,#select .upgrade b,#select .achievement b{font-size:15px}
+#select .primary,#select .secondary{font-size:15px;min-height:46px}
+#select .hint,#home .hint{font-size:14px;line-height:1.7}
+#home .panel p{font-size:16px;line-height:1.8}
+#home .panel .tag{font-size:13px;padding:6px 10px}
+#home .panel .primary{font-size:17px;min-height:58px}
+#select button:focus-visible,#home button:focus-visible{outline:3px solid #ffe18a;outline-offset:3px}
+@media(orientation:portrait){
+ body:before{content:"برای اجرای بازی، دستگاه را افقی نگه دارید";position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:28px;text-align:center;direction:rtl;color:#fff;font:900 22px/1.9 Tahoma,Arial,sans-serif;background:radial-gradient(ellipse at 50% 30%,#294d70,#07111f 75%);background-image:linear-gradient(#07111fee,#07111fee),url("./assets/vector/world-01.svg");background-size:cover;background-position:center}
+ body:after{content:"↻";position:fixed;z-index:100000;top:calc(50% + 52px);left:50%;transform:translateX(-50%);font:900 48px/1 Arial,sans-serif;color:#ffd477}
+}
+@media(orientation:landscape) and (max-height:520px){
+ #select .gtMenu{max-height:96svh;height:96svh;gap:7px;padding:10px 16px}
+ #select .menuTabs{padding:1px 0 4px}
+ #select .menuTab{padding:8px 12px}
+ #select .tabPanel{gap:7px}
+ #select .sectionHeading p{font-size:13px}
+}
+
 </style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
@@ -211,4 +253,11 @@
 </section></div>
 <div class="overlay hidden" id="pausePanel"><section class="panel narrow"><h1>مسابقه متوقف شد</h1><p>کمی استراحت کن؛ زمان مسابقه متوقف شده است.</p><button class="primary" id="resume">ادامه مسابقه ▶</button><p><button class="secondary" id="quitRace">بازگشت به مراحل</button></p></section></div>
 <div class="overlay hidden" id="finish"><section class="panel narrow"><h1>🏆 مرحله به پایان رسید!</h1><p id="finishText"></p><button class="primary" id="nextStage">مرحله بعد ▶</button><p><button class="secondary" id="finishSelect">انتخاب مرحله</button></p></section></div>
+<script>
+/* Installed PWA starts in landscape via manifest; request a runtime lock on first user gesture where supported. */
+(()=>{let requested=false;const lockLandscape=()=>{if(requested)return;requested=true;try{const result=screen.orientation?.lock?.("landscape");if(result?.catch)result.catch(()=>{});}catch(_){}};
+document.addEventListener("pointerdown",lockLandscape,{capture:true,passive:true,once:true});
+document.addEventListener("click",event=>{if(event.target.closest("#play,#startRace"))lockLandscape();},{capture:true});
+})();
+</script>
 <script>if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script type="module" src="./src/boot.js?v=2026.10.31.17"></script></body></html>
