@@ -1,6 +1,7 @@
 import manifest from "./asset-manifest.json" with { type: "json" };
 
-const imageCache = new Map();\nconst audioCache = new Map();
+const imageCache = new Map();
+const audioCache = new Map();
 const timeout = (promise, ms, label) => new Promise((resolve, reject) => {
   const timer = setTimeout(() => reject(new Error(`Asset timeout: ${label}`)), ms);
   Promise.resolve(promise).then(value => { clearTimeout(timer); resolve(value); }, error => { clearTimeout(timer); reject(error); });
