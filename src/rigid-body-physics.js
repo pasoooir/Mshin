@@ -76,10 +76,12 @@ export function resolveRigidVehicleImpact(a,b,{positionPercent=.82,slop=.02}={})
 // Conservative temporal sampling prevents fast bodies stepping through one another.
 // The caller supplies previous/current transforms; a contact is resolved at the
 // earliest sampled time, then the remaining frame can be integrated with new velocity.
-export function sweptVehicleContact(a0,a1,b0,b1,{maxStep=8}={}) {
+export function sweptVehicleContact(a0,a1,b0,b1,{maxStep=24}={}) {
   const travel=Math.hypot((a1.x-a0.x)-(b1.x-b0.x),(a1.y-a0.y)-(b1.y-b0.y));
+  const radiusA=Math.hypot(a0.length,a0.width)/2,radiusB=Math.hypot(b0.length,b0.width)/2;
+  const rotationalTravel=Math.abs(a1.angle-a0.angle)*radiusA+Math.abs(b1.angle-b0.angle)*radiusB;
   const feature=Math.max(4,Math.min(a0.width,a0.length,b0.width,b0.length)*.35);
-  const steps=clamp(Math.ceil(travel/feature),1,maxStep);
+  const steps=clamp(Math.ceil((travel+rotationalTravel)/feature),1,maxStep);
   for(let i=0;i<=steps;i++){
     const t=i/steps;
     const a={...a0,x:a0.x+(a1.x-a0.x)*t,y:a0.y+(a1.y-a0.y)*t,angle:a0.angle+(a1.angle-a0.angle)*t};
