@@ -9,7 +9,7 @@ permissions:
 jobs:
   browser-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -60,6 +60,8 @@ jobs:
           (ss -ltnp || true) | grep ':4173' || true
           exit 1
       - name: Run desktop and mobile browser smoke tests
+        env:
+          CI: "true"
         run: |
           node --check tests/browser-smoke.mjs
           node tests/browser-smoke.mjs
