@@ -103,7 +103,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰\.۴\.۸/);
+  assert.match(html, /نسخه ۰\.۴\.۹/);
   assert.match(html, /splashCarFront/);
   assert.match(html, /id="assetPercent"/);
   assert.match(html, /id="assetProgress"/);
