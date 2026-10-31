@@ -47,8 +47,8 @@ try {
   assert.equal(await page.locator("#sfxToggle").isVisible(), true, "settings tab should expose an independent SFX toggle");
   assert.equal(await page.locator("#musicVolume").isVisible(), true, "music volume slider should be available");
   assert.equal(await page.locator("#sfxVolume").isVisible(), true, "SFX volume slider should be available");
-  await page.locator("#musicVolume").fill("37");
-  await page.locator("#sfxVolume").fill("62");
+  await page.locator("#musicVolume").evaluate(el => { el.value="37"; el.dispatchEvent(new Event("input",{bubbles:true})); });
+  await page.locator("#sfxVolume").evaluate(el => { el.value="62"; el.dispatchEvent(new Event("input",{bubbles:true})); });
   await page.locator("#musicToggle").click();
   assert.equal(await page.locator("#musicToggle").getAttribute("aria-pressed"), "false", "music toggle should mute only music");
   assert.equal(await page.locator("#sfxToggle").getAttribute("aria-pressed"), "true", "muting music must not mute SFX");
