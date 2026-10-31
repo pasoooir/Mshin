@@ -12,7 +12,7 @@ async function fetchImage(asset) {
   for (const source of [asset.cdn, asset.src].filter(Boolean)) {
     const controller = new AbortController();
     const remote = new URL(source, location.href).origin !== location.origin;
-    const timer = setTimeout(() => controller.abort(), remote ? (asset.group === "scene" ? 2200 : 1500) : 4000);
+    const timer = setTimeout(() => controller.abort(), remote ? (asset.group === "scene" ? 1800 : 1200) : 3000);
     try {
       const response = await fetch(source, { cache: "force-cache", credentials: "omit", signal: controller.signal });
       if (!response.ok) throw new Error(`Asset request failed (${response.status}): ${source}`);
@@ -39,13 +39,13 @@ async function loadVector(asset) {
 
 async function loadAudio(asset) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 6000);
+  const timer = setTimeout(() => controller.abort(), 5000);
   try {
-    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 6000, asset.src);
+    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 5000, asset.src);
     if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
     const type = response.headers.get("content-type") || "";
     if (!type.includes("audio/") && !asset.src.endsWith(".mp3")) throw new Error(`Unexpected audio MIME type: ${type}`);
-    return await timeout(response.arrayBuffer(), 6000, asset.src);
+    return await timeout(response.arrayBuffer(), 5000, asset.src);
   } finally { clearTimeout(timer); }
 }
 
@@ -64,7 +64,7 @@ export async function preloadGameAssets(onProgress = () => {}) {
       onProgress({ loaded, total: all.length, percent: Math.round(loaded / all.length * 100), name: asset.name });
     }
   };
-  await Promise.all(Array.from({ length: 4 }, worker));
+  await Promise.all(Array.from({ length: 6 }, worker));
   window.MshinAssets = {
     version: manifest.version,
     worlds: manifest.worlds.map(item => imageCache.get(item.id) || null),
