@@ -13,6 +13,7 @@ async function waitForGameBoot(page, label = "game") {
       return {
         stage: window.MshinBootStage,
         bootReady: window.MshinBootReady === true,
+        runtimeImported: window.MshinRuntimeImported === true,
         bootError: window.MshinBootError || null,
         assetsReady: window.MshinAssets?.ready === true,
         progress: window.MshinPreloadProgress,
@@ -22,10 +23,10 @@ async function waitForGameBoot(page, label = "game") {
       };
     });
     if (state.bootError) throw new Error(label + " reported a boot error: " + JSON.stringify(state));
-    if (state.bootReady && state.assetsReady && state.homePresent && state.homeVisible) break;
+    if (state.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible) break;
     await new Promise(resolve => setTimeout(resolve, 120));
   }
-  assert.ok(state?.bootReady && state.assetsReady && state.homePresent && state.homeVisible,
+  assert.ok(state?.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible,
     label + " did not reach the complete runtime-ready state: " + JSON.stringify(state));
   return state;
 }
