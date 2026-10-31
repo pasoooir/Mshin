@@ -103,9 +103,9 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /\.icon-ltr\\{direction:ltr;unicode-bidi:isolate/);
-  assert.match(html, /<bdi class="icon-ltr" dir="ltr">▶<\\/bdi>/);
-  assert.match(html, /<bdi class="icon-ltr" dir="ltr">←<\\/bdi>/);
+  assert.match(html, /\.icon-ltr\{direction:ltr;unicode-bidi:isolate/);
+  assert.match(html, /<bdi class="icon-ltr" dir="ltr">▶<\/bdi>/);
+  assert.match(html, /<bdi class="icon-ltr" dir="ltr">←<\/bdi>/);
   assert.match(html, /<html lang="fa-IR" dir="rtl">/);
   assert.match(html, /نسخه ۰\.۴\.۹/);
   assert.match(html, /splashCarFront/);
@@ -126,10 +126,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
-  assert.match(sw, /mshin-arcade-v15/);
+  assert.match(sw, /mshin-arcade-v16/);
   assert.match(html, /boot\.js\?v=2026.10.31.2/);
-  assert.equal(manifest.version, "2026.10.31.1");
+  assert.equal(manifest.version, "2026.10.31.2");
   assert.equal(pkg.version, "0.5.0");
-  assert.equal(pwa.version, "0.4.9");
+  assert.equal(pwa.version, "0.5.0");
   assert.equal(cocos.version, "2026.10.31.1");
 });
