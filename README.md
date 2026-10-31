@@ -1,3 +1,10 @@
+## Steering controls · v0.10.2
+
+- Responsive fuzzy steering with a fast input ramp, speed-aware sensitivity and configurable return-to-center.
+- Selectable Joystick, Gyroscope and Hybrid input modes.
+- Device tilt steering with permission handling, neutral calibration, dead zone and adjustable tilt range.
+- Steering input continues through the existing tire-force, grip, slip and vehicle-dynamics simulation; sensor data never teleports the car.
+
 # Mshin — 2D Top-Down Arcade Racing
 
 Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + TypeScript, with a lightweight browser-playable edition hosted on GitHub Pages.
