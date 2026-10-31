@@ -93,7 +93,9 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
+  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "runtime should recover cleanly after reload");
   await page.locator("#play").click();
   await page.locator("#tab-settings").click();
   assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
@@ -157,7 +159,9 @@ try {
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
+  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "runtime should recover cleanly after reload");
   await page.locator("#play").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
@@ -312,7 +316,8 @@ try {
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
-  await economy.reload({ waitUntil: "networkidle" });
+  await economy.reload({ waitUntil: "domcontentloaded" });
+  await economy.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
   await economy.locator("#play").click();
   await economy.locator("#tab-cars").click();
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "unlocked selected car should persist after reload");
@@ -334,7 +339,9 @@ try {
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
+  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "runtime should recover cleanly after reload");
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
   const audioCacheAudit = await page.evaluate(async () => {
     const manifest = await fetch("./src/asset-manifest.json").then(response => response.json());
