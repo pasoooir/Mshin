@@ -23,7 +23,8 @@ try {
   assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
   await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
-  assert.equal(await page.locator(".menuTab").count(), 5, "menu should expose five dedicated tabs");
+  assert.equal(await page.locator(".menuTab").count(), 9, "menu should expose eight requested sections plus the existing workshop");
+  assert.equal(await page.locator(".menuTab:disabled").count(), 2, "unimplemented leaderboard and store entries must remain disabled");
   const menuLayout = await page.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, columns: getComputedStyle(el).gridTemplateColumns, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(menuLayout.display, "grid", "menu should use a dedicated motorsport navigation rail");
   assert.equal(menuLayout.tabsDirection, "column", "menu tabs should form a vertical navigation rail");
