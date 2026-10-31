@@ -12,7 +12,7 @@ test("every runtime asset is stored inside this repository", async () => {
   assert.equal(manifest.scenes.length, 10);
   assert.equal(manifest.icons.length, 3);
   assert.equal(manifest.sounds.length, 10);
-  assert.equal(assets.length, 28);
+  assert.equal(assets.length, 38);
   for (const asset of assets) {
     assert.ok(asset.src.startsWith("./"), `${asset.id} must use a relative same-origin path`);
     assert.doesNotMatch(asset.src, /^https?:/i, `${asset.id} must not reference an external host`);
