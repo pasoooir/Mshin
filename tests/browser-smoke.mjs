@@ -146,7 +146,7 @@ try {
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
-  assert.match(await page.locator("#position").textContent(), /^[1-4] \/ 4$/, "live race position should show the player among three AI rivals");
+  assert.match(await page.locator("#position").textContent(), /^[1-4] \/ 4$/, "live race position should show the player among four AI rivals");
   assert.match(await page.locator("#stageName").textContent(), /دنیای ۰5.*مرحله ۰5/);
   await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(2400);
