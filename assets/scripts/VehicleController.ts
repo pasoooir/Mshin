@@ -1,5 +1,5 @@
 import { _decorator, Component } from "cc";
-import { CarState, DriveInput, createRaceState, RaceState, stepCar, updateRace, createVehicleDamage, addVehicleDamage, resolveStaticBarrier, CollisionBody, createRigidBody2D, resolveRigidBody2D, splitImpactEnergy, worldVelocityToCar } from "../../src/cocos-core";
+import { CarState, DriveInput, createRaceState, RaceState, stepCar, updateRace, createVehicleDamage, addVehicleDamage, resolveStaticBarrier, CollisionBody, createRigidBody2D, resolveRigidBody2D, splitImpactEnergy, worldVelocityToCar, surfaceCollisionFriction } from "../../src/cocos-core";
 import { nearestTrackPoint, Point } from "../../src/stage-catalog";
 const {ccclass}=_decorator;
 @ccclass("MshinVehicleController")
@@ -40,7 +40,7 @@ export class VehicleController extends Component {
    const forwardAngle=this.car.heading-Math.PI/2;
    const body=createRigidBody2D({x:this.car.x,y:this.car.y,vx:Math.sin(this.car.heading)*this.car.speed,vy:-Math.cos(this.car.heading)*this.car.speed,
     angle:forwardAngle,angularVelocity:this.car.angularVelocity??0,mass:1250,length:92,width:44});
-   const barrier=createRigidBody2D({x:obstacle.x,y:obstacle.y,angle:obstacle.angle,mass:1,length:34,width:28,static:true});
+   const barrier=createRigidBody2D({x:obstacle.x,y:obstacle.y,angle:obstacle.angle,mass:1,length:34,width:28,friction:surfaceCollisionFriction(this.surfaceGrip),static:true});
    const impact=resolveRigidBody2D(body,barrier);
    if(!impact.hit)continue;
    this.car.x=body.x;this.car.y=body.y;this.car.angularVelocity=body.angularVelocity;
@@ -59,7 +59,7 @@ export class VehicleController extends Component {
   if(other===this||this.hitCooldown>0||other.hitCooldown>0)return;
   const make=(v:VehicleController)=>{const fx=Math.sin(v.car.heading),fy=-Math.cos(v.car.heading),rx=Math.cos(v.car.heading),ry=Math.sin(v.car.heading),lateral=v.car.lateralSpeed??0;
    return createRigidBody2D({x:v.car.x,y:v.car.y,vx:fx*v.car.speed+rx*lateral,vy:fy*v.car.speed+ry*lateral,
-    angle:v.car.heading-Math.PI/2,angularVelocity:v.car.angularVelocity??0,mass:1250,length:92,width:44,restitution:.12,friction:.72});
+    angle:v.car.heading-Math.PI/2,angularVelocity:v.car.angularVelocity??0,mass:1250,length:92,width:44,restitution:.12,friction:surfaceCollisionFriction(v.surfaceGrip)});
   };
   const a=make(this),b=make(other),impact=resolveRigidBody2D(a,b);if(!impact.hit)return;
   const energyShare=splitImpactEnergy(impact.energy,a.invMass,b.invMass);
