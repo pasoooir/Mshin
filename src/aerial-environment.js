@@ -176,7 +176,7 @@ export function renderAerialScenery(ctx, stage, frameAt, world, time = 0) {
         ctx.fillStyle = accent; ctx.fillRect(x - 11, y - 11, 22, 5); ctx.fillStyle = "#ffffff77"; ctx.fillRect(x - 11, y - 11, 3, 3); ctx.restore();
       }
     } else {
-      ctx.save(); ctx.fillStyle = `rgba(0,0,0,${lighting.shadowAlpha + .08})`; ctx.beginPath(); ctx.ellipse(x + 7 + lighting.shadowX * 5, y + 11 + lighting.shadowY * 4, 25, 13, 0, 0, TAU); ctx.fill();
+      ctx.save(); ctx.fillStyle = lighting.softShadowColor; ctx.beginPath(); ctx.ellipse(x + 7 + lighting.shadowX * 5, y + 11 + lighting.shadowY * 4, 25, 13, 0, 0, TAU); ctx.fill();
       ctx.fillStyle = accent; ctx.beginPath(); ctx.ellipse(x, y, 23, 10, .2, 0, TAU); ctx.fill();
       ctx.fillStyle = "#fff9"; ctx.fillRect(x - 13, y - 3, 26, 3); ctx.restore();
     }
@@ -187,7 +187,7 @@ export function renderAerialScenery(ctx, stage, frameAt, world, time = 0) {
     const frame = frameAt((i + .35) / 22 * TAU), side = i % 2 ? 1 : -1;
     const x = frame.p.x + frame.nx * side * 218, y = frame.p.y + frame.ny * side * 218;
     ctx.save(); ctx.translate(x, y); ctx.rotate(frame.angle);
-    ctx.fillStyle = `rgba(0,0,0,${lighting.shadowAlpha + .08})`; ctx.fillRect(-23 + lighting.shadowX * 3, 8 + lighting.shadowY * 3, 49, 8);
+    ctx.fillStyle = lighting.softShadowColor; ctx.fillRect(-23 + lighting.shadowX * 3, 8 + lighting.shadowY * 3, 49, 8);
     ctx.fillStyle = "#6a7478"; ctx.fillRect(-24, -4, 48, 15);
     ctx.fillStyle = i % 2 ? "#f0e8d2" : "#e66c56"; ctx.fillRect(-24, -7, 48, 12);
     ctx.fillStyle = "#ffffffaa"; ctx.fillRect(-20, -6, 7, 9); ctx.fillRect(-2, -6, 7, 9); ctx.fillRect(16, -6, 7, 9);
