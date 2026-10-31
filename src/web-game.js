@@ -32,7 +32,7 @@ const frameSamples=new Array(120).fill(0);let frameCursor=0,frameCount=0,collisi
 window.MshinPerformance={samples:0,avgFrameMs:0,p95FrameMs:0,maxFrameMs:0,fps:0,collisions:0,pickups:0};
 const achievementDefs=[{id:"first-finish",name:"اولین مسابقه",detail:"اولین مسابقه خود را به پایان برسانید",reward:75},{id:"podium",name:"سکوی قهرمانی",detail:"مسابقه را در سه رتبه نخست تمام کنید",reward:100},{id:"world-tour",name:"جهان‌گرد",detail:"در پنج دنیای متفاوت مسابقه را تمام کنید",reward:150},{id:"collector",name:"کلکسیون خودرو",detail:"هر پنج خودرو را آزاد کنید",reward:200},{id:"fully-tuned",name:"خودروی فول‌آپشن",detail:"هر سه ارتقای یک خودرو را به بالاترین سطح برسانید",reward:175}];
 const audio=createGameAudio();if(!settings.sound)audio.toggle();
-function emitParticle(x,y,vx,vy,color,life=.55,size=4){if(particles.length>=150)return;const p=particlePool.pop()||{};Object.assign(p,{x,y,vx,vy,color,life,maxLife:life,size});particles.push(p)}
+function emitParticle(x,y,vx,vy,color,life=.55,size=4,blend="lighter"){if(particles.length>=150)return;const p=particlePool.pop()||{};Object.assign(p,{x,y,vx,vy,color,life,maxLife:life,size,blend});particles.push(p)}
 function burst(x,y,count,color){for(let i=0;i<count;i++){const a=Math.PI*2*i/count+(Math.random()-.5)*.35,v=35+Math.random()*125;emitParticle(x,y,Math.cos(a)*v,Math.sin(a)*v,color,.35+Math.random()*.55,2+Math.random()*4)}}
 function updateParticles(dt){for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles[i]=particles[particles.length-1];particles.pop();particlePool.push(p);continue}p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt)}}
 function loadProgress(){try{const p=JSON.parse(localStorage.getItem("mshin-progress-v1")||"{}"),defaults=["rally","comet","lynx"],safeLevel=v=>Number.isInteger(v)?Math.max(0,Math.min(3,v)):0,raw=p.upgrades&&typeof p.upgrades==="object"?p.upgrades:{},upgrades={};["rally","comet","lynx","thunder","raptor"].forEach(id=>{const u=raw[id]&&typeof raw[id]==="object"?raw[id]:{};upgrades[id]={engine:safeLevel(u.engine),grip:safeLevel(u.grip),nitro:safeLevel(u.nitro)}});return {completed:Array.isArray(p.completed)?p.completed.filter(n=>Number.isInteger(n)&&n>=1&&n<=50):[],best:p.best&&typeof p.best==="object"?p.best:{},credits:Number.isFinite(p.credits)?Math.max(0,Math.floor(p.credits)):0,unlockedCars:Array.isArray(p.unlockedCars)?[...new Set([...defaults,...p.unlockedCars.filter(id=>["thunder","raptor"].includes(id))])]:defaults,upgrades,achievements:Array.isArray(p.achievements)?[...new Set(p.achievements.filter(id=>["first-finish","podium","world-tour","collector","fully-tuned"].includes(id)))]:[]}}catch{return {completed:[],best:{},credits:0,unlockedCars:["rally","comet","lynx"],upgrades:{},achievements:[]}}}
@@ -56,7 +56,7 @@ function advanceVehicleDestruction(vehicle,dt,x,y,heading){
  if(visual.explosion&&!vehicle.destructionEffectPlayed){vehicle.destructionEffectPlayed=true;burst(x,y,34,"#ffb34d");burst(x,y,22,"#e8e8e8");cameraShake=Math.max(cameraShake,.48);audio.collision(1.35)}
  if(state.despawned)return;state.destructionClock=(state.destructionClock||0)+dt;
  if(state.destructionClock>=(visual.smoke>.02?.075:.2)){state.destructionClock=0;
-  if(visual.smoke>.02){const h=heading||0;emitParticle(x+Math.cos(h)*34,y+Math.sin(h)*34,Math.cos(h)*(-12+Math.random()*16)+(Math.random()-.5)*24,Math.sin(h)*(-12+Math.random()*16)+(Math.random()-.5)*24,visual.fire>0?"#25282b":"#454b50",.9+Math.random()*.8,7+visual.smoke*12)}
+  if(visual.smoke>.02){const h=heading||0;emitParticle(x+Math.cos(h)*34,y+Math.sin(h)*34,Math.cos(h)*(-12+Math.random()*16)+(Math.random()-.5)*24,Math.sin(h)*(-12+Math.random()*16)+(Math.random()-.5)*24,visual.fire>0?"#151719":"#34393e",.9+Math.random()*.8,7+visual.smoke*12,"source-over")}
   if(visual.fire>.04)for(let i=0;i<2;i++)emitParticle(x+Math.cos(heading||0)*28+(Math.random()-.5)*18,y+Math.sin(heading||0)*28+(Math.random()-.5)*18,(Math.random()-.5)*35,-35-Math.random()*28,Math.random()>.5?"#ff7a25":"#ffc04d",.28+Math.random()*.3,3+Math.random()*5);
  }
 }
@@ -112,7 +112,7 @@ function renderTrackDynamics(){const w=worlds[stage.world];pickups.forEach(p=>{i
  else if(stage.world===7){ctx.rect(-13,-18,26,36);ctx.rect(-18,-22,36,6)}
  else{ctx.roundRect(-20,-10,40,20,5);ctx.moveTo(-13,-17);ctx.lineTo(-13,17);ctx.moveTo(13,-17);ctx.lineTo(13,17)}
  ctx.fill();ctx.stroke();ctx.restore()})}
-function drawParticles(){ctx.save();ctx.globalCompositeOperation="lighter";for(const p of particles){const alpha=clamp(p.life/p.maxLife,0,1);ctx.globalAlpha=alpha;ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(p.x,p.y,p.size*alpha,0,Math.PI*2);ctx.fill()}ctx.restore()}
+function drawParticles(){ctx.save();ctx.globalCompositeOperation="lighter";for(const p of particles){const alpha=clamp(p.life/p.maxLife,0,1);ctx.globalCompositeOperation=p.blend||"lighter";ctx.globalAlpha=alpha;ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(p.x,p.y,p.size*alpha,0,Math.PI*2);ctx.fill()}ctx.restore()}
 function drawDamageOverlay(target,damage){
  const visual=getDamageVisuals(damage),now=performance.now();
  if(!visual.panels.some(panel=>panel.dentCount)||visual.smoke<=0&&!visual.glassCracks)return;
