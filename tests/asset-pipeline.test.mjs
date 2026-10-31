@@ -62,7 +62,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
 });
 test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  for (const module of ["audio.js", "collision-physics.js", "rigid-body-physics.js", "tire-physics.js", "vehicle-damage-visuals.js", "traffic-ai.js", "vehicle-destruction.js"]) {
+  for (const module of ["audio.js", "race-camera.js", "collision-physics.js", "rigid-body-physics.js", "tire-physics.js", "vehicle-damage-visuals.js", "traffic-ai.js", "vehicle-destruction.js"]) {
     assert.ok(sw.includes(`./src/${module}`), `${module} must be precached`);
   }
 });
