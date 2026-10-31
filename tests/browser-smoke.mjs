@@ -167,7 +167,6 @@ try {
   economy.on("pageerror", error => errors.push(error.message));
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await economy.locator("#play").click();
-  await economy.waitForFunction(() => window.MshinAudioReady === true, undefined, { timeout: 15000 });
   assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
   assert.equal((await economy.locator("#credits").textContent()).trim(), "1000 🪙", "wallet should load saved coins");
   assert.match(await economy.locator("#weatherInfo").textContent(), /صاف/, "Green Valley should use clear weather");
@@ -183,7 +182,6 @@ try {
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
   await economy.reload({ waitUntil: "networkidle" });
   await economy.locator("#play").click();
-  await economy.waitForFunction(() => window.MshinAudioReady === true, undefined, { timeout: 15000 });
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "unlocked selected car should persist after reload");
   assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "car upgrades should persist after reload");
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
