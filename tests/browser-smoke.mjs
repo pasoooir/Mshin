@@ -41,7 +41,8 @@ try {
   await page.setViewportSize({width:1280,height:800});
   assert.equal(await page.locator(".worldCard").count(), 10, "all 10 image-led world cards should be selectable; browser errors: " + errors.join(" | "));
   const firstWorldBounds = await page.locator(".worldCard").first().boundingBox(), worldRailBounds = await page.locator("#worlds").boundingBox();
-  assert.ok(firstWorldBounds && firstWorldBounds.width > 100 && firstWorldBounds.height > 100 && worldRailBounds && firstWorldBounds.x < worldRailBounds.x + worldRailBounds.width && firstWorldBounds.x + firstWorldBounds.width > worldRailBounds.x, "first world card must intersect the visible world rail: " + JSON.stringify({firstWorldBounds,worldRailBounds}));
+  const firstWorldStyle = await page.locator(".worldCard").first().evaluate(el => ({display:getComputedStyle(el).display,visibility:getComputedStyle(el).visibility,opacity:getComputedStyle(el).opacity,background:getComputedStyle(el).backgroundColor,text:el.innerText}));
+  assert.ok(firstWorldBounds && firstWorldBounds.width > 100 && firstWorldBounds.height > 100 && worldRailBounds && firstWorldBounds.x < worldRailBounds.x + worldRailBounds.width && firstWorldBounds.x + firstWorldBounds.width > worldRailBounds.x && firstWorldBounds.y < worldRailBounds.y + worldRailBounds.height && firstWorldBounds.y + firstWorldBounds.height > worldRailBounds.y && firstWorldStyle.display!=="none" && firstWorldStyle.visibility==="visible" && Number(firstWorldStyle.opacity)>0, "first world card must be visible inside the world rail: " + JSON.stringify({firstWorldBounds,worldRailBounds,firstWorldStyle}));
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
