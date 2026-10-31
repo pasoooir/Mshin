@@ -54,6 +54,7 @@ try {
   await page.locator(".carChoice").nth(1).click();
   assert.equal(await page.evaluate(() => window.MshinShowroom3D.carId), "comet", "changing the selected car must update the live 3D model");
   await page.locator(".carChoice").first().click();
+  await page.screenshot({path:"artifacts/mshin-garage-webgl-desktop.png"});
   await page.locator("#showroomRotate").click();
   assert.equal(await page.evaluate(() => window.MshinShowroom.spinCount), 1, "360-degree showroom spin should be interactive");
   assert.equal(await page.locator("#showroomSound").isVisible(), true, "showroom should expose an engine preview control");
@@ -246,6 +247,8 @@ try {
   await mobile.locator("#tab-cars").click();
   assert.notEqual(await mobile.locator("#select .gtMenu").evaluate(el=>getComputedStyle(el).perspective),"none","mobile showroom should retain perspective depth");
   assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
+  assert.equal(await mobile.evaluate(() => window.MshinShowroom3D?.status), "webgl", "mobile garage must use the WebGL renderer too");
+  await mobile.waitForFunction(() => window.MshinShowroom3D?.frameCount > 0, undefined, {timeout:5000});
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
   const showroomCenter = { x: mobileShowroom.x + mobileShowroom.width/2, y: mobileShowroom.y + mobileShowroom.height/2 };
   await mobile.locator("#showroomVehicle").dispatchEvent("pointerdown", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y });
@@ -254,6 +257,8 @@ try {
   await mobile.waitForTimeout(60);
   const mobileDragState = await mobile.evaluate(()=>window.MshinShowroom);
   assert.ok(Math.abs(mobileDragState.angle)>0,"mobile drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
+  assert.ok(Math.abs(await mobile.evaluate(()=>window.MshinShowroom3D.rotation))>0,"mobile touch drag must rotate the actual WebGL vehicle model");
+  await mobile.screenshot({path:"artifacts/mshin-garage-webgl-mobile.png"});
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();
