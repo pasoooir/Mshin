@@ -183,6 +183,7 @@ try {
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
   await economy.reload({ waitUntil: "networkidle" });
   await economy.locator("#play").click();
+  await economy.waitForFunction(() => window.MshinAudioReady === true, undefined, { timeout: 15000 });
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "unlocked selected car should persist after reload");
   assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "car upgrades should persist after reload");
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
