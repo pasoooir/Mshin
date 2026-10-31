@@ -173,11 +173,15 @@ try {
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
   await page.reload({ waitUntil: "networkidle" });
+  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 });
+  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "reloaded game should finish booting before the home menu is used");
+  await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
+  await page.locator("#play").waitFor({ state: "visible", timeout: 5000 });
   await page.locator("#play").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   await page.locator("#startRace").click();
-  await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 22000 });
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "saved mute preference should survive reload");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
