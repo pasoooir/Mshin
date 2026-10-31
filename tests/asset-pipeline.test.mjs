@@ -168,7 +168,7 @@ test("vehicle-specific sound profiles include an EV motor whine", async () => {
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   for (const id of ["rally", "comet", "lynx", "raptor", "thunder"]) assert.ok(audio.includes(id + ":{"), id + " sound profile is required");
-  assert.ok(audio.includes("electric:true"));
+  assert.ok(audio.includes("electric:true")); assert.ok(audio.includes("roughness:0"));
   assert.ok(audio.includes("evOscillators"));
   assert.ok(audio.includes('vehicleId="rally"'));
   assert.ok(game.includes("boostTimer>0,selectedCar"));
