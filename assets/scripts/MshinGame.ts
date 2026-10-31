@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode, JsonAsset, resources } from "cc";
 import { STAGES, WORLD_THEMES, StageDefinition, generateTrackPath } from "../../src/stage-catalog";
 import { VehicleController } from "./VehicleController";
+import { VehicleDamageRenderer } from "./VehicleDamageRenderer";
 import { WorldRenderer } from "./WorldRenderer";
 import { ProgressStore, PlayerProgress } from "./ProgressStore";
 const {ccclass}=_decorator;
@@ -35,6 +36,7 @@ export class MshinGame extends Component {
    this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);this.cameraNode.angle=-this.carNode.angle;this.hudCanvas.angle=this.carNode.angle;
    this.hudRefresh+=dt;if(this.hudRefresh>=.1){this.hudRefresh=0;
     this.setText("speed","سرعت  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
+    this.setText("damage","بدنه  "+Math.round(this.vehicle.damage.total)+"٪");
     this.setText("time","زمان  "+this.format(this.vehicle.race.elapsedSeconds));
     this.setText("lap","دور  "+this.vehicle.race.lap+" / "+this.stage.laps);
    }
@@ -47,7 +49,7 @@ export class MshinGame extends Component {
   const bg=this.makeNode("HUD Backdrop",this.hudRoot);const g=bg.addComponent(Graphics);g.fillColor=new Color(18,32,52,220);g.roundRect(-610,300,1220,86,18);g.fill();
   this.addLabel("brand","مِشین • مسابقه آرکید",0,330,26,false);
   this.addLabel("world","",0,294,15,false);
-  this.addLabel("lap","دور  ۰ / ۳",-420,330,18,false);this.addLabel("time","زمان  ۰۰:۰۰",-260,330,18,false);this.addLabel("speed","سرعت  ۰",-90,330,18,false);
+  this.addLabel("lap","دور  ۰ / ۳",-420,330,18,false);this.addLabel("time","زمان  ۰۰:۰۰",-260,330,18,false);this.addLabel("speed","سرعت  ۰",-90,330,18,false);this.addLabel("damage","بدنه  ۰٪",120,330,18,false);
  }
  private addLabel(id:string,text:string,x:number,y:number,size:number,transient:boolean):Label {
   const n=this.makeNode("Label "+id,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(390,48);
@@ -100,6 +102,7 @@ export class MshinGame extends Component {
   const path=renderer.configure(this.stage,this.artLibrary);
   this.carNode.destroy();this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
   this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount,this.stage.world.grip);
+  const damageRenderer=this.carNode.addComponent(VehicleDamageRenderer);damageRenderer.bind(this.vehicle);
   this.vehicle.onLap=(lap)=>this.setText("lap","دور  "+lap+" / "+this.stage.laps);
   this.setText("world",this.stage.world.name+"  •  مرحله "+String(id).padStart(2,"۰"));
   this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
