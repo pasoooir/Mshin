@@ -12,7 +12,7 @@ Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from 
 
 The garage starts with three cars: Rally Fox (balanced), Comet GT (top speed), and Lynx 4x4 (high grip). Two additional cars — Thunder EV and Desert Raptor — can be unlocked with coins earned by finishing races. A local workshop lets players buy up to three engine, tyre-grip and nitro upgrades for each car. Five milestone achievements reward extra coins for a first finish, podiums, exploring worlds, collecting all cars and fully tuning a vehicle. Coins, unlocks, achievements, upgrade levels, best times and vehicle selection persist on the device. Collect glowing track pickups to recharge nitro, then trigger a temporary speed boost.
 
-The browser edition is version 0.4.9, a landscape installable PWA. Its versioned service worker (`mshin-arcade-v15`) precaches the 15 vector illustrations/sprites and refreshes the complete app shell; photographic world scenes are decoded before the menu appears before the game is considered ready, and serves it offline. The browser boot process decodes art before importing the race runtime; gameplay does not fetch or decode art during a race. No backend is required for gameplay.
+The browser edition is version 0.5.0, a landscape installable PWA. Its versioned service worker (`mshin-arcade-v16`) precaches the 15 vector illustrations/sprites and refreshes the complete app shell; photographic world scenes are decoded before the menu appears before the game is considered ready, and serves it offline. The browser boot process decodes art before importing the race runtime; gameplay does not fetch or decode art during a race. No backend is required for gameplay.
 
 ## Project implementation
 
@@ -27,6 +27,10 @@ The browser edition is version 0.4.9, a landscape installable PWA. Its versioned
 - Offline browser progress and settings: `localStorage`; selected car, mute preference, stage completion and best times remain on the device. Cocos adapter uses `sys.localStorage`.
 - PWA: `manifest.webmanifest`, `service-worker.js`, and `icons/mshin.svg`; offline-first app-shell caching is covered by Playwright.
 - Stateless optional Worker API: `workers.js`; see `docs/CLOUDFLARE_WORKER.md`.
+
+## RTL text and LTR icon direction
+
+Persian interface copy follows RTL reading order, while directional glyphs and UI icons are isolated as LTR inline elements (`bdi.icon-ltr`) so play, back, and navigation symbols retain their intended direction and do not get reordered by the Persian paragraph direction.
 
 ## Vehicle collision and damage
 
