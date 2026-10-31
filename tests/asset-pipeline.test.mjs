@@ -103,7 +103,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /lane\(60,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /Four lanes/);
   assert.match(game, /ROAD_HALF_WIDTH=180/);
-  assert.match(game, /lanes:\[-135,-45,45,135\]/);
+  assert.match(game, /lanes:\[-120,-30,30,120\]/);
   assert.match(game, /countdownElapsed<3\.72/);
   assert.match(game, /"دره سبز"/);
   assert.match(game, /"توفان کویر"/);
