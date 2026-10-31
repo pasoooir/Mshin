@@ -72,7 +72,7 @@ function drawDestructionOverlay(target,state){
 function makeObstacles(){
  obstacles=[];
  for(let i=0;i<stage.hazards;i++){const t=(i+.48)*Math.PI*2/stage.hazards+(stage.seed%11)*.025;obstacles.push({t,lateral:(i%2?1:-1)*(168+(i%3)*4),hit:false,cooldown:0})}
- pickups=Array.from({length:4},(_,i)=>({t:(i+.5)*Math.PI/2+(stage.seed%7)*.08,lateral:i%2?-42:42,collected:false}));
+ pickups=Array.from({length:4},(_,i)=>({t:(i+.5)*Math.PI/2+(stage.seed%7)*.08,lateral:i%2?-12:12,collected:false}));
  const types=["car","car","car","car"];
  if(stage.id>=11)types.push("pickup");
  if(stage.id>=21)types.push("formula");
