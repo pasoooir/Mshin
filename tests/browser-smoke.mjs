@@ -72,6 +72,7 @@ try {
   await page.locator("#sfxToggle").click();
   assert.deepEqual(await page.evaluate(() => { const s=JSON.parse(localStorage.getItem("mshin-settings-v1")); return {music:s.music,sound:s.sound,musicVolume:s.musicVolume,sfxVolume:s.sfxVolume}; }), {music:true,sound:true,musicVolume:.37,sfxVolume:.62}, "audio controls should persist separate values");
   await page.locator("#tab-race").click();
+  await page.waitForTimeout(260);
   await page.screenshot({ path: "artifacts/mshin-world-select-desktop.png", fullPage: true });
   const worldCards = await page.locator(".worldCard img").evaluateAll(nodes => nodes.map(node => node.getAttribute("src")));
   assert.ok(worldCards.every((src, index) => src === "./assets/vector/world-" + String(index + 1).padStart(2, "0") + ".svg"), "each world card should use its own text-free vector artwork");
