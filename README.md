@@ -85,10 +85,19 @@ npm run check
 CI validates stage data, portable TypeScript, Cocos script syntax, Worker syntax, browser runtime syntax, and Node tests. Cocos scripts still require the actual Creator Editor for engine type-check/import/build verification.
 
 
-## Next release candidate: 0.10.0 — NFS-inspired menu system
+## Next release candidate: 0.10.1 — procedural 3D motorsport menu and garage
 
 - Reworked the main and pause interface with angular graphite/red motorsport panels.
 - Added a ten-slot pause navigation layout; only implemented actions are interactive.
 - Replaced static MOST WANTED placeholders with a five-row live race/profile-derived ranking.
 - Added automatic software landscape rotation for portrait browser viewports, with landscape logical canvas sizing and touch-coordinate remapping.
-- Advanced the PWA shell cache to `mshin-arcade-v35`.
+- Advanced the PWA shell cache to `mshin-arcade-v36` and precached the local 3D renderer.
+
+
+## Version 0.10.1 — procedural 3D menu and showroom
+
+- Added a repository-local WebGL renderer with perspective camera, directional lighting, low-poly vehicle geometry, track surface, kerbs, trees, pit-side buildings and animated vehicle presentation.
+- Added a separate interactive 3D garage scene. Vehicle selection updates the actual 3D body paint, and drag input rotates the rendered 3D model rather than only rotating a 2D sprite.
+- Kept the live race Canvas visible behind the pause overlay; the menu renderer hides when the game enters a race/pause screen.
+- No CDN, remote 3D model, or external runtime library is required. The renderer is included in the offline app shell as `src/menu-3d-scene.js`.
+- Browser WebGL acceptance is being validated in Playwright with software rendering. Cocos Creator Editor import/build remains a separate unverified gate.
