@@ -39,6 +39,6 @@ test("settings and pause actions preserve game state semantics", () => {
 });
 
 test("PWA and offline cache markers advance together", () => {
-  assert.equal(manifest.version, "0.10.0");
-  assert.match(sw, /mshin-arcade-v35/);
+  assert.equal(manifest.version, "0.10.1");
+  assert.match(sw, /mshin-arcade-v36/);
 });
