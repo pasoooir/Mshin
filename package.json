@@ -1,9 +1,9 @@
 {
   "name": "mshin-2d-racing",
-  "version": "0.10.2",
+  "version": "0.11.0",
   "private": true,
   "type": "module",
-  "description": "Mshin 2D top-down arcade racing game; Cocos Creator 3.8.6 and TypeScript",
+  "description": "Mshin 2.5D perspective arcade racing game; Cocos Creator 3.8.6 and TypeScript",
   "uuid": "b4f38e2e-9a6c-4c3e-ae8c-56c1d00c38a1",
   "creator": {
     "version": "3.8.6"
