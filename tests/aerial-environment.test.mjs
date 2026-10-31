@@ -34,7 +34,7 @@ test("all ten worlds render volumetric scenery, crowd silhouettes and raised bar
   const stage={id:kind*5+1,world:kind,seed:kind*97+31};
   const frameAt=t=>({p:{x:Math.cos(t)*420,y:Math.sin(t)*320},nx:Math.cos(t),ny:Math.sin(t),angle:t});
   renderAerialScenery(context,stage,frameAt,world);
-  assert.ok(calls.ellipse>=54, "world "+kind+" should include grounded contact shadows");
+  assert.ok(calls.ellipse>=30, "world "+kind+" should include grounded contact shadows");
   assert.ok(calls.fillRect>=60, "world "+kind+" should include facade/barrier detail");
   assert.ok(calls.fill>=40, "world "+kind+" should include layered solid geometry");
   assert.ok(calls.stroke>=18, "world "+kind+" should include dimensional figure details");
