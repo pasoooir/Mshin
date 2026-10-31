@@ -1,3 +1,12 @@
+## 0.10.1 — WebGL 3D garage preview (in validation)
+
+### Real-time 3D showroom
+- Replaced the perspective-transformed 2D car artwork in the garage with a dependency-free WebGL 1 scene: low-poly body shell, cabin glazing, wheels, alloy hubs, lights, spoiler, lit studio floor and perspective camera.
+- Added live paint-color changes for all five selectable vehicles, pointer/touch orbit rotation, and an animated 360-degree spin.
+- Added an image fallback for browsers without WebGL and visibility-aware rendering to avoid wasting battery while the garage is closed.
+- Added a Playwright WebGL/SwiftShader acceptance check and advanced the offline PWA cache to `mshin-arcade-v36`.
+- Release gate: browser CI, merged-main validation and GitHub Pages deployment must pass; Cocos Creator Editor import/build remains a separate unverified gate.
+
 ## 0.9.3 — published (2026-10-31)
 
 ### Repository-local runtime assets
