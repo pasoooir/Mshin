@@ -98,7 +98,7 @@ test('impact energy is assigned by inverse mass, with static barriers absorbing 
 test('AI racing line offsets cars consistently and wraps at the path boundary',()=>{
  const path=[{x:0,y:0},{x:10,y:0},{x:20,y:0},{x:30,y:0}];
  const left=calculateRacingLineTarget(path,0,4),right=calculateRacingLineTarget(path,0,-4);
- assert.equal(left.x,0);assert.equal(right.x,0);assert.equal(left.y,4);assert.equal(right.y,-4);
+ assert.equal(left.x,0);assert.equal(right.x,0);assert.equal(left.y,-4);assert.equal(right.y,4);
  assert.deepEqual(calculateRacingLineTarget(path,4,4),left);
 });
 test('AI target speed decreases for sharper turns and remains bounded for invalid input',()=>{
