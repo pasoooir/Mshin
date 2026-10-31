@@ -39,7 +39,7 @@ export class VehicleController extends Component {
    if(Math.hypot(dx,dy)>58)continue;
    const forwardAngle=this.car.heading-Math.PI/2;
    const body=createRigidBody2D({x:this.car.x,y:this.car.y,vx:Math.sin(this.car.heading)*this.car.speed,vy:-Math.cos(this.car.heading)*this.car.speed,
-    angle:forwardAngle,angularVelocity:this.car.angularVelocity??0,mass:1250,length:74,width:32});
+    angle:forwardAngle,angularVelocity:this.car.angularVelocity??0,mass:1250,length:92,width:44});
    const barrier=createRigidBody2D({x:obstacle.x,y:obstacle.y,angle:obstacle.angle,mass:1,length:34,width:28,static:true});
    const impact=resolveRigidBody2D(body,barrier);
    if(!impact.hit)continue;
@@ -58,7 +58,7 @@ export class VehicleController extends Component {
  resolveVehicleContact(other:VehicleController):void {
   if(other===this||this.hitCooldown>0||other.hitCooldown>0)return;
   const make=(v:VehicleController)=>createRigidBody2D({x:v.car.x,y:v.car.y,vx:Math.sin(v.car.heading)*v.car.speed,vy:-Math.cos(v.car.heading)*v.car.speed,
-   angle:v.car.heading-Math.PI/2,angularVelocity:v.car.angularVelocity??0,mass:1250,length:74,width:32});
+   angle:v.car.heading-Math.PI/2,angularVelocity:v.car.angularVelocity??0,mass:1250,length:92,width:44});
   const a=make(this),b=make(other),impact=resolveRigidBody2D(a,b);if(!impact.hit)return;
   const energyShare=splitImpactEnergy(impact.energy,a.invMass,b.invMass);
   for(const [vehicle,body,normalSign,damageEnergy] of [[this,a,1,energyShare.a],[other,b,-1,energyShare.b]] as Array<[VehicleController,ReturnType<typeof make>,number,number]>) {
