@@ -228,6 +228,7 @@ function renderWorlds(){const root=$("worlds");root.innerHTML="";worlds.forEach(
 let showroomAngle=0,showroomDragX=null;
 const mainMenuRenderer=createShowroom3D($("mainMenu3dCanvas"));
 mainMenuRenderer.setAutoRotate(5);
+mainMenuRenderer.setScale(1.65);
 if(mainMenuRenderer.state.status==="webgl")$("select").classList.add("has-webgl");
 window.MshinMainMenu3D=mainMenuRenderer.state;
 const showroomRenderer=createShowroom3D($("showroom3dCanvas"));
