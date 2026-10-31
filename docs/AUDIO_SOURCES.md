@@ -1,6 +1,6 @@
 # Mshin audio asset provenance
 
-The 0.8.9 candidate uses two loopable instrumental racing tracks and five recorded vehicle/road layers. Each OpenGameArt/SFXMint/BigSoundBank/Freesound source identifies the applicable CC0 license; the source pages are the authoritative license records.
+The 0.8.9 candidate uses two loopable instrumental racing tracks, five recorded vehicle/road layers and dedicated collision/brake/gear effects. Each OpenGameArt/SFXMint/BigSoundBank/Freesound source identifies the applicable CC0 license; the source pages are the authoritative license records.
 
 | In-game use | Track | Author | License evidence | Format |
 |---|---|---|---|---|
@@ -21,4 +21,10 @@ The browser asset manifest points to immutable commit `e280012e423cf2c800bd54e4f
 
 The audio engine blends idle, load and rolling recordings independently, with per-vehicle layer weights, filter resonance, RPM-dependent playback rates and throttle envelopes. The electric vehicle retains a separate synthesized motor profile. This replaces the previous six pitch-only loop layers.
 
+## Other sound effects
+
+| In-game use | File | Source | License evidence |
+|---|---|---|---|
 | Vehicle collision | `collisionImpact.ogg` | qubodup, “Crash Collision” | https://opengameart.org/content/crash-collision — CC0 1.0 |
+| Tyre/brake squeal | `brakeSqueal` | SFXMint race-car-07 | https://sfxmint.com/license — CC0 1.0 |
+| Gear change | `gearDown` | SFXMint race-car-10 | https://sfxmint.com/license — CC0 1.0 |
