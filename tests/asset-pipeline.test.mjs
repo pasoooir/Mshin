@@ -182,5 +182,5 @@ test("race intro, progressive traffic classes and impact coin rewards are wired 
   assert.ok(game.includes("function drawTrafficBody(r)"));
   assert.ok(game.includes("function awardImpactReward(hit,forwardDot)"));
   assert.ok(game.includes("progress.credits+=reward;saveProgress()")); assert.ok(game.includes("race.impactPoints"));
-  assert.ok(game.includes("ضربه قدرتمند"));
+  assert.ok(game.includes("تخریب حریف"));
 });
