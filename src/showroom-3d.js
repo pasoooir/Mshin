@@ -74,7 +74,7 @@ function makeMesh(gl,triangles){
 function boxTriangles(cx,cy,cz,sx,sy,sz){
  const x=sx/2,y=sy/2,z=sz/2;
  const p=[[-x,-y,-z],[x,-y,-z],[x,y,-z],[-x,y,-z],[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z]].map(v=>[v[0]+cx,v[1]+cy,v[2]+cz]);
- const faces=[[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[3,2,6,7],[4,5,1,0]];
+ const faces=[[0,3,2,1],[4,5,6,7],[4,7,3,0],[1,2,6,5],[3,7,6,2],[4,0,1,5]];
  const out=[];for(const [a,b,c,d] of faces){out.push([p[a],p[b],p[c]],[p[a],p[c],p[d]])}return out;
 }
 function loftTriangles(sections){
@@ -179,7 +179,7 @@ export function createShowroom3D(canvas){
   canvas.addEventListener("webglcontextlost",onContextLost);canvas.addEventListener("webglcontextrestored",onContextRestored);
   return {
    state,
-   setCar(next){model=next||model;state.carId=model.id;},
+   setCar(next){model=next||model;state.carId=model.id;const hex=String(model.color||"#f15d4e").replace("#","");const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255);if(rgb.every(Number.isFinite)&&carParts[0])carParts[0].color=rgb;},
    setRotation(deg){rotation=((Number(deg)||0)%360+360)%360;spinStart=0;state.rotation=rotation;},
    spin(){spinFrom=rotation;spinStart=performance.now();if(visible&&!raf)raf=requestAnimationFrame(render);},
    resize,
