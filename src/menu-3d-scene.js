@@ -59,7 +59,7 @@ function createRenderer(canvas,mode){const gl=canvas.getContext("webgl",{alpha:t
    const yaw=angle+Math.sin(time*.00018)*.12;car(colorHex,yaw,time,false,vp);
    for(let i=0;i<9;i++){const x=-12+i*3,z=-9;draw(meshes.light,multiply(translate(x,.55,z),scale(.12,1.1,.12)),vp)}
   }
-  const stats={ready:true,mode,drawCalls,meshes:cache.size+paintMeshes.size,webglVersion:gl.getParameter(gl.VERSION),frame:((mode==="garage"?window.Mshin3DGarage?.frame:window.Mshin3D?.frame)||0)+1};if(mode==="garage")window.Mshin3DGarage={...(window.Mshin3DGarage||{}),...stats,angle};else window.Mshin3D=stats;
+  const stats={ready:true,mode,color:colorHex,drawCalls,meshes:cache.size+paintMeshes.size,webglVersion:gl.getParameter(gl.VERSION),frame:((mode==="garage"?window.Mshin3DGarage?.frame:window.Mshin3D?.frame)||0)+1};if(mode==="garage")window.Mshin3DGarage={...(window.Mshin3DGarage||{}),...stats,angle};else window.Mshin3D=stats;
  }
  function dispose(){disposed=true;for(const m of [...cache.values(),...paintMeshes.values()])for(const b of [m.p,m.n,m.c])gl.deleteBuffer(b);gl.deleteProgram(program)}
  return {render,dispose};
