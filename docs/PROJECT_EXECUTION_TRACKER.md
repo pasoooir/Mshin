@@ -2,18 +2,21 @@
 
 Last evidence refresh: 2026-10-31
 
-## Latest verified release — 0.8.8
+## Latest verified release — 0.8.9
 
-- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #41 ادغام و GitHub Pages منتشر شده است.
-- **Release scope:** نمایشگاه سینمایی خودرو با نورافکن و کف نورانی، چرخش تعاملی با لمس/کشیدن، چرخش ۳۶۰ درجه و پیش‌نمایش صدای اختصاصی موتور هر خودرو؛ خودروی برقی صدای whine اختصاصی دارد.
-- **Regression coverage:** Playwright دسکتاپ و موبایل؛ نمایش خودرو و مشخصات انتخاب‌شده، تغییر تصویر با انتخاب خودرو، اجرای چرخش ۳۶۰ درجه، کنترل پیش‌نمایش صدا و چرخش با drag در موبایل.
-- **Release metadata:** package و PWA manifest برابر `0.8.8`؛ asset marker برابر `2026.10.31.12`؛ Service Worker cache برابر `mshin-arcade-v27`.
-- **PR #41:** https://github.com/pasoooir/Mshin/pull/41 — merged، commit `ed7554dcd161ccabf5261f53a14afcd6210998aa`.
-- **PR browser CI:** run `41194601384` — success؛ تست‌های Node و Playwright دسکتاپ/موبایل موفق.
-- **Merged-main validation:** run `41195187912` — success.
-- **GitHub Pages deployment:** run `41195187475` — success.
+- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #44 و PR #45 ادغام و GitHub Pages منتشر شده است.
+- **Release scope:** میکسر صوتی مستقل برای Music و SFX؛ کلیدهای روشن/خاموش مجزا، volume مستقل و ذخیره تنظیمات؛ موسیقی CC0 منوی اصلی و مسابقه با crossfade؛ preload موتور، ترمز، تعویض دنده و موسیقی پیش از مسابقه.
+- **Offline acceptance:** Playwright وجود تمام فایل‌های صوتی manifest در Cache Storage را بررسی می‌کند؛ سپس شبکه را قطع می‌کند، صفحه را مجدداً بارگذاری می‌کند و وجود مجدد تمام ArrayBufferهای صوتی را تأیید می‌کند.
+- **Regression coverage:** تست‌های Node و Playwright دسکتاپ/موبایل؛ بررسی تنظیمات صوتی و پایداری آن‌ها پس از reload، عدم درخواست دیرهنگام منابع هنگام مسابقه، اجرای آفلاین و انتخاب ۱۰ دنیا.
+- **Release metadata:** package و PWA manifest برابر `0.8.9`؛ asset marker برابر `2026.10.31.13`؛ Service Worker cache برابر `mshin-arcade-v29`.
+- **PR #44:** https://github.com/pasoooir/Mshin/pull/44 — merged؛ audio mixer، موسیقی CC0 و تنظیمات مستقل صدا.
+- **PR #44 merged-main validation:** run `41202329340` — success؛ **Pages deployment:** run `41202328716` — success.
+- **PR #45:** https://github.com/pasoooir/Mshin/pull/45 — merged، commit `ac5e8e7666df7d3deb4d4dac17a674318dda84ba`.
+- **PR #45 browser validation:** run `41202686023` و push validation run `41202647584` — success.
+- **Merged-main validation:** runs `41202871457` و `41202859952` — success.
+- **GitHub Pages deployment:** run `41202859572` — success.
 - **Live game:** https://pasoooir.github.io/Mshin/
-- **Limit:** پیش‌نمایش صدای مرورگر و تست Playwright جایگزین تست شنیداری روی بلندگوی واقعی یا تأیید فیزیکی دستگاه نیست؛ Cocos Creator Editor/device QA نیز مستقل است.
+- **Limit:** تست مرورگر صحت cache و decode را تأیید می‌کند، اما جایگزین ارزیابی شنیداری روی بلندگوهای فیزیکی و QA مستقل در Cocos Creator نیست.
 
 ## Previous verified release — 0.8.7
 
