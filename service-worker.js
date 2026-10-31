@@ -1,7 +1,7 @@
-const CACHE_NAME = "mshin-arcade-v27";
+const CACHE_NAME = "mshin-arcade-v28";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
-  "./src/web-game.js", "./src/tire-physics.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
+  "./src/web-game.js", "./src/environment-renderer.js", "./src/tire-physics.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
   "./assets/vector/world-01.svg",
   "./assets/vector/world-02.svg",
   "./assets/vector/world-03.svg",
@@ -15,9 +15,18 @@ const APP_SHELL = [
   "./assets/vector/car-rally.svg", "./assets/vector/car-comet.svg", "./assets/vector/car-lynx.svg",
   "./assets/vector/car-thunder.svg", "./assets/vector/car-raptor.svg"
 ];
+const REMOTE_AUDIO = [
+  "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/sky_blue_street_bpm165.ogg",
+  "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/pure_raceway_bpm160.ogg"
+];
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(APP_SHELL);
+    await Promise.allSettled(REMOTE_AUDIO.map(url => cache.add(url)));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", event => {
@@ -26,11 +35,14 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   const request = event.request;
-  if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
+  const url = new URL(request.url);
+  const localRequest = url.origin === self.location.origin;
+  const approvedRemoteAudio = REMOTE_AUDIO.includes(request.url);
+  if (request.method !== "GET" || (!localRequest && !approvedRemoteAudio)) return;
   event.respondWith(caches.match(request, { ignoreSearch: true }).then(cached => {
     if (cached) return cached;
     return fetch(request).then(response => {
-      if (response.ok && response.type === "basic") {
+      if (response.ok && (response.type === "basic" || approvedRemoteAudio && response.type === "cors")) {
         const copy = response.clone();
         event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, copy)));
       }
