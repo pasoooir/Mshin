@@ -10,6 +10,10 @@ async function waitForGameBoot(page, label = "game") {
   while (Date.now() < deadline) {
     state = await page.evaluate(() => {
       const home = document.querySelector("#home");
+      const play = document.querySelector("#play");
+      const homeStyle = home ? getComputedStyle(home) : null;
+      const playStyle = play ? getComputedStyle(play) : null;
+      const playRect = play?.getBoundingClientRect();
       return {
         stage: window.MshinBootStage,
         bootReady: window.MshinBootReady === true,
@@ -19,14 +23,18 @@ async function waitForGameBoot(page, label = "game") {
         progress: window.MshinPreloadProgress,
         failures: window.MshinAssets?.failures || [],
         homePresent: Boolean(home),
-        homeVisible: Boolean(home && !home.classList.contains("hidden") && getComputedStyle(home).visibility !== "hidden")
+        homeVisible: Boolean(home && !home.classList.contains("hidden") && homeStyle.display !== "none" && homeStyle.visibility !== "hidden" && Number(homeStyle.opacity) > 0),
+        playVisible: Boolean(play && playStyle.display !== "none" && playStyle.visibility !== "hidden" && Number(playStyle.opacity) > 0 && playRect?.width > 0 && playRect?.height > 0),
+        homeClass: home?.className || null,
+        playClass: play?.className || null,
+        playBounds: playRect ? {width:playRect.width,height:playRect.height} : null
       };
     });
     if (state.bootError) throw new Error(label + " reported a boot error: " + JSON.stringify(state));
-    if (state.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible) break;
+    if (state.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible && state.playVisible) break;
     await new Promise(resolve => setTimeout(resolve, 120));
   }
-  assert.ok(state?.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible,
+  assert.ok(state?.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible && state.playVisible,
     label + " did not reach the complete runtime-ready state: " + JSON.stringify(state));
   return state;
 }
@@ -150,7 +158,6 @@ try {
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "settings-persistence reload");
-  await page.locator("#play").waitFor({ state: "visible", timeout: 5000 });
   await page.locator("#play").click();
   await page.locator("#tab-settings").click();
   assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
