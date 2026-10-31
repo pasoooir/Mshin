@@ -340,13 +340,18 @@ try {
   assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
   const showroomCenter = { x: mobileShowroom.x + mobileShowroom.width/2, y: mobileShowroom.y + mobileShowroom.height/2 };
-  await mobile.mouse.move(showroomCenter.x,showroomCenter.y);
-  await mobile.mouse.down();
-  await mobile.mouse.move(showroomCenter.x,showroomCenter.y+35,{steps:5});
-  await mobile.mouse.up();
-  await mobile.waitForTimeout(60);
+  // Dispatch touch-typed PointerEvents directly on the transformed showroom
+  // target. Playwright's mouse device remains a mouse even on isMobile pages,
+  // so it does not exercise the mobile pointer path consistently.
+  await mobile.locator("#showroomVehicle").evaluate((el, point) => {
+    const common = { bubbles: true, cancelable: true, pointerId: 7, pointerType: "touch", isPrimary: true, clientX: point.x, clientY: point.y };
+    el.dispatchEvent(new PointerEvent("pointerdown", common));
+    el.dispatchEvent(new PointerEvent("pointermove", { ...common, clientY: point.y + 35 }));
+    el.dispatchEvent(new PointerEvent("pointerup", { ...common, clientY: point.y + 35 }));
+  }, showroomCenter);
   const mobileDragState = await mobile.evaluate(()=>window.MshinShowroom);
-  assert.ok(Math.abs(mobileDragState.angle)>0,"mobile drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
+  assert.ok(mobileDragState.dragStarts > 0 && mobileDragState.dragMoves > 0 && Math.abs(mobileDragState.angle)>0,
+    "mobile touch drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();
