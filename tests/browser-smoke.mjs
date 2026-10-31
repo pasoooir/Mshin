@@ -25,6 +25,7 @@ try {
   await page.waitForFunction(() => window.Mshin3D?.ready === true, undefined, { timeout: 10000 });
   const menu3d = await page.evaluate(() => window.Mshin3D);
   assert.ok(menu3d.drawCalls >= 40 && menu3d.meshes >= 8, "home menu must render a real WebGL 3D environment and vehicle: " + JSON.stringify(menu3d));
+  await page.screenshot({path:"artifacts/mshin-3d-menu-desktop.png"});
   assert.equal(await page.locator("#mshinMenu3DCanvas").isVisible(), true, "cinematic WebGL background must be visible behind the home menu");
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 9, "menu should expose eight requested sections plus the existing workshop");
@@ -53,6 +54,7 @@ try {
   assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
   await page.waitForFunction(() => window.Mshin3DGarage?.ready === true && window.Mshin3DGarage.drawCalls >= 10, undefined, { timeout: 10000 });
   assert.equal(await page.locator("#mshinGarage3DCanvas").isVisible(), true, "garage must render a local WebGL 3D showroom canvas");
+  await page.screenshot({path:"artifacts/mshin-3d-garage-desktop.png"});
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-rally.svg", "showroom should display the selected starter car");
   await page.locator("#showroomRotate").click();
   assert.equal(await page.evaluate(() => window.MshinShowroom.spinCount), 1, "360-degree showroom spin should be interactive");
@@ -206,6 +208,8 @@ try {
   await page.screenshot({ path: "artifacts/mshin-gameplay-desktop.png" });
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
+  await page.waitForFunction(() => document.getElementById("mshinMenu3DCanvas")?.classList.contains("is-visible") === false);
+  assert.equal(await page.locator("#mshinMenu3DCanvas").isVisible(), false, "menu renderer must hide on pause so the live race canvas remains visible");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
   await page.screenshot({path:"artifacts/mshin-pause-desktop.png"});
