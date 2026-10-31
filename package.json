@@ -14,7 +14,8 @@
     "check:worker": "node --check workers.js",
     "test": "npm run build:core && node --test tests/*.test.mjs",
     "check": "npm run validate:data && npm run build:core && npm run check:cocos-syntax && npm run check:worker && npm test",
-    "check:cocos-syntax": "node scripts/check-cocos-syntax.mjs"
+    "check:cocos-syntax": "node scripts/check-cocos-syntax.mjs",
+    "sync:version": "node scripts/sync-version.mjs"
   },
   "engines": {
     "node": ">=20"
