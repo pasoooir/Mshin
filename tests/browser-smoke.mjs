@@ -32,6 +32,11 @@ try {
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
+  assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
+  assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-rally.svg", "showroom should display the selected starter car");
+  await page.locator("#showroomRotate").click();
+  assert.equal(await page.evaluate(() => window.MshinShowroom.spinCount), 1, "360-degree showroom spin should be interactive");
+  assert.equal(await page.locator("#showroomSound").isVisible(), true, "showroom should expose an engine preview control");
   assert.equal(await page.locator("#tabPanel-cars").isVisible(), true, "car tab should be visible after selection");
   await page.locator("#tab-workshop").click();
   assert.equal(await page.locator(".upgrade").count(), 3, "workshop tab should show three horizontal upgrade cards");
@@ -47,6 +52,8 @@ try {
   await page.locator("#tab-cars").click();
   await page.getByRole("button", { name: /دنباله‌دار GT/ }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
+  assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
+  assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("#play").click();
   await page.locator("#tab-cars").click();
@@ -170,6 +177,12 @@ try {
   assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
   await mobile.locator("#tab-cars").click();
   assert.notEqual(await mobile.locator("#select .gtMenu").evaluate(el=>getComputedStyle(el).perspective),"none","mobile showroom should retain perspective depth");
+  assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
+  const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
+  await mobile.locator("#showroomVehicle").dispatchEvent("pointerdown",{pointerId:1,clientX:mobileShowroom.x+mobileShowroom.width/2,clientY:mobileShowroom.y+mobileShowroom.height/2});
+  await mobile.locator("#showroomVehicle").dispatchEvent("pointermove",{pointerId:1,clientX:mobileShowroom.x+mobileShowroom.width/2+35,clientY:mobileShowroom.y+mobileShowroom.height/2});
+  await mobile.locator("#showroomVehicle").dispatchEvent("pointerup",{pointerId:1,clientX:mobileShowroom.x+mobileShowroom.width/2+35,clientY:mobileShowroom.y+mobileShowroom.height/2});
+  assert.ok(Math.abs(await mobile.evaluate(()=>window.MshinShowroom.angle))>0,"mobile drag should rotate the showroom vehicle");
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();

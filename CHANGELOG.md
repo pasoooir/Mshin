@@ -1,3 +1,12 @@
+## 0.8.8 — 2026-10-31
+
+### Cinematic vehicle showroom
+- Added a dedicated selected-car studio with cinematic spotlight, reflective floor glow and a layered 3D perspective presentation.
+- Added interactive drag rotation plus a one-tap 360° showroom spin, with touch and pointer support.
+- Added short, vehicle-specific engine previews using the already-preloaded CC0 engine layers; the electric vehicle receives a synthesized electric whine preview.
+- Preserved selected vehicle and progression behavior; extended desktop/mobile browser coverage for showroom selection, rotation and audio preview controls.
+- Advanced PWA cache to v27 and synchronized package/manifest metadata to 0.8.8.
+
 ## 0.8.7 — 2026-10-31
 
 ### Premium 3D showroom and menu polish

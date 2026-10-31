@@ -123,6 +123,28 @@
 @media(hover:hover) and (pointer:fine){#select .carChoice:hover{transform:translateY(-7px) rotateX(3deg) rotateY(-3deg) scale(1.025);box-shadow:0 22px 38px #0009,0 0 25px #61dafa22}#select .carChoice:hover::after{opacity:1}#select .worldCard:hover{transform:translateY(-6px) rotateX(2deg) scale(1.025);box-shadow:0 20px 34px #0008}#select .stageCard:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 15px 26px #0008}#select .upgrade:hover,#select .achievement:hover{transform:translateY(-5px) rotateX(2deg);box-shadow:0 19px 34px #0008}}
 @media(max-width:700px){#select .gtMenu{perspective:900px;padding:12px;gap:9px;border-radius:19px}#select .visualRail{gap:10px;scroll-padding-inline:4px}#select .carChoice{width:clamp(158px,54vw,205px);border-radius:14px}#select .carArt{height:clamp(112px,21vh,155px)}#select .carArt img{width:94%;height:94%;transform:translateZ(12px)}#select .worldCard{width:clamp(142px,46vw,180px)}#select .worldArt{height:clamp(92px,15vh,125px)}#select .stageCard{width:clamp(142px,45vw,175px)}#select .menuTab{min-width:88px;padding:9px 10px}#select .menuFooter{gap:7px}#select .footerSelection{font-size:9px}}
 @media(prefers-reduced-motion:reduce){#select .carChoice,#select .worldCard,#select .stageCard,#select .upgrade,#select .achievement,#select .carChoice::after{transition:none!important;will-change:auto}}
+
+/* 0.8.8 cinematic vehicle studio */
+#tabPanel-cars{min-height:0}
+.showroomStage{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(190px,1fr) minmax(190px,.82fr);align-items:center;gap:16px;min-height:clamp(170px,25vh,230px);padding:12px 18px;border:1px solid #9de9ff35;border-radius:18px;overflow:hidden;background:radial-gradient(ellipse at 30% 48%,#386b8b88,#142c45 52%,#081626 100%);box-shadow:inset 0 1px #fff3,0 14px 28px #0005}
+.showroomSpotlight{position:absolute;z-index:-1;left:14%;top:-80%;width:42%;height:220%;background:linear-gradient(90deg,transparent,#a5edff18,transparent);transform:rotate(24deg);filter:blur(8px);animation:showroomLight 7s ease-in-out infinite alternate}
+.showroomFloor{position:absolute;z-index:-1;left:4%;bottom:12%;width:54%;height:22%;border-radius:50%;background:radial-gradient(ellipse,#6beaff55 0%,#4b9dc033 38%,transparent 72%);filter:blur(12px)}
+.showroomVehicle{position:relative;display:grid;place-items:center;min-width:0;height:clamp(145px,22vh,205px);perspective:850px;touch-action:pan-y;cursor:grab;user-select:none}
+.showroomVehicle:active{cursor:grabbing}
+.showroomVehicle img{width:min(100%,290px);height:100%;object-fit:contain;filter:drop-shadow(0 20px 12px #000b) drop-shadow(0 0 20px #64dfff55);transform:translateZ(22px) rotateY(var(--showroom-angle,0deg));transform-style:preserve-3d;transition:filter .35s;will-change:transform}
+.showroomVehicle.is-spinning img{animation:showroomSpin 1.35s cubic-bezier(.2,.75,.2,1) both}
+.showroomInfo{display:grid;gap:5px;align-content:center;text-align:right;min-width:0}
+.showroomEyebrow{font-size:8px;font-weight:1000;letter-spacing:2px;color:#7ce8ff}
+.showroomInfo>b{font-size:clamp(18px,2.5vw,25px);color:#fff2c0}
+.showroomInfo>small{font-size:10px;color:#b8d2e8}
+.showroomActions{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.showroomActions button{font-size:10px;padding:8px 10px;border:1px solid #ffffff35;background:#ffffff12;color:#fff}
+.showroomActions button:disabled{opacity:.45}
+.showroomHint{font-size:9px!important;color:#8caac5!important}
+@keyframes showroomSpin{0%{transform:translateZ(22px) rotateY(var(--showroom-angle,0deg)) scale(.92)}45%{transform:translateZ(45px) rotateY(calc(var(--showroom-angle,0deg) + 190deg)) scale(1.08)}100%{transform:translateZ(22px) rotateY(calc(var(--showroom-angle,0deg) + 360deg)) scale(1)}}
+@keyframes showroomLight{from{transform:translateX(-24%) rotate(24deg);opacity:.45}to{transform:translateX(34%) rotate(24deg);opacity:1}}
+@media(max-width:700px){.showroomStage{grid-template-columns:1fr;gap:2px;min-height:0;padding:8px 12px}.showroomVehicle{height:clamp(105px,17vh,145px)}.showroomVehicle img{width:min(86%,240px)}.showroomInfo{text-align:center;gap:3px}.showroomActions{justify-content:center;margin-top:4px}.showroomActions button{font-size:9px;padding:7px 9px}.showroomHint{display:none}.showroomEyebrow{font-size:7px}}
+@media(prefers-reduced-motion:reduce){.showroomSpotlight{animation:none}.showroomVehicle.is-spinning img{animation:none!important;transform:rotateY(12deg)}}
 </style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
@@ -159,6 +181,13 @@
 <section class="tabPanel" id="tabPanel-cars" role="tabpanel" aria-labelledby="tab-cars" data-panel="cars" hidden>
 <div class="sectionHeading"><div><span class="menuEyebrow">GARAGE</span><h2>ناوگان خودروها</h2><p>هر خودرو شخصیت، شتاب و هندلینگ مخصوص خودش را دارد.</p></div><span class="sectionCounter">خودروی فعال</span></div>
 <div class="selectedCarHero" id="selectedCarHero"><span>خودروی انتخاب‌شده</span><b id="selectedCarName">روباه رالی</b></div>
+<div class="showroomStage" id="showroomStage" aria-label="نمایشگاه سه‌بعدی خودروی انتخاب‌شده">
+  <div class="showroomSpotlight"></div><div class="showroomFloor"></div>
+  <div class="showroomVehicle" id="showroomVehicle" role="img" aria-label="نمای سه‌بعدی خودرو">
+    <img id="showroomCarImage" src="./assets/vector/car-rally.svg" alt="">
+  </div>
+  <div class="showroomInfo"><span class="showroomEyebrow">360° CINEMATIC SHOWROOM</span><b id="showroomCarName">روباه رالی</b><small id="showroomCarSpecs">متعادل · سرعت ۳۳۰</small><div class="showroomActions"><button type="button" class="secondary" id="showroomRotate" aria-label="چرخش ۳۶۰ درجه خودرو">⟳ چرخش ۳۶۰°</button><button type="button" class="secondary" id="showroomSound" aria-label="پخش صدای موتور خودرو">🔊 شنیدن صدای موتور</button></div><small class="showroomHint">برای چرخاندن خودرو، تصویر را لمس و بکش.</small></div>
+</div>
 <div class="garage visualRail" id="garage" aria-label="خودروهای قابل انتخاب"></div>
 </section>
 <section class="tabPanel" id="tabPanel-workshop" role="tabpanel" aria-labelledby="tab-workshop" data-panel="workshop" hidden>
@@ -178,4 +207,4 @@
 </section></div>
 <div class="overlay hidden" id="pausePanel"><section class="panel narrow"><h1>مسابقه متوقف شد</h1><p>کمی استراحت کن؛ زمان مسابقه متوقف شده است.</p><button class="primary" id="resume">ادامه مسابقه ▶</button><p><button class="secondary" id="quitRace">بازگشت به مراحل</button></p></section></div>
 <div class="overlay hidden" id="finish"><section class="panel narrow"><h1>🏆 مرحله به پایان رسید!</h1><p id="finishText"></p><button class="primary" id="nextStage">مرحله بعد ▶</button><p><button class="secondary" id="finishSelect">انتخاب مرحله</button></p></section></div>
-<script>if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script type="module" src="./src/boot.js?v=2026.10.31.11"></script></body></html>
+<script>if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script type="module" src="./src/boot.js?v=2026.10.31.12"></script></body></html>
