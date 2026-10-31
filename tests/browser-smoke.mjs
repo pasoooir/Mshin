@@ -228,9 +228,11 @@ try {
   assert.notEqual(await mobile.locator("#select .gtMenu").evaluate(el=>getComputedStyle(el).perspective),"none","mobile showroom should retain perspective depth");
   assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
-  await mobile.locator("#showroomVehicle").dispatchEvent("pointerdown",{pointerId:1,clientX:mobileShowroom.x+mobileShowroom.width/2,clientY:mobileShowroom.y+mobileShowroom.height/2});
-  await mobile.locator("#showroomVehicle").dispatchEvent("pointermove",{pointerId:1,clientX:mobileShowroom.x+mobileShowroom.width/2,clientY:mobileShowroom.y+mobileShowroom.height/2+35});
-  await mobile.locator("#showroomVehicle").dispatchEvent("pointerup",{pointerId:1,clientX:mobileShowroom.x+mobileShowroom.width/2,clientY:mobileShowroom.y+mobileShowroom.height/2+35});
+  const showroomCenter = { x: mobileShowroom.x + mobileShowroom.width/2, y: mobileShowroom.y + mobileShowroom.height/2 };
+  await mobile.mouse.move(showroomCenter.x, showroomCenter.y);
+  await mobile.mouse.down();
+  await mobile.mouse.move(showroomCenter.x, showroomCenter.y + 35, { steps: 5 });
+  await mobile.mouse.up();
   assert.ok(Math.abs(await mobile.evaluate(()=>window.MshinShowroom.angle))>0,"mobile drag should rotate the showroom vehicle");
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
