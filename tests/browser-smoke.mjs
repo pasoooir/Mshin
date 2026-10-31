@@ -192,7 +192,7 @@ try {
     assert.equal((await cameraButton.textContent()).trim(), label, "camera button should show " + label);
   }
   await cameraButton.click();
-  await page.waitForTimeout(120);
+  await page.waitForFunction(() => window.MshinPerformance.cameraMode === "top" && window.MshinPerformance.trackCacheBuilds === 1, undefined, { timeout: 4000 });
   const topModeMetrics = await page.evaluate(() => window.MshinPerformance);
   assert.equal(topModeMetrics.cameraMode, "top", "top-down compatibility view should remain available");
   assert.equal(topModeMetrics.trackCacheBuilds, 1, "top-down view should still rasterize static world art once per stage");
