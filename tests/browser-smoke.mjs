@@ -29,7 +29,8 @@ try {
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".worldCard").count(), 10, "all 10 image-led world cards should be selectable; browser errors: " + errors.join(" | "));
-  assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
+  const racePanelState = await page.evaluate(() => ({ selectClass: document.querySelector("#select").className, panelHidden: document.querySelector("#tabPanel-race").hidden, panelClass: document.querySelector("#tabPanel-race").className, panelDisplay: getComputedStyle(document.querySelector("#tabPanel-race")).display }));
+  assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible; state=" + JSON.stringify(racePanelState) + "; browser errors=" + errors.join(" | "));
   await page.locator("#tab-cars").click();
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
   assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
