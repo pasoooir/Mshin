@@ -12,8 +12,8 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
   const assets = [...manifest.worlds, ...manifest.cars];
   assert.equal(new Set(assets.map(asset => asset.src)).size, 15);
   for (const asset of assets) {
-    assert.ok(asset.cdn.startsWith("https://cdn.jsdelivr.net/gh/pasoooir/Mshin@"), asset.src + " should use jsDelivr");
-    assert.match(asset.cdn.split("@")[1].split("/")[0], /^[a-f0-9]{40}$/, asset.src + " should pin an immutable commit");
+    assert.equal(asset.cdn, undefined, asset.src + " must not retain an external CDN fallback");
+    assert.ok(asset.src.startsWith("./assets/vector/"), asset.src + " must resolve locally");
   }
   for (const asset of assets) {
     const source = await readFile(path.join(root, asset.src.replace(/^\.\//, "")), "utf8");
@@ -51,12 +51,14 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(loader, /audioCache\.set/);
   assert.match(loader, /loadAudio/);
   assert.ok(loader.includes("audioData:"), "audio bytes must be retained before game startup");
-  assert.ok(manifest.sounds.filter(sound => sound.id.startsWith("engine")).length === 6 && manifest.sounds.filter(sound => sound.id.startsWith("engine")).every(sound => sound.src.startsWith("https://cdn.jsdelivr.net/gh/yashimosh/border-run@") && sound.license === "CC0"), "race engine audio must use direct CDN assets");
-  assert.equal(manifest.icons.length, 3, "gas, brake and nitro must use CDN icon artwork");
+  assert.ok(manifest.sounds.filter(sound => sound.id.startsWith("engine")).length === 6 && manifest.sounds.filter(sound => sound.id.startsWith("engine")).every(sound => sound.src.startsWith("./cdn/assets/audio/") && sound.license === "CC0"), "race engine audio must be bundled locally with CC0 provenance");
+  assert.equal(manifest.icons.length, 3, "gas, brake and nitro icons must be bundled");
+  assert.ok(manifest.icons.every(icon => icon.src.startsWith("./cdn/assets/icons/")), "all control icons must be local repository assets");
   const music = manifest.sounds.filter(sound => sound.id === "musicMenu" || sound.id === "musicRace");
   assert.equal(music.length, 2, "menu and race music must both be registered");
-  assert.ok(music.every(track => track.license === "CC0-1.0" && track.src.startsWith("https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@") && track.source.startsWith("https://opengameart.org/")), "music tracks must be sourced from declared CC0 OpenGameArt entries");
-  assert.match(loader, /mshin-audio-assets-v1/, "preloaded audio must be persisted for offline playback");
+  assert.ok(music.every(track => track.license === "CC0-1.0" && track.src.startsWith("./cdn/assets/audio/") && track.source.startsWith("https://opengameart.org/")), "music tracks must be bundled locally with CC0 provenance");
+  assert.ok(manifest.scenes.every(scene => scene.src.startsWith("./cdn/assets/scenes/")), "all photographic scenes must be local repository assets");
+  assert.ok([...manifest.scenes, ...manifest.icons, ...manifest.sounds].every(asset => !/^https?:/i.test(asset.src)), "runtime asset paths must never point to external hosts");
 });
 test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
@@ -66,7 +68,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v32/);
+  assert.match(sw, /mshin-arcade-v33/);
   assert.match(sw, /mshin-audio-assets-v1/, "service worker must read the preloaded cross-origin audio cache");
   assert.match(sw, /\["opengameart\.org", "sfxmint\.com", "cdn\.jsdelivr\.net"\]/, "all declared audio CDN hosts must be intercepted for offline playback");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -164,12 +166,11 @@ test("all app cache and asset version markers are advanced together", async () =
   const readme = await readFile(path.join(root, "README.md"), "utf8");
   assert.match(sw, /mshin-arcade-v32/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.16");
-  assert.equal(pkg.version, "0.9.2");
-  assert.equal(pwa.version, "0.9.2");
-  assert.equal(cocos.version, "2026.10.31.16");
-  assert.ok(readme.includes("live browser release is **version 0.9.2**") && readme.includes("deployed to GitHub Pages after successful source-branch validation and deployment"), "README must identify 0.9.0 as the verified live release");
-  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.2**"), "README must preserve the latest published release after 0.9.2 deploys");
+  assert.equal(manifest.version, "2026.10.31.17");
+  assert.equal(pkg.version, "0.9.3");
+  assert.equal(pwa.version, "0.9.3");
+  assert.equal(cocos.version, "2026.10.31.17");
+  assert.ok(readme.includes("release candidate is **version 0.9.3**"), "README must identify 0.9.3 as the current release candidate");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
