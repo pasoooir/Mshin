@@ -11,10 +11,10 @@ export function calculateSlipAngle(forwardSpeed:number,lateralSpeed:number):numb
  const lateral=Number.isFinite(lateralSpeed)?lateralSpeed:0;
  return Math.atan2(lateral,Math.max(forward,1));
 }
-/** Scales combined longitudinal/lateral tire demand to the available friction circle. */
-export function frictionCircleScale(longitudinal:number,lateral:number,grip:number):number {
- const mu=Math.max(0.05,Number.isFinite(grip)?grip:1),demand=Math.hypot(Number.isFinite(longitudinal)?longitudinal:0,Number.isFinite(lateral)?lateral:0);
- return demand<=mu||demand===0?1:mu/demand;
+/** Scales combined longitudinal/lateral acceleration demand to available tire capacity. */
+export function frictionCircleScale(longitudinal:number,lateral:number,capacity:number):number {
+ const limit=Math.max(0.05,Number.isFinite(capacity)?capacity:1),demand=Math.hypot(Number.isFinite(longitudinal)?longitudinal:0,Number.isFinite(lateral)?lateral:0);
+ return demand<=limit||demand===0?1:limit/demand;
 }
 export function surfaceCollisionFriction(grip:number):number {
  const normalized=clamp(Number.isFinite(grip)?grip:1,0.35,1.15);
@@ -36,6 +36,7 @@ export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number):
  const performance = clamp(Number.isFinite(input.performance) ? (input.performance as number) : 1, 0.3, 1);
  const throttle = input.throttle ? 1 : 0; const brake = input.brake ? 1 : 0;
  const maxSpeed = (offRoad ? 220 : 360) * performance;
+ // Longitudinal acceleration is applied before cornering; its demand also consumes tire grip.
  if (brake) car.speed = Math.max(0, car.speed - 560 * dt);
  else if (throttle) car.speed = clamp(car.speed + 306 * (offRoad ? 0.58 : 1) * performance * dt, 0, maxSpeed);
  else car.speed = Math.max(0, car.speed - (offRoad ? 220 : 95) * dt);
@@ -44,17 +45,26 @@ export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number):
  // For a 1,250 kg rally car (rho=1.225 kg/m^3, CdA=1.58 m^2), this is 7.75e-5 * v_world^2 world-units/s^2.
  const dragAcceleration = 0.0000775 * car.speed * car.speed;
  car.speed = Math.max(0, car.speed - dragAcceleration * dt);
- car.heading -= steer * (1.9 + Math.abs(car.speed) / 155) * grip * dt * Math.sign(car.speed || 1);
- // Tire lateral force damps post-impact slip; low-grip surfaces retain more lateral momentum.
  const lateral = Number.isFinite(car.lateralSpeed) ? (car.lateralSpeed as number) : 0;
  const slipAngle=calculateSlipAngle(car.speed,lateral);
- // Tire lateral force is limited by available grip; the cap is calibrated in world-units/s².
+ // Calibrated tire capacity: 85 world-units/s² ~= 8.5 m/s² at 0.1 m/world-unit.
+ const tireCapacity=85*grip;
+ const longitudinalDemand=brake?65:(throttle?30:0);
+ // A speed-sensitive bicycle-model yaw request creates the lateral acceleration the tires must supply.
+ const requestedYawRate=steer*(0.55+Math.abs(car.speed)/500)*Math.sign(car.speed||1);
+ const corneringDemand=Math.abs(car.speed*requestedYawRate);
+ const steeringScale=frictionCircleScale(longitudinalDemand,corneringDemand,tireCapacity);
+ car.heading-=requestedYawRate*steeringScale*dt;
+ // Lateral slip recovery is also limited by the remaining combined tire-force budget.
  const requestedLateralAcceleration=-lateral*(3.5+7*grip);
- const maxLateralAcceleration=0.085*grip;
- const lateralAcceleration=clamp(requestedLateralAcceleration,-maxLateralAcceleration,maxLateralAcceleration);
+ const combinedScale=frictionCircleScale(longitudinalDemand,Math.abs(requestedLateralAcceleration),tireCapacity);
+ const lateralAcceleration=clamp(requestedLateralAcceleration*combinedScale,-tireCapacity,tireCapacity);
  const lateralAfter=lateral+lateralAcceleration*dt;
- // At very low forward speed, avoid an unstable slip-angle snap while retaining physical lateral momentum.
- car.lateralSpeed=Math.abs(car.speed)<2&&Math.abs(slipAngle)>1.2?lateralAfter:lateralAfter;
+ car.lateralSpeed=lateralAfter;
+ // Sustained slip produces a bounded yaw response (oversteer); it is strongest once moving.
+ const slipYawTarget=clamp(slipAngle*1.4,-0.9,0.9)*clamp((Math.abs(car.speed)-70)/100,0,1);
+ const yawBlend=clamp(dt*2.5,0,1);
+ car.angularVelocity=clamp((Number.isFinite(car.angularVelocity)?(car.angularVelocity as number):0)+(slipYawTarget-(Number.isFinite(car.angularVelocity)?(car.angularVelocity as number):0))*yawBlend,-1.4,1.4);
  const forwardX=Math.sin(car.heading),forwardY=-Math.cos(car.heading),rightX=Math.cos(car.heading),rightY=Math.sin(car.heading);
  car.x += (forwardX*car.speed+rightX*lateralAfter)*dt;
  car.y += (forwardY*car.speed+rightY*lateralAfter)*dt; return car;

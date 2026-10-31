@@ -175,3 +175,40 @@ test('low-grip tires shed lateral velocity more slowly than high-grip tires',()=
  stepCar(low,{steer:0,throttle:false,brake:false,grip:.4},1/20);
  assert.ok(Math.abs(low.lateralSpeed)>Math.abs(high.lateralSpeed));
 });
+
+
+test('cornering yaw authority falls with speed and low tire grip',()=>{
+ const slow={x:0,y:0,heading:0,speed:90},fast={x:0,y:0,heading:0,speed:300},lowGrip={x:0,y:0,heading:0,speed:180};
+ stepCar(slow,{steer:1,throttle:false,brake:false,grip:1},.05);
+ stepCar(fast,{steer:1,throttle:false,brake:false,grip:1},.05);
+ stepCar(lowGrip,{steer:1,throttle:false,brake:false,grip:.4},.05);
+ assert.ok(Math.abs(fast.heading)<Math.abs(slow.heading),'high-speed cornering must be grip-limited');
+ const normal={x:0,y:0,heading:0,speed:180};
+ stepCar(normal,{steer:1,throttle:false,brake:false,grip:1},.05);
+ assert.ok(Math.abs(lowGrip.heading)<Math.abs(normal.heading),'low grip must cause understeer');
+});
+
+test('combined throttle demand reduces available cornering force',()=>{
+ const coasting={x:0,y:0,heading:0,speed:180},powering={x:0,y:0,heading:0,speed:180};
+ stepCar(coasting,{steer:1,throttle:false,brake:false,grip:1},.05);
+ stepCar(powering,{steer:1,throttle:true,brake:false,grip:1},.05);
+ assert.ok(Math.abs(powering.heading)<Math.abs(coasting.heading));
+});
+
+test('large lateral slip is bounded by tire capacity and recovers faster on high grip',()=>{
+ const high={x:0,y:0,heading:0,speed:100,lateralSpeed:35},low={x:0,y:0,heading:0,speed:100,lateralSpeed:35};
+ stepCar(high,{steer:0,throttle:false,brake:false,grip:1},.05);
+ stepCar(low,{steer:0,throttle:false,brake:false,grip:.4},.05);
+ assert.ok(Math.abs(high.lateralSpeed)<35);
+ assert.ok(Math.abs(low.lateralSpeed)>Math.abs(high.lateralSpeed));
+ assert.ok(Number.isFinite(calculateSlipAngle(high.speed,high.lateralSpeed)));
+});
+
+
+test('sustained lateral slip creates bounded oversteer yaw without an instant heading snap',()=>{
+ const car={x:0,y:0,heading:0,speed:180,lateralSpeed:45,angularVelocity:0};
+ stepCar(car,{steer:0,throttle:false,brake:false,grip:.55},.05);
+ assert.ok(car.angularVelocity>0);
+ assert.ok(Math.abs(car.angularVelocity)<=1.4);
+ assert.ok(Math.abs(car.heading)<.01,'yaw response is integrated over time, not teleported');
+});
