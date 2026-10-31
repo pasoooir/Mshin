@@ -25,7 +25,7 @@ test("browser renderer exposes panel soot, fire, smoke and one-shot explosion fe
 
 test("burnt rivals leave traffic, collision, minimap and ranking participation", () => {
   assert.match(source, /rivals=rivals\.filter\(r=>!r\.destruction\?\.despawned\)/);
-  assert.match(source, /if\(a\.destruction\?\.despawned\|\|b\.destruction\?\.despawned\)/);
+  assert.match(source, /if\(a\.destruction\?\.despawned\|\|b\.destruction\?\.despawned\|\|a\.collisionCooldown/);
   assert.match(source, /!r\.destruction\?\.despawned&&r\.distance>/);
   assert.match(source, /if\(!r\.destruction\?\.despawned\)dot\(r\.distance/);
 });
