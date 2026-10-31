@@ -121,8 +121,9 @@ export class MshinGame extends Component {
    g.fillColor=hex("#FFF5C8");g.circle(-9,31,3);g.fill();g.circle(9,31,3);g.fill();
    const controller=node.addComponent(VehicleController);
    controller.configure(path,this.stage.trackWidth,999,0,this.stage.world.grip);
-   const index=Math.floor(path.length*(i+1)/4),p=path[index],next=path[(index+1)%path.length];
-   controller.car.x=p.x;controller.car.y=p.y;controller.car.heading=Math.atan2(next.x-p.x,p.y-next.y);
+   const index=Math.floor(path.length*(i+1)/4),p=path[index],next=path[(index+1)%path.length],prev=path[(index+path.length-1)%path.length];
+   const laneOffset=(i-1)*this.stage.trackWidth*.14,tx=next.x-prev.x,ty=next.y-prev.y,tlen=Math.hypot(tx,ty)||1,nx=-ty/tlen,ny=tx/tlen;
+   controller.car.x=p.x+nx*laneOffset;controller.car.y=p.y+ny*laneOffset;controller.car.heading=Math.atan2(next.x-p.x,p.y-next.y);
    controller.car.speed=0;node.setPosition(p.x,p.y,0);node.angle=180-controller.car.heading*180/Math.PI;
    const fx=new Node("Rival Damage FX");fx.setPosition(0,0,1);node.addChild(fx);fx.addComponent(VehicleDamageRenderer).bind(controller);
    this.rivals.push(controller);
@@ -132,12 +133,20 @@ export class MshinGame extends Component {
   for(const rival of this.rivals){
    if(!rival.enabled||rival.path.length<2)continue;
    const nearest=nearestTrackPoint(rival.car,rival.path),lookAhead=8;
-   const target=rival.path[(nearest.segment+lookAhead)%rival.path.length];
-   const desired=Math.atan2(target.x-rival.car.x,rival.car.y-target.y);
+   const targetIndex=(nearest.segment+lookAhead)%rival.path.length,target=rival.path[targetIndex];
+   const prev=rival.path[(targetIndex+rival.path.length-1)%rival.path.length],next=rival.path[(targetIndex+1)%rival.path.length];
+   const tx=next.x-prev.x,ty=next.y-prev.y,tlen=Math.hypot(tx,ty)||1;
+   const laneIndex=this.rivals.indexOf(rival),laneOffset=(laneIndex-1)*this.stage.trackWidth*.14;
+   const targetX=target.x-ty/tlen*laneOffset,targetY=target.y+tx/tlen*laneOffset;
+   const desired=Math.atan2(targetX-rival.car.x,rival.car.y-targetY);
    const error=Math.atan2(Math.sin(desired-rival.car.heading),Math.cos(desired-rival.car.heading));
-   rival.input.steer=Math.max(-1,Math.min(1,error*1.9));
-   rival.input.throttle=Math.abs(error)<1.15;
-   rival.input.brake=Math.abs(error)>=1.15;
+   const before=rival.path[(targetIndex+rival.path.length-2)%rival.path.length];
+   const incoming=Math.atan2(target.y-before.y,target.x-before.x),outgoing=Math.atan2(next.y-target.y,next.x-target.x);
+   const turn=Math.atan2(Math.sin(outgoing-incoming),Math.cos(outgoing-incoming));
+   const targetSpeed=Math.max(165,Math.min(310,310-Math.abs(turn)*105));
+   rival.input.steer=Math.max(-1,Math.min(1,error*1.75));
+   rival.input.throttle=Math.abs(error)<.82&&rival.car.speed<targetSpeed;
+   rival.input.brake=Math.abs(error)>1.0||rival.car.speed>targetSpeed+18;
   }
  }
  private resolveTrafficContacts():void {
