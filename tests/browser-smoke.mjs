@@ -5,7 +5,23 @@ import { mkdir } from "node:fs/promises";
 await mkdir("artifacts", { recursive: true });
 
 async function waitForGameBoot(page, label = "game") {
-  await page.locator("#assetLoader").waitFor({ state: "detached", timeout: 45000 });
+  try {
+    await page.locator("#assetLoader").waitFor({ state: "detached", timeout: 45000 });
+  } catch (error) {
+    const stalled = await page.evaluate(() => ({
+      stage: window.MshinBootStage,
+      bootReady: window.MshinBootReady === true,
+      bootError: window.MshinBootError || null,
+      assetsReady: window.MshinAssets?.ready === true,
+      progress: window.MshinPreloadProgress,
+      failures: window.MshinAssets?.failures || [],
+      homePresent: Boolean(document.querySelector("#home")),
+      loaderClass: document.querySelector("#assetLoader")?.className || null,
+      serviceWorkerControlled: Boolean(navigator.serviceWorker?.controller),
+      bootResources: performance.getEntriesByType("resource").filter(item => /boot\\.js|asset-loader|web-game/.test(item.name)).slice(-8).map(item => ({name:item.name,duration:Math.round(item.duration),transfer:item.transferSize}))
+    }));
+    throw new Error(label + " loader did not settle: " + JSON.stringify(stalled) + " | " + error.message);
+  }
   const state = await page.evaluate(() => ({
     stage: window.MshinBootStage,
     bootReady: window.MshinBootReady === true,
