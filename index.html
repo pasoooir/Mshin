@@ -176,8 +176,8 @@ body{font-size:16px}
 #home .panel .primary{font-size:17px;min-height:58px}
 #select button:focus-visible,#home button:focus-visible{outline:3px solid #ffe18a;outline-offset:3px}
 @media(orientation:portrait){
- body:before{content:"برای اجرای بازی، دستگاه را افقی نگه دارید";position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:28px;text-align:center;direction:rtl;color:#fff;font:900 22px/1.9 Tahoma,Arial,sans-serif;background:radial-gradient(ellipse at 50% 30%,#294d70,#07111f 75%);background-image:linear-gradient(#07111fee,#07111fee),url("./assets/vector/world-01.svg");background-size:cover;background-position:center}
- body:after{content:"↻";position:fixed;z-index:100000;top:calc(50% + 52px);left:50%;transform:translateX(-50%);font:900 48px/1 Arial,sans-serif;color:#ffd477}
+ body:before{content:"برای اجرای بازی، دستگاه را افقی نگه دارید";pointer-events:none;position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:28px;text-align:center;direction:rtl;color:#fff;font:900 22px/1.9 Tahoma,Arial,sans-serif;background:radial-gradient(ellipse at 50% 30%,#294d70,#07111f 75%);background-image:linear-gradient(#07111fee,#07111fee),url("./assets/vector/world-01.svg");background-size:cover;background-position:center}
+ body:after{content:"↻";pointer-events:none;position:fixed;z-index:100000;top:calc(50% + 52px);left:50%;transform:translateX(-50%);font:900 48px/1 Arial,sans-serif;color:#ffd477}
 }
 @media(orientation:landscape) and (max-height:520px){
  #select .gtMenu{max-height:96svh;height:96svh;gap:7px;padding:10px 16px}
@@ -257,7 +257,15 @@ body{font-size:16px}
 /* Installed PWA starts in landscape via manifest; request a runtime lock on first user gesture where supported. */
 (()=>{let requested=false;const lockLandscape=()=>{if(requested)return;requested=true;try{const result=screen.orientation?.lock?.("landscape");if(result?.catch)result.catch(()=>{});}catch(_){}};
 document.addEventListener("pointerdown",lockLandscape,{capture:true,passive:true,once:true});
-document.addEventListener("click",event=>{if(event.target.closest("#play,#startRace"))lockLandscape();},{capture:true});
+document.addEventListener("click",event=>{
+ const action=event.target instanceof Element ? event.target.closest("#play,#startRace") : null;
+ if(!action)return;
+ lockLandscape();
+ if(window.matchMedia("(orientation: portrait)").matches){
+  event.preventDefault();
+  event.stopImmediatePropagation();
+ }
+},{capture:true});
 })();
 </script>
 <script>if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script type="module" src="./src/boot.js?v=2026.10.31.17"></script></body></html>
