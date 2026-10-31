@@ -102,7 +102,7 @@ export class MshinGame extends Component {
   const path=renderer.configure(this.stage,this.artLibrary);
   this.carNode.destroy();this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
   this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount,this.stage.world.grip);
-  const damageRenderer=this.carNode.addComponent(VehicleDamageRenderer);damageRenderer.bind(this.vehicle);
+  const damageFxNode=new Node("Vehicle Damage FX");damageFxNode.setPosition(0,0,1);this.carNode.addChild(damageFxNode);const damageRenderer=damageFxNode.addComponent(VehicleDamageRenderer);damageRenderer.bind(this.vehicle);
   this.vehicle.onLap=(lap)=>this.setText("lap","دور  "+lap+" / "+this.stage.laps);
   this.setText("world",this.stage.world.name+"  •  مرحله "+String(id).padStart(2,"۰"));
   this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
