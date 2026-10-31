@@ -63,10 +63,27 @@ export class MshinGame extends Component {
  private addUiLabel(text:string,x:number,y:number,size:number):void {this.addLabel("screen-"+this.uiNodes.length,text,x,y,size,true);}
  private button(text:string,x:number,y:number,w:number,h:number,action:()=>void):Node {
   const n=this.makeNode("Button "+text,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(w,h);
-  const g=n.addComponent(Graphics);g.fillColor=hex("#F8C84E");g.roundRect(-w/2,-h/2,w,h,14);g.fill();g.strokeColor=hex("#FFF4CF");g.lineWidth=3;g.roundRect(-w/2,-h/2,w,h,14);g.stroke();
-  const labelNode=this.makeNode("Button Label",n);labelNode.getComponent(UITransform)!.setContentSize(w-16,h-8);
-  const l=labelNode.addComponent(Label);l.string=text;l.fontSize=Math.min(23,h*.34);l.color=hex("#25334A");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
+  const g=n.addComponent(Graphics);
+  g.fillColor=hex("#14253A");g.moveTo(-w/2+7,-h/2);g.lineTo(w/2-18,-h/2);g.lineTo(w/2,h/2);g.lineTo(-w/2+7,h/2);g.close();g.fill();
+  g.strokeColor=hex("#536A80");g.lineWidth=2;g.moveTo(-w/2+7,-h/2);g.lineTo(w/2-18,-h/2);g.lineTo(w/2,h/2);g.lineTo(-w/2+7,h/2);g.close();g.stroke();
+  g.fillColor=hex("#F33A52");g.moveTo(-w/2+7,-h/2);g.lineTo(-w/2+15,-h/2);g.lineTo(-w/2+15,h/2);g.lineTo(-w/2+7,h/2);g.close();g.fill();
+  g.fillColor=hex("#FFFFFF");g.moveTo(w/2-23,-h/2+7);g.lineTo(w/2-18,-h/2+7);g.lineTo(w/2-8,h/2-7);g.lineTo(w/2-13,h/2-7);g.close();g.fill();
+  const labelNode=this.makeNode("Button Label",n);labelNode.getComponent(UITransform)!.setContentSize(w-28,h-8);
+  const l=labelNode.addComponent(Label);l.string=text;l.fontSize=Math.min(24,h*.36);l.color=hex("#F3F7FC");l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
   n.on(Node.EventType.TOUCH_END,action,this);this.uiNodes.push(n);return n;
+ }
+ private drawMenuBackdrop(kicker:string,subtitle:string):void {
+  const n=this.makeNode("Motorsport Menu Backdrop",this.hudRoot);n.getComponent(UITransform)!.setContentSize(1280,720);
+  const g=n.addComponent(Graphics);g.fillColor=hex("#081321");g.rect(-640,-360,1280,720);g.fill();
+  g.fillColor=hex("#10243A");g.moveTo(-640,-360);g.lineTo(-180,-360);g.lineTo(250,360);g.lineTo(-640,360);g.close();g.fill();
+  g.fillColor=hex("#F33A52");g.moveTo(-640,250);g.lineTo(-640,360);g.lineTo(-565,360);g.lineTo(-615,250);g.close();g.fill();
+  g.fillColor=hex("#1A344C");g.moveTo(310,-360);g.lineTo(640,-360);g.lineTo(640,360);g.lineTo(520,360);g.close();g.fill();
+  g.strokeColor=hex("#F33A52");g.lineWidth=5;g.moveTo(-610,-300);g.lineTo(-430,-300);g.stroke();
+  g.strokeColor=hex("#34506A");g.lineWidth=2;for(let i=0;i<9;i++){const y=-220+i*52;g.moveTo(350,y);g.lineTo(620,y);g.stroke();}
+  g.fillColor=hex("#FFFFFF");g.moveTo(410,290);g.lineTo(600,290);g.lineTo(620,310);g.lineTo(410,310);g.close();g.fill();
+  g.fillColor=hex("#F33A52");g.moveTo(580,290);g.lineTo(600,290);g.lineTo(620,310);g.lineTo(600,310);g.close();g.fill();
+  this.uiNodes.push(n);n.setSiblingIndex(0);
+  this.addUiLabel(kicker,0,300,14);this.addUiLabel(subtitle,0,265,17);
  }
  private addButton(text:string,x:number,y:number,w:number,h:number,fn:()=>void):void {this.button(text,x,y,w,h,fn);}
  private drawStagePreview(stage:StageDefinition,x:number,y:number):void {
@@ -79,18 +96,19 @@ export class MshinGame extends Component {
  }
  private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("در حال آماده‌سازی دنیای مسابقه",0,40,30);this.addUiLabel("در حال بارگذاری تصاویر و رنگ‌بندی خودروها…",0,-25,18);}
  private showHome():void {
-  this.clearRivals();this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("۵۰ پیست • ۱۰ دنیا • یک قهرمان",0,35,19);
-  this.addButton("شروع مسابقه",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
-  this.addButton("انتخاب دنیا",0,-160,270,62,()=>this.showWorlds());
-  this.addUiLabel("مرحله بعدی "+this.progress.unlockedStage+" / ۵۰",0,-245,18);
+  this.clearRivals();this.screen="home";this.clearUi();this.drawMenuBackdrop("MSHIN MOTORSPORT","مسابقه را انتخاب کن؛ مسیر بعدی منتظر توست");
+  this.addUiLabel("MSHIN",0,135,76);this.addUiLabel("۵۰ پیست  •  ۱۰ دنیای متفاوت  •  یک قهرمان",0,72,21);
+  this.addUiLabel("مرحله بعدی  "+this.progress.unlockedStage+" / ۵۰",0,-225,19);
+  this.addButton("شروع مسابقه",0,-35,330,76,()=>this.startStage(this.progress.unlockedStage));
+  this.addButton("انتخاب دنیا",0,-135,330,66,()=>this.showWorlds());
  }
  private showWorlds():void {
-  this.screen="worlds";this.clearUi();this.addUiLabel("انتخاب دنیای مسابقه",0,245,34);
+  this.screen="worlds";this.clearUi();this.drawMenuBackdrop("WORLD SELECT","جهان مورد علاقه‌ات را برای مسابقه انتخاب کن");this.addUiLabel("انتخاب دنیای مسابقه",0,215,34);
   WORLD_THEMES.forEach((world,i)=>{const col=i%5,row=Math.floor(i/5),x=(col-2)*220,y=100-row*170;this.addButton(world.name,x,y,196,110,()=>{this.selectedWorld=i;this.showStages();});});
   this.addButton("بازگشت",0,-280,170,54,()=>this.showHome());
  }
  private showStages():void {
-  this.screen="stages";this.clearUi();const world=WORLD_THEMES[this.selectedWorld];this.addUiLabel(world.name.toUpperCase()+"  •  انتخاب مرحله",0,245,29);
+  this.screen="stages";this.clearUi();const world=WORLD_THEMES[this.selectedWorld];this.drawMenuBackdrop("STAGE SELECT",world.name+"  •  انتخاب مرحله");this.addUiLabel(world.name.toUpperCase()+"  •  انتخاب مرحله",0,215,29);
   for(let i=0;i<5;i++){const s=STAGES[this.selectedWorld*5+i],unlocked=ProgressStore.isUnlocked(s.id,this.progress),x=(i-2)*230;
    this.addButton((unlocked?"▶ ":"🔒 ")+String(s.stageInWorld).padStart(2,"0")+"  "+s.name,x,35,210,112,()=>{if(unlocked)this.startStage(s.id);});
    this.drawStagePreview(s,x,155);
@@ -176,12 +194,12 @@ export class MshinGame extends Component {
  private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),limit=58,raw=Math.max(-1,Math.min(1,p.x/limit)),m=Math.abs(raw),dead=.07,linear=m<=dead?0:(m-dead)/(1-dead);this.knob.setPosition(Math.max(-limit,Math.min(limit,p.x)),0,0);this.vehicle.input.steer=Math.sign(raw)*Math.pow(linear,1.28);}
  private onStickEnd(e:EventTouch):void {if(e.getID()!==this.stickId)return;this.stickId=-1;this.knob.setPosition(0,0,0);this.vehicle.input.steer=0;}
  private pauseRace():void {
-  if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();
+  if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();this.drawMenuBackdrop("RACE PAUSED","مسابقه متوقف شده است");
   this.addUiLabel("مسابقه متوقف شد",0,75,54);this.addButton("ادامه مسابقه",0,-20,230,70,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;for(const rival of this.rivals)rival.enabled=true;this.createControls();});
   this.addButton("بازگشت به منو",0,-115,230,60,()=>{this.vehicle.enabled=false;this.showHome();});
  }
  private showFinished():void {
-  this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();
+  this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();this.drawMenuBackdrop("RACE COMPLETE","عملکردت ثبت شد؛ آماده مرحله بعدی باش");
   this.addUiLabel("🏆  پایان مسابقه!",0,85,56);this.addUiLabel("زمان  "+this.format(this.vehicle.race.elapsedSeconds),0,15,24);
   this.addButton("مرحله بعد",0,-75,250,70,()=>this.startStage(Math.min(50,this.stage.id+1)));
   this.addButton("منوی اصلی",0,-165,230,58,()=>this.showHome());
