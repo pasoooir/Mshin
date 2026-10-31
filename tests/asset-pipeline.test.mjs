@@ -39,7 +39,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(audio, /decodeAudioData/);
   assert.match(audio, /engineGains/);
   assert.match(audio, /engineSources/);
-  assert.match(audio, /seamless soundtrack crossfades/);
+  assert.match(audio, /exponentialRampToValueAtTime/);
   assert.match(audio, /loopStart=edge/);
   assert.match(audio, /loopEnd=Math.max/);
   assert.match(audio, /gearForSpeed/);
