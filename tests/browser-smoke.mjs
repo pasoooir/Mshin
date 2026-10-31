@@ -251,9 +251,24 @@ try {
   assert.match(await page.locator("#stageName").textContent(), /دنیای ۰5.*مرحله ۰5/);
   await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(2400);
-  await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
-  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 12000 });
+  try {
+    // Keep accelerating until the player physically reaches a track pickup.
+    // Releasing the key after a fixed 2.4s can leave the car short of the first
+    // pickup, where coasting eventually stops before the 12s pickup wait ends.
+    await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 15000 });
+  } catch (error) {
+    const pickupState = await page.evaluate(() => ({
+      nitro: document.querySelector("#nitroFill")?.style.width ?? null,
+      speed: document.querySelector("#speed")?.textContent ?? null,
+      performance: window.MshinPerformance ?? null,
+      visibilityState: document.visibilityState,
+      gameCanvas: Boolean(document.querySelector("#game"))
+    }));
+    throw new Error("Track pickup was not collected while accelerating: " + JSON.stringify(pickupState) + "; " + error.message);
+  } finally {
+    await page.keyboard.up("ArrowUp");
+  }
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
   await page.locator("#nitro").click();
