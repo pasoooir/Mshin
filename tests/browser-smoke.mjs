@@ -181,7 +181,21 @@ try {
   assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
   assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 200, "no single game JS frame should exceed 200ms in smoke run");
-  assert.equal(frameMetrics.trackCacheBuilds, 1, "static track and world art should be rasterized once per selected stage, not on every frame");
+  assert.equal(frameMetrics.cameraMode, "side", "the new side-profile perspective camera should be the default race view");
+  assert.ok(Number.isFinite(frameMetrics.renderScale) && frameMetrics.renderScale <= 1.55, "render resolution should be capped for stable mobile and desktop frame rates");
+  const cameraButton = page.locator("#cameraMode");
+  assert.equal(await cameraButton.textContent(), "SIDE", "camera selector should identify the side profile view");
+  for (const [mode, label] of [["top","TOP"],["southeast","SE"],["southwest","SW"],["side","SIDE"]]) {
+    await cameraButton.click();
+    await page.waitForTimeout(90);
+    assert.equal(await page.evaluate(() => window.MshinCamera.mode), mode, "camera selector should switch to " + mode);
+    assert.equal((await cameraButton.textContent()).trim(), label, "camera button should show " + label);
+  }
+  await cameraButton.click();
+  await page.waitForTimeout(120);
+  const topModeMetrics = await page.evaluate(() => window.MshinPerformance);
+  assert.equal(topModeMetrics.cameraMode, "top", "top-down compatibility view should remain available");
+  assert.equal(topModeMetrics.trackCacheBuilds, 1, "top-down view should still rasterize static world art once per stage");
   assert.equal(frameMetrics.trackRadiusX, 1180, "race should use a large world-space circuit instead of a compact loop");
   assert.equal(frameMetrics.trackRadiusY, 760, "race should use a deep world-space circuit");
   assert.ok(frameMetrics.roadWidth >= 350, "four-lane asphalt should span the full wide road surface");
