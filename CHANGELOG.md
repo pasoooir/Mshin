@@ -12,7 +12,7 @@
 - Replaced the synthetic oscillator engine with preloaded CDN race-car idle and full-throttle recordings.
 - Added race-car braking/tire-squeal and downshift clips.
 - Preloads audio bytes before gameplay and decodes the sound bank on the first menu gesture while a stage is selected.
-- Audio clips are from the SFXMint CC0 1.0 library.
+- Audio clips are from the SFXMint CC0 1.0 library; they are AI-generated effects, not real-world field recordings.
 
 ### Loading and offline
 - Preloads ten world illustrations, five car sprites, ten photographic scenes, three control icons and four sound clips before importing the game loop.
