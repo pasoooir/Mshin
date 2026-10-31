@@ -1,7 +1,7 @@
 name: Validate Mshin game data and portable TypeScript core
 on:
   push:
-    branches: [main, "feat/**", "test/**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
