@@ -39,7 +39,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(audio, /decodeAudioData/);
   assert.match(audio, /engineGains/);
   assert.match(audio, /engineSources/);
-  assert.match(audio, /Six pitch layers/);
+  assert.match(audio, /RPM layers use equal-power crossfades/);\n  assert.match(audio, /loopStart=edge/);\n  assert.match(audio, /loopEnd=Math.max/);\n  assert.match(audio, /gearForSpeed/);\n  assert.match(audio, /setTargetAtTime/);\n  assert.match(audio, /createBiquadFilter/);\n  assert.match(game, /audio\.update\(car\.speed,state==="race"\|\|state==="countdown",input\.gas,input\.brake,boostTimer>0\)/);
   assert.match(loader, /manifest\.icons/);
   assert.match(loader, /manifest\.sounds/);
   assert.match(loader, /audioCache\.set/);
