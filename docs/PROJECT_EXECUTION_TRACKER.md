@@ -2,18 +2,16 @@
 
 Last evidence refresh: 2026-10-31
 
-## Latest verified release — 0.9.1
+## Latest release candidate — 0.9.2
 
-- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #48 ادغام شده، merged-main validation و GitHub Pages deployment هر دو موفق‌اند.
-- **Release scope:** نورپردازی هوشمند و وابسته به جهان؛ جهت نور خورشید با تغییر آهسته زمان مسابقه حرکت می‌کند؛ شدت نور محیط با نوع دنیا و آب‌وهوا تغییر می‌کند؛ سایه‌های درخت، ساختمان، تماشاگر، صخره و موانع از یک بردار نور مشترک استفاده می‌کنند.
-- **Regression coverage:** تست Node برای ده پروفایل نوری، جهت نور نرمال‌شده، پایداری خروجی در timestamp ثابت و تغییر ambient/shadow با وضعیت آب‌وهوا؛ Playwright دسکتاپ/موبایل و تست‌های کامل بازی.
-- **Release metadata:** package و PWA manifest برابر `0.9.1`؛ asset marker برابر `2026.10.31.15`؛ Service Worker cache برابر `mshin-arcade-v31`.
-- **PR #48:** https://github.com/pasoooir/Mshin/pull/48 — merged، commit `3ce9af24e14e71ffdb670260c47a771e0901fb74`.
-- **PR #48 source validation:** push run `41204063528` و PR run `41204067804` — success؛ Node و Playwright دسکتاپ/موبایل موفق.
-- **GitHub Pages deployment:** run `41204250314` — success.
-- **Merged-main validation:** run `41204250381` — success.
+- **Status:** 🟡 در حال اجرا؛ PR #51 تغییر refresh نورپردازی را آماده کرده و تا پایان CI و deployment نباید سبز اعلام شود.
+- **Release scope:** نور خورشید و سایه‌های وابسته به دنیا/آب‌وهوا اکنون در طول مسابقه نیز تغییر می‌کنند؛ cache صحنه ثابت هر ۸ ثانیه بازسازی می‌شود تا جهت نور و سایه‌ها آرام به‌روز شوند، بدون محاسبه مجدد در هر فریم.
+- **Regression coverage:** تست Node وجود بازسازی دوره‌ای cache را بررسی می‌کند؛ تست‌های موجود هندسه نور، آب‌وهوا، تمام ده دنیا و Playwright دسکتاپ/موبایل را پوشش می‌دهند.
+- **Release metadata:** package و PWA manifest برابر `0.9.2`؛ asset marker برابر `2026.10.31.16`؛ Service Worker cache برابر `mshin-arcade-v32`.
+- **PR #51:** fix for timed aerial-lighting refresh — در حال اعتبارسنجی.
+- **Base release:** PR #50 / نسخه 0.9.1؛ merge commit `9d487926f1ece5e3efc3e3822c7d88703f3e15f7`.
 - **Live game:** https://pasoooir.github.io/Mshin/
-- **Limit:** تست‌های خودکار نورپردازی و مرورگر جایگزین ارزیابی بصری روی دستگاه‌های فیزیکی و QA مستقل در Cocos Creator نیستند.
+- **Acceptance gate:** تست Node و Playwright دسکتاپ/موبایل، سپس merged-main validation و GitHub Pages deployment.
 
 
 ## Previous verified release — 0.9.0
