@@ -170,7 +170,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰.۹.۳/);
+  assert.match(html, /نسخه ۰.۱۰.۰/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
   assert.match(html, /splashCarFront/);
@@ -195,8 +195,8 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.match(sw, /mshin-arcade-v35/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.10.31.17");
-  assert.equal(pkg.version, "0.9.3");
-  assert.equal(pwa.version, "0.9.3");
+  assert.equal(pkg.version, "0.10.0");
+  assert.equal(pwa.version, "0.10.0");
   assert.equal(cocos.version, "2026.10.31.17");
   assert.ok(readme.includes("live browser release is **version 0.9.3**") && readme.includes("deployed to GitHub Pages after successful merged-main validation"), "README must identify the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.3**"), "README must preserve the latest published release");
