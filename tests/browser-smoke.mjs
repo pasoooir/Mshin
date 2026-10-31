@@ -35,6 +35,7 @@ try {
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
   await page.locator("#startRace").click();
+  await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
   assert.equal(raceRequests.length, requestCountAtStart, "starting a race must not trigger late asset/network requests");
@@ -71,7 +72,8 @@ try {
   assert.equal(frameMetrics.trackCacheBuilds, 1, "static track and world art should be rasterized once per selected stage, not on every frame");
   assert.equal(frameMetrics.trackRadiusX, 1180, "race should use a large world-space circuit instead of a compact loop");
   assert.equal(frameMetrics.trackRadiusY, 760, "race should use a deep world-space circuit");
-  assert.ok(frameMetrics.roadWidth >= 230, "road surface should be wide enough to visually anchor the cars");
+  assert.ok(frameMetrics.roadWidth >= 350, "four-lane asphalt should span the full wide road surface");
+  assert.equal(frameMetrics.laneCount, 4, "race should expose four driving lanes");
   assert.equal(frameMetrics.playerHeadingOffsetDeg, 90, "player sprite nose should be aligned with the road tangent");
   assert.equal(frameMetrics.cameraChase, true, "camera should keep the player facing forward on screen");
   assert.ok(Number.isFinite(frameMetrics.damage) && frameMetrics.damage >= 0, "race telemetry should expose cumulative vehicle damage");
@@ -85,6 +87,7 @@ try {
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   await page.locator("#startRace").click();
+  await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "saved mute preference should survive reload");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
@@ -139,9 +142,13 @@ try {
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await mobile.locator("#play").click();
   await mobile.locator("#startRace").click();
+  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
   assert.ok((await mobile.locator("#stick").boundingBox()).width >= 120, "mobile steering pad should remain wide enough for comfortable thumb travel");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
+  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "گاز", "gas pedal should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "نیترو", "nitro control should use a CDN icon with accessible alternative text");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   assert.ok(await mobile.locator(".stats").evaluate(el => el.getBoundingClientRect().right <= document.querySelector("#soundToggle").getBoundingClientRect().left), "compact mobile race stats should not overlap sound controls");
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
