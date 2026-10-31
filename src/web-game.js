@@ -245,7 +245,7 @@ $("showroomSound").addEventListener("click",async()=>{
  try{const ok=await audio.preview(selectedCar);button.textContent=ok?"♪ صدای موتور پخش شد":"صدای موتور در دسترس نیست";if(ok)window.MshinShowroom={...window.MshinShowroom,previewCount:(window.MshinShowroom?.previewCount||0)+1}}
  finally{setTimeout(()=>{button.disabled=false;button.textContent="🔊 شنیدن صدای موتور"},1700)}
 });
-$("showroomVehicle").addEventListener("pointerdown",event=>{showroomDragX=matchMedia("(orientation: portrait)").matches?event.clientY:event.clientX;$("showroomVehicle").setPointerCapture?.(event.pointerId)});
+$("showroomVehicle").addEventListener("pointerdown",event=>{showroomDragX=matchMedia("(orientation: portrait)").matches?event.clientY:event.clientX;try{$("showroomVehicle").setPointerCapture?.(event.pointerId)}catch{}});
 $("showroomVehicle").addEventListener("pointermove",event=>{if(showroomDragX===null)return;const dragX=matchMedia("(orientation: portrait)").matches?event.clientY:event.clientX,delta=dragX-showroomDragX;showroomDragX=dragX;showroomAngle=(showroomAngle+delta*.9+360)%360;$("showroomVehicle").style.setProperty("--showroom-angle",showroomAngle+"deg");window.MshinShowroom={...window.MshinShowroom,angle:showroomAngle}});
 const stopShowroomDrag=()=>{showroomDragX=null};
 $("showroomVehicle").addEventListener("pointerup",stopShowroomDrag);$("showroomVehicle").addEventListener("pointercancel",stopShowroomDrag);$("showroomVehicle").addEventListener("lostpointercapture",stopShowroomDrag);
