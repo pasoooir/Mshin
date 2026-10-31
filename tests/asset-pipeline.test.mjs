@@ -28,7 +28,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.14"'));
+  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.15"'));
   assert.match(html, /role="tablist"/);
   assert.match(html, /data-panel="race"/);
   assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
@@ -67,6 +67,8 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(audio, /const loadMix=/);
   assert.match(audio, /const roadMix=/);
   assert.match(audio, /startEngine\(\)/);
+  assert.match(audio, /collisionImpact/);
+  assert.match(audio, /impactThump/);
   assert.equal(manifest.icons.length, 3, "gas, brake and nitro must use CDN icon artwork");
   for (const id of ["menuMusic", "raceMusic"]) {
     const track = manifest.sounds.find(sound => sound.id === id);
@@ -74,6 +76,8 @@ test("asset boot waits for bounded preload before starting the game module", asy
     assert.ok(track.source.startsWith("https://opengameart.org/content/"), id + " must preserve its official license provenance");
   }
   assert.match(loader, /requiredFailures/);
+  const crash = manifest.sounds.find(sound => sound.id === "collisionImpact");
+  assert.ok(crash && crash.required && crash.license === "CC0 1.0" && crash.source === "https://opengameart.org/content/crash-collision", "collision must use a dedicated recorded CC0 impact");
 });
 test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
@@ -83,7 +87,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v29/);
+  assert.match(sw, /mshin-arcade-v30/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
