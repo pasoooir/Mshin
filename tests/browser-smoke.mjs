@@ -25,6 +25,10 @@ try {
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 5, "menu should expose five dedicated tabs");
   assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "race", "race tab should be selected by default");
+  const depth = await page.locator("#select .gtMenu").evaluate(el => ({ perspective:getComputedStyle(el).perspective, preserve3d:getComputedStyle(document.querySelector("#select .carChoice")).transformStyle }));
+  assert.notEqual(depth.perspective,"none","showroom should establish perspective depth");
+  assert.equal(depth.preserve3d,"preserve-3d","vehicle cards should preserve 3D transforms");
+  assert.equal(await page.locator("#select .carChoice").count(),5,"3D showroom should retain all five vehicles");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".worldCard").count(), 10, "all 10 image-led world cards should be selectable; browser errors: " + errors.join(" | "));
@@ -166,6 +170,13 @@ try {
   mobile.on("pageerror", error => errors.push(error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await mobile.locator("#play").click();
+  assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
+  await mobile.locator("#tab-cars").click();
+  assert.notEqual(await mobile.locator("#select .gtMenu").evaluate(el=>getComputedStyle(el).perspective),"none","mobile showroom should retain perspective depth");
+  const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
+  assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
+  await mobile.locator("#tab-race").click();
+  assert.equal(await mobile.locator(".stageCard").count(),5,"mobile race tab should retain five stages");
   await mobile.locator("#startRace").click();
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
