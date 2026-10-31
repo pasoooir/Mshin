@@ -1,11 +1,11 @@
-## 0.9.3 — release candidate (2026-10-31)
+## 0.9.3 — published (2026-10-31)
 
 ### Repository-local runtime assets
 - Vendored 10 photographic world scenes, 3 control SVGs, and 10 engine/music/braking audio files into `cdn/assets/`.
 - Repointed the runtime asset manifest to same-origin repository paths and removed external CDN fallback from the service worker.
 - Advanced the PWA shell cache to `mshin-arcade-v33`; the complete local asset set is precached for offline launch and gameplay.
 - Synchronized package/PWA version `0.9.3`, asset marker `2026.10.31.17`, and Cocos vector catalog marker.
-- Pending: complete Node + desktop/mobile Playwright checks, merged-main validation, and successful GitHub Pages deployment.
+- Verification: all 136 Node tests and desktop/mobile Playwright passed; merged-main validation run `41206965694` succeeded; GitHub Pages deployment run `41206965179` succeeded for commit `07695e04a4645dedd6fc0fed6a85ffbd8f895412`.
 
 ## 0.8.8 — 2026-10-31
 
