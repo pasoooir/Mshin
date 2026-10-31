@@ -28,7 +28,7 @@ test("camera projection responds to lateral position and camera yaw", () => {
   const viewport = { width: 1000, height: 600 };
   const camera = { x: 0, y: 0 };
   const center = projectRacePoint({ x: 0, y: 500 }, camera, Math.PI / 2, viewport);
-  const right = projectRacePoint({ x: 120, y: 500 }, camera, Math.PI / 2, viewport);
+  const right = projectRacePoint({ x: -120, y: 500 }, camera, Math.PI / 2, viewport);
   const yawed = projectRacePoint({ x: 0, y: 500 }, camera, Math.PI / 2, viewport, { yaw: .25 });
   assert.ok(right.x > center.x, "right-side road points should project to the right");
   assert.ok(yawed.x > center.x, "camera yaw should shift the projected view");
