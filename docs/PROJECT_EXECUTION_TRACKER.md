@@ -2,18 +2,22 @@
 
 Last evidence refresh: 2026-10-31
 
-## Latest verified release — 0.8.7
+## Latest verified release — 0.8.8
 
-- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #40 ادغام شده است.
-- **Release scope:** نمایشگاه سه‌بعدی خودرو با perspective، نورپردازی چندلایه، بازتاب و سایه؛ حالت‌های hover/selected برای کارت‌ها؛ ریل‌های افقی واکنش‌گرا و رعایت prefers-reduced-motion.
-- **Regression coverage:** تست‌های Playwright دسکتاپ و موبایل، حفظ پنج خودرو، تب خودروها، عمق بصری منو، پیمایش افقی ریل و حفظ پنج مرحله؛ مسیر شروع مسابقه و HUD موبایل نیز بررسی شد.
-- **Release metadata:** package و PWA manifest برابر `0.8.7`؛ Service Worker cache برابر `mshin-arcade-v26`.
-- **PR #40:** https://github.com/pasoooir/Mshin/pull/40 — merged، commit `3d4578fa407ffcdffdf60693dca2c0e5a8a2591d`.
-- **PR browser CI:** run `41192455546` — success؛ تست‌های Node و Playwright دسکتاپ/موبایل موفق.
-- **Merged-main validation:** run `41193018567` — success.
-- **GitHub Pages deployment:** run `41193017445` — success.
+- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #41 ادغام و GitHub Pages منتشر شده است.
+- **Release scope:** نمایشگاه سینمایی خودرو با نورافکن و کف نورانی، چرخش تعاملی با لمس/کشیدن، چرخش ۳۶۰ درجه و پیش‌نمایش صدای اختصاصی موتور هر خودرو؛ خودروی برقی صدای whine اختصاصی دارد.
+- **Regression coverage:** Playwright دسکتاپ و موبایل؛ نمایش خودرو و مشخصات انتخاب‌شده، تغییر تصویر با انتخاب خودرو، اجرای چرخش ۳۶۰ درجه، کنترل پیش‌نمایش صدا و چرخش با drag در موبایل.
+- **Release metadata:** package و PWA manifest برابر `0.8.8`؛ asset marker برابر `2026.10.31.12`؛ Service Worker cache برابر `mshin-arcade-v27`.
+- **PR #41:** https://github.com/pasoooir/Mshin/pull/41 — merged، commit `ed7554dcd161ccabf5261f53a14afcd6210998aa`.
+- **PR browser CI:** run `41194601384` — success؛ تست‌های Node و Playwright دسکتاپ/موبایل موفق.
+- **Merged-main validation:** run `41195187912` — success.
+- **GitHub Pages deployment:** run `41195187475` — success.
 - **Live game:** https://pasoooir.github.io/Mshin/
-- **Limit:** تست مرورگر، جایگزین تست فیزیکی روی گوشی یا تأیید build در Cocos Creator Editor نیست.
+- **Limit:** پیش‌نمایش صدای مرورگر و تست Playwright جایگزین تست شنیداری روی بلندگوی واقعی یا تأیید فیزیکی دستگاه نیست؛ Cocos Creator Editor/device QA نیز مستقل است.
+
+## Previous verified release — 0.8.7
+
+- PR #40، commit `3d4578fa407ffcdffdf60693dca2c0e5a8a2591d`؛ CI run `41192455546`، merged-main validation `41193018567` و Pages deployment `41193017445` موفق بودند.
 
 ## Repository and delivery state
 
