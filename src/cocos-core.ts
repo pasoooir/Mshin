@@ -1,5 +1,5 @@
 /** Engine-independent gameplay core for the Cocos Creator 3.8.6 adapter. */
-export interface CarState { x: number; y: number; heading: number; speed: number; }
+export interface CarState { x: number; y: number; heading: number; speed: number; angularVelocity?:number; }
 export interface DriveInput { steer: number; throttle: boolean; brake: boolean; offRoad?: boolean; grip?: number; performance?: number; }
 export interface TrackBounds { radiusX: number; radiusY: number; inner: number; outer: number; }
 export interface RaceState { lap: number; previousProgress: number; finished: boolean; elapsedSeconds: number; }
@@ -70,4 +70,62 @@ export function updateRace(state: RaceState, x: number, y: number, dt: number, t
  const lapsRequired = Number.isFinite(targetLaps) ? Math.max(1, Math.floor(targetLaps)) : 3;
  if (state.previousProgress > 0.88 && current < 0.12) { state.lap += 1; if (state.lap >= lapsRequired) state.finished = true; }
  state.previousProgress = current; return state;
+}
+
+
+/** Oriented 2D rigid body used by the Cocos scene adapter. Coordinates are world units. */
+export interface RigidVector2 {x:number;y:number;}
+export interface RigidBody2D {
+ x:number;y:number;vx:number;vy:number;angle:number;angularVelocity:number;
+ mass:number;length:number;width:number;inertia:number;invMass:number;invInertia:number;
+ restitution:number;friction:number;
+}
+export interface RigidImpactResult {hit:boolean;nx:number;ny:number;overlap:number;closingSpeed:number;impulse:number;energy:number;pointX:number;pointY:number;}
+export function createRigidBody2D(options:{x:number;y:number;vx?:number;vy?:number;angle?:number;angularVelocity?:number;mass?:number;length?:number;width?:number;restitution?:number;friction?:number;static?:boolean}):RigidBody2D {
+ const mass=Math.max(1,options.mass??1250),length=Math.max(1,options.length??54),width=Math.max(1,options.width??30),isStatic=options.static===true;
+ const inertia=mass*(length*length+width*width)/12;
+ return {x:options.x,y:options.y,vx:options.vx??0,vy:options.vy??0,angle:options.angle??0,angularVelocity:options.angularVelocity??0,mass,length,width,inertia,
+  invMass:isStatic?0:1/mass,invInertia:isStatic?0:1/inertia,restitution:clamp(options.restitution??.12,0,.8),friction:clamp(options.friction??.34,0,1)};
+}
+function rigidAxes(b:RigidBody2D):[RigidVector2,RigidVector2] {const c=Math.cos(b.angle),s=Math.sin(b.angle);return [{x:c,y:s},{x:-s,y:c}];}
+function rigidRadius(b:RigidBody2D,axis:RigidVector2,basis:[RigidVector2,RigidVector2]):number {
+ return Math.abs(axis.x*basis[0].x+axis.y*basis[0].y)*b.length/2+Math.abs(axis.x*basis[1].x+axis.y*basis[1].y)*b.width/2;
+}
+function rigidSupport(b:RigidBody2D,dx:number,dy:number):RigidVector2 {
+ const axes=rigidAxes(b),d0=dx*axes[0].x+dy*axes[0].y,d1=dx*axes[1].x+dy*axes[1].y,s0=Math.abs(d0)<1e-8?0:Math.sign(d0),s1=Math.abs(d1)<1e-8?0:Math.sign(d1);
+ return {x:b.x+s0*axes[0].x*b.length/2+s1*axes[1].x*b.width/2,y:b.y+s0*axes[0].y*b.length/2+s1*axes[1].y*b.width/2};
+}
+function rigidCross(ax:number,ay:number,bx:number,by:number):number{return ax*by-ay*bx;}
+function rigidVelocityAt(b:RigidBody2D,rx:number,ry:number):RigidVector2{return {x:b.vx-b.angularVelocity*ry,y:b.vy+b.angularVelocity*rx};}
+export function resolveRigidBody2D(a:RigidBody2D,b:RigidBody2D,positionPercent=.82):RigidImpactResult {
+ const aa=rigidAxes(a),bb=rigidAxes(b),dx=b.x-a.x,dy=b.y-a.y;let overlap=Infinity,nx=0,ny=0;
+ for(const axis of [...aa,...bb]){const distance=Math.abs(dx*axis.x+dy*axis.y),depth=rigidRadius(a,axis,aa)+rigidRadius(b,axis,bb)-distance;
+  if(depth<=0)return {hit:false,nx:0,ny:0,overlap:0,closingSpeed:0,impulse:0,energy:0,pointX:0,pointY:0};
+  if(depth<overlap){overlap=depth;const sign=dx*axis.x+dy*axis.y>=0?1:-1;nx=axis.x*sign;ny=axis.y*sign;}
+ }
+ const pa=rigidSupport(a,nx,ny),pb=rigidSupport(b,-nx,-ny),pointX=(pa.x+pb.x)/2,pointY=(pa.y+pb.y)/2;
+ const rax=pointX-a.x,ray=pointY-a.y,rbx=pointX-b.x,rby=pointY-b.y,va=rigidVelocityAt(a,rax,ray),vb=rigidVelocityAt(b,rbx,rby);
+ const vn=(vb.x-va.x)*nx+(vb.y-va.y)*ny,ran=rigidCross(rax,ray,nx,ny),rbn=rigidCross(rbx,rby,nx,ny);
+ const denom=a.invMass+b.invMass+ran*ran*a.invInertia+rbn*rbn*b.invInertia;let impulse=0,energy=0,closingSpeed=Math.max(0,-vn);
+ if(vn<0&&denom>1e-10){
+  const e=Math.min(a.restitution,b.restitution);impulse=-(1+e)*vn/denom;const ix=impulse*nx,iy=impulse*ny;
+  a.vx-=ix*a.invMass;a.vy-=iy*a.invMass;a.angularVelocity-=rigidCross(rax,ray,ix,iy)*a.invInertia;
+  b.vx+=ix*b.invMass;b.vy+=iy*b.invMass;b.angularVelocity+=rigidCross(rbx,rby,ix,iy)*b.invInertia;
+  energy=.5*vn*vn/denom*(1-e*e);
+  const tx=-ny,ty=nx,vat=rigidVelocityAt(a,rax,ray),vbt=rigidVelocityAt(b,rbx,rby),vt=(vbt.x-vat.x)*tx+(vbt.y-vat.y)*ty;
+  const rat=rigidCross(rax,ray,tx,ty),rbt=rigidCross(rbx,rby,tx,ty),td=a.invMass+b.invMass+rat*rat*a.invInertia+rbt*rbt*b.invInertia;
+  const mu=Math.sqrt(a.friction*b.friction),jt=clamp(-vt/Math.max(1e-10,td),-impulse*mu,impulse*mu),tix=jt*tx,tiy=jt*ty;
+  a.vx-=tix*a.invMass;a.vy-=tiy*a.invMass;a.angularVelocity-=rigidCross(rax,ray,tix,tiy)*a.invInertia;
+  b.vx+=tix*b.invMass;b.vy+=tiy*b.invMass;b.angularVelocity+=rigidCross(rbx,rby,tix,tiy)*b.invInertia;
+ }
+ const invSum=a.invMass+b.invMass,correction=invSum>0?Math.max(overlap-.02,0)*positionPercent/invSum:0;
+ if(correction){a.x-=nx*correction*a.invMass;a.y-=ny*correction*a.invMass;b.x+=nx*correction*b.invMass;b.y+=ny*correction*b.invMass;}
+ return {hit:true,nx,ny,overlap,closingSpeed,impulse,energy,pointX,pointY};
+}
+export function resolveRigidVehiclePair(a:RigidBody2D,b:RigidBody2D):RigidImpactResult {return resolveRigidBody2D(a,b);}
+
+/** Allocate dissipated impact energy by inverse-mass response (lighter body absorbs the larger share). */
+export function splitImpactEnergy(energy:number,invMassA:number,invMassB:number):{a:number;b:number} {
+ const safeEnergy=Math.max(0,Number.isFinite(energy)?energy:0),a=Math.max(0,Number.isFinite(invMassA)?invMassA:0),b=Math.max(0,Number.isFinite(invMassB)?invMassB:0),sum=a+b;
+ return sum>1e-12?{a:safeEnergy*a/sum,b:safeEnergy*b/sum}:{a:safeEnergy*.5,b:safeEnergy*.5};
 }

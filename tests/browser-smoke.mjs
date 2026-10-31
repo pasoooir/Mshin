@@ -42,6 +42,27 @@ try {
   assert.equal(physicsCheck.hit,true,"browser should load collision impulse solver");
   assert.ok(physicsCheck.closing>0 && physicsCheck.rivalVelocity>40,"rear impact should transfer momentum");
   assert.ok(physicsCheck.damage>0 && physicsCheck.level===1,"impact energy should accumulate damage");
+  const rigidCheck = await page.evaluate(async () => {
+    const p = await import("./src/rigid-body-physics.js");
+    const a = p.createRigidVehicle({x:0,y:0,vx:260,vy:12,mass:1500,length:108,width:58});
+    const b = p.createRigidVehicle({x:100,y:8,vx:15,vy:0,mass:900,length:96,width:54,angle:.04});
+    const impact = p.resolveRigidVehicleImpact(a,b);
+    const share = p.splitImpactEnergy(impact.energy,a.invMass,b.invMass);
+    const sweep = p.sweptVehicleContact(
+      p.createRigidVehicle({x:-180,y:0,mass:1200,length:90,width:42}),
+      p.createRigidVehicle({x:180,y:0,mass:1200,length:90,width:42}),
+      p.createRigidVehicle({x:0,y:0,mass:1200,length:90,width:42}),
+      p.createRigidVehicle({x:0,y:0,mass:1200,length:90,width:42})
+    );
+    return {hit:impact.hit,impulse:impact.impulse,energy:impact.energy,shareTotal:share.a+share.b,
+      angular:Number.isFinite(a.angularVelocity)&&Number.isFinite(b.angularVelocity),swept:sweep.hit};
+  });
+  assert.equal(rigidCheck.hit,true,"browser should execute oriented rigid-body SAT and impulse solver");
+  assert.ok(rigidCheck.impulse>0 && rigidCheck.energy>0,"rigid-body contact should produce a physical impulse and dissipated energy");
+  assert.ok(Math.abs(rigidCheck.shareTotal-rigidCheck.energy)<1e-6,"impact damage energy should be conserved across vehicle shares");
+  assert.equal(rigidCheck.angular,true,"off-centre browser collision should preserve finite angular response");
+  assert.equal(rigidCheck.swept,true,"swept collision should detect fast body traversal");
+
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
   assert.ok(frameMetrics.samples >= 30, "race loop should publish rolling frame-time samples");
   assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
