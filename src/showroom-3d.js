@@ -131,7 +131,7 @@ export function createShowroom3D(canvas){
  let gl=null,programInfo=null,carParts=[],stageParts=[],raf=0,visible=false,destroyed=false,rotation=0,spinStart=0,spinFrom=0,spinDuration=1450,frameCount=0,autoRotate=0,lastFrame=0,modelScale=1,model={id:"rally",color:"#f15d4e"},lastSize="";
  const state={status:"initializing",carId:model.id,rotation:0,scale:1,frameCount:0,renderer:"WebGL 1"};
  try{
-  gl=canvas.getContext("webgl",{alpha:false,antialias:true,depth:true,powerPreference:"low-power"})||canvas.getContext("experimental-webgl");
+  gl=canvas.getContext("webgl",{alpha:false,antialias:true,depth:true,powerPreference:"low-power",preserveDrawingBuffer:true})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable");
   programInfo=program(gl);carParts=buildCar(gl);stageParts=buildStage(gl);
   const p=programInfo;

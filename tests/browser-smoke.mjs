@@ -5,6 +5,15 @@ import { mkdir, writeFile } from "node:fs/promises";
 await mkdir("artifacts", { recursive: true });
 
 async function saveWebGLPreview(page, selector, path) {
+  const audit = await page.locator(selector).evaluate(canvas => {
+    const gl = canvas.getContext("webgl");
+    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    let changed = 0;
+    for (let i = 0; i < pixels.length; i += 4) if (Math.abs(pixels[i]-6)+Math.abs(pixels[i+1]-14)+Math.abs(pixels[i+2]-23)>18) changed++;
+    return {width:canvas.width,height:canvas.height,changed};
+  });
+  assert.ok(audit.width > 0 && audit.height > 0 && audit.changed > 500, "WebGL buffer should contain rendered car and studio geometry: "+JSON.stringify(audit));
   const dataUrl = await page.locator(selector).evaluate(canvas => canvas.toDataURL("image/png"));
   const encoded = dataUrl.split(",")[1];
   assert.ok(encoded && encoded.length > 1000, "WebGL canvas should export a rendered image");
