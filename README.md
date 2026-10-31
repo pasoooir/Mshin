@@ -16,7 +16,7 @@ The browser edition is now **version 0.8.0**, a landscape installable PWA. This 
 
 ## Version 0.8.0 — audio, camera and race presentation
 
-- Replaced synthesized sawtooth engine audio with CDN-hosted race-car idle/rev recordings, braking and downshift effects (SFXMint CC0 1.0).
+- Replaced synthesized sawtooth engine audio with CDN-hosted race-car idle/rev recordings, braking and downshift effects from SFXMint CC0 1.0 (AI-generated assets, not field recordings).
 - Expanded the asphalt to a four-lane road with three visible separators and four AI lane centers.
 - Pulled the chase camera back so the complete road width remains visible on desktop and mobile.
 - Added an animated 3 → 2 → 1 → GO countdown; player and AI movement begins together only after GO.
