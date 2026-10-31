@@ -196,7 +196,7 @@ export class MshinGame extends Component {
  private pauseRace():void {
   if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();
   const overlay=this.makeNode("Pause Screen Overlay",this.menuRoot);overlay.getComponent(UITransform)!.setContentSize(1280,720);const shade=overlay.addComponent(Graphics);shade.fillColor=new Color(3,8,14,190);shade.rect(-640,-360,1280,720);shade.fill();this.uiNodes.push(overlay);overlay.setSiblingIndex(0);
-  this.addUiLabel("PAUSE", -470, 305, 42);this.addUiLabel("MSHIN MOTORSPORT  /  EVENT PAUSED",-220,258,14);
+  this.addUiLabel("PAUSE", -470, 305, 42);this.addUiLabel("RACE PAUSED",-220,225,15);this.addUiLabel("MSHIN MOTORSPORT  /  EVENT PAUSED",-220,258,14);
   const entries:[string,number,boolean,()=>void][]=[
    ["CONTINUE",190,true,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;for(const rival of this.rivals)rival.enabled=true;this.createControls();}],
    ["RETRY",125,true,()=>this.startStage(this.stage.id)],
@@ -255,7 +255,7 @@ export class MshinGame extends Component {
   });
  }
  private resizeUi():void {
-  const s=view.getVisibleSize();this.lastSize={width:s.width,height:s.height};this.camera.orthoHeight=s.height;const menuScale=Math.max(.45,Math.min(1,s.width/1280,s.height/720));this.menuRoot.setScale(menuScale,menuScale,1);this.menuRoot.setPosition(0,0,0);
+  const s=view.getVisibleSize();this.lastSize={width:s.width,height:s.height};this.camera.orthoHeight=s.height;const menuScale=Math.max(.1,Math.min(1,s.width/1280,s.height/720));this.menuRoot.setScale(menuScale,menuScale,1);this.menuRoot.setPosition(0,0,0);
   const pos=(name:string,x:number,y:number)=>{const n=this.hudRoot.getChildByName(name);if(n)n.setPosition(x,y,0);};
   pos("HUD Backdrop",0,s.height/2-52);pos("Label brand",0,s.height/2-26);pos("Label world",0,s.height/2-62);
   pos("Label lap",-s.width/2+150,s.height/2-26);pos("Label time",-s.width/2+320,s.height/2-26);pos("Label speed",-s.width/2+485,s.height/2-26);
