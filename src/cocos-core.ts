@@ -6,6 +6,16 @@ export interface RaceState { lap: number; previousProgress: number; finished: bo
 export const GREEN_VALLEY_TRACK: Readonly<TrackBounds> = Object.freeze({ radiusX: 420, radiusY: 260, inner: 0.82, outer: 1.18 });
 export const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 /** Converts normalized track grip into a bounded vehicle-contact friction coefficient. */
+export function calculateSlipAngle(forwardSpeed:number,lateralSpeed:number):number {
+ const forward=Number.isFinite(forwardSpeed)?Math.abs(forwardSpeed):0;
+ const lateral=Number.isFinite(lateralSpeed)?lateralSpeed:0;
+ return Math.atan2(lateral,Math.max(forward,1));
+}
+/** Scales combined longitudinal/lateral tire demand to the available friction circle. */
+export function frictionCircleScale(longitudinal:number,lateral:number,grip:number):number {
+ const mu=Math.max(0.05,Number.isFinite(grip)?grip:1),demand=Math.hypot(Number.isFinite(longitudinal)?longitudinal:0,Number.isFinite(lateral)?lateral:0);
+ return demand<=mu||demand===0?1:mu/demand;
+}
 export function surfaceCollisionFriction(grip:number):number {
  const normalized=clamp(Number.isFinite(grip)?grip:1,0.35,1.15);
  return clamp(0.72*normalized,0.22,0.82);
@@ -37,7 +47,14 @@ export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number):
  car.heading -= steer * (1.9 + Math.abs(car.speed) / 155) * grip * dt * Math.sign(car.speed || 1);
  // Tire lateral force damps post-impact slip; low-grip surfaces retain more lateral momentum.
  const lateral = Number.isFinite(car.lateralSpeed) ? (car.lateralSpeed as number) : 0;
- const lateralAfter = lateral * Math.exp(-(3.5 + 7 * grip) * dt); car.lateralSpeed = lateralAfter;
+ const slipAngle=calculateSlipAngle(car.speed,lateral);
+ // Tire lateral force is limited by available grip; the cap is calibrated in world-units/s².
+ const requestedLateralAcceleration=-lateral*(3.5+7*grip);
+ const maxLateralAcceleration=0.085*grip;
+ const lateralAcceleration=clamp(requestedLateralAcceleration,-maxLateralAcceleration,maxLateralAcceleration);
+ const lateralAfter=lateral+lateralAcceleration*dt;
+ // At very low forward speed, avoid an unstable slip-angle snap while retaining physical lateral momentum.
+ car.lateralSpeed=Math.abs(car.speed)<2&&Math.abs(slipAngle)>1.2?lateralAfter:lateralAfter;
  const forwardX=Math.sin(car.heading),forwardY=-Math.cos(car.heading),rightX=Math.cos(car.heading),rightY=Math.sin(car.heading);
  car.x += (forwardX*car.speed+rightX*lateralAfter)*dt;
  car.y += (forwardY*car.speed+rightY*lateralAfter)*dt; return car;

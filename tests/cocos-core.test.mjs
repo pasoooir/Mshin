@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy, calculateRacingLineTarget, calculateAiTargetSpeed, worldVelocityToCar, surfaceCollisionFriction } from '../.test-build/src/cocos-core.js';
+import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy, calculateRacingLineTarget, calculateAiTargetSpeed, worldVelocityToCar, surfaceCollisionFriction, calculateSlipAngle, frictionCircleScale } from '../.test-build/src/cocos-core.js';
 
 test('joystick clamps diagonal displacement to unit radius', () => {
  const v = normalizeJoystick(100, 100, 50); assert.ok(Math.hypot(v.x, v.y) <= 1.000001); assert.ok(v.x > 0 && v.y > 0);
@@ -150,4 +150,28 @@ test('surface collision friction follows asphalt, dirt and wet grip without inva
  assert.ok(surfaceCollisionFriction(.55)>surfaceCollisionFriction(.35));
  assert.ok(surfaceCollisionFriction(1.15)<=.82);
  assert.ok(surfaceCollisionFriction(Number.NaN)>0);
+});
+
+
+test('tire slip angle responds to lateral velocity and remains finite at low speed',()=>{
+ assert.ok(calculateSlipAngle(30,6)>0);
+ assert.ok(calculateSlipAngle(30,-6)<0);
+ assert.equal(calculateSlipAngle(0,0),0);
+ assert.ok(Number.isFinite(calculateSlipAngle(0,100)));
+});
+
+test('friction circle limits combined longitudinal and lateral tire demand',()=>{
+ assert.equal(frictionCircleScale(.3,.4,1),1);
+ const scale=frictionCircleScale(1,1,1);
+ assert.ok(scale<1);
+ assert.ok(Math.hypot(scale,scale)<=1.000001);
+ assert.ok(frictionCircleScale(1,1,.5)<frictionCircleScale(1,1,1));
+});
+
+test('low-grip tires shed lateral velocity more slowly than high-grip tires',()=>{
+ const high={x:0,y:0,heading:0,speed:30,lateralSpeed:8};
+ const low={x:0,y:0,heading:0,speed:30,lateralSpeed:8};
+ stepCar(high,{steer:0,throttle:false,brake:false,grip:1},1/20);
+ stepCar(low,{steer:0,throttle:false,brake:false,grip:.4},1/20);
+ assert.ok(Math.abs(low.lateralSpeed)>Math.abs(high.lateralSpeed));
 });
