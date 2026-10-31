@@ -39,6 +39,22 @@ test("settings and pause actions preserve game state semantics", () => {
 });
 
 test("PWA and offline cache markers advance together", () => {
-  assert.equal(manifest.version, "0.10.0");
-  assert.match(sw, /mshin-arcade-v35/);
+  assert.equal(manifest.version, "0.10.1");
+  assert.match(sw, /mshin-arcade-v36/);
+});
+
+test("menu and garage use repository-local procedural WebGL 3D scenes", async () => {
+  const scene = await readFile(new URL("../src/menu-3d-scene.js", import.meta.url), "utf8");
+  assert.match(game, /createMenu3DScene/);
+  assert.match(scene, /getContext\("webgl"/);
+  assert.match(scene, /function perspective/);
+  assert.match(scene, /function lookAt/);
+  assert.match(scene, /function ring\(/);
+  assert.match(scene, /function car\(/);
+  assert.match(scene, /mshinMenu3DCanvas/);
+  assert.match(scene, /mshinGarage3DCanvas/);
+  assert.match(scene, /Mshin3DGarage/);
+  assert.doesNotMatch(scene, /https?:\/\//, "3D runtime must not depend on a CDN or external model host");
+  assert.ok(sw.includes("./src/menu-3d-scene.js"), "3D scene module must be precached for offline use");
+  assert.match(html, /#mshinGarage3DCanvas/);
 });
