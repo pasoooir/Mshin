@@ -10,7 +10,7 @@ const sw = await readFile(new URL("../service-worker.js", import.meta.url), "utf
 test("portrait devices receive a rotated landscape game surface without a rotate-device gate", () => {
   assert.match(html, /width:100dvh!important;height:100dvw!important/);
   assert.match(html, /transform:rotate\(90deg\) translateY\(-100%\)!important/);
-  assert.doesNotMatch(html, /برای اجرای بازی، دستگاه را افقی نگه دارید|گوشی را به حالت افقی بچرخانید/);
+  assert.doesNotMatch(html, /برای اجرای بازی، دستگاه را افقی نگه دارید|گوشی را به حالت افقی بچرخانید|content:\\"↻\\"/);
   assert.doesNotMatch(html, /stopImmediatePropagation\(\)/);
   assert.equal(manifest.orientation, "landscape");
 });
