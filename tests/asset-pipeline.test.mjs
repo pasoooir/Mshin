@@ -55,7 +55,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.equal(manifest.icons.length, 3, "gas, brake and nitro must use CDN icon artwork");
   const music = manifest.sounds.filter(sound => sound.id === "musicMenu" || sound.id === "musicRace");
   assert.equal(music.length, 2, "menu and race music must both be registered");
-  assert.ok(music.every(track => track.license === "CC0-1.0" && track.src.startsWith("https://opengameart.org/")), "music tracks must be sourced from declared CC0 OpenGameArt entries");
+  assert.ok(music.every(track => track.license === "CC0-1.0" && track.src.startsWith("https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@") && track.source.startsWith("https://opengameart.org/")), "music tracks must be sourced from declared CC0 OpenGameArt entries");
   assert.match(loader, /mshin-audio-assets-v1/, "preloaded audio must be persisted for offline playback");
 });
 test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
