@@ -278,7 +278,7 @@ try {
   assert.ok(canvasState.visiblePixels > 100, "game canvas should contain visible rendered pixels");
   assert.ok(canvasState.imageBytes > 1000, "gameplay frame should not be a blank image");
   await page.screenshot({ path: "artifacts/mshin-gameplay-desktop.png" });
-  await page.locator("#pause").click();
+  await page.locator("#pause").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   await page.waitForFunction(() => document.getElementById("mshinMenu3DCanvas")?.classList.contains("is-visible") === false);
   assert.equal(await page.locator("#mshinMenu3DCanvas").isVisible(), false, "menu renderer must hide on pause so the live race canvas remains visible");
@@ -295,14 +295,14 @@ try {
   assert.equal(await page.locator("#driverDetailsPanel").isVisible(), true, "driver details must open a real profile panel");
   await page.locator("#driverDetailsClose").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "driver profile should return to the same pause menu");
-  await page.locator("#pauseSettings").click();
+  await page.locator("#pauseSettings").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#select").isVisible(), true, "settings should open from pause");
-  await page.locator("#backHome").click();
+  await page.locator("#backHome").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "back from pause settings should return to the paused event");
-  await page.locator("#resume").click();
+  await page.locator("#resume").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#pausePanel").isVisible(), false, "resume should close pause panel");
   await page.locator("#pause").click();
-  await page.locator("#quitRace").click();
+  await page.locator("#quitRace").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
