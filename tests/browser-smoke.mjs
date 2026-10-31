@@ -242,7 +242,9 @@ try {
   await mobile.mouse.down();
   await mobile.mouse.move(showroomCenter.x, showroomCenter.y + 35, { steps: 5 });
   await mobile.mouse.up();
-  assert.ok(Math.abs(await mobile.evaluate(()=>window.MshinShowroom.angle))>0,"mobile drag should rotate the showroom vehicle");
+  await mobile.waitForTimeout(60);
+  const mobileDragState = await mobile.evaluate(()=>window.MshinShowroom);
+  assert.ok(Math.abs(mobileDragState.angle)>0,"mobile drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();
