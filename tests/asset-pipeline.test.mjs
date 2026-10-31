@@ -35,7 +35,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(game, /function activateMenuTab/);
   assert.match(game, /worldArt/);
   assert.match(game, /carArt/);
-n/, "audio module must not contain escaped newlines that break browser module parsing");
+  assert.doesNotMatch(audio, /\\\\n/, "audio module must not contain escaped newlines that break browser module parsing");
   assert.match(audio, /decodeAudioData/);
   assert.match(audio, /engineGains/);
   assert.match(audio, /engineSources/);
