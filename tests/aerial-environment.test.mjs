@@ -14,6 +14,6 @@ test("helicopter shadow follows the world camera anchor as it advances",()=>{
  const tangent={x:1,y:0,nx:0,ny:1};
  const a=getHelicopterShadowPose(3000,2,{x:0,y:0},tangent);
  const b=getHelicopterShadowPose(3000,2,{x:500,y:250},tangent);
- assert.equal(b.x-a.x,500);
- assert.equal(b.y-a.y,250);
+ assert.ok(Math.abs((b.x-a.x)-500)<1e-9);
+ assert.ok(Math.abs((b.y-a.y)-250)<1e-9);
 });
