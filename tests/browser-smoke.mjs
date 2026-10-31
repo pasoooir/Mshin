@@ -4,7 +4,7 @@ import { mkdir } from "node:fs/promises";
 
 await mkdir("artifacts", { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, args: ["--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -22,6 +22,10 @@ try {
   assert.equal(preloadState.scenes, 10, "all ten photographic world environments should be decoded before the menu is interactive");
   assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
   await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
+  await page.waitForFunction(() => window.Mshin3D?.ready === true, undefined, { timeout: 10000 });
+  const menu3d = await page.evaluate(() => window.Mshin3D);
+  assert.ok(menu3d.drawCalls >= 40 && menu3d.meshes >= 8, "home menu must render a real WebGL 3D environment and vehicle: " + JSON.stringify(menu3d));
+  assert.equal(await page.locator("#mshinMenu3DCanvas").isVisible(), true, "cinematic WebGL background must be visible behind the home menu");
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 9, "menu should expose eight requested sections plus the existing workshop");
   assert.equal(await page.locator(".menuTab:disabled").count(), 2, "unimplemented leaderboard and store entries must remain disabled");
@@ -47,9 +51,16 @@ try {
   await page.locator("#tab-cars").click();
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
   assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
+  await page.waitForFunction(() => window.Mshin3DGarage?.ready === true && window.Mshin3DGarage.drawCalls >= 10, undefined, { timeout: 10000 });
+  assert.equal(await page.locator("#mshinGarage3DCanvas").isVisible(), true, "garage must render a local WebGL 3D showroom canvas");
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-rally.svg", "showroom should display the selected starter car");
   await page.locator("#showroomRotate").click();
   assert.equal(await page.evaluate(() => window.MshinShowroom.spinCount), 1, "360-degree showroom spin should be interactive");
+  await page.locator("#showroomVehicle").dispatchEvent("pointerdown", { pointerId: 81, pointerType: "touch", clientX: 120 });
+  await page.locator("#showroomVehicle").dispatchEvent("pointermove", { pointerId: 81, pointerType: "touch", clientX: 205 });
+  await page.locator("#showroomVehicle").dispatchEvent("pointerup", { pointerId: 81, pointerType: "touch", clientX: 205 });
+  await page.waitForFunction(() => (window.Mshin3DGarage?.dragMoves || 0) > 0, undefined, { timeout: 3000 });
+  assert.notEqual(await page.evaluate(() => window.Mshin3DGarage.angle), 0, "dragging the 3D showroom must rotate the actual WebGL vehicle");
   assert.equal(await page.locator("#showroomSound").isVisible(), true, "showroom should expose an engine preview control");
   assert.equal(await page.locator("#tabPanel-cars").isVisible(), true, "car tab should be visible after selection");
   await page.locator("#tab-workshop").click();
