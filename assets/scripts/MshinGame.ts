@@ -139,7 +139,7 @@ export class MshinGame extends Component {
    const target=calculateRacingLineTarget(rival.path,targetIndex,laneOffset);
    const desired=Math.atan2(target.x-rival.car.x,rival.car.y-target.y);
    const error=Math.atan2(Math.sin(desired-rival.car.heading),Math.cos(desired-rival.car.heading));
-   const before=rival.path[(targetIndex+rival.path.length-2)%rival.path.length];
+   const before=rival.path[(targetIndex+rival.path.length-2)%rival.path.length],next=rival.path[(targetIndex+1)%rival.path.length];
    const incoming=Math.atan2(target.y-before.y,target.x-before.x),outgoing=Math.atan2(next.y-target.y,next.x-target.x);
    const turn=Math.atan2(Math.sin(outgoing-incoming),Math.cos(outgoing-incoming));
    const targetSpeed=calculateAiTargetSpeed(turn);
