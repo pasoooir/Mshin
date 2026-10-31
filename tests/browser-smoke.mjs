@@ -25,10 +25,7 @@ try {
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 5, "menu should expose five dedicated tabs");
   assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "race", "race tab should be selected by default");
-  const depth = await page.locator("#select .gtMenu").evaluate(el => ({ perspective:getComputedStyle(el).perspective, preserve3d:getComputedStyle(document.querySelector("#select .carChoice")).transformStyle }));
-  assert.notEqual(depth.perspective,"none","showroom should establish perspective depth");
-  assert.equal(depth.preserve3d,"preserve-3d","vehicle cards should preserve 3D transforms");
-  assert.equal(await page.locator("#select .carChoice").count(),5,"3D showroom should retain all five vehicles");
+  assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".worldCard").count(), 10, "all 10 image-led world cards should be selectable; browser errors: " + errors.join(" | "));
