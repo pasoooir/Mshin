@@ -40,13 +40,13 @@ async function loadVector(asset) {
 
 async function loadAudio(asset) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
+  const timer = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 5000, asset.src);
+    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 15000, asset.src);
     if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
     const type = response.headers.get("content-type") || "";
     if (!type.includes("audio/") && !asset.src.endsWith(".mp3")) throw new Error(`Unexpected audio MIME type: ${type}`);
-    return await timeout(response.arrayBuffer(), 5000, asset.src);
+    return await timeout(response.arrayBuffer(), 15000, asset.src);
   } finally { clearTimeout(timer); }
 }
 
@@ -60,7 +60,7 @@ export async function preloadGameAssets(onProgress = () => {}) {
       try {
         if (asset.group === "audio") audioCache.set(asset.id, await loadAudio(asset));
         else imageCache.set(asset.id, await loadVector(asset));
-      } catch (error) { failures.push({ asset: asset.src || asset.cdn, error: error.message }); }
+      } catch (error) { failures.push({ asset: asset.src || asset.cdn, required: Boolean(asset.required), error: error.message }); }
       loaded++;
       onProgress({ loaded, total: all.length, percent: Math.round(loaded / all.length * 100), name: asset.name });
     }
@@ -74,7 +74,8 @@ export async function preloadGameAssets(onProgress = () => {}) {
     icons: Object.fromEntries((manifest.icons || []).map(item => [item.id, imageCache.get(item.id) || null])),
     audioData: Object.fromEntries((manifest.sounds || []).map(item => [item.id, audioCache.get(item.id) || null])),
     failures,
-    ready: true
+    requiredFailures: failures.filter(item => item.required),
+    ready: failures.every(item => !item.required)
   };
   return window.MshinAssets;
 }
