@@ -28,7 +28,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.13"'));
+  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.14"'));
   assert.match(html, /role="tablist"/);
   assert.match(html, /data-panel="race"/);
   assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
@@ -59,7 +59,14 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(loader, /audioCache\.set/);
   assert.match(loader, /loadAudio/);
   assert.ok(loader.includes("audioData:"), "audio bytes must be retained before game startup");
-  assert.ok(manifest.sounds.filter(sound => sound.id.startsWith("engine")).length === 6 && manifest.sounds.filter(sound => sound.id.startsWith("engine")).every(sound => sound.src.startsWith("https://cdn.jsdelivr.net/gh/yashimosh/border-run@") && sound.license === "CC0"), "race engine audio must use direct CDN assets");
+  const recordedEngineIds = ["engineIdle", "engineLoad", "roadRoll", "engineStart", "engineStop"];
+  const recordedEngineAssets = manifest.sounds.filter(sound => recordedEngineIds.includes(sound.id));
+  assert.equal(recordedEngineAssets.length, recordedEngineIds.length, "recorded idle/load/road/start/stop layers must all be present");
+  assert.ok(recordedEngineAssets.every(sound => sound.src.startsWith("https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@") && sound.license === "CC0 1.0" && sound.required), "recorded engine layers must be required CC0 assets");
+  assert.match(audio, /const idleMix=/);
+  assert.match(audio, /const loadMix=/);
+  assert.match(audio, /const roadMix=/);
+  assert.match(audio, /startEngine\(\)/);
   assert.equal(manifest.icons.length, 3, "gas, brake and nitro must use CDN icon artwork");
   for (const id of ["menuMusic", "raceMusic"]) {
     const track = manifest.sounds.find(sound => sound.id === id);
@@ -76,7 +83,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v28/);
+  assert.match(sw, /mshin-arcade-v29/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
