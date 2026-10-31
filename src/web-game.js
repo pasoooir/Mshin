@@ -231,6 +231,7 @@ mainMenuRenderer.setAutoRotate(5);
 mainMenuRenderer.setScale(1.65);
 if(mainMenuRenderer.state.status==="webgl")$("select").classList.add("has-webgl");
 window.MshinMainMenu3D=mainMenuRenderer.state;
+window.MshinMainMenuRenderer=mainMenuRenderer;
 const showroomRenderer=createShowroom3D($("showroom3dCanvas"));
 if(showroomRenderer.state.status==="webgl")$("showroomVehicle").classList.add("has-webgl");
 window.MshinShowroom3D=showroomRenderer.state;

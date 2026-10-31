@@ -186,11 +186,13 @@ export function createShowroom3D(canvas){
    spin(){spinFrom=rotation;spinStart=performance.now();if(visible&&!raf)raf=requestAnimationFrame(render);},
    setAutoRotate(speed){autoRotate=Number(speed)||0;},
    setScale(value){modelScale=clamp(Number(value)||1,.6,2.4);state.scale=modelScale;},
+   pause(){if(raf){cancelAnimationFrame(raf);raf=0;}},
+   resume(){if(!destroyed&&visible&&!raf)raf=window.requestAnimationFrame(render);},
    resize,
    destroy(){destroyed=true;observer?.disconnect();resizeObserver?.disconnect();document.removeEventListener("visibilitychange",onVisibility);canvas.removeEventListener("webglcontextlost",onContextLost);canvas.removeEventListener("webglcontextrestored",onContextRestored);if(raf)cancelAnimationFrame(raf);for(const part of [...carParts,...stageParts])gl.deleteBuffer(part.mesh.buffer);gl.deleteProgram(programInfo);},
   };
  }catch(error){
   state.status="fallback-image";state.error=String(error?.message||error);
-  return {state,setCar(next){model=next||model;state.carId=model.id},setRotation(deg){rotation=Number(deg)||0;state.rotation=rotation},spin(){},setAutoRotate(){},setScale(){},resize(){},destroy(){}};
+  return {state,setCar(next){model=next||model;state.carId=model.id},setRotation(deg){rotation=Number(deg)||0;state.rotation=rotation},spin(){},setAutoRotate(){},setScale(){},pause(){},resume(){},resize(){},destroy(){}};
  }
 }

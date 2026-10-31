@@ -36,7 +36,9 @@ try {
   assert.equal(await page.evaluate(() => window.MshinMainMenu3D?.status), "webgl", "main navigation must render a real 3D vehicle scene behind its panels");
   assert.ok(await page.evaluate(() => window.MshinMainMenu3D.scale > 1), "main menu hero vehicle should use cinematic foreground scale");
   await page.waitForFunction(() => window.MshinMainMenu3D?.frameCount > 0, undefined, {timeout:5000});
-  await page.screenshot({path:"artifacts/mshin-main-menu-webgl-desktop.png"});
+  await page.evaluate(() => window.MshinMainMenuRenderer.pause());
+  await page.screenshot({path:"artifacts/mshin-main-menu-webgl-desktop.png",animations:"disabled",timeout:60000});
+  await page.evaluate(() => window.MshinMainMenuRenderer.resume());
   for (const size of [{width:1280,height:720},{width:1280,height:800},{width:1680,height:720},{width:1024,height:768}]) {
     await page.setViewportSize(size);
     const bounds = await page.locator("#select .gtMenu").boundingBox();
