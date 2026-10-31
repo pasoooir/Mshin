@@ -28,7 +28,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.12"'));
+  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.13"'));
   assert.match(html, /role="tablist"/);
   assert.match(html, /data-panel="race"/);
   assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
@@ -39,12 +39,20 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(audio, /decodeAudioData/);
   assert.match(audio, /engineGains/);
   assert.match(audio, /engineSources/);
-  assert.match(audio, /RPM layers use equal-power crossfades/);
+  assert.match(audio, /seamless soundtrack crossfades/);
   assert.match(audio, /loopStart=edge/);
   assert.match(audio, /loopEnd=Math.max/);
   assert.match(audio, /gearForSpeed/);
   assert.match(audio, /setTargetAtTime/);
   assert.match(audio, /createBiquadFilter/);
+  assert.match(audio, /sfxBus/);
+  assert.match(audio, /musicBus/);
+  assert.match(audio, /playMusic/);
+  assert.match(game, /drawWorldEnvironment/);
+  assert.match(game, /drawHelicopterShadow/);
+  assert.match(game, /syncAudioSettings/);
+  assert.match(html, /id="musicVolume"/);
+  assert.match(html, /id="sfxVolume"/);
   assert.match(game, /audio\.update\(car\.speed,state==="race"\|\|state==="countdown",input\.gas,input\.brake,boostTimer>0,selectedCar\)/);
   assert.match(loader, /manifest\.icons/);
   assert.match(loader, /manifest\.sounds/);
@@ -53,16 +61,22 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.ok(loader.includes("audioData:"), "audio bytes must be retained before game startup");
   assert.ok(manifest.sounds.filter(sound => sound.id.startsWith("engine")).length === 6 && manifest.sounds.filter(sound => sound.id.startsWith("engine")).every(sound => sound.src.startsWith("https://cdn.jsdelivr.net/gh/yashimosh/border-run@") && sound.license === "CC0"), "race engine audio must use direct CDN assets");
   assert.equal(manifest.icons.length, 3, "gas, brake and nitro must use CDN icon artwork");
+  for (const id of ["menuMusic", "raceMusic"]) {
+    const track = manifest.sounds.find(sound => sound.id === id);
+    assert.ok(track && track.required && track.license === "CC0 1.0", id + " must be a required, license-verified soundtrack asset");
+    assert.ok(track.source.startsWith("https://opengameart.org/content/"), id + " must preserve its official license provenance");
+  }
+  assert.match(loader, /requiredFailures/);
 });
 test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  for (const module of ["audio.js", "collision-physics.js", "rigid-body-physics.js", "tire-physics.js", "vehicle-damage-visuals.js", "traffic-ai.js", "vehicle-destruction.js"]) {
+  for (const module of ["audio.js", "collision-physics.js", "rigid-body-physics.js", "tire-physics.js", "vehicle-damage-visuals.js", "traffic-ai.js", "vehicle-destruction.js", "environment-renderer.js"]) {
     assert.ok(sw.includes(`./src/${module}`), `${module} must be precached`);
   }
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v27/);
+  assert.match(sw, /mshin-arcade-v28/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
@@ -158,10 +172,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const readme = await readFile(path.join(root, "README.md"), "utf8");
   assert.match(sw, /mshin-arcade-v27/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.12");
-  assert.equal(pkg.version, "0.8.8");
-  assert.equal(pwa.version, "0.8.8");
-  assert.equal(cocos.version, "2026.10.31.12");
+  assert.equal(manifest.version, "2026.10.31.13");
+  assert.equal(pkg.version, "0.8.9");
+  assert.equal(pwa.version, "0.8.9");
+  assert.equal(cocos.version, "2026.10.31.13");
   assert.ok(readme.includes("live browser release is **version 0.8.8**") && readme.includes("deployed to GitHub Pages after successful merged-main validation and desktop/mobile Playwright browser smoke tests"), "README must identify 0.8.7 as the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.8.8**"), "README must preserve the latest published release until 0.8.8 deploys");
 });
@@ -185,4 +199,30 @@ test("race intro, progressive traffic classes and impact coin rewards are wired 
   assert.ok(game.includes("function awardImpactReward(hit,forwardDot)"));
   assert.ok(game.includes("progress.credits+=reward;saveProgress()")); assert.ok(game.includes("race.impactPoints"));
   assert.ok(game.includes("تخریب حریف"));
+});
+
+test("2.5D renderer and helicopter shadow are part of the browser track pipeline", async () => {
+  const renderer = await readFile(path.join(root, "src/environment-renderer.js"), "utf8");
+  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  assert.match(renderer, /export function drawWorldEnvironment/);
+  assert.match(renderer, /export function drawHelicopterShadow/);
+  assert.match(renderer, /drawCrowd/);
+  assert.match(renderer, /drawBuilding/);
+  assert.match(renderer, /drawTree/);
+  assert.match(game, /drawWorldEnvironment\(ctx,stage\.world,frameAt\)/);
+  assert.match(game, /drawHelicopterShadow\(ctx,frameAt,performance\.now\(\)\)/);
+});
+
+test("music and sound effects have separate persistent controls", async () => {
+  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  const html = await readFile(path.join(root, "index.html"), "utf8");
+  const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
+  for (const id of ["musicEnabled", "musicVolume", "sfxEnabled", "sfxVolume"]) assert.ok(html.includes(`id="${id}"`), id + " control is required");
+  assert.match(game, /musicEnabled:v\.musicEnabled!==false/);
+  assert.match(game, /sfxEnabled/);
+  assert.match(game, /localStorage\.setItem\("mshin-settings-v1"/);
+  assert.match(audio, /setMusicEnabled/);
+  assert.match(audio, /setSfxEnabled/);
+  assert.match(audio, /setMusicVolume/);
+  assert.match(audio, /setSfxVolume/);
 });
