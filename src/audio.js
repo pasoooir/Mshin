@@ -84,7 +84,7 @@ export function createGameAudio() {
     const buffer=decoded.get(selected); if (!buffer) return false;
     const now=context.currentTime, source=context.createBufferSource(), gain=context.createGain();
     source.buffer=buffer; source.loop=true; source.connect(gain); gain.connect(musicBus);
-    gain.gain.setValueAtTime(.0001,now); source.start(now); gain.gain.exponentialRampToValueAtTime(Math.max(.0001,musicVolume),now+.65);
+    gain.gain.setValueAtTime(.0001,now); source.start(now); gain.gain.exponentialRampToValueAtTime(1,now+.65);
     if (musicSource && musicSourceGain) {
       musicSourceGain.gain.cancelScheduledValues(now);
       musicSourceGain.gain.setValueAtTime(Math.max(.0001,musicSourceGain.gain.value),now);
@@ -97,25 +97,22 @@ export function createGameAudio() {
   };
   const setSfxEnabled = value => {
     sfxEnabled=Boolean(value);
-    if (ensure()) sfxBus.gain.setTargetAtTime(sfxEnabled?sfxVolume:0,context.currentTime,.04);
+    if (context) sfxBus.gain.setTargetAtTime(sfxEnabled?sfxVolume:0,context.currentTime,.04);
     return sfxEnabled;
   };
   const setMusicEnabled = value => {
     musicEnabled=Boolean(value);
-    if (ensure()) musicBus.gain.setTargetAtTime(musicEnabled?musicVolume:0,context.currentTime,.05);
+    if (context) musicBus.gain.setTargetAtTime(musicEnabled?musicVolume:0,context.currentTime,.05);
     return musicEnabled;
   };
   const setSfxVolume = value => {
     sfxVolume=Math.max(0,Math.min(1,Number(value)||0));
-    if (ensure()) sfxBus.gain.setTargetAtTime(sfxEnabled?sfxVolume:0,context.currentTime,.04);
+    if (context) sfxBus.gain.setTargetAtTime(sfxEnabled?sfxVolume:0,context.currentTime,.04);
     return sfxVolume;
   };
   const setMusicVolume = value => {
     musicVolume=Math.max(0,Math.min(1,Number(value)||0));
-    if (ensure()) {
-      musicBus.gain.setTargetAtTime(musicEnabled?musicVolume:0,context.currentTime,.05);
-      if(musicSourceGain) musicSourceGain.gain.setTargetAtTime(Math.max(.0001,musicVolume),context.currentTime,.08);
-    }
+    if (context) musicBus.gain.setTargetAtTime(musicEnabled?musicVolume:0,context.currentTime,.05);
     return musicVolume;
   };
   return {
