@@ -1,5 +1,6 @@
 import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode, JsonAsset, resources } from "cc";
 import { STAGES, WORLD_THEMES, StageDefinition, generateTrackPath, nearestTrackPoint } from "../../src/stage-catalog";
+import { calculateRacingLineTarget, calculateAiTargetSpeed } from "../../src/cocos-core";
 import { VehicleController } from "./VehicleController";
 import { VehicleDamageRenderer } from "./VehicleDamageRenderer";
 import { WorldRenderer } from "./WorldRenderer";
@@ -133,17 +134,15 @@ export class MshinGame extends Component {
   for(const rival of this.rivals){
    if(!rival.enabled||rival.path.length<2)continue;
    const nearest=nearestTrackPoint(rival.car,rival.path),lookAhead=8;
-   const targetIndex=(nearest.segment+lookAhead)%rival.path.length,target=rival.path[targetIndex];
-   const prev=rival.path[(targetIndex+rival.path.length-1)%rival.path.length],next=rival.path[(targetIndex+1)%rival.path.length];
-   const tx=next.x-prev.x,ty=next.y-prev.y,tlen=Math.hypot(tx,ty)||1;
+   const targetIndex=(nearest.segment+lookAhead)%rival.path.length;
    const laneIndex=this.rivals.indexOf(rival),laneOffset=(laneIndex-1)*this.stage.trackWidth*.14;
-   const targetX=target.x-ty/tlen*laneOffset,targetY=target.y+tx/tlen*laneOffset;
-   const desired=Math.atan2(targetX-rival.car.x,rival.car.y-targetY);
+   const target=calculateRacingLineTarget(rival.path,targetIndex,laneOffset);
+   const desired=Math.atan2(target.x-rival.car.x,rival.car.y-target.y);
    const error=Math.atan2(Math.sin(desired-rival.car.heading),Math.cos(desired-rival.car.heading));
    const before=rival.path[(targetIndex+rival.path.length-2)%rival.path.length];
    const incoming=Math.atan2(target.y-before.y,target.x-before.x),outgoing=Math.atan2(next.y-target.y,next.x-target.x);
    const turn=Math.atan2(Math.sin(outgoing-incoming),Math.cos(outgoing-incoming));
-   const targetSpeed=Math.max(165,Math.min(310,310-Math.abs(turn)*105));
+   const targetSpeed=calculateAiTargetSpeed(turn);
    rival.input.steer=Math.max(-1,Math.min(1,error*1.75));
    rival.input.throttle=Math.abs(error)<.82&&rival.car.speed<targetSpeed;
    rival.input.brake=Math.abs(error)>1.0||rival.car.speed>targetSpeed+18;
