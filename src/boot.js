@@ -12,7 +12,8 @@ try {
     label.textContent = `بارگذاری · ${loaded}/${total} · ${name}`;
     if (percentLabel) percentLabel.textContent = percent + "%";
   });
-  label.textContent = window.MshinAssets.failures.length ? `بارگذاری با ${window.MshinAssets.failures.length} منبع ناموفق؛ نسخه جایگزین فعال است` : "همه منابع آماده‌اند · بازی در حال اجراست";
+  if (!window.MshinAssets.ready) throw new Error("Required audio assets failed to preload: " + window.MshinAssets.requiredFailures.map(item => item.asset).join(", "));
+  label.textContent = window.MshinAssets.failures.length ? `بارگذاری با ${window.MshinAssets.failures.length} منبع اختیاری ناموفق؛ نسخه جایگزین فعال است` : "همه منابع آماده‌اند · بازی در حال اجراست";
   if (percentLabel) percentLabel.textContent = "100%";
   window.MshinBootStage = "importing-runtime";
   await import("./web-game.js");
