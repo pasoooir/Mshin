@@ -145,7 +145,62 @@
 @keyframes showroomLight{from{transform:translateX(-24%) rotate(24deg);opacity:.45}to{transform:translateX(34%) rotate(24deg);opacity:1}}
 @media(max-width:700px){.showroomStage{grid-template-columns:1fr;gap:2px;min-height:0;padding:8px 12px}.showroomVehicle{height:clamp(105px,17vh,145px)}.showroomVehicle img{width:min(86%,240px)}.showroomInfo{text-align:center;gap:3px}.showroomActions{justify-content:center;margin-top:4px}.showroomActions button{font-size:9px;padding:7px 9px}.showroomHint{display:none}.showroomEyebrow{font-size:7px}}
 @media(prefers-reduced-motion:reduce){.showroomSpotlight{animation:none}.showroomVehicle.is-spinning img{animation:none!important;transform:rotateY(12deg)}}
+
+/* 0.9.1 — readable Persian menu and landscape-first presentation */
+#select .gtMenu{font-family:Tahoma,Arial,sans-serif}
+#select .menuEyebrow{font-size:clamp(11px,1.15vw,13px);letter-spacing:1.4px}
+#select .menuHeader h1{font-size:clamp(25px,2.5vw,34px)}
+#select .menuHeader p,#select .sectionHeading p{font-size:clamp(13px,1.25vw,15px);line-height:1.7}
+#select .menuWallet small{font-size:12px}
+#select .menuWallet b{font-size:clamp(16px,1.6vw,20px)}
+#select .menuTab{font-size:clamp(14px,1.35vw,16px);min-height:48px;padding:11px 15px}
+#select .menuTab>span{font-size:19px}
+#select .sectionHeading h2{font-size:clamp(19px,2vw,24px)}
+#select .sectionCounter,#select .selectedWorldBar span{font-size:13px}
+#select .worldCard .worldName,#select .stageCard .stageName{font-size:clamp(15px,1.5vw,18px);line-height:1.5}
+#select .worldCard small,#select .stageCard small{font-size:12px;line-height:1.55}
+#select .selectedWorldBar b{font-size:18px}
+#select .selectedWorldBar small{font-size:13px}
+#select .carChoice{font-size:15px;line-height:1.5}
+#select .carChoice small{font-size:12px;line-height:1.5}
+#select .upgrade b,#select .achievement b{font-size:15px}
+#select .upgrade small,#select .achievement small{font-size:12px;line-height:1.6}
+#select .settingCard b{font-size:16px}
+#select .settingCard small{font-size:13px;line-height:1.6}
+#select .showroomInfo>small{font-size:13px}
+#select .showroomActions button{font-size:13px}
+#select .menuFooter button{font-size:15px;min-height:48px;padding:12px 20px}
+#select .footerSelection{font-size:13px}
+#select .menuBody{scrollbar-width:thin}
+@media(max-width:700px){
+ #select .gtMenu{padding:12px;gap:10px}
+ #select .menuHeader h1{font-size:23px}
+ #select .menuHeader p,#select .sectionHeading p{font-size:13px}
+ #select .menuTab{font-size:13px;min-width:0;min-height:46px;padding:9px 10px}
+ #select .menuTab>span{font-size:17px}
+ #select .sectionHeading h2{font-size:19px}
+ #select .worldCard .worldName,#select .stageCard .stageName{font-size:15px}
+ #select .worldCard small,#select .stageCard small{font-size:12px}
+ #select .carChoice{font-size:14px}
+ #select .carChoice small{font-size:12px}
+ #select .upgrade b,#select .achievement b{font-size:13px}
+ #select .upgrade small,#select .achievement small{font-size:12px}
+ #select .menuFooter button{font-size:14px;padding:10px 13px}
+ #select .footerSelection{font-size:12px}
+}
+#orientationGate{position:fixed;inset:0;z-index:1000;display:none;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 20%,#244d70,#07111f 75%);color:#fff;text-align:center;direction:rtl}
+#orientationGate.is-visible{display:grid}
+.orientationCard{width:min(440px,92vw);padding:28px 24px;border:1px solid #9de9ff66;border-radius:24px;background:linear-gradient(145deg,#18314deF,#091727f5);box-shadow:0 24px 80px #000b}
+.orientationIcon{font-size:clamp(54px,12vw,82px);line-height:1.2;display:block;animation:orientationTurn 2.4s ease-in-out infinite}
+.orientationCard h2{font-size:clamp(22px,5vw,30px);margin:12px 0}
+.orientationCard p{font-size:clamp(15px,3.5vw,18px);line-height:1.9;color:#d3e7f8;margin:8px 0 18px}
+.orientationCard button{min-height:50px;padding:12px 22px;border:0;border-radius:13px;background:linear-gradient(135deg,#ffe18a,#ff9b45);color:#39220e;font-size:15px;font-weight:900}
+@keyframes orientationTurn{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
+@media(orientation:landscape){#orientationGate.is-visible{display:none}}
+@media(prefers-reduced-motion:reduce){.orientationIcon{animation:none}}
+
 </style></head><body>
+<div id="orientationGate" role="dialog" aria-modal="true" aria-labelledby="orientationTitle"><div class="orientationCard"><span class="orientationIcon" aria-hidden="true">📱</span><h2 id="orientationTitle">مسابقه در حالت افقی</h2><p>برای نمایش درست مسیر، خودروها و منوی بازی، دستگاه را افقی نگه دارید. در نسخه نصب‌شده، جهت صفحه روی افقی قفل می‌شود.</p><button id="lockLandscape" type="button">تلاش برای قفل حالت افقی</button></div></div>
 <canvas id="game" aria-label="Mshin racing game"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
 <section class="splash">
@@ -211,4 +266,24 @@
 </section></div>
 <div class="overlay hidden" id="pausePanel"><section class="panel narrow"><h1>مسابقه متوقف شد</h1><p>کمی استراحت کن؛ زمان مسابقه متوقف شده است.</p><button class="primary" id="resume">ادامه مسابقه ▶</button><p><button class="secondary" id="quitRace">بازگشت به مراحل</button></p></section></div>
 <div class="overlay hidden" id="finish"><section class="panel narrow"><h1>🏆 مرحله به پایان رسید!</h1><p id="finishText"></p><button class="primary" id="nextStage">مرحله بعد ▶</button><p><button class="secondary" id="finishSelect">انتخاب مرحله</button></p></section></div>
-<script>if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script type="module" src="./src/boot.js?v=2026.10.31.14"></script></body></html>
+<script>
+(()=> {
+ const gate=document.getElementById("orientationGate");
+ const button=document.getElementById("lockLandscape");
+ const isLandscape=()=>window.matchMedia("(orientation: landscape)").matches || (screen.orientation?.type||"").startsWith("landscape");
+ const sync=()=>{const portrait=!isLandscape();gate.classList.toggle("is-visible",portrait);document.documentElement.classList.toggle("mshin-portrait",portrait);};
+ const lock=async()=>{
+   try{if(document.fullscreenElement===null && document.documentElement.requestFullscreen && !isLandscape()) await document.documentElement.requestFullscreen({navigationUI:"hide"}).catch(()=>{});}catch{}
+   try{if(screen.orientation?.lock) await screen.orientation.lock("landscape");}catch{}
+   sync();
+ };
+ button.addEventListener("click",lock);
+ window.addEventListener("pointerdown",()=>{if(!isLandscape())lock();},{passive:true});
+ window.addEventListener("orientationchange",sync);
+ window.addEventListener("resize",sync,{passive:true});
+ document.addEventListener("fullscreenchange",()=>{if(!isLandscape())lock();});
+ sync();
+ window.MshinOrientation={isLandscape,lock};
+})();
+</script>
+<script>if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script type="module" src="./src/boot.js?v=2026.10.31.15"></script></body></html>
