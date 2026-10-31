@@ -50,7 +50,8 @@ export function createGameAudio() {
     return decodePromise;
   };
   return {
-    unlock() { if (ensure()) prepare(); },\n    ready() { return ensure() ? prepare() : Promise.resolve(); },
+    unlock() { if (ensure()) prepare(); },
+    ready() { return ensure() ? prepare() : Promise.resolve(); },
     update(speed, active, throttle = false) {
       if (!ensure()) return;
       prepare();
