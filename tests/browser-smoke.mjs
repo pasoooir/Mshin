@@ -260,9 +260,20 @@ try {
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
+  const audioCacheAudit = await page.evaluate(async () => {
+    const manifest = await fetch("./src/asset-manifest.json").then(response => response.json());
+    const cache = await caches.open("mshin-audio-assets-v1");
+    const sounds = manifest.sounds.filter(sound => sound.group === "audio");
+    const cached = await Promise.all(sounds.map(async sound => ({ id: sound.id, present: Boolean(await cache.match(sound.src)) })));
+    return { expected: sounds.length, cached: cached.filter(item => item.present).length, missing: cached.filter(item => !item.present).map(item => item.id) };
+  });
+  assert.equal(audioCacheAudit.cached, audioCacheAudit.expected, "every declared engine, effect and music track must be persisted in the offline audio cache: " + audioCacheAudit.missing.join(", "));
   await page.context().setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
   assert.equal(await page.locator("#home").isVisible(), true, "game shell should load while offline after first visit");
+  await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 20000 });
+  const offlineAudio = await page.evaluate(() => ({ loaded: Object.values(window.MshinAssets.audioData).filter(value => value instanceof ArrayBuffer).length, expected: Object.keys(window.MshinAssets.audioData).length }));
+  assert.equal(offlineAudio.loaded, offlineAudio.expected, "all audio buffers must be reloaded from Cache Storage with the network disabled");
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
   await page.context().setOffline(false);
