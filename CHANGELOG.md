@@ -1,3 +1,13 @@
+## 0.8.6 — 2026-10-31
+
+### GT-inspired menu redesign
+- Rebuilt the game selection interface as a single-screen, five-tab motorsport menu: Race, Cars, Workshop, Awards and Settings.
+- Replaced text-first stacked choices with horizontal, image-led 3D-styled cards; world and vehicle artwork contains no embedded labels, with concise Persian descriptions below each image.
+- Added keyboard-accessible tab navigation, active-state feedback, horizontal snap rails and responsive mobile layouts.
+- Moved world/stage selection, vehicle selection, tuning, achievements and sound settings into dedicated tabs without changing race progression or saved player data.
+- Removed the latest-changes link from the first/home screen.
+- Updated PWA cache to v25 and asset marker to 2026.10.31.11.
+
 ## 0.8.5 — 2026-10-31
 
 ### Mobile localization and release integrity
