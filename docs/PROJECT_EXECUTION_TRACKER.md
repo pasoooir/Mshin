@@ -7,12 +7,18 @@ Last evidence refresh: 2026-10-31 (after PR #54 and Cocos menu source update)
 - **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #52 merged to `main` as `07695e04a4645dedd6fc0fed6a85ffbd8f895412`.
 - **Validation:** merged-main run `41206965694` succeeded, including all 136 Node tests and desktop/mobile Playwright; Pages deployment run `41206965179` succeeded.
 - **Asset inventory:** ۱۰ تصویر محیط، ۳ آیکون کنترل و ۱۰ فایل صوتی در `cdn/assets/{scenes,icons,audio}/`.
-- **Runtime policy:** مسیرهای `src` در manifest همگی relative/local هستند؛ CDN fallback از Service Worker حذف شده و فایل‌ها در app shell با cache `mshin-arcade-v33` precache می‌شوند؛ پس از بازطراحی منو در PR #54، cache به `mshin-arcade-v34` ارتقا یافت.
+- **Runtime policy:** مسیرهای `src` در manifest همگی relative/local هستند؛ CDN fallback از Service Worker حذف شده و فایل‌ها در app shell با cache فعلی `mshin-arcade-v34` precache می‌شوند (نسخه اولیه 0.9.3 از v33 استفاده می‌کرد؛ PR #54 کش را ارتقا داد).
 - **Version markers:** package/PWA برابر `0.9.3`؛ asset marker برابر `2026.10.31.17`؛ Cocos vector catalog نیز `2026.10.31.17`.
 - **Provenance:** `docs/VENDORED_ASSETS.md` باید URL اصلی و وضعیت مجوز هر فایل را ثبت کند؛ پیش از انتشار عمومی، مجوزهای upstream باید بازبینی شوند.
 - **Acceptance:** Node tests، data/syntax checks، Playwright desktop/mobile، بررسی same-origin بودن همه دارایی‌ها، merged-main validation و GitHub Pages deployment همگی موفق شدند.
 
-## Verified menu redesign — PR #54\n\n- **Status:** 🟢 merged to `main` as `24f395546e2edd979c52c70934cbf319d9fe0462`.\n- **Browser menu:** five-tab navigation now uses an angular motorsport rail and a dedicated content panel with responsive mobile sizing.\n- **Cocos runtime menus:** current follow-up source branch adds shared dark-navy/red angular styling to home, world, stage, pause and finish screens; source syntax and regression checks are required before merge.\n- **Validation:** PR #54 runs `41209240425` (PR) and `41209236363` (push) passed; merged-main run `41209457561` and Pages deployment `41209456703` passed.\n- **Published browser URL:** https://pasoooir.github.io/Mshin/\n\n## Previous verified release — 0.9.2
+## Verified menu redesign — PR #54 and PR #56
+
+- **Browser menu:** PR #54 merged as `24f395546e2edd979c52c70934cbf319d9fe0462`; five-tab navigation uses an angular motorsport rail and a dedicated content panel with responsive mobile sizing.
+- **Cocos runtime menus:** PR #56 merged as `1f822e597ec397c0b65ef6438c52b806aa39a8ff`; home, world, stage, pause and finish screens now share dark-navy panels, red racing accents and angular high-contrast buttons.
+- **Validation:** PR #54 runs `41209240425` (PR) and `41209236363` (push) passed; PR #56 run `41209845420` passed; merged-main validation run `41210029961` and Pages deployment `41210029747` passed.
+- **Boundary:** Cocos Creator Editor import, serialized startup scene, Creator Web build and physical-device QA remain unverified; source-level CI is not an Editor build.
+- **Published browser URL:** https://pasoooir.github.io/Mshin/\n\n## Previous verified release — 0.9.2
 
 - PR #51 merged as `e2b3af25b645e4c05ce73dd62d50d2bfe3bf1a42`; eight-second scenery-cache refresh for evolving aerial lighting.
 - Live game: https://pasoooir.github.io/Mshin/
