@@ -29,7 +29,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(html, /src="\.\/src\/boot\.js(?:\?v=[^"]+)?"/);
   assert.match(boot, /await preloadGameAssets/);
   assert.match(boot, /await import\("\.\/web-game\.js"\)/);
-  assert.match(loader, /length: 4/);
+  assert.match(loader, /length: 6/);
   assert.match(loader, /manifest\.scenes/);
   assert.match(loader, /Unexpected image MIME type/);
   assert.match(loader, /image\.decode/);
