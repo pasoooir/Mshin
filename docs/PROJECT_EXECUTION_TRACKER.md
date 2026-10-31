@@ -2,16 +2,16 @@
 
 Last evidence refresh: 2026-10-31
 
-## Latest published release — 0.9.0
+## Latest verified release — 0.9.0
 
-- **Status:** 🟡 در حال نهایی‌سازی تأیید main؛ PR #46 ادغام شده و GitHub Pages deployment موفق است، اما merged-main validation هنوز در حال اجراست.
+- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #46 ادغام شده، merged-main validation و GitHub Pages deployment هر دو موفق‌اند.
 - **Release scope:** ارتقای محیط هوایی/2.5D در هر ده دنیا؛ تاج درختان چندلایه، تنه و ریشه، ساختمان‌های دارای سطوح جلو/کنار/سقف، پنجره‌های فرورفته، صخره‌های چندوجهی، جمعیت تماشاگر با سر/بدن/دست/پا، سایه تماس و موانع حجمی؛ سایه متحرک هلیکوپتر نیز نرم‌تر شده است.
 - **Regression coverage:** تست‌های Node برای هندسه و اجزای بصری در هر ده دنیا؛ Playwright دسکتاپ/موبایل برای منو، مسابقه، کنترل‌ها، آفلاین و عملکرد رگرسیونی.
 - **Release metadata:** package و PWA manifest برابر `0.9.0`؛ asset marker برابر `2026.10.31.14`؛ Service Worker cache برابر `mshin-arcade-v30`.
 - **PR #46:** https://github.com/pasoooir/Mshin/pull/46 — merged، commit `4ac5d3405037bd715736d57d4a1743ace9a30273`.
 - **PR #46 source validation:** push run `41203170159` و PR run `41203171734` — success؛ تست Node و Playwright دسکتاپ/موبایل موفق.
 - **GitHub Pages deployment:** run `41203337340` — success.
-- **Merged-main validation:** run `41203337448` — در حال اجرا؛ تا موفقیت آن release در tracker سبز نمی‌شود.
+- **Merged-main validation:** run `41203337448` — success.
 - **Live game:** https://pasoooir.github.io/Mshin/
 - **Limit:** تست‌های خودکار هندسه و مرورگر، جایگزین ارزیابی بصری روی نمایشگرهای فیزیکی و QA مستقل در Cocos Creator نیستند.
 
