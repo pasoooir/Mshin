@@ -227,3 +227,11 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - **Changed files:** `index.html`, `src/audio.js`, `src/web-game.js`, `src/asset-manifest.json`, `service-worker.js`, `package.json`, `manifest.webmanifest`, `tests/browser-smoke.mjs`.
 - **PWA:** app version `0.9.1`, asset marker `2026.10.31.15`, cache `mshin-arcade-v31`; app shell now includes the aerial renderer.
 - **Acceptance still pending:** CI must confirm OGA audio CORS/download/decode; browser assertions for independent switches and persisted slider values must pass; visual mobile settings QA and offline re-entry with the new music assets remain to be verified. No release is accepted until all required checks pass.
+
+
+## WebGL 3D garage showroom — active work (2026-10-31)
+
+- **Status:** 🟡 در حال اجرا؛ branch `feat/webgl-3d-showroom-v0.10.1`; not yet merged or released.
+- **Implemented:** dependency-free WebGL 1 renderer in `src/showroom-3d.js`; procedural low-poly car body, cabin, wheels/alloy hubs, headlights, tail lights, spoiler, lit studio floor, perspective camera, per-car paint color, touch/pointer orbit, animated 360° spin, visibility-aware render loop, and image fallback for browsers without WebGL.
+- **Integration:** garage canvas is connected to the actual selected vehicle; service worker cache advanced to `mshin-arcade-v36`; package/PWA version set to `0.10.1`; asset marker set to `2026.10.31.18`.
+- **Acceptance pending:** Playwright must prove a real WebGL drawing buffer and non-zero rendered frames, selected-car changes, spin and drag; full Node/data/Cocos syntax checks; merged-main validation; Pages deployment. Cocos Creator Editor import and Creator build are not claimed by browser CI.
