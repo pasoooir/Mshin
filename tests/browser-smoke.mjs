@@ -10,6 +10,11 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 }).catch(async () => {
+    const state = await page.evaluate(() => ({ stage: window.MshinBootStage, progress: window.MshinPreloadProgress, failures: window.MshinAssets?.failures }));
+    throw new Error("Mshin boot did not finish: " + JSON.stringify(state));
+  });
+  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "game runtime must import after the full preload");
   await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 15000 });
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
