@@ -139,28 +139,28 @@ function drawPlayerSideCar(ctx, width, height, color, steer, speed, mode) {
   ctx.fill();
 
   // Side-profile body with a low rally nose, raised rear quarter and visible cabin.
-  const body = new Path2D();
-  body.moveTo(-length * .56, bodyHeight * .12);
-  body.lineTo(-length * .48, -bodyHeight * .02);
-  body.lineTo(-length * .24, -bodyHeight * .16);
-  body.lineTo(-length * .08, -bodyHeight * .64);
-  body.lineTo(length * .22, -bodyHeight * .67);
-  body.lineTo(length * .42, -bodyHeight * .2);
-  body.lineTo(length * .58, -bodyHeight * .08);
-  body.lineTo(length * .56, bodyHeight * .2);
-  body.lineTo(-length * .5, bodyHeight * .2);
-  body.closePath();
+  ctx.beginPath();
+  ctx.moveTo(-length * .56, bodyHeight * .12);
+  ctx.lineTo(-length * .48, -bodyHeight * .02);
+  ctx.lineTo(-length * .24, -bodyHeight * .16);
+  ctx.lineTo(-length * .08, -bodyHeight * .64);
+  ctx.lineTo(length * .22, -bodyHeight * .67);
+  ctx.lineTo(length * .42, -bodyHeight * .2);
+  ctx.lineTo(length * .58, -bodyHeight * .08);
+  ctx.lineTo(length * .56, bodyHeight * .2);
+  ctx.lineTo(-length * .5, bodyHeight * .2);
+  ctx.closePath();
   ctx.fillStyle = color;
-  ctx.fill(body);
+  ctx.fill();
 
-  const glass = new Path2D();
-  glass.moveTo(-length * .13, -bodyHeight * .25);
-  glass.lineTo(-length * .035, -bodyHeight * .57);
-  glass.lineTo(length * .17, -bodyHeight * .59);
-  glass.lineTo(length * .34, -bodyHeight * .23);
-  glass.closePath();
+  ctx.beginPath();
+  ctx.moveTo(-length * .13, -bodyHeight * .25);
+  ctx.lineTo(-length * .035, -bodyHeight * .57);
+  ctx.lineTo(length * .17, -bodyHeight * .59);
+  ctx.lineTo(length * .34, -bodyHeight * .23);
+  ctx.closePath();
   ctx.fillStyle = "#b9eaff";
-  ctx.fill(glass);
+  ctx.fill();
   ctx.fillStyle = "#17212d";
   ctx.fillRect(-length * .02, -bodyHeight * .59, 3 * scale, bodyHeight * .34);
   ctx.fillStyle = "#f3f6f8";
@@ -240,15 +240,25 @@ export function drawPerspectiveRace(ctx, options) {
   ctx.fillStyle = "#587a54";
   ctx.fillRect(0, horizon + 22, width, height - horizon);
 
-  const segments = 76;
+  const segments = 52;
   const samples = [];
   for (let i = 0; i <= segments; i++) {
-    const t = car.t + i * .012;
-    const left = project(t, -roadHalfWidth);
-    const right = project(t, roadHalfWidth);
-    const shoulderLeft = project(t, -roadHalfWidth - 38);
-    const shoulderRight = project(t, roadHalfWidth + 38);
-    samples.push({ t, left, right, shoulderLeft, shoulderRight, center: project(t, 0) });
+    const t = car.t + i * .0175;
+    const f = frameAt(t);
+    const pointAt = lateral => projectRacePoint({
+      x: f.p.x + f.nx * lateral,
+      y: f.p.y + f.ny * lateral
+    }, cameraPoint, cameraAngle, viewport, { horizon, yaw });
+    samples.push({
+      t,
+      left: pointAt(-roadHalfWidth),
+      right: pointAt(roadHalfWidth),
+      shoulderLeft: pointAt(-roadHalfWidth - 38),
+      shoulderRight: pointAt(roadHalfWidth + 38),
+      lanes: [-90, 0, 90].map(pointAt),
+      treeLeft: pointAt(-roadHalfWidth - 72),
+      treeRight: pointAt(roadHalfWidth + 72)
+    });
   }
 
   for (let i = segments - 1; i >= 0; i--) {
@@ -274,8 +284,8 @@ export function drawPerspectiveRace(ctx, options) {
     if (i % 3 === 0) {
       ctx.strokeStyle = "#f7f5df";
       ctx.lineWidth = Math.max(.8, a.left.scale * 3.2);
-      for (const laneOffset of [-90, 0, 90]) {
-        const p1 = project(a.t, laneOffset), p2 = project(b.t, laneOffset);
+      for (let laneIndex = 0; laneIndex < 3; laneIndex++) {
+        const p1 = a.lanes[laneIndex], p2 = b.lanes[laneIndex];
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
@@ -284,7 +294,7 @@ export function drawPerspectiveRace(ctx, options) {
     }
     if (i % 5 === 0) {
       for (const side of [-1, 1]) {
-        const p = project(a.t, side * (roadHalfWidth + 72));
+        const p = side < 0 ? a.treeLeft : a.treeRight;
         drawTree(ctx, p.x, p.y, p.scale, palette[5], palette[4]);
       }
     }
