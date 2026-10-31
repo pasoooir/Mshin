@@ -209,7 +209,16 @@ try {
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 });
+  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 }).catch(async error => {
+    const state = await page.evaluate(() => ({
+      stage: window.MshinBootStage,
+      progress: window.MshinPreloadProgress,
+      loaded: window.MshinAssets?.ready,
+      failures: window.MshinAssets?.failures,
+      bootError: window.MshinBootError
+    }));
+    throw new Error("Reloaded Mshin boot stalled: " + JSON.stringify(state) + " | " + error.message);
+  });
   assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "reloaded game should finish booting before the home menu is used");
   await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
   await page.locator("#play").waitFor({ state: "visible", timeout: 5000 });
