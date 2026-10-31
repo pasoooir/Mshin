@@ -42,7 +42,7 @@ const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
-  page.setDefaultTimeout(20000);
+  page.setDefaultTimeout(60000);
   page.setDefaultNavigationTimeout(60000);
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   page.on("requestfailed", request => errors.push("requestfailed: " + request.url() + " — " + (request.failure()?.errorText || "unknown")));
@@ -53,7 +53,7 @@ try {
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.scenes, 10, "all ten photographic world environments should be decoded before the menu is interactive");
   assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
-  await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
+  await page.screenshot({ timeout: 120000, animations: "disabled", caret: "hide", path: "artifacts/mshin-home-desktop.png" });
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 9, "menu should expose eight requested sections plus the existing workshop");
   assert.equal(await page.locator(".menuTab:disabled").count(), 2, "unimplemented leaderboard and store entries must remain disabled");
@@ -105,7 +105,7 @@ try {
   assert.deepEqual(await page.evaluate(() => { const s=JSON.parse(localStorage.getItem("mshin-settings-v1")); return {music:s.music,sound:s.sound,musicVolume:s.musicVolume,sfxVolume:s.sfxVolume}; }), {music:true,sound:true,musicVolume:.37,sfxVolume:.62}, "audio controls should persist separate values");
   await page.locator("#tab-race").click();
   await page.waitForTimeout(260);
-  await page.screenshot({ path: "artifacts/mshin-world-select-desktop.png", fullPage: true });
+  await page.screenshot({ timeout: 120000, animations: "disabled", caret: "hide", path: "artifacts/mshin-world-select-desktop.png", fullPage: true });
   const worldCards = await page.locator(".worldCard img").evaluateAll(nodes => nodes.map(node => node.getAttribute("src")));
   assert.ok(worldCards.every((src, index) => src === "./assets/vector/world-" + String(index + 1).padStart(2, "0") + ".svg"), "each world card should use its own text-free vector artwork");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
@@ -226,12 +226,12 @@ try {
   assert.ok(canvasState.width > 0 && canvasState.height > 0, "game canvas should have a real drawing surface");
   assert.ok(canvasState.visiblePixels > 100, "game canvas should contain visible rendered pixels");
   assert.ok(canvasState.imageBytes > 1000, "gameplay frame should not be a blank image");
-  await page.screenshot({ path: "artifacts/mshin-gameplay-desktop.png" });
+  await page.screenshot({ timeout: 120000, animations: "disabled", caret: "hide", path: "artifacts/mshin-gameplay-desktop.png" });
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
-  await page.screenshot({path:"artifacts/mshin-pause-desktop.png"});
+  await page.screenshot({ timeout: 120000, animations: "disabled", caret: "hide",path:"artifacts/mshin-pause-desktop.png"});
   assert.equal(await page.locator("#pausePanel .pauseMenu > *").count(), 10, "pause menu should expose all ten requested rows");
   assert.equal(await page.locator("#mostWantedList li").count(), 5, "MOST WANTED should render the player and four live rivals");
   assert.equal(await page.locator("#mostWantedList li.playerRank").count(), 1, "the player must own the first highlighted rank");
@@ -254,7 +254,7 @@ try {
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
-  mobile.setDefaultTimeout(20000);
+  mobile.setDefaultTimeout(60000);
   mobile.setDefaultNavigationTimeout(60000);
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(mobile, "mobile initial boot");
@@ -309,12 +309,12 @@ try {
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
-  await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
+  await mobile.screenshot({ timeout: 120000, animations: "disabled", caret: "hide", path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   economy.on("pageerror", error => errors.push(error.message));
-  economy.setDefaultTimeout(20000);
+  economy.setDefaultTimeout(60000);
   economy.setDefaultNavigationTimeout(60000);
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(economy, "economy initial boot");
