@@ -236,6 +236,7 @@ try {
   assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
   assert.equal(await mobile.locator("body").evaluate(el => getComputedStyle(el, "::before").content), "none", "portrait mode must not display a rotate-device prompt");
   await mobile.locator("#play").click();
+  assert.equal(await mobile.evaluate(() => window.MshinMainMenu3D?.status), "webgl", "portrait software-landscape navigation must also use the live WebGL background");
   assert.equal(await mobile.locator("#select").isVisible(), true, "portrait mode must enter the menu through software landscape rotation");
   const softwareViewport = await mobile.evaluate(() => ({ ...window.MshinViewport, canvasWidth: document.querySelector("#game").width, canvasHeight: document.querySelector("#game").height }));
   assert.equal(softwareViewport.softwareLandscape, true, "portrait mode must activate the software landscape viewport");
