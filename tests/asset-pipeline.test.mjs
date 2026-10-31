@@ -131,5 +131,5 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(manifest.version, "2026.10.31.2");
   assert.equal(pkg.version, "0.5.0");
   assert.equal(pwa.version, "0.5.0");
-  assert.equal(cocos.version, "2026.10.31.1");
+  assert.equal(cocos.version, "2026.10.31.2");
 });
