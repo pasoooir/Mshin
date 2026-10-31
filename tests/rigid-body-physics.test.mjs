@@ -58,3 +58,23 @@ test("separating overlapping vehicles receive correction but no false energy",()
  const r=resolveRigidVehicleImpact(a,b);
  assert.ok(r.hit);assert.equal(r.energy,0);assert.equal(r.impulse,0);
 });
+
+test("high-speed vehicle strikes a stationary vehicle with mass-weighted impulse",()=>{
+ const fast=body(0,0,520,0,1450),stopped=body(86,0,0,0,1050);
+ const before=stopped.vx,r=resolveRigidVehicleImpact(fast,stopped);
+ assert.ok(r.hit&&r.closingSpeed>500);assert.ok(stopped.vx>before);assert.ok(r.energy>100000);
+});
+test("a previously damaged vehicle continues accumulating impact damage without random variation",()=>{
+ const d={total:42,front:28,rear:0,left:14,right:0,engine:18,disabled:false};
+ const impact={energy:4_000_000},one=applyRigidImpactDamage(d,impact,"front");
+ const afterFirst=d.total,two=applyRigidImpactDamage(d,impact,"front");
+ assert.ok(one.points>0&&two.points>0);assert.ok(d.total>afterFirst);assert.ok(d.front>28);
+ assert.equal(d.left,14);assert.equal(d.right,0);
+});
+test("very high relative speed is bounded by the physical impulse solution, not a fixed speed penalty",()=>{
+ const a=body(0,0,1200,0,1250),b=body(88,0,0,0,1250);
+ const r=resolveRigidVehicleImpact(a,b);
+ assert.ok(r.hit&&r.energy>1_000_000);
+ assert.ok(a.vx<1200&&b.vx>0);
+ assert.ok(Math.abs(a.mass*a.vx+b.mass*b.vx-1_500_000)<1e-4);
+});
