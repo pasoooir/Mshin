@@ -1,3 +1,10 @@
+## 0.8.2 — 2026-10-31
+
+- Refined recorded engine loops with trimmed loop points to remove silence at loop boundaries.
+- Added equal-power six-layer RPM crossfades, six automatic gear bands, downshift cues, throttle/load/boost response, engine braking decay and RPM-sensitive exhaust filtering.
+- Added smoothed gain/pitch/filter automation and gentle dynamics compression; braking and nitro now influence engine audio.
+- Advanced runtime, PWA and service-worker cache markers to 0.8.2 / 2026.10.31.7 / v21.
+
 ## 0.8.1 — 2026-10-31
 
 - Replaced AI-generated engine clips with six recorded CC0 engine RPM loops from OpenGameArt, served by immutable jsDelivr CDN URLs and cross-faded by speed.
