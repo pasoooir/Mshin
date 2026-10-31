@@ -144,7 +144,7 @@ export function createShowroom3D(canvas){
   const view=lookAt([3.1,2.25,4.25],[0,.42,0],[0,1,0]);
   function resize(){
    if(destroyed)return;
-   const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,1.7),w=Math.max(1,Math.round(rect.width*dpr)),h=Math.max(1,Math.round(rect.height*dpr)),key=w+"x"+h;
+   const rect=canvas.getBoundingClientRect(),logicalWidth=canvas.clientWidth||rect.width,logicalHeight=canvas.clientHeight||rect.height,dpr=Math.min(window.devicePixelRatio||1,1.7),w=Math.max(1,Math.round(logicalWidth*dpr)),h=Math.max(1,Math.round(logicalHeight*dpr)),key=w+"x"+h;
    if(key===lastSize)return;lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);
   }
   function drawParts(parts,viewProjection,modelMatrix){
