@@ -3,7 +3,7 @@ export function createGameAudio() {
   let context=null,master=null,sfxBus=null,musicBus=null,engineFilter=null,compressor=null;
   let engineGains=[],engineSources=[],engineBuffers={},evOscillators=[],evGain=null;
   let previewSource=null,previewGain=null,musicSource=null,musicSourceGain=null,musicMode=null;
-  let sfxEnabled=true,musicEnabled=true,sfxVolume=.82,musicVolume=.24,decodePromise=null;
+  let sfxEnabled=true,musicEnabled=true,sfxVolume=.82,musicVolume=.24,decodePromise=null,coreAudioReady=false;
   let smoothedRpm=.18,throttleEnvelope=0,lastUpdate=0,lastGear=-1,shiftAt=-Infinity;
   const decoded=new Map(),oneShots=new Map();
   const profiles={
@@ -52,13 +52,13 @@ export function createGameAudio() {
   };
   const prepare=()=>{
     if(decodePromise)return decodePromise;if(!ensure())return Promise.resolve(false);
-    const ids=["engineIdle","engineLoad","roadRoll","engineStart","engineStop","brakeSqueal","gearDown","collisionImpact","menuMusic","raceMusic"];
+    const ids=["engineIdle","engineLoad","roadRoll","engineStart","engineStop","brakeSqueal","gearDown","collisionImpact"];
     decodePromise=Promise.all(ids.map(decode)).then(buffers=>{
       engineBuffers={idle:buffers[0],load:buffers[1],road:buffers[2]};
       engineSources=[loop(engineBuffers.idle,engineGains[0]),loop(engineBuffers.load,engineGains[1]),loop(engineBuffers.road,engineGains[2])];
       ["engineStart","engineStop","brakeSqueal","gearDown","collisionImpact"].forEach((id,index)=>oneShots.set(id,buffers[index+3]));
-      const ready=Object.values(engineBuffers).every(Boolean)&&buffers.slice(3).every(Boolean);
-      window.MshinAudioReady=ready;return ready;
+      coreAudioReady=Object.values(engineBuffers).every(Boolean)&&buffers.slice(3).every(Boolean);
+      window.MshinAudioReady=coreAudioReady;return coreAudioReady;
     });
     return decodePromise;
   };
@@ -67,12 +67,12 @@ export function createGameAudio() {
     if(!ensure()||!musicEnabled)return false;
     const selected=mode==="race"?"raceMusic":"menuMusic";await prepare();
     if(musicMode===mode&&musicSource)return true;
-    const buffer=decoded.get(selected);if(!buffer)return false;
+    const buffer=await decode(selected);window.MshinAudioReady=coreAudioReady&&Boolean(buffer);if(!buffer)return false;
     const now=context.currentTime,source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;source.loop=true;source.connect(gain);gain.connect(musicBus);
     gain.gain.setValueAtTime(.0001,now);source.start(now);gain.gain.exponentialRampToValueAtTime(1,now+.65);
     if(musicSource&&musicSourceGain){musicSourceGain.gain.cancelScheduledValues(now);musicSourceGain.gain.setValueAtTime(Math.max(.0001,musicSourceGain.gain.value),now);musicSourceGain.gain.exponentialRampToValueAtTime(.0001,now+.65);try{musicSource.stop(now+.68)}catch{}}
     musicSource=source;musicSourceGain=gain;musicMode=mode;
-    source.onended=()=>{if(musicSource===source){musicSource=null;musicSourceGain=null;musicMode=null}source.disconnect();gain.disconnect()};
+    source.onended=()=>{if(musicSource===source){musicSource=null;musicSourceGain=null;musicMode=null}else{decoded.delete(selected)}source.disconnect();gain.disconnect()};
     return true;
   };
   const setSfxEnabled=value=>{sfxEnabled=Boolean(value);if(context)sfxBus.gain.setTargetAtTime(sfxEnabled?sfxVolume:0,context.currentTime,.04);return sfxEnabled};
@@ -87,7 +87,7 @@ export function createGameAudio() {
   };
   return {
     unlock(){try{if(ensure())prepare()}catch(error){window.MshinAudioError=error.message}},
-    ready(){if(!ensure())return Promise.resolve(false);return Promise.race([prepare(),new Promise(resolve=>setTimeout(()=>resolve(false),15000))])},
+    ready(){if(!ensure())return Promise.resolve(false);const task=prepare().then(async core=>{const musicReady=!musicEnabled||Boolean(await decode("raceMusic"));window.MshinAudioReady=core&&musicReady;return core&&musicReady});return Promise.race([task,new Promise(resolve=>setTimeout(()=>resolve(false),15000))])},
     playMusic,setMusicMode:playMusic,setMusicEnabled,setMusicVolume,setSfxEnabled,setSfxVolume,
     startEngine(){oneShot("engineStart",.25,.98)},
     async preview(vehicleId="rally"){
