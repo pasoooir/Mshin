@@ -79,6 +79,14 @@
 
 # Changelog
 
+## 0.9.3 — 2026-10-31 · Motorsport menu polish
+
+- Reworked the browser five-tab menu into a vertical angular navigation rail with a separate content panel and compact mobile layout (PR #54).
+- Refreshed the PWA shell cache to `mshin-arcade-v34` so returning installations receive the current menu.
+- Began aligning the Cocos Creator runtime menu screens with the same dark navy, red-accented motorsport visual language; Editor/device verification remains a separate gate.
+
+
+
 ## 0.8.0 — 2026-10-31
 
 ### Race presentation

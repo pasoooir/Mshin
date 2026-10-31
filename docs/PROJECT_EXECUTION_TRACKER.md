@@ -1,18 +1,18 @@
 # Mshin — Project Execution Tracker
 
-Last evidence refresh: 2026-10-31
+Last evidence refresh: 2026-10-31 (after PR #54 and Cocos menu source update)
 
 ## Verified release 0.9.3 — repository-local runtime assets
 
 - **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #52 merged to `main` as `07695e04a4645dedd6fc0fed6a85ffbd8f895412`.
 - **Validation:** merged-main run `41206965694` succeeded, including all 136 Node tests and desktop/mobile Playwright; Pages deployment run `41206965179` succeeded.
 - **Asset inventory:** ۱۰ تصویر محیط، ۳ آیکون کنترل و ۱۰ فایل صوتی در `cdn/assets/{scenes,icons,audio}/`.
-- **Runtime policy:** مسیرهای `src` در manifest همگی relative/local هستند؛ CDN fallback از Service Worker حذف شده و فایل‌ها در app shell با cache `mshin-arcade-v33` precache می‌شوند.
+- **Runtime policy:** مسیرهای `src` در manifest همگی relative/local هستند؛ CDN fallback از Service Worker حذف شده و فایل‌ها در app shell با cache `mshin-arcade-v33` precache می‌شوند؛ پس از بازطراحی منو در PR #54، cache به `mshin-arcade-v34` ارتقا یافت.
 - **Version markers:** package/PWA برابر `0.9.3`؛ asset marker برابر `2026.10.31.17`؛ Cocos vector catalog نیز `2026.10.31.17`.
 - **Provenance:** `docs/VENDORED_ASSETS.md` باید URL اصلی و وضعیت مجوز هر فایل را ثبت کند؛ پیش از انتشار عمومی، مجوزهای upstream باید بازبینی شوند.
 - **Acceptance:** Node tests، data/syntax checks، Playwright desktop/mobile، بررسی same-origin بودن همه دارایی‌ها، merged-main validation و GitHub Pages deployment همگی موفق شدند.
 
-## Previous verified release — 0.9.2
+## Verified menu redesign — PR #54\n\n- **Status:** 🟢 merged to `main` as `24f395546e2edd979c52c70934cbf319d9fe0462`.\n- **Browser menu:** five-tab navigation now uses an angular motorsport rail and a dedicated content panel with responsive mobile sizing.\n- **Cocos runtime menus:** current follow-up source branch adds shared dark-navy/red angular styling to home, world, stage, pause and finish screens; source syntax and regression checks are required before merge.\n- **Validation:** PR #54 runs `41209240425` (PR) and `41209236363` (push) passed; merged-main run `41209457561` and Pages deployment `41209456703` passed.\n- **Published browser URL:** https://pasoooir.github.io/Mshin/\n\n## Previous verified release — 0.9.2
 
 - PR #51 merged as `e2b3af25b645e4c05ce73dd62d50d2bfe3bf1a42`; eight-second scenery-cache refresh for evolving aerial lighting.
 - Live game: https://pasoooir.github.io/Mshin/
@@ -46,7 +46,7 @@ Last evidence refresh: 2026-10-31
 | Portable driving/race core | 🟡 | 68% | Off-road handling, bounded frame-step timing and invalid-input safeguards have regression coverage; broader play balance remains. |
 | Cocos Creator project/runtime integration | 🔴 | 20% | Project metadata and runtime scripts are in `assets/scripts/`; no Editor-created startup scene, engine type-check, Editor import, or Cocos preview/build has been verified. |
 | Cocos world visuals and hazards | 🟡 | 38% | Theme-specific decorations, route generation and hazard drawing are implemented in source; Creator visual QA is outstanding. |
-| Cocos menus, selection and HUD | 🟡 | 35% | Runtime-created screens and controls exist; Editor/device responsive QA is outstanding. |
+| Cocos menus, selection and HUD | 🟡 | 40% | Runtime-created home/world/stage/pause/finish screens now share an angular navy/red motorsport visual system; Creator Editor/device responsive QA and actual scene integration remain outstanding. |
 | Browser playable edition | 🟡 | 98% | Merged game includes five cars, persistent workshop upgrades, coin rewards, five milestone achievements, ten weather profiles, AI rivals, live ranking, minimap, nitro and 50 stages. Real-device balance, Cocos parity and final art polish remain. |
 | Browser automated QA | 🟢 | 100% | Main validation run `41076533036` passed data validation, TypeScript/core build, syntax checks, Node tests and desktop/mobile Playwright. Tests cover five-car garage, coin unlocks, three persistent upgrades, weather profiles, full race and payout, First Finish achievement and bonus announcement, AI rivals, nitro, canvas rendering and offline PWA. |
 | Audio, animation and polish | 🟡 | 64% | Browser engine tone, collision/finish audio, saved mute setting, animated vehicle details, AI rival cars, minimap, exhaust particles, nitro trails, collision bursts, finish celebration, weather overlays and achievement unlock feedback are implemented. More vehicle/environment animation and final art polish remain. |
