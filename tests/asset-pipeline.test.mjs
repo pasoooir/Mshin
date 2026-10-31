@@ -63,7 +63,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v22/);
+  assert.match(sw, /mshin-arcade-v23/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
@@ -158,10 +158,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   assert.match(sw, /mshin-arcade-v22/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.8");
-  assert.equal(pkg.version, "0.8.3");
-  assert.equal(pwa.version, "0.8.3");
-  assert.equal(cocos.version, "2026.10.31.8");
+  assert.equal(manifest.version, "2026.10.31.9");
+  assert.equal(pkg.version, "0.8.4");
+  assert.equal(pwa.version, "0.8.4");
+  assert.equal(cocos.version, "2026.10.31.9");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
