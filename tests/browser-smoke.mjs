@@ -24,7 +24,7 @@ try {
   await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
-  assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable");
+  assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable; browser errors: " + errors.join(" | "));
   await page.screenshot({ path: "artifacts/mshin-world-select-desktop.png", fullPage: true });
   const worldCards = await page.locator(".world").evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundImage));
   assert.ok(worldCards.every((background, index) => background.includes("world-" + String(index + 1).padStart(2, "0") + ".svg")), "each world card should use its own vector artwork");
