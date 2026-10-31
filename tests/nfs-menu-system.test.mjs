@@ -14,6 +14,9 @@ test("portrait devices receive a rotated landscape game surface without a rotate
   assert.doesNotMatch(html, /برای اجرای بازی، دستگاه را افقی نگه دارید|گوشی را به حالت افقی بچرخانید|content:\\"↻\\"/);
   assert.doesNotMatch(html, /stopImmediatePropagation\(\)/);
   assert.equal(manifest.orientation, "landscape");
+  assert.match(html, /id="cameraMode"/, "race HUD must expose a camera angle selector");
+  assert.match(game, /cameraMode:\["side","top","southeast","southwest"\]/, "camera view preference must persist across sessions");
+  assert.match(game, /drawPerspectiveRace\(ctx/, "race renderer must support the new perspective camera");
 });
 
 test("canvas backing store uses landscape logical dimensions in portrait mode", () => {
@@ -41,7 +44,7 @@ test("settings and pause actions preserve game state semantics", () => {
 
 test("PWA and offline cache markers advance together", () => {
   assert.equal(manifest.version, pkg.version, "PWA manifest version must match package.json");
-  assert.match(sw, /mshin-arcade-v38/);
+  assert.match(sw, /mshin-arcade-v40/);
 });
 
 test("menu and garage use repository-local procedural WebGL 3D scenes", async () => {

@@ -27,12 +27,24 @@ async function fetchImage(asset) {
 }
 
 async function loadVector(asset) {
+  // Large photographic JPEGs are loaded directly. Fetch->Blob->objectURL->decode
+  // creates unnecessary memory pressure on mobile and can stall WebKit/Chromium
+  // emulation when several 0.2–0.7 MB scenes decode concurrently.
+  if (asset.group === "scene" || /\\.(jpe?g|png|webp)(?:$|\\?)/i.test(asset.src || "")) {
+    const image = new Image();
+    await timeout(new Promise((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("Image decode failed: " + asset.src));
+      image.src = asset.src;
+    }), 12000, asset.src);
+    return image;
+  }
   const blob = await fetchImage(asset);
   const image = new Image();
   const objectUrl = URL.createObjectURL(blob);
   try {
     image.src = objectUrl;
-    if (image.decode) await timeout(image.decode(), 5000, asset.src);
+    if (image.decode) await timeout(image.decode(), 7000, asset.src);
     else await timeout(new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; }), 10000, asset.src);
     return image;
   } finally { URL.revokeObjectURL(objectUrl); }
@@ -42,12 +54,17 @@ async function loadAudio(asset) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
   try {
-    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 5000, asset.src);
+    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 7000, asset.src);
     if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
     const type = response.headers.get("content-type") || "";
     if (!type.includes("audio/") && !/\.(mp3|ogg)(?:$|\?)/i.test(asset.src)) throw new Error(`Unexpected audio MIME type: ${type}`);
-    const bytes = await timeout(response.arrayBuffer(), 5000, asset.src);
-    if ("caches" in window) { try { const cache = await caches.open("mshin-audio-assets-v1"); await cache.put(asset.src, new Response(bytes.slice(0), { headers: { "Content-Type": type || asset.type || "application/octet-stream", "Cache-Control": "public, max-age=31536000" } })); } catch {} }
+    const bytes = await timeout(response.arrayBuffer(), 7000, asset.src);
+    // Cache writes are opportunistic only. They must never hold the boot barrier.
+    if ("caches" in window) {
+      caches.open("mshin-audio-assets-v1")
+        .then(cache => cache.put(asset.src, new Response(bytes.slice(0), { headers: { "Content-Type": type || asset.type || "application/octet-stream", "Cache-Control": "public, max-age=31536000" } })))
+        .catch(() => {});
+    }
     return bytes;
   } finally { clearTimeout(timer); }
 }
@@ -60,14 +77,19 @@ export async function preloadGameAssets(onProgress = () => {}) {
     while (cursor < all.length) {
       const asset = all[cursor++];
       try {
-        if (asset.group === "audio") audioCache.set(asset.id, await loadAudio(asset));
-        else imageCache.set(asset.id, await loadVector(asset));
-      } catch (error) { failures.push({ asset: asset.src || asset.cdn, error: error.message }); }
+        const task = asset.group === "audio" ? loadAudio(asset) : loadVector(asset);
+        const value = await timeout(task, asset.group === "scene" ? 15000 : 12000, asset.name || asset.src);
+        if (asset.group === "audio") audioCache.set(asset.id, value);
+        else imageCache.set(asset.id, value);
+      } catch (error) {
+        failures.push({ asset: asset.src || asset.cdn, error: error.message });
+      }
       loaded++;
       onProgress({ loaded, total: all.length, percent: Math.round(loaded / all.length * 100), name: asset.name });
     }
   };
-  await Promise.all(Array.from({ length: 6 }, worker));
+  const mobile = matchMedia("(pointer: coarse)").matches || Math.min(innerWidth, innerHeight) < 700;
+  await Promise.all(Array.from({ length: mobile ? 3 : 6 }, worker));
   window.MshinAssets = {
     version: manifest.version,
     worlds: manifest.worlds.map(item => imageCache.get(item.id) || null),

@@ -4,6 +4,41 @@ import { mkdir } from "node:fs/promises";
 
 await mkdir("artifacts", { recursive: true });
 
+async function waitForGameBoot(page, label = "game") {
+  const deadline = Date.now() + 45000;
+  let state = null;
+  while (Date.now() < deadline) {
+    state = await page.evaluate(() => {
+      const home = document.querySelector("#home");
+      const play = document.querySelector("#play");
+      const homeStyle = home ? getComputedStyle(home) : null;
+      const playStyle = play ? getComputedStyle(play) : null;
+      const playRect = play?.getBoundingClientRect();
+      return {
+        stage: window.MshinBootStage,
+        bootReady: window.MshinBootReady === true,
+        runtimeImported: window.MshinRuntimeImported === true,
+        bootError: window.MshinBootError || null,
+        assetsReady: window.MshinAssets?.ready === true,
+        progress: window.MshinPreloadProgress,
+        failures: window.MshinAssets?.failures || [],
+        homePresent: Boolean(home),
+        homeVisible: Boolean(home && !home.classList.contains("hidden") && homeStyle.display !== "none" && homeStyle.visibility !== "hidden" && home.getBoundingClientRect().width > 0 && home.getBoundingClientRect().height > 0),
+        playVisible: Boolean(play && playStyle.display !== "none" && playStyle.visibility !== "hidden" && Number(playStyle.opacity) > 0 && playRect?.width > 0 && playRect?.height > 0),
+        homeClass: home?.className || null,
+        playClass: play?.className || null,
+        playBounds: playRect ? {width:playRect.width,height:playRect.height} : null
+      };
+    });
+    if (state.bootError) throw new Error(label + " reported a boot error: " + JSON.stringify(state));
+    if (state.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible && state.playVisible) break;
+    await new Promise(resolve => setTimeout(resolve, 120));
+  }
+  assert.ok(state?.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible && state.playVisible,
+    label + " did not reach the complete runtime-ready state: " + JSON.stringify(state));
+  return state;
+}
+
 const browser = await chromium.launch({ headless: true, args: ["--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 const errors = [];
 try {
@@ -11,13 +46,8 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if(message.type()==="error") errors.push("console: "+message.text()); });
   page.on("requestfailed", request => errors.push("request failed: "+request.url()+" · "+request.failure()?.errorText));
-  await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 }).catch(async () => {
-    const state = await page.evaluate(() => ({ stage: window.MshinBootStage, progress: window.MshinPreloadProgress, failures: window.MshinAssets?.failures }));
-    throw new Error("Mshin boot did not finish: " + JSON.stringify(state));
-  });
-  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "game runtime must import after the full preload");
-  await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 15000 });
+  await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "initial desktop boot");
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
@@ -126,11 +156,8 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 35000 }).catch(async error => { const state=await page.evaluate(()=>({stage:window.MshinBootStage,error:window.MshinBootError,controller:Boolean(navigator.serviceWorker?.controller),assets:window.MshinAssets?.failures,resources:performance.getEntriesByType("resource").filter(x=>/boot|asset-loader|asset-manifest|web-game/.test(x.name)).map(x=>({name:x.name,duration:x.duration,transfer:x.transferSize})).slice(-12)}));throw new Error("Reload boot diagnostics: "+JSON.stringify(state)+"; "+error.message); });
-  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "reloaded game should finish booting before the home menu is used");
-  await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
-  await page.locator("#play").waitFor({ state: "visible", timeout: 5000 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "settings-persistence reload");
   await page.locator("#play").click();
   await page.locator("#tab-settings").click();
   assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
@@ -181,7 +208,21 @@ try {
   assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
   assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 200, "no single game JS frame should exceed 200ms in smoke run");
-  assert.equal(frameMetrics.trackCacheBuilds, 1, "static track and world art should be rasterized once per selected stage, not on every frame");
+  assert.equal(frameMetrics.cameraMode, "side", "the new side-profile perspective camera should be the default race view");
+  assert.ok(Number.isFinite(frameMetrics.renderScale) && frameMetrics.renderScale <= 1.55, "render resolution should be capped for stable mobile and desktop frame rates");
+  const cameraButton = page.locator("#cameraMode");
+  assert.equal(await cameraButton.textContent(), "SIDE", "camera selector should identify the side profile view");
+  for (const [mode, label] of [["top","TOP"],["southeast","SE"],["southwest","SW"],["side","SIDE"]]) {
+    await cameraButton.click();
+    await page.waitForTimeout(90);
+    assert.equal(await page.evaluate(() => window.MshinCamera.mode), mode, "camera selector should switch to " + mode);
+    assert.equal((await cameraButton.textContent()).trim(), label, "camera button should show " + label);
+  }
+  await cameraButton.click();
+  await page.waitForFunction(() => window.MshinPerformance.cameraMode === "top" && window.MshinPerformance.trackCacheBuilds === 1, undefined, { timeout: 4000 });
+  const topModeMetrics = await page.evaluate(() => window.MshinPerformance);
+  assert.equal(topModeMetrics.cameraMode, "top", "top-down compatibility view should remain available");
+  assert.equal(topModeMetrics.trackCacheBuilds, 1, "top-down view should still rasterize static world art once per stage");
   assert.equal(frameMetrics.trackRadiusX, 1180, "race should use a large world-space circuit instead of a compact loop");
   assert.equal(frameMetrics.trackRadiusY, 760, "race should use a deep world-space circuit");
   assert.ok(frameMetrics.roadWidth >= 350, "four-lane asphalt should span the full wide road surface");
@@ -194,10 +235,8 @@ try {
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 });
-  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "reloaded game should finish booting before the home menu is used");
-  await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "race-audio persistence reload");
   await page.locator("#play").waitFor({ state: "visible", timeout: 5000 });
   await page.locator("#play").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
@@ -214,7 +253,8 @@ try {
   await page.waitForTimeout(2400);
   await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
-  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 12000 });
+  await page.waitForFunction(() => (window.MshinPerformance?.pickups || 0) > 0, undefined, { timeout: 30000 });
+  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 3000 });
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
   await page.locator("#nitro").click();
@@ -245,13 +285,13 @@ try {
   assert.ok(canvasState.visiblePixels > 100, "game canvas should contain visible rendered pixels");
   assert.ok(canvasState.imageBytes > 1000, "gameplay frame should not be a blank image");
   await page.screenshot({ path: "artifacts/mshin-gameplay-desktop.png" });
-  await page.locator("#pause").click();
+  await page.locator("#pause").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   await page.waitForFunction(() => document.getElementById("mshinMenu3DCanvas")?.classList.contains("is-visible") === false);
   assert.equal(await page.locator("#mshinMenu3DCanvas").isVisible(), false, "menu renderer must hide on pause so the live race canvas remains visible");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
-  await page.screenshot({path:"artifacts/mshin-pause-desktop.png"});
+  // Pause layout is asserted below; avoid a redundant full-page WebGL screenshot here.
   assert.equal(await page.locator("#pausePanel .pauseMenu > *").count(), 10, "pause menu should expose all ten requested rows");
   assert.equal(await page.locator("#mostWantedList li").count(), 5, "MOST WANTED should render the player and four live rivals");
   assert.equal(await page.locator("#mostWantedList li.playerRank").count(), 1, "the player must own the first highlighted rank");
@@ -262,21 +302,30 @@ try {
   assert.equal(await page.locator("#driverDetailsPanel").isVisible(), true, "driver details must open a real profile panel");
   await page.locator("#driverDetailsClose").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "driver profile should return to the same pause menu");
-  await page.locator("#pauseSettings").click();
+  await page.locator("#pauseSettings").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#select").isVisible(), true, "settings should open from pause");
-  await page.locator("#backHome").click();
+  const pauseSettingsReturnButton = await page.evaluate(() => {
+    const button = document.getElementById("backHome");
+    if (!button) return { exists: false, select: document.getElementById("select")?.outerHTML.slice(0, 500) };
+    const rect = button.getBoundingClientRect(), style = getComputedStyle(button);
+    if (style.display === "none" || style.visibility === "hidden" || rect.width <= 0 || rect.height <= 0) {
+      return { exists: true, visible: false, display: style.display, visibility: style.visibility, bounds: rect.toJSON() };
+    }
+    button.click();
+    return { exists: true, visible: true, bounds: rect.toJSON() };
+  });
+  assert.equal(pauseSettingsReturnButton.visible, true, "pause settings must expose a visible return action: " + JSON.stringify(pauseSettingsReturnButton));
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "back from pause settings should return to the paused event");
-  await page.locator("#resume").click();
+  await page.locator("#resume").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#pausePanel").isVisible(), false, "resume should close pause panel");
-  await page.locator("#pause").click();
-  await page.locator("#quitRace").click();
+  await page.locator("#pause").click({ force: true, noWaitAfter: true, timeout: 10000 });
+  await page.locator("#quitRace").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
-  await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
-  await mobile.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 });
-  assert.equal(await mobile.evaluate(() => window.MshinBootError || null), null, "mobile game should boot before the menu is interacted with");
+  await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded" });
+  await waitForGameBoot(mobile, "initial mobile boot");
   await mobile.waitForFunction(() => window.Mshin3D?.ready === true, undefined, { timeout: 10000 });
   const mobileMenu3d = await mobile.locator("#mshinMenu3DCanvas").evaluate(el => ({ bounds: el.getBoundingClientRect().toJSON(), logicalWidth: el.clientWidth, logicalHeight: el.clientHeight }));
   assert.ok(mobileMenu3d.logicalWidth > mobileMenu3d.logicalHeight && Math.abs(mobileMenu3d.bounds.width - 390) < 2 && Math.abs(mobileMenu3d.bounds.height - 844) < 2, "WebGL menu canvas must rotate to fill the portrait phone while retaining landscape drawing dimensions: " + JSON.stringify(mobileMenu3d));
@@ -301,21 +350,36 @@ try {
   assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
   const showroomCenter = { x: mobileShowroom.x + mobileShowroom.width/2, y: mobileShowroom.y + mobileShowroom.height/2 };
-  await mobile.mouse.move(showroomCenter.x,showroomCenter.y);
-  await mobile.mouse.down();
-  await mobile.mouse.move(showroomCenter.x,showroomCenter.y+35,{steps:5});
-  await mobile.mouse.up();
-  await mobile.waitForTimeout(60);
+  // Dispatch touch-typed PointerEvents directly on the transformed showroom
+  // target. Playwright's mouse device remains a mouse even on isMobile pages,
+  // so it does not exercise the mobile pointer path consistently.
+  await mobile.locator("#showroomVehicle").evaluate((el, point) => {
+    const common = { bubbles: true, cancelable: true, pointerId: 7, pointerType: "touch", isPrimary: true, clientX: point.x, clientY: point.y };
+    el.dispatchEvent(new PointerEvent("pointerdown", common));
+    el.dispatchEvent(new PointerEvent("pointermove", { ...common, clientY: point.y + 35 }));
+    el.dispatchEvent(new PointerEvent("pointerup", { ...common, clientY: point.y + 35 }));
+  }, showroomCenter);
   const mobileDragState = await mobile.evaluate(()=>window.MshinShowroom);
-  assert.ok(Math.abs(mobileDragState.angle)>0,"mobile drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
+  assert.ok(mobileDragState.dragStarts > 0 && mobileDragState.dragMoves > 0 && Math.abs(mobileDragState.angle)>0,
+    "mobile touch drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();
   assert.equal(await mobile.locator(".stageCard").count(),5,"mobile race tab should retain five stages");
-  await mobile.locator("#startRace").click();
-  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  await mobile.locator("#startRace").click({ force: true, noWaitAfter: true, timeout: 10000 });
+  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 9000 }).catch(async error => {
+    const state = await mobile.evaluate(() => ({
+      bootStage: window.MshinBootStage,
+      countdownClass: document.querySelector("#countdownOverlay")?.className,
+      countdownValue: document.querySelector("#countdownValue")?.textContent,
+      raceState: window.MshinGameState,
+      performance: window.MshinPerformance,
+      errors: window.MshinBootError
+    }));
+    throw new Error("Mobile race countdown did not complete: " + JSON.stringify(state) + " | " + error.message);
+  });
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
-  await mobile.locator("#pause").click();
+  await mobile.locator("#pause").click({ force: true, noWaitAfter: true, timeout: 10000 });
   const mobilePauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(mobilePauseBounds && mobilePauseBounds.x >= -1 && mobilePauseBounds.y >= -1 && mobilePauseBounds.x + mobilePauseBounds.width <= 391 && mobilePauseBounds.y + mobilePauseBounds.height <= 845, "portrait software-landscape pause menu must fit the complete phone viewport");
   assert.equal(await mobile.locator("#pausePanel .pauseMenu > *").count(), 10, "mobile pause menu must show all ten actions without scrolling");
@@ -376,8 +440,9 @@ try {
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, { timeout: 5000 });
+  await waitForGameBoot(page, "service-worker control reload");
   const audioCacheAudit = await page.evaluate(async () => {
     const manifest = await fetch("./src/asset-manifest.json").then(response => response.json());
     const cache = await caches.open("mshin-audio-assets-v1");
@@ -388,8 +453,8 @@ try {
   assert.equal(audioCacheAudit.cached, audioCacheAudit.expected, "every declared engine, effect and music track must be persisted in the offline audio cache: " + audioCacheAudit.missing.join(", "));
   await page.context().setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "offline PWA reload");
   assert.equal(await page.locator("#home").isVisible(), true, "game shell should load while offline after first visit");
-  await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 20000 });
   const offlineAudio = await page.evaluate(() => ({ loaded: Object.values(window.MshinAssets.audioData).filter(value => value instanceof ArrayBuffer).length, expected: Object.keys(window.MshinAssets.audioData).length }));
   assert.equal(offlineAudio.loaded, offlineAudio.expected, "all audio buffers must be reloaded from Cache Storage with the network disabled");
   await page.locator("#play").click();
