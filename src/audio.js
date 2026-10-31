@@ -52,11 +52,11 @@ export function createGameAudio() {
   };
   const prepare=()=>{
     if(decodePromise)return decodePromise;if(!ensure())return Promise.resolve(false);
-    const ids=["engineIdle","engineLoad","roadRoll","engineStart","engineStop","brakeSqueal","gearDown","menuMusic","raceMusic"];
+    const ids=["engineIdle","engineLoad","roadRoll","engineStart","engineStop","brakeSqueal","gearDown","collisionImpact","menuMusic","raceMusic"];
     decodePromise=Promise.all(ids.map(decode)).then(buffers=>{
       engineBuffers={idle:buffers[0],load:buffers[1],road:buffers[2]};
       engineSources=[loop(engineBuffers.idle,engineGains[0]),loop(engineBuffers.load,engineGains[1]),loop(engineBuffers.road,engineGains[2])];
-      ["engineStart","engineStop","brakeSqueal","gearDown"].forEach((id,index)=>oneShots.set(id,buffers[index+3]));
+      ["engineStart","engineStop","brakeSqueal","gearDown","collisionImpact"].forEach((id,index)=>oneShots.set(id,buffers[index+3]));
       const ready=Object.values(engineBuffers).every(Boolean)&&buffers.slice(3).every(Boolean);
       window.MshinAudioReady=ready;return ready;
     });
@@ -83,7 +83,7 @@ export function createGameAudio() {
     if(!ensure()||!sfxEnabled)return;
     const now=context.currentTime,osc=context.createOscillator(),gain=context.createGain();osc.type="triangle";osc.frequency.setValueAtTime(118,now);osc.frequency.exponentialRampToValueAtTime(38,now+.19);
     gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.16*Math.max(.25,Math.min(1.5,intensity)),now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+.23);
-    osc.connect(gain);gain.connect(sfxBus);osc.start(now);osc.stop(now+.24);
+    osc.connect(gain);gain.connect(sfxBus);osc.onended=()=>{osc.disconnect();gain.disconnect()};osc.start(now);osc.stop(now+.24);
   };
   return {
     unlock(){try{if(ensure())prepare()}catch(error){window.MshinAudioError=error.message}},
@@ -123,7 +123,7 @@ export function createGameAudio() {
       engineFilter.Q.setTargetAtTime(profile.resonance,now,.1);
       if(brake&&velocity>95&&Math.random()<dt*.22)oneShot("brakeSqueal",.055,.98);
     },
-    collision(intensity=1){const n=Math.max(0,Math.min(1.5,intensity));oneShot("brakeSqueal",.13+n*.16,.88+n*.08);impactThump(n)},
+    collision(intensity=1){const n=Math.max(0,Math.min(1.5,intensity));oneShot("collisionImpact",.22+n*.2,.9+n*.08);oneShot("brakeSqueal",.08+n*.08,.92);impactThump(n)},
     finish(){oneShot("engineStop",.22,.96);oneShot("gearDown",.18,.92)},
     toggle(){return setSfxEnabled(!sfxEnabled)},
     get enabled(){return sfxEnabled},get musicEnabled(){return musicEnabled},get sfxVolume(){return sfxVolume},get musicVolume(){return musicVolume}
