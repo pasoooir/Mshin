@@ -42,11 +42,14 @@ try {
   const worldCards = await page.locator(".worldCard img").evaluateAll(nodes => nodes.map(node => node.getAttribute("src")));
   assert.ok(worldCards.every((src, index) => src === "./assets/vector/world-" + String(index + 1).padStart(2, "0") + ".svg"), "each world card should use its own text-free vector artwork");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
+  await page.locator("#tab-cars").click();
   await page.getByRole("button", { name: /دنباله‌دار GT/ }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("#play").click();
+  await page.locator("#tab-cars").click();
   assert.match(await page.locator(".carChoice.active").textContent(), /دنباله‌دار GT/, "garage should restore the saved car");
+  await page.locator("#tab-race").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
