@@ -41,7 +41,8 @@ export function createGameAudio() {
   const prepare = async () => {
     if (decodePromise || !context) return decodePromise;
     decodePromise = Promise.all([decode("engineIdle"), decode("engineRev"), decode("brakeSqueal"), decode("gearDown")]).then(([idle, rev, brake, gear]) => {
-      oneShots.set("brakeSqueal", brake); oneShots.set("gearDown", gear);\n      window.MshinAudioReady = Boolean(idle && rev && brake && gear);
+      oneShots.set("brakeSqueal", brake); oneShots.set("gearDown", gear);
+      window.MshinAudioReady = Boolean(idle && rev && brake && gear);
       idleSource = loopBuffer(idle, idleGain, .88);
       revSource = loopBuffer(rev, revGain, .9);
       idleGain.gain.setTargetAtTime(.24, context.currentTime, .3);
