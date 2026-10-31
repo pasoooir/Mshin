@@ -1,5 +1,5 @@
 import { _decorator, Component } from "cc";
-import { CarState, DriveInput, createRaceState, RaceState, stepCar, updateRace, createVehicleDamage, addVehicleDamage, resolveStaticBarrier, CollisionBody, createRigidBody2D, resolveRigidBody2D } from "../../src/cocos-core";
+import { CarState, DriveInput, createRaceState, RaceState, stepCar, updateRace, createVehicleDamage, addVehicleDamage, resolveStaticBarrier, CollisionBody, createRigidBody2D, resolveRigidBody2D, splitImpactEnergy } from "../../src/cocos-core";
 import { nearestTrackPoint, Point } from "../../src/stage-catalog";
 const {ccclass}=_decorator;
 @ccclass("MshinVehicleController")
@@ -60,13 +60,13 @@ export class VehicleController extends Component {
   const make=(v:VehicleController)=>createRigidBody2D({x:v.car.x,y:v.car.y,vx:Math.sin(v.car.heading)*v.car.speed,vy:-Math.cos(v.car.heading)*v.car.speed,
    angle:v.car.heading-Math.PI/2,angularVelocity:v.car.angularVelocity??0,mass:1250,length:54,width:30});
   const a=make(this),b=make(other),impact=resolveRigidBody2D(a,b);if(!impact.hit)return;
-  for(const [vehicle,body,normalSign] of [[this,a,1],[other,b,-1]] as Array<[VehicleController,ReturnType<typeof make>,number]>) {
+  const energyShare=splitImpactEnergy(impact.energy,a.invMass,b.invMass);\n  for(const [vehicle,body,normalSign,damageEnergy] of [[this,a,1,energyShare.a],[other,b,-1,energyShare.b]] as Array<[VehicleController,ReturnType<typeof make>,number,number]>) {
    vehicle.car.x=body.x;vehicle.car.y=body.y;vehicle.car.angularVelocity=body.angularVelocity;
    const fx=Math.sin(vehicle.car.heading),fy=-Math.cos(vehicle.car.heading);
    vehicle.car.speed=Math.max(0,body.vx*fx+body.vy*fy);
    vehicle.car.heading+=body.angularVelocity*.016;
    const localF=impact.nx*normalSign*fx+impact.ny*normalSign*fy,localR=impact.nx*normalSign*(-fy)+impact.ny*normalSign*fx;
-   addVehicleDamage(vehicle.damage,impact.energy*(body.invMass/(a.invMass+b.invMass)),Math.abs(localF)>=Math.abs(localR)?(localF>=0?"front":"rear"):(localR>=0?"right":"left"));
+   addVehicleDamage(vehicle.damage,damageEnergy,Math.abs(localF)>=Math.abs(localR)?(localF>=0?"front":"rear"):(localR>=0?"right":"left"));
    vehicle.hitCooldown=.22;
   }
  }
