@@ -304,7 +304,17 @@ try {
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "driver profile should return to the same pause menu");
   await page.locator("#pauseSettings").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#select").isVisible(), true, "settings should open from pause");
-  await page.locator("#backHome").click({ force: true, noWaitAfter: true, timeout: 10000 });
+  const pauseSettingsReturnButton = await page.evaluate(() => {
+    const button = document.getElementById("backHome");
+    if (!button) return { exists: false, select: document.getElementById("select")?.outerHTML.slice(0, 500) };
+    const rect = button.getBoundingClientRect(), style = getComputedStyle(button);
+    if (style.display === "none" || style.visibility === "hidden" || rect.width <= 0 || rect.height <= 0) {
+      return { exists: true, visible: false, display: style.display, visibility: style.visibility, bounds: rect.toJSON() };
+    }
+    button.click();
+    return { exists: true, visible: true, bounds: rect.toJSON() };
+  });
+  assert.equal(pauseSettingsReturnButton.visible, true, "pause settings must expose a visible return action: " + JSON.stringify(pauseSettingsReturnButton));
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "back from pause settings should return to the paused event");
   await page.locator("#resume").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#pausePanel").isVisible(), false, "resume should close pause panel");
