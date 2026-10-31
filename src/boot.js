@@ -10,7 +10,7 @@ try {
     label.textContent = `بارگذاری · ${loaded}/${total} · ${name}`;
     if (percentLabel) percentLabel.textContent = percent + "%";
   });
-  label.textContent = "همه منابع آماده‌اند · بازی در حال اجراست";
+  label.textContent = window.MshinAssets.failures.length ? `بارگذاری با ${window.MshinAssets.failures.length} منبع ناموفق؛ نسخه جایگزین فعال است` : "همه منابع آماده‌اند · بازی در حال اجراست";
   if (percentLabel) percentLabel.textContent = "100%";
 } catch (error) {
   label.textContent = "بازی با تصاویر داخلی اجرا می‌شود";
