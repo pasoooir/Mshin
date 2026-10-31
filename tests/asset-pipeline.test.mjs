@@ -75,6 +75,18 @@ test("service worker precaches all vector art before offline races", async () =>
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...manifest.sounds]) assert.ok(sw.includes(asset.src), asset.src + " must be precached");
 });
+test("Cocos runtime menus use the Mshin motorsport visual system", async () => {
+  const cocos = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
+  assert.match(cocos, /drawMenuBackdrop\("MSHIN MOTORSPORT"/);
+  for (const screen of ["WORLD SELECT", "STAGE SELECT", "RACE PAUSED", "RACE COMPLETE"]) assert.ok(cocos.includes(screen), screen + " should use the shared motorsport backdrop");
+  assert.match(cocos, /#14253A/);
+  assert.match(cocos, /#F33A52/);
+  assert.match(cocos, /g\.moveTo\(-w\/2\+7,-h\/2\)/);
+  assert.match(cocos, /g\.close\(\);g\.fill\(\)/);
+  assert.match(cocos, /Node\.EventType\.TOUCH_END/);
+  assert.doesNotMatch(cocos, /g\.fillColor=hex\("#F8C84E"\);g\.roundRect\(-w\/2/);
+});
+
 test("photographic world scenes are repository-bundled before the race runtime", async () => {
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
