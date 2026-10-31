@@ -6,7 +6,7 @@ await mkdir("artifacts", { recursive: true });
 
 async function waitForGameBoot(page, label = "game") {
   try {
-    await page.locator("#assetLoader").waitFor({ state: "detached", timeout: 45000 });
+    await page.locator("#assetLoader.loaded").waitFor({ state: "attached", timeout: 45000 });
   } catch (error) {
     const stalled = await page.evaluate(() => ({
       stage: window.MshinBootStage,
