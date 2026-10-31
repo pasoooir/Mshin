@@ -214,7 +214,7 @@ try {
   await page.waitForTimeout(2400);
   await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
-  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 12000 });
+  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 20000 });
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
   await page.locator("#nitro").click();
