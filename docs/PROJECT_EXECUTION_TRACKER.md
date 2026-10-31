@@ -107,8 +107,17 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 | P2 | Burn-out and vehicle removal (browser) | 🟢 تکمیل‌شده و تأییدشده | After the explosion, the wreck continues burning briefly, emits fading black smoke, then fades/shrinks and is removed from active traffic/collision/ranking safely. Player vehicle must use a clear race-over/recovery flow rather than silently disappearing. |
 | P1 | Collision and destruction regression suite (browser integration + desktop/mobile smoke) | 🟢 تکمیل‌شده و تأییدشده | Automated tests cover impulse transfer, mass differences, off-centre yaw, repeated-hit damage accumulation, smoke/fire thresholds, one-shot explosion, burn duration, despawn cleanup, and no ghost collisions after removal. Desktop and mobile gameplay previews must show the complete sequence. |
 
-**Implementation notes:** use the existing rigid-body/impulse and localized damage foundations rather than scripted teleportation. Keep browser and Cocos behavior aligned where each runtime is supported. Tune thresholds for readable arcade gameplay while preserving physically plausible direction and relative response. Treat smoke, flames and debris as pooled effects so repeated traffic collisions do not create unbounded per-frame allocations. The browser edition is released as 0.7.0 (PR #32 merged; release PR and CI evidence linked below). Rear-end multi-car chain-collision tuning and full Cocos Editor/device validation remain separate follow-up gates.
-\n\n## Release 0.7.0 — 2026-10-31\n\n- **Status:** released and merged to `main` as PR #32 (merge commit `dab62a69b35e57f7ccd8c2898895cbd1b43d947f`).\n- **Visible browser changes:** adaptive lane-changing traffic; progressive localized soot; dark smoke and fire; one-shot explosion feedback; wreck burn/fade/despawn; explicit player destruction finish state.\n- **Offline compatibility:** service-worker cache v18 includes `rigid-body-physics.js`, `traffic-ai.js`, and `vehicle-destruction.js` in addition to the existing app shell.\n- **Verification:** PR #32 release CI run `41172188163` passed all 15 steps, including `npm test`, desktop/mobile Playwright smoke and gameplay preview upload. Merged-main validation run `41172531303` passed; GitHub Pages build/deployment run `41172530906` succeeded.\n- **Limit:** Cocos Creator Editor/device runtime validation is not claimed by browser CI.\n
+**Implementation notes:** use the existing rigid-body/impulse and localized damage foundations rather than scripted teleportation. Keep browser and Cocos behavior aligned where each runtime is supported. Tune thresholds for readable arcade gameplay while preserving physically plausible direction and relative response. Treat smoke, flames and debris as pooled effects so repeated traffic collisions do not create unbounded per-frame allocations. The browser edition is released as 0.8.0 (PR #33 merged; release and deployment evidence linked below). Rear-end multi-car chain-collision tuning and full Cocos Editor/device validation remain separate follow-up gates.
+
+
+## Release 0.7.0 — 2026-10-31
+
+- **Status:** released and merged to `main` as PR #32 (merge commit `dab62a69b35e57f7ccd8c2898895cbd1b43d947f`).
+- **Visible browser changes:** adaptive lane-changing traffic; progressive localized soot; dark smoke and fire; one-shot explosion feedback; wreck burn/fade/despawn; explicit player destruction finish state.
+- **Offline compatibility:** service-worker cache v18 includes `rigid-body-physics.js`, `traffic-ai.js`, and `vehicle-destruction.js` in addition to the existing app shell.
+- **Verification:** PR #32 release CI run `41172188163` passed all 15 steps, including `npm test`, desktop/mobile Playwright smoke and gameplay preview upload. Merged-main validation run `41172531303` passed; GitHub Pages build/deployment run `41172530906` succeeded.
+- **Limit:** Cocos Creator Editor/device runtime validation is not claimed by browser CI.
+
 
 ## Release 0.7.0 — publication evidence
 
@@ -120,11 +129,15 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - Browser release URL: https://pasoooir.github.io/Mshin/ (deployment workflow succeeded; verify the live UI in a browser with cache refresh if an older service-worker shell appears).
 
 
-## Version 0.8.0 work in progress
+## Release 0.8.0 — publication evidence
 
-- [ ] Replace synthesized engine oscillator with real race-car audio from CDN (idle/rev, braking and downshift); preload all clips and decode before race start.
-- [ ] Four-lane asphalt and wider camera framing with full road width visible.
-- [ ] Animated 3 → 2 → 1 → GO countdown with all vehicles held until GO.
-- [ ] CDN SVG icons for accelerator, brake and nitro controls.
-- [ ] Boot preload for all scene art, car sprites, control icons and sound assets; no race-time asset network requests.
-- [ ] Desktop/mobile browser smoke, performance, network and visual preview evidence.
+- **Status:** released and merged to `main` through PR #33; merge commit `2b564023744c9a0578943c33242d0e8504667be4`.
+- **Engine audio:** replaced the synthetic oscillator with preloaded CDN race-car idle/rev, braking and downshift clips; the sound bank is decoded before GO. The selected SFXMint CC0 1.0 files are AI-generated effects rather than field recordings; this provenance is documented.
+- **Road and camera:** 360-unit asphalt with four traffic lanes, four lane centers and pulled-back camera framing; road width is exposed in runtime telemetry.
+- **Race start:** animated 3 → 2 → 1 → GO; player and AI movement remain frozen until GO.
+- **Controls:** gas, brake and nitro use accessible jsDelivr SVG icons instead of text labels.
+- **Preload:** ten world illustrations, five car sprites, ten photographic scenes, three control icons and four audio clips are loaded before importing the game loop; browser smoke confirms no asset/network requests during countdown or gameplay.
+- **Verification:** release CI run #522 (`41174957473`) passed; merged-main validation run #523 (`41175066815`) passed; GitHub Pages build and deployment run #61 (`41175066541`) succeeded.
+- **Release links:** PR #33 https://github.com/pasoooir/Mshin/pull/33 · CI https://github.com/pasoooir/Mshin/actions/runs/41175066815 · Pages https://github.com/pasoooir/Mshin/actions/runs/41175066541.
+- **Published browser URL:** https://pasoooir.github.io/Mshin/
+- **Limit:** Cocos Creator Editor/device runtime validation is not claimed by browser CI.
