@@ -38,6 +38,10 @@ try {
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
   assert.equal(raceRequests.length, requestCountAtStart, "starting a race must not trigger late asset/network requests");
+  const physicsCheck = await page.evaluate(async () => { const p = await import("./src/collision-physics.js"); const a={x:0,y:0,vx:300,vy:0,mass:1200,radius:32},b={x:64,y:0,vx:40,vy:0,mass:1000,radius:32}; const hit=p.resolveVehicleImpact(a,b); const damage=p.createDamageState(); p.applyVehicleDamage(damage,hit.energy,"rear"); return {hit:hit.hit,closing:hit.closingSpeed,rivalVelocity:b.vx,damage:damage.total,level:p.damageLevel(damage)}; });
+  assert.equal(physicsCheck.hit,true,"browser should load collision impulse solver");
+  assert.ok(physicsCheck.closing>0 && physicsCheck.rivalVelocity>40,"rear impact should transfer momentum");
+  assert.ok(physicsCheck.damage>0 && physicsCheck.level===1,"impact energy should accumulate damage");
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
   assert.ok(frameMetrics.samples >= 30, "race loop should publish rolling frame-time samples");
   assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
@@ -49,6 +53,8 @@ try {
   assert.ok(frameMetrics.roadWidth >= 230, "road surface should be wide enough to visually anchor the cars");
   assert.equal(frameMetrics.playerHeadingOffsetDeg, 90, "player sprite nose should be aligned with the road tangent");
   assert.equal(frameMetrics.cameraChase, true, "camera should keep the player facing forward on screen");
+  assert.ok(Number.isFinite(frameMetrics.damage) && frameMetrics.damage >= 0, "race telemetry should expose cumulative vehicle damage");
+  assert.ok(Number.isInteger(frameMetrics.damageLevel) && frameMetrics.damageLevel >= 0 && frameMetrics.damageLevel <= 4, "race telemetry should expose one of five damage levels");
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound should start enabled");
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
