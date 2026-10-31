@@ -162,8 +162,8 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pkg.version, "0.8.8");
   assert.equal(pwa.version, "0.8.8");
   assert.equal(cocos.version, "2026.10.31.12");
-  assert.ok(readme.includes("live browser release remains **version 0.8.7**") && readme.includes("while 0.8.8 is under test; deployment will follow successful unit/integration and Playwright desktop/mobile browser smoke tests"), "README must identify 0.8.7 as the verified live release");
-  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.8.7**"), "README must preserve the latest published release until 0.8.8 deploys");
+  assert.ok(readme.includes("live browser release is **version 0.8.8**") && readme.includes("deployed to GitHub Pages after successful merged-main validation and desktop/mobile Playwright browser smoke tests"), "README must identify 0.8.7 as the verified live release");
+  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.8.8**"), "README must preserve the latest published release until 0.8.8 deploys");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
