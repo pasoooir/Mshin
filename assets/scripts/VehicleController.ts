@@ -60,12 +60,12 @@ export class VehicleController extends Component {
   const make=(v:VehicleController)=>createRigidBody2D({x:v.car.x,y:v.car.y,vx:Math.sin(v.car.heading)*v.car.speed,vy:-Math.cos(v.car.heading)*v.car.speed,
    angle:v.car.heading-Math.PI/2,angularVelocity:v.car.angularVelocity??0,mass:1250,length:54,width:30});
   const a=make(this),b=make(other),impact=resolveRigidBody2D(a,b);if(!impact.hit)return;
-  for(const [vehicle,body] of [[this,a],[other,b]] as Array<[VehicleController,ReturnType<typeof make>]>) {
+  for(const [vehicle,body,normalSign] of [[this,a,1],[other,b,-1]] as Array<[VehicleController,ReturnType<typeof make>,number]>) {
    vehicle.car.x=body.x;vehicle.car.y=body.y;vehicle.car.angularVelocity=body.angularVelocity;
    const fx=Math.sin(vehicle.car.heading),fy=-Math.cos(vehicle.car.heading);
    vehicle.car.speed=Math.max(0,body.vx*fx+body.vy*fy);
    vehicle.car.heading+=body.angularVelocity*.016;
-   const localF=impact.nx*fx+impact.ny*fy,localR=impact.nx*(-fy)+impact.ny*fx;
+   const localF=impact.nx*normalSign*fx+impact.ny*normalSign*fy,localR=impact.nx*normalSign*(-fy)+impact.ny*normalSign*fx;
    addVehicleDamage(vehicle.damage,impact.energy,Math.abs(localF)>=Math.abs(localR)?(localF>=0?"front":"rear"):(localR>=0?"right":"left"));
    vehicle.hitCooldown=.22;
   }
