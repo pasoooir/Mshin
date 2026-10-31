@@ -163,7 +163,7 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pwa.version, "0.8.6");
   assert.equal(cocos.version, "2026.10.31.11");
   assert.match(readme, /release candidate; publication follows the CI and Pages deployment gates/);
-  assert.ok(readme.includes("## Latest published build") && readme.includes("Published version 0.8.5"), "README must distinguish the latest published version from the 0.8.6 candidate");
+  assert.ok(readme.includes("## Latest published build") && readme.includes("currently version **0.8.5**"), "README must distinguish the latest published version from the 0.8.6 candidate");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
