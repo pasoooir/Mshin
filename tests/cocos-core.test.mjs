@@ -107,3 +107,9 @@ test('AI target speed decreases for sharper turns and remains bounded for invali
  assert.ok(calculateAiTargetSpeed(Math.PI)>=165);
  assert.equal(calculateAiTargetSpeed(Number.NaN),165);
 });
+
+test('AI racing-line planner safely handles invalid indices and lane offsets',()=>{
+ const path=[{x:3,y:7},{x:13,y:7},{x:23,y:7}];
+ assert.deepEqual(calculateRacingLineTarget(path,Number.NaN,Number.NaN),{x:3,y:7});
+ assert.deepEqual(calculateRacingLineTarget([],0,10),{x:0,y:0});
+});
