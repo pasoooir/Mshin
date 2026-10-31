@@ -1,12 +1,12 @@
 // Recorded CC0 RPM layers use equal-power crossfades; vehicle-specific profiles give each class a distinct character.
 export function createGameAudio(){
- let context=null,master=null,filter=null,compressor=null,engineGains=[],engineSources=[],engineBuffers=[],evOscillators=[],evGain=null,previewSource=null,previewGain=null;
- let enabled=true,decodePromise=null,smoothedRpm=.18,throttleEnvelope=0,lastUpdate=0,lastGear=-1,shiftAt=-Infinity;
+ let context=null,master=null,musicGain=null,musicSource=null,musicKind="",filter=null,compressor=null,engineGains=[],engineSources=[],engineBuffers=[],evOscillators=[],evGain=null,previewSource=null,previewGain=null;
+ let enabled=true,musicEnabled=true,sfxVolume=.8,musicVolume=.45,decodePromise=null,smoothedRpm=.18,throttleEnvelope=0,lastUpdate=0,lastGear=-1,shiftAt=-Infinity;
  const oneShots=new Map();
  const profiles={rally:{pitch:1.06,filterBase:920,filterRange:5050,volume:1.02,roughness:1.12},comet:{pitch:1.16,filterBase:1280,filterRange:5700,volume:.94,roughness:.72},lynx:{pitch:.88,filterBase:690,filterRange:3850,volume:1.08,roughness:.82},raptor:{pitch:.96,filterBase:820,filterRange:4300,volume:1.1,roughness:1.02},thunder:{electric:true,pitch:1.04,filterBase:2100,filterRange:4700,volume:.88,roughness:0}};
  const ensure=()=>{
   if(!enabled)return false;const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return false;
-  if(!context){context=new Audio();master=context.createGain();master.gain.value=.72;filter=context.createBiquadFilter();filter.type="lowpass";filter.frequency.value=1700;filter.Q.value=.72;compressor=context.createDynamicsCompressor();compressor.threshold.value=-20;compressor.knee.value=18;compressor.ratio.value=3;compressor.attack.value=.012;compressor.release.value=.18;master.connect(filter);filter.connect(compressor);compressor.connect(context.destination);engineGains=Array.from({length:6},()=>{const g=context.createGain();g.gain.value=0;g.connect(master);return g});evGain=context.createGain();evGain.gain.value=0;evGain.connect(master);const low=context.createOscillator(),harmonic=context.createOscillator();low.type="sine";harmonic.type="triangle";low.frequency.value=42;harmonic.frequency.value=86;const lowGain=context.createGain(),harmonicGain=context.createGain();lowGain.gain.value=.15;harmonicGain.gain.value=.035;low.connect(lowGain);harmonic.connect(harmonicGain);lowGain.connect(evGain);harmonicGain.connect(evGain);low.start();harmonic.start();evOscillators=[low,harmonic]}
+  if(!context){context=new Audio();master=context.createGain();master.gain.value=sfxVolume;filter=context.createBiquadFilter();filter.type="lowpass";filter.frequency.value=1700;filter.Q.value=.72;compressor=context.createDynamicsCompressor();compressor.threshold.value=-20;compressor.knee.value=18;compressor.ratio.value=3;compressor.attack.value=.012;compressor.release.value=.18;master.connect(filter);filter.connect(compressor);compressor.connect(context.destination);musicGain=context.createGain();musicGain.gain.value=musicVolume;musicGain.connect(compressor);engineGains=Array.from({length:6},()=>{const g=context.createGain();g.gain.value=0;g.connect(master);return g});evGain=context.createGain();evGain.gain.value=0;evGain.connect(master);const low=context.createOscillator(),harmonic=context.createOscillator();low.type="sine";harmonic.type="triangle";low.frequency.value=42;harmonic.frequency.value=86;const lowGain=context.createGain(),harmonicGain=context.createGain();lowGain.gain.value=.15;harmonicGain.gain.value=.035;low.connect(lowGain);harmonic.connect(harmonicGain);lowGain.connect(evGain);harmonicGain.connect(evGain);low.start();harmonic.start();evOscillators=[low,harmonic]}
   if(context.state==="suspended")context.resume().catch(()=>{});return true;
  };
  const decode=async id=>{const data=window.MshinAssets?.audioData?.[id];if(!data||!context)return null;try{return await context.decodeAudioData(data.slice(0))}catch{return null}};
@@ -34,6 +34,14 @@ export function createGameAudio(){
    filter.frequency.setTargetAtTime(profile.filterBase+smoothedRpm*profile.filterRange+throttleEnvelope*650,now,.08);if(brake&&velocity>95&&Math.random()<dt*.22)oneShot("brakeSqueal",.055,.98);
   },
   collision(intensity=1){const n=Math.max(0,Math.min(1.5,intensity));oneShot("brakeSqueal",.12+n*.18,.92+n*.12)},finish(){oneShot("gearDown",.24,.92)},
-  toggle(){enabled=!enabled;if(master&&context)master.gain.setTargetAtTime(enabled?.72:0,context.currentTime,.05);if(enabled)this.unlock();return enabled},get enabled(){return enabled}
+  playMusic(kind="menu"){
+   if(!ensure()||!musicEnabled)return false;const id=kind==="race"?"musicRace":"musicMenu",data=window.MshinAssets?.audioData?.[id];if(!data)return false;
+   decode(id).then(buffer=>{if(!buffer||!context||!musicEnabled)return;if(musicSource&&musicKind===kind)return;const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;source.loop=true;gain.gain.value=0;source.connect(gain);gain.connect(musicGain);source.start();gain.gain.setTargetAtTime(musicVolume,context.currentTime,.8);if(musicSource){const old=musicSource;old.gain.gain.setTargetAtTime(0,context.currentTime,.65);setTimeout(()=>{try{old.source.stop()}catch{}old.gain.disconnect()},2200)}musicSource={source,gain};musicKind=kind}).catch(()=>{});return true;
+  },
+  setMusicEnabled(value){musicEnabled=Boolean(value);if(musicGain&&context)musicGain.gain.setTargetAtTime(musicEnabled?musicVolume:0,context.currentTime,.06);if(musicEnabled&&musicKind)this.playMusic(musicKind);return musicEnabled},
+  setSfxEnabled(value){enabled=Boolean(value);if(master&&context)master.gain.setTargetAtTime(enabled?sfxVolume:0,context.currentTime,.06);if(enabled)this.unlock();return enabled},
+  setMusicVolume(value){musicVolume=Math.max(0,Math.min(1,Number(value)||0));if(musicGain&&context)musicGain.gain.setTargetAtTime(musicEnabled?musicVolume:0,context.currentTime,.05);return musicVolume},
+  setSfxVolume(value){sfxVolume=Math.max(0,Math.min(1,Number(value)||0));if(master&&context)master.gain.setTargetAtTime(enabled?sfxVolume:0,context.currentTime,.05);return sfxVolume},
+  toggle(){return this.setSfxEnabled(!enabled)},get enabled(){return enabled},get musicEnabled(){return musicEnabled},get musicVolume(){return musicVolume},get sfxVolume(){return sfxVolume}
  };
 }
