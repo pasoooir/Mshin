@@ -189,9 +189,11 @@ try {
   assert.match(await economy.locator("#weatherInfo").textContent(), /صاف/, "Green Valley should use clear weather");
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
   assert.match(await economy.locator("#weatherInfo").textContent(), /شن/, "Desert Storm should select sand weather");
+  await economy.locator("#tab-cars").click();
   await economy.getByRole("button", { name: /تندر برقی/ }).click();
   assert.equal(await economy.getByRole("button", { name: /تندر برقی/ }).getAttribute("class").then(v => v.includes("locked")), false, "purchased car should unlock");
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "newly unlocked car should be selected immediately");
+  await economy.locator("#tab-workshop").click();
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "engine upgrade should advance its level");
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
@@ -199,8 +201,11 @@ try {
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
   await economy.reload({ waitUntil: "networkidle" });
   await economy.locator("#play").click();
+  await economy.locator("#tab-cars").click();
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "unlocked selected car should persist after reload");
+  await economy.locator("#tab-workshop").click();
   assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "car upgrades should persist after reload");
+  await economy.locator("#tab-race").click();
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
@@ -210,6 +215,7 @@ try {
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
+  await economy.locator("#tab-awards").click();
   assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge");
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
