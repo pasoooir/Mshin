@@ -70,6 +70,9 @@ try {
   await page.mouse.up();
   await page.waitForFunction(() => (window.Mshin3DGarage?.dragMoves || 0) > 0, undefined, { timeout: 3000 });
   assert.notEqual(await page.evaluate(() => window.Mshin3DGarage.angle), 0, "dragging the 3D showroom must rotate the actual WebGL vehicle");
+  await page.locator(".carChoice").nth(1).click();
+  await page.waitForFunction(() => window.Mshin3DGarage?.color === "#39a9ff", undefined, { timeout: 3000 });
+  assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "selecting a vehicle must update the actual 3D garage model and preview image");
   assert.equal(await page.locator("#showroomSound").isVisible(), true, "showroom should expose an engine preview control");
   assert.equal(await page.locator("#tabPanel-cars").isVisible(), true, "car tab should be visible after selection");
   await page.locator("#tab-workshop").click();
