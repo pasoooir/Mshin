@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v32";
+const CACHE_NAME = "mshin-arcade-v33";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
   "./src/web-game.js", "./src/aerial-environment.js", "./src/tire-physics.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
@@ -13,7 +13,30 @@ const APP_SHELL = [
   "./assets/vector/world-09.svg",
   "./assets/vector/world-10.svg",
   "./assets/vector/car-rally.svg", "./assets/vector/car-comet.svg", "./assets/vector/car-lynx.svg",
-  "./assets/vector/car-thunder.svg", "./assets/vector/car-raptor.svg"
+  "./assets/vector/car-thunder.svg", "./assets/vector/car-raptor.svg",
+  "./cdn/assets/scenes/scene-01.jpg",
+  "./cdn/assets/scenes/scene-02.jpg",
+  "./cdn/assets/scenes/scene-03.jpg",
+  "./cdn/assets/scenes/scene-04.jpg",
+  "./cdn/assets/scenes/scene-05.jpg",
+  "./cdn/assets/scenes/scene-06.jpg",
+  "./cdn/assets/scenes/scene-07.jpg",
+  "./cdn/assets/scenes/scene-08.jpg",
+  "./cdn/assets/scenes/scene-09.jpg",
+  "./cdn/assets/scenes/scene-10.jpg",
+  "./cdn/assets/icons/accelerate.svg",
+  "./cdn/assets/icons/brake.svg",
+  "./cdn/assets/icons/nitro.svg",
+  "./cdn/assets/audio/engine0.wav",
+  "./cdn/assets/audio/engine1.wav",
+  "./cdn/assets/audio/engine2.wav",
+  "./cdn/assets/audio/engine3.wav",
+  "./cdn/assets/audio/engine4.wav",
+  "./cdn/assets/audio/engine5.wav",
+  "./cdn/assets/audio/brakeSqueal.mp3",
+  "./cdn/assets/audio/gearDown.mp3",
+  "./cdn/assets/audio/musicMenu.ogg",
+  "./cdn/assets/audio/musicRace.ogg"
 ];
 
 self.addEventListener("install", event => {
@@ -28,17 +51,7 @@ self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
   const requestUrl = new URL(request.url);
-  if (requestUrl.origin !== self.location.origin) {
-    if (!["opengameart.org", "sfxmint.com", "cdn.jsdelivr.net"].includes(requestUrl.hostname)) return;
-    event.respondWith(caches.open("mshin-audio-assets-v1").then(async cache => {
-      const cached = await cache.match(request);
-      if (cached) return cached;
-      const response = await fetch(request);
-      if (response.ok && response.type === "cors") await cache.put(request, response.clone());
-      return response;
-    }));
-    return;
-  }
+  if (requestUrl.origin !== self.location.origin) return;
   event.respondWith(caches.match(request, { ignoreSearch: true }).then(cached => {
     if (cached) return cached;
     return fetch(request).then(response => {

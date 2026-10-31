@@ -1,85 +1,75 @@
 {
-  "version": "2026.10.31.16",
+  "version": "2026.10.31.17",
   "worlds": [
     {
       "id": 1,
       "name": "دره سبز",
       "src": "./assets/vector/world-01.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-01.svg"
+      "group": "world"
     },
     {
       "id": 2,
       "name": "توفان کویر",
       "src": "./assets/vector/world-02.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-02.svg"
+      "group": "world"
     },
     {
       "id": 3,
       "name": "سرزمین یخ",
       "src": "./assets/vector/world-03.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-03.svg"
+      "group": "world"
     },
     {
       "id": 4,
       "name": "جزیره استوایی",
       "src": "./assets/vector/world-04.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-04.svg"
+      "group": "world"
     },
     {
       "id": 5,
       "name": "شهر نئونی",
       "src": "./assets/vector/world-05.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-05.svg"
+      "group": "world"
     },
     {
       "id": 6,
       "name": "منطقه صنعتی",
       "src": "./assets/vector/world-06.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-06.svg"
+      "group": "world"
     },
     {
       "id": 7,
       "name": "یورش کوهستان",
       "src": "./assets/vector/world-07.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-07.svg"
+      "group": "world"
     },
     {
       "id": 8,
       "name": "دنیای باستان",
       "src": "./assets/vector/world-08.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-08.svg"
+      "group": "world"
     },
     {
       "id": 9,
       "name": "مسابقه فضایی",
       "src": "./assets/vector/world-09.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-09.svg"
+      "group": "world"
     },
     {
       "id": 10,
       "name": "قهرمانی نهایی",
       "src": "./assets/vector/world-10.svg",
       "type": "image/svg+xml",
-      "group": "world",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/world-10.svg"
+      "group": "world"
     }
   ],
   "cars": [
@@ -88,233 +78,251 @@
       "name": "روباه رالی",
       "src": "./assets/vector/car-rally.svg",
       "type": "image/svg+xml",
-      "group": "vehicle",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-rally.svg"
+      "group": "vehicle"
     },
     {
       "id": "comet",
       "name": "دنباله‌دار GT",
       "src": "./assets/vector/car-comet.svg",
       "type": "image/svg+xml",
-      "group": "vehicle",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-comet.svg"
+      "group": "vehicle"
     },
     {
       "id": "lynx",
       "name": "سیاهگوش ۴×۴",
       "src": "./assets/vector/car-lynx.svg",
       "type": "image/svg+xml",
-      "group": "vehicle",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-lynx.svg"
+      "group": "vehicle"
     },
     {
       "id": "thunder",
       "name": "تندر برقی",
       "src": "./assets/vector/car-thunder.svg",
       "type": "image/svg+xml",
-      "group": "vehicle",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-thunder.svg"
+      "group": "vehicle"
     },
     {
       "id": "raptor",
       "name": "رپتور کویر",
       "src": "./assets/vector/car-raptor.svg",
       "type": "image/svg+xml",
-      "group": "vehicle",
-      "cdn": "https://cdn.jsdelivr.net/gh/pasoooir/Mshin@0ba3ea9a021dbbb5d4fa1a0660b8dfa177ba5b4f/assets/vector/car-raptor.svg"
+      "group": "vehicle"
     }
   ],
   "scenes": [
     {
       "id": "scene-01",
       "name": "World 1 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 0
+      "world": 0,
+      "src": "./cdn/assets/scenes/scene-01.jpg",
+      "bytes": 523560
     },
     {
       "id": "scene-02",
       "name": "World 2 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 1
+      "world": 1,
+      "src": "./cdn/assets/scenes/scene-02.jpg",
+      "bytes": 309355
     },
     {
       "id": "scene-03",
       "name": "World 3 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 2
+      "world": 2,
+      "src": "./cdn/assets/scenes/scene-03.jpg",
+      "bytes": 252830
     },
     {
       "id": "scene-04",
       "name": "World 4 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 3
+      "world": 3,
+      "src": "./cdn/assets/scenes/scene-04.jpg",
+      "bytes": 289183
     },
     {
       "id": "scene-05",
       "name": "World 5 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 4
+      "world": 4,
+      "src": "./cdn/assets/scenes/scene-05.jpg",
+      "bytes": 545164
     },
     {
       "id": "scene-06",
       "name": "World 6 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 5
+      "world": 5,
+      "src": "./cdn/assets/scenes/scene-06.jpg",
+      "bytes": 418560
     },
     {
       "id": "scene-07",
       "name": "World 7 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 6
+      "world": 6,
+      "src": "./cdn/assets/scenes/scene-07.jpg",
+      "bytes": 417895
     },
     {
       "id": "scene-08",
       "name": "World 8 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 7
+      "world": 7,
+      "src": "./cdn/assets/scenes/scene-08.jpg",
+      "bytes": 694777
     },
     {
       "id": "scene-09",
       "name": "World 9 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 8
+      "world": 8,
+      "src": "./cdn/assets/scenes/scene-09.jpg",
+      "bytes": 313901
     },
     {
       "id": "scene-10",
       "name": "World 10 photographic environment",
-      "cdn": "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1600&q=76",
       "type": "image/jpeg",
       "group": "scene",
-      "world": 9
+      "world": 9,
+      "src": "./cdn/assets/scenes/scene-10.jpg",
+      "bytes": 225014
     }
   ],
   "icons": [
     {
       "id": "accelerate",
       "name": "Accelerator icon",
-      "src": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/arrow-up.svg",
+      "src": "./cdn/assets/icons/accelerate.svg",
       "type": "image/svg+xml",
-      "group": "icon"
+      "group": "icon",
+      "bytes": 511
     },
     {
       "id": "brake",
       "name": "Brake icon",
-      "src": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/hand.svg",
+      "src": "./cdn/assets/icons/brake.svg",
       "type": "image/svg+xml",
-      "group": "icon"
+      "group": "icon",
+      "bytes": 733
     },
     {
       "id": "nitro",
       "name": "Nitro icon",
-      "src": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/bolt.svg",
+      "src": "./cdn/assets/icons/nitro.svg",
       "type": "image/svg+xml",
-      "group": "icon"
+      "group": "icon",
+      "bytes": 537
     }
   ],
   "sounds": [
     {
       "id": "engine0",
       "name": "Recorded CC0 car engine RPM layer 1",
-      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_0.wav",
+      "src": "./cdn/assets/audio/engine0.wav",
       "type": "audio/wav",
       "group": "audio",
       "license": "CC0",
-      "source": "OpenGameArt racing car engine sound loops"
+      "source": "OpenGameArt racing car engine sound loops",
+      "bytes": 76332
     },
     {
       "id": "engine1",
       "name": "Recorded CC0 car engine RPM layer 2",
-      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_1_0.wav",
+      "src": "./cdn/assets/audio/engine1.wav",
       "type": "audio/wav",
       "group": "audio",
       "license": "CC0",
-      "source": "OpenGameArt racing car engine sound loops"
+      "source": "OpenGameArt racing car engine sound loops",
+      "bytes": 58920
     },
     {
       "id": "engine2",
       "name": "Recorded CC0 car engine RPM layer 3",
-      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_2_0.wav",
+      "src": "./cdn/assets/audio/engine2.wav",
       "type": "audio/wav",
       "group": "audio",
       "license": "CC0",
-      "source": "OpenGameArt racing car engine sound loops"
+      "source": "OpenGameArt racing car engine sound loops",
+      "bytes": 60322
     },
     {
       "id": "engine3",
       "name": "Recorded CC0 car engine RPM layer 4",
-      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_3_0.wav",
+      "src": "./cdn/assets/audio/engine3.wav",
       "type": "audio/wav",
       "group": "audio",
       "license": "CC0",
-      "source": "OpenGameArt racing car engine sound loops"
+      "source": "OpenGameArt racing car engine sound loops",
+      "bytes": 54454
     },
     {
       "id": "engine4",
       "name": "Recorded CC0 car engine RPM layer 5",
-      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_4_0.wav",
+      "src": "./cdn/assets/audio/engine4.wav",
       "type": "audio/wav",
       "group": "audio",
       "license": "CC0",
-      "source": "OpenGameArt racing car engine sound loops"
+      "source": "OpenGameArt racing car engine sound loops",
+      "bytes": 55760
     },
     {
       "id": "engine5",
       "name": "Recorded CC0 car engine RPM layer 6",
-      "src": "https://cdn.jsdelivr.net/gh/yashimosh/border-run@38d6afa442a06bbd414f21ac05c0f1b4d08bd705/public/sfx/engine/loop_5_0.wav",
+      "src": "./cdn/assets/audio/engine5.wav",
       "type": "audio/wav",
       "group": "audio",
       "license": "CC0",
-      "source": "OpenGameArt racing car engine sound loops"
+      "source": "OpenGameArt racing car engine sound loops",
+      "bytes": 55648
     },
     {
       "id": "brakeSqueal",
       "name": "Race car braking and tire squeal",
-      "src": "https://sfxmint.com/dl/race-car-07.mp3",
+      "src": "./cdn/assets/audio/brakeSqueal.mp3",
       "type": "audio/mpeg",
-      "group": "audio"
+      "group": "audio",
+      "bytes": 43510
     },
     {
       "id": "gearDown",
       "name": "Race car downshift",
-      "src": "https://sfxmint.com/dl/race-car-10.mp3",
+      "src": "./cdn/assets/audio/gearDown.mp3",
       "type": "audio/mpeg",
-      "group": "audio"
+      "group": "audio",
+      "bytes": 36405
     },
     {
       "id": "musicMenu",
       "name": "Darkness Road Remake — MintoDog (CC0)",
-      "src": "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/darkness_road_remake_bpm165.ogg",
+      "src": "./cdn/assets/audio/musicMenu.ogg",
       "type": "audio/ogg",
       "group": "audio",
       "license": "CC0-1.0",
-      "source": "https://opengameart.org/content/darkness-roadremake"
+      "source": "https://opengameart.org/content/darkness-roadremake",
+      "bytes": 4347271
     },
     {
       "id": "musicRace",
       "name": "Pure Raceway — MintoDog (CC0)",
-      "src": "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/pure_raceway_bpm160.ogg",
+      "src": "./cdn/assets/audio/musicRace.ogg",
       "type": "audio/ogg",
       "group": "audio",
       "license": "CC0-1.0",
-      "source": "https://opengameart.org/content/pure-raceway"
+      "source": "https://opengameart.org/content/pure-raceway",
+      "bytes": 2928796
     }
   ]
 }
