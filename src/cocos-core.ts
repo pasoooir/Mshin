@@ -74,6 +74,7 @@ export function updateRace(state: RaceState, x: number, y: number, dt: number, t
 
 
 /** Oriented 2D rigid body used by the Cocos scene adapter. Coordinates are world units. */
+export interface RigidVector2 {x:number;y:number;}
 export interface RigidBody2D {
  x:number;y:number;vx:number;vy:number;angle:number;angularVelocity:number;
  mass:number;length:number;width:number;inertia:number;invMass:number;invInertia:number;
@@ -86,16 +87,16 @@ export function createRigidBody2D(options:{x:number;y:number;vx?:number;vy?:numb
  return {x:options.x,y:options.y,vx:options.vx??0,vy:options.vy??0,angle:options.angle??0,angularVelocity:options.angularVelocity??0,mass,length,width,inertia,
   invMass:isStatic?0:1/mass,invInertia:isStatic?0:1/inertia,restitution:clamp(options.restitution??.12,0,.8),friction:clamp(options.friction??.34,0,1)};
 }
-function rigidAxes(b:RigidBody2D):[Point,Point] {const c=Math.cos(b.angle),s=Math.sin(b.angle);return [{x:c,y:s},{x:-s,y:c}];}
-function rigidRadius(b:RigidBody2D,axis:Point,basis:[Point,Point]):number {
+function rigidAxes(b:RigidBody2D):[RigidVector2,RigidVector2] {const c=Math.cos(b.angle),s=Math.sin(b.angle);return [{x:c,y:s},{x:-s,y:c}];}
+function rigidRadius(b:RigidBody2D,axis:RigidVector2,basis:[RigidVector2,RigidVector2]):number {
  return Math.abs(axis.x*basis[0].x+axis.y*basis[0].y)*b.length/2+Math.abs(axis.x*basis[1].x+axis.y*basis[1].y)*b.width/2;
 }
-function rigidSupport(b:RigidBody2D,dx:number,dy:number):Point {
+function rigidSupport(b:RigidBody2D,dx:number,dy:number):RigidVector2 {
  const axes=rigidAxes(b),d0=dx*axes[0].x+dy*axes[0].y,d1=dx*axes[1].x+dy*axes[1].y,s0=Math.abs(d0)<1e-8?0:Math.sign(d0),s1=Math.abs(d1)<1e-8?0:Math.sign(d1);
  return {x:b.x+s0*axes[0].x*b.length/2+s1*axes[1].x*b.width/2,y:b.y+s0*axes[0].y*b.length/2+s1*axes[1].y*b.width/2};
 }
 function rigidCross(ax:number,ay:number,bx:number,by:number):number{return ax*by-ay*bx;}
-function rigidVelocityAt(b:RigidBody2D,rx:number,ry:number):Point{return {x:b.vx-b.angularVelocity*ry,y:b.vy+b.angularVelocity*rx};}
+function rigidVelocityAt(b:RigidBody2D,rx:number,ry:number):RigidVector2{return {x:b.vx-b.angularVelocity*ry,y:b.vy+b.angularVelocity*rx};}
 export function resolveRigidBody2D(a:RigidBody2D,b:RigidBody2D,positionPercent=.82):RigidImpactResult {
  const aa=rigidAxes(a),bb=rigidAxes(b),dx=b.x-a.x,dy=b.y-a.y;let overlap=Infinity,nx=0,ny=0;
  for(const axis of [...aa,...bb]){const distance=Math.abs(dx*axis.x+dy*axis.y),depth=rigidRadius(a,axis,aa)+rigidRadius(b,axis,bb)-distance;
