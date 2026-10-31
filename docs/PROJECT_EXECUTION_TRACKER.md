@@ -2,23 +2,22 @@
 
 Last evidence refresh: 2026-10-31
 
-## Latest release candidate — 0.9.2
+## Release candidate 0.9.3 — repository-local runtime assets
 
-- **Status:** 🟡 در حال اجرا؛ PR #51 تغییر refresh نورپردازی را آماده کرده و تا پایان CI و deployment نباید سبز اعلام شود.
-- **Release scope:** نور خورشید و سایه‌های وابسته به دنیا/آب‌وهوا اکنون در طول مسابقه نیز تغییر می‌کنند؛ cache صحنه ثابت هر ۸ ثانیه بازسازی می‌شود تا جهت نور و سایه‌ها آرام به‌روز شوند، بدون محاسبه مجدد در هر فریم.
-- **Regression coverage:** تست Node وجود بازسازی دوره‌ای cache را بررسی می‌کند؛ تست‌های موجود هندسه نور، آب‌وهوا، تمام ده دنیا و Playwright دسکتاپ/موبایل را پوشش می‌دهند.
-- **Release metadata:** package و PWA manifest برابر `0.9.2`؛ asset marker برابر `2026.10.31.16`؛ Service Worker cache برابر `mshin-arcade-v32`.
-- **PR #51:** fix for timed aerial-lighting refresh — در حال اعتبارسنجی.
-- **Base release:** PR #50 / نسخه 0.9.1؛ merge commit `9d487926f1ece5e3efc3e3822c7d88703f3e15f7`.
-- **Live game:** https://pasoooir.github.io/Mshin/
-- **Acceptance gate:** تست Node و Playwright دسکتاپ/موبایل، سپس merged-main validation و GitHub Pages deployment.
+- **Status:** 🟡 در حال اجرا؛ همه ۲۳ فایل runtime از منابع بیرونی دریافت و در مخزن ذخیره شده‌اند؛ هنوز تست‌های کامل، merge و Pages deployment لازم است.
+- **Asset inventory:** ۱۰ تصویر محیط، ۳ آیکون کنترل و ۱۰ فایل صوتی در `cdn/assets/{scenes,icons,audio}/`.
+- **Runtime policy:** مسیرهای `src` در manifest همگی relative/local هستند؛ CDN fallback از Service Worker حذف شده و فایل‌ها در app shell با cache `mshin-arcade-v33` precache می‌شوند.
+- **Version markers:** package/PWA برابر `0.9.3`؛ asset marker برابر `2026.10.31.17`؛ Cocos vector catalog نیز `2026.10.31.17`.
+- **Provenance:** `docs/VENDORED_ASSETS.md` باید URL اصلی و وضعیت مجوز هر فایل را ثبت کند؛ پیش از انتشار عمومی، مجوزهای upstream باید بازبینی شوند.
+- **Acceptance gate:** Node tests، data/syntax checks، Playwright desktop/mobile، بررسی عدم درخواست خارجی در runtime، merged-main validation و GitHub Pages deployment.
 
+## Previous verified release — 0.9.2
 
-## Previous verified release — 0.9.0
-
-- PR #47، commit `aad2e4a7e3faffb864b6b102e4f6a45fb1d5739f`؛ PR browser validation run `41203599574`، merged-main validation `41203799355` و Pages deployment `41203798835` موفق بودند. PR #46 محیط 2.5D حجمی را به main افزود.
+- PR #51 merged as `e2b3af25b645e4c05ce73dd62d50d2bfe3bf1a42`; eight-second scenery-cache refresh for evolving aerial lighting.
+- Live game: https://pasoooir.github.io/Mshin/
 
 ## Repository and delivery state
+
 
 - Default branch `main` includes merge commit `8bd105a4ac33fa2606a23715aba4a68db98ccc30` (PR #9), following PR #8 merge commit `7722d011720a2dfa709d8966dcc56d6ee60ab636`.
 - PR #1 (Cocos/game foundation), PR #2 (50-stage browser edition), PR #3 (Playwright browser QA), PR #4 (browser race audio and mute control), PR #5 (visible car animation and particles), PR #6 (garage, nitro and offline PWA), PR #7 (AI rivals, live position, minimap and mobile HUD refinement), PR #8 (coin economy, car unlocks, workshop upgrades and weather), and PR #9 (race achievements and milestone rewards) are merged.
