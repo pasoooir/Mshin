@@ -134,7 +134,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه منتشرشده ۰.۸.۵/);
+  assert.match(html, /نسخه ۰.۸.۶/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
   assert.match(html, /splashCarFront/);
@@ -158,12 +158,12 @@ test("all app cache and asset version markers are advanced together", async () =
   const readme = await readFile(path.join(root, "README.md"), "utf8");
   assert.match(sw, /mshin-arcade-v25/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.10");
-  assert.equal(pkg.version, "0.8.5");
-  assert.equal(pwa.version, "0.8.5");
-  assert.equal(cocos.version, "2026.10.31.10");
+  assert.equal(manifest.version, "2026.10.31.11");
+  assert.equal(pkg.version, "0.8.6");
+  assert.equal(pwa.version, "0.8.6");
+  assert.equal(cocos.version, "2026.10.31.11");
   assert.match(readme, /release candidate; publication follows the CI and Pages deployment gates/);
-  assert.ok(readme.includes("## Latest published build") && readme.includes("Published version 0.8.4"), "README must distinguish the latest published version from the 0.8.5 candidate");
+  assert.ok(readme.includes("## Latest published build") && readme.includes("Published version 0.8.5"), "README must distinguish the latest published version from the 0.8.6 candidate");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
