@@ -80,6 +80,8 @@ try {
   assert.ok(firstWorldBounds && firstWorldBounds.width > 100 && firstWorldBounds.height > 100 && worldRailBounds && firstWorldBounds.x < worldRailBounds.x + worldRailBounds.width && firstWorldBounds.x + firstWorldBounds.width > worldRailBounds.x && firstWorldBounds.y < worldRailBounds.y + worldRailBounds.height && firstWorldBounds.y + firstWorldBounds.height > worldRailBounds.y && firstWorldStyle.display!=="none" && firstWorldStyle.visibility==="visible" && Number(firstWorldStyle.opacity)>0, "first world card must be visible inside the world rail: " + JSON.stringify({firstWorldBounds,worldRailBounds,firstWorldStyle}));
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
+  assert.equal(await page.locator("#select").evaluate(el => el.classList.contains("showing-garage")), true, "garage tab must switch off the main menu background scene");
+  assert.equal(await page.locator("#mainMenu3dCanvas").isVisible(), false, "main menu WebGL canvas must not cover the garage showroom");
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
   assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-rally.svg", "showroom should display the selected starter car");
