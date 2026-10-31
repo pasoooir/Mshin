@@ -129,7 +129,7 @@
 .showroomStage{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(190px,1fr) minmax(190px,.82fr);align-items:center;gap:16px;min-height:clamp(170px,25vh,230px);padding:12px 18px;border:1px solid #9de9ff35;border-radius:18px;overflow:hidden;background:radial-gradient(ellipse at 30% 48%,#386b8b88,#142c45 52%,#081626 100%);box-shadow:inset 0 1px #fff3,0 14px 28px #0005}
 .showroomSpotlight{position:absolute;z-index:-1;left:14%;top:-80%;width:42%;height:220%;background:linear-gradient(90deg,transparent,#a5edff18,transparent);transform:rotate(24deg);filter:blur(8px);animation:showroomLight 7s ease-in-out infinite alternate}
 .showroomFloor{position:absolute;z-index:-1;left:4%;bottom:12%;width:54%;height:22%;border-radius:50%;background:radial-gradient(ellipse,#6beaff55 0%,#4b9dc033 38%,transparent 72%);filter:blur(12px)}
-.showroomVehicle{position:relative;display:grid;place-items:center;min-width:0;height:clamp(145px,22vh,205px);perspective:850px;touch-action:pan-y;cursor:grab;user-select:none}
+.showroomVehicle{position:relative;display:grid;place-items:center;min-width:0;height:clamp(145px,22vh,205px);perspective:850px;touch-action:none;cursor:grab;user-select:none}
 .showroomVehicle:active{cursor:grabbing}
 .showroomVehicle img{width:min(100%,290px);height:100%;object-fit:contain;filter:drop-shadow(0 20px 12px #000b) drop-shadow(0 0 20px #64dfff55);transform:translateZ(22px) rotateY(var(--showroom-angle,0deg));transform-style:preserve-3d;transition:filter .35s;will-change:transform}
 .showroomVehicle.is-spinning img{animation:showroomSpin 1.35s cubic-bezier(.2,.75,.2,1) both}
