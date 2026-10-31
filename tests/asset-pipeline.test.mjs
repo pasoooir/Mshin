@@ -181,6 +181,6 @@ test("race intro, progressive traffic classes and impact coin rewards are wired 
   for (const kind of ['types.push("pickup")','types.push("formula")','types.push("truck")','types.push("bus","motorcycle")']) assert.ok(game.includes(kind), kind + " must be introduced in later stages");
   assert.ok(game.includes("function drawTrafficBody(r)"));
   assert.ok(game.includes("function awardImpactReward(hit,forwardDot)"));
-  assert.ok(game.includes("progress.credits+=reward;saveProgress()"));
+  assert.ok(game.includes("progress.credits+=reward;saveProgress()")); assert.ok(game.includes("race.impactPoints"));
   assert.ok(game.includes("ضربه قدرتمند"));
 });
