@@ -300,17 +300,17 @@
     },
     {
       "id": "musicMenu",
-      "name": "Racing Game Menu — MintoDog (CC0)",
-      "src": "https://opengameart.org/sites/default/files/racing_game_menu_bpm165.ogg",
+      "name": "Darkness Road Remake — MintoDog (CC0)",
+      "src": "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/darkness_road_remake_bpm165.ogg",
       "type": "audio/ogg",
       "group": "audio",
       "license": "CC0-1.0",
-      "source": "https://opengameart.org/content/racing-game-menu"
+      "source": "https://opengameart.org/content/darkness-roadremake"
     },
     {
       "id": "musicRace",
       "name": "Pure Raceway — MintoDog (CC0)",
-      "src": "https://opengameart.org/sites/default/files/pure_raceway_bpm160.ogg",
+      "src": "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/pure_raceway_bpm160.ogg",
       "type": "audio/ogg",
       "group": "audio",
       "license": "CC0-1.0",
