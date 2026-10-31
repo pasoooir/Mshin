@@ -9,7 +9,7 @@ async function waitForGameBoot(page, label = "game") {
     const stage = window.MshinBootStage;
     const ready = window.MshinBootReady === true || stage === "ready";
     return ready && window.MshinAssets?.ready === true && Boolean(document.querySelector("#home"));
-  }, undefined, { timeout: 45000 }).catch(async error => {
+  }, undefined, { timeout: 120000 }).catch(async error => {
     const state = await page.evaluate(() => ({
       stage: window.MshinBootStage,
       bootReady: window.MshinBootReady === true,
@@ -37,12 +37,16 @@ async function waitForGameBoot(page, label = "game") {
   return state;
 }
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
-  await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  page.setDefaultTimeout(20000);
+  page.setDefaultNavigationTimeout(60000);
+  page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
+  page.on("requestfailed", request => errors.push("requestfailed: " + request.url() + " — " + (request.failure()?.errorText || "unknown")));
+  await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(page, "initial desktop boot");
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
@@ -250,7 +254,10 @@ try {
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
-  await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  mobile.setDefaultTimeout(20000);
+  mobile.setDefaultNavigationTimeout(60000);
+  await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
+  await waitForGameBoot(mobile, "mobile initial boot");
   const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
   assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
@@ -307,7 +314,10 @@ try {
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   economy.on("pageerror", error => errors.push(error.message));
-  await economy.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  economy.setDefaultTimeout(20000);
+  economy.setDefaultNavigationTimeout(60000);
+  await economy.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
+  await waitForGameBoot(economy, "economy initial boot");
   await economy.locator("#play").click();
   assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
   assert.equal((await economy.locator("#credits").textContent()).trim(), "1000 🪙", "wallet should load saved coins");
