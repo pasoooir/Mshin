@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const game = await readFile(new URL("../src/web-game.js", import.meta.url), "utf8");
 const manifest = JSON.parse(await readFile(new URL("../manifest.webmanifest", import.meta.url), "utf8"));
+const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const sw = await readFile(new URL("../service-worker.js", import.meta.url), "utf8");
 
 test("portrait devices receive a rotated landscape game surface without a rotate-device gate", () => {
@@ -39,7 +40,7 @@ test("settings and pause actions preserve game state semantics", () => {
 });
 
 test("PWA and offline cache markers advance together", () => {
-  assert.equal(manifest.version, "0.10.1");
+  assert.equal(manifest.version, pkg.version, "PWA manifest version must match package.json");
   assert.match(sw, /mshin-arcade-v38/);
 });
 
