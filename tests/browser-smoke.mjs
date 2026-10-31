@@ -201,8 +201,10 @@ try {
   await mobile.locator("#tab-settings").click();
   assert.equal(await mobile.locator("#musicEnabled").isVisible(), true, "mobile settings must show the music toggle");
   assert.equal(await mobile.locator("#sfxEnabled").isVisible(), true, "mobile settings must show the SFX toggle");
-  const mobileAudioBounds = await mobile.evaluate(() => ["musicEnabled","sfxEnabled","musicVolume","sfxVolume"].map(id => { const r=document.getElementById(id).getBoundingClientRect(); return {id,left:r.left,right:r.right,width:r.width,height:r.height}; }));
-  assert.ok(mobileAudioBounds.every(r => r.left >= 0 && r.right <= window.innerWidth && r.width > 0), "mobile audio controls must fit the viewport");
+  const mobileAudioBounds = [];
+  for (const id of ["musicEnabled","sfxEnabled","musicVolume","sfxVolume"]) { const box=await mobile.locator("#"+id).boundingBox(); mobileAudioBounds.push({id,...box}); }
+  const mobileWidth=mobile.viewportSize().width;
+  assert.ok(mobileAudioBounds.every(r => r.x >= 0 && r.x+r.width <= mobileWidth && r.width > 0), "mobile audio controls must fit the viewport");
   assert.ok(mobileAudioBounds.filter(r => r.id.endsWith("Enabled")).every(r => r.height >= 44), "mobile audio toggle targets must be at least 44px high");
   await mobile.screenshot({ path: "artifacts/mshin-audio-settings-mobile.png" });
   await mobile.locator("#tab-cars").click();
