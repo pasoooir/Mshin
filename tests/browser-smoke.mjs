@@ -189,6 +189,11 @@ try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  assert.match(await mobile.locator("body").evaluate(el => getComputedStyle(el, "::before").content), /افقی نگه دارید/, "portrait phones should show a clear landscape instruction");
+  await mobile.locator("#play").click();
+  assert.equal(await mobile.locator("#home").isVisible(), true, "portrait mode must not enter the game before the device is rotated");
+  await mobile.setViewportSize({ width: 844, height: 390 });
+  assert.equal(await mobile.evaluate(() => matchMedia("(orientation: landscape)").matches), true, "mobile gameplay smoke test must run in landscape orientation");
   await mobile.locator("#play").click();
   assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
   await mobile.locator("#tab-cars").click();
