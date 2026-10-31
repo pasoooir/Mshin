@@ -175,7 +175,8 @@ try {
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "race-audio persistence reload");
   await page.locator("#play").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
@@ -323,7 +324,8 @@ try {
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
-  await economy.reload({ waitUntil: "networkidle" });
+  await economy.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(economy, "economy persistence reload");
   await economy.locator("#play").click();
   await economy.locator("#tab-cars").click();
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "unlocked selected car should persist after reload");
@@ -345,8 +347,9 @@ try {
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "service-worker control reload");
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, { timeout: 5000 });
   const audioCacheAudit = await page.evaluate(async () => {
     const manifest = await fetch("./src/asset-manifest.json").then(response => response.json());
     const cache = await caches.open("mshin-audio-assets-v1");
