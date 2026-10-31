@@ -16,6 +16,11 @@ const APP_SHELL = [
   "./assets/vector/car-thunder.svg", "./assets/vector/car-raptor.svg"
 ];
 const REMOTE_AUDIO = [
+  "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/engine-idle.wav",
+  "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/engine-load.wav",
+  "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/road-roll.wav",
+  "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/engine-start.wav",
+  "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/engine-stop.wav",
   "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/sky_blue_street_bpm165.ogg",
   "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/pure_raceway_bpm160.ogg"
 ];
