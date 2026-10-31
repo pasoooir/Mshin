@@ -194,11 +194,11 @@ export class MshinGame extends Component {
  private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),limit=58,raw=Math.max(-1,Math.min(1,p.x/limit)),m=Math.abs(raw),dead=.07,linear=m<=dead?0:(m-dead)/(1-dead);this.knob.setPosition(Math.max(-limit,Math.min(limit,p.x)),0,0);this.vehicle.input.steer=Math.sign(raw)*Math.pow(linear,1.28);}
  private onStickEnd(e:EventTouch):void {if(e.getID()!==this.stickId)return;this.stickId=-1;this.knob.setPosition(0,0,0);this.vehicle.input.steer=0;}
  private pauseRace():void {
-  if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();
+  if(this.screen!=="race")return;this.screen="paused";this.cameraNode.angle=0;this.hudCanvas.angle=0;this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();
   const overlay=this.makeNode("Pause Screen Overlay",this.menuRoot);overlay.getComponent(UITransform)!.setContentSize(1280,720);const shade=overlay.addComponent(Graphics);shade.fillColor=new Color(3,8,14,190);shade.rect(-640,-360,1280,720);shade.fill();this.uiNodes.push(overlay);overlay.setSiblingIndex(0);
   this.addUiLabel("PAUSE", -470, 305, 42);this.addUiLabel("RACE PAUSED",-220,225,15);this.addUiLabel("MSHIN MOTORSPORT  /  EVENT PAUSED",-220,258,14);
   const entries:[string,number,boolean,()=>void][]=[
-   ["CONTINUE",190,true,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;for(const rival of this.rivals)rival.enabled=true;this.createControls();}],
+   ["CONTINUE",190,true,()=>{this.screen="race";this.cameraNode.angle=-this.carNode.angle;this.hudCanvas.angle=this.carNode.angle;this.clearUi();this.vehicle.enabled=true;for(const rival of this.rivals)rival.enabled=true;this.createControls();}],
    ["RETRY",125,true,()=>this.startStage(this.stage.id)],
    ["LEAVE EVENT",60,true,()=>{this.vehicle.enabled=false;this.showHome();}],
    ["DRIVER DETAILS",-5,false,()=>{}],["MAP",-70,false,()=>{}],["MULTIPLAYER",-135,false,()=>{}],["FRIENDS",-200,false,()=>{}],["SETTINGS",-265,false,()=>{}]
@@ -225,7 +225,7 @@ export class MshinGame extends Component {
   const sub=this.makeNode("Wanted Detail",n);sub.getComponent(UITransform)!.setContentSize(300,22);const sl=sub.addComponent(Label);sl.string=detail;sl.fontSize=12;sl.color=hex(player?"#35424D":"#B7C0C8");sl.horizontalAlign=Label.HorizontalAlign.LEFT;sl.verticalAlign=Label.VerticalAlign.CENTER;sub.setPosition(25,-15,0);this.uiNodes.push(n);
  }
  private showFinished():void {
-  this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();this.drawMenuBackdrop("RACE COMPLETE","عملکردت ثبت شد؛ آماده مرحله بعدی باش");
+  this.screen="finished";this.cameraNode.angle=0;this.hudCanvas.angle=0;this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();this.drawMenuBackdrop("RACE COMPLETE","عملکردت ثبت شد؛ آماده مرحله بعدی باش");
   this.addUiLabel("🏆  پایان مسابقه!",0,85,56);this.addUiLabel("زمان  "+this.format(this.vehicle.race.elapsedSeconds),0,15,24);
   this.addButton("مرحله بعد",0,-75,250,70,()=>this.startStage(Math.min(50,this.stage.id+1)));
   this.addButton("منوی اصلی",0,-165,230,58,()=>this.showHome());
