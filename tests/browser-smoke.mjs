@@ -31,7 +31,7 @@ try {
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".worldCard").count(), 10, "all 10 image-led world cards should be selectable; browser errors: " + errors.join(" | "));
-  assert.ok(await page.locator(".worldCard").first().evaluate(el => parseFloat(getComputedStyle(el.querySelector(".worldName") || el).fontSize) >= 15), "world-card labels must not fall below readable Persian text sizing");
+  assert.ok(await page.locator(".worldCard").first().evaluate(el => parseFloat(getComputedStyle(el.querySelector(".worldCaption b") || el).fontSize) >= 15), "world-card labels must not fall below readable Persian text sizing");
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
