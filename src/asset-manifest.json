@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.31.12",
+  "version": "2026.10.31.13",
   "worlds": [
     {
       "id": 1,
@@ -297,6 +297,26 @@
       "src": "https://sfxmint.com/dl/race-car-10.mp3",
       "type": "audio/mpeg",
       "group": "audio"
+    },
+    {
+      "id": "menuMusic",
+      "name": "Sky Blue Street — menu soundtrack",
+      "src": "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/sky_blue_street_bpm165.ogg",
+      "type": "audio/ogg",
+      "group": "audio",
+      "license": "CC0 1.0",
+      "source": "https://opengameart.org/content/sky-blue-street",
+      "required": true
+    },
+    {
+      "id": "raceMusic",
+      "name": "Pure Raceway — race soundtrack",
+      "src": "https://cdn.jsdelivr.net/gh/JerryMerweather/Checkpoint-Chaser@e280012e423cf2c800bd54e4fe361edaa9cae167/pure_raceway_bpm160.ogg",
+      "type": "audio/ogg",
+      "group": "audio",
+      "license": "CC0 1.0",
+      "source": "https://opengameart.org/content/pure-raceway",
+      "required": true
     }
   ]
 }
