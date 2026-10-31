@@ -37,11 +37,15 @@ async function loadVector(asset) {
 }
 
 async function loadAudio(asset) {
-  const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit" }), 12000, asset.src);
-  if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
-  const type = response.headers.get("content-type") || "";
-  if (!type.includes("audio/") && !asset.src.endsWith(".mp3")) throw new Error(`Unexpected audio MIME type: ${type}`);
-  return await response.arrayBuffer();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 9000);
+  try {
+    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 9000, asset.src);
+    if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
+    const type = response.headers.get("content-type") || "";
+    if (!type.includes("audio/") && !asset.src.endsWith(".mp3")) throw new Error(`Unexpected audio MIME type: ${type}`);
+    return await timeout(response.arrayBuffer(), 9000, asset.src);
+  } finally { clearTimeout(timer); }
 }
 
 export async function preloadGameAssets(onProgress = () => {}) {
