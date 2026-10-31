@@ -1,4 +1,5 @@
 import { createGameAudio } from "./audio.js";
+import { drawWorldEnvironment, drawHelicopterShadow } from "./environment-renderer.js";
 import { createDamageState, damageLevel, applyVehicleDamage, resolveVehicleImpact, resolveBarrierImpact, damageSideFromLocalNormal } from "./collision-physics.js";
 import { createRigidVehicle, resolveRigidVehicleImpact, sweptVehicleContact, splitImpactEnergy } from "./rigid-body-physics.js";
 import { resolveTireForces } from "./tire-physics.js";
@@ -101,19 +102,10 @@ function renderStaticTrack(){const w=worlds[stage.world];ctx.fillStyle=w[1];ctx.
  lane(0,"#ffffffdd",5,[34,28]);lane(-90,"#ffffff70",3,[22,30]);lane(90,"#ffffff70",3,[22,30]);
  for(let i=0;i<64;i++){const f=frameAt(i/64*Math.PI*2);ctx.save();ctx.translate(f.p.x,f.p.y);ctx.rotate(f.angle);ctx.fillStyle=i%2?"#fff":"#f05c58";ctx.fillRect(-7,-85,14,13);ctx.fillRect(-7,72,14,13);ctx.restore()}
  const start=frameAt(0);ctx.save();ctx.translate(start.p.x,start.p.y);ctx.rotate(start.angle);for(let r=0;r<2;r++)for(let c=0;c<10;c++){ctx.fillStyle=(r+c)%2?"#fff":"#182338";ctx.fillRect(-55+c*11,-8+r*16,11,16)}ctx.restore();
- // Distinct themed scenery and trackside props.
- for(let i=0;i<42;i++){const t=i/42*Math.PI*2,f=frameAt(t),side=i%2?1:-1,x=f.p.x+f.nx*side*(218+(i%4)*30),y=f.p.y+f.ny*side*(145+(i%4)*22);ctx.save();ctx.translate(x,y);ctx.rotate(t);ctx.fillStyle=w[5];ctx.globalAlpha=.9;
-  if(stage.world===0){ctx.beginPath();ctx.arc(-7,-5,15,0,Math.PI*2);ctx.arc(9,-2,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#9bdc74";ctx.beginPath();ctx.arc(-10,-10,5,0,Math.PI*2);ctx.fill()}
-  else if(stage.world===1){ctx.fillRect(-5,-23,10,42);ctx.fillRect(-17,-8,12,7);ctx.fillRect(5,-15,12,7)}
-  else if(stage.world===2){ctx.beginPath();ctx.moveTo(0,-27);ctx.lineTo(16,-5);ctx.lineTo(8,22);ctx.lineTo(-8,22);ctx.lineTo(-16,-5);ctx.closePath();ctx.fill();ctx.strokeStyle="#fff";ctx.stroke()}
-  else if(stage.world===3){ctx.fillRect(-3,-4,6,25);for(let k=0;k<5;k++){ctx.save();ctx.rotate(k*Math.PI*2/5);ctx.fillRect(0,-24,4,20);ctx.restore()}}
-  else if(stage.world===4||stage.world===8){ctx.shadowColor=w[4];ctx.shadowBlur=16;ctx.fillRect(-13,-28,26,56);ctx.fillStyle=w[4];ctx.fillRect(-7,-20,4,4);ctx.fillRect(3,-8,4,4);ctx.fillRect(-7,6,4,4)}
-  else if(stage.world===5){ctx.fillRect(-18,-7,36,14);ctx.fillRect(-13,-18,7,36);ctx.fillRect(7,-18,7,36)}
-  else if(stage.world===6){ctx.beginPath();ctx.moveTo(0,-28);ctx.lineTo(24,20);ctx.lineTo(-24,20);ctx.closePath();ctx.fill();ctx.fillStyle="#e9f0e5";ctx.beginPath();ctx.moveTo(0,-28);ctx.lineTo(8,-12);ctx.lineTo(-5,-12);ctx.closePath();ctx.fill()}
-  else if(stage.world===7){ctx.fillRect(-14,-23,28,46);ctx.fillStyle=w[4];ctx.fillRect(-18,-25,36,6);ctx.fillRect(-18,19,36,6)}
-  else{ctx.beginPath();ctx.moveTo(-18,-18);ctx.lineTo(18,-18);ctx.lineTo(10,18);ctx.lineTo(-10,18);ctx.closePath();ctx.fill()}ctx.restore()}
+ // Volumetric 2.5D scenery is drawn into the stage cache, not as flat decals.
+ drawWorldEnvironment(ctx,stage.world,frameAt);
 }
-function renderTrackDynamics(){const w=worlds[stage.world];pickups.forEach(p=>{if(p.collected)return;const f=frameAt(p.t),x=f.p.x+f.nx*p.lateral,y=f.p.y+f.ny*p.lateral;ctx.save();ctx.translate(x,y);const pulse=1+Math.sin(performance.now()*.006+p.t)*.16;ctx.scale(pulse,pulse);ctx.shadowColor="#63f5ff";ctx.shadowBlur=22;ctx.fillStyle="#63f5ff";ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle="#163d5b";ctx.font="bold 15px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("⚡",0,1);ctx.restore()});
+function renderTrackDynamics(){const w=worlds[stage.world];drawHelicopterShadow(ctx,frameAt,performance.now());pickups.forEach(p=>{if(p.collected)return;const f=frameAt(p.t),x=f.p.x+f.nx*p.lateral,y=f.p.y+f.ny*p.lateral;ctx.save();ctx.translate(x,y);const pulse=1+Math.sin(performance.now()*.006+p.t)*.16;ctx.scale(pulse,pulse);ctx.shadowColor="#63f5ff";ctx.shadowBlur=22;ctx.fillStyle="#63f5ff";ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle="#163d5b";ctx.font="bold 15px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("⚡",0,1);ctx.restore()});
 
  obstacles.forEach((o,i)=>{const f=frameAt(o.t),x=f.p.x+f.nx*o.lateral,y=f.p.y+f.ny*o.lateral;ctx.save();ctx.translate(x,y);ctx.rotate(o.t);ctx.fillStyle="#0005";ctx.beginPath();ctx.ellipse(4,8,18,12,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=w[5];ctx.strokeStyle=w[4];ctx.lineWidth=3;ctx.beginPath();
  if(stage.world===0){ctx.roundRect(-18,-13,36,26,9)}
