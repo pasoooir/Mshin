@@ -6,6 +6,13 @@
 - Advanced the offline service-worker cache to v24 so returning PWA installations receive the updated release shell.
 - Added automated checks for release-label and metadata consistency, and a browser assertion that the published version badge is visible.
 
+## 0.8.4 — 2026-10-31
+
+### Published version visibility and cache refresh
+- Show the published release number (0.8.4) on the startup splash screen and the main menu after loading.
+- Add a direct link from the in-game version badge to this changelog so players can verify what is included in the published build.
+- Advance the PWA manifest, package metadata, asset catalogs and boot query marker together; bump the service-worker cache to v23 so returning installations refresh to this release.
+
 ## 0.8.3 — 2026-10-31
 
 ### Vehicle identity and race presentation
