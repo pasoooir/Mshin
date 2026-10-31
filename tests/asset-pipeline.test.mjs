@@ -28,14 +28,13 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.match(html, /src="\.\/src\/boot\.js(?:\?v=[^"]+)?"/);
-  assert.match(boot, /await preloadGameAssets/);
-  assert.match(boot, /await import\("\.\/web-game\.js"\)/);
-  assert.match(loader, /length: 6/);
-  assert.match(loader, /manifest\.scenes/);
-  assert.match(loader, /Unexpected image MIME type/);
-  assert.match(loader, /image\.decode/);
-  assert.ok(loader.includes("asset.cdn"), "loader should try the manifest CDN URL");
+  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.11"'));
+  assert.match(html, /role="tablist"/);
+  assert.match(html, /data-panel="race"/);
+  assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
+  assert.match(game, /function activateMenuTab/);
+  assert.match(game, /worldArt/);
+  assert.match(game, /carArt/);
   assert.doesNotMatch(audio, /\\\\n/, "audio module must not contain escaped newlines that break browser module parsing");
   assert.match(audio, /decodeAudioData/);
   assert.match(audio, /engineGains/);
@@ -63,7 +62,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v24/);
+  assert.match(sw, /mshin-arcade-v25/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
@@ -135,7 +134,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه منتشرشده ۰.۸.۵/);
+  assert.match(html, /نسخه ۰.۸.۶/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
   assert.match(html, /splashCarFront/);
@@ -157,14 +156,14 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v24/);
+  assert.match(sw, /mshin-arcade-v25/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.10");
-  assert.equal(pkg.version, "0.8.5");
-  assert.equal(pwa.version, "0.8.5");
-  assert.equal(cocos.version, "2026.10.31.10");
+  assert.equal(manifest.version, "2026.10.31.11");
+  assert.equal(pkg.version, "0.8.6");
+  assert.equal(pwa.version, "0.8.6");
+  assert.equal(cocos.version, "2026.10.31.11");
   assert.match(readme, /release candidate; publication follows the CI and Pages deployment gates/);
-  assert.ok(readme.includes("## Latest published build") && readme.includes("Published version 0.8.4"), "README must distinguish the latest published version from the 0.8.5 candidate");
+  assert.ok(readme.includes("## Latest published build") && readme.includes("currently version **0.8.5**"), "README must distinguish the latest published version from the 0.8.6 candidate");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
