@@ -1,7 +1,7 @@
-const CACHE_NAME = "mshin-arcade-v27";
+const CACHE_NAME = "mshin-arcade-v28";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
-  "./src/web-game.js", "./src/tire-physics.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
+  "./src/web-game.js", "./src/aerial-environment.js", "./src/tire-physics.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
   "./assets/vector/world-01.svg",
   "./assets/vector/world-02.svg",
   "./assets/vector/world-03.svg",
@@ -26,7 +26,19 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   const request = event.request;
-  if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
+  if (request.method !== "GET") return;
+  const requestUrl = new URL(request.url);
+  if (requestUrl.origin !== self.location.origin) {
+    if (!["opengameart.org", "sfxmint.com", "cdn.jsdelivr.net"].includes(requestUrl.hostname)) return;
+    event.respondWith(caches.open("mshin-audio-assets-v1").then(async cache => {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok && response.type === "cors") await cache.put(request, response.clone());
+      return response;
+    }));
+    return;
+  }
   event.respondWith(caches.match(request, { ignoreSearch: true }).then(cached => {
     if (cached) return cached;
     return fetch(request).then(response => {
