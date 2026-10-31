@@ -24,6 +24,9 @@ try {
   await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 5, "menu should expose five dedicated tabs");
+  assert.ok(await page.locator("#tab-race").evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 14), "Persian menu tab labels must remain comfortably readable");
+  assert.ok(await page.locator(".worldCard").first().evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), "world-card labels must not fall below readable Persian text sizing");
+  assert.equal(await page.locator("link[rel=manifest]").getAttribute("href"), "./manifest.webmanifest", "PWA manifest must remain connected for orientation policy");
   assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "race", "race tab should be selected by default");
   assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
@@ -186,9 +189,11 @@ try {
   await page.locator("#quitRace").click();
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
-  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const mobile = await browser.newPage({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  assert.equal(await mobile.evaluate(() => window.MshinOrientation.isLandscape()), true, "mobile game viewport should launch in landscape orientation");
+  assert.equal(await mobile.locator("#orientationGate").evaluate(el => el.classList.contains("is-visible")), false, "landscape gameplay must not be blocked by the portrait gate");
   await mobile.locator("#play").click();
   assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
   await mobile.locator("#tab-cars").click();
