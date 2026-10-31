@@ -24,6 +24,10 @@ try {
   await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 5, "menu should expose five dedicated tabs");
+  const menuLayout = await page.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, columns: getComputedStyle(el).gridTemplateColumns, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
+  assert.equal(menuLayout.display, "grid", "menu should use a dedicated motorsport navigation rail");
+  assert.equal(menuLayout.tabsDirection, "column", "menu tabs should form a vertical navigation rail");
+  assert.ok(menuLayout.columns.split(" ").length >= 2, "menu should reserve separate navigation and content columns");
   assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "race", "race tab should be selected by default");
   assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
@@ -189,6 +193,10 @@ try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection, tabs: el.querySelector(".menuTabs").getBoundingClientRect().toJSON(), body: el.querySelector(".menuBody").getBoundingClientRect().toJSON() }));
+  assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
+  assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
+  assert.ok(mobileMenuLayout.tabs.width > 0 && mobileMenuLayout.body.width > 0, "mobile navigation and content columns must both remain visible");
   assert.match(await mobile.locator("body").evaluate(el => getComputedStyle(el, "::before").content), /افقی نگه دارید/, "portrait phones should show a clear landscape instruction");
   await mobile.locator("#play").click();
   assert.equal(await mobile.locator("#home").isVisible(), true, "portrait mode must not enter the game before the device is rotated");
