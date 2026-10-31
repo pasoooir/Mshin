@@ -57,4 +57,5 @@ test("menu and garage use repository-local procedural WebGL 3D scenes", async ()
   assert.doesNotMatch(scene, /https?:\/\//, "3D runtime must not depend on a CDN or external model host");
   assert.ok(sw.includes("./src/menu-3d-scene.js"), "3D scene module must be precached for offline use");
   assert.match(html, /#mshinGarage3DCanvas/);
+  assert.match(html, /#hud,\.overlay,#mshinMenu3DCanvas/);
 });
