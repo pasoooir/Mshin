@@ -198,8 +198,15 @@ try {
   mobile.on("pageerror", error => errors.push(error.stack || error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await mobile.locator("#play").click();
-  assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
+  await mobile.locator("#tab-settings").click();
+  assert.equal(await mobile.locator("#musicEnabled").isVisible(), true, "mobile settings must show the music toggle");
+  assert.equal(await mobile.locator("#sfxEnabled").isVisible(), true, "mobile settings must show the SFX toggle");
+  const mobileAudioBounds = await mobile.evaluate(() => ["musicEnabled","sfxEnabled","musicVolume","sfxVolume"].map(id => { const r=document.getElementById(id).getBoundingClientRect(); return {id,left:r.left,right:r.right,width:r.width,height:r.height}; }));
+  assert.ok(mobileAudioBounds.every(r => r.left >= 0 && r.right <= innerWidth && r.width > 0), "mobile audio controls must fit the viewport");
+  assert.ok(mobileAudioBounds.filter(r => r.id.endsWith("Enabled")).every(r => r.height >= 44), "mobile audio toggle targets must be at least 44px high");
+  await mobile.screenshot({ path: "artifacts/mshin-audio-settings-mobile.png" });
   await mobile.locator("#tab-cars").click();
+  assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
   assert.notEqual(await mobile.locator("#select .gtMenu").evaluate(el=>getComputedStyle(el).perspective),"none","mobile showroom should retain perspective depth");
   assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
