@@ -5,6 +5,11 @@ export interface TrackBounds { radiusX: number; radiusY: number; inner: number; 
 export interface RaceState { lap: number; previousProgress: number; finished: boolean; elapsedSeconds: number; }
 export const GREEN_VALLEY_TRACK: Readonly<TrackBounds> = Object.freeze({ radiusX: 420, radiusY: 260, inner: 0.82, outer: 1.18 });
 export const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
+/** Converts normalized track grip into a bounded vehicle-contact friction coefficient. */
+export function surfaceCollisionFriction(grip:number):number {
+ const normalized=clamp(Number.isFinite(grip)?grip:1,0.35,1.15);
+ return clamp(0.72*normalized,0.22,0.82);
+}
 const FRAME_STEP_LIMIT = 1 / 20;
 export function normalizeJoystick(dx: number, dy: number, radius: number): { x: number; y: number } {
  if (!Number.isFinite(radius) || radius <= 0 || !Number.isFinite(dx) || !Number.isFinite(dy)) return { x: 0, y: 0 };

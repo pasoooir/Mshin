@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy, calculateRacingLineTarget, calculateAiTargetSpeed, worldVelocityToCar } from '../.test-build/src/cocos-core.js';
+import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy, calculateRacingLineTarget, calculateAiTargetSpeed, worldVelocityToCar, surfaceCollisionFriction } from '../.test-build/src/cocos-core.js';
 
 test('joystick clamps diagonal displacement to unit radius', () => {
  const v = normalizeJoystick(100, 100, 50); assert.ok(Math.hypot(v.x, v.y) <= 1.000001); assert.ok(v.x > 0 && v.y > 0);
@@ -142,4 +142,12 @@ test('aerodynamic drag scales quadratically with speed and tire grip damps later
  const slowLoss=100-95*.05-slow.speed,fastLoss=300-95*.05-fast.speed;
  assert.ok(fastLoss>slowLoss*7,'quadratic aero drag should be substantially stronger at 3x speed');
  assert.ok(Math.abs(slow.lateralSpeed)<20,'tire forces should damp lateral slip');
+});
+
+
+test('surface collision friction follows asphalt, dirt and wet grip without invalid coefficients',()=>{
+ assert.ok(surfaceCollisionFriction(1)>surfaceCollisionFriction(.55));
+ assert.ok(surfaceCollisionFriction(.55)>surfaceCollisionFriction(.35));
+ assert.ok(surfaceCollisionFriction(1.15)<=.82);
+ assert.ok(surfaceCollisionFriction(Number.NaN)>0);
 });
