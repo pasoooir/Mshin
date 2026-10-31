@@ -202,3 +202,13 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - تغییرات: تب‌های مسابقه، خودروها، تعمیرگاه، افتخارات و تنظیمات؛ تصویر بدون نوشته و توضیح فارسی زیر آن؛ طراحی سه‌بعدی/عمق‌دار؛ حذف پیوند آخرین تغییرات از صفحه اول.
 - معیار پذیرش: تست‌های Node، اعتبارسنجی داده و syntax، Playwright دسکتاپ/موبایل، پیمایش تب‌ها با صفحه‌کلید، بررسی افقی‌بودن ریل‌ها و حفظ عملکرد انتخاب دنیا/مرحله/خودرو؛ تست‌های Node و Playwright دسکتاپ/موبایل موفق؛ PR #39 ادغام و استقرار GitHub Pages موفق.
 - شناسه‌های نسخه: `0.8.6`، دارایی `2026.10.31.11`، کش آفلاین `mshin-arcade-v25`؛ merge: `ac716d561b01071851281425742128b9a07c57f3`؛ CI run: `41190710002`؛ Pages deployment: `41191114909` (موفق).
+
+
+## Aerial environment and audio overhaul — active work (2026-10-31)
+
+- **Status:** 🟡 در حال اجرا؛ PR #43 is open as a draft and is not merged or deployed.
+- **Implemented in PR #43:** a deterministic, lightweight Canvas 2.5D scenery pass for all ten world themes (layered tree canopies, shaded terrain/rock forms, raised building silhouettes, crowd clusters and trackside barriers); a moving rotor/body helicopter shadow rendered in world coordinates; unit tests for world-space shadow anchoring.
+- **Changed files:** `src/aerial-environment.js`, `src/web-game.js`, `tests/aerial-environment.test.mjs`.
+- **PR:** https://github.com/pasoooir/Mshin/pull/43
+- **Not accepted yet:** no CI result has been verified for this PR; no visual screenshot/device QA has been captured; the existing renderer is still Canvas 2D (this is a 2.5D approximation, not a true 3D renderer).
+- **Remaining mission gates:** independent music/SFX toggles and volume sliders with persistence; menu/race music; broader recorded SFX profiles and RPM/transient tuning; preload failure gating and verified audio decoding; cache/PWA updates; desktop/mobile visual and performance tests; all 50 stage screenshots/spot checks. Do not merge or deploy until these gates are addressed and CI passes.
