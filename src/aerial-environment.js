@@ -95,17 +95,20 @@ function crowd(ctx, x, y, seed, scale = 1) {
   // A long stand shadow makes the group sit on the same ground plane as the props.
   ctx.fillStyle = "#0005";
   ctx.beginPath(); ctx.ellipse(0, 8, 43, 13, -.05, 0, TAU); ctx.fill();
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 12; i++) {
     const px = (random() - .5) * 76, py = (random() - .5) * 13, height = 7 + random() * 3;
     const color = CROWD_COLORS[i % CROWD_COLORS.length];
     ctx.save(); ctx.translate(px, py);
     // Legs, torso, arms and head remain legible as tiny top-down human silhouettes.
     ctx.strokeStyle = "#17232d"; ctx.lineWidth = 1.7;
-    ctx.beginPath(); ctx.moveTo(-1, height * .45); ctx.lineTo(-2.2, height + 3); ctx.moveTo(1, height * .45); ctx.lineTo(2.4, height + 3); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-1, height * .45); ctx.lineTo(-2.2, height + 3);
+    ctx.moveTo(1, height * .45); ctx.lineTo(2.4, height + 3);
+    ctx.moveTo(-2, -height * .3); ctx.lineTo(-4.5, height * .18);
+    ctx.moveTo(2, -height * .3); ctx.lineTo(4.5, height * .18);
+    ctx.stroke();
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(-3, -height * .1); ctx.lineTo(-2, -height * .65); ctx.lineTo(2, -height * .65); ctx.lineTo(3, -height * .1); ctx.lineTo(2, height * .55); ctx.lineTo(-2, height * .55); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 1.8;
-    ctx.beginPath(); ctx.moveTo(-2, -height * .3); ctx.lineTo(-4.5, height * .18); ctx.moveTo(2, -height * .3); ctx.lineTo(4.5, height * .18); ctx.stroke();
     ctx.fillStyle = "#e9c29c"; ctx.beginPath(); ctx.arc(0, -height * .95, 2.2, 0, TAU); ctx.fill();
     ctx.fillStyle = "#ffffff66"; ctx.fillRect(-1.7, -height * .5, 1, height * .55);
     ctx.restore();
