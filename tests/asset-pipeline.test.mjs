@@ -84,6 +84,12 @@ test("Cocos runtime menus use the Mshin motorsport visual system", async () => {
   assert.match(cocos, /g\.moveTo\(-w\/2\+7,-h\/2\)/);
   assert.match(cocos, /g\.close\(\);g\.fill\(\)/);
   assert.match(cocos, /Node\.EventType\.TOUCH_END/);
+  assert.match(cocos, /private menuRoot!:Node/);
+  assert.match(cocos, /menuRoot\.setScale\(menuScale,menuScale,1\)/);
+  assert.match(cocos, /Math\.min\(1,s\.width\/1280,s\.height\/720\)/);
+  for (const entry of ["CONTINUE","RETRY","LEAVE EVENT","DRIVER DETAILS","MOST WANTED"]) assert.ok(cocos.includes(entry), `${entry} must appear in the responsive pause menu`);
+  assert.match(cocos, /private addWantedRow\(/);
+  assert.match(cocos, /private addPauseEntry\(/);
   assert.doesNotMatch(cocos, /g\.fillColor=hex\("#F8C84E"\);g\.roundRect\(-w\/2/);
 });
 
