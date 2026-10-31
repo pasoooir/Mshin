@@ -2,25 +2,23 @@
 
 Last evidence refresh: 2026-10-31
 
-## Latest verified release — 0.8.9
+## Latest published release — 0.9.0
 
-- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #44 و PR #45 ادغام و GitHub Pages منتشر شده است.
-- **Release scope:** میکسر صوتی مستقل برای Music و SFX؛ کلیدهای روشن/خاموش مجزا، volume مستقل و ذخیره تنظیمات؛ موسیقی CC0 منوی اصلی و مسابقه با crossfade؛ preload موتور، ترمز، تعویض دنده و موسیقی پیش از مسابقه.
-- **Offline acceptance:** Playwright وجود تمام فایل‌های صوتی manifest در Cache Storage را بررسی می‌کند؛ سپس شبکه را قطع می‌کند، صفحه را مجدداً بارگذاری می‌کند و وجود مجدد تمام ArrayBufferهای صوتی را تأیید می‌کند.
-- **Regression coverage:** تست‌های Node و Playwright دسکتاپ/موبایل؛ بررسی تنظیمات صوتی و پایداری آن‌ها پس از reload، عدم درخواست دیرهنگام منابع هنگام مسابقه، اجرای آفلاین و انتخاب ۱۰ دنیا.
-- **Release metadata:** package و PWA manifest برابر `0.8.9`؛ asset marker برابر `2026.10.31.13`؛ Service Worker cache برابر `mshin-arcade-v29`.
-- **PR #44:** https://github.com/pasoooir/Mshin/pull/44 — merged؛ audio mixer، موسیقی CC0 و تنظیمات مستقل صدا.
-- **PR #44 merged-main validation:** run `41202329340` — success؛ **Pages deployment:** run `41202328716` — success.
-- **PR #45:** https://github.com/pasoooir/Mshin/pull/45 — merged، commit `ac5e8e7666df7d3deb4d4dac17a674318dda84ba`.
-- **PR #45 browser validation:** run `41202686023` و push validation run `41202647584` — success.
-- **Merged-main validation:** runs `41202871457` و `41202859952` — success.
-- **GitHub Pages deployment:** run `41202859572` — success.
+- **Status:** 🟡 در حال نهایی‌سازی تأیید main؛ PR #46 ادغام شده و GitHub Pages deployment موفق است، اما merged-main validation هنوز در حال اجراست.
+- **Release scope:** ارتقای محیط هوایی/2.5D در هر ده دنیا؛ تاج درختان چندلایه، تنه و ریشه، ساختمان‌های دارای سطوح جلو/کنار/سقف، پنجره‌های فرورفته، صخره‌های چندوجهی، جمعیت تماشاگر با سر/بدن/دست/پا، سایه تماس و موانع حجمی؛ سایه متحرک هلیکوپتر نیز نرم‌تر شده است.
+- **Regression coverage:** تست‌های Node برای هندسه و اجزای بصری در هر ده دنیا؛ Playwright دسکتاپ/موبایل برای منو، مسابقه، کنترل‌ها، آفلاین و عملکرد رگرسیونی.
+- **Release metadata:** package و PWA manifest برابر `0.9.0`؛ asset marker برابر `2026.10.31.14`؛ Service Worker cache برابر `mshin-arcade-v30`.
+- **PR #46:** https://github.com/pasoooir/Mshin/pull/46 — merged، commit `4ac5d3405037bd715736d57d4a1743ace9a30273`.
+- **PR #46 source validation:** push run `41203170159` و PR run `41203171734` — success؛ تست Node و Playwright دسکتاپ/موبایل موفق.
+- **GitHub Pages deployment:** run `41203337340` — success.
+- **Merged-main validation:** run `41203337448` — در حال اجرا؛ تا موفقیت آن release در tracker سبز نمی‌شود.
 - **Live game:** https://pasoooir.github.io/Mshin/
-- **Limit:** تست مرورگر صحت cache و decode را تأیید می‌کند، اما جایگزین ارزیابی شنیداری روی بلندگوهای فیزیکی و QA مستقل در Cocos Creator نیست.
+- **Limit:** تست‌های خودکار هندسه و مرورگر، جایگزین ارزیابی بصری روی نمایشگرهای فیزیکی و QA مستقل در Cocos Creator نیستند.
 
-## Previous verified release — 0.8.8
 
-- PR #41، commit `ed7554dcd161ccabf5261f53a14afcd6210998aa`؛ PR browser CI run `41194601384`، merged-main validation `41195187912` و Pages deployment `41195187475` موفق بودند.
+## Previous verified release — 0.8.9
+
+- PR #45، commit `ac5e8e7666df7d3deb4d4dac17a674318dda84ba`؛ PR browser run `41202686023`، push validation `41202647584`، merged-main validations `41202871457` و `41202859952` و Pages deployment `41202859572` موفق بودند.
 
 ## Repository and delivery state
 
@@ -223,5 +221,5 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - **Implemented:** separate Web Audio SFX and music buses; separate enable switches and 0–100 sliders; persistent values in `mshin-settings-v1`; menu/race loop selection with gain crossfade; mandatory decode of six RPM layers, brake/downshift effects and both music tracks before race countdown; abort countdown with an explicit message if required audio decode fails.
 - **Music licensing:** MintoDog's “Racing Game Menu” and “Pure Raceway” are registered as CC0 in the manifest; source pages: https://opengameart.org/content/racing-game-menu and https://opengameart.org/content/pure-raceway.
 - **Changed files:** `index.html`, `src/audio.js`, `src/web-game.js`, `src/asset-manifest.json`, `service-worker.js`, `package.json`, `manifest.webmanifest`, `tests/browser-smoke.mjs`.
-- **PWA:** app version `0.8.9`, asset marker `2026.10.31.13`, cache `mshin-arcade-v28`; app shell now includes the aerial renderer.
+- **PWA:** app version `0.9.0`, asset marker `2026.10.31.14`, cache `mshin-arcade-v30`; app shell now includes the aerial renderer.
 - **Acceptance still pending:** CI must confirm OGA audio CORS/download/decode; browser assertions for independent switches and persisted slider values must pass; visual mobile settings QA and offline re-entry with the new music assets remain to be verified. No release is accepted until all required checks pass.
