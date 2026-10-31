@@ -318,6 +318,25 @@ body{font-size:16px}
 @media(prefers-reduced-motion:reduce){.overlay,.tabPanel{animation:none!important;transition:none!important}}
 
 #driverDetailsPanel .driverDetailsCard{max-width:520px;text-align:left;background:linear-gradient(135deg,#172331,#080e16);color:#fff;border:1px solid #ffffff44;border-left:4px solid var(--mshin-red);border-radius:0;clip-path:polygon(0 0,96% 0,100% 8%,100% 100%,0 100%)}#driverDetailsPanel h1{font-size:clamp(22px,4vh,34px);color:#fff}#driverDetailsPanel p{color:#c6d0da;line-height:1.8}
+
+/* Local procedural WebGL scenes: true perspective geometry, no remote runtime dependency. */
+.mshin3d-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:4;display:block;pointer-events:none;opacity:.96;transition:opacity .25s}
+.mshin3d-canvas:not(.is-visible){display:none}
+.mshin3d-fallback{display:none}
+#home{background:linear-gradient(90deg,#030912a8,#07111f35 58%,#07111f88)!important;backdrop-filter:none}
+#home .panel{background:linear-gradient(145deg,#091522eF,#0b1828e8);color:#edf6ff;border-color:#f04b4b77;backdrop-filter:blur(8px)}
+#home .panel p,#home .panel .hint{color:#c3d4e4}
+#home .panel:before{background:linear-gradient(0deg,#0d1b3488,#0d1b3411),url("./assets/vector/world-01.svg") center 48%/cover,linear-gradient(120deg,#327c61,#a8d76f)}
+#select{background:linear-gradient(90deg,#02070dcf 0%,#07111f65 48%,#07111fa6 100%)!important;backdrop-filter:none}
+#select .gtMenu{background:linear-gradient(145deg,#101d2be0,#07111fe8 72%);backdrop-filter:blur(5px)}
+.showroomStage{background:linear-gradient(140deg,#08152155,#142c4570 52%,#08162677)!important}
+.showroomSpotlight,.showroomFloor{display:none!important}
+.showroomVehicle img{opacity:0!important}
+#mshinGarage3DCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:none;opacity:1}
+#mshinGarage3DCanvas:not(.is-visible){display:none}
+.showroomVehicle,.showroomInfo{position:relative;z-index:2}
+@media(prefers-reduced-motion:reduce){.mshin3d-canvas{transition:none}}
+
 </style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
@@ -397,4 +416,4 @@ document.addEventListener("keydown",lockLandscape,{capture:true,once:true});
 window.MshinOrientation={get softwareLandscape(){return matchMedia("(orientation: portrait)").matches},requestLock:lockLandscape};
 })();
 </script>
-<script>if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script type="module" src="./src/boot.js?v=2026.10.31.17"></script></body></html>
+<script>if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}</script><script type="module" src="./src/boot.js?v=2026.10.31.18"></script></body></html>
