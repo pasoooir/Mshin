@@ -84,7 +84,7 @@ function renderStaticTrack(){const w=worlds[stage.world];ctx.fillStyle=w[1];ctx.
  function lane(offset,col,wide,dash=[]){ctx.beginPath();for(let i=0;i<=240;i++){const f=frameAt(i/240*Math.PI*2),x=f.p.x+f.nx*offset,y=f.p.y+f.ny*offset;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.strokeStyle=col;ctx.lineWidth=wide;ctx.setLineDash(dash);ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();ctx.setLineDash([])}
  stroke("#0007",450);stroke(w[2],426);stroke(w[4],390);stroke(w[2],360);
  // Four lanes with three visible separators and generous asphalt shoulders.
- lane(0,"#ffffffdd",5,[34,28]);lane(-90,"#ffffff70",3,[22,30]);lane(0,"#ffffff70",3,[22,30]);lane(90,"#ffffff70",3,[22,30]);
+ lane(0,"#ffffffdd",5,[34,28]);lane(-90,"#ffffff70",3,[22,30]);lane(90,"#ffffff70",3,[22,30]);
  for(let i=0;i<64;i++){const f=frameAt(i/64*Math.PI*2);ctx.save();ctx.translate(f.p.x,f.p.y);ctx.rotate(f.angle);ctx.fillStyle=i%2?"#fff":"#f05c58";ctx.fillRect(-7,-85,14,13);ctx.fillRect(-7,72,14,13);ctx.restore()}
  const start=frameAt(0);ctx.save();ctx.translate(start.p.x,start.p.y);ctx.rotate(start.angle);for(let r=0;r<2;r++)for(let c=0;c<10;c++){ctx.fillStyle=(r+c)%2?"#fff":"#182338";ctx.fillRect(-55+c*11,-8+r*16,11,16)}ctx.restore();
  // Distinct themed scenery and trackside props.
