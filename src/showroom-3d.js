@@ -171,12 +171,12 @@ export function createShowroom3D(canvas){
    raf=window.requestAnimationFrame(render);
   }
   const observer=typeof IntersectionObserver!=="undefined"?new IntersectionObserver(entries=>{visible=entries.some(e=>e.isIntersecting&&e.intersectionRatio>0);if(visible&&!raf)raf=window.requestAnimationFrame(render);else if(!visible&&raf){cancelAnimationFrame(raf);raf=0}}):null;
-  observer?.observe(canvas);
+  observer?.observe(canvas);if(!observer){visible=true;raf=window.requestAnimationFrame(render);}
   const onVisibility=()=>{if(document.hidden&&raf){cancelAnimationFrame(raf);raf=0}else if(!document.hidden&&visible&&!raf)raf=requestAnimationFrame(render)};
   document.addEventListener("visibilitychange",onVisibility);
   const resizeObserver=typeof ResizeObserver!=="undefined"?new ResizeObserver(resize):null;resizeObserver?.observe(canvas);
-  const onContextLost=e=>{e.preventDefault();state.status="context-lost";if(raf)cancelAnimationFrame(raf);raf=0};
-  const onContextRestored=()=>{state.status="context-restored";destroyed=true};
+  const onContextLost=e=>{e.preventDefault();state.status="fallback-image";canvas.parentElement?.classList.remove("has-webgl");if(raf)cancelAnimationFrame(raf);raf=0};
+  const onContextRestored=()=>{state.status="fallback-image";canvas.parentElement?.classList.remove("has-webgl");destroyed=true};
   canvas.addEventListener("webglcontextlost",onContextLost);canvas.addEventListener("webglcontextrestored",onContextRestored);
   return {
    state,
@@ -189,6 +189,6 @@ export function createShowroom3D(canvas){
   };
  }catch(error){
   state.status="fallback-image";state.error=String(error?.message||error);
-  return {state,setCar(next){model=next||model;state.carId=model.id},setRotation(deg){rotation=Number(deg)||0;state.rotation=rotation},spin(){},resize(){},destroy(){}};
+  return {state,setCar(next){model=next||model;state.carId=model.id},setRotation(deg){rotation=Number(deg)||0;state.rotation=rotation},spin(){},setAutoRotate(){},resize(){},destroy(){}};
  }
 }
