@@ -28,7 +28,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.16"'));
+  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.17"'));
   assert.match(html, /role="tablist"/);
   assert.match(html, /data-panel="race"/);
   assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
@@ -73,9 +73,9 @@ test("service worker precaches all vector art before offline races", async () =>
   assert.match(sw, /\["opengameart\.org", "sfxmint\.com", "cdn\.jsdelivr\.net"\]/, "all declared audio CDN hosts must be intercepted for offline playback");
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
-  for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
+  for (const asset of [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...manifest.sounds]) assert.ok(sw.includes(asset.src), asset.src + " must be precached");
 });
-test("photographic world scenes are CDN-preloaded before the race runtime", async () => {
+test("photographic world scenes are repository-bundled before the race runtime", async () => {
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const cocos = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
