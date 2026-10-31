@@ -140,7 +140,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰.۸.۶/);
+  assert.match(html, /نسخه ۰.۹.۰/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
   assert.match(html, /splashCarFront/);
@@ -168,7 +168,7 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pkg.version, "0.9.0");
   assert.equal(pwa.version, "0.9.0");
   assert.equal(cocos.version, "2026.10.31.14");
-  assert.ok(readme.includes("live browser release is **version 0.9.0**") && readme.includes("deployed to GitHub Pages after successful merged-main validation and desktop/mobile Playwright browser smoke tests"), "README must identify 0.8.9 as the verified live release");
+  assert.ok(readme.includes("live browser release is **version 0.9.0**") && readme.includes("deployed to GitHub Pages after successful merged-main validation and desktop/mobile Playwright browser smoke tests"), "README must identify 0.9.0 as the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.0**"), "README must preserve the latest published release after 0.9.0 deploys");
 });
 
