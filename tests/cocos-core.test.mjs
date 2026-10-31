@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy } from '../.test-build/src/cocos-core.js';
+import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy, calculateRacingLineTarget, calculateAiTargetSpeed } from '../.test-build/src/cocos-core.js';
 
 test('joystick clamps diagonal displacement to unit radius', () => {
  const v = normalizeJoystick(100, 100, 50); assert.ok(Math.hypot(v.x, v.y) <= 1.000001); assert.ok(v.x > 0 && v.y > 0);
@@ -92,4 +92,24 @@ test('impact energy is assigned by inverse mass, with static barriers absorbing 
  assert.ok(heavyLight.b>heavyLight.a);assert.equal(heavyLight.a+heavyLight.b,100);
  const wall=splitImpactEnergy(100,1/1200,0);
  assert.equal(wall.a,100);assert.equal(wall.b,0);
+});
+
+
+test('AI racing line offsets cars consistently and wraps at the path boundary',()=>{
+ const path=[{x:0,y:0},{x:10,y:0},{x:20,y:0},{x:30,y:0}];
+ const left=calculateRacingLineTarget(path,0,4),right=calculateRacingLineTarget(path,0,-4);
+ assert.equal(left.x,0);assert.equal(right.x,0);assert.equal(left.y,-4);assert.equal(right.y,4);
+ assert.deepEqual(calculateRacingLineTarget(path,4,4),left);
+});
+test('AI target speed decreases for sharper turns and remains bounded for invalid input',()=>{
+ assert.equal(calculateAiTargetSpeed(0),310);
+ assert.ok(calculateAiTargetSpeed(1.2)<calculateAiTargetSpeed(.2));
+ assert.ok(calculateAiTargetSpeed(Math.PI)>=165);
+ assert.equal(calculateAiTargetSpeed(Number.NaN),165);
+});
+
+test('AI racing-line planner safely handles invalid indices and lane offsets',()=>{
+ const path=[{x:3,y:7},{x:13,y:7},{x:23,y:7}];
+ assert.deepEqual(calculateRacingLineTarget(path,Number.NaN,Number.NaN),{x:3,y:7});
+ assert.deepEqual(calculateRacingLineTarget([],0,10),{x:0,y:0});
 });
