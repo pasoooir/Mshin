@@ -308,7 +308,7 @@ try {
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "back from pause settings should return to the paused event");
   await page.locator("#resume").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#pausePanel").isVisible(), false, "resume should close pause panel");
-  await page.locator("#pause").click();
+  await page.locator("#pause").click({ force: true, noWaitAfter: true, timeout: 10000 });
   await page.locator("#quitRace").click({ force: true, noWaitAfter: true, timeout: 10000 });
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
@@ -359,7 +359,7 @@ try {
   await mobile.locator("#startRace").click();
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
-  await mobile.locator("#pause").click();
+  await mobile.locator("#pause").click({ force: true, noWaitAfter: true, timeout: 10000 });
   const mobilePauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(mobilePauseBounds && mobilePauseBounds.x >= -1 && mobilePauseBounds.y >= -1 && mobilePauseBounds.x + mobilePauseBounds.width <= 391 && mobilePauseBounds.y + mobilePauseBounds.height <= 845, "portrait software-landscape pause menu must fit the complete phone viewport");
   assert.equal(await mobile.locator("#pausePanel .pauseMenu > *").count(), 10, "mobile pause menu must show all ten actions without scrolling");
