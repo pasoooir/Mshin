@@ -1,19 +1,24 @@
 # Changelog
 
-## 0.7.0 — 2026-10-31
+## 0.8.0 — 2026-10-31
 
-### Visible gameplay
-- Rival traffic now uses continuous AI steering, safe following gaps, curve-aware pace and smooth lane changes.
-- Vehicle collisions accumulate panel-local soot and progressively produce dark smoke and flames.
-- Critical damage triggers a single explosion effect with camera and audio feedback.
-- AI wrecks burn, fade and leave active traffic, collision checks, minimap and ranking.
-- Player vehicle destruction ends the race with a visible explanation.
+### Race presentation
+- Widened the asphalt to a four-lane road with four traffic lane centers.
+- Pulled the chase camera back to keep the full asphalt width visible.
+- Added a cinematic animated 3, 2, 1, GO countdown; player and AI cars remain stationary until GO.
+- Replaced gas, brake and nitro labels with accessible SVG control icons from jsDelivr.
 
-### Runtime and offline
-- Added all browser runtime physics/AI/destruction modules to the service-worker app shell.
-- Bumped the PWA cache to `mshin-arcade-v18`.
-- Updated visible splash/home release labels and metadata to 0.7.0.
+### Audio
+- Replaced the synthetic oscillator engine with preloaded CDN race-car idle and full-throttle recordings.
+- Added race-car braking/tire-squeal and downshift clips.
+- Preloads audio bytes before gameplay and decodes the sound bank on the first menu gesture while a stage is selected.
+- Audio clips are from the SFXMint CC0 1.0 library; they are AI-generated effects, not real-world field recordings.
+
+### Loading and offline
+- Preloads ten world illustrations, five car sprites, ten photographic scenes, three control icons and four sound clips before importing the game loop.
+- Advanced service-worker cache to `mshin-arcade-v19`.
 
 ### Verification boundaries
-- Browser desktop/mobile Playwright smoke and automated test suite are required release gates.
+- Desktop/mobile Playwright, network-request, countdown, four-lane telemetry and asset-preload checks are release gates.
 - Cocos Creator Editor builds and physical-device QA are not represented as completed by browser CI.
+

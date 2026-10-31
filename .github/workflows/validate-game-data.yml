@@ -22,6 +22,8 @@ jobs:
       - run: node --check src/physics.js
       - run: node --check src/game.js
       - run: node --check src/web-game.js
+      - run: node --check src/audio.js
+      - run: node --check src/asset-loader.js
       - run: npm test
       - name: Install Playwright and Chromium
         run: |

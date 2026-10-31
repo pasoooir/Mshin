@@ -25,17 +25,25 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
 test("asset boot waits for bounded preload before starting the game module", async () => {
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
+  const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
   assert.match(html, /src="\.\/src\/boot\.js(?:\?v=[^"]+)?"/);
   assert.match(boot, /await preloadGameAssets/);
   assert.match(boot, /await import\("\.\/web-game\.js"\)/);
-  assert.match(loader, /length: 4/);
+  assert.match(loader, /length: 6/);
   assert.match(loader, /manifest\.scenes/);
   assert.match(loader, /Unexpected image MIME type/);
   assert.match(loader, /image\.decode/);
   assert.ok(loader.includes("asset.cdn"), "loader should try the manifest CDN URL");
-  assert.ok(loader.includes('source === asset.cdn ? (asset.group === "scene" ? 4200 : 2200) : 10000'), "CDN should have a bounded timeout before local fallback");
-  assert.ok(loader.includes("[asset.cdn, asset.src]"), "local bundled art must remain the fallback");
+  assert.doesNotMatch(audio, /\\\\n/, "audio module must not contain escaped newlines that break browser module parsing");
+  assert.match(audio, /decodeAudioData/);
+  assert.match(loader, /manifest\.icons/);
+  assert.match(loader, /manifest\.sounds/);
+  assert.match(loader, /audioCache\.set/);
+  assert.match(loader, /loadAudio/);
+  assert.ok(loader.includes("audioData:"), "audio bytes must be retained before game startup");
+  assert.ok(manifest.sounds.every(sound => sound.src.startsWith("https://sfxmint.com/dl/")), "race engine audio must use direct CDN assets");
+  assert.equal(manifest.icons.length, 3, "gas, brake and nitro must use CDN icon artwork");
 });
 test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
@@ -45,7 +53,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v18/);
+  assert.match(sw, /mshin-arcade-v19/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
@@ -56,7 +64,7 @@ test("photographic world scenes are CDN-preloaded before the race runtime", asyn
   const cocos = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
   assert.match(loader, /scenes: Object\.fromEntries/);
   assert.match(game, /sceneArt/);
-  assert.match(game, /\)\*1\.6/);
+  assert.match(game, /\)\*1\.18/);
   assert.match(game, /,-36,-54,72,108/);
   assert.ok(game.includes("ctx.rotate(-c.angle-Math.PI/2)"), "race camera should follow the road tangent and keep the player car facing forward");
   assert.match(cocos, /cameraNode\.angle=-this\.carNode\.angle/);
@@ -94,9 +102,12 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /collisionCooldown/);
   assert.match(game, /resolveTireForces/);
   assert.match(sw, /collision-physics\.js/);
-  assert.match(game, /lane\(-40,"#ffffff70",3,\[22,30\]\)/);
-  assert.match(game, /lane\(40,"#ffffff70",3,\[22,30\]\)/);
-  assert.match(game, /Three readable lanes/);
+  assert.match(game, /lane\(-60,"#ffffff70",3,\[22,30\]\)/);
+  assert.match(game, /lane\(60,"#ffffff70",3,\[22,30\]\)/);
+  assert.match(game, /Four lanes/);
+  assert.match(game, /ROAD_HALF_WIDTH=180/);
+  assert.match(game, /lanes:\[-120,-30,30,120\]/);
+  assert.match(game, /countdownElapsed<3\.72/);
   assert.match(game, /"دره سبز"/);
   assert.match(game, /"توفان کویر"/);
   assert.match(game, /وضعیت هوا/);
@@ -114,7 +125,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰.۷.۰/);
+  assert.match(html, /نسخه ۰.۸.۰/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
   assert.match(html, /splashCarFront/);
@@ -135,10 +146,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
-  assert.match(sw, /mshin-arcade-v18/);
-  assert.match(html, /boot\.js\?v=2026.10.31.4/);
-  assert.equal(manifest.version, "2026.10.31.4");
-  assert.equal(pkg.version, "0.7.0");
-  assert.equal(pwa.version, "0.7.0");
-  assert.equal(cocos.version, "2026.10.31.4");
+  assert.match(sw, /mshin-arcade-v19/);
+  assert.match(html, /boot\.js\?v=2026.10.31.5/);
+  assert.equal(manifest.version, "2026.10.31.5");
+  assert.equal(pkg.version, "0.8.0");
+  assert.equal(pwa.version, "0.8.0");
+  assert.equal(cocos.version, "2026.10.31.5");
 });

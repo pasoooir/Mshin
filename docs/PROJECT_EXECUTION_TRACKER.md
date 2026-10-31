@@ -118,3 +118,13 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - GitHub Pages build/deployment: https://github.com/pasoooir/Mshin/actions/runs/41172530906 — success.
 - Published commit: `dab62a69b35e57f7ccd8c2898895cbd1b43d947f`.
 - Browser release URL: https://pasoooir.github.io/Mshin/ (deployment workflow succeeded; verify the live UI in a browser with cache refresh if an older service-worker shell appears).
+
+
+## Version 0.8.0 work in progress
+
+- [ ] Replace synthesized engine oscillator with real race-car audio from CDN (idle/rev, braking and downshift); preload all clips and decode before race start.
+- [ ] Four-lane asphalt and wider camera framing with full road width visible.
+- [ ] Animated 3 → 2 → 1 → GO countdown with all vehicles held until GO.
+- [ ] CDN SVG icons for accelerator, brake and nitro controls.
+- [ ] Boot preload for all scene art, car sprites, control icons and sound assets; no race-time asset network requests.
+- [ ] Desktop/mobile browser smoke, performance, network and visual preview evidence.
