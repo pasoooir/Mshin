@@ -123,3 +123,9 @@ export function resolveRigidBody2D(a:RigidBody2D,b:RigidBody2D,positionPercent=.
  return {hit:true,nx,ny,overlap,closingSpeed,impulse,energy,pointX,pointY};
 }
 export function resolveRigidVehiclePair(a:RigidBody2D,b:RigidBody2D):RigidImpactResult {return resolveRigidBody2D(a,b);}
+
+/** Allocate dissipated impact energy by inverse-mass response (lighter body absorbs the larger share). */
+export function splitImpactEnergy(energy:number,invMassA:number,invMassB:number):{a:number;b:number} {
+ const safeEnergy=Math.max(0,Number.isFinite(energy)?energy:0),a=Math.max(0,Number.isFinite(invMassA)?invMassA:0),b=Math.max(0,Number.isFinite(invMassB)?invMassB:0),sum=a+b;
+ return sum>1e-12?{a:safeEnergy*a/sum,b:safeEnergy*b/sum}:{a:safeEnergy*.5,b:safeEnergy*.5};
+}
