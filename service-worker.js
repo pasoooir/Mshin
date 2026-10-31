@@ -24,7 +24,6 @@ self.addEventListener("install", event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(APP_SHELL);
-    await Promise.allSettled(REMOTE_AUDIO.map(url => cache.add(url)));
     await self.skipWaiting();
   })());
 });
