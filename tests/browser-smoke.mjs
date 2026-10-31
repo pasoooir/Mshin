@@ -167,6 +167,7 @@ try {
   economy.on("pageerror", error => errors.push(error.message));
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await economy.locator("#play").click();
+  await economy.waitForFunction(() => window.MshinAudioReady === true, undefined, { timeout: 15000 });
   assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
   assert.equal((await economy.locator("#credits").textContent()).trim(), "1000 🪙", "wallet should load saved coins");
   assert.match(await economy.locator("#weatherInfo").textContent(), /صاف/, "Green Valley should use clear weather");
