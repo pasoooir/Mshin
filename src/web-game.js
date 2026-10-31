@@ -82,12 +82,14 @@ function makeObstacles(){
  rivals=types.map((type,i)=>{const spec=specs[type],mass=type==="car"&&i<3?[1450,980,1250][i]:spec.mass,cruiseFactor=type==="car"&&i<3?.82+i*.06:spec.cruise;return {id:i,type,...spec,mass,cruiseFactor,distance:.18+i*.22,speed:activeCar().max*cruiseFactor,lateral:lanes[i],lateralVelocity:0,laneIndex:[0,1,3,2,0,2,1,3][i],targetLane:[0,1,3,2,0,2,1,3][i],changeCooldown:.4+i*.25,yaw:0,yawRate:0,damage:createDamageState(),destruction:createDestructionState(),destructionEffectPlayed:false,destructionClock:0,collisionCooldown:0,color:colors[i]}})
  window.MshinTrafficRoster=rivals.map(({type,id,mass,length,width})=>({type,id,mass,length,width}));
 }
-let trackCache=null,trackCacheStage=0,trackCacheBuilds=0;
+let trackCache=null,trackCacheStage=0,trackCacheBuilds=0,trackCacheLightingAt=0;
 function drawTrack(){
- if(!trackCache||trackCacheStage!==stage.id){
+ const now=performance.now();
+ const refreshLighting=now-trackCacheLightingAt>=8000;
+ if(!trackCache||trackCacheStage!==stage.id||refreshLighting){
   const cache=document.createElement("canvas");cache.width=1600;cache.height=1200;trackCacheBuilds++;
   const previous=ctx;ctx=cache.getContext("2d");ctx.setTransform(.5,0,0,.5,800,600);
-  renderStaticTrack();ctx=previous;trackCache=cache;trackCacheStage=stage.id;
+  renderStaticTrack();ctx=previous;trackCache=cache;trackCacheStage=stage.id;trackCacheLightingAt=now;
  }
  ctx.drawImage(trackCache,-1600,-1200,3200,2400);
  renderTrackDynamics();
