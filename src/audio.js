@@ -103,7 +103,7 @@ export function createGameAudio() {
       if(!ensure())return;if(!decodePromise)prepare();if(!engineSources.length)return;
       const profile=profiles[vehicleId]||profiles.rally,now=context.currentTime,dt=lastUpdate?Math.min(.1,Math.max(.001,now-lastUpdate)):.016;lastUpdate=now;
       const velocity=Math.max(0,Math.min(390,speed||0)),gear=gearForSpeed(velocity),gearChanged=lastGear>=0&&gear!==lastGear;
-      if(gearChanged&&!profile.electric){shiftAt=now;oneShot("gearDown",.14,gear<lastGear?.9:1.08)}lastGear=gear;
+      if(gearChanged&&!profile.electric){shiftAt=now;oneShot("gearDown",.14,gear < lastGear ? .9 : 1.08)}lastGear=gear;
       const bounds=[0,.13,.28,.44,.61,.79,1.001],span=bounds[gear+1]-bounds[gear];
       let rpm=.22+Math.max(0,Math.min(1,(velocity/390-bounds[gear])/span))*.76;
       throttleEnvelope+=( (throttle?1:0)-throttleEnvelope )*(1-Math.exp(-dt*(throttle?9:4.2)));
