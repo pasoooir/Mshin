@@ -168,7 +168,7 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pkg.version, "0.9.0");
   assert.equal(pwa.version, "0.9.0");
   assert.equal(cocos.version, "2026.10.31.14");
-  assert.ok(readme.includes("live browser release is **version 0.9.0**") && readme.includes("deployed to GitHub Pages after successful merged-main validation and desktop/mobile Playwright browser smoke tests"), "README must identify 0.8.9 as the verified live release");
+  assert.ok(readme.includes("live browser release is **version 0.9.0**") && readme.includes("deployed to GitHub Pages after successful source-branch validation and deployment"), "README must identify 0.8.9 as the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.0**"), "README must preserve the latest published release after 0.9.0 deploys");
 });
 
