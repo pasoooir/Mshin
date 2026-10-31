@@ -66,7 +66,7 @@ export class VehicleController extends Component {
    vehicle.car.speed=Math.max(0,body.vx*fx+body.vy*fy);
    vehicle.car.heading+=body.angularVelocity*.016;
    const localF=impact.nx*normalSign*fx+impact.ny*normalSign*fy,localR=impact.nx*normalSign*(-fy)+impact.ny*normalSign*fx;
-   addVehicleDamage(vehicle.damage,impact.energy,Math.abs(localF)>=Math.abs(localR)?(localF>=0?"front":"rear"):(localR>=0?"right":"left"));
+   addVehicleDamage(vehicle.damage,impact.energy*(body.invMass/(a.invMass+b.invMass)),Math.abs(localF)>=Math.abs(localR)?(localF>=0?"front":"rear"):(localR>=0?"right":"left"));
    vehicle.hitCooldown=.22;
   }
  }
