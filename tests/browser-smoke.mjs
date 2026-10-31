@@ -238,10 +238,9 @@ try {
   assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
   const showroomCenter = { x: mobileShowroom.x + mobileShowroom.width/2, y: mobileShowroom.y + mobileShowroom.height/2 };
-  await mobile.mouse.move(showroomCenter.x, showroomCenter.y);
-  await mobile.mouse.down();
-  await mobile.mouse.move(showroomCenter.x, showroomCenter.y + 35, { steps: 5 });
-  await mobile.mouse.up();
+  await mobile.locator("#showroomVehicle").dispatchEvent("pointerdown", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y });
+  await mobile.locator("#showroomVehicle").dispatchEvent("pointermove", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y + 35 });
+  await mobile.locator("#showroomVehicle").dispatchEvent("pointerup", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y + 35 });
   await mobile.waitForTimeout(60);
   const mobileDragState = await mobile.evaluate(()=>window.MshinShowroom);
   assert.ok(Math.abs(mobileDragState.angle)>0,"mobile drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
