@@ -4,18 +4,46 @@ import { mkdir } from "node:fs/promises";
 
 await mkdir("artifacts", { recursive: true });
 
+async function waitForGameBoot(page, label = "game") {
+  await page.waitForFunction(() => {
+    const stage = window.MshinBootStage;
+    const ready = window.MshinBootReady === true || stage === "ready";
+    return ready && window.MshinAssets?.ready === true && Boolean(document.querySelector("#home"));
+  }, undefined, { timeout: 45000 }).catch(async error => {
+    const state = await page.evaluate(() => ({
+      stage: window.MshinBootStage,
+      bootReady: window.MshinBootReady === true,
+      bootError: window.MshinBootError || null,
+      assetsReady: window.MshinAssets?.ready === true,
+      progress: window.MshinPreloadProgress,
+      failures: window.MshinAssets?.failures || [],
+      homePresent: Boolean(document.querySelector("#home")),
+      loaderPresent: Boolean(document.querySelector("#assetLoader"))
+    }));
+    throw new Error(label + " did not reach the game-ready state: " + JSON.stringify(state) + " | " + error.message);
+  });
+  const state = await page.evaluate(() => ({
+    stage: window.MshinBootStage,
+    bootReady: window.MshinBootReady === true,
+    bootError: window.MshinBootError || null,
+    assetsReady: window.MshinAssets?.ready === true,
+    homePresent: Boolean(document.querySelector("#home"))
+  }));
+  assert.equal(state.bootError, null, label + " must not report a boot error: " + JSON.stringify(state));
+  assert.equal(state.bootReady || state.stage === "ready", true, label + " must publish its final runtime-ready signal: " + JSON.stringify(state));
+  assert.equal(state.assetsReady, true, label + " assets must be ready: " + JSON.stringify(state));
+  assert.equal(state.homePresent, true, label + " must retain the home menu DOM");
+  await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
+  return state;
+}
+
 const browser = await chromium.launch({ headless: true });
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 }).catch(async () => {
-    const state = await page.evaluate(() => ({ stage: window.MshinBootStage, progress: window.MshinPreloadProgress, failures: window.MshinAssets?.failures }));
-    throw new Error("Mshin boot did not finish: " + JSON.stringify(state));
-  });
-  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "game runtime must import after the full preload");
-  await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 15000 });
+  await waitForGameBoot(page, "initial desktop boot");
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
@@ -82,7 +110,8 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "persistence reload");
   await page.locator("#play").click();
   await page.locator("#tab-settings").click();
   assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
@@ -146,7 +175,8 @@ try {
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "race-audio persistence reload");
   await page.locator("#play").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
@@ -294,7 +324,8 @@ try {
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
-  await economy.reload({ waitUntil: "networkidle" });
+  await economy.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(economy, "economy persistence reload");
   await economy.locator("#play").click();
   await economy.locator("#tab-cars").click();
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "unlocked selected car should persist after reload");
@@ -316,8 +347,9 @@ try {
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "service-worker control reload");
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, { timeout: 5000 });
   const audioCacheAudit = await page.evaluate(async () => {
     const manifest = await fetch("./src/asset-manifest.json").then(response => response.json());
     const cache = await caches.open("mshin-audio-assets-v1");
@@ -328,8 +360,8 @@ try {
   assert.equal(audioCacheAudit.cached, audioCacheAudit.expected, "every declared engine, effect and music track must be persisted in the offline audio cache: " + audioCacheAudit.missing.join(", "));
   await page.context().setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "offline PWA reload");
   assert.equal(await page.locator("#home").isVisible(), true, "game shell should load while offline after first visit");
-  await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 20000 });
   const offlineAudio = await page.evaluate(() => ({ loaded: Object.values(window.MshinAssets.audioData).filter(value => value instanceof ArrayBuffer).length, expected: Object.keys(window.MshinAssets.audioData).length }));
   assert.equal(offlineAudio.loaded, offlineAudio.expected, "all audio buffers must be reloaded from Cache Storage with the network disabled");
   await page.locator("#play").click();
