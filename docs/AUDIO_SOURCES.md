@@ -20,3 +20,5 @@ The browser asset manifest points to immutable commit `e280012e423cf2c800bd54e4f
 | Engine stop | `engine-stop.wav` | Joseph Sardin, BigSoundBank | https://bigsoundbank.com/car-on-a-road-s1286.html — CC0 1.0 |
 
 The audio engine blends idle, load and rolling recordings independently, with per-vehicle layer weights, filter resonance, RPM-dependent playback rates and throttle envelopes. The electric vehicle retains a separate synthesized motor profile. This replaces the previous six pitch-only loop layers.
+
+| Vehicle collision | `collisionImpact.ogg` | qubodup, “Crash Collision” | https://opengameart.org/content/crash-collision — CC0 1.0 |
