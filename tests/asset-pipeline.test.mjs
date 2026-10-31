@@ -62,7 +62,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v25/);
+  assert.match(sw, /mshin-arcade-v26/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
@@ -156,13 +156,13 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v25/);
+  assert.match(sw, /mshin-arcade-v26/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.10.31.11");
-  assert.equal(pkg.version, "0.8.6");
-  assert.equal(pwa.version, "0.8.6");
+  assert.equal(pkg.version, "0.8.7");
+  assert.equal(pwa.version, "0.8.7");
   assert.equal(cocos.version, "2026.10.31.11");
-  assert.match(readme, /deployed to GitHub Pages after successful unit\/integration and Playwright desktop\/mobile browser smoke tests/);
+  assert.ok(readme.includes("proposed browser release is **version 0.8.7**") && readme.includes("deployment will follow successful unit/integration and Playwright desktop/mobile browser smoke tests"), "README must describe 0.8.7 as proposed until deployment succeeds");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.8.6**"), "README must identify 0.8.6 as the deployed release");
 });
 
