@@ -51,8 +51,15 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(game, /drawWorldEnvironment/);
   assert.match(game, /drawHelicopterShadow/);
   assert.match(game, /syncAudioSettings/);
+  assert.match(game, /const audioReady=await audio.ready\(\)/);
+  assert.match(game, /audioErrorMessage/);
+  assert.match(audio, /profiles=/);
+  assert.match(audio, /const idleMix=/);
+  assert.match(audio, /const loadMix=/);
+  assert.match(audio, /const roadMix=/);
   assert.match(html, /id="musicVolume"/);
   assert.match(html, /id="sfxVolume"/);
+  assert.match(html, /id="audioErrorMessage"/);
   assert.match(game, /audio\.update\(car\.speed,state==="race"\|\|state==="countdown",input\.gas,input\.brake,boostTimer>0,selectedCar\)/);
   assert.match(loader, /manifest\.icons/);
   assert.match(loader, /manifest\.sounds/);
