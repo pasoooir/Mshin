@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair } from '../.test-build/src/cocos-core.js';
+import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy } from '../.test-build/src/cocos-core.js';
 
 test('joystick clamps diagonal displacement to unit radius', () => {
  const v = normalizeJoystick(100, 100, 50); assert.ok(Math.hypot(v.x, v.y) <= 1.000001); assert.ok(v.x > 0 && v.y > 0);
@@ -83,4 +83,13 @@ test('Cocos collision chain transfers impulse to a third vehicle',()=>{
  const front=createRigidBody2D({x:84,y:0,vx:0,vy:0,mass:1000,length:54,width:30});
  const first=resolveRigidVehiclePair(rear,middle),second=resolveRigidVehiclePair(middle,front);
  assert.ok(first.hit&&second.hit);assert.ok(front.vx>0);
+});
+
+test('impact energy is assigned by inverse mass, with static barriers absorbing none',()=>{
+ const equal=splitImpactEnergy(100,1/1000,1/1000);
+ assert.equal(equal.a,50);assert.equal(equal.b,50);
+ const heavyLight=splitImpactEnergy(100,1/2000,1/500);
+ assert.ok(heavyLight.b>heavyLight.a);assert.equal(heavyLight.a+heavyLight.b,100);
+ const wall=splitImpactEnergy(100,1/1200,0);
+ assert.equal(wall.a,100);assert.equal(wall.b,0);
 });
