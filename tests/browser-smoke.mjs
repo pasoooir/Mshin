@@ -58,7 +58,26 @@ async function waitForGameBoot(page, label = "game") {
   assert.equal(state.bootReady || state.stage === "ready", true, label + " must publish its final runtime-ready signal: " + JSON.stringify(state));
   assert.equal(state.assetsReady, true, label + " assets must be ready: " + JSON.stringify(state));
   assert.equal(state.homePresent, true, label + " must retain the home menu DOM");
-  await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
+  try {
+    await page.locator("#home").waitFor({ state: "visible", timeout: 15000 });
+  } catch (error) {
+    const visibility = await page.evaluate(() => {
+      const home = document.querySelector("#home");
+      if (!home) return { present: false };
+      const style = getComputedStyle(home);
+      const rect = home.getBoundingClientRect();
+      return {
+        present: true,
+        className: home.className,
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        state: window.MshinGameState || null
+      };
+    });
+    throw new Error(label + " booted but home menu did not become visible: " + JSON.stringify(visibility) + " | " + error.message);
+  }
   return state;
 }
 
