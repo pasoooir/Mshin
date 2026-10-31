@@ -28,7 +28,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.18"'));
+  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.19"'));
   assert.match(html, /role="tablist"/);
   assert.match(html, /data-panel="race"/);
   assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
@@ -194,10 +194,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const readme = await readFile(path.join(root, "README.md"), "utf8");
   assert.match(sw, /mshin-arcade-v36/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.18");
+  assert.equal(manifest.version, "2026.10.31.19");
   assert.equal(pkg.version, "0.10.1");
   assert.equal(pwa.version, "0.10.1");
-  assert.equal(cocos.version, "2026.10.31.18");
+  assert.equal(cocos.version, "2026.10.31.19");
   assert.ok(readme.includes("live browser release is **version 0.9.3**") && readme.includes("deployed to GitHub Pages after successful merged-main validation"), "README must identify the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.3**"), "README must preserve the latest published release");
 });
