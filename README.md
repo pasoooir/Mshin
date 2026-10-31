@@ -12,6 +12,13 @@ The garage now includes a cinematic vehicle studio with pointer/touch rotation, 
 
 Version 0.8.8 passed desktop/mobile Playwright regression tests and was deployed to GitHub Pages from merge commit `ed7554dcd161ccabf5261f53a14afcd6210998aa`.
 
+
+## Active development candidate — 0.8.9 (not released)
+
+The current feature branch is implementing a first pass of the aerial-rally presentation and audio overhaul. It replaces flat trackside decorations with cached, world-specific 2.5D trees, extruded buildings, rocks, palms and spectator groups; adds a moving world-anchored helicopter shadow with rotating rotor silhouettes; separates music and SFX gain buses with independent persistent toggles/sliders; adds the CC0 menu/race soundtrack loops; and requires both music tracks to preload before the browser runtime starts. The service worker now precaches the renderer and attempts to cache the two approved remote soundtrack files for offline play.
+
+Soundtrack provenance: “Sky Blue Street” and “Pure Raceway” by MintoDog, both marked CC0 on their individual OpenGameArt pages ([Sky Blue Street](https://opengameart.org/content/sky-blue-street), [Pure Raceway](https://opengameart.org/content/pure-raceway)). The release remains **unverified and unpublished** until the new Node, desktop/mobile Playwright, preload, and Pages checks pass. The existing live release remains 0.8.8.
+
 ## Play the browser edition
 
 Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from **10 themed worlds and 50 playable stages**. The browser edition includes large-scale race circuits, four clearly marked driving lanes on a 360-unit asphalt surface, a pulled-back forward-facing chase camera, tangent-aligned player and rival cars, themed scenery and hazards, touch steering, icon-only CDN gas/brake/nitro controls, keyboard controls, lap timing, three AI rivals, live race position, a circuit minimap, weather effects and weather-dependent handling, deterministic player/AI and AI/AI collision impulses, cumulative localized damage, impact-dependent smoke/sparks/camera shake, pause/finish screens, and local best-time/progress storage.
