@@ -68,7 +68,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v39/);
+  assert.match(sw, /mshin-arcade-v40/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -193,7 +193,7 @@ test("all app cache and asset version markers are advanced together", async () =
   const assetManifest = JSON.parse(await readFile(path.join(root, "src/asset-manifest.json"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v39/);
+  assert.match(sw, /mshin-arcade-v40/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(pwa.version, pkg.version, "PWA manifest version must match package.json");
   assert.equal(manifest.version, assetManifest.version, "asset manifest version must match the bundled asset revision");
