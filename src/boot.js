@@ -1,11 +1,11 @@
-import { preloadGameAssets } from "./asset-loader.js";
-
 const panel = document.getElementById("assetLoader");
 const bar = document.getElementById("assetProgress");
 const label = document.getElementById("assetStatus");
 const percentLabel = document.getElementById("assetPercent");
-window.MshinBootStage = "preloading";
+window.MshinBootStage = "loading";
 try {
+  const { preloadGameAssets } = await import("./asset-loader.js");
+  window.MshinBootStage = "preloading";
   await preloadGameAssets(({ loaded, total, percent, name }) => {
     window.MshinPreloadProgress = { loaded, total, percent, name };
     bar.style.width = percent + "%";

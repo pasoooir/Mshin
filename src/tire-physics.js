@@ -13,7 +13,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const capacity=85*surfaceGrip;
  const longitudinalDemand=brake?65:(throttle?30:0);
  const targetLateralVelocity=steering*(38+Math.abs(v)*.29)/Math.max(.55,surfaceGrip);
- const steeringResponse=1-Math.exp(-dt*(Math.abs(steering)<.001?7:5.5));
+ const steeringResponse=1-Math.exp(-dt*(Math.abs(steering)<.001?9.5:11.5));
  const requestedLateralAcceleration=(targetLateralVelocity-lateral)*steeringResponse/Math.max(dt,.001);
  const lateralDemand=Math.abs(requestedLateralAcceleration);
  const lateralScale=Math.min(1,capacity/Math.max(.001,Math.hypot(longitudinalDemand,lateralDemand)));

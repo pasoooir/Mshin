@@ -1,7 +1,7 @@
 name: Validate Mshin game data and portable TypeScript core
 on:
   push:
-    branches: [main, "feat/**", "test/**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -22,6 +22,9 @@ jobs:
       - run: node --check src/physics.js
       - run: node --check src/game.js
       - run: node --check src/web-game.js
+      - run: node --check src/steering-controls.js
+      - run: node --check src/tire-physics.js
+      - run: node --check src/menu-3d-scene.js
       - run: node --check src/audio.js
       - run: node --check src/asset-loader.js
       - run: npm test
