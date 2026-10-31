@@ -69,6 +69,9 @@ try {
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("#play").click();
+  await page.locator("#tab-settings").click();
+  assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
+  assert.equal(await page.locator("#sfxVolume").inputValue(), "62", "SFX volume should restore after reload");
   await page.locator("#tab-cars").click();
   assert.match(await page.locator(".carChoice.active").textContent(), /دنباله‌دار GT/, "garage should restore the saved car");
   await page.locator("#tab-race").click();
