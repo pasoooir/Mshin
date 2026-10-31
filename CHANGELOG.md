@@ -1,3 +1,12 @@
+## 0.8.7 — 2026-10-31
+
+### Premium 3D showroom and menu polish
+- Added a perspective-driven showroom with layered lighting, metallic reflections, stronger contact shadows and 3D vehicle artwork.
+- Refined hover and selected states across vehicle, world, stage, workshop and achievement cards.
+- Tuned card sizing and horizontal touch rails for narrow mobile screens; respects reduced-motion preferences.
+- Extended Playwright coverage for desktop perspective, five-car integrity, mobile rail sizing and five-stage selection.
+- Bumped PWA shell cache to v26 and synchronized package/manifest metadata to 0.8.7.
+
 ## 0.8.6 — 2026-10-31
 
 ### GT-inspired menu redesign
