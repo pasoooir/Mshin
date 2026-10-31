@@ -105,3 +105,9 @@ export function applyRigidImpactDamage(damage, impact, localSide, tuning={}) {
   damage.disabled=damage.total>=96;
   return {points,zone,disabled:damage.disabled,energy};
 }
+
+/** Allocate dissipated impact energy by inverse-mass response. */
+export function splitImpactEnergy(energy,invMassA,invMassB) {
+  const safeEnergy=Math.max(0,Number.isFinite(energy)?energy:0),a=Math.max(0,Number.isFinite(invMassA)?invMassA:0),b=Math.max(0,Number.isFinite(invMassB)?invMassB:0),sum=a+b;
+  return sum>1e-12?{a:safeEnergy*a/sum,b:safeEnergy*b/sum}:{a:safeEnergy*.5,b:safeEnergy*.5};
+}
