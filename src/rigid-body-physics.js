@@ -25,8 +25,8 @@ function support(body, dx, dy) {
   const basis=axes(body);
   return {x:body.x+Math.sign(Math.abs(dx*basis[0].x+dy*basis[0].y)<EPS?0:dx*basis[0].x+dy*basis[0].y)*basis[0].x*body.length/2+
       Math.sign(Math.abs(dx*basis[1].x+dy*basis[1].y)<EPS?0:dx*basis[1].x+dy*basis[1].y)*basis[1].x*body.width/2,
-    y:body.y+Math.sign(dx*basis[0].x+dy*basis[0].y||1)*basis[0].y*body.length/2+
-      Math.sign(dx*basis[1].x+dy*basis[1].y||1)*basis[1].y*body.width/2};
+    y:body.y+Math.sign(Math.abs(dx*basis[0].x+dy*basis[0].y)<EPS?0:dx*basis[0].x+dy*basis[0].y)*basis[0].y*body.length/2+
+      Math.sign(Math.abs(dx*basis[1].x+dy*basis[1].y)<EPS?0:dx*basis[1].x+dy*basis[1].y)*basis[1].y*body.width/2};
 }
 export function vehicleContact(a,b) {
   const dx=b.x-a.x,dy=b.y-a.y,aa=axes(a),bb=axes(b);
