@@ -18,9 +18,9 @@ Last evidence refresh: 2026-10-31
 - **Live game:** https://pasoooir.github.io/Mshin/
 - **Limit:** تست مرورگر صحت cache و decode را تأیید می‌کند، اما جایگزین ارزیابی شنیداری روی بلندگوهای فیزیکی و QA مستقل در Cocos Creator نیست.
 
-## Previous verified release — 0.8.7
+## Previous verified release — 0.8.8
 
-- PR #40، commit `3d4578fa407ffcdffdf60693dca2c0e5a8a2591d`؛ CI run `41192455546`، merged-main validation `41193018567` و Pages deployment `41193017445` موفق بودند.
+- PR #41، commit `ed7554dcd161ccabf5261f53a14afcd6210998aa`؛ PR browser CI run `41194601384`، merged-main validation `41195187912` و Pages deployment `41195187475` موفق بودند.
 
 ## Repository and delivery state
 
