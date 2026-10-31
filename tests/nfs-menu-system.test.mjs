@@ -40,7 +40,7 @@ test("settings and pause actions preserve game state semantics", () => {
 
 test("PWA and offline cache markers advance together", () => {
   assert.equal(manifest.version, "0.10.1");
-  assert.match(sw, /mshin-arcade-v37/);
+  assert.match(sw, /mshin-arcade-v38/);
 });
 
 test("menu and garage use repository-local procedural WebGL 3D scenes", async () => {
