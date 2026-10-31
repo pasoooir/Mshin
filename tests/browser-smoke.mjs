@@ -22,6 +22,8 @@ try {
   assert.equal(preloadState.scenes, 10, "all ten photographic world environments should be decoded before the menu is interactive");
   assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
   await page.screenshot({ path: "artifacts/mshin-home-desktop.png" });
+  assert.match(await page.locator(".releaseBadge").textContent(), /نسخه منتشرشده ۰\.۸\.۵/, "home menu must visibly identify the published release");
+  assert.equal(await page.locator(".releaseBadge").isVisible(), true, "published release badge must be visible to players");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "all 10 worlds should be selectable; browser errors: " + errors.join(" | "));

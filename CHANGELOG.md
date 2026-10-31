@@ -1,4 +1,19 @@
-## 0.8.4 — 2026-10-31\n\n### Published version visibility and cache refresh\n- Show the published release number (0.8.4) on the startup splash screen and the main menu after loading.\n- Add a direct link from the in-game version badge to this changelog so players can verify what is included in the published build.\n- Advance the PWA manifest, package metadata, asset catalogs and boot query marker together; bump the service-worker cache to v23 so returning installations refresh to this release.\n\n## 0.8.3 — 2026-10-31
+## 0.8.5 — 2026-10-31
+
+### Mobile localization and release integrity
+- Replaced the remaining English portrait-orientation hint with Persian guidance to rotate the phone for the intended landscape racing view.
+- Synchronized the visible splash/menu release labels, package metadata, PWA manifest and asset catalog version markers at 0.8.5 / 2026.10.31.10.
+- Advanced the offline service-worker cache to v24 so returning PWA installations receive the updated release shell.
+- Added automated checks for release-label and metadata consistency, and a browser assertion that the published version badge is visible.
+
+## 0.8.4 — 2026-10-31
+
+### Published version visibility and cache refresh
+- Show the published release number (0.8.4) on the startup splash screen and the main menu after loading.
+- Add a direct link from the in-game version badge to this changelog so players can verify what is included in the published build.
+- Advance the PWA manifest, package metadata, asset catalogs and boot query marker together; bump the service-worker cache to v23 so returning installations refresh to this release.
+
+## 0.8.3 — 2026-10-31
 
 ### Vehicle identity and race presentation
 - Added individual sound profiles for Rally, GT, 4x4 and Desert Raptor vehicles; pitch, throttle character, filter response and loudness now differ by vehicle.
