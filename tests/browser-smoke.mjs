@@ -34,11 +34,14 @@ try {
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
+  assert.ok(await page.evaluate(() => Object.values(window.MshinAssets.audioData).every(value => value instanceof ArrayBuffer)), "all CDN audio bytes should be preloaded before a race");
   await page.locator("#startRace").click();
-  await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
   assert.equal(raceRequests.length, requestCountAtStart, "starting a race must not trigger late asset/network requests");
+  await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  assert.equal(raceRequests.length, requestCountAtStart, "countdown and gameplay must not trigger late asset/network requests");
+  assert.equal(await page.evaluate(() => window.MshinAudioReady), true, "all CDN engine and effect audio must decode before GO");
   const physicsCheck = await page.evaluate(async () => { const p = await import("./src/collision-physics.js"); const a={x:0,y:0,vx:300,vy:0,mass:1200,radius:32},b={x:64,y:0,vx:40,vy:0,mass:1000,radius:32}; const hit=p.resolveVehicleImpact(a,b); const damage=p.createDamageState(); p.applyVehicleDamage(damage,hit.energy,"rear"); return {hit:hit.hit,closing:hit.closingSpeed,rivalVelocity:b.vx,damage:damage.total,level:p.damageLevel(damage)}; });
   assert.equal(physicsCheck.hit,true,"browser should load collision impulse solver");
   assert.ok(physicsCheck.closing>0 && physicsCheck.rivalVelocity>40,"rear impact should transfer momentum");
@@ -196,7 +199,8 @@ try {
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
   await page.context().setOffline(false);
-  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\\n");
+  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
+");
 } finally {
   await browser.close();
 }
