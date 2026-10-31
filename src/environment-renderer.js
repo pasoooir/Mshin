@@ -16,19 +16,21 @@ function drawTree(ctx, x, y, scale, palette, pine = false) {
   ctx.fillStyle = "rgba(8,18,20,.28)";
   ctx.beginPath(); ctx.ellipse(12, 17, 27, 13, -.18, 0, TAU); ctx.fill();
   ctx.fillStyle = "#493a2c";
-  polygon(ctx, [[-5,4],[4,4],[7,22],[0,25],[-6,20]], "#493a2c", "#2c2924");
-  polygon(ctx, [[1,5],[5,7],[8,21],[3,20]], "#796047");
+  polygon(ctx, [[-6,3],[3,3],[7,22],[0,26],[-7,20]], "#493a2c", "#2c2924");
+  polygon(ctx, [[1,4],[5,6],[8,22],[3,20]], "#92704e");
+  ctx.strokeStyle = "#5b4532"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 9); ctx.lineTo(-10, -5); ctx.moveTo(1, 8); ctx.lineTo(12, -8); ctx.stroke();
   if (pine) {
     polygon(ctx, [[0,-34],[25,3],[13,4],[30,22],[-28,22],[-12,4],[-25,4]], palette.mid, "#28483d");
     polygon(ctx, [[0,-34],[0,17],[-13,17],[-4,0],[-15,0]], palette.light);
     polygon(ctx, [[0,-19],[18,9],[5,8]], palette.dark);
   } else {
+    polygon(ctx, [[-27,-7],[-22,7],[-4,16],[18,11],[29,-5],[18,5],[-4,11],[-18,2]], palette.dark, "#234b37");
     ctx.fillStyle = palette.dark;
-    ctx.beginPath(); ctx.ellipse(-8, -7, 22, 19, -.3, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-8, -8, 23, 18, -.3, 0, TAU); ctx.fill();
     ctx.fillStyle = palette.mid;
-    ctx.beginPath(); ctx.ellipse(10, -13, 23, 20, .2, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(10, -16, 24, 20, .2, 0, TAU); ctx.fill();
     ctx.fillStyle = palette.light;
-    ctx.beginPath(); ctx.ellipse(-4, -23, 14, 11, -.25, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-5, -27, 15, 12, -.25, 0, TAU); ctx.fill();
     ctx.fillStyle = "rgba(255,255,255,.16)";
     ctx.beginPath(); ctx.ellipse(11, -20, 8, 5, .3, 0, TAU); ctx.fill();
   }
@@ -112,7 +114,7 @@ export function drawWorldEnvironment(ctx, world, frameAt) {
     const t = i / 42 * TAU, f = frameAt(t), side = i % 2 ? 1 : -1;
     const offset = 218 + (i % 4) * 30;
     const x = f.p.x + f.nx * side * offset, y = f.p.y + f.ny * side * (145 + (i % 4) * 22);
-    const scale = .78 + (i % 5) * .12;
+    const scale = 1.08 + (i % 5) * .12;
     ctx.save(); ctx.translate(x, y); ctx.rotate(t);
     if (world === 0 || world === 6 || world === 9) drawTree(ctx, 0, 0, scale, palette, world === 6);
     else if (world === 1) drawRock(ctx, 0, 0, scale * 1.15, palette);
@@ -138,14 +140,15 @@ export function drawWorldEnvironment(ctx, world, frameAt) {
 
 export function drawHelicopterShadow(ctx, frameAt, timeMs = 0) {
   const t = (timeMs * .000075) % TAU, f = frameAt(t);
-  const lateral = 90 + Math.sin(timeMs * .00009) * 240;
+  const lateral = 55 + Math.sin(timeMs * .00009) * 135;
   const x = f.p.x + f.nx * lateral, y = f.p.y + f.ny * lateral;
   const rotation = f.angle + Math.sin(timeMs * .00022) * .12;
-  const rotor = timeMs * .012;
-  ctx.save(); ctx.translate(x, y); ctx.rotate(rotation); ctx.scale(1.18, 1.18);
-  ctx.globalAlpha = .2;
-  ctx.fillStyle = "rgba(4,10,20,.10)"; ctx.beginPath(); ctx.ellipse(0, 8, 42, 70, 0, 0, TAU); ctx.fill();
-  ctx.fillStyle = "#07101b"; ctx.shadowColor = "#07101b"; ctx.shadowBlur = 9;
+  const rotor = timeMs * .035;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rotation); ctx.scale(1.3, 1.3);
+  ctx.globalAlpha = .34;
+  ctx.fillStyle = "rgba(4,10,20,.12)"; ctx.beginPath(); ctx.ellipse(0, 8, 48, 76, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = "rgba(4,10,20,.18)"; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0, -4, 61, 61, 0, 0, TAU); ctx.stroke();
+  ctx.fillStyle = "#07101b"; ctx.shadowColor = "#07101b"; ctx.shadowBlur = 10;
   // Tail boom and stabilizer.
   polygon(ctx, [[-7,12],[-4,12],[-23,58],[-28,58]], "#07101b");
   ctx.fillRect(-34,54,16,4);
