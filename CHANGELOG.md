@@ -1,3 +1,12 @@
+## 0.9.3 — release candidate (2026-10-31)
+
+### Repository-local runtime assets
+- Vendored 10 photographic world scenes, 3 control SVGs, and 10 engine/music/braking audio files into `cdn/assets/`.
+- Repointed the runtime asset manifest to same-origin repository paths and removed external CDN fallback from the service worker.
+- Advanced the PWA shell cache to `mshin-arcade-v33`; the complete local asset set is precached for offline launch and gameplay.
+- Synchronized package/PWA version `0.9.3`, asset marker `2026.10.31.17`, and Cocos vector catalog marker.
+- Pending: complete Node + desktop/mobile Playwright checks, merged-main validation, and successful GitHub Pages deployment.
+
 ## 0.8.8 — 2026-10-31
 
 ### Cinematic vehicle showroom
