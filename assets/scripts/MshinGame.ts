@@ -11,7 +11,7 @@ const hex=(v:string)=>{const h=v.replace("#","");return new Color(parseInt(h.sli
 @ccclass("MshinGame")
 export class MshinGame extends Component {
  private screen:Screen="home";private stage:StageDefinition=STAGES[0];private progress:PlayerProgress=ProgressStore.load();private selectedWorld=0;
- private cameraNode!:Node;private camera!:Camera;private worldRoot!:Node;private hudCanvas!:Node;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;private rivals:VehicleController[]=[];
+ private cameraNode!:Node;private camera!:Camera;private worldRoot!:Node;private hudCanvas!:Node;private hudRoot!:Node;private menuRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;private rivals:VehicleController[]=[];
  private labels=new Map<string,Label>();private uiNodes:Node[]=[];private joystick!:Node;private knob!:Node;private stickId=-1;
  private lastSize={width:0,height:0};private finishHandled=false;private artLibrary:any=null;private hudRefresh=0;
  start():void {
@@ -28,7 +28,7 @@ export class MshinGame extends Component {
   this.hudCanvas=new Node("HUD Canvas");this.cameraNode.addChild(this.hudCanvas);this.hudCanvas.setPosition(0,0,-900);
   this.hudCanvas.addComponent(UITransform).setContentSize(1280,720);
   const uiCanvas=this.hudCanvas.addComponent(Canvas);uiCanvas.cameraComponent=this.camera;uiCanvas.alignCanvasWithScreen=false;
-  this.hudRoot=new Node("HUD and Menus");this.hudCanvas.addChild(this.hudRoot);
+  this.hudRoot=new Node("HUD and Menus");this.hudCanvas.addChild(this.hudRoot);this.menuRoot=new Node("Responsive Menu Layer");this.hudRoot.addChild(this.menuRoot);
   this.createPersistentHud();this.bindKeyboard();this.showLoading();this.resizeUi();
   resources.load("vector-art",JsonAsset,(error,asset)=>{if(!error&&asset)this.artLibrary=asset.json;else console.warn("Mshin Cocos vector art preload failed; procedural Graphics fallback will be used.",error);this.showHome();});
  }
@@ -54,7 +54,7 @@ export class MshinGame extends Component {
   this.addLabel("lap","دور  ۰ / ۳",-420,330,18,false);this.addLabel("time","زمان  ۰۰:۰۰",-260,330,18,false);this.addLabel("speed","سرعت  ۰",-90,330,18,false);this.addLabel("damage","بدنه  ۰٪",120,330,18,false);
  }
  private addLabel(id:string,text:string,x:number,y:number,size:number,transient:boolean):Label {
-  const n=this.makeNode("Label "+id,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(390,48);
+  const n=this.makeNode("Label "+id,transient?this.menuRoot:this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(390,48);
   const l=n.addComponent(Label);l.string=text;l.fontSize=size;l.lineHeight=size+5;l.color=new Color(255,255,255,255);l.horizontalAlign=Label.HorizontalAlign.CENTER;l.verticalAlign=Label.VerticalAlign.CENTER;
   this.labels.set(id,l);if(transient)this.uiNodes.push(n);return l;
  }
@@ -62,7 +62,7 @@ export class MshinGame extends Component {
  private clearUi():void {for(const n of this.uiNodes){this.labels.forEach((v,k)=>{if(v.node===n)this.labels.delete(k);});n.destroy();}this.uiNodes=[];}
  private addUiLabel(text:string,x:number,y:number,size:number):void {this.addLabel("screen-"+this.uiNodes.length,text,x,y,size,true);}
  private button(text:string,x:number,y:number,w:number,h:number,action:()=>void):Node {
-  const n=this.makeNode("Button "+text,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(w,h);
+  const n=this.makeNode("Button "+text,this.menuRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(w,h);
   const g=n.addComponent(Graphics);
   g.fillColor=hex("#14253A");g.moveTo(-w/2+7,-h/2);g.lineTo(w/2-18,-h/2);g.lineTo(w/2,h/2);g.lineTo(-w/2+7,h/2);g.close();g.fill();
   g.strokeColor=hex("#536A80");g.lineWidth=2;g.moveTo(-w/2+7,-h/2);g.lineTo(w/2-18,-h/2);g.lineTo(w/2,h/2);g.lineTo(-w/2+7,h/2);g.close();g.stroke();
@@ -73,7 +73,7 @@ export class MshinGame extends Component {
   n.on(Node.EventType.TOUCH_END,action,this);this.uiNodes.push(n);return n;
  }
  private drawMenuBackdrop(kicker:string,subtitle:string):void {
-  const n=this.makeNode("Motorsport Menu Backdrop",this.hudRoot);n.getComponent(UITransform)!.setContentSize(1280,720);
+  const n=this.makeNode("Motorsport Menu Backdrop",this.menuRoot);n.getComponent(UITransform)!.setContentSize(1280,720);
   const g=n.addComponent(Graphics);g.fillColor=hex("#081321");g.rect(-640,-360,1280,720);g.fill();
   g.fillColor=hex("#10243A");g.moveTo(-640,-360);g.lineTo(-180,-360);g.lineTo(250,360);g.lineTo(-640,360);g.close();g.fill();
   g.fillColor=hex("#F33A52");g.moveTo(-640,250);g.lineTo(-640,360);g.lineTo(-565,360);g.lineTo(-615,250);g.close();g.fill();
@@ -87,7 +87,7 @@ export class MshinGame extends Component {
  }
  private addButton(text:string,x:number,y:number,w:number,h:number,fn:()=>void):void {this.button(text,x,y,w,h,fn);}
  private drawStagePreview(stage:StageDefinition,x:number,y:number):void {
-  const n=this.makeNode("Stage Preview "+stage.id,this.hudRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(180,78);
+  const n=this.makeNode("Stage Preview "+stage.id,this.menuRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(180,78);
   const g=n.addComponent(Graphics);g.fillColor=hex(stage.world.ground);g.roundRect(-90,-39,180,78,10);g.fill();
   const path=generateTrackPath(stage,48),draw=(width:number,stroke:string)=>{g.lineWidth=width;g.strokeColor=hex(stroke);g.moveTo(path[0].x*.1,path[0].y*.1);for(let i=1;i<path.length;i++)g.lineTo(path[i].x*.1,path[i].y*.1);g.close();g.stroke();};
   draw(15,stage.world.shoulder);draw(9,stage.world.road);
@@ -194,9 +194,35 @@ export class MshinGame extends Component {
  private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),limit=58,raw=Math.max(-1,Math.min(1,p.x/limit)),m=Math.abs(raw),dead=.07,linear=m<=dead?0:(m-dead)/(1-dead);this.knob.setPosition(Math.max(-limit,Math.min(limit,p.x)),0,0);this.vehicle.input.steer=Math.sign(raw)*Math.pow(linear,1.28);}
  private onStickEnd(e:EventTouch):void {if(e.getID()!==this.stickId)return;this.stickId=-1;this.knob.setPosition(0,0,0);this.vehicle.input.steer=0;}
  private pauseRace():void {
-  if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();this.drawMenuBackdrop("RACE PAUSED","مسابقه متوقف شده است");
-  this.addUiLabel("مسابقه متوقف شد",0,75,54);this.addButton("ادامه مسابقه",0,-20,230,70,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;for(const rival of this.rivals)rival.enabled=true;this.createControls();});
-  this.addButton("بازگشت به منو",0,-115,230,60,()=>{this.vehicle.enabled=false;this.showHome();});
+  if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();
+  const overlay=this.makeNode("Pause Screen Overlay",this.menuRoot);overlay.getComponent(UITransform)!.setContentSize(1280,720);const shade=overlay.addComponent(Graphics);shade.fillColor=new Color(3,8,14,190);shade.rect(-640,-360,1280,720);shade.fill();this.uiNodes.push(overlay);overlay.setSiblingIndex(0);
+  this.addUiLabel("PAUSE", -470, 305, 42);this.addUiLabel("RACE PAUSED",-220,225,15);this.addUiLabel("MSHIN MOTORSPORT  /  EVENT PAUSED",-220,258,14);
+  const entries:[string,number,boolean,()=>void][]=[
+   ["CONTINUE",190,true,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;for(const rival of this.rivals)rival.enabled=true;this.createControls();}],
+   ["RETRY",125,true,()=>this.startStage(this.stage.id)],
+   ["LEAVE EVENT",60,true,()=>{this.vehicle.enabled=false;this.showHome();}],
+   ["DRIVER DETAILS",-5,false,()=>{}],["MAP",-70,false,()=>{}],["MULTIPLAYER",-135,false,()=>{}],["FRIENDS",-200,false,()=>{}],["SETTINGS",-265,false,()=>{}]
+  ];
+  entries.forEach(([label,y,active,action],index)=>this.addPauseEntry(label,-390,y,active,action,index===0));
+  this.addUiLabel("MOST WANTED",330,270,32);
+  const rivals=[["01","Mshin Driver","YOUR CAR"],["02","Rival Alpha","SPORT CLASS"],["03","Rival Bravo","RALLY CLASS"],["04","Rival Charlie","GT CLASS"],["05","Rival Delta","PRO CLASS"]];
+  rivals.forEach((row,i)=>this.addWantedRow(row[0],row[1],row[2],330,175-i*82,i===0));
+ }
+ private addPauseEntry(label:string,x:number,y:number,active:boolean,action:()=>void,selected=false):void {
+  const n=this.makeNode("Pause Entry "+label,this.menuRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(365,52);const g=n.addComponent(Graphics);
+  g.fillColor=active?hex(selected?"#202A32":"#111A22"):hex("#111820");g.moveTo(-182,-26);g.lineTo(160,-26);g.lineTo(182,26);g.lineTo(-182,26);g.close();g.fill();
+  g.fillColor=hex(active?"#E51E35":"#59616A");g.moveTo(-182,-26);g.lineTo(-165,-26);g.lineTo(-165,26);g.lineTo(-182,26);g.close();g.fill();
+  g.fillColor=hex("#E9EDF0");g.moveTo(145,-26);g.lineTo(160,-26);g.lineTo(182,26);g.lineTo(167,26);g.close();g.fill();
+  const t=this.makeNode("Pause Entry Label",n);t.getComponent(UITransform)!.setContentSize(315,46);const l=t.addComponent(Label);l.string=label;l.fontSize=active?20:18;l.color=hex(active?"#FFFFFF":"#9AA4AD");l.horizontalAlign=Label.HorizontalAlign.LEFT;l.verticalAlign=Label.VerticalAlign.CENTER;
+  if(active)n.on(Node.EventType.TOUCH_END,action,this);this.uiNodes.push(n);
+ }
+ private addWantedRow(rank:string,name:string,detail:string,x:number,y:number,player=false):void {
+  const n=this.makeNode("Most Wanted "+rank,this.menuRoot);n.setPosition(x,y,0);n.getComponent(UITransform)!.setContentSize(510,66);const g=n.addComponent(Graphics);
+  g.fillColor=hex(player?"#D5D9DC":"#111A22");g.moveTo(-255,-33);g.lineTo(240,-33);g.lineTo(255,33);g.lineTo(-240,33);g.close();g.fill();
+  g.fillColor=hex("#E51E35");g.moveTo(-255,-33);g.lineTo(-185,-33);g.lineTo(-170,33);g.lineTo(-240,33);g.close();g.fill();
+  const rankNode=this.makeNode("Wanted Rank",n);rankNode.getComponent(UITransform)!.setContentSize(62,56);const rl=rankNode.addComponent(Label);rl.string=rank;rl.fontSize=30;rl.color=hex("#FFFFFF");rl.horizontalAlign=Label.HorizontalAlign.CENTER;rl.verticalAlign=Label.VerticalAlign.CENTER;rankNode.setPosition(-215,0,0);
+  const title=this.makeNode("Wanted Driver",n);title.getComponent(UITransform)!.setContentSize(300,30);const tl=title.addComponent(Label);tl.string=name;tl.fontSize=player?18:17;tl.color=hex(player?"#18232C":"#F04455");tl.horizontalAlign=Label.HorizontalAlign.LEFT;tl.verticalAlign=Label.VerticalAlign.CENTER;title.setPosition(25,10,0);
+  const sub=this.makeNode("Wanted Detail",n);sub.getComponent(UITransform)!.setContentSize(300,22);const sl=sub.addComponent(Label);sl.string=detail;sl.fontSize=12;sl.color=hex(player?"#35424D":"#B7C0C8");sl.horizontalAlign=Label.HorizontalAlign.LEFT;sl.verticalAlign=Label.VerticalAlign.CENTER;sub.setPosition(25,-15,0);this.uiNodes.push(n);
  }
  private showFinished():void {
   this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();this.drawMenuBackdrop("RACE COMPLETE","عملکردت ثبت شد؛ آماده مرحله بعدی باش");
@@ -229,7 +255,7 @@ export class MshinGame extends Component {
   });
  }
  private resizeUi():void {
-  const s=view.getVisibleSize();this.lastSize={width:s.width,height:s.height};this.camera.orthoHeight=s.height;
+  const s=view.getVisibleSize();this.lastSize={width:s.width,height:s.height};this.camera.orthoHeight=s.height;const menuScale=Math.max(.1,Math.min(1,s.width/1280,s.height/720));this.menuRoot.setScale(menuScale,menuScale,1);this.menuRoot.setPosition(0,0,0);
   const pos=(name:string,x:number,y:number)=>{const n=this.hudRoot.getChildByName(name);if(n)n.setPosition(x,y,0);};
   pos("HUD Backdrop",0,s.height/2-52);pos("Label brand",0,s.height/2-26);pos("Label world",0,s.height/2-62);
   pos("Label lap",-s.width/2+150,s.height/2-26);pos("Label time",-s.width/2+320,s.height/2-26);pos("Label speed",-s.width/2+485,s.height/2-26);
