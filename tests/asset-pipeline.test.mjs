@@ -25,7 +25,8 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
 test("asset boot waits for bounded preload before starting the game module", async () => {
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
-  const audio = await readFile(path.join(root, "src/audio.js"), "utf8");\n  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
+  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
   assert.match(html, /src="\.\/src\/boot\.js(?:\?v=[^"]+)?"/);
   assert.match(boot, /await preloadGameAssets/);
