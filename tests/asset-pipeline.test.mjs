@@ -39,7 +39,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v15/);
+  assert.match(sw, /mshin-arcade-v16/);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
 });
 test("photographic world scenes are CDN-preloaded before the race runtime", async () => {
@@ -103,6 +103,10 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
+  assert.match(html, /\.icon-ltr\\{direction:ltr;unicode-bidi:isolate/);
+  assert.match(html, /<bdi class="icon-ltr" dir="ltr">▶<\\/bdi>/);
+  assert.match(html, /<bdi class="icon-ltr" dir="ltr">←<\\/bdi>/);
+  assert.match(html, /<html lang="fa-IR" dir="rtl">/);
   assert.match(html, /نسخه ۰\.۴\.۹/);
   assert.match(html, /splashCarFront/);
   assert.match(html, /id="assetPercent"/);
@@ -123,9 +127,9 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   assert.match(sw, /mshin-arcade-v15/);
-  assert.match(html, /boot\.js\?v=2026.10.31.1/);
+  assert.match(html, /boot\.js\?v=2026.10.31.2/);
   assert.equal(manifest.version, "2026.10.31.1");
-  assert.equal(pkg.version, "0.4.9");
+  assert.equal(pkg.version, "0.5.0");
   assert.equal(pwa.version, "0.4.9");
   assert.equal(cocos.version, "2026.10.31.1");
 });
