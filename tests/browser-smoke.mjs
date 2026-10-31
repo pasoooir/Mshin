@@ -43,10 +43,10 @@ try {
   await page.locator("#tab-settings").click();
   assert.equal(await page.locator("#steeringMode option").count(), 3, "settings must offer joystick, gyroscope and hybrid steering");
   await page.locator("#steeringMode").selectOption("hybrid");
-  await page.locator("#steeringSensitivity").fill("125");
-  await page.locator("#tiltRange").fill("28");
-  await page.locator("#returnStrength").fill("85");
-  await page.locator("#gyroDeadZone").fill("30");
+  await page.locator("#steeringSensitivity").evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event("input",{bubbles:true}))},125);
+  await page.locator("#tiltRange").evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event("input",{bubbles:true}))},28);
+  await page.locator("#returnStrength").evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event("input",{bubbles:true}))},85);
+  await page.locator("#gyroDeadZone").evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event("input",{bubbles:true}))},30);
   const steeringPrefs = await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")));
   assert.equal(steeringPrefs.steeringMode, "hybrid", "hybrid steering selection should persist");
   assert.equal(steeringPrefs.steeringSensitivity, 1.25, "steering sensitivity should persist");
@@ -54,10 +54,10 @@ try {
   assert.equal(steeringPrefs.returnStrength, .85, "steering return strength should persist");
   assert.equal(steeringPrefs.gyroDeadZone, 3, "gyro dead zone should persist");
   await page.locator("#steeringMode").selectOption("joystick");
-  await page.locator("#steeringSensitivity").fill("100");
-  await page.locator("#tiltRange").fill("22");
-  await page.locator("#returnStrength").fill("75");
-  await page.locator("#gyroDeadZone").fill("25");
+  await page.locator("#steeringSensitivity").evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event("input",{bubbles:true}))},100);
+  await page.locator("#tiltRange").evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event("input",{bubbles:true}))},22);
+  await page.locator("#returnStrength").evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event("input",{bubbles:true}))},75);
+  await page.locator("#gyroDeadZone").evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event("input",{bubbles:true}))},25);
   await page.locator("#tab-race").click();
   for (const size of [{width:1280,height:720},{width:1280,height:800},{width:1680,height:720},{width:1024,height:768}]) {
     await page.setViewportSize(size);
