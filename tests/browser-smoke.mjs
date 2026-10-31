@@ -8,7 +8,7 @@ const browser = await chromium.launch({ headless: true });
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  page.on("pageerror", error => errors.push(error.message));
+  page.on("pageerror", error => errors.push(error.stack || error.message));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 }).catch(async () => {
     const state = await page.evaluate(() => ({ stage: window.MshinBootStage, progress: window.MshinPreloadProgress, failures: window.MshinAssets?.failures }));
@@ -193,7 +193,7 @@ try {
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  mobile.on("pageerror", error => errors.push(error.message));
+  mobile.on("pageerror", error => errors.push(error.stack || error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await mobile.locator("#play").click();
   assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
@@ -224,7 +224,7 @@ try {
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
-  economy.on("pageerror", error => errors.push(error.message));
+  economy.on("pageerror", error => errors.push(error.stack || error.message));
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await economy.locator("#play").click();
   assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
