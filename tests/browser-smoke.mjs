@@ -50,6 +50,10 @@ try {
   assert.ok(firstWorldBounds && firstWorldBounds.width > 100 && firstWorldBounds.height > 100 && worldRailBounds && firstWorldBounds.x < worldRailBounds.x + worldRailBounds.width && firstWorldBounds.x + firstWorldBounds.width > worldRailBounds.x && firstWorldBounds.y < worldRailBounds.y + worldRailBounds.height && firstWorldBounds.y + firstWorldBounds.height > worldRailBounds.y && firstWorldStyle.display!=="none" && firstWorldStyle.visibility==="visible" && Number(firstWorldStyle.opacity)>0, "first world card must be visible inside the world rail: " + JSON.stringify({firstWorldBounds,worldRailBounds,firstWorldStyle}));
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
+  await page.locator("#tabPanel-cars").waitFor({state:"visible"});
+  await page.waitForTimeout(300);
+  const garageLayout = await page.evaluate(() => Object.fromEntries([".sectionHeading","#showroomStage","#garage"].map(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return [selector,{x:r.x,y:r.y,width:r.width,height:r.height}]})));
+  assert.ok(garageLayout["#showroomStage"].width>200 && garageLayout["#showroomStage"].height>120 && garageLayout["#garage"].height>30, "garage panels and 3D stage must occupy visible layout space: "+JSON.stringify(garageLayout));
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
   assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
   await page.waitForFunction(() => window.Mshin3DGarage?.ready === true && window.Mshin3DGarage.drawCalls >= 10, undefined, { timeout: 10000 });
