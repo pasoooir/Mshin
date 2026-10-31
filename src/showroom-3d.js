@@ -128,7 +128,7 @@ function buildStage(gl){
  return parts;
 }
 export function createShowroom3D(canvas){
- let gl=null,programInfo=null,carParts=[],stageParts=[],raf=0,visible=false,destroyed=false,rotation=0,spinStart=0,spinFrom=0,spinDuration=1450,frameCount=0,model={id:"rally",color:"#f15d4e"},lastSize="";
+ let gl=null,programInfo=null,carParts=[],stageParts=[],raf=0,visible=false,destroyed=false,rotation=0,spinStart=0,spinFrom=0,spinDuration=1450,frameCount=0,autoRotate=0,lastFrame=0,model={id:"rally",color:"#f15d4e"},lastSize="";
  const state={status:"initializing",carId:model.id,rotation:0,frameCount:0,renderer:"WebGL 1"};
  try{
   gl=canvas.getContext("webgl",{alpha:false,antialias:true,depth:true,powerPreference:"low-power"})||canvas.getContext("experimental-webgl");
@@ -181,7 +181,7 @@ export function createShowroom3D(canvas){
    state,
    setCar(next){model=next||model;state.carId=model.id;const hex=String(model.color||"#f15d4e").replace("#","");const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255);if(rgb.every(Number.isFinite)&&carParts[0])carParts[0].color=rgb;},
    setRotation(deg){rotation=((Number(deg)||0)%360+360)%360;spinStart=0;state.rotation=rotation;},
-   spin(){spinFrom=rotation;spinStart=performance.now();if(visible&&!raf)raf=requestAnimationFrame(render);},
+   spin(){spinFrom=rotation;spinStart=performance.now();if(visible&&!raf)raf=requestAnimationFrame(render);},\n   setAutoRotate(speed){autoRotate=Number(speed)||0;},
    resize,
    destroy(){destroyed=true;observer?.disconnect();resizeObserver?.disconnect();document.removeEventListener("visibilitychange",onVisibility);canvas.removeEventListener("webglcontextlost",onContextLost);canvas.removeEventListener("webglcontextrestored",onContextRestored);if(raf)cancelAnimationFrame(raf);for(const part of [...carParts,...stageParts])gl.deleteBuffer(part.mesh.buffer);gl.deleteProgram(programInfo);},
   };
