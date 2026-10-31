@@ -60,8 +60,11 @@ export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number):
  const combinedScale=frictionCircleScale(longitudinalDemand,Math.abs(requestedLateralAcceleration),tireCapacity);
  const lateralAcceleration=clamp(requestedLateralAcceleration*combinedScale,-tireCapacity,tireCapacity);
  const lateralAfter=lateral+lateralAcceleration*dt;
- // At very low forward speed, keep the finite velocity state instead of snapping the slip angle.
- car.lateralSpeed=Math.abs(car.speed)<2&&Math.abs(slipAngle)>1.2?lateralAfter:lateralAfter;
+ car.lateralSpeed=lateralAfter;
+ // Sustained slip produces a bounded yaw response (oversteer); it is strongest once moving.
+ const slipYawTarget=clamp(slipAngle*1.4,-0.9,0.9)*clamp((Math.abs(car.speed)-70)/100,0,1);
+ const yawBlend=clamp(dt*2.5,0,1);
+ car.angularVelocity=clamp((Number.isFinite(car.angularVelocity)?(car.angularVelocity as number):0)+(slipYawTarget-(Number.isFinite(car.angularVelocity)?(car.angularVelocity as number):0))*yawBlend,-1.4,1.4);
  const forwardX=Math.sin(car.heading),forwardY=-Math.cos(car.heading),rightX=Math.cos(car.heading),rightY=Math.sin(car.heading);
  car.x += (forwardX*car.speed+rightX*lateralAfter)*dt;
  car.y += (forwardY*car.speed+rightY*lateralAfter)*dt; return car;
