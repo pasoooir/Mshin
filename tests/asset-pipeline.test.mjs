@@ -156,12 +156,15 @@ test("all app cache and asset version markers are advanced together", async () =
   const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
+  const readme = await readFile(path.join(root, "README.md"), "utf8");
   assert.match(sw, /mshin-arcade-v24/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.10.31.10");
   assert.equal(pkg.version, "0.8.5");
   assert.equal(pwa.version, "0.8.5");
   assert.equal(cocos.version, "2026.10.31.10");
+  assert.match(readme, /release candidate; publication follows the CI and Pages deployment gates/);
+  assert.match(readme, /Latest published build\\n\\nThe live splash screen and home menu display \\*\\*Published version 0\\.8\\.4\\*\\*/);
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
