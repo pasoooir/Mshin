@@ -252,6 +252,8 @@ try {
   assert.notEqual(await mobile.locator("#select .gtMenu").evaluate(el=>getComputedStyle(el).perspective),"none","mobile showroom should retain perspective depth");
   assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
   assert.equal(await mobile.evaluate(() => window.MshinShowroom3D?.status), "webgl", "mobile garage must use the WebGL renderer too");
+  const mobileWebglBuffer = await mobile.locator("#showroom3dCanvas").evaluate(canvas => ({width:canvas.width,height:canvas.height,logicalWidth:canvas.clientWidth,logicalHeight:canvas.clientHeight}));
+  assert.ok(mobileWebglBuffer.logicalWidth > mobileWebglBuffer.logicalHeight && mobileWebglBuffer.width > mobileWebglBuffer.height, "WebGL drawing buffer must preserve landscape logical dimensions on portrait hardware: "+JSON.stringify(mobileWebglBuffer));
   await mobile.waitForFunction(() => window.MshinShowroom3D?.frameCount > 0, undefined, {timeout:5000});
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
   const showroomCenter = { x: mobileShowroom.x + mobileShowroom.width/2, y: mobileShowroom.y + mobileShowroom.height/2 };
