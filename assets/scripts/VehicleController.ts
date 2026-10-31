@@ -1,5 +1,5 @@
 import { _decorator, Component } from "cc";
-import { CarState, DriveInput, createRaceState, RaceState, stepCar, updateRace, createVehicleDamage, addVehicleDamage, resolveStaticBarrier, CollisionBody, createRigidBody2D, resolveRigidBody2D, splitImpactEnergy } from "../../src/cocos-core";
+import { CarState, DriveInput, createRaceState, RaceState, stepCar, updateRace, createVehicleDamage, addVehicleDamage, resolveStaticBarrier, CollisionBody, createRigidBody2D, resolveRigidBody2D, splitImpactEnergy, worldVelocityToCar } from "../../src/cocos-core";
 import { nearestTrackPoint, Point } from "../../src/stage-catalog";
 const {ccclass}=_decorator;
 @ccclass("MshinVehicleController")
@@ -13,7 +13,7 @@ export class VehicleController extends Component {
  configure(path:Point[],trackWidth:number,laps:number,hazardCount:number,surfaceGrip=1):void {
   this.path=path;this.trackWidth=trackWidth;this.targetLaps=laps;this.surfaceGrip=surfaceGrip;this.obstacles=[];
   for(let i=0;i<hazardCount;i++){const index=Math.floor((i+.45)*path.length/hazardCount),p=path[index],n=path[(index+2)%path.length],dx=n.y-p.y,dy=p.x-n.x,len=Math.hypot(dx,dy)||1,side=i%2?1:-1;this.obstacles.push({x:p.x+dx/len*trackWidth*.18*side,y:p.y+dy/len*trackWidth*.18*side,angle:Math.atan2(n.y-p.y,n.x-p.x)});}
-  const start=path[0];this.car.x=start.x;this.car.y=start.y;this.car.heading=Math.PI;this.car.speed=0;this.car.angularVelocity=0;Object.assign(this.damage,createVehicleDamage());
+  const start=path[0];this.car.x=start.x;this.car.y=start.y;this.car.heading=Math.PI;this.car.speed=0;this.car.lateralSpeed=0;this.car.angularVelocity=0;Object.assign(this.damage,createVehicleDamage());
   Object.assign(this.race,{lap:0,previousProgress:0,finished:false,elapsedSeconds:0});this.lastLap=0;this.hitCooldown=0;this.node.setPosition(start.x,start.y,0);this.resetInput();
  }
  update(dt:number):void {
@@ -57,15 +57,20 @@ export class VehicleController extends Component {
  /** Shared contact hook for future Cocos AI/traffic actors; both vehicles receive the same impulse solve. */
  resolveVehicleContact(other:VehicleController):void {
   if(other===this||this.hitCooldown>0||other.hitCooldown>0)return;
-  const make=(v:VehicleController)=>createRigidBody2D({x:v.car.x,y:v.car.y,vx:Math.sin(v.car.heading)*v.car.speed,vy:-Math.cos(v.car.heading)*v.car.speed,
-   angle:v.car.heading-Math.PI/2,angularVelocity:v.car.angularVelocity??0,mass:1250,length:92,width:44});
+  const make=(v:VehicleController)=>{const fx=Math.sin(v.car.heading),fy=-Math.cos(v.car.heading),rx=Math.cos(v.car.heading),ry=Math.sin(v.car.heading),lateral=v.car.lateralSpeed??0;
+   return createRigidBody2D({x:v.car.x,y:v.car.y,vx:fx*v.car.speed+rx*lateral,vy:fy*v.car.speed+ry*lateral,
+    angle:v.car.heading-Math.PI/2,angularVelocity:v.car.angularVelocity??0,mass:1250,length:92,width:44,restitution:.12,friction:.72});
+  };
   const a=make(this),b=make(other),impact=resolveRigidBody2D(a,b);if(!impact.hit)return;
   const energyShare=splitImpactEnergy(impact.energy,a.invMass,b.invMass);
   for(const [vehicle,body,normalSign,damageEnergy] of [[this,a,1,energyShare.a],[other,b,-1,energyShare.b]] as Array<[VehicleController,ReturnType<typeof make>,number,number]>) {
    vehicle.car.x=body.x;vehicle.car.y=body.y;vehicle.car.angularVelocity=body.angularVelocity;
+   const velocity=worldVelocityToCar(body.vx,body.vy,vehicle.car.heading);
+   vehicle.car.speed=Math.max(0,velocity.speed);
+   vehicle.car.lateralSpeed=velocity.lateralSpeed;
+   // Classify the impulse in this vehicle's own forward/right coordinate frame.
    const fx=Math.sin(vehicle.car.heading),fy=-Math.cos(vehicle.car.heading);
-   vehicle.car.speed=Math.max(0,body.vx*fx+body.vy*fy);
-   vehicle.car.heading+=body.angularVelocity*.016;
+   // Keep yaw rate from the impulse solve; VehicleController integrates it at fixed substeps.
    const localF=impact.nx*normalSign*fx+impact.ny*normalSign*fy,localR=impact.nx*normalSign*(-fy)+impact.ny*normalSign*fx;
    addVehicleDamage(vehicle.damage,damageEnergy,Math.abs(localF)>=Math.abs(localR)?(localF>=0?"front":"rear"):(localR>=0?"right":"left"));
    vehicle.hitCooldown=.22;

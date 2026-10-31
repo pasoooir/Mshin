@@ -1,5 +1,5 @@
 /** Engine-independent gameplay core for the Cocos Creator 3.8.6 adapter. */
-export interface CarState { x: number; y: number; heading: number; speed: number; angularVelocity?:number; }
+export interface CarState { x: number; y: number; heading: number; speed: number; lateralSpeed?:number; angularVelocity?:number; }
 export interface DriveInput { steer: number; throttle: boolean; brake: boolean; offRoad?: boolean; grip?: number; performance?: number; }
 export interface TrackBounds { radiusX: number; radiusY: number; inner: number; outer: number; }
 export interface RaceState { lap: number; previousProgress: number; finished: boolean; elapsedSeconds: number; }
@@ -25,8 +25,23 @@ export function stepCar(car: CarState, input: DriveInput, deltaSeconds: number):
  else if (throttle) car.speed = clamp(car.speed + 306 * (offRoad ? 0.58 : 1) * performance * dt, 0, maxSpeed);
  else car.speed = Math.max(0, car.speed - (offRoad ? 220 : 95) * dt);
  if (car.speed > maxSpeed) car.speed = Math.max(maxSpeed, car.speed - 360 * dt);
+ // Aerodynamic drag: Fd = 1/2 rho CdA v^2. World units are calibrated at 0.1 m/unit.
+ // For a 1,250 kg rally car (rho=1.225 kg/m^3, CdA=1.58 m^2), this is 7.75e-5 * v_world^2 world-units/s^2.
+ const dragAcceleration = 0.0000775 * car.speed * car.speed;
+ car.speed = Math.max(0, car.speed - dragAcceleration * dt);
  car.heading -= steer * (1.9 + Math.abs(car.speed) / 155) * grip * dt * Math.sign(car.speed || 1);
- car.x += Math.sin(car.heading) * car.speed * dt; car.y -= Math.cos(car.heading) * car.speed * dt; return car;
+ // Tire lateral force damps post-impact slip; low-grip surfaces retain more lateral momentum.
+ const lateral = Number.isFinite(car.lateralSpeed) ? (car.lateralSpeed as number) : 0;
+ const lateralAfter = lateral * Math.exp(-(3.5 + 7 * grip) * dt); car.lateralSpeed = lateralAfter;
+ const forwardX=Math.sin(car.heading),forwardY=-Math.cos(car.heading),rightX=Math.cos(car.heading),rightY=Math.sin(car.heading);
+ car.x += (forwardX*car.speed+rightX*lateralAfter)*dt;
+ car.y += (forwardY*car.speed+rightY*lateralAfter)*dt; return car;
+}
+
+/** Decomposes world-space velocity into the vehicle's forward and right axes. */
+export function worldVelocityToCar(vx:number,vy:number,heading:number):{speed:number;lateralSpeed:number} {
+ const fx=Math.sin(heading),fy=-Math.cos(heading),rx=Math.cos(heading),ry=Math.sin(heading);
+ return {speed:vx*fx+vy*fy,lateralSpeed:vx*rx+vy*ry};
 }
 
 export interface CollisionBody { x:number; y:number; vx:number; vy:number; mass:number; radius:number; }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy, calculateRacingLineTarget, calculateAiTargetSpeed } from '../.test-build/src/cocos-core.js';
+import { createRaceState, normalizeJoystick, resolveTrackCollision, stepCar, updateRace, createRigidBody2D, resolveRigidBody2D, resolveRigidVehiclePair, splitImpactEnergy, calculateRacingLineTarget, calculateAiTargetSpeed, worldVelocityToCar } from '../.test-build/src/cocos-core.js';
 
 test('joystick clamps diagonal displacement to unit radius', () => {
  const v = normalizeJoystick(100, 100, 50); assert.ok(Math.hypot(v.x, v.y) <= 1.000001); assert.ok(v.x > 0 && v.y > 0);
@@ -112,4 +112,34 @@ test('AI racing-line planner safely handles invalid indices and lane offsets',()
  const path=[{x:3,y:7},{x:13,y:7},{x:23,y:7}];
  assert.deepEqual(calculateRacingLineTarget(path,Number.NaN,Number.NaN),{x:3,y:7});
  assert.deepEqual(calculateRacingLineTarget([],0,10),{x:0,y:0});
+});
+
+
+test('rear-end impact transfers forward momentum to the leading car and slows the striking car',()=>{
+ const rear=createRigidBody2D({x:0,y:0,vx:0,vy:240,angle:Math.PI/2,mass:1250,length:92,width:44,restitution:.12,friction:.72});
+ const lead=createRigidBody2D({x:0,y:91,vx:0,vy:120,angle:Math.PI/2,mass:1250,length:92,width:44,restitution:.12,friction:.72});
+ const momentumBefore=rear.mass*rear.vy+lead.mass*lead.vy;
+ const impact=resolveRigidBody2D(rear,lead);
+ assert.equal(impact.hit,true);assert.ok(impact.closingSpeed>0);
+ assert.ok(lead.vy>120,'leading car must receive forward impulse');
+ assert.ok(rear.vy<240,'striking car must lose forward speed');
+ assert.ok(Math.abs((rear.mass*rear.vy+lead.mass*lead.vy)-momentumBefore)<1e-6,'linear momentum must be conserved');
+ assert.ok(Math.abs(rear.angularVelocity)<1e-8&&Math.abs(lead.angularVelocity)<1e-8,'centred rear-end impact must not invent yaw');
+});
+test('off-centre rear impact creates yaw and persistent lateral velocity instead of discarding the impulse',()=>{
+ const rear=createRigidBody2D({x:0,y:0,vx:18,vy:230,angle:Math.PI/2,mass:1250,length:92,width:44});
+ const lead=createRigidBody2D({x:12,y:91,vx:0,vy:100,angle:Math.PI/2,mass:1250,length:92,width:44});
+ const impact=resolveRigidBody2D(rear,lead);
+ assert.equal(impact.hit,true);
+ assert.ok(Math.abs(rear.angularVelocity)+Math.abs(lead.angularVelocity)>1e-7);
+ const projected=worldVelocityToCar(lead.vx,lead.vy,Math.PI);
+ assert.ok(Math.abs(projected.lateralSpeed)>0.01,'lateral component must survive collision projection');
+});
+test('aerodynamic drag scales quadratically with speed and tire grip damps lateral slip',()=>{
+ const slow={x:0,y:0,heading:0,speed:100,lateralSpeed:20},fast={x:0,y:0,heading:0,speed:300,lateralSpeed:20};
+ stepCar(slow,{steer:0,throttle:false,brake:false},.05);
+ stepCar(fast,{steer:0,throttle:false,brake:false},.05);
+ const slowLoss=100-95*.05-slow.speed,fastLoss=300-95*.05-fast.speed;
+ assert.ok(fastLoss>slowLoss*7,'quadratic aero drag should be substantially stronger at 3x speed');
+ assert.ok(Math.abs(slow.lateralSpeed)<20,'tire forces should damp lateral slip');
 });
