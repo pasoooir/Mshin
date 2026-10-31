@@ -12,11 +12,12 @@ async function fetchImage(asset) {
   for (const source of [asset.cdn, asset.src].filter(Boolean)) {
     const controller = new AbortController();
     const remote = new URL(source, location.href).origin !== location.origin;
-    const timer = setTimeout(() => controller.abort(), remote ? (asset.group === "scene" ? 1800 : 1200) : 3000);
+    const limit = remote ? (asset.group === "scene" ? 1800 : 1200) : 3000;
+    const timer = setTimeout(() => controller.abort(), limit);
     try {
-      const response = await fetch(source, { cache: "force-cache", credentials: "omit", signal: controller.signal });
+      const response = await timeout(fetch(source, { cache: "force-cache", credentials: "omit", signal: controller.signal }), limit, source);
       if (!response.ok) throw new Error(`Asset request failed (${response.status}): ${source}`);
-      const blob = await response.blob();
+      const blob = await timeout(response.blob(), limit, source);
       if (!blob.type.startsWith("image/")) throw new Error(`Unexpected image MIME type: ${blob.type}`);
       return blob;
     } catch (error) { lastError = error; }
@@ -31,7 +32,7 @@ async function loadVector(asset) {
   const objectUrl = URL.createObjectURL(blob);
   try {
     image.src = objectUrl;
-    if (image.decode) await timeout(image.decode(), 10000, asset.src);
+    if (image.decode) await timeout(image.decode(), 5000, asset.src);
     else await timeout(new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; }), 10000, asset.src);
     return image;
   } finally { URL.revokeObjectURL(objectUrl); }
