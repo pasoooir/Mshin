@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.31.15",
+  "version": "2026.10.31.16",
   "worlds": [
     {
       "id": 1,
@@ -235,14 +235,20 @@
       "name": "Race car braking and tire squeal",
       "src": "https://sfxmint.com/dl/race-car-07.mp3",
       "type": "audio/mpeg",
-      "group": "audio"
+      "group": "audio",
+      "license": "CC0 1.0",
+      "source": "https://sfxmint.com/license",
+      "required": true
     },
     {
       "id": "gearDown",
       "name": "Race car downshift",
       "src": "https://sfxmint.com/dl/race-car-10.mp3",
       "type": "audio/mpeg",
-      "group": "audio"
+      "group": "audio",
+      "license": "CC0 1.0",
+      "source": "https://sfxmint.com/license",
+      "required": true
     },
     {
       "id": "menuMusic",
