@@ -25,7 +25,7 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
 test("asset boot waits for bounded preload before starting the game module", async () => {
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
-  const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
+  const audio = await readFile(path.join(root, "src/audio.js"), "utf8");\n  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
   assert.match(html, /src="\.\/src\/boot\.js(?:\?v=[^"]+)?"/);
   assert.match(boot, /await preloadGameAssets/);
@@ -62,7 +62,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v20/);
+  assert.match(sw, /mshin-arcade-v21/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
@@ -134,7 +134,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰.۸.۱/);
+  assert.match(html, /نسخه ۰.۸.۲/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
   assert.match(html, /splashCarFront/);
@@ -155,10 +155,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
-  assert.match(sw, /mshin-arcade-v20/);
-  assert.match(html, /boot\.js\?v=2026.10.31.6/);
-  assert.equal(manifest.version, "2026.10.31.6");
-  assert.equal(pkg.version, "0.8.1");
-  assert.equal(pwa.version, "0.8.1");
-  assert.equal(cocos.version, "2026.10.31.6");
+  assert.match(sw, /mshin-arcade-v21/);
+  assert.match(html, /boot\.js\?v=2026.10.31.7/);
+  assert.equal(manifest.version, "2026.10.31.7");
+  assert.equal(pkg.version, "0.8.2");
+  assert.equal(pwa.version, "0.8.2");
+  assert.equal(cocos.version, "2026.10.31.7");
 });
