@@ -215,8 +215,9 @@ try {
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
+  await economy.locator("#finishSelect").click();
   await economy.locator("#tab-awards").click();
-  assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge");
+  assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
