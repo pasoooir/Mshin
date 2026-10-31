@@ -5,37 +5,28 @@ import { mkdir } from "node:fs/promises";
 await mkdir("artifacts", { recursive: true });
 
 async function waitForGameBoot(page, label = "game") {
-  try {
-    await page.locator("#assetLoader.loaded").waitFor({ state: "attached", timeout: 45000 });
-  } catch (error) {
-    const stalled = await page.evaluate(() => ({
-      stage: window.MshinBootStage,
-      bootReady: window.MshinBootReady === true,
-      bootError: window.MshinBootError || null,
-      assetsReady: window.MshinAssets?.ready === true,
-      progress: window.MshinPreloadProgress,
-      failures: window.MshinAssets?.failures || [],
-      homePresent: Boolean(document.querySelector("#home")),
-      loaderClass: document.querySelector("#assetLoader")?.className || null,
-      serviceWorkerControlled: Boolean(navigator.serviceWorker?.controller),
-      bootResources: performance.getEntriesByType("resource").filter(item => /boot\\.js|asset-loader|web-game/.test(item.name)).slice(-8).map(item => ({name:item.name,duration:Math.round(item.duration),transfer:item.transferSize}))
-    }));
-    throw new Error(label + " loader did not settle: " + JSON.stringify(stalled) + " | " + error.message);
+  const deadline = Date.now() + 45000;
+  let state = null;
+  while (Date.now() < deadline) {
+    state = await page.evaluate(() => {
+      const home = document.querySelector("#home");
+      return {
+        stage: window.MshinBootStage,
+        bootReady: window.MshinBootReady === true,
+        bootError: window.MshinBootError || null,
+        assetsReady: window.MshinAssets?.ready === true,
+        progress: window.MshinPreloadProgress,
+        failures: window.MshinAssets?.failures || [],
+        homePresent: Boolean(home),
+        homeVisible: Boolean(home && !home.classList.contains("hidden") && getComputedStyle(home).visibility !== "hidden")
+      };
+    });
+    if (state.bootError) throw new Error(label + " reported a boot error: " + JSON.stringify(state));
+    if (state.bootReady && state.assetsReady && state.homePresent && state.homeVisible) break;
+    await new Promise(resolve => setTimeout(resolve, 120));
   }
-  const state = await page.evaluate(() => ({
-    stage: window.MshinBootStage,
-    bootReady: window.MshinBootReady === true,
-    bootError: window.MshinBootError || null,
-    assetsReady: window.MshinAssets?.ready === true,
-    progress: window.MshinPreloadProgress,
-    failures: window.MshinAssets?.failures || [],
-    homePresent: Boolean(document.querySelector("#home"))
-  }));
-  assert.equal(state.bootError, null, label + " must not report a boot error: " + JSON.stringify(state));
-  assert.equal(state.bootReady, true, label + " must publish its final runtime-ready signal: " + JSON.stringify(state));
-  assert.equal(state.assetsReady, true, label + " assets must be ready: " + JSON.stringify(state));
-  assert.equal(state.homePresent, true, label + " must retain the home menu DOM");
-  await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
+  assert.ok(state?.bootReady && state.assetsReady && state.homePresent && state.homeVisible,
+    label + " did not reach the complete runtime-ready state: " + JSON.stringify(state));
   return state;
 }
 
