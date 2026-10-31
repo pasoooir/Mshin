@@ -68,7 +68,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v33/);
+  assert.match(sw, /mshin-arcade-v34/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -193,4 +193,13 @@ test("race intro, progressive traffic classes and impact coin rewards are wired 
   assert.ok(game.includes("function awardImpactReward(hit,forwardDot)"));
   assert.ok(game.includes("progress.credits+=reward;saveProgress()")); assert.ok(game.includes("race.impactPoints"));
   assert.ok(game.includes("تخریب حریف"));
+});
+
+test("landscape menu uses a readable vertical navigation rail without clipping its content", async () => {
+  const html = await readFile(path.join(root, "index.html"), "utf8");
+  assert.match(html, /grid-template-columns:clamp\(154px,18vw,214px\) minmax\(0,1fr\)/);
+  assert.match(html, /#select \.menuTabs\{[\s\S]*?flex-direction:column/);
+  assert.match(html, /#select \.menuBody\{grid-column:2;grid-row:2;min-width:0;min-height:0;overflow:auto/);
+  assert.match(html, /@media\(max-width:700px\)[\s\S]*?grid-template-columns:clamp\(126px,25vw,154px\)/);
+  assert.equal((html.match(/class="menuTab/g) || []).length, 5, "all five menu destinations remain available");
 });
