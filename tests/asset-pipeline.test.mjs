@@ -79,6 +79,8 @@ test("photographic world scenes are CDN-preloaded before the race runtime", asyn
   const cocos = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
   assert.match(loader, /scenes: Object\.fromEntries/);
   assert.match(game, /sceneArt/);
+  assert.match(game, /trackCacheLightingAt/, "cached static scenery must track the last lighting refresh");
+  assert.match(game, /now-trackCacheLightingAt>=8000/, "sunlight and projected scenery shadows must refresh gradually during a race");
   assert.match(game, /\)\*\.96/);
   assert.match(game, /,-36,-54,72,108/);
   assert.ok(game.includes("ctx.rotate(-c.angle-Math.PI/2)"), "race camera should follow the road tangent and keep the player car facing forward");
