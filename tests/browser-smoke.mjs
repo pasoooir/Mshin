@@ -109,6 +109,7 @@ try {
   await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 });
   assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "reloaded game should finish booting before the home menu is used");
   await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
+  await page.locator("#play").waitFor({ state: "visible", timeout: 5000 });
   await page.locator("#play").click();
   await page.locator("#tab-settings").click();
   assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
