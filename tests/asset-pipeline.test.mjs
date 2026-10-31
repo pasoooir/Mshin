@@ -28,7 +28,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.12"'));
+  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.13"'));
   assert.match(html, /role="tablist"/);
   assert.match(html, /data-panel="race"/);
   assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
@@ -62,7 +62,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v27/);
+  assert.match(sw, /mshin-arcade-v28/);
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
@@ -156,12 +156,12 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v27/);
+  assert.match(sw, /mshin-arcade-v28/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.12");
-  assert.equal(pkg.version, "0.8.8");
-  assert.equal(pwa.version, "0.8.8");
-  assert.equal(cocos.version, "2026.10.31.12");
+  assert.equal(manifest.version, "2026.10.31.13");
+  assert.equal(pkg.version, "0.8.9");
+  assert.equal(pwa.version, "0.8.9");
+  assert.equal(cocos.version, "2026.10.31.13");
   assert.ok(readme.includes("live browser release is **version 0.8.8**") && readme.includes("deployed to GitHub Pages after successful merged-main validation and desktop/mobile Playwright browser smoke tests"), "README must identify 0.8.7 as the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.8.8**"), "README must preserve the latest published release until 0.8.8 deploys");
 });
