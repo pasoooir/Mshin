@@ -313,6 +313,16 @@
       "license": "CC0 1.0",
       "source": "https://bigsoundbank.com/car-on-a-road-s1286.html",
       "required": true
+    },
+    {
+      "id": "collisionImpact",
+      "name": "Recorded metallic car crash impact",
+      "src": "https://cdn.jsdelivr.net/gh/tininsteelian/tininsteelian.github.io@66c5f2415978cec667ab166daf22fb3889f1760b/games/3dfoggydrive/media/151624__qubodup__clank-car-crash-collision.ogg",
+      "type": "audio/ogg",
+      "group": "audio",
+      "license": "CC0 1.0",
+      "source": "https://opengameart.org/content/crash-collision",
+      "required": true
     }
   ]
 }
