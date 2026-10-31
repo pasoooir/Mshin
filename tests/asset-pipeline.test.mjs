@@ -61,7 +61,7 @@ test("photographic world scenes are CDN-preloaded before the race runtime", asyn
   const cocos = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
   assert.match(loader, /scenes: Object\.fromEntries/);
   assert.match(game, /sceneArt/);
-  assert.match(game, /\)\*1\.6/);
+  assert.match(game, /\)\*1\.18/);
   assert.match(game, /,-36,-54,72,108/);
   assert.ok(game.includes("ctx.rotate(-c.angle-Math.PI/2)"), "race camera should follow the road tangent and keep the player car facing forward");
   assert.match(cocos, /cameraNode\.angle=-this\.carNode\.angle/);
@@ -143,8 +143,8 @@ test("all app cache and asset version markers are advanced together", async () =
   const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
-  assert.match(sw, /mshin-arcade-v18/);
-  assert.match(html, /boot\.js\?v=2026.10.31.4/);
+  assert.match(sw, /mshin-arcade-v19/);
+  assert.match(html, /boot\.js\?v=2026.10.31.5/);
   assert.equal(manifest.version, "2026.10.31.5");
   assert.equal(pkg.version, "0.8.0");
   assert.equal(pwa.version, "0.8.0");
