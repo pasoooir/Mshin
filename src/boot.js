@@ -44,22 +44,14 @@ try {
   ]).finally(() => clearTimeout(runtimeImportTimer));
   window.MshinRuntimeImported = true;
 
-  // Prefer two animation frames, but never leave boot stuck if the browser
-  // throttles RAF during a navigation/background transition.
-  await new Promise(resolve => {
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(frameFallback);
-      resolve();
-    };
-    const frameFallback = setTimeout(finish, 500);
-    requestAnimationFrame(() => requestAnimationFrame(finish));
-  });
+  // Module evaluation is the runtime initialization barrier: all event
+  // handlers and UI bindings are installed before the import promise resolves.
+  await Promise.resolve();
 
-  if (!document.querySelector("#home")) {
-    throw new Error("Game runtime imported, but the home menu DOM is missing.");
+  const requiredUi = ["#home", "#play", "#select", "#game", "#hud"];
+  const missingUi = requiredUi.filter(selector => !document.querySelector(selector));
+  if (missingUi.length) {
+    throw new Error("Game runtime imported, but required UI nodes are missing: " + missingUi.join(", "));
   }
 
   window.MshinBootStage = "ready";
