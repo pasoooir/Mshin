@@ -1,3 +1,16 @@
+## 0.8.3 — 2026-10-31
+
+### Vehicle identity and race presentation
+- Added individual sound profiles for Rally, GT, 4x4 and Desert Raptor vehicles; pitch, throttle character, filter response and loudness now differ by vehicle.
+- Added a dedicated speed-linked electric motor whine for the Thunder EV instead of combustion-engine loops.
+- Added a cinematic close-up race intro showing the selected car and nearby competitors during 3–2–1–GO.
+
+### Progressive traffic and rewards
+- Introduced additional traffic classes by stage: pickup from stage 11, Formula car from stage 21, truck from stage 31, and bus plus motorcycle from stage 41.
+- Added distinct silhouettes, vehicle dimensions and mass/speed profiles so heavy vehicles and motorcycles react differently in collisions.
+- Strong player-initiated front impacts award persistent bonus coins with a cooldown and on-screen reward feedback.
+- Updated ranking to keep the three championship rivals separate from additional track traffic; advanced runtime version to 0.8.3 and offline cache to v22.
+
 ## 0.8.2 — 2026-10-31
 
 - Refined recorded engine loops with trimmed loop points to remove silence at loop boundaries.
