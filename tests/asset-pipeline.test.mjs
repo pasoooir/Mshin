@@ -89,6 +89,8 @@ test("Cocos runtime menus use the Mshin motorsport visual system", async () => {
   assert.match(cocos, /Math\.min\(1,s\.width\/1280,s\.height\/720\)/);
   for (const entry of ["CONTINUE","RETRY","LEAVE EVENT","DRIVER DETAILS","MOST WANTED"]) assert.ok(cocos.includes(entry), `${entry} must appear in the responsive pause menu`);
   assert.match(cocos, /private addWantedRow\(/);
+  assert.match(cocos, /this\.screen="paused";this\.cameraNode\.angle=0;this\.hudCanvas\.angle=0/);
+  assert.match(cocos, /this\.cameraNode\.angle=-this\.carNode\.angle;this\.hudCanvas\.angle=this\.carNode\.angle/);
   assert.match(cocos, /private addPauseEntry\(/);
   const pauseHtml = await readFile(path.join(root, "index.html"), "utf8");
   assert.match(pauseHtml, /class="pauseScreen"/);
