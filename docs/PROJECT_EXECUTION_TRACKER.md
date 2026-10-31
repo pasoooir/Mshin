@@ -1,6 +1,6 @@
 # Mshin — Project Execution Tracker
 
-Last evidence refresh: 2026-10-30
+Last evidence refresh: 2026-10-31
 
 ## Repository and delivery state
 
@@ -107,5 +107,14 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 | P2 | Burn-out and vehicle removal (browser) | 🟢 تکمیل‌شده و تأییدشده | After the explosion, the wreck continues burning briefly, emits fading black smoke, then fades/shrinks and is removed from active traffic/collision/ranking safely. Player vehicle must use a clear race-over/recovery flow rather than silently disappearing. |
 | P1 | Collision and destruction regression suite (browser integration + desktop/mobile smoke) | 🟢 تکمیل‌شده و تأییدشده | Automated tests cover impulse transfer, mass differences, off-centre yaw, repeated-hit damage accumulation, smoke/fire thresholds, one-shot explosion, burn duration, despawn cleanup, and no ghost collisions after removal. Desktop and mobile gameplay previews must show the complete sequence. |
 
-**Implementation notes:** use the existing rigid-body/impulse and localized damage foundations rather than scripted teleportation. Keep browser and Cocos behavior aligned where each runtime is supported. Tune thresholds for readable arcade gameplay while preserving physically plausible direction and relative response. Treat smoke, flames and debris as pooled effects so repeated traffic collisions do not create unbounded per-frame allocations. The browser edition is released as 0.7.0 (PR #31 merged; release PR and CI evidence linked below). Rear-end multi-car chain-collision tuning and full Cocos Editor/device validation remain separate follow-up gates.
-\n\n## Release 0.7.0 — 2026-10-31\n\n- **Status:** preparing release candidate from merged gameplay changes in PR #29–#31.\n- **Visible browser changes:** adaptive lane-changing traffic; progressive localized soot; dark smoke and fire; one-shot explosion feedback; wreck burn/fade/despawn; explicit player destruction finish state.\n- **Offline compatibility:** service-worker cache v18 includes `rigid-body-physics.js`, `traffic-ai.js`, and `vehicle-destruction.js` in addition to the existing app shell.\n- **Verification:** PR #31 main CI run #501 passed; release branch must pass its own complete desktop/mobile smoke and asset-pipeline tests before publication.\n- **Limit:** Cocos Creator Editor/device runtime validation is not claimed by browser CI.\n
+**Implementation notes:** use the existing rigid-body/impulse and localized damage foundations rather than scripted teleportation. Keep browser and Cocos behavior aligned where each runtime is supported. Tune thresholds for readable arcade gameplay while preserving physically plausible direction and relative response. Treat smoke, flames and debris as pooled effects so repeated traffic collisions do not create unbounded per-frame allocations. The browser edition is released as 0.7.0 (PR #32 merged; release PR and CI evidence linked below). Rear-end multi-car chain-collision tuning and full Cocos Editor/device validation remain separate follow-up gates.
+\n\n## Release 0.7.0 — 2026-10-31\n\n- **Status:** released and merged to `main` as PR #32 (merge commit `dab62a69b35e57f7ccd8c2898895cbd1b43d947f`).\n- **Visible browser changes:** adaptive lane-changing traffic; progressive localized soot; dark smoke and fire; one-shot explosion feedback; wreck burn/fade/despawn; explicit player destruction finish state.\n- **Offline compatibility:** service-worker cache v18 includes `rigid-body-physics.js`, `traffic-ai.js`, and `vehicle-destruction.js` in addition to the existing app shell.\n- **Verification:** PR #32 release CI run `41172188163` passed all 15 steps, including `npm test`, desktop/mobile Playwright smoke and gameplay preview upload. Merged-main validation run `41172531303` passed; GitHub Pages build/deployment run `41172530906` succeeded.\n- **Limit:** Cocos Creator Editor/device runtime validation is not claimed by browser CI.\n
+
+## Release 0.7.0 — publication evidence
+
+- Release PR #32: https://github.com/pasoooir/Mshin/pull/32 — merged.
+- Release CI: https://github.com/pasoooir/Mshin/actions/runs/41172188163 — success; desktop/mobile smoke and gameplay preview artifacts uploaded.
+- Merged-main validation: https://github.com/pasoooir/Mshin/actions/runs/41172531303 — success.
+- GitHub Pages build/deployment: https://github.com/pasoooir/Mshin/actions/runs/41172530906 — success.
+- Published commit: `dab62a69b35e57f7ccd8c2898895cbd1b43d947f`.
+- Browser release URL: https://pasoooir.github.io/Mshin/ (deployment workflow succeeded; verify the live UI in a browser with cache refresh if an older service-worker shell appears).
