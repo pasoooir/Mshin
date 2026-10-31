@@ -120,7 +120,7 @@ export class MshinGame extends Component {
    g.fillColor=hex("#26313A");g.roundRect(-12,-12,24,31,6);g.fill();g.fillColor=hex("#BDEEFF");g.roundRect(-11,-10,22,25,5);g.fill();
    g.fillColor=hex("#FFF5C8");g.circle(-9,31,3);g.fill();g.circle(9,31,3);g.fill();
    const controller=node.addComponent(VehicleController);
-   controller.configure(path,this.stage.trackWidth,this.stage.laps,0,this.stage.world.grip);
+   controller.configure(path,this.stage.trackWidth,999,0,this.stage.world.grip);
    const index=Math.floor(path.length*(i+1)/4),p=path[index],next=path[(index+1)%path.length];
    controller.car.x=p.x;controller.car.y=p.y;controller.car.heading=Math.atan2(next.x-p.x,p.y-next.y);
    controller.car.speed=0;node.setPosition(p.x,p.y,0);node.angle=180-controller.car.heading*180/Math.PI;
