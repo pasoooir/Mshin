@@ -45,7 +45,7 @@ try {
   assert.equal(await page.locator("#tabPanel-cars").isVisible(), true, "car tab should be visible after selection");
   await page.locator("#tab-workshop").click();
   assert.equal(await page.locator(".upgrade").count(), 3, "workshop tab should show three horizontal upgrade cards");
-  await page.locator("#tab-awards").click();
+  await page.locator("#tab-career").click();
   assert.equal(await page.locator(".achievement").count(), 5, "awards tab should show five achievement cards");
   await page.locator("#tab-settings").click();
   assert.equal(await page.locator("#musicToggle").isVisible(), true, "settings tab should expose an independent music toggle");
@@ -272,7 +272,7 @@ try {
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
   await economy.locator("#finishSelect").click();
-  await economy.locator("#tab-awards").click();
+  await economy.locator("#tab-career").click();
   assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
