@@ -291,6 +291,7 @@ body{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){.overlay,.tabPanel{animation:none!important;transition:none!important}}
 
+#driverDetailsPanel .driverDetailsCard{max-width:520px;text-align:left;background:linear-gradient(135deg,#172331,#080e16);color:#fff;border:1px solid #ffffff44;border-left:4px solid var(--mshin-red);border-radius:0;clip-path:polygon(0 0,96% 0,100% 8%,100% 100%,0 100%)}#driverDetailsPanel h1{font-size:clamp(22px,4vh,34px);color:#fff}#driverDetailsPanel p{color:#c6d0da;line-height:1.8}
 </style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
@@ -356,6 +357,7 @@ body{font-size:16px}
 <footer class="menuFooter"><button class="secondary" id="backHome">← بازگشت</button><div class="footerSelection" id="footerSelection">دره سبز · مرحله ۰۱</div><button class="primary" id="startRace">شروع مسابقه <span>▶</span></button></footer>
 </section></div>
 <div class="overlay hidden" id="pausePanel"><section class="pauseScreen" role="dialog" aria-modal="true" aria-label="Pause menu"><header class="pauseHeader"><span>PAUSE</span><small>MSHIN MOTORSPORT</small></header><div class="pauseColumns"><nav class="pauseMenu" aria-label="Race options"><button class="pauseAction selected" id="resume">CONTINUE <span>↵</span></button><button class="pauseAction" id="retryRace">RETRY</button><button class="pauseAction" id="quitRace">LEAVE EVENT</button><button class="pauseAction" id="driverDetails">DRIVER DETAILS</button><div class="pauseInactive" aria-disabled="true">MAP · UNAVAILABLE</div><div class="pauseInactive" aria-disabled="true">MULTIPLAYER · UNAVAILABLE</div><div class="pauseInactive" aria-disabled="true">FRIENDS · UNAVAILABLE</div><button class="pauseAction" id="pauseSettings">SETTINGS</button><div class="pauseInactive" aria-disabled="true">STORE · UNAVAILABLE</div><div class="pauseInactive" aria-disabled="true">QUIT · UNAVAILABLE</div></nav><aside class="mostWanted"><h2>MOST WANTED</h2><ol id="mostWantedList" aria-label="Live race standings"><li class="playerRank"><b>1</b><span class="rankCar">🏎️</span><span class="rankName">YOU · MSHIN DRIVER<small>PLAYER PROFILE</small></span><strong id="pauseScore">000,000 <i>CR</i></strong></li></ol></aside></div><footer class="pauseFooter">EVENT PAUSED <span>ESC · RESUME</span></footer></section></div>
+<div class="overlay hidden" id="driverDetailsPanel"><section class="panel narrow driverDetailsCard" role="dialog" aria-modal="true" aria-labelledby="driverDetailsTitle"><span class="menuEyebrow">DRIVER PROFILE</span><h1 id="driverDetailsTitle">DRIVER DETAILS</h1><p id="driverDetailsText"></p><button class="primary" id="driverDetailsClose">BACK TO PAUSE</button></section></div>
 <div class="overlay hidden" id="finish"><section class="panel narrow"><h1>🏆 مرحله به پایان رسید!</h1><p id="finishText"></p><button class="primary" id="nextStage">مرحله بعد ▶</button><p><button class="secondary" id="finishSelect">انتخاب مرحله</button></p></section></div>
 <script>
 /* Native orientation lock is best-effort. Portrait devices always get a fully rotated landscape game surface. */
