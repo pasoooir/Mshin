@@ -161,6 +161,7 @@ export function createShowroom3D(canvas){
   function render(now){
    if(destroyed||!visible)return;
    resize();
+   const delta=lastFrame?Math.min((now-lastFrame)/1000,.05):0;lastFrame=now;if(autoRotate&&!spinStart)rotation=(rotation+autoRotate*delta)%360;
    if(spinStart){const t=clamp((now-spinStart)/spinDuration,0,1),ease=1-Math.pow(1-t,3);rotation=spinFrom+360*ease;if(t>=1)spinStart=0}
    const aspect=canvas.width/Math.max(1,canvas.height),projection=perspective(Math.PI/4.2,aspect,.1,60),vp=multiply(projection,view),turn=rotationY(rotation*Math.PI/180);
    gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
@@ -181,7 +182,8 @@ export function createShowroom3D(canvas){
    state,
    setCar(next){model=next||model;state.carId=model.id;const hex=String(model.color||"#f15d4e").replace("#","");const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255);if(rgb.every(Number.isFinite)&&carParts[0])carParts[0].color=rgb;},
    setRotation(deg){rotation=((Number(deg)||0)%360+360)%360;spinStart=0;state.rotation=rotation;},
-   spin(){spinFrom=rotation;spinStart=performance.now();if(visible&&!raf)raf=requestAnimationFrame(render);},\n   setAutoRotate(speed){autoRotate=Number(speed)||0;},
+   spin(){spinFrom=rotation;spinStart=performance.now();if(visible&&!raf)raf=requestAnimationFrame(render);},
+   setAutoRotate(speed){autoRotate=Number(speed)||0;}(speed){autoRotate=Number(speed)||0;},
    resize,
    destroy(){destroyed=true;observer?.disconnect();resizeObserver?.disconnect();document.removeEventListener("visibilitychange",onVisibility);canvas.removeEventListener("webglcontextlost",onContextLost);canvas.removeEventListener("webglcontextrestored",onContextRestored);if(raf)cancelAnimationFrame(raf);for(const part of [...carParts,...stageParts])gl.deleteBuffer(part.mesh.buffer);gl.deleteProgram(programInfo);},
   };
