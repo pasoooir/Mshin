@@ -78,7 +78,7 @@ function makeObstacles(){
  if(stage.id>=41)types.push("bus","motorcycle");
  const specs={car:{mass:1250,length:96,width:54,cruise:.84},pickup:{mass:1900,length:116,width:60,cruise:.76},formula:{mass:760,length:104,width:50,cruise:1.02},truck:{mass:6200,length:148,width:66,cruise:.62},bus:{mass:7800,length:164,width:68,cruise:.58},motorcycle:{mass:230,length:64,width:30,cruise:1.08}};
  const lanes=[-135,-45,135,45,-135,45,-45,135],colors=["#ffd34e","#b58cff","#ff79a8","#e6a05a","#69d5ff","#a9d77c","#ff8d76","#e2e7f0"];
- rivals=types.map((type,i)=>{const spec=specs[type];return {id:i,type,...spec,distance:.18+i*.22,speed:activeCar().max*spec.cruise,lateral:lanes[i],lateralVelocity:0,laneIndex:[0,1,3,2,0,2,1,3][i],targetLane:[0,1,3,2,0,2,1,3][i],changeCooldown:.4+i*.25,yaw:0,yawRate:0,damage:createDamageState(),destruction:createDestructionState(),destructionEffectPlayed:false,destructionClock:0,collisionCooldown:0,color:colors[i]}})
+ rivals=types.map((type,i)=>{const spec=specs[type],mass=type==="car"&&i<3?[1450,980,1250][i]:spec.mass,cruiseFactor=type==="car"&&i<3?.82+i*.06:spec.cruise;return {id:i,type,...spec,mass,cruiseFactor,distance:.18+i*.22,speed:activeCar().max*cruiseFactor,lateral:lanes[i],lateralVelocity:0,laneIndex:[0,1,3,2,0,2,1,3][i],targetLane:[0,1,3,2,0,2,1,3][i],changeCooldown:.4+i*.25,yaw:0,yawRate:0,damage:createDamageState(),destruction:createDestructionState(),destructionEffectPlayed:false,destructionClock:0,collisionCooldown:0,color:colors[i]}})
  window.MshinTrafficRoster=rivals.map(({type,id,mass,length,width})=>({type,id,mass,length,width}));
 }
 let trackCache=null,trackCacheStage=0,trackCacheBuilds=0;
