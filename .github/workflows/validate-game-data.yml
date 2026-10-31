@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: mshin-validate-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: mshin-validate-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
   validate:
