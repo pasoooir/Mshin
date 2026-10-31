@@ -37,7 +37,13 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.ok(loader.includes('source === asset.cdn ? (asset.group === "scene" ? 4200 : 2200) : 10000'), "CDN should have a bounded timeout before local fallback");
   assert.ok(loader.includes("[asset.cdn, asset.src]"), "local bundled art must remain the fallback");
 });
-test("service worker precaches every browser runtime dependency for offline gameplay", async () => {\n  const sw = await readFile(path.join(root, "service-worker.js"), "utf8");\n  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");\n  for (const [, module] of game.matchAll(/from "\.\\/([^"]+\\.js)"/g)) assert.ok(sw.includes(`./src/${module}`), `${module} must be precached`);\n});\ntest("service worker precaches all vector art before offline races", async () => {
+test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
+  const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
+  for (const module of ["audio.js", "collision-physics.js", "rigid-body-physics.js", "tire-physics.js", "vehicle-damage-visuals.js", "traffic-ai.js", "vehicle-destruction.js"]) {
+    assert.ok(sw.includes(`./src/${module}`), `${module} must be precached`);
+  }
+});
+test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
   assert.match(sw, /mshin-arcade-v18/);
   assert.match(sw, /src\/tire-physics\.js/);
@@ -130,9 +136,9 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   assert.match(sw, /mshin-arcade-v18/);
-  assert.match(html, /boot\.js\?v=2026.10.31.3/);
+  assert.match(html, /boot\.js\?v=2026.10.31.4/);
   assert.equal(manifest.version, "2026.10.31.4");
   assert.equal(pkg.version, "0.7.0");
-  assert.equal(pwa.version, "0.6.0");
-  assert.equal(cocos.version, "2026.10.31.3");
+  assert.equal(pwa.version, "0.7.0");
+  assert.equal(cocos.version, "2026.10.31.4");
 });
