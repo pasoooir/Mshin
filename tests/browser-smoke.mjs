@@ -193,10 +193,9 @@ try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
-  const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection, tabs: el.querySelector(".menuTabs").getBoundingClientRect().toJSON(), body: el.querySelector(".menuBody").getBoundingClientRect().toJSON() }));
+  const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
   assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
-  assert.ok(mobileMenuLayout.tabs.width > 0 && mobileMenuLayout.body.width > 0, "mobile navigation and content columns must both remain visible");
   assert.match(await mobile.locator("body").evaluate(el => getComputedStyle(el, "::before").content), /افقی نگه دارید/, "portrait phones should show a clear landscape instruction");
   await mobile.locator("#play").click();
   assert.equal(await mobile.locator("#home").isVisible(), true, "portrait mode must not enter the game before the device is rotated");
@@ -204,6 +203,8 @@ try {
   assert.equal(await mobile.evaluate(() => matchMedia("(orientation: landscape)").matches), true, "mobile gameplay smoke test must run in landscape orientation");
   await mobile.locator("#play").click();
   assert.equal(await mobile.locator(".carChoice").count(),5,"mobile showroom should retain all five cars");
+  const visibleMobileColumns = await mobile.locator("#select .gtMenu").evaluate(el => ({ tabs: el.querySelector(".menuTabs").getBoundingClientRect(), body: el.querySelector(".menuBody").getBoundingClientRect() }));
+  assert.ok(visibleMobileColumns.tabs.width > 0 && visibleMobileColumns.body.width > 0, "mobile navigation and content columns must both remain visible after entering the menu");
   await mobile.locator("#tab-cars").click();
   assert.notEqual(await mobile.locator("#select .gtMenu").evaluate(el=>getComputedStyle(el).perspective),"none","mobile showroom should retain perspective depth");
   assert.equal(await mobile.locator("#showroomStage").isVisible(),true,"mobile garage should show the cinematic car studio");
