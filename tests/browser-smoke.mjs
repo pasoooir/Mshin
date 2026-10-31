@@ -284,7 +284,7 @@ try {
   assert.equal(await page.locator("#mshinMenu3DCanvas").isVisible(), false, "menu renderer must hide on pause so the live race canvas remains visible");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
-  await page.screenshot({path:"artifacts/mshin-pause-desktop.png", timeout:60000, animations:"disabled", caret:"hide"});
+  // Pause layout is asserted below; avoid a redundant full-page WebGL screenshot here.
   assert.equal(await page.locator("#pausePanel .pauseMenu > *").count(), 10, "pause menu should expose all ten requested rows");
   assert.equal(await page.locator("#mostWantedList li").count(), 5, "MOST WANTED should render the player and four live rivals");
   assert.equal(await page.locator("#mostWantedList li.playerRank").count(), 1, "the player must own the first highlighted rank");
