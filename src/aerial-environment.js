@@ -1,6 +1,39 @@
 // Deterministic 2.5D trackside scenery. Objects use layered faces, contact shadows and depth-scaled silhouettes.
 const TAU = Math.PI * 2;
 const CROWD_COLORS = ["#f2d17b", "#e56e5b", "#d8e6ee", "#4b88b8", "#313f54", "#75b96c"];
+const AMBIENT_BY_WORLD = [.84, .93, .96, .86, .48, .61, .78, .89, .38, .82];
+const lightingCache = new Map();
+export function getAerialLighting(stage, time = 0) {
+  const world = Math.max(0, Math.min(9, stage.world || 0));
+  const phase = time * .000012 + (stage.seed || stage.id || 1) * .013;
+  const sunAngle = .72 + Math.sin(phase) * .2;
+  const weather = stage.weather || "clear";
+  const weatherDim = weather === "storm" || weather === "rain" ? .2 : weather === "dust" || weather === "sand" ? .12 : weather === "snow" ? .06 : 0;
+  const ambient = Math.max(.22, AMBIENT_BY_WORLD[world] - weatherDim);
+  const sunX = Math.cos(sunAngle), sunY = Math.sin(sunAngle);
+  return {
+    sunX, sunY,
+    shadowX: -sunX * (1.15 + ambient * .45),
+    shadowY: -sunY * (.42 + ambient * .18),
+    shadowAlpha: .16 + (1 - ambient) * .14,
+    ambient,
+    highlight: .32 + ambient * .48,
+    glow: world === 4 || world === 8 ? .55 : world === 9 ? .2 : .08,
+    shadowColor: `rgba(7,19,28,${.16 + (1 - ambient) * .14})`,
+    softShadowColor: `rgba(0,0,0,${.26 + (1 - ambient) * .14})`,
+    trunkHighlight: `rgba(225,190,132,${(.32 + ambient * .48)})`,
+    highlightColor: `rgba(255,255,255,${(.32 + ambient * .48) * .28})`,
+    facadeHighlight: `rgba(255,255,255,${(.32 + ambient * .48) * .72})`
+  };
+}
+function getFrameLighting(stage, time) {
+  const key = stage.id || stage.seed || 0;
+  const cached = lightingCache.get(key);
+  if (cached && time - cached.time < 1200) return cached.value;
+  const value = getAerialLighting(stage, time);
+  lightingCache.set(key, { time, value });
+  return value;
+}
 export function getHelicopterShadowPose(time, stageId, center, tangent) {
   const phase = time * 0.00011 + stageId * 0.37;
   const side = Math.sin(phase) * 0.18;
@@ -17,7 +50,7 @@ function seeded(seed) {
   let s = seed >>> 0;
   return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 }
-function tree(ctx, x, y, size, kind, seed) {
+function tree(ctx, x, y, size, kind, seed, lighting) {
   const random = seeded(seed);
   const pine = kind === "pine";
   const snow = kind === "snow";
@@ -25,15 +58,15 @@ function tree(ctx, x, y, size, kind, seed) {
   ctx.save();
   ctx.translate(x, y);
   // A displaced, soft footprint anchors the tree to the ground.
-  ctx.fillStyle = "#07131c55";
-  ctx.beginPath(); ctx.ellipse(size * .24, size * .48, size * .94, size * .42, -.16, 0, TAU); ctx.fill();
+  ctx.fillStyle = lighting.shadowColor;
+  ctx.beginPath(); ctx.ellipse(size * .24 + lighting.shadowX * size * .5, size * .48 + lighting.shadowY * size * .4, size * .94, size * .42, -.16, 0, TAU); ctx.fill();
   // Tapered trunk with a lit edge and two exposed roots.
   ctx.fillStyle = "#493b2b";
   ctx.beginPath();
   ctx.moveTo(-size * .14, size * .38); ctx.lineTo(-size * .09, -size * .27);
   ctx.lineTo(size * .1, -size * .27); ctx.lineTo(size * .16, size * .38);
   ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = "#b18a58"; ctx.lineWidth = Math.max(1, size * .045);
+  ctx.strokeStyle = lighting.trunkHighlight; ctx.lineWidth = Math.max(1, size * .045);
   ctx.beginPath(); ctx.moveTo(-size * .04, size * .24); ctx.lineTo(-size * .025, -size * .2); ctx.stroke();
   ctx.fillStyle = "#382f27";
   ctx.beginPath(); ctx.moveTo(-size * .1, size * .3); ctx.lineTo(-size * .42, size * .48); ctx.lineTo(-size * .08, size * .4); ctx.closePath(); ctx.fill();
@@ -57,17 +90,18 @@ function tree(ctx, x, y, size, kind, seed) {
       ctx.fillStyle = "#07131c20";
       ctx.beginPath(); ctx.ellipse(cx + size * .1, cy + size * .12, size * .3, size * .16, .2, 0, TAU); ctx.fill();
     }
-    ctx.fillStyle = "#ffffff3b";
-    ctx.beginPath(); ctx.ellipse(-size * .2, -size * .63, size * .25, size * .1, -.42, 0, TAU); ctx.fill();
+    ctx.fillStyle = lighting.highlightColor;
+    ctx.beginPath(); ctx.ellipse(-size * .2 + lighting.sunX * size * .08, -size * .63 + lighting.sunY * size * .05, size * .25, size * .1, -.42, 0, TAU); ctx.fill();
   }
   ctx.restore();
 }
-function building(ctx, x, y, w, h, accent, depth = 13) {
+function building(ctx, x, y, w, h, accent, depth = 13, lighting) {
   ctx.save();
   ctx.translate(x, y);
   // Ground shadow, right-side wall, roof and front facade are separate planes.
-  ctx.fillStyle = "#07131c66";
-  ctx.beginPath(); ctx.moveTo(-w * .48, h * .36); ctx.lineTo(w * .62, h * .36); ctx.lineTo(w * .76, h * .53); ctx.lineTo(-w * .32, h * .53); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = lighting.softShadowColor;
+  const sx = lighting.shadowX * depth * 1.5, sy = lighting.shadowY * depth * 1.5;
+  ctx.beginPath(); ctx.moveTo(-w * .48 + sx, h * .36 + sy); ctx.lineTo(w * .62 + sx, h * .36 + sy); ctx.lineTo(w * .76 + sx, h * .53 + sy); ctx.lineTo(-w * .32 + sx, h * .53 + sy); ctx.closePath(); ctx.fill();
   ctx.fillStyle = "#46545f";
   ctx.beginPath(); ctx.moveTo(w / 2, -h / 2); ctx.lineTo(w / 2 + depth, -h / 2 - depth * .55); ctx.lineTo(w / 2 + depth, h / 2 - depth * .55); ctx.lineTo(w / 2, h / 2); ctx.closePath(); ctx.fill();
   ctx.fillStyle = "#9aa7aa";
@@ -84,17 +118,17 @@ function building(ctx, x, y, w, h, accent, depth = 13) {
   // Roof coping and a bright facade edge help the building read from above.
   ctx.fillStyle = "#d7d5c6";
   ctx.beginPath(); ctx.moveTo(-w / 2 - 2, -h / 2); ctx.lineTo(-w / 2 + depth, -h / 2 - depth * .55); ctx.lineTo(w / 2 + depth + 2, -h / 2 - depth * .55); ctx.lineTo(w / 2 + 2, -h / 2); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = "#ffffff66"; ctx.fillRect(-w / 2, -h / 2, 3, h);
+  ctx.fillStyle = lighting.facadeHighlight; ctx.fillRect(-w / 2, -h / 2, 3, h);
   ctx.restore();
 }
-function crowd(ctx, x, y, seed, scale = 1) {
+function crowd(ctx, x, y, seed, scale = 1, lighting) {
   const random = seeded(seed);
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(scale, scale);
   // A long stand shadow makes the group sit on the same ground plane as the props.
-  ctx.fillStyle = "#0005";
-  ctx.beginPath(); ctx.ellipse(0, 8, 43, 13, -.05, 0, TAU); ctx.fill();
+  ctx.fillStyle = lighting.softShadowColor;
+  ctx.beginPath(); ctx.ellipse(lighting.shadowX * 5, 8 + lighting.shadowY * 4, 43, 13, -.05, 0, TAU); ctx.fill();
   for (let i = 0; i < 12; i++) {
     const px = (random() - .5) * 76, py = (random() - .5) * 13, height = 7 + random() * 3;
     const color = CROWD_COLORS[i % CROWD_COLORS.length];
@@ -115,44 +149,45 @@ function crowd(ctx, x, y, seed, scale = 1) {
   }
   ctx.restore();
 }
-function rock(ctx, x, y, size, sand = false) {
+function rock(ctx, x, y, size, sand = false, lighting) {
   ctx.save(); ctx.translate(x, y);
-  ctx.fillStyle = "#0005"; ctx.beginPath(); ctx.ellipse(5, size * .42, size * 1.05, size * .48, .2, 0, TAU); ctx.fill();
+  ctx.fillStyle = lighting.softShadowColor; ctx.beginPath(); ctx.ellipse(5 + lighting.shadowX * size * .4, size * .42 + lighting.shadowY * size * .35, size * 1.05, size * .48, .2, 0, TAU); ctx.fill();
   ctx.fillStyle = sand ? "#8e6b49" : "#66747a";
   ctx.beginPath(); ctx.moveTo(-size, size * .2); ctx.lineTo(-size * .55, -size * .65); ctx.lineTo(size * .1, -size); ctx.lineTo(size * .85, -size * .45); ctx.lineTo(size, size * .3); ctx.closePath(); ctx.fill();
   ctx.fillStyle = "#ffffff35"; ctx.beginPath(); ctx.moveTo(-size * .55, -size * .65); ctx.lineTo(size * .1, -size); ctx.lineTo(size * .42, -size * .12); ctx.lineTo(-size * .12, size * .02); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
-export function renderAerialScenery(ctx, stage, frameAt, world) {
+export function renderAerialScenery(ctx, stage, frameAt, world, time = 0) {
   const random = seeded((stage.seed || stage.id || 1) * 7919), accent = world[4], kind = stage.world;
+  const lighting = getFrameLighting(stage, time);
   for (let i = 0; i < 54; i++) {
     const t = i / 54 * TAU, frame = frameAt(t), side = i % 2 ? 1 : -1, distance = 248 + random() * 205;
     const x = frame.p.x + frame.nx * side * distance, y = frame.p.y + frame.ny * side * distance;
     const size = (19 + random() * 17) * (1.16 - (distance - 248) / 205 * .34);
-    if (kind === 0 || kind === 3 || kind === 6) tree(ctx, x, y, size, kind === 6 ? "pine" : "broadleaf", stage.seed + i);
-    else if (kind === 1 || kind === 7) rock(ctx, x, y, size, kind === 1);
-    else if (kind === 2) tree(ctx, x, y, size, "snow", stage.seed + i);
+    if (kind === 0 || kind === 3 || kind === 6) tree(ctx, x, y, size, kind === 6 ? "pine" : "broadleaf", stage.seed + i, lighting);
+    else if (kind === 1 || kind === 7) rock(ctx, x, y, size, kind === 1, lighting);
+    else if (kind === 2) tree(ctx, x, y, size, "snow", stage.seed + i, lighting);
     else if (kind === 4 || kind === 5 || kind === 9) {
-      if (i % 3 === 0) building(ctx, x, y, 48 + random() * 34, 42 + random() * 34, accent, 10 + random() * 9);
+      if (i % 3 === 0) building(ctx, x, y, 48 + random() * 34, 42 + random() * 34, accent, 10 + random() * 9, lighting);
       else {
-        ctx.save(); ctx.fillStyle = "#0005"; ctx.beginPath(); ctx.ellipse(x + 9, y + 13, 25, 13, 0, 0, TAU); ctx.fill();
+        ctx.save(); ctx.fillStyle = lighting.softShadowColor; ctx.beginPath(); ctx.ellipse(x + 9 + lighting.shadowX * 5, y + 13 + lighting.shadowY * 4, 25, 13, 0, 0, TAU); ctx.fill();
         ctx.fillStyle = "#45535f"; ctx.fillRect(x - 15, y - 17, 30, 32);
         ctx.fillStyle = "#7f9297"; ctx.beginPath(); ctx.moveTo(x - 15, y - 17); ctx.lineTo(x - 7, y - 23); ctx.lineTo(x + 22, y - 23); ctx.lineTo(x + 15, y - 17); ctx.closePath(); ctx.fill();
         ctx.fillStyle = accent; ctx.fillRect(x - 11, y - 11, 22, 5); ctx.fillStyle = "#ffffff77"; ctx.fillRect(x - 11, y - 11, 3, 3); ctx.restore();
       }
     } else {
-      ctx.save(); ctx.fillStyle = "#0005"; ctx.beginPath(); ctx.ellipse(x + 7, y + 11, 25, 13, 0, 0, TAU); ctx.fill();
+      ctx.save(); ctx.fillStyle = lighting.softShadowColor; ctx.beginPath(); ctx.ellipse(x + 7 + lighting.shadowX * 5, y + 11 + lighting.shadowY * 4, 25, 13, 0, 0, TAU); ctx.fill();
       ctx.fillStyle = accent; ctx.beginPath(); ctx.ellipse(x, y, 23, 10, .2, 0, TAU); ctx.fill();
       ctx.fillStyle = "#fff9"; ctx.fillRect(x - 13, y - 3, 26, 3); ctx.restore();
     }
-    if (i % 9 === 0) crowd(ctx, x + side * 25, y + side * 16, stage.seed + i * 31, .82 + random() * .22);
+    if (i % 9 === 0) crowd(ctx, x + side * 25, y + side * 16, stage.seed + i * 31, .82 + random() * .22, lighting);
   }
   // Alternating 3D crash barriers: top lip, front face and cast shadow.
   for (let i = 0; i < 22; i++) {
     const frame = frameAt((i + .35) / 22 * TAU), side = i % 2 ? 1 : -1;
     const x = frame.p.x + frame.nx * side * 218, y = frame.p.y + frame.ny * side * 218;
     ctx.save(); ctx.translate(x, y); ctx.rotate(frame.angle);
-    ctx.fillStyle = "#0005"; ctx.fillRect(-23, 8, 49, 8);
+    ctx.fillStyle = lighting.softShadowColor; ctx.fillRect(-23 + lighting.shadowX * 3, 8 + lighting.shadowY * 3, 49, 8);
     ctx.fillStyle = "#6a7478"; ctx.fillRect(-24, -4, 48, 15);
     ctx.fillStyle = i % 2 ? "#f0e8d2" : "#e66c56"; ctx.fillRect(-24, -7, 48, 12);
     ctx.fillStyle = "#ffffffaa"; ctx.fillRect(-20, -6, 7, 9); ctx.fillRect(-2, -6, 7, 9); ctx.fillRect(16, -6, 7, 9);
