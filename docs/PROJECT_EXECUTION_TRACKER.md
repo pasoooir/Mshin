@@ -2,23 +2,23 @@
 
 Last evidence refresh: 2026-10-31
 
-## Latest verified release — 0.9.0
+## Latest verified release — 0.9.1
 
-- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #46 ادغام شده، merged-main validation و GitHub Pages deployment هر دو موفق‌اند.
-- **Release scope:** ارتقای محیط هوایی/2.5D در هر ده دنیا؛ تاج درختان چندلایه، تنه و ریشه، ساختمان‌های دارای سطوح جلو/کنار/سقف، پنجره‌های فرورفته، صخره‌های چندوجهی، جمعیت تماشاگر با سر/بدن/دست/پا، سایه تماس و موانع حجمی؛ سایه متحرک هلیکوپتر نیز نرم‌تر شده است.
-- **Regression coverage:** تست‌های Node برای هندسه و اجزای بصری در هر ده دنیا؛ Playwright دسکتاپ/موبایل برای منو، مسابقه، کنترل‌ها، آفلاین و عملکرد رگرسیونی.
-- **Release metadata:** package و PWA manifest برابر `0.9.0`؛ asset marker برابر `2026.10.31.14`؛ Service Worker cache برابر `mshin-arcade-v30`.
-- **PR #46:** https://github.com/pasoooir/Mshin/pull/46 — merged، commit `4ac5d3405037bd715736d57d4a1743ace9a30273`.
-- **PR #46 source validation:** push run `41203170159` و PR run `41203171734` — success؛ تست Node و Playwright دسکتاپ/موبایل موفق.
-- **GitHub Pages deployment:** run `41203337340` — success.
-- **Merged-main validation:** run `41203337448` — success.
+- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #48 ادغام شده، merged-main validation و GitHub Pages deployment هر دو موفق‌اند.
+- **Release scope:** نورپردازی هوشمند و وابسته به جهان؛ جهت نور خورشید با تغییر آهسته زمان مسابقه حرکت می‌کند؛ شدت نور محیط با نوع دنیا و آب‌وهوا تغییر می‌کند؛ سایه‌های درخت، ساختمان، تماشاگر، صخره و موانع از یک بردار نور مشترک استفاده می‌کنند.
+- **Regression coverage:** تست Node برای ده پروفایل نوری، جهت نور نرمال‌شده، پایداری خروجی در timestamp ثابت و تغییر ambient/shadow با وضعیت آب‌وهوا؛ Playwright دسکتاپ/موبایل و تست‌های کامل بازی.
+- **Release metadata:** package و PWA manifest برابر `0.9.1`؛ asset marker برابر `2026.10.31.15`؛ Service Worker cache برابر `mshin-arcade-v31`.
+- **PR #48:** https://github.com/pasoooir/Mshin/pull/48 — merged، commit `3ce9af24e14e71ffdb670260c47a771e0901fb74`.
+- **PR #48 source validation:** push run `41204063528` و PR run `41204067804` — success؛ Node و Playwright دسکتاپ/موبایل موفق.
+- **GitHub Pages deployment:** run `41204250314` — success.
+- **Merged-main validation:** run `41204250381` — success.
 - **Live game:** https://pasoooir.github.io/Mshin/
-- **Limit:** تست‌های خودکار هندسه و مرورگر، جایگزین ارزیابی بصری روی نمایشگرهای فیزیکی و QA مستقل در Cocos Creator نیستند.
+- **Limit:** تست‌های خودکار نورپردازی و مرورگر جایگزین ارزیابی بصری روی دستگاه‌های فیزیکی و QA مستقل در Cocos Creator نیستند.
 
 
-## Previous verified release — 0.8.9
+## Previous verified release — 0.9.0
 
-- PR #45، commit `ac5e8e7666df7d3deb4d4dac17a674318dda84ba`؛ PR browser run `41202686023`، push validation `41202647584`، merged-main validations `41202871457` و `41202859952` و Pages deployment `41202859572` موفق بودند.
+- PR #47، commit `aad2e4a7e3faffb864b6b102e4f6a45fb1d5739f`؛ PR browser validation run `41203599574`، merged-main validation `41203799355` و Pages deployment `41203798835` موفق بودند. PR #46 محیط 2.5D حجمی را به main افزود.
 
 ## Repository and delivery state
 
@@ -221,5 +221,5 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - **Implemented:** separate Web Audio SFX and music buses; separate enable switches and 0–100 sliders; persistent values in `mshin-settings-v1`; menu/race loop selection with gain crossfade; mandatory decode of six RPM layers, brake/downshift effects and both music tracks before race countdown; abort countdown with an explicit message if required audio decode fails.
 - **Music licensing:** MintoDog's “Racing Game Menu” and “Pure Raceway” are registered as CC0 in the manifest; source pages: https://opengameart.org/content/racing-game-menu and https://opengameart.org/content/pure-raceway.
 - **Changed files:** `index.html`, `src/audio.js`, `src/web-game.js`, `src/asset-manifest.json`, `service-worker.js`, `package.json`, `manifest.webmanifest`, `tests/browser-smoke.mjs`.
-- **PWA:** app version `0.9.0`, asset marker `2026.10.31.14`, cache `mshin-arcade-v30`; app shell now includes the aerial renderer.
+- **PWA:** app version `0.9.1`, asset marker `2026.10.31.15`, cache `mshin-arcade-v31`; app shell now includes the aerial renderer.
 - **Acceptance still pending:** CI must confirm OGA audio CORS/download/decode; browser assertions for independent switches and persisted slider values must pass; visual mobile settings QA and offline re-entry with the new music assets remain to be verified. No release is accepted until all required checks pass.
