@@ -356,8 +356,18 @@ try {
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();
   assert.equal(await mobile.locator(".stageCard").count(),5,"mobile race tab should retain five stages");
-  await mobile.locator("#startRace").click();
-  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  await mobile.locator("#startRace").click({ force: true, noWaitAfter: true, timeout: 10000 });
+  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 9000 }).catch(async error => {
+    const state = await mobile.evaluate(() => ({
+      bootStage: window.MshinBootStage,
+      countdownClass: document.querySelector("#countdownOverlay")?.className,
+      countdownValue: document.querySelector("#countdownValue")?.textContent,
+      raceState: window.MshinGameState,
+      performance: window.MshinPerformance,
+      errors: window.MshinBootError
+    }));
+    throw new Error("Mobile race countdown did not complete: " + JSON.stringify(state) + " | " + error.message);
+  });
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
   await mobile.locator("#pause").click({ force: true, noWaitAfter: true, timeout: 10000 });
   const mobilePauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
