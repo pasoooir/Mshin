@@ -199,7 +199,7 @@ function drawPlayerSideCar(ctx, width, height, color, steer, speed, mode) {
 export function drawPerspectiveRace(ctx, options) {
   const {
     width, height, mode = "side", car, stage, world, center, frameAt,
-    rivals = [], obstacles = [], pickups = [], carColor = "#f15d4e",
+    rivals = [], obstacles = [], pickups = [], particles = [], carColor = "#f15d4e",
     roadHalfWidth = 180, now = 0
   } = options;
   const palette = world || ["", "#6eae56", "#59636d", "#f3e2b4", "#f4d35e", "#6e9a53"];
@@ -334,7 +334,20 @@ export function drawPerspectiveRace(ctx, options) {
     drawRacingCar(ctx, p.x, p.y - 12 * p.scale, p.scale * .9, rival.color || "#dce4ec", mode === "southwest" ? -1 : 1, false);
   }
 
-  const direction = mode === "southwest" ? -1 : 1;
+  if (particles.length) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (const particle of particles) {
+      const point = projectRacePoint({ x: particle.x, y: particle.y }, cameraPoint, cameraAngle, viewport, { horizon, yaw });
+      if (point.depth < -80 || point.y < horizon - 30 || point.y > height + 30) continue;
+      ctx.globalAlpha = Math.max(0, Math.min(1, particle.life / particle.maxLife));
+      ctx.fillStyle = particle.color;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, Math.max(1, particle.size * point.scale), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
   drawPlayerSideCar(ctx, width, height, carColor, car.steer || 0, car.speed || 0, mode);
   if (mode === "southeast" || mode === "southwest") {
     ctx.save();
