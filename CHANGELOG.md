@@ -1,4 +1,4 @@
-## 0.8.3 — 2026-10-31
+## 0.8.4 — 2026-10-31\n\n### Published version visibility and cache refresh\n- Show the published release number (0.8.4) on the startup splash screen and the main menu after loading.\n- Add a direct link from the in-game version badge to this changelog so players can verify what is included in the published build.\n- Advance the PWA manifest, package metadata, asset catalogs and boot query marker together; bump the service-worker cache to v23 so returning installations refresh to this release.\n\n## 0.8.3 — 2026-10-31
 
 ### Vehicle identity and race presentation
 - Added individual sound profiles for Rally, GT, 4x4 and Desert Raptor vehicles; pitch, throttle character, filter response and loudness now differ by vehicle.
