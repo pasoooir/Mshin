@@ -1,8 +1,15 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 
 await mkdir("artifacts", { recursive: true });
+
+async function saveWebGLPreview(page, selector, path) {
+  const dataUrl = await page.locator(selector).evaluate(canvas => canvas.toDataURL("image/png"));
+  const encoded = dataUrl.split(",")[1];
+  assert.ok(encoded && encoded.length > 1000, "WebGL canvas should export a rendered image");
+  await writeFile(path, Buffer.from(encoded, "base64"));
+}
 
 const browser = await chromium.launch({ headless: true, args: ["--enable-webgl","--ignore-gpu-blocklist","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"] });
 const errors = [];
@@ -61,7 +68,7 @@ try {
   assert.equal(await page.evaluate(() => window.MshinShowroom3D.carId), "comet", "changing the selected car must update the live 3D model");
   await page.locator(".carChoice").first().click();
   await page.evaluate(() => window.MshinShowroomRenderer.pause());
-  await page.screenshot({path:"artifacts/mshin-garage-webgl-desktop.png",animations:"disabled",timeout:60000});
+  await saveWebGLPreview(page,"#showroom3dCanvas","artifacts/mshin-garage-webgl-desktop.png");
   await page.evaluate(() => window.MshinShowroomRenderer.resume());
   await page.locator("#showroomRotate").click();
   assert.equal(await page.evaluate(() => window.MshinShowroom.spinCount), 1, "360-degree showroom spin should be interactive");
@@ -280,7 +287,7 @@ try {
   assert.ok(Math.abs(mobileDragState.angle)>0,"mobile drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
   assert.ok(Math.abs(await mobile.evaluate(()=>window.MshinShowroom3D.rotation))>0,"mobile touch drag must rotate the actual WebGL vehicle model");
   await mobile.evaluate(() => window.MshinShowroomRenderer.pause());
-  await mobile.screenshot({path:"artifacts/mshin-garage-webgl-mobile.png",animations:"disabled",timeout:60000});
+  await saveWebGLPreview(mobile,"#showroom3dCanvas","artifacts/mshin-garage-webgl-mobile.png");
   await mobile.evaluate(() => window.MshinShowroomRenderer.resume());
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
