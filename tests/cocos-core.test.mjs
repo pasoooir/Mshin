@@ -116,8 +116,8 @@ test('AI racing-line planner safely handles invalid indices and lane offsets',()
 
 
 test('rear-end impact transfers forward momentum to the leading car and slows the striking car',()=>{
- const rear=createRigidBody2D({x:0,y:0,vx:0,vy:240,mass:1250,length:92,width:44,restitution:.12,friction:.72});
- const lead=createRigidBody2D({x:0,y:91,vx:0,vy:120,mass:1250,length:92,width:44,restitution:.12,friction:.72});
+ const rear=createRigidBody2D({x:0,y:0,vx:0,vy:240,angle:Math.PI/2,mass:1250,length:92,width:44,restitution:.12,friction:.72});
+ const lead=createRigidBody2D({x:0,y:91,vx:0,vy:120,angle:Math.PI/2,mass:1250,length:92,width:44,restitution:.12,friction:.72});
  const momentumBefore=rear.mass*rear.vy+lead.mass*lead.vy;
  const impact=resolveRigidBody2D(rear,lead);
  assert.equal(impact.hit,true);assert.ok(impact.closingSpeed>0);
@@ -127,8 +127,8 @@ test('rear-end impact transfers forward momentum to the leading car and slows th
  assert.ok(Math.abs(rear.angularVelocity)<1e-8&&Math.abs(lead.angularVelocity)<1e-8,'centred rear-end impact must not invent yaw');
 });
 test('off-centre rear impact creates yaw and persistent lateral velocity instead of discarding the impulse',()=>{
- const rear=createRigidBody2D({x:0,y:0,vx:18,vy:230,mass:1250,length:92,width:44});
- const lead=createRigidBody2D({x:12,y:91,vx:0,vy:100,mass:1250,length:92,width:44});
+ const rear=createRigidBody2D({x:0,y:0,vx:18,vy:230,angle:Math.PI/2,mass:1250,length:92,width:44});
+ const lead=createRigidBody2D({x:12,y:91,vx:0,vy:100,angle:Math.PI/2,mass:1250,length:92,width:44});
  const impact=resolveRigidBody2D(rear,lead);
  assert.equal(impact.hit,true);
  assert.ok(Math.abs(rear.angularVelocity)+Math.abs(lead.angularVelocity)>1e-7);
