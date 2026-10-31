@@ -138,12 +138,14 @@ export function drawWorldEnvironment(ctx, world, frameAt) {
 
 export function drawHelicopterShadow(ctx, frameAt, timeMs = 0) {
   const t = (timeMs * .000075) % TAU, f = frameAt(t);
-  const x = f.p.x + f.nx * 345, y = f.p.y + f.ny * 345;
+  const lateral = 90 + Math.sin(timeMs * .00009) * 240;
+  const x = f.p.x + f.nx * lateral, y = f.p.y + f.ny * lateral;
   const rotation = f.angle + Math.sin(timeMs * .00022) * .12;
   const rotor = timeMs * .012;
   ctx.save(); ctx.translate(x, y); ctx.rotate(rotation); ctx.scale(1.18, 1.18);
-  ctx.globalAlpha = .24; ctx.filter = "blur(2.4px)";
-  ctx.fillStyle = "#07101b"; ctx.shadowColor = "#07101b"; ctx.shadowBlur = 15;
+  ctx.globalAlpha = .2;
+  ctx.fillStyle = "rgba(4,10,20,.10)"; ctx.beginPath(); ctx.ellipse(0, 8, 42, 70, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = "#07101b"; ctx.shadowColor = "#07101b"; ctx.shadowBlur = 9;
   // Tail boom and stabilizer.
   polygon(ctx, [[-7,12],[-4,12],[-23,58],[-28,58]], "#07101b");
   ctx.fillRect(-34,54,16,4);
@@ -158,5 +160,5 @@ export function drawHelicopterShadow(ctx, frameAt, timeMs = 0) {
   ctx.save(); ctx.translate(-27, 57); ctx.rotate(-rotor * 1.7);
   ctx.fillRect(-2, -12, 4, 24); ctx.fillRect(-10, -2, 20, 4);
   ctx.restore();
-  ctx.filter = "none"; ctx.restore();
+  ctx.restore();
 }
