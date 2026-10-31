@@ -152,3 +152,13 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - Strong front impacts initiated by the player award 10–60 persistent coins, rate-limited to prevent farming.
 - Acceptance gates: all Node tests, syntax checks, desktop/mobile Playwright smoke, race intro rendering, later-stage traffic roster, persistent impact rewards, and GitHub Pages deployment.
 - Cocos Creator Editor/device validation remains a separate external gate.
+
+
+## 0.8.3 — 🟢 تکمیل‌شده و تأییدشده
+
+- PR #36 با commit `672ec8ae0c4280d7380b4406998b3611146b0ded` در شاخه `main` ادغام شد.
+- ۱۲۷ تست خودکار: ۱۲۷ موفق، صفر ناموفق.
+- بررسی syntax، build، data validation و Playwright دسکتاپ/موبایل موفق شد.
+- GitHub Pages build و deploy موفق شد.
+- صداهای اختصاصی خودروها، intro معکوس ۳–۲–۱–GO، ترافیک مرحله‌ای و پاداش امتیاز/سکه برخورد در نسخه ۰.۸.۳ منتشر شد.
+- تست فیزیکی روی بلندگو/گوشی واقعی هنوز انجام نشده و به‌عنوان تأیید دستگاه واقعی ادعا نمی‌شود.
