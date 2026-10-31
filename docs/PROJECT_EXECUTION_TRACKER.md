@@ -2,6 +2,19 @@
 
 Last evidence refresh: 2026-10-31
 
+## Latest verified release — 0.8.7
+
+- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #40 ادغام شده است.
+- **Release scope:** نمایشگاه سه‌بعدی خودرو با perspective، نورپردازی چندلایه، بازتاب و سایه؛ حالت‌های hover/selected برای کارت‌ها؛ ریل‌های افقی واکنش‌گرا و رعایت prefers-reduced-motion.
+- **Regression coverage:** تست‌های Playwright دسکتاپ و موبایل، حفظ پنج خودرو، تب خودروها، عمق بصری منو، پیمایش افقی ریل و حفظ پنج مرحله؛ مسیر شروع مسابقه و HUD موبایل نیز بررسی شد.
+- **Release metadata:** package و PWA manifest برابر `0.8.7`؛ Service Worker cache برابر `mshin-arcade-v26`.
+- **PR #40:** https://github.com/pasoooir/Mshin/pull/40 — merged، commit `3d4578fa407ffcdffdf60693dca2c0e5a8a2591d`.
+- **PR browser CI:** run `41192455546` — success؛ تست‌های Node و Playwright دسکتاپ/موبایل موفق.
+- **Merged-main validation:** run `41193018567` — success.
+- **GitHub Pages deployment:** run `41193017445` — success.
+- **Live game:** https://pasoooir.github.io/Mshin/
+- **Limit:** تست مرورگر، جایگزین تست فیزیکی روی گوشی یا تأیید build در Cocos Creator Editor نیست.
+
 ## Repository and delivery state
 
 - Default branch `main` includes merge commit `8bd105a4ac33fa2606a23715aba4a68db98ccc30` (PR #9), following PR #8 merge commit `7722d011720a2dfa709d8966dcc56d6ee60ab636`.
