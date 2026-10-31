@@ -129,3 +129,16 @@ export function splitImpactEnergy(energy:number,invMassA:number,invMassB:number)
  const safeEnergy=Math.max(0,Number.isFinite(energy)?energy:0),a=Math.max(0,Number.isFinite(invMassA)?invMassA:0),b=Math.max(0,Number.isFinite(invMassB)?invMassB:0),sum=a+b;
  return sum>1e-12?{a:safeEnergy*a/sum,b:safeEnergy*b/sum}:{a:safeEnergy*.5,b:safeEnergy*.5};
 }
+
+/** Returns a path point shifted sideways by a stable racing-lane offset. */
+export function calculateRacingLineTarget(path:ReadonlyArray<{x:number;y:number}>,index:number,laneOffset:number):{x:number;y:number} {
+ if(path.length===0)return {x:0,y:0};
+ const i=((Math.floor(index)%path.length)+path.length)%path.length,target=path[i],prev=path[(i+path.length-1)%path.length],next=path[(i+1)%path.length];
+ const tx=next.x-prev.x,ty=next.y-prev.y,length=Math.hypot(tx,ty)||1;
+ return {x:target.x-ty/length*laneOffset,y:target.y+tx/length*laneOffset};
+}
+/** Slows AI before sharp corners while preserving a predictable minimum pace. */
+export function calculateAiTargetSpeed(turnAngle:number,minSpeed=165,maxSpeed=310):number {
+ const turn=Number.isFinite(turnAngle)?Math.abs(turnAngle):Math.PI;
+ return clamp(maxSpeed-turn*105,minSpeed,maxSpeed);
+}
