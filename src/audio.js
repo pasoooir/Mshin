@@ -79,7 +79,7 @@ export function createGameAudio() {
   const playMusic = async mode => {
     if (!ensure() || !musicEnabled) return false;
     const selected=mode==="race"?"raceMusic":"menuMusic";
-    if (!(await prepare())) return false;
+    await prepare();
     if (musicMode===mode && musicSource) return true;
     const buffer=decoded.get(selected); if (!buffer) return false;
     const now=context.currentTime, source=context.createBufferSource(), gain=context.createGain();
