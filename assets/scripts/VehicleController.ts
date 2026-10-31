@@ -68,6 +68,8 @@ export class VehicleController extends Component {
    const velocity=worldVelocityToCar(body.vx,body.vy,vehicle.car.heading);
    vehicle.car.speed=Math.max(0,velocity.speed);
    vehicle.car.lateralSpeed=velocity.lateralSpeed;
+   // Classify the impulse in this vehicle's own forward/right coordinate frame.
+   const fx=Math.sin(vehicle.car.heading),fy=-Math.cos(vehicle.car.heading);
    // Keep yaw rate from the impulse solve; VehicleController integrates it at fixed substeps.
    const localF=impact.nx*normalSign*fx+impact.ny*normalSign*fy,localR=impact.nx*normalSign*(-fy)+impact.ny*normalSign*fx;
    addVehicleDamage(vehicle.damage,damageEnergy,Math.abs(localF)>=Math.abs(localR)?(localF>=0?"front":"rear"):(localR>=0?"right":"left"));
