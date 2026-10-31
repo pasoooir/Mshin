@@ -170,7 +170,8 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pkg.version, "0.9.3");
   assert.equal(pwa.version, "0.9.3");
   assert.equal(cocos.version, "2026.10.31.17");
-  assert.ok(readme.includes("release candidate is **version 0.9.3**"), "README must identify 0.9.3 as the current release candidate");
+  assert.ok(readme.includes("live browser release is **version 0.9.3**") && readme.includes("deployed to GitHub Pages after successful merged-main validation"), "README must identify the verified live release");
+  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.3**"), "README must preserve the latest published release");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
