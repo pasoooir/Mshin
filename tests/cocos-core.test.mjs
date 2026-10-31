@@ -203,3 +203,12 @@ test('large lateral slip is bounded by tire capacity and recovers faster on high
  assert.ok(Math.abs(low.lateralSpeed)>Math.abs(high.lateralSpeed));
  assert.ok(Number.isFinite(calculateSlipAngle(high.speed,high.lateralSpeed)));
 });
+
+
+test('sustained lateral slip creates bounded oversteer yaw without an instant heading snap',()=>{
+ const car={x:0,y:0,heading:0,speed:180,lateralSpeed:45,angularVelocity:0};
+ stepCar(car,{steer:0,throttle:false,brake:false,grip:.55},.05);
+ assert.ok(car.angularVelocity>0);
+ assert.ok(Math.abs(car.angularVelocity)<=1.4);
+ assert.ok(Math.abs(car.heading)<.01,'yaw response is integrated over time, not teleported');
+});
