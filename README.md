@@ -96,7 +96,8 @@ CI validates stage data, portable TypeScript, Cocos script syntax, Worker syntax
 
 ## Version 0.10.1 — procedural 3D menu and showroom
 
-- Added a repository-local WebGL renderer with perspective camera, directional lighting, low-poly vehicle geometry, track surface, kerbs, trees, pit-side buildings and animated vehicle presentation.
+- Added a repository-local WebGL renderer with perspective camera, directional lighting, a sculpted low-poly rally car, circuit geometry, kerbs, trees, pit-side buildings and animated vehicle presentation.
+- Added a dedicated garage set with a raised platform, neon perimeter, back wall, light bars and touch/mouse-controlled vehicle rotation.
 - Added a separate interactive 3D garage scene. Vehicle selection updates the actual 3D body paint, and drag input rotates the rendered 3D model rather than only rotating a 2D sprite.
 - Kept the live race Canvas visible behind the pause overlay; the menu renderer hides when the game enters a race/pause screen.
 - No CDN, remote 3D model, or external runtime library is required. The renderer is included in the offline app shell as `src/menu-3d-scene.js`.
