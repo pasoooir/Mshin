@@ -235,6 +235,7 @@ window.MshinMainMenuRenderer=mainMenuRenderer;
 const showroomRenderer=createShowroom3D($("showroom3dCanvas"));
 if(showroomRenderer.state.status==="webgl")$("showroomVehicle").classList.add("has-webgl");
 window.MshinShowroom3D=showroomRenderer.state;
+window.MshinShowroomRenderer=showroomRenderer;
 function renderShowroomPreview(){
  const model=carModels.find(c=>c.id===selectedCar)||carModels[0],image=$("showroomCarImage"),vehicle=$("showroomVehicle");
  if(!image||!vehicle)return;

@@ -60,7 +60,9 @@ try {
   await page.locator(".carChoice").nth(1).click();
   assert.equal(await page.evaluate(() => window.MshinShowroom3D.carId), "comet", "changing the selected car must update the live 3D model");
   await page.locator(".carChoice").first().click();
-  await page.screenshot({path:"artifacts/mshin-garage-webgl-desktop.png"});
+  await page.evaluate(() => window.MshinShowroomRenderer.pause());
+  await page.screenshot({path:"artifacts/mshin-garage-webgl-desktop.png",animations:"disabled",timeout:60000});
+  await page.evaluate(() => window.MshinShowroomRenderer.resume());
   await page.locator("#showroomRotate").click();
   assert.equal(await page.evaluate(() => window.MshinShowroom.spinCount), 1, "360-degree showroom spin should be interactive");
   assert.equal(await page.locator("#showroomSound").isVisible(), true, "showroom should expose an engine preview control");
@@ -86,7 +88,9 @@ try {
   assert.deepEqual(await page.evaluate(() => { const s=JSON.parse(localStorage.getItem("mshin-settings-v1")); return {music:s.music,sound:s.sound,musicVolume:s.musicVolume,sfxVolume:s.sfxVolume}; }), {music:true,sound:true,musicVolume:.37,sfxVolume:.62}, "audio controls should persist separate values");
   await page.locator("#tab-race").click();
   await page.waitForTimeout(260);
-  await page.screenshot({ path: "artifacts/mshin-world-select-desktop.png", fullPage: true });
+  await page.evaluate(() => window.MshinMainMenuRenderer.pause());
+  await page.screenshot({ path: "artifacts/mshin-world-select-desktop.png", fullPage: true, animations:"disabled", timeout:60000 });
+  await page.evaluate(() => window.MshinMainMenuRenderer.resume());
   const worldCards = await page.locator(".worldCard img").evaluateAll(nodes => nodes.map(node => node.getAttribute("src")));
   assert.ok(worldCards.every((src, index) => src === "./assets/vector/world-" + String(index + 1).padStart(2, "0") + ".svg"), "each world card should use its own text-free vector artwork");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
@@ -275,7 +279,9 @@ try {
   const mobileDragState = await mobile.evaluate(()=>window.MshinShowroom);
   assert.ok(Math.abs(mobileDragState.angle)>0,"mobile drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
   assert.ok(Math.abs(await mobile.evaluate(()=>window.MshinShowroom3D.rotation))>0,"mobile touch drag must rotate the actual WebGL vehicle model");
-  await mobile.screenshot({path:"artifacts/mshin-garage-webgl-mobile.png"});
+  await mobile.evaluate(() => window.MshinShowroomRenderer.pause());
+  await mobile.screenshot({path:"artifacts/mshin-garage-webgl-mobile.png",animations:"disabled",timeout:60000});
+  await mobile.evaluate(() => window.MshinShowroomRenderer.resume());
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();
