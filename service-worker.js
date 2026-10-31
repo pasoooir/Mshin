@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v30";
+const CACHE_NAME = "mshin-arcade-v31";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
   "./src/web-game.js", "./src/environment-renderer.js", "./src/tire-physics.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
@@ -16,6 +16,8 @@ const APP_SHELL = [
   "./assets/vector/car-thunder.svg", "./assets/vector/car-raptor.svg"
 ];
 const REMOTE_AUDIO = [
+  "https://sfxmint.com/dl/race-car-07.mp3",
+  "https://sfxmint.com/dl/race-car-10.mp3",
   "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/engine-idle.wav",
   "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/engine-load.wav",
   "https://cdn.jsdelivr.net/gh/Billioncodes001/agent-empire@17621885f718517d926729266ea3a00c317e6723/src/client/public/audio/road-roll.wav",
