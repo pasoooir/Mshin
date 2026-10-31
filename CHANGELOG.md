@@ -1,3 +1,10 @@
+## 0.8.1 — 2026-10-31
+
+- Replaced AI-generated engine clips with six recorded CC0 engine RPM loops from OpenGameArt, served by immutable jsDelivr CDN URLs and cross-faded by speed.
+- Preloads and decodes all six engine layers plus brake/downshift effects before countdown.
+- Pulls the chase camera back to 0.96 scale and balances four lane corridors to equal widths.
+- Advances release/cache markers to 0.8.1 / 2026.10.31.6 / v20.
+
 # Changelog
 
 ## 0.8.0 — 2026-10-31
