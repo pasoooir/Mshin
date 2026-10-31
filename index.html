@@ -326,6 +326,13 @@ body{font-size:16px}
 .showroomVehicle.has-webgl{overflow:hidden}
 .showroomVehicle.has-webgl:after{content:"";position:absolute;inset:8% 4%;pointer-events:none;background:radial-gradient(ellipse at 50% 82%,#7ce8ff1c,transparent 55%);mix-blend-mode:screen}
 @media(prefers-reduced-motion:reduce){.showroomSpotlight{animation:none!important}}
+
+/* The main navigation sits over the same live WebGL car studio as the garage. */
+#select{isolation:isolate;overflow:hidden}
+.mainMenu3dCanvas{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none;opacity:.78}
+#select .gtMenu{position:relative;z-index:2}
+#select.has-webgl:before{opacity:.32}
+#select.has-webgl:after{opacity:.06}
 </style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
@@ -343,7 +350,7 @@ body{font-size:16px}
 <div id="countdownOverlay" class="hidden" aria-live="assertive" aria-label="شمارش معکوس شروع مسابقه"><div class="countdownCard"><span id="countdownValue">3</span></div></div>
 <div class="hud hidden" id="hud"><div class="topbar"><div class="badge"><div class="brand">🏁 MSHIN</div><div class="sub" id="stageName">دنیای ۰۱ · مرحله ۰۱</div></div><div class="stats"><div class="stat"><small>زمان</small><b id="time">00:00</b></div><div class="stat"><small>دور</small><b id="lap">0 / 3</b></div><div class="stat"><small>سرعت</small><b id="speed">0</b></div><div class="stat"><small>رتبه</small><b id="position">5 / 5</b></div></div><button class="pause" id="soundToggle" aria-label="روشن یا خاموش کردن صدا" aria-pressed="true">🔊</button><button class="pause" id="pause" aria-label="توقف مسابقه">Ⅱ</button></div><div class="controls"><div class="stick" id="stick" role="slider" aria-label="فرمان؛ برای چرخیدن به چپ یا راست بکشید و رها کنید." aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0" tabindex="0"><div class="knob" id="knob"></div></div><div class="pedals"><button class="pedal brake" id="brake" aria-label="ترمز"><img src="./cdn/assets/icons/brake.svg" alt="ترمز"></button><button class="pedal gas" id="gas" aria-label="گاز"><img src="./cdn/assets/icons/accelerate.svg" alt="گاز"></button><button class="nitroButton" id="nitro" aria-label="فعال کردن نیترو"><img src="./cdn/assets/icons/nitro.svg" alt="نیترو"></button></div><div class="nitroWrap"><div class="nitroLabel">قدرت نیترو</div><div class="nitroTrack"><div class="nitroFill" id="nitroFill"></div></div></div></div></div>
 <div class="overlay" id="home"><section class="panel narrow"><h1>🏎️ MSHIN</h1><p>مسابقه‌ای هیجان‌انگیز در <b>۱۰ دنیا و ۵۰ مرحله</b>.</p><p><span class="tag">کنترل لمسی</span><span class="tag">بازی آفلاین</span><span class="tag">قابل نصب</span><span class="tag">نمای افقی</span><span class="tag">هوش ترافیک</span><span class="tag">تخریب پویا</span></p><button class="primary" id="play">انتخاب مسابقه ▶</button><p class="hint">فرمان بده · گاز بده · ترمز کن · رکورد خودت را بشکن</p></section></div>
-<div class="overlay hidden" id="select"><section class="panel gtMenu" aria-label="منوی اصلی بازی">
+<div class="overlay hidden" id="select"><canvas id="mainMenu3dCanvas" class="mainMenu3dCanvas" aria-hidden="true"></canvas><section class="panel gtMenu" aria-label="منوی اصلی بازی">
 <header class="menuHeader"><div><span class="menuEyebrow">MSHIN MOTORSPORT</span><h1>مرکز مسابقات</h1><p>مسیر، ماشین و تنظیمات مسابقه را انتخاب کن.</p></div><div class="menuWallet"><small>اعتبار مسابقه</small><b id="credits">0 🪙</b></div></header>
 <nav class="menuTabs" role="tablist" aria-label="بخش‌های منو">
 <button class="menuTab active" id="tab-race" role="tab" aria-selected="true" aria-controls="tabPanel-race" data-tab="race"><span>▶</span> PLAY</button>
