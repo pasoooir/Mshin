@@ -33,6 +33,12 @@ try {
   assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
+  for (const size of [{width:1280,height:720},{width:1280,height:800},{width:1680,height:720},{width:1024,height:768}]) {
+    await page.setViewportSize(size);
+    const bounds = await page.locator("#select .gtMenu").boundingBox();
+    assert.ok(bounds && bounds.x >= -1 && bounds.y >= -1 && bounds.x + bounds.width <= size.width + 1 && bounds.y + bounds.height <= size.height + 1, `menu must fit ${size.width}×${size.height} without clipping`);
+  }
+  await page.setViewportSize({width:1280,height:800});
   assert.equal(await page.locator(".worldCard").count(), 10, "all 10 image-led world cards should be selectable; browser errors: " + errors.join(" | "));
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
@@ -185,6 +191,9 @@ try {
   await page.screenshot({ path: "artifacts/mshin-gameplay-desktop.png" });
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
+  const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
+  assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
+  await page.screenshot({path:"artifacts/mshin-pause-desktop.png"});
   assert.equal(await page.locator("#pausePanel .pauseMenu > *").count(), 10, "pause menu should expose all ten requested rows");
   assert.equal(await page.locator("#mostWantedList li").count(), 5, "MOST WANTED should render the player and four live rivals");
   assert.equal(await page.locator("#mostWantedList li.playerRank").count(), 1, "the player must own the first highlighted rank");
@@ -241,6 +250,12 @@ try {
   await mobile.locator("#startRace").click();
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
+  await mobile.locator("#pause").click();
+  const mobilePauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
+  assert.ok(mobilePauseBounds && mobilePauseBounds.x >= -1 && mobilePauseBounds.y >= -1 && mobilePauseBounds.x + mobilePauseBounds.width <= 391 && mobilePauseBounds.y + mobilePauseBounds.height <= 845, "portrait software-landscape pause menu must fit the complete phone viewport");
+  assert.equal(await mobile.locator("#pausePanel .pauseMenu > *").count(), 10, "mobile pause menu must show all ten actions without scrolling");
+  assert.equal(await mobile.locator("#mostWantedList li").count(), 5, "mobile MOST WANTED panel must show five standings");
+  await mobile.locator("#resume").click();
   const mobileStickBounds = await mobile.locator("#stick").boundingBox();
   assert.ok(Math.max(mobileStickBounds.width, mobileStickBounds.height) >= 120 && Math.min(mobileStickBounds.width, mobileStickBounds.height) >= 100, "rotated mobile steering pad should preserve a 120×100 touch surface");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
