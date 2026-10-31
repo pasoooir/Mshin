@@ -22,8 +22,20 @@ async function saveWebGLPreview(page, selector, path) {
 
 const browser = await chromium.launch({ headless: true, args: ["--enable-webgl","--ignore-gpu-blocklist","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"] });
 const errors = [];
+async function reopenInSameContext(current, errorList) {
+  const context = current.context();
+  const viewport = current.viewportSize();
+  await current.close();
+  const next = await context.newPage();
+  await next.setViewportSize(viewport);
+  next.on("pageerror", error => errorList.push(error.message));
+  await next.goto("http://127.0.0.1:4173/", {waitUntil:"domcontentloaded"});
+  await next.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
+  assert.equal(await next.evaluate(() => window.MshinBootError || null), null, "runtime should recover cleanly in a fresh page within the same storage context");
+  return next;
+}
 try {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  let page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 }).catch(async () => {
@@ -115,9 +127,7 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
-  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "runtime should recover cleanly after reload");
+  page = await reopenInSameContext(page, errors);
   await page.locator("#play").click();
   await page.locator("#tab-settings").click();
   assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
@@ -185,9 +195,7 @@ try {
   await page.locator("#soundToggle").click();
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "sound toggle should mute audio");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
-  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "runtime should recover cleanly after reload");
+  page = await reopenInSameContext(page, errors);
   await page.locator("#play").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
@@ -324,7 +332,7 @@ try {
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
-  const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  let economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   economy.on("pageerror", error => errors.push(error.message));
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
@@ -344,8 +352,7 @@ try {
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
-  await economy.reload({ waitUntil: "domcontentloaded" });
-  await economy.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
+  economy = await reopenInSameContext(economy, errors);
   await economy.locator("#play").click();
   await economy.locator("#tab-cars").click();
   assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "unlocked selected car should persist after reload");
@@ -367,9 +374,7 @@ try {
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, {timeout:25000});
-  assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "runtime should recover cleanly after reload");
+  page = await reopenInSameContext(page, errors);
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
   const audioCacheAudit = await page.evaluate(async () => {
     const manifest = await fetch("./src/asset-manifest.json").then(response => response.json());
@@ -380,7 +385,7 @@ try {
   });
   assert.equal(audioCacheAudit.cached, audioCacheAudit.expected, "every declared engine, effect and music track must be persisted in the offline audio cache: " + audioCacheAudit.missing.join(", "));
   await page.context().setOffline(true);
-  await page.reload({ waitUntil: "domcontentloaded" });
+  page = await reopenInSameContext(page, errors);
   assert.equal(await page.locator("#home").isVisible(), true, "game shell should load while offline after first visit");
   await page.waitForFunction(() => window.MshinAssets?.ready === true, undefined, { timeout: 20000 });
   const offlineAudio = await page.evaluate(() => ({ loaded: Object.values(window.MshinAssets.audioData).filter(value => value instanceof ArrayBuffer).length, expected: Object.keys(window.MshinAssets.audioData).length }));
