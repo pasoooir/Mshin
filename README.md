@@ -31,7 +31,11 @@ The next browser release is **version 0.8.5** (release candidate; publication fo
 - Boot preloads all world art, car sprites, photographic scenes, icons and audio data before importing the game loop.
 - Advanced the visible release to 0.8.2 and service-worker cache to v19.
 
-## Latest published build\n\nThe live splash screen and home menu display **Published version 0.8.5**. The home-screen version badge links directly to the release changelog. The service worker cache is `mshin-arcade-v24`; app and asset markers are updated together so returning PWA users receive the current release.\n\n## Project implementation
+## Latest published build
+
+The live splash screen and home menu display **Published version 0.8.4**. The home-screen version badge links directly to the release changelog. The service worker cache is `mshin-arcade-v23`; app and asset markers are updated together so returning PWA users receive the current release.
+
+## Project implementation
 
 - Browser game entry: `index.html` + `src/web-game.js` (Canvas 2D, no external runtime dependency).
 - Cocos Creator runtime components: `assets/scripts/`; localized body creases and engine-damage smoke are rendered by `VehicleDamageRenderer.ts`.
