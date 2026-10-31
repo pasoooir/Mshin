@@ -4,7 +4,7 @@ import { mkdir } from "node:fs/promises";
 
 await mkdir("artifacts", { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, args: ["--enable-webgl","--ignore-gpu-blocklist","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"] });
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -48,6 +48,12 @@ try {
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
   assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-rally.svg", "showroom should display the selected starter car");
+  assert.equal(await page.evaluate(() => window.MshinShowroom3D?.status), "webgl", "garage must render its selected vehicle through the real WebGL 3D renderer");
+  await page.waitForFunction(() => window.MshinShowroom3D?.frameCount > 0, undefined, {timeout:5000});
+  assert.ok(await page.locator("#showroom3dCanvas").evaluate(canvas => canvas.width > 0 && canvas.height > 0), "3D showroom canvas must have a real drawing buffer");
+  await page.locator(".carChoice").nth(1).click();
+  assert.equal(await page.evaluate(() => window.MshinShowroom3D.carId), "comet", "changing the selected car must update the live 3D model");
+  await page.locator(".carChoice").first().click();
   await page.locator("#showroomRotate").click();
   assert.equal(await page.evaluate(() => window.MshinShowroom.spinCount), 1, "360-degree showroom spin should be interactive");
   assert.equal(await page.locator("#showroomSound").isVisible(), true, "showroom should expose an engine preview control");
