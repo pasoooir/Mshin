@@ -226,13 +226,17 @@ function drawImpactRewardToast(){if(!collisionRewardToast)return;const alpha=cla
 function draw(){ctx.clearRect(0,0,width,height);if(state==="countdown"){drawCountdownIntro();return}if(state!=="race"&&state!=="paused")return;const c=carPoint();cameraShake=Math.max(0,cameraShake-.016);const shake=cameraShake*18;ctx.save();ctx.translate(width/2+(Math.random()-.5)*shake,height/2+(Math.random()-.5)*shake);ctx.rotate(-c.angle-Math.PI/2);ctx.scale(zoom,zoom);ctx.translate(-c.x,-c.y);drawTrack();drawRivals();drawParticles();drawCar();ctx.restore();if(state==="race"||state==="paused")drawMinimap();drawWeather();drawImpactRewardToast()}
 function renderWorlds(){const root=$("worlds");root.innerHTML="";worlds.forEach((w,i)=>{const b=document.createElement("button");b.type="button";b.className="world worldCard"+(i===selectedWorld?" active":"");b.setAttribute("aria-pressed",String(i===selectedWorld));const art="./assets/vector/world-"+String(i+1).padStart(2,"0")+".svg";const image=document.createElement("span");image.className="worldArt";image.setAttribute("aria-hidden","true");const img=document.createElement("img");img.src=art;img.alt="";img.loading="eager";image.append(img);const caption=document.createElement("span");caption.className="worldCaption";const title=document.createElement("b");title.textContent=w[0];const detail=document.createElement("small");detail.textContent="۵ مرحله · مسیر و شرایط رانندگی اختصاصی";caption.append(title,detail);b.append(image,caption);b.onclick=()=>{selectedWorld=i;selectedStage=i*5+1;renderWorlds();renderStages();updateMenuSummary()};root.append(b)})}
 let showroomAngle=0,showroomDragX=null;
+const mainMenuRenderer=createShowroom3D($("mainMenu3dCanvas"));
+mainMenuRenderer.setAutoRotate(5);
+if(mainMenuRenderer.state.status==="webgl")$("select").classList.add("has-webgl");
+window.MshinMainMenu3D=mainMenuRenderer.state;
 const showroomRenderer=createShowroom3D($("showroom3dCanvas"));
 if(showroomRenderer.state.status==="webgl")$("showroomVehicle").classList.add("has-webgl");
 window.MshinShowroom3D=showroomRenderer.state;
 function renderShowroomPreview(){
  const model=carModels.find(c=>c.id===selectedCar)||carModels[0],image=$("showroomCarImage"),vehicle=$("showroomVehicle");
  if(!image||!vehicle)return;
- image.src="./assets/vector/car-"+model.id+".svg";image.alt="";showroomRenderer.setCar(model);showroomRenderer.setRotation(showroomAngle);
+ image.src="./assets/vector/car-"+model.id+".svg";image.alt="";mainMenuRenderer.setCar(model);showroomRenderer.setCar(model);showroomRenderer.setRotation(showroomAngle);
  $("showroomCarName").textContent=model.name;
  $("showroomCarSpecs").textContent=model.tag+" · سرعت "+Math.round(model.max)+" · شتاب "+Math.round(model.accel);
  $("selectedCarName").textContent=model.name;
