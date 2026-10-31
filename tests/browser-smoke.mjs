@@ -241,7 +241,8 @@ try {
   await mobile.locator("#startRace").click();
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
-  assert.ok((await mobile.locator("#stick").boundingBox()).width >= 120, "mobile steering pad should remain wide enough for comfortable thumb travel");
+  const mobileStickBounds = await mobile.locator("#stick").boundingBox();
+  assert.ok(Math.max(mobileStickBounds.width, mobileStickBounds.height) >= 120 && Math.min(mobileStickBounds.width, mobileStickBounds.height) >= 100, "rotated mobile steering pad should preserve a 120×100 touch surface");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
   assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "گاز", "gas pedal should use a CDN icon with accessible alternative text");
   assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
