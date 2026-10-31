@@ -66,7 +66,8 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v28/);\n  assert.match(sw, /mshin-audio-assets-v1/, "service worker must read the preloaded cross-origin audio cache");
+  assert.match(sw, /mshin-arcade-v28/);
+  assert.match(sw, /mshin-audio-assets-v1/, "service worker must read the preloaded cross-origin audio cache");
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars]) assert.ok(sw.includes(asset.src.replace(/^\.\//, "./")) || sw.includes(asset.src), asset.src + " must be precached");
