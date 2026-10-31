@@ -1,5 +1,5 @@
 import { _decorator, Component, Node, Graphics, Label, UITransform, Color, Camera, Canvas, view, EventTouch, ResolutionPolicy, macro, Input, input, KeyCode, JsonAsset, resources } from "cc";
-import { STAGES, WORLD_THEMES, StageDefinition, generateTrackPath } from "../../src/stage-catalog";
+import { STAGES, WORLD_THEMES, StageDefinition, generateTrackPath, nearestTrackPoint } from "../../src/stage-catalog";
 import { VehicleController } from "./VehicleController";
 import { VehicleDamageRenderer } from "./VehicleDamageRenderer";
 import { WorldRenderer } from "./WorldRenderer";
@@ -10,7 +10,7 @@ const hex=(v:string)=>{const h=v.replace("#","");return new Color(parseInt(h.sli
 @ccclass("MshinGame")
 export class MshinGame extends Component {
  private screen:Screen="home";private stage:StageDefinition=STAGES[0];private progress:PlayerProgress=ProgressStore.load();private selectedWorld=0;
- private cameraNode!:Node;private camera!:Camera;private worldRoot!:Node;private hudCanvas!:Node;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;
+ private cameraNode!:Node;private camera!:Camera;private worldRoot!:Node;private hudCanvas!:Node;private hudRoot!:Node;private worldNode!:Node;private carNode!:Node;private vehicle!:VehicleController;private rivals:VehicleController[]=[];
  private labels=new Map<string,Label>();private uiNodes:Node[]=[];private joystick!:Node;private knob!:Node;private stickId=-1;
  private lastSize={width:0,height:0};private finishHandled=false;private artLibrary:any=null;private hudRefresh=0;
  start():void {
@@ -33,6 +33,7 @@ export class MshinGame extends Component {
  }
  update(dt:number):void {
   if(this.screen==="race"){
+   this.updateRivalTraffic();this.resolveTrafficContacts();
    this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);this.cameraNode.angle=-this.carNode.angle;this.hudCanvas.angle=this.carNode.angle;
    this.hudRefresh+=dt;if(this.hudRefresh>=.1){this.hudRefresh=0;
     this.setText("speed","سرعت  "+Math.round(Math.abs(this.vehicle.car.speed)*.42));
@@ -77,7 +78,7 @@ export class MshinGame extends Component {
  }
  private showLoading():void {this.screen="home";this.clearUi();this.addUiLabel("در حال آماده‌سازی دنیای مسابقه",0,40,30);this.addUiLabel("در حال بارگذاری تصاویر و رنگ‌بندی خودروها…",0,-25,18);}
  private showHome():void {
-  this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("۵۰ پیست • ۱۰ دنیا • یک قهرمان",0,35,19);
+  this.clearRivals();this.screen="home";this.clearUi();this.addUiLabel("MSHIN",0,100,68);this.addUiLabel("۵۰ پیست • ۱۰ دنیا • یک قهرمان",0,35,19);
   this.addButton("شروع مسابقه",0,-65,270,76,()=>this.startStage(this.progress.unlockedStage));
   this.addButton("انتخاب دنیا",0,-160,270,62,()=>this.showWorlds());
   this.addUiLabel("مرحله بعدی "+this.progress.unlockedStage+" / ۵۰",0,-245,18);
@@ -97,15 +98,55 @@ export class MshinGame extends Component {
   this.addButton("بازگشت",0,-205,170,54,()=>this.showWorlds());
  }
  private startStage(id:number):void {
-  this.stage=STAGES[id-1];this.screen="race";this.clearUi();this.finishHandled=false;
+  this.clearRivals();this.stage=STAGES[id-1];this.screen="race";this.clearUi();this.finishHandled=false;
   this.worldNode.destroyAllChildren();const rn=new Node("World Renderer");this.worldNode.addChild(rn);const renderer=rn.addComponent(WorldRenderer);
   const path=renderer.configure(this.stage,this.artLibrary);
   this.carNode.destroy();this.carNode=new Node("Player Car");this.worldRoot.addChild(this.carNode);this.drawCar();
   this.vehicle=this.carNode.addComponent(VehicleController);this.vehicle.configure(path,this.stage.trackWidth,this.stage.laps,this.stage.hazardCount,this.stage.world.grip);
   const damageFxNode=new Node("Vehicle Damage FX");damageFxNode.setPosition(0,0,1);this.carNode.addChild(damageFxNode);const damageRenderer=damageFxNode.addComponent(VehicleDamageRenderer);damageRenderer.bind(this.vehicle);
   this.vehicle.onLap=(lap)=>this.setText("lap","دور  "+lap+" / "+this.stage.laps);
+  this.spawnRivals(path);
   this.setText("world",this.stage.world.name+"  •  مرحله "+String(id).padStart(2,"۰"));
   this.createControls();this.cameraNode.setPosition(this.vehicle.car.x,this.vehicle.car.y,1000);
+ }
+ private spawnRivals(path:{x:number;y:number}[]):void {
+  const paints=["#36B7E8","#E6A23C","#9B7AE8"];
+  for(let i=0;i<3;i++){
+   const node=new Node("AI Rival "+(i+1));this.worldRoot.addChild(node);node.setScale(1.25,1.25,1);
+   const g=node.addComponent(Graphics),body=hex(paints[i]);
+   g.fillColor=new Color(4,12,24,70);g.ellipse(2,-3,22,39);g.fill();
+   g.fillColor=hex("#26313A");g.roundRect(-22,-27,12,21,4);g.fill();g.roundRect(10,-27,12,21,4);g.fill();g.roundRect(-22,8,12,21,4);g.fill();g.roundRect(10,8,12,21,4);g.fill();
+   g.fillColor=body;g.roundRect(-16,-37,32,74,10);g.fill();g.strokeColor=hex("#FFFFFF");g.lineWidth=2;g.roundRect(-16,-37,32,74,10);g.stroke();
+   g.fillColor=hex("#26313A");g.roundRect(-12,-12,24,31,6);g.fill();g.fillColor=hex("#BDEEFF");g.roundRect(-11,-10,22,25,5);g.fill();
+   g.fillColor=hex("#FFF5C8");g.circle(-9,31,3);g.fill();g.circle(9,31,3);g.fill();
+   const controller=node.addComponent(VehicleController);
+   controller.configure(path,this.stage.trackWidth,this.stage.laps,0,this.stage.world.grip);
+   const index=Math.floor(path.length*(i+1)/4),p=path[index],next=path[(index+1)%path.length];
+   controller.car.x=p.x;controller.car.y=p.y;controller.car.heading=Math.atan2(next.x-p.x,p.y-next.y);
+   controller.car.speed=0;node.setPosition(p.x,p.y,0);node.angle=180-controller.car.heading*180/Math.PI;
+   const fx=new Node("Rival Damage FX");fx.setPosition(0,0,1);node.addChild(fx);fx.addComponent(VehicleDamageRenderer).bind(controller);
+   this.rivals.push(controller);
+  }
+ }
+ private updateRivalTraffic():void {
+  for(const rival of this.rivals){
+   if(!rival.enabled||rival.path.length<2)continue;
+   const nearest=nearestTrackPoint(rival.car,rival.path),lookAhead=8;
+   const target=rival.path[(nearest.segment+lookAhead)%rival.path.length];
+   const desired=Math.atan2(target.x-rival.car.x,rival.car.y-target.y);
+   const error=Math.atan2(Math.sin(desired-rival.car.heading),Math.cos(desired-rival.car.heading));
+   rival.input.steer=Math.max(-1,Math.min(1,error*1.9));
+   rival.input.throttle=Math.abs(error)<1.15;
+   rival.input.brake=Math.abs(error)>=1.15;
+  }
+ }
+ private resolveTrafficContacts():void {
+  const traffic=[this.vehicle,...this.rivals].filter(v=>v&&v.enabled);
+  for(let i=0;i<traffic.length;i++)for(let j=i+1;j<traffic.length;j++)traffic[i].resolveVehicleContact(traffic[j]);
+ }
+ private clearRivals():void {
+  for(const rival of this.rivals){rival.resetInput();rival.node.destroy();}
+  this.rivals=[];
  }
  private createControls():void {
   this.joystick=this.makeNode("Virtual Joystick",this.hudRoot);this.uiNodes.push(this.joystick);this.joystick.setPosition(-500,-250,0);this.joystick.getComponent(UITransform)!.setContentSize(184,132);
@@ -127,12 +168,12 @@ export class MshinGame extends Component {
  private onStickMove(e:EventTouch):void {if(e.getID()!==this.stickId)return;const p=this.joystick.getComponent(UITransform)!.convertToNodeSpaceAR(e.getUILocation()),limit=58,raw=Math.max(-1,Math.min(1,p.x/limit)),m=Math.abs(raw),dead=.07,linear=m<=dead?0:(m-dead)/(1-dead);this.knob.setPosition(Math.max(-limit,Math.min(limit,p.x)),0,0);this.vehicle.input.steer=Math.sign(raw)*Math.pow(linear,1.28);}
  private onStickEnd(e:EventTouch):void {if(e.getID()!==this.stickId)return;this.stickId=-1;this.knob.setPosition(0,0,0);this.vehicle.input.steer=0;}
  private pauseRace():void {
-  if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
-  this.addUiLabel("مسابقه متوقف شد",0,75,54);this.addButton("ادامه مسابقه",0,-20,230,70,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;this.createControls();});
+  if(this.screen!=="race")return;this.screen="paused";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();
+  this.addUiLabel("مسابقه متوقف شد",0,75,54);this.addButton("ادامه مسابقه",0,-20,230,70,()=>{this.screen="race";this.clearUi();this.vehicle.enabled=true;for(const rival of this.rivals)rival.enabled=true;this.createControls();});
   this.addButton("بازگشت به منو",0,-115,230,60,()=>{this.vehicle.enabled=false;this.showHome();});
  }
  private showFinished():void {
-  this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();this.clearUi();
+  this.screen="finished";this.vehicle.enabled=false;this.vehicle.resetInput();for(const rival of this.rivals){rival.enabled=false;rival.resetInput();}this.clearUi();
   this.addUiLabel("🏆  پایان مسابقه!",0,85,56);this.addUiLabel("زمان  "+this.format(this.vehicle.race.elapsedSeconds),0,15,24);
   this.addButton("مرحله بعد",0,-75,250,70,()=>this.startStage(Math.min(50,this.stage.id+1)));
   this.addButton("منوی اصلی",0,-165,230,58,()=>this.showHome());
