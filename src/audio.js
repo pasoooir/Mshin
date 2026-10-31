@@ -15,7 +15,7 @@ export function createGameAudio(){
  const prepare=()=>{if(decodePromise||!context)return decodePromise;decodePromise=Promise.all([...Array.from({length:6},(_,i)=>decode("engine"+i)),decode("brakeSqueal"),decode("gearDown")]).then(buffers=>{const engines=buffers.slice(0,6);engines.forEach((b,i)=>engineSources[i]=loop(b,engineGains[i],.96));oneShots.set("brakeSqueal",buffers[6]);oneShots.set("gearDown",buffers[7]);window.MshinAudioReady=engines.every(Boolean)&&Boolean(buffers[6])&&Boolean(buffers[7]);return window.MshinAudioReady});return decodePromise};
  const gearForSpeed=speed=>{const n=Math.max(0,Math.min(1,speed/390));return n<.13?0:n<.28?1:n<.44?2:n<.61?3:n<.79?4:5};
  return {
-  unlock(){if(ensure())prepare()},ready(){return ensure()?prepare():Promise.resolve(false)},
+  unlock(){if(ensure())prepare()},ready(){if(!ensure())return Promise.resolve(false);return Promise.race([prepare(),new Promise(resolve=>setTimeout(()=>resolve(false),9000))])},
   update(speed,active,throttle=false,brake=false,boost=false,vehicleId="rally"){
    if(!ensure())return;if(!decodePromise)prepare();if(!engineSources.length)return;const profile=profiles[vehicleId]||profiles.rally,now=context.currentTime,dt=lastUpdate?Math.min(.1,Math.max(.001,now-lastUpdate)):.016;lastUpdate=now;
    const velocity=Math.max(0,Math.min(390,speed||0)),gear=gearForSpeed(velocity),gearChanged=lastGear>=0&&gear!==lastGear;if(gearChanged&&!profile.electric){shiftAt=now;if(gear<lastGear)oneShot("gearDown",.17,.94)}lastGear=gear;
