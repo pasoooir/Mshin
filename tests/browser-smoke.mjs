@@ -40,6 +40,8 @@ try {
   }
   await page.setViewportSize({width:1280,height:800});
   assert.equal(await page.locator(".worldCard").count(), 10, "all 10 image-led world cards should be selectable; browser errors: " + errors.join(" | "));
+  const firstWorldBounds = await page.locator(".worldCard").first().boundingBox();
+  assert.ok(firstWorldBounds && firstWorldBounds.width > 100 && firstWorldBounds.height > 100, "world cards must occupy visible layout space, not remain hidden in the content panel");
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
