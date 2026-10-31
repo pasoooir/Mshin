@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getHelicopterShadowPose, renderAerialScenery, drawHelicopterShadow } from "../src/aerial-environment.js";
+import { getHelicopterShadowPose, getAerialLighting, renderAerialScenery, drawHelicopterShadow } from "../src/aerial-environment.js";
 
 test("helicopter shadow remains attached to a world-space pose, not the viewport",()=>{
  const center={x:120,y:-45}, tangent={x:1,y:0,nx:0,ny:1};
@@ -53,4 +53,21 @@ test("helicopter shadow draws a blurred fuselage and a separately faded rotor di
  assert.ok(calls.ellipse>=2);
  assert.equal(calls.rotate,2);
  assert.equal(calls.fillRect,3);
+});
+
+test("stage-aware aerial lighting stays bounded and changes with world weather and time",()=>{
+ for(let world=0;world<10;world++){
+  const stage={id:world+1,world,seed:world*97+31,weather:"clear"};
+  const a=getAerialLighting(stage,1000),b=getAerialLighting(stage,1000);
+  assert.deepEqual(a,b,"lighting must be deterministic for a fixed stage and timestamp");
+  assert.ok(a.ambient>=.22&&a.ambient<=.96);
+  assert.ok(a.shadowAlpha>=.16&&a.shadowAlpha<=.3);
+  assert.ok(Math.abs(Math.hypot(a.sunX,a.sunY)-1)<1e-9,"sun direction must be normalized");
+  const later=getAerialLighting(stage,60000);
+  assert.notEqual(a.sunX,later.sunX,"sun angle should evolve slowly over time");
+ }
+ const clear=getAerialLighting({world:0,seed:1,weather:"clear"},0);
+ const storm=getAerialLighting({world:0,seed:1,weather:"storm"},0);
+ assert.ok(storm.ambient<clear.ambient,"storm weather should reduce ambient light");
+ assert.ok(storm.shadowAlpha>clear.shadowAlpha,"low ambient light should strengthen visible cast shadows");
 });
