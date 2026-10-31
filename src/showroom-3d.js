@@ -187,7 +187,7 @@ export function createShowroom3D(canvas){
    setAutoRotate(speed){autoRotate=Number(speed)||0;},
    setScale(value){modelScale=clamp(Number(value)||1,.6,2.4);state.scale=modelScale;},
    pause(){if(raf){cancelAnimationFrame(raf);raf=0;}},
-   resume(){if(!destroyed&&visible&&!raf)raf=window.requestAnimationFrame(render);},
+   resume(force=false){if(force)visible=true;if(!destroyed&&visible&&!raf)raf=window.requestAnimationFrame(render);},
    resize,
    destroy(){destroyed=true;observer?.disconnect();resizeObserver?.disconnect();document.removeEventListener("visibilitychange",onVisibility);canvas.removeEventListener("webglcontextlost",onContextLost);canvas.removeEventListener("webglcontextrestored",onContextRestored);if(raf)cancelAnimationFrame(raf);for(const part of [...carParts,...stageParts])gl.deleteBuffer(part.mesh.buffer);gl.deleteProgram(programInfo);},
   };
