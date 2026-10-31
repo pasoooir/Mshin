@@ -35,7 +35,8 @@ async function reopenInSameContext(current, errorList) {
   return next;
 }
 try {
-  let page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const desktopContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  let page = await desktopContext.newPage();
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 }).catch(async () => {
@@ -267,7 +268,8 @@ try {
   await page.locator("#quitRace").click();
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
-  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const mobile = await mobileContext.newPage();
   mobile.on("pageerror", error => errors.push(error.message));
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
@@ -332,8 +334,9 @@ try {
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
   await mobile.screenshot({ path: "artifacts/mshin-gameplay-mobile.png" });
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
-  let economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
+  const economyContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  let economy = await economyContext.newPage();
+  await economyContext.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   economy.on("pageerror", error => errors.push(error.message));
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await economy.locator("#play").click();
