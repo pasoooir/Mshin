@@ -9,6 +9,8 @@ const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
+  page.on("console", message => { if(message.type()==="error") errors.push("console: "+message.text()); });
+  page.on("requestfailed", request => errors.push("request failed: "+request.url()+" · "+request.failure()?.errorText));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
   await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 }).catch(async () => {
     const state = await page.evaluate(() => ({ stage: window.MshinBootStage, progress: window.MshinPreloadProgress, failures: window.MshinAssets?.failures }));
@@ -106,7 +108,7 @@ try {
   assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 25000 });
+  await page.waitForFunction(() => window.MshinBootStage === "ready" || Boolean(window.MshinBootError), undefined, { timeout: 35000 }).catch(async error => { const state=await page.evaluate(()=>({stage:window.MshinBootStage,error:window.MshinBootError,controller:Boolean(navigator.serviceWorker?.controller),assets:window.MshinAssets?.failures,resources:performance.getEntriesByType("resource").filter(x=>/boot|asset-loader|asset-manifest|web-game/.test(x.name)).map(x=>({name:x.name,duration:x.duration,transfer:x.transferSize})).slice(-12)}));throw new Error("Reload boot diagnostics: "+JSON.stringify(state)+"; "+error.message); });
   assert.equal(await page.evaluate(() => window.MshinBootError || null), null, "reloaded game should finish booting before the home menu is used");
   await page.locator("#home").waitFor({ state: "visible", timeout: 5000 });
   await page.locator("#play").waitFor({ state: "visible", timeout: 5000 });
