@@ -2,14 +2,15 @@
 
 Last evidence refresh: 2026-10-31
 
-## Release candidate 0.9.3 — repository-local runtime assets
+## Verified release 0.9.3 — repository-local runtime assets
 
-- **Status:** 🟡 در حال اجرا؛ همه ۲۳ فایل runtime از منابع بیرونی دریافت و در مخزن ذخیره شده‌اند؛ هنوز تست‌های کامل، merge و Pages deployment لازم است.
+- **Status:** 🟢 تکمیل‌شده و تأییدشده؛ PR #52 merged to `main` as `07695e04a4645dedd6fc0fed6a85ffbd8f895412`.
+- **Validation:** merged-main run `41206965694` succeeded, including all 136 Node tests and desktop/mobile Playwright; Pages deployment run `41206965179` succeeded.
 - **Asset inventory:** ۱۰ تصویر محیط، ۳ آیکون کنترل و ۱۰ فایل صوتی در `cdn/assets/{scenes,icons,audio}/`.
 - **Runtime policy:** مسیرهای `src` در manifest همگی relative/local هستند؛ CDN fallback از Service Worker حذف شده و فایل‌ها در app shell با cache `mshin-arcade-v33` precache می‌شوند.
 - **Version markers:** package/PWA برابر `0.9.3`؛ asset marker برابر `2026.10.31.17`؛ Cocos vector catalog نیز `2026.10.31.17`.
 - **Provenance:** `docs/VENDORED_ASSETS.md` باید URL اصلی و وضعیت مجوز هر فایل را ثبت کند؛ پیش از انتشار عمومی، مجوزهای upstream باید بازبینی شوند.
-- **Acceptance gate:** Node tests، data/syntax checks، Playwright desktop/mobile، بررسی عدم درخواست خارجی در runtime، merged-main validation و GitHub Pages deployment.
+- **Acceptance:** Node tests، data/syntax checks، Playwright desktop/mobile، بررسی same-origin بودن همه دارایی‌ها، merged-main validation و GitHub Pages deployment همگی موفق شدند.
 
 ## Previous verified release — 0.9.2
 
