@@ -1,5 +1,5 @@
 /** Engine-independent gameplay core for the Cocos Creator 3.8.6 adapter. */
-export interface CarState { x: number; y: number; heading: number; speed: number; }
+export interface CarState { x: number; y: number; heading: number; speed: number; angularVelocity?:number; }
 export interface DriveInput { steer: number; throttle: boolean; brake: boolean; offRoad?: boolean; grip?: number; performance?: number; }
 export interface TrackBounds { radiusX: number; radiusY: number; inner: number; outer: number; }
 export interface RaceState { lap: number; previousProgress: number; finished: boolean; elapsedSeconds: number; }
