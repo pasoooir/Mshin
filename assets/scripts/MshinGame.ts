@@ -125,7 +125,7 @@ export class MshinGame extends Component {
    const index=Math.floor(path.length*(i+1)/4),p=path[index],next=path[(index+1)%path.length],prev=path[(index+path.length-1)%path.length];
    const laneOffset=(i-1)*this.stage.trackWidth*.14,tx=next.x-prev.x,ty=next.y-prev.y,tlen=Math.hypot(tx,ty)||1,nx=-ty/tlen,ny=tx/tlen;
    controller.car.x=p.x+nx*laneOffset;controller.car.y=p.y+ny*laneOffset;controller.car.heading=Math.atan2(next.x-p.x,p.y-next.y);
-   controller.car.speed=0;node.setPosition(p.x,p.y,0);node.angle=180-controller.car.heading*180/Math.PI;
+   controller.car.speed=0;node.setPosition(controller.car.x,controller.car.y,0);node.angle=180-controller.car.heading*180/Math.PI;
    const fx=new Node("Rival Damage FX");fx.setPosition(0,0,1);node.addChild(fx);fx.addComponent(VehicleDamageRenderer).bind(controller);
    this.rivals.push(controller);
   }
