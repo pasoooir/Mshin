@@ -1,0 +1,79 @@
+name: Mshin desktop and mobile browser smoke
+on:
+  push:
+    branches: [main, "feat/**", "test/**"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local game server
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          # Remove a stale listener from the dedicated smoke-test port.
+          if command -v fuser >/dev/null 2>&1; then
+            fuser -k 4173/tcp || true
+          fi
+
+          cd "$GITHUB_WORKSPACE"
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory "$GITHUB_WORKSPACE" \
+            >/tmp/mshin-http.log 2>&1 &
+          server_pid=$!
+          echo "$server_pid" > /tmp/mshin-http.pid
+
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:4173/ >/dev/null; then
+              echo "Local game server is ready (attempt $attempt)."
+              exit 0
+            fi
+
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "Server exited unexpectedly (PID: $server_pid)."
+              echo "--- HTTP server log ---"
+              cat /tmp/mshin-http.log || true
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          echo "Local game server did not become ready within 60 seconds."
+          echo "--- HTTP server log ---"
+          cat /tmp/mshin-http.log || true
+          echo "--- Listener diagnostics ---"
+          (ss -ltnp || true) | grep ':4173' || true
+          exit 1
+      - name: Run desktop and mobile browser smoke tests
+        run: |
+          node --check tests/browser-smoke.mjs
+          node tests/browser-smoke.mjs
+      - name: Stop local game server
+        if: always()
+        run: |
+          if [ -f /tmp/mshin-http.pid ]; then
+            kill "$(cat /tmp/mshin-http.pid)" 2>/dev/null || true
+          fi
+      - name: Upload desktop and mobile gameplay previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mshin-gameplay-previews
+          path: artifacts/*.png
+          if-no-files-found: warn
+          retention-days: 7
