@@ -33,6 +33,9 @@ try {
   assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
+  assert.equal(await page.evaluate(() => window.MshinMainMenu3D?.status), "webgl", "main navigation must render a real 3D vehicle scene behind its panels");
+  await page.waitForFunction(() => window.MshinMainMenu3D?.frameCount > 0, undefined, {timeout:5000});
+  await page.screenshot({path:"artifacts/mshin-main-menu-webgl-desktop.png"});
   for (const size of [{width:1280,height:720},{width:1280,height:800},{width:1680,height:720},{width:1024,height:768}]) {
     await page.setViewportSize(size);
     const bounds = await page.locator("#select .gtMenu").boundingBox();
