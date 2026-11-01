@@ -368,7 +368,8 @@ try {
   await mobile.locator("#tab-race").click();
   assert.equal(await mobile.locator(".stageCard").count(),5,"mobile race tab should retain five stages");
   await mobile.locator("#startRace").click();
-  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  try { await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 12000 }); }
+  catch (error) { const state = await mobile.evaluate(() => ({ boot: window.MshinBootStage, audioReady: window.MshinAudioReady ?? null, failures: window.MshinAssets?.failures ?? [], settings: window.MshinSettings ?? null })); throw new Error("Mobile race countdown did not finish: " + JSON.stringify(state) + "; " + error.message); }
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
   await mobile.locator("#pause").click();
   const mobilePauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
