@@ -23,8 +23,8 @@ async function waitForGameBoot(page, label = "game") {
         progress: window.MshinPreloadProgress,
         failures: window.MshinAssets?.failures || [],
         homePresent: Boolean(home),
-        homeVisible: Boolean(home && !home.classList.contains("hidden") && home.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && home.getBoundingClientRect().width > 0 && home.getBoundingClientRect().height > 0),
-        playVisible: Boolean(play && play.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && playRect?.width > 0 && playRect?.height > 0),
+        homeVisible: Boolean(home && !home.classList.contains("hidden") && homeStyle.display !== "none" && homeStyle.visibility !== "hidden" && home.getBoundingClientRect().width > 0 && home.getBoundingClientRect().height > 0),
+        playVisible: Boolean(play && playStyle.display !== "none" && playStyle.visibility !== "hidden" && Number(playStyle.opacity) > 0 && playRect?.width > 0 && playRect?.height > 0),
         homeClass: home?.className || null,
         playClass: play?.className || null,
         playBounds: playRect ? {width:playRect.width,height:playRect.height} : null
