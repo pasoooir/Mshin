@@ -379,6 +379,9 @@ try {
   await mobile.locator("#startRace").click();
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
+  assert.equal(await mobile.locator("#game3d").isVisible(), true, "portrait phones should display the rotated WebGL race canvas");
+  const mobile3dBounds = await mobile.locator("#game3d").boundingBox();
+  assert.ok(mobile3dBounds && Math.abs(mobile3dBounds.width - 390) <= 2 && Math.abs(mobile3dBounds.height - 845) <= 2, "rotated WebGL canvas should cover the complete portrait viewport: " + JSON.stringify(mobile3dBounds));
   await mobile.locator("#pause").click();
   const mobilePauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(mobilePauseBounds && mobilePauseBounds.x >= -1 && mobilePauseBounds.y >= -1 && mobilePauseBounds.x + mobilePauseBounds.width <= 391 && mobilePauseBounds.y + mobilePauseBounds.height <= 845, "portrait software-landscape pause menu must fit the complete phone viewport");
