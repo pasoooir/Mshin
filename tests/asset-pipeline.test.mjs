@@ -163,6 +163,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
 
 test("boot experience uses a cinematic game splash and responsive motorsport menu", async () => {
   const html = await readFile(path.join(root, "index.html"), "utf8");
+  const menuCss = await readFile(path.join(root, "src/menu-visual-system.css"), "utf8");
   assert.match(html, /class="splash"/);
   assert.match(html, /lang="fa-IR" dir="rtl"/);
   assert.match(html, /Hamed Babaei/);
@@ -173,13 +174,13 @@ test("boot experience uses a cinematic game splash and responsive motorsport men
   assert.match(html, /نسخه ۰.۱۷.۰/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
-  assert.match(html, /splashCarFront/);\n  assert.match(html, /menu-visual-system\\.css/);\n  assert.match(html, /class="homeShowcase"/);\n  assert.match(html, /class="menuHero"/);
-  assert.match(html, /id="assetPercent"/);
-  assert.match(html, /id="assetProgress"/);
-  assert.match(html, /@keyframes splashDrive/);
-  assert.match(html, /#select \.worlds\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(html, /#select \.upgrades\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(html, /#select \.actions\{position:sticky/);
+  assert.match(html, /splashCarFront/);
+  assert.match(html, /menu-visual-system\.css/);
+  assert.match(html, /class="homeShowcase"/);
+  assert.match(html, /class="menuHero"/);
+  assert.match(html, /id="startRace"/);
+  assert.match(menuCss, /grid-template-areas:"header header" "nav body" "footer footer"/);
+  assert.match(menuCss, /@media\(max-width:820px\)/);
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   assert.match(boot, /assetPercent/);
   assert.match(boot, /همه منابع آماده‌اند/);
