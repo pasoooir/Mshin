@@ -68,7 +68,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v45/);
+  assert.match(sw, /mshin-arcade-v46/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -145,7 +145,8 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /AI-to-AI contacts/);
   assert.match(game, /cameraShake/);
   assert.match(game, /collisionCooldown/);
-  assert.match(game, /resolveTireForces/);
+  assert.match(game, /stepVehicleDynamics/);
+  assert.match(sw, /vehicle-dynamics\.js/);
   assert.match(sw, /collision-physics\.js/);
   assert.match(game, /lane\(-90,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /lane\(90,"#ffffff70",3,\[22,30\]\)/);
@@ -192,7 +193,7 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v45/);
+  assert.match(sw, /mshin-arcade-v46/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.01.08");
   assert.equal(pkg.version, "0.12.0");
