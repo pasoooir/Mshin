@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 230">
+<defs><linearGradient id="alloy" x2="1" y2="1"><stop stop-color="#f6fbff"/><stop offset=".2" stop-color="#8399aa"/><stop offset=".5" stop-color="#e0eaf1"/><stop offset=".75" stop-color="#40566a"/><stop offset="1" stop-color="#b7c6d2"/></linearGradient><linearGradient id="edge" x2="0" y2="1"><stop stop-color="#394f63"/><stop offset="1" stop-color="#080e16"/></linearGradient><filter id="s"><feGaussianBlur stdDeviation="5"/></filter></defs>
+<path d="M18 34Q110 8 202 34l-15 176H33z" fill="#000" opacity=".5" filter="url(#s)"/>
+<path d="M20 27Q110 2 200 27l-15 177H35z" fill="url(#edge)" stroke="#e0ebf2" stroke-width="5"/>
+<path d="M31 36Q110 15 189 36l-13 155H44z" fill="url(#alloy)" stroke="#101a25" stroke-width="5"/>
+<g fill="none" stroke="#142332" stroke-width="9" stroke-linecap="round"><path d="M56 57l-3 23M83 52l-2 25M110 49v27M137 52l2 25M164 57l3 23"/><path d="M53 98l-2 24M81 96l-1 25M110 94v26M139 96l1 25M167 98l2 24"/><path d="M50 140l-2 22M79 139l-1 23M110 138v24M141 139l1 23M170 140l2 22"/></g>
+<g fill="none" stroke="#f6fbff" stroke-opacity=".6" stroke-width="2"><path d="M56 57l-3 23M83 52l-2 25M110 49v27M137 52l2 25M164 57l3 23"/></g>
+<path d="M84 197h52" stroke="#ffb75b" stroke-width="4" stroke-linecap="round"/>
+<circle cx="44" cy="42" r="4" fill="#0b1520"/><circle cx="176" cy="42" r="4" fill="#0b1520"/>
+</svg>
