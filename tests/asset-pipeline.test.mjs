@@ -68,7 +68,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v53/);
+  assert.match(sw, /mshin-arcade-v55/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -161,8 +161,9 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /hudClock>=\.1/);
 });
 
-test("boot experience uses a cinematic game splash and compact one-page mobile menu", async () => {
+test("boot experience uses a cinematic game splash and responsive motorsport menu", async () => {
   const html = await readFile(path.join(root, "index.html"), "utf8");
+  const menuCss = await readFile(path.join(root, "src/menu-visual-system.css"), "utf8");
   assert.match(html, /class="splash"/);
   assert.match(html, /lang="fa-IR" dir="rtl"/);
   assert.match(html, /Hamed Babaei/);
@@ -170,16 +171,16 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰.۱۱.۰/);
+  assert.match(html, /نسخه ۰.۱۷.۰/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
   assert.match(html, /splashCarFront/);
-  assert.match(html, /id="assetPercent"/);
-  assert.match(html, /id="assetProgress"/);
-  assert.match(html, /@keyframes splashDrive/);
-  assert.match(html, /#select \.worlds\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(html, /#select \.upgrades\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(html, /#select \.actions\{position:sticky/);
+  assert.match(html, /menu-visual-system\.css/);
+  assert.match(html, /class="homeShowcase"/);
+  assert.match(html, /class="menuHero"/);
+  assert.match(html, /id="startRace"/);
+  assert.match(menuCss, /grid-template-areas:"header header" "nav body" "footer footer"/);
+  assert.match(menuCss, /@media\(max-width:820px\)/);
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   assert.match(boot, /assetPercent/);
   assert.match(boot, /همه منابع آماده‌اند/);
@@ -192,11 +193,11 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v53/);
+  assert.match(sw, /mshin-arcade-v55/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.01.10");
-  assert.equal(pkg.version, "0.15.1");
-  assert.equal(pwa.version, "0.15.1");
+  assert.equal(pkg.version, "0.17.0");
+  assert.equal(pwa.version, "0.17.0");
   assert.equal(cocos.version, "2026.11.01.10");
   assert.ok(readme.includes("Latest published release on main: 0.11.7") && readme.includes("Version 0.14.0 remains a separate draft and is not claimed as live"), "README must identify the verified live release without claiming the mobile fix is deployed");
   assert.ok(readme.includes("## Latest published release on main: 0.11.7") && readme.includes("Versions 0.11.0–0.11.6 were published on GitHub Pages; the in-race vehicle geometry was merged afterward in pull request #77"), "README must distinguish the published release from the mobile-fix PR branch");
