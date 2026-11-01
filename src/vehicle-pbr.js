@@ -146,7 +146,9 @@ export const VEHICLE_MATERIALS={
  glass:{metallic:.08,roughness:.1,clearcoat:.82,kind:2},
  trim:{metallic:.68,roughness:.3,clearcoat:.22,kind:3},
  rubber:{metallic:0,roughness:.86,clearcoat:0,kind:4},
- rims:{metallic:.94,roughness:.2,clearcoat:.35,kind:5},\n brakes:{metallic:.82,roughness:.34,clearcoat:.08,kind:9},\n interior:{metallic:.04,roughness:.76,clearcoat:.02,kind:10},
+ rims:{metallic:.94,roughness:.2,clearcoat:.35,kind:5},
+ brakes:{metallic:.82,roughness:.34,clearcoat:.08,kind:9},
+ interior:{metallic:.04,roughness:.76,clearcoat:.02,kind:10},
  lights:{metallic:.18,roughness:.13,clearcoat:.55,kind:6},
  aero:{metallic:.58,roughness:.34,clearcoat:.18,kind:7},
  decals:{metallic:.28,roughness:.27,clearcoat:.72,kind:8}
