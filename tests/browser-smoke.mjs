@@ -97,6 +97,7 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
 
   let throttleHeld = false;
   let brakeHeld = false;
+  let targetLateral = 0;
   await page.mouse.move(center.x, center.y);
   await page.mouse.down();
   try {
@@ -120,6 +121,7 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
           damage: p.damage,
           damageLevel: p.damageLevel,
           collisions: p.collisions,
+          traffic: p.trafficTelemetry || [],
           trackT: p.playerTrackT,
           lap: document.querySelector("#lap")?.textContent || null,
           time: document.querySelector("#time")?.textContent || null
@@ -136,13 +138,14 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
         if (!brakeHeld) await page.keyboard.down("ArrowDown");
         brakeHeld = true;
       }
-      const steer = calculateRaceSteering(state);
+      targetLateral = chooseRaceTargetLateral({ trackT: state.trackT, currentTarget: targetLateral, traffic: state.traffic });
+      const steer = calculateRaceSteering({ ...state, targetLateral });
       if (!Number.isFinite(lastSteer) || Math.abs(steer - lastSteer) >= 0.025) {
         await page.mouse.move(center.x + steer * limit, center.y, { steps: 1 });
         lastSteer = steer;
       }
       if (Date.now() - lastTelemetryAt >= 1000) {
-        telemetry.push({ ...state, steer: Number(steer.toFixed(3)) });
+        telemetry.push({ ...state, targetLateral, steer: Number(steer.toFixed(3)) });
         if (telemetry.length > 12) telemetry.shift();
         lastTelemetryAt = Date.now();
       }
