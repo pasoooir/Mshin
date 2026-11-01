@@ -216,3 +216,11 @@ test("invalid rear stability calibration falls back to neutral yaw recovery",()=
  assert.equal(invalid.yawRecoveryScale,1);
  assert.equal(invalid.yawResponse,baseline.yawResponse);
 });
+
+test("cornering utilization consumes a measurable share of the tyre force budget",()=>{
+ const straight=resolveTireForces({speed:250,lateralVelocity:0,steer:0,throttle:true,brake:false,grip:1,deltaSeconds:1/60});
+ const turning=resolveTireForces({speed:250,lateralVelocity:0,steer:.8,throttle:true,brake:false,grip:1,deltaSeconds:1/60});
+ assert.equal(straight.corneringUtilization,0);
+ assert.ok(turning.corneringUtilization>0);
+ assert.ok(turning.corneringUtilization<=.98);
+});
