@@ -25,7 +25,7 @@ test("every runtime asset is stored inside this repository", async () => {
 
 test("service worker precaches all runtime assets and rejects cross-origin requests", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v54/);
+  assert.match(sw, /mshin-arcade-v55/);
   assert.match(sw, /\.\/src\/vehicle-pbr\.js/);
   assert.match(sw, /\.\/src\/menu-visual-system\.css/);
   assert.match(sw, /requestUrl\.origin !== self\.location\.origin\) return/);
