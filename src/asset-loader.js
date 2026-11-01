@@ -69,13 +69,12 @@ async function loadAudio(asset) {
   } finally { clearTimeout(timer); }
 }
 
-export async function preloadGameAssets(onProgress = () => {}) {
-  const all = [...manifest.worlds, ...manifest.cars, ...(manifest.scenes || []), ...(manifest.icons || []), ...(manifest.sounds || [])];
-  let loaded = 0, cursor = 0;
-  const failures = [];
+async function loadAssetBatch(assets, { concurrency, offset, total, failures, onProgress }) {
+  let loaded = offset;
+  let cursor = 0;
   const worker = async () => {
-    while (cursor < all.length) {
-      const asset = all[cursor++];
+    while (cursor < assets.length) {
+      const asset = assets[cursor++];
       try {
         const task = asset.group === "audio" ? loadAudio(asset) : loadVector(asset);
         const value = await timeout(task, asset.group === "scene" ? 15000 : 12000, asset.name || asset.src);
@@ -85,20 +84,103 @@ export async function preloadGameAssets(onProgress = () => {}) {
         failures.push({ asset: asset.src || asset.cdn, error: error.message });
       }
       loaded++;
-      onProgress({ loaded, total: all.length, percent: Math.round(loaded / all.length * 100), name: asset.name });
+      onProgress({ loaded, total, percent: Math.round(loaded / total * 100), name: asset.name });
     }
   };
+  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, assets.length)) }, worker));
+}
+
+export async function preloadGameAssets(onProgress = () => {}) {
   const mobile = matchMedia("(pointer: coarse)").matches || Math.min(innerWidth, innerHeight) < 700;
-  await Promise.all(Array.from({ length: mobile ? 3 : 6 }, worker));
-  window.MshinAssets = {
+  const scenes = manifest.scenes || [];
+  const sounds = manifest.sounds || [];
+  const critical = [...manifest.worlds, ...manifest.cars, ...(manifest.icons || [])];
+  const total = critical.length + sounds.length + scenes.length;
+  const failures = [];
+
+  // Only assets required to render and navigate the game block first paint.
+  // Audio and photographic environments load in the background or on demand.
+  await loadAssetBatch(critical, {
+    concurrency: mobile ? 4 : 6,
+    offset: 0,
+    total,
+    failures,
+    onProgress
+  });
+
+  const sceneMap = Object.fromEntries(scenes.map(item => [item.id, imageCache.get(item.id) || null]));
+  const audioMap = Object.fromEntries(sounds.map(item => [item.id, audioCache.get(item.id) || null]));
+  const assets = window.MshinAssets = {
     version: manifest.version,
     worlds: manifest.worlds.map(item => imageCache.get(item.id) || null),
     cars: Object.fromEntries(manifest.cars.map(item => [item.id, imageCache.get(item.id) || null])),
-    scenes: Object.fromEntries((manifest.scenes || []).map(item => [item.id, imageCache.get(item.id) || null])),
+    scenes: sceneMap,
     icons: Object.fromEntries((manifest.icons || []).map(item => [item.id, imageCache.get(item.id) || null])),
-    audioData: Object.fromEntries((manifest.sounds || []).map(item => [item.id, audioCache.get(item.id) || null])),
+    audioData: audioMap,
     failures,
-    ready: true
+    ready: true,
+    audioReady: sounds.length === 0,
+    scenesReady: scenes.length === 0,
+    backgroundLoading: sounds.length > 0 || (!mobile && scenes.length > 0)
   };
-  return window.MshinAssets;
+
+  const audioPromise = loadAssetBatch(sounds, {
+    concurrency: mobile ? 2 : 4,
+    offset: critical.length,
+    total,
+    failures,
+    onProgress
+  }).then(() => {
+    for (const item of sounds) audioMap[item.id] = audioCache.get(item.id) || null;
+    assets.audioReady = true;
+    return audioMap;
+  });
+  assets.audioPromise = audioPromise;
+
+  const scenePromises = new Map();
+  assets.ensureScene = async worldIndex => {
+    const item = scenes.find(scene => scene.world === worldIndex) || scenes[worldIndex];
+    if (!item) return null;
+    if (imageCache.has(item.id)) return imageCache.get(item.id);
+    if (!scenePromises.has(item.id)) {
+      const promise = (async () => {
+        try {
+          const image = await timeout(loadVector(item), 15000, item.name || item.src);
+          imageCache.set(item.id, image);
+          sceneMap[item.id] = image;
+        } catch (error) {
+          failures.push({ asset: item.src || item.cdn, error: error.message });
+          sceneMap[item.id] = null;
+        }
+        return sceneMap[item.id];
+      })();
+      scenePromises.set(item.id, promise);
+    }
+    return scenePromises.get(item.id);
+  };
+
+  if (!mobile && scenes.length) {
+    assets.scenesPromise = audioPromise.then(async () => {
+      let cursor = 0;
+      let loaded = critical.length + sounds.length;
+      const worker = async () => {
+        while (cursor < scenes.length) {
+          const item = scenes[cursor++];
+          await assets.ensureScene(item.world);
+          loaded++;
+          onProgress({ loaded, total, percent: Math.round(loaded / total * 100), name: item.name });
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(4, scenes.length) }, worker));
+      assets.scenesReady = true;
+      return sceneMap;
+    });
+  } else {
+    assets.scenesPromise = Promise.resolve(sceneMap);
+  }
+
+  Promise.all([audioPromise, assets.scenesPromise]).finally(() => {
+    assets.backgroundLoading = false;
+  });
+  return assets;
 }
