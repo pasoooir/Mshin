@@ -238,7 +238,12 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "race-audio persistence reload");
-  await page.locator("#play").click();
+  // The home menu has a cinematic entrance transition. Disable motion for this
+  // deterministic post-reload interaction so Playwright does not wait forever
+  // for a moving hit target on slower CI/mobile emulation.
+  await page.addStyleTag({ content: "*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}" });
+  await page.waitForTimeout(40);
+  await page.locator("#play").click({ timeout: 10000 });
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   await page.locator("#startRace").click();
