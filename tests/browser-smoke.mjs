@@ -223,6 +223,11 @@ try {
   assert.equal(rigidCheck.swept,true,"swept collision should detect fast body traversal");
 
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
+  console.log("[browser-smoke] MshinPerformance:", JSON.stringify(frameMetrics));
+  for (const key of ["maxUpdateCostMs", "maxAudioCostMs", "maxDrawCostMs", "maxLoopCostMs"]) {
+    assert.ok(Number.isFinite(frameMetrics[key]) && frameMetrics[key] >= 0, "performance telemetry should expose finite " + key + ": " + JSON.stringify(frameMetrics));
+  }
+  assert.ok(Number.isInteger(frameMetrics.maxUpdateSteps) && frameMetrics.maxUpdateSteps >= 0, "performance telemetry should expose maximum simulation steps");
   assert.ok(frameMetrics.samples >= 30, "race loop should publish rolling frame-time samples");
   assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
