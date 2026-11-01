@@ -208,6 +208,10 @@ try {
   }
   assert.equal(raceRequests.length, requestCountAtStart, "countdown and gameplay must not trigger late asset/network requests");
   assert.equal(await page.evaluate(() => window.MshinAudioReady), true, "all CDN engine and effect audio must decode before GO");
+  const racePbr = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, pipeline: window.Mshin3DRenderer?.materialPipeline, environmentMapReady: window.Mshin3DRenderer?.environmentMapReady }));
+  assert.equal(racePbr.status, "webgl-ready", "race renderer must compile and run its WebGL pipeline");
+  assert.equal(racePbr.pipeline, "automotive-pbr-ggx-clearcoat", "live race cars must use the shared automotive PBR shader");
+  assert.equal(racePbr.environmentMapReady, true, "live race renderer must have its studio reflection cubemap");
   const physicsCheck = await page.evaluate(async () => { const p = await import("./src/collision-physics.js"); const a={x:0,y:0,vx:300,vy:0,mass:1200,radius:32},b={x:64,y:0,vx:40,vy:0,mass:1000,radius:32}; const hit=p.resolveVehicleImpact(a,b); const damage=p.createDamageState(); p.applyVehicleDamage(damage,hit.energy,"rear"); return {hit:hit.hit,closing:hit.closingSpeed,rivalVelocity:b.vx,damage:damage.total,level:p.damageLevel(damage)}; });
   assert.equal(physicsCheck.hit,true,"browser should load collision impulse solver");
   assert.ok(physicsCheck.closing>0 && physicsCheck.rivalVelocity>40,"rear impact should transfer momentum");
