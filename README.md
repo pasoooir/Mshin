@@ -1,3 +1,12 @@
+## Version 0.11.4 — faster driving and adaptive mobile performance
+
+- Increased player acceleration and maximum driving speed by 30% and 22%; AI traffic pace is raised by 20% so races remain competitive.
+- Decoupled fixed 60 Hz simulation from display rendering and replaced the mobile frame-skip gate with a refresh-rate-aware render accumulator.
+- Added adaptive mobile WebGL resolution based on measured render cost, with a bounded quality range.
+- Reduced mobile scene geometry and visible rival count, removed per-frame rival object cloning, and optimized AI lane-gap scans to avoid repeated array allocation, mapping, filtering, and sorting.
+- Added an angular broad phase before expensive AI-to-AI collision geometry.
+- Advanced the service-worker cache to `mshin-arcade-v41`.
+
 ## Version 0.11.3 — mobile frame-pacing and WebGL optimization\n\n- Fixed portrait-device landscape rotation for the active WebGL race canvas, including correct landscape drawing-buffer dimensions.\n- Reduced mobile WebGL scene density and disabled costly multisample antialiasing on touch devices; capped mobile render resolution to 0.78 device scale.\n- Added a smoothed chase camera and bounded mobile simulation catch-up and 60 Hz render pacing to prevent visible jumps after delayed frames.\n- Advanced the offline service-worker cache to `mshin-arcade-v40`.\n\n## Version 0.11.2 — countdown reliability hotfix
 
 - Replaced frame-delta countdown progression with monotonic `performance.now()` timing.
