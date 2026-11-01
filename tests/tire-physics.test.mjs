@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolveTireForces } from "../src/tire-physics.js";
+import { resolveTireForces, resolveLongitudinalAcceleration } from "../src/tire-physics.js";
 
 test("combined throttle and lateral demand never exceed tire capacity",()=>{
  const response=resolveTireForces({speed:240,lateralVelocity:0,steer:1,throttle:true,brake:false,grip:.65,deltaSeconds:1/60});
