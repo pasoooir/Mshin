@@ -456,6 +456,9 @@ try {
   // This scenario measures a full live race, so make its tab foreground first.
   await economy.bringToFront();
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
+  // The dedicated race-completion scenario validates gameplay physics and economy,
+  // not SwiftShader performance. Earlier desktop/mobile checks already validate WebGL.
+  await economy.addInitScript(() => { window.__MshinBrowserSmoke = true; window.__MshinForce2DRenderer = true; });
   economy.on("pageerror", error => errors.push(error.message));
   economy.setDefaultTimeout(60000);
   economy.setDefaultNavigationTimeout(60000);
@@ -489,8 +492,39 @@ try {
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   await economy.keyboard.down("ArrowUp");
+  let activeSteerKey = null;
+  const raceDeadline = Date.now() + 120000;
   try {
-    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 300000 });
+    while (Date.now() < raceDeadline) {
+      const finishStatus = await economy.evaluate(() => ({
+        visible: !document.querySelector("#finish").classList.contains("hidden"),
+        rewarded: /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent)
+      }));
+      if (finishStatus.visible) {
+        if (finishStatus.rewarded) break;
+        throw new Error("race ended before a valid stage finish");
+      }
+      const controls = await economy.evaluate(() => {
+        const telemetry = window.MshinRaceTelemetry;
+        if (!telemetry) return { steering: 0, brake: false };
+        const steering = Math.max(-1, Math.min(1,
+          telemetry.feedForwardSteer - telemetry.lateral / 105 - telemetry.yaw * .85
+        ));
+        return { steering, brake: telemetry.speed > 165 };
+      });
+      const nextSteerKey = controls.steering < -.12 ? "ArrowLeft"
+        : controls.steering > .12 ? "ArrowRight" : null;
+      if (nextSteerKey !== activeSteerKey) {
+        if (activeSteerKey) await economy.keyboard.up(activeSteerKey);
+        if (nextSteerKey) await economy.keyboard.down(nextSteerKey);
+        activeSteerKey = nextSteerKey;
+      }
+      if (controls.brake) await economy.keyboard.down("ArrowDown");
+      else await economy.keyboard.up("ArrowDown");
+      await economy.waitForTimeout(90);
+    }
+    await economy.waitForFunction(() => /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent),
+      undefined, { timeout: Math.max(1, raceDeadline - Date.now()) });
   } catch (error) {
     const raceState = await economy.evaluate(() => ({
       finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
@@ -502,11 +536,14 @@ try {
       renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
       performance: window.MshinPerformance ?? null,
       progress: localStorage.getItem("mshin-progress-v1"),
+      telemetry: window.MshinRaceTelemetry ?? null,
       bodyClass: document.body.className
     }));
     throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
   } finally {
     await economy.keyboard.up("ArrowUp");
+    await economy.keyboard.up("ArrowDown");
+    if (activeSteerKey) await economy.keyboard.up(activeSteerKey);
   }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
