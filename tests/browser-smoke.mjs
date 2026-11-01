@@ -502,10 +502,10 @@ try {
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   await economy.keyboard.down("ArrowUp");
-  const steeringPad = await economy.locator("#stick").boundingBox();
-  assert.ok(steeringPad && steeringPad.width > 0, "economy race must expose the analog steering pad");
-  const steeringCenter = { x: steeringPad.x + steeringPad.width / 2, y: steeringPad.y + steeringPad.height / 2 };
-  const steeringLimit = Math.max(1, (steeringPad.width - 58) / 2);
+  const economySteeringPad = await economy.locator("#stick").boundingBox();
+  assert.ok(economySteeringPad && economySteeringPad.width > 0, "economy race must expose the analog steering pad");
+  const steeringCenter = { x: economySteeringPad.x + economySteeringPad.width / 2, y: economySteeringPad.y + economySteeringPad.height / 2 };
+  const steeringLimit = Math.max(1, (economySteeringPad.width - 58) / 2);
   await economy.mouse.move(steeringCenter.x, steeringCenter.y);
   await economy.mouse.down();
   const raceDeadline = Date.now() + 120000;
