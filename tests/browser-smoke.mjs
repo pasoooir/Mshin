@@ -204,6 +204,7 @@ try {
       readyState: document.readyState,
       audioReady: window.MshinAudioReady ?? null,
       performance: window.MshinPerformance ?? null,
+      raceTelemetry: window.MshinRaceTelemetry ?? null,
       animationFrames: window.MshinPerformance?.countdownIntroFrames ?? null
     }));
     throw new Error("Countdown did not finish: " + JSON.stringify(countdownState) + "; browser errors: " + JSON.stringify(errors) + "; " + error.message);
@@ -494,19 +495,29 @@ try {
   const raceDeadline = Date.now() + 75000;
   try {
     while (Date.now() < raceDeadline && await economy.locator("#finish").evaluate(el => el.classList.contains("hidden"))) {
-      const steering = await economy.evaluate(() => {
+      const controls = await economy.evaluate(() => {
         const telemetry = window.MshinRaceTelemetry;
-        if (!telemetry) return 0;
-        // Feed-forward follows the measured track curvature; feedback recentres
-        // the car without changing the production vehicle physics.
-        return Math.max(-1, Math.min(1, telemetry.feedForwardSteer - telemetry.lateral / 260 - telemetry.yaw * .55));
+        if (!telemetry) return { steering: 0, brake: false };
+        const wrap = value => Math.atan2(Math.sin(value), Math.cos(value));
+        const nearby = (telemetry.rivals || []).filter(rival => Math.abs(wrap(rival.distance - telemetry.trackT)) < .24);
+        const candidateLanes = [-125, -75, -25, 25, 75, 125];
+        const targetLane = candidateLanes.reduce((best, lane) => {
+          const clearance = nearby.length ? Math.min(...nearby.map(rival => Math.abs(lane - rival.lateral))) : 999;
+          return clearance > best.clearance ? { lane, clearance } : best;
+        }, { lane: 0, clearance: -1 }).lane;
+        // Track curvature supplies feed-forward; lateral/yaw feedback holds a
+        // safe lane. The driver also caps speed to preserve steering authority.
+        const steering = Math.max(-1, Math.min(1, telemetry.feedForwardSteer - (telemetry.lateral - targetLane) / 145 - telemetry.yaw * .8));
+        return { steering, brake: telemetry.speed > 205 };
       });
-      const nextSteerKey = steering < -.12 ? "ArrowLeft" : steering > .12 ? "ArrowRight" : null;
+      const nextSteerKey = controls.steering < -.12 ? "ArrowLeft" : controls.steering > .12 ? "ArrowRight" : null;
       if (nextSteerKey !== activeSteerKey) {
         if (activeSteerKey) await economy.keyboard.up(activeSteerKey);
         if (nextSteerKey) await economy.keyboard.down(nextSteerKey);
         activeSteerKey = nextSteerKey;
       }
+      if (controls.brake) await economy.keyboard.down("ArrowDown");
+      else await economy.keyboard.up("ArrowDown");
       await economy.waitForTimeout(90);
     }
     await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: Math.max(1, raceDeadline - Date.now()) });
