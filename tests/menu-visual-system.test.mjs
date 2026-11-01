@@ -34,7 +34,7 @@ test("menu navigation retains a vertical side rail on narrow mobile screens", ()
 
 test("offline app shell precaches the menu stylesheet and keeps the release cache aligned", () => {
   assert.match(html, /href="\.\/src\/menu-visual-system\.css"/);
-  assert.match(sw, /mshin-arcade-v54/);
+  assert.match(sw, /mshin-arcade-v55/);
   assert.match(sw, /\.\/src\/menu-visual-system\.css/);
 });
 
