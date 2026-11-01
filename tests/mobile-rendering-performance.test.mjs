@@ -36,8 +36,8 @@ test("mobile rendering targets 60fps without dropping alternate high-refresh cal
  assert.ok(!game.includes("ts-last<16.5"));
 });
 test("mobile renderer adapts drawing resolution to measured render cost",()=>{
- assert.ok(game.includes("renderCostEMA>22"));
- assert.ok(game.includes("renderCostEMA<14"));
+ assert.ok(game.includes("renderCostEMA>18"));
+ assert.ok(game.includes("renderCostEMA<13"));
  assert.ok(game.includes("race3d.setQuality?.(adaptiveQuality)"));
  assert.ok(renderer.includes("setQuality(scale){qualityScale=clamp(scale,.58,1)"));
 });
