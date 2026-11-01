@@ -21,7 +21,7 @@ test("in-race car includes detailed glass, lighting, aero and metallic wheel hub
   assert.match(source, /Sloped glazing|Cabin:/);
   assert.match(source, /Distinct LED headlamps/);
   assert.match(source, /part\(rims,/);
-  assert.match(source, /rear wing/);
+  assert.match(source, /racing wing/);
   assert.match(source, /part\(aero,/);
 });
 
