@@ -57,3 +57,12 @@ test("traffic lane evaluation avoids per-tick array mapping, filtering and sorti
  assert.ok(!traffic.includes(".filter("));
  assert.ok(!traffic.includes(".sort("));
 });
+
+test("3D rival selection reuses scratch arrays, avoids sorting, and draws rivals at track distance",()=>{
+ assert.ok(renderer.includes("const visibleRivals=[],visibleDistances=[]"));
+ assert.ok(renderer.includes("visibleRivals.length=0;visibleDistances.length=0"));
+ assert.ok(renderer.includes("visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance)"));
+ assert.ok(!renderer.includes("visibleRivals.sort("));
+ assert.ok(renderer.includes("drawVehicle(r.distance,r.lateral,r.yaw||0"));
+ assert.ok(renderer.includes("rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta)"));
+});

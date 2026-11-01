@@ -120,6 +120,7 @@ export function createRaceRenderer(canvas){
   
  }
  let vp,partCacheSmoke;
+ const visibleRivals=[],visibleDistances=[];
  function render(snapshot){
   if(!gl||lost||!snapshot||!["race","countdown","paused"].includes(snapshot.state))return;
   resize();if(lastStage!==snapshot.stageId)buildTrack(snapshot);
@@ -131,7 +132,7 @@ export function createRaceRenderer(canvas){
   const projection=perspective(Math.PI/3.15,canvas.width/Math.max(1,canvas.height),1,7000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);state.triangles=0;
   drawPart(road,vp,translate(0,0,0));for(const p of decor)drawPart(p,vp,translate(0,0,0));
-  const playerT=snapshot.player.t,visibleRivals=[];for(const r of snapshot.rivals){if(r.despawned||r.destruction?.despawned)continue;const renderDistance=Math.abs(Math.atan2(Math.sin(r.distance-playerT),Math.cos(r.distance-playerT)));if(renderDistance<.72)visibleRivals.push({vehicle:r,distance:renderDistance})}visibleRivals.sort((a,b)=>a.distance-b.distance);for(let i=0;i<Math.min(visibleRivals.length,mobile?3:7);i++){const r=visibleRivals[i].vehicle;drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage?.total||r.damage||0,r.type,snapshot)}
+  const playerT=snapshot.player.t,maxVisible=mobile?3:7;visibleRivals.length=0;visibleDistances.length=0;for(const r of snapshot.rivals){if(r.despawned||r.destruction?.despawned)continue;const rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta);if(distance>=.72)continue;let slot=visibleDistances.length;while(slot>0&&distance<visibleDistances[slot-1])slot--;if(slot>=maxVisible)continue;visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance);if(visibleRivals.length>maxVisible){visibleRivals.pop();visibleDistances.pop()}}for(let i=0;i<visibleRivals.length;i++){const r=visibleRivals[i];drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage?.total||r.damage||0,r.type,snapshot)}
   drawVehicle(snapshot.player.t,snapshot.player.lateral,snapshot.player.yaw,snapshot.player.color,snapshot.player.damage,"player",snapshot);
   state.frames++;state.stageId=snapshot.stageId;state.playerPosition={x,z};state.camera="perspective-chase";
  }

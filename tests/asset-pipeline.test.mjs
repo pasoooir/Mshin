@@ -68,7 +68,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v41/);
+  assert.match(sw, /mshin-arcade-v42/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -192,14 +192,14 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v41/);
+  assert.match(sw, /mshin-arcade-v42/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.01.05");
-  assert.equal(pkg.version, "0.11.4");
-  assert.equal(pwa.version, "0.11.4");
+  assert.equal(pkg.version, "0.11.5");
+  assert.equal(pwa.version, "0.11.5");
   assert.equal(cocos.version, "2026.11.01.05");
-  assert.ok(readme.includes("live browser release on `main` is **version 0.10.1**") && readme.includes("not live on GitHub Pages until that change is merged"), "README must identify the verified live release without claiming the PR is deployed");
-  assert.ok(readme.includes("## Latest published release on main: 0.10.1") && readme.includes("Versions 0.11.0–0.11.4 described above are development milestones"), "README must distinguish the published release from the PR branch");
+  assert.ok(readme.includes("live browser release on `main` is **version 0.11.4**") && readme.includes("version 0.11.5, is under review in pull request #73"), "README must identify the verified live release without claiming the PR is deployed");
+  assert.ok(readme.includes("## Latest published release on main: 0.11.4") && readme.includes("Versions 0.11.0–0.11.4 are published on GitHub Pages. Version 0.11.5 is the next development update"), "README must distinguish the published release from the PR branch");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
