@@ -458,6 +458,9 @@ try {
   // This scenario measures a full live race, so make its tab foreground first.
   await economy.bringToFront();
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
+  // The separate desktop/mobile smoke paths already validate WebGL. Keep this economy-only
+  // flow on the lightweight renderer so SwiftShader stalls cannot distort race timing.
+  await economy.addInitScript(() => { window.__MshinBrowserSmoke = true; window.__MshinForce2DRenderer = true; });
   economy.on("pageerror", error => errors.push(error.message));
   economy.setDefaultTimeout(60000);
   economy.setDefaultNavigationTimeout(60000);
