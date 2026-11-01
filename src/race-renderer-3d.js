@@ -123,7 +123,20 @@ export function createRaceRenderer(canvas){
   state.frames++;state.stageId=snapshot.stageId;state.playerPosition={x,z};state.camera="perspective-chase";
  }
  function onLost(e){e.preventDefault();lost=true;state.status="context-lost"}
- function onRestored(){lost=false;state.status="context-restored";lastStage=-1;carParts=[]}
+ function onRestored(){
+  lost=false;
+  try{
+   // A restored WebGL context invalidates every program, uniform and buffer handle.
+   // Recreate the complete GPU pipeline before allowing the next frame to render.
+   program=makeProgram(gl);
+   attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};
+   uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uColor"),emissive:gl.getUniformLocation(program,"uEmissive")};
+   gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
+   road=null;decor=[];carParts=[];lastStage=-1;lastSize="";
+   state.status="webgl-ready";state.error=null;
+   resize();
+  }catch(e){state.status="unavailable";state.error=String(e?.message||e)}
+ }
  canvas.addEventListener("webglcontextlost",onLost);canvas.addEventListener("webglcontextrestored",onRestored);
  return {state,render,resize,destroy(){canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([road,...decor,...carParts]);if(program)gl.deleteProgram(program)}};
 }
