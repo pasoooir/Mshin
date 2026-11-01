@@ -1,3 +1,10 @@
+## 0.11.7 — mobile landscape orientation fix
+
+- Moved native orientation locking from the first menu touch to the explicit race-start gesture.
+- Requests fullscreen before locking landscape, as required by many Android browsers.
+- Keeps software landscape rotation as a fallback when the browser denies native locking.
+- Refreshes the offline app shell cache to v44.
+
 ## 0.9.3 — published (2026-10-31)
 
 ### Repository-local runtime assets

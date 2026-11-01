@@ -1,3 +1,11 @@
+## Version 0.11.7 — native mobile landscape entry fix
+
+- Fixed the mobile orientation-lock timing: the old one-shot touch handler attempted to lock landscape on the first menu tap, before fullscreen was entered, then never retried.
+- The explicit Start Race gesture now enters fullscreen first and requests the native landscape orientation while the browser still has user activation.
+- Retains the CSS software-landscape fallback on browsers that deny fullscreen or orientation locking.
+- Added orientation-change resize synchronization and advanced the offline cache to `mshin-arcade-v44`.
+- Updated runtime marker to `2026.11.01.07`.
+
 ## Version 0.11.5 — 3D traffic rendering hotfix
 
 - Replaced per-frame rival object allocation and full sorting with reusable scratch arrays and bounded insertion of only the nearest visible opponents.
@@ -41,11 +49,11 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 This branch introduces a native, repository-local WebGL perspective renderer for the active race scene. During countdown and gameplay, the browser now renders a perspective chase-camera view with a generated 3D road surface, shoulders, lane markings, three-dimensional roadside geometry, and mesh-based player/rival vehicles. The 2D game simulation remains the source of truth for vehicle motion, traffic, collisions, damage, pickups, race progression, and controls; the new renderer consumes that live state rather than replacing the gameplay physics. The renderer is bundled locally and precached by the service worker, with no runtime CDN dependency. This is the first migration milestone, not a claim that every legacy visual/effect has already been ported to 3D; minimap, weather overlays, particle effects, and full 3D damage deformation remain follow-up work.
 
-## Latest published release on main: 0.11.5 — true 3D racing and mobile performance
+## Latest published release on main: 0.11.6 — visible WebGL race scene
 
-Version 0.11.5 is merged into main. Its validation and GitHub Pages deployment workflows completed successfully. It includes the native WebGL perspective race renderer, optimized rival rendering, faster vehicle acceleration and top speed, fixed-step simulation, adaptive mobile rendering quality, and service-worker cache `mshin-arcade-v42`.
+Version 0.11.6 is merged into main. Browser smoke, core validation, and GitHub Pages deployment completed successfully. It fixes the WebGL program binding that previously left the race view showing only the clear-color background and advances the service-worker cache to `mshin-arcade-v43`.
 
-Versions 0.11.0–0.11.5 are published on GitHub Pages. Version 0.11.6 is the next development update in pull request #75 and is not yet published.
+Versions 0.11.0–0.11.6 are published on GitHub Pages. Version 0.11.7 is the mobile native-landscape entry fix under review in pull request #76.
 
 ## Play the browser edition
 
