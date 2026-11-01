@@ -58,10 +58,10 @@ export function createRaceRenderer(canvas){
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,y,-(f.p.y+f.ny*offset)];
    const l0=point(fa,-half),r0=point(fa,half),l1=point(fb,-half),r1=point(fb,half);
    const sl0=point(fa,-half-26,-.04),sr0=point(fa,half+26,-.04),sl1=point(fb,-half-26,-.04),sr1=point(fb,half+26,-.04);
-   quad(roadTris,l0,r0,r1,l1);quad(shoulderTris,sl0,l0,l1,sl1);quad(shoulderTris,r0,sr0,sr1,r1);
-   for(const offset of [-90,0,90]){const width=offset===0?2.5:1.5;const p0=point(fa,offset-width,.012),q0=point(fa,offset+width,.012),p1=point(fb,offset-width,.012),q1=point(fb,offset+width,.012);if(offset!==0&&i%3!==0)continue;quad(laneTris,p0,q0,q1,p1)}
+   quad(roadTris,l0,l1,r1,r0);quad(shoulderTris,sl0,sl1,l1,l0);quad(shoulderTris,r0,r1,sr1,sr0);
+   for(const offset of [-90,0,90]){const width=offset===0?2.5:1.5;const p0=point(fa,offset-width,.012),q0=point(fa,offset+width,.012),p1=point(fb,offset-width,.012),q1=point(fb,offset+width,.012);if(offset!==0&&i%3!==0)continue;quad(laneTris,p0,p1,q1,q0)}
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
-   quad(groundTris,outerL,outerR,outerR1,outerL1);
+   quad(groundTris,outerL,outerL1,outerR1,outerR);
   }
   road=part(roadTris,theme[1]);decor=[part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0])];
   const trees=[],rocks=[],buildings=[];
