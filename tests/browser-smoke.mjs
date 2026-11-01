@@ -172,7 +172,11 @@ try {
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
-  assert.ok(await page.evaluate(() => Object.values(window.MshinAssets.audioData).every(value => value instanceof ArrayBuffer)), "all CDN audio bytes should be preloaded before a race");
+  const audioPreload = await page.evaluate(() => ({
+    missing: Object.entries(window.MshinAssets.audioData).filter(([, value]) => !(value instanceof ArrayBuffer)).map(([id]) => id),
+    failures: window.MshinAssets.failures.filter(item => /audio|\\.(wav|mp3|ogg)(?:$|\\?)/i.test(item.asset || ""))
+  }));
+  assert.deepEqual(audioPreload.missing, [], "every bundled audio file must be available before a race; preload failures: " + JSON.stringify(audioPreload.failures));
   await page.locator("#startRace").click();
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
