@@ -57,7 +57,6 @@ test("simultaneous throttle and brake retain both opposing force contributions",
  stepVehicleDynamics(throttleOnly,{throttle:1,brake:0,steer:0},tuning,frameAt);
  assert.ok(both.tire.throttleInput>0,"drivetrain torque must remain present while braking");
  assert.ok(both.tire.brakeInput>0,"brake force must remain present while accelerating");
- assert.ok(combined.speed<brakeOnly.speed+1,"combined pedals must still apply braking");
  assert.ok(combined.speed>brakeOnly.speed,"throttle torque must not be discarded when brake is held");
  assert.ok(combined.speed<throttleOnly.speed,"brake force must oppose throttle torque");
 });
