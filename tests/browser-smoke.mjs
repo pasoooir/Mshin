@@ -476,9 +476,36 @@ try {
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
+  const economySteeringPad = economy.locator("#stick");
+  const economySteeringBox = await economySteeringPad.boundingBox();
+  const economySteeringCenter = {
+    x: economySteeringBox.x + economySteeringBox.width / 2,
+    y: economySteeringBox.y + economySteeringBox.height / 2
+  };
+  const economySteeringLimit = Math.max(1, (economySteeringBox.width - 58) / 2);
+  const setEconomySteering = async command => {
+    const magnitude = Math.min(1, Math.abs(command));
+    const raw = Math.sign(command) * (magnitude <= 0 ? 0 : .07 + .93 * Math.pow(magnitude, 1 / 1.28));
+    await economy.mouse.move(economySteeringCenter.x + economySteeringLimit * raw, economySteeringCenter.y);
+  };
+  await economy.mouse.move(economySteeringCenter.x, economySteeringCenter.y);
+  await economy.mouse.down();
   await economy.keyboard.down("ArrowUp");
   try {
-    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 75000 });
+    const raceDeadline = Date.now() + 75000;
+    while (Date.now() < raceDeadline && await economy.locator("#finish").evaluate(el => el.classList.contains("hidden"))) {
+      const telemetry = await economy.evaluate(() => window.MshinPerformance ?? {});
+      const trackT = Number(telemetry.playerTrackT) || 0;
+      const yaw = Number(telemetry.playerYaw) || 0;
+      const lateral = Number(telemetry.playerLateral) || 0;
+      const rx = 1180, ry = 760;
+      const curvature = rx * ry / Math.pow(rx * rx * Math.sin(trackT) ** 2 + ry * ry * Math.cos(trackT) ** 2, 1.5);
+      const feedForward = Math.atan(128 * curvature) / .48;
+      const steeringCommand = Math.max(-1, Math.min(1, feedForward - 1.1 * yaw - .0015 * lateral));
+      await setEconomySteering(steeringCommand);
+      await economy.waitForTimeout(100);
+    }
+    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 1000 });
   } catch (error) {
     const raceState = await economy.evaluate(() => ({
       finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
