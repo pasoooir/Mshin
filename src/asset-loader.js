@@ -64,7 +64,7 @@ async function loadAudio(asset) {
 }
 
 export async function preloadGameAssets(onProgress = () => {}) {
-  const all = [...manifest.worlds, ...manifest.cars, ...(manifest.scenes || []), ...(manifest.icons || []), ...(manifest.sounds || [])];
+  const all = [...manifest.worlds, ...manifest.cars, ...(manifest.scenes || []), ...(manifest.icons || []), ...(manifest.controls || []), ...(manifest.sounds || [])];
   let loaded = 0, cursor = 0;
   const failures = [];
   const worker = async () => {
