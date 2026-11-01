@@ -305,6 +305,7 @@ try {
     await page.keyboard.up("ArrowUp");
   }
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
+  assert.equal(await page.locator("#nitro").isDisabled(), false, "collecting nitro energy must immediately enable the turbo control");
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
   const nitroControl=page.locator("#nitro");
   await nitroControl.dispatchEvent("pointerdown",{pointerId:303,pointerType:"touch",button:0,isPrimary:true});
