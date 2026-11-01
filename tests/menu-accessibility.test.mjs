@@ -9,20 +9,20 @@ test("race HQ tabs support vertical and horizontal arrows plus Home and End", ()
   for (const key of ["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft", "Home", "End"]) {
     assert.ok(source.includes(key), `missing keyboard navigation for ${key}`);
   }
-  assert.match(source, /aria-orientation", "vertical"/);
+  assert.ok(source.includes('nav.setAttribute("aria-orientation", "vertical")'));
 });
 
 test("keyboard navigation delegates activation to the existing game tab handler", () => {
-  assert.match(source, /tab\.click\(\)/);
-  assert.match(source, /event\.preventDefault\(\)/);
-  assert.match(source, /\[role='tab'\]:not\(:disabled\)/);
+  assert.ok(source.includes("tab.click()"));
+  assert.ok(source.includes("event.preventDefault()"));
+  assert.ok(source.includes("[role='tab']:not(:disabled)"));
 });
 
 test("disabled tabs are skipped and only the selected tab remains in the tab order", () => {
-  assert.match(source, /tab\.tabIndex = tab === selected \? 0 : -1/);
-  assert.match(source, /if \(!tab \|\| tab\.disabled\)/);
+  assert.ok(source.includes("tab.tabIndex = tab === selected ? 0 : -1"));
+  assert.ok(source.includes("if (!tab || tab.disabled)"));
 });
 
 test("keyboard accessibility module is loaded by the GitHub Pages entry point", () => {
-  assert.match(html, /src="\.\/src\/menu-accessibility\.js"/);
+  assert.ok(html.includes('src="./src/menu-accessibility.js"'));
 });
