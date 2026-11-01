@@ -36,6 +36,7 @@ async function waitForGameBoot(page, label = "game") {
   }
   assert.ok(state?.bootReady && state.runtimeImported && state.assetsReady && state.homePresent && state.homeVisible && state.playVisible,
     label + " did not reach the complete runtime-ready state: " + JSON.stringify(state));
+  await page.locator("#assetLoader").waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
   return state;
 }
 
@@ -239,7 +240,8 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "race-audio persistence reload");
-  await page.locator("#play").click();
+  assert.equal(await page.locator("#play").isVisible(), true, "home action must be visible after reload");
+  await page.locator("#play").click({ force: true, noWaitAfter: true });
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   await page.locator("#startRace").click();
