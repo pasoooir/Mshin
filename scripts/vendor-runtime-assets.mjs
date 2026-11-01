@@ -7,6 +7,7 @@ const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const entries = [
   ...(manifest.scenes || []),
   ...(manifest.icons || []),
+  ...(manifest.controls || []),
   ...(manifest.sounds || [])
 ];
 let totalBytes = 0;
