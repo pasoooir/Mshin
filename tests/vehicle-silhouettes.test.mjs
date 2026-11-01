@@ -38,3 +38,11 @@ test("additional AI meshes are queued and uploaded progressively", () => {
   assert.match(renderer, /if\(carBuildQueue\.length\)/);
   assert.match(renderer, /return carPartSets\.values\(\)\.next\(\)\.value/);
 });
+
+test("race-car body meshes include sculpted wheel arches and integrated fascia details", () => {
+  assert.match(renderer, /const p=VEHICLE_SHAPES\[id\].*fenders=\[\]/);
+  assert.match(renderer, /Sculpted wheel-arch lips/);
+  assert.match(renderer, /quad\(fenders,/);
+  assert.match(renderer, /Hood crown, shoulder creases, mirrors and functional-looking front fascia/);
+  assert.match(renderer, /part\(fenders,"#d83d37"\)/);
+});
