@@ -409,6 +409,7 @@ try {
   await page.locator("#resume").click();
 
 
+  await page.bringToFront();
   const steeringBox = await steeringPad.boundingBox();
   const steerCenter = { x: steeringBox.x + steeringBox.width / 2, y: steeringBox.y + steeringBox.height / 2 };
   await page.mouse.move(steerCenter.x, steerCenter.y);
