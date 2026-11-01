@@ -318,7 +318,19 @@ $("pause").onclick=()=>{if(state==="race"){state="paused";input.gas=false;input.
 function hold(id,key){const el=$(id),on=e=>{e.preventDefault();input[key]=true;el.setPointerCapture?.(e.pointerId)},off=e=>{e.preventDefault();input[key]=false};el.addEventListener("pointerdown",on);["pointerup","pointercancel","lostpointercapture"].forEach(t=>el.addEventListener(t,off))}
 hold("gas","gas");hold("brake","brake");const stick=$("stick"),knob=$("knob");let pointer=null,manualSteerActive=false;function steer(e){manualSteerActive=true;const r=stick.getBoundingClientRect(),portrait=matchMedia("(orientation: portrait)").matches,px=portrait?e.clientY:e.clientX,py=portrait?innerWidth-e.clientX:e.clientY,left=portrait?r.top:r.left,top=portrait?innerWidth-r.right:r.top,rw=portrait?r.height:r.width,dx=px-left-rw/2,limit=Math.max(1,(rw-58)/2),raw=clamp(dx/limit,-1,1),dead=.07,mag=Math.abs(raw),linear=mag<=dead?0:(mag-dead)/(1-dead);input.steerTarget=Math.sign(raw)*Math.pow(linear,1.28);knob.style.transform="translate("+clamp(dx,-limit,limit)+"px,0px)";stick.dataset.steer=input.steerTarget.toFixed(3);stick.setAttribute("aria-valuenow",input.steerTarget.toFixed(2))}stick.addEventListener("pointerdown",e=>{pointer=e.pointerId;manualSteerActive=true;try{stick.setPointerCapture(e.pointerId)}catch{}steer(e)});stick.addEventListener("pointermove",e=>{if(e.pointerId===pointer)steer(e)});function release(e){if(e.pointerId!==pointer)return;pointer=null;manualSteerActive=false;input.steerTarget=gyroEnabled&&gyroLastTilt!==null?tiltToSteer(gyroLastTilt-gyroBaseline,gyroSensitivity):0;knob.style.transform="translate(0,0)";stick.dataset.steer="0";stick.setAttribute("aria-valuenow","0")}["pointerup","pointercancel","lostpointercapture"].forEach(t=>stick.addEventListener(t,release));
 const gyroButton=$("gyroToggle"),gyroCalibrate=$("gyroCalibrate");
+const gyroSensitivityButton=document.createElement("button");
+gyroSensitivityButton.type="button";gyroSensitivityButton.className="gyroCalibrate";
+gyroSensitivityButton.id="gyroSensitivity";gyroSensitivityButton.hidden=true;
+gyroSensitivityButton.textContent="حساسیت ۱٫۰×";
+gyroSensitivityButton.setAttribute("aria-label","تغییر حساسیت فرمان ژیروسکوپی");
+gyroCalibrate.after(gyroSensitivityButton);
 let gyroEnabled=false,gyroBaseline=null,gyroLastTilt=null,gyroSensitivity=1;
+const gyroSensitivityLevels=[.7,.85,1,1.15,1.3];
+gyroSensitivityButton.addEventListener("click",()=>{
+ const current=gyroSensitivityLevels.indexOf(gyroSensitivity);
+ gyroSensitivity=gyroSensitivityLevels[(current+1)%gyroSensitivityLevels.length];
+ gyroSensitivityButton.textContent="حساسیت "+gyroSensitivity.toLocaleString("fa-IR",{minimumFractionDigits:1,maximumFractionDigits:1})+"×";
+});
 function currentScreenAngle(){return Number(screen.orientation?.angle??window.orientation??0)}
 function updateGyroSteering(event){
  const tilt=screenRelativeTilt(event,currentScreenAngle());
@@ -331,7 +343,7 @@ async function toggleGyro(){
  if(gyroEnabled){
   removeEventListener("deviceorientation",updateGyroSteering);
   gyroEnabled=false;gyroBaseline=null;gyroLastTilt=null;input.steerTarget=0;
-  gyroButton.textContent="📱";gyroButton.setAttribute("aria-pressed","false");gyroCalibrate.hidden=true;return;
+  gyroButton.textContent="📱";gyroButton.setAttribute("aria-pressed","false");gyroCalibrate.hidden=true;gyroSensitivityButton.hidden=true;return;
  }
  if(!("DeviceOrientationEvent" in window)){gyroButton.textContent="حسگر در دسترس نیست";return}
  if(!window.isSecureContext){gyroButton.textContent="نیازمند اتصال امن";return}
@@ -342,7 +354,7 @@ async function toggleGyro(){
   }
   gyroEnabled=true;gyroBaseline=null;gyroLastTilt=null;
   addEventListener("deviceorientation",updateGyroSteering,{passive:true});
-  gyroButton.textContent="📱 ✓";gyroButton.setAttribute("aria-pressed","true");gyroCalibrate.hidden=false;
+  gyroButton.textContent="📱 ✓";gyroButton.setAttribute("aria-pressed","true");gyroCalibrate.hidden=false;gyroSensitivityButton.hidden=false;
  }catch(error){gyroEnabled=false;gyroButton.textContent="خطا در حسگر";window.MshinGyroError=String(error?.message||error)}
 }
 gyroButton.addEventListener("click",toggleGyro);
