@@ -26,8 +26,9 @@ test("race hub uses a dedicated hero banner and a vertical desktop navigation ra
 
 test("menu navigation retains a vertical side rail on narrow mobile screens", () => {
   assert.match(css, /@media\(max-width:820px\)/);
-  assert.match(css, /grid-template-columns:72px minmax\(0,1fr\)/);\n  assert.match(css, /grid-template-areas:"header header" "nav body" "footer footer"/);
-  assert.match(css, /#select \.menuTabs\s*\{[\s\S]*?flex-direction:row/);
+  assert.match(css, /grid-template-columns:72px minmax\(0,1fr\)/);
+  assert.match(css, /grid-template-areas:"header header" "nav body" "footer footer"/);
+  assert.match(css, /#select \.menuTabs\s*\{[\s\S]*?flex-direction:column/);
   assert.match(css, /#select \.menuBody\{overflow-y:auto/);
 });
 
