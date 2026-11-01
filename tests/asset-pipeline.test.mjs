@@ -157,7 +157,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /countdownElapsed<3\.72/);
   assert.match(game, /countdownStartedAt=performance\.now\(\)/);
   assert.match(game, /performance\.now\(\)-countdownStartedAt/);
-  assert.match(game, /simulationAccumulator\\+=wallElapsed/);
+  assert.match(game, /simulationAccumulator\+=wallElapsed/);
   assert.match(game, /while\(simulationAccumulator>0\)/);
   assert.match(game, /"دره سبز"/);
   assert.match(game, /"توفان کویر"/);
