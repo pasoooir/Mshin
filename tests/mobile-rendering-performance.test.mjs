@@ -34,3 +34,9 @@ test("3D chase camera eases toward its target instead of snapping", () => {
   assert.match(renderer, /Math\.exp\(-cameraDt\/\(mobile\?\.16:\.11\)\)/);
   assert.match(renderer, /cameraEye\[i\]\+=\(desiredEye\[i\]-cameraEye\[i\]\)\*follow/);
 });
+
+test("3D stage rebuilds release previous GPU buffers instead of leaking meshes", () => {
+  assert.match(renderer, /function disposeParts\(parts\)\{for\(const item of parts\).*?gl\.deleteBuffer\(buffer\)/);
+  assert.match(renderer, /disposeParts\(\[road,\.\.\.decor\]\);road=null;decor=\[\]/);
+  assert.match(renderer, /destroy\(\).*?disposeParts\(\[road,\.\.\.decor,\.\.\.carParts\]\)/);
+});
