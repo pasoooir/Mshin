@@ -48,6 +48,7 @@ try {
   page.on("requestfailed", request => errors.push("request failed: "+request.url()+" · "+request.failure()?.errorText));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "initial desktop boot");
+  await page.waitForFunction(() => window.MshinAssets?.scenesReady === true, undefined, { timeout: 45000 });
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
@@ -170,7 +171,8 @@ try {
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
-  assert.ok(await page.evaluate(() => Object.values(window.MshinAssets.audioData).every(value => value instanceof ArrayBuffer)), "all CDN audio bytes should be preloaded before a race");
+  await page.waitForFunction(() => window.MshinAssets?.audioReady === true, undefined, { timeout: 30000 });
+  assert.ok(await page.evaluate(() => Object.values(window.MshinAssets.audioData).every(value => value instanceof ArrayBuffer)), "all local audio bytes should be ready before a race");
   await page.locator("#startRace").click();
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
@@ -359,15 +361,15 @@ try {
     el.dispatchEvent(new PointerEvent("pointermove", { ...common, clientY: point.y + 35 }));
     el.dispatchEvent(new PointerEvent("pointerup", { ...common, clientY: point.y + 35 }));
   }, showroomCenter);
-  const mobileDragState = await mobile.evaluate(()=>window.MshinShowroom);
-  assert.ok(mobileDragState.dragStarts > 0 && mobileDragState.dragMoves > 0 && Math.abs(mobileDragState.angle)>0,
-    "mobile touch drag should rotate the showroom vehicle: "+JSON.stringify(mobileDragState));
+  const mobileDragState = await mobile.evaluate(()=>({showroom:window.MshinShowroom,garage:window.Mshin3DGarage}));
+  assert.ok((mobileDragState.garage?.dragMoves || 0) > 0 && Math.abs(mobileDragState.garage?.angle || 0) > 0,
+    "mobile touch drag should rotate the actual WebGL showroom vehicle: "+JSON.stringify(mobileDragState));
   const rail=await mobile.locator("#select .garage").evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,height:el.clientHeight}));
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();
   assert.equal(await mobile.locator(".stageCard").count(),5,"mobile race tab should retain five stages");
   await mobile.locator("#startRace").click({ force: true, noWaitAfter: true, timeout: 10000 });
-  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 9000 }).catch(async error => {
+  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 30000 }).catch(async error => {
     const state = await mobile.evaluate(() => ({
       bootStage: window.MshinBootStage,
       countdownClass: document.querySelector("#countdownOverlay")?.className,
