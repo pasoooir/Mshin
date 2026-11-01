@@ -441,9 +441,9 @@ try {
   const mobileStickBounds = await mobile.locator("#stick").boundingBox();
   assert.ok(Math.max(mobileStickBounds.width, mobileStickBounds.height) >= 120 && Math.min(mobileStickBounds.width, mobileStickBounds.height) >= 100, "rotated mobile steering pad should preserve a 120×100 touch surface");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
-  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "گاز", "gas pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "نیترو", "nitro control should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "پدال گاز فلزی", "gas pedal should use dedicated metallic pedal artwork");
+  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "پدال ترمز فلزی", "brake pedal should use dedicated metallic pedal artwork");
+  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "توربوشارژر", "turbo control should use dedicated turbocharger artwork");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   const mobileStatsBounds = await mobile.locator(".stats").boundingBox(), mobileSoundBounds = await mobile.locator("#soundToggle").boundingBox();
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
