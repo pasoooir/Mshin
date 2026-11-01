@@ -74,7 +74,7 @@ function bindHold(id,key){const el=$(id);const on=e=>{e.preventDefault();state[k
 bindHold("gas","gas");bindHold("brake","brake");
 const stick=$("stick"),knob=$("knob");let stickId=null;
 function moveStick(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=39,len=Math.hypot(dx,dy)||1,n=Math.min(1,max/len);state.steer=clamp(dx/max,-1,1);knob.style.transform=`translate(${dx*n}px,${dy*n}px)`;}
-stick.addEventListener("pointerdown",e=>{e.preventDefault();stickId=e.pointerId;stick.setPointerCapture(e.pointerId);moveStick(e);});
+stick.addEventListener("pointerdown",e=>{e.preventDefault();stickId=e.pointerId;try{if(typeof stick.setPointerCapture==="function")stick.setPointerCapture(e.pointerId)}catch{/* Synthetic or cancelled pointers cannot be captured; pointer tracking remains active. */}moveStick(e);});
 stick.addEventListener("pointermove",e=>{if(e.pointerId===stickId)moveStick(e);});
 function releaseStick(e){if(e.pointerId!==stickId)return;stickId=null;state.steer=0;knob.style.transform="translate(0,0)";}
 ["pointerup","pointercancel","lostpointercapture"].forEach(t=>stick.addEventListener(t,releaseStick));
