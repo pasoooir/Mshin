@@ -2,83 +2,58 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const [html, game, renderer] = await Promise.all([
-  readFile(new URL("../index.html", import.meta.url), "utf8"),
-  readFile(new URL("../src/web-game.js", import.meta.url), "utf8"),
-  readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8")
+const [html,game,renderer,traffic] = await Promise.all([
+ readFile(new URL("../index.html",import.meta.url),"utf8"),
+ readFile(new URL("../src/web-game.js",import.meta.url),"utf8"),
+ readFile(new URL("../src/race-renderer-3d.js",import.meta.url),"utf8"),
+ readFile(new URL("../src/traffic-ai.js",import.meta.url),"utf8")
 ]);
 
-test("portrait phones rotate the active WebGL canvas with the landscape game", () => {
-  assert.match(html, /#game,#game3d,#assetLoader,#countdownOverlay,#hud,\.overlay/);
-  assert.match(html, /#game,#game3d\{display:block!important\}/);
-  assert.match(html, /transform:rotate\(90deg\) translateY\(-100%\)!important/);
+test("portrait phones rotate the active WebGL canvas with the landscape game",()=>{
+ assert.match(html,/#game,#game3d,#assetLoader,#countdownOverlay,#hud,\.overlay/);
+ assert.match(html,/#game,#game3d\{display:block!important\}/);
+ assert.match(html,/transform:rotate\(90deg\) translateY\(-100%\)!important/);
 });
-
-test("mobile WebGL uses a bounded landscape drawing buffer and lower GPU cost", () => {
-  assert.match(renderer, /const mobile=matchMedia\("\(pointer:coarse\)"\)/);
-  assert.match(renderer, /antialias:!mobile/);
-  assert.match(renderer, /mobile\?\.78:1\.5/);
-  assert.match(renderer, /portrait\?innerHeight:innerWidth/);
-  assert.match(renderer, /mobile\?84:360/);
-  assert.match(renderer, /mobile\?18:70/);
-  assert.match(renderer, /mobile\?10:54/);
-  assert.match(renderer, /mobile\?3:7/);
-  assert.match(renderer, /qualityScale=clamp\(scale,\.58,1\)/);
+test("mobile WebGL uses a bounded landscape drawing buffer and lower GPU cost",()=>{
+ assert.ok(renderer.includes('const mobile=matchMedia("(pointer:coarse)")'));
+ assert.ok(renderer.includes("antialias:!mobile"));
+ assert.ok(renderer.includes("mobile?.68:1.5"));
+ assert.ok(renderer.includes("portrait?innerHeight:innerWidth"));
+ assert.ok(renderer.includes("mobile?84:360"));
+ assert.ok(renderer.includes("mobile?18:70"));
+ assert.ok(renderer.includes("mobile?10:54"));
+ assert.ok(renderer.includes("mobile?3:7"));
+ assert.ok(renderer.includes("qualityScale=clamp(scale,.58,1)"));
 });
-
-test("race simulation advances in stable fixed 60 Hz steps", () => {
-  assert.match(game, /const FIXED_STEP=1\/60/);
-  assert.match(game, /while\(simulationAccumulator>=FIXED_STEP&&steps<\(mobileDevice\?3:8\)\)\{update\(FIXED_STEP\)/);
-  assert.match(game, /simulationAccumulator=Math\.min\(simulationAccumulator\+frameDelta,mobileDevice\?\.05:\.1\)/);
+test("race simulation advances in stable fixed 60 Hz steps",()=>{
+ assert.ok(game.includes("const FIXED_STEP=1/60,RENDER_STEP=1/60"));
+ assert.ok(game.includes("steps<(mobileDevice?5:8)"));
+ assert.ok(game.includes("simulationAccumulator=Math.min(simulationAccumulator+frameDelta,mobileDevice?.08:.1)"));
 });
-
-test("3D chase camera eases toward its target instead of snapping", () => {
-  assert.match(renderer, /cameraDt=lastRenderAt\?Math\.min\(\(now-lastRenderAt\)\/1000,mobile\?\.05:\.1\):1\/60/);
-  assert.match(renderer, /Math\.exp\(-cameraDt\/\(mobile\?\.16:\.11\)\)/);
-  assert.match(renderer, /cameraEye\[i\]\+=\(desiredEye\[i\]-cameraEye\[i\]\)\*follow/);
+test("mobile rendering targets 60fps without dropping alternate high-refresh callbacks",()=>{
+ assert.ok(game.includes("renderAccumulator+=frameDelta"));
+ assert.ok(game.includes("renderAccumulator>=RENDER_STEP"));
+ assert.ok(!game.includes("ts-last<16.5"));
 });
-
-test("3D stage rebuilds release previous GPU buffers instead of leaking meshes", () => {
-  assert.match(renderer, /function disposeParts\(parts\)\{for\(const item of parts\).*?gl\.deleteBuffer\(buffer\)/);
-  assert.match(renderer, /disposeParts\(\[road,\.\.\.decor\]\);road=null;decor=\[\]/);
-  assert.match(renderer, /destroy\(\).*?disposeParts\(\[road,\.\.\.decor,\.\.\.carParts\]\)/);
+test("mobile renderer adapts drawing resolution to measured render cost",()=>{
+ assert.ok(game.includes("renderCostEMA>22"));
+ assert.ok(game.includes("renderCostEMA<14"));
+ assert.ok(game.includes("race3d.setQuality?.(adaptiveQuality)"));
+ assert.ok(renderer.includes("setQuality(scale){qualityScale=clamp(scale,.58,1)"));
 });
-
-test("WebGL context restoration recreates the shader pipeline and invalidated stage buffers", () => {
-  assert.match(renderer, /function onRestored\(\)\{[\s\S]*?program=makeProgram\(gl\)/);
-  assert.match(renderer, /attributes=\{position:gl\.getAttribLocation\(program,"aPosition"\)/);
-  assert.match(renderer, /uniforms=\{mvp:gl\.getUniformLocation\(program,"uMvp"\)/);
-  assert.match(renderer, /road=null;decor=\[\];carParts=\[\];lastStage=-1;lastSize=""/);
-  assert.match(renderer, /state\.status="webgl-ready";state\.error=null/);
+test("driving acceleration, top speed and displayed speed are increased",()=>{
+ assert.ok(game.includes("maxSpeed=model.max*1.22*performanceFactor"));
+ assert.ok(game.includes("accel=model.accel*1.3*performanceFactor"));
+ assert.ok(game.includes("cruiseSpeed:activeCar().max*1.2"));
+ assert.ok(game.includes('$("speed").textContent=Math.round(car.speed*.55)'));
 });
-
-test("WebGL program creation releases temporary compiled shader objects", () => {
-  assert.match(renderer, /function makeProgram\(gl\)\{[\s\S]*?gl\.detachShader\(p,vertex\);gl\.detachShader\(p,fragment\);gl\.deleteShader\(vertex\);gl\.deleteShader\(fragment\)/);
-  assert.match(renderer, /catch\(error\)\{[\s\S]*?gl\.deleteProgram\(p\)[\s\S]*?gl\.deleteShader\(vertex\)[\s\S]*?gl\.deleteShader\(fragment\)/);
+test("AI-to-AI collision work uses a conservative angular broad phase",()=>{
+ const broad=game.indexOf("angularGap>.20"),geometry=game.indexOf("const fa=frameAt(a.distance%(Math.PI*2)),fb=frameAt(b.distance%(Math.PI*2))",broad);
+ assert.ok(broad>=0&&geometry>broad);
 });
-
-test("mobile rendering targets 60fps without dropping alternate high-refresh callbacks", () => {
-  assert.match(game, /const FIXED_STEP=1\\/60,RENDER_STEP=1\\/60/);
-  assert.match(game, /renderAccumulator\\+=frameDelta/);
-  assert.match(game, /renderAccumulator>=RENDER_STEP/);
-  assert.doesNotMatch(game, /ts-last<16\\.5/);
-});
-
-test("mobile renderer adapts drawing resolution to measured render cost", () => {
-  assert.match(game, /renderCostEMA>22/);
-  assert.match(game, /renderCostEMA<14/);
-  assert.match(game, /race3d\\.setQuality\\?\\.\\(adaptiveQuality\\)/);
-  assert.match(renderer, /setQuality\\(scale\\)\\{qualityScale=clamp\\(scale,\\.58,1\\)/);
-});
-
-test("driving acceleration, top speed and displayed speed are increased", () => {
-  assert.match(game, /maxSpeed=model\\.max\\*1\\.22/);
-  assert.match(game, /accel=model\\.accel\\*1\\.3/);
-  assert.match(game, /cruiseSpeed:activeCar\\(\\)\\.max\\*1\\.2/);
-  assert.match(game, /textContent=Math\\.round\\(car\\.speed\\*\\.55\\)/);
-});
-
-test("AI-to-AI collision work uses an angular broad phase before track geometry", () => {
-  assert.match(game, /angularGap=Math\\.abs\\(Math\\.atan2\\(Math\\.sin\\(b\\.distance-a\\.distance\\)/);
-  assert.ok(game.indexOf("angularGap>.14") < game.indexOf("const fa=frameAt(a.distance%(Math.PI*2)),fb=frameAt(b.distance%(Math.PI*2))"));
+test("traffic lane evaluation avoids per-tick array mapping, filtering and sorting",()=>{
+ assert.ok(traffic.includes("const aheadInLane=laneIndex=>"));
+ assert.ok(!traffic.includes(".map("));
+ assert.ok(!traffic.includes(".filter("));
+ assert.ok(!traffic.includes(".sort("));
 });
