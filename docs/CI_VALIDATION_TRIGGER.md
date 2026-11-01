@@ -1,0 +1,1 @@
+Temporary validation-branch marker for Mshin 0.10.1 CI verification. This file is not part of the release branch.
