@@ -16,14 +16,14 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
         return {finishState,telemetry};
       }
       const state=await page.evaluate(()=>{const p=window.MshinPerformance||{};return {lateral:p.playerLateral,yaw:p.playerYaw,lateralVelocity:p.playerLateralVelocity,trackCurvature:p.playerTrackCurvature,speed:p.playerSpeed,damage:p.damage,damageLevel:p.damageLevel,collisions:p.collisions,trackT:p.playerTrackT,lap:document.querySelector("#lap")?.textContent||null,time:document.querySelector("#time")?.textContent||null}});
-      if(!throttleHeld&&state.speed<325){await page.keyboard.down("ArrowUp");throttleHeld=true}else if(throttleHeld&&state.speed>345){await page.keyboard.up("ArrowUp");throttleHeld=false}
+      const targetSpeed=Math.abs(state.lateral)>140?185:245;if(state.speed<targetSpeed-12){if(!throttleHeld){await page.keyboard.down("ArrowUp");throttleHeld=true}if(brakeHeld){await page.keyboard.up("ArrowDown");brakeHeld=false}}else if(state.speed>targetSpeed+12){if(throttleHeld){await page.keyboard.up("ArrowUp");throttleHeld=false}if(!brakeHeld){await page.keyboard.down("ArrowDown");brakeHeld=true}}else{if(throttleHeld){await page.keyboard.up("ArrowUp");throttleHeld=false}if(brakeHeld){await page.keyboard.up("ArrowDown");brakeHeld=false}}
       const steer=calculateRaceSteering(state);
       if(!Number.isFinite(lastSteer)||Math.abs(steer-lastSteer)>=.025){await page.mouse.move(center.x+steer*limit,center.y,{steps:1});lastSteer=steer}
       if(Date.now()-lastTelemetryAt>=1000){telemetry.push({...state,steer:Number(steer.toFixed(3))});if(telemetry.length>12)telemetry.shift();lastTelemetryAt=Date.now()}
       await page.waitForTimeout(70);
     }
     throw new Error("Closed-loop smoke driver timed out before three laps: "+JSON.stringify({telemetry,elapsedMs:Date.now()-startedAt}));
-  }finally{await page.mouse.up();await page.keyboard.up("ArrowUp")}
+  }finally{await page.mouse.up();await page.keyboard.up("ArrowUp");await page.keyboard.up("ArrowDown")}
 }
 
 await mkdir("artifacts", { recursive: true });
