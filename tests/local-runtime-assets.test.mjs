@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(await readFile(path.join(root, "src/asset-manifest.json"), "utf8"));
 
 test("every runtime asset is stored inside this repository", async () => {
-  const assets = [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...manifest.sounds];
+  const assets = [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...(manifest.controls || []), ...manifest.sounds];
   assert.equal(manifest.scenes.length, 10);
   assert.equal(manifest.icons.length, 3);
   assert.equal(manifest.sounds.length, 10);
