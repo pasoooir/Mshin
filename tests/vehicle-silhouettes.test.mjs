@@ -18,8 +18,8 @@ test("garage cars have distinct proportions, wheel sizes and body styles", () =>
   assert.match(renderer, /lynx:\{width:1\.13,length:1,bodyY:1\.22/);
   assert.match(renderer, /thunder:\{width:1\.08,length:1\.06,bodyY:\.86/);
   assert.match(renderer, /raptor:\{width:1\.17,length:1\.04,bodyY:1\.12/);
-  assert.match(renderer, /p\.style==="pickup"/);
-  assert.match(renderer, /p\.style==="formula"/);
+  assert.match(models, /style:"pickup"/);
+  assert.match(models, /style:"formula"/);
 });
 
 test("vehicle meshes are cached per silhouette and released on renderer teardown", () => {
