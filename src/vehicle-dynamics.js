@@ -1,6 +1,7 @@
 import { resolveTireForces, resolveLongitudinalAcceleration } from "./tire-physics.js";
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const pedalInput = value => typeof value === "boolean" ? (value ? 1 : 0) : clamp(Number.isFinite(value) ? value : 0, 0, 1);
 const wrapAngle = value => Math.atan2(Math.sin(value), Math.cos(value));
 
 /**
@@ -24,6 +25,8 @@ export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
   const sideY = forwardX;
 
   const speed = Math.max(0, Number(vehicle.speed) || 0);
+  const throttleInput = pedalInput(controls.throttle);
+  const brakeInput = pedalInput(controls.brake);
   const lateralVelocity = Number(vehicle.lateralVelocity) || 0;
   const grip = clamp(Number(tuning.grip) || 1, 0.25, 1.5);
   const mass = clamp(Number(tuning.mass) || 1250, 650, 8000);
@@ -31,8 +34,8 @@ export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
     speed,
     lateralVelocity,
     steer: controls.steer,
-    throttle: controls.throttle,
-    brake: controls.brake,
+    throttle: throttleInput,
+    brake: brakeInput,
     grip,
     deltaSeconds: dt,
     mass,
@@ -45,13 +48,11 @@ export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
   const driveAcceleration = resolveLongitudinalAcceleration({
     requestedAcceleration,
     grip: 1
-  });
+  }) * throttleInput;
   const rollingAndAeroDrag = 18 + speed * speed * 0.00052;
-  let longitudinalAcceleration = controls.brake
-    ? -tire.brakingDeceleration
-    : controls.throttle
-      ? driveAcceleration
-      : -rollingAndAeroDrag;
+  // Throttle and brake are independent analog channels. If both are held,
+  // the drivetrain still produces torque while the brakes apply opposing force.
+  let longitudinalAcceleration = driveAcceleration - tire.brakingDeceleration - rollingAndAeroDrag;
 
   // The combined tyre-force budget prevents full drive/brake force and full
   // cornering force from being applied independently at the same time.
