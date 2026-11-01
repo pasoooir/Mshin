@@ -40,3 +40,11 @@ test("3D stage rebuilds release previous GPU buffers instead of leaking meshes",
   assert.match(renderer, /disposeParts\(\[road,\.\.\.decor\]\);road=null;decor=\[\]/);
   assert.match(renderer, /destroy\(\).*?disposeParts\(\[road,\.\.\.decor,\.\.\.carParts\]\)/);
 });
+
+test("WebGL context restoration recreates the shader pipeline and invalidated stage buffers", () => {
+  assert.match(renderer, /function onRestored\(\)\{[\s\S]*?program=makeProgram\(gl\)/);
+  assert.match(renderer, /attributes=\{position:gl\.getAttribLocation\(program,"aPosition"\)/);
+  assert.match(renderer, /uniforms=\{mvp:gl\.getUniformLocation\(program,"uMvp"\)/);
+  assert.match(renderer, /road=null;decor=\[\];carParts=\[\];lastStage=-1;lastSize=""/);
+  assert.match(renderer, /state\.status="webgl-ready";state\.error=null/);
+});
