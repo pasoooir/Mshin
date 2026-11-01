@@ -1,15 +1,33 @@
-## Version 0.12.0 — sculpted in-race 3D vehicle (under review)
+## Version 0.15.0 — automotive PBR materials and studio reflections (under review)
+
+- Replaced the previous flat diffuse/metal tint with a shared WebGL 1 metallic-roughness physically based shading pipeline for both the 360-degree showroom and live race scene.
+- Added Cook–Torrance GGX specular response, Schlick Fresnel, energy-aware diffuse, metallic response, automotive clearcoat and filmic highlight roll-off.
+- Added a locally generated six-face studio environment cubemap with large softbox reflections; no external HDRI, CDN or runtime download is required.
+- Added material-specific procedural surface detail: metallic paint micro-flake, carbon-fibre twill on aero parts, rubber sidewall grain and brushed-alloy highlights. Body paint, glazing, trim, rubber, rims, lamps, aero and decals now use distinct metallic/roughness/clearcoat presets.
+- The same PBR shader and material definitions are shared by showroom and gameplay, including player and AI cars. WebGL context restoration rebuilds the PBR program and environment.
+- Cache advanced to `mshin-arcade-v48`; the new shader module is precached for offline use. Browser GPU validation is required before this draft can be considered complete.
+- These are locally generated procedural materials and studio lighting, not scanned photogrammetry assets; no scanned-source provenance is claimed.
+
+## Version 0.14.0 — true 3D 360-degree vehicle showroom (under review)
+
+- Replaced the garage's flat SVG image and CSS perspective rotation with an actual WebGL vehicle model rendered on a canvas.
+- Added five garage profiles plus five distinct AI race-car profiles, all generated locally from one shared model builder with sculpted body sections, glazed cockpit, wheel arches, flared fenders, alloy wheels, brake details, lights, mirrors, side skirts, splitters and racing aero.
+- Touch/mouse dragging now orbits a real 3D camera around the vehicle; the 360-degree button performs a full camera orbit rather than rotating a flat image.
+- The same generated vehicle meshes are used by both the 360-degree garage and the live race renderer, so the selected car no longer changes shape between showroom and gameplay. The renderer is repository-local and precached for offline use. Version 0.15.0 adds shared PBR materials to these meshes. No runtime model CDN is required.
+- Browser and device validation are required before this draft can be considered complete.
+
+## Version 0.12.0 — sculpted in-race 3D vehicle (merged)
 
 - Rebuilt the vehicle visible on the race track as a tapered, multi-section WebGL body instead of stacked rectangular primitives.
 - Added pronounced body character creases along both flanks, hood power lines, wheel-arch lips, sculpted side sills, sloped glazing, LED lamps, grille, splitter, diffuser and rear wing.
 - Added rubber tires and metallic wheel hubs. Geometry is generated locally by the WebGL renderer; no runtime CDN/model download is required.
-- This PR also carries forward the native mobile landscape entry fix tracked in pull request #76. Version 0.12.0 is not yet the published live release.
+- The sculpted in-race vehicle geometry was merged to `main` in pull request #77; the current showroom work is tracked separately in version 0.14.0.
 
 ## Version 0.11.7 — verified live release on main
 
 - Verified browser release on GitHub Pages.
 - The WebGL race scene is visible and the offline app shell uses cache `mshin-arcade-v44`.
-- This is the latest published release on main; the 0.12.0 changes remain under review.
+- The 0.12.0 vehicle geometry is merged; the 0.14.0 WebGL showroom remains under review.
 
 # Mshin — 2D Top-Down Arcade Racing
 
@@ -27,7 +45,7 @@ This branch introduces a native, repository-local WebGL perspective renderer for
 
 The verified live browser release on `main` is version 0.11.7. Browser smoke, core validation and GitHub Pages deployment for that release completed successfully. Its service-worker cache is `mshin-arcade-v44`.
 
-Versions 0.11.0–0.11.6 are published on GitHub Pages. Version 0.12.0 is the mobile native-landscape entry fix under review in pull request #76, with the sculpted in-race 3D vehicle improvements being developed in the current follow-up PR. Neither set of 0.12.0 changes is claimed as live.
+Versions 0.11.0–0.11.6 were published on GitHub Pages; the in-race vehicle geometry was merged afterward in pull request #77. Version 0.14.0 remains a separate draft and is not claimed as live.
 
 ## Play the browser edition
 

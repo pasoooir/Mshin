@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const renderer = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
+const models = await readFile(new URL("../src/vehicle-showroom-3d.js", import.meta.url), "utf8");
 const game = await readFile(new URL("../src/web-game.js", import.meta.url), "utf8");
 
 test("the 3D renderer defines ten distinct player and AI vehicle silhouettes", () => {
@@ -17,8 +18,8 @@ test("garage cars have distinct proportions, wheel sizes and body styles", () =>
   assert.match(renderer, /lynx:\{width:1\.13,length:1,bodyY:1\.22/);
   assert.match(renderer, /thunder:\{width:1\.08,length:1\.06,bodyY:\.86/);
   assert.match(renderer, /raptor:\{width:1\.17,length:1\.04,bodyY:1\.12/);
-  assert.match(renderer, /p\.style==="pickup"/);
-  assert.match(renderer, /p\.style==="formula"/);
+  assert.match(models, /style:"pickup"/);
+  assert.match(models, /style:"formula"/);
 });
 
 test("vehicle meshes are cached per silhouette and released on renderer teardown", () => {
@@ -39,10 +40,10 @@ test("additional AI meshes are queued and uploaded progressively", () => {
   assert.match(renderer, /return carPartSets\.values\(\)\.next\(\)\.value/);
 });
 
-test("race-car body meshes include sculpted wheel arches and integrated fascia details", () => {
-  assert.match(renderer, /const p=VEHICLE_SHAPES\[id\].*fenders=\[\]/);
-  assert.match(renderer, /Sculpted wheel-arch lips/);
-  assert.match(renderer, /quad\(fenders,/);
-  assert.match(renderer, /Hood crown, shoulder creases, mirrors and functional-looking front fascia/);
-  assert.match(renderer, /part\(fenders,"#d83d37"\)/);
+test("race and showroom renderers consume the same sculpted race-car body meshes", () => {
+  assert.match(renderer, /buildVehicleGeometry\(id\)\.map/);
+  assert.match(models, /Deep wheel arches, flared fenders/);
+  assert.match(models, /quad\(trim,point\(p\.wheel\+8/);
+  assert.match(models, /Hood creases, front grille, intakes and LED signatures/);
+  assert.match(models, /multi-spoke alloys/);
 });

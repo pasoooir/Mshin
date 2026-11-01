@@ -1,5 +1,5 @@
 {
-  "version": "2026.11.01.08",
+  "version": "2026.11.01.10",
   "renderer": "cocos-graphics-vector",
   "preloadPolicy": "load-before-main-menu",
   "cars": {

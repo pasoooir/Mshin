@@ -121,9 +121,20 @@ try {
   assert.ok(firstWorldBounds && firstWorldBounds.width > 100 && firstWorldBounds.height > 100 && worldRailBounds && firstWorldBounds.x < worldRailBounds.x + worldRailBounds.width && firstWorldBounds.x + firstWorldBounds.width > worldRailBounds.x && firstWorldBounds.y < worldRailBounds.y + worldRailBounds.height && firstWorldBounds.y + firstWorldBounds.height > worldRailBounds.y && firstWorldStyle.display!=="none" && firstWorldStyle.visibility==="visible" && Number(firstWorldStyle.opacity)>0, "first world card must be visible inside the world rail: " + JSON.stringify({firstWorldBounds,worldRailBounds,firstWorldStyle}));
   assert.equal(await page.locator("#tabPanel-race").isVisible(), true, "race tab panel should be visible");
   await page.locator("#tab-cars").click();
-  assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five image-led vehicles");
+  assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five vehicle profiles");
   assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
-  assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-rally.svg", "showroom should display the selected starter car");
+  await page.waitForFunction(() => window.MshinVehicleShowroom?.status === "webgl-ready" && window.MshinVehicleShowroom.environmentMapReady === true && window.MshinVehicleShowroom.materialPipeline === "automotive-pbr-ggx-clearcoat" && window.MshinVehicleShowroom.frames > 0 && window.MshinVehicleShowroom.triangles > 1000, undefined, { timeout: 10000 });
+  const showroomBeforeDrag = await page.evaluate(() => ({ status: window.MshinVehicleShowroom.status, triangles: window.MshinVehicleShowroom.triangles, yaw: window.MshinVehicleShowroom.yaw, materialPipeline: window.MshinVehicleShowroom.materialPipeline, environmentMapReady: window.MshinVehicleShowroom.environmentMapReady }));
+  assert.equal(showroomBeforeDrag.status, "webgl-ready", "garage must render a real WebGL vehicle model");
+  assert.ok(showroomBeforeDrag.triangles > 1000, "3D showroom must submit detailed vehicle geometry");
+  assert.equal(showroomBeforeDrag.materialPipeline, "automotive-pbr-ggx-clearcoat", "showroom must compile the shared automotive PBR shader");
+  assert.equal(showroomBeforeDrag.environmentMapReady, true, "showroom must build its studio reflection environment");
+  const showroomBox = await page.locator("#showroomVehicle").boundingBox();
+  await page.mouse.move(showroomBox.x + showroomBox.width / 2, showroomBox.y + showroomBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(showroomBox.x + showroomBox.width / 2 + 70, showroomBox.y + showroomBox.height / 2 + 12, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForFunction(before => Math.abs(window.MshinVehicleShowroom.yaw - before) > .1, showroomBeforeDrag.yaw, { timeout: 3000 });
   await page.locator("#showroomRotate").click();
   assert.equal(await page.evaluate(() => window.MshinShowroom.spinCount), 1, "360-degree showroom spin should be interactive");
   assert.equal(await page.locator("#showroomSound").isVisible(), true, "showroom should expose an engine preview control");
@@ -156,7 +167,8 @@ try {
   await page.locator("#tab-cars").click();
   await page.getByRole("button", { name: /دنباله‌دار GT/ }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
-  assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
+  assert.equal(await page.locator("#showroomVehicle").evaluate(el => el.tagName), "CANVAS", "the selected vehicle should render in the real WebGL showroom");
+  await page.waitForFunction(() => window.MshinVehicleShowroom?.vehicle === "comet", undefined, { timeout: 5000 });
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "persistence reload");
@@ -197,6 +209,10 @@ try {
   }
   assert.equal(raceRequests.length, requestCountAtStart, "countdown and gameplay must not trigger late asset/network requests");
   assert.equal(await page.evaluate(() => window.MshinAudioReady), true, "all CDN engine and effect audio must decode before GO");
+  const racePbr = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, pipeline: window.Mshin3DRenderer?.materialPipeline, environmentMapReady: window.Mshin3DRenderer?.environmentMapReady }));
+  assert.equal(racePbr.status, "webgl-ready", "race renderer must compile and run its WebGL pipeline");
+  assert.equal(racePbr.pipeline, "automotive-pbr-ggx-clearcoat", "live race cars must use the shared automotive PBR shader");
+  assert.equal(racePbr.environmentMapReady, true, "live race renderer must have its studio reflection cubemap");
   const physicsCheck = await page.evaluate(async () => { const p = await import("./src/collision-physics.js"); const a={x:0,y:0,vx:300,vy:0,mass:1200,radius:32},b={x:64,y:0,vx:40,vy:0,mass:1000,radius:32}; const hit=p.resolveVehicleImpact(a,b); const damage=p.createDamageState(); p.applyVehicleDamage(damage,hit.energy,"rear"); return {hit:hit.hit,closing:hit.closingSpeed,rivalVelocity:b.vx,damage:damage.total,level:p.damageLevel(damage)}; });
   assert.equal(physicsCheck.hit,true,"browser should load collision impulse solver");
   assert.ok(physicsCheck.closing>0 && physicsCheck.rivalVelocity>40,"rear impact should transfer momentum");
@@ -386,6 +402,9 @@ try {
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
   const showroomCenter = { x: mobileShowroom.x + mobileShowroom.width/2, y: mobileShowroom.y + mobileShowroom.height/2 };
   await mobile.locator("#showroomVehicle").dispatchEvent("pointerdown", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y });
+  const dragMovesBeforeForeignPointer = await mobile.evaluate(()=>window.MshinShowroom.dragMoves||0);
+  await mobile.locator("#showroomVehicle").dispatchEvent("pointermove", { pointerId: 78, pointerType: "touch", clientX: showroomCenter.x + 40, clientY: showroomCenter.y + 35 });
+  assert.equal(await mobile.evaluate(()=>window.MshinShowroom.dragMoves||0),dragMovesBeforeForeignPointer,"showroom must ignore movement from a different pointer");
   await mobile.locator("#showroomVehicle").dispatchEvent("pointermove", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y + 35 });
   await mobile.locator("#showroomVehicle").dispatchEvent("pointerup", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y + 35 });
   await mobile.waitForTimeout(60);
