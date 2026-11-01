@@ -68,7 +68,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v52/);
+  assert.match(sw, /mshin-arcade-v53/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -192,7 +192,7 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v52/);
+  assert.match(sw, /mshin-arcade-v53/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.01.10");
   assert.equal(pkg.version, "0.15.1");
@@ -239,4 +239,11 @@ test("pickup collection uses swept vehicle motion and a physical capture radius"
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   assert.match(game, /sweptPickupContact\(previousPlayerPosition,pickupCurrentPosition/);
   assert.match(game, /const previousPlayerPosition=carPoint\(\)/);
+});
+
+test("first track pickup is reachable before the opening traffic pack", async () => {
+  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  assert.match(game, /t:i===0\?\.075:/, "the first pickup should be placed just ahead of the starting line");
+  assert.match(game, /lateral:i===0\?0:/, "the first pickup should align with the player's starting lane");
+  assert.match(game, /distance:\.32\+i\*\.22/, "the opening rival pack must leave a safe acceleration and pickup approach zone");
 });
