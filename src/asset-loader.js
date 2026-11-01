@@ -39,14 +39,16 @@ async function loadVector(asset) {
 }
 
 async function loadAudio(asset) {
+  // Large repository-bundled music tracks need a longer cold-cache window.
+  const timeoutMs = 20000;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 5000, asset.src);
+    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), timeoutMs, asset.src);
     if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
     const type = response.headers.get("content-type") || "";
-    if (!type.includes("audio/") && !/\.(mp3|ogg)(?:$|\?)/i.test(asset.src)) throw new Error(`Unexpected audio MIME type: ${type}`);
-    const bytes = await timeout(response.arrayBuffer(), 5000, asset.src);
+    if (!type.includes("audio/") && !/\.(wav|mp3|ogg)(?:$|\?)/i.test(asset.src)) throw new Error(`Unexpected audio MIME type: ${type}`);
+    const bytes = await timeout(response.arrayBuffer(), timeoutMs, asset.src);
     if ("caches" in window) { try { const cache = await caches.open("mshin-audio-assets-v1"); await cache.put(asset.src, new Response(bytes.slice(0), { headers: { "Content-Type": type || asset.type || "application/octet-stream", "Cache-Control": "public, max-age=31536000" } })); } catch {} }
     return bytes;
   } finally { clearTimeout(timer); }
