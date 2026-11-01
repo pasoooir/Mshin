@@ -67,10 +67,15 @@ test("available braking deceleration scales monotonically with surface grip",()=
  assert.equal(resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:false,grip:.55,deltaSeconds:1/60}).brakingDeceleration,0);
 });
 
-test("braking never drives the simulated speed below zero",()=>{
+test("braking integrates with the fixed simulation step and never reverses the car",()=>{
  let speed=12;
- const response=resolveTireForces({speed,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:.35,deltaSeconds:1/60});
- speed=Math.max(0,speed-response.brakingDeceleration*1);
+ const dt=1/60;
+ for(let frame=0;frame<120;frame++){
+  const response=resolveTireForces({speed,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:.35,deltaSeconds:dt});
+  speed=Math.max(0,speed-response.brakingDeceleration*dt);
+  assert.ok(speed>=0);
+  if(speed===0)break;
+ }
  assert.equal(speed,0);
 });
 
@@ -98,4 +103,12 @@ test("drive acceleration scales with available road grip",()=>{
 test("invalid traction inputs remain finite and safe",()=>{
  assert.equal(resolveLongitudinalAcceleration({requestedAcceleration:NaN,grip:NaN}),0);
  assert.equal(resolveLongitudinalAcceleration({requestedAcceleration:260,grip:.1}),91);
+});
+
+
+test("longitudinal traction stays bounded and monotonic across the supported grip range",()=>{
+ const grips=[.35,.5,.68,.86,1,1.08,1.15];
+ const accelerations=grips.map(grip=>resolveLongitudinalAcceleration({requestedAcceleration:300,grip}));
+ for(let i=1;i<accelerations.length;i++)assert.ok(accelerations[i]>=accelerations[i-1]);
+ assert.ok(accelerations.every(value=>Number.isFinite(value)&&value>=0&&value<=345));
 });
