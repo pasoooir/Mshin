@@ -12,7 +12,7 @@ export function calculateRaceSteering({ lateral = 0, targetLateral = 0, yaw = 0,
   const safeCurvature = Number.isFinite(trackCurvature) ? trackCurvature : 0;
   const safeLateralVelocity = Number.isFinite(lateralVelocity) ? lateralVelocity : 0;
   const curveCompensation = Math.atan(safeCurvature * 128) / 0.48;
-  const correction = curveCompensation - ((safeLateral - safeTargetLateral) / 300) - (safeYaw * 0.3) - (safeLateralVelocity / 800);
-  const steering = clamp(correction, -0.65, 0.65);
+  const correction = curveCompensation - ((safeLateral - safeTargetLateral) / 800) - (safeYaw * 0.22) - (safeLateralVelocity / 1200);
+  const steering = clamp(correction, -0.42, 0.42);
   return Math.abs(steering) < 0.035 ? 0 : steering;
 }
