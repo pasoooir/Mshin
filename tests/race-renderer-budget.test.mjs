@@ -30,7 +30,8 @@ test("WebGL geometry upload avoids per-triangle temporary arrays", () => {
   assert.match(uploader, /Math\.hypot\(nx0,ny0,nz0\)/);
   assert.doesNotMatch(uploader, /triangles\.slice|\.map\(|\.push\(/,
     "geometry upload must not allocate temporary vertex arrays per triangle");
-  assert.match(source, /state\\.trackBuildMs=performance\\.now\\(\\)-trackBuildStarted/,\n    "total incremental track construction time must be exposed for browser profiling");
+  assert.match(source, /state\.trackBuildMs=performance\.now\(\)-trackBuildStarted/,
+    "total incremental track construction time must be exposed for browser profiling");
 });
 
 test("track geometry is assembled in bounded frame-sized phases", () => {
