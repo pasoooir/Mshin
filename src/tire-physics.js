@@ -42,11 +42,11 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const requestedCorneringAcceleration=Math.abs(v*requestedYawRate);
  const corneringScale=Math.min(1,availableLateral/Math.max(.001,requestedCorneringAcceleration));
 
- // Relaxation toward a speed-dependent lateral velocity gives the chassis
- // progressive slip instead of an instantaneous, arcade-like lane snap.
- const targetLateralVelocity=steering*Math.min(150,v*.42)/Math.max(.65,surfaceGrip);
- const steeringResponse=1-Math.exp(-dt*(Math.abs(steering)<.001?7:5.5)*steeringScale);
- const requestedLateralAcceleration=(targetLateralVelocity-lateral)*steeringResponse/Math.max(dt,.001);
+ // Steering changes chassis yaw; lateral velocity is reserved for actual
+ // sideslip from impacts and tyre slip. It must not be a permanent sideways
+ // command, otherwise a steady turn would push the car off the road.
+ const lateralDamping=5.5*steeringScale;
+ const requestedLateralAcceleration=-lateral*lateralDamping;
  const lateralAcceleration=clamp(requestedLateralAcceleration,-availableLateral,availableLateral);
  const slipAngle=Math.atan2(lateral,Math.max(v,1));
 
@@ -55,7 +55,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const slipCorrection=slipAngle*1.1*clamp((v-70)/100,0,1)/(rearGripScale*yawInertiaScale*rearStabilityScale);
  const yawLimit=availableLateral/Math.max(v,1);
  const yawRateTarget=clamp(requestedYawRate*corneringScale+slipCorrection,-yawLimit,yawLimit);
- const lateralScale=Math.min(1,availableLateral/Math.max(.001,Math.abs(requestedLateralAcceleration)));
+ const lateralScale=Math.min(1,availableLateral/Math.max(.001,Math.abs(requestedLateralAcceleration)));\n const corneringAcceleration=Math.abs(v*yawRateTarget);\n const combinedLateralDemand=Math.min(capacity*.98,Math.hypot(lateralAcceleration,corneringAcceleration));
  return {
   lateralAcceleration,
   yawRateTarget,
