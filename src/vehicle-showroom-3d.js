@@ -97,10 +97,10 @@ export function buildVehicleGeometry(id){
  // Carbon brake vents, mirrors, race number plates and subtle pinstriping.
  box(decals,0,36*h,0,15,1,12);
  return [
-  {vertices:body,paint:p.paint,metal:.32,emissive:0},{vertices:glass,paint:"#122d42",metal:.7,emissive:.02},
-  {vertices:trim,paint:"#aebbc5",metal:.72,emissive:0},{vertices:rubber,paint:"#11151a",metal:.05,emissive:0},
-  {vertices:rims,paint:"#dce6ed",metal:.92,emissive:.01},{vertices:lights,paint:"#eafcff",metal:.15,emissive:.32},
-  {vertices:aero,paint:"#202b35",metal:.6,emissive:0},{vertices:decals,paint:p.accent,metal:.24,emissive:.01}
+  {vertices:body,paint:p.paint,material:"body",emissive:0},{vertices:glass,paint:"#122d42",material:"glass",emissive:.02},
+  {vertices:trim,paint:"#aebbc5",material:"trim",emissive:0},{vertices:rubber,paint:"#11151a",material:"rubber",emissive:0},
+  {vertices:rims,paint:"#dce6ed",material:"rims",emissive:.01},{vertices:lights,paint:"#eafcff",material:"lights",emissive:.32},
+  {vertices:aero,paint:"#202b35",material:"aero",emissive:0},{vertices:decals,paint:p.accent,material:"decals",emissive:.01}
  ];
 }
 function buildVehicle(gl,id){return buildVehicleGeometry(id).map(item=>mesh(gl,item.vertices,item.paint,item.material,item.emissive));}
@@ -128,8 +128,8 @@ export function createVehicleShowroom(canvas){
   const aspect=width/Math.max(1,height),projection=perspective(.68,aspect,.1,900),distance=225;
   const eye=[Math.sin(yaw)*Math.cos(state.pitch)*distance,Math.sin(state.pitch)*distance+57,Math.cos(yaw)*Math.cos(state.pitch)*distance];
   const view=lookAt(eye,[0,31,0],[0,1,0]),mvp=multiply(projection,view);
-  gl.uniformMatrix4fv(locations.mvp,false,mvp);let triangles=0;
-  for(const item of parts){gl.bindBuffer(gl.ARRAY_BUFFER,item.buffer);gl.enableVertexAttribArray(locations.position);gl.vertexAttribPointer(locations.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(locations.normal);gl.vertexAttribPointer(locations.normal,3,gl.FLOAT,false,24,12);gl.uniform3fv(locations.color,item.color);gl.uniform1f(locations.metal,item.metal);gl.uniform1f(locations.emissive,item.emissive);gl.drawArrays(gl.TRIANGLES,0,item.count);triangles+=item.count/3}
+  gl.uniformMatrix4fv(locations.mvp,false,mvp);gl.uniformMatrix4fv(locations.model,false,identity);gl.uniform3f(locations.camera,eye[0],eye[1],eye[2]);gl.uniform3f(locations.light,-.45,.88,.35);gl.uniform3f(locations.lightColor,4.2,3.9,3.55);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(locations.env,0);let triangles=0;
+  for(const item of parts){gl.bindBuffer(gl.ARRAY_BUFFER,item.buffer);gl.enableVertexAttribArray(locations.position);gl.vertexAttribPointer(locations.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(locations.normal);gl.vertexAttribPointer(locations.normal,3,gl.FLOAT,false,24,12);gl.uniform3fv(locations.color,item.color);gl.uniform1f(locations.metal,item.metallic);gl.uniform1f(locations.roughness,item.roughness);gl.uniform1f(locations.clearcoat,item.clearcoat);gl.uniform1f(locations.kind,item.kind);gl.uniform1f(locations.emissive,item.emissive);gl.drawArrays(gl.TRIANGLES,0,item.count);triangles+=item.count/3}
   state.triangles=triangles;
  };
  raf=requestAnimationFrame(draw);
