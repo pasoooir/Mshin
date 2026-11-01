@@ -129,9 +129,8 @@
 .showroomStage{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(190px,1fr) minmax(190px,.82fr);align-items:center;gap:16px;min-height:clamp(170px,25vh,230px);padding:12px 18px;border:1px solid #9de9ff35;border-radius:18px;overflow:hidden;background:radial-gradient(ellipse at 30% 48%,#386b8b88,#142c45 52%,#081626 100%);box-shadow:inset 0 1px #fff3,0 14px 28px #0005}
 .showroomSpotlight{position:absolute;z-index:-1;left:14%;top:-80%;width:42%;height:220%;background:linear-gradient(90deg,transparent,#a5edff18,transparent);transform:rotate(24deg);filter:blur(8px);animation:showroomLight 7s ease-in-out infinite alternate}
 .showroomFloor{position:absolute;z-index:-1;left:4%;bottom:12%;width:54%;height:22%;border-radius:50%;background:radial-gradient(ellipse,#6beaff55 0%,#4b9dc033 38%,transparent 72%);filter:blur(12px)}
-.showroomVehicle{position:relative;display:grid;place-items:center;min-width:0;height:clamp(145px,22vh,205px);perspective:850px;touch-action:none;cursor:grab;user-select:none}
+.showroomVehicle{position:relative;display:block;min-width:0;width:100%;max-width:430px;justify-self:center;height:clamp(145px,22vh,205px);touch-action:none;cursor:grab;user-select:none;outline:none;background:radial-gradient(ellipse at 50% 76%,#75dfff20,transparent 60%)}
 .showroomVehicle:active{cursor:grabbing}
-.showroomVehicle{width:100%;max-width:430px;justify-self:center;display:block;outline:none;background:radial-gradient(ellipse at 50% 76%,#75dfff20,transparent 60%)}
 .showroomVehicle:focus-visible{outline:2px solid #7ce8ff;outline-offset:4px;border-radius:14px}
 .showroomInfo{display:grid;gap:5px;align-content:center;text-align:right;min-width:0}
 .showroomEyebrow{font-size:8px;font-weight:1000;letter-spacing:2px;color:#7ce8ff}
@@ -142,8 +141,8 @@
 .showroomActions button:disabled{opacity:.45}
 .showroomHint{font-size:9px!important;color:#8caac5!important}
 @keyframes showroomLight{from{transform:translateX(-24%) rotate(24deg);opacity:.45}to{transform:translateX(34%) rotate(24deg);opacity:1}}
-@media(max-width:700px){.showroomStage{grid-template-columns:1fr;gap:2px;min-height:0;padding:8px 12px}.showroomVehicle{height:clamp(105px,17vh,145px)} .showroomVehicle{width:100%;max-width:340px}.showroomInfo{text-align:center;gap:3px}.showroomActions{justify-content:center;margin-top:4px}.showroomActions button{font-size:9px;padding:7px 9px}.showroomHint{display:none}.showroomEyebrow{font-size:7px}}
-@media(prefers-reduced-motion:reduce){.showroomSpotlight{animation:none}.showroomVehicle.is-spinning img{animation:none!important;transform:rotateY(12deg)}}
+@media(max-width:700px){.showroomStage{grid-template-columns:1fr;gap:2px;min-height:0;padding:8px 12px}.showroomVehicle{height:clamp(105px,17vh,145px);max-width:340px}.showroomInfo{text-align:center;gap:3px}.showroomActions{justify-content:center;margin-top:4px}.showroomActions button{font-size:9px;padding:7px 9px}.showroomHint{display:none}.showroomEyebrow{font-size:7px}}
+@media(prefers-reduced-motion:reduce){.showroomSpotlight{animation:none}}
 
 /* Readable Persian typography and landscape-first game menu */
 :root{font-family:Tahoma,"Vazirmatn",Arial,sans-serif}
