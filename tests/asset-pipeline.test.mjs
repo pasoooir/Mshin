@@ -103,11 +103,15 @@ test("Cocos runtime menus use the Mshin motorsport visual system", async () => {
   assert.doesNotMatch(cocos, /g\.fillColor=hex\("#F8C84E"\);g\.roundRect\(-w\/2/);
 });
 
-test("photographic world scenes are repository-bundled before the race runtime", async () => {
+test("photographic world scenes load progressively without blocking the mobile boot", async () => {
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const cocos = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
-  assert.match(loader, /scenes: Object\.fromEntries/);
+  assert.match(loader, /scenes: sceneMap/);
+  assert.match(loader, /audioPromise/);
+  assert.match(loader, /ensureScene/);
+  assert.match(loader, /scenesReady/);
+  assert.match(loader, /const critical = \[\.\.\.manifest\.worlds, \.\.\.manifest\.cars, \.\.\.\(manifest\.icons \|\| \[\]\)\]/);
   assert.match(game, /sceneArt/);
   assert.match(game, /\)\*\.96/);
   assert.match(game, /,-36,-54,72,108/);
