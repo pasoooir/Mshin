@@ -41,7 +41,9 @@ function hexColor(value){const h=String(value||"#e94f45").replace("#","");return
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
 export function createRaceRenderer(canvas){
  const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",error:null};
- let gl,program,uniforms,attributes,road=null,decor=[],carParts=[],lastStage=-1,lastSize="",lost=false;\n  const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);\n  let cameraEye=null,cameraTarget=null,lastRenderAt=0;
+ let gl,program,uniforms,attributes,road=null,decor=[],carParts=[],lastStage=-1,lastSize="",lost=false;
+  const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
+  let cameraEye=null,cameraTarget=null,lastRenderAt=0;
  try{
   gl=canvas.getContext("webgl",{alpha:false,antialias:!mobile,depth:true,powerPreference:"high-performance",preserveDrawingBuffer:false})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable on this device");
