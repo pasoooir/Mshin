@@ -271,7 +271,7 @@ try {
     y: pickupSteeringBox.y + pickupSteeringBox.height / 2
   };
   const pickupSteerLimit = Math.max(1, (pickupSteeringBox.width - 58) / 2);
-  const pickupSteerRaw = 0.07 + 0.93 * Math.pow(0.3, 1 / 1.28);
+  const pickupSteerRaw = 0.07 + 0.93 * Math.pow(0.5, 1 / 1.28);
   await page.mouse.move(pickupSteerCenter.x, pickupSteerCenter.y);
   await page.mouse.down();
   await page.mouse.move(pickupSteerCenter.x + pickupSteerLimit * pickupSteerRaw, pickupSteerCenter.y, { steps: 4 });
@@ -279,7 +279,7 @@ try {
   await page.waitForTimeout(2400);
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
   try {
-    // Maintain a modest right-hand steering input as well as throttle so the
+    // Maintain a controlled right-hand steering input as well as throttle so the
     // vehicle follows the oval's curvature and physically intersects a pickup.
     await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 15000 });
   } catch (error) {
