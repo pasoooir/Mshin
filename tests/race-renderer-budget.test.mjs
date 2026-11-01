@@ -20,3 +20,16 @@ test("the scene keeps its full road width while reducing mesh density", () => {
   assert.ok(source.includes("quad(roadTris,l0,l1,r1,r0)"),
     "the asphalt remains a continuous closed road ribbon");
 });
+
+test("WebGL geometry upload avoids per-triangle temporary arrays", () => {
+  const start = source.indexOf("function makeGeometry(gl,triangles)");
+  const end = source.indexOf("\n function tri(", start);
+  assert.ok(start >= 0 && end > start, "geometry uploader must remain a named local helper");
+  const uploader = source.slice(start, end);
+  assert.match(uploader, /new Float32Array\(vertexCount\*6\)/);
+  assert.match(uploader, /Math\.hypot\(nx0,ny0,nz0\)/);
+  assert.doesNotMatch(uploader, /triangles\.slice|\.map\(|\.push\(/,
+    "geometry upload must not allocate temporary vertex arrays per triangle");
+  assert.match(source, /state\.trackBuildMs=performance\.now\(\)-buildStarted/,
+    "track construction cost must be exposed for browser profiling");
+});
