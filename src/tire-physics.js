@@ -47,6 +47,9 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
   lateralScale,
   corneringScale,
   longitudinalDemand,
+  // Longitudinal braking remains calibrated in game speed-units; grip scales
+  // the available deceleration while preserving the dry-road baseline.
+  brakingDeceleration:brake?470*surfaceGrip:0,
   frictionUtilization:Math.min(1,Math.hypot(longitudinalDemand,lateralAcceleration)/Math.max(capacity,.001))
  };
 }
