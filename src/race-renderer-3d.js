@@ -40,7 +40,7 @@ function cylinder(out,x,y,z,r,depth,segments=12){for(let i=0;i<segments;i++){con
 function hexColor(value){const h=String(value||"#e94f45").replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>Number.isFinite(v)?v:1)}
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
 export function createRaceRenderer(canvas){
- const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",error:null};
+ const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",error:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
  let gl,program,uniforms,attributes,road=null,decor=[],carParts=[],lastStage=-1,lastSize="",lost=false;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0;
@@ -54,7 +54,7 @@ export function createRaceRenderer(canvas){
  function part(tris,color,emissive=0){return {mesh:makeGeometry(gl,tris),color:hexColor(color),emissive}}
  function buildTrack(snapshot){
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
-  const segments=mobile?180:360,half=180;
+  const segments=mobile?112:360,half=180;
   for(let i=0;i<segments;i++){
    const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,(f.height||0)+y,-(f.p.y+f.ny*offset)];
@@ -67,20 +67,20 @@ export function createRaceRenderer(canvas){
   }
   road=part(roadTris,theme[1]);decor=[part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0])];
   const trees=[],buildings=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[];
-  for(let i=0;i<(mobile?42:70);i++){const t=i/70*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
+  for(let i=0;i<(mobile?24:70);i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
    if((snapshot.world||0)===4||(snapshot.world||0)===8){box(buildings,x,48,z,44+(i%3)*16,95+(i%4)*32,42);box(buildings,x,100+(i%4)*32,z,48+(i%3)*16,5,46)}
    else{box(trees,x,(f.height||0)+18,z,9,36,9);const cone=[];const baseY=(f.height||0)+22,rad=24+(i%3)*7,top=(f.height||0)+74+(i%4)*8;for(let j=0;j<8;j++){const aa=j/8*Math.PI*2,bb=(j+1)/8*Math.PI*2;tri(cone,[x+Math.cos(aa)*rad,baseY,z+Math.sin(aa)*rad],[x+Math.cos(bb)*rad,baseY,z+Math.sin(bb)*rad],[x,top,z])}trees.push(...cone)}
   }
   decor.push(part(trees,theme[3]),part(buildings,(snapshot.world||0)===4?"#5c4d85":"#747b82"));
-  for(let i=0;i<360;i+=(mobile?8:4)){
+  for(let i=0;i<360;i+=(mobile?12:4)){
    const a=i/360*Math.PI*2,b=(i+1)/360*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    for(const side of [-1,1]){
     const offset=side*(half+15),p0=[fa.p.x+fa.nx*offset,(fa.height||0)+12,-(fa.p.y+fa.ny*offset)],p1=[fb.p.x+fb.nx*offset,(fb.height||0)+12,-(fb.p.y+fb.ny*offset)],q0=[p0[0],p0[1]+19,p0[2]],q1=[p1[0],p1[1]+19,p1[2]];
     quad(railTris,p0,p1,q1,q0);
    }
   }
-  for(let i=0;i<(mobile?30:54);i++){
-   const t=(i+.5)/54*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,offset=238+(i%4)*13,x=f.p.x+f.nx*side*offset,z=-(f.p.y+f.ny*side*offset),base=f.height||0;
+  for(let i=0;i<(mobile?16:54);i++){
+   const t=(i+.5)/(mobile?16:54)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,offset=238+(i%4)*13,x=f.p.x+f.nx*side*offset,z=-(f.p.y+f.ny*side*offset),base=f.height||0;
    box(crowdBodies,x,base+27,z,11,20,8);box(crowdBodies,x-7,base+27,z,5,17,5);box(crowdBodies,x+7,base+27,z,5,17,5);
    box(crowdHeads,x,base+43,z,9,9,9);box(crowdLegs,x-3,base+12,z,5,13,6);box(crowdLegs,x+3,base+12,z,5,13,6);
   }
@@ -95,7 +95,7 @@ export function createRaceRenderer(canvas){
   for(const x of [-37,37])for(const z of [-37,38]){cylinder(wheels,x,13,z,13,9,14);cylinder(trim,x+(x<0?-9:9),13,z,7,2,12)}
   carParts=[part(body,"#e94f45"),part(glass,"#8bd7ed"),part(trim,"#e7e9e9"),part(wheels,"#171c23")];
  }
- function resize(){const portrait=matchMedia("(orientation: portrait)").matches;const cssWidth=portrait?innerHeight:innerWidth,cssHeight=portrait?innerWidth:innerHeight;const dpr=Math.min(devicePixelRatio||1,mobile?1:1.5),w=Math.max(1,Math.round(cssWidth*dpr)),h=Math.max(1,Math.round(cssHeight*dpr)),key=w+"x"+h;if(key===lastSize)return;lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}
+ function resize(){const portrait=matchMedia("(orientation: portrait)").matches;const cssWidth=portrait?innerHeight:innerWidth,cssHeight=portrait?innerWidth:innerHeight;const dpr=Math.min(devicePixelRatio||1,mobile?.78:1.5),w=Math.max(1,Math.round(cssWidth*dpr)),h=Math.max(1,Math.round(cssHeight*dpr)),key=w+"x"+h;if(key===lastSize)return;lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);state.quality={mobile,pixelRatio:dpr,detail:mobile?"mobile-balanced":"high",width:w,height:h}}
  function drawPart(p,vp,model){gl.uniformMatrix4fv(uniforms.model,false,model);gl.uniformMatrix4fv(uniforms.mvp,false,mul(vp,model));gl.uniform3fv(uniforms.color,p.color);gl.uniform1f(uniforms.emissive,p.emissive);gl.bindBuffer(gl.ARRAY_BUFFER,p.mesh.buffer);gl.enableVertexAttribArray(attributes.position);gl.vertexAttribPointer(attributes.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);gl.drawArrays(gl.TRIANGLES,0,p.mesh.count);state.triangles+=p.mesh.count/3}
  function drawVehicle(t,lateral,yaw,color,damage=0,kind="car",snapshot){
   const f=snapshot.frameAt(t),x=f.p.x+f.nx*lateral,z=-(f.p.y+f.ny*lateral),heading=-(f.angle+yaw);
@@ -110,12 +110,12 @@ export function createRaceRenderer(canvas){
   if(!carParts.length)buildCar();
   const f=snapshot.frameAt(snapshot.player.t),x=f.p.x+f.nx*snapshot.player.lateral,z=-(f.p.y+f.ny*snapshot.player.lateral),angle=f.angle+snapshot.player.yaw;
   const roadHeight=f.height||0;const desiredEye=[x-Math.cos(angle)*270,roadHeight+155,z+Math.sin(angle)*270],desiredTarget=[x+Math.cos(angle)*250,roadHeight+20,z-Math.sin(angle)*250];
-  const now=performance.now(),cameraDt=lastRenderAt?Math.min((now-lastRenderAt)/1000,.1):1/60;lastRenderAt=now;const follow=1-Math.exp(-cameraDt/.11);
+  const now=performance.now(),cameraDt=lastRenderAt?Math.min((now-lastRenderAt)/1000,mobile?.05:.1):1/60;lastRenderAt=now;const follow=1-Math.exp(-cameraDt/(mobile?.16:.11));
   if(!cameraEye){cameraEye=desiredEye.slice();cameraTarget=desiredTarget.slice()}else{for(let i=0;i<3;i++){cameraEye[i]+=(desiredEye[i]-cameraEye[i])*follow;cameraTarget[i]+=(desiredTarget[i]-cameraTarget[i])*follow}}
   const projection=perspective(Math.PI/3.15,canvas.width/Math.max(1,canvas.height),1,7000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);state.triangles=0;
   drawPart(road,vp,translate(0,0,0));for(const p of decor)drawPart(p,vp,translate(0,0,0));
-  snapshot.rivals.forEach(r=>{if(!r.despawned)drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage||0,r.type,snapshot)});
+  const playerT=snapshot.player.t,visibleRivals=snapshot.rivals.filter(r=>!r.despawned).map(r=>({...r,renderDistance:Math.abs(Math.atan2(Math.sin(r.distance-playerT),Math.cos(r.distance-playerT)))})).filter(r=>r.renderDistance<.72).sort((a,b)=>a.renderDistance-b.renderDistance).slice(0,mobile?4:7);visibleRivals.forEach(r=>drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage||0,r.type,snapshot));
   drawVehicle(snapshot.player.t,snapshot.player.lateral,snapshot.player.yaw,snapshot.player.color,snapshot.player.damage,"player",snapshot);
   state.frames++;state.stageId=snapshot.stageId;state.playerPosition={x,z};state.camera="perspective-chase";
  }
