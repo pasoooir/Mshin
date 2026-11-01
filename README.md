@@ -1,9 +1,9 @@
 ## Version 0.14.0 — true 3D 360-degree vehicle showroom (under review)
 
 - Replaced the garage's flat SVG image and CSS perspective rotation with an actual WebGL vehicle model rendered on a canvas.
-- Added five locally generated vehicle profiles with sculpted body sections, glazed cockpit, wheel arches, flared fenders, alloy wheels, brake details, lights, mirrors, side skirts, splitters and racing aero.
+- Added five garage profiles plus five distinct AI race-car profiles, all generated locally from one shared model builder with sculpted body sections, glazed cockpit, wheel arches, flared fenders, alloy wheels, brake details, lights, mirrors, side skirts, splitters and racing aero.
 - Touch/mouse dragging now orbits a real 3D camera around the vehicle; the 360-degree button performs a full camera orbit rather than rotating a flat image.
-- The showroom renderer is repository-local and precached for offline use. No runtime model CDN is required.
+- The same generated vehicle meshes are used by both the 360-degree garage and the live race renderer, so the selected car no longer changes shape between showroom and gameplay. The renderer is repository-local and precached for offline use. No runtime model CDN is required.
 - Browser and device validation are required before this draft can be considered complete.
 
 ## Version 0.12.0 — sculpted in-race 3D vehicle (merged)
