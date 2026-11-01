@@ -48,3 +48,8 @@ test("WebGL context restoration recreates the shader pipeline and invalidated st
   assert.match(renderer, /road=null;decor=\[\];carParts=\[\];lastStage=-1;lastSize=""/);
   assert.match(renderer, /state\.status="webgl-ready";state\.error=null/);
 });
+
+test("WebGL program creation releases temporary compiled shader objects", () => {
+  assert.match(renderer, /function makeProgram\(gl\)\{[\s\S]*?gl\.detachShader\(p,vertex\);gl\.detachShader\(p,fragment\);gl\.deleteShader\(vertex\);gl\.deleteShader\(fragment\)/);
+  assert.match(renderer, /catch\(error\)\{[\s\S]*?gl\.deleteProgram\(p\)[\s\S]*?gl\.deleteShader\(vertex\)[\s\S]*?gl\.deleteShader\(fragment\)/);
+});
