@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { stepVehicleDynamics } from "../src/vehicle-dynamics.js";
 
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
 const frameAt = t => ({
   p: { x: Math.cos(t) * 1000, y: Math.sin(t) * 700 },
   nx: -Math.cos(t),
