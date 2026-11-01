@@ -55,3 +55,21 @@ test("zero delta time remains finite and produces no force demand",()=>{
  assert.ok(Number.isFinite(response.yawRateTarget));
  assert.equal(response.lateralAcceleration,0);
 });
+
+
+test("available braking deceleration scales monotonically with surface grip",()=>{
+ const dry=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
+ const wet=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:.86,deltaSeconds:1/60});
+ const ice=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:.55,deltaSeconds:1/60});
+ assert.equal(dry.brakingDeceleration,470);
+ assert.ok(wet.brakingDeceleration<dry.brakingDeceleration);
+ assert.ok(ice.brakingDeceleration<wet.brakingDeceleration);
+ assert.equal(resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:false,grip:.55,deltaSeconds:1/60}).brakingDeceleration,0);
+});
+
+test("braking never drives the simulated speed below zero",()=>{
+ let speed=12;
+ const response=resolveTireForces({speed,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:.35,deltaSeconds:1/60});
+ speed=Math.max(0,speed-response.brakingDeceleration*1);
+ assert.equal(speed,0);
+});
