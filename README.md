@@ -41,11 +41,11 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 This branch introduces a native, repository-local WebGL perspective renderer for the active race scene. During countdown and gameplay, the browser now renders a perspective chase-camera view with a generated 3D road surface, shoulders, lane markings, three-dimensional roadside geometry, and mesh-based player/rival vehicles. The 2D game simulation remains the source of truth for vehicle motion, traffic, collisions, damage, pickups, race progression, and controls; the new renderer consumes that live state rather than replacing the gameplay physics. The renderer is bundled locally and precached by the service worker, with no runtime CDN dependency. This is the first migration milestone, not a claim that every legacy visual/effect has already been ported to 3D; minimap, weather overlays, particle effects, and full 3D damage deformation remain follow-up work.
 
-## Latest published release on main: 0.11.4 — true 3D racing and mobile performance
+## Latest published release on main: 0.11.5 — true 3D racing and mobile performance
 
-The 3D-rendering release 0.11.4 is merged into main. Its merged-main validation and GitHub Pages deployment workflows completed successfully. It introduces the native WebGL perspective race renderer, faster vehicle acceleration and top speed, fixed-step simulation, adaptive mobile rendering quality, and service-worker cache `mshin-arcade-v41`.
+Version 0.11.5 is merged into main. Its validation and GitHub Pages deployment workflows completed successfully. It includes the native WebGL perspective race renderer, optimized rival rendering, faster vehicle acceleration and top speed, fixed-step simulation, adaptive mobile rendering quality, and service-worker cache `mshin-arcade-v42`.
 
-Versions 0.11.0–0.11.4 are published on GitHub Pages. Version 0.11.5 is the next development update in pull request #73 and is not yet published.
+Versions 0.11.0–0.11.5 are published on GitHub Pages. Version 0.11.6 is the next development update in pull request #75 and is not yet published.
 
 ## Play the browser edition
 
