@@ -1,3 +1,11 @@
+## Version 0.11.7 — native mobile landscape entry fix
+
+- Fixed the mobile orientation-lock timing: the old one-shot touch handler attempted to lock landscape on the first menu tap, before fullscreen was entered, then never retried.
+- The explicit Start Race gesture now enters fullscreen first and requests the native landscape orientation while the browser still has user activation.
+- Retains the CSS software-landscape fallback on browsers that deny fullscreen or orientation locking.
+- Added orientation-change resize synchronization and advanced the offline cache to `mshin-arcade-v44`.
+- Updated runtime marker to `2026.11.01.07`.
+
 ## Version 0.11.5 — 3D traffic rendering hotfix
 
 - Replaced per-frame rival object allocation and full sorting with reusable scratch arrays and bounded insertion of only the nearest visible opponents.
