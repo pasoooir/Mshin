@@ -49,11 +49,11 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 This branch introduces a native, repository-local WebGL perspective renderer for the active race scene. During countdown and gameplay, the browser now renders a perspective chase-camera view with a generated 3D road surface, shoulders, lane markings, three-dimensional roadside geometry, and mesh-based player/rival vehicles. The 2D game simulation remains the source of truth for vehicle motion, traffic, collisions, damage, pickups, race progression, and controls; the new renderer consumes that live state rather than replacing the gameplay physics. The renderer is bundled locally and precached by the service worker, with no runtime CDN dependency. This is the first migration milestone, not a claim that every legacy visual/effect has already been ported to 3D; minimap, weather overlays, particle effects, and full 3D damage deformation remain follow-up work.
 
-## Latest published release on main: 0.11.6 — visible WebGL race scene
+## Latest published release on main: 0.11.7 — visible WebGL race scene
 
 Version 0.11.6 is merged into main. Browser smoke, core validation, and GitHub Pages deployment completed successfully. It fixes the WebGL program binding that previously left the race view showing only the clear-color background and advances the service-worker cache to `mshin-arcade-v43`.
 
-Versions 0.11.0–0.11.6 are published on GitHub Pages. Version 0.11.7 is the mobile native-landscape entry fix under review in pull request #76.
+Versions 0.11.0–0.11.7 are published on GitHub Pages. Version 0.12.0 is under review in the current pull request.
 
 ## Play the browser edition
 
