@@ -10,6 +10,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const v=Number.isFinite(speed)?Math.max(0,speed):0;
  const lateral=Number.isFinite(lateralVelocity)?lateralVelocity:0;
  const steering=clamp(Number.isFinite(steer)?steer:0,-1,1);
+ const throttleInput=pedalInput(throttle),brakeInput=pedalInput(brake);
  const dt=clamp(Number.isFinite(deltaSeconds)?deltaSeconds:0,0,.1);
  const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.35);
  // Existing vehicle mass values also drive collision response. Use the same
@@ -24,14 +25,14 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  // Longitudinal load transfer changes the rear axle's normal-load share.
  // Positive values move load forward under braking; throttle moves it rearward.
  // The fractions are normalized axle-load shifts, not vehicle mass units.
- const weightTransferFraction=brake?.14:throttle?-.06:0;
+ const weightTransferFraction=brakeInput*.14-throttleInput*.06;
  const rearAxleLoadFraction=clamp(.5-weightTransferFraction,.32,.68);
  const rearGripScale=Math.sqrt(rearAxleLoadFraction/.5);
  const capacity=320*surfaceGrip*rearGripScale;
  // Only the rear share of braking force is charged to this rear-axle budget;
  // the front axle carries the larger share under normal brake bias.
  const rearBrakeBias=.4;
- const longitudinalDemand=brake?65*rearBrakeBias:(throttle?30:0);
+ const longitudinalDemand=brakeInput*65*rearBrakeBias+throttleInput*30;
  const availableLateral=Math.sqrt(Math.max(0,capacity*capacity-longitudinalDemand*longitudinalDemand));
 
  // Bicycle-model steering: yaw rate follows speed, steering angle and wheelbase.
@@ -79,7 +80,9 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
   longitudinalDemand,
   // Longitudinal braking remains calibrated in game speed-units; grip scales
   // the available deceleration while preserving the dry-road baseline.
-  brakingDeceleration:brake?470*surfaceGrip*Math.sqrt(Math.max(0,1-(combinedLateralDemand/Math.max(capacity,.001))**2)):0,
+  brakingDeceleration:brakeInput*470*surfaceGrip*Math.sqrt(Math.max(0,1-(combinedLateralDemand/Math.max(capacity,.001))**2)),
+  throttleInput,
+  brakeInput,
   frictionUtilization:Math.min(1,Math.hypot(longitudinalDemand,combinedLateralDemand)/Math.max(capacity,.001))
  };
 }
