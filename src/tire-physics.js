@@ -76,6 +76,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
   yawResponse:2.5*rearStabilityScale/yawInertiaScale,
   lateralScale,
   corneringScale,
+  corneringUtilization:Math.min(.98,combinedLateralDemand/Math.max(capacity,.001)),
   longitudinalDemand,
   // Longitudinal braking remains calibrated in game speed-units; grip scales
   // the available deceleration while preserving the dry-road baseline.
