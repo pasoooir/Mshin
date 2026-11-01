@@ -187,7 +187,7 @@ async function driveUntilPickupWithFeedback(page, timeoutMs = 20000) {
     throw new Error("Closed-loop driver did not collect the first track pickup: " + JSON.stringify({ telemetry, elapsedMs: Date.now() - startedAt }));
   } finally {
     await page.mouse.up();
-    if (throttleHeld) await page.keyboard.up("ArrowUp");
+    await page.keyboard.up("ArrowUp");
   }
 }
 
