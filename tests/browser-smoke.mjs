@@ -557,9 +557,9 @@ try {
     }));
     throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
   } finally {
+    await economy.mouse.up();
     await economy.keyboard.up("ArrowUp");
     await economy.keyboard.up("ArrowDown");
-    if (activeSteerKey) await economy.keyboard.up(activeSteerKey);
   }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
