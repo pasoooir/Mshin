@@ -1,4 +1,5 @@
-import { createGameAudio } from "./audio.js";\nimport { createRaceRenderer } from "./race-renderer-3d.js";
+import { createGameAudio } from "./audio.js";
+import { createRaceRenderer } from "./race-renderer-3d.js";
 import { renderAerialScenery, drawHelicopterShadow, getHelicopterShadowPose } from "./aerial-environment.js";
 import { createDamageState, damageLevel, applyVehicleDamage, resolveVehicleImpact, resolveBarrierImpact, damageSideFromLocalNormal } from "./collision-physics.js";
 import { createRigidVehicle, resolveRigidVehicleImpact, sweptVehicleContact, splitImpactEnergy } from "./rigid-body-physics.js";
@@ -6,7 +7,8 @@ import { resolveTireForces } from "./tire-physics.js";
 import { getDamageVisuals } from "./vehicle-damage-visuals.js";
 import { stepTrafficVehicle } from "./traffic-ai.js";
 import { createDestructionState, applyDestructionImpact, stepDestruction, destructionVisuals } from "./vehicle-destruction.js";
-const canvas=document.querySelector("#game");let ctx=canvas.getContext("2d");const race3dCanvas=document.querySelector("#game3d");const race3d=createRaceRenderer(race3dCanvas);const $=id=>document.getElementById(id);\nwindow.Mshin3DRenderer=race3d.state;
+const canvas=document.querySelector("#game");let ctx=canvas.getContext("2d");const race3dCanvas=document.querySelector("#game3d");const race3d=createRaceRenderer(race3dCanvas);const $=id=>document.getElementById(id);
+window.Mshin3DRenderer=race3d.state;
 const worlds=[
 ["دره سبز","#83c95f","#65727b","#f5e5b8","#f6d45c","#e8b84f",1,"🌳"],
 ["توفان کویر","#e9b96c","#a77a50","#f8d99b","#d66e36","#55a34c",.88,"🌵"],
