@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const renderer = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
+const models = await readFile(new URL("../src/vehicle-showroom-3d.js", import.meta.url), "utf8");
 const game = await readFile(new URL("../src/web-game.js", import.meta.url), "utf8");
 
 test("the 3D renderer defines ten distinct player and AI vehicle silhouettes", () => {
@@ -39,10 +40,10 @@ test("additional AI meshes are queued and uploaded progressively", () => {
   assert.match(renderer, /return carPartSets\.values\(\)\.next\(\)\.value/);
 });
 
-test("race-car body meshes include sculpted wheel arches and integrated fascia details", () => {
-  assert.match(renderer, /const p=VEHICLE_SHAPES\[id\].*fenders=\[\]/);
-  assert.match(renderer, /Sculpted wheel-arch lips/);
-  assert.match(renderer, /quad\(fenders,/);
-  assert.match(renderer, /Hood crown, shoulder creases, mirrors and functional-looking front fascia/);
-  assert.match(renderer, /part\(fenders,"#d83d37"\)/);
+test("race and showroom renderers consume the same sculpted race-car body meshes", () => {
+  assert.match(renderer, /buildVehicleGeometry\(id\)\.map/);
+  assert.match(models, /Deep wheel arches, flared fenders/);
+  assert.match(models, /quad\(trim,point\(p\.wheel\+8/);
+  assert.match(models, /Hood creases, front grille, intakes and LED signatures/);
+  assert.match(models, /multi-spoke alloys/);
 });
