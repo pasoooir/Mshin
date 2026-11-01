@@ -305,8 +305,45 @@ function renderPauseLeaderboard(){
  for(let i=0;i<4;i++){const rival=rivals[i];if(!rival)continue;const model=carModels.find(v=>v.id===models[i])||carModels[0];const progressScore=Math.max(0,Math.round((rival.distance||0)*18500+(rival.speed||0)*22+(rival.id+1)*750));rows.push({player:false,name:rivalNames[i],className:model.tag.toUpperCase()+" CLASS",score:progressScore,car:model.id})}
  list.replaceChildren(...rows.slice(0,5).map((row,index)=>{const li=document.createElement("li");if(row.player)li.className="playerRank";const rank=document.createElement("b");rank.textContent=String(index+1);const carIcon=document.createElement("span");carIcon.className="rankCar";const image=document.createElement("img");image.src="./assets/vector/car-"+row.car+".svg";image.alt="";carIcon.append(image);const name=document.createElement("span");name.className="rankName";name.append(document.createTextNode(row.name));const small=document.createElement("small");small.textContent=row.className;name.append(small);const value=document.createElement("strong");value.append(document.createTextNode(row.score.toLocaleString("en-US")+" "));const unit=document.createElement("i");unit.textContent="CR";value.append(unit);li.append(rank,carIcon,name,value);return li}));
 }
-const FIXED_STEP=1/60,RENDER_STEP=1/60;let simulationAccumulator=0,renderAccumulator=0,lastRenderCost=0,renderCostEMA=0,adaptiveQuality=1,renderedFrames=0,fpsWindowStart=performance.now(),measuredFps=0;
-function loop(ts){const started=performance.now();const frameDelta=last?Math.min((ts-last)/1000,mobileDevice?.05:.1):0;last=ts;simulationAccumulator=Math.min(simulationAccumulator+frameDelta,mobileDevice?.08:.1);let steps=0;while(simulationAccumulator>=FIXED_STEP&&steps<(mobileDevice?5:8)){update(FIXED_STEP);simulationAccumulator-=FIXED_STEP;steps++;}renderAccumulator+=frameDelta;if(renderAccumulator>=RENDER_STEP){renderAccumulator%=RENDER_STEP;const renderStarted=performance.now();audio.update(car.speed,state==="race"||state==="countdown",input.gas,input.brake,boostTimer>0,selectedCar);draw();lastRenderCost=performance.now()-renderStarted;renderCostEMA=renderCostEMA?renderCostEMA*.85+lastRenderCost*.15:lastRenderCost;renderedFrames++;if(renderedFrames%60===0){measuredFps=60000/Math.max(1,performance.now()-fpsWindowStart);fpsWindowStart=performance.now();if(mobileDevice){const next=renderCostEMA>18?Math.max(.58,adaptiveQuality-.08):renderCostEMA<13?Math.min(1,adaptiveQuality+.04):adaptiveQuality;if(next!==adaptiveQuality){adaptiveQuality=next;race3d.setQuality?.(adaptiveQuality)}}}window.MshinPerformance.trackCacheBuilds=trackCacheBuilds;}const elapsed=performance.now()-started;frameSamples[frameCursor]=Math.max(elapsed,lastRenderCost);frameCursor=(frameCursor+1)%frameSamples.length;frameCount++;if(frameCount%30===0){const sample=frameSamples.slice(0,Math.min(frameCount,frameSamples.length)).filter(Number.isFinite).sort((a,b)=>a-b);const sum=sample.reduce((a,b)=>a+b,0);window.MshinPerformance={samples:Math.min(frameCount,frameSamples.length),avgFrameMs:sum/Math.max(1,sample.length),p95FrameMs:sample[Math.min(sample.length-1,Math.floor(sample.length*.95))]||0,maxFrameMs:sample[sample.length-1]||0,fps:measuredFps,renderFps:measuredFps,renderCostMs:lastRenderCost,renderCostEmaMs:renderCostEMA,renderQuality:adaptiveQuality,collisions:collisionEvents,pickups:pickupEvents,damage:Math.round(car.damage.total),damageLevel:damageLevel(car.damage),playerDisabled:car.damage.disabled,trackCacheBuilds,trackRadiusX:TRACK_RADIUS_X,trackRadiusY:TRACK_RADIUS_Y,roadWidth:ROAD_HALF_WIDTH*2,laneCount:4,playerHeadingOffsetDeg:90,cameraChase:true,trafficCount:rivals.length,trafficTypes:rivals.map(r=>r.type),countdownIntroFrames};}requestAnimationFrame(loop)}requestAnimationFrame(loop);
+const FIXED_STEP=1/60,RENDER_STEP=1/60;
+let simulationAccumulator=0,renderAccumulator=0,lastRenderCost=0,renderCostEMA=0,adaptiveQuality=1,renderedFrames=0,fpsWindowStart=performance.now(),measuredFps=0;
+let maxUpdateCostMs=0,maxAudioCostMs=0,maxDrawCostMs=0,maxLoopCostMs=0,maxUpdateSteps=0,lastSlowFrame=null;
+function loop(ts){
+ const started=performance.now();
+ const frameDelta=last?Math.min((ts-last)/1000,mobileDevice?.05:.1):0;last=ts;
+ simulationAccumulator=Math.min(simulationAccumulator+frameDelta,mobileDevice?.08:.1);
+ let steps=0,updateCost=0;
+ while(simulationAccumulator>=FIXED_STEP&&steps<(mobileDevice?5:8)){
+  const updateStarted=performance.now();update(FIXED_STEP);updateCost+=performance.now()-updateStarted;
+  simulationAccumulator-=FIXED_STEP;steps++;
+ }
+ maxUpdateCostMs=Math.max(maxUpdateCostMs,updateCost);maxUpdateSteps=Math.max(maxUpdateSteps,steps);
+ renderAccumulator+=frameDelta;
+ let audioCost=0,drawCost=0;
+ if(renderAccumulator>=RENDER_STEP){
+  renderAccumulator%=RENDER_STEP;
+  const audioStarted=performance.now();audio.update(car.speed,state==="race"||state==="countdown",input.gas,input.brake,boostTimer>0,selectedCar);audioCost=performance.now()-audioStarted;
+  const drawStarted=performance.now();draw();drawCost=performance.now()-drawStarted;
+  lastRenderCost=audioCost+drawCost;maxAudioCostMs=Math.max(maxAudioCostMs,audioCost);maxDrawCostMs=Math.max(maxDrawCostMs,drawCost);
+  renderCostEMA=renderCostEMA?renderCostEMA*.85+lastRenderCost*.15:lastRenderCost;renderedFrames++;
+  if(renderedFrames%60===0){
+   measuredFps=60000/Math.max(1,performance.now()-fpsWindowStart);fpsWindowStart=performance.now();
+   if(mobileDevice){const next=renderCostEMA>18?Math.max(.58,adaptiveQuality-.08):renderCostEMA<13?Math.min(1,adaptiveQuality+.04):adaptiveQuality;if(next!==adaptiveQuality){adaptiveQuality=next;race3d.setQuality?.(adaptiveQuality)}}
+  }
+  window.MshinPerformance.trackCacheBuilds=trackCacheBuilds;
+ }
+ const elapsed=performance.now()-started;maxLoopCostMs=Math.max(maxLoopCostMs,elapsed);
+ const frameCost=Math.max(elapsed,lastRenderCost);frameSamples[frameCursor]=frameCost;
+ if(frameCost>200)lastSlowFrame={frameMs:frameCost,updateMs:updateCost,audioMs:audioCost,drawMs:drawCost,steps,at:Math.round(ts)};
+ frameCursor=(frameCursor+1)%frameSamples.length;frameCount++;
+ if(frameCount%30===0){
+  const sample=frameSamples.slice(0,Math.min(frameCount,frameSamples.length)).filter(Number.isFinite).sort((a,b)=>a-b);
+  const sum=sample.reduce((a,b)=>a+b,0);
+  window.MshinPerformance={samples:Math.min(frameCount,frameSamples.length),avgFrameMs:sum/Math.max(1,sample.length),p95FrameMs:sample[Math.min(sample.length-1,Math.floor(sample.length*.95))]||0,maxFrameMs:sample[sample.length-1]||0,slowFrameCount:sample.filter(value=>value>200).length,fps:measuredFps,renderFps:measuredFps,renderCostMs:lastRenderCost,renderCostEmaMs:renderCostEMA,maxUpdateCostMs,maxAudioCostMs,maxDrawCostMs,maxLoopCostMs,maxUpdateSteps,lastSlowFrame,renderQuality:adaptiveQuality,collisions:collisionEvents,pickups:pickupEvents,damage:Math.round(car.damage.total),damageLevel:damageLevel(car.damage),playerDisabled:car.damage.disabled,trackCacheBuilds,trackRadiusX:TRACK_RADIUS_X,trackRadiusY:TRACK_RADIUS_Y,roadWidth:ROAD_HALF_WIDTH*2,laneCount:4,playerHeadingOffsetDeg:90,cameraChase:true,trafficCount:rivals.length,trafficTypes:rivals.map(r=>r.type),countdownIntroFrames};
+ }
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
 document.querySelectorAll(".menuTab").forEach(button=>button.addEventListener("click",()=>activateMenuTab(button.dataset.tab)));document.querySelectorAll(".menuTab").forEach(button=>button.addEventListener("keydown",event=>{if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;event.preventDefault();const tabs=[...document.querySelectorAll(".menuTab:not(:disabled)")],index=tabs.indexOf(button),next=event.key==="Home"?0:event.key==="End"?tabs.length-1:(index+(event.key==="ArrowLeft"?1:-1)+tabs.length)%tabs.length;tabs[next].focus();activateMenuTab(tabs[next].dataset.tab)}));
 $("play").onclick=()=>{audio.unlock();audio.playMusic("menu");selectedWorld=Math.floor((selectedStage-1)/5);renderWorlds();renderStages();activateMenuTab("race");state="select";show("select")};$("backHome").onclick=()=>{if(pauseSettingsReturn){pauseSettingsReturn=false;state="paused";renderPauseLeaderboard();show("pausePanel")}else{state="home";show("home")}};$("startRace").onclick=begin;
 function toggleSfx(){settings.sound=audio.setSfxEnabled(!settings.sound);saveSettings();$("soundToggle").textContent=settings.sound?"🔊":"🔇";$("soundToggle").setAttribute("aria-pressed",String(settings.sound));updateMenuSummary();if(settings.sound)audio.unlock()}
