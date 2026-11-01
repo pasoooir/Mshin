@@ -67,6 +67,8 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
   rearGripScale,
   vehicleMass,
   yawInertiaScale,
+  steeringScale,
+  rearStabilityScale,
   yawResponse:2.5/yawInertiaScale,
   lateralScale,
   corneringScale,
