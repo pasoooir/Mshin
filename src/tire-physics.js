@@ -6,12 +6,12 @@ const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
  * The friction circle is shared by steering, throttle and braking; steering
  * authority therefore falls naturally with speed and low-grip surfaces.
  */
-export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,grip,deltaSeconds}) {
+export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,grip,deltaSeconds,mass=1250}) {
  const v=Number.isFinite(speed)?Math.max(0,speed):0;
  const lateral=Number.isFinite(lateralVelocity)?lateralVelocity:0;
  const steering=clamp(Number.isFinite(steer)?steer:0,-1,1);
  const dt=clamp(Number.isFinite(deltaSeconds)?deltaSeconds:0,0,.1);
- const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.35);
+ const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.35);\n // Existing vehicle mass values also drive collision response. Use the same\n // mass to model yaw inertia: lighter cars rotate more readily, heavier cars\n // need more time to change heading. This is a game-scale inertia ratio.\n const vehicleMass=clamp(Number.isFinite(mass)?mass:1250,850,2000);\n const yawInertiaScale=clamp(vehicleMass/1250,.8,1.6);
  // Longitudinal load transfer changes the rear axle's normal-load share.
  // Positive values move load forward under braking; throttle moves it rearward.
  // The fractions are normalized axle-load shifts, not vehicle mass units.
@@ -29,7 +29,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const wheelbase=128;
  const maxRoadWheelAngle=.48;
  const roadWheelAngle=steering*maxRoadWheelAngle;
- const requestedYawRate=v>0?(v/wheelbase)*Math.tan(roadWheelAngle):0;
+ const requestedYawRate=v>0?(v/wheelbase)*Math.tan(roadWheelAngle)/yawInertiaScale:0;
  const requestedCorneringAcceleration=Math.abs(v*requestedYawRate);
  const corneringScale=Math.min(1,availableLateral/Math.max(.001,requestedCorneringAcceleration));
 
@@ -43,7 +43,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
 
  // Slip contributes a damped yaw correction, but the final yaw remains inside
  // the lateral force envelope so it cannot bypass the tyre friction circle.
- const slipCorrection=slipAngle*1.1*clamp((v-70)/100,0,1)/rearGripScale;
+ const slipCorrection=slipAngle*1.1*clamp((v-70)/100,0,1)/(rearGripScale*yawInertiaScale);
  const yawLimit=availableLateral/Math.max(v,1);
  const yawRateTarget=clamp(requestedYawRate*corneringScale+slipCorrection,-yawLimit,yawLimit);
  const lateralScale=Math.min(1,availableLateral/Math.max(.001,Math.abs(requestedLateralAcceleration)));
