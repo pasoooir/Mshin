@@ -125,7 +125,7 @@ export function createVehicleShowroom(canvas){
   gl=canvas.getContext("webgl",{alpha:true,antialias:true,depth:true,powerPreference:"low-power"})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable");
   program=programFor(gl);locations={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal"),mvp:gl.getUniformLocation(program,"uMvp"),color:gl.getUniformLocation(program,"uColor"),metal:gl.getUniformLocation(program,"uMetal"),emissive:gl.getUniformLocation(program,"uEmissive")};
-  gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.clearColor(0,0,0,0);
+  gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
   parts=buildVehicle(gl,"rally");state.status="webgl-ready";
  }catch(error){state.status="unavailable";state.error=String(error?.message||error);return {state,setVehicle(){},spin360(){},destroy(){}}}
  const release=()=>{if(drag!==null)drag=null};
