@@ -523,17 +523,21 @@ try {
         const telemetry = window.MshinPerformance;
         if (!telemetry || !Number.isFinite(telemetry.playerTrackT)) return { steering: 0, brake: false };
         const lateral = Number(telemetry.playerLateral) || 0;
+        const lateralVelocity = Number(telemetry.playerLateralVelocity) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
+        const speed = Math.max(60, Number(telemetry.playerSpeed) || 0);
         const trackCurvature = Number(telemetry.playerTrackCurvature) || 0;
-        // Pure-pursuit path tracking: compensate for the road's curvature,
-        // then aim a look-ahead point back toward the road centre. This keeps
-        // the test driver on the actual track rather than steering against
-        // lateral error alone (which cannot follow a curved road).
+        // Pure-pursuit path tracking: compensate for road curvature and
+        // project both heading and lateral drift onto a look-ahead point.
+        // The velocity term damps an outward slide before it reaches the
+        // road edge, while the curvature feed-forward follows actual bends.
         const lookAhead = 360;
-        const correctionCurvature = -2 * (lateral + lookAhead * Math.sin(yaw)) / (lookAhead * lookAhead);
+        const predictedLateral = lateral + lookAhead * Math.sin(yaw)
+          + lookAhead * lateralVelocity / speed;
+        const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
         const targetCurvature = trackCurvature + correctionCurvature;
         const steering = Math.max(-.92, Math.min(.92, Math.atan(128 * targetCurvature) / .48));
-        return { steering, brake: telemetry.playerSpeed > 205 };
+        return { steering, brake: speed > 205 };
       });
       const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
       await economy.mouse.move(
