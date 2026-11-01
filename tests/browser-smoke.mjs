@@ -172,7 +172,11 @@ try {
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
-  assert.ok(await page.evaluate(() => Object.values(window.MshinAssets.audioData).every(value => value instanceof ArrayBuffer)), "all CDN audio bytes should be preloaded before a race");
+  const audioPreload = await page.evaluate(() => ({
+    missing: Object.entries(window.MshinAssets.audioData).filter(([, value]) => !(value instanceof ArrayBuffer)).map(([id]) => id),
+    failures: window.MshinAssets.failures
+  }));
+  assert.equal(audioPreload.missing.length, 0, "all repository-local audio bytes must be preloaded before a race: " + JSON.stringify(audioPreload));
   await page.locator("#startRace").click();
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
