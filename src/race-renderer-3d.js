@@ -83,6 +83,25 @@ export function createRaceRenderer(canvas){
   gl=canvas.getContext("webgl",{alpha:false,antialias:!mobile,depth:true,powerPreference:"high-performance",preserveDrawingBuffer:false})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable on this device");
   program=makeProgram(gl);attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uColor"),emissive:gl.getUniformLocation(program,"uEmissive")};
+  // Force the browser/driver to compile and execute the linked shader pipeline
+  // before the first countdown frame. Some headless and mobile GPUs defer this
+  // work until the first real draw, producing a multi-second gameplay hitch.
+  const warmupStarted=performance.now(),warmupBuffer=gl.createBuffer();
+  const warmupVertices=new Float32Array([
+   -0.5,-0.5,0,0,0,1,
+    0.5,-0.5,0,0,0,1,
+    0,0.5,0,0,0,1
+  ]);
+  gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,warmupBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER,warmupVertices,gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(attributes.position);gl.vertexAttribPointer(attributes.position,3,gl.FLOAT,false,24,0);
+  gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);
+  const identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+  gl.uniformMatrix4fv(uniforms.mvp,false,identity);gl.uniformMatrix4fv(uniforms.model,false,identity);
+  gl.uniform3f(uniforms.color,.5,.6,.7);gl.uniform1f(uniforms.emissive,0);
+  gl.viewport(0,0,1,1);gl.drawArrays(gl.TRIANGLES,0,3);gl.finish();
+  gl.deleteBuffer(warmupBuffer);gl.bindBuffer(gl.ARRAY_BUFFER,null);
+  state.pipelineWarmupMs=performance.now()-warmupStarted;
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}

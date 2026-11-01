@@ -6,7 +6,7 @@ const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
  * The friction circle is shared by steering, throttle and braking; steering
  * authority therefore falls naturally with speed and low-grip surfaces.
  */
-export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,grip,deltaSeconds,mass=1250}) {
+export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,grip,deltaSeconds,mass=1250,steeringResponseScale=1,rearStability=1}) {
  const v=Number.isFinite(speed)?Math.max(0,speed):0;
  const lateral=Number.isFinite(lateralVelocity)?lateralVelocity:0;
  const steering=clamp(Number.isFinite(steer)?steer:0,-1,1);
@@ -17,6 +17,10 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  // need more time to change heading. This is a game-scale inertia ratio.
  const vehicleMass=clamp(Number.isFinite(mass)?mass:1250,850,2000);
  const yawInertiaScale=clamp(vehicleMass/1250,.8,1.6);
+ // Per-car coefficients are game-scale handling calibration, not claimed
+ // manufacturer measurements. They separate turn-in from rear-slip stability.
+ const steeringScale=clamp(Number.isFinite(steeringResponseScale)?steeringResponseScale:1,.75,1.25);
+ const rearStabilityScale=clamp(Number.isFinite(rearStability)?rearStability:1,.75,1.25);
  // Longitudinal load transfer changes the rear axle's normal-load share.
  // Positive values move load forward under braking; throttle moves it rearward.
  // The fractions are normalized axle-load shifts, not vehicle mass units.
@@ -33,7 +37,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  // Bicycle-model steering: yaw rate follows speed, steering angle and wheelbase.
  const wheelbase=128;
  const maxRoadWheelAngle=.48;
- const roadWheelAngle=steering*maxRoadWheelAngle;
+ const roadWheelAngle=steering*maxRoadWheelAngle*steeringScale;
  const requestedYawRate=v>0?(v/wheelbase)*Math.tan(roadWheelAngle)/yawInertiaScale:0;
  const requestedCorneringAcceleration=Math.abs(v*requestedYawRate);
  const corneringScale=Math.min(1,availableLateral/Math.max(.001,requestedCorneringAcceleration));
@@ -41,14 +45,14 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  // Relaxation toward a speed-dependent lateral velocity gives the chassis
  // progressive slip instead of an instantaneous, arcade-like lane snap.
  const targetLateralVelocity=steering*Math.min(150,v*.42)/Math.max(.65,surfaceGrip);
- const steeringResponse=1-Math.exp(-dt*(Math.abs(steering)<.001?7:5.5));
+ const steeringResponse=1-Math.exp(-dt*(Math.abs(steering)<.001?7:5.5)*steeringScale);
  const requestedLateralAcceleration=(targetLateralVelocity-lateral)*steeringResponse/Math.max(dt,.001);
  const lateralAcceleration=clamp(requestedLateralAcceleration,-availableLateral,availableLateral);
  const slipAngle=Math.atan2(lateral,Math.max(v,1));
 
  // Slip contributes a damped yaw correction, but the final yaw remains inside
  // the lateral force envelope so it cannot bypass the tyre friction circle.
- const slipCorrection=slipAngle*1.1*clamp((v-70)/100,0,1)/(rearGripScale*yawInertiaScale);
+ const slipCorrection=slipAngle*1.1*clamp((v-70)/100,0,1)/(rearGripScale*yawInertiaScale*rearStabilityScale);
  const yawLimit=availableLateral/Math.max(v,1);
  const yawRateTarget=clamp(requestedYawRate*corneringScale+slipCorrection,-yawLimit,yawLimit);
  const lateralScale=Math.min(1,availableLateral/Math.max(.001,Math.abs(requestedLateralAcceleration)));
@@ -63,6 +67,8 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
   rearGripScale,
   vehicleMass,
   yawInertiaScale,
+  steeringScale,
+  rearStabilityScale,
   yawResponse:2.5/yawInertiaScale,
   lateralScale,
   corneringScale,

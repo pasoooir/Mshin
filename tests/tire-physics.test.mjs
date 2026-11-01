@@ -179,3 +179,24 @@ test("invalid vehicle mass falls back to a finite baseline inertia",()=>{
  assert.equal(invalid.yawInertiaScale,baseline.yawInertiaScale);
  assert.equal(invalid.yawRateTarget,baseline.yawRateTarget);
 });
+
+
+test("vehicle handling calibration separates turn-in and rear-slip stability",()=>{
+ const base={speed:170,lateralVelocity:34,steer:.35,throttle:false,brake:false,grip:1,deltaSeconds:1/60,mass:1250};
+ const agile=resolveTireForces({...base,steeringResponseScale:1.12,rearStability:.88});
+ const stable=resolveTireForces({...base,steeringResponseScale:.92,rearStability:1.18});
+ assert.ok(agile.steeringScale>stable.steeringScale);
+ assert.ok(agile.rearStabilityScale<stable.rearStabilityScale);
+ assert.ok(Math.abs(agile.yawRateTarget)>Math.abs(stable.yawRateTarget));
+ assert.ok(Math.abs(170*agile.yawRateTarget)<=agile.availableLateral+1e-7);
+ assert.ok(Math.abs(170*stable.yawRateTarget)<=stable.availableLateral+1e-7);
+});
+
+test("invalid per-vehicle handling coefficients fall back to neutral calibration",()=>{
+ const base={speed:130,lateralVelocity:20,steer:.3,throttle:false,brake:false,grip:1,deltaSeconds:1/60};
+ const neutral=resolveTireForces(base);
+ const invalid=resolveTireForces({...base,steeringResponseScale:NaN,rearStability:Infinity});
+ assert.equal(invalid.steeringScale,1);
+ assert.equal(invalid.rearStabilityScale,1);
+ assert.equal(invalid.yawRateTarget,neutral.yawRateTarget);
+});
