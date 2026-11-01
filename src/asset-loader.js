@@ -55,21 +55,39 @@ async function loadAudio(asset) {
 }
 
 export async function preloadGameAssets(onProgress = () => {}) {
-  const all = [...manifest.worlds, ...manifest.cars, ...(manifest.scenes || []), ...(manifest.icons || []), ...(manifest.sounds || [])];
-  let loaded = 0, cursor = 0;
+  const images = [...manifest.worlds, ...manifest.cars, ...(manifest.scenes || []), ...(manifest.icons || [])];
+  const sounds = [...(manifest.sounds || [])];
+  const total = images.length + sounds.length;
+  let loaded = 0;
   const failures = [];
-  const worker = async () => {
-    while (cursor < all.length) {
-      const asset = all[cursor++];
-      try {
-        if (asset.group === "audio") audioCache.set(asset.id, await loadAudio(asset));
-        else imageCache.set(asset.id, await loadVector(asset));
-      } catch (error) { failures.push({ asset: asset.src || asset.cdn, error: error.message }); }
-      loaded++;
-      onProgress({ loaded, total: all.length, percent: Math.round(loaded / all.length * 100), name: asset.name });
-    }
+
+  const runQueue = async (queue, concurrency) => {
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < queue.length) {
+        const asset = queue[cursor++];
+        try {
+          if (asset.group === "audio") audioCache.set(asset.id, await loadAudio(asset));
+          else imageCache.set(asset.id, await loadVector(asset));
+        } catch (error) {
+          failures.push({ id: asset.id, asset: asset.src || asset.cdn, error: error.message });
+        } finally {
+          loaded++;
+          onProgress({ loaded, total, percent: Math.round(loaded / total * 100), name: asset.name });
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, worker));
   };
-  await Promise.all(Array.from({ length: 6 }, worker));
+
+  // Start audio independently from the larger image queue. Otherwise all six
+  // workers can spend the cold-start window decoding photos/SVGs before they
+  // even reach the music files at the end of the manifest.
+  await Promise.all([
+    runQueue(images, 6),
+    runQueue(sounds, 4)
+  ]);
+
   window.MshinAssets = {
     version: manifest.version,
     worlds: manifest.worlds.map(item => imageCache.get(item.id) || null),
