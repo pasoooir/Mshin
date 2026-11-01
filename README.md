@@ -1,41 +1,15 @@
-## Version 0.11.7 — native mobile landscape entry fix
+## Version 0.12.0 — sculpted in-race 3D vehicle (under review)
 
-- Fixed the mobile orientation-lock timing: the old one-shot touch handler attempted to lock landscape on the first menu tap, before fullscreen was entered, then never retried.
-- The explicit Start Race gesture now enters fullscreen first and requests the native landscape orientation while the browser still has user activation.
-- Retains the CSS software-landscape fallback on browsers that deny fullscreen or orientation locking.
-- Added orientation-change resize synchronization and advanced the offline cache to `mshin-arcade-v44`.
-- Updated runtime marker to `2026.11.01.07`.
+- Rebuilt the vehicle visible on the race track as a tapered, multi-section WebGL body instead of stacked rectangular primitives.
+- Added pronounced body character creases along both flanks, hood power lines, wheel-arch lips, sculpted side sills, sloped glazing, LED lamps, grille, splitter, diffuser and rear wing.
+- Added rubber tires and metallic wheel hubs. Geometry is generated locally by the WebGL renderer; no runtime CDN/model download is required.
+- This PR also carries forward the native mobile landscape entry fix tracked in pull request #76. Version 0.12.0 is not yet the published live release.
 
-## Version 0.11.5 — 3D traffic rendering hotfix
+## Version 0.11.7 — verified live release on main
 
-- Replaced per-frame rival object allocation and full sorting with reusable scratch arrays and bounded insertion of only the nearest visible opponents.
-- Removed trigonometric angle wrapping from the hot render-selection loop while preserving wraparound distance handling.
-- Fixed a 3D rendering position bug: visible rivals are now drawn at their actual track distance, not their distance-from-player used for sorting.
-- Added regression coverage for allocation reuse, bounded selection, wraparound distance, and correct world positions.
-- Advanced the service-worker cache to `mshin-arcade-v42`.
-
-## Version 0.11.4 — faster driving and adaptive mobile performance
-
-- Increased player acceleration and maximum driving speed by 30% and 22%; AI traffic pace is raised by 20% so races remain competitive.
-- Decoupled fixed 60 Hz simulation from display rendering and replaced the mobile frame-skip gate with a refresh-rate-aware render accumulator.
-- Added adaptive mobile WebGL resolution based on measured render cost, with a bounded quality range.
-- Reduced mobile scene geometry and visible rival count, removed per-frame rival object cloning, and optimized AI lane-gap scans to avoid repeated array allocation, mapping, filtering, and sorting.
-- Added an angular broad phase before expensive AI-to-AI collision geometry.
-- Advanced the service-worker cache to `mshin-arcade-v41`.
-
-## Version 0.11.3 — mobile frame-pacing and WebGL optimization
-
-- Fixed portrait-device landscape rotation for the active WebGL race canvas, including correct landscape drawing-buffer dimensions.
-- Reduced mobile WebGL scene density and disabled costly multisample antialiasing on touch devices; capped mobile render resolution to 0.78 device scale.
-- Added a smoothed chase camera and bounded mobile simulation catch-up and 60 Hz render pacing to prevent visible jumps after delayed frames.
-- Advanced the offline service-worker cache to `mshin-arcade-v40`.
-
-## Version 0.11.2 — countdown reliability hotfix
-
-- Replaced frame-delta countdown progression with monotonic `performance.now()` timing.
-- Added an independent bounded `setTimeout` scheduler so the 3–2–1–GO transition completes even when `requestAnimationFrame` is throttled or temporarily paused.
-- Keeps vehicle and AI simulation frozen until GO; resets the clock and cancels any prior timer on every race start/retry.
-- Advanced the PWA cache to `mshin-arcade-v39` to prevent stale countdown code from surviving an update.
+- Verified browser release on GitHub Pages.
+- The WebGL race scene is visible and the offline app shell uses cache `mshin-arcade-v44`.
+- This is the latest published release on main; the 0.12.0 changes remain under review.
 
 # Mshin — 2D Top-Down Arcade Racing
 
@@ -49,11 +23,11 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 This branch introduces a native, repository-local WebGL perspective renderer for the active race scene. During countdown and gameplay, the browser now renders a perspective chase-camera view with a generated 3D road surface, shoulders, lane markings, three-dimensional roadside geometry, and mesh-based player/rival vehicles. The 2D game simulation remains the source of truth for vehicle motion, traffic, collisions, damage, pickups, race progression, and controls; the new renderer consumes that live state rather than replacing the gameplay physics. The renderer is bundled locally and precached by the service worker, with no runtime CDN dependency. This is the first migration milestone, not a claim that every legacy visual/effect has already been ported to 3D; minimap, weather overlays, particle effects, and full 3D damage deformation remain follow-up work.
 
-## Latest published release on main: 0.11.7 — visible WebGL race scene
+## Latest published release on main: 0.11.7
 
-Version 0.11.6 is merged into main. Browser smoke, core validation, and GitHub Pages deployment completed successfully. It fixes the WebGL program binding that previously left the race view showing only the clear-color background and advances the service-worker cache to `mshin-arcade-v43`.
+The verified live browser release on `main` is version 0.11.7. Browser smoke, core validation and GitHub Pages deployment for that release completed successfully. Its service-worker cache is `mshin-arcade-v44`.
 
-Versions 0.11.0–0.11.7 are published on GitHub Pages. Version 0.12.0 is under review in the current pull request.
+Versions 0.11.0–0.11.6 are published on GitHub Pages. Version 0.12.0 is the mobile native-landscape entry fix under review in pull request #76, with the sculpted in-race 3D vehicle improvements being developed in the current follow-up PR. Neither set of 0.12.0 changes is claimed as live.
 
 ## Play the browser edition
 
@@ -61,7 +35,7 @@ Open [the GitHub Pages game](https://pasoooir.github.io/Mshin/) and choose from 
 
 The garage starts with three cars: Rally Fox (balanced), Comet GT (top speed), and Lynx 4x4 (high grip). Two additional cars — Thunder EV and Desert Raptor — can be unlocked with coins earned by finishing races. A local workshop lets players buy up to three engine, tyre-grip and nitro upgrades for each car. Five milestone achievements reward extra coins for a first finish, podiums, exploring worlds, collecting all cars and fully tuning a vehicle. Coins, unlocks, achievements, upgrade levels, best times and vehicle selection persist on the device. Collect glowing track pickups to recharge nitro, then trigger a temporary speed boost.
 
-The live browser release on `main` is **version 0.11.5**. The 3D scene visibility and camera correction, version 0.11.6, is under review in pull request #75. Version 0.9.2 refreshes the cached aerial scene every eight seconds so stage-aware sunlight, ambient light and cast shadows keep changing during a race. It retains the volumetric 2.5D scenery and independent CC0 music/SFX mixer with verified offline audio cache. Its service-worker cache is `mshin-arcade-v32`. The browser menu now uses a motorsport-inspired vertical navigation rail with a dedicated content panel, while the Cocos runtime menus share a dark navy, red-accented angular visual system. The first screen no longer contains a latest-changes link. This release makes nearby traffic visibly smarter: three rival cars move independently, anticipate track curvature, adapt pace, keep following gaps, and smoothly choose adjacent lanes around congestion and the player. Vehicle impacts now feed a progressive destruction lifecycle: localized panels accumulate soot, dark engine smoke and flames grow with damage, critical damage triggers a one-shot explosion with camera/audio feedback, and AI wrecks burn out before fading and leaving traffic, collisions, minimap and ranking. A destroyed player car ends the race explicitly. The browser renderer uses bounded pooled particles for smoke/fire/debris effects. The release builds on 0.6.0 localized dents/scratches/cracked glass and the 0.5.0 grip-limited tire model. Its versioned service worker (`mshin-arcade-v32`) precaches the complete browser runtime—including rigid-body physics, traffic AI and vehicle destruction modules—plus the 15 vector illustrations/sprites. The boot loader also loads and decodes all ten repository-local photographic scenes, three repository-local control icons, six CC0 engine RPM layers, braking/downshift effects and two CC0 background music tracks before the game module starts; audio buffers are decoded on the first menu gesture while the player chooses a stage, so gameplay does not perform late asset requests or expensive audio decoding. No backend is required for gameplay.
+The release history and live-version status are maintained in the **Latest published release on main** section above; older feature notes below are historical.
 
 ## Version 0.8.5 — release consistency and localized mobile polish
 
