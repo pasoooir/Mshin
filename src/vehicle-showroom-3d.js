@@ -114,7 +114,7 @@ export function buildVehicleGeometry(id){
 function buildVehicle(gl,id){return buildVehicleGeometry(id).map(item=>mesh(gl,item.vertices,item.paint,item.material,item.emissive));}
 export function createVehicleShowroom(canvas){
  const state={status:"initializing",vehicle:"rally",yaw:-.55,pitch:.16,frames:0,triangles:0,materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false};
- let gl,program,locations,environment,parts=[],raf=0,last=0,width=0,height=0,drag=null,spinUntil=0,yaw=state.yaw,disposed=false;
+ let gl,program,locations,environment,parts=[],raf=0,last=0,width=0,height=0,drag=null,spinUntil=0,yaw=state.yaw,disposed=false,visible=!document.hidden,intersecting=true,contextLost=false;
  try{
   gl=canvas.getContext("webgl",{alpha:true,antialias:true,depth:true,powerPreference:"low-power"})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable");
@@ -122,15 +122,25 @@ export function createVehicleShowroom(canvas){
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
   parts=buildVehicle(gl,"rally");state.status="webgl-ready";
  }catch(error){state.status="unavailable";state.error=String(error?.message||error);return {state,setVehicle(){},spin360(){},destroy(){}}}
+ const pointerDown=event=>{if(event.button!==undefined&&event.button!==0)return;drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY};spinUntil=0;try{canvas.setPointerCapture?.(event.pointerId)}catch{}};
  const release=event=>{if(drag!==null&&(event?.pointerId==null||event.pointerId===drag.pointerId))drag=null};
  const move=event=>{if(!drag||event.pointerId!==drag.pointerId)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;drag={...drag,x:event.clientX,y:event.clientY};yaw+=dx*.012;state.pitch=clamp(state.pitch+dy*.008,-.38,.62);};
- canvas.addEventListener("pointerdown",event=>{drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY};spinUntil=0});
+ const onVisibility=()=>{visible=!document.hidden;if(visible&&intersecting&&!contextLost&&!disposed&&!raf){last=0;raf=requestAnimationFrame(draw)}};
+ const onContextLost=event=>{event.preventDefault();contextLost=true;state.status="context-lost";if(raf)cancelAnimationFrame(raf);raf=0};
+ const onContextRestored=()=>{state.status="context-restored-reload-required"};
+ canvas.addEventListener("pointerdown",pointerDown);
  window.addEventListener("pointermove",move);window.addEventListener("pointerup",release);window.addEventListener("pointercancel",release);
+ document.addEventListener("visibilitychange",onVisibility);
+ canvas.addEventListener("webglcontextlost",onContextLost,false);
+ canvas.addEventListener("webglcontextrestored",onContextRestored,false);
  const resize=()=>{const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.35);width=Math.max(1,Math.round(rect.width*dpr));height=Math.max(1,Math.round(rect.height*dpr));if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;gl.viewport(0,0,width,height)}};
- const observer=typeof ResizeObserver!=="undefined"?new ResizeObserver(resize):null;observer?.observe(canvas);resize();
+ const observer=typeof ResizeObserver!=="undefined"?new ResizeObserver(resize):null;observer?.observe(canvas);
+ const intersectionObserver=typeof IntersectionObserver!=="undefined"?new IntersectionObserver(entries=>{intersecting=!!entries[0]?.isIntersecting;if(intersecting&&visible&&!contextLost&&!disposed&&!raf){last=0;raf=requestAnimationFrame(draw)}else if(!intersecting&&raf){cancelAnimationFrame(raf);raf=0}}):null;
+ intersectionObserver?.observe(canvas);resize();
  const identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
  const draw=now=>{
-  if(disposed)return;raf=requestAnimationFrame(draw);if(now-last<30)return;last=now;
+  raf=0;if(disposed||!visible||!intersecting||contextLost)return;
+  if(visible&&intersecting&&!contextLost)raf=requestAnimationFrame(draw);if(now-last<30)return;last=now;
   resize();if(spinUntil>now)yaw+=.14;state.yaw=yaw;state.frames++;
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);
   const aspect=width/Math.max(1,height),projection=perspective(.68,aspect,.1,900),distance=225;
@@ -145,6 +155,6 @@ export function createVehicleShowroom(canvas){
   state,
   setVehicle(id){const next=PROFILES[id]?id:"rally";if(next===state.vehicle)return;for(const p of parts)gl.deleteBuffer(p.buffer);parts=buildVehicle(gl,next);state.vehicle=next;state.pitch=.16;yaw=-.55;state.yaw=yaw},
   spin360(){spinUntil=performance.now()+1500;},
-  destroy(){disposed=true;cancelAnimationFrame(raf);observer?.disconnect();window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",release);window.removeEventListener("pointercancel",release);for(const p of parts)gl.deleteBuffer(p.buffer);try{gl.deleteProgram(program);gl.deleteTexture(environment)}catch{}}
+  destroy(){if(disposed)return;disposed=true;if(raf)cancelAnimationFrame(raf);raf=0;observer?.disconnect();intersectionObserver?.disconnect();canvas.removeEventListener("pointerdown",pointerDown);canvas.removeEventListener("webglcontextlost",onContextLost);canvas.removeEventListener("webglcontextrestored",onContextRestored);document.removeEventListener("visibilitychange",onVisibility);window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",release);window.removeEventListener("pointercancel",release);for(const p of parts)gl.deleteBuffer(p.buffer);try{gl.deleteProgram(program);gl.deleteTexture(environment)}catch{}}
  };
 }
