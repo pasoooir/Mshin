@@ -95,13 +95,12 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
   let lastSteer = Number.NaN;
   let lastTelemetryAt = 0;
 
-  await page.keyboard.down("ArrowUp");
+  let throttleHeld = false;
   await page.mouse.move(center.x, center.y);
   await page.mouse.down();
   try {
     while (Date.now() - startedAt < timeoutMs) {
       if (await page.locator("#finish").isVisible()) return;
-
       const state = await page.evaluate(() => {
         const p = window.MshinPerformance || {};
         return {
@@ -109,11 +108,21 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
           yaw: p.playerYaw,
           lateralVelocity: p.playerLateralVelocity,
           speed: p.playerSpeed,
+          damage: p.damage,
+          damageLevel: p.damageLevel,
+          collisions: p.collisions,
           trackT: p.playerTrackT,
           lap: document.querySelector("#lap")?.textContent || null,
           time: document.querySelector("#time")?.textContent || null
         };
       });
+      if (!throttleHeld && state.speed < 325) {
+        await page.keyboard.down("ArrowUp");
+        throttleHeld = true;
+      } else if (throttleHeld && state.speed > 345) {
+        await page.keyboard.up("ArrowUp");
+        throttleHeld = false;
+      }
       const steer = calculateRaceSteering(state);
       if (!Number.isFinite(lastSteer) || Math.abs(steer - lastSteer) >= 0.025) {
         await page.mouse.move(center.x + steer * limit, center.y, { steps: 1 });
@@ -178,7 +187,7 @@ async function driveUntilPickupWithFeedback(page, timeoutMs = 20000) {
     throw new Error("Closed-loop driver did not collect the first track pickup: " + JSON.stringify({ telemetry, elapsedMs: Date.now() - startedAt }));
   } finally {
     await page.mouse.up();
-    await page.keyboard.up("ArrowUp");
+    if (throttleHeld) await page.keyboard.up("ArrowUp");
   }
 }
 
