@@ -42,3 +42,10 @@ test("fixed-step integration is deterministic for identical inputs",()=>{
  for(let i=0;i<120;i++)stepVehicleDynamics(b,{throttle:true,brake:false,steer:.3},tuning,frameAt);
  assert.deepEqual(a,b);
 });
+
+test("zero fixed step leaves vehicle state unchanged",()=>{
+ const car=makeCar({t:.4,lateral:12,speed:90,lateralVelocity:3,yaw:.1,yawRate:.2});
+ const before={...car};
+ assert.equal(stepVehicleDynamics(car,{throttle:true,brake:false,steer:1},{...tuning,dt:0},frameAt),null);
+ assert.deepEqual(car,before);
+});
