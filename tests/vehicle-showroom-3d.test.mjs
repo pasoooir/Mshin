@@ -61,3 +61,26 @@ test("procedural finish details distinguish paint flakes, carbon weave, rubber g
   assert.match(pbr, /Rubber sidewall micrograin/);
   assert.match(pbr, /Brushed aluminium/);
 });
+
+
+test("showroom pauses GPU work when hidden or offscreen and resumes when visible", () => {
+  assert.match(renderer, /document\.addEventListener\("visibilitychange",onVisibility\)/);
+  assert.match(renderer, /new IntersectionObserver/);
+  assert.match(renderer, /!visible\|\|!intersecting\|\|contextLost/);
+  assert.match(renderer, /cancelAnimationFrame\(raf\)/);
+});
+
+test("showroom releases every registered input and lifecycle listener on destroy", () => {
+  assert.match(renderer, /canvas\.removeEventListener\("pointerdown",pointerDown\)/);
+  assert.match(renderer, /document\.removeEventListener\("visibilitychange",onVisibility\)/);
+  assert.match(renderer, /window\.removeEventListener\("pointermove",move\)/);
+  assert.match(renderer, /canvas\.removeEventListener\("webglcontextlost",onContextLost\)/);
+  assert.match(renderer, /intersectionObserver\?\.disconnect\(\)/);
+  assert.match(renderer, /if\(disposed\)return;disposed=true/);
+});
+
+test("showroom handles WebGL context loss without continuing to issue draw calls", () => {
+  assert.match(renderer, /event\.preventDefault\(\);contextLost=true/);
+  assert.match(renderer, /state\.status="context-lost"/);
+  assert.match(renderer, /onContextRestored/);
+});
