@@ -4,13 +4,21 @@
 const EPS = 1e-8;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
 export function createRigidVehicle({ x=0, y=0, vx=0, vy=0, angle=0, angularVelocity=0,
   mass=1200, length=108, width=58, restitution=.12, friction=.34 } = {}) {
-  const safeMass = Math.max(1, mass);
-  return { x, y, vx, vy, angle, angularVelocity, mass:safeMass, length, width,
-    inertia:safeMass*(length*length+width*width)/12,
-    invMass:1/safeMass, invInertia:12/(safeMass*(length*length+width*width)),
-    restitution:clamp(restitution,0,.8), friction:clamp(friction,0,1) };
+  const safeMass=clamp(finite(mass,1200),250,4000);
+  const safeLength=clamp(finite(length,108),30,300);
+  const safeWidth=clamp(finite(width,58),18,120);
+  return {
+    x:finite(x,0),y:finite(y,0),vx:finite(vx,0),vy:finite(vy,0),
+    angle:finite(angle,0),angularVelocity:finite(angularVelocity,0),
+    mass:safeMass,length:safeLength,width:safeWidth,
+    inertia:safeMass*(safeLength*safeLength+safeWidth*safeWidth)/12,
+    invMass:1/safeMass,invInertia:12/(safeMass*(safeLength*safeLength+safeWidth*safeWidth)),
+    restitution:clamp(finite(restitution,.12),0,.8),
+    friction:clamp(finite(friction,.34),0,1)
+  };
 }
 
 function axes(body) {
@@ -44,6 +52,8 @@ export function vehicleContact(a,b) {
 function cross(ax,ay,bx,by){return ax*by-ay*bx}
 function velocityAt(body,rx,ry){return {x:body.vx-body.angularVelocity*ry,y:body.vy+body.angularVelocity*rx}}
 export function resolveRigidVehicleImpact(a,b,{positionPercent=.82,slop=.02}={}) {
+  positionPercent=clamp(finite(positionPercent,.82),0,1);
+  slop=clamp(finite(slop,.02),0,5);
   const contact=vehicleContact(a,b);
   if(!contact.hit)return {hit:false,energy:0,impulse:0,overlap:0};
   const {nx,ny,point}=contact,raX=point.x-a.x,raY=point.y-a.y,rbX=point.x-b.x,rbY=point.y-b.y;
