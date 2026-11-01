@@ -524,14 +524,20 @@ try {
         if (!telemetry || !Number.isFinite(telemetry.playerTrackT)) return { steering: 0, brake: false };
         const lateral = Number(telemetry.playerLateral) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
-        // Use the same analog steering surface as a human driver. A bounded,
-        // deliberately soft controller avoids full-lock oscillation and keeps
-        // the tyres inside their combined steering/braking force budget.
-        const steering = Math.max(-.48, Math.min(.48, -lateral / 520 - yaw * .34));
-        return { steering, brake: telemetry.playerSpeed > 190 };
+        const trackCurvature = Number(telemetry.playerTrackCurvature) || 0;
+        // Pure-pursuit path tracking: compensate for the road's curvature,
+        // then aim a look-ahead point back toward the road centre. This keeps
+        // the test driver on the actual track rather than steering against
+        // lateral error alone (which cannot follow a curved road).
+        const lookAhead = 360;
+        const correctionCurvature = -2 * (lateral + lookAhead * Math.sin(yaw)) / (lookAhead * lookAhead);
+        const targetCurvature = trackCurvature + correctionCurvature;
+        const steering = Math.max(-.92, Math.min(.92, Math.atan(128 * targetCurvature) / .48));
+        return { steering, brake: telemetry.playerSpeed > 205 };
       });
+      const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
       await economy.mouse.move(
-        steeringCenter.x + controls.steering * steeringLimit,
+        steeringCenter.x + pointerSteering * steeringLimit,
         steeringCenter.y
       );
       if (controls.brake) await economy.keyboard.down("ArrowDown");
