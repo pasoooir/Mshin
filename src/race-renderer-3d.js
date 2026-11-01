@@ -201,6 +201,8 @@ export function createRaceRenderer(canvas){
  function render(snapshot){
   if(!gl||lost||!snapshot||!["race","countdown","paused"].includes(snapshot.state))return;
   resize();
+  const playerProfile=vehicleShapeFor("player",snapshot.player.modelId);
+  if(!carPartSets.has(playerProfile))carPartSets.set(playerProfile,buildCar(playerProfile));
   // Build at most one additional vehicle mesh set per frame. The player car
   // is created on demand; rival silhouettes are upgraded progressively so
   // ten detailed profiles cannot cause a first-frame GPU upload spike.
