@@ -69,3 +69,11 @@ test("releaseAll safely clears every active pointer", () => {
   assert.equal(input.pointerCount(), 0);
   assert.deepEqual(input.snapshot().activePointers, { steering: 0, throttle: 0, brake: 0, turbo: 0 });
 });
+
+test("neutral steering does not retain a phantom pointer owner", () => {
+  const input = createInputStateManager();
+  input.set("steering", -1, 0);
+  assert.equal(input.snapshot().steering, 0);
+  assert.equal(input.snapshot().activePointers.steering, 0);
+  assert.equal(input.pointerCount(), 0);
+});
