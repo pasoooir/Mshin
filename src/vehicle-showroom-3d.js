@@ -29,7 +29,7 @@ function box(out,x,y,z,w,h,d){const x0=x-w/2,x1=x+w/2,y0=y-h/2,y1=y+h/2,z0=z-d/2
 function cylinderX(out,x,y,z,r,depth,segments=24){for(let i=0;i<segments;i++){const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,p=[x,y+Math.cos(a)*r,z+Math.sin(a)*r],q=[x,y+Math.cos(b)*r,z+Math.sin(b)*r],p2=[x+depth,y+Math.cos(a)*r,z+Math.sin(a)*r],q2=[x+depth,y+Math.cos(b)*r,z+Math.sin(b)*r];quad(out,p,q,q2,p2);tri(out,[x,y,z],q,p);tri(out,[x+depth,y,z],p2,q2)}}
 function mesh(gl,vertices,paint,materialName="body",emissive=0){const data=new Float32Array(vertices.length/3*6);let k=0;for(let i=0;i<vertices.length;i+=9){const a=vertices.slice(i,i+3),b=vertices.slice(i+3,i+6),c=vertices.slice(i+6,i+9),n=normalize(cross(sub(b,a),sub(c,a)));for(let j=0;j<3;j++){data[k++]=vertices[i+j*3];data[k++]=vertices[i+j*3+1];data[k++]=vertices[i+j*3+2];data[k++]=n[0];data[k++]=n[1];data[k++]=n[2]}}const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);const material=VEHICLE_MATERIALS[materialName]||VEHICLE_MATERIALS.body;return {buffer,count:data.length/6,color:color(paint),...material,emissive}}
 export function buildVehicleGeometry(id){
- const p=PROFILES[id]||PROFILES.rally,w=p.width,L=p.length,h=p.height,body=geometry(),glass=geometry(),trim=geometry(),rubber=geometry(),rims=geometry(),lights=geometry(),aero=geometry(),decals=geometry();
+ const p=PROFILES[id]||PROFILES.rally,w=p.width,L=p.length,h=p.height,body=geometry(),glass=geometry(),trim=geometry(),rubber=geometry(),rims=geometry(),brakes=geometry(),interior=geometry(),lights=geometry(),aero=geometry(),decals=geometry();
  // Low, wide racing shell with a tapered nose, shoulder volume and raised rear haunches.
  const stations=[[-68,19,9,22],[-54,29,11,29],[-30,34,13,33],[4,36,13,35],[39,33,12,32],[61,27,12,27],[69,20,13,20]];
  const rings=stations.map(([z,bottom,side,top])=>[[-bottom*w,10*h,z*L],[bottom*w,10*h,z*L],[side*w,22*h,z*L],[top*w,34*h,z*L],[-top*w,34*h,z*L],[-side*w,22*h,z*L]]);
@@ -72,7 +72,7 @@ export function buildVehicleGeometry(id){
  box(trim,0,19*h,68*L,24*w,7,2);
  box(trim,0,18*h,69*L,13*w,3,2);
  box(trim,0,13*h,-67*L,44*w,5,4);
- // Touring wing and rear diffuser; off-road and SUV profiles receive tall clearance details.
+ // Cockpit furniture, roll structure and race-grade cabin details visible through the glazing.\n box(interior,-10*w,31*p.cabin,-7*L,13,5,17);box(interior,10*w,31*p.cabin,-7*L,13,5,17);\n box(interior,-10*w,39*p.cabin,-13*L,11,17*p.cabin,5);box(interior,10*w,39*p.cabin,-13*L,11,17*p.cabin,5);\n box(interior,0,32*p.cabin,23*L,48*w,5,9);box(interior,0,37*p.cabin,28*L,3,3,4);\n box(interior,-21*w,42*p.cabin,-2*L,2,19*p.cabin,2);box(interior,21*w,42*p.cabin,-2*L,2,19*p.cabin,2);\n // Touring wing and rear diffuser; off-road and SUV profiles receive tall clearance details.
  if(p.style!=="electric"){box(aero,0,53*p.cabin,-63*L,62*w,3,6);box(aero,-27*w,44*p.cabin,-63*L,3,13,5);box(aero,27*w,44*p.cabin,-63*L,3,13,5)}
  if(p.style==="offroad"||p.style==="suv"){box(aero,0,59*h,-5*L,52*w,3,46*L);box(aero,-24*w,51*h,-5*L,3,15,42*L);box(aero,24*w,51*h,-5*L,3,15,42*L);box(trim,0,68*h,0,4,3,105*L)}
  if(p.style==="rally"){for(const side of [-1,1])box(decals,side*20*w,35*h,-2*L,5,1,100*L);box(aero,0,59*h,-59*L,72*w,3,5)}
@@ -94,7 +94,7 @@ export function buildVehicleGeometry(id){
   cylinderX(trim,x+(x0<0?19:0),y,z,3.8,2,16);
   for(let spoke=0;spoke<10;spoke++){const a=spoke/10*Math.PI*2,xx=x+(x0<0?19:0)+1.2,cy=y+Math.cos(a)*p.wheel*.43,cz=z+Math.sin(a)*p.wheel*.43;box(rims,xx,cy,cz,2,2.1,Math.max(2,p.wheel*.48))}
  }
- // Carbon brake vents, mirrors, race number plates and subtle pinstriping.
+ // Exhaust tips, hood louvres, washer jets, windshield wipers and panel hardware.\n for(const side of [-1,1]){cylinderX(trim,side*18*w-3,11*h,-69*L,3.2,7,18);box(aero,side*10*w,35*h,43*L,5,1.2,13*L);box(trim,side*12*w,33*h,43*L,1.2,1,13*L);box(trim,side*14*w,34*h,24*L,2,1,12)}\n box(trim,0,31*p.cabin,24*L,35*w,1.2,2);box(trim,0,29*p.cabin,21*L,28*w,1,2);\n // Carbon brake vents, mirrors, race number plates and subtle pinstriping.
  box(decals,0,36*h,0,15,1,12);
  return [
   {vertices:body,paint:p.paint,material:"body",emissive:0},{vertices:glass,paint:"#122d42",material:"glass",emissive:.02},
