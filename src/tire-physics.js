@@ -47,7 +47,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  // command, otherwise a steady turn would push the car off the road.
  const lateralDamping=5.5*steeringScale;
  const requestedLateralAcceleration=-lateral*lateralDamping;
- const lateralAcceleration=clamp(requestedLateralAcceleration,-availableLateral,availableLateral);
+ const lateralAccelerationRaw=clamp(requestedLateralAcceleration,-availableLateral,availableLateral);\n const lateralAcceleration=Math.abs(lateralAccelerationRaw)<1e-9?0:lateralAccelerationRaw;
  const slipAngle=Math.atan2(lateral,Math.max(v,1));
 
  // Slip contributes a damped yaw correction, but the final yaw remains inside
