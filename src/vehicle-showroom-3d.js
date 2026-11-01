@@ -137,7 +137,7 @@ export function createVehicleShowroom(canvas){
  const identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
  const draw=now=>{
   if(disposed)return;raf=requestAnimationFrame(draw);if(now-last<30)return;last=now;
-  resize();if(spinUntil>now)yaw+=.028;state.yaw=yaw;state.frames++;
+  resize();if(spinUntil>now)yaw+=.14;state.yaw=yaw;state.frames++;
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);
   const aspect=width/Math.max(1,height),projection=perspective(.68,aspect,.1,900),distance=225;
   const eye=[Math.sin(yaw)*Math.cos(state.pitch)*distance,Math.sin(state.pitch)*distance+57,Math.cos(yaw)*Math.cos(state.pitch)*distance];
