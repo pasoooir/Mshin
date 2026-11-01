@@ -161,7 +161,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /hudClock>=\.1/);
 });
 
-test("boot experience uses a cinematic game splash and compact one-page mobile menu", async () => {
+test("boot experience uses a cinematic game splash and responsive motorsport menu", async () => {
   const html = await readFile(path.join(root, "index.html"), "utf8");
   assert.match(html, /class="splash"/);
   assert.match(html, /lang="fa-IR" dir="rtl"/);
@@ -170,10 +170,10 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰.۱۱.۰/);
+  assert.match(html, /نسخه ۰.۱۷.۰/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
-  assert.match(html, /splashCarFront/);
+  assert.match(html, /splashCarFront/);\n  assert.match(html, /menu-visual-system\\.css/);\n  assert.match(html, /class="homeShowcase"/);\n  assert.match(html, /class="menuHero"/);
   assert.match(html, /id="assetPercent"/);
   assert.match(html, /id="assetProgress"/);
   assert.match(html, /@keyframes splashDrive/);
