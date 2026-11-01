@@ -502,7 +502,12 @@ try {
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   await economy.keyboard.down("ArrowUp");
-  let activeSteerKey = null;
+  const steeringPad = await economy.locator("#stick").boundingBox();
+  assert.ok(steeringPad && steeringPad.width > 0, "economy race must expose the analog steering pad");
+  const steeringCenter = { x: steeringPad.x + steeringPad.width / 2, y: steeringPad.y + steeringPad.height / 2 };
+  const steeringLimit = Math.max(1, (steeringPad.width - 58) / 2);
+  await economy.mouse.move(steeringCenter.x, steeringCenter.y);
+  await economy.mouse.down();
   const raceDeadline = Date.now() + 120000;
   try {
     while (Date.now() < raceDeadline) {
@@ -515,31 +520,28 @@ try {
         throw new Error("race ended before a valid stage finish");
       }
       const controls = await economy.evaluate(() => {
-        // The game publishes its live vehicle state through MshinPerformance;
-        // MshinRaceTelemetry is not a runtime API and silently produced zero steer.
         const telemetry = window.MshinPerformance;
         if (!telemetry || !Number.isFinite(telemetry.playerTrackT)) return { steering: 0, brake: false };
         const lateral = Number(telemetry.playerLateral) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
-        // Stabilize both lateral displacement and chassis heading. Ease off
-        // throttle speed with braking before the high-speed tyre budget saturates.
-        const steering = Math.max(-.82, Math.min(.82, -lateral / 145 - yaw * 1.05));
-        return { steering, brake: telemetry.playerSpeed > 175 };
+        // Use the same analog steering surface as a human driver. A bounded,
+        // deliberately soft controller avoids full-lock oscillation and keeps
+        // the tyres inside their combined steering/braking force budget.
+        const steering = Math.max(-.48, Math.min(.48, -lateral / 520 - yaw * .34));
+        return { steering, brake: telemetry.playerSpeed > 190 };
       });
-      const nextSteerKey = controls.steering < -.12 ? "ArrowLeft"
-        : controls.steering > .12 ? "ArrowRight" : null;
-      if (nextSteerKey !== activeSteerKey) {
-        if (activeSteerKey) await economy.keyboard.up(activeSteerKey);
-        if (nextSteerKey) await economy.keyboard.down(nextSteerKey);
-        activeSteerKey = nextSteerKey;
-      }
+      await economy.mouse.move(
+        steeringCenter.x + controls.steering * steeringLimit,
+        steeringCenter.y
+      );
       if (controls.brake) await economy.keyboard.down("ArrowDown");
       else await economy.keyboard.up("ArrowDown");
-      await economy.waitForTimeout(90);
+      await economy.waitForTimeout(70);
     }
-    await economy.waitForFunction(() => /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent),
-      undefined, { timeout: Math.max(1, raceDeadline - Date.now()) });
+    const completed = await economy.evaluate(() => /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent));
+    if (!completed) throw new Error("race deadline elapsed before a rewarded finish");
   } catch (error) {
+    await economy.mouse.up();
     const raceState = await economy.evaluate(() => ({
       finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
       hudHidden: document.querySelector("#hud")?.classList.contains("hidden"),
@@ -550,7 +552,7 @@ try {
       renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
       performance: window.MshinPerformance ?? null,
       progress: localStorage.getItem("mshin-progress-v1"),
-      telemetry: window.MshinRaceTelemetry ?? null,
+      telemetry: window.MshinPerformance ?? null,
       bodyClass: document.body.className
     }));
     throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
