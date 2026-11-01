@@ -64,5 +64,5 @@ test("3D rival selection reuses scratch arrays, avoids sorting, and draws rivals
  assert.ok(renderer.includes("visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance)"));
  assert.ok(!renderer.includes("visibleRivals.sort("));
  assert.ok(renderer.includes("drawVehicle(r.distance,r.lateral,r.yaw||0"));
- assert.ok(renderer.includes("Math.min(delta,Math.PI*2-delta)"));
+ assert.ok(renderer.includes("rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta)"));
 });
