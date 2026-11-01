@@ -71,7 +71,7 @@ export function createRaceRenderer(canvas){
   // Release the previous stage meshes before allocating the next stage to prevent GPU-memory growth.
   disposeParts([road,...decor]);road=null;decor=[];
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
-  const segments=mobile?84:360,half=180;
+  const segments=mobile?84:240,half=180;
   for(let i=0;i<segments;i++){
    const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,(f.height||0)+y,-(f.p.y+f.ny*offset)];
@@ -84,19 +84,19 @@ export function createRaceRenderer(canvas){
   }
   road=part(roadTris,theme[1]);decor=[part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0])];
   const trees=[],buildings=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[];
-  for(let i=0;i<(mobile?18:70);i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
+  for(let i=0;i<(mobile?18:48);i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
    if((snapshot.world||0)===4||(snapshot.world||0)===8){box(buildings,x,48,z,44+(i%3)*16,95+(i%4)*32,42);box(buildings,x,100+(i%4)*32,z,48+(i%3)*16,5,46)}
    else{box(trees,x,(f.height||0)+18,z,9,36,9);const cone=[];const baseY=(f.height||0)+22,rad=24+(i%3)*7,top=(f.height||0)+74+(i%4)*8;for(let j=0;j<8;j++){const aa=j/8*Math.PI*2,bb=(j+1)/8*Math.PI*2;tri(cone,[x+Math.cos(aa)*rad,baseY,z+Math.sin(aa)*rad],[x+Math.cos(bb)*rad,baseY,z+Math.sin(bb)*rad],[x,top,z])}trees.push(...cone)}
   }
   decor.push(part(trees,theme[3]),part(buildings,(snapshot.world||0)===4?"#5c4d85":"#747b82"));
-  for(let i=0;i<360;i+=(mobile?18:4)){
+  for(let i=0;i<360;i+=(mobile?18:6)){
    const a=i/360*Math.PI*2,b=(i+1)/360*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    for(const side of [-1,1]){
     const offset=side*(half+15),p0=[fa.p.x+fa.nx*offset,(fa.height||0)+12,-(fa.p.y+fa.ny*offset)],p1=[fb.p.x+fb.nx*offset,(fb.height||0)+12,-(fb.p.y+fb.ny*offset)],q0=[p0[0],p0[1]+19,p0[2]],q1=[p1[0],p1[1]+19,p1[2]];
     quad(railTris,p0,p1,q1,q0);
    }
   }
-  for(let i=0;i<(mobile?10:54);i++){
+  for(let i=0;i<(mobile?10:36);i++){
    const t=(i+.5)/(mobile?16:54)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,offset=238+(i%4)*13,x=f.p.x+f.nx*side*offset,z=-(f.p.y+f.ny*side*offset),base=f.height||0;
    box(crowdBodies,x,base+27,z,11,20,8);box(crowdBodies,x-7,base+27,z,5,17,5);box(crowdBodies,x+7,base+27,z,5,17,5);
    box(crowdHeads,x,base+43,z,9,9,9);box(crowdLegs,x-3,base+12,z,5,13,6);box(crowdLegs,x+3,base+12,z,5,13,6);
