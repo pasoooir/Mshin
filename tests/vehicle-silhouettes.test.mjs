@@ -31,3 +31,10 @@ test("the selected garage vehicle identity reaches the 3D player renderer", () =
   assert.match(game, /modelId:activeCar\(\)\.id/);
   assert.match(renderer, /snapshot\.player\.modelId/);
 });
+
+test("additional AI meshes are queued and uploaded progressively", () => {
+  assert.match(renderer, /carBuildQueue=\[\]/);
+  assert.match(renderer, /carBuildQueued=new Set\(\)/);
+  assert.match(renderer, /if\(carBuildQueue\.length\)/);
+  assert.match(renderer, /return carPartSets\.values\(\)\.next\(\)\.value/);
+});
