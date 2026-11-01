@@ -81,3 +81,21 @@ test("cornering consumes braking capacity through the shared friction circle",()
  assert.ok(turning.brakingDeceleration<straight.brakingDeceleration);
  assert.ok(turning.frictionUtilization<=1+1e-7);
 });
+
+
+test("drive acceleration scales with available road grip",()=>{
+ const requestedAcceleration=260;
+ const dry=resolveLongitudinalAcceleration({requestedAcceleration,grip:1});
+ const wet=resolveLongitudinalAcceleration({requestedAcceleration,grip:.86});
+ const snow=resolveLongitudinalAcceleration({requestedAcceleration,grip:.78});
+ assert.equal(dry,requestedAcceleration);
+ assert.ok(wet<dry);
+ assert.ok(snow<wet);
+ assert.equal(resolveLongitudinalAcceleration({requestedAcceleration:-10,grip:1}),0);
+ assert.equal(resolveLongitudinalAcceleration({requestedAcceleration:260,grip:1.15}),299);
+});
+
+test("invalid traction inputs remain finite and safe",()=>{
+ assert.equal(resolveLongitudinalAcceleration({requestedAcceleration:NaN,grip:NaN}),0);
+ assert.equal(resolveLongitudinalAcceleration({requestedAcceleration:260,grip:.1}),91);
+});
