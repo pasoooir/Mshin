@@ -401,6 +401,18 @@ try {
   const afterConcurrentRelease=await page.evaluate(()=>window.MshinInputState?.());
   assert.equal(afterConcurrentRelease.throttle,0,"throttle must release after its own pointer is lifted");
   assert.equal(afterConcurrentRelease.turbo,false,"turbo must release after its own pointer is lifted");
+  await gasControl.dispatchEvent("pointerdown",{pointerId:520,pointerType:"touch",clientX:0,clientY:0,button:0,isPrimary:true});
+  await page.locator("#brake").dispatchEvent("pointerdown",{pointerId:521,pointerType:"touch",clientX:0,clientY:0,button:0,isPrimary:false});
+  const simultaneousPedals=await page.evaluate(()=>window.MshinInputState?.());
+  assert.equal(simultaneousPedals.throttle,1,"accelerator must remain active while brake is pressed");
+  assert.equal(simultaneousPedals.brake,1,"brake must remain active while accelerator is pressed");
+  await gasControl.dispatchEvent("pointermove",{pointerId:520,pointerType:"touch",clientX:-900,clientY:-900,button:0,isPrimary:true});
+  assert.equal((await page.evaluate(()=>window.MshinInputState?.())).throttle,1,"moving a captured finger outside its pedal must not release it");
+  await gasControl.dispatchEvent("pointercancel",{pointerId:520,pointerType:"touch",button:0,isPrimary:true});
+  assert.equal((await page.evaluate(()=>window.MshinInputState?.())).throttle,0,"Pointer Cancel must release only the cancelled accelerator pointer");
+  await page.locator("#brake").dispatchEvent("lostpointercapture",{pointerId:521,pointerType:"touch",button:0,isPrimary:false});
+  assert.equal((await page.evaluate(()=>window.MshinInputState?.())).brake,0,"lost pointer capture must release the remaining brake pointer");
+
   await steeringPad.dispatchEvent("pointerdown",{pointerId:511,pointerType:"touch",clientX:steeringBounds.x+steeringBounds.width*.8,clientY:steeringBounds.y+steeringBounds.height/2,button:0,isPrimary:true});
   await gasControl.dispatchEvent("pointerdown",{pointerId:512,pointerType:"touch",clientX:0,clientY:0,button:0,isPrimary:false});
   await page.locator("#pause").click();
