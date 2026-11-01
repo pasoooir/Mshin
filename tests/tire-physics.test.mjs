@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { resolveTireForces, resolveLongitudinalAcceleration } from "../src/tire-physics.js";
 
 test("combined throttle and lateral demand never exceed tire capacity",()=>{
- const response=resolveTireForces({speed:240,lateralVelocity:0,steer:1,throttle:true,brake:false,grip:.65,deltaSeconds:1/60});
+ const response=resolveTireForces({speed:240,lateralVelocity:80,steer:1,throttle:true,brake:false,grip:.65,deltaSeconds:1/60});
  assert.ok(Math.abs(response.lateralAcceleration)<=response.tireCapacity);
  assert.ok(response.lateralScale<1);
 });
@@ -25,7 +25,7 @@ test("sustained lateral velocity generates bounded progressive oversteer yaw",()
 test("braking consumes more tire budget than coasting during a turn",()=>{
  const coast=resolveTireForces({speed:180,lateralVelocity:0,steer:1,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
  const braking=resolveTireForces({speed:180,lateralVelocity:0,steer:1,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
- assert.ok(braking.corneringScale<coast.corneringScale);
+ assert.ok(braking.availableLateral<coast.availableLateral);
 });
 
 test("zero-speed steering does not create a yaw impulse",()=>{
