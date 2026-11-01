@@ -114,6 +114,7 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
           lateral: p.playerLateral,
           yaw: p.playerYaw,
           lateralVelocity: p.playerLateralVelocity,
+          trackCurvature: p.playerTrackCurvature,
           speed: p.playerSpeed,
           damage: p.damage,
           damageLevel: p.damageLevel,
@@ -173,6 +174,7 @@ async function driveUntilPickupWithFeedback(page, timeoutMs = 20000) {
           targetLateral: 30,
           yaw: p.playerYaw,
           lateralVelocity: p.playerLateralVelocity,
+          trackCurvature: p.playerTrackCurvature,
           speed: p.playerSpeed,
           trackT: p.playerTrackT,
           nitro: Number.parseFloat(document.querySelector("#nitroFill")?.style.width || "0")
