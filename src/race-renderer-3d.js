@@ -52,7 +52,10 @@ export function createRaceRenderer(canvas){
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
  function part(tris,color,emissive=0){return {mesh:makeGeometry(gl,tris),color:hexColor(color),emissive}}
+ function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
  function buildTrack(snapshot){
+  // Release the previous stage meshes before allocating the next stage to prevent GPU-memory growth.
+  disposeParts([road,...decor]);road=null;decor=[];
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
   const segments=mobile?112:360,half=180;
   for(let i=0;i<segments;i++){
@@ -122,5 +125,5 @@ export function createRaceRenderer(canvas){
  function onLost(e){e.preventDefault();lost=true;state.status="context-lost"}
  function onRestored(){lost=false;state.status="context-restored";lastStage=-1;carParts=[]}
  canvas.addEventListener("webglcontextlost",onLost);canvas.addEventListener("webglcontextrestored",onRestored);
- return {state,render,resize,destroy(){canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);for(const p of [road,...decor,...carParts].filter(Boolean))gl.deleteBuffer(p.mesh.buffer);if(program)gl.deleteProgram(program)}};
+ return {state,render,resize,destroy(){canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([road,...decor,...carParts]);if(program)gl.deleteProgram(program)}};
 }
