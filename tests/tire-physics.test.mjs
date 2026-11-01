@@ -144,3 +144,12 @@ test("countersteer progressively reduces an established rear-slip yaw target",()
  assert.ok(countersteer.yawRateTarget<neutral.yawRateTarget);
  assert.ok(Number.isFinite(countersteer.lateralAcceleration));
 });
+
+
+test("high-grip vehicles retain distinct traction instead of being capped to the same value",()=>{
+ const lynx=resolveLongitudinalAcceleration({requestedAcceleration:260,grip:1.22});
+ const raptor=resolveLongitudinalAcceleration({requestedAcceleration:260,grip:1.32});
+ assert.ok(lynx>260);
+ assert.ok(raptor>lynx);
+ assert.ok(raptor<260*1.32+1e-9);
+});
