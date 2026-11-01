@@ -31,7 +31,20 @@ function translate(x,y,z){return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,x,y,z
 function rotateY(a){const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1])}
 function scale(x,y,z){return new Float32Array([x,0,0,0,0,y,0,0,0,0,z,0,0,0,0,1])}
 function shader(gl,type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s)||"3D shader compile failed");return s}
-function makeProgram(gl){const p=gl.createProgram();gl.attachShader(p,shader(gl,gl.VERTEX_SHADER,VERT));gl.attachShader(p,shader(gl,gl.FRAGMENT_SHADER,FRAG));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p)||"3D program link failed");return p}
+function makeProgram(gl){
+ const vertex=shader(gl,gl.VERTEX_SHADER,VERT),fragment=shader(gl,gl.FRAGMENT_SHADER,FRAG),p=gl.createProgram();
+ try{
+  gl.attachShader(p,vertex);gl.attachShader(p,fragment);gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p)||"3D program link failed");
+  gl.detachShader(p,vertex);gl.detachShader(p,fragment);gl.deleteShader(vertex);gl.deleteShader(fragment);
+  return p;
+ }catch(error){
+  try{gl.deleteProgram(p)}catch{}
+  try{gl.deleteShader(vertex)}catch{}
+  try{gl.deleteShader(fragment)}catch{}
+  throw error;
+ }
+}
 function makeGeometry(gl,triangles){const data=[];for(let i=0;i<triangles.length;i+=9){const a=triangles.slice(i,i+3),b=triangles.slice(i+3,i+6),c=triangles.slice(i+6,i+9),n=norm(cross(sub(b,a),sub(c,a)));for(const p of [a,b,c])data.push(...p,...n)}const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return {buffer,count:data.length/6}}
 function tri(out,a,b,c){out.push(...a,...b,...c)}
 function quad(out,a,b,c,d){tri(out,a,b,c);tri(out,a,c,d)}
