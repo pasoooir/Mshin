@@ -396,6 +396,9 @@ try {
   const mobileShowroom=await mobile.locator("#showroomVehicle").boundingBox();
   const showroomCenter = { x: mobileShowroom.x + mobileShowroom.width/2, y: mobileShowroom.y + mobileShowroom.height/2 };
   await mobile.locator("#showroomVehicle").dispatchEvent("pointerdown", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y });
+  const dragMovesBeforeForeignPointer = await mobile.evaluate(()=>window.MshinShowroom.dragMoves||0);
+  await mobile.locator("#showroomVehicle").dispatchEvent("pointermove", { pointerId: 78, pointerType: "touch", clientX: showroomCenter.x + 40, clientY: showroomCenter.y + 35 });
+  assert.equal(await mobile.evaluate(()=>window.MshinShowroom.dragMoves||0),dragMovesBeforeForeignPointer,"showroom must ignore movement from a different pointer");
   await mobile.locator("#showroomVehicle").dispatchEvent("pointermove", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y + 35 });
   await mobile.locator("#showroomVehicle").dispatchEvent("pointerup", { pointerId: 77, pointerType: "touch", clientX: showroomCenter.x, clientY: showroomCenter.y + 35 });
   await mobile.waitForTimeout(60);
