@@ -92,30 +92,6 @@ try {
   page.on("requestfailed", request => errors.push("requestfailed: " + request.url() + " — " + (request.failure()?.errorText || "unknown")));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(page, "initial desktop boot");
-  await page.evaluate(() => {
-    class TestDeviceOrientationEvent extends Event {
-      static async requestPermission() { return "granted"; }
-      constructor(type, values = {}) { super(type); Object.assign(this, values); }
-    }
-    Object.defineProperty(window, "DeviceOrientationEvent", { configurable: true, value: TestDeviceOrientationEvent });
-  });
-  await page.locator("#gyroToggle").click();
-  await page.waitForFunction(() => document.querySelector("#gyroToggle")?.getAttribute("aria-pressed") === "true" && document.querySelector("#gyroSensitivity") && !document.querySelector("#gyroSensitivity").hidden, undefined, { timeout: 5000 });
-  assert.equal(await page.locator("#gyroToggle").getAttribute("aria-pressed"), "true", "gyro control should enable after explicit user activation");
-  assert.equal(await page.locator("#gyroCalibrate").isVisible(), true, "gyro calibration should appear when the sensor is enabled");
-  assert.equal(await page.locator("#gyroSensitivity").isVisible(), true, "gyro sensitivity control should appear when the sensor is enabled");
-  const initialGyroSensitivity = await page.locator("#gyroSensitivity").textContent();
-  await page.locator("#gyroSensitivity").click();
-  assert.notEqual(await page.locator("#gyroSensitivity").textContent(), initialGyroSensitivity, "gyro sensitivity should be adjustable");
-  await page.evaluate(() => {
-    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 0 }));
-    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 12 }));
-  });
-  await page.waitForFunction(() => Math.abs(window.MshinPerformance?.steerTarget || 0) > .1, undefined, { timeout: 5000 });
-  await page.locator("#gyroCalibrate").click();
-  await page.waitForFunction(() => document.querySelector("#gyroCalibrate").textContent.includes("مرکز تنظیم شد"));
-  await page.locator("#gyroToggle").click();
-  assert.equal(await page.locator("#gyroToggle").getAttribute("aria-pressed"), "false", "gyro control should disable cleanly");
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
@@ -221,6 +197,34 @@ try {
   }
   assert.equal(raceRequests.length, requestCountAtStart, "countdown and gameplay must not trigger late asset/network requests");
   assert.equal(await page.evaluate(() => window.MshinAudioReady), true, "all CDN engine and effect audio must decode before GO");
+
+  // Gyro controls live in the in-race HUD, so exercise them only after the race
+  // has started and the HUD is visible. Testing them on the home screen hid the
+  // actual controls and caused a 60-second Playwright timeout.
+  await page.evaluate(() => {
+    class TestDeviceOrientationEvent extends Event {
+      static async requestPermission() { return "granted"; }
+      constructor(type, values = {}) { super(type); Object.assign(this, values); }
+    }
+    Object.defineProperty(window, "DeviceOrientationEvent", { configurable: true, value: TestDeviceOrientationEvent });
+  });
+  await page.locator("#gyroToggle").click();
+  await page.waitForFunction(() => document.querySelector("#gyroToggle")?.getAttribute("aria-pressed") === "true" && document.querySelector("#gyroSensitivity") && !document.querySelector("#gyroSensitivity").hidden, undefined, { timeout: 5000 });
+  assert.equal(await page.locator("#gyroToggle").getAttribute("aria-pressed"), "true", "gyro control should enable after explicit user activation");
+  assert.equal(await page.locator("#gyroCalibrate").isVisible(), true, "gyro calibration should appear when the sensor is enabled");
+  assert.equal(await page.locator("#gyroSensitivity").isVisible(), true, "gyro sensitivity control should appear when the sensor is enabled");
+  const initialGyroSensitivity = await page.locator("#gyroSensitivity").textContent();
+  await page.locator("#gyroSensitivity").click();
+  assert.notEqual(await page.locator("#gyroSensitivity").textContent(), initialGyroSensitivity, "gyro sensitivity should be adjustable");
+  await page.evaluate(() => {
+    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 0 }));
+    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 12 }));
+  });
+  await page.waitForFunction(() => Math.abs(window.MshinPerformance?.steerTarget || 0) > .1, undefined, { timeout: 5000 });
+  await page.locator("#gyroCalibrate").click();
+  await page.waitForFunction(() => document.querySelector("#gyroCalibrate").textContent.includes("مرکز تنظیم شد"));
+  await page.locator("#gyroToggle").click();
+  assert.equal(await page.locator("#gyroToggle").getAttribute("aria-pressed"), "false", "gyro control should disable cleanly");
   const physicsCheck = await page.evaluate(async () => { const p = await import("./src/collision-physics.js"); const a={x:0,y:0,vx:300,vy:0,mass:1200,radius:32},b={x:64,y:0,vx:40,vy:0,mass:1000,radius:32}; const hit=p.resolveVehicleImpact(a,b); const damage=p.createDamageState(); p.applyVehicleDamage(damage,hit.energy,"rear"); return {hit:hit.hit,closing:hit.closingSpeed,rivalVelocity:b.vx,damage:damage.total,level:p.damageLevel(damage)}; });
   assert.equal(physicsCheck.hit,true,"browser should load collision impulse solver");
   assert.ok(physicsCheck.closing>0 && physicsCheck.rivalVelocity>40,"rear impact should transfer momentum");
