@@ -105,12 +105,61 @@ export function createRaceRenderer(canvas){
   lastStage=snapshot.stageId;
  }
  function buildCar(){
-  const body=[],glass=[],trim=[],wheels=[];
-  box(body,0,18,0,66,22,116);box(body,0,32,-5,55,14,66);box(body,0,39,-6,46,3,58);
-  box(glass,0,40,22,43,16,25);box(glass,0,40,-29,43,15,20);
-  box(trim,-24,16,57,8,7,5);box(trim,24,16,57,8,7,5);box(trim,-23,16,-58,9,7,5);box(trim,23,16,-58,9,7,5);
-  for(const x of [-37,37])for(const z of [-37,38]){cylinder(wheels,x,13,z,13,9,14);cylinder(trim,x+(x<0?-9:9),13,z,7,2,12)}
-  carParts=[part(body,"#e94f45"),part(glass,"#8bd7ed"),part(trim,"#e7e9e9"),part(wheels,"#171c23")];
+  const body=[],glass=[],trim=[],wheels=[],rims=[],lights=[],aero=[];
+  // A six-sided, multi-station shell gives the car a tapered nose, shoulder
+  // volume and a broad rear haunch instead of the old stack of rectangular boxes.
+  const stations=[
+   {z:-66,w:25,b:10,s:24,t:28},{z:-49,w:32,b:10,s:29,t:34},
+   {z:-22,w:35,b:10,s:31,t:35},{z:18,w:34,b:10,s:30,t:34},
+   {z:47,w:31,b:10,s:27,t:30},{z:65,w:23,b:12,s:22,t:24}
+  ];
+  const rings=stations.map(q=>[
+   [-q.w,q.b,q.z],[q.w,q.b,q.z],[q.w,q.s,q.z],
+   [q.w*.76,q.t,q.z],[-q.w*.76,q.t,q.z],[-q.w,q.s,q.z]
+  ]);
+  for(let i=0;i<rings.length-1;i++)for(let j=0;j<6;j++)
+   quad(body,rings[i][j],rings[i][(j+1)%6],rings[i+1][(j+1)%6],rings[i+1][j]);
+  // Hood and rear deck facets catch highlights and make the panel breaks legible.
+  for(let i=1;i<stations.length-1;i++){
+   const a=stations[i],b=stations[i+1];
+   quad(body,[-a.w*.76,a.t,a.z],[a.w*.76,a.t,a.z],[b.w*.76,b.t,b.z],[-b.w*.76,b.t,b.z]);
+  }
+  // Cabin: sloped windscreen/rear glass, side glazing and a separate roof.
+  box(body,0,37,-7,49,15,43);
+  box(body,0,47,-7,38,4,31);
+  box(glass,0,42,18,39,13,15);
+  box(glass,0,41,-31,38,12,14);
+  box(glass,-25,41,-7,2,11,32);box(glass,25,41,-7,2,11,32);
+  // Sculpted side character lines: two crisp creases per flank follow the shoulder.
+  for(const side of [-1,1]){
+   box(trim,side*31,27,-4,1.5,2.1,88);
+   box(trim,side*28,22,-2,1.1,1.2,76);
+   box(trim,side*29,31,-6,1.2,1.1,52);
+   // Wheel arch lips and sill trim frame the tires.
+   for(const z of [-39,39]){
+    box(trim,side*32,18,z,2.4,2.2,27);
+   }
+   box(trim,side*29,13,0,2,3,47);
+  }
+  // Hood power creases, front splitter, rear diffuser and racing wing.
+  for(const side of [-1,1])box(trim,side*10,31,42,1.2,1.1,32);
+  box(aero,0,11,65,58,3,9);box(aero,0,10,-65,54,4,8);
+  box(aero,0,38,-61,62,3,5);box(aero,-27,35,-61,3,10,5);box(aero,27,35,-61,3,10,5);
+  // Four rubber tires with metallic multi-spoke hubs.
+  for(const x of [-35,35])for(const z of [-39,39]){
+   cylinder(wheels,x-(x<0?5:0),15,z,14,10,18);
+   cylinder(rims,x-(x<0?5:0),15,z,8.5,10,16);
+   cylinder(trim,x-(x<0?5:0),15,z,3.2,10,12);
+  }
+  // Distinct LED headlamps, rear lamps, grille and lower air intakes.
+  box(lights,-17,25,62,11,3,2);box(lights,17,25,62,11,3,2);
+  box(lights,-17,23,-65,10,4,2);box(lights,17,23,-65,10,4,2);
+  box(trim,0,20,65,22,7,2);box(trim,0,19,66,12,3,2);
+  carParts=[
+   part(body,"#e94f45"),part(glass,"#76c8e2",.08),part(trim,"#aeb9c3"),
+   part(wheels,"#111820"),part(rims,"#c7d1d8",.04),part(lights,"#eaf8ff",.22),
+   part(aero,"#202a35")
+  ];
  }
  function resize(){const portrait=matchMedia("(orientation: portrait)").matches;const cssWidth=portrait?innerHeight:innerWidth,cssHeight=portrait?innerWidth:innerHeight;const dpr=Math.min(devicePixelRatio||1,mobile?.68:1.5)*qualityScale,w=Math.max(1,Math.round(cssWidth*dpr)),h=Math.max(1,Math.round(cssHeight*dpr)),key=w+"x"+h;if(key===lastSize)return;lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);state.quality={mobile,pixelRatio:dpr,detail:mobile?"mobile-balanced":"high",width:w,height:h}}
  function drawPart(p,vp,model){gl.uniformMatrix4fv(uniforms.model,false,model);gl.uniformMatrix4fv(uniforms.mvp,false,mul(vp,model));gl.uniform3fv(uniforms.color,p.color);gl.uniform1f(uniforms.emissive,p.emissive);gl.bindBuffer(gl.ARRAY_BUFFER,p.mesh.buffer);gl.enableVertexAttribArray(attributes.position);gl.vertexAttribPointer(attributes.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);gl.drawArrays(gl.TRIANGLES,0,p.mesh.count);state.triangles+=p.mesh.count/3}
