@@ -78,7 +78,7 @@ export function createRaceRenderer(canvas){
   gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);
   const identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
   gl.uniformMatrix4fv(uniforms.mvp,false,identity);gl.uniformMatrix4fv(uniforms.model,false,identity);
-  gl.uniform3f(uniforms.color,.5,.6,.7);gl.uniform1f(uniforms.emissive,0);
+  gl.uniform3f(uniforms.color,.5,.6,.7);gl.uniform3f(uniforms.camera,0,0,2);gl.uniform3f(uniforms.light,-.4,.8,.4);gl.uniform3f(uniforms.lightColor,3,3,3);gl.uniform1f(uniforms.metal,.5);gl.uniform1f(uniforms.roughness,.4);gl.uniform1f(uniforms.clearcoat,.5);gl.uniform1f(uniforms.kind,1);gl.uniform1f(uniforms.emissive,0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(uniforms.env,0);
   gl.viewport(0,0,1,1);gl.drawArrays(gl.TRIANGLES,0,3);gl.finish();
   gl.deleteBuffer(warmupBuffer);gl.bindBuffer(gl.ARRAY_BUFFER,null);
   state.pipelineWarmupMs=performance.now()-warmupStarted;
@@ -219,9 +219,9 @@ export function createRaceRenderer(canvas){
   try{
    // A restored WebGL context invalidates every program, uniform and buffer handle.
    // Recreate the complete GPU pipeline before allowing the next frame to render.
-   program=makeProgram(gl);
+   program=makeProgram(gl);environment=createVehicleEnvironment(gl);
    attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};
-   uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uColor"),emissive:gl.getUniformLocation(program,"uEmissive")};
+   uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive")};
    gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
    road=null;decor=[];carPartSets.clear();carBuildQueue.length=0;carBuildQueued.clear();lastStage=-1;lastSize="";trackBuildJob=null;trackBuildStage=-1;pendingTrackParts=[];state.trackBuildProgress=0;
    state.status="webgl-ready";state.error=null;
