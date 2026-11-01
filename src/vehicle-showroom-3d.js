@@ -1,30 +1,5 @@
+import { PBR_VERTEX, PBR_FRAGMENT, createVehicleEnvironment, VEHICLE_MATERIALS } from "./vehicle-pbr.js";
 // True WebGL vehicle showroom: real orbitable 3D geometry, not a flat SVG rotated with CSS.
-const VERT = `
-attribute vec3 aPosition;
-attribute vec3 aNormal;
-uniform mat4 uMvp;
-varying vec3 vNormal;
-varying vec3 vPosition;
-void main(){gl_Position=uMvp*vec4(aPosition,1.0);vNormal=aNormal;vPosition=aPosition;}
-`;
-const FRAG = `
-precision mediump float;
-uniform vec3 uColor;
-uniform float uMetal;
-uniform float uEmissive;
-varying vec3 vNormal;
-varying vec3 vPosition;
-void main(){
- vec3 n=normalize(vNormal);
- vec3 lightA=normalize(vec3(-.45,.9,.55));
- vec3 lightB=normalize(vec3(.7,.25,-.6));
- float diffuse=max(dot(n,lightA),0.0)*.78+max(dot(n,lightB),0.0)*.22;
- float hemi=.34+.28*max(n.y,0.0);
- float rim=pow(1.0-max(dot(n,normalize(vec3(0.0,.35,1.0))),0.0),3.0)*uMetal*.22;
- vec3 base=uColor*(hemi+diffuse*.82+rim)+uColor*uEmissive;
- gl_FragColor=vec4(base,1.0);
-}
-`;
 const PROFILES={
  rally:{paint:"#d83b35",accent:"#f4f0e8",width:1,length:1,height:1,cabin:1,wheel:15,ride:0,style:"rally"},
  comet:{paint:"#167bd2",accent:"#e7f5ff",width:1.04,length:1.15,height:.86,cabin:.78,wheel:14,ride:-2,style:"gt"},
@@ -46,13 +21,13 @@ function perspective(fov,aspect,near,far){const f=1/Math.tan(fov/2),d=1/(near-fa
 function lookAt(eye,target,up){const z=normalize(sub(eye,target)),x=normalize(cross(up,z)),y=cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*eye[i],0),-y.reduce((s,v,i)=>s+v*eye[i],0),-z.reduce((s,v,i)=>s+v*eye[i],0),1])}
 function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o}
 function shader(gl,type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s)||"Vehicle showroom shader failed");return s}
-function programFor(gl){const p=gl.createProgram(),v=shader(gl,gl.VERTEX_SHADER,VERT),f=shader(gl,gl.FRAGMENT_SHADER,FRAG);gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);gl.deleteShader(v);gl.deleteShader(f);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p)||"Vehicle showroom program failed");return p}
+function programFor(gl){const p=gl.createProgram(),v=shader(gl,gl.VERTEX_SHADER,PBR_VERTEX),f=shader(gl,gl.FRAGMENT_SHADER,PBR_FRAGMENT);gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);gl.deleteShader(v);gl.deleteShader(f);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p)||"Vehicle showroom program failed");return p}
 function geometry(){return []}
 function tri(out,a,b,c){out.push(...a,...b,...c)}
 function quad(out,a,b,c,d){tri(out,a,b,c);tri(out,a,c,d)}
 function box(out,x,y,z,w,h,d){const x0=x-w/2,x1=x+w/2,y0=y-h/2,y1=y+h/2,z0=z-d/2,z1=z+d/2;quad(out,[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]);quad(out,[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]);quad(out,[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]);quad(out,[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1]);quad(out,[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0]);quad(out,[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1])}
 function cylinderX(out,x,y,z,r,depth,segments=24){for(let i=0;i<segments;i++){const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,p=[x,y+Math.cos(a)*r,z+Math.sin(a)*r],q=[x,y+Math.cos(b)*r,z+Math.sin(b)*r],p2=[x+depth,y+Math.cos(a)*r,z+Math.sin(a)*r],q2=[x+depth,y+Math.cos(b)*r,z+Math.sin(b)*r];quad(out,p,q,q2,p2);tri(out,[x,y,z],q,p);tri(out,[x+depth,y,z],p2,q2)}}
-function mesh(gl,vertices,paint,metal=0,emissive=0){const data=new Float32Array(vertices.length/3*6);let k=0;for(let i=0;i<vertices.length;i+=9){const a=vertices.slice(i,i+3),b=vertices.slice(i+3,i+6),c=vertices.slice(i+6,i+9),n=normalize(cross(sub(b,a),sub(c,a)));for(let j=0;j<3;j++){data[k++]=vertices[i+j*3];data[k++]=vertices[i+j*3+1];data[k++]=vertices[i+j*3+2];data[k++]=n[0];data[k++]=n[1];data[k++]=n[2]}}const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);return {buffer,count:data.length/6,color:color(paint),metal,emissive}}
+function mesh(gl,vertices,paint,materialName="body",emissive=0){const data=new Float32Array(vertices.length/3*6);let k=0;for(let i=0;i<vertices.length;i+=9){const a=vertices.slice(i,i+3),b=vertices.slice(i+3,i+6),c=vertices.slice(i+6,i+9),n=normalize(cross(sub(b,a),sub(c,a)));for(let j=0;j<3;j++){data[k++]=vertices[i+j*3];data[k++]=vertices[i+j*3+1];data[k++]=vertices[i+j*3+2];data[k++]=n[0];data[k++]=n[1];data[k++]=n[2]}}const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);const material=VEHICLE_MATERIALS[materialName]||VEHICLE_MATERIALS.body;return {buffer,count:data.length/6,color:color(paint),...material,emissive}}
 export function buildVehicleGeometry(id){
  const p=PROFILES[id]||PROFILES.rally,w=p.width,L=p.length,h=p.height,body=geometry(),glass=geometry(),trim=geometry(),rubber=geometry(),rims=geometry(),lights=geometry(),aero=geometry(),decals=geometry();
  // Low, wide racing shell with a tapered nose, shoulder volume and raised rear haunches.
@@ -128,14 +103,14 @@ export function buildVehicleGeometry(id){
   {vertices:aero,paint:"#202b35",metal:.6,emissive:0},{vertices:decals,paint:p.accent,metal:.24,emissive:.01}
  ];
 }
-function buildVehicle(gl,id){return buildVehicleGeometry(id).map(item=>mesh(gl,item.vertices,item.paint,item.metal,item.emissive));}
+function buildVehicle(gl,id){return buildVehicleGeometry(id).map(item=>mesh(gl,item.vertices,item.paint,item.material,item.emissive));}
 export function createVehicleShowroom(canvas){
  const state={status:"initializing",vehicle:"rally",yaw:-.55,pitch:.16,frames:0,triangles:0};
- let gl,program,locations,parts=[],raf=0,last=0,width=0,height=0,drag=null,spinUntil=0,yaw=state.yaw,disposed=false;
+ let gl,program,locations,environment,parts=[],raf=0,last=0,width=0,height=0,drag=null,spinUntil=0,yaw=state.yaw,disposed=false;
  try{
   gl=canvas.getContext("webgl",{alpha:true,antialias:true,depth:true,powerPreference:"low-power"})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable");
-  program=programFor(gl);locations={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal"),mvp:gl.getUniformLocation(program,"uMvp"),color:gl.getUniformLocation(program,"uColor"),metal:gl.getUniformLocation(program,"uMetal"),emissive:gl.getUniformLocation(program,"uEmissive")};
+  program=programFor(gl);environment=createVehicleEnvironment(gl);locations={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal"),mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive")};
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
   parts=buildVehicle(gl,"rally");state.status="webgl-ready";
  }catch(error){state.status="unavailable";state.error=String(error?.message||error);return {state,setVehicle(){},spin360(){},destroy(){}}}
@@ -162,6 +137,6 @@ export function createVehicleShowroom(canvas){
   state,
   setVehicle(id){const next=PROFILES[id]?id:"rally";if(next===state.vehicle)return;for(const p of parts)gl.deleteBuffer(p.buffer);parts=buildVehicle(gl,next);state.vehicle=next;state.pitch=.16;yaw=-.55;state.yaw=yaw},
   spin360(){spinUntil=performance.now()+1500;},
-  destroy(){disposed=true;cancelAnimationFrame(raf);observer?.disconnect();for(const p of parts)gl.deleteBuffer(p.buffer);try{gl.deleteProgram(program)}catch{}}
+  destroy(){disposed=true;cancelAnimationFrame(raf);observer?.disconnect();for(const p of parts)gl.deleteBuffer(p.buffer);try{gl.deleteProgram(program);gl.deleteTexture(environment)}catch{}}
  };
 }
