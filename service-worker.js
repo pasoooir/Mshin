@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v52";
+const CACHE_NAME = "mshin-arcade-v53";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
   "./src/web-game.js", "./src/vehicle-pbr.js", "./src/vehicle-showroom-3d.js", "./src/race-renderer-3d.js", "./src/aerial-environment.js", "./src/tire-physics.js", "./src/vehicle-dynamics.js", "./src/pickup-collection.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
@@ -14,6 +14,8 @@ const APP_SHELL = [
   "./assets/vector/world-10.svg",
   "./assets/vector/car-rally.svg", "./assets/vector/car-comet.svg", "./assets/vector/car-lynx.svg",
   "./assets/vector/car-thunder.svg", "./assets/vector/car-raptor.svg",
+  "./assets/controls/steering-wheel.svg", "./assets/controls/accelerator-pedal.svg",
+  "./assets/controls/brake-pedal.svg", "./assets/controls/turbocharger.svg",
   "./cdn/assets/scenes/scene-01.jpg",
   "./cdn/assets/scenes/scene-02.jpg",
   "./cdn/assets/scenes/scene-03.jpg",
