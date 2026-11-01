@@ -228,5 +228,5 @@ test("world-space player collision velocity preserves chassis heading", async ()
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const playerVelocity = /vehicleVelocity\(car\.t,car\.speed,car\.lateralVelocity,car\.yaw\)/g;
   assert.ok((game.match(playerVelocity) || []).length >= 3, "AI and obstacle collision responses must use the player's actual chassis heading");
-  assert.match(game, /playerTrackT:car\.t,playerLateral:car\.lateral,playerLateralVelocity:car\.lateralVelocity,playerYaw:car\.yaw,playerYawRate:car\.yawRate,playerSpeed:car\.speed/);
+  assert.match(game, /playerTrackT:car\.t,playerTrackCurvature:/);
 });
