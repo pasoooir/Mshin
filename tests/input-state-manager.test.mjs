@@ -77,3 +77,22 @@ test("neutral steering does not retain a phantom pointer owner", () => {
   assert.equal(input.snapshot().activePointers.steering, 0);
   assert.equal(input.pointerCount(), 0);
 });
+
+test("steering and brake remain active together without shared pointer ownership",()=>{
+ const input=createInputStateManager();
+ input.set("steering",71,-.6);
+ input.set("brake",72,true);
+ const state=input.snapshot();
+ assert.equal(state.steering,-.6);assert.equal(state.brake,1);
+ input.releasePointer(71);
+ assert.equal(input.snapshot().brake,1);
+});
+
+test("gas, brake and turbo can all remain active simultaneously",()=>{
+ const input=createInputStateManager();
+ input.set("throttle",81,true);input.set("brake",82,true);input.set("turbo",83,true);
+ const state=input.snapshot();
+ assert.equal(state.throttle,1);assert.equal(state.brake,1);assert.equal(state.turbo,true);
+ input.releasePointer(82);
+ assert.equal(input.snapshot().throttle,1);assert.equal(input.snapshot().turbo,true);
+});
