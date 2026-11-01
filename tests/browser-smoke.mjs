@@ -387,7 +387,17 @@ try {
     }));
     throw new Error("Mobile race countdown did not complete: " + JSON.stringify(state) + " | " + error.message);
   });
-  assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
+  const mobileHudState = await mobile.locator("#hud").evaluate(el => ({
+    className: el.className,
+    display: getComputedStyle(el).display,
+    visibility: getComputedStyle(el).visibility,
+    opacity: getComputedStyle(el).opacity,
+    bounds: el.getBoundingClientRect().toJSON(),
+    pauseClass: document.querySelector("#pause")?.className,
+    raceCanvas: document.querySelector("#game")?.getBoundingClientRect().toJSON()
+  }));
+  assert.ok(!mobileHudState.className.split(/\\s+/).includes("hidden") && mobileHudState.display !== "none" && mobileHudState.visibility !== "hidden" && mobileHudState.bounds.width > 0 && mobileHudState.bounds.height > 0,
+    "mobile race HUD should render: " + JSON.stringify(mobileHudState));
   await mobile.locator("#pause").click({ force: true, noWaitAfter: true, timeout: 10000 });
   const mobilePauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(mobilePauseBounds && mobilePauseBounds.x >= -1 && mobilePauseBounds.y >= -1 && mobilePauseBounds.x + mobilePauseBounds.width <= 391 && mobilePauseBounds.y + mobilePauseBounds.height <= 845, "portrait software-landscape pause menu must fit the complete phone viewport");
