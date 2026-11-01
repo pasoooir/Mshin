@@ -385,7 +385,16 @@ try {
   assert.ok(rail.height>0 && rail.scrollWidth>=rail.width,"mobile showroom rail should remain horizontally scrollable");
   await mobile.locator("#tab-race").click();
   assert.equal(await mobile.locator(".stageCard").count(),5,"mobile race tab should retain five stages");
+  await mobile.evaluate(() => {
+    window.__orientationCalls = [];
+    Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => window.__fakeFullscreen ? document.documentElement : null });
+    document.documentElement.requestFullscreen = async () => { window.__orientationCalls.push("fullscreen"); window.__fakeFullscreen = true; };
+    Object.defineProperty(screen.orientation, "lock", { configurable: true, value: async mode => { window.__orientationCalls.push("lock:" + mode); } });
+  });
   await mobile.locator("#startRace").click();
+  await mobile.waitForFunction(() => window.__orientationCalls?.includes("lock:landscape"), undefined, { timeout: 3000 });
+  const orientationCalls = await mobile.evaluate(() => window.__orientationCalls);
+  assert.deepEqual(orientationCalls, ["fullscreen", "lock:landscape"], "mobile race start must enter fullscreen before requesting native landscape lock");
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 });
   const mobileRenderQuality = await mobile.evaluate(() => window.Mshin3DRenderer.quality);
