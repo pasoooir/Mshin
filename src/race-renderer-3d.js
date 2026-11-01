@@ -154,7 +154,7 @@ export function createRaceRenderer(canvas){
    const a=point(-halfWidth,low,.5),b=point(halfWidth,low,.5),c=point(halfWidth,high,.5),d=point(-halfWidth,high,.5);
    quad(billboardFaces,a,b,c,d);
    // Bright aluminum frame and two restrained racing-red trim bands.
-   quad(billboardFrames,point(-halfWidth-3,low-3,.9),point(halfWidth+3,low-3,.9),point(halfWidth+3,high+3,.9),point(-halfWidth-3,high+3,.9));
+   quad(billboardFrames,point(-halfWidth-3,low-3,.9),point(halfWidth+3,low-3,.9),point(halfWidth+3,low+1,.9),point(-halfWidth-3,low+1,.9));\n   quad(billboardFrames,point(-halfWidth-3,high-1,.9),point(halfWidth+3,high-1,.9),point(halfWidth+3,high+3,.9),point(-halfWidth-3,high+3,.9));\n   quad(billboardFrames,point(-halfWidth-3,low,.9),point(-halfWidth+1,low,.9),point(-halfWidth+1,high,.9),point(-halfWidth-3,high,.9));\n   quad(billboardFrames,point(halfWidth-1,low,.9),point(halfWidth+3,low,.9),point(halfWidth+3,high,.9),point(halfWidth-1,high,.9));
    quad(billboardAccents,point(-halfWidth+5,high-5,1.1),point(halfWidth-5,high-5,1.1),point(halfWidth-5,high-1,1.1),point(-halfWidth+5,high-1,1.1));
    quad(billboardAccents,point(-halfWidth+5,low+2,1.1),point(halfWidth-5,low+2,1.1),point(halfWidth-5,low+6,1.1),point(-halfWidth+5,low+6,1.1));
    // A clean center panel remains intentionally unbranded for future paid creatives.
