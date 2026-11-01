@@ -22,7 +22,7 @@ test("showroom builds five distinct locally generated 3D race-car profiles", () 
   assert.match(renderer, /cylinderX\(rubber/);
   assert.match(renderer, /wheel arches, flared fenders/);
   assert.match(renderer, /multi-spoke alloys/);
-  assert.doesNotMatch(renderer, /https?:\\/\\//);
+  assert.doesNotMatch(renderer, /https?:\/\//);
 });
 
 test("360-degree interaction changes the real orbit camera and supports a complete spin", () => {
