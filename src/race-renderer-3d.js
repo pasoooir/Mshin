@@ -86,7 +86,7 @@ export function createRaceRenderer(canvas){
   const f=snapshot.frameAt(t),x=f.p.x+f.nx*lateral,z=-(f.p.y+f.ny*lateral),heading=-(f.angle+yaw);
   const model=mul(translate(x,0,z),rotateY(heading));carParts[0].color=hexColor(color);
   for(let i=0;i<carParts.length;i++)drawPart(carParts[i],vp,model);
-  if(damage>45){const smoke=partCacheSmoke;drawPart(smoke,vp,mul(translate(x,38,z-5),scale(1+damage/90,1+damage/90,1+damage/90)))}
+  
  }
  let vp,partCacheSmoke;
  function render(snapshot){
