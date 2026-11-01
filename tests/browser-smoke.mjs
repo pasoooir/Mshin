@@ -309,6 +309,7 @@ try {
   const nitroControl=page.locator("#nitro");
   await nitroControl.dispatchEvent("pointerdown",{pointerId:303,pointerType:"touch",button:0,isPrimary:true});
   await nitroControl.dispatchEvent("pointerup",{pointerId:303,pointerType:"touch",button:0,isPrimary:true});
+  assert.equal(await nitroControl.getAttribute("data-state"), "active", "turbo must remain visibly active for the duration of the existing boost");
   await page.waitForTimeout(180);
   await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) < 50, undefined, { timeout: 3000 });
   assert.ok(parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width)) < chargedNitro, "nitro boost should consume stored charge");
