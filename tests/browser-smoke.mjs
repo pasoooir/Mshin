@@ -262,13 +262,25 @@ try {
   const race3dState = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, frames: window.Mshin3DRenderer?.frames, triangles: window.Mshin3DRenderer?.triangles, camera: window.Mshin3DRenderer?.camera }));
   assert.equal(race3dState.status, "webgl-ready", "race must use the native WebGL 3D renderer");
   assert.ok(race3dState.triangles > 1000, "race renderer must submit real 3D mesh geometry: " + JSON.stringify(race3dState));
+  // A world-space car must steer through the circuit; accelerating with a
+  // permanently centred wheel would deliberately drive straight off this oval.
+  const pickupSteeringPad = page.locator("#stick");
+  const pickupSteeringBox = await pickupSteeringPad.boundingBox();
+  const pickupSteerCenter = {
+    x: pickupSteeringBox.x + pickupSteeringBox.width / 2,
+    y: pickupSteeringBox.y + pickupSteeringBox.height / 2
+  };
+  const pickupSteerLimit = Math.max(1, (pickupSteeringBox.width - 58) / 2);
+  const pickupSteerRaw = 0.07 + 0.93 * Math.pow(0.3, 1 / 1.28);
+  await page.mouse.move(pickupSteerCenter.x, pickupSteerCenter.y);
+  await page.mouse.down();
+  await page.mouse.move(pickupSteerCenter.x + pickupSteerLimit * pickupSteerRaw, pickupSteerCenter.y, { steps: 4 });
   await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(2400);
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
   try {
-    // Keep accelerating until the player physically reaches a track pickup.
-    // Releasing the key after a fixed 2.4s can leave the car short of the first
-    // pickup, where coasting eventually stops before the 12s pickup wait ends.
+    // Maintain a modest right-hand steering input as well as throttle so the
+    // vehicle follows the oval's curvature and physically intersects a pickup.
     await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 15000 });
   } catch (error) {
     const pickupState = await page.evaluate(() => ({
@@ -278,9 +290,10 @@ try {
       visibilityState: document.visibilityState,
       gameCanvas: Boolean(document.querySelector("#game"))
     }));
-    throw new Error("Track pickup was not collected while accelerating: " + JSON.stringify(pickupState) + "; " + error.message);
+    throw new Error("Track pickup was not collected while accelerating and steering: " + JSON.stringify(pickupState) + "; " + error.message);
   } finally {
     await page.keyboard.up("ArrowUp");
+    await page.mouse.up();
   }
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
