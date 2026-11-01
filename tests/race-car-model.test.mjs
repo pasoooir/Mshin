@@ -18,9 +18,9 @@ test("race-car flanks retain body creases, wheel-arch lips and side sills", () =
 });
 
 test("race cars include scaled cabins, glazing, aero, lamps and metallic wheel hubs", () => {
-  assert.match(source, /const cabinLength=/);
-  assert.match(source, /box\(glass,0,42\*p\.cabinY/);
-  assert.match(source, /if\(p\.wing>\.2\)/);
+  assert.match(source, /const baseY=30\*p\.cabinY,roofY=baseY\+17\*p\.cabinHeight/);
+  assert.match(source, /quad\(glass,\[-lowerW\+3,baseY\+2,frontZ-1\]/);
+  assert.match(source, /if\(p\.wing>\.2\)/);\n  assert.match(source, /quad\(body,\[-lowerW,baseY,rearZ\]/);
   assert.match(source, /box\(lights,-17\*w,25\*h/);
   assert.match(source, /part\(rims,/);
 });
