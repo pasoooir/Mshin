@@ -12,17 +12,22 @@ export function createGameAudio(){
  const decode=async id=>{if(decodedBuffers.has(id))return decodedBuffers.get(id);const data=window.MshinAssets?.audioData?.[id];if(!data||!context)return null;try{const buffer=await context.decodeAudioData(data.slice(0));decodedBuffers.set(id,buffer);return buffer}catch{return null}};
  const loop=(buffer,gain,rate)=>{if(!buffer||!context)return null;const s=context.createBufferSource();s.buffer=buffer;s.loop=true;const edge=Math.min(.075,buffer.duration*.04);s.loopStart=edge;s.loopEnd=Math.max(edge+.12,buffer.duration-edge);s.playbackRate.value=rate;s.connect(gain);s.start();return s};
  const oneShot=async(id,volume,rate)=>{if(!ensure())return;if(!oneShots.has(id))oneShots.set(id,await decode(id));const b=oneShots.get(id);if(!b)return;const s=context.createBufferSource(),g=context.createGain();s.buffer=b;s.playbackRate.value=rate;g.gain.value=volume;s.connect(g);g.connect(master);s.start()};
- const prepare=()=>{if(decodePromise||!context)return decodePromise;decodePromise=Promise.all([...Array.from({length:6},(_,i)=>decode("engine"+i)),decode("brakeSqueal"),decode("gearDown"),decode("musicMenu"),decode("musicRace")]).then(buffers=>{const engines=buffers.slice(0,6);engineBuffers=engines;engines.forEach((b,i)=>engineSources[i]=loop(b,engineGains[i],.96));oneShots.set("brakeSqueal",buffers[6]);oneShots.set("gearDown",buffers[7]);window.MshinAudioReady=engines.every(Boolean)&&Boolean(buffers[6])&&Boolean(buffers[7])&&Boolean(buffers[8])&&Boolean(buffers[9]);return window.MshinAudioReady});return decodePromise};
+ const prepare=()=>{if(decodePromise||!context)return decodePromise;if(window.MshinAssets?.audioReady!==true)return Promise.resolve(false);decodePromise=Promise.all([...Array.from({length:6},(_,i)=>decode("engine"+i)),decode("brakeSqueal"),decode("gearDown"),decode("musicMenu"),decode("musicRace")]).then(buffers=>{const engines=buffers.slice(0,6);engineBuffers=engines;engines.forEach((b,i)=>engineSources[i]=loop(b,engineGains[i],.96));oneShots.set("brakeSqueal",buffers[6]);oneShots.set("gearDown",buffers[7]);window.MshinAudioReady=engines.every(Boolean)&&Boolean(buffers[6])&&Boolean(buffers[7])&&Boolean(buffers[8])&&Boolean(buffers[9]);return window.MshinAudioReady});return decodePromise};
  const gearForSpeed=speed=>{const n=Math.max(0,Math.min(1,speed/390));return n<.13?0:n<.28?1:n<.44?2:n<.61?3:n<.79?4:5};
  return {
-  unlock(){if(ensure())prepare()},ready(){if(!ensure())return Promise.resolve(false);return Promise.race([prepare(),new Promise(resolve=>setTimeout(()=>resolve(false),20000))])},
+  unlock(){if(ensure()&&window.MshinAssets?.audioReady===true)prepare()},
+  ready(){
+   if(!ensure())return Promise.resolve(false);
+   const bytesReady=window.MshinAssets?.audioReady===true?Promise.resolve():window.MshinAssets?.audioPromise||Promise.resolve();
+   return Promise.race([Promise.resolve(bytesReady).then(()=>prepare()),new Promise(resolve=>setTimeout(()=>resolve(false),20000))]);
+  },
   async preview(vehicleId="rally"){
    if(!enabled||!ensure())return false;const ok=await ready();if(!ok)return false;const profile=profiles[vehicleId]||profiles.rally;if(previewSource){try{previewSource.stop()}catch{}previewSource=null}if(previewGain&&context)previewGain.disconnect();
    if(profile.electric){const now=context.currentTime,osc=context.createOscillator(),gain=context.createGain();osc.type="triangle";osc.frequency.setValueAtTime(105,now);osc.frequency.exponentialRampToValueAtTime(520,now+1.15);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.16*profile.volume,now+.12);gain.gain.exponentialRampToValueAtTime(.0001,now+1.45);osc.connect(gain);gain.connect(master);osc.start(now);osc.stop(now+1.5);previewSource=osc;previewGain=gain;return true}
    const buffer=engineBuffers[2]||engineBuffers[1]||engineBuffers[0];if(!buffer)return false;const source=context.createBufferSource(),gain=context.createGain(),now=context.currentTime;source.buffer=buffer;source.playbackRate.value=profile.pitch*.98;gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.25*profile.volume,now+.12);gain.gain.setValueAtTime(.25*profile.volume,now+1.05);gain.gain.exponentialRampToValueAtTime(.0001,now+1.5);source.connect(gain);gain.connect(master);source.start(now);source.stop(now+1.55);previewSource=source;previewGain=gain;return true;
   },
   update(speed,active,throttle=false,brake=false,boost=false,vehicleId="rally"){
-   if(!ensure())return;if(!decodePromise)prepare();if(!engineSources.length)return;const profile=profiles[vehicleId]||profiles.rally,now=context.currentTime,dt=lastUpdate?Math.min(.1,Math.max(.001,now-lastUpdate)):.016;lastUpdate=now;
+   if(!ensure()||window.MshinAssets?.audioReady!==true)return;if(!decodePromise)prepare();if(!engineSources.length)return;const profile=profiles[vehicleId]||profiles.rally,now=context.currentTime,dt=lastUpdate?Math.min(.1,Math.max(.001,now-lastUpdate)):.016;lastUpdate=now;
    const velocity=Math.max(0,Math.min(390,speed||0)),gear=gearForSpeed(velocity),gearChanged=lastGear>=0&&gear!==lastGear;if(gearChanged&&!profile.electric){shiftAt=now;if(gear<lastGear)oneShot("gearDown",.17,.94)}lastGear=gear;
    const bounds=[0,.13,.28,.44,.61,.79,1.001],span=bounds[gear+1]-bounds[gear];let rpm=.22+Math.max(0,Math.min(1,(velocity/390-bounds[gear])/span))*.76;
    const throttleTarget=throttle?1:0;throttleEnvelope+=(throttleTarget-throttleEnvelope)*(1-Math.exp(-dt*(throttle?9:4.2)));rpm=Math.max(.16,Math.min(1,rpm+throttleEnvelope*.075*profile.roughness+(boost?.055:0)));
@@ -35,8 +40,11 @@ export function createGameAudio(){
   },
   collision(intensity=1){const n=Math.max(0,Math.min(1.5,intensity));oneShot("brakeSqueal",.12+n*.18,.92+n*.12)},finish(){oneShot("gearDown",.24,.92)},
   playMusic(kind="menu"){
-   if(!ensure()||!musicEnabled)return false;const id=kind==="race"?"musicRace":"musicMenu",data=window.MshinAssets?.audioData?.[id];if(!data)return false;
-   decode(id).then(buffer=>{if(!buffer||!context||!musicEnabled)return;if(musicSource&&musicKind===kind)return;const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;source.loop=true;gain.gain.value=0;source.connect(gain);gain.connect(musicGain);source.start();gain.gain.setTargetAtTime(musicVolume,context.currentTime,.8);if(musicSource){const old=musicSource;old.gain.gain.setTargetAtTime(0,context.currentTime,.65);setTimeout(()=>{try{old.source.stop()}catch{}old.gain.disconnect()},2200)}musicSource={source,gain};musicKind=kind}).catch(()=>{});return true;
+   if(!ensure()||!musicEnabled)return false;
+   const id=kind==="race"?"musicRace":"musicMenu";
+   const bytesReady=window.MshinAssets?.audioReady===true?Promise.resolve():window.MshinAssets?.audioPromise||Promise.resolve();
+   Promise.resolve(bytesReady).then(()=>decode(id)).then(buffer=>{if(!buffer||!context||!musicEnabled)return;if(musicSource&&musicKind===kind)return;const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;source.loop=true;gain.gain.value=0;source.connect(gain);gain.connect(musicGain);source.start();gain.gain.setTargetAtTime(musicVolume,context.currentTime,.8);if(musicSource){const old=musicSource;old.gain.gain.setTargetAtTime(0,context.currentTime,.65);setTimeout(()=>{try{old.source.stop()}catch{}old.gain.disconnect()},2200)}musicSource={source,gain};musicKind=kind}).catch(()=>{});
+   return true;
   },
   setMusicEnabled(value){musicEnabled=Boolean(value);if(musicGain&&context)musicGain.gain.setTargetAtTime(musicEnabled?musicVolume:0,context.currentTime,.06);if(musicEnabled&&musicKind)this.playMusic(musicKind);return musicEnabled},
   setSfxEnabled(value){enabled=Boolean(value);if(master&&context)master.gain.setTargetAtTime(enabled?sfxVolume:0,context.currentTime,.06);if(enabled)this.unlock();return enabled},
