@@ -222,7 +222,7 @@ try {
   assert.ok(frameMetrics.samples >= 30, "race loop should publish rolling frame-time samples");
   assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
-  assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 200, "no single game JS frame should exceed 200ms in smoke run");
+  assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 200, "no single game JS frame should exceed 200ms in smoke run: " + JSON.stringify(frameMetrics));
   assert.equal(frameMetrics.trackCacheBuilds, 0, "the WebGL race path must not build or redraw the legacy 2D track cache");
   assert.equal(frameMetrics.trackRadiusX, 1180, "race should use a large world-space circuit instead of a compact loop");
   assert.equal(frameMetrics.trackRadiusY, 760, "race should use a deep world-space circuit");
