@@ -39,7 +39,7 @@ test("showroom module is loaded locally and precached for offline use", () => {
   assert.match(game, /from "\.\/vehicle-showroom-3d\.js"/);
   assert.match(worker, /\.\/src\/vehicle-showroom-3d\.js/);
   assert.match(worker, /mshin-arcade-v48/);
-  assert.match(game, /from "\.\/vehicle-pbr\.js"/);
+  assert.match(renderer, /from "\.\/vehicle-pbr\.js"/);
   assert.match(worker, /\.\/src\/vehicle-pbr\.js/);
 });
 
