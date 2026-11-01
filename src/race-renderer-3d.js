@@ -109,8 +109,10 @@ export function createRaceRenderer(canvas){
   resize();if(lastStage!==snapshot.stageId)buildTrack(snapshot);
   if(!carParts.length)buildCar();
   const f=snapshot.frameAt(snapshot.player.t),x=f.p.x+f.nx*snapshot.player.lateral,z=-(f.p.y+f.ny*snapshot.player.lateral),angle=f.angle+snapshot.player.yaw;
-  const roadHeight=f.height||0;const eye=[x-Math.cos(angle)*270,roadHeight+155,z+Math.sin(angle)*270],target=[x+Math.cos(angle)*250,roadHeight+20,z-Math.sin(angle)*250];
-  const projection=perspective(Math.PI/3.15,canvas.width/Math.max(1,canvas.height),1,7000),view=lookAt(eye,target,[0,1,0]);vp=mul(projection,view);
+  const roadHeight=f.height||0;const desiredEye=[x-Math.cos(angle)*270,roadHeight+155,z+Math.sin(angle)*270],desiredTarget=[x+Math.cos(angle)*250,roadHeight+20,z-Math.sin(angle)*250];
+  const now=performance.now(),cameraDt=lastRenderAt?Math.min((now-lastRenderAt)/1000,.1):1/60;lastRenderAt=now;const follow=1-Math.exp(-cameraDt/.11);
+  if(!cameraEye){cameraEye=desiredEye.slice();cameraTarget=desiredTarget.slice()}else{for(let i=0;i<3;i++){cameraEye[i]+=(desiredEye[i]-cameraEye[i])*follow;cameraTarget[i]+=(desiredTarget[i]-cameraTarget[i])*follow}}
+  const projection=perspective(Math.PI/3.15,canvas.width/Math.max(1,canvas.height),1,7000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);state.triangles=0;
   drawPart(road,vp,translate(0,0,0));for(const p of decor)drawPart(p,vp,translate(0,0,0));
   snapshot.rivals.forEach(r=>{if(!r.despawned)drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage||0,r.type,snapshot)});
