@@ -39,17 +39,28 @@ async function loadVector(asset) {
 }
 
 async function loadAudio(asset) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
-  try {
-    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 5000, asset.src);
-    if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
-    const type = response.headers.get("content-type") || "";
-    if (!type.includes("audio/") && !/\.(mp3|ogg)(?:$|\?)/i.test(asset.src)) throw new Error(`Unexpected audio MIME type: ${type}`);
-    const bytes = await timeout(response.arrayBuffer(), 5000, asset.src);
-    if ("caches" in window) { try { const cache = await caches.open("mshin-audio-assets-v1"); await cache.put(asset.src, new Response(bytes.slice(0), { headers: { "Content-Type": type || asset.type || "application/octet-stream", "Cache-Control": "public, max-age=31536000" } })); } catch {} }
-    return bytes;
-  } finally { clearTimeout(timer); }
+  const remote = new URL(asset.src, location.href).origin !== location.origin;
+  // Cold CI runners occasionally exceeded the old 5-second limit for bundled
+  // multi-megabyte music files, leaving null entries in the ready asset map.
+  const limit = remote ? 15000 : 20000;
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), limit);
+    try {
+      const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), limit, asset.src);
+      if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
+      const type = response.headers.get("content-type") || "";
+      if (!type.includes("audio/") && !/\\.(mp3|ogg|wav)(?:$|\\?)/i.test(asset.src)) throw new Error(`Unexpected audio MIME type: ${type}`);
+      const bytes = await timeout(response.arrayBuffer(), limit, asset.src);
+      if ("caches" in window) { try { const cache = await caches.open("mshin-audio-assets-v1"); await cache.put(asset.src, new Response(bytes.slice(0), { headers: { "Content-Type": type || asset.type || "application/octet-stream", "Cache-Control": "public, max-age=31536000" } })); } catch {} }
+      return bytes;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 250));
+    } finally { clearTimeout(timer); }
+  }
+  throw lastError || new Error(`Audio preload failed: ${asset.src}`);
 }
 
 export async function preloadGameAssets(onProgress = () => {}) {
