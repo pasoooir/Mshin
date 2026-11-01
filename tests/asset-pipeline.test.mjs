@@ -9,6 +9,13 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
   assert.equal(manifest.worlds.length, 10);
   assert.equal(manifest.cars.length, 5);
   assert.equal(manifest.scenes.length, 10);
+  assert.equal(manifest.controls.length, 4);
+  for (const control of manifest.controls) {
+    assert.ok(control.src.startsWith("./assets/controls/"));
+    const source = await readFile(path.join(root, control.src.replace(/^\\.\\//, "")), "utf8");
+    assert.match(source, /<svg[\\s>]/);
+    assert.match(source, /viewBox=/);
+  }
   const assets = [...manifest.worlds, ...manifest.cars];
   assert.equal(new Set(assets.map(asset => asset.src)).size, 15);
   for (const asset of assets) {
@@ -68,7 +75,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v52/);
+  assert.match(sw, /mshin-arcade-v53/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
