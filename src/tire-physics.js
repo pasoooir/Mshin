@@ -11,7 +11,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const lateral=Number.isFinite(lateralVelocity)?lateralVelocity:0;
  const steering=clamp(Number.isFinite(steer)?steer:0,-1,1);
  const dt=clamp(Number.isFinite(deltaSeconds)?deltaSeconds:0,0,.1);
- const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.15);
+ const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.35);
  // Longitudinal load transfer changes the rear axle's normal-load share.
  // Positive values move load forward under braking; throttle moves it rearward.
  // The fractions are normalized axle-load shifts, not vehicle mass units.
@@ -70,6 +70,6 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  */
 export function resolveLongitudinalAcceleration({requestedAcceleration,grip}) {
  const requested=Number.isFinite(requestedAcceleration)?Math.max(0,requestedAcceleration):0;
- const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.15);
+ const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.35);
  return requested*surfaceGrip;
 }
