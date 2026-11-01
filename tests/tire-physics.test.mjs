@@ -73,3 +73,11 @@ test("braking never drives the simulated speed below zero",()=>{
  speed=Math.max(0,speed-response.brakingDeceleration*1);
  assert.equal(speed,0);
 });
+
+
+test("cornering consumes braking capacity through the shared friction circle",()=>{
+ const straight=resolveTireForces({speed:220,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
+ const turning=resolveTireForces({speed:220,lateralVelocity:0,steer:1,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
+ assert.ok(turning.brakingDeceleration<straight.brakingDeceleration);
+ assert.ok(turning.frictionUtilization<=1+1e-7);
+});
