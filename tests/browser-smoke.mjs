@@ -433,8 +433,25 @@ try {
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   await economy.keyboard.down("ArrowUp");
-  await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 75000 });
-  await economy.keyboard.up("ArrowUp");
+  try {
+    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 75000 });
+  } catch (error) {
+    const raceState = await economy.evaluate(() => ({
+      finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
+      hudHidden: document.querySelector("#hud")?.classList.contains("hidden"),
+      lap: document.querySelector("#lap")?.textContent,
+      speed: document.querySelector("#speed")?.textContent,
+      time: document.querySelector("#time")?.textContent,
+      stage: document.querySelector("#stageName")?.textContent,
+      renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
+      performance: window.MshinPerformance ?? null,
+      progress: localStorage.getItem("mshin-progress-v1"),
+      bodyClass: document.body.className
+    }));
+    throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
+  } finally {
+    await economy.keyboard.up("ArrowUp");
+  }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
