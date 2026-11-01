@@ -153,3 +153,11 @@ test("high-grip vehicles retain distinct traction instead of being capped to the
  assert.ok(raptor>lynx);
  assert.ok(raptor<260*1.32+1e-9);
 });
+
+
+test("rear axle retains lateral reserve under moderate grip braking",()=>{
+ const response=resolveTireForces({speed:120,lateralVelocity:0,steer:.35,throttle:false,brake:true,grip:.8,deltaSeconds:1/60});
+ assert.ok(response.longitudinalDemand<response.tireCapacity);
+ assert.ok(response.availableLateral>0);
+ assert.ok(Number.isFinite(response.brakingDeceleration));
+});
