@@ -19,7 +19,7 @@ jobs:
       - run: npm run build:core
       - run: npm run check:js-syntax
       - name: Validate workflow YAML syntax
-        run: ruby -e 'require "yaml"; Dir.glob(".github/workflows/*.{yml,yaml}").each { |file| YAML.parse_file(file); puts "PASS: #{file}" }'
+        run: ruby -e 'require "yaml"; Dir.glob(".github/workflows/*.{yml,yaml}").each { |file| YAML.parse_file(file); puts "PASS #{file}" }'
       - run: npm run check:cocos-syntax
       - run: npm run check:worker
       - run: node --check src/physics.js
