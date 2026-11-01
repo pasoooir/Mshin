@@ -42,9 +42,9 @@ test("ten vehicle profiles are generated locally without a runtime model CDN", (
 test("race and showroom share PBR materials, environment reflections and automotive clearcoat", () => {
   assert.match(raceRenderer, /PBR_FRAGMENT/);
   assert.match(raceRenderer, /createVehicleEnvironment/);
-  assert.match(raceRenderer, /uniforms\\.roughness/);
-  assert.match(raceRenderer, /item\\.material/);
+  assert.match(raceRenderer, /uniforms\.roughness/);
+  assert.match(raceRenderer, /item\.material/);
   assert.match(pbr, /distributionGGX/);
-  assert.match(pbr, /textureCube\\(uEnvironmentMap,R\\)/);
+  assert.match(pbr, /textureCube\(uEnvironmentMap,R\)/);
   assert.match(pbr, /clearcoat/);
 });
