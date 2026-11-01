@@ -56,7 +56,7 @@ export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
   // The combined tyre-force budget prevents full drive/brake force and full
   // cornering force from being applied independently at the same time.
   const longitudinalLimit = 470 * grip;
-  const lateralUse = Math.min(0.98, Math.abs(tire.lateralAcceleration) / Math.max(1, tire.tireCapacity));
+  const lateralUse = clamp(Number(tire.corneringUtilization) || 0, 0, 0.98);
   const availableLongitudinal = longitudinalLimit * Math.sqrt(1 - lateralUse * lateralUse);
   longitudinalAcceleration = clamp(longitudinalAcceleration, -availableLongitudinal, availableLongitudinal);
   vehicle.speed = clamp(speed + longitudinalAcceleration * dt, 0, maxSpeed);
