@@ -78,3 +78,23 @@ test("very high relative speed is bounded by the physical impulse solution, not 
  assert.ok(a.vx<1200&&b.vx>0);
  assert.ok(Math.abs(a.mass*a.vx+b.mass*b.vx-1_500_000)<1e-4);
 });
+
+test("rigid vehicle construction sanitizes non-finite state and invalid dimensions",()=>{
+ const v=createRigidVehicle({x:NaN,y:Infinity,vx:NaN,vy:-Infinity,angle:NaN,angularVelocity:Infinity,mass:NaN,length:-20,width:NaN,restitution:NaN,friction:Infinity});
+ for(const key of ["x","y","vx","vy","angle","angularVelocity","mass","length","width","inertia","invMass","invInertia","restitution","friction"])assert.ok(Number.isFinite(v[key]),key+" must be finite");
+ assert.ok(v.mass>=250&&v.mass<=4000);
+ assert.ok(v.length>=30&&v.width>=18&&v.inertia>0);
+ assert.ok(v.invMass>0&&v.invInertia>0);
+ assert.equal(v.restitution,.12);
+ assert.equal(v.friction,.34);
+});
+test("rigid vehicle physical coefficients are clamped to supported bounds",()=>{
+ const v=createRigidVehicle({mass:9000,length:900,width:2,restitution:2,friction:-1});
+ assert.equal(v.mass,4000);assert.equal(v.length,300);assert.equal(v.width,18);
+ assert.equal(v.restitution,.8);assert.equal(v.friction,0);
+});
+test("invalid positional correction options cannot inject NaN into a collision",()=>{
+ const a=body(0,0,40,0),b=body(80,0,0,0);
+ const r=resolveRigidVehicleImpact(a,b,{positionPercent:NaN,slop:Infinity});
+ assert.ok(r.hit);assert.ok([a.x,a.y,b.x,b.y].every(Number.isFinite));
+});
