@@ -1,3 +1,10 @@
+## Version 0.11.1 — countdown reliability hotfix
+
+- Replaced frame-delta countdown progression with monotonic `performance.now()` timing.
+- Added an independent bounded `setTimeout` scheduler so the 3–2–1–GO transition completes even when `requestAnimationFrame` is throttled or temporarily paused.
+- Keeps vehicle and AI simulation frozen until GO; resets the clock and cancels any prior timer on every race start/retry.
+- Advanced the PWA cache to `mshin-arcade-v38` to prevent stale countdown code from surviving an update.
+
 # Mshin — 2D Top-Down Arcade Racing
 
 Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + TypeScript, with a lightweight browser-playable edition hosted on GitHub Pages.
