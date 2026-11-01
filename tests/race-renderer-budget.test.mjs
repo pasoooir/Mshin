@@ -1,0 +1,35 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
+
+test("procedural 3D scene stays within a bounded first-build geometry budget", () => {
+  assert.ok(source.includes("const segments=mobile?84:240,half=180;"),
+    "desktop track tessellation is capped at 240 segments");
+  assert.ok(source.includes("i<(mobile?18:48);i++"),
+    "desktop tree instances are capped at 48");
+  assert.ok(source.includes("i+=(mobile?18:6)"),
+    "trackside rail sampling is bounded on desktop");
+  assert.ok(source.includes("i<(mobile?10:36);i++"),
+    "desktop crowd instances are capped at 36");
+});
+
+test("the scene keeps its full road width while reducing mesh density", () => {
+  assert.ok(source.includes("const segments=mobile?84:240,half=180;"));
+  assert.ok(source.includes("quad(roadTris,l0,l1,r1,r0)"),
+    "the asphalt remains a continuous closed road ribbon");
+});
+
+test("WebGL geometry upload avoids per-triangle temporary arrays", () => {
+  const start = source.indexOf("function makeGeometry(gl,triangles)");
+  const end = source.indexOf("\nfunction tri(", start);
+  assert.ok(start >= 0 && end > start, "geometry uploader must remain a named local helper");
+  const uploader = source.slice(start, end);
+  assert.match(uploader, /new Float32Array\(vertexCount\*6\)/);
+  assert.match(uploader, /Math\.hypot\(nx0,ny0,nz0\)/);
+  assert.doesNotMatch(uploader, /triangles\.slice|\.map\(|\.push\(/,
+    "geometry upload must not allocate temporary vertex arrays per triangle");
+  assert.match(source, /state\.trackBuildMs=performance\.now\(\)-buildStarted/,
+    "track construction cost must be exposed for browser profiling");
+});
