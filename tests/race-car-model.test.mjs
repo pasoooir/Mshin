@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
+const source = await readFile(new URL("../src/vehicle-showroom-3d.js", import.meta.url), "utf8");
+const raceRenderer = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
 
 test("3D race-car body shells use tapered multi-station geometry", () => {
   assert.match(source, /const stations=\[/);
@@ -27,7 +28,8 @@ test("race cars include scaled cabins, glazing, aero, lamps and metallic wheel h
 });
 
 test("ten vehicle profiles are generated locally without a runtime model CDN", () => {
-  assert.match(source, /function buildCar\(id="rally"\)/);
+  assert.match(source, /function buildVehicleGeometry\(id\)/);
+  assert.match(raceRenderer, /buildVehicleGeometry\(id\)\.map/);
   assert.match(source, /const VEHICLE_SHAPES=\{/);
   assert.match(source, /"ai-formula"/);
   assert.match(source, /"ai-pickup"/);
