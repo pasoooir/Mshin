@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateRaceSteering } from "./race-test-driver.mjs";
+import { calculateRaceSteering, chooseRaceTargetLateral } from "./race-test-driver.mjs";
 
 test("race test driver counter-steers positive lateral displacement", () => {
   assert.ok(calculateRaceSteering({ lateral: 120 }) < 0);
@@ -35,4 +35,17 @@ test("race test driver can hold a deliberate pickup lane target", () => {
 test("race test driver adds steering feed-forward for positive and negative track curvature", () => {
   assert.ok(calculateRaceSteering({ trackCurvature: 0.001 }) > 0);
   assert.ok(calculateRaceSteering({ trackCurvature: -0.001 }) < 0);
+});
+
+test("race test driver keeps its lane when traffic is not nearby", () => {
+  assert.equal(chooseRaceTargetLateral({ trackT: 0, currentTarget: 0, traffic: [{ distance: 2, lateral: 0 }] }), 0);
+});
+
+test("race test driver moves away from a nearby vehicle", () => {
+  const target = chooseRaceTargetLateral({ trackT: 0, currentTarget: 0, traffic: [{ distance: 0.02, lateral: 0 }] });
+  assert.ok(Math.abs(target) >= 90);
+});
+
+test("race test driver ignores invalid traffic telemetry", () => {
+  assert.equal(chooseRaceTargetLateral({ trackT: 0, currentTarget: 0, traffic: [{ distance: NaN, lateral: 0 }] }), 0);
 });
