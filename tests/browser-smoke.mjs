@@ -399,6 +399,9 @@ try {
   await captureScreenshot(mobile, "artifacts/mshin-gameplay-mobile.png");
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  // Chromium throttles requestAnimationFrame heavily in background tabs.
+  // This scenario measures a full live race, so make its tab foreground first.
+  await economy.bringToFront();
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   economy.on("pageerror", error => errors.push(error.message));
   economy.setDefaultTimeout(60000);
