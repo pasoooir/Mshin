@@ -196,14 +196,14 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v35/);
+  assert.match(sw, /mshin-arcade-v36/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.17");
+  assert.equal(manifest.version, "2026.11.01.01");
   assert.equal(pkg.version, "0.10.1");
-  assert.equal(pwa.version, "0.10.0");
-  assert.equal(cocos.version, "2026.10.31.17");
+  assert.equal(pwa.version, "0.10.1");
+  assert.equal(cocos.version, "2026.11.01.01");
   assert.ok(readme.includes("live browser release is **version 0.10.1**") && readme.includes("deployed to GitHub Pages after successful merged-main validation"), "README must identify the verified live release");
-  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.3**"), "README must preserve the latest published release");
+  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.10.1**"), "README must preserve the latest published release");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
