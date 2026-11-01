@@ -18,7 +18,8 @@ export function createInputStateManager() {
 
     if (control === "steering") {
       const normalized = clamp(Number(value) || 0, -1, 1);
-      owned.set(pointerId, normalized);
+      if (normalized === 0) owned.delete(pointerId);
+      else owned.set(pointerId, normalized);
       steering = normalized;
     } else {
       owned.set(pointerId, Boolean(value));
