@@ -480,9 +480,9 @@
     height:calc(100dvh - max(8px,env(safe-area-inset-top)) - max(8px,env(safe-area-inset-bottom)));
     max-height:none;
     padding:10px;
-    grid-template-columns:minmax(0,1fr);
-    grid-template-rows:auto auto minmax(0,1fr) auto;
-    grid-template-areas:"header" "nav" "body" "footer";
+    grid-template-columns:72px minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"header header" "nav body" "footer footer";
     gap:8px;
     border-radius:16px 4px 16px 4px;
   }
@@ -492,16 +492,29 @@
   #select .menuWallet{min-width:98px;padding:6px 9px}
   #select .menuWallet b{font-size:14px}
   #select .menuTabs{
-    flex-direction:row;
+    flex-direction:column;
     gap:6px;
-    padding:2px 1px 8px;
-    overflow-x:auto;
-    overflow-y:hidden;
+    padding:3px 0 3px 7px;
+    overflow-x:hidden;
+    overflow-y:auto;
     border:0;
-    border-bottom:1px solid #ffffff22;
+    border-left:1px solid #ffffff22;
   }
-  #select .menuTab{width:auto;min-width:95px;min-height:42px;padding:7px 10px;font-size:9px;gap:7px}
-  #select .menuTab span{width:24px;height:24px;flex-basis:24px;font-size:13px}
+  #select .menuTab{
+    width:100%;
+    min-width:0;
+    min-height:54px;
+    padding:5px 2px;
+    flex-direction:column;
+    justify-content:center;
+    gap:4px;
+    font-size:7px;
+    line-height:1.15;
+    letter-spacing:0;
+    white-space:normal;
+    text-align:center;
+  }
+  #select .menuTab span{width:23px;height:23px;flex-basis:23px;font-size:13px}
   #select .menuBody{overflow-y:auto;overflow-x:hidden;padding:0 1px 4px}
   #select .tabPanel{height:auto;min-height:100%;gap:8px}
   #select .menuHero{flex-basis:clamp(96px,16vh,128px);min-height:96px;padding:8px 12px}
