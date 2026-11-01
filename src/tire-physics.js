@@ -53,3 +53,14 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
   frictionUtilization:Math.min(1,Math.hypot(longitudinalDemand,lateralAcceleration)/Math.max(capacity,.001))
  };
 }
+
+
+/**
+ * Limit requested drive acceleration by available tyre-road grip.
+ * A grip value of 1 preserves the existing dry-road calibration.
+ */
+export function resolveLongitudinalAcceleration({requestedAcceleration,grip}) {
+ const requested=Number.isFinite(requestedAcceleration)?Math.max(0,requestedAcceleration):0;
+ const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.15);
+ return requested*surfaceGrip;
+}
