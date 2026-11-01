@@ -100,7 +100,14 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
   await page.mouse.down();
   try {
     while (Date.now() - startedAt < timeoutMs) {
-      if (await page.locator("#finish").isVisible()) return;
+      if (await page.locator("#finish").isVisible()) {
+        const finishState = await page.evaluate(() => ({
+          finishText: document.querySelector("#finishText")?.textContent || null,
+          lap: document.querySelector("#lap")?.textContent || null,
+          performance: window.MshinPerformance || null
+        }));
+        return { finishState, telemetry };
+      }
       const state = await page.evaluate(() => {
         const p = window.MshinPerformance || {};
         return {
@@ -580,8 +587,8 @@ try {
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
-  await driveRaceWithFeedback(economy, 120000);
-    assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
+  const raceDriverResult = await driveRaceWithFeedback(economy, 120000);
+  assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins: " + JSON.stringify(raceDriverResult));
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
   await economy.locator("#finishSelect").click();
