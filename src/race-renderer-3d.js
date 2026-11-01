@@ -166,10 +166,20 @@ export function createRaceRenderer(canvas){
   const rings=stations.map(q=>[[-q.w*w,q.b*h,q.z*l],[q.w*w,q.b*h,q.z*l],[q.w*w,q.s*h,q.z*l],[q.w*.76*w,q.t*h,q.z*l],[-q.w*.76*w,q.t*h,q.z*l],[-q.w*w,q.s*h,q.z*l]]);
   for(let i=0;i<rings.length-1;i++)for(let j=0;j<6;j++)quad(body,rings[i][j],rings[i][(j+1)%6],rings[i+1][(j+1)%6],rings[i+1][j]);
   for(let i=1;i<stations.length-1;i++){const a=stations[i],b=stations[i+1];quad(body,[-a.w*.76*w,a.t*h,a.z*l],[a.w*.76*w,a.t*h,a.z*l],[b.w*.76*w,b.t*h,b.z*l],[-b.w*.76*w,b.t*h,b.z*l])}
-  const cabinLength=p.style==="gt"||p.style==="prototype"?38:p.style==="suv"||p.style==="pickup"?49:43;
-  box(body,0,37*p.cabinY,-7,49*p.cabinWidth,15*p.cabinHeight,cabinLength*l);box(body,0,47*p.cabinY,-7,38*p.cabinWidth,4*p.cabinHeight,31*l);
-  box(glass,0,42*p.cabinY,18*l,39*p.cabinWidth,13*p.cabinHeight,15*l);box(glass,0,41*p.cabinY,-31*l,38*p.cabinWidth,12*p.cabinHeight,14*l);
-  box(glass,-25*p.cabinWidth,41*p.cabinY,-7,2,11*p.cabinHeight,32*l);box(glass,25*p.cabinWidth,41*p.cabinY,-7,2,11*p.cabinHeight,32*l);
+  // Sloped greenhouse: separate windshield, rear glass, side windows and roof
+  // replace the former rectangular cabin block with a recognizable race-car canopy.
+  const baseY=30*p.cabinY,roofY=baseY+17*p.cabinHeight;
+  const lowerW=25*p.cabinWidth,roofW=19*p.cabinWidth;
+  const frontZ=24*l,rearZ=-36*l,roofFrontZ=9*l,roofRearZ=-25*l;
+  quad(body,[-lowerW,baseY,frontZ],[lowerW,baseY,frontZ],[roofW,roofY,roofFrontZ],[-roofW,roofY,roofFrontZ]);
+  quad(body,[lowerW,baseY,rearZ],[-lowerW,baseY,rearZ],[-roofW,roofY,roofRearZ],[roofW,roofY,roofRearZ]);
+  quad(body,[-lowerW,baseY,rearZ],[-lowerW,baseY,frontZ],[-roofW,roofY,roofFrontZ],[-roofW,roofY,roofRearZ]);
+  quad(body,[lowerW,baseY,frontZ],[lowerW,baseY,rearZ],[roofW,roofY,roofRearZ],[roofW,roofY,roofFrontZ]);
+  quad(body,[-roofW,roofY,roofFrontZ],[roofW,roofY,roofFrontZ],[roofW,roofY,roofRearZ],[-roofW,roofY,roofRearZ]);
+  quad(glass,[-lowerW+3,baseY+2,frontZ-1],[lowerW-3,baseY+2,frontZ-1],[roofW-2,roofY-2,roofFrontZ+1],[-roofW+2,roofY-2,roofFrontZ+1]);
+  quad(glass,[lowerW-3,baseY+2,rearZ+1],[-lowerW+3,baseY+2,rearZ+1],[-roofW+2,roofY-2,roofRearZ-1],[roofW-2,roofY-2,roofRearZ-1]);
+  quad(glass,[-lowerW+2,baseY+3,rearZ+5],[-lowerW+2,baseY+3,frontZ-5],[-roofW+2,roofY-3,roofFrontZ-4],[-roofW+2,roofY-3,roofRearZ+4]);
+  quad(glass,[lowerW-2,baseY+3,frontZ-5],[lowerW-2,baseY+3,rearZ+5],[roofW-2,roofY-3,roofRearZ+4],[roofW-2,roofY-3,roofFrontZ-4]);
   for(const side of [-1,1]){box(trim,side*31*w,27*h,-4*l,1.5,2.1,88*l);box(trim,side*28*w,22*h,-2*l,1.1,1.2,76*l);box(trim,side*29*w,31*h,-6*l,1.2,1.1,52*l);for(const z of [-p.wheelZ,p.wheelZ])box(trim,side*(p.wheelX+1)*w,p.wheelRadius*.9,z,2.4,2.2,p.wheelRadius*1.9);box(trim,side*29*w,13*h,0,2,3,47*l)}
   for(const side of [-1,1])box(trim,side*10*w,31*h,42*l,1.2,1.1,32*l);
   if(p.wing>.2){box(aero,0,11*h,65*l,58*w*p.wing,3*h,9*l);box(aero,0,38*h,-61*l,62*w*p.wing,3*h,5*l);box(aero,-27*w,35*h,-61*l,3,10*h,5*l);box(aero,27*w,35*h,-61*l,3,10*h,5*l)}
