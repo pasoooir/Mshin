@@ -30,7 +30,12 @@ const PROFILES={
  comet:{paint:"#167bd2",accent:"#e7f5ff",width:1.04,length:1.15,height:.86,cabin:.78,wheel:14,ride:-2,style:"gt"},
  lynx:{paint:"#73818a",accent:"#f1a52d",width:1.15,length:1.02,height:1.18,cabin:1.2,wheel:19,ride:8,style:"suv"},
  thunder:{paint:"#20a9a5",accent:"#d9ffff",width:1.08,length:1.08,height:.82,cabin:.75,wheel:15,ride:-1,style:"electric"},
- raptor:{paint:"#c58b36",accent:"#252d32",width:1.18,length:1.06,height:1.12,cabin:1.04,wheel:20,ride:11,style:"offroad"}
+ raptor:{paint:"#c58b36",accent:"#252d32",width:1.18,length:1.06,height:1.12,cabin:1.04,wheel:20,ride:11,style:"offroad"},
+ "ai-formula":{paint:"#d6e1ed",accent:"#ed3147",width:.9,length:1.2,height:.72,cabin:.5,wheel:19,ride:-2,style:"formula"},
+ "ai-pickup":{paint:"#b06d39",accent:"#f2d2a1",width:1.12,length:1.12,height:1.1,cabin:1.02,wheel:18,ride:8,style:"pickup"},
+ "ai-rallycross":{paint:"#5c9b63",accent:"#e8efcf",width:1.1,length:1.05,height:1.08,cabin:.98,wheel:17,ride:5,style:"rallycross"},
+ "ai-touring":{paint:"#8a4bb4",accent:"#f1d6ff",width:1.08,length:1.02,height:1,cabin:.96,wheel:16,ride:1,style:"touring"},
+ "ai-prototype":{paint:"#d0d9df",accent:"#4de1e2",width:1,length:1.22,height:.78,cabin:.7,wheel:16,ride:-1,style:"prototype"}
 };
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const color=s=>{const h=s.replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255)};
@@ -48,7 +53,7 @@ function quad(out,a,b,c,d){tri(out,a,b,c);tri(out,a,c,d)}
 function box(out,x,y,z,w,h,d){const x0=x-w/2,x1=x+w/2,y0=y-h/2,y1=y+h/2,z0=z-d/2,z1=z+d/2;quad(out,[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]);quad(out,[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]);quad(out,[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]);quad(out,[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1]);quad(out,[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0]);quad(out,[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1])}
 function cylinderX(out,x,y,z,r,depth,segments=24){for(let i=0;i<segments;i++){const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,p=[x,y+Math.cos(a)*r,z+Math.sin(a)*r],q=[x,y+Math.cos(b)*r,z+Math.sin(b)*r],p2=[x+depth,y+Math.cos(a)*r,z+Math.sin(a)*r],q2=[x+depth,y+Math.cos(b)*r,z+Math.sin(b)*r];quad(out,p,q,q2,p2);tri(out,[x,y,z],q,p);tri(out,[x+depth,y,z],p2,q2)}}
 function mesh(gl,vertices,paint,metal=0,emissive=0){const data=new Float32Array(vertices.length/3*6);let k=0;for(let i=0;i<vertices.length;i+=9){const a=vertices.slice(i,i+3),b=vertices.slice(i+3,i+6),c=vertices.slice(i+6,i+9),n=normalize(cross(sub(b,a),sub(c,a)));for(let j=0;j<3;j++){data[k++]=vertices[i+j*3];data[k++]=vertices[i+j*3+1];data[k++]=vertices[i+j*3+2];data[k++]=n[0];data[k++]=n[1];data[k++]=n[2]}}const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);return {buffer,count:data.length/6,color:color(paint),metal,emissive}}
-function buildVehicle(gl,id){
+export function buildVehicleGeometry(id){
  const p=PROFILES[id]||PROFILES.rally,w=p.width,L=p.length,h=p.height,body=geometry(),glass=geometry(),trim=geometry(),rubber=geometry(),rims=geometry(),lights=geometry(),aero=geometry(),decals=geometry();
  // Low, wide racing shell with a tapered nose, shoulder volume and raised rear haunches.
  const stations=[[-68,19,9,22],[-54,29,11,29],[-30,34,13,33],[4,36,13,35],[39,33,12,32],[61,27,12,27],[69,20,13,20]];
@@ -100,6 +105,11 @@ function buildVehicle(gl,id){
  if(p.style==="electric"){box(decals,0,35*h,-2*L,7,1,100*L);box(aero,0,13*h,-67*L,50*w,4,5)}
  if(p.style==="suv"||p.style==="offroad"){box(body,0,31*h,-44*L,48*w,7*h,34*L)}
  if(p.style==="offroad"){box(trim,0,64*h,0,4,4,115*L);box(aero,0,8*h,0,68*w,4,12)}
+ if(p.style==="formula"){box(aero,0,12*h,73*L,88*w,4,14);box(aero,0,14*h,-72*L,92*w,4,13);box(body,0,27*h,4*L,17*w,10*h,48*L);box(aero,-22*w,19*h,-4*L,15*w,7*h,48*L);box(aero,22*w,19*h,-4*L,15*w,7*h,48*L)}
+ if(p.style==="pickup"){box(body,0,31*h,-45*L,50*w,9*h,36*L);for(const side of [-1,1])box(trim,side*26*w,43*h,-45*L,3,13*h,39*L);box(trim,0,43*h,-64*L,52*w,13*h,3)}
+ if(p.style==="rallycross"){for(const side of [-1,1]){box(aero,side*42*w,24*h,-43*L,7,8*h,31*L);box(aero,side*42*w,24*h,43*L,7,8*h,31*L)}box(aero,0,59*h,-61*L,78*w,4,6);box(aero,0,58*h,0,5,4,35*L)}
+ if(p.style==="touring"){box(aero,0,13*h,68*L,70*w,4,10);box(aero,0,55*h,-61*L,68*w,4,6);for(const side of [-1,1])box(decals,side*22*w,35*h,-4*L,5,1,112*L)}
+ if(p.style==="prototype"){box(aero,0,48*h,-4*L,5,20*h,90*L);box(aero,0,12*h,70*L,80*w,4,12);box(aero,0,55*h,-65*L,84*w,4,7);box(body,0,32*h,-3*L,30*w,10*h,58*L)}
  // Four tires, sidewall rings, brake discs, multi-spoke alloys and center-lock hubs.
  for(const x0 of [-38*w,38*w])for(const z0 of [-43*L,43*L]){
   const x=x0-(x0<0?9:-1),y=p.wheel+12+p.ride,z=z0;
@@ -111,13 +121,14 @@ function buildVehicle(gl,id){
  }
  // Carbon brake vents, mirrors, race number plates and subtle pinstriping.
  box(decals,0,36*h,0,15,1,12);
- const all=[
-  mesh(gl,body,p.paint,.32,0),mesh(gl,glass,"#122d42",.7,.02),mesh(gl,trim,"#aebbc5",.72,0),
-  mesh(gl,rubber,"#11151a",.05,0),mesh(gl,rims,"#dce6ed",.92,.01),mesh(gl,lights,"#eafcff",.15,.32),
-  mesh(gl,aero,"#202b35",.6,0),mesh(gl,decals,p.accent,.24,.01)
+ return [
+  {vertices:body,paint:p.paint,metal:.32,emissive:0},{vertices:glass,paint:"#122d42",metal:.7,emissive:.02},
+  {vertices:trim,paint:"#aebbc5",metal:.72,emissive:0},{vertices:rubber,paint:"#11151a",metal:.05,emissive:0},
+  {vertices:rims,paint:"#dce6ed",metal:.92,emissive:.01},{vertices:lights,paint:"#eafcff",metal:.15,emissive:.32},
+  {vertices:aero,paint:"#202b35",metal:.6,emissive:0},{vertices:decals,paint:p.accent,metal:.24,emissive:.01}
  ];
- return all;
 }
+function buildVehicle(gl,id){return buildVehicleGeometry(id).map(item=>mesh(gl,item.vertices,item.paint,item.metal,item.emissive));}
 export function createVehicleShowroom(canvas){
  const state={status:"initializing",vehicle:"rally",yaw:-.55,pitch:.16,frames:0,triangles:0};
  let gl,program,locations,parts=[],raf=0,last=0,width=0,height=0,drag=null,spinUntil=0,yaw=state.yaw,disposed=false;
