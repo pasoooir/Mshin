@@ -7,7 +7,14 @@
 - Added an angular broad phase before expensive AI-to-AI collision geometry.
 - Advanced the service-worker cache to `mshin-arcade-v41`.
 
-## Version 0.11.3 — mobile frame-pacing and WebGL optimization\n\n- Fixed portrait-device landscape rotation for the active WebGL race canvas, including correct landscape drawing-buffer dimensions.\n- Reduced mobile WebGL scene density and disabled costly multisample antialiasing on touch devices; capped mobile render resolution to 0.78 device scale.\n- Added a smoothed chase camera and bounded mobile simulation catch-up and 60 Hz render pacing to prevent visible jumps after delayed frames.\n- Advanced the offline service-worker cache to `mshin-arcade-v40`.\n\n## Version 0.11.2 — countdown reliability hotfix
+## Version 0.11.3 — mobile frame-pacing and WebGL optimization
+
+- Fixed portrait-device landscape rotation for the active WebGL race canvas, including correct landscape drawing-buffer dimensions.
+- Reduced mobile WebGL scene density and disabled costly multisample antialiasing on touch devices; capped mobile render resolution to 0.78 device scale.
+- Added a smoothed chase camera and bounded mobile simulation catch-up and 60 Hz render pacing to prevent visible jumps after delayed frames.
+- Advanced the offline service-worker cache to `mshin-arcade-v40`.
+
+## Version 0.11.2 — countdown reliability hotfix
 
 - Replaced frame-delta countdown progression with monotonic `performance.now()` timing.
 - Added an independent bounded `setTimeout` scheduler so the 3–2–1–GO transition completes even when `requestAnimationFrame` is throttled or temporarily paused.
@@ -30,7 +37,7 @@ This branch introduces a native, repository-local WebGL perspective renderer for
 
 The currently published GitHub Pages release remains version 0.10.1 until the 3D-rendering pull request is reviewed, merged, and its merged-main checks pass. Version 0.10.1 fixes race countdown timing with monotonic wall-clock time, improves cold-cache loading for repository-bundled CC0 audio, validates WAV/MP3/OGG MIME fallbacks, and adds JavaScript/MJS plus GitHub Actions YAML syntax checks. Its service-worker cache is `mshin-arcade-v36`.
 
-Versions 0.11.0–0.11.3 described above are development milestones on this pull-request branch and are not yet published to GitHub Pages.
+Versions 0.11.0–0.11.4 described above are development milestones on this pull-request branch and are not yet published to GitHub Pages.
 
 ## Play the browser edition
 
