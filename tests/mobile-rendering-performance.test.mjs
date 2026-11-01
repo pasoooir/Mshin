@@ -17,20 +17,20 @@ test("portrait phones rotate the active WebGL canvas with the landscape game", (
 test("mobile WebGL uses a bounded landscape drawing buffer and lower GPU cost", () => {
   assert.match(renderer, /const mobile=matchMedia\("\(pointer:coarse\)"\)/);
   assert.match(renderer, /antialias:!mobile/);
-  assert.match(renderer, /mobile\?1:1\.5/);
+  assert.match(renderer, /mobile\?\.78:1\.5/);
   assert.match(renderer, /portrait\?innerHeight:innerWidth/);
-  assert.match(renderer, /mobile\?180:360/);
-  assert.match(renderer, /mobile\?42:70/);
+  assert.match(renderer, /mobile\?112:360/);
+  assert.match(renderer, /mobile\?24:70/);
 });
 
 test("race simulation advances in stable fixed 60 Hz steps", () => {
   assert.match(game, /const FIXED_STEP=1\/60/);
-  assert.match(game, /while\(simulationAccumulator>=FIXED_STEP&&steps<15\)\{update\(FIXED_STEP\)/);
-  assert.match(game, /simulationAccumulator=Math\.min\(simulationAccumulator\+frameDelta,\.25\)/);
+  assert.match(game, /while\(simulationAccumulator>=FIXED_STEP&&steps<\(mobileDevice\?3:8\)\)\{update\(FIXED_STEP\)/);
+  assert.match(game, /simulationAccumulator=Math\.min\(simulationAccumulator\+frameDelta,mobileDevice\?\.05:\.1\)/);
 });
 
 test("3D chase camera eases toward its target instead of snapping", () => {
-  assert.match(renderer, /cameraDt=lastRenderAt\?Math\.min\(\(now-lastRenderAt\)\/1000,\.1\):1\/60/);
-  assert.match(renderer, /Math\.exp\(-cameraDt\/\.11\)/);
+  assert.match(renderer, /cameraDt=lastRenderAt\?Math\.min\(\(now-lastRenderAt\)\/1000,mobile\?\.05:\.1\):1\/60/);
+  assert.match(renderer, /Math\.exp\(-cameraDt\/\(mobile\?\.16:\.11\)\)/);
   assert.match(renderer, /cameraEye\[i\]\+=\(desiredEye\[i\]-cameraEye\[i\]\)\*follow/);
 });
