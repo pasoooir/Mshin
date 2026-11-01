@@ -26,7 +26,7 @@ test("mobile WebGL uses a bounded landscape drawing buffer and lower GPU cost", 
 test("race simulation advances in stable fixed 60 Hz steps", () => {
   assert.match(game, /const FIXED_STEP=1\/60/);
   assert.match(game, /while\(simulationAccumulator>=FIXED_STEP&&steps<15\)\{update\(FIXED_STEP\)/);
-  assert.match(game, /simulationAccumulator=Math\.min\(simulationAccumulator\+frameDelta,FIXED_STEP\*4\)/);
+  assert.match(game, /simulationAccumulator=Math\.min\(simulationAccumulator\+frameDelta,\.25\)/);
 });
 
 test("3D chase camera eases toward its target instead of snapping", () => {
