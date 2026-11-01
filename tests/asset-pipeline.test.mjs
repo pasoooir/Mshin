@@ -146,7 +146,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /cameraShake/);
   assert.match(game, /collisionCooldown/);
   assert.match(game, /stepVehicleDynamics/);
-  assert.match(sw, /vehicle-dynamics\\.js/);
+  assert.match(sw, /vehicle-dynamics\.js/);
   assert.match(sw, /collision-physics\.js/);
   assert.match(game, /lane\(-90,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /lane\(90,"#ffffff70",3,\[22,30\]\)/);
