@@ -1,3 +1,4 @@
+import { buildVehicleGeometry } from "./vehicle-showroom-3d.js";
 // Native WebGL 3D race renderer. No CDN or external runtime dependency.
 const VERT=`
 attribute vec3 aPosition;
@@ -191,55 +192,8 @@ export function createRaceRenderer(canvas){
  const AI_VEHICLE_SHAPES=["ai-formula","ai-pickup","ai-rallycross","ai-touring","ai-prototype"];
  function vehicleShapeFor(kind,id){return kind==="player"?(VEHICLE_SHAPES[id]?id:"rally"):AI_VEHICLE_SHAPES[Math.abs(Number(id)||0)%5]}
  function buildCar(id="rally"){
-  const p=VEHICLE_SHAPES[id]||VEHICLE_SHAPES.rally,w=p.width,l=p.length,h=p.bodyY,body=[],glass=[],trim=[],wheels=[],rims=[],lights=[],aero=[],fenders=[];
-  const stations=[{z:-66,w:25,b:10,s:24,t:28},{z:-49,w:32,b:10,s:29,t:34},{z:-22,w:35,b:10,s:31,t:35},{z:18,w:34,b:10,s:30,t:34},{z:47,w:31,b:10,s:27,t:30},{z:65,w:23,b:12,s:22,t:24}];
-  const rings=stations.map(q=>[[-q.w*w,q.b*h,q.z*l],[q.w*w,q.b*h,q.z*l],[q.w*w,q.s*h,q.z*l],[q.w*.76*w,q.t*h,q.z*l],[-q.w*.76*w,q.t*h,q.z*l],[-q.w*w,q.s*h,q.z*l]]);
-  for(let i=0;i<rings.length-1;i++)for(let j=0;j<6;j++)quad(body,rings[i][j],rings[i][(j+1)%6],rings[i+1][(j+1)%6],rings[i+1][j]);
-  for(let i=1;i<stations.length-1;i++){const a=stations[i],b=stations[i+1];quad(body,[-a.w*.76*w,a.t*h,a.z*l],[a.w*.76*w,a.t*h,a.z*l],[b.w*.76*w,b.t*h,b.z*l],[-b.w*.76*w,b.t*h,b.z*l])}
-  // Sloped greenhouse: separate windshield, rear glass, side windows and roof
-  // replace the former rectangular cabin block with a recognizable race-car canopy.
-  const baseY=30*p.cabinY,roofY=baseY+17*p.cabinHeight;
-  const lowerW=25*p.cabinWidth,roofW=19*p.cabinWidth;
-  const frontZ=24*l,rearZ=-36*l,roofFrontZ=9*l,roofRearZ=-25*l;
-  quad(body,[-lowerW,baseY,frontZ],[lowerW,baseY,frontZ],[roofW,roofY,roofFrontZ],[-roofW,roofY,roofFrontZ]);
-  quad(body,[lowerW,baseY,rearZ],[-lowerW,baseY,rearZ],[-roofW,roofY,roofRearZ],[roofW,roofY,roofRearZ]);
-  quad(body,[-lowerW,baseY,rearZ],[-lowerW,baseY,frontZ],[-roofW,roofY,roofFrontZ],[-roofW,roofY,roofRearZ]);
-  quad(body,[lowerW,baseY,frontZ],[lowerW,baseY,rearZ],[roofW,roofY,roofRearZ],[roofW,roofY,roofFrontZ]);
-  quad(body,[-roofW,roofY,roofFrontZ],[roofW,roofY,roofFrontZ],[roofW,roofY,roofRearZ],[-roofW,roofY,roofRearZ]);
-  quad(glass,[-lowerW+3,baseY+2,frontZ-1],[lowerW-3,baseY+2,frontZ-1],[roofW-2,roofY-2,roofFrontZ+1],[-roofW+2,roofY-2,roofFrontZ+1]);
-  quad(glass,[lowerW-3,baseY+2,rearZ+1],[-lowerW+3,baseY+2,rearZ+1],[-roofW+2,roofY-2,roofRearZ-1],[roofW-2,roofY-2,roofRearZ-1]);
-  quad(glass,[-lowerW+2,baseY+3,rearZ+5],[-lowerW+2,baseY+3,frontZ-5],[-roofW+2,roofY-3,roofFrontZ-4],[-roofW+2,roofY-3,roofRearZ+4]);
-  quad(glass,[lowerW-2,baseY+3,frontZ-5],[lowerW-2,baseY+3,rearZ+5],[roofW-2,roofY-3,roofRearZ+4],[roofW-2,roofY-3,roofFrontZ-4]);
-  // Sculpted wheel-arch lips: curved segmented flares follow each tire instead of
-  // leaving the wheels visually detached from the body shell.
-  for(const side of [-1,1])for(const zc of [-p.wheelZ,p.wheelZ]){
-   const cy=p.wheelRadius+1,outer=21,inner=17;
-   for(let segment=0;segment<12;segment++){
-    const a=segment*Math.PI/12,b=(segment+1)*Math.PI/12;
-    const point=(radius,angle,xOffset=0)=>[side*(p.wheelX*w+xOffset),cy+Math.sin(angle)*radius,zc*l+Math.cos(angle)*radius*l/39];
-    quad(fenders,point(outer,a,2),point(outer,b,2),point(inner,b,2),point(inner,a,2));
-    quad(fenders,point(outer,a,5),point(outer,b,5),point(outer,b,2),point(outer,a,2));
-   }
-  }
-  // Hood crown, shoulder creases, mirrors and functional-looking front fascia.
-  for(const side of [-1,1]){
-   quad(body,[side*8*w,25*h,34*l],[side*10*w,26*h,34*l],[side*13*w,24*h,61*l],[side*11*w,24*h,61*l]);
-   box(trim,side*34*w,37*h,7*l,8*w,4*h,7*l);
-   box(trim,side*38*w,37*h,7*l,3*w,3*h,4*l);
-   box(lights,side*20*w,22*h,63*l,7*w,3*h,3*l);
-  }
-  box(trim,0,19*h,66*l,18*w,5*h,2);
-  box(trim,0,18*h,67*l,9*w,2*h,2);
-    for(const side of [-1,1]){box(trim,side*31*w,27*h,-4*l,1.5,2.1,88*l);box(trim,side*28*w,22*h,-2*l,1.1,1.2,76*l);box(trim,side*29*w,31*h,-6*l,1.2,1.1,52*l);for(const z of [-p.wheelZ,p.wheelZ])box(trim,side*(p.wheelX+1)*w,p.wheelRadius*.9,z,2.4,2.2,p.wheelRadius*1.9);box(trim,side*29*w,13*h,0,2,3,47*l)}
-  for(const side of [-1,1])box(trim,side*10*w,31*h,42*l,1.2,1.1,32*l);
-  if(p.wing>.2){box(aero,0,11*h,65*l,58*w*p.wing,3*h,9*l);box(aero,0,38*h,-61*l,62*w*p.wing,3*h,5*l);box(aero,-27*w,35*h,-61*l,3,10*h,5*l);box(aero,27*w,35*h,-61*l,3,10*h,5*l)}
-  if(p.style==="pickup"){box(body,0,29*h,-43*l,52*w,12*h,31*l);box(trim,-27*w,39*h,-43*l,2,12*h,34*l);box(trim,27*w,39*h,-43*l,2,12*h,34*l);box(trim,0,39*h,-58*l,54*w,12*h,2)}
-  if(p.style==="suv"||p.style==="offroad"){box(aero,0,61*h,-5*l,52*w,3,48*l);box(aero,-23*w,54*h,-5*l,3,12,44*l);box(aero,23*w,54*h,-5*l,3,12,44*l)}
-  if(p.style==="formula"){box(aero,0,12*h,72*l,76*w,3,12*l);box(aero,0,12*h,-72*l,80*w,3,12*l);box(body,0,27*h,-2*l,23*w,12*h,48*l)}
-  for(const x of [-p.wheelX,p.wheelX])for(const z of [-p.wheelZ,p.wheelZ]){cylinder(wheels,x*w-p.wheelRadius*.35,p.wheelRadius+1,z*l,p.wheelRadius,10,20);cylinder(rims,x*w-p.wheelRadius*.35,p.wheelRadius+1,z*l,p.wheelRadius*.61,10,18);cylinder(trim,x*w-p.wheelRadius*.35,p.wheelRadius+1,z*l,3.2,10,12)}
-  box(lights,-17*w,25*h,62*l,11*w,3*h,2);box(lights,17*w,25*h,62*l,11*w,3*h,2);box(lights,-17*w,23*h,-65*l,10*w,4*h,2);box(lights,17*w,23*h,-65*l,10*w,4*h,2);
-  if(p.style!=="electric"){box(trim,0,20*h,65*l,22*w,7*h,2);box(trim,0,19*h,66*l,12*w,3*h,2)}
-  return [part(body,"#e94f45"),part(fenders,"#d83d37"),part(glass,"#76c8e2",.08),part(trim,"#aeb9c3"),part(wheels,"#111820"),part(rims,"#c7d1d8",.04),part(lights,"#eaf8ff",.22),part(aero,"#202a35")]
+  // Race scene and showroom consume the same detailed procedural mesh builder.
+  return buildVehicleGeometry(id).map(item=>part(item.vertices,item.paint,item.emissive));
  }
  function getCarParts(id){
   if(carPartSets.has(id))return carPartSets.get(id);
