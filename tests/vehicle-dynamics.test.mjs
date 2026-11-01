@@ -49,3 +49,15 @@ test("zero fixed step leaves vehicle state unchanged",()=>{
  assert.equal(stepVehicleDynamics(car,{throttle:true,brake:false,steer:1},{...tuning,dt:0},frameAt),null);
  assert.deepEqual(car,before);
 });
+
+test("simultaneous throttle and brake retain both opposing force contributions",()=>{
+ const combined=makeCar({speed:180}),brakeOnly=makeCar({speed:180}),throttleOnly=makeCar({speed:180});
+ const both=stepVehicleDynamics(combined,{throttle:1,brake:1,steer:0},tuning,frameAt);
+ stepVehicleDynamics(brakeOnly,{throttle:0,brake:1,steer:0},tuning,frameAt);
+ stepVehicleDynamics(throttleOnly,{throttle:1,brake:0,steer:0},tuning,frameAt);
+ assert.ok(both.tire.throttleInput>0,"drivetrain torque must remain present while braking");
+ assert.ok(both.tire.brakeInput>0,"brake force must remain present while accelerating");
+ assert.ok(combined.speed<brakeOnly.speed+1,"combined pedals must still apply braking");
+ assert.ok(combined.speed>brakeOnly.speed,"throttle torque must not be discarded when brake is held");
+ assert.ok(combined.speed<throttleOnly.speed,"brake force must oppose throttle torque");
+});
