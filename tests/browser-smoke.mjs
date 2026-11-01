@@ -123,10 +123,12 @@ try {
   await page.locator("#tab-cars").click();
   assert.equal(await page.locator(".carChoice").count(), 5, "car tab should show all five vehicle profiles");
   assert.equal(await page.locator("#showroomStage").isVisible(), true, "garage should show the cinematic selected-car studio");
-  await page.waitForFunction(() => window.MshinVehicleShowroom?.status === "webgl-ready" && window.MshinVehicleShowroom.frames > 0 && window.MshinVehicleShowroom.triangles > 1000, undefined, { timeout: 10000 });
-  const showroomBeforeDrag = await page.evaluate(() => ({ status: window.MshinVehicleShowroom.status, triangles: window.MshinVehicleShowroom.triangles, yaw: window.MshinVehicleShowroom.yaw }));
+  await page.waitForFunction(() => window.MshinVehicleShowroom?.status === "webgl-ready" && window.MshinVehicleShowroom.environmentMapReady === true && window.MshinVehicleShowroom.materialPipeline === "automotive-pbr-ggx-clearcoat" && window.MshinVehicleShowroom.frames > 0 && window.MshinVehicleShowroom.triangles > 1000, undefined, { timeout: 10000 });
+  const showroomBeforeDrag = await page.evaluate(() => ({ status: window.MshinVehicleShowroom.status, triangles: window.MshinVehicleShowroom.triangles, yaw: window.MshinVehicleShowroom.yaw, materialPipeline: window.MshinVehicleShowroom.materialPipeline, environmentMapReady: window.MshinVehicleShowroom.environmentMapReady }));
   assert.equal(showroomBeforeDrag.status, "webgl-ready", "garage must render a real WebGL vehicle model");
   assert.ok(showroomBeforeDrag.triangles > 1000, "3D showroom must submit detailed vehicle geometry");
+  assert.equal(showroomBeforeDrag.materialPipeline, "automotive-pbr-ggx-clearcoat", "showroom must compile the shared automotive PBR shader");
+  assert.equal(showroomBeforeDrag.environmentMapReady, true, "showroom must build its studio reflection environment");
   const showroomBox = await page.locator("#showroomVehicle").boundingBox();
   await page.mouse.move(showroomBox.x + showroomBox.width / 2, showroomBox.y + showroomBox.height / 2);
   await page.mouse.down();
