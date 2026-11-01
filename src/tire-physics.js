@@ -55,7 +55,9 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const slipCorrection=slipAngle*1.1*clamp((v-70)/100,0,1)/(rearGripScale*yawInertiaScale*rearStabilityScale);
  const yawLimit=availableLateral/Math.max(v,1);
  const yawRateTarget=clamp(requestedYawRate*corneringScale+slipCorrection,-yawLimit,yawLimit);
- const lateralScale=Math.min(1,availableLateral/Math.max(.001,Math.abs(requestedLateralAcceleration)));\n const corneringAcceleration=Math.abs(v*yawRateTarget);\n const combinedLateralDemand=Math.min(capacity*.98,Math.hypot(lateralAcceleration,corneringAcceleration));
+ const lateralScale=Math.min(1,availableLateral/Math.max(.001,Math.abs(requestedLateralAcceleration)));
+ const corneringAcceleration=Math.abs(v*yawRateTarget);
+ const combinedLateralDemand=Math.min(capacity*.98,Math.hypot(lateralAcceleration,corneringAcceleration));
  return {
   lateralAcceleration,
   yawRateTarget,
