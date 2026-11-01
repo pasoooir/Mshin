@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { calculateRaceSteering } from "./race-test-driver.mjs";
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -79,6 +80,57 @@ async function waitForGameBoot(page, label = "game") {
     throw new Error(label + " booted but home menu did not become visible: " + JSON.stringify(visibility) + " | " + error.message);
   }
   return state;
+}
+
+
+
+async function driveRaceWithFeedback(page, timeoutMs = 120000) {
+  const stick = page.locator("#stick");
+  const bounds = await stick.boundingBox();
+  assert.ok(bounds && bounds.width > 58, "race steering pad must be available to the smoke driver");
+  const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  const limit = Math.max(1, (bounds.width - 58) / 2);
+  const startedAt = Date.now();
+  const telemetry = [];
+  let lastSteer = Number.NaN;
+  let lastTelemetryAt = 0;
+
+  await page.keyboard.down("ArrowUp");
+  await page.mouse.move(center.x, center.y);
+  await page.mouse.down();
+  try {
+    while (Date.now() - startedAt < timeoutMs) {
+      if (await page.locator("#finish").isVisible()) return;
+
+      const state = await page.evaluate(() => {
+        const p = window.MshinPerformance || {};
+        return {
+          lateral: p.playerLateral,
+          yaw: p.playerYaw,
+          lateralVelocity: p.playerLateralVelocity,
+          speed: p.playerSpeed,
+          trackT: p.playerTrackT,
+          lap: document.querySelector("#lap")?.textContent || null,
+          time: document.querySelector("#time")?.textContent || null
+        };
+      });
+      const steer = calculateRaceSteering(state);
+      if (!Number.isFinite(lastSteer) || Math.abs(steer - lastSteer) >= 0.025) {
+        await page.mouse.move(center.x + steer * limit, center.y, { steps: 1 });
+        lastSteer = steer;
+      }
+      if (Date.now() - lastTelemetryAt >= 1000) {
+        telemetry.push({ ...state, steer: Number(steer.toFixed(3)) });
+        if (telemetry.length > 12) telemetry.shift();
+        lastTelemetryAt = Date.now();
+      }
+      await page.waitForTimeout(70);
+    }
+    throw new Error("Closed-loop smoke driver timed out before three laps: " + JSON.stringify({ telemetry, elapsedMs: Date.now() - startedAt }));
+  } finally {
+    await page.mouse.up();
+    await page.keyboard.up("ArrowUp");
+  }
 }
 
 const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
@@ -488,27 +540,8 @@ try {
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
-  await economy.keyboard.down("ArrowUp");
-  try {
-    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 75000 });
-  } catch (error) {
-    const raceState = await economy.evaluate(() => ({
-      finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
-      hudHidden: document.querySelector("#hud")?.classList.contains("hidden"),
-      lap: document.querySelector("#lap")?.textContent,
-      speed: document.querySelector("#speed")?.textContent,
-      time: document.querySelector("#time")?.textContent,
-      stage: document.querySelector("#stageName")?.textContent,
-      renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
-      performance: window.MshinPerformance ?? null,
-      progress: localStorage.getItem("mshin-progress-v1"),
-      bodyClass: document.body.className
-    }));
-    throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
-  } finally {
-    await economy.keyboard.up("ArrowUp");
-  }
-  assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
+  await driveRaceWithFeedback(economy, 120000);
+    assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
   await economy.locator("#finishSelect").click();
