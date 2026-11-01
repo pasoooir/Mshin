@@ -75,7 +75,7 @@ function cylinder(out,x,y,z,r,depth,segments=12){for(let i=0;i<segments;i++){con
 function hexColor(value){const h=String(value||"#e94f45").replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>Number.isFinite(v)?v:1)}
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
 export function createRaceRenderer(canvas){
- const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",error:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
+ const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",error:null,adSlots:[],quality:{mobile:false,pixelRatio:1,detail:"high"}};
  let gl,program,uniforms,attributes,road=null,decor=[],carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
@@ -123,7 +123,7 @@ export function createRaceRenderer(canvas){
   }
   const nextRoad=part(roadTris,theme[1]);nextDecor.push(part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0]));
   yield {parts:[nextRoad,...nextDecor],progress:.34};
-  const trees=[],buildings=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[];
+  const trees=[],buildings=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   for(let i=0;i<(mobile?18:48);i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
    if((snapshot.world||0)===4||(snapshot.world||0)===8){box(buildings,x,48,z,44+(i%3)*16,95+(i%4)*32,42);box(buildings,x,100+(i%4)*32,z,48+(i%3)*16,5,46)}
    else{box(trees,x,(f.height||0)+18,z,9,36,9);const cone=[];const baseY=(f.height||0)+22,rad=24+(i%3)*7,top=(f.height||0)+74+(i%4)*8;for(let j=0;j<8;j++){const aa=j/8*Math.PI*2,bb=(j+1)/8*Math.PI*2;tri(cone,[x+Math.cos(aa)*rad,baseY,z+Math.sin(aa)*rad],[x+Math.cos(bb)*rad,baseY,z+Math.sin(bb)*rad],[x,top,z])}trees.push(...cone)}
@@ -142,7 +142,34 @@ export function createRaceRenderer(canvas){
    box(crowdBodies,x,base+27,z,11,20,8);box(crowdBodies,x-7,base+27,z,5,17,5);box(crowdBodies,x+7,base+27,z,5,17,5);
    box(crowdHeads,x,base+43,z,9,9,9);box(crowdLegs,x-3,base+12,z,5,13,6);box(crowdLegs,x+3,base+12,z,5,13,6);
   }
-  nextDecor.push(part(railTris,"#d9dfe2"),part(crowdBodies,"#e85b47"),part(crowdHeads,"#d4a47e"),part(crowdLegs,"#263344"));
+
+  // Trackside advertising inventory: permanent, camera-visible 3D placements.
+  // Each slot has a stable world-scoped ID for a future sponsor artwork/booking system.
+  const billboardCount=mobile?8:20;
+  for(let i=0;i<billboardCount;i++){
+   const t=(i+.5)/billboardCount*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1;
+   const offset=270,base=f.height||0,nx=f.nx*side,nz=-f.ny*side,tx=f.ny,tz=f.nx;
+   const cx=f.p.x+nx*offset,cz=-(f.p.y+f.ny*side*offset),halfWidth=52,low=base+49,high=base+81;
+   const point=(along,y,depth=0)=>[cx+tx*along+nx*depth,y,cz+tz*along+nz*depth];
+   const a=point(-halfWidth,low,.5),b=point(halfWidth,low,.5),c=point(halfWidth,high,.5),d=point(-halfWidth,high,.5);
+   quad(billboardFaces,a,b,c,d);
+   // Bright aluminum frame and two restrained racing-red trim bands.
+   quad(billboardFrames,point(-halfWidth-3,low-3,.9),point(halfWidth+3,low-3,.9),point(halfWidth+3,high+3,.9),point(-halfWidth-3,high+3,.9));
+   quad(billboardAccents,point(-halfWidth+5,high-5,1.1),point(halfWidth-5,high-5,1.1),point(halfWidth-5,high-1,1.1),point(-halfWidth+5,high-1,1.1));
+   quad(billboardAccents,point(-halfWidth+5,low+2,1.1),point(halfWidth-5,low+2,1.1),point(halfWidth-5,low+6,1.1),point(-halfWidth+5,low+6,1.1));
+   // A clean center panel remains intentionally unbranded for future paid creatives.
+   quad(billboardAccents,point(-24,base+62,1.15),point(-13,base+62,1.15),point(-13,base+68,1.15),point(-24,base+68,1.15));
+   quad(billboardAccents,point(-5,base+62,1.15),point(6,base+62,1.15),point(6,base+68,1.15),point(-5,base+68,1.15));
+   quad(billboardAccents,point(14,base+62,1.15),point(25,base+62,1.15),point(25,base+68,1.15),point(14,base+68,1.15));
+   for(const along of [-43,43]){
+    const foot=point(along,base+21,-1);
+    box(billboardPosts,foot[0],base+24,foot[2],7,48,7);
+    box(billboardPosts,foot[0],base+3,foot[2],17,6,17);
+   }
+   billboardSlots.push({id:`world-${snapshot.world||0}-trackside-${String(i+1).padStart(2,"0")}`,world:snapshot.world||0,side,format:"trackside-3d",width:104,height:32,available:true,creative:null});
+  }
+  state.adSlots=billboardSlots;
+  nextDecor.push(part(billboardPosts,"#303d4b"),part(billboardFaces,"#17324b"),part(billboardFrames,"#d9e2e8"),part(billboardAccents,"#ed344e",.12),part(railTris,"#d9dfe2"),part(crowdBodies,"#e85b47"),part(crowdHeads,"#d4a47e"),part(crowdLegs,"#263344"));
   return {road:nextRoad,decor:nextDecor,stageId:snapshot.stageId};
  }
  function cancelTrackBuild(){if(pendingTrackParts.length)disposeParts(pendingTrackParts);pendingTrackParts=[];trackBuildJob=null;trackBuildStage=-1;}
