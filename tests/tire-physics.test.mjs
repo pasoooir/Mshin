@@ -161,3 +161,21 @@ test("rear axle retains lateral reserve under moderate grip braking",()=>{
  assert.ok(response.availableLateral>0);
  assert.ok(Number.isFinite(response.brakingDeceleration));
 });
+
+
+test("vehicle mass changes yaw inertia without bypassing tyre grip limits",()=>{
+ const light=resolveTireForces({speed:100,lateralVelocity:0,steer:.25,throttle:false,brake:false,grip:1,deltaSeconds:1/60,mass:1050});
+ const heavy=resolveTireForces({speed:100,lateralVelocity:0,steer:.25,throttle:false,brake:false,grip:1,deltaSeconds:1/60,mass:1780});
+ assert.ok(light.yawInertiaScale<heavy.yawInertiaScale);
+ assert.ok(light.yawRateTarget>heavy.yawRateTarget);
+ assert.ok(light.yawResponse>heavy.yawResponse);
+ assert.ok(Math.abs(100*light.yawRateTarget)<=light.availableLateral+1e-7);
+ assert.ok(Math.abs(100*heavy.yawRateTarget)<=heavy.availableLateral+1e-7);
+});
+
+test("invalid vehicle mass falls back to a finite baseline inertia",()=>{
+ const baseline=resolveTireForces({speed:100,lateralVelocity:0,steer:.25,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const invalid=resolveTireForces({speed:100,lateralVelocity:0,steer:.25,throttle:false,brake:false,grip:1,deltaSeconds:1/60,mass:NaN});
+ assert.equal(invalid.yawInertiaScale,baseline.yawInertiaScale);
+ assert.equal(invalid.yawRateTarget,baseline.yawRateTarget);
+});
