@@ -200,3 +200,18 @@ test("invalid per-vehicle handling coefficients fall back to neutral calibration
  assert.equal(invalid.rearStabilityScale,1);
  assert.equal(invalid.yawRateTarget,neutral.yawRateTarget);
 });
+
+test("rear stability calibration changes yaw-rate recovery response monotonically",()=>{
+ const loose=resolveTireForces({speed:180,lateralVelocity:36,steer:-.3,throttle:false,brake:false,grip:.8,deltaSeconds:1/60,mass:1250,rearStability:.88});
+ const stable=resolveTireForces({speed:180,lateralVelocity:36,steer:-.3,throttle:false,brake:false,grip:.8,deltaSeconds:1/60,mass:1250,rearStability:1.18});
+ assert.equal(loose.yawRecoveryScale,.88);
+ assert.equal(stable.yawRecoveryScale,1.18);
+ assert.ok(stable.yawResponse>loose.yawResponse);
+ assert.ok(Math.abs(180*stable.yawRateTarget)<=stable.availableLateral+1e-7);
+});
+test("invalid rear stability calibration falls back to neutral yaw recovery",()=>{
+ const baseline=resolveTireForces({speed:160,lateralVelocity:24,steer:.2,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const invalid=resolveTireForces({speed:160,lateralVelocity:24,steer:.2,throttle:false,brake:false,grip:1,deltaSeconds:1/60,rearStability:NaN});
+ assert.equal(invalid.yawRecoveryScale,1);
+ assert.equal(invalid.yawResponse,baseline.yawResponse);
+});
