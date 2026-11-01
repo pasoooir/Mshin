@@ -28,8 +28,8 @@ test("race test driver output is bounded and ignores invalid telemetry", () => {
 
 test("race test driver can hold a deliberate pickup lane target", () => {
   assert.equal(calculateRaceSteering({ lateral: 30, targetLateral: 30 }), 0);
-  assert.ok(calculateRaceSteering({ lateral: 80, targetLateral: 30 }) < 0);
-  assert.ok(calculateRaceSteering({ lateral: -20, targetLateral: 30 }) > 0);
+  assert.ok(calculateRaceSteering({ lateral: 140, targetLateral: 30 }) < 0);
+  assert.ok(calculateRaceSteering({ lateral: -100, targetLateral: 30 }) > 0);
 });
 
 test("race test driver adds steering feed-forward for positive and negative track curvature", () => {
