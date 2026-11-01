@@ -19,8 +19,11 @@ test("mobile WebGL uses a bounded landscape drawing buffer and lower GPU cost", 
   assert.match(renderer, /antialias:!mobile/);
   assert.match(renderer, /mobile\?\.78:1\.5/);
   assert.match(renderer, /portrait\?innerHeight:innerWidth/);
-  assert.match(renderer, /mobile\?112:360/);
-  assert.match(renderer, /mobile\?24:70/);
+  assert.match(renderer, /mobile\?84:360/);
+  assert.match(renderer, /mobile\?18:70/);
+  assert.match(renderer, /mobile\?10:54/);
+  assert.match(renderer, /mobile\?3:7/);
+  assert.match(renderer, /qualityScale=clamp\(scale,\.58,1\)/);
 });
 
 test("race simulation advances in stable fixed 60 Hz steps", () => {
