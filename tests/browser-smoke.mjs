@@ -249,7 +249,11 @@ try {
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
   assert.match(await page.locator("#position").textContent(), /^[1-5] \/ 5$/, "live race position should show the player among four AI rivals");
   assert.match(await page.locator("#stageName").textContent(), /دنیای ۰5.*مرحله ۰5/);
-  await page.waitForFunction(() => window.Mshin3DRenderer?.status === "webgl-ready" && window.Mshin3DRenderer.frames > 0 && window.Mshin3DRenderer.triangles > 1000 && document.body.classList.contains("is-3d-race"), undefined, { timeout: 12000 });\n  const race3dState = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, frames: window.Mshin3DRenderer?.frames, triangles: window.Mshin3DRenderer?.triangles, camera: window.Mshin3DRenderer?.camera }));\n  assert.equal(race3dState.status, "webgl-ready", "race must use the native WebGL 3D renderer");\n  assert.ok(race3dState.triangles > 1000, "race renderer must submit real 3D mesh geometry: " + JSON.stringify(race3dState));\n  await page.keyboard.down("ArrowUp");
+  await page.waitForFunction(() => window.Mshin3DRenderer?.status === "webgl-ready" && window.Mshin3DRenderer.frames > 0 && window.Mshin3DRenderer.triangles > 1000 && document.body.classList.contains("is-3d-race"), undefined, { timeout: 12000 });
+  const race3dState = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, frames: window.Mshin3DRenderer?.frames, triangles: window.Mshin3DRenderer?.triangles, camera: window.Mshin3DRenderer?.camera }));
+  assert.equal(race3dState.status, "webgl-ready", "race must use the native WebGL 3D renderer");
+  assert.ok(race3dState.triangles > 1000, "race renderer must submit real 3D mesh geometry: " + JSON.stringify(race3dState));
+  await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(2400);
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
   try {
