@@ -16,7 +16,7 @@ test("race HQ tabs support directional, Home and End keyboard navigation", () =>
 
 test("keyboard navigation reuses existing tab click behavior and skips disabled tabs", () => {
   assert.match(source, /tab\.click\(\)/);
-  assert.match(source, /\[role='tab':not\(:disabled\)\]/);
+  assert.match(source, /\[role='tab'\]:not\(:disabled\)/);
   assert.match(source, /event\.preventDefault\(\)/);
 });
 
