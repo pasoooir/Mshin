@@ -28,7 +28,8 @@ test("showroom builds five distinct locally generated 3D race-car profiles", () 
 test("360-degree interaction changes the real orbit camera and supports a complete spin", () => {
   assert.match(renderer, /yaw\+=dx\*\.012/);
   assert.match(renderer, /state\.pitch=clamp/);
-  assert.match(renderer, /spin360\(\)\{spinUntil=performance\.now\(\)\+1500/);\n  assert.match(renderer, /if\(spinUntil>now\)yaw\+=\.14/);
+  assert.match(renderer, /spin360\(\)\{spinUntil=performance\.now\(\)\+1500/);
+  assert.match(renderer, /if\(spinUntil>now\)yaw\+=\.14/);
   assert.match(game, /showroom3d\.spin360\(\)/);
   assert.match(game, /showroom3d\.setVehicle\(model\.id\)/);
 });
