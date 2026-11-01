@@ -19,7 +19,10 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const rearAxleLoadFraction=clamp(.5-weightTransferFraction,.32,.68);
  const rearGripScale=Math.sqrt(rearAxleLoadFraction/.5);
  const capacity=85*surfaceGrip*rearGripScale;
- const longitudinalDemand=brake?65:(throttle?30:0);
+ // Only the rear share of braking force is charged to this rear-axle budget;
+ // the front axle carries the larger share under normal brake bias.
+ const rearBrakeBias=.4;
+ const longitudinalDemand=brake?65*rearBrakeBias:(throttle?30:0);
  const availableLateral=Math.sqrt(Math.max(0,capacity*capacity-longitudinalDemand*longitudinalDemand));
 
  // Bicycle-model steering: yaw rate follows speed, steering angle and wheelbase.
