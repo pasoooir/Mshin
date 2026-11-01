@@ -549,6 +549,26 @@ try {
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
+  const originalMobileViewport=mobile.viewportSize();
+  for(const viewport of [{width:360,height:800},{width:390,height:844},{width:844,height:390},{width:768,height:1024}]){
+    await mobile.setViewportSize(viewport);
+    await mobile.waitForTimeout(80);
+    const layout=await mobile.evaluate(()=>{
+      const rect=id=>{const e=document.querySelector(id);if(!e)return null;const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};
+      return{viewport:{width:innerWidth,height:innerHeight},steering:rect("#stick"),gas:rect("#gas"),brake:rect("#brake"),turbo:rect("#nitro"),energy:rect(".nitroWrap"),touchActions:Object.fromEntries(["#stick","#gas","#brake","#nitro"].map(id=>[id,getComputedStyle(document.querySelector(id)).touchAction]))};
+    });
+    for(const [name,box] of Object.entries({steering:layout.steering,gas:layout.gas,brake:layout.brake,turbo:layout.turbo,energy:layout.energy})){
+      assert.ok(box&&box.x>=0&&box.y>=0&&box.right<=layout.viewport.width+1&&box.bottom<=layout.viewport.height+1, name+" control must remain inside "+JSON.stringify(viewport)+": "+JSON.stringify(box));
+    }
+    const overlaps=(a,b)=>a.x<b.right&&a.right>b.x&&a.y<b.bottom&&a.bottom>b.y;
+    assert.equal(overlaps(layout.steering,layout.gas)||overlaps(layout.steering,layout.brake)||overlaps(layout.steering,layout.turbo),false,"steering wheel must not overlap the pedal cluster at "+JSON.stringify(viewport));
+    assert.equal(overlaps(layout.gas,layout.brake)||overlaps(layout.gas,layout.turbo)||overlaps(layout.brake,layout.turbo),false,"pedals and turbo must have independent touch zones at "+JSON.stringify(viewport));
+    assert.ok(Object.values(layout.touchActions).every(value=>value==="none"),"every control must suppress browser gestures for independent Pointer Events");
+    assert.ok(layout.steering.width>=120&&layout.steering.height>=120,"steering touch surface must stay at least 120px");
+    assert.ok(layout.gas.width>=60&&layout.brake.width>=60&&layout.turbo.width>=60,"pedal and turbo targets must remain at least 60px");
+  }
+  await mobile.setViewportSize(originalMobileViewport);
+
   await captureScreenshot(mobile, "artifacts/mshin-gameplay-mobile.png");
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
