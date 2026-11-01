@@ -1,3 +1,11 @@
+## Version 0.11.5 — 3D traffic rendering hotfix
+
+- Replaced per-frame rival object allocation and full sorting with reusable scratch arrays and bounded insertion of only the nearest visible opponents.
+- Removed trigonometric angle wrapping from the hot render-selection loop while preserving wraparound distance handling.
+- Fixed a 3D rendering position bug: visible rivals are now drawn at their actual track distance, not their distance-from-player used for sorting.
+- Added regression coverage for allocation reuse, bounded selection, wraparound distance, and correct world positions.
+- Advanced the service-worker cache to `mshin-arcade-v42`.
+
 ## Version 0.11.4 — faster driving and adaptive mobile performance
 
 - Increased player acceleration and maximum driving speed by 30% and 22%; AI traffic pace is raised by 20% so races remain competitive.
