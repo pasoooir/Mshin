@@ -70,6 +70,30 @@ function makeGeometry(gl,triangles){
  }
 function tri(out,a,b,c){out.push(...a,...b,...c)}
 function quad(out,a,b,c,d){tri(out,a,b,c);tri(out,a,c,d)}
+const BILLBOARD_FONT={
+ M:["10001","11011","10101","10101","10001","10001","10001"],
+ S:["01111","10000","10000","01110","00001","00001","11110"],
+ H:["10001","10001","10001","11111","10001","10001","10001"],
+ I:["11111","00100","00100","00100","00100","00100","11111"],
+ N:["10001","11001","10101","10011","10001","10001","10001"],
+ R:["11110","10001","10001","11110","10100","10010","10001"],
+ A:["01110","10001","10001","11111","10001","10001","10001"],
+ C:["01111","10000","10000","10000","10000","10000","01111"],
+ E:["11111","10000","10000","11110","10000","10000","11111"]
+};
+function billboardText(out,text,centerX,centerY,cell,point,depth){
+ const gap=cell*.35,width=text.length*5*cell+Math.max(0,text.length-1)*gap;
+ let cursor=centerX-width/2;
+ for(const letter of text){
+  const glyph=BILLBOARD_FONT[letter];if(!glyph){cursor+=5*cell+gap;continue}
+  for(let row=0;row<7;row++)for(let col=0;col<5;col++)if(glyph[row][col]==="1"){
+   const x=cursor+col*cell,y=centerY+(3-row)*cell,half=cell*.43;
+   quad(out,point(x-half,y-half,depth),point(x+half,y-half,depth),point(x+half,y+half,depth),point(x-half,y+half,depth));
+  }
+  cursor+=5*cell+gap;
+ }
+}
+
 function box(out,x,y,z,w,h,d){const x0=x-w/2,x1=x+w/2,y0=y-h/2,y1=y+h/2,z0=z-d/2,z1=z+d/2;quad(out,[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]);quad(out,[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]);quad(out,[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]);quad(out,[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1]);quad(out,[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0]);quad(out,[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1])}
 function cylinder(out,x,y,z,r,depth,segments=12){for(let i=0;i<segments;i++){const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,p=[x,y+Math.cos(a)*r,z+Math.sin(a)*r],q=[x,y+Math.cos(b)*r,z+Math.sin(b)*r],p2=[x+depth,y+Math.cos(a)*r,z+Math.sin(a)*r],q2=[x+depth,y+Math.cos(b)*r,z+Math.sin(b)*r];quad(out,p,q,q2,p2)}}
 function hexColor(value){const h=String(value||"#e94f45").replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>Number.isFinite(v)?v:1)}
@@ -160,16 +184,13 @@ export function createRaceRenderer(canvas){
    quad(billboardFrames,point(halfWidth-1,low,.9),point(halfWidth+3,low,.9),point(halfWidth+3,high,.9),point(halfWidth-1,high,.9));
    quad(billboardAccents,point(-halfWidth+5,high-5,1.1),point(halfWidth-5,high-5,1.1),point(halfWidth-5,high-1,1.1),point(-halfWidth+5,high-1,1.1));
    quad(billboardAccents,point(-halfWidth+5,low+2,1.1),point(halfWidth-5,low+2,1.1),point(halfWidth-5,low+6,1.1),point(-halfWidth+5,low+6,1.1));
-   // A clean center panel remains intentionally unbranded for future paid creatives.
-   quad(billboardAccents,point(-24,base+62,1.15),point(-13,base+62,1.15),point(-13,base+68,1.15),point(-24,base+68,1.15));
-   quad(billboardAccents,point(-5,base+62,1.15),point(6,base+62,1.15),point(6,base+68,1.15),point(-5,base+68,1.15));
-   quad(billboardAccents,point(14,base+62,1.15),point(25,base+62,1.15),point(25,base+68,1.15),point(14,base+68,1.15));
+   // A high-contrast house creative gives every blank inventory slot a finished race-series look.\n   billboardText(billboardAccents,"MSHIN",0,base+66,2.05,point,1.18);\n   billboardText(billboardAccents,"RACE",0,base+55,1.05,point,1.18);
    for(const along of [-43,43]){
     const foot=point(along,base+21,-1);
     box(billboardPosts,foot[0],base+24,foot[2],7,48,7);
     box(billboardPosts,foot[0],base+3,foot[2],17,6,17);
    }
-   billboardSlots.push({id:`world-${snapshot.world||0}-trackside-${String(i+1).padStart(2,"0")}`,world:snapshot.world||0,side,format:"trackside-3d",width:104,height:32,available:true,creative:null});
+   billboardSlots.push({id:`world-${snapshot.world||0}-trackside-${String(i+1).padStart(2,"0")}`,world:snapshot.world||0,side,format:"trackside-3d",width:104,height:32,available:true,creative:{type:"house-ad",brand:"MSHIN",campaign:"RACE-SERIES"}});
   }
   state.adSlots=billboardSlots;
   nextDecor.push(part(billboardPosts,"#303d4b"),part(billboardFaces,"#17324b"),part(billboardFrames,"#d9e2e8"),part(billboardAccents,"#ed344e",.12),part(railTris,"#d9dfe2"),part(crowdBodies,"#e85b47"),part(crowdHeads,"#d4a47e"),part(crowdLegs,"#263344"));
