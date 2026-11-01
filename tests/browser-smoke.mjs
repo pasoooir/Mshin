@@ -118,6 +118,8 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
           lateralVelocity: p.playerLateralVelocity,
           trackCurvature: p.playerTrackCurvature,
           speed: p.playerSpeed,
+          appliedSteer: p.playerSteer,
+          appliedTarget: p.playerSteerTarget,
           damage: p.damage,
           damageLevel: p.damageLevel,
           collisions: p.collisions,
