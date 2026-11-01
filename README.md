@@ -6,6 +6,10 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 رابط کاربری نسخه مرورگر و منوهای نسخه Cocos به فارسی ایران بومی‌سازی شده‌اند. در صفحه آغازین، نام **Hamed Babaei** به‌عنوان صاحب اثر و توسعه‌دهنده درج شده و به صفحه LinkedIn او پیوند دارد.
 
+## Version 0.11.0 — first true 3D race-rendering milestone
+
+This branch introduces a native, repository-local WebGL perspective renderer for the active race scene. During countdown and gameplay, the browser now renders a perspective chase-camera view with a generated 3D road surface, shoulders, lane markings, three-dimensional roadside geometry, and mesh-based player/rival vehicles. The 2D game simulation remains the source of truth for vehicle motion, traffic, collisions, damage, pickups, race progression, and controls; the new renderer consumes that live state rather than replacing the gameplay physics. The renderer is bundled locally and precached by the service worker, with no runtime CDN dependency. This is the first migration milestone, not a claim that every legacy visual/effect has already been ported to 3D; minimap, weather overlays, particle effects, and full 3D damage deformation remain follow-up work.
+
 ## Latest published release: 0.9.3 — repository-local runtime assets
 
 The game now renders volumetric 2.5D trackside scenery across all ten world themes: layered tree canopies and trunks, extruded building faces and roofs, human-shaped spectator crowds, faceted rocks, contact shadows and a moving helicopter silhouette. The release also includes the independently controlled CC0 music/SFX system and verified offline audio cache from 0.8.9.
