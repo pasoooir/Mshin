@@ -458,7 +458,17 @@ try {
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   // The dedicated race-completion scenario validates gameplay physics and economy,
   // not SwiftShader performance. Earlier desktop/mobile checks already validate WebGL.
-  await economy.addInitScript(() => { window.__MshinBrowserSmoke = true; window.__MshinForce2DRenderer = true; });
+  await economy.addInitScript(() => {
+    window.__MshinBrowserSmoke = true;
+    // The economy acceptance flow exercises real vehicle physics and rewards.
+    // Earlier smoke coverage already asserts the WebGL race renderer; avoid
+    // SwiftShader's multi-second draw stalls in this long-duration scenario.
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(type, ...args) {
+      if (this.id === "game3d" && /^(webgl|webgl2|experimental-webgl)$/i.test(String(type))) return null;
+      return getContext.call(this, type, ...args);
+    };
+  });
   economy.on("pageerror", error => errors.push(error.message));
   economy.setDefaultTimeout(60000);
   economy.setDefaultNavigationTimeout(60000);
@@ -505,12 +515,16 @@ try {
         throw new Error("race ended before a valid stage finish");
       }
       const controls = await economy.evaluate(() => {
-        const telemetry = window.MshinRaceTelemetry;
-        if (!telemetry) return { steering: 0, brake: false };
-        const steering = Math.max(-1, Math.min(1,
-          telemetry.feedForwardSteer - telemetry.lateral / 105 - telemetry.yaw * .85
-        ));
-        return { steering, brake: telemetry.speed > 165 };
+        // The game publishes its live vehicle state through MshinPerformance;
+        // MshinRaceTelemetry is not a runtime API and silently produced zero steer.
+        const telemetry = window.MshinPerformance;
+        if (!telemetry || !Number.isFinite(telemetry.playerTrackT)) return { steering: 0, brake: false };
+        const lateral = Number(telemetry.playerLateral) || 0;
+        const yaw = Number(telemetry.playerYaw) || 0;
+        // Stabilize both lateral displacement and chassis heading. Ease off
+        // throttle speed with braking before the high-speed tyre budget saturates.
+        const steering = Math.max(-.82, Math.min(.82, -lateral / 145 - yaw * 1.05));
+        return { steering, brake: telemetry.playerSpeed > 175 };
       });
       const nextSteerKey = controls.steering < -.12 ? "ArrowLeft"
         : controls.steering > .12 ? "ArrowRight" : null;
