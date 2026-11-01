@@ -80,7 +80,7 @@ test("service worker precaches all vector art before offline races", async () =>
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
   for (const module of ["vehicle-pbr.js", "rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
-  for (const asset of [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...manifest.sounds]) assert.ok(sw.includes(asset.src), asset.src + " must be precached");
+  for (const asset of [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...(manifest.controls || []), ...manifest.sounds]) assert.ok(sw.includes(asset.src), asset.src + " must be precached");
 });
 test("Cocos runtime menus use the Mshin motorsport visual system", async () => {
   const cocos = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
@@ -201,7 +201,7 @@ test("all app cache and asset version markers are advanced together", async () =
   const readme = await readFile(path.join(root, "README.md"), "utf8");
   assert.match(sw, /mshin-arcade-v53/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.11.01.10");
+  assert.equal(manifest.version, "2026.11.01.11");
   assert.equal(pkg.version, "0.15.1");
   assert.equal(pwa.version, "0.15.1");
   assert.equal(cocos.version, "2026.11.01.10");
