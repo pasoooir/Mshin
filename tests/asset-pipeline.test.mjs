@@ -204,7 +204,7 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(manifest.version, "2026.11.01.11");
   assert.equal(pkg.version, "0.15.1");
   assert.equal(pwa.version, "0.15.1");
-  assert.equal(cocos.version, "2026.11.01.10");
+  assert.equal(cocos.version, "2026.11.01.11");
   assert.ok(readme.includes("Latest published release on main: 0.11.7") && readme.includes("Version 0.14.0 remains a separate draft and is not claimed as live"), "README must identify the verified live release without claiming the mobile fix is deployed");
   assert.ok(readme.includes("## Latest published release on main: 0.11.7") && readme.includes("Versions 0.11.0–0.11.6 were published on GitHub Pages; the in-race vehicle geometry was merged afterward in pull request #77"), "README must distinguish the published release from the mobile-fix PR branch");
 });
