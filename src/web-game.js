@@ -47,7 +47,7 @@ addEventListener("resize",resize);resize();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),fmt=s=>{let m=Math.floor(s/60),v=Math.floor(s%60);return String(m).padStart(2,"0")+":"+String(v).padStart(2,"0")};
 const TRACK_RADIUS_X=1180,TRACK_RADIUS_Y=760,ROAD_HALF_WIDTH=180;
 function center(t){const s=stage,phase=s.seed*.017,amp=[.025,.07,.12,.095,.14][s.slot],harm=[2,2,6,3,7][s.slot],wave=1+amp*Math.sin(harm*t+phase)+.045*Math.cos(3*t+s.seed*.031)+.022*Math.sin(5*t+s.seed*.013);return {x:Math.cos(t)*TRACK_RADIUS_X*wave,y:Math.sin(t)*TRACK_RADIUS_Y*(wave-.025*Math.sin(2*t+phase))}}
-function frameAt(t){const p=center(t),a=center(t-.002),b=center(t+.002),dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;return {p,nx:-dy/len,ny:dx/len,angle:Math.atan2(dy,dx)}}
+function frameAt(t){const p=center(t),a=center(t-.002),b=center(t+.002),dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;return {p,nx:-dy/len,ny:dx/len,angle:Math.atan2(dy,dx),height:Math.sin(t*2+stage.seed*.01)*18+Math.sin(t*5+stage.seed*.02)*6}}
 function carPoint(){const f=frameAt(car.t);return {x:f.p.x+f.nx*car.lateral,y:f.p.y+f.ny*car.lateral,...f,angle:f.angle+car.yaw}}
 function awardImpactReward(hit,forwardDot){if(forwardDot<=0||hit.closingSpeed<110||hit.energy<12000||collisionRewardCooldown>0)return 0;const reward=clamp(Math.round((hit.closingSpeed-90)*.16+Math.sqrt(hit.energy)*.035),10,60);race.impactPoints=(race.impactPoints||0)+reward;progress.credits+=reward;saveProgress();collisionRewardCooldown=1.25;collisionRewardToast={amount:reward,life:1.6};return reward}
 function applyDamageAndDestruction(vehicle,energy,side="front"){
