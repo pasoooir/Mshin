@@ -292,16 +292,21 @@ try {
   await page.mouse.up();
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "releasing the steering pad should return the control to center");
   assert.match(await steeringPad.getAttribute("aria-label"), /برای چرخیدن به چپ یا راست بکشید و رها کنید/, "steering instructions should be accessible in Persian");
-  const canvasState = await page.locator("#game").evaluate(canvas => {
-    const context = canvas.getContext("2d");
-    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+  const canvasState = await page.locator("#game3d").evaluate(canvas => {
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) return { width: canvas.width, height: canvas.height, visiblePixels: 0, pixelBytes: 0, context: false };
+    gl.finish();
+    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     let visible = 0;
-    for (let i = 3; i < pixels.length; i += 4 * 32) if (pixels[i] > 0) visible++;
-    return { width: canvas.width, height: canvas.height, visiblePixels: visible, imageBytes: canvas.toDataURL("image/png").length };
+    for (let i = 0; i < pixels.length; i += 4 * 32) {
+      if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 24) visible++;
+    }
+    return { width: canvas.width, height: canvas.height, visiblePixels: visible, pixelBytes: pixels.byteLength, context: true };
   });
-  assert.ok(canvasState.width > 0 && canvasState.height > 0, "game canvas should have a real drawing surface");
-  assert.ok(canvasState.visiblePixels > 100, "game canvas should contain visible rendered pixels");
-  assert.ok(canvasState.imageBytes > 1000, "gameplay frame should not be a blank image");
+  assert.ok(canvasState.context && canvasState.width > 0 && canvasState.height > 0, "3D game canvas should have a real WebGL drawing surface");
+  assert.ok(canvasState.visiblePixels > 100, "3D game canvas should contain visible rendered pixels");
+  assert.ok(canvasState.pixelBytes > 1000, "3D gameplay frame should not be a blank image");
   await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
