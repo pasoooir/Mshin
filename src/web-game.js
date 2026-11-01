@@ -277,6 +277,8 @@ function setCountdown(label){countdownLabel=label;const node=$("countdownValue")
 async function begin(){
  pauseSettingsReturn=false;
  stage=stages[selectedStage-1];
+ // Unlock synchronously inside the trusted click before any asynchronous media wait.
+ audio.unlock();
  const startButton=$("startRace"),startLabel=startButton.textContent;
  const sceneId="scene-"+String(stage.world+1).padStart(2,"0");
  const needsAudio=window.MshinAssets?.audioReady!==true;
@@ -294,6 +296,8 @@ async function begin(){
    startButton.textContent=startLabel;
   }
  }
+ // Decode the already downloaded RPM/effect/music buffers before the countdown.
+ await audio.ready();
  trackCache=null;trackCacheStage=0;particles=[];particlePool.length=0;hudClock=0;exhaustClock=0;collisionRewardCooldown=0;collisionRewardToast=null;countdownIntroFrames=0;nitro=25;boostTimer=0;car.t=0;car.lateral=30;car.lateralVelocity=0;car.speed=0;car.yaw=0;car.yawRate=0;car.damage=createDamageState();car.destruction=createDestructionState();car.destructionEffectPlayed=false;car.destructionClock=0;car.collisionCooldown=0;car.smokeClock=0;cameraShake=0;race.elapsed=0;race.laps=0;race.lastT=0;race.finished=false;race.impactPoints=0;input.steer=0;input.steerTarget=0;input.manualSteerTarget=0;input.gyroTarget=0;input.gas=false;input.brake=false;input.nitro=false;makeObstacles();$("nitroFill").style.width=nitro+"%";$("stageName").textContent="دنیای "+String(stage.world+1).padStart(2,"۰")+" · مرحله "+String(stage.slot+1).padStart(2,"۰");$("lap").textContent="0 / 3";$("time").textContent="00:00";$("speed").textContent="0";$("countdownOverlay").classList.remove("hidden");setCountdown("3");state="countdown";countdownElapsed=0;countdownStartedAt=performance.now();$("soundToggle").textContent=settings.sound?"🔊":"🔇";$("soundToggle").setAttribute("aria-pressed",String(settings.sound));show("race");audio.unlock();audio.playMusic("race");audio.update(0,true,false,false,false,selectedCar)}
 function complete(){race.finished=true;state="finish";const place=1+rivals.filter(r=>r.id<4&&!r.destruction?.despawned&&r.distance>race.laps*Math.PI*2+car.t).length;const c=carPoint();burst(c.x,c.y,34,worlds[stage.world][4]);audio.update(0,false,false,false,false,selectedCar);audio.finish();audio.playMusic("menu");const firstClear=!progress.completed.includes(stage.id),old=Number(progress.best[stage.id])||Infinity,reward=(firstClear?120:25)+[180,120,80,50,25][place-1];progress.credits+=reward;progress.completed=[...new Set([...progress.completed,stage.id])];if(race.elapsed<old)progress.best[stage.id]=race.elapsed;const milestones=awardAchievements(place);progress.credits+=milestones.bonus;saveProgress();const bonusText=milestones.earned.length?" دستاورد: "+milestones.earned.map(a=>a.name).join("، ")+" (+"+milestones.bonus+" سکه جایزه).":"";$("finishText").textContent="مرحله «"+stage.name+"» در "+fmt(race.elapsed)+" تمام شد · رتبه "+place+" از ۵. "+(race.elapsed<=old?"رکورد تازه ثبت شد!":"بهترین زمان: "+fmt(progress.best[stage.id]))+" "+reward+" سکه دریافت کردید! · امتیاز برخورد: "+(race.impactPoints||0)+bonusText;renderGarage();renderAchievements();show("finish")}
 function activateNitro(){if(state!=="race"||nitro<35||boostTimer>0)return false;nitro-=35;boostTimer=activeCar().nitroDuration;const c=carPoint();burst(c.x,c.y,18,"#65edff");$("nitroFill").style.width=nitro+"%";return true}
