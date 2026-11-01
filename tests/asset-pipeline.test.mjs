@@ -195,8 +195,8 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.match(sw, /mshin-arcade-v37/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.01.02");
-  assert.equal(pkg.version, "0.10.0");
-  assert.equal(pwa.version, "0.10.0");
+  assert.equal(pkg.version, "0.11.0");
+  assert.equal(pwa.version, "0.11.0");
   assert.equal(cocos.version, "2026.11.01.02");
   assert.ok(readme.includes("live browser release is **version 0.9.3**") && readme.includes("deployed to GitHub Pages after successful merged-main validation"), "README must identify the verified live release");
   assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.3**"), "README must preserve the latest published release");
