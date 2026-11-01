@@ -24,3 +24,12 @@ test("gyro steering has a dead zone and saturates smoothly", () => {
   assert.equal(tiltToSteer(90), 1);
   assert.equal(tiltToSteer(-90), -1);
 });
+
+test("gyro sensitivity changes steering gain without exceeding the command range", () => {
+  const normal = tiltToSteer(10, 1);
+  const high = tiltToSteer(10, 1.3);
+  const low = tiltToSteer(10, .7);
+  assert.ok(high > normal);
+  assert.ok(normal > low);
+  assert.ok(high <= 1 && low >= -1);
+});
