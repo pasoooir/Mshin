@@ -112,3 +112,70 @@ test("longitudinal traction stays bounded and monotonic across the supported gri
  for(let i=1;i<accelerations.length;i++)assert.ok(accelerations[i]>=accelerations[i-1]);
  assert.ok(accelerations.every(value=>Number.isFinite(value)&&value>=0&&value<=345));
 });
+
+
+test("braking transfers load forward and reduces rear-axle grip",()=>{
+ const coast=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const braking=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
+ assert.ok(braking.weightTransferFraction>0);
+ assert.ok(braking.rearAxleLoadFraction<coast.rearAxleLoadFraction);
+ assert.ok(braking.rearGripScale<coast.rearGripScale);
+ assert.ok(braking.tireCapacity<coast.tireCapacity);
+});
+
+test("drive torque transfers load rearward and improves rear traction reserve",()=>{
+ const coast=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const throttle=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:true,brake:false,grip:1,deltaSeconds:1/60});
+ assert.ok(throttle.weightTransferFraction<0);
+ assert.ok(throttle.rearAxleLoadFraction>coast.rearAxleLoadFraction);
+ assert.ok(throttle.rearGripScale>coast.rearGripScale);
+});
+
+test("braking load transfer increases rear slip response while keeping yaw bounded",()=>{
+ const neutral=resolveTireForces({speed:100,lateralVelocity:38,steer:0,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const braking=resolveTireForces({speed:100,lateralVelocity:38,steer:0,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
+ assert.ok(braking.yawRateTarget>neutral.yawRateTarget);
+ assert.ok(Math.abs(100*braking.yawRateTarget)<=braking.availableLateral+1e-7);
+});
+
+test("countersteer progressively reduces an established rear-slip yaw target",()=>{
+ const neutral=resolveTireForces({speed:190,lateralVelocity:42,steer:0,throttle:false,brake:false,grip:.72,deltaSeconds:1/60});
+ const countersteer=resolveTireForces({speed:190,lateralVelocity:42,steer:-.45,throttle:false,brake:false,grip:.72,deltaSeconds:1/60});
+ assert.ok(countersteer.yawRateTarget<neutral.yawRateTarget);
+ assert.ok(Number.isFinite(countersteer.lateralAcceleration));
+});
+
+
+test("high-grip vehicles retain distinct traction instead of being capped to the same value",()=>{
+ const lynx=resolveLongitudinalAcceleration({requestedAcceleration:260,grip:1.22});
+ const raptor=resolveLongitudinalAcceleration({requestedAcceleration:260,grip:1.32});
+ assert.ok(lynx>260);
+ assert.ok(raptor>lynx);
+ assert.ok(raptor<260*1.32+1e-9);
+});
+
+
+test("rear axle retains lateral reserve under moderate grip braking",()=>{
+ const response=resolveTireForces({speed:120,lateralVelocity:0,steer:.35,throttle:false,brake:true,grip:.8,deltaSeconds:1/60});
+ assert.ok(response.longitudinalDemand<response.tireCapacity);
+ assert.ok(response.availableLateral>0);
+ assert.ok(Number.isFinite(response.brakingDeceleration));
+});
+
+
+test("vehicle mass changes yaw inertia without bypassing tyre grip limits",()=>{
+ const light=resolveTireForces({speed:100,lateralVelocity:0,steer:.25,throttle:false,brake:false,grip:1,deltaSeconds:1/60,mass:1050});
+ const heavy=resolveTireForces({speed:100,lateralVelocity:0,steer:.25,throttle:false,brake:false,grip:1,deltaSeconds:1/60,mass:1780});
+ assert.ok(light.yawInertiaScale<heavy.yawInertiaScale);
+ assert.ok(light.yawRateTarget>heavy.yawRateTarget);
+ assert.ok(light.yawResponse>heavy.yawResponse);
+ assert.ok(Math.abs(100*light.yawRateTarget)<=light.availableLateral+1e-7);
+ assert.ok(Math.abs(100*heavy.yawRateTarget)<=heavy.availableLateral+1e-7);
+});
+
+test("invalid vehicle mass falls back to a finite baseline inertia",()=>{
+ const baseline=resolveTireForces({speed:100,lateralVelocity:0,steer:.25,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const invalid=resolveTireForces({speed:100,lateralVelocity:0,steer:.25,throttle:false,brake:false,grip:1,deltaSeconds:1/60,mass:NaN});
+ assert.equal(invalid.yawInertiaScale,baseline.yawInertiaScale);
+ assert.equal(invalid.yawRateTarget,baseline.yawRateTarget);
+});
