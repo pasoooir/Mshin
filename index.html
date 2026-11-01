@@ -478,6 +478,14 @@ body{font-size:16px}
  .nitroButton.turbo-control{width:62px;height:62px;min-width:62px}
 }
 
+
+.turbo-control.is-active{border-color:#c5fbff;background:radial-gradient(circle at 50% 45%,#6df2ff,#12658a 58%,#071b2b 100%);box-shadow:0 3px 0 #03101a,0 0 12px #65eaff,0 0 32px #36dfff,inset 0 0 0 4px #d6fbff;animation:turboActivePulse .72s ease-in-out infinite alternate}
+.turbo-control[data-state="charging"]{filter:saturate(.55) brightness(.78)}
+.turbo-control[data-state="ready"]{box-shadow:0 7px 0 #03101a,0 0 18px #4deaff88,inset 0 0 0 4px #c5f8ff}
+.turbo-control:disabled{opacity:.5;filter:grayscale(.75);box-shadow:0 4px 0 #03101a,inset 0 0 0 4px #526b7d}
+@keyframes turboActivePulse{from{filter:brightness(1);transform:scale(1)}to{filter:brightness(1.35);transform:scale(1.035)}}
+@media(prefers-reduced-motion:reduce){.turbo-control.is-active{animation:none}}
+
 </style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>\n<canvas id="game3d" aria-label="Three-dimensional Mshin racing scene"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
