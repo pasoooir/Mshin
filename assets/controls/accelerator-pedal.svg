@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 250">
+<defs><linearGradient id="alloy" x2="1" y2="1"><stop stop-color="#f5fbff"/><stop offset=".2" stop-color="#73889a"/><stop offset=".48" stop-color="#dce7ee"/><stop offset=".72" stop-color="#40566a"/><stop offset="1" stop-color="#a9bbc9"/></linearGradient><linearGradient id="edge" x2="0" y2="1"><stop stop-color="#354b60"/><stop offset="1" stop-color="#080e16"/></linearGradient><filter id="s"><feGaussianBlur stdDeviation="5"/></filter></defs>
+<path d="M48 12h84l25 218H23z" fill="#000" opacity=".5" filter="url(#s)"/>
+<path d="M53 10h74l27 218H26z" fill="url(#edge)" stroke="#d5e3ed" stroke-width="5" stroke-linejoin="round"/>
+<path d="M61 20h58l22 196H39z" fill="url(#alloy)" stroke="#101a25" stroke-width="5"/>
+<path d="M67 37h46M64 62h52M61 87h58M58 112h64M55 137h70M52 162h76M49 187h82" stroke="#172534" stroke-width="8" stroke-linecap="round"/>
+<path d="M69 37h42M66 62h48M63 87h54M60 112h60M57 137h66M54 162h72M51 187h78" stroke="#eaf4fa" stroke-opacity=".65" stroke-width="2" stroke-linecap="round"/>
+<path d="M53 10h74l3 20H50z" fill="#f4f8fb" opacity=".42"/>
+<circle cx="55" cy="24" r="4" fill="#0b1520"/><circle cx="125" cy="24" r="4" fill="#0b1520"/><circle cx="43" cy="208" r="4" fill="#0b1520"/><circle cx="137" cy="208" r="4" fill="#0b1520"/>
+<path d="M74 224h32" stroke="#55d9ff" stroke-width="4" stroke-linecap="round"/>
+</svg>
