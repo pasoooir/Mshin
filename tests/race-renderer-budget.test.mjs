@@ -30,6 +30,23 @@ test("WebGL geometry upload avoids per-triangle temporary arrays", () => {
   assert.match(uploader, /Math\.hypot\(nx0,ny0,nz0\)/);
   assert.doesNotMatch(uploader, /triangles\.slice|\.map\(|\.push\(/,
     "geometry upload must not allocate temporary vertex arrays per triangle");
-  assert.match(source, /state\.trackBuildMs=performance\.now\(\)-buildStarted/,
-    "track construction cost must be exposed for browser profiling");
+  assert.match(source, /state\.trackBuildMs=performance\.now\(\)-trackBuildStarted/,
+    "total incremental track construction time must be exposed for browser profiling");
+});
+
+test("track geometry is assembled in bounded frame-sized phases", () => {
+  assert.match(source, /function\* buildTrack\(snapshot\)/,
+    "track generation must be resumable instead of blocking one frame");
+  assert.match(source, /yield \{parts:\[nextRoad,\.\.\.nextDecor\],progress:\.34\}/,
+    "road geometry must be uploaded as the first bounded phase");
+  assert.match(source, /progress:\.67/,
+    "scenery geometry must be uploaded as a separate phase");
+  assert.match(source, /trackBuildJob\.next\(\)/,
+    "the render loop must advance no more than one construction phase per frame");
+  assert.match(source, /state\.trackBuildProgress=step\.value\.progress/,
+    "the renderer must expose incremental construction progress");
+  assert.match(source, /if\(road\)drawPart\(road,vp/,
+    "the renderer must remain safe before the first complete road mesh exists");
+  assert.match(source, /disposeParts\(previous\)/,
+    "old stage GPU buffers must be released only after the replacement is ready");
 });
