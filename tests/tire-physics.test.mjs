@@ -112,3 +112,35 @@ test("longitudinal traction stays bounded and monotonic across the supported gri
  for(let i=1;i<accelerations.length;i++)assert.ok(accelerations[i]>=accelerations[i-1]);
  assert.ok(accelerations.every(value=>Number.isFinite(value)&&value>=0&&value<=345));
 });
+
+
+test("braking transfers load forward and reduces rear-axle grip",()=>{
+ const coast=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const braking=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
+ assert.ok(braking.weightTransferFraction>0);
+ assert.ok(braking.rearAxleLoadFraction<coast.rearAxleLoadFraction);
+ assert.ok(braking.rearGripScale<coast.rearGripScale);
+ assert.ok(braking.tireCapacity<coast.tireCapacity);
+});
+
+test("drive torque transfers load rearward and improves rear traction reserve",()=>{
+ const coast=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const throttle=resolveTireForces({speed:180,lateralVelocity:0,steer:0,throttle:true,brake:false,grip:1,deltaSeconds:1/60});
+ assert.ok(throttle.weightTransferFraction<0);
+ assert.ok(throttle.rearAxleLoadFraction>coast.rearAxleLoadFraction);
+ assert.ok(throttle.rearGripScale>coast.rearGripScale);
+});
+
+test("braking load transfer increases rear slip response while keeping yaw bounded",()=>{
+ const neutral=resolveTireForces({speed:200,lateralVelocity:38,steer:0,throttle:false,brake:false,grip:.8,deltaSeconds:1/60});
+ const braking=resolveTireForces({speed:200,lateralVelocity:38,steer:0,throttle:false,brake:true,grip:.8,deltaSeconds:1/60});
+ assert.ok(braking.yawRateTarget>neutral.yawRateTarget);
+ assert.ok(Math.abs(200*braking.yawRateTarget)<=braking.availableLateral+1e-7);
+});
+
+test("countersteer progressively reduces an established rear-slip yaw target",()=>{
+ const neutral=resolveTireForces({speed:190,lateralVelocity:42,steer:0,throttle:false,brake:false,grip:.72,deltaSeconds:1/60});
+ const countersteer=resolveTireForces({speed:190,lateralVelocity:42,steer:-.45,throttle:false,brake:false,grip:.72,deltaSeconds:1/60});
+ assert.ok(countersteer.yawRateTarget<neutral.yawRateTarget);
+ assert.ok(Number.isFinite(countersteer.lateralAcceleration));
+});
