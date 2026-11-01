@@ -335,6 +335,13 @@ try {
   const afterConcurrentRelease=await page.evaluate(()=>window.MshinInputState?.());
   assert.equal(afterConcurrentRelease.throttle,0,"throttle must release after its own pointer is lifted");
   assert.equal(afterConcurrentRelease.turbo,false,"turbo must release after its own pointer is lifted");
+  await steeringPad.dispatchEvent("pointerdown",{pointerId:511,pointerType:"touch",clientX:steeringBounds.x+steeringBounds.width*.8,clientY:steeringBounds.y+steeringBounds.height/2,button:0,isPrimary:true});
+  await gasControl.dispatchEvent("pointerdown",{pointerId:512,pointerType:"touch",clientX:0,clientY:0,button:0,isPrimary:false});
+  await page.locator("#pause").click();
+  const pausedInputState=await page.evaluate(()=>window.MshinInputState?.());
+  assert.deepEqual(pausedInputState.activePointers,{steering:0,throttle:0,brake:0,turbo:0},"pausing must release every captured control pointer");
+  await page.locator("#resume").click();
+
 
   const steeringBox = await steeringPad.boundingBox();
   const steerCenter = { x: steeringBox.x + steeringBox.width / 2, y: steeringBox.y + steeringBox.height / 2 };
