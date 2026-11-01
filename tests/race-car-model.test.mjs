@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("../src/vehicle-showroom-3d.js", import.meta.url), "utf8");
 const raceRenderer = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
+const pbr = await readFile(new URL("../src/vehicle-pbr.js", import.meta.url), "utf8");
 
 test("3D race-car body shells use tapered multi-station geometry", () => {
   assert.match(source, /const stations=\[/);
@@ -36,4 +37,14 @@ test("ten vehicle profiles are generated locally without a runtime model CDN", (
   assert.match(source, /"ai-touring"/);
   assert.match(source, /"ai-prototype"/);
   assert.doesNotMatch(source, /https?:\/\//);
+});
+
+test("race and showroom share PBR materials, environment reflections and automotive clearcoat", () => {
+  assert.match(raceRenderer, /PBR_FRAGMENT/);
+  assert.match(raceRenderer, /createVehicleEnvironment/);
+  assert.match(raceRenderer, /uniforms\\.roughness/);
+  assert.match(raceRenderer, /item\\.material/);
+  assert.match(pbr, /distributionGGX/);
+  assert.match(pbr, /textureCube\\(uEnvironmentMap,R\\)/);
+  assert.match(pbr, /clearcoat/);
 });
