@@ -490,8 +490,26 @@ try {
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   await economy.keyboard.down("ArrowUp");
+  let activeSteerKey = null;
+  const raceDeadline = Date.now() + 75000;
   try {
-    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 75000 });
+    while (Date.now() < raceDeadline && await economy.locator("#finish").evaluate(el => el.classList.contains("hidden"))) {
+      const steering = await economy.evaluate(() => {
+        const telemetry = window.MshinRaceTelemetry;
+        if (!telemetry) return 0;
+        // Feed-forward follows the measured track curvature; feedback recentres
+        // the car without changing the production vehicle physics.
+        return Math.max(-1, Math.min(1, telemetry.feedForwardSteer - telemetry.lateral / 260 - telemetry.yaw * .55));
+      });
+      const nextSteerKey = steering < -.12 ? "ArrowLeft" : steering > .12 ? "ArrowRight" : null;
+      if (nextSteerKey !== activeSteerKey) {
+        if (activeSteerKey) await economy.keyboard.up(activeSteerKey);
+        if (nextSteerKey) await economy.keyboard.down(nextSteerKey);
+        activeSteerKey = nextSteerKey;
+      }
+      await economy.waitForTimeout(90);
+    }
+    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: Math.max(1, raceDeadline - Date.now()) });
   } catch (error) {
     const raceState = await economy.evaluate(() => ({
       finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
@@ -508,6 +526,7 @@ try {
     throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
   } finally {
     await economy.keyboard.up("ArrowUp");
+    if (activeSteerKey) await economy.keyboard.up(activeSteerKey);
   }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
