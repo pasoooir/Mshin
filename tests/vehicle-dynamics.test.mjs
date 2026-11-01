@@ -72,3 +72,39 @@ test("fixed-step integration is deterministic for equal simulation time", () => 
   assert.ok(Math.abs(a.speed - b.speed) < 0.01);
   assert.ok(Math.abs(a.lateral - b.lateral) < 2.5);
 });
+
+test("sustained steering turns the chassis without injecting continuous lateral drift", () => {
+  const car = vehicle({ speed: 220 });
+  for (let i = 0; i < 180; i++) {
+    stepVehicleDynamics(car, { throttle: true, brake: false, steer: .55 }, tuning, t => ({
+      p: { x: t * 1000, y: 0 }, nx: 0, ny: 1, angle: 0
+    }));
+  }
+  assert.ok(Math.abs(car.yaw) > .2, "steering should rotate the chassis");
+  assert.ok(Math.abs(car.lateralVelocity) < 1, "steering alone must not create an ever-growing sideways velocity");
+  assert.ok(Math.abs(car.lateral) > 10, "the world-space trajectory should leave the original straight line");
+});
+
+test("curvature-aware steering can complete three laps without track-centreline locking", () => {
+  const rx = 1180, ry = 760;
+  const ellipseFrame = t => {
+    const p = { x: Math.cos(t) * rx, y: Math.sin(t) * ry };
+    const dx = -Math.sin(t) * rx, dy = Math.cos(t) * ry;
+    const length = Math.hypot(dx, dy);
+    return { p, nx: -dy / length, ny: dx / length, angle: Math.atan2(dy, dx) };
+  };
+  const car = vehicle();
+  let laps = 0, previousT = car.t, maxLateral = 0;
+  for (let i = 0; i < 3600; i++) {
+    const frame = ellipseFrame(car.t);
+    const curvature = rx * ry / Math.pow(rx * rx * Math.sin(car.t) ** 2 + ry * ry * Math.cos(car.t) ** 2, 1.5);
+    const feedForward = Math.atan(128 * curvature) / .48;
+    const steer = clamp(feedForward - 1.1 * car.yaw - .0015 * car.lateral, -1, 1);
+    stepVehicleDynamics(car, { throttle: true, brake: false, steer }, { ...tuning, dt: 1 / 60, worldUnitsPerSpeedUnit: 1 }, ellipseFrame);
+    if (previousT > 5.8 && car.t < .5) laps++;
+    previousT = car.t;
+    maxLateral = Math.max(maxLateral, Math.abs(car.lateral));
+  }
+  assert.ok(laps >= 3, `expected at least three laps, observed ${laps}`);
+  assert.ok(maxLateral < 120, `curvature-aware steering should stay on the road, max lateral offset was ${maxLateral}`);
+});
