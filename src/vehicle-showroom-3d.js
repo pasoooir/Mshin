@@ -123,9 +123,9 @@ export function createVehicleShowroom(canvas){
   parts=buildVehicle(gl,"rally");state.status="webgl-ready";
  }catch(error){state.status="unavailable";state.error=String(error?.message||error);return {state,setVehicle(){},spin360(){},destroy(){}}}
  const release=event=>{if(drag!==null&&(event?.pointerId==null||event.pointerId===drag.pointerId))drag=null};
- canvas.addEventListener("pointerdown",event=>{drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY};try{if(typeof canvas.setPointerCapture==="function")canvas.setPointerCapture(event.pointerId)}catch{/* Synthetic or already-cancelled pointers cannot be captured. Drag tracking still works. */}spinUntil=0});
- canvas.addEventListener("pointermove",event=>{if(!drag||event.pointerId!==drag.pointerId)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;drag={...drag,x:event.clientX,y:event.clientY};yaw+=dx*.012;state.pitch=clamp(state.pitch+dy*.008,-.38,.62);});
- canvas.addEventListener("pointerup",release);canvas.addEventListener("pointercancel",release);canvas.addEventListener("lostpointercapture",release);
+ const move=event=>{if(!drag||event.pointerId!==drag.pointerId)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;drag={...drag,x:event.clientX,y:event.clientY};yaw+=dx*.012;state.pitch=clamp(state.pitch+dy*.008,-.38,.62);};
+ canvas.addEventListener("pointerdown",event=>{drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY};spinUntil=0});
+ window.addEventListener("pointermove",move);window.addEventListener("pointerup",release);window.addEventListener("pointercancel",release);
  const resize=()=>{const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.35);width=Math.max(1,Math.round(rect.width*dpr));height=Math.max(1,Math.round(rect.height*dpr));if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;gl.viewport(0,0,width,height)}};
  const observer=typeof ResizeObserver!=="undefined"?new ResizeObserver(resize):null;observer?.observe(canvas);resize();
  const identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
@@ -145,6 +145,6 @@ export function createVehicleShowroom(canvas){
   state,
   setVehicle(id){const next=PROFILES[id]?id:"rally";if(next===state.vehicle)return;for(const p of parts)gl.deleteBuffer(p.buffer);parts=buildVehicle(gl,next);state.vehicle=next;state.pitch=.16;yaw=-.55;state.yaw=yaw},
   spin360(){spinUntil=performance.now()+1500;},
-  destroy(){disposed=true;cancelAnimationFrame(raf);observer?.disconnect();for(const p of parts)gl.deleteBuffer(p.buffer);try{gl.deleteProgram(program);gl.deleteTexture(environment)}catch{}}
+  destroy(){disposed=true;cancelAnimationFrame(raf);observer?.disconnect();window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",release);window.removeEventListener("pointercancel",release);for(const p of parts)gl.deleteBuffer(p.buffer);try{gl.deleteProgram(program);gl.deleteTexture(environment)}catch{}}
  };
 }
