@@ -309,14 +309,18 @@ try {
       const pixels = new Uint8Array(width * height * 4);
       gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
       let visible = 0;
-      for (let i = 0; i < pixels.length; i += 4 * 32) {
+      const colors = new Set();
+      for (let i = 0; i < pixels.length; i += 4 * 16) {
         if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 24) visible++;
+        colors.add((pixels[i] >> 4) + ":" + (pixels[i + 1] >> 4) + ":" + (pixels[i + 2] >> 4));
       }
-      resolve({ width, height, visiblePixels: visible, pixelBytes: pixels.byteLength, context: true, glError: gl.getError() });
+      resolve({ width, height, visiblePixels: visible, uniqueColors: colors.size, pixelBytes: pixels.byteLength, context: true, glError: gl.getError() });
     });
   }));
   assert.ok(canvasState.context && canvasState.width > 0 && canvasState.height > 0, "3D game canvas should have a real WebGL drawing surface");
   assert.ok(canvasState.visiblePixels > 100, "3D game canvas should contain visible rendered pixels: " + JSON.stringify(canvasState));
+  assert.ok(canvasState.uniqueColors > 6, "3D scene must contain actual mesh color variation, not only the clear-color background: " + JSON.stringify(canvasState));
+  assert.equal(canvasState.glError, 0, "3D renderer must not leave a WebGL error: " + JSON.stringify(canvasState));
   assert.ok(canvasState.pixelBytes > 1000, "3D gameplay frame should not be a blank image");
   await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
   await page.locator("#pause").click();
