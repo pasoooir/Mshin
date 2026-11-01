@@ -46,7 +46,28 @@ function makeProgram(gl){
   throw error;
  }
 }
-function makeGeometry(gl,triangles){const data=[];for(let i=0;i<triangles.length;i+=9){const a=triangles.slice(i,i+3),b=triangles.slice(i+3,i+6),c=triangles.slice(i+6,i+9),n=norm(cross(sub(b,a),sub(c,a)));for(const p of [a,b,c])data.push(...p,...n)}const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return {buffer,count:data.length/6}}
+function makeGeometry(gl,triangles){
+  // Preallocate the final interleaved vertex buffer and calculate face normals
+  // from scalar coordinates. Avoid per-triangle slice/map/spread allocations.
+  const vertexCount=triangles.length/3,data=new Float32Array(vertexCount*6);
+  let out=0;
+  for(let i=0;i<triangles.length;i+=9){
+   const ax=triangles[i],ay=triangles[i+1],az=triangles[i+2];
+   const bx=triangles[i+3],by=triangles[i+4],bz=triangles[i+5];
+   const cx=triangles[i+6],cy=triangles[i+7],cz=triangles[i+8];
+   const abx=bx-ax,aby=by-ay,abz=bz-az,acx=cx-ax,acy=cy-ay,acz=cz-az;
+   const nx0=aby*acz-abz*acy,ny0=abz*acx-abx*acz,nz0=abx*acy-aby*acx;
+   const inverseLength=1/(Math.hypot(nx0,ny0,nz0)||1);
+   const nx=nx0*inverseLength,ny=ny0*inverseLength,nz=nz0*inverseLength;
+   for(let vertex=0;vertex<3;vertex++){
+    const offset=i+vertex*3;
+    data[out++]=triangles[offset];data[out++]=triangles[offset+1];data[out++]=triangles[offset+2];
+    data[out++]=nx;data[out++]=ny;data[out++]=nz;
+   }
+  }
+  const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);
+  return {buffer,count:vertexCount};
+ }
 function tri(out,a,b,c){out.push(...a,...b,...c)}
 function quad(out,a,b,c,d){tri(out,a,b,c);tri(out,a,c,d)}
 function box(out,x,y,z,w,h,d){const x0=x-w/2,x1=x+w/2,y0=y-h/2,y1=y+h/2,z0=z-d/2,z1=z+d/2;quad(out,[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]);quad(out,[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]);quad(out,[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]);quad(out,[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1]);quad(out,[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0]);quad(out,[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1])}
@@ -173,7 +194,7 @@ export function createRaceRenderer(canvas){
  const visibleRivals=[],visibleDistances=[];
  function render(snapshot){
   if(!gl||lost||!snapshot||!["race","countdown","paused"].includes(snapshot.state))return;
-  resize();if(lastStage!==snapshot.stageId)buildTrack(snapshot);
+  resize();if(lastStage!==snapshot.stageId){const buildStarted=performance.now();buildTrack(snapshot);state.trackBuildMs=performance.now()-buildStarted;}
   if(!carParts.length)buildCar();
   const f=snapshot.frameAt(snapshot.player.t),x=f.p.x+f.nx*snapshot.player.lateral,z=-(f.p.y+f.ny*snapshot.player.lateral),angle=f.angle+snapshot.player.yaw;
   const roadHeight=f.height||0;const desiredEye=[x-Math.cos(angle)*270,roadHeight+235,z+Math.sin(angle)*310],desiredTarget=[x+Math.cos(angle)*330,roadHeight+28,z-Math.sin(angle)*330];
