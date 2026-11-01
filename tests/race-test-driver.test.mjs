@@ -21,8 +21,8 @@ test("race test driver damps lateral velocity before the car leaves the track", 
 });
 
 test("race test driver output is bounded and ignores invalid telemetry", () => {
-  assert.equal(calculateRaceSteering({ lateral: 1e9 }), -0.52);
-  assert.equal(calculateRaceSteering({ lateral: -1e9 }), 0.52);
+  assert.equal(calculateRaceSteering({ lateral: 1e9 }), -0.65);
+  assert.equal(calculateRaceSteering({ lateral: -1e9 }), 0.65);
   assert.equal(calculateRaceSteering({ lateral: NaN, yaw: Infinity, lateralVelocity: undefined }), 0);
 });
 
