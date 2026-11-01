@@ -242,6 +242,8 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "race-audio persistence reload");
+  const restoredAudioState = await page.evaluate(() => ({ stored: JSON.parse(localStorage.getItem("mshin-settings-v1")).sound, runtime: window.MshinSettings?.sound, assetVersion: window.MshinAssets?.version }));
+  assert.deepEqual(restoredAudioState, { stored: false, runtime: false, assetVersion: "2026.11.01.01" }, "reload should restore mute state and current asset revision: " + JSON.stringify(restoredAudioState));
   await page.locator("#play").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
