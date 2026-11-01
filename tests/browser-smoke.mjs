@@ -100,6 +100,7 @@ try {
     Object.defineProperty(window, "DeviceOrientationEvent", { configurable: true, value: TestDeviceOrientationEvent });
   });
   await page.locator("#gyroToggle").click();
+  await page.waitForFunction(() => document.querySelector("#gyroToggle")?.getAttribute("aria-pressed") === "true" && document.querySelector("#gyroSensitivity") && !document.querySelector("#gyroSensitivity").hidden, undefined, { timeout: 5000 });
   assert.equal(await page.locator("#gyroToggle").getAttribute("aria-pressed"), "true", "gyro control should enable after explicit user activation");
   assert.equal(await page.locator("#gyroCalibrate").isVisible(), true, "gyro calibration should appear when the sensor is enabled");
   assert.equal(await page.locator("#gyroSensitivity").isVisible(), true, "gyro sensitivity control should appear when the sensor is enabled");
