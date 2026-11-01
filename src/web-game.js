@@ -331,7 +331,7 @@ async function toggleGyro(){
  if(gyroEnabled){
   removeEventListener("deviceorientation",updateGyroSteering);
   gyroEnabled=false;gyroBaseline=null;gyroLastTilt=null;input.steerTarget=0;
-  gyroButton.textContent="📱 ژیروسکوپ";gyroButton.setAttribute("aria-pressed","false");gyroCalibrate.hidden=true;return;
+  gyroButton.textContent="📱";gyroButton.setAttribute("aria-pressed","false");gyroCalibrate.hidden=true;return;
  }
  if(!("DeviceOrientationEvent" in window)){gyroButton.textContent="حسگر در دسترس نیست";return}
  if(!window.isSecureContext){gyroButton.textContent="نیازمند اتصال امن";return}
@@ -342,7 +342,7 @@ async function toggleGyro(){
   }
   gyroEnabled=true;gyroBaseline=null;gyroLastTilt=null;
   addEventListener("deviceorientation",updateGyroSteering,{passive:true});
-  gyroButton.textContent="📱 ژیروسکوپ روشن";gyroButton.setAttribute("aria-pressed","true");gyroCalibrate.hidden=false;
+  gyroButton.textContent="📱 ✓";gyroButton.setAttribute("aria-pressed","true");gyroCalibrate.hidden=false;
  }catch(error){gyroEnabled=false;gyroButton.textContent="خطا در حسگر";window.MshinGyroError=String(error?.message||error)}
 }
 gyroButton.addEventListener("click",toggleGyro);
@@ -351,7 +351,8 @@ gyroCalibrate.addEventListener("click",()=>{
  gyroBaseline=gyroLastTilt;input.steerTarget=0;gyroCalibrate.textContent="مرکز تنظیم شد ✓";
  setTimeout(()=>{gyroCalibrate.textContent="تنظیم مرکز"},1400);
 });
-\naddEventListener("keydown",e=>{if(state==="paused"&&["ArrowUp","ArrowDown"].includes(e.key)){const items=[...document.querySelectorAll("#pausePanel .pauseAction")],current=items.indexOf(document.activeElement),next=(current+(e.key==="ArrowDown"?1:-1)+items.length)%items.length;if(items[next])items[next].focus();return}if(["ArrowLeft","a","A"].includes(e.key))input.steerTarget=-1;if(["ArrowRight","d","D"].includes(e.key))input.steerTarget=1;if(["ArrowUp","w","W"].includes(e.key))input.gas=true;if(["ArrowDown","s","S"," "].includes(e.key))input.brake=true;if(e.key==="Shift")activateNitro();if(e.key==="Escape"){if(state==="race")$("pause").click();else if(state==="paused"){if(!$("driverDetailsPanel").classList.contains("hidden"))$("driverDetailsClose").click();else if(pauseSettingsReturn)$("backHome").click();else $("resume").click()}}});addEventListener("keyup",e=>{if(["ArrowLeft","a","A","ArrowRight","d","D"].includes(e.key))input.steerTarget=0;if(["ArrowUp","w","W"].includes(e.key))input.gas=false;if(["ArrowDown","s","S"," "].includes(e.key))input.brake=false;});
+
+addEventListener("keydown",e=>{if(state==="paused"&&["ArrowUp","ArrowDown"].includes(e.key)){const items=[...document.querySelectorAll("#pausePanel .pauseAction")],current=items.indexOf(document.activeElement),next=(current+(e.key==="ArrowDown"?1:-1)+items.length)%items.length;if(items[next])items[next].focus();return}if(["ArrowLeft","a","A"].includes(e.key))input.steerTarget=-1;if(["ArrowRight","d","D"].includes(e.key))input.steerTarget=1;if(["ArrowUp","w","W"].includes(e.key))input.gas=true;if(["ArrowDown","s","S"," "].includes(e.key))input.brake=true;if(e.key==="Shift")activateNitro();if(e.key==="Escape"){if(state==="race")$("pause").click();else if(state==="paused"){if(!$("driverDetailsPanel").classList.contains("hidden"))$("driverDetailsClose").click();else if(pauseSettingsReturn)$("backHome").click();else $("resume").click()}}});addEventListener("keyup",e=>{if(["ArrowLeft","a","A","ArrowRight","d","D"].includes(e.key))input.steerTarget=0;if(["ArrowUp","w","W"].includes(e.key))input.gas=false;if(["ArrowDown","s","S"," "].includes(e.key))input.brake=false;});
 
 // Publish a deterministic initial UI state on every document load. This also
 // restores the home menu after a hard reload from an active race/session.
