@@ -242,20 +242,12 @@ try {
   await waitForGameBoot(page, "race-audio persistence reload");
   assert.equal(await page.locator("#play").isVisible(), true, "home action must be visible after reload");
   await page.locator("#play").click({ force: true, noWaitAfter: true });
-  await page.waitForFunction(() => {
-    const select = document.querySelector("#select");
-    return Boolean(select && !select.classList.contains("hidden") && document.querySelectorAll("#worlds .world").length === 10);
-  }, undefined, { timeout: 8000 }).catch(async error => {
-    const state = await page.evaluate(() => ({
-      homeClass: document.querySelector("#home")?.className,
-      selectClass: document.querySelector("#select")?.className,
-      worldCount: document.querySelectorAll("#worlds .world").length,
-      bootStage: window.MshinBootStage,
-      runtimeImported: window.MshinRuntimeImported,
-      bootError: window.MshinBootError
-    }));
-    throw new Error("Reloaded home action did not open world selection: " + JSON.stringify(state) + " | " + error.message);
-  });
+  const reloadedMenuState = await page.evaluate(() => ({
+    selectVisible: !document.querySelector("#select").classList.contains("hidden"),
+    worldCount: document.querySelectorAll("#worlds .world").length
+  }));
+  assert.equal(reloadedMenuState.selectVisible, true, "reloaded home action must open the world menu");
+  assert.equal(reloadedMenuState.worldCount, 10, "world menu must render all ten cards after reload");
   await page.locator("#worlds .world").filter({ hasText: "شهر نئونی" }).click({ force: true, noWaitAfter: true });
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   await page.locator("#startRace").click();
