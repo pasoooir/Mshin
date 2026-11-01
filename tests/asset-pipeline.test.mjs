@@ -192,12 +192,12 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v43/);
+  assert.match(sw, /mshin-arcade-v44/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.11.01.06");
+  assert.equal(manifest.version, "2026.11.01.07");
   assert.equal(pkg.version, "0.11.7");
-  assert.equal(pwa.version, "0.11.6");
-  assert.equal(cocos.version, "2026.11.01.06");
+  assert.equal(pwa.version, "0.11.7");
+  assert.equal(cocos.version, "2026.11.01.07");
   assert.ok(readme.includes("Latest published release on main: 0.11.6") && readme.includes("0.11.7 is the mobile native-landscape entry fix under review in pull request #76"), "README must identify the verified live release without claiming the mobile fix is deployed");
   assert.ok(readme.includes("## Latest published release on main: 0.11.6") && readme.includes("Versions 0.11.0–0.11.6 are published on GitHub Pages. Version 0.11.7 is the mobile native-landscape entry fix"), "README must distinguish the published release from the mobile-fix PR branch");
 });
