@@ -124,10 +124,10 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
           time: document.querySelector("#time")?.textContent || null
         };
       });
-      if (!throttleHeld && state.speed < 325) {
+      if (!throttleHeld && state.speed < 290) {
         await page.keyboard.down("ArrowUp");
         throttleHeld = true;
-      } else if (throttleHeld && state.speed > 345) {
+      } else if (throttleHeld && state.speed > 310) {
         await page.keyboard.up("ArrowUp");
         throttleHeld = false;
       }
