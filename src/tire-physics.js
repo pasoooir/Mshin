@@ -11,7 +11,12 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const lateral=Number.isFinite(lateralVelocity)?lateralVelocity:0;
  const steering=clamp(Number.isFinite(steer)?steer:0,-1,1);
  const dt=clamp(Number.isFinite(deltaSeconds)?deltaSeconds:0,0,.1);
- const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.35);\n // Existing vehicle mass values also drive collision response. Use the same\n // mass to model yaw inertia: lighter cars rotate more readily, heavier cars\n // need more time to change heading. This is a game-scale inertia ratio.\n const vehicleMass=clamp(Number.isFinite(mass)?mass:1250,850,2000);\n const yawInertiaScale=clamp(vehicleMass/1250,.8,1.6);
+ const surfaceGrip=clamp(Number.isFinite(grip)?grip:1,.35,1.35);
+ // Existing vehicle mass values also drive collision response. Use the same
+ // mass to model yaw inertia: lighter cars rotate more readily, heavier cars
+ // need more time to change heading. This is a game-scale inertia ratio.
+ const vehicleMass=clamp(Number.isFinite(mass)?mass:1250,850,2000);
+ const yawInertiaScale=clamp(vehicleMass/1250,.8,1.6);
  // Longitudinal load transfer changes the rear axle's normal-load share.
  // Positive values move load forward under braking; throttle moves it rearward.
  // The fractions are normalized axle-load shifts, not vehicle mass units.
