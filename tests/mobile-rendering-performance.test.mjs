@@ -53,3 +53,29 @@ test("WebGL program creation releases temporary compiled shader objects", () => 
   assert.match(renderer, /function makeProgram\(gl\)\{[\s\S]*?gl\.detachShader\(p,vertex\);gl\.detachShader\(p,fragment\);gl\.deleteShader\(vertex\);gl\.deleteShader\(fragment\)/);
   assert.match(renderer, /catch\(error\)\{[\s\S]*?gl\.deleteProgram\(p\)[\s\S]*?gl\.deleteShader\(vertex\)[\s\S]*?gl\.deleteShader\(fragment\)/);
 });
+
+test("mobile rendering targets 60fps without dropping alternate high-refresh callbacks", () => {
+  assert.match(game, /const FIXED_STEP=1\\/60,RENDER_STEP=1\\/60/);
+  assert.match(game, /renderAccumulator\\+=frameDelta/);
+  assert.match(game, /renderAccumulator>=RENDER_STEP/);
+  assert.doesNotMatch(game, /ts-last<16\\.5/);
+});
+
+test("mobile renderer adapts drawing resolution to measured render cost", () => {
+  assert.match(game, /renderCostEMA>22/);
+  assert.match(game, /renderCostEMA<14/);
+  assert.match(game, /race3d\\.setQuality\\?\\.\\(adaptiveQuality\\)/);
+  assert.match(renderer, /setQuality\\(scale\\)\\{qualityScale=clamp\\(scale,\\.58,1\\)/);
+});
+
+test("driving acceleration, top speed and displayed speed are increased", () => {
+  assert.match(game, /maxSpeed=model\\.max\\*1\\.22/);
+  assert.match(game, /accel=model\\.accel\\*1\\.3/);
+  assert.match(game, /cruiseSpeed:activeCar\\(\\)\\.max\\*1\\.2/);
+  assert.match(game, /textContent=Math\\.round\\(car\\.speed\\*\\.55\\)/);
+});
+
+test("AI-to-AI collision work uses an angular broad phase before track geometry", () => {
+  assert.match(game, /angularGap=Math\\.abs\\(Math\\.atan2\\(Math\\.sin\\(b\\.distance-a\\.distance\\)/);
+  assert.ok(game.indexOf("angularGap>.14") < game.indexOf("const fa=frameAt(a.distance%(Math.PI*2)),fb=frameAt(b.distance%(Math.PI*2))"));
+});
