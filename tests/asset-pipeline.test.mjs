@@ -198,8 +198,8 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pkg.version, "0.11.6");
   assert.equal(pwa.version, "0.11.6");
   assert.equal(cocos.version, "2026.11.01.06");
-  assert.ok(readme.includes("live browser release on `main` is **version 0.11.5**") && readme.includes("version 0.11.6, is under review in pull request #73"), "README must identify the verified live release without claiming the PR is deployed");
-  assert.ok(readme.includes("## Latest published release on main: 0.11.5") && readme.includes("Versions 0.11.0–0.11.4 are published on GitHub Pages. Version 0.11.6 is the next development update"), "README must distinguish the published release from the PR branch");
+  assert.ok(readme.includes("live browser release on `main` is **version 0.11.5**") && readme.includes("version 0.11.6, is under review in pull request #75"), "README must identify the verified live release without claiming the PR is deployed");
+  assert.ok(readme.includes("## Latest published release on main: 0.11.5") && readme.includes("Versions 0.11.0–0.11.5 are published on GitHub Pages. Version 0.11.6 is the next development update"), "README must distinguish the published release from the PR branch");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
