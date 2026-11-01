@@ -345,8 +345,8 @@ try {
   await page.mouse.move(steerCenter.x + 42, steerCenter.y, { steps: 5 });
   const rightSteer = Number(await steeringPad.getAttribute("aria-valuenow"));
   assert.ok(rightSteer > 0.25, "dragging the steering pad right should produce progressive right steering");
-  await page.waitForFunction(() => (window.MshinPhysicsInput?.steering ?? 0) > 0.2, undefined, { timeout: 750 });
-  assert.ok((await page.evaluate(() => window.MshinPhysicsInput.steering)) > 0.2, "the first steering movement should reach the fixed-step vehicle controller without a long easing delay");
+  await page.waitForFunction(() => (window.MshinPhysicsInput?.().steering ?? 0) > 0.2, undefined, { timeout: 750 });
+  assert.ok((await page.evaluate(() => window.MshinPhysicsInput().steering)) > 0.2, "the first steering movement should reach the fixed-step vehicle controller without a long easing delay");
   await page.mouse.move(steerCenter.x + 1, steerCenter.y, { steps: 4 });
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "small thumb movements around center should be ignored by the steering dead zone");
   await page.mouse.up();
