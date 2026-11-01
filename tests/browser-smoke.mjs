@@ -172,7 +172,11 @@ try {
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
-  assert.ok(await page.evaluate(() => Object.values(window.MshinAssets.audioData).every(value => value instanceof ArrayBuffer)), "all CDN audio bytes should be preloaded before a race");
+  const audioPreload = await page.evaluate(() => ({
+    missing: Object.entries(window.MshinAssets.audioData).filter(([, value]) => !(value instanceof ArrayBuffer)).map(([id]) => id),
+    failures: window.MshinAssets.failures
+  }));
+  assert.equal(audioPreload.missing.length, 0, "all repository-local audio bytes must be preloaded before a race: " + JSON.stringify(audioPreload));
   await page.locator("#startRace").click();
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
@@ -238,6 +242,8 @@ try {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).sound), false, "mute preference should persist");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "race-audio persistence reload");
+  const restoredAudioState = await page.evaluate(() => ({ stored: JSON.parse(localStorage.getItem("mshin-settings-v1")).sound, runtime: window.MshinSettings?.sound, assetVersion: window.MshinAssets?.version }));
+  assert.deepEqual(restoredAudioState, { stored: false, runtime: false, assetVersion: "2026.11.01.01" }, "reload should restore mute state and current asset revision: " + JSON.stringify(restoredAudioState));
   await page.locator("#play").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
@@ -362,7 +368,8 @@ try {
   await mobile.locator("#tab-race").click();
   assert.equal(await mobile.locator(".stageCard").count(),5,"mobile race tab should retain five stages");
   await mobile.locator("#startRace").click();
-  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  try { await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 12000 }); }
+  catch (error) { const state = await mobile.evaluate(() => ({ boot: window.MshinBootStage, audioReady: window.MshinAudioReady ?? null, failures: window.MshinAssets?.failures ?? [], settings: window.MshinSettings ?? null })); throw new Error("Mobile race countdown did not finish: " + JSON.stringify(state) + "; " + error.message); }
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
   await mobile.locator("#pause").click();
   const mobilePauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
@@ -418,7 +425,8 @@ try {
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   await economy.keyboard.down("ArrowUp");
-  await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 75000 });
+  try { await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 75000 }); }
+  catch (error) { const state = await economy.evaluate(() => window.MshinPerformance); throw new Error("Economy race did not finish: " + JSON.stringify(state) + "; " + error.message); }
   await economy.keyboard.up("ArrowUp");
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");

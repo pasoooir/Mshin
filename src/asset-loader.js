@@ -39,35 +39,55 @@ async function loadVector(asset) {
 }
 
 async function loadAudio(asset) {
+  // Large repository-bundled music tracks need a longer cold-cache window.
+  const timeoutMs = 20000;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), 5000, asset.src);
+    const response = await timeout(fetch(asset.src, { cache: "force-cache", mode: "cors", credentials: "omit", signal: controller.signal }), timeoutMs, asset.src);
     if (!response.ok) throw new Error(`Audio request failed (${response.status}): ${asset.src}`);
     const type = response.headers.get("content-type") || "";
-    if (!type.includes("audio/") && !/\.(mp3|ogg)(?:$|\?)/i.test(asset.src)) throw new Error(`Unexpected audio MIME type: ${type}`);
-    const bytes = await timeout(response.arrayBuffer(), 5000, asset.src);
+    if (!type.includes("audio/") && !/\.(wav|mp3|ogg)(?:$|\?)/i.test(asset.src)) throw new Error(`Unexpected audio MIME type: ${type}`);
+    const bytes = await timeout(response.arrayBuffer(), timeoutMs, asset.src);
     if ("caches" in window) { try { const cache = await caches.open("mshin-audio-assets-v1"); await cache.put(asset.src, new Response(bytes.slice(0), { headers: { "Content-Type": type || asset.type || "application/octet-stream", "Cache-Control": "public, max-age=31536000" } })); } catch {} }
     return bytes;
   } finally { clearTimeout(timer); }
 }
 
 export async function preloadGameAssets(onProgress = () => {}) {
-  const all = [...manifest.worlds, ...manifest.cars, ...(manifest.scenes || []), ...(manifest.icons || []), ...(manifest.sounds || [])];
-  let loaded = 0, cursor = 0;
+  const images = [...manifest.worlds, ...manifest.cars, ...(manifest.scenes || []), ...(manifest.icons || [])];
+  const sounds = [...(manifest.sounds || [])];
+  const total = images.length + sounds.length;
+  let loaded = 0;
   const failures = [];
-  const worker = async () => {
-    while (cursor < all.length) {
-      const asset = all[cursor++];
-      try {
-        if (asset.group === "audio") audioCache.set(asset.id, await loadAudio(asset));
-        else imageCache.set(asset.id, await loadVector(asset));
-      } catch (error) { failures.push({ asset: asset.src || asset.cdn, error: error.message }); }
-      loaded++;
-      onProgress({ loaded, total: all.length, percent: Math.round(loaded / all.length * 100), name: asset.name });
-    }
+
+  const runQueue = async (queue, concurrency) => {
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < queue.length) {
+        const asset = queue[cursor++];
+        try {
+          if (asset.group === "audio") audioCache.set(asset.id, await loadAudio(asset));
+          else imageCache.set(asset.id, await loadVector(asset));
+        } catch (error) {
+          failures.push({ id: asset.id, asset: asset.src || asset.cdn, error: error.message });
+        } finally {
+          loaded++;
+          onProgress({ loaded, total, percent: Math.round(loaded / total * 100), name: asset.name });
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, worker));
   };
-  await Promise.all(Array.from({ length: 6 }, worker));
+
+  // Start audio independently from the larger image queue. Otherwise all six
+  // workers can spend the cold-start window decoding photos/SVGs before they
+  // even reach the music files at the end of the manifest.
+  await Promise.all([
+    runQueue(images, 6),
+    runQueue(sounds, 4)
+  ]);
+
   window.MshinAssets = {
     version: manifest.version,
     worlds: manifest.worlds.map(item => imageCache.get(item.id) || null),

@@ -28,7 +28,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.ok(html.includes('src="./src/boot.js?v=2026.10.31.17"'));
+  assert.ok(html.includes('src="./src/boot.js?v=2026.11.01.01"'));
   assert.match(html, /role="tablist"/);
   assert.match(html, /data-panel="race"/);
   assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
@@ -50,6 +50,8 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.match(loader, /manifest\.sounds/);
   assert.match(loader, /audioCache\.set/);
   assert.match(loader, /loadAudio/);
+  assert.match(loader, /const timeoutMs = 20000/);
+  assert.match(loader, /response\.arrayBuffer\(\), timeoutMs/);
   assert.ok(loader.includes("audioData:"), "audio bytes must be retained before game startup");
   assert.ok(manifest.sounds.filter(sound => sound.id.startsWith("engine")).length === 6 && manifest.sounds.filter(sound => sound.id.startsWith("engine")).every(sound => sound.src.startsWith("./cdn/assets/audio/") && sound.license === "CC0"), "race engine audio must be bundled locally with CC0 provenance");
   assert.equal(manifest.icons.length, 3, "gas, brake and nitro icons must be bundled");
@@ -68,7 +70,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v35/);
+  assert.match(sw, /mshin-arcade-v36/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -153,6 +155,10 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /ROAD_HALF_WIDTH=180/);
   assert.match(game, /lanes:\[-135,-45,45,135\]/);
   assert.match(game, /countdownElapsed<3\.72/);
+  assert.match(game, /countdownStartedAt=performance\.now\(\)/);
+  assert.match(game, /performance\.now\(\)-countdownStartedAt/);
+  assert.match(game, /simulationAccumulator\+=wallElapsed/);
+  assert.match(game, /while\(simulationAccumulator>0\)/);
   assert.match(game, /"دره سبز"/);
   assert.match(game, /"توفان کویر"/);
   assert.match(game, /وضعیت هوا/);
@@ -170,7 +176,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /انتخاب مسابقه/);
   assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰.۱۰.۰/);
+  assert.match(html, /نسخه ۰.۱۰.۱/);
   assert.match(html, /هوش ترافیک/);
   assert.match(html, /تخریب پویا/);
   assert.match(html, /splashCarFront/);
@@ -192,14 +198,14 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v35/);
+  assert.match(sw, /mshin-arcade-v36/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.10.31.17");
-  assert.equal(pkg.version, "0.10.0");
-  assert.equal(pwa.version, "0.10.0");
-  assert.equal(cocos.version, "2026.10.31.17");
-  assert.ok(readme.includes("live browser release is **version 0.9.3**") && readme.includes("deployed to GitHub Pages after successful merged-main validation"), "README must identify the verified live release");
-  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.3**"), "README must preserve the latest published release");
+  assert.equal(manifest.version, "2026.11.01.01");
+  assert.equal(pkg.version, "0.10.1");
+  assert.equal(pwa.version, "0.10.1");
+  assert.equal(cocos.version, "2026.11.01.01");
+  assert.ok(readme.includes("live browser release is **version 0.10.1**") && readme.includes("deployed to GitHub Pages after successful merged-main validation"), "README must identify the verified live release");
+  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.10.1**"), "README must preserve the latest published release");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
