@@ -1,0 +1,4 @@
+import test from"node:test";import assert from"node:assert/strict";import{calculateRaceSteering}from"./race-test-driver.mjs";
+test("race steering corrects lateral error and yaw",()=>{assert.ok(calculateRaceSteering({lateral:120})<0);assert.ok(calculateRaceSteering({lateral:-120})>0);assert.ok(calculateRaceSteering({yaw:.3})<0);assert.ok(calculateRaceSteering({yaw:-.3})>0)});
+test("race steering damps slip and follows curvature",()=>{assert.ok(calculateRaceSteering({lateralVelocity:40})<0);assert.ok(calculateRaceSteering({lateralVelocity:-40})>0);assert.ok(calculateRaceSteering({trackCurvature:.001})>0);assert.ok(calculateRaceSteering({trackCurvature:-.001})<0)});
+test("race steering is bounded for invalid telemetry",()=>{assert.equal(calculateRaceSteering({lateral:1e9}),-.52);assert.equal(calculateRaceSteering({lateral:-1e9}),.52);assert.equal(calculateRaceSteering({lateral:NaN,yaw:Infinity}),0)})
