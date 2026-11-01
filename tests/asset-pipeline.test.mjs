@@ -62,13 +62,13 @@ test("asset boot waits for bounded preload before starting the game module", asy
 });
 test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  for (const module of ["audio.js", "collision-physics.js", "vehicle-pbr.js", "rigid-body-physics.js", "tire-physics.js", "vehicle-dynamics.js", "vehicle-damage-visuals.js", "traffic-ai.js", "vehicle-destruction.js"]) {
+  for (const module of ["audio.js", "collision-physics.js", "vehicle-pbr.js", "rigid-body-physics.js", "tire-physics.js", "vehicle-dynamics.js", "pickup-collection.js", "vehicle-damage-visuals.js", "traffic-ai.js", "vehicle-destruction.js"]) {
     assert.ok(sw.includes(`./src/${module}`), `${module} must be precached`);
   }
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v51/);
+  assert.match(sw, /mshin-arcade-v52/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -192,7 +192,7 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v51/);
+  assert.match(sw, /mshin-arcade-v52/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.01.10");
   assert.equal(pkg.version, "0.15.1");
@@ -229,4 +229,14 @@ test("world-space player collision velocity preserves chassis heading", async ()
   const playerVelocity = /vehicleVelocity\(car\.t,car\.speed,car\.lateralVelocity,car\.yaw\)/g;
   assert.ok((game.match(playerVelocity) || []).length >= 3, "AI and obstacle collision responses must use the player's actual chassis heading");
   assert.match(game, /playerTrackT:car\.t,playerLateral:car\.lateral,playerYaw:car\.yaw,playerSpeed:car\.speed/);
+});
+
+test("pickup collection uses swept vehicle motion and a physical capture radius", async () => {
+  const source = await readFile(path.join(root, "src/pickup-collection.js"), "utf8");
+  assert.match(source, /function sweptPickupContact/);
+  assert.match(source, /pointSegmentDistanceSquared/);
+  assert.match(source, /radius\*radius/);
+  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  assert.match(game, /sweptPickupContact\(previousPlayerPosition,pickupCurrentPosition/);
+  assert.match(game, /const previousPlayerPosition=carPoint\(\)/);
 });
