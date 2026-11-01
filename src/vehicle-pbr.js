@@ -17,7 +17,7 @@ void main(){
 }
 `;
 export const PBR_FRAGMENT = `
-precision highp float;
+precision mediump float;
 uniform vec3 uBaseColor;
 uniform vec3 uCameraPosition;
 uniform vec3 uLightDirection;
