@@ -378,6 +378,9 @@ try {
   assert.equal(await mobile.locator(".stageCard").count(),5,"mobile race tab should retain five stages");
   await mobile.locator("#startRace").click();
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 });
+  const mobileRenderQuality = await mobile.evaluate(() => window.Mshin3DRenderer.quality);
+  assert.ok(mobileRenderQuality.pixelRatio <= 0.8 && mobileRenderQuality.width <= 700 && mobileRenderQuality.height <= 700, "mobile WebGL must use a reduced render resolution to protect frame pacing: " + JSON.stringify(mobileRenderQuality));
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
   assert.equal(await mobile.locator("#game3d").isVisible(), true, "portrait phones should display the rotated WebGL race canvas");
   const mobile3dBounds = await mobile.locator("#game3d").boundingBox();
