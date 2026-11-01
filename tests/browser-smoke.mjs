@@ -494,21 +494,22 @@ try {
   let activeSteerKey = null;
   const raceDeadline = Date.now() + 75000;
   try {
-    while (Date.now() < raceDeadline && await economy.locator("#finish").evaluate(el => el.classList.contains("hidden"))) {
+    while (Date.now() < raceDeadline) {
+      const finishStatus = await economy.evaluate(() => ({
+        visible: !document.querySelector("#finish").classList.contains("hidden"),
+        rewarded: /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent)
+      }));
+      if (finishStatus.visible) {
+        if (finishStatus.rewarded) break;
+        throw new Error("race ended before a valid stage finish");
+      }
       const controls = await economy.evaluate(() => {
         const telemetry = window.MshinRaceTelemetry;
         if (!telemetry) return { steering: 0, brake: false };
-        const wrap = value => Math.atan2(Math.sin(value), Math.cos(value));
-        const nearby = (telemetry.rivals || []).filter(rival => Math.abs(wrap(rival.distance - telemetry.trackT)) < .24);
-        const candidateLanes = [-125, -75, -25, 25, 75, 125];
-        const targetLane = candidateLanes.reduce((best, lane) => {
-          const clearance = nearby.length ? Math.min(...nearby.map(rival => Math.abs(lane - rival.lateral))) : 999;
-          return clearance > best.clearance ? { lane, clearance } : best;
-        }, { lane: 0, clearance: -1 }).lane;
-        // Track curvature supplies feed-forward; lateral/yaw feedback holds a
-        // safe lane. The driver also caps speed to preserve steering authority.
-        const steering = Math.max(-1, Math.min(1, telemetry.feedForwardSteer - (telemetry.lateral - targetLane) / 145 - telemetry.yaw * .8));
-        return { steering, brake: telemetry.speed > 205 };
+        // Stay in the centre corridor between AI traffic lanes. The curvature
+        // feed-forward follows the road while strong feedback prevents runoff.
+        const steering = Math.max(-1, Math.min(1, telemetry.feedForwardSteer - telemetry.lateral / 105 - telemetry.yaw * .85));
+        return { steering, brake: telemetry.speed > 165 };
       });
       const nextSteerKey = controls.steering < -.12 ? "ArrowLeft" : controls.steering > .12 ? "ArrowRight" : null;
       if (nextSteerKey !== activeSteerKey) {
@@ -520,7 +521,7 @@ try {
       else await economy.keyboard.up("ArrowDown");
       await economy.waitForTimeout(90);
     }
-    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: Math.max(1, raceDeadline - Date.now()) });
+    await economy.waitForFunction(() => /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent), undefined, { timeout: Math.max(1, raceDeadline - Date.now()) });
   } catch (error) {
     const raceState = await economy.evaluate(() => ({
       finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
