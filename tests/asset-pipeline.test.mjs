@@ -12,8 +12,8 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
   assert.equal(manifest.controls.length, 4);
   for (const control of manifest.controls) {
     assert.ok(control.src.startsWith("./assets/controls/"));
-    const source = await readFile(path.join(root, control.src.replace(/^\\.\\//, "")), "utf8");
-    assert.match(source, /<svg[\\s>]/);
+    const source = await readFile(path.join(root, control.src.replace(/^\.\//, "")), "utf8");
+    assert.match(source, /<svg[\s>]/);
     assert.match(source, /viewBox=/);
   }
   const assets = [...manifest.worlds, ...manifest.cars];
@@ -65,7 +65,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   assert.equal(music.length, 2, "menu and race music must both be registered");
   assert.ok(music.every(track => track.license === "CC0-1.0" && track.src.startsWith("./cdn/assets/audio/") && track.source.startsWith("https://opengameart.org/")), "music tracks must be bundled locally with CC0 provenance");
   assert.ok(manifest.scenes.every(scene => scene.src.startsWith("./cdn/assets/scenes/")), "all photographic scenes must be local repository assets");
-  assert.ok([...manifest.scenes, ...manifest.icons, ...manifest.sounds].every(asset => !/^https?:/i.test(asset.src)), "runtime asset paths must never point to external hosts");
+  assert.ok([...manifest.scenes, ...manifest.icons, ...(manifest.controls || []), ...manifest.sounds].every(asset => !/^https?:/i.test(asset.src)), "runtime asset paths must never point to external hosts");
 });
 test("service worker precaches every browser runtime dependency for offline gameplay", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
@@ -199,7 +199,7 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v52/);
+  assert.match(sw, /mshin-arcade-v53/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.01.10");
   assert.equal(pkg.version, "0.15.1");
