@@ -27,7 +27,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  const weightTransferFraction=brake?.14:throttle?-.06:0;
  const rearAxleLoadFraction=clamp(.5-weightTransferFraction,.32,.68);
  const rearGripScale=Math.sqrt(rearAxleLoadFraction/.5);
- const capacity=85*surfaceGrip*rearGripScale;
+ const capacity=320*surfaceGrip*rearGripScale;
  // Only the rear share of braking force is charged to this rear-axle budget;
  // the front axle carries the larger share under normal brake bias.
  const rearBrakeBias=.4;
