@@ -198,8 +198,8 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pkg.version, "0.14.0");
   assert.equal(pwa.version, "0.14.0");
   assert.equal(cocos.version, "2026.11.01.09");
-  assert.ok(readme.includes("Latest published release on main: 0.11.7") && readme.includes("0.12.0 is the mobile native-landscape entry fix under review in pull request #76"), "README must identify the verified live release without claiming the mobile fix is deployed");
-  assert.ok(readme.includes("## Latest published release on main: 0.11.7") && readme.includes("Versions 0.11.0–0.11.6 are published on GitHub Pages. Version 0.12.0 is the mobile native-landscape entry fix"), "README must distinguish the published release from the mobile-fix PR branch");
+  assert.ok(readme.includes("Latest published release on main: 0.11.7") && readme.includes("Version 0.14.0 remains a separate draft and is not claimed as live"), "README must identify the verified live release without claiming the mobile fix is deployed");
+  assert.ok(readme.includes("## Latest published release on main: 0.11.7") && readme.includes("Versions 0.11.0–0.11.6 were published on GitHub Pages; the in-race vehicle geometry was merged afterward in pull request #77"), "README must distinguish the published release from the mobile-fix PR branch");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
