@@ -474,7 +474,7 @@ try {
   await waitForGameBoot(mobile, "mobile initial boot");
   const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
-  assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
+  assert.equal(mobileMenuLayout.tabsDirection, "row", "mobile menu navigation should use the compact horizontal tab rail");
   assert.equal(await mobile.locator("body").evaluate(el => getComputedStyle(el, "::before").content), "none", "portrait mode must not display a rotate-device prompt");
   await mobile.locator("#play").click();
   assert.equal(await mobile.locator("#select").isVisible(), true, "portrait mode must enter the menu through software landscape rotation");
