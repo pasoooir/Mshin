@@ -223,7 +223,7 @@ try {
   assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "average game JS frame work should stay below 50ms");
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
   assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 200, "no single game JS frame should exceed 200ms in smoke run");
-  assert.equal(frameMetrics.trackCacheBuilds, 1, "static track and world art should be rasterized once per selected stage, not on every frame");
+  assert.equal(frameMetrics.trackCacheBuilds, 0, "the WebGL race path must not build or redraw the legacy 2D track cache");
   assert.equal(frameMetrics.trackRadiusX, 1180, "race should use a large world-space circuit instead of a compact loop");
   assert.equal(frameMetrics.trackRadiusY, 760, "race should use a deep world-space circuit");
   assert.ok(frameMetrics.roadWidth >= 350, "four-lane asphalt should span the full wide road surface");
