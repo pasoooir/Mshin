@@ -7,6 +7,7 @@ const renderer = await readFile(new URL("src/vehicle-showroom-3d.js", root), "ut
 const game = await readFile(new URL("src/web-game.js", root), "utf8");
 const html = await readFile(new URL("index.html", root), "utf8");
 const worker = await readFile(new URL("service-worker.js", root), "utf8");
+const pbr = await readFile(new URL("src/vehicle-pbr.js", root), "utf8");
 
 test("garage uses a real WebGL canvas rather than a perspective-transformed flat SVG", () => {
   assert.match(html, /<canvas class="showroomVehicle" id="showroomVehicle"/);
@@ -37,5 +38,26 @@ test("360-degree interaction changes the real orbit camera and supports a comple
 test("showroom module is loaded locally and precached for offline use", () => {
   assert.match(game, /from "\.\/vehicle-showroom-3d\.js"/);
   assert.match(worker, /\.\/src\/vehicle-showroom-3d\.js/);
-  assert.match(worker, /mshin-arcade-v47/);
+  assert.match(worker, /mshin-arcade-v48/);
+  assert.match(renderer, /from "\.\/vehicle-pbr\.js"/);
+  assert.match(worker, /\.\/src\/vehicle-pbr\.js/);
+});
+
+test("automotive paint uses shared Cook-Torrance metallic-roughness PBR and clearcoat", () => {
+  assert.match(pbr, /distributionGGX/);
+  assert.match(pbr, /fresnelSchlick/);
+  assert.match(pbr, /geometrySchlick/);
+  assert.match(pbr, /uClearcoat/);
+  assert.match(pbr, /samplerCube uEnvironmentMap/);
+  assert.match(pbr, /createVehicleEnvironment/);
+  for (const material of ["body", "glass", "rubber", "rims", "aero"]) assert.match(pbr, new RegExp(material + ":\\{"));
+  assert.match(renderer, /material:"body"/);
+  assert.match(renderer, /material:"rubber"/);
+});
+
+test("procedural finish details distinguish paint flakes, carbon weave, rubber grain and brushed alloys", () => {
+  assert.match(pbr, /Fine metallic flakes/);
+  assert.match(pbr, /Carbon-fibre twill/);
+  assert.match(pbr, /Rubber sidewall micrograin/);
+  assert.match(pbr, /Brushed aluminium/);
 });
