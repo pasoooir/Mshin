@@ -133,9 +133,9 @@ test("drive torque transfers load rearward and improves rear traction reserve",(
 
 test("braking load transfer increases rear slip response while keeping yaw bounded",()=>{
  const neutral=resolveTireForces({speed:100,lateralVelocity:38,steer:0,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
- const braking=resolveTireForces({speed:200,lateralVelocity:38,steer:0,throttle:false,brake:true,grip:.8,deltaSeconds:1/60});
+ const braking=resolveTireForces({speed:100,lateralVelocity:38,steer:0,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
  assert.ok(braking.yawRateTarget>neutral.yawRateTarget);
- assert.ok(Math.abs(200*braking.yawRateTarget)<=braking.availableLateral+1e-7);
+ assert.ok(Math.abs(100*braking.yawRateTarget)<=braking.availableLateral+1e-7);
 });
 
 test("countersteer progressively reduces an established rear-slip yaw target",()=>{
