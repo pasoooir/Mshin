@@ -198,8 +198,8 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.equal(pkg.version, "0.11.3");
   assert.equal(pwa.version, "0.11.3");
   assert.equal(cocos.version, "2026.11.01.05");
-  assert.ok(readme.includes("live browser release is **version 0.9.3**") && readme.includes("deployed to GitHub Pages after successful merged-main validation"), "README must identify the verified live release");
-  assert.ok(readme.includes("## Latest published build") && readme.includes("live game is **version 0.9.3**"), "README must preserve the latest published release");
+  assert.ok(readme.includes("live browser release on `main` is **version 0.10.1**") && readme.includes("not live on GitHub Pages until that change is merged"), "README must identify the verified live release without claiming the PR is deployed");
+  assert.ok(readme.includes("## Latest published release on main: 0.10.1") && readme.includes("Versions 0.11.0–0.11.3 described above are development milestones"), "README must distinguish the published release from the PR branch");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
