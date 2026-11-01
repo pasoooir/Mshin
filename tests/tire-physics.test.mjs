@@ -12,7 +12,8 @@ test("low grip reduces steering authority and preserves more lateral slip",()=>{
  const high=resolveTireForces({speed:220,lateralVelocity:30,steer:1,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
  const low=resolveTireForces({speed:220,lateralVelocity:30,steer:1,throttle:false,brake:false,grip:.4,deltaSeconds:1/60});
  assert.ok(low.corneringScale<high.corneringScale);
- assert.ok(low.lateralScale<high.lateralScale);\n assert.ok(Math.abs(low.lateralAcceleration)<Math.abs(high.lateralAcceleration));
+ assert.ok(low.lateralScale<high.lateralScale);
+ assert.ok(Math.abs(low.lateralAcceleration)<Math.abs(high.lateralAcceleration));
 });
 
 test("sustained lateral velocity generates bounded progressive oversteer yaw",()=>{
