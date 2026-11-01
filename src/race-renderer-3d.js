@@ -118,7 +118,7 @@ export function createRaceRenderer(canvas){
    const sl0=point(fa,-half-26,-.04),sr0=point(fa,half+26,-.04),sl1=point(fb,-half-26,-.04),sr1=point(fb,half+26,-.04);
    quad(roadTris,l0,l1,r1,r0);quad(shoulderTris,sl0,sl1,l1,l0);quad(shoulderTris,r0,r1,sr1,sr0);
    for(const offset of [-90,0,90]){const width=offset===0?2.5:1.5;const p0=point(fa,offset-width,.012),q0=point(fa,offset+width,.012),p1=point(fb,offset-width,.012),q1=point(fb,offset+width,.012);if(offset!==0&&i%3!==0)continue;quad(laneTris,p0,p1,q1,q0)}
-   const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
+   const terrainExtent=1500;const outerL=point(fa,-terrainExtent,-.18),outerR=point(fa,terrainExtent,-.18),outerL1=point(fb,-terrainExtent,-.18),outerR1=point(fb,terrainExtent,-.18);
    quad(groundTris,outerL,outerL1,outerR1,outerR);
   }
   const nextRoad=part(roadTris,theme[1]);nextDecor.push(part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0]));
@@ -126,7 +126,7 @@ export function createRaceRenderer(canvas){
   const trees=[],buildings=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   for(let i=0;i<(mobile?18:48);i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
    if((snapshot.world||0)===4||(snapshot.world||0)===8){box(buildings,x,48,z,44+(i%3)*16,95+(i%4)*32,42);box(buildings,x,100+(i%4)*32,z,48+(i%3)*16,5,46)}
-   else{box(trees,x,(f.height||0)+18,z,9,36,9);const cone=[];const baseY=(f.height||0)+22,rad=24+(i%3)*7,top=(f.height||0)+74+(i%4)*8;for(let j=0;j<8;j++){const aa=j/8*Math.PI*2,bb=(j+1)/8*Math.PI*2;tri(cone,[x+Math.cos(aa)*rad,baseY,z+Math.sin(aa)*rad],[x+Math.cos(bb)*rad,baseY,z+Math.sin(bb)*rad],[x,top,z])}trees.push(...cone)}
+   else{box(trees,x,(f.height||0)+18,z,9,36,9);const foliage=[];const trunkTop=(f.height||0)+22,rad=24+(i%3)*7,top=(f.height||0)+74+(i%4)*8;for(let tier=0;tier<3;tier++){const tierBase=trunkTop+tier*15,tierTop=top-tier*8,tierRadius=rad*(1-tier*.2);for(let j=0;j<10;j++){const aa=j/10*Math.PI*2,bb=(j+1)/10*Math.PI*2;tri(foliage,[x+Math.cos(aa)*tierRadius,tierBase,z+Math.sin(aa)*tierRadius],[x+Math.cos(bb)*tierRadius,tierBase,z+Math.sin(bb)*tierRadius],[x,tierTop,z])}}trees.push(...foliage)}
   }
   nextDecor.push(part(trees,theme[3]),part(buildings,(snapshot.world||0)===4?"#5c4d85":"#747b82"));
   yield {parts:[nextRoad,...nextDecor],progress:.67};
