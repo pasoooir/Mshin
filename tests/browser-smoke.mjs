@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-import { calculateRaceSteering } from "./race-test-driver.mjs";
+import { calculateRaceSteering, chooseRaceTargetLateral } from "./race-test-driver.mjs";
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
