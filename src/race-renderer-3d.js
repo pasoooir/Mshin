@@ -13,10 +13,11 @@ uniform vec3 uColor;
 uniform float uEmissive;
 varying vec3 vNormal;
 void main(){
- vec3 n=normalize(vNormal),l=normalize(vec3(-.38,.86,.42));
+ vec3 n=normalize(vNormal);if(!gl_FrontFacing)n=-n;
+ vec3 l=normalize(vec3(-.38,.86,.42));
  float diffuse=max(dot(n,l),0.0);
- float hemi=.28+.25*max(n.y,0.0);
- vec3 color=uColor*(hemi+diffuse*.72)+uColor*uEmissive;
+ float hemi=.38+.34*max(n.y,0.0);
+ vec3 color=uColor*(hemi+diffuse*.78)+uColor*uEmissive;
  gl_FragColor=vec4(color,1.0);
 }
 `;
@@ -61,7 +62,7 @@ export function createRaceRenderer(canvas){
   gl=canvas.getContext("webgl",{alpha:false,antialias:!mobile,depth:true,powerPreference:"high-performance",preserveDrawingBuffer:false})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable on this device");
   program=makeProgram(gl);attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uColor"),emissive:gl.getUniformLocation(program,"uEmissive")};
-  gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
+  gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
  function part(tris,color,emissive=0){return {mesh:makeGeometry(gl,tris),color:hexColor(color),emissive}}
@@ -126,10 +127,10 @@ export function createRaceRenderer(canvas){
   resize();if(lastStage!==snapshot.stageId)buildTrack(snapshot);
   if(!carParts.length)buildCar();
   const f=snapshot.frameAt(snapshot.player.t),x=f.p.x+f.nx*snapshot.player.lateral,z=-(f.p.y+f.ny*snapshot.player.lateral),angle=f.angle+snapshot.player.yaw;
-  const roadHeight=f.height||0;const desiredEye=[x-Math.cos(angle)*270,roadHeight+155,z+Math.sin(angle)*270],desiredTarget=[x+Math.cos(angle)*250,roadHeight+20,z-Math.sin(angle)*250];
+  const roadHeight=f.height||0;const desiredEye=[x-Math.cos(angle)*270,roadHeight+235,z+Math.sin(angle)*310],desiredTarget=[x+Math.cos(angle)*330,roadHeight+28,z-Math.sin(angle)*330];
   const now=performance.now(),cameraDt=lastRenderAt?Math.min((now-lastRenderAt)/1000,mobile?.05:.1):1/60;lastRenderAt=now;const follow=1-Math.exp(-cameraDt/(mobile?.16:.11));
   if(!cameraEye){cameraEye=desiredEye.slice();cameraTarget=desiredTarget.slice()}else{for(let i=0;i<3;i++){cameraEye[i]+=(desiredEye[i]-cameraEye[i])*follow;cameraTarget[i]+=(desiredTarget[i]-cameraTarget[i])*follow}}
-  const projection=perspective(Math.PI/3.15,canvas.width/Math.max(1,canvas.height),1,7000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
+  const projection=perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,6000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);state.triangles=0;
   drawPart(road,vp,translate(0,0,0));for(const p of decor)drawPart(p,vp,translate(0,0,0));
   const playerT=snapshot.player.t,maxVisible=mobile?3:7;visibleRivals.length=0;visibleDistances.length=0;for(const r of snapshot.rivals){if(r.despawned||r.destruction?.despawned)continue;const rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta);if(distance>=.72)continue;let slot=visibleDistances.length;while(slot>0&&distance<visibleDistances[slot-1])slot--;if(slot>=maxVisible)continue;visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance);if(visibleRivals.length>maxVisible){visibleRivals.pop();visibleDistances.pop()}}for(let i=0;i<visibleRivals.length;i++){const r=visibleRivals[i];drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage?.total||r.damage||0,r.type,snapshot)}
