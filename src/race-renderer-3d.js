@@ -184,7 +184,9 @@ export function createRaceRenderer(canvas){
    quad(billboardFrames,point(halfWidth-1,low,.9),point(halfWidth+3,low,.9),point(halfWidth+3,high,.9),point(halfWidth-1,high,.9));
    quad(billboardAccents,point(-halfWidth+5,high-5,1.1),point(halfWidth-5,high-5,1.1),point(halfWidth-5,high-1,1.1),point(-halfWidth+5,high-1,1.1));
    quad(billboardAccents,point(-halfWidth+5,low+2,1.1),point(halfWidth-5,low+2,1.1),point(halfWidth-5,low+6,1.1),point(-halfWidth+5,low+6,1.1));
-   // A high-contrast house creative gives every blank inventory slot a finished race-series look.\n   billboardText(billboardAccents,"MSHIN",0,base+66,2.05,point,1.18);\n   billboardText(billboardAccents,"RACE",0,base+55,1.05,point,1.18);
+   // A high-contrast house creative gives every blank inventory slot a finished race-series look.
+   billboardText(billboardAccents,"MSHIN",0,base+66,2.05,point,1.18);
+   billboardText(billboardAccents,"RACE",0,base+55,1.05,point,1.18);
    for(const along of [-43,43]){
     const foot=point(along,base+21,-1);
     box(billboardPosts,foot[0],base+24,foot[2],7,48,7);
