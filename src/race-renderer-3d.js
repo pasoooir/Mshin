@@ -76,7 +76,7 @@ function hexColor(value){const h=String(value||"#e94f45").replace("#","");return
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
 export function createRaceRenderer(canvas){
  const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",error:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
- let gl,program,uniforms,attributes,road=null,decor=[],carPartSets=new Map(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
+ let gl,program,uniforms,attributes,road=null,decor=[],carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
  try{
@@ -181,7 +181,12 @@ export function createRaceRenderer(canvas){
   if(p.style!=="electric"){box(trim,0,20*h,65*l,22*w,7*h,2);box(trim,0,19*h,66*l,12*w,3*h,2)}
   return [part(body,"#e94f45"),part(glass,"#76c8e2",.08),part(trim,"#aeb9c3"),part(wheels,"#111820"),part(rims,"#c7d1d8",.04),part(lights,"#eaf8ff",.22),part(aero,"#202a35")]
  }
- function getCarParts(id){if(!carPartSets.has(id))carPartSets.set(id,buildCar(id));return carPartSets.get(id)}
+ function getCarParts(id){
+  if(carPartSets.has(id))return carPartSets.get(id);
+  if(carPartSets.size===0){const parts=buildCar(id);carPartSets.set(id,parts);return parts;}
+  if(!carBuildQueued.has(id)){carBuildQueued.add(id);carBuildQueue.push(id);}
+  return carPartSets.values().next().value;
+ }
  function resize(){const portrait=matchMedia("(orientation: portrait)").matches;const cssWidth=portrait?innerHeight:innerWidth,cssHeight=portrait?innerWidth:innerHeight;const dpr=Math.min(devicePixelRatio||1,mobile?.68:1.5)*qualityScale,w=Math.max(1,Math.round(cssWidth*dpr)),h=Math.max(1,Math.round(cssHeight*dpr)),key=w+"x"+h;if(key===lastSize)return;lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);state.quality={mobile,pixelRatio:dpr,detail:mobile?"mobile-balanced":"high",width:w,height:h}}
  function drawPart(p,vp,model){gl.uniformMatrix4fv(uniforms.model,false,model);gl.uniformMatrix4fv(uniforms.mvp,false,mul(vp,model));gl.uniform3fv(uniforms.color,p.color);gl.uniform1f(uniforms.emissive,p.emissive);gl.bindBuffer(gl.ARRAY_BUFFER,p.mesh.buffer);gl.enableVertexAttribArray(attributes.position);gl.vertexAttribPointer(attributes.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);gl.drawArrays(gl.TRIANGLES,0,p.mesh.count);state.triangles+=p.mesh.count/3}
  function drawVehicle(t,lateral,yaw,color,damage=0,kind="car",vehicleId=0,snapshot){
@@ -196,6 +201,10 @@ export function createRaceRenderer(canvas){
  function render(snapshot){
   if(!gl||lost||!snapshot||!["race","countdown","paused"].includes(snapshot.state))return;
   resize();
+  // Build at most one additional vehicle mesh set per frame. The player car
+  // is created on demand; rival silhouettes are upgraded progressively so
+  // ten detailed profiles cannot cause a first-frame GPU upload spike.
+  if(carBuildQueue.length){const nextId=carBuildQueue.shift();carBuildQueued.delete(nextId);if(!carPartSets.has(nextId))carPartSets.set(nextId,buildCar(nextId));}
   if(lastStage!==snapshot.stageId&&trackBuildStage!==snapshot.stageId){cancelTrackBuild();trackBuildStage=snapshot.stageId;trackBuildStarted=performance.now();trackBuildJob=buildTrack(snapshot);state.trackBuildProgress=0;}
   if(trackBuildJob){const step=trackBuildJob.next();if(step.done){const previous=[road,...decor];road=step.value.road;decor=step.value.decor;lastStage=step.value.stageId;pendingTrackParts=[];trackBuildJob=null;state.trackBuildProgress=1;state.trackBuildMs=performance.now()-trackBuildStarted;disposeParts(previous);}else{pendingTrackParts=step.value.parts;state.trackBuildProgress=step.value.progress;}}
   const f=snapshot.frameAt(snapshot.player.t),x=f.p.x+f.nx*snapshot.player.lateral,z=-(f.p.y+f.ny*snapshot.player.lateral),angle=f.angle+snapshot.player.yaw;
@@ -219,11 +228,11 @@ export function createRaceRenderer(canvas){
    attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};
    uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uColor"),emissive:gl.getUniformLocation(program,"uEmissive")};
    gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
-   road=null;decor=[];carPartSets.clear();lastStage=-1;lastSize="";trackBuildJob=null;trackBuildStage=-1;pendingTrackParts=[];state.trackBuildProgress=0;
+   road=null;decor=[];carPartSets.clear();carBuildQueue.length=0;carBuildQueued.clear();lastStage=-1;lastSize="";trackBuildJob=null;trackBuildStage=-1;pendingTrackParts=[];state.trackBuildProgress=0;
    state.status="webgl-ready";state.error=null;
    resize();
   }catch(e){state.status="unavailable";state.error=String(e?.message||e)}
  }
  canvas.addEventListener("webglcontextlost",onLost);canvas.addEventListener("webglcontextrestored",onRestored);
- return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);if(program)gl.deleteProgram(program)}};
+ return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();if(program)gl.deleteProgram(program)}};
 }
