@@ -102,6 +102,10 @@ try {
   await page.locator("#gyroToggle").click();
   assert.equal(await page.locator("#gyroToggle").getAttribute("aria-pressed"), "true", "gyro control should enable after explicit user activation");
   assert.equal(await page.locator("#gyroCalibrate").isVisible(), true, "gyro calibration should appear when the sensor is enabled");
+  assert.equal(await page.locator("#gyroSensitivity").isVisible(), true, "gyro sensitivity control should appear when the sensor is enabled");
+  const initialGyroSensitivity = await page.locator("#gyroSensitivity").textContent();
+  await page.locator("#gyroSensitivity").click();
+  assert.notEqual(await page.locator("#gyroSensitivity").textContent(), initialGyroSensitivity, "gyro sensitivity should be adjustable");
   await page.evaluate(() => {
     window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 0 }));
     window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 12 }));
