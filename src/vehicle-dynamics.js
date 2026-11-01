@@ -9,7 +9,7 @@ const wrapAngle = value => Math.atan2(Math.sin(value), Math.cos(value));
  * steering, tyre forces and the car's actual heading determine its trajectory.
  *
  * speed is the longitudinal body speed in the game's calibrated speed units;
- * lateralVelocity is body-local lateral speed in world units/second.
+ * lateralVelocity is body-local lateral speed in the same calibrated units as speed.
  */
 export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
   const dt = clamp(Number.isFinite(tuning.dt) ? tuning.dt : 0, 0, 1 / 30);
@@ -71,9 +71,9 @@ export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
 
   // Convert the chassis velocity into world-space displacement. This is the
   // key distinction from lane-following: yaw changes the direction of travel.
-  const worldUnitsPerSpeedUnit = tuning.worldUnitsPerSpeedUnit || 2.25;
+  const worldUnitsPerSpeedUnit = tuning.worldUnitsPerSpeedUnit || 1;
   const longitudinalWorldSpeed = vehicle.speed * worldUnitsPerSpeedUnit;
-  const lateralWorldSpeed = vehicle.lateralVelocity;
+  const lateralWorldSpeed = vehicle.lateralVelocity * worldUnitsPerSpeedUnit;
   const worldVx = forwardX * longitudinalWorldSpeed + sideX * lateralWorldSpeed;
   const worldVy = forwardY * longitudinalWorldSpeed + sideY * lateralWorldSpeed;
   const dx = worldVx * dt;
