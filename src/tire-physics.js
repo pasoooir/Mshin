@@ -47,7 +47,8 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  // command, otherwise a steady turn would push the car off the road.
  const lateralDamping=5.5*steeringScale;
  const requestedLateralAcceleration=-lateral*lateralDamping;
- const lateralAccelerationRaw=clamp(requestedLateralAcceleration,-availableLateral,availableLateral);\n const lateralAcceleration=Math.abs(lateralAccelerationRaw)<1e-9?0:lateralAccelerationRaw;
+ const lateralAccelerationRaw=clamp(requestedLateralAcceleration,-availableLateral,availableLateral);
+ const lateralAcceleration=Math.abs(lateralAccelerationRaw)<1e-9?0:lateralAccelerationRaw;
  const slipAngle=Math.atan2(lateral,Math.max(v,1));
 
  // Slip contributes a damped yaw correction, but the final yaw remains inside
@@ -78,8 +79,8 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
   longitudinalDemand,
   // Longitudinal braking remains calibrated in game speed-units; grip scales
   // the available deceleration while preserving the dry-road baseline.
-  brakingDeceleration:brake?470*surfaceGrip*Math.sqrt(Math.max(0,1-(lateralAcceleration/Math.max(capacity,.001))**2)):0,
-  frictionUtilization:Math.min(1,Math.hypot(longitudinalDemand,lateralAcceleration)/Math.max(capacity,.001))
+  brakingDeceleration:brake?470*surfaceGrip*Math.sqrt(Math.max(0,1-(combinedLateralDemand/Math.max(capacity,.001))**2)):0,
+  frictionUtilization:Math.min(1,Math.hypot(longitudinalDemand,combinedLateralDemand)/Math.max(capacity,.001))
  };
 }
 
