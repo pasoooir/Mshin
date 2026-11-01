@@ -7,7 +7,7 @@ const game = await readFile(new URL("../src/web-game.js", import.meta.url), "utf
 
 test("the 3D renderer defines ten distinct player and AI vehicle silhouettes", () => {
   const profiles = ["rally", "comet", "lynx", "thunder", "raptor", "ai-formula", "ai-pickup", "ai-rallycross", "ai-touring", "ai-prototype"];
-  for (const id of profiles) assert.match(renderer, new RegExp('"' + id + '"\\s*:'));
+  for (const id of profiles) assert.match(renderer, new RegExp('(?:^|[,{\\s])"?'+id+'"?:'));
   assert.match(renderer, /const AI_VEHICLE_SHAPES=\[/);
   assert.match(renderer, /function vehicleShapeFor\(/);
 });
