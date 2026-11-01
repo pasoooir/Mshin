@@ -23,7 +23,7 @@ test("the scene keeps its full road width while reducing mesh density", () => {
 
 test("WebGL geometry upload avoids per-triangle temporary arrays", () => {
   const start = source.indexOf("function makeGeometry(gl,triangles)");
-  const end = source.indexOf("\n function tri(", start);
+  const end = source.indexOf("\nfunction tri(", start);
   assert.ok(start >= 0 && end > start, "geometry uploader must remain a named local helper");
   const uploader = source.slice(start, end);
   assert.match(uploader, /new Float32Array\(vertexCount\*6\)/);
