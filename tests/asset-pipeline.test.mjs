@@ -195,11 +195,11 @@ test("all app cache and asset version markers are advanced together", async () =
   assert.match(sw, /mshin-arcade-v41/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.01.05");
-  assert.equal(pkg.version, "0.11.3");
-  assert.equal(pwa.version, "0.11.3");
+  assert.equal(pkg.version, "0.11.4");
+  assert.equal(pwa.version, "0.11.4");
   assert.equal(cocos.version, "2026.11.01.05");
   assert.ok(readme.includes("live browser release on `main` is **version 0.10.1**") && readme.includes("not live on GitHub Pages until that change is merged"), "README must identify the verified live release without claiming the PR is deployed");
-  assert.ok(readme.includes("## Latest published release on main: 0.10.1") && readme.includes("Versions 0.11.0–0.11.3 described above are development milestones"), "README must distinguish the published release from the PR branch");
+  assert.ok(readme.includes("## Latest published release on main: 0.10.1") && readme.includes("Versions 0.11.0–0.11.4 described above are development milestones"), "README must distinguish the published release from the PR branch");
 });
 
 test("vehicle-specific sound profiles include an EV motor whine", async () => {
