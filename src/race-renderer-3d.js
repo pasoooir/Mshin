@@ -96,7 +96,7 @@ export function createRaceRenderer(canvas){
   const f=snapshot.frameAt(snapshot.player.t),x=f.p.x+f.nx*snapshot.player.lateral,z=-(f.p.y+f.ny*snapshot.player.lateral),angle=f.angle+snapshot.player.yaw;
   const eye=[x-Math.cos(angle)*270,155,z+Math.sin(angle)*270],target=[x+Math.cos(angle)*250,20,z-Math.sin(angle)*250];
   const projection=perspective(Math.PI/3.15,canvas.width/Math.max(1,canvas.height),1,7000),view=lookAt(eye,target,[0,1,0]);vp=mul(projection,view);
-  const theme=THEMES[snapshot.world||0];gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i===0?.55:.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);state.triangles=0;
+  const theme=THEMES[snapshot.world||0];gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);state.triangles=0;
   drawPart(road,vp,translate(0,0,0));for(const p of decor)drawPart(p,vp,translate(0,0,0));
   snapshot.rivals.forEach(r=>{if(!r.despawned)drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage||0,r.type,snapshot)});
   drawVehicle(snapshot.player.t,snapshot.player.lateral,snapshot.player.yaw,snapshot.player.color,snapshot.player.damage,"player",snapshot);
