@@ -122,9 +122,9 @@ export function createVehicleShowroom(canvas){
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
   parts=buildVehicle(gl,"rally");state.status="webgl-ready";
  }catch(error){state.status="unavailable";state.error=String(error?.message||error);return {state,setVehicle(){},spin360(){},destroy(){}}}
- const release=()=>{if(drag!==null)drag=null};
- canvas.addEventListener("pointerdown",event=>{drag={x:event.clientX,y:event.clientY};canvas.setPointerCapture?.(event.pointerId);spinUntil=0});
- canvas.addEventListener("pointermove",event=>{if(!drag)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;drag={x:event.clientX,y:event.clientY};yaw+=dx*.012;state.pitch=clamp(state.pitch+dy*.008,-.38,.62);});
+ const release=event=>{if(drag!==null&&(event?.pointerId==null||event.pointerId===drag.pointerId))drag=null};
+ canvas.addEventListener("pointerdown",event=>{drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY};try{if(typeof canvas.setPointerCapture==="function")canvas.setPointerCapture(event.pointerId)}catch{/* Synthetic or already-cancelled pointers cannot be captured. Drag tracking still works. */}spinUntil=0});
+ canvas.addEventListener("pointermove",event=>{if(!drag||event.pointerId!==drag.pointerId)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;drag={...drag,x:event.clientX,y:event.clientY};yaw+=dx*.012;state.pitch=clamp(state.pitch+dy*.008,-.38,.62);});
  canvas.addEventListener("pointerup",release);canvas.addEventListener("pointercancel",release);canvas.addEventListener("lostpointercapture",release);
  const resize=()=>{const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.35);width=Math.max(1,Math.round(rect.width*dpr));height=Math.max(1,Math.round(rect.height*dpr));if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;gl.viewport(0,0,width,height)}};
  const observer=typeof ResizeObserver!=="undefined"?new ResizeObserver(resize):null;observer?.observe(canvas);resize();
