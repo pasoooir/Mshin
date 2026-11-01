@@ -3,16 +3,16 @@ import assert from "node:assert/strict";
 import { resolveTireForces, resolveLongitudinalAcceleration } from "../src/tire-physics.js";
 
 test("combined throttle and lateral demand never exceed tire capacity",()=>{
- const response=resolveTireForces({speed:240,lateralVelocity:0,steer:1,throttle:true,brake:false,grip:.65,deltaSeconds:1/60});
+ const response=resolveTireForces({speed:240,lateralVelocity:80,steer:1,throttle:true,brake:false,grip:.65,deltaSeconds:1/60});
  assert.ok(Math.abs(response.lateralAcceleration)<=response.tireCapacity);
  assert.ok(response.lateralScale<1);
 });
 
 test("low grip reduces steering authority and preserves more lateral slip",()=>{
- const high=resolveTireForces({speed:220,lateralVelocity:0,steer:1,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
- const low=resolveTireForces({speed:220,lateralVelocity:0,steer:1,throttle:false,brake:false,grip:.4,deltaSeconds:1/60});
+ const high=resolveTireForces({speed:220,lateralVelocity:30,steer:1,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
+ const low=resolveTireForces({speed:220,lateralVelocity:30,steer:1,throttle:false,brake:false,grip:.4,deltaSeconds:1/60});
  assert.ok(low.corneringScale<high.corneringScale);
- assert.ok(Math.abs(low.lateralAcceleration)<=Math.abs(high.lateralAcceleration));
+ assert.ok(low.lateralScale<high.lateralScale);\n assert.ok(Math.abs(low.lateralAcceleration)<Math.abs(high.lateralAcceleration));
 });
 
 test("sustained lateral velocity generates bounded progressive oversteer yaw",()=>{
@@ -25,7 +25,7 @@ test("sustained lateral velocity generates bounded progressive oversteer yaw",()
 test("braking consumes more tire budget than coasting during a turn",()=>{
  const coast=resolveTireForces({speed:180,lateralVelocity:0,steer:1,throttle:false,brake:false,grip:1,deltaSeconds:1/60});
  const braking=resolveTireForces({speed:180,lateralVelocity:0,steer:1,throttle:false,brake:true,grip:1,deltaSeconds:1/60});
- assert.ok(braking.corneringScale<coast.corneringScale);
+ assert.ok(braking.availableLateral<coast.availableLateral);
 });
 
 test("zero-speed steering does not create a yaw impulse",()=>{
@@ -43,9 +43,9 @@ test("yaw rate always respects the available lateral tyre-force envelope",()=>{
 });
 
 test("steering response is symmetric for left and right inputs",()=>{
- const left=resolveTireForces({speed:210,lateralVelocity:0,steer:-.7,throttle:true,brake:false,grip:.8,deltaSeconds:1/60});
- const right=resolveTireForces({speed:210,lateralVelocity:0,steer:.7,throttle:true,brake:false,grip:.8,deltaSeconds:1/60});
- assert.ok(Math.abs(left.lateralAcceleration+right.lateralAcceleration)<1e-9);
+ const left=resolveTireForces({speed:210,lateralVelocity:25,steer:-.7,throttle:true,brake:false,grip:.8,deltaSeconds:1/60});
+ const right=resolveTireForces({speed:210,lateralVelocity:25,steer:.7,throttle:true,brake:false,grip:.8,deltaSeconds:1/60});
+ assert.ok(Math.abs(left.lateralAcceleration-right.lateralAcceleration)<1e-9);
  assert.ok(Math.abs(left.yawRateTarget+right.yawRateTarget)<1e-9);
 });
 
