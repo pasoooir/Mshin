@@ -12,7 +12,7 @@ test("3D race-car body shells use tapered multi-station geometry", () => {
 
 test("race-car flanks retain body creases, wheel-arch lips and side sills", () => {
   assert.match(source, /box\(trim,side\*31\*w,27\*h,-4\*l/);
-  assert.match(source, /profile\.wheelRadius\*1\.9/);
+  assert.match(source, /p\.wheelRadius\*1\.9/);
   assert.match(source, /box\(trim,side\*29\*w,13\*h,0/);
   assert.match(source, /for\(const side of \[-1,1\]\)box\(trim,side\*10\*w/);
 });
