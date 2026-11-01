@@ -107,7 +107,8 @@ try {
   assert.ok(menuLayout.columns.split(" ").length >= 2, "menu should reserve separate navigation and content columns");
   assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "race", "race tab should be selected by default");
   assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
-  assert.match(preloadState.menuArt, /scene-01[.]jpg/, "the home screen should use a local cinematic race environment");\n  assert.equal(await page.locator("#home .homeShowcase img").isVisible(), true, "the home screen should show the featured race car");
+  assert.match(preloadState.menuArt, /scene-01[.]jpg/, "the home screen should use a local cinematic race environment");
+  assert.equal(await page.locator("#home .homeShowcase img").isVisible(), true, "the home screen should show the featured race car");
   await page.locator("#play").click();
   for (const size of [{width:1280,height:720},{width:1280,height:800},{width:1680,height:720},{width:1024,height:768}]) {
     await page.setViewportSize(size);
