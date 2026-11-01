@@ -15,7 +15,7 @@ test("trackside sponsor boards are generated as visible 3D roadside structures",
 test("billboard locations expose stable world-scoped ad inventory metadata", () => {
   assert.match(renderer, /world-\$\{snapshot\.world\|\|0\}-trackside-/);
   assert.match(renderer, /format:"trackside-3d"/);
-  assert.match(renderer, /available:true,creative:null/);
+  assert.match(renderer, /available:true,creative:{type:"house-ad",brand:"MSHIN",campaign:"RACE-SERIES"}/);
   assert.match(renderer, /state\.adSlots=billboardSlots/);
 });
 
