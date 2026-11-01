@@ -165,7 +165,8 @@ try {
   await page.locator("#tab-cars").click();
   await page.getByRole("button", { name: /دنباله‌دار GT/ }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
-  assert.equal(await page.locator("#showroomCarImage").getAttribute("src"), "./assets/vector/car-comet.svg", "showroom artwork should follow selected car changes");
+  assert.equal(await page.locator("#showroomVehicle").evaluate(el => el.tagName), "CANVAS", "the selected vehicle should render in the real WebGL showroom");
+  await page.waitForFunction(() => window.MshinVehicleShowroom?.vehicle === "comet", undefined, { timeout: 5000 });
   assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "persistence reload");
