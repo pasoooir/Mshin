@@ -177,7 +177,20 @@ try {
   const requestCountAtStart = raceRequests.length;
   await page.waitForTimeout(1100);
   assert.equal(raceRequests.length, requestCountAtStart, "starting a race must not trigger late asset/network requests");
-  await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  try {
+    await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  } catch (error) {
+    const countdownState = await page.evaluate(() => ({
+      overlayClass: document.querySelector("#countdownOverlay")?.className ?? "missing",
+      countdownText: document.querySelector("#countdownValue")?.textContent ?? null,
+      visibilityState: document.visibilityState,
+      readyState: document.readyState,
+      audioReady: window.MshinAudioReady ?? null,
+      performance: window.MshinPerformance ?? null,
+      animationFrames: window.MshinPerformance?.countdownIntroFrames ?? null
+    }));
+    throw new Error("Countdown did not finish: " + JSON.stringify(countdownState) + "; browser errors: " + JSON.stringify(errors) + "; " + error.message);
+  }
   assert.equal(raceRequests.length, requestCountAtStart, "countdown and gameplay must not trigger late asset/network requests");
   assert.equal(await page.evaluate(() => window.MshinAudioReady), true, "all CDN engine and effect audio must decode before GO");
   const physicsCheck = await page.evaluate(async () => { const p = await import("./src/collision-physics.js"); const a={x:0,y:0,vx:300,vy:0,mass:1200,radius:32},b={x:64,y:0,vx:40,vy:0,mass:1000,radius:32}; const hit=p.resolveVehicleImpact(a,b); const damage=p.createDamageState(); p.applyVehicleDamage(damage,hit.energy,"rear"); return {hit:hit.hit,closing:hit.closingSpeed,rivalVelocity:b.vx,damage:damage.total,level:p.damageLevel(damage)}; });
@@ -238,9 +251,24 @@ try {
   assert.match(await page.locator("#stageName").textContent(), /دنیای ۰5.*مرحله ۰5/);
   await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(2400);
-  await page.keyboard.up("ArrowUp");
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
-  await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 12000 });
+  try {
+    // Keep accelerating until the player physically reaches a track pickup.
+    // Releasing the key after a fixed 2.4s can leave the car short of the first
+    // pickup, where coasting eventually stops before the 12s pickup wait ends.
+    await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 15000 });
+  } catch (error) {
+    const pickupState = await page.evaluate(() => ({
+      nitro: document.querySelector("#nitroFill")?.style.width ?? null,
+      speed: document.querySelector("#speed")?.textContent ?? null,
+      performance: window.MshinPerformance ?? null,
+      visibilityState: document.visibilityState,
+      gameCanvas: Boolean(document.querySelector("#game"))
+    }));
+    throw new Error("Track pickup was not collected while accelerating: " + JSON.stringify(pickupState) + "; " + error.message);
+  } finally {
+    await page.keyboard.up("ArrowUp");
+  }
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
   await page.locator("#nitro").click();
