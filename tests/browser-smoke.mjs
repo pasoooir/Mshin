@@ -92,6 +92,25 @@ try {
   page.on("requestfailed", request => errors.push("requestfailed: " + request.url() + " — " + (request.failure()?.errorText || "unknown")));
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(page, "initial desktop boot");
+  await page.evaluate(() => {
+    class TestDeviceOrientationEvent extends Event {
+      static async requestPermission() { return "granted"; }
+      constructor(type, values = {}) { super(type); Object.assign(this, values); }
+    }
+    Object.defineProperty(window, "DeviceOrientationEvent", { configurable: true, value: TestDeviceOrientationEvent });
+  });
+  await page.locator("#gyroToggle").click();
+  assert.equal(await page.locator("#gyroToggle").getAttribute("aria-pressed"), "true", "gyro control should enable after explicit user activation");
+  assert.equal(await page.locator("#gyroCalibrate").isVisible(), true, "gyro calibration should appear when the sensor is enabled");
+  await page.evaluate(() => {
+    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 0 }));
+    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 12 }));
+  });
+  await page.waitForFunction(() => Math.abs(window.MshinPerformance?.steerTarget || 0) > .1, undefined, { timeout: 5000 });
+  await page.locator("#gyroCalibrate").click();
+  await page.waitForFunction(() => document.querySelector("#gyroCalibrate").textContent.includes("مرکز تنظیم شد"));
+  await page.locator("#gyroToggle").click();
+  assert.equal(await page.locator("#gyroToggle").getAttribute("aria-pressed"), "false", "gyro control should disable cleanly");
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
   assert.equal(preloadState.worlds, 10, "all ten world SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
@@ -262,13 +281,25 @@ try {
   const race3dState = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, frames: window.Mshin3DRenderer?.frames, triangles: window.Mshin3DRenderer?.triangles, camera: window.Mshin3DRenderer?.camera }));
   assert.equal(race3dState.status, "webgl-ready", "race must use the native WebGL 3D renderer");
   assert.ok(race3dState.triangles > 1000, "race renderer must submit real 3D mesh geometry: " + JSON.stringify(race3dState));
+  // A world-space car must steer through the circuit; accelerating with a
+  // permanently centred wheel would deliberately drive straight off this oval.
+  const pickupSteeringPad = page.locator("#stick");
+  const pickupSteeringBox = await pickupSteeringPad.boundingBox();
+  const pickupSteerCenter = {
+    x: pickupSteeringBox.x + pickupSteeringBox.width / 2,
+    y: pickupSteeringBox.y + pickupSteeringBox.height / 2
+  };
+  const pickupSteerLimit = Math.max(1, (pickupSteeringBox.width - 58) / 2);
+  const pickupSteerRaw = 0.07 + 0.93 * Math.pow(0.5, 1 / 1.28);
+  await page.mouse.move(pickupSteerCenter.x, pickupSteerCenter.y);
+  await page.mouse.down();
+  await page.mouse.move(pickupSteerCenter.x + pickupSteerLimit * pickupSteerRaw, pickupSteerCenter.y, { steps: 4 });
   await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(2400);
   assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
   try {
-    // Keep accelerating until the player physically reaches a track pickup.
-    // Releasing the key after a fixed 2.4s can leave the car short of the first
-    // pickup, where coasting eventually stops before the 12s pickup wait ends.
+    // Maintain a controlled right-hand steering input as well as throttle so the
+    // vehicle follows the oval's curvature and physically intersects a pickup.
     await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) > 25, undefined, { timeout: 15000 });
   } catch (error) {
     const pickupState = await page.evaluate(() => ({
@@ -278,9 +309,10 @@ try {
       visibilityState: document.visibilityState,
       gameCanvas: Boolean(document.querySelector("#game"))
     }));
-    throw new Error("Track pickup was not collected while accelerating: " + JSON.stringify(pickupState) + "; " + error.message);
+    throw new Error("Track pickup was not collected while accelerating and steering: " + JSON.stringify(pickupState) + "; " + error.message);
   } finally {
     await page.keyboard.up("ArrowUp");
+    await page.mouse.up();
   }
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
@@ -463,9 +495,36 @@ try {
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
+  const economySteeringPad = economy.locator("#stick");
+  const economySteeringBox = await economySteeringPad.boundingBox();
+  const economySteeringCenter = {
+    x: economySteeringBox.x + economySteeringBox.width / 2,
+    y: economySteeringBox.y + economySteeringBox.height / 2
+  };
+  const economySteeringLimit = Math.max(1, (economySteeringBox.width - 58) / 2);
+  const setEconomySteering = async command => {
+    const magnitude = Math.min(1, Math.abs(command));
+    const raw = Math.sign(command) * (magnitude <= 0 ? 0 : .07 + .93 * Math.pow(magnitude, 1 / 1.28));
+    await economy.mouse.move(economySteeringCenter.x + economySteeringLimit * raw, economySteeringCenter.y);
+  };
+  await economy.mouse.move(economySteeringCenter.x, economySteeringCenter.y);
+  await economy.mouse.down();
   await economy.keyboard.down("ArrowUp");
   try {
-    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 75000 });
+    const raceDeadline = Date.now() + 75000;
+    while (Date.now() < raceDeadline && await economy.locator("#finish").evaluate(el => el.classList.contains("hidden"))) {
+      const telemetry = await economy.evaluate(() => window.MshinPerformance ?? {});
+      const trackT = Number(telemetry.playerTrackT) || 0;
+      const yaw = Number(telemetry.playerYaw) || 0;
+      const lateral = Number(telemetry.playerLateral) || 0;
+      const rx = 1180, ry = 760;
+      const curvature = rx * ry / Math.pow(rx * rx * Math.sin(trackT) ** 2 + ry * ry * Math.cos(trackT) ** 2, 1.5);
+      const feedForward = Math.atan(128 * curvature) / .48;
+      const steeringCommand = Math.max(-1, Math.min(1, feedForward - 1.1 * yaw - .0015 * lateral));
+      await setEconomySteering(steeringCommand);
+      await economy.waitForTimeout(100);
+    }
+    await economy.waitForFunction(() => !document.querySelector("#finish").classList.contains("hidden"), undefined, { timeout: 1000 });
   } catch (error) {
     const raceState = await economy.evaluate(() => ({
       finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
@@ -482,6 +541,7 @@ try {
     throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
   } finally {
     await economy.keyboard.up("ArrowUp");
+    await economy.mouse.up();
   }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
