@@ -14,6 +14,7 @@ import { createDestructionState, applyDestructionImpact, stepDestruction, destru
 const mobileDevice=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);const canvas=document.querySelector("#game");let ctx=canvas.getContext("2d");const race3dCanvas=document.querySelector("#game3d");const race3d=createRaceRenderer(race3dCanvas);const $=id=>document.getElementById(id);
 function safeSetPointerCapture(element,pointerId){try{if(Number.isInteger(pointerId)&&typeof element?.setPointerCapture==="function")element.setPointerCapture(pointerId)}catch{/* Synthetic, stale, or cancelled pointer IDs are safe: pointer tracking continues without capture. */}}
 window.Mshin3DRenderer=race3d.state;
+window.MshinInputState=()=>inputState.snapshot();
 const showroom3d=createVehicleShowroom(document.querySelector("#showroomVehicle"));
 window.MshinVehicleShowroom=showroom3d.state;
 const worlds=[
