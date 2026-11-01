@@ -240,7 +240,9 @@ export function drawPerspectiveRace(ctx, options) {
   ctx.fillStyle = "#587a54";
   ctx.fillRect(0, horizon + 22, width, height - horizon);
 
-  const segments = 52;
+  // Fewer perspective slices on compact/mobile screens reduce path tessellation cost
+  // without changing the world-space track or vehicle physics.
+  const segments = width < 900 ? 34 : 46;
   const samples = [];
   for (let i = 0; i <= segments; i++) {
     const t = car.t + i * .0175;
