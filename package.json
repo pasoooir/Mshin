@@ -1,6 +1,6 @@
 {
   "name": "mshin-2d-racing",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "private": true,
   "type": "module",
   "description": "Mshin 2D top-down arcade racing game; Cocos Creator 3.8.6 and TypeScript",
@@ -12,8 +12,9 @@
     "validate:data": "node scripts/validate-game-data.mjs",
     "build:core": "tsc -p tsconfig.core.json",
     "check:worker": "node --check workers.js",
+    "check:js-syntax": "node scripts/check-js-syntax.mjs",
     "test": "npm run build:core && node --test tests/*.test.mjs",
-    "check": "npm run validate:data && npm run build:core && npm run check:cocos-syntax && npm run check:worker && npm test",
+    "check": "npm run validate:data && npm run build:core && npm run check:js-syntax && npm run check:cocos-syntax && npm run check:worker && npm test",
     "check:cocos-syntax": "node scripts/check-cocos-syntax.mjs"
   },
   "engines": {
