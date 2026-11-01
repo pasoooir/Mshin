@@ -21,7 +21,7 @@ test("race cars include scaled cabins, glazing, aero, lamps and metallic wheel h
   assert.match(source, /const base=32\*p\.cabin,roof=base\+20\*p\.cabin/);
   assert.match(source, /quad\(glass,\[-low\+2,base\+2,fz-2\]/);
   assert.match(source, /if\(p\.style!=="electric"\)/);
-  assert.match(source, /quad\(body,\[-low,base,rz\]/);
+  assert.match(source, /quad\(body,\[low,base,rz\]/);
   assert.match(source, /box\(lights,side\*21\*w,24\*h/);
   assert.match(source, /vertices:rims,paint:"#dce6ed"/);
 });
