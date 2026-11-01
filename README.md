@@ -1,9 +1,9 @@
-## Version 0.11.1 — countdown reliability hotfix
+## Version 0.11.2 — mobile smoothness and landscape rendering\n\n- Fixed portrait-device landscape rotation for the active WebGL race canvas, including correct landscape drawing-buffer dimensions.\n- Reduced mobile WebGL scene density and disabled costly multisample antialiasing on touch devices; capped mobile render resolution to device scale 1.\n- Added a smoothed chase camera and fixed-step 60 Hz simulation updates to reduce camera judder and physics spikes after delayed frames.\n- Advanced the offline service-worker cache to `mshin-arcade-v39`.\n\n## Version 0.11.2 — countdown reliability hotfix
 
 - Replaced frame-delta countdown progression with monotonic `performance.now()` timing.
 - Added an independent bounded `setTimeout` scheduler so the 3–2–1–GO transition completes even when `requestAnimationFrame` is throttled or temporarily paused.
 - Keeps vehicle and AI simulation frozen until GO; resets the clock and cancels any prior timer on every race start/retry.
-- Advanced the PWA cache to `mshin-arcade-v38` to prevent stale countdown code from surviving an update.
+- Advanced the PWA cache to `mshin-arcade-v39` to prevent stale countdown code from surviving an update.
 
 # Mshin — 2D Top-Down Arcade Racing
 
