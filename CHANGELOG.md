@@ -1,3 +1,17 @@
+## 0.12.0 — sculpted 3D race-car body milestone
+
+- Rebuilt the in-race WebGL car from simple stacked boxes into a tapered multi-section body shell with visible hood, shoulder and rear-quarter surfaces.
+- Added crisp side character creases, lower sill lines, wheel-arch lips, hood power lines, sloped glazing, roof, LED lamps, grille, splitter, diffuser and rear wing.
+- Added rubber tires and metallic wheel hubs while keeping the model procedural, lightweight, repository-local and free of runtime CDN dependencies.
+- Advanced the PWA shell cache to v45 and synchronized package, manifest and asset markers.
+
+## 0.11.7 — mobile landscape orientation fix
+
+- Moved native orientation locking from the first menu touch to the explicit race-start gesture.
+- Requests fullscreen before locking landscape, as required by many Android browsers.
+- Keeps software landscape rotation as a fallback when the browser denies native locking.
+- Refreshes the offline app shell cache to v44.
+
 ## 0.11.7 — mobile landscape orientation fix
 
 - Moved native orientation locking from the first menu touch to the explicit race-start gesture.
