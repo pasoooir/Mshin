@@ -1,5 +1,6 @@
 import { createGameAudio } from "./audio.js";
 import { createRaceRenderer } from "./race-renderer-3d.js";
+import { createVehicleShowroom } from "./vehicle-showroom-3d.js";
 import { renderAerialScenery, drawHelicopterShadow, getHelicopterShadowPose } from "./aerial-environment.js";
 import { createDamageState, damageLevel, applyVehicleDamage, resolveVehicleImpact, resolveBarrierImpact, damageSideFromLocalNormal } from "./collision-physics.js";
 import { createRigidVehicle, resolveRigidVehicleImpact, sweptVehicleContact, splitImpactEnergy } from "./rigid-body-physics.js";
@@ -9,6 +10,8 @@ import { stepTrafficVehicle } from "./traffic-ai.js";
 import { createDestructionState, applyDestructionImpact, stepDestruction, destructionVisuals } from "./vehicle-destruction.js";
 const mobileDevice=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);const canvas=document.querySelector("#game");let ctx=canvas.getContext("2d");const race3dCanvas=document.querySelector("#game3d");const race3d=createRaceRenderer(race3dCanvas);const $=id=>document.getElementById(id);
 window.Mshin3DRenderer=race3d.state;
+const showroom3d=createVehicleShowroom(document.querySelector("#showroomVehicle"));
+window.MshinVehicleShowroom=showroom3d.state;
 const worlds=[
 ["دره سبز","#83c95f","#65727b","#f5e5b8","#f6d45c","#e8b84f",1,"🌳"],
 ["توفان کویر","#e9b96c","#a77a50","#f8d99b","#d66e36","#55a34c",.88,"🌵"],
@@ -228,9 +231,9 @@ function draw(){const threeDimensional=state==="race"||state==="paused"||state==
 function renderWorlds(){const root=$("worlds");root.innerHTML="";worlds.forEach((w,i)=>{const b=document.createElement("button");b.type="button";b.className="world worldCard"+(i===selectedWorld?" active":"");b.setAttribute("aria-pressed",String(i===selectedWorld));const art="./assets/vector/world-"+String(i+1).padStart(2,"0")+".svg";const image=document.createElement("span");image.className="worldArt";image.setAttribute("aria-hidden","true");const img=document.createElement("img");img.src=art;img.alt="";img.loading="eager";image.append(img);const caption=document.createElement("span");caption.className="worldCaption";const title=document.createElement("b");title.textContent=w[0];const detail=document.createElement("small");detail.textContent="۵ مرحله · مسیر و شرایط رانندگی اختصاصی";caption.append(title,detail);b.append(image,caption);b.onclick=()=>{selectedWorld=i;selectedStage=i*5+1;renderWorlds();renderStages();updateMenuSummary()};root.append(b)})}
 let showroomAngle=0,showroomDragX=null;
 function renderShowroomPreview(){
- const model=carModels.find(c=>c.id===selectedCar)||carModels[0],image=$("showroomCarImage"),vehicle=$("showroomVehicle");
- if(!image||!vehicle)return;
- image.src="./assets/vector/car-"+model.id+".svg";image.alt="";
+ const model=carModels.find(c=>c.id===selectedCar)||carModels[0],vehicle=$("showroomVehicle");
+ if(!vehicle)return;
+ showroom3d.setVehicle(model.id);
  $("showroomCarName").textContent=model.name;
  $("showroomCarSpecs").textContent=model.tag+" · سرعت "+Math.round(model.max)+" · شتاب "+Math.round(model.accel);
  $("selectedCarName").textContent=model.name;
@@ -238,9 +241,8 @@ function renderShowroomPreview(){
  window.MshinShowroom={carId:model.id,angle:showroomAngle,previewCount:window.MshinShowroom?.previewCount||0};
 }
 $("showroomRotate").addEventListener("click",()=>{
- const vehicle=$("showroomVehicle");vehicle.classList.remove("is-spinning");void vehicle.offsetWidth;vehicle.classList.add("is-spinning");
+ showroom3d.spin360();
  window.MshinShowroom={...window.MshinShowroom,spinCount:(window.MshinShowroom?.spinCount||0)+1};
- setTimeout(()=>vehicle.classList.remove("is-spinning"),1450);
 });
 $("showroomSound").addEventListener("click",async()=>{
  audio.unlock();const button=$("showroomSound");button.disabled=true;
