@@ -306,11 +306,34 @@ try {
   }
   const chargedNitro = parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width));
   assert.ok(chargedNitro >= 50, "collecting a track pickup should recharge nitro");
-  await page.locator("#nitro").click();
+  const nitroControl=page.locator("#nitro");
+  await nitroControl.dispatchEvent("pointerdown",{pointerId:303,pointerType:"touch",button:0,isPrimary:true});
+  await nitroControl.dispatchEvent("pointerup",{pointerId:303,pointerType:"touch",button:0,isPrimary:true});
   await page.waitForTimeout(180);
   await page.waitForFunction(() => parseFloat(document.querySelector("#nitroFill").style.width) < 50, undefined, { timeout: 3000 });
   assert.ok(parseFloat(await page.locator("#nitroFill").evaluate(el => el.style.width)) < chargedNitro, "nitro boost should consume stored charge");
   const steeringPad = page.locator("#stick");
+  const gasControl=page.locator("#gas"),turboControl=page.locator("#nitro");
+  const steeringBounds=await steeringPad.boundingBox();
+  const steeringPoint={clientX:steeringBounds.x+steeringBounds.width*.82,clientY:steeringBounds.y+steeringBounds.height/2};
+  // Dispatch three distinct touch Pointer IDs before reading the snapshot: this
+  // asserts an overlapping interval, not a sequence of independent taps.
+  await steeringPad.dispatchEvent("pointerdown",{pointerId:501,pointerType:"touch",...steeringPoint,button:0,isPrimary:true});
+  await gasControl.dispatchEvent("pointerdown",{pointerId:502,pointerType:"touch",clientX:0,clientY:0,button:0,isPrimary:false});
+  await turboControl.dispatchEvent("pointerdown",{pointerId:503,pointerType:"touch",clientX:0,clientY:0,button:0,isPrimary:false});
+  const concurrentInputs=await page.evaluate(()=>window.MshinInputState?.());
+  assert.ok(concurrentInputs,"race should expose its read-only input diagnostic snapshot");
+  assert.ok(concurrentInputs.steering>0.2,"first pointer should steer right during the overlap");
+  assert.equal(concurrentInputs.throttle,1,"second pointer should keep throttle active during the overlap");
+  assert.equal(concurrentInputs.turbo,true,"third pointer should keep turbo active during the overlap");
+  assert.deepEqual(concurrentInputs.activePointers,{steering:1,throttle:1,brake:0,turbo:1},"all three distinct pointers must be concurrently owned");
+  await steeringPad.dispatchEvent("pointerup",{pointerId:501,pointerType:"touch",...steeringPoint,button:0,isPrimary:true});
+  await gasControl.dispatchEvent("pointerup",{pointerId:502,pointerType:"touch",clientX:0,clientY:0,button:0,isPrimary:false});
+  await turboControl.dispatchEvent("pointerup",{pointerId:503,pointerType:"touch",clientX:0,clientY:0,button:0,isPrimary:false});
+  const afterConcurrentRelease=await page.evaluate(()=>window.MshinInputState?.());
+  assert.equal(afterConcurrentRelease.throttle,0,"throttle must release after its own pointer is lifted");
+  assert.equal(afterConcurrentRelease.turbo,false,"turbo must release after its own pointer is lifted");
+
   const steeringBox = await steeringPad.boundingBox();
   const steerCenter = { x: steeringBox.x + steeringBox.width / 2, y: steeringBox.y + steeringBox.height / 2 };
   await page.mouse.move(steerCenter.x, steerCenter.y);
@@ -441,9 +464,9 @@ try {
   const mobileStickBounds = await mobile.locator("#stick").boundingBox();
   assert.ok(Math.max(mobileStickBounds.width, mobileStickBounds.height) >= 120 && Math.min(mobileStickBounds.width, mobileStickBounds.height) >= 100, "rotated mobile steering pad should preserve a 120×100 touch surface");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
-  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "گاز", "gas pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "نیترو", "nitro control should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "پدال گاز فلزی", "gas pedal should use dedicated metallic pedal artwork");
+  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "پدال ترمز فلزی", "brake pedal should use dedicated metallic pedal artwork");
+  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "توربوشارژر", "turbo control should use dedicated turbocharger artwork");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   const mobileStatsBounds = await mobile.locator(".stats").boundingBox(), mobileSoundBounds = await mobile.locator("#soundToggle").boundingBox();
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
