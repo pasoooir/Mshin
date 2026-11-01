@@ -109,6 +109,22 @@ try {
   assert.notEqual(await page.locator("#select .gtMenu").evaluate(el => getComputedStyle(el).perspective), "none", "menu shell should establish perspective depth");
   assert.match(preloadState.menuArt, /world-01[.]svg/, "the home screen should use themed visual art");
   await page.locator("#play").click();
+  const keyboardTabs = page.locator(".menuTabs [role='tab']");
+  await page.locator("#tab-race").focus();
+  await page.keyboard.press("ArrowDown");
+  assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "cars", "ArrowDown should activate the next menu tab");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "tab-cars", "ArrowDown should move keyboard focus with selection");
+  await page.keyboard.press("ArrowDown");
+  assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "world", "ArrowDown should continue through the vertical tab rail");
+  await page.keyboard.press("ArrowUp");
+  assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "cars", "ArrowUp should move to the previous enabled tab");
+  await page.keyboard.press("Home");
+  assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "race", "Home should activate the first enabled tab");
+  await page.keyboard.press("End");
+  assert.equal(await page.locator(".menuTab.active").getAttribute("data-tab"), "settings", "End should stop at the last enabled tab and skip disabled entries");
+  assert.equal(await page.locator(".menuTab:disabled").evaluateAll(tabs => tabs.every(tab => tab.tabIndex === -1)), true, "disabled menu entries must never enter the keyboard tab order");
+  assert.equal(await keyboardTabs.evaluateAll(tabs => tabs.filter(tab => tab.tabIndex === 0).length), 1, "exactly one enabled menu tab should have tabIndex zero");
+  await page.locator("#tab-race").click();
   for (const size of [{width:1280,height:720},{width:1280,height:800},{width:1680,height:720},{width:1024,height:768}]) {
     await page.setViewportSize(size);
     const bounds = await page.locator("#select .gtMenu").boundingBox();
