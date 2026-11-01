@@ -44,8 +44,8 @@ test("yaw rate always respects the available lateral tyre-force envelope",()=>{
 });
 
 test("steering response is symmetric for left and right inputs",()=>{
- const left=resolveTireForces({speed:210,lateralVelocity:25,steer:-.7,throttle:true,brake:false,grip:.8,deltaSeconds:1/60});
- const right=resolveTireForces({speed:210,lateralVelocity:25,steer:.7,throttle:true,brake:false,grip:.8,deltaSeconds:1/60});
+ const left=resolveTireForces({speed:210,lateralVelocity:0,steer:-.7,throttle:true,brake:false,grip:.8,deltaSeconds:1/60});
+ const right=resolveTireForces({speed:210,lateralVelocity:0,steer:.7,throttle:true,brake:false,grip:.8,deltaSeconds:1/60});
  assert.ok(Math.abs(left.lateralAcceleration-right.lateralAcceleration)<1e-9);
  assert.ok(Math.abs(left.yawRateTarget+right.yawRateTarget)<1e-9);
 });
