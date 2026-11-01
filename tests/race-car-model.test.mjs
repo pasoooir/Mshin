@@ -4,29 +4,35 @@ import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
 
-test("in-race WebGL car uses a tapered multi-station body shell", () => {
+test("3D race-car body shells use tapered multi-station geometry", () => {
   assert.match(source, /const stations=\[/);
   assert.match(source, /const rings=stations\.map/);
   assert.match(source, /quad\(body,rings\[i\]/);
 });
 
-test("in-race car retains visible body character creases and sculpted side details", () => {
-  assert.match(source, /side character lines/);
-  assert.match(source, /box\(trim,side\*31,27,-4/);
-  assert.match(source, /Wheel arch lips and sill trim/);
-  assert.match(source, /Hood power creases/);
+test("race-car flanks retain body creases, wheel-arch lips and side sills", () => {
+  assert.match(source, /box\(trim,side\*31\*w,27\*h,-4\*l/);
+  assert.match(source, /p\.wheelRadius\*1\.9/);
+  assert.match(source, /box\(trim,side\*29\*w,13\*h,0/);
+  assert.match(source, /for\(const side of \[-1,1\]\)box\(trim,side\*10\*w/);
 });
 
-test("in-race car includes detailed glass, lighting, aero and metallic wheel hubs", () => {
-  assert.match(source, /Sloped glazing|Cabin:/);
-  assert.match(source, /Distinct LED headlamps/);
+test("race cars include scaled cabins, glazing, aero, lamps and metallic wheel hubs", () => {
+  assert.match(source, /const baseY=30\*p\.cabinY,roofY=baseY\+17\*p\.cabinHeight/);
+  assert.match(source, /quad\(glass,\[-lowerW\+3,baseY\+2,frontZ-1\]/);
+  assert.match(source, /if\(p\.wing>\.2\)/);
+  assert.match(source, /quad\(body,\[-lowerW,baseY,rearZ\]/);
+  assert.match(source, /box\(lights,-17\*w,25\*h/);
   assert.match(source, /part\(rims,/);
-  assert.match(source, /racing wing/);
-  assert.match(source, /part\(aero,/);
 });
 
-test("3D race-car geometry is procedural and has no runtime CDN dependency", () => {
-  assert.match(source, /function buildCar\(\)/);
-  assert.match(source, /carParts=\[/);
+test("ten vehicle profiles are generated locally without a runtime model CDN", () => {
+  assert.match(source, /function buildCar\(id="rally"\)/);
+  assert.match(source, /const VEHICLE_SHAPES=\{/);
+  assert.match(source, /"ai-formula"/);
+  assert.match(source, /"ai-pickup"/);
+  assert.match(source, /"ai-rallycross"/);
+  assert.match(source, /"ai-touring"/);
+  assert.match(source, /"ai-prototype"/);
   assert.doesNotMatch(source, /https?:\/\//);
 });
