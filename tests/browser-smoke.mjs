@@ -375,7 +375,15 @@ try {
   assert.match(await steeringPad.getAttribute("aria-label"), /برای چرخیدن به چپ یا راست بکشید و رها کنید/, "steering instructions should be accessible in Persian");
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
-  await page.waitForFunction(() => window.Mshin3DRenderer?.trackBuildProgress >= 1 && window.Mshin3DRenderer?.frames > 0, undefined, { timeout: 15000 });
+  await page.waitForFunction(() => {
+    const renderer = window.Mshin3DRenderer;
+    if (!renderer || renderer.trackBuildProgress < 1 || renderer.frames <= 0) return false;
+    const stageId = renderer.stageId;
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => {
+      const current = window.Mshin3DRenderer;
+      resolve(Boolean(current && current.stageId === stageId && current.trackBuildProgress >= 1));
+    })));
+  }, undefined, { timeout: 30000 });
   const canvasState = await page.locator("#game3d").evaluate(canvas => new Promise(resolve => {
     const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     if (!gl) return resolve({ width: canvas.width, height: canvas.height, visiblePixels: 0, pixelBytes: 0, context: false });
