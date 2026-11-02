@@ -21,7 +21,8 @@ test("utility and civic buildings require road access and charge their construct
 
 test("utility coverage reaches nearby buildings and remains bounded", () => {
   const city=createInitialCity(602);
-  assert.equal(placeCityItem(city,17,13,"home").ok,true);\n  const before=computeCityServices(city);
+  assert.equal(placeCityItem(city,17,13,"home").ok,true);
+  const before=computeCityServices(city);
   assert.equal(before.utilityCoverage,0);
   assert.equal(placeCityItem(city,17,14,"power").ok,true);
   assert.equal(placeCityItem(city,14,17,"water").ok,true);
@@ -49,7 +50,8 @@ test("public safety, health and education coverage contributes to the city servi
 test("service coverage is deterministic and city simulation exposes infrastructure metrics", () => {
   const a=createInitialCity(604),b=createInitialCity(604);
   for(const city of [a,b]){
-    placeCityItem(city,16,14,"power");
+    placeCityItem(city,17,13,"home");
+    placeCityItem(city,17,14,"power");
     placeCityItem(city,14,14,"water");
     stepCity(city);
   }
