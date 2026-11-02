@@ -4,13 +4,23 @@ import { mkdir, writeFile } from "node:fs/promises";
 
 await mkdir("artifacts", { recursive: true });
 
+function withTimeout(promise, timeoutMs, label) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(label + " timed out after " + timeoutMs + "ms")), timeoutMs);
+    })
+  ]).finally(() => clearTimeout(timer));
+}
+
 async function captureScreenshot(page, path, { fullPage = false } = {}) {
   // Avoid Playwright's screenshot preflight (font/animation waits), which has
   // stalled on this WebGL-heavy page in GitHub Actions after fonts were ready.
-  const session = await page.context().newCDPSession(page);
+  const session = await withTimeout(page.context().newCDPSession(page), 10000, "screenshot CDP session");
   try {
-    await session.send("Page.enable");
-    const metrics = await session.send("Page.getLayoutMetrics");
+    await withTimeout(session.send("Page.enable"), 10000, "screenshot Page.enable");
+    const metrics = await withTimeout(session.send("Page.getLayoutMetrics"), 10000, "screenshot layout metrics");
     const size = metrics.cssContentSize || metrics.contentSize;
     const params = { format: "png", fromSurface: true, captureBeyondViewport: fullPage };
     if (fullPage) {
@@ -21,10 +31,10 @@ async function captureScreenshot(page, path, { fullPage = false } = {}) {
         scale: 1
       };
     }
-    const { data } = await session.send("Page.captureScreenshot", params);
-    await writeFile(path, Buffer.from(data, "base64"));
+    const { data } = await withTimeout(session.send("Page.captureScreenshot", params), 30000, "CDP screenshot capture");
+    await withTimeout(writeFile(path, Buffer.from(data, "base64")), 10000, "screenshot file write");
   } finally {
-    await session.detach();
+    await Promise.race([session.detach().catch(() => {}), new Promise(resolve => setTimeout(resolve, 5000))]);
   }
 }
 
@@ -573,7 +583,7 @@ try {
   // previous test polled telemetry and moved the mouse over CDP for every
   // 70ms slice; that throttled the game to ~1.5 rendered frames/second and
   // advanced only a fraction of the simulation time before the wall timeout.
-  await economy.evaluate(({ center, limit }) => {
+  await withTimeout(economy.evaluate(({ center, limit }) => {
     const stick = document.querySelector("#stick");
     const gas = document.querySelector("#gas");
     const brake = document.querySelector("#brake");
@@ -640,7 +650,7 @@ try {
     };
     window.__mshinRaceDriver = { get controls() { return lastControls; }, pointerId };
     window.__mshinRaceDriverFrame = requestAnimationFrame(drive);
-  }, { center: steeringCenter, limit: steeringLimit });
+  }, { center: steeringCenter, limit: steeringLimit }), 15000, "economy race driver installation");
   const raceDeadline = 180000;
   let raceDeadlineTimer;
   try {
@@ -737,5 +747,5 @@ try {
   process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
 ");
 } finally {
-  await browser.close();
+  await withTimeout(browser.close(), 15000, "browser shutdown");
 }
