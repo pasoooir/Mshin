@@ -157,6 +157,19 @@ try {
   const mobileRenderQuality = await mobile.evaluate(() => window.Mshin3DRenderer.quality);
   assert.ok(mobileRenderQuality.pixelRatio <= 0.8 && mobileRenderQuality.width <= 700 && mobileRenderQuality.height <= 700, "mobile WebGL must use a reduced render resolution to protect frame pacing: " + JSON.stringify(mobileRenderQuality));
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
+  // Verify the opening nitro pickup is actually reachable on a touch-first race,
+  // not merely present in the static track data.
+  const gasBounds = await mobile.locator("#gas").boundingBox();
+  await mobile.locator("#gas").dispatchEvent("pointerdown", { pointerId: 303, pointerType: "touch", clientX: gasBounds.x + gasBounds.width / 2, clientY: gasBounds.y + gasBounds.height / 2 });
+  try {
+    await mobile.waitForFunction(() => Number.parseFloat(document.querySelector("#nitroFill")?.style.width || "0") >= 50 && (window.MshinPerformance?.pickups || 0) >= 1, undefined, { timeout: 12000 });
+  } catch (error) {
+    const pickupState = await mobile.evaluate(() => ({ nitro: document.querySelector("#nitroFill")?.style.width, performance: window.MshinPerformance, traffic: window.MshinTrafficRoster }));
+    throw new Error("mobile player could not collect the opening nitro pickup while accelerating: " + JSON.stringify(pickupState) + " | " + error.message);
+  } finally {
+    await mobile.locator("#gas").dispatchEvent("pointerup", { pointerId: 303, pointerType: "touch", clientX: gasBounds.x + gasBounds.width / 2, clientY: gasBounds.y + gasBounds.height / 2 });
+  }
+
   assert.equal(await mobile.locator("#game3d").isVisible(), true, "portrait phones should display the rotated WebGL race canvas");
   const mobile3dBounds = await mobile.locator("#game3d").boundingBox();
   assert.ok(mobile3dBounds && Math.abs(mobile3dBounds.width - 390) <= 2 && Math.abs(mobile3dBounds.height - 845) <= 2, "rotated WebGL canvas should cover the complete portrait viewport: " + JSON.stringify(mobile3dBounds));
