@@ -93,6 +93,7 @@ async function waitForGameBoot(page, label = "game") {
 
 const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--disable-features=CalculateNativeWinOcclusion", "--disable-frame-rate-limit"] : [] });
 const errors = [];
+let primaryError = null;
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
@@ -726,14 +727,19 @@ try {
   await page.context().setOffline(false);
   process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
 ");
+} catch (error) {
+  primaryError = error;
 } finally {
   try {
     await withTimeout(browser.close(), 15000, "browser shutdown");
-  } catch (error) {
-    // A stuck SwiftShader/WebGL renderer can prevent Chromium's graceful close.
-    // Preserve any real assertion/race error from the test body, then force
-    // terminate the child so CI does not mask the useful failure diagnostics.
-    console.warn("[browser-smoke] graceful browser shutdown failed: " + error.message);
-    browser.process()?.kill("SIGKILL");
+  } catch (closeError) {
+    // Do not let a stuck SwiftShader/WebGL process hide the actual assertion
+    // or race failure. process.exit below terminates remaining Chromium handles.
+    console.warn("[browser-smoke] graceful browser shutdown failed: " + closeError.message);
+    if (!primaryError) primaryError = closeError;
   }
+}
+if (primaryError) {
+  console.error(primaryError.stack || primaryError);
+  process.exit(1);
 }
