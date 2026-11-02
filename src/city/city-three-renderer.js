@@ -218,7 +218,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const stripeGeometry = new THREE.BoxGeometry(0.14, 0.025, 0.72);
   const stripeMaterial = new THREE.MeshStandardMaterial({ color: "#f7f0dc", roughness: 0.8 });
-  const intersectionCenters = [7.5, 15.5, 23.5, 31.5, 39.5, 47.5, 55.5];
+  const intersectionCenters = [7.5, 23.5, 31.5, 39.5, 55.5];
   const crosswalks = new THREE.InstancedMesh(stripeGeometry, stripeMaterial, intersectionCenters.length ** 2 * 28);
   let stripeIndex = 0;
   for (const ix of intersectionCenters) {
