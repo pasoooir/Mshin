@@ -120,3 +120,12 @@ Core single-player city gameplay must not require a network account or transmit 
 3. Do not implement city traffic before road graph contracts are tested.
 4. Do not add a new renderer until the current 5.3-second draw stall is profiled.
 5. Do not add multiplayer or cloud persistence before local save integrity is proven.
+
+
+## 13. Architecture diagram
+
+The initial runtime architecture has been rendered in FigJam using the connected Figma integration. It shows the Cocos runtime adapter, deterministic simulation core, city domains, existing vehicle-dynamics reuse boundary, presentation/rendering, missions and offline save system.
+
+[Open Sims City Runtime Architecture in FigJam](https://www.figma.com/board/BTGstaU2QRh5FMnn8rEpj9/)
+
+This diagram is a design artifact, not evidence that the depicted city systems have been implemented. It must be revised as the vertical slice is implemented.
