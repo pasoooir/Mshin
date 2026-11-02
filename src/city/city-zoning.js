@@ -31,7 +31,7 @@ function demandAllows(city, type) {
   if (type === "commercial") return count("shop") < Math.max(3, Math.ceil(population / 18));
   if (type === "industrial") return count("industrial") < Math.max(2, Math.ceil(population / 36));
   if (type === "administrative") return count("administrative") < Math.max(2, Math.ceil(population / 180));
-  if (type === "recreational") return count("park") < Math.max(3, Math.ceil(population / 85));
+  if (type === "recreational") return count("park") < Math.max(10, Math.ceil(population / 85));
   return false;
 }
 
