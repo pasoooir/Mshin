@@ -506,52 +506,61 @@ try {
   assert.ok(economySteeringPad && economySteeringPad.width > 0, "economy race must expose the analog steering pad");
   const steeringCenter = { x: economySteeringPad.x + economySteeringPad.width / 2, y: economySteeringPad.y + economySteeringPad.height / 2 };
   const steeringLimit = Math.max(1, (economySteeringPad.width - 58) / 2);
-  await economy.mouse.move(steeringCenter.x, steeringCenter.y);
-  await economy.mouse.down();
-  const raceDeadline = Date.now() + 120000;
-  try {
-    while (Date.now() < raceDeadline) {
-      const finishStatus = await economy.evaluate(() => ({
-        visible: !document.querySelector("#finish").classList.contains("hidden"),
-        rewarded: /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent)
-      }));
-      if (finishStatus.visible) {
-        if (finishStatus.rewarded) break;
-        throw new Error("race ended before a valid stage finish");
-      }
-      const controls = await economy.evaluate(() => {
-        const telemetry = window.MshinPerformance;
-        if (!telemetry || !Number.isFinite(telemetry.playerTrackT)) return { steering: 0, brake: false };
+  // Keep the browser's animation loop free from Playwright round-trips. The
+  // previous test polled telemetry and moved the mouse over CDP for every
+  // 70ms slice; that throttled the game to ~1.5 rendered frames/second and
+  // advanced only a fraction of the simulation time before the wall timeout.
+  await economy.keyboard.down("ArrowUp");
+  await economy.evaluate(({ center, limit }) => {
+    const stick = document.querySelector("#stick");
+    const pointerId = 7319;
+    let braking = false;
+    let lastControls = { steering: 0, brake: false };
+    const dispatchPointer = (type, x) => stick.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId, pointerType: "mouse",
+      clientX: center.x + x * limit, clientY: center.y, button: 0,
+      buttons: type === "pointerup" ? 0 : 1
+    }));
+    dispatchPointer("pointerdown", 0);
+    const drive = () => {
+      const telemetry = window.MshinPerformance;
+      if (telemetry && Number.isFinite(telemetry.playerTrackT)) {
         const lateral = Number(telemetry.playerLateral) || 0;
         const lateralVelocity = Number(telemetry.playerLateralVelocity) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
         const speed = Math.max(60, Number(telemetry.playerSpeed) || 0);
-        const trackCurvature = Number(telemetry.playerTrackCurvature) || 0;
-        // Pure-pursuit path tracking: compensate for road curvature and
-        // project both heading and lateral drift onto a look-ahead point.
-        // The velocity term damps an outward slide before it reaches the
-        // road edge, while the curvature feed-forward follows actual bends.
-        const lookAhead = 360;
+        const curvature = Number(telemetry.playerTrackCurvature) || 0;
+        const lookAhead = Math.max(190, Math.min(330, 150 + speed * .48));
         const predictedLateral = lateral + lookAhead * Math.sin(yaw)
           + lookAhead * lateralVelocity / speed;
         const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
-        const targetCurvature = trackCurvature + correctionCurvature;
-        const steering = Math.max(-.92, Math.min(.92, Math.atan(128 * targetCurvature) / .48));
-        return { steering, brake: speed > 205 };
-      });
-      const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
-      await economy.mouse.move(
-        steeringCenter.x + pointerSteering * steeringLimit,
-        steeringCenter.y
-      );
-      if (controls.brake) await economy.keyboard.down("ArrowDown");
-      else await economy.keyboard.up("ArrowDown");
-      await economy.waitForTimeout(70);
-    }
-    const completed = await economy.evaluate(() => /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent));
-    if (!completed) throw new Error("race deadline elapsed before a rewarded finish");
+        const targetCurvature = curvature + correctionCurvature;
+        const steering = Math.max(-.86, Math.min(.86, Math.atan(128 * targetCurvature) / .48));
+        if (speed > 185) braking = true;
+        else if (speed < 145) braking = false;
+        lastControls = { steering, brake: braking, speed, lateral, yaw, curvature };
+        const pointerSteering = Math.sign(steering) * Math.pow(Math.abs(steering), 1 / 1.28);
+        dispatchPointer("pointermove", pointerSteering);
+        if (braking !== Boolean(window.__mshinRaceBrake)) {
+          window.dispatchEvent(new KeyboardEvent(braking ? "keydown" : "keyup", {
+            key: "ArrowDown", bubbles: true, cancelable: true
+          }));
+          window.__mshinRaceBrake = braking;
+        }
+      }
+      if (!window.__mshinRaceDriverStopped) window.__mshinRaceDriverFrame = requestAnimationFrame(drive);
+    };
+    window.__mshinRaceDriver = { get controls() { return lastControls; }, pointerId };
+    window.__mshinRaceDriverFrame = requestAnimationFrame(drive);
+  }, { center: steeringCenter, limit: steeringLimit });
+  const raceDeadline = 180000;
+  try {
+    await economy.waitForFunction(() => {
+      const finish = document.querySelector("#finish");
+      return finish && !finish.classList.contains("hidden")
+        && /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent);
+    }, undefined, { timeout: raceDeadline, polling: "raf" });
   } catch (error) {
-    await economy.mouse.up();
     const raceState = await economy.evaluate(() => ({
       finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
       hudHidden: document.querySelector("#hud")?.classList.contains("hidden"),
@@ -561,15 +570,24 @@ try {
       stage: document.querySelector("#stageName")?.textContent,
       renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
       performance: window.MshinPerformance ?? null,
+      driver: window.__mshinRaceDriver?.controls ?? null,
       progress: localStorage.getItem("mshin-progress-v1"),
-      telemetry: window.MshinPerformance ?? null,
+      visibility: document.visibilityState,
       bodyClass: document.body.className
     }));
-    throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
+    throw new Error("Economy race did not reach a rewarded finish: " + JSON.stringify(raceState) + "; " + error.message);
   } finally {
-    await economy.mouse.up();
+    await economy.evaluate(() => {
+      window.__mshinRaceDriverStopped = true;
+      if (window.__mshinRaceDriverFrame) cancelAnimationFrame(window.__mshinRaceDriverFrame);
+      const stick = document.querySelector("#stick");
+      stick?.dispatchEvent(new PointerEvent("pointerup", {
+        bubbles: true, cancelable: true, pointerId: 7319, pointerType: "mouse",
+        clientX: 0, clientY: 0, button: 0, buttons: 0
+      }));
+      if (window.__mshinRaceBrake) window.dispatchEvent(new KeyboardEvent("keyup", { key: "ArrowDown", bubbles: true }));
+    });
     await economy.keyboard.up("ArrowUp");
-    await economy.keyboard.up("ArrowDown");
   }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
