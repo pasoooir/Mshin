@@ -15,7 +15,7 @@ async function waitForGameBoot(page, label = "game") {
     const stage = window.MshinBootStage;
     const ready = window.MshinBootReady === true || stage === "ready";
     return ready && window.MshinAssets?.ready === true && Boolean(document.querySelector("#home"));
-  }, undefined, { timeout: 120000 }).catch(async error => {
+  }, undefined, { polling: 100, timeout: 120000 }).catch(async error => {
     const state = await page.evaluate(() => ({
       stage: window.MshinBootStage,
       bootReady: window.MshinBootReady === true,
@@ -392,7 +392,15 @@ try {
   mobile.on("pageerror", error => errors.push(error.message));
   mobile.setDefaultTimeout(60000);
   mobile.setDefaultNavigationTimeout(60000);
+  // The desktop tab remains open during mobile coverage. Explicitly activate
+  // the mobile target so its boot/RAF loop is not frozen as a background page.
+  await mobile.bringToFront();
+  const mobileSession = await mobile.context().newCDPSession(mobile);
+  await mobileSession.send("Page.setWebLifecycleState", { state: "active" });
+  await mobile.evaluate(() => window.focus());
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
+  await mobile.bringToFront();
+  await mobileSession.send("Page.setWebLifecycleState", { state: "active" });
   await waitForGameBoot(mobile, "mobile initial boot");
   const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
