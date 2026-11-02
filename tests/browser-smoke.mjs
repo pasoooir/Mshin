@@ -295,12 +295,39 @@ try {
   assert.match(await page.locator("#position").textContent(), /^[1-5] \/ 5$/, "live race position should show the player among four AI rivals");
   assert.match(await page.locator("#stageName").textContent(), /دنیای ۰5.*مرحله ۰5/);
   await page.waitForFunction(() => window.Mshin3DRenderer?.status === "webgl-ready" && window.Mshin3DRenderer.frames > 0 && window.Mshin3DRenderer.triangles > 1000 && document.body.classList.contains("is-3d-race"), undefined, { timeout: 12000 });
+  // Reloading the page creates a fresh WebGL context and can trigger a second
+  // one-time SwiftShader shader compilation stall. Warm this race instance too
+  // before checking controls so the simulation has a stable frame cadence.
+  await page.waitForFunction(() => {
+    const metrics = window.MshinPerformance;
+    const renderer = window.Mshin3DRenderer;
+    return renderer?.status === "webgl-ready" && renderer.frames >= 120
+      && metrics && metrics.samples >= 120
+      && Number.isFinite(metrics.fps) && metrics.fps >= 30
+      && Number.isFinite(metrics.maxFrameMs) && metrics.maxFrameMs < 1500
+      && metrics.slowFrameCount === 0;
+  }, undefined, { timeout: 45000 }).catch(async error => {
+    const state = await page.evaluate(() => ({
+      renderer: window.Mshin3DRenderer ?? null,
+      performance: window.MshinPerformance ?? null,
+      visibility: document.visibilityState
+    }));
+    throw new Error("Reloaded WebGL race did not reach stable foreground performance before control checks: " + JSON.stringify(state) + "; " + error.message);
+  });
   const race3dState = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, frames: window.Mshin3DRenderer?.frames, triangles: window.Mshin3DRenderer?.triangles, camera: window.Mshin3DRenderer?.camera }));
   assert.equal(race3dState.status, "webgl-ready", "race must use the native WebGL 3D renderer");
   assert.ok(race3dState.triangles > 1000, "race renderer must submit real 3D mesh geometry: " + JSON.stringify(race3dState));
   await page.keyboard.down("ArrowUp");
-  await page.waitForTimeout(2400);
-  assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
+  await page.waitForFunction(() => Number(document.querySelector("#speed").textContent) > 0, undefined, { timeout: 12000 }).catch(async error => {
+    const state = await page.evaluate(() => ({
+      speed: document.querySelector("#speed")?.textContent ?? null,
+      gas: window.MshinPerformance?.playerGas ?? null,
+      fps: window.MshinPerformance?.fps ?? null,
+      playerSpeed: window.MshinPerformance?.playerSpeed ?? null,
+      visibility: document.visibilityState
+    }));
+    throw new Error("Accelerator did not increase vehicle speed after WebGL warm-up: " + JSON.stringify(state) + "; " + error.message);
+  });
   try {
     // Keep accelerating until the player physically reaches a track pickup.
     // Releasing the key after a fixed 2.4s can leave the car short of the first
