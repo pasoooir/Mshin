@@ -45,8 +45,10 @@ test("track geometry is assembled in bounded frame-sized phases", () => {
     "the render loop must advance no more than one construction phase per frame");
   assert.match(source, /state\.trackBuildProgress=step\.value\.progress/,
     "the renderer must expose incremental construction progress");
-  assert.match(source, /if\(road\)drawPart\(road,vp/,
-    "the renderer must remain safe before the first complete road mesh exists");
+  assert.match(source, /const drawParts=road\?\[road,\.\.\.decor\]:pendingTrackParts/,
+    "the renderer must draw progressive geometry before the replacement track is complete");
+  assert.match(source, /for\(const p of drawParts\)drawPart\(p,vp/,
+    "pending road and scenery meshes must be visible during incremental construction");
   assert.match(source, /disposeParts\(previous\)/,
     "old stage GPU buffers must be released only after the replacement is ready");
   assert.match(source, /yield \{progress:\.39\}/, "sky construction must yield before scenery generation");
