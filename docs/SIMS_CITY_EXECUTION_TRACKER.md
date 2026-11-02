@@ -36,7 +36,7 @@
 | SC-ARC-001 | Define engine-independent simulation/domain boundaries | Software architecture | SC-AUD-001 | P1 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Layer boundaries, module map, events, scheduling and Cocos adapter boundary documented | 86d52be | #135 |
 | SC-ARC-002 | Define coordinate, road graph and city-save schemas | Software architecture | SC-ARC-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Coordinate conventions, graph topology and save envelope outlined; detailed typed schemas and migration fixtures remain | — | #135 |
 | SC-ART-001 | Define cohesive city art direction and asset acceptance gates | Art direction | SC-RSH-001 | P1 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Art direction, asset families, plugin-led pipeline and runtime QA criteria documented | 86d52be | #135 |
-| SC-PLG-001 | Produce first city-block/road concept through available design tools | Art/design | SC-ART-001 | P2 | ⬜ شروع‌نشده | — | — | Saved source design, exported references, in-engine review | — | — |
+| SC-PLG-001 | Produce first city-block/road concept through available design tools | Art/design | SC-ART-001 | P2 | 🟡 در حال اجرا | 2026-11-02 | — | OpenArt concept sheet submitted and pending; Figma architecture diagram requires team/organization selection in the Figma widget; no final 3D assets accepted yet | — | — |
 
 ### Design package created (documentation only; 0% gameplay completion)
 - `SIMS_CITY_GAME_DESIGN_DOCUMENT.md`
@@ -52,7 +52,7 @@
 
 | ID | Task | Owner | Dependencies | Priority | Status | Start | Complete | Test / evidence | Commit | PR |
 |---|---|---|---|---|---|---|---|---|---|---|
-| SC-QA-001 | Profile and fix the single-frame 5.3-second draw stall | Runtime/performance | SC-AUD-004 | P0 | 🟡 در حال اجرا | 2026-11-02 | — | Root cause isolated in renderer: late crowd/billboard/rail meshes bypassed the bounded upload queue; fix and regression test submitted, CI running | dd561dc | #136 |
+| SC-QA-001 | Profile and fix the single-frame 5.3-second draw stall | Runtime/performance | SC-AUD-004 | P0 | 🟡 در حال اجرا | 2026-11-02 | — | First cause found: late crowd/billboard/rail meshes bypassed the upload queue. Moving them into bounded batches did not remove the 6.7s draw stall; additional per-phase timing and incremental late-geometry yields are now under CI verification | dd561dc | #136 |
 | SC-QA-002 | Review PR #132 and its CI/diff; preserve current driving controls | Gameplay/QA | SC-QA-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Core validation passed; browser smoke failed on head SHA 5bf91e4; renderer fix is now under PR #136 | — | #132 / #136 |
 | SC-QA-003 | Review stacked open PR dependency graph and test evidence | Technical lead | SC-AUD-004 | P1 | ⬜ شروع‌نشده | — | — | Per-PR diff, base/head, checks and review state | — | — |
 
