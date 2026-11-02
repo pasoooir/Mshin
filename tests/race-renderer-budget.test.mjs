@@ -106,3 +106,10 @@ test("the full WebGL drawing buffer is sized before the first gameplay frame", (
   assert.ok(initialSize >= 0 && contextCreation > initialSize,
     "the first full-resolution drawing buffer must be allocated before the renderer enters the game loop");
 });
+
+
+test("WebGL pixel acceptance can sample the submitted frame before buffer presentation", () => {
+  assert.match(source, /captureNextFrameSample:false,lastFramePixelSample:null/);
+  assert.match(source, /if\(state\.captureNextFrameSample\)[\s\S]*?gl\.readPixels/);
+  assert.match(source, /state\.lastFramePixelSample=\{width:sampleWidth,height:sampleHeight,visiblePixels,uniqueColors/);
+});
