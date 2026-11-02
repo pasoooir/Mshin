@@ -56,7 +56,7 @@ function cylinder(out,x,y,z,r,depth,segments=12){for(let i=0;i<segments;i++){con
 function hexColor(value){const h=String(value||"#e94f45").replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>Number.isFinite(v)?v:1)}
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
 export function createRaceRenderer(canvas){
- const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,maxTrackBuildStepMs:0,lastTrackBuildStepMs:0,maxDrawPartMs:0,drawPartCount:0,quality:{mobile:false,pixelRatio:1,detail:"high"}};
+ const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,maxTrackBuildStepMs:0,lastTrackBuildStepMs:0,maxDrawPartMs:0,drawPartCount:0,maxVehicleBuildMs:0,lastVehicleBuildMs:0,vehicleBuildCount:0,quality:{mobile:false,pixelRatio:1,detail:"high"}};
  let gl,program,uniforms,attributes,environment=null,road=null,decor=[],carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
@@ -231,7 +231,9 @@ export function createRaceRenderer(canvas){
  function vehicleShapeFor(kind,id){return kind==="player"?(VEHICLE_SHAPES[id]?id:"rally"):AI_VEHICLE_SHAPES[Math.abs(Number(id)||0)%5]}
  function buildCar(id="rally"){
   // Race scene and showroom consume the same detailed procedural mesh builder.
-  return buildVehicleGeometry(id).map(item=>part(item.vertices,item.paint,item.emissive,item.material));
+  const started=performance.now(),geometry=buildVehicleGeometry(id),parts=geometry.map(item=>part(item.vertices,item.paint,item.emissive,item.material)),elapsed=performance.now()-started;
+  state.lastVehicleBuildMs=elapsed;state.maxVehicleBuildMs=Math.max(state.maxVehicleBuildMs||0,elapsed);state.vehicleBuildCount=(state.vehicleBuildCount||0)+1;
+  return parts;
  }
  function getCarParts(id){
   if(carPartSets.has(id))return carPartSets.get(id);
