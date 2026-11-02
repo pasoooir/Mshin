@@ -261,6 +261,8 @@ try {
     lastTrackBuildProgress: window.Mshin3DRenderer?.lastTrackBuildProgress
   }));
   console.log("[browser-smoke] RendererDiagnostics:", JSON.stringify(uploadMetrics));
+  const renderTiming = await page.evaluate(() => window.MshinRenderTiming ?? null);
+  console.log("[browser-smoke] RenderTiming:", JSON.stringify(renderTiming));
   assert.ok(Number.isFinite(uploadMetrics.maxMeshUploadMs) && uploadMetrics.maxMeshUploadMs < 1500, "individual WebGL mesh uploads must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isInteger(uploadMetrics.meshUploadCount) && uploadMetrics.meshUploadCount > 0, "renderer should expose completed mesh-upload diagnostics");
   assert.ok(Number.isFinite(uploadMetrics.maxTrackBuildStepMs) && uploadMetrics.maxTrackBuildStepMs < 1500, "individual track construction steps must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
