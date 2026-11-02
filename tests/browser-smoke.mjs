@@ -165,11 +165,11 @@ try {
   assert.ok(worldCards.every((src, index) => src === "./assets/vector/world-" + String(index + 1).padStart(2, "0") + ".svg"), "each world card should use its own text-free vector artwork");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
   await page.locator("#tab-cars").click();
-  await page.getByRole("button", { name: /دنباله‌دار GT/ }).click();
+  await page.getByRole("button", { name: /(?:Zola GT|Zola GT)/ }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   assert.equal(await page.locator("#showroomVehicle").evaluate(el => el.tagName), "CANVAS", "the selected vehicle should render in the real WebGL showroom");
   await page.waitForFunction(() => window.MshinVehicleShowroom?.vehicle === "comet", undefined, { timeout: 5000 });
-  assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
+  assert.match(await page.locator("#showroomCarName").textContent(), /(?:Zola GT|Zola GT)/, "showroom identity should follow the selected vehicle");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "persistence reload");
   await page.locator("#play").click();
@@ -177,7 +177,7 @@ try {
   assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
   assert.equal(await page.locator("#sfxVolume").inputValue(), "62", "SFX volume should restore after reload");
   await page.locator("#tab-cars").click();
-  assert.match(await page.locator(".carChoice.active").textContent(), /دنباله‌دار GT/, "garage should restore the saved car");
+  assert.match(await page.locator(".carChoice.active").textContent(), /(?:Zola GT|Zola GT)/, "garage should restore the saved car");
   await page.locator("#tab-race").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
