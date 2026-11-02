@@ -1,3 +1,9 @@
+/** Convert a screen-relative steering command to the game's steering convention. */
+export function invertSteerDirection(value) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(-1, Math.min(1, -value));
+}
+
 /** Convert the track tangent into the WebGL car model's local +Z forward axis. */
 export function vehicleModelHeading(trackAngle, yaw = 0) {
   const angle = Number.isFinite(trackAngle) ? trackAngle : 0;
