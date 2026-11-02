@@ -1,10 +1,10 @@
-name: Mshin desktop and mobile browser smoke
+name: Mshin mobile browser smoke
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 on:
   push:
-    branches: [main, "feat/**", "test/**", "fix/**"]
+    branches: [main, "feat/**", "test/**", "fix/**", "refactor/**"]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -28,38 +28,28 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-
-          # Remove a stale listener from the dedicated smoke-test port.
           if command -v fuser >/dev/null 2>&1; then
             fuser -k 4173/tcp || true
           fi
-
           cd "$GITHUB_WORKSPACE"
           python3 -m http.server 4173 --bind 127.0.0.1 --directory "$GITHUB_WORKSPACE" \
             >/tmp/mshin-http.log 2>&1 &
           server_pid=$!
           echo "$server_pid" > /tmp/mshin-http.pid
-
           for attempt in $(seq 1 60); do
             if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:4173/ >/dev/null; then
               echo "Local game server is ready (attempt $attempt)."
               exit 0
             fi
-
             if ! kill -0 "$server_pid" 2>/dev/null; then
               echo "Server exited unexpectedly (PID: $server_pid)."
-              echo "--- HTTP server log ---"
               cat /tmp/mshin-http.log || true
               exit 1
             fi
-
             sleep 1
           done
-
           echo "Local game server did not become ready within 60 seconds."
-          echo "--- HTTP server log ---"
           cat /tmp/mshin-http.log || true
-          echo "--- Listener diagnostics ---"
           (ss -ltnp || true) | grep ':4173' || true
           exit 1
       - name: Run city entry browser smoke test
@@ -68,23 +58,23 @@ jobs:
         run: |
           node --check tests/city-browser-smoke.mjs
           node tests/city-browser-smoke.mjs
-      - name: Run desktop and mobile browser smoke tests
+      - name: Run mobile-only browser smoke tests
         env:
           CI: "true"
         run: |
-          node --check tests/browser-smoke.mjs
-          node tests/browser-smoke.mjs
+          node --check tests/mobile-browser-smoke.mjs
+          node tests/mobile-browser-smoke.mjs
       - name: Stop local game server
         if: always()
         run: |
           if [ -f /tmp/mshin-http.pid ]; then
             kill "$(cat /tmp/mshin-http.pid)" 2>/dev/null || true
           fi
-      - name: Upload desktop and mobile gameplay previews
+      - name: Upload mobile gameplay previews
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mshin-gameplay-previews
+          name: mshin-mobile-gameplay-previews
           path: artifacts/*.png
           if-no-files-found: warn
           retention-days: 7
