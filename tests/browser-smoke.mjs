@@ -513,9 +513,7 @@ try {
   await economy.mouse.move(steeringCenter.x, steeringCenter.y);
   await economy.mouse.down();
   const raceDeadline = Date.now() + 120000;
-  // Telemetry is sampled every 30 simulation frames. Never hold full brake
-  // based on a stale speed sample: use short, bounded pulses with a cooldown.
-  // This keeps the economy race moving while preserving the real brake input.
+  // Keep the race driver focused on throttle and centerline steering.
   try {
     while (Date.now() < raceDeadline) {
       const finishStatus = await economy.evaluate(() => ({
