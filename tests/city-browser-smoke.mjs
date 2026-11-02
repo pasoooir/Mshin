@@ -8,6 +8,14 @@ try{
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
  await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
  assert.ok(await page.locator("#cityThreeViewport").count()===1,"city must render through the Three.js WebGL scene");
+ const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
+ assert.equal(renderStats.renderer,"three.js");
+ assert.equal(renderStats.version,"180");
+ assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
+ assert.equal(renderStats.roadTiles,348,"the complete road grid must be rendered in 3D");
+ assert.ok(renderStats.raisedCurbs>0&&renderStats.crosswalkStripes>=200,"streets need raised curbs and visible pedestrian crossings");
+ assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
+
  const mapControls=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,buttons:[...document.querySelectorAll(".cityMapControls button")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,visible:r.width>0&&r.height>0}})}));
  assert.ok(mapControls.zoom>=.7,"mobile city should open with a useful exploration zoom");assert.equal(mapControls.buttons.length,3);assert.ok(mapControls.buttons.every(b=>b.visible&&b.width>=44&&b.height>=44),"map zoom controls must be visible 44px touch targets");
  await page.locator("#cityZoomIn").click();const zoomedIn=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomedIn>mapControls.zoom,"zoom-in control must enlarge the map");
