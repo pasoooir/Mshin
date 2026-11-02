@@ -557,6 +557,10 @@ try {
   // not SwiftShader performance. Earlier desktop/mobile checks already validate WebGL.
   await economy.addInitScript(() => {
     window.__MshinBrowserSmoke = true;
+    // Keep the economy acceptance run focused on fixed-step gameplay, AI, collisions and rewards.
+    // Desktop/mobile smoke scenarios above already validate actual 3D rendering; skipping duplicate
+    // per-frame drawing here prevents the software-rendered CI runner from starving the simulation.
+    window.__MshinBrowserSmokeSimulationOnly = true;
     // The economy acceptance flow exercises real vehicle physics and rewards.
     // Earlier smoke coverage already asserts the WebGL race renderer; avoid
     // SwiftShader's multi-second draw stalls in this long-duration scenario.
