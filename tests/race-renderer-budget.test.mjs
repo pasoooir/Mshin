@@ -45,8 +45,10 @@ test("track geometry is assembled in bounded frame-sized phases", () => {
     "the render loop must advance no more than one construction phase per frame");
   assert.match(source, /state\.trackBuildProgress=step\.value\.progress/,
     "the renderer must expose incremental construction progress");
-  assert.match(source, /if\(road\)drawPart\(road,vp/,
-    "the renderer must remain safe before the first complete road mesh exists");
+  assert.match(source, /const drawParts=road\?\[road,\.\.\.decor\]:pendingTrackParts/,
+    "the renderer must draw progressive geometry before the replacement track is complete");
+  assert.match(source, /for\(const p of drawParts\)drawPart\(p,vp/,
+    "pending road and scenery meshes must be visible during incremental construction");
   assert.match(source, /disposeParts\(previous\)/,
     "old stage GPU buffers must be released only after the replacement is ready");
   assert.match(source, /yield \{progress:\.39\}/, "sky construction must yield before scenery generation");
@@ -55,4 +57,61 @@ test("track geometry is assembled in bounded frame-sized phases", () => {
   assert.match(source, /const maxUploadValues=4096\*9/, "large scenery meshes must be split into bounded GPU upload batches");
   assert.match(source, /vertices\.slice\(offset,end\)/, "each GPU upload must contain only one bounded geometry slice");
   assert.match(source, /progress:\.68\+\.30\*\(uploadedValues\/Math\.max\(1,uploadValues\)\)/, "GPU upload progress must advance monotonically across all scenery batches");
+});
+
+
+test("all late trackside and crowd geometry enters the bounded upload queue", () => {
+  const billboardBuild = source.indexOf("const billboardCount=mobile?8:20;");
+  const uploadQueue = source.indexOf("const uploadQueue=[");
+  const finalReturn = source.indexOf("return {road:nextRoad,decor:nextDecor,stageId:snapshot.stageId};", uploadQueue);
+  assert.ok(billboardBuild >= 0 && uploadQueue > billboardBuild,
+    "billboards, railings and late crowd geometry must be assembled before GPU uploads begin");
+  assert.ok(finalReturn > uploadQueue, "bounded uploads must finish before the completed track is returned");
+  const afterQueue = source.slice(uploadQueue, finalReturn);
+  assert.match(afterQueue, /\[billboardPosts,/,
+    "billboard geometry must be included in the chunked upload queue");
+  assert.match(afterQueue, /\[railTris,/,
+    "rail geometry must be included in the chunked upload queue");
+  assert.match(afterQueue, /\[crowdBodies,/,
+    "late crowd geometry must be included in the chunked upload queue");
+  assert.doesNotMatch(afterQueue, /nextDecor\.push\(part\(billboardPosts/,
+    "the completion frame must not synchronously upload the full late-scene meshes");
+});
+
+test("mesh upload duration is exposed for browser performance diagnostics", () => {
+  assert.match(source, /state\.maxMeshUploadMs=Math\.max\(state\.maxMeshUploadMs\|\|0,elapsed\)/);
+  assert.match(source, /maxMeshUploadMs:0,meshUploadCount:0/);
+});
+
+
+test("late track construction yields between rail, crowd and billboard batches", () => {
+  assert.match(source, /if\(\+\+railSegmentsBuilt%\(mobile\?2:12\)===0\)yield \{progress:\.67\+/,
+    "rail generation must not monopolize one render frame");
+  assert.match(source, /if\(i%4===3\)yield \{progress:\.673\+/,
+    "additional crowd geometry must be built in small frame-sized batches");
+  assert.match(source, /if\(i%2===1\)yield \{progress:\.675\+/,
+    "billboard generation must yield before the mesh upload queue");
+  assert.match(source, /state\.maxTrackBuildStepMs=Math\.max/);
+  assert.match(source, /state\.maxDrawPartMs=Math\.max/);
+});
+
+
+test("procedural vehicle mesh construction exposes its synchronous cost", () => {
+  assert.match(source, /state\.maxVehicleBuildMs=Math\.max/);
+  assert.match(source, /vehicleBuildCount:0/);
+});
+
+
+test("the full WebGL drawing buffer is sized before the first gameplay frame", () => {
+  const initialSize = source.indexOf("canvas.width=initialWidth;canvas.height=initialHeight");
+  const contextCreation = source.indexOf("gl=canvas.getContext");
+  assert.ok(initialSize >= 0 && contextCreation > initialSize,
+    "the first full-resolution drawing buffer must be allocated before the renderer enters the game loop");
+});
+
+
+test("WebGL pixel acceptance can sample the submitted frame before buffer presentation", () => {
+  assert.match(source, /captureNextFrameSample:false,lastFramePixelSample:null/);
+  assert.match(source, /if\(state\.captureNextFrameSample\)[\s\S]*?gl\.readPixels/);
+  assert.match(source, /state\.lastFramePixelSample=\{width:sampleWidth,height:sampleHeight,visiblePixels,uniqueColors/);
 });
