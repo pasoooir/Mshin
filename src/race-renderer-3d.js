@@ -65,7 +65,8 @@ export function createRaceRenderer(canvas){
   const initialDpr=Math.min(devicePixelRatio||1,mobile?.68:1.5)*qualityScale;
   const initialWidth=Math.max(1,Math.round((initialPortrait?innerHeight:innerWidth)*initialDpr));
   const initialHeight=Math.max(1,Math.round((initialPortrait?innerWidth:innerHeight)*initialDpr));
-  canvas.width=initialWidth;canvas.height=initialHeight;lastSize=initialWidth+"x"+initialHeight;
+  // Do not allocate a full-resolution drawing buffer before the GPU profile is known.
+  // SwiftShader/llvmpipe can otherwise allocate the large buffer and immediately resize it.
   state.quality={mobile,pixelRatio:initialDpr,detail:mobile?"mobile-balanced":"high",width:initialWidth,height:initialHeight};
  try{
   gl=canvas.getContext("webgl",{alpha:false,antialias:!mobile,depth:true,powerPreference:"high-performance",preserveDrawingBuffer:false})||canvas.getContext("experimental-webgl");
@@ -77,7 +78,9 @@ export function createRaceRenderer(canvas){
   const gpuProfile=debugRenderer?String(gl.getParameter(debugRenderer.UNMASKED_RENDERER_WEBGL)||""):String(gl.getParameter(gl.RENDERER)||"");
   softwareRenderer=/swiftshader|llvmpipe|lavapipe|software raster/i.test(gpuProfile);
   state.softwareRenderer=softwareRenderer;state.gpuProfile=gpuProfile.slice(0,120);
-  if(softwareRenderer){qualityScale=.58;resize();}
+  if(softwareRenderer)qualityScale=.58;
+  // Allocate exactly once at the selected profile's final pixel ratio, before shader warm-up.
+  resize();
   program=makeProgram(gl);environment=createVehicleEnvironment(gl);state.environmentMapReady=!!environment;attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive")};
   // Force the browser/driver to compile and execute the linked shader pipeline
   // before the first countdown frame. Some headless and mobile GPUs defer this
