@@ -458,7 +458,8 @@ try {
   const mobileStatsBounds = await mobile.locator(".stats").boundingBox(), mobileSoundBounds = await mobile.locator("#soundToggle").boundingBox();
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
-  assert.ok(await mobile.locator("#pause")  const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
+  const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // Bring the page forward and explicitly reactivate its lifecycle before the
   // long simulation; headless bringToFront() alone does not always clear the
