@@ -115,6 +115,20 @@ The following are recurring themes in reviewed public sources, not claims of una
 - [Cities of Tomorrow review](https://www.gamespot.com/reviews/simcity-cities-of-tomorrow-review/1900-6415573/)
 - [EA SimCity BuildIt beginner guide](https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/)
 
+### 10.1 Follow-up review of current player feedback (2026-11-02)
+
+A fresh check of public sources reinforces the design responses above, while keeping the scope of each report explicit:
+
+- **Cities: Skylines II — traffic and pathfinding:** the October 2026 community state-of-the-game thread includes player reports of lane-cutting, poor lane discipline and unresolved traffic-AI expectations. This is a recurring concern in that discussion, not a measured survey of all players. The same thread describes CPU-side pathfinding as an ongoing developer challenge and reports on LOD, memory and simulation optimization work. Design response: make route choice explainable, use legal lane/turn transitions, and profile pathfinding separately from rendering. Source: https://www.reddit.com/r/CitiesSkylines2/comments/1wxfjii/october_2026_state_of_the_game/
+
+- **Cities: Skylines II — economy feedback:** the same October discussion includes reports of commercial businesses showing "Not Enough Customers" despite players believing nearby demand, staffing, stock and access are sufficient. This is a reported symptom and may be patch- or city-specific; it does not establish the underlying cause. Design response: provide diagnostics for customer catchment, demand, stock, wages, travel time and road access instead of opaque warning labels.
+
+- **SimCity (2013) — traffic routing and city scale:** contemporary reviews described traffic choosing a short low-capacity route over a higher-capacity freeway, emergency vehicles getting caught in congestion, and limited city footprints. Design response: route costs must include travel time, congestion, vehicle class and road capacity; emergency dispatch must use the same route model; districts should expand without a hard small-tile ceiling. Sources: https://www.theguardian.com/technology/gamesblog/2013/mar/15/simcity-video-game-review and https://gameinformer.com/games/simcity/b/pc/archive/2013/03/15/simcity-review
+
+- **SimCity BuildIt — offline ownership:** EA's current help guidance says offline building can continue, but offline progress is not safely synced and may be lost or overwritten when devices/accounts reconnect in certain sequences. Design response: core Mshin city play must persist locally without a server, with validated backups and explicit import/export; cloud sync must remain optional and conflict-safe. Sources: https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/ and https://help.ea.com/en/articles/simcity/simcity-buildit/save-progress/
+
+These examples are qualitative evidence. They are used to identify failure modes and acceptance tests, not to claim universal player consensus.
+
 ## 11. Scope exclusions for the first slice
 
 No multiplayer economy, live-service dependency, real-money store, cloud account requirement, huge open world, full metro simulation, complex disasters or hundreds of individually rendered citizens in the first slice. These may be considered only after the core simulation is stable.
