@@ -20,7 +20,7 @@ test("garage cars have distinct proportions, wheel sizes and body styles", () =>
   assert.match(renderer, /raptor:\{width:1\.17,length:1\.04,bodyY:1\.12/);
   assert.match(models, /style:"pickup"/);
   assert.match(models, /style:"formula"/);
-  assert.match(models, /comet:\\{paint:"#343b43",accent:"#e63d4b"/);
+  assert.match(models, /comet:\{paint:"#343b43",accent:"#e63d4b"/);
   assert.match(models, /Zola-inspired graphite supercar package/);
   assert.match(models, /deep side intakes/);
 });
