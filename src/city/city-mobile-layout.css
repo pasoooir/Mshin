@@ -44,3 +44,29 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
 .cityMapControls{position:fixed;z-index:5;right:max(8px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:grid;gap:7px;pointer-events:auto}
 .cityMapControls button{width:44px;height:44px;border:1px solid #ffffff55;border-radius:13px;background:#122337e8;color:#fff;font-size:22px;font-weight:900;box-shadow:0 5px 18px #07152266;backdrop-filter:blur(10px);touch-action:manipulation}
 .cityMapControls button:active{transform:scale(.94);background:#e2b85e;color:#30291d}
+
+/* Landscape phones are wide but short: use the same touch-first dock as portrait-width phones. */
+@media (max-height:520px) and (min-width:761px) {
+ .cityShell{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+ .cityTop{gap:6px;align-items:flex-start}
+ .cityBrand{min-width:0;padding:6px 10px}
+ .cityBrand strong{font-size:14px}
+ .cityBrand small{font-size:9px}
+ .cityMetrics{gap:4px;flex-wrap:nowrap}
+ .cityMetric{min-width:58px;padding:4px 6px}
+ .cityMetric small{font-size:8px}
+ .cityMetric b{font-size:11px}
+ .cityActions{gap:4px}
+ .cityAction{padding:6px 8px;font-size:10px;min-height:38px}
+ .cityTools{position:fixed;z-index:3;left:50%;bottom:calc(env(safe-area-inset-bottom) + 62px);transform:translateX(-50%);width:max-content;max-width:calc(100vw - 92px);flex-direction:row;gap:5px;padding:5px;margin:0;border-radius:13px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+ .cityTools::-webkit-scrollbar{display:none}
+ .cityTool{width:46px;height:44px;flex:0 0 46px;font-size:17px}
+ .cityTool small{font-size:8px}
+ .cityBottom{position:fixed;z-index:2;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));bottom:env(safe-area-inset-bottom);gap:8px;align-items:center}
+ .cityBottomInfo{padding:5px 8px;max-width:280px}
+ .cityBottomInfo strong{font-size:10px}
+ .cityBottomInfo small{font-size:8px}
+ .citySpeed{padding:3px;gap:2px}
+ .citySpeed button{padding:6px 8px;min-height:36px;font-size:10px}
+ .cityToast{bottom:calc(env(safe-area-inset-bottom) + 116px);font-size:10px}
+}
