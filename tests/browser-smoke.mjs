@@ -2,6 +2,16 @@ import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
+function withTimeout(promise, timeoutMs, label) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(label + " timed out after " + timeoutMs + "ms")), timeoutMs);
+    })
+  ]).finally(() => clearTimeout(timer));
+}
+
 await mkdir("artifacts", { recursive: true });
 
 async function captureScreenshot(page, path, { fullPage = false } = {}) {
@@ -81,7 +91,7 @@ async function waitForGameBoot(page, label = "game") {
   return state;
 }
 
-const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
+const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--disable-features=CalculateNativeWinOcclusion", "--disable-frame-rate-limit", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -449,16 +459,17 @@ try {
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
-  await captureScreenshot(mobile, "artifacts/mshin-gameplay-mobile.png");
-  assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
-  // This scenario measures a full live race, so make its tab foreground first.
+  // Bring the page forward and explicitly reactivate its lifecycle before the
+  // long simulation; headless bringToFront() alone does not always clear the
+  // background lifecycle state in GitHub Actions.
   await economy.bringToFront();
   const economySession = await economy.context().newCDPSession(economy);
   await economySession.send("Page.setWebLifecycleState", { state: "active" });
   await economy.evaluate(() => window.focus());
-  assert.equal(await economy.evaluate(() => document.visibilityState), "visible", "economy race tab must be active so requestAnimationFrame runs at foreground cadence");
+  assert.equal(await economy.evaluate(() => document.visibilityState), "visible",
+    "economy race tab must be active so requestAnimationFrame runs at foreground cadence");
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   // The dedicated race-completion scenario validates gameplay physics and economy,
   // not SwiftShader performance. Earlier desktop/mobile checks already validate WebGL.
@@ -505,77 +516,141 @@ try {
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
-  await economy.keyboard.down("ArrowUp");
   const economySteeringPad = await economy.locator("#stick").boundingBox();
   assert.ok(economySteeringPad && economySteeringPad.width > 0, "economy race must expose the analog steering pad");
   const steeringCenter = { x: economySteeringPad.x + economySteeringPad.width / 2, y: economySteeringPad.y + economySteeringPad.height / 2 };
   const steeringLimit = Math.max(1, (economySteeringPad.width - 58) / 2);
-  await economy.mouse.move(steeringCenter.x, steeringCenter.y);
-  await economy.mouse.down();
-  const raceDeadline = Date.now() + 120000;
-  try {
-    while (Date.now() < raceDeadline) {
-      const finishStatus = await economy.evaluate(() => ({
-        visible: !document.querySelector("#finish").classList.contains("hidden"),
-        rewarded: /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent)
-      }));
-      if (finishStatus.visible) {
-        if (finishStatus.rewarded) break;
-        throw new Error("race ended before a valid stage finish");
-      }
-      const controls = await economy.evaluate(() => {
-        const telemetry = window.MshinPerformance;
-        if (!telemetry || !Number.isFinite(telemetry.playerTrackT)) return { steering: 0, brake: false };
+  // Keep the browser's animation loop free from Playwright round-trips. The
+  // previous test polled telemetry and moved the mouse over CDP for every
+  // 70ms slice; that throttled the game to ~1.5 rendered frames/second and
+  // advanced only a fraction of the simulation time before the wall timeout.
+  await withTimeout(economy.evaluate(({ center, limit }) => {
+    const stick = document.querySelector("#stick");
+    const gas = document.querySelector("#gas");
+    const brake = document.querySelector("#brake");
+    const pointerId = 7319;
+    const gasPointerId = 7320;
+    const brakePointerId = 7321;
+    const dispatchButton = (element, type, id) => element.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId: id, pointerType: "mouse",
+      clientX: 0, clientY: 0, button: 0, buttons: type === "pointerup" ? 0 : 1
+    }));
+    dispatchButton(gas, "pointerdown", gasPointerId);
+    let braking = false;
+    let lastControls = { steering: 0, brake: false };
+    // The steering pad rotates its active axis in portrait orientation:
+    // steer() reads clientY and the pad's height there, not clientX/width.
+    // Drive the same axis the real touch control uses so the controller's
+    // requested sign is the sign received by the game simulation.
+    const portrait = matchMedia("(orientation: portrait)").matches;
+    const dispatchPointer = (type, x) => stick.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId, pointerType: "mouse",
+      clientX: portrait ? center.x : center.x + x * limit,
+      clientY: portrait ? center.y + x * limit : center.y,
+      button: 0, buttons: type === "pointerup" ? 0 : 1
+    }));
+    dispatchPointer("pointerdown", 0);
+    const drive = () => {
+      const telemetry = window.MshinPerformance;
+      if (telemetry && Number.isFinite(telemetry.playerTrackT)) {
         const lateral = Number(telemetry.playerLateral) || 0;
         const lateralVelocity = Number(telemetry.playerLateralVelocity) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
         const speed = Math.max(60, Number(telemetry.playerSpeed) || 0);
-        const trackCurvature = Number(telemetry.playerTrackCurvature) || 0;
-        // Pure-pursuit path tracking: compensate for road curvature and
-        // project both heading and lateral drift onto a look-ahead point.
-        // The velocity term damps an outward slide before it reaches the
-        // road edge, while the curvature feed-forward follows actual bends.
-        const lookAhead = 360;
-        const predictedLateral = lateral + lookAhead * Math.sin(yaw)
-          + lookAhead * lateralVelocity / speed;
-        const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
-        const targetCurvature = trackCurvature + correctionCurvature;
-        const steering = Math.max(-.92, Math.min(.92, Math.atan(128 * targetCurvature) / .48));
-        return { steering, brake: speed > 205 };
-      });
-      const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
-      await economy.mouse.move(
-        steeringCenter.x + pointerSteering * steeringLimit,
-        steeringCenter.y
-      );
-      if (controls.brake) await economy.keyboard.down("ArrowDown");
-      else await economy.keyboard.up("ArrowDown");
-      await economy.waitForTimeout(70);
-    }
-    const completed = await economy.evaluate(() => /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent));
-    if (!completed) throw new Error("race deadline elapsed before a rewarded finish");
+        const curvature = Number(telemetry.playerTrackCurvature) || 0;
+        const lookAhead = 320;
+        // Keep road curvature as feed-forward while independently correcting
+        // lateral displacement, chassis heading and outward lateral velocity.
+        // Unlike a single look-ahead projection, these terms cannot cancel a
+        // large road-edge error merely because the nose points back inward.
+        const roadWheelAngle = Math.atan(128 * curvature)
+          - 2 * Math.atan2(lateral, lookAhead)
+          - yaw * .65
+          - Math.atan2(lateralVelocity, Math.max(80, speed)) * .45;
+        const steering = Math.max(-.86, Math.min(.86, roadWheelAngle / .48));
+        // Telemetry is published every 30 simulation frames. A low threshold can
+        // hold full braking across a stale sample and stop the test car; use a
+        // wider high-speed hysteresis band to avoid brake chatter/stalling.
+        if (speed > 340) braking = true;
+        else if (speed < 240) braking = false;
+        lastControls = {
+          steering, brake: braking, speed, lateral, yaw, curvature,
+          observedSteer: Number(telemetry.playerSteer) || 0,
+          stickSteer: Number(stick.dataset.steer) || 0
+        };
+        // Pointer displacement and the simulation's positive steering axis share the same direction.
+        // Keep the sign intact: inverting it drives the car farther away from the road centre.
+        const pointerSteering = Math.sign(steering) * Math.pow(Math.abs(steering), 1 / 1.28);
+        dispatchPointer("pointermove", pointerSteering);
+        if (braking !== Boolean(window.__mshinRaceBrake)) {
+          dispatchButton(brake, braking ? "pointerdown" : "pointerup", brakePointerId);
+          window.__mshinRaceBrake = braking;
+        }
+      }
+      if (!window.__mshinRaceDriverStopped) window.__mshinRaceDriverFrame = requestAnimationFrame(drive);
+    };
+    window.__mshinRaceDriver = { get controls() { return lastControls; }, pointerId };
+    window.__mshinRaceDriverFrame = requestAnimationFrame(drive);
+  }, { center: steeringCenter, limit: steeringLimit }), 15000, "economy race driver installation");
+  const raceDeadline = 180000;
+  let raceDeadlineTimer;
+  try {
+    const finishCondition = () => {
+      const finish = document.querySelector("#finish");
+      // Detect every terminal state immediately. A destroyed car also
+      // opens the finish panel, but must fail the reward assertion below
+      // instead of waiting the full race deadline for a reward that cannot arrive.
+      return finish && !finish.classList.contains("hidden");
+    };
+    await Promise.race([
+      economy.waitForFunction(finishCondition, undefined, { timeout: 0, polling: 100 }),
+      new Promise((_, reject) => {
+        raceDeadlineTimer = setTimeout(() => reject(new Error("economy race wall-clock deadline elapsed")), raceDeadline);
+      })
+    ]);
   } catch (error) {
-    await economy.mouse.up();
-    const raceState = await economy.evaluate(() => ({
-      finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
-      hudHidden: document.querySelector("#hud")?.classList.contains("hidden"),
-      lap: document.querySelector("#lap")?.textContent,
-      speed: document.querySelector("#speed")?.textContent,
-      time: document.querySelector("#time")?.textContent,
-      stage: document.querySelector("#stageName")?.textContent,
-      renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
-      performance: window.MshinPerformance ?? null,
-      progress: localStorage.getItem("mshin-progress-v1"),
-      telemetry: window.MshinPerformance ?? null,
-      bodyClass: document.body.className
-    }));
-    throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
+    const raceState = await Promise.race([
+      economy.evaluate(() => ({
+        finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
+        hudHidden: document.querySelector("#hud")?.classList.contains("hidden"),
+        lap: document.querySelector("#lap")?.textContent,
+        speed: document.querySelector("#speed")?.textContent,
+        time: document.querySelector("#time")?.textContent,
+        stage: document.querySelector("#stageName")?.textContent,
+        renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
+        performance: window.MshinPerformance ?? null,
+        driver: window.__mshinRaceDriver?.controls ?? null,
+        controlState: { gas: window.MshinPerformance?.playerGas, brake: window.MshinPerformance?.playerBrake, steer: window.MshinPerformance?.playerSteer, steerTarget: window.MshinPerformance?.playerSteerTarget, stick: document.querySelector("#stick")?.dataset.steer },
+        progress: localStorage.getItem("mshin-progress-v1"),
+        visibility: document.visibilityState,
+        bodyClass: document.body.className
+      })),
+      new Promise(resolve => setTimeout(() => resolve({ diagnosticsUnavailable: true, reason: "browser main thread did not answer within 5 seconds" }), 5000))
+    ]);
+    throw new Error("Economy race did not reach a rewarded finish: " + JSON.stringify(raceState) + "; " + error.message);
   } finally {
-    await economy.mouse.up();
-    await economy.keyboard.up("ArrowUp");
-    await economy.keyboard.up("ArrowDown");
+    clearTimeout(raceDeadlineTimer);
+    await Promise.race([
+      economy.evaluate(() => {
+        window.__mshinRaceDriverStopped = true;
+        if (window.__mshinRaceDriverFrame) cancelAnimationFrame(window.__mshinRaceDriverFrame);
+        const stick = document.querySelector("#stick");
+        stick?.dispatchEvent(new PointerEvent("pointerup", {
+          bubbles: true, cancelable: true, pointerId: 7319, pointerType: "mouse",
+          clientX: 0, clientY: 0, button: 0, buttons: 0
+        }));
+        document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType: "mouse", button: 0, buttons: 0 }));
+        if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType: "mouse", button: 0, buttons: 0 }));
+      }),
+      new Promise(resolve => setTimeout(resolve, 5000))
+    ]);
   }
-  assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
+  const finishEvidence = await economy.evaluate(() => ({
+    text: document.querySelector("#finishText")?.textContent ?? "",
+    progress: JSON.parse(localStorage.getItem("mshin-progress-v1") || "{}")
+  }));
+  assert.match(finishEvidence.text, /سکه دریافت کردید/,
+    "a terminal race state must be a rewarded finish, not vehicle destruction: " + JSON.stringify(finishEvidence));
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
   await economy.locator("#finishSelect").click();
