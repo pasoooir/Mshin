@@ -56,7 +56,7 @@ function cylinder(out,x,y,z,r,depth,segments=12){for(let i=0;i<segments;i++){con
 function hexColor(value){const h=String(value||"#e94f45").replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>Number.isFinite(v)?v:1)}
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
 export function createRaceRenderer(canvas){
- const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],quality:{mobile:false,pixelRatio:1,detail:"high"}};
+ const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,quality:{mobile:false,pixelRatio:1,detail:"high"}};
  let gl,program,uniforms,attributes,environment=null,road=null,decor=[],carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
@@ -86,7 +86,7 @@ export function createRaceRenderer(canvas){
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
- function part(tris,color,emissive=0,materialName="environment"){const material=VEHICLE_MATERIALS[materialName]||{metallic:.06,roughness:.78,clearcoat:0,kind:0};return {mesh:makeGeometry(gl,tris),color:hexColor(color),...material,emissive}}
+ function part(tris,color,emissive=0,materialName="environment"){const material=VEHICLE_MATERIALS[materialName]||{metallic:.06,roughness:.78,clearcoat:0,kind:0},started=performance.now(),mesh=makeGeometry(gl,tris),elapsed=performance.now()-started;state.maxMeshUploadMs=Math.max(state.maxMeshUploadMs||0,elapsed);state.meshUploadCount=(state.meshUploadCount||0)+1;return {mesh,color:hexColor(color),...material,emissive}}
  function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
  function* buildTrack(snapshot){
   const nextDecor=[];
@@ -141,29 +141,6 @@ export function createRaceRenderer(canvas){
   // Soft contact-shadow decals sit directly on the ground under structures.
   state.environmentCounts={trees:treeCount,houses:urban?0:buildingCount,shops:shopCount,buildings:urban?buildingCount:0,spectators:spectatorCount,dogs:Math.ceil(petCount/2),cats:Math.floor(petCount/2),contactShadows:treeCount+buildingCount};
   yield {parts:[nextRoad,...nextDecor],progress:.67};
-  // Convert and upload large procedural meshes in bounded GPU batches. Building
-  // the scene arrays is cheap compared with normal generation + bufferData for
-  // one enormous mesh; keep each render() call below a small upload budget.
-  const uploadQueue=[
-   [landscape,"#778b78"],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[trees,theme[3]],
-   [houses,"#d6c6a4"],[buildings,urban?"#5c4d85":"#747b82"],[roofTris,urban?"#343b4a":"#9b5942"],
-   [windows,"#8ec7d4",.05],[doors,"#493b34"],[shops,"#c8b08b"],[crowdBodies,"#e85b47"],
-   [crowdHeads,"#d4a47e"],[crowdArms,"#e2b18c"],[crowdLegs,"#263344"],[petBodies,"#b88c5c"],
-   [petHeads,"#b88c5c"],[petLegs,"#75543c"],[petEars,"#8b5d4a"],[petTails,"#8b5d4a"],
-   [billboardPosts,"#303d4b"],[billboardFaces,"#17324b"],[billboardFrames,"#d9e2e8"],
-   [billboardAccents,"#ed344e",.12],[railTris,"#d9dfe2"]
-  ];
-  const uploadValues=uploadQueue.reduce((sum,item)=>sum+item[0].length,0);
-  const maxUploadValues=4096*9;
-  let uploadedValues=0;
-  for(const [vertices,color,emissive=0] of uploadQueue){
-   for(let offset=0;offset<vertices.length;offset+=maxUploadValues){
-    const end=Math.min(vertices.length,offset+maxUploadValues);
-    nextDecor.push(part(vertices.slice(offset,end),color,emissive));
-    uploadedValues+=end-offset;
-    yield {parts:[nextRoad,...nextDecor],progress:.68+.30*(uploadedValues/Math.max(1,uploadValues))};
-   }
-  }
   for(let i=0;i<360;i+=(mobile?18:6)){
    const a=i/360*Math.PI*2,b=(i+1)/360*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    for(const side of [-1,1]){
@@ -206,7 +183,29 @@ export function createRaceRenderer(canvas){
    billboardSlots.push({id:`world-${snapshot.world||0}-trackside-${String(i+1).padStart(2,"0")}`,world:snapshot.world||0,side,format:"trackside-3d",width:104,height:32,available:true,creative:null});
   }
   state.adSlots=billboardSlots;
-  nextDecor.push(part(billboardPosts,"#303d4b"),part(billboardFaces,"#17324b"),part(billboardFrames,"#d9e2e8"),part(billboardAccents,"#ed344e",.12),part(railTris,"#d9dfe2"),part(crowdBodies,"#e85b47"),part(crowdHeads,"#d4a47e"),part(crowdLegs,"#263344"));
+  // Convert and upload large procedural meshes in bounded GPU batches. Building
+  // the scene arrays is cheap compared with normal generation + bufferData for
+  // one enormous mesh; keep each render() call below a small upload budget.
+  const uploadQueue=[
+   [landscape,"#778b78"],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[trees,theme[3]],
+   [houses,"#d6c6a4"],[buildings,urban?"#5c4d85":"#747b82"],[roofTris,urban?"#343b4a":"#9b5942"],
+   [windows,"#8ec7d4",.05],[doors,"#493b34"],[shops,"#c8b08b"],[crowdBodies,"#e85b47"],
+   [crowdHeads,"#d4a47e"],[crowdArms,"#e2b18c"],[crowdLegs,"#263344"],[petBodies,"#b88c5c"],
+   [petHeads,"#b88c5c"],[petLegs,"#75543c"],[petEars,"#8b5d4a"],[petTails,"#8b5d4a"],
+   [billboardPosts,"#303d4b"],[billboardFaces,"#17324b"],[billboardFrames,"#d9e2e8"],
+   [billboardAccents,"#ed344e",.12],[railTris,"#d9dfe2"]
+  ];
+  const uploadValues=uploadQueue.reduce((sum,item)=>sum+item[0].length,0);
+  const maxUploadValues=4096*9;
+  let uploadedValues=0;
+  for(const [vertices,color,emissive=0] of uploadQueue){
+   for(let offset=0;offset<vertices.length;offset+=maxUploadValues){
+    const end=Math.min(vertices.length,offset+maxUploadValues);
+    nextDecor.push(part(vertices.slice(offset,end),color,emissive));
+    uploadedValues+=end-offset;
+    yield {parts:[nextRoad,...nextDecor],progress:.68+.30*(uploadedValues/Math.max(1,uploadValues))};
+   }
+  }
   return {road:nextRoad,decor:nextDecor,stageId:snapshot.stageId};
  }
  function cancelTrackBuild(){if(pendingTrackParts.length)disposeParts(pendingTrackParts);pendingTrackParts=[];trackBuildJob=null;trackBuildStage=-1;}
