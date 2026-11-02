@@ -54,7 +54,7 @@ function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return
 function mount(){
  const canvas=document.getElementById("cityViewport");let ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;
  const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1};
- let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,lastPersistTick=city.tick;
+ let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,lastPersistTick=city.tick,loopRunning=false;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  let staticLayer=null,cacheBuilds=0,frameCount=0,drawCount=0,needsDraw=true,lastDrawAt=0,lastHudUpdate=0;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};
@@ -128,9 +128,11 @@ function mount(){
  canvas.addEventListener("pointerup",finishPointer);canvas.addEventListener("pointercancel",finishPointer);canvas.addEventListener("wheel",e=>{e.preventDefault();cam.zoom=Math.max(.42,Math.min(1.5,cam.zoom*(e.deltaY<0?1.08:.92)));draw()},{passive:false});
  addEventListener("resize",()=>{resize();needsDraw=true;draw()});
  canvas.addEventListener("contextrestored",()=>{ctx=canvas.getContext("2d");if(ctx){rebuildStaticLayer();draw()} });addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
- resize();rebuildStaticLayer();window.MshinCityPerformance={get frames(){return frameCount},get draws(){return drawCount},get staticLayerReady(){return!!staticLayer},get cacheBuilds(){return cacheBuilds}};window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t)};
+ resize();rebuildStaticLayer();window.MshinCityPerformance={get frames(){return frameCount},get draws(){return drawCount},get staticLayerReady(){return!!staticLayer},get cacheBuilds(){return cacheBuilds},get loopActive(){return loopRunning}};window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t)};
  document.documentElement.dataset.cityReady="true";
- function frame(now){frameCount++;const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}needsDraw=true}if(city.tick-lastPersistTick>=6){if(persist(city))lastPersistTick=city.tick}if(needsDraw&&now-lastDrawAt>=50){draw();lastDrawAt=now}raf=requestAnimationFrame(frame)}
- raf=requestAnimationFrame(frame);addEventListener("pagehide",()=>{cancelAnimationFrame(raf);persist(city)},{once:true});
+ function frame(now){if(document.hidden){loopRunning=false;raf=0;return}frameCount++;const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}needsDraw=true}if(city.tick-lastPersistTick>=6){if(persist(city))lastPersistTick=city.tick}if(needsDraw&&now-lastDrawAt>=50){draw();lastDrawAt=now}raf=requestAnimationFrame(frame)}
+ function startLoop(){if(loopRunning||document.hidden)return;loopRunning=true;last=performance.now();raf=requestAnimationFrame(frame)}
+ document.addEventListener("visibilitychange",()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;loopRunning=false;persist(city)}else startLoop()});
+ startLoop();addEventListener("pagehide",()=>{cancelAnimationFrame(raf);raf=0;loopRunning=false;persist(city)},{once:true});
 }
 if(typeof document!=="undefined"){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});else mount()}
