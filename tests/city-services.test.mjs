@@ -34,7 +34,7 @@ test("utility coverage reaches nearby buildings and remains bounded", () => {
 
 test("public safety, health and education coverage contributes to the city service score", () => {
   const city=createInitialCity(603);
-  for(const [x,y,type] of [[16,14,"power"],[14,14,"water"],[16,16,"police"],[14,16,"health"],[16,18,"fire"],[14,18,"education"]]){
+  for(const [x,y,type] of [[16,14,"power"],[14,14,"water"],[16,16,"police"],[14,16,"health"],[18,16,"fire"],[14,20,"education"]]){
     assert.equal(placeCityItem(city,x,y,type).ok,true,type+" should be constructible");
   }
   stepCity(city);
