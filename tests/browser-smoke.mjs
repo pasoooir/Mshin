@@ -531,7 +531,7 @@ try {
         // project both heading and lateral drift onto a look-ahead point.
         // The velocity term damps an outward slide before it reaches the
         // road edge, while the curvature feed-forward follows actual bends.
-        const lookAhead = 360;
+        const lookAhead = 220;
         const predictedLateral = lateral + lookAhead * Math.sin(yaw)
           + lookAhead * lateralVelocity / speed;
         const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
