@@ -275,6 +275,8 @@ try {
   assert.ok(Number.isFinite(uploadMetrics.maxDrawPartMs) && uploadMetrics.maxDrawPartMs < 1500, "individual WebGL draw parts must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isInteger(uploadMetrics.drawPartCount) && uploadMetrics.drawPartCount > 0, "renderer should expose draw-part diagnostics");
   assert.ok(Number.isFinite(uploadMetrics.maxVehicleBuildMs) && uploadMetrics.maxVehicleBuildMs < 1500, "procedural vehicle mesh generation must not stall the game loop: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isFinite(uploadMetrics.maxResizeMs) && uploadMetrics.maxResizeMs < 1500, "WebGL drawing buffer resize must not stall an active frame: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isFinite(uploadMetrics.maxRendererRenderMs) && uploadMetrics.maxRendererRenderMs < 1500, "complete WebGL render work must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
 
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
   console.log("[browser-smoke] MshinPerformance:", JSON.stringify(frameMetrics));
