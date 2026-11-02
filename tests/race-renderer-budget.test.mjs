@@ -120,6 +120,7 @@ test("WebGL pixel acceptance can sample the submitted frame before buffer presen
 });
 
 
+// The selected software profile must be applied before the first framebuffer allocation.
 test("software WebGL devices automatically use a bounded render target and scene profile", () => {
   assert.match(source, /WEBGL_debug_renderer_info/,
     "the renderer should identify CPU-backed WebGL implementations when available");
