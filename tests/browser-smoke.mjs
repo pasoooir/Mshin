@@ -223,6 +223,24 @@ try {
   assert.equal(racePbr.status, "webgl-ready", "race renderer must compile and run its WebGL pipeline");
   assert.equal(racePbr.pipeline, "automotive-pbr-ggx-clearcoat", "live race cars must use the shared automotive PBR shader");
   assert.equal(racePbr.environmentMapReady, true, "live race renderer must have its studio reflection cubemap");
+  const webglCanvasState = await page.locator("#game3d").evaluate(canvas => {
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    const renderer = window.Mshin3DRenderer;
+    return {
+      width: canvas.width, height: canvas.height, context: Boolean(gl),
+      drawingBufferWidth: gl?.drawingBufferWidth ?? 0,
+      drawingBufferHeight: gl?.drawingBufferHeight ?? 0,
+      preserveDrawingBuffer: gl?.getContextAttributes()?.preserveDrawingBuffer ?? null,
+      frames: renderer?.frames ?? 0, triangles: renderer?.triangles ?? 0,
+      glError: gl?.getError() ?? -1
+    };
+  });
+  assert.ok(webglCanvasState.context && webglCanvasState.width > 0 && webglCanvasState.height > 0
+    && webglCanvasState.drawingBufferWidth > 0 && webglCanvasState.drawingBufferHeight > 0,
+    "3D game canvas should have a real WebGL drawing surface: " + JSON.stringify(webglCanvasState));
+  assert.equal(webglCanvasState.preserveDrawingBuffer, false, "production WebGL should retain the non-blocking default-buffer policy");
+  assert.ok(webglCanvasState.frames > 0 && webglCanvasState.triangles > 1000, "3D scene must submit real mesh geometry: " + JSON.stringify(webglCanvasState));
+  assert.equal(webglCanvasState.glError, 0, "3D renderer must not leave a WebGL error: " + JSON.stringify(webglCanvasState));
   const physicsCheck = await page.evaluate(async () => { const p = await import("./src/collision-physics.js"); const a={x:0,y:0,vx:300,vy:0,mass:1200,radius:32},b={x:64,y:0,vx:40,vy:0,mass:1000,radius:32}; const hit=p.resolveVehicleImpact(a,b); const damage=p.createDamageState(); p.applyVehicleDamage(damage,hit.energy,"rear"); return {hit:hit.hit,closing:hit.closingSpeed,rivalVelocity:b.vx,damage:damage.total,level:p.damageLevel(damage)}; });
   assert.equal(physicsCheck.hit,true,"browser should load collision impulse solver");
   assert.ok(physicsCheck.closing>0 && physicsCheck.rivalVelocity>40,"rear impact should transfer momentum");
@@ -334,6 +352,7 @@ try {
     }));
     throw new Error("Accelerator did not increase vehicle speed after WebGL warm-up: " + JSON.stringify(state) + "; " + error.message);
   });
+  await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
   try {
     // Keep accelerating until the player physically reaches a track pickup.
     // Releasing the key after a fixed 2.4s can leave the car short of the first
@@ -370,52 +389,12 @@ try {
   await page.mouse.up();
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "releasing the steering pad should return the control to center");
   assert.match(await steeringPad.getAttribute("aria-label"), /برای چرخیدن به چپ یا راست بکشید و رها کنید/, "steering instructions should be accessible in Persian");
-  // The race renderer intentionally uses preserveDrawingBuffer:false for
-  // production performance. WebGL is allowed to discard the default
-  // framebuffer after compositing, so readPixels()/toDataURL() from a later
-  // animation callback can legally return a uniform buffer even when the
-  // browser has displayed a valid frame. Verify the actual render pipeline
-  // and capture the composited page screenshot instead of reading a discarded
-  // default framebuffer.
-  await page.waitForFunction(() => {
-    const renderer = window.Mshin3DRenderer;
-    return renderer?.status === "webgl-ready" && renderer.frames > 0 && renderer.triangles > 1000;
-  }, undefined, { timeout: 15000 }).catch(async error => {
-    const state = await page.evaluate(() => ({
-      renderer: window.Mshin3DRenderer ?? null,
-      gameState: window.MshinGameState ?? null,
-      canvas: {
-        width: document.querySelector("#game3d")?.width ?? 0,
-        height: document.querySelector("#game3d")?.height ?? 0
-      }
-    }));
-    throw new Error("3D renderer did not submit scene geometry before canvas validation: " + JSON.stringify(state) + "; " + error.message);
-  });
-  const canvasState = await page.locator("#game3d").evaluate(canvas => {
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    const renderer = window.Mshin3DRenderer;
-    return {
-      width: canvas.width,
-      height: canvas.height,
-      context: Boolean(gl),
-      drawingBufferWidth: gl?.drawingBufferWidth ?? 0,
-      drawingBufferHeight: gl?.drawingBufferHeight ?? 0,
-      preserveDrawingBuffer: gl?.getContextAttributes()?.preserveDrawingBuffer ?? null,
-      rendererFrames: renderer?.frames ?? 0,
-      rendererTriangles: renderer?.triangles ?? 0,
-      glError: gl?.getError() ?? -1
-    };
-  });
-  assert.ok(canvasState.context && canvasState.width > 0 && canvasState.height > 0
-    && canvasState.drawingBufferWidth > 0 && canvasState.drawingBufferHeight > 0,
-    "3D game canvas should have a real WebGL drawing surface: " + JSON.stringify(canvasState));
-  assert.equal(canvasState.preserveDrawingBuffer, false,
-    "production WebGL should retain the non-blocking default-buffer policy");
-  assert.ok(canvasState.rendererFrames > 0 && canvasState.rendererTriangles > 1000,
-    "3D scene must submit real mesh geometry on rendered frames: " + JSON.stringify(canvasState));
-  assert.equal(canvasState.glError, 0,
-    "3D renderer must not leave a WebGL error: " + JSON.stringify(canvasState));
-  await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
+  const fallbackCanvasState = await page.locator("#game").evaluate(canvas => ({
+    width: canvas.width, height: canvas.height,
+    context: Boolean(canvas.getContext("2d"))
+  }));
+  assert.ok(fallbackCanvasState.context && fallbackCanvasState.width > 0 && fallbackCanvasState.height > 0,
+    "post-reload 2D gameplay canvas should remain drawable: " + JSON.stringify(fallbackCanvasState));
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
@@ -447,6 +426,7 @@ try {
   mobile.setDefaultNavigationTimeout(60000);
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(mobile, "mobile initial boot");
+  await captureScreenshot(mobile, "artifacts/mshin-home-mobile.png");
   const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
   assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
@@ -516,7 +496,7 @@ try {
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
-  await captureScreenshot(mobile, "artifacts/mshin-gameplay-mobile.png");
+
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
