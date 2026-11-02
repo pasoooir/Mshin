@@ -599,7 +599,10 @@ try {
   await economy.locator("#tab-workshop").click();
   assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "car upgrades should persist after reload");
   await economy.locator("#tab-race").click();
-  await economy.getByRole("button", { name: /توفان کویر/ }).click();
+  // Desert-weather selection was already asserted above. Run the rewarded
+  // finish acceptance on the beginner Green Valley circuit so this scenario
+  // measures race completion and persistence rather than the extra low-grip hazard load.
+  await economy.getByRole("button", { name: /دره سبز/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   const economySteeringPad = await economy.locator("#stick").boundingBox();
