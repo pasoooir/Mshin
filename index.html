@@ -440,6 +440,11 @@ body{font-size:16px}
 @media(prefers-reduced-motion:reduce){#home .panel:before,#select .menuTab{transition:none!important}}
 
 .pedal.is-pressed{transform:translateY(3px) scale(.97);filter:brightness(1.18);box-shadow:0 2px 0 #0008,inset 0 0 0 3px #ffffff55}.nitroButton:active{transform:translateY(2px) scale(.97)}.controls,.controls *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.pedal,.nitroButton,.stick{touch-action:none;-webkit-tap-highlight-color:transparent}
+.stick{width:220px;height:180px;border-radius:68px;border-width:4px}
+.knob{width:66px;height:58px;left:calc(50% - 33px);top:calc(50% - 29px);border-radius:30px}
+.knob:after{line-height:50px;font-size:30px}
+#gyroToggle{min-width:58px;min-height:58px;padding:10px 14px;font-size:22px;border-radius:16px;touch-action:manipulation}
+@media(orientation:portrait){.stick{width:188px;height:150px}.knob{width:62px;height:54px;left:calc(50% - 31px);top:calc(50% - 27px)}.knob:after{line-height:46px}#gyroToggle{min-width:54px;min-height:54px;padding:8px 11px}}
 </style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>\n<canvas id="game3d" aria-label="Three-dimensional Mshin racing scene"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
