@@ -38,12 +38,22 @@
 | SC-ART-001 | Define cohesive city art direction and asset acceptance gates | Art direction | SC-RSH-001 | P1 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Art direction, asset families, plugin-led pipeline and runtime QA criteria documented | 86d52be | #135 |
 | SC-PLG-001 | Produce first city-block/road concept through available design tools | Art/design | SC-ART-001 | P2 | ⬜ شروع‌نشده | — | — | Saved source design, exported references, in-engine review | — | — |
 
+### Design package created (documentation only; 0% gameplay completion)
+- `SIMS_CITY_GAME_DESIGN_DOCUMENT.md`
+- `SIMS_CITY_FEATURE_MATRIX.md`
+- `SIMS_CITY_TECHNICAL_ARCHITECTURE.md`
+- `SIMS_CITY_GAMEPLAY_SYSTEMS.md`
+- `SIMS_CITY_ART_DIRECTION.md`
+- `SIMS_CITY_PERFORMANCE_STRATEGY.md`
+- `SIMS_CITY_ASSET_PIPELINE.md`
+- Research synthesis is in the Game Design Document; the first plugin-authored city-block concept remains pending.
+
 ## Phase 2 — Existing-game stabilization
 
 | ID | Task | Owner | Dependencies | Priority | Status | Start | Complete | Test / evidence | Commit | PR |
 |---|---|---|---|---|---|---|---|---|---|---|
-| SC-QA-001 | Profile and fix the single-frame 5.3-second draw stall | Runtime/performance | SC-AUD-004 | P0 | 🔴 شکست‌خورده یا مسدود | 2026-11-02 | — | Latest browser smoke fails at line 260; telemetry isolates draw/loop spike but exact GPU/render cause is not yet proven | — | — |
-| SC-QA-002 | Review PR #132 and its CI/diff; preserve current driving controls | Gameplay/QA | SC-QA-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Core validation passed; browser smoke failed on head SHA 5bf91e4 | — | #132 |
+| SC-QA-001 | Profile and fix the single-frame 5.3-second draw stall | Runtime/performance | SC-AUD-004 | P0 | 🟡 در حال اجرا | 2026-11-02 | — | Root cause isolated in renderer: late crowd/billboard/rail meshes bypassed the bounded upload queue; fix and regression test submitted, CI running | dd561dc | #136 |
+| SC-QA-002 | Review PR #132 and its CI/diff; preserve current driving controls | Gameplay/QA | SC-QA-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Core validation passed; browser smoke failed on head SHA 5bf91e4; renderer fix is now under PR #136 | — | #132 / #136 |
 | SC-QA-003 | Review stacked open PR dependency graph and test evidence | Technical lead | SC-AUD-004 | P1 | ⬜ شروع‌نشده | — | — | Per-PR diff, base/head, checks and review state | — | — |
 
 ## Phase 3 — Sims City vertical slice (not yet implemented)
