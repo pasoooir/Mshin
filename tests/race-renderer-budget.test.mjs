@@ -102,11 +102,14 @@ test("procedural vehicle mesh construction exposes its synchronous cost", () => 
 });
 
 
-test("the full WebGL drawing buffer is sized before the first gameplay frame", () => {
-  const initialSize = source.indexOf("canvas.width=initialWidth;canvas.height=initialHeight");
+test("the WebGL drawing buffer is allocated after the GPU profile is known", () => {
   const contextCreation = source.indexOf("gl=canvas.getContext");
-  assert.ok(initialSize >= 0 && contextCreation > initialSize,
-    "the first full-resolution drawing buffer must be allocated before the renderer enters the game loop");
+  const profileDetection = source.indexOf("softwareRenderer=/swiftshader");
+  const bufferAllocation = source.indexOf("resize();", profileDetection);
+  assert.ok(contextCreation >= 0 && profileDetection > contextCreation && bufferAllocation > profileDetection,
+    "the renderer must identify the GPU and select its quality profile before allocating the drawing buffer");
+  assert.equal(source.includes("canvas.width=initialWidth;canvas.height=initialHeight"), false,
+    "initialization must not allocate a full-resolution drawing buffer before GPU profiling");
 });
 
 
