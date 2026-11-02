@@ -1,6 +1,6 @@
 const THREE_CDN="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 export async function createCityThreeRenderer(sourceCanvas){
- const THREE=await import(THREE_CDN);
+ let THREE;try{THREE=await import(THREE_CDN)}catch{THREE=await import("https://unpkg.com/three@0.180.0/build/three.module.js")}
  const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight,false);
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
