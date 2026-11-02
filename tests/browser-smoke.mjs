@@ -540,6 +540,7 @@ try {
   await mobile.close();
   await page.goto("about:blank");
 
+  activePhase = "economy progression, AI driver and rewarded race";
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // Bring the page forward and explicitly reactivate its lifecycle before the
@@ -740,6 +741,7 @@ try {
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
 
+  activePhase = "service-worker, cache and offline PWA acceptance";
   // Re-enter the original origin after releasing its earlier WebGL scene.
   // Service-worker registration and Cache Storage belong to the browser
   // context, not the old document, and remain available across this navigation.
