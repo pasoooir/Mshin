@@ -516,8 +516,6 @@ try {
   // Telemetry is sampled every 30 simulation frames. Never hold full brake
   // based on a stale speed sample: use short, bounded pulses with a cooldown.
   // This keeps the economy race moving while preserving the real brake input.
-  let economyBrakeUntil = 0;
-  let economyBrakeCooldownUntil = 0;
   try {
     while (Date.now() < raceDeadline) {
       const finishStatus = await economy.evaluate(() => ({
@@ -530,37 +528,28 @@ try {
       }
       const controls = await economy.evaluate(() => {
         const telemetry = window.MshinPerformance;
-        if (!telemetry || !Number.isFinite(telemetry.playerTrackT)) return { steering: 0, brake: false };
+        if (!telemetry || !Number.isFinite(telemetry.playerTrackT)) return { steering: 0 };
         const lateral = Number(telemetry.playerLateral) || 0;
         const lateralVelocity = Number(telemetry.playerLateralVelocity) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
         const speed = Math.max(60, Number(telemetry.playerSpeed) || 0);
         const trackCurvature = Number(telemetry.playerTrackCurvature) || 0;
-        // Pure-pursuit path tracking: compensate for road curvature and
-        // project both heading and lateral drift onto a look-ahead point.
-        // The velocity term damps an outward slide before it reaches the
-        // road edge, while the curvature feed-forward follows actual bends.
+        // Pure-pursuit path tracking follows the track centerline. Keep the
+        // smoke driver on throttle-only input: braking is not needed for this
+        // broad test circuit and can latch across sparse browser input frames.
         const lookAhead = 520;
         const predictedLateral = lateral + lookAhead * Math.sin(yaw)
           + lookAhead * lateralVelocity / speed;
         const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
         const targetCurvature = trackCurvature + correctionCurvature;
         const steering = Math.max(-.78, Math.min(.78, Math.atan(80 * targetCurvature) / .55));
-        return { steering, speed };
+        return { steering };
       });
-      const now = Date.now();
-      if (controls.speed > 330 && now >= economyBrakeCooldownUntil && now >= economyBrakeUntil) {
-        economyBrakeUntil = now + 55;
-        economyBrakeCooldownUntil = now + 800;
-      }
-      const economyBrakeActive = now < economyBrakeUntil;
       const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
       await economy.mouse.move(
         steeringCenter.x + pointerSteering * steeringLimit,
         steeringCenter.y
       );
-      if (economyBrakeActive) await economy.keyboard.down("ArrowDown");
-      else await economy.keyboard.up("ArrowDown");
       await economy.waitForTimeout(70);
     }
     const completed = await economy.evaluate(() => /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent));
@@ -584,7 +573,6 @@ try {
   } finally {
     await economy.mouse.up();
     await economy.keyboard.up("ArrowUp");
-    await economy.keyboard.up("ArrowDown");
   }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
