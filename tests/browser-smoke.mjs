@@ -509,6 +509,10 @@ try {
   await economy.mouse.move(steeringCenter.x, steeringCenter.y);
   await economy.mouse.down();
   const raceDeadline = Date.now() + 120000;
+  // Telemetry is sampled every 30 simulation frames. Use short brake pulses
+  // so a stale high-speed sample cannot hold full braking until the car stops.
+  let economyBrakeUntil = 0;
+  let economyBrakeCooldownUntil = 0;
   try {
     while (Date.now() < raceDeadline) {
       const finishStatus = await economy.evaluate(() => ({
@@ -540,16 +544,22 @@ try {
           - yaw * .65
           - Math.atan2(lateralVelocity, Math.max(80, speed)) * .45;
         const steering = Math.max(-.92, Math.min(.92, roadWheelAngle / .48));
-        return { steering, brake: speed > 245 };
+        return { steering, speed };
       });
       // The desktop steering pad maps positive pointer X to positive tire steer.
       // Keep the controller sign unchanged so lateral recovery turns back toward road centre.
+      const now = Date.now();
+      if (controls.speed > 265 && now >= economyBrakeCooldownUntil && now >= economyBrakeUntil) {
+        economyBrakeUntil = now + 85;
+        economyBrakeCooldownUntil = now + 520;
+      }
+      const economyBrakeActive = now < economyBrakeUntil;
       const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
       await economy.mouse.move(
         steeringCenter.x + pointerSteering * steeringLimit,
         steeringCenter.y
       );
-      if (controls.brake) await economy.keyboard.down("ArrowDown");
+      if (economyBrakeActive) await economy.keyboard.down("ArrowDown");
       else await economy.keyboard.up("ArrowDown");
       await economy.waitForTimeout(70);
     }
