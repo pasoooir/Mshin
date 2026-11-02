@@ -376,3 +376,8 @@ Therefore, the repository proves that Cocos scripts exist, but it does **not** c
 
 This also identifies a concrete project-integrity gap: if Cocos Creator is intended to be a supported production target, add the actual project metadata, scene assets, UUID/meta files and an automated Creator build/scene validation workflow. If it is not intended to ship, archive it only after confirming no active contributor depends on it; do not silently delete it.
 
+
+
+## Phase 1 tooling update — dependency audit command
+
+A repository-local scanner is now available as `npm run analyze:architecture` (`scripts/analyze-module-boundaries.mjs`). It inventories JavaScript/TypeScript source files, records the browser entry-point references from `index.html` and `city.html`, extracts relative runtime imports from `src/**` and `assets/scripts/**`, highlights cross-domain edges, and ranks the largest source modules by byte size. Use `npm run analyze:architecture -- --write` to generate `docs/architecture-dependency-map.json` for review. The scanner is intentionally read-only unless `--write` is supplied; it does not move files or alter runtime behavior. Its output is an audit input, not proof that dynamic imports, HTML-generated globals, service-worker dependencies, Cocos serialized references, or runtime-loaded assets have all been discovered. Those still require explicit review.
