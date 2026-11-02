@@ -384,23 +384,13 @@ try {
       resolve(Boolean(current && current.stageId === stageId && current.trackBuildProgress >= 1));
     })));
   }, undefined, { timeout: 30000 });
-  const frameBeforeReadback = await page.evaluate(() => window.Mshin3DRenderer?.frames ?? 0);
-  await page.waitForFunction(previousFrame => (window.Mshin3DRenderer?.frames ?? 0) > previousFrame, frameBeforeReadback, { timeout: 5000 });
-  const canvasState = await page.locator("#game3d").evaluate(canvas => {
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) return { width: canvas.width, height: canvas.height, visiblePixels: 0, pixelBytes: 0, context: false };
-    gl.finish();
-    const width = canvas.width, height = canvas.height;
-    const pixels = new Uint8Array(width * height * 4);
-    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    let visible = 0;
-    const colors = new Set();
-    for (let i = 0; i < pixels.length; i += 4 * 16) {
-      if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 24) visible++;
-      colors.add((pixels[i] >> 4) + ":" + (pixels[i + 1] >> 4) + ":" + (pixels[i + 2] >> 4));
-    }
-    return { width, height, visiblePixels: visible, uniqueColors: colors.size, pixelBytes: pixels.byteLength, context: true, glError: gl.getError() };
+  await page.evaluate(() => {
+    if (!window.Mshin3DRenderer) throw new Error("3D renderer diagnostics are not available");
+    window.Mshin3DRenderer.lastFramePixelSample = null;
+    window.Mshin3DRenderer.captureNextFrameSample = true;
   });
+  await page.waitForFunction(() => window.Mshin3DRenderer?.lastFramePixelSample?.pixelBytes > 0, undefined, { timeout: 5000 });
+  const canvasState = await page.evaluate(() => window.Mshin3DRenderer.lastFramePixelSample);
   assert.ok(canvasState.context && canvasState.width > 0 && canvasState.height > 0, "3D game canvas should have a real WebGL drawing surface");
   assert.ok(canvasState.visiblePixels > 100, "3D game canvas should contain visible rendered pixels: " + JSON.stringify(canvasState));
   assert.ok(canvasState.uniqueColors > 6, "3D scene must contain actual mesh color variation, not only the clear-color background: " + JSON.stringify(canvasState));
