@@ -18,5 +18,5 @@ test("race environment builds a complete local 3D roadside scene", async () => {
     "petCount=mobile?3:9"
   ]) assert.ok(source.includes(budget), "missing mobile/desktop scene budget: " + budget);
   assert.ok(source.includes("sphere(skyTris,0,0,0,5600,3000,5600"));
-  assert.ok(source.includes("box(trees,x,base+19,z,8,38,8)"));
+  assert.ok(source.includes("box(treeTrunks,x,base+19,z,8,38,8)"));assert.ok(source.includes("treeFoliage.push(...foliage)"));
 });
