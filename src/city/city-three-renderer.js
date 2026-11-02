@@ -155,6 +155,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const curbs = new THREE.InstancedMesh(curbGeometry, curbMaterial, Math.max(1, curbInstances.length));
   curbInstances.forEach((v, i) => {
     dummy.position.set(v.x, 0.13, v.z);
+    dummy.rotation.set(0, 0, 0);
     dummy.scale.set(v.sx, 1, v.sz);
     dummy.updateMatrix();
     curbs.setMatrixAt(i, dummy.matrix);
