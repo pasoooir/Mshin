@@ -308,7 +308,7 @@ function getRaceStandings(){
  const playerFinished=race.playerFinishTime!==null;
  const rows=[{id:"player",player:true,name:"راننده شما",progress:playerFinished?Math.PI*6:race.laps*Math.PI*2+car.t,elapsed:race.elapsed,finishTime:race.playerFinishTime,finished:playerFinished,vehicle:null}];
  const names=["RIVAL ALPHA","RIVAL BRAVO","RIVAL CHARLIE","RIVAL DELTA"];
- for(const rival of rivals){if(rival.id>=4)continue;rows.push({id:"rival-"+rival.id,player:false,name:names[rival.id]||("RIVAL "+(rival.id+1)),progress:rival.finishTime!==null?Math.PI*6:(rival.totalProgress??rival.distance),elapsed:rival.timerElapsed||0,finishTime:rival.finishTime??null,finished:rival.finishTime!==null,vehicle:rival});}
+ for(const rival of rivals){if(rival.id>=4||rival.destruction?.despawned)continue;rows.push({id:"rival-"+rival.id,player:false,name:names[rival.id]||("RIVAL "+(rival.id+1)),progress:rival.finishTime!==null?Math.PI*6:(rival.totalProgress??rival.distance),elapsed:rival.timerElapsed||0,finishTime:rival.finishTime??null,finished:rival.finishTime!==null,vehicle:rival});}
  rows.sort((a,b)=>{if(a.finishTime!==null&&b.finishTime!==null)return a.finishTime-b.finishTime;if(a.finishTime!==null)return -1;if(b.finishTime!==null)return 1;return b.progress-a.progress||String(a.id).localeCompare(String(b.id));});
  rows.forEach((row,index)=>{row.rank=index+1;if(row.vehicle)row.vehicle.rank=row.rank;});
  window.MshinRaceStandings=rows.map(({id,player,name,progress,elapsed,finishTime,finished,rank})=>({id,player,name,progress,elapsed,finishTime,finished,rank}));
