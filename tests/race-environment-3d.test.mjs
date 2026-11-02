@@ -11,10 +11,10 @@ test("race environment builds a complete local 3D roadside scene", async () => {
     "state.environmentCounts"
   ]) assert.ok(source.includes(feature), "missing environment feature: " + feature);
   for (const budget of [
-    "treeCount=mobile?18:48",
+    "treeCount=mobile?18:softwareRenderer?22:48",
     "buildingCount=mobile?8:22",
     "shopCount=mobile?3:7",
-    "spectatorCount=mobile?10:36",
+    "spectatorCount=mobile?10:softwareRenderer?14:36",
     "petCount=mobile?3:9"
   ]) assert.ok(source.includes(budget), "missing mobile/desktop scene budget: " + budget);
   assert.ok(source.includes("sphere(skyTris,0,0,0,5600,3000,5600"));
