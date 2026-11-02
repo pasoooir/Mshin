@@ -24,3 +24,11 @@ test("gyro steering has a dead zone and saturates smoothly", () => {
   assert.equal(tiltToSteer(90), 1);
   assert.equal(tiltToSteer(-90), -1);
 });
+
+
+test("gyro steering remains bounded and responds strongly to small calibrated tilts", () => {
+  assert.ok(tiltToSteer(6, 1.45) > tiltToSteer(6, 1));
+  assert.ok(tiltToSteer(-6, 1.45) < tiltToSteer(-6, 1));
+  assert.equal(tiltToSteer(90, 1.45), 1);
+  assert.equal(tiltToSteer(-90, 1.45), -1);
+});
