@@ -248,9 +248,21 @@ try {
   assert.equal(rigidCheck.angular,true,"off-centre browser collision should preserve finite angular response");
   assert.equal(rigidCheck.swept,true,"swept collision should detect fast body traversal");
 
-  const uploadMetrics = await page.evaluate(() => ({ maxMeshUploadMs: window.Mshin3DRenderer?.maxMeshUploadMs, meshUploadCount: window.Mshin3DRenderer?.meshUploadCount }));
+  const uploadMetrics = await page.evaluate(() => ({
+    maxMeshUploadMs: window.Mshin3DRenderer?.maxMeshUploadMs,
+    meshUploadCount: window.Mshin3DRenderer?.meshUploadCount,
+    maxTrackBuildStepMs: window.Mshin3DRenderer?.maxTrackBuildStepMs,
+    lastTrackBuildStepMs: window.Mshin3DRenderer?.lastTrackBuildStepMs,
+    maxDrawPartMs: window.Mshin3DRenderer?.maxDrawPartMs,
+    drawPartCount: window.Mshin3DRenderer?.drawPartCount,
+    lastTrackBuildProgress: window.Mshin3DRenderer?.lastTrackBuildProgress
+  }));
+  console.log("[browser-smoke] RendererDiagnostics:", JSON.stringify(uploadMetrics));
   assert.ok(Number.isFinite(uploadMetrics.maxMeshUploadMs) && uploadMetrics.maxMeshUploadMs < 1500, "individual WebGL mesh uploads must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isInteger(uploadMetrics.meshUploadCount) && uploadMetrics.meshUploadCount > 0, "renderer should expose completed mesh-upload diagnostics");
+  assert.ok(Number.isFinite(uploadMetrics.maxTrackBuildStepMs) && uploadMetrics.maxTrackBuildStepMs < 1500, "individual track construction steps must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isFinite(uploadMetrics.maxDrawPartMs) && uploadMetrics.maxDrawPartMs < 1500, "individual WebGL draw parts must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isInteger(uploadMetrics.drawPartCount) && uploadMetrics.drawPartCount > 0, "renderer should expose draw-part diagnostics");
 
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
   console.log("[browser-smoke] MshinPerformance:", JSON.stringify(frameMetrics));
