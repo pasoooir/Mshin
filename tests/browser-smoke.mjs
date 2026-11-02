@@ -238,13 +238,21 @@ try {
   assert.equal(rigidCheck.angular,true,"off-centre browser collision should preserve finite angular response");
   assert.equal(rigidCheck.swept,true,"swept collision should detect fast body traversal");
 
-  // SwiftShader can spend several seconds compiling the first WebGL race
-  // shader. Exclude only the single worst sample from the steady-state mean;
-  // p95 and slowFrameCount still catch recurring frame stalls.
+  // SwiftShader may block the first WebGL draw while compiling its shader.
+  // Wait for that one-time initialization sample to age out of the rolling
+  // telemetry window; recurring stalls keep maxFrameMs/slowFrameCount high
+  // and therefore fail this bounded warm-up instead of being excused.
+  await page.waitForFunction(() => {
+    const metrics = window.MshinPerformance;
+    return metrics && metrics.samples >= 120
+      && Number.isFinite(metrics.maxFrameMs)
+      && metrics.maxFrameMs < 1500
+      && metrics.slowFrameCount === 0;
+  }, undefined, { timeout: 45000 }).catch(async error => {
+    const metrics = await page.evaluate(() => window.MshinPerformance ?? null);
+    throw new Error("WebGL renderer did not reach a stable 120-sample performance window after shader warm-up: " + JSON.stringify(metrics) + "; " + error.message);
+  });
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
-  const steadyStateAverageMs = frameMetrics.samples > 1
-    ? (frameMetrics.avgFrameMs * frameMetrics.samples - frameMetrics.maxFrameMs) / (frameMetrics.samples - 1)
-    : frameMetrics.avgFrameMs;
   console.log("[browser-smoke] MshinPerformance:", JSON.stringify(frameMetrics));
   for (const key of ["maxUpdateCostMs", "maxAudioCostMs", "maxDrawCostMs", "maxLoopCostMs"]) {
     assert.ok(Number.isFinite(frameMetrics[key]) && frameMetrics[key] >= 0, "performance telemetry should expose finite " + key + ": " + JSON.stringify(frameMetrics));
@@ -253,7 +261,7 @@ try {
   assert.ok(frameMetrics.samples >= 30, "race loop should publish rolling frame-time samples");
   assert.ok(Number.isFinite(steadyStateAverageMs) && steadyStateAverageMs < 50, "steady-state game JS frame work should stay below 50ms after excluding one shader initialization sample: " + JSON.stringify({steadyStateAverageMs,frameMetrics}));
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
-  assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 8000, "game loop must not stall repeatedly or exceed the bounded one-time SwiftShader shader initialization allowance: " + JSON.stringify(frameMetrics));
+  assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 1500, "steady-state game loop must not stall for multiple seconds: " + JSON.stringify(frameMetrics));
   assert.ok(Number.isInteger(frameMetrics.slowFrameCount) && frameMetrics.slowFrameCount <= 1, "at most one isolated scheduler/initialization spike above 200ms is tolerated; repeated long frames must fail: " + JSON.stringify(frameMetrics));
   assert.equal(frameMetrics.trackCacheBuilds, 0, "the WebGL race path must not build or redraw the legacy 2D track cache");
   assert.equal(frameMetrics.trackRadiusX, 1180, "race should use a large world-space circuit instead of a compact loop");
