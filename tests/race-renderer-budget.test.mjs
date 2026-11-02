@@ -6,7 +6,7 @@ const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.
 
 test("procedural 3D scene stays within a bounded first-build geometry budget", () => {
   assert.ok(source.includes("const segments=mobile?280:760,half=180;"),
-    "desktop track tessellation is capped at 240 segments");
+    "desktop track tessellation is capped at 760 segments");
   assert.ok(source.includes("i<(mobile?54:144);i++"),
     "desktop tree instances are capped at 48");
   assert.ok(source.includes("i+=(mobile?18:6)"),
