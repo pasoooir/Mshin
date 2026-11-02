@@ -1,5 +1,6 @@
 import { CITY_ZONES, placeCityZone, developCityZones, isCityZoneCell } from "./city-zoning.js";
-const SIZE=32,KEY="mshin-city-save-v1",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650};
+import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
+const SIZE=32,KEY="mshin-city-save-v1",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
 const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b)&&g[y+b][x+a]==="road");
@@ -23,12 +24,13 @@ export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==1||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
  city.tick++;city.minuteOfDay=(city.minuteOfDay+10)%1440;
  if(city.tick%12===0)developCityZones(city);
+ const infrastructure=computeCityServices(city);
  const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
  const income=Math.round(homes.length*13+shops.length*46+industrial.length*72+administrative.length*28+services.length*8),expenses=Math.round(services.length*31+parks.length*7+industrial.length*24+administrative.length*12+city.buildings.length*2);
- city.stats={income,expenses,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2))};
- city.treasury+=income-expenses;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
- const coverage=Math.min(1,services.length/Math.max(1,Math.ceil(city.buildings.length/12)));
- city.happiness=Math.max(25,Math.min(98,city.happiness+(coverage>.5?.2:-.08)+(parks.length>2?.05:0)));
+ city.stats={income,expenses:expenses+infrastructure.upkeep,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage};
+ city.treasury+=income-expenses-infrastructure.upkeep;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
+ const serviceScore=(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
+ city.happiness=Math.max(25,Math.min(98,city.happiness+(serviceScore-.35)*.08+(parks.length>2?.05:0)));
  for(const p of city.citizens){p.phase+=p.pace*seconds;p.x+=Math.cos(p.phase)*.012;p.y+=Math.sin(p.phase)*.009;if(p.x<7||p.x>24)p.phase=Math.PI-p.phase;if(p.y<7||p.y>24)p.phase=-p.phase;p.x=Math.max(7,Math.min(24,p.x));p.y=Math.max(7,Math.min(24,p.y))}
  for(const v of city.traffic){v.x+=v.speed*seconds*.24;if(v.x>SIZE+1)v.x=-1}
  for(const a of city.animals||[]){a.phase+=a.pace*seconds;a.x+=Math.cos(a.phase)*.009;a.y+=Math.sin(a.phase)*.007;a.x=Math.max(8,Math.min(25,a.x));a.y=Math.max(8,Math.min(25,a.y))}
@@ -65,22 +67,23 @@ function mount(){
  if(type==="water"){ctx.fillStyle="#c5f3f766";ctx.beginPath();ctx.ellipse(p.x-3,p.y-2,5,1.6,-.25,0,6.28);ctx.fill()}
  }
  function building(b){const p=tilePoint(b.x,b.y),t=b.type;if(t==="park"){ctx.fillStyle="#244b3155";ctx.beginPath();ctx.ellipse(p.x+1,p.y+2,14,5,0,0,6.28);ctx.fill();ctx.fillStyle="#3c7d48";ctx.beginPath();ctx.arc(p.x,p.y-8,7,0,6.28);ctx.fill();ctx.fillStyle="#82b76c";ctx.beginPath();ctx.arc(p.x-2,p.y-11,4,0,6.28);ctx.fill();ctx.fillStyle="#806a4b";ctx.fillRect(p.x-1,p.y-7,2,9);return}
- const h=t==="home"?22+b.level*8:t==="shop"?27+b.level*5:t==="industrial"?42:t==="administrative"?40:35,w=t==="industrial"?22:18,d=10,top=p.y-h;
+ const service=CITY_SERVICE_TYPES[t],h=t==="home"?22+b.level*8:t==="shop"?27+b.level*5:t==="industrial"?42:t==="administrative"?40:service?38:35,w=t==="industrial"||t==="education"?22:18,d=10,top=p.y-h;
  ctx.fillStyle="#1a2c2b44";ctx.beginPath();ctx.ellipse(p.x+2,p.y+4,16,6,0,0,6.28);ctx.fill();
- poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top+d},{x:p.x,y:p.y+d/2},{x:p.x-w/2,y:p.y}],t==="home"?"#d9a978":t==="shop"?"#5b9eaa":t==="industrial"?"#89949d":t==="administrative"?"#9b8ac2":"#b9c9d8","#253c4933");
- poly([{x:p.x,y:top+d},{x:p.x+w/2,y:top+d/2},{x:p.x+w/2,y:p.y},{x:p.x,y:p.y+d/2}],t==="home"?"#a97759":t==="shop"?"#3f7888":t==="industrial"?"#59636d":t==="administrative"?"#76669c":"#849bae","#253c4933");
- poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top},{x:p.x+w/2,y:top+d/2},{x:p.x,y:top+d}],t==="home"?"#e8c68b":t==="shop"?"#7fc1c0":t==="industrial"?"#b9c3ca":t==="administrative"?"#c8b9e7":"#d8e2ed","#ffffff55");
+ poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top+d},{x:p.x,y:p.y+d/2},{x:p.x-w/2,y:p.y}],t==="home"?"#d9a978":t==="shop"?"#5b9eaa":t==="industrial"?"#89949d":t==="administrative"?"#9b8ac2":service?service.color:"#b9c9d8","#253c4933");
+ poly([{x:p.x,y:top+d},{x:p.x+w/2,y:top+d/2},{x:p.x+w/2,y:p.y},{x:p.x,y:p.y+d/2}],t==="home"?"#a97759":t==="shop"?"#3f7888":t==="industrial"?"#59636d":t==="administrative"?"#76669c":service?service.color:"#849bae","#253c4933");
+ poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top},{x:p.x+w/2,y:top+d/2},{x:p.x,y:top+d}],t==="home"?"#e8c68b":t==="shop"?"#7fc1c0":t==="industrial"?"#b9c3ca":t==="administrative"?"#c8b9e7":service?service.color:"#d8e2ed","#ffffff55");
  if(t==="service"){ctx.fillStyle="#d34d4d";ctx.fillRect(p.x-2,top+5,4,15);ctx.fillRect(p.x-7,top+10,14,4)}
  else{const rows=t==="home"?2:t==="industrial"?3:t==="administrative"?2:1,cols=t==="industrial"?3:2;for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){ctx.fillStyle="#d8f5f2";ctx.fillRect(p.x-w/2+4+col*6,top+7+row*9,3.2,4.5)}}
  if(t==="shop"){ctx.fillStyle="#f4d27a";ctx.fillRect(p.x-7,top+d+2,14,4)}
  if(t==="industrial"){ctx.fillStyle="#4c5860";ctx.fillRect(p.x+5,top-13,5,16);ctx.fillStyle="#b6c1c8";ctx.beginPath();ctx.arc(p.x+7,top-16,4,0,6.28);ctx.fill()}
  if(t==="administrative"){ctx.fillStyle="#d7c7ee";ctx.fillRect(p.x-1,top-10,2,11);ctx.fillStyle="#d7a96d";ctx.fillRect(p.x+1,top-10,7,4)}
+ if(service){ctx.fillStyle="#172b3d";ctx.font="1000 12px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";const glyph={power:"⚡",water:"💧",sewage:"≈",waste:"♻",police:"★",fire:"✚",health:"+",education:"▤"}[t]||"●";ctx.fillText(glyph,p.x,top+18)}
  }
  function tree(t){const p=tilePoint(t.x,t.y),s=t.size;ctx.fillStyle="#233d2e55";ctx.beginPath();ctx.ellipse(p.x+2,p.y+3,7*s,3*s,0,0,6.28);ctx.fill();ctx.fillStyle="#74583b";ctx.fillRect(p.x-1.5,p.y-9*s,3,10*s);ctx.fillStyle="#36774b";ctx.beginPath();ctx.arc(p.x,p.y-12*s,7*s,0,6.28);ctx.fill();ctx.fillStyle="#65a85d";ctx.beginPath();ctx.arc(p.x-2*s,p.y-15*s,4*s,0,6.28);ctx.fill()}
  function people(){for(const p of city.citizens){const q=tilePoint(p.x,p.y);ctx.fillStyle="#25364b55";ctx.beginPath();ctx.ellipse(q.x,q.y+2,2.8,1.4,0,0,6.28);ctx.fill();ctx.fillStyle=p.id%3===0?"#e9c56b":p.id%3===1?"#e7edf2":"#d98b75";ctx.beginPath();ctx.arc(q.x,q.y-4,2.1,0,6.28);ctx.fill();ctx.strokeStyle="#f5dfbd";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(q.x,q.y-2);ctx.lineTo(q.x,q.y+1);ctx.stroke()}}
  function cars(){for(const v of city.traffic){const p=tilePoint(v.x,v.y);ctx.save();ctx.translate(p.x,p.y-1);ctx.fillStyle="#1a2635aa";ctx.beginPath();ctx.ellipse(0,3,7,2.8,0,0,6.28);ctx.fill();ctx.fillStyle=v.color;ctx.beginPath();ctx.roundRect(-6,-4,12,7,2);ctx.fill();ctx.fillStyle="#d8efff";ctx.beginPath();ctx.roundRect(-3.5,-3,5,3,1);ctx.fill();ctx.restore()}}
  function animals(){for(const a of city.animals||[]){const p=tilePoint(a.x,a.y);ctx.save();ctx.translate(p.x,p.y);if(a.type==="bird"){ctx.strokeStyle="#eaf4dc";ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(-2,-2,3,Math.PI,Math.PI*1.85);ctx.arc(2,-2,3,Math.PI*1.15,Math.PI*2);ctx.stroke()}else{ctx.fillStyle=a.type==="cat"?"#d9b28a":"#b7c2ca";ctx.beginPath();ctx.ellipse(0,-2,4.2,2.8,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(-2,-5,1.8,0,6.28);ctx.arc(2,-5,1.8,0,6.28);ctx.fill();ctx.strokeStyle="#f4e7d6";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(3,0);ctx.lineTo(6,-2);ctx.stroke()}ctx.restore()}}
- function toolName(){return({select:"انتخاب",road:"خیابان",home:"مسکونی",shop:"تجاری",industrial:"صنعتی",administrative:"اداری",service:"خدمات",park:"پارک","zone-residential":"زون مسکونی","zone-commercial":"زون تجاری","zone-industrial":"زون صنعتی","zone-administrative":"زون اداری","zone-recreational":"زون تفریحی",bulldoze:"تخریب"})[tool]||tool}
+ function toolName(){return({select:"انتخاب",road:"خیابان",home:"مسکونی",shop:"تجاری",industrial:"صنعتی",administrative:"اداری",service:"خدمات",park:"پارک",power:"برق",water:"آب",sewage:"فاضلاب",waste:"پسماند",police:"پلیس",fire:"آتش‌نشانی",health:"درمان",education:"آموزش","zone-residential":"زون مسکونی","zone-commercial":"زون تجاری","zone-industrial":"زون صنعتی","zone-administrative":"زون اداری","zone-recreational":"زون تفریحی",bulldoze:"تخریب"})[tool]||tool}
  function draw(){
   ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
   const sky=ctx.createLinearGradient(0,0,0,view.h);sky.addColorStop(0,"#a7cbd1");sky.addColorStop(.52,"#c9d8c0");sky.addColorStop(1,"#718c75");ctx.fillStyle=sky;ctx.fillRect(0,0,view.w,view.h);
@@ -88,9 +91,9 @@ function mount(){
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)ground(x,y,city.grid[y][x]);
   [...city.trees.map(t=>({d:t.x+t.y,draw:()=>tree(t)})),...city.buildings.map(b=>({d:b.x+b.y,draw:()=>building(b)}))].sort((a,b)=>a.d-b.d).forEach(v=>v.draw());
   cars();people();animals();if(selected){const p=tilePoint(selected.x,selected.y);ctx.strokeStyle="#fff1a6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y-8);ctx.lineTo(p.x+16,p.y);ctx.lineTo(p.x,p.y+8);ctx.lineTo(p.x-16,p.y);ctx.closePath();ctx.stroke()}ctx.restore();
-  $("cityPopulation").textContent=city.population.toLocaleString("fa-IR");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("fa-IR")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("fa-IR");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("fa-IR")+"٪";
+  $("cityPopulation").textContent=city.population.toLocaleString("fa-IR");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("fa-IR")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("fa-IR");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("fa-IR")+"٪";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"٪";
   $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="روز "+(1+Math.floor(city.tick/144)).toLocaleString("fa-IR");
-  $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را انتخاب کن.":"ابزار فعال: "+toolName();$("cityBudgetHint").textContent="درآمد +"+city.stats.income.toLocaleString("fa-IR")+" · هزینه -"+city.stats.expenses.toLocaleString("fa-IR");$("citySaveState").textContent=toastFrames>0?"ذخیره شد ✓":"ذخیره محلی";if(toastFrames>0)toastFrames--;
+  $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را انتخاب کن.":"ابزار فعال: "+toolName();$("cityBudgetHint").textContent="درآمد +"+city.stats.income.toLocaleString("fa-IR")+" · هزینه -"+city.stats.expenses.toLocaleString("fa-IR")+" · زیرساخت "+(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"٪";$("citySaveState").textContent=toastFrames>0?"ذخیره شد ✓":"ذخیره محلی";if(toastFrames>0)toastFrames--;
  }
  function setTool(next){tool=next;document.querySelectorAll("[data-city-tool]").forEach(b=>{const active=b.dataset.cityTool===tool;b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active))});canvas.style.cursor=tool==="select"?"grab":"crosshair";draw()}
  function apply(x,y){
