@@ -78,7 +78,7 @@ function mount(){
   $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="روز "+(1+Math.floor(city.tick/144)).toLocaleString("fa-IR");
   $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را انتخاب کن.":"ابزار فعال: "+toolName();$("cityBudgetHint").textContent="درآمد +"+city.stats.income.toLocaleString("fa-IR")+" · هزینه -"+city.stats.expenses.toLocaleString("fa-IR")+" · زیرساخت "+(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"٪";$("citySaveState").textContent=toastFrames>0?"ذخیره شد ✓":"ذخیره محلی";if(toastFrames>0)toastFrames--;
  }
- function draw(){if(threeRenderer){threeRenderer.render(city,view,cam);hud();return}
+ function draw(){if(threeRenderer){threeRenderer.render(city,view,cam);window.MshinCity3DStats=threeRenderer.getStats();hud();return}
 
   ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
   const sky=ctx.createLinearGradient(0,0,0,view.h);sky.addColorStop(0,"#a7cbd1");sky.addColorStop(.52,"#c9d8c0");sky.addColorStop(1,"#718c75");ctx.fillStyle=sky;ctx.fillRect(0,0,view.w,view.h);
