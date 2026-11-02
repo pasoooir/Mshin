@@ -2,7 +2,7 @@ import {chromium} from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--enable-webgl","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]});
-const page=await browser.newPage({viewport:{width:740,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+const page=await browser.newPage({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
 const errors=[];page.on("pageerror",e=>errors.push(e.stack||String(e)));page.on("console",m=>{if(m.type()==="error")errors.push("console: "+m.text())});page.on("requestfailed",r=>errors.push("request failed: "+r.url()+" "+r.failure()?.errorText));
 try{
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
@@ -48,20 +48,47 @@ try{
  assert.equal(demolition.cell,"grass","bulldoze action must remove the selected residential building");assert.equal(demolition.saved.grid.flat().filter(v=>v==="building").length,await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),"demolition must persist immediately");
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.tick>=6),"simulation must autosave without a manual save");
- const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(1300);const after=await page.evaluate(()=>window.MshinCityDebug.city.tick);assert.ok(after>before,"simulation should advance");
+ await page.bringToFront();await page.locator('[data-city-speed="1"]').click();await page.waitForFunction(()=>document.visibilityState==="visible");const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(4000);const simulation=await page.evaluate(()=>({tick:window.MshinCityDebug.city.tick,visibility:document.visibilityState,speedLabel:document.querySelector("#citySpeedLabel")?.textContent}));assert.ok(simulation.tick>before,"simulation should advance while the mobile city is visible at 1x speed: "+JSON.stringify({before,...simulation}));
  const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),toolButtons:[...document.querySelectorAll(".cityTool")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,right:r.right,left:r.left}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
  assert.ok(mobile.tools.y>mobile.metrics.bottom,"mobile construction dock must sit below the city metrics");
  assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile tool dock must not overlap the bottom status bar");
  assert.ok(mobile.toolButtons.every(b=>b.width>=40&&b.height>=44),"mobile touch targets must be at least 40×44 CSS pixels");assert.ok(await page.locator(".cityTools").evaluate(el=>el.scrollWidth>el.clientWidth),"extended city construction tools must remain horizontally reachable on phones");
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
- await page.screenshot({path:"artifacts/city-mobile-390x844.png"});
+ await page.screenshot({path:"artifacts/city-mobile-landscape-844x390.png"});
  const compactPage=await browser.newPage({viewport:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
- try{await compactPage.goto("http://127.0.0.1:4173/city.html");await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+ try{
+  await compactPage.addInitScript(()=>{
+   window.__cityOrientationCalls=[];
+   document.documentElement.requestFullscreen=async()=>{window.__cityOrientationCalls.push("fullscreen")};
+   try{Object.defineProperty(screen.orientation,"lock",{configurable:true,value:async mode=>window.__cityOrientationCalls.push("lock:"+mode)})}catch{}
+  });
+  await compactPage.goto("http://127.0.0.1:4173/city.html");
+  await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
   const compact=await compactPage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
-  assert.equal(compact.gate,"grid","portrait phones must be stopped at the landscape orientation gate");assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
-  fs.mkdirSync("artifacts",{recursive:true});await compactPage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
+  assert.equal(compact.gate,"grid","portrait phones must be stopped at the landscape orientation gate");
+  assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
+  assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
+  fs.mkdirSync("artifacts",{recursive:true});
+  await compactPage.screenshot({path:"artifacts/city-portrait-orientation-gate.png",fullPage:true});
+  await compactPage.locator("#cityEnterLandscape").click();
+  await compactPage.waitForFunction(()=>window.__cityOrientationCalls.includes("lock:landscape"));
+  assert.deepEqual(await compactPage.evaluate(()=>window.__cityOrientationCalls),["fullscreen","lock:landscape"],"city entry must request fullscreen then native landscape lock from a user gesture");
+  assert.equal(await compactPage.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"grid","portrait gate must remain visible when the browser cannot rotate the device");
  }finally{await compactPage.close()}
+ // Chromium can reject Browser.setWindowBounds after fullscreen/orientation APIs
+ // have been exercised. Verify landscape in a fresh page with its final viewport.
+ const landscapePage=await browser.newPage({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ try{
+  await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
+  await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  await landscapePage.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display==="none");
+  const landscape=await landscapePage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,height:innerHeight,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));
+  assert.equal(landscape.gate,"none","landscape page must show the city rather than the portrait gate");
+  assert.equal(landscape.width,landscape.viewport,"landscape city must not overflow horizontally");
+  fs.mkdirSync("artifacts",{recursive:true});
+  await landscapePage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
+ }finally{await landscapePage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, service coverage, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
