@@ -572,12 +572,19 @@ try {
     window.__mshinRaceDriverFrame = requestAnimationFrame(drive);
   }, { center: steeringCenter, limit: steeringLimit });
   const raceDeadline = 180000;
+  let raceDeadlineTimer;
   try {
-    await economy.waitForFunction(() => {
+    const finishCondition = () => {
       const finish = document.querySelector("#finish");
       return finish && !finish.classList.contains("hidden")
         && /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent);
-    }, undefined, { timeout: raceDeadline, polling: "raf" });
+    };
+    await Promise.race([
+      economy.waitForFunction(finishCondition, undefined, { timeout: 0, polling: 100 }),
+      new Promise((_, reject) => {
+        raceDeadlineTimer = setTimeout(() => reject(new Error("economy race wall-clock deadline elapsed")), raceDeadline);
+      })
+    ]);
   } catch (error) {
     const raceState = await economy.evaluate(() => ({
       finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
@@ -596,6 +603,7 @@ try {
     }));
     throw new Error("Economy race did not reach a rewarded finish: " + JSON.stringify(raceState) + "; " + error.message);
   } finally {
+    clearTimeout(raceDeadlineTimer);
     await economy.evaluate(() => {
       window.__mshinRaceDriverStopped = true;
       if (window.__mshinRaceDriverFrame) cancelAnimationFrame(window.__mshinRaceDriverFrame);
