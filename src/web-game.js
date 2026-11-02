@@ -1,4 +1,4 @@
-import { screenRelativeTilt, tiltToSteer } from "./vehicle-controls.js";
+import { screenRelativeTilt, tiltToSteer, invertSteerDirection } from "./vehicle-controls.js";
 import { createMultiTouchPointerSet } from "./multitouch-input.js";
 import { createGameAudio } from "./audio.js";
 import { createRaceRenderer } from "./race-renderer-3d.js";
