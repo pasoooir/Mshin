@@ -20,7 +20,7 @@ const browser = await chromium.launch({
 const errors = [];
 try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  mobile.on("pageerror", error => errors.push(error.message));
+  mobile.on("pageerror", error => errors.push(error.stack || error.message));
   mobile.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   mobile.setDefaultTimeout(60000);
   mobile.setDefaultNavigationTimeout(60000);
@@ -99,7 +99,7 @@ try {
   const overlap = !(stats.x + stats.width <= sound.x || sound.x + sound.width <= stats.x || stats.y + stats.height <= sound.y || sound.y + sound.height <= stats.y);
   assert.equal(overlap, false, "mobile HUD stats must not overlap sound controls");
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "pause control must remain inside phone viewport");
-  assert.deepEqual(errors, [], "mobile gameplay must not emit browser runtime errors");
+  assert.deepEqual(errors, [], "mobile gameplay must not emit browser runtime errors: " + errors.join("\\n"));
   console.log("[mobile-smoke] PASS: phone boot, touch showroom, orientation, WebGL, race standings, HUD and touch controls");
   await mobile.close();
 } finally {
