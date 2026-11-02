@@ -1,3 +1,12 @@
+## 0.15.2 — professional multi-touch racing controls
+
+- Added independent pointer tracking for simultaneous gas and brake inputs; releasing one finger no longer cancels another active pointer.
+- Preserved concurrent steering, throttle, brake and nitro interactions across separate touch pointers.
+- Added cleanup for pointer cancellation, lost capture, pause, restart, blur and document visibility changes.
+- Enlarged mobile control targets and added clear pressed-state feedback.
+- Added multi-pointer unit tests and advanced the offline app-shell cache to v53.
+- Validation: 229 tests passed; browser smoke remains blocked by the existing economy-race completion scenario.
+
 ## 0.12.0 — sculpted 3D race-car body milestone
 
 - Rebuilt the in-race WebGL car from simple stacked boxes into a tapered multi-section body shell with visible hood, shoulder and rear-quarter surfaces.
