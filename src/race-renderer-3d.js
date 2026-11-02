@@ -60,6 +60,13 @@ export function createRaceRenderer(canvas){
  let gl,program,uniforms,attributes,environment=null,road=null,decor=[],carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
+  // Allocate the final drawing buffer before gameplay starts; resizing a live WebGL canvas on its first race frame can stall the main loop for seconds.
+  const initialPortrait=matchMedia("(orientation: portrait)").matches;
+  const initialDpr=Math.min(devicePixelRatio||1,mobile?.68:1.5)*qualityScale;
+  const initialWidth=Math.max(1,Math.round((initialPortrait?innerHeight:innerWidth)*initialDpr));
+  const initialHeight=Math.max(1,Math.round((initialPortrait?innerWidth:innerHeight)*initialDpr));
+  canvas.width=initialWidth;canvas.height=initialHeight;lastSize=initialWidth+"x"+initialHeight;
+  state.quality={mobile,pixelRatio:initialDpr,detail:mobile?"mobile-balanced":"high",width:initialWidth,height:initialHeight};
  try{
   gl=canvas.getContext("webgl",{alpha:false,antialias:!mobile,depth:true,powerPreference:"high-performance",preserveDrawingBuffer:false})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable on this device");
