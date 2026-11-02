@@ -57,7 +57,7 @@ function mount(){
  let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,lastPersistTick=city.tick;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};
- function resize(){view.w=innerWidth;view.h=innerHeight;view.dpr=Math.min(devicePixelRatio||1,1.6);canvas.width=Math.round(view.w*view.dpr);canvas.height=Math.round(view.h*view.dpr);canvas.style.width=view.w+"px";canvas.style.height=view.h+"px";cam.zoom=Math.max(.42,Math.min(1.18,Math.min(view.w/1040,view.h/740)*1.08))}
+ function resize(){view.w=innerWidth;view.h=innerHeight;view.dpr=Math.min(devicePixelRatio||1,1.6);canvas.width=Math.round(view.w*view.dpr);canvas.height=Math.round(view.h*view.dpr);canvas.style.width=view.w+"px";canvas.style.height=view.h+"px";if(!cam.initialized){cam.zoom=matchMedia("(max-width:760px)").matches?.72:Math.max(.42,Math.min(1.18,Math.min(view.w/1040,view.h/740)*1.08));cam.initialized=true}}
  function tileAt(px,py){const sx=(px-view.w/2-cam.x)/cam.zoom,sy=(py-view.h*.23-cam.y)/cam.zoom+centerY,a=sx/16,b=sy/8;return{x:Math.floor((a+b)/2+.5),y:Math.floor((b-a)/2+.5)}}
  function poly(points,fill,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=.8;ctx.stroke()}}
  function ground(x,y,type){const p=tilePoint(x,y),park=city.buildings.some(b=>b.type==="park"&&b.x===x&&b.y===y),zoneType=type.startsWith("zone-")?type.slice(5):null,zoneColor=zoneType&&CITY_ZONES[zoneType]?.color,colors=type==="road"?["#414b56","#343e49"]:type==="water"?["#4b9fc0","#397fa4"]:zoneColor?[zoneColor,zoneColor]:park?["#5b9a60","#478452"]:["#7eaa68","#71995d"];
@@ -104,6 +104,7 @@ function mount(){
  }
  document.querySelectorAll("[data-city-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.cityTool)));
  document.querySelectorAll("[data-city-speed]").forEach(b=>b.addEventListener("click",()=>{speed=Number(b.dataset.citySpeed);document.querySelectorAll("[data-city-speed]").forEach(v=>v.classList.toggle("active",v===b));$("citySpeedLabel").textContent=speed===0?"متوقف":speed+"×"}));
+ $("cityZoomIn").addEventListener("click",()=>{cam.zoom=Math.min(1.5,cam.zoom*1.18);draw()});$("cityZoomOut").addEventListener("click",()=>{cam.zoom=Math.max(.42,cam.zoom/1.18);draw()});$("cityRecenter").addEventListener("click",()=>{cam.x=0;cam.y=0;cam.zoom=matchMedia("(max-width:760px)").matches?.72:Math.max(.42,Math.min(1.18,Math.min(view.w/1040,view.h/740)*1.08));draw()});
  $("citySave").addEventListener("click",()=>{const ok=persist(city);if(ok)lastPersistTick=city.tick;$("cityToast").textContent=ok?"شهر با موفقیت ذخیره شد.":"ذخیره‌سازی در این مرورگر در دسترس نیست.";toastFrames=120;draw()});
  $("cityReset").addEventListener("click",()=>{if(!confirm("شهر فعلی با یک شهر تازه جایگزین شود؟"))return;const fresh=createInitialCity((city.seed+7919)>>>0);Object.keys(city).forEach(k=>delete city[k]);Object.assign(city,fresh);persist(city);draw()});
  $("cityHelp").addEventListener("click",()=>$("cityHelpPanel").classList.toggle("hidden"));$("cityCloseHelp").addEventListener("click",()=>$("cityHelpPanel").classList.add("hidden"));
