@@ -36,7 +36,7 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
  .citySpeed button{padding:7px 6px}
 }
 @media(max-height:620px) and (max-width:760px){
- .cityTop{gap:4px}.cityBrand{padding:5px 8px}.cityMetrics{gap:3px}.cityMetric{padding:3px}.cityTool{height:42px}
+ .cityTop{gap:4px}.cityBrand{padding:5px 8px}.cityMetrics{gap:3px}.cityMetric{padding:3px}.cityTool{height:44px}
  .cityTools{bottom:calc(env(safe-area-inset-bottom) + 62px)}.cityBottomInfo{padding:5px 7px}
 }
 
