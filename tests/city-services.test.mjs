@@ -11,20 +11,20 @@ test("the city defines all four utilities and four public service departments", 
 
 test("utility and civic buildings require road access and charge their construction cost", () => {
   const city=createInitialCity(601),money=city.treasury;
-  const result=placeCityItem(city,16,14,"power");
+  const result=placeCityItem(city,17,14,"power");
   assert.equal(result.ok,true);
-  assert.equal(city.grid[14][16],"building");
+  assert.equal(city.grid[14][17],"building");
   assert.ok(city.treasury<money);
-  assert.equal(city.buildings.find(b=>b.x===16&&b.y===14).type,"power");
+  assert.equal(city.buildings.find(b=>b.x===17&&b.y===14).type,"power");
   assert.equal(placeCityItem(city,2,2,"police").ok,false);
 });
 
 test("utility coverage reaches nearby buildings and remains bounded", () => {
   const city=createInitialCity(602);
-  const before=computeCityServices(city);
+  assert.equal(placeCityItem(city,17,13,"home").ok,true);\n  const before=computeCityServices(city);
   assert.equal(before.utilityCoverage,0);
   assert.equal(placeCityItem(city,16,14,"power").ok,true);
-  assert.equal(placeCityItem(city,14,14,"water").ok,true);
+  assert.equal(placeCityItem(city,14,17,"water").ok,true);
   const result=computeCityServices(city);
   assert.ok(result.coverage.power>0);
   assert.ok(result.coverage.water>0);
@@ -34,7 +34,7 @@ test("utility coverage reaches nearby buildings and remains bounded", () => {
 
 test("public safety, health and education coverage contributes to the city service score", () => {
   const city=createInitialCity(603);
-  for(const [x,y,type] of [[16,14,"power"],[14,14,"water"],[16,16,"police"],[14,16,"health"],[18,16,"fire"],[14,20,"education"]]){
+  for(const [x,y,type] of [[17,14,"power"],[14,17,"water"],[18,14,"police"],[13,17,"health"],[18,17,"fire"],[13,14,"education"]]){
     assert.equal(placeCityItem(city,x,y,type).ok,true,type+" should be constructible");
   }
   stepCity(city);
