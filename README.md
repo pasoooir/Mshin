@@ -1,3 +1,12 @@
+## Version 0.15.2 — professional multi-touch racing controls (merged)
+
+- Added independent pointer tracking for gas and brake, so one finger can release without cancelling another held finger.
+- Preserved simultaneous steering, throttle, braking and nitro input across separate touch pointers; interruption, pause, restart and visibility loss clear stale held inputs safely.
+- Enlarged mobile steering, pedal and nitro touch targets and added clear pressed-state feedback with touch-action protection.
+- Added dedicated multi-pointer unit coverage; the merged commit passed the portable validation suite (229 tests, 0 failures).
+- Advanced the offline service-worker cache to mshin-arcade-v53 and precached the new multi-touch input module.
+- Browser smoke still reports a failure in the pre-existing economy-race completion scenario; this is tracked separately and is not represented as a passing gameplay test.
+
 ## Version 0.15.0 — automotive PBR materials and studio reflections (under review)
 
 - Replaced the previous flat diffuse/metal tint with a shared WebGL 1 metallic-roughness physically based shading pipeline for both the 360-degree showroom and live race scene.
@@ -41,9 +50,9 @@ Mshin is a colorful top-down arcade racing game targeting Cocos Creator 3.8.6 + 
 
 This branch introduces a native, repository-local WebGL perspective renderer for the active race scene. During countdown and gameplay, the browser now renders a perspective chase-camera view with a generated 3D road surface, shoulders, lane markings, three-dimensional roadside geometry, and mesh-based player/rival vehicles. The 2D game simulation remains the source of truth for vehicle motion, traffic, collisions, damage, pickups, race progression, and controls; the new renderer consumes that live state rather than replacing the gameplay physics. The renderer is bundled locally and precached by the service worker, with no runtime CDN dependency. This is the first migration milestone, not a claim that every legacy visual/effect has already been ported to 3D; minimap, weather overlays, particle effects, and full 3D damage deformation remain follow-up work.
 
-## Latest published release on main: 0.11.7
+## Latest published release on main: 0.15.2
 
-The verified live browser release on `main` is version 0.11.7. Browser smoke, core validation and GitHub Pages deployment for that release completed successfully. Its service-worker cache is `mshin-arcade-v44`.
+Version 0.15.2 is merged on `main`. The portable validation suite passed; GitHub Pages deployment verification is being checked. The offline service-worker cache is `mshin-arcade-v53`.
 
 Versions 0.11.0–0.11.6 were published on GitHub Pages; the in-race vehicle geometry was merged afterward in pull request #77. Version 0.14.0 remains a separate draft and is not claimed as live.
 
