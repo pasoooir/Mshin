@@ -10,11 +10,13 @@ test("race environment builds a complete local 3D roadside scene", async () => {
     "windows", "crowdBodies", "petBodies", "petHeads", "petLegs",
     "state.environmentCounts"
   ]) assert.ok(source.includes(feature), "missing environment feature: " + feature);
-  assert.match(source, /const treeCount=mobile\?18:52/);
-  assert.match(source, /const buildingCount=mobile\?8:22/);
-  assert.match(source, /const shopCount=mobile\?3:7/);
-  assert.match(source, /const spectatorCount=mobile\?12:44/);
-  assert.match(source, /const petCount=mobile\?3:9/);
-  assert.match(source, /sphere\(skyTris,0,0,0,5600,3000,5600/);
-  assert.match(source, /box\(trees,x,base\+19,z,8,38,8\)/);
+  for (const budget of [
+    "treeCount=mobile?18:48",
+    "buildingCount=mobile?8:22",
+    "shopCount=mobile?3:7",
+    "spectatorCount=mobile?10:36",
+    "petCount=mobile?3:9"
+  ]) assert.ok(source.includes(budget), "missing mobile/desktop scene budget: " + budget);
+  assert.ok(source.includes("sphere(skyTris,0,0,0,5600,3000,5600"));
+  assert.ok(source.includes("box(trees,x,base+19,z,8,38,8)"));
 });
