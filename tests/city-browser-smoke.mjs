@@ -1,7 +1,7 @@
 import {chromium} from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--enable-webgl","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]});
 const page=await browser.newPage({viewport:{width:740,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
 const errors=[];page.on("pageerror",e=>errors.push(String(e)));
 try{
@@ -29,7 +29,7 @@ try{
  await page.evaluate(()=>window.MshinCityDebug.step());
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
- const demolition=await page.evaluate(()=>{const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));if(!b)throw new Error("test fixture needs a second residential building");return window.MshinCityDebug.actAt(b.x,b.y,"bulldoze")});
+ const secondHome=await page.evaluate(()=>window.MshinCityDebug.place(17,13,"home"));assert.equal(secondHome.ok,true,"a second road-accessible home should be constructible");\n const demolition=await page.evaluate(()=>{const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));if(!b)throw new Error("test fixture needs a second residential building");return window.MshinCityDebug.actAt(b.x,b.y,"bulldoze")});
  assert.equal(demolition.cell,"grass","bulldoze action must remove the selected residential building");assert.equal(demolition.saved.grid.flat().filter(v=>v==="building").length,await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),"demolition must persist immediately");
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.tick>=6),"simulation must autosave without a manual save");
