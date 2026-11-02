@@ -254,6 +254,7 @@ try {
     maxTrackBuildStepMs: window.Mshin3DRenderer?.maxTrackBuildStepMs,
     lastTrackBuildStepMs: window.Mshin3DRenderer?.lastTrackBuildStepMs,
     maxDrawPartMs: window.Mshin3DRenderer?.maxDrawPartMs,
+    drawPartCount: window.Mshin3DRenderer?.drawPartCount,
     maxDrawArraysMs: window.Mshin3DRenderer?.maxDrawArraysMs,
     lastDrawArraysMs: window.Mshin3DRenderer?.lastDrawArraysMs,
     maxDrawPartVertices: window.Mshin3DRenderer?.maxDrawPartVertices,
