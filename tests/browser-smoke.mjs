@@ -737,7 +737,7 @@ try {
   const finalStandings = await economy.evaluate(() => ({ rows: [...document.querySelectorAll("#raceResults li")].map(row => ({ rank: Number(row.querySelector(".resultRank")?.textContent), time: row.querySelector(".resultClock")?.textContent })), standings: window.MshinRaceStandings, overlay: !!document.querySelector("#racePositionOverlay") }));
   assert.equal(finalStandings.rows.length, 5, "the finish screen must show the final order of all five race cars");
   assert.deepEqual(finalStandings.rows.map(row => row.rank), [1, 2, 3, 4, 5], "every car must receive one unique final position");
-  assert.ok(finalStandings.rows.every(row => /^\\d{2}:\\d{2}:\\d{2}$/.test(row.time)), "each car must retain its own stopwatch result");
+  assert.ok(finalStandings.rows.every(row => /^\d{2}:\d{2}:\d{2}$/.test(row.time)), "each car must retain its own stopwatch result");
   assert.equal(finalStandings.standings.length, 5, "the race standings model must contain the player and four AI racers");
   assert.equal(finalStandings.overlay, true, "the overhead cloud overlay must be available during the race");
   assert.match(finishEvidence.text, /سکه دریافت کردید/,
