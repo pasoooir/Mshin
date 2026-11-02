@@ -7,6 +7,11 @@ const errors=[];page.on("pageerror",e=>errors.push(String(e)));
 try{
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
  await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:10000});
+ const mapControls=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,buttons:[...document.querySelectorAll(".cityMapControls button")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,visible:r.width>0&&r.height>0}})}));
+ assert.ok(mapControls.zoom>=.7,"mobile city should open with a useful exploration zoom");assert.equal(mapControls.buttons.length,3);assert.ok(mapControls.buttons.every(b=>b.visible&&b.width>=44&&b.height>=44),"map zoom controls must be visible 44px touch targets");
+ await page.locator("#cityZoomIn").click();const zoomedIn=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomedIn>mapControls.zoom,"zoom-in control must enlarge the map");
+ await page.locator("#cityZoomOut").click();const zoomedOut=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomedOut<zoomedIn,"zoom-out control must reduce map scale");
+ await page.locator("#cityRecenter").click();assert.ok(Math.abs(await page.evaluate(()=>window.MshinCityDebug.view.zoom)-.72)<.001,"recenter must restore the mobile map scale");
  assert.equal(await page.title(),"شهر من | مِشین");
  const initial=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,buildings:window.MshinCityDebug.city.buildings.length,roads:window.MshinCityDebug.city.grid.flat().filter(t=>t==="road").length,citizens:window.MshinCityDebug.city.citizens.length,traffic:window.MshinCityDebug.city.traffic.length,animals:window.MshinCityDebug.city.animals.length,width:document.querySelector("#cityViewport").width}));
  assert.ok(initial.population>100,"entry page must show a populated city");assert.ok(initial.buildings>=30,"initial buildings should be visible");assert.ok(initial.roads>=100,"city should have a street grid");assert.ok(initial.citizens>=20&&initial.traffic>=6&&initial.animals>=8,"citizens, traffic and wildlife should be present");assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
