@@ -513,12 +513,11 @@ try {
   await economy.mouse.move(steeringCenter.x, steeringCenter.y);
   await economy.mouse.down();
   const raceDeadline = Date.now() + 120000;
-  // Telemetry is published every 30 simulation frames, while full braking
-  // removes up to 470 speed units per second. A single 205-unit threshold
-  // therefore keeps the brake held across a stale sample and can stop the
-  // car completely. Use a wide hysteresis band so the real race remains
-  // under closed-loop control without repeatedly applying full braking.
-  let economyBrakeActive = false;
+  // Telemetry is sampled every 30 simulation frames. Never hold full brake
+  // based on a stale speed sample: use short, bounded pulses with a cooldown.
+  // This keeps the economy race moving while preserving the real brake input.
+  let economyBrakeUntil = 0;
+  let economyBrakeCooldownUntil = 0;
   try {
     while (Date.now() < raceDeadline) {
       const finishStatus = await economy.evaluate(() => ({
@@ -549,8 +548,12 @@ try {
         const steering = Math.max(-.92, Math.min(.92, Math.atan(128 * targetCurvature) / .48));
         return { steering, speed };
       });
-      if (controls.speed > 340) economyBrakeActive = true;
-      else if (controls.speed < 240) economyBrakeActive = false;
+      const now = Date.now();
+      if (controls.speed > 265 && now >= economyBrakeCooldownUntil && now >= economyBrakeUntil) {
+        economyBrakeUntil = now + 85;
+        economyBrakeCooldownUntil = now + 520;
+      }
+      const economyBrakeActive = now < economyBrakeUntil;
       const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
       await economy.mouse.move(
         steeringCenter.x + pointerSteering * steeringLimit,
