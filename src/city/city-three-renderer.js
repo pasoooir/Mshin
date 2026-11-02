@@ -328,6 +328,18 @@ export async function createCityThreeRenderer(sourceCanvas) {
     tileAt,
     screenForTile,
     resize,
+    getStats() {
+      return {
+        renderer: "three.js",
+        version: THREE.REVISION,
+        plots: grassCountA + grassCountB,
+        roadTiles: roadCount,
+        raisedCurbs: curbInstances.length,
+        crosswalkStripes: crossings.children.length,
+        drawCalls: renderer.info.render.calls,
+        pixelRatio: renderer.getPixelRatio()
+      };
+    },
     destroy() {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
