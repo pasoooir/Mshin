@@ -12,3 +12,6 @@ The race renderer streams the following 1K diffuse maps directly from the offici
 | Building / pit surfaces | Concrete Floor 02 | https://polyhaven.com/a/concrete_floor_02 | https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_diff_1k.jpg |
 
 Textures are loaded asynchronously with CORS enabled, mipmaps and repeat wrapping. A 1×1 fallback texture is created immediately, so a slow CDN never blocks the first frame or prevents the race from starting. Texture sampling is world-space in the shared WebGL PBR shader; road, terrain, hills and selected built surfaces receive scanned detail while retaining each biome's palette.
+
+| Tree bark | Bark Brown 02 | https://polyhaven.com/a/bark_brown_02 | https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg |
+| Tree foliage | Leafy Grass | https://polyhaven.com/a/leafy_grass | https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg |
