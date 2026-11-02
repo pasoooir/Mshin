@@ -603,35 +603,41 @@ try {
       })
     ]);
   } catch (error) {
-    const raceState = await economy.evaluate(() => ({
-      finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
-      hudHidden: document.querySelector("#hud")?.classList.contains("hidden"),
-      lap: document.querySelector("#lap")?.textContent,
-      speed: document.querySelector("#speed")?.textContent,
-      time: document.querySelector("#time")?.textContent,
-      stage: document.querySelector("#stageName")?.textContent,
-      renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
-      performance: window.MshinPerformance ?? null,
-      driver: window.__mshinRaceDriver?.controls ?? null,
-      controlState: { gas: window.MshinPerformance?.playerGas, brake: window.MshinPerformance?.playerBrake, steer: window.MshinPerformance?.playerSteer, steerTarget: window.MshinPerformance?.playerSteerTarget, stick: document.querySelector("#stick")?.dataset.steer },
-      progress: localStorage.getItem("mshin-progress-v1"),
-      visibility: document.visibilityState,
-      bodyClass: document.body.className
-    }));
+    const raceState = await Promise.race([
+      economy.evaluate(() => ({
+        finishHidden: document.querySelector("#finish")?.classList.contains("hidden"),
+        hudHidden: document.querySelector("#hud")?.classList.contains("hidden"),
+        lap: document.querySelector("#lap")?.textContent,
+        speed: document.querySelector("#speed")?.textContent,
+        time: document.querySelector("#time")?.textContent,
+        stage: document.querySelector("#stageName")?.textContent,
+        renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
+        performance: window.MshinPerformance ?? null,
+        driver: window.__mshinRaceDriver?.controls ?? null,
+        controlState: { gas: window.MshinPerformance?.playerGas, brake: window.MshinPerformance?.playerBrake, steer: window.MshinPerformance?.playerSteer, steerTarget: window.MshinPerformance?.playerSteerTarget, stick: document.querySelector("#stick")?.dataset.steer },
+        progress: localStorage.getItem("mshin-progress-v1"),
+        visibility: document.visibilityState,
+        bodyClass: document.body.className
+      })),
+      new Promise(resolve => setTimeout(() => resolve({ diagnosticsUnavailable: true, reason: "browser main thread did not answer within 5 seconds" }), 5000))
+    ]);
     throw new Error("Economy race did not reach a rewarded finish: " + JSON.stringify(raceState) + "; " + error.message);
   } finally {
     clearTimeout(raceDeadlineTimer);
-    await economy.evaluate(() => {
-      window.__mshinRaceDriverStopped = true;
-      if (window.__mshinRaceDriverFrame) cancelAnimationFrame(window.__mshinRaceDriverFrame);
-      const stick = document.querySelector("#stick");
-      stick?.dispatchEvent(new PointerEvent("pointerup", {
-        bubbles: true, cancelable: true, pointerId: 7319, pointerType: "mouse",
-        clientX: 0, clientY: 0, button: 0, buttons: 0
-      }));
-      document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType: "mouse", button: 0, buttons: 0 }));
-      if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType: "mouse", button: 0, buttons: 0 }));
-    });
+    await Promise.race([
+      economy.evaluate(() => {
+        window.__mshinRaceDriverStopped = true;
+        if (window.__mshinRaceDriverFrame) cancelAnimationFrame(window.__mshinRaceDriverFrame);
+        const stick = document.querySelector("#stick");
+        stick?.dispatchEvent(new PointerEvent("pointerup", {
+          bubbles: true, cancelable: true, pointerId: 7319, pointerType: "mouse",
+          clientX: 0, clientY: 0, button: 0, buttons: 0
+        }));
+        document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType: "mouse", button: 0, buttons: 0 }));
+        if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType: "mouse", button: 0, buttons: 0 }));
+      }),
+      new Promise(resolve => setTimeout(resolve, 5000))
+    ]);
   }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
