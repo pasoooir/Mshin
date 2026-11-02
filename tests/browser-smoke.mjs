@@ -602,8 +602,10 @@ try {
   try {
     const finishCondition = () => {
       const finish = document.querySelector("#finish");
-      return finish && !finish.classList.contains("hidden")
-        && /سکه دریافت کردید/.test(document.querySelector("#finishText").textContent);
+      // Detect every terminal state immediately. A destroyed car also
+      // opens the finish panel, but must fail the reward assertion below
+      // instead of waiting the full race deadline for a reward that cannot arrive.
+      return finish && !finish.classList.contains("hidden");
     };
     await Promise.race([
       economy.waitForFunction(finishCondition, undefined, { timeout: 0, polling: 100 }),
@@ -648,7 +650,12 @@ try {
       new Promise(resolve => setTimeout(resolve, 5000))
     ]);
   }
-  assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
+  const finishEvidence = await economy.evaluate(() => ({
+    text: document.querySelector("#finishText")?.textContent ?? "",
+    progress: JSON.parse(localStorage.getItem("mshin-progress-v1") || "{}")
+  }));
+  assert.match(finishEvidence.text, /سکه دریافت کردید/,
+    "a terminal race state must be a rewarded finish, not vehicle destruction: " + JSON.stringify(finishEvidence));
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
   await economy.locator("#finishSelect").click();
