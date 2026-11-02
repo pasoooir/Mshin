@@ -195,7 +195,7 @@ These are **not implemented/verified**, not merely “hidden” by the existing 
 The current ChatGPT tool surface exposes integrations/capabilities for GitHub, Context7, Amazing Drawing, OpenArt, Runchat, Figma, Canva, SketchMonkey Design Studio, and the Build 3D Game Rooms workflow skill. These are available tool surfaces, not proof that every external desktop bridge or paid generation service is currently running or authorized.
 
 - GitHub: repository inspection, branches, files, PRs, CI logs and commits.
-- Context7: resolved the exact /cocos/cocos-engine/3.8.6 library. Retrieved excerpts were limited to engine error/configuration references, so each API still requires verification against official 3.8.6 documentation.
+- Context7: queried the official Cocos Creator 3.8 manual. Confirmed the Node + Component model, TypeScript component creation/attachment workflow and that a script component must be attached to a scene node. The engine-specific `/cocos/cocos-engine/3.8.6` query also resolved; editor scene serialization and Web build still require an actual Creator 3.8.6 installation.
 - Amazing Drawing: suitable for city/block/road-network diagrams.
 - OpenArt: connected, but the account balance reported 0 credits; image generation was not run.
 - Build 3D Game Rooms: structured concept-to-asset-to-runtime workflow; requires its prescribed gates and reference documents before execution.
