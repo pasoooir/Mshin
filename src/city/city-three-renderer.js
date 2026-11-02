@@ -4,8 +4,7 @@ const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
 const ACTIVE_SIZE = 32;
-const ROAD_CELLS = new Set([7, 8, 15, 16, 23, 24]);
-const isRoadCell = value => value % 8 === 7 || value % 8 === 0;
+const isRoadCell = value => (value % 8 === 7 || value % 8 === 0) && value !== 16 && value !== 47;
 const isActiveCell = (x, y) => x >= ACTIVE_START && x < ACTIVE_END && y >= ACTIVE_START && y < ACTIVE_END;
 
 export async function createCityThreeRenderer(sourceCanvas) {
