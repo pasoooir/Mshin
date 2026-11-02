@@ -115,3 +115,19 @@ test("WebGL pixel acceptance can sample the submitted frame before buffer presen
   assert.match(source, /if\(state\.captureNextFrameSample\)[\s\S]*?gl\.readPixels/);
   assert.match(source, /state\.lastFramePixelSample=\{width:sampleWidth,height:sampleHeight,visiblePixels,uniqueColors/);
 });
+
+
+test("software WebGL devices automatically use a bounded render target and scene profile", () => {
+  assert.match(source, /WEBGL_debug_renderer_info/,
+    "the renderer should identify CPU-backed WebGL implementations when available");
+  assert.match(source, /softwareRenderer=\/swiftshader\|llvmpipe\|lavapipe\|software raster\/i\.test\(gpuProfile\)/,
+    "SwiftShader, llvmpipe and lavapipe should activate the software profile");
+  assert.match(source, /if\(softwareRenderer\)\{qualityScale=\.58;resize\(\);\}/,
+    "software render targets should reduce pixel workload before gameplay begins");
+  assert.match(source, /softwareRenderer\?96:240/,
+    "software rendering should reduce track tessellation without changing road dimensions");
+  assert.match(source, /softwareRenderer\?2:7/,
+    "software rendering should cap simultaneously rendered rival vehicles");
+  assert.match(source, /softwareRenderer\?14:36/,
+    "software rendering should reduce crowd geometry while retaining visible spectators");
+});
