@@ -20,6 +20,10 @@ try{
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][16]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===16&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
+ for(const [type,x,y] of [["power",18,14],["water",14,16],["police",18,16]]){await page.locator('[data-city-tool="'+type+'"]').click();const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
+ await page.evaluate(()=>window.MshinCityDebug.step());
+ const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
+ assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
  const building=await page.evaluate(()=>window.MshinCityDebug.city.buildings.find(b=>b.type==="home"&&!(b.x===16&&b.y===14)));
  await page.locator('[data-city-tool="bulldoze"]').click();const demolition=await page.evaluate(b=>window.MshinCityDebug.screenForTile(b.x,b.y),building);await page.mouse.click(demolition.x,demolition.y);
  assert.ok(await page.evaluate(b=>JSON.parse(localStorage.getItem("mshin-city-save-v1"))?.grid?.[b.y]?.[b.x]==="grass",building),"demolition must persist immediately");
@@ -30,7 +34,7 @@ try{
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
  assert.ok(mobile.tools.y>mobile.metrics.bottom,"mobile construction dock must sit below the city metrics");
  assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile tool dock must not overlap the bottom status bar");
- assert.ok(mobile.toolButtons.every(b=>b.width>=40&&b.height>=44),"mobile touch targets must be at least 40×44 CSS pixels");
+ assert.ok(mobile.toolButtons.every(b=>b.width>=40&&b.height>=44),"mobile touch targets must be at least 40×44 CSS pixels");assert.ok(await page.locator(".cityTools").evaluate(el=>el.scrollWidth>el.clientWidth),"extended city construction tools must remain horizontally reachable on phones");
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
  await page.screenshot({path:"artifacts/city-mobile-390x844.png"});
  await page.setViewportSize({width:360,height:640});await page.waitForTimeout(80);
@@ -38,5 +42,5 @@ try{
  assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
  assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
  fs.mkdirSync("artifacts",{recursive:true});await page.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});assert.deepEqual(errors,[],"city route must not throw runtime errors");
- process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, wildlife, pinch zoom, residential zoning growth, demolition persistence, autosave and live simulation.\n");
+ process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, wildlife, pinch zoom, residential zoning, utility and public service construction, service coverage, demolition persistence, autosave and live simulation.\n");
 }finally{await browser.close()}
