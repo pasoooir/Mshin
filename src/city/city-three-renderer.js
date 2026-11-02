@@ -1,7 +1,12 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
-const GRID_SIZE = 32;
+const VISUAL_GRID = 64;
+const ACTIVE_START = 16;
+const ACTIVE_END = 48;
+const ACTIVE_SIZE = 32;
 const ROAD_CELLS = new Set([7, 8, 15, 16, 23, 24]);
+const isRoadCell = value => value % 8 === 7 || value % 8 === 0;
+const isActiveCell = (x, y) => x >= ACTIVE_START && x < ACTIVE_END && y >= ACTIVE_START && y < ACTIVE_END;
 
 export async function createCityThreeRenderer(sourceCanvas) {
   let THREE;
@@ -36,11 +41,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
   sourceCanvas.style.opacity = "0";
 
   const scene = new THREE.Scene();
-  const sky = new THREE.Color("#b9d8e2");
-  scene.background = sky;
-  scene.fog = new THREE.Fog("#b9d8e2", 95, 190);
-
-  const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 260);
+  scene.background = new THREE.Color("#b9d8e2");
+  scene.fog = new THREE.Fog("#b9d8e2", 125, 235);
+  const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 320);
   camera.position.set(48, 58, 48);
   camera.lookAt(0, 0, 0);
 
@@ -49,10 +52,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   sun.position.set(-42, 68, -35);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.left = -52;
-  sun.shadow.camera.right = 52;
-  sun.shadow.camera.top = 52;
-  sun.shadow.camera.bottom = -52;
+  sun.shadow.camera.left = -76;
+  sun.shadow.camera.right = 76;
+  sun.shadow.camera.top = 76;
+  sun.shadow.camera.bottom = -76;
   sun.shadow.bias = -0.00025;
   scene.add(sun);
   const fill = new THREE.DirectionalLight("#9bd7ff", 0.85);
@@ -86,17 +89,18 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const grassMap = makeSurfaceTexture("#86a96d", "#d9e8b9", 741, 11500);
   const roadMap = makeSurfaceTexture("#353e47", "#b5c0c2", 912, 6800, 0.8);
-  const sidewalkMap = makeSurfaceTexture("#c2c0ae", "#f4f0df", 1187, 2400);
   const grassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, roughness: 1 });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#dce8c7", roughness: 1 });
+  const lockedGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#899783", roughness: 1 });
+  const lockedGrassAlternateMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#9aa48e", roughness: 1 });
   const roadMaterial = new THREE.MeshStandardMaterial({ map: roadMap, roughness: 0.96, metalness: 0.015 });
-  const sidewalkMaterial = new THREE.MeshStandardMaterial({ map: sidewalkMap, roughness: 0.94 });
+  const lockedRoadMaterial = new THREE.MeshStandardMaterial({ map: roadMap, color: "#aab2b1", roughness: 0.98 });
   const curbMaterial = new THREE.MeshStandardMaterial({ color: "#e4dfc9", roughness: 0.88 });
-  const markingMaterial = new THREE.MeshStandardMaterial({ color: "#f8edc8", roughness: 0.8 });
-  const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#e6e9ce", transparent: true, opacity: 0.62 });
+  const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#e6e9ce", transparent: true, opacity: 0.66 });
+  const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(210, 210),
+    new THREE.PlaneGeometry(230, 230),
     new THREE.MeshStandardMaterial({ color: "#718d61", roughness: 1 })
   );
   ground.rotation.x = -Math.PI / 2;
@@ -106,50 +110,68 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const grassGeometry = new THREE.BoxGeometry(1.94, 0.22, 1.94);
   const roadGeometry = new THREE.BoxGeometry(1.99, 0.16, 1.99);
-  const grassA = new THREE.InstancedMesh(grassGeometry, grassMaterial, 1024);
-  const grassB = new THREE.InstancedMesh(grassGeometry, alternateGrassMaterial, 1024);
-  const roads = new THREE.InstancedMesh(roadGeometry, roadMaterial, 1024);
+  const grassA = new THREE.InstancedMesh(grassGeometry, grassMaterial, 2304);
+  const grassB = new THREE.InstancedMesh(grassGeometry, alternateGrassMaterial, 2304);
+  const lockedGrassA = new THREE.InstancedMesh(grassGeometry, lockedGrassMaterial, 2304);
+  const lockedGrassB = new THREE.InstancedMesh(grassGeometry, lockedGrassAlternateMaterial, 2304);
+  const roads = new THREE.InstancedMesh(roadGeometry, roadMaterial, 1792);
+  const lockedRoads = new THREE.InstancedMesh(roadGeometry, lockedRoadMaterial, 1792);
   const dummy = new THREE.Object3D();
-  let grassCountA = 0, grassCountB = 0, roadCount = 0;
-  const plotEdges = [];
-  const curbInstances = [];
-  const markingInstances = [];
+  let activeGrassA = 0, activeGrassB = 0, activeRoads = 0;
+  let lockedGrassCountA = 0, lockedGrassCountB = 0, lockedRoadCount = 0;
+  const activePlotEdges = [], lockedPlotEdges = [], curbInstances = [];
 
-  for (let y = 0; y < GRID_SIZE; y++) {
-    for (let x = 0; x < GRID_SIZE; x++) {
-      const px = (x - 15.5) * 2;
-      const pz = (y - 15.5) * 2;
-      const isRoad = ROAD_CELLS.has(x) || ROAD_CELLS.has(y);
-      dummy.position.set(px, isRoad ? -0.01 : 0.025, pz);
+  for (let y = 0; y < VISUAL_GRID; y++) {
+    for (let x = 0; x < VISUAL_GRID; x++) {
+      const px = (x - 31.5) * 2;
+      const pz = (y - 31.5) * 2;
+      const active = isActiveCell(x, y);
+      const road = isRoadCell(x) || isRoadCell(y);
+      dummy.position.set(px, road ? -0.01 : 0.025, pz);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
-      if (isRoad) {
-        roads.setMatrixAt(roadCount++, dummy.matrix);
+
+      if (road) {
+        (active ? roads : lockedRoads).setMatrixAt(active ? activeRoads++ : lockedRoadCount++, dummy.matrix);
         continue;
       }
+
       const alternate = (x + y) % 2 === 1;
-      (alternate ? grassB : grassA).setMatrixAt(alternate ? grassCountB++ : grassCountA++, dummy.matrix);
+      if (active) {
+        (alternate ? grassB : grassA).setMatrixAt(alternate ? activeGrassB++ : activeGrassA++, dummy.matrix);
+      } else {
+        (alternate ? lockedGrassB : lockedGrassA).setMatrixAt(alternate ? lockedGrassCountB++ : lockedGrassCountA++, dummy.matrix);
+      }
+
       const edgeY = 0.142;
-      plotEdges.push(
+      const edges = active ? activePlotEdges : lockedPlotEdges;
+      edges.push(
         px - 0.91, edgeY, pz - 0.91, px + 0.91, edgeY, pz - 0.91,
         px + 0.91, edgeY, pz - 0.91, px + 0.91, edgeY, pz + 0.91,
         px + 0.91, edgeY, pz + 0.91, px - 0.91, edgeY, pz + 0.91,
         px - 0.91, edgeY, pz + 0.91, px - 0.91, edgeY, pz - 0.91
       );
 
-      // Raised concrete curbs give every empty parcel a readable street edge.
       for (const [dx, dz, sx, sz] of [[1,0,0.08,1.72],[-1,0,0.08,1.72],[0,1,1.72,0.08],[0,-1,1.72,0.08]]) {
         const nx = x + dx, ny = y + dz;
-        if (nx < 0 || ny < 0 || nx >= GRID_SIZE || ny >= GRID_SIZE || !(ROAD_CELLS.has(nx) || ROAD_CELLS.has(ny))) continue;
+        if (nx < 0 || ny < 0 || nx >= VISUAL_GRID || ny >= VISUAL_GRID || !(isRoadCell(nx) || isRoadCell(ny))) continue;
         curbInstances.push({ x: px + dx * 0.94, z: pz + dz * 0.94, sx, sz });
       }
     }
   }
-  grassA.count = grassCountA;
-  grassB.count = grassCountB;
-  roads.count = roadCount;
-  grassA.instanceMatrix.needsUpdate = grassB.instanceMatrix.needsUpdate = roads.instanceMatrix.needsUpdate = true;
-  grassA.receiveShadow = grassB.receiveShadow = roads.receiveShadow = true;
-  scene.add(grassA, grassB, roads);
+
+  for (const mesh of [grassA, grassB, lockedGrassA, lockedGrassB, roads, lockedRoads]) {
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.receiveShadow = true;
+  }
+  grassA.count = activeGrassA;
+  grassB.count = activeGrassB;
+  roads.count = activeRoads;
+  lockedGrassA.count = lockedGrassCountA;
+  lockedGrassB.count = lockedGrassCountB;
+  lockedRoads.count = lockedRoadCount;
+  scene.add(grassA, grassB, lockedGrassA, lockedGrassB, roads, lockedRoads);
 
   const curbGeometry = new THREE.BoxGeometry(1, 0.15, 1);
   const curbs = new THREE.InstancedMesh(curbGeometry, curbMaterial, Math.max(1, curbInstances.length));
@@ -162,80 +184,86 @@ export async function createCityThreeRenderer(sourceCanvas) {
   });
   curbs.count = curbInstances.length;
   curbs.instanceMatrix.needsUpdate = true;
-  curbs.castShadow = true;
   curbs.receiveShadow = true;
   scene.add(curbs);
 
-  // Fine cadastral outlines make the initial empty city read as thousands of buildable lots.
-  const plotGeometry = new THREE.BufferGeometry();
-  plotGeometry.setAttribute("position", new THREE.Float32BufferAttribute(plotEdges, 3));
-  scene.add(new THREE.LineSegments(plotGeometry, plotLineMaterial));
+  function addLineLayer(points, material) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
+    const lines = new THREE.LineSegments(geometry, material);
+    scene.add(lines);
+    return lines;
+  }
+  addLineLayer(activePlotEdges, plotLineMaterial);
+  addLineLayer(lockedPlotEdges, lockedPlotLineMaterial);
 
-  // Every street gets a dashed centre line; the broad intersections get zebra crossings.
+  // Road dashes and crosswalks are instanced to keep the mobile GPU draw-call count low.
   const roadMarkings = [];
-  for (let y = 0; y < GRID_SIZE; y++) {
-    if (!ROAD_CELLS.has(y)) continue;
-    for (let x = 0; x < GRID_SIZE; x++) {
-      if (ROAD_CELLS.has(x) || x % 2 !== 0) continue;
-      const z = (y - 15.5) * 2;
-      roadMarkings.push((x - 15.5) * 2 - 0.36, 0.078, z, (x - 15.5) * 2 + 0.36, 0.078, z);
+  for (let y = 0; y < VISUAL_GRID; y++) {
+    if (!isRoadCell(y)) continue;
+    for (let x = 0; x < VISUAL_GRID; x++) {
+      if (isRoadCell(x) || x % 2 !== 0) continue;
+      const z = (y - 31.5) * 2;
+      roadMarkings.push((x - 31.5) * 2 - 0.36, 0.078, z, (x - 31.5) * 2 + 0.36, 0.078, z);
     }
   }
-  for (let x = 0; x < GRID_SIZE; x++) {
-    if (!ROAD_CELLS.has(x)) continue;
-    for (let y = 0; y < GRID_SIZE; y++) {
-      if (ROAD_CELLS.has(y) || y % 2 !== 0) continue;
-      const px = (x - 15.5) * 2;
-      roadMarkings.push(px, 0.078, (y - 15.5) * 2 - 0.36, px, 0.078, (y - 15.5) * 2 + 0.36);
+  for (let x = 0; x < VISUAL_GRID; x++) {
+    if (!isRoadCell(x)) continue;
+    for (let y = 0; y < VISUAL_GRID; y++) {
+      if (isRoadCell(y) || y % 2 !== 0) continue;
+      const px = (x - 31.5) * 2;
+      roadMarkings.push(px, 0.078, (y - 31.5) * 2 - 0.36, px, 0.078, (y - 31.5) * 2 + 0.36);
     }
   }
-  const markingGeometry = new THREE.BufferGeometry();
-  markingGeometry.setAttribute("position", new THREE.Float32BufferAttribute(roadMarkings, 3));
-  scene.add(new THREE.LineSegments(markingGeometry, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 })));
+  addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
 
   const stripeGeometry = new THREE.BoxGeometry(0.14, 0.025, 0.72);
   const stripeMaterial = new THREE.MeshStandardMaterial({ color: "#f7f0dc", roughness: 0.8 });
-  const intersectionCenters = [7.5, 15.5, 23.5];
-  const crosswalkCount = intersectionCenters.length * intersectionCenters.length * 28;
-  const crossings = new THREE.InstancedMesh(stripeGeometry, stripeMaterial, crosswalkCount);
+  const intersectionCenters = [7.5, 15.5, 23.5, 31.5, 39.5, 47.5, 55.5];
+  const crosswalks = new THREE.InstancedMesh(stripeGeometry, stripeMaterial, intersectionCenters.length ** 2 * 28);
   let stripeIndex = 0;
   for (const ix of intersectionCenters) {
     for (const iz of intersectionCenters) {
-      const cx = (ix - 15.5) * 2, cz = (iz - 15.5) * 2;
+      const cx = (ix - 31.5) * 2, cz = (iz - 31.5) * 2;
       for (let n = -3; n <= 3; n++) {
         for (const offset of [-2.05, 2.05]) {
           dummy.position.set(cx + n * 0.24, 0.09, cz + offset);
           dummy.rotation.set(0, 0, 0);
           dummy.scale.set(1, 1, 1);
           dummy.updateMatrix();
-          crossings.setMatrixAt(stripeIndex++, dummy.matrix);
+          crosswalks.setMatrixAt(stripeIndex++, dummy.matrix);
           dummy.position.set(cx + offset, 0.09, cz + n * 0.24);
           dummy.rotation.set(0, Math.PI / 2, 0);
           dummy.updateMatrix();
-          crossings.setMatrixAt(stripeIndex++, dummy.matrix);
+          crosswalks.setMatrixAt(stripeIndex++, dummy.matrix);
         }
       }
     }
   }
-  crossings.count = stripeIndex;
-  crossings.instanceMatrix.needsUpdate = true;
-  crossings.castShadow = false;
-  crossings.receiveShadow = true;
-  scene.add(crossings);
+  crosswalks.count = stripeIndex;
+  crosswalks.instanceMatrix.needsUpdate = true;
+  scene.add(crosswalks);
 
-  // Subtle parcel subdivision lines create smaller build pads inside each city block.
   const lotLines = [];
-  for (let y = 0; y < GRID_SIZE; y += 2) {
-    for (let x = 0; x < GRID_SIZE; x++) {
-      if (ROAD_CELLS.has(y) || ROAD_CELLS.has(x)) continue;
-      const left = (x - 15.5) * 2, right = left + 2;
-      const z = (y - 15.5) * 2;
+  for (let y = 0; y < VISUAL_GRID; y += 2) {
+    for (let x = 0; x < VISUAL_GRID; x++) {
+      if (isRoadCell(y) || isRoadCell(x)) continue;
+      const left = (x - 31.5) * 2, right = left + 2;
+      const z = (y - 31.5) * 2;
       lotLines.push(left, 0.151, z, right, 0.151, z);
     }
   }
-  const lotGeometry = new THREE.BufferGeometry();
-  lotGeometry.setAttribute("position", new THREE.Float32BufferAttribute(lotLines, 3));
-  scene.add(new THREE.LineSegments(lotGeometry, new THREE.LineBasicMaterial({ color: "#f1e8cb", transparent: true, opacity: 0.42 })));
+  addLineLayer(lotLines, new THREE.LineBasicMaterial({ color: "#f1e8cb", transparent: true, opacity: 0.42 }));
+
+  // Gold boundary clearly separates the initially unlocked district from future expansion.
+  const boundary = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-32, 0.19, -32), new THREE.Vector3(32, 0.19, -32),
+      new THREE.Vector3(32, 0.19, 32), new THREE.Vector3(-32, 0.19, 32)
+    ]),
+    new THREE.LineBasicMaterial({ color: "#e7bd69", transparent: true, opacity: 0.92 })
+  );
+  scene.add(boundary);
 
   const buildings = new THREE.Group();
   scene.add(buildings);
@@ -339,10 +367,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
       return {
         renderer: "three.js",
         version: THREE.REVISION,
-        plots: grassCountA + grassCountB,
-        roadTiles: roadCount,
+        plots: activeGrassA + activeGrassB,
+        roadTiles: activeRoads,
+        lockedPlots: lockedGrassCountA + lockedGrassCountB,
+        lockedRoadTiles: lockedRoadCount,
+        visiblePlots: activeGrassA + activeGrassB + lockedGrassCountA + lockedGrassCountB,
+        visibleRoadTiles: activeRoads + lockedRoadCount,
         raisedCurbs: curbInstances.length,
-        crosswalkStripes: crossings.count,
+        crosswalkStripes: crosswalks.count,
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio()
       };
@@ -352,7 +384,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
       renderer.dispose();
       grassMap.dispose();
       roadMap.dispose();
-      sidewalkMap.dispose();
       canvas.remove();
       sourceCanvas.style.opacity = "";
     }
