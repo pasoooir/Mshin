@@ -529,10 +529,16 @@ try {
     dispatchButton(gas, "pointerdown", gasPointerId);
     let braking = false;
     let lastControls = { steering: 0, brake: false };
+    // The steering pad rotates its active axis in portrait orientation:
+    // steer() reads clientY and the pad's height there, not clientX/width.
+    // Drive the same axis the real touch control uses so the controller's
+    // requested sign is the sign received by the game simulation.
+    const portrait = matchMedia("(orientation: portrait)").matches;
     const dispatchPointer = (type, x) => stick.dispatchEvent(new PointerEvent(type, {
       bubbles: true, cancelable: true, pointerId, pointerType: "mouse",
-      clientX: center.x + x * limit, clientY: center.y, button: 0,
-      buttons: type === "pointerup" ? 0 : 1
+      clientX: portrait ? center.x : center.x + x * limit,
+      clientY: portrait ? center.y + x * limit : center.y,
+      button: 0, buttons: type === "pointerup" ? 0 : 1
     }));
     dispatchPointer("pointerdown", 0);
     const drive = () => {
@@ -555,7 +561,11 @@ try {
         const steering = Math.max(-.86, Math.min(.86, roadWheelAngle / .48));
         if (speed > 185) braking = true;
         else if (speed < 145) braking = false;
-        lastControls = { steering, brake: braking, speed, lateral, yaw, curvature };
+        lastControls = {
+          steering, brake: braking, speed, lateral, yaw, curvature,
+          observedSteer: Number(telemetry.playerSteer) || 0,
+          stickSteer: Number(stick.dataset.steer) || 0
+        };
         // Pointer displacement and the simulation's positive steering axis share the same direction.
         // Keep the sign intact: inverting it drives the car farther away from the road centre.
         const pointerSteering = Math.sign(steering) * Math.pow(Math.abs(steering), 1 / 1.28);
