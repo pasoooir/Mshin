@@ -89,7 +89,7 @@ progressHeartbeat.unref();
 try {
   activePhase = "mobile viewport and touch controls";
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  mobile.on("pageerror", error => errors.push(error.message));
+  mobile.on("pageerror", error => errors.push(error.stack || error.message));
   mobile.setDefaultTimeout(60000);
   mobile.setDefaultNavigationTimeout(60000);
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
