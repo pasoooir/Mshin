@@ -251,3 +251,10 @@ test("pickup collection uses swept vehicle motion and a physical capture radius"
   assert.match(game, /sweptPickupContact\(previousPlayerPosition,pickupCurrentPosition/);
   assert.match(game, /const previousPlayerPosition=carPoint\(\)/);
 });
+
+test("opening nitro pickup is aligned with the player and protected from early traffic", async () => {
+  const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
+  assert.match(game, /t:i===0\?\.075:/, "first pickup should be just ahead of the start line");
+  assert.match(game, /lateral:i===0\?0:/, "first pickup should align with the starting lane");
+  assert.match(game, /distance:\.32\+i\*\.22,totalProgress:\.32\+i\*\.22/, "opening rivals should leave a clear approach zone");
+});
