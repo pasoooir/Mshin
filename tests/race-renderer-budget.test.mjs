@@ -80,3 +80,15 @@ test("mesh upload duration is exposed for browser performance diagnostics", () =
   assert.match(source, /state\.maxMeshUploadMs=Math\.max\(state\.maxMeshUploadMs\|\|0,elapsed\)/);
   assert.match(source, /maxMeshUploadMs:0,meshUploadCount:0/);
 });
+
+
+test("late track construction yields between rail, crowd and billboard batches", () => {
+  assert.match(source, /railSegmentsBuilt\+\+%(?:mobile\?2:12)===0\)yield \{progress:\.67\+/,
+    "rail generation must not monopolize one render frame");
+  assert.match(source, /if\(i%4===3\)yield \{progress:\.673\+/,
+    "additional crowd geometry must be built in small frame-sized batches");
+  assert.match(source, /if\(i%2===1\)yield \{progress:\.675\+/,
+    "billboard generation must yield before the mesh upload queue");
+  assert.match(source, /state\.maxTrackBuildStepMs=Math\.max/);
+  assert.match(source, /state\.maxDrawPartMs=Math\.max/);
+});
