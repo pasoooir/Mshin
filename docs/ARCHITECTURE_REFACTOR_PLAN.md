@@ -211,3 +211,123 @@ This architecture is considered adopted only when:
 - GitHub Pages deployment is verified after merge.
 
 A lower file count by itself is not a success metric. The success metrics are fewer overlapping PR paths, fewer merge conflicts, shorter focused CI runs, and preserved gameplay behavior.
+
+## 11. Phase 1 — verified runtime and dependency map (2026-11-02)
+
+This section records the executable entry points and import edges verified against `main` at the audit time. It deliberately distinguishes what is proven by source references from what still requires a scene/build audit.
+
+### 11.1 Published browser entry points
+
+| Surface | HTML entry | Runtime entry | Verified behavior |
+|---|---|---|---|
+| Racing | `index.html` | `src/boot.js` | The page loads accessibility and boot modules. Boot preloads the manifest, then dynamically imports `src/web-game.js`. |
+| City | `city.html` | `src/city/city-view.js` | The page directly loads the city view as an ES module. |
+| Offline shell | Both pages | `service-worker.js` | Both pages register the same root service worker on secure origins. |
+
+The racing page also contains inline orientation/viewport and service-worker registration logic. The browser runtime is therefore the currently published, directly reachable implementation; the Cocos TypeScript source is a parallel project implementation, not the entry point referenced by either published HTML page.
+
+### 11.2 Racing browser dependency graph
+
+```text
+index.html
+  ├─ inline orientation/viewport helpers (window.MshinOrientation)
+  ├─ src/menu-accessibility.js
+  └─ src/boot.js
+       ├─ src/asset-loader.js
+       │    └─ src/asset-manifest.json
+       │         ├─ assets/vector/car-*.svg
+       │         ├─ assets/vector/world-*.svg
+       │         ├─ cdn/assets/scenes/scene-*.jpg
+       │         ├─ cdn/assets/icons/*
+       │         └─ cdn/assets/audio/*
+       └─ dynamic import: src/web-game.js
+            ├─ vehicle-controls.js
+            ├─ multitouch-input.js
+            ├─ audio.js
+            ├─ race-renderer-3d.js
+            │    ├─ vehicle-showroom-3d.js
+            │    │    └─ vehicle-pbr.js
+            │    ├─ vehicle-pbr.js
+            │    └─ vehicle-controls.js
+            ├─ vehicle-showroom-3d.js
+            ├─ aerial-environment.js
+            ├─ collision-physics.js
+            ├─ rigid-body-physics.js
+            ├─ vehicle-dynamics.js
+            │    └─ tire-physics.js
+            ├─ pickup-collection.js
+            ├─ vehicle-damage-visuals.js
+            ├─ traffic-ai.js
+            └─ vehicle-destruction.js
+```
+
+Additional observations:
+- `src/game.js` imports `src/physics.js`, but neither `index.html` nor `src/boot.js` references `src/game.js`. Treat it as an apparently legacy/unwired module until repository-wide references confirm otherwise.
+- `src/web-game.js` publishes diagnostic/runtime objects on `window`, including `Mshin3DRenderer`, `MshinVehicleShowroom`, `MshinPerformance`, `MshinTrafficRoster`, `MshinViewport`, `MshinShowroom` and gyro/boot diagnostics. These globals are implicit integration contracts used by tests and browser diagnostics; do not move or rename them without a compatibility layer.
+- The main racing runtime has a large orchestration surface. Extract behavior behind focused interfaces before moving files; avoid changing its entry import in the same PR as unrelated gameplay changes.
+
+### 11.3 City browser dependency graph
+
+```text
+city.html
+  └─ src/city/city-view.js
+       ├─ DOM/canvas presentation and input handling
+       ├─ city state/simulation helpers (currently in the same module)
+       └─ window.MshinCityDebug (browser test/debug contract)
+```
+
+The city page has no observed ES-module imports in its current view entry. The simulation/view separation is therefore an internal extraction opportunity, but should be introduced with focused city tests and a stable city-view API.
+
+### 11.4 Cocos TypeScript dependency graph
+
+The Cocos scripts are not referenced by the published browser HTML entry points. Their observed source-level graph is:
+
+```text
+assets/scripts/MshinGame.ts
+  ├─ cc (Cocos Creator engine)
+  ├─ src/stage-catalog.ts
+  ├─ src/cocos-core.ts
+  ├─ assets/scripts/VehicleController.ts
+  │    ├─ cc
+  │    ├─ src/cocos-core.ts
+  │    └─ src/stage-catalog.ts
+  ├─ assets/scripts/VehicleDamageRenderer.ts
+  │    ├─ cc
+  │    └─ assets/scripts/VehicleController.ts
+  ├─ assets/scripts/WorldRenderer.ts
+  │    ├─ cc
+  │    └─ src/stage-catalog.ts
+  └─ assets/scripts/ProgressStore.ts
+       ├─ cc
+       ├─ src/stage-catalog.ts
+       └─ src/progress.ts
+```
+
+This confirms code-level dependencies but does not prove which Cocos scene is configured as the launch scene. Before any Cocos file migration, inspect `project.json`, `settings/v2/packages` (if present), scene assets, UUID/meta references and Creator build settings.
+
+### 11.5 Shared offline/cache boundary
+
+- Both browser pages register the root `service-worker.js`.
+- The worker's precache list explicitly includes the racing browser runtime, its physics/control/render modules, `src/asset-loader.js` and `src/asset-manifest.json`.
+- The asset manifest is the source of truth for car/world SVGs, scene images, control icons and audio files.
+- Any future module extraction must update the service-worker precache strategy and offline tests in the same bounded change. A module that works online but is absent from the offline cache is not considered integrated.
+
+### 11.6 Ownership and safe first extraction
+
+| Existing area | Target ownership | Initial action |
+|---|---|---|
+| `src/vehicle-controls.js`, `src/multitouch-input.js` | Racing / Controls | Add contract tests and isolate the public input API; keep legacy imports stable. |
+| `src/vehicle-dynamics.js`, `src/tire-physics.js`, `src/collision-physics.js`, `src/rigid-body-physics.js` | Racing / Vehicles + Physics | Keep physics pure and renderer-independent; map consumers before extraction. |
+| `src/traffic-ai.js`, `src/vehicle-destruction.js`, `src/vehicle-damage-visuals.js` | Racing / Vehicles | Separate simulation state from visual effects. |
+| `src/asset-loader.js`, `src/asset-manifest.json` | Shared / Assets | Treat manifest keys and fallback behavior as a public contract. |
+| `src/city/city-view.js` | City / App + Graphics + Simulation | Extract pure simulation helpers first; keep DOM/canvas ownership in the view. |
+| `assets/scripts/**`, `src/cocos-core.ts` | Cocos Racing runtime | Keep separate until scene/build authority and import mapping are verified. |
+
+### 11.7 Phase 1 completion limits
+
+Verified: the published browser entry points, the racing boot/preload chain, the static ES-module imports listed above, key global debug contracts, the asset-manifest dependency, service-worker registration, and the Cocos source import graph.
+
+Not yet verified: every Cocos scene UUID/reference, all dynamically constructed asset paths, the complete test-to-runtime dependency graph, all workflow path filters, and whether every file in `src/` has an active production consumer. Those are explicit follow-up checks, not assumed facts.
+
+**Phase 1 status: partially complete.** Do not start mass file moves yet. Next, audit PR changed-path overlap and complete Cocos scene/asset UUID tracing; then add boundary checks in a separate, testable change.
+
