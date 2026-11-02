@@ -10,7 +10,7 @@ const [html,game,renderer,traffic] = await Promise.all([
 ]);
 
 test("portrait phones rotate the active WebGL canvas with the landscape game",()=>{
- assert.match(html,/#game,#game3d,#assetLoader,#countdownOverlay,#hud,\.overlay/);
+ assert.match(html,/#game,#game3d,#racePositionOverlay,#assetLoader,#countdownOverlay,#hud,\.overlay/);
  assert.match(html,/#game,#game3d\{display:block!important\}/);
  assert.match(html,/transform:rotate\(90deg\) translateY\(-100%\)!important/);
 });
