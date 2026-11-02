@@ -1,9 +1,5 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
-
-await mkdir("artifacts", { recursive: true });
-
 function withTimeout(promise, timeoutMs, label) {
   let timer;
   return Promise.race([
@@ -13,31 +9,6 @@ function withTimeout(promise, timeoutMs, label) {
     })
   ]).finally(() => clearTimeout(timer));
 }
-
-async function captureScreenshot(page, path, { fullPage = false } = {}) {
-  // Avoid Playwright's screenshot preflight (font/animation waits), which has
-  // stalled on this WebGL-heavy page in GitHub Actions after fonts were ready.
-  const session = await withTimeout(page.context().newCDPSession(page), 10000, "screenshot CDP session");
-  try {
-    await withTimeout(session.send("Page.enable"), 10000, "screenshot Page.enable");
-    const metrics = await withTimeout(session.send("Page.getLayoutMetrics"), 10000, "screenshot layout metrics");
-    const size = metrics.cssContentSize || metrics.contentSize;
-    const params = { format: "png", fromSurface: true, captureBeyondViewport: fullPage };
-    if (fullPage) {
-      params.clip = {
-        x: 0, y: 0,
-        width: Math.max(1, Math.ceil(size.width)),
-        height: Math.max(1, Math.ceil(size.height)),
-        scale: 1
-      };
-    }
-    const { data } = await withTimeout(session.send("Page.captureScreenshot", params), 30000, "CDP screenshot capture");
-    await withTimeout(writeFile(path, Buffer.from(data, "base64")), 10000, "screenshot file write");
-  } finally {
-    await Promise.race([session.detach().catch(() => {}), new Promise(resolve => setTimeout(resolve, 5000))]);
-  }
-}
-
 
 async function waitForGameBoot(page, label = "game") {
   await page.waitForFunction(() => {
@@ -108,7 +79,6 @@ try {
   assert.equal(preloadState.cars, 5, "all five vehicle SVGs should be decoded before the menu is interactive");
   assert.equal(preloadState.scenes, 10, "all ten photographic world environments should be decoded before the menu is interactive");
   assert.equal(preloadState.failures, 0, "the local vector asset pack should load without CDN/network dependencies");
-  await captureScreenshot(page, "artifacts/mshin-home-desktop.png");
   assert.equal(await page.locator(".releaseBadge").count(), 0, "home screen must not show the latest-changes link");
   assert.equal(await page.locator(".menuTab").count(), 9, "menu should expose eight requested sections plus the existing workshop");
   assert.equal(await page.locator(".menuTab:disabled").count(), 2, "unimplemented leaderboard and store entries must remain disabled");
@@ -171,7 +141,6 @@ try {
   assert.deepEqual(await page.evaluate(() => { const s=JSON.parse(localStorage.getItem("mshin-settings-v1")); return {music:s.music,sound:s.sound,musicVolume:s.musicVolume,sfxVolume:s.sfxVolume}; }), {music:true,sound:true,musicVolume:.37,sfxVolume:.62}, "audio controls should persist separate values");
   await page.locator("#tab-race").click();
   await page.waitForTimeout(260);
-  await captureScreenshot(page, "artifacts/mshin-world-select-desktop.png", { fullPage: true });
   const worldCards = await page.locator(".worldCard img").evaluateAll(nodes => nodes.map(node => node.getAttribute("src")));
   assert.ok(worldCards.every((src, index) => src === "./assets/vector/world-" + String(index + 1).padStart(2, "0") + ".svg"), "each world card should use its own text-free vector artwork");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
@@ -353,7 +322,6 @@ try {
     }));
     throw new Error("Accelerator did not increase vehicle speed after WebGL warm-up: " + JSON.stringify(state) + "; " + error.message);
   });
-  await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
   try {
     // Keep accelerating until the player physically reaches a track pickup.
     // Releasing the key after a fixed 2.4s can leave the car short of the first
@@ -400,7 +368,6 @@ try {
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
-  await captureScreenshot(page, "artifacts/mshin-pause-desktop.png");
   assert.equal(await page.locator("#pausePanel .pauseMenu > *").count(), 10, "pause menu should expose all ten requested rows");
   assert.equal(await page.locator("#mostWantedList li").count(), 5, "MOST WANTED should render the player and four live rivals");
   assert.equal(await page.locator("#mostWantedList li.playerRank").count(), 1, "the player must own the first highlighted rank");
@@ -427,7 +394,6 @@ try {
   mobile.setDefaultNavigationTimeout(60000);
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(mobile, "mobile initial boot");
-  await captureScreenshot(mobile, "artifacts/mshin-home-mobile.png");
   const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
   assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
@@ -725,7 +691,7 @@ try {
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
   await page.context().setOffline(false);
-  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
+  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile browser flows, offline PWA launch, pause/resume, and touch controls.\
 ");
 } catch (error) {
   primaryError = error;
