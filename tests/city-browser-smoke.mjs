@@ -61,7 +61,8 @@ try{
   await compactPage.addInitScript(()=>{
    window.__cityOrientationCalls=[];
    document.documentElement.requestFullscreen=async()=>{window.__cityOrientationCalls.push("fullscreen")};
-   try{Object.defineProperty(screen.orientation,"lock",{configurable:true,value:async mode=>window.__cityOrientationCalls.push("lock:"+mode)})}catch{}
+   const orientation=screen.orientation;
+   if(orientation){const prototype=Object.getPrototypeOf(orientation);Object.defineProperty(prototype,"lock",{configurable:true,writable:true,value:async function(mode){window.__cityOrientationCalls.push("lock:"+mode)}})}else{window.__cityOrientationCalls.push("orientation-api-unavailable")}
   });
   await compactPage.goto("http://127.0.0.1:4173/city.html");
   await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
