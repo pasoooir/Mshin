@@ -425,7 +425,22 @@ try {
   const orientationCalls = await mobile.evaluate(() => window.__orientationCalls);
   assert.deepEqual(orientationCalls, ["fullscreen", "lock:landscape"], "mobile race start must enter fullscreen before requesting native landscape lock");
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
-  await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 });
+  await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 }).catch(async error => {
+    const diagnostic = await mobile.evaluate(() => ({
+      renderer: window.Mshin3DRenderer ? {
+        status: window.Mshin3DRenderer.status,
+        error: window.Mshin3DRenderer.error,
+        frames: window.Mshin3DRenderer.frames,
+        quality: window.Mshin3DRenderer.quality,
+        trackBuildProgress: window.Mshin3DRenderer.trackBuildProgress,
+        environmentCounts: window.Mshin3DRenderer.environmentCounts
+      } : null,
+      canvas: { width: document.querySelector("#game3d")?.width, height: document.querySelector("#game3d")?.height },
+      bodyClass: document.body.className,
+      pageErrors: errors
+    }));
+    throw new Error("mobile WebGL renderer did not reach a stable frame state: " + JSON.stringify(diagnostic) + " | " + error.message);
+  });
   const mobileRenderQuality = await mobile.evaluate(() => window.Mshin3DRenderer.quality);
   assert.ok(mobileRenderQuality.pixelRatio <= 0.8 && mobileRenderQuality.width <= 700 && mobileRenderQuality.height <= 700, "mobile WebGL must use a reduced render resolution to protect frame pacing: " + JSON.stringify(mobileRenderQuality));
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
