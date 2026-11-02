@@ -60,7 +60,7 @@
 
 | ID | Feature | Acceptance target | Dependencies | Priority | Status |
 |---|---|---|---|---|---|
-| SC-CORE-001 | Deterministic simulation clock and world state | Seeded fixed-tick simulation with pause/speed controls | SC-ARC-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Implementation in PR #137: immutable city state, fixed-tick clock, seeded PRNG and six Node tests; initial PR #137 portable validation passed (237 tests, 0 failures); a pause/backlog regression test was then added in commit 98b4c7b and revalidation is pending; browser smoke remains pending | 98b4c7b | #137 |
+| SC-CORE-001 | Deterministic simulation clock and world state | Seeded fixed-tick simulation with pause/speed controls | SC-ARC-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Implementation in PR #137: immutable city state, fixed-tick clock, seeded PRNG and six Node tests; PR #137 commit 98b4c7b portable validation passed (238 tests, 0 failures); browser smoke is queued; in-game city acceptance remains pending | 98b4c7b | #137 |
 | SC-WORLD-001 | Small city map/grid and terrain | Selectable buildable parcels; persistent coordinates | SC-CORE-001 | P2 | ⬜ شروع‌نشده |
 | SC-ROAD-001 | Road placement and road graph | Validated connected road segments; costs, undo-safe placement | SC-WORLD-001 | P1 | ⬜ شروع‌نشده |
 | SC-BLD-001 | Building placement and occupancy | Data-driven residential/commercial/public buildings attached to road access | SC-ROAD-001 | P2 | ⬜ شروع‌نشده |
