@@ -9,19 +9,29 @@ const timeout = (promise, ms, label) => new Promise((resolve, reject) => {
 
 async function fetchImage(asset) {
   let lastError;
-  for (const source of [asset.cdn, asset.src].filter(Boolean)) {
-    const controller = new AbortController();
+  for (const source of [...new Set([asset.cdn, asset.src].filter(Boolean))]) {
     const remote = new URL(source, location.href).origin !== location.origin;
-    const limit = remote ? (asset.group === "scene" ? 1800 : 1200) : 3000;
-    const timer = setTimeout(() => controller.abort(), limit);
-    try {
-      const response = await timeout(fetch(source, { cache: "force-cache", credentials: "omit", signal: controller.signal }), limit, source);
-      if (!response.ok) throw new Error(`Asset request failed (${response.status}): ${source}`);
-      const blob = await timeout(response.blob(), limit, source);
-      if (!blob.type.startsWith("image/")) throw new Error(`Unexpected image MIME type: ${blob.type}`);
-      return blob;
-    } catch (error) { lastError = error; }
-    finally { clearTimeout(timer); }
+    // Mobile emulation and cold GitHub runners can contend for bandwidth while
+    // scene textures decode. Keep local assets independent of that contention
+    // and retry transient fetch/abort failures before declaring an asset lost.
+    const limit = remote ? (asset.group === "scene" ? 5000 : 4000) : 12000;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), limit);
+      try {
+        const response = await timeout(fetch(source, { cache: "force-cache", credentials: "omit", signal: controller.signal }), limit, source);
+        if (!response.ok) throw new Error(`Asset request failed (${response.status}): ${source}`);
+        const blob = await timeout(response.blob(), limit, source);
+        if (!blob.type.startsWith("image/")) throw new Error(`Unexpected image MIME type: ${blob.type}`);
+        return blob;
+      } catch (error) {
+        lastError = error;
+        // Retry network/timeout failures only. A stable HTTP or MIME error is
+        // deterministic and should surface immediately instead of being hidden.
+        if (error?.name !== "AbortError" && !/timeout|Failed to fetch|NetworkError/i.test(String(error?.message || error))) break;
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 150 * (attempt + 1)));
+      } finally { clearTimeout(timer); }
+    }
   }
   throw lastError || new Error(`No image source available: ${asset.src}`);
 }
