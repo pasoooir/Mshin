@@ -83,7 +83,7 @@ test("mesh upload duration is exposed for browser performance diagnostics", () =
 
 
 test("late track construction yields between rail, crowd and billboard batches", () => {
-  assert.match(source, /railSegmentsBuilt\+\+%(?:mobile\?2:12)===0\)yield \{progress:\.67\+/,
+  assert.match(source, /if\(\+\+railSegmentsBuilt%\(mobile\?2:12\)===0\)yield \{progress:\.67\+/,
     "rail generation must not monopolize one render frame");
   assert.match(source, /if\(i%4===3\)yield \{progress:\.673\+/,
     "additional crowd geometry must be built in small frame-sized batches");
