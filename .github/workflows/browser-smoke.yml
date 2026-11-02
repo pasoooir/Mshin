@@ -62,7 +62,7 @@ jobs:
           echo "--- Listener diagnostics ---"
           (ss -ltnp || true) | grep ':4173' || true
           exit 1
-      - name: Run city entry browser smoke test
+      - name: Run mobile city entry browser smoke test
         env:
           CI: "true"
         run: |
@@ -80,11 +80,3 @@ jobs:
           if [ -f /tmp/mshin-http.pid ]; then
             kill "$(cat /tmp/mshin-http.pid)" 2>/dev/null || true
           fi
-      - name: Upload mobile gameplay previews
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mshin-mobile-gameplay-previews
-          path: artifacts/mobile/*.png
-          if-no-files-found: warn
-          retention-days: 7
