@@ -26,7 +26,7 @@ try{
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
- for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,18]]){await page.locator('[data-city-tool="'+type+'"]').click();const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
+ for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,14]]){await page.locator('[data-city-tool="'+type+'"]').click();const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
  await page.evaluate(()=>window.MshinCityDebug.step());
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
