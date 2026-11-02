@@ -139,9 +139,31 @@ export function createRaceRenderer(canvas){
   // Leashed dogs and cats near spectator lawns: four-legged silhouettes, tails and ears.
   const petCount=mobile?3:9;for(let i=0;i<petCount;i++){const t=(i+.7)/petCount*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,x=f.p.x+f.nx*side*(305+(i%3)*22),z=-(f.p.y+f.ny*side*(305+(i%3)*22)),base=f.height||0,cat=i%2===1,coat=cat?"#777b83":"#b88c5c";sphere(petBodies,x,base+9,z,cat?13:18,8,cat?8:10,8,4);sphere(petHeads,x+13,base+14,z,8,8,8,8,4);for(const lx of [-8,7])for(const lz of [-5,5])box(petLegs,x+lx,base+3,z+lz,3,8,3);sphere(petTails,x-17,base+15,z-4,cat?3:4,cat?12:10,3,6,3);for(const ex of [-4,4]){const ear=[];tri(ear,[x+13+ex,base+19,z],[x+13+ex+3,base+14,z+2],[x+13+ex+1,base+27,z]);petEars.push(...ear)}if(!state.petCoats)state.petCoats=[];state.petCoats.push(coat);yield {progress:.65+(i/petCount)*.015}}
   // Soft contact-shadow decals sit directly on the ground under structures.
-  nextDecor.push(part(landscape,"#778b78"),part(treeShadows,"#26332b"),part(buildingShadows,"#303a35"),part(trees,theme[3]),part(houses,"#d6c6a4"),part(buildings,urban?"#5c4d85":"#747b82"),part(roofTris,urban?"#343b4a":"#9b5942"),part(windows,"#8ec7d4",.05),part(doors,"#493b34"),part(shops,"#c8b08b"),part(crowdBodies,"#e85b47"),part(crowdHeads,"#d4a47e"),part(crowdArms,"#e2b18c"),part(crowdLegs,"#263344"),part(petBodies,"#b88c5c"),part(petHeads,"#b88c5c"),part(petLegs,"#75543c"),part(petEars,"#8b5d4a"),part(petTails,"#8b5d4a"));
   state.environmentCounts={trees:treeCount,houses:urban?0:buildingCount,shops:shopCount,buildings:urban?buildingCount:0,spectators:spectatorCount,dogs:Math.ceil(petCount/2),cats:Math.floor(petCount/2),contactShadows:treeCount+buildingCount};
   yield {parts:[nextRoad,...nextDecor],progress:.67};
+  // Convert and upload large procedural meshes in bounded GPU batches. Building
+  // the scene arrays is cheap compared with normal generation + bufferData for
+  // one enormous mesh; keep each render() call below a small upload budget.
+  const uploadQueue=[
+   [landscape,"#778b78"],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[trees,theme[3]],
+   [houses,"#d6c6a4"],[buildings,urban?"#5c4d85":"#747b82"],[roofTris,urban?"#343b4a":"#9b5942"],
+   [windows,"#8ec7d4",.05],[doors,"#493b34"],[shops,"#c8b08b"],[crowdBodies,"#e85b47"],
+   [crowdHeads,"#d4a47e"],[crowdArms,"#e2b18c"],[crowdLegs,"#263344"],[petBodies,"#b88c5c"],
+   [petHeads,"#b88c5c"],[petLegs,"#75543c"],[petEars,"#8b5d4a"],[petTails,"#8b5d4a"],
+   [billboardPosts,"#303d4b"],[billboardFaces,"#17324b"],[billboardFrames,"#d9e2e8"],
+   [billboardAccents,"#ed344e",.12],[railTris,"#d9dfe2"]
+  ];
+  const uploadValues=uploadQueue.reduce((sum,item)=>sum+item[0].length,0);
+  const maxUploadValues=4096*9;
+  let uploadedValues=0;
+  for(const [vertices,color,emissive=0] of uploadQueue){
+   for(let offset=0;offset<vertices.length;offset+=maxUploadValues){
+    const end=Math.min(vertices.length,offset+maxUploadValues);
+    nextDecor.push(part(vertices.slice(offset,end),color,emissive));
+    uploadedValues+=end-offset;
+    yield {parts:[nextRoad,...nextDecor],progress:.68+.30*(uploadedValues/Math.max(1,uploadValues))};
+   }
+  }
   for(let i=0;i<360;i+=(mobile?18:6)){
    const a=i/360*Math.PI*2,b=(i+1)/360*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    for(const side of [-1,1]){
