@@ -2,7 +2,7 @@ const THREE_CDN="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.j
 export async function createCityThreeRenderer(sourceCanvas){
  let THREE;try{THREE=await import(THREE_CDN)}catch{THREE=await import("https://unpkg.com/three@0.180.0/build/three.module.js")}
  const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight,false);
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight,false);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
  const canvas=renderer.domElement;canvas.id="cityThreeViewport";canvas.style.cssText="position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block";
  sourceCanvas.parentNode.insertBefore(canvas,sourceCanvas.nextSibling);sourceCanvas.style.opacity="0";
@@ -12,10 +12,12 @@ export async function createCityThreeRenderer(sourceCanvas){
  const sun=new THREE.DirectionalLight("#fff0d2",3.2);sun.position.set(-30,52,-24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-42;sun.shadow.camera.right=42;sun.shadow.camera.top=42;sun.shadow.camera.bottom=-42;scene.add(sun);
  const fill=new THREE.DirectionalLight("#8dc8ff",.75);fill.position.set(25,22,30);scene.add(fill);
  const base=new THREE.Mesh(new THREE.PlaneGeometry(180,180),new THREE.MeshStandardMaterial({color:"#789d69",roughness:1}));base.rotation.x=-Math.PI/2;base.position.y=-.2;base.receiveShadow=true;scene.add(base);
+ function surfaceTexture(base,accent,seed,count){const el=document.createElement("canvas");el.width=el.height=256;const g=el.getContext("2d");g.fillStyle=base;g.fillRect(0,0,256,256);let state=seed>>>0;const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296};for(let i=0;i<count;i++){const x=random()*256,y=random()*256,size=.35+random()*1.7;g.globalAlpha=.12+random()*.25;g.fillStyle=accent;g.fillRect(x,y,size,size)}g.globalAlpha=1;const map=new THREE.CanvasTexture(el);map.colorSpace=THREE.SRGBColorSpace;map.wrapS=map.wrapT=THREE.RepeatWrapping;map.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);return map}
+ const grassTexture=surfaceTexture("#83a968","#d1e2a7",741,5200),roadTexture=surfaceTexture("#343e47","#9ca8ae",912,2600);
  const grassGeo=new THREE.BoxGeometry(1.94,.18,1.94),roadGeo=new THREE.BoxGeometry(1.99,.13,1.99);
- const grassA=new THREE.InstancedMesh(grassGeo,new THREE.MeshStandardMaterial({color:"#82ad68",roughness:.96}),1024);
- const grassB=new THREE.InstancedMesh(grassGeo,new THREE.MeshStandardMaterial({color:"#8db978",roughness:.96}),1024);
- const roads=new THREE.InstancedMesh(roadGeo,new THREE.MeshStandardMaterial({color:"#38434c",roughness:.94}),1024);
+ const grassA=new THREE.InstancedMesh(grassGeo,new THREE.MeshStandardMaterial({map:grassTexture,color:"#ffffff",roughness:1}),1024);
+ const grassB=new THREE.InstancedMesh(grassGeo,new THREE.MeshStandardMaterial({map:grassTexture,color:"#d9edc8",roughness:1}),1024);
+ const roads=new THREE.InstancedMesh(roadGeo,new THREE.MeshStandardMaterial({map:roadTexture,color:"#ffffff",roughness:.98}),1024);
  const dummy=new THREE.Object3D(),edges=[],markings=[];let a=0,b=0,r=0;
  for(let y=0;y<32;y++)for(let x=0;x<32;x++){
   const px=(x-15.5)*2,pz=(y-15.5)*2,isRoad=[7,8,15,16,23,24].includes(x)||[7,8,15,16,23,24].includes(y);
