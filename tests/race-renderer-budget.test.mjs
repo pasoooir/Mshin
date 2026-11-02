@@ -52,4 +52,7 @@ test("track geometry is assembled in bounded frame-sized phases", () => {
   assert.match(source, /yield \{progress:\.39\}/, "sky construction must yield before scenery generation");
   assert.match(source, /if\(i%4===3\)yield \{progress:/, "large scenery loops must yield in bounded chunks");
   assert.match(source, /if\(step\.value\.parts\)pendingTrackParts=step\.value\.parts/, "progress-only yields must preserve pending GPU buffers");
+  assert.match(source, /const maxUploadValues=4096\*9/, "large scenery meshes must be split into bounded GPU upload batches");
+  assert.match(source, /vertices\.slice\(offset,end\)/, "each GPU upload must contain only one bounded geometry slice");
+  assert.match(source, /progress:\.68\+\.30\*\(uploadedValues\/Math\.max\(1,uploadValues\)\)/, "GPU upload progress must advance monotonically across all scenery batches");
 });
