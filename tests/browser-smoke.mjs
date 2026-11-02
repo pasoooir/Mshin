@@ -373,6 +373,7 @@ try {
   await page.mouse.up();
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "releasing the steering pad should return the control to center");
   assert.match(await steeringPad.getAttribute("aria-label"), /برای چرخیدن به چپ یا راست بکشید و رها کنید/, "steering instructions should be accessible in Persian");
+  await page.waitForFunction(() => window.Mshin3DRenderer?.trackBuildProgress >= 1 && window.Mshin3DRenderer?.frames > 0, undefined, { timeout: 15000 });
   const canvasState = await page.locator("#game3d").evaluate(canvas => new Promise(resolve => {
     const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     if (!gl) return resolve({ width: canvas.width, height: canvas.height, visiblePixels: 0, pixelBytes: 0, context: false });
