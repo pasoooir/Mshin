@@ -16,6 +16,11 @@ test("race renderer uses real Poly Haven CDN surfaces for asphalt and biome terr
  assert.match(renderer,/texture:surfaceKey\?surfaceTextures\.get\(surfaceKey\)/);
 });
 
+test("non-urban roadside house roofs emit valid three-vertex faces",()=>{
+ assert.match(renderer,/tri\(roof,\[x-w\/2-7,eave,z-d\/2-7\],\[x\+w\/2\+7,eave,z-d\/2-7\],\[x,peak,z-d\/2-7\]\)/);
+ assert.match(renderer,/tri\(roof,\[x\+w\/2\+7,eave,z\+d\/2\+7\],\[x-w\/2-7,eave,z\+d\/2\+7\],\[x,peak,z\+d\/2\+7\]\)/);
+});
+
 test("optional CDN textures have bounded mobile loading and preserve fallback rendering",()=>{
  assert.match(renderer,/6500/);
  assert.match(renderer,/CDN texture timed out/);
