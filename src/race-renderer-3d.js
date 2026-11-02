@@ -104,9 +104,16 @@ export function createRaceRenderer(canvas){
   }
   const nextRoad=part(roadTris,theme[1]);nextDecor.push(part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0]));
   yield {parts:[nextRoad,...nextDecor],progress:.34};
-  const trees=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
+  state.petCoats=[];const trees=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?18:52,buildingCount=mobile?8:22;
   const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
+  // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
+  const skyTris=[],cloudTris=[],sunTris=[];
+  sphere(skyTris,0,0,0,5600,3000,5600,32,14);
+  for(let i=0;i<(mobile?5:12);i++){const a=i/12*Math.PI*2,r=3550+(i%3)*330,x=Math.cos(a)*r,y=820+(i%4)*115,z=Math.sin(a)*r;sphere(cloudTris,x,y,z,300+(i%3)*55,55+(i%2)*25,115+(i%4)*28,9,4);sphere(cloudTris,x+125,y+18,z-35,185,46,90,8,4);}
+  sphere(sunTris,-2650,1780,-3000,155,155,155,12,8);
+  nextDecor.push(part(skyTris,"#78aee2",.22),part(cloudTris,"#dce9f3",.08),part(sunTris,"#fff0bd",.48));
+
   const disk=(out,x,y,z,r,segments=12)=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2,b=(j+1)/segments*Math.PI*2;tri(out,[x,y,z],[x+Math.cos(a)*r,y,z+Math.sin(a)*r],[x+Math.cos(b)*r,y,z+Math.sin(b)*r]);}};
   // A layered distant terrain silhouette gives every biome a readable horizon.
   for(let i=0;i<72;i++){const a=i/72*Math.PI*2,r=2450+(i%5)*170,x=Math.cos(a)*r,z=Math.sin(a)*r,h=90+(i%7)*38;const hill=[];sphere(hill,x,h*.34,z,260+(i%4)*45,h,230+(i%3)*35,8,4);landscape.push(...hill)}
