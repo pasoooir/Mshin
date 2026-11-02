@@ -14,6 +14,17 @@ try{
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][14]),"building","park tool should place a city asset");
  await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v1"))?.buildings?.some(b=>b.x===14&&b.y===14)),"city changes should persist");
  const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(1300);const after=await page.evaluate(()=>window.MshinCityDebug.city.tick);assert.ok(after>before,"simulation should advance");
+ const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),toolButtons:[...document.querySelectorAll(".cityTool")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,right:r.right,left:r.left}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
+ assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
+ assert.ok(mobile.tools.y>mobile.metrics.bottom,"mobile construction dock must sit below the city metrics");
+ assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile tool dock must not overlap the bottom status bar");
+ assert.ok(mobile.toolButtons.every(b=>b.width>=40&&b.height>=44),"mobile touch targets must be at least 40×44 CSS pixels");
+ assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
+ await page.screenshot({path:"artifacts/city-mobile-390x844.png"});
+ await page.setViewportSize({width:360,height:640});await page.waitForTimeout(80);
+ const compact=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
+ assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
+ assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
  fs.mkdirSync("artifacts",{recursive:true});await page.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, construction, local save and live simulation.\n");
 }finally{await browser.close()}
