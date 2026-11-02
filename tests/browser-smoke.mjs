@@ -259,7 +259,7 @@ try {
   }
   assert.ok(Number.isInteger(frameMetrics.maxUpdateSteps) && frameMetrics.maxUpdateSteps >= 0, "performance telemetry should expose maximum simulation steps");
   assert.ok(frameMetrics.samples >= 30, "race loop should publish rolling frame-time samples");
-  assert.ok(Number.isFinite(steadyStateAverageMs) && steadyStateAverageMs < 50, "steady-state game JS frame work should stay below 50ms after excluding one shader initialization sample: " + JSON.stringify({steadyStateAverageMs,frameMetrics}));
+  assert.ok(Number.isFinite(frameMetrics.avgFrameMs) && frameMetrics.avgFrameMs < 50, "steady-state game JS frame work should stay below 50ms after the rolling window has cleared shader initialization: " + JSON.stringify(frameMetrics));
   assert.ok(Number.isFinite(frameMetrics.p95FrameMs) && frameMetrics.p95FrameMs < 100, "95th percentile game JS frame work should stay below 100ms");
   assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 1500, "steady-state game loop must not stall for multiple seconds: " + JSON.stringify(frameMetrics));
   assert.ok(Number.isInteger(frameMetrics.slowFrameCount) && frameMetrics.slowFrameCount <= 1, "at most one isolated scheduler/initialization spike above 200ms is tolerated; repeated long frames must fail: " + JSON.stringify(frameMetrics));
