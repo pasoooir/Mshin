@@ -241,9 +241,11 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const next = city.buildings.map(v => [v.id, v.type, v.x, v.y, v.level].join(":")).join("|");
     if (next === buildingSignature) return;
     buildingSignature = next;
-    while (buildings.children.length) {
-      const child = buildings.children.pop();
+    for (const child of [...buildings.children]) {
       buildings.remove(child);
+      child.geometry?.dispose();
+      if (Array.isArray(child.material)) child.material.forEach(material => material.dispose());
+      else child.material?.dispose();
     }
     for (const item of city.buildings) {
       const x = (item.x - 15.5) * 2, z = (item.y - 15.5) * 2;
