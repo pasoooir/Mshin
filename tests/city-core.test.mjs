@@ -53,6 +53,23 @@ test("clock retains backlog and limits work per frame without dropping simulatio
   assert.equal(clock.pendingTicks, 0);
 });
 
+test("paused clock retains due ticks without advancing simulation", () => {
+  const clock = new SimulationClock({ tickSeconds: 1, maxTicksPerAdvance: 2 });
+  const seen = [];
+  const first = clock.advance(5, tick => seen.push(tick));
+  assert.equal(first.ticksRun, 2);
+  assert.equal(first.pendingTicks, 3);
+  clock.setSpeed(0);
+  const paused = clock.advance(30, tick => seen.push(tick));
+  assert.equal(paused.ticksRun, 0);
+  assert.equal(paused.pendingTicks, 3);
+  assert.equal(clock.tick, 2);
+  clock.setSpeed(1);
+  clock.advance(0, tick => seen.push(tick));
+  assert.deepEqual(seen, [1, 2, 3, 4]);
+  assert.equal(clock.tick, 4);
+});
+
 test("pause and speed controls do not corrupt the fixed-step accumulator", () => {
   const clock = new SimulationClock({ tickSeconds: 1 });
   const seen = [];
