@@ -92,6 +92,9 @@ async function waitForGameBoot(page, label = "game") {
 }
 
 const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--disable-features=CalculateNativeWinOcclusion", "--disable-frame-rate-limit", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
+let activePhase = "browser launch";
+const progressHeartbeat = setInterval(() => console.log("[browser-smoke] still running; current phase: " + activePhase), 15000);
+progressHeartbeat.unref();
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -100,6 +103,7 @@ try {
   page.setDefaultNavigationTimeout(60000);
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   page.on("requestfailed", request => errors.push("requestfailed: " + request.url() + " — " + (request.failure()?.errorText || "unknown")));
+  activePhase = "initial desktop boot and asset preload";
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(page, "initial desktop boot");
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
@@ -180,6 +184,7 @@ try {
   assert.equal(await page.locator("#showroomVehicle").evaluate(el => el.tagName), "CANVAS", "the selected vehicle should render in the real WebGL showroom");
   await page.waitForFunction(() => window.MshinVehicleShowroom?.vehicle === "comet", undefined, { timeout: 5000 });
   assert.match(await page.locator("#showroomCarName").textContent(), /(?:Zola GT|Zola GT)/, "showroom identity should follow the selected vehicle");
+  activePhase = "audio persistence reload";
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "persistence reload");
   await page.locator("#play").click();
@@ -248,6 +253,7 @@ try {
   assert.equal(rigidCheck.angular,true,"off-centre browser collision should preserve finite angular response");
   assert.equal(rigidCheck.swept,true,"swept collision should detect fast body traversal");
 
+  activePhase = "desktop WebGL renderer and frame-budget diagnostics";
   const uploadMetrics = await page.evaluate(() => ({
     maxMeshUploadMs: window.Mshin3DRenderer?.maxMeshUploadMs,
     meshUploadCount: window.Mshin3DRenderer?.meshUploadCount,
@@ -274,13 +280,17 @@ try {
     lastClearMs: window.Mshin3DRenderer?.lastClearMs,
     maxRendererRenderMs: window.Mshin3DRenderer?.maxRendererRenderMs,
     lastRendererRenderMs: window.Mshin3DRenderer?.lastRendererRenderMs,
-    lastTrackBuildProgress: window.Mshin3DRenderer?.lastTrackBuildProgress
+    lastTrackBuildProgress: window.Mshin3DRenderer?.lastTrackBuildProgress,
+    softwareRenderer: window.Mshin3DRenderer?.softwareRenderer,
+    gpuProfile: window.Mshin3DRenderer?.gpuProfile,
+    renderScale: window.Mshin3DRenderer?.quality?.renderScale
   }));
   console.log("[browser-smoke] RendererDiagnostics:", JSON.stringify(uploadMetrics));
   const renderTiming = await page.evaluate(() => window.MshinRenderTiming ?? null);
   console.log("[browser-smoke] RenderTiming:", JSON.stringify(renderTiming));
   assert.ok(Number.isFinite(uploadMetrics.maxMeshUploadMs) && uploadMetrics.maxMeshUploadMs < 1500, "individual WebGL mesh uploads must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isInteger(uploadMetrics.meshUploadCount) && uploadMetrics.meshUploadCount > 0, "renderer should expose completed mesh-upload diagnostics");
+  if (uploadMetrics.softwareRenderer) assert.ok(uploadMetrics.renderScale <= 0.65, "software WebGL render targets must use the bounded software-GPU profile: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isFinite(uploadMetrics.maxTrackBuildStepMs) && uploadMetrics.maxTrackBuildStepMs < 1500, "individual track construction steps must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isFinite(uploadMetrics.maxDrawPartMs) && uploadMetrics.maxDrawPartMs < 1500, "individual WebGL draw parts must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isInteger(uploadMetrics.drawPartCount) && uploadMetrics.drawPartCount > 0, "renderer should expose draw-part diagnostics");
@@ -431,6 +441,7 @@ try {
   await page.locator("#quitRace").click();
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
+  activePhase = "mobile viewport and touch controls";
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
   mobile.setDefaultTimeout(60000);
@@ -758,5 +769,6 @@ try {
   process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
 ");
 } finally {
+  clearInterval(progressHeartbeat);
   await browser.close();
 }
