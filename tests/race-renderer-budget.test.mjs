@@ -56,3 +56,27 @@ test("track geometry is assembled in bounded frame-sized phases", () => {
   assert.match(source, /vertices\.slice\(offset,end\)/, "each GPU upload must contain only one bounded geometry slice");
   assert.match(source, /progress:\.68\+\.30\*\(uploadedValues\/Math\.max\(1,uploadValues\)\)/, "GPU upload progress must advance monotonically across all scenery batches");
 });
+
+
+test("all late trackside and crowd geometry enters the bounded upload queue", () => {
+  const billboardBuild = source.indexOf("const billboardCount=mobile?8:20;");
+  const uploadQueue = source.indexOf("const uploadQueue=[");
+  const finalReturn = source.indexOf("return {road:nextRoad,decor:nextDecor,stageId:snapshot.stageId};", uploadQueue);
+  assert.ok(billboardBuild >= 0 && uploadQueue > billboardBuild,
+    "billboards, railings and late crowd geometry must be assembled before GPU uploads begin");
+  assert.ok(finalReturn > uploadQueue, "bounded uploads must finish before the completed track is returned");
+  const afterQueue = source.slice(uploadQueue, finalReturn);
+  assert.match(afterQueue, /\[billboardPosts,/,
+    "billboard geometry must be included in the chunked upload queue");
+  assert.match(afterQueue, /\[railTris,/,
+    "rail geometry must be included in the chunked upload queue");
+  assert.match(afterQueue, /\[crowdBodies,/,
+    "late crowd geometry must be included in the chunked upload queue");
+  assert.doesNotMatch(afterQueue, /nextDecor\.push\(part\(billboardPosts/,
+    "the completion frame must not synchronously upload the full late-scene meshes");
+});
+
+test("mesh upload duration is exposed for browser performance diagnostics", () => {
+  assert.match(source, /state\.maxMeshUploadMs=Math\.max\(state\.maxMeshUploadMs\|\|0,elapsed\)/);
+  assert.match(source, /maxMeshUploadMs:0,meshUploadCount:0/);
+});
