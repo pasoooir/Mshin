@@ -13,7 +13,7 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
   const telemetry = [];
   let lastSteer = Number.NaN;
   let lastTelemetryAt = 0;
-  let throttleHeld = false;
+  let throttleHeld = false, brakeHeld = false;
   await page.mouse.move(center.x, center.y);
   await page.mouse.down();
   try {
@@ -42,7 +42,7 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
           time: document.querySelector("#time")?.textContent || null
         };
       });
-      const targetSpeed=Math.abs(state.lateral)>140?185:245;if(state.speed<targetSpeed-12){if(!throttleHeld){await page.keyboard.down("ArrowUp");throttleHeld=true}if(brakeHeld){await page.keyboard.up("ArrowDown");brakeHeld=false}}else if(state.speed>targetSpeed+12){if(throttleHeld){await page.keyboard.up("ArrowUp");throttleHeld=false,brakeHeld=false}if(!brakeHeld){await page.keyboard.down("ArrowDown");brakeHeld=true}}else{if(throttleHeld){await page.keyboard.up("ArrowUp");throttleHeld=false}if(brakeHeld){await page.keyboard.up("ArrowDown");brakeHeld=false}}
+      const targetSpeed=Math.abs(state.lateral)>140?185:245;if(state.speed<targetSpeed-12){if(!throttleHeld){await page.keyboard.down("ArrowUp");throttleHeld=true}if(brakeHeld){await page.keyboard.up("ArrowDown");brakeHeld=false}}else if(state.speed>targetSpeed+12){if(throttleHeld){await page.keyboard.up("ArrowUp");throttleHeld=false}if(!brakeHeld){await page.keyboard.down("ArrowDown");brakeHeld=true}}else{if(throttleHeld){await page.keyboard.up("ArrowUp");throttleHeld=false}if(brakeHeld){await page.keyboard.up("ArrowDown");brakeHeld=false}}
       const steer = calculateRaceSteering(state);
       if (!Number.isFinite(lastSteer) || Math.abs(steer - lastSteer) >= .025) {
         await page.mouse.move(center.x + steer * limit, center.y, { steps: 1 });
