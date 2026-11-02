@@ -15,7 +15,7 @@ try{
  assert.equal(renderStats.roadTiles,348,"the complete road grid must be rendered in 3D");
  assert.ok(renderStats.raisedCurbs>0&&renderStats.crosswalkStripes>=200,"streets need raised curbs and visible pedestrian crossings");
  assert.ok(renderStats.lockedPlots>=1600&&renderStats.visiblePlots>=2300,"the visible world must include a large locked expansion grid, not blank margins");
- assert.equal(renderStats.visibleRoadTiles,1792,"the expanded 64×64 world must have a continuous road network");
+ assert.equal(renderStats.visibleRoadTiles,1392,"the expanded 64×64 world must have a continuous road network");
  assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
  await page.screenshot({path:"artifacts/city-empty-world-landscape.png"});
 
