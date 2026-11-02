@@ -145,7 +145,7 @@ export function createRaceRenderer(canvas){
   for(let i=0;i<buildingCount;i++){const t=(i+.25)/buildingCount*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=520+(i%4)*125,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0,w=96+(i%3)*22,h=58+(i%4)*12,d=84+(i%2)*18;
    disk(buildingShadows,x,base+.5,z,58,12);
    if(urban){box(buildings,x,base+h/2,z,w,h,d);box(roofTris,x,base+h+5,z,w+10,10,d+10);for(let floor=0;floor<Math.max(1,Math.floor(h/28));floor++)for(let sideX of [-1,1]){box(windows,x+sideX*w*.27,base+17+floor*25,z+d/2+.8,13,12,2);box(windows,x+sideX*w*.27,base+17+floor*25,z-d/2-.8,13,12,2)}}
-   else{box(houses,x,base+h/2,z,w,h,d);const roof=[];const eave=base+h,peak=eave+40;quad(roof,[x-w/2-7,eave,z-d/2-7],[x+w/2+7,eave,z-d/2-7],[x,peak,z-d/2-7]);quad(roof,[x+w/2+7,eave,z+d/2+7],[x-w/2-7,eave,z+d/2+7],[x,peak,z+d/2+7]);quad(roof,[x-w/2-7,eave,z-d/2-7],[x-w/2-7,eave,z+d/2+7],[x,peak,z]);quad(roof,[x+w/2+7,eave,z+d/2+7],[x+w/2+7,eave,z-d/2-7],[x,peak,z]);roofTris.push(...roof);
+   else{box(houses,x,base+h/2,z,w,h,d);const roof=[];const eave=base+h,peak=eave+40;tri(roof,[x-w/2-7,eave,z-d/2-7],[x+w/2+7,eave,z-d/2-7],[x,peak,z-d/2-7]);tri(roof,[x+w/2+7,eave,z+d/2+7],[x-w/2-7,eave,z+d/2+7],[x,peak,z+d/2+7]);tri(roof,[x-w/2-7,eave,z-d/2-7],[x-w/2-7,eave,z+d/2+7],[x,peak,z]);tri(roof,[x+w/2+7,eave,z+d/2+7],[x+w/2+7,eave,z-d/2-7],[x,peak,z]);roofTris.push(...roof);
     box(doors,x,base+14,z+d/2+1,13,28,2);for(const wx of [-w*.28,w*.28]){box(windows,x+wx,base+27,z+d/2+1,15,14,2);box(windows,x+wx,base+27,z+d/2+2,2,14,1);box(windows,x+wx,base+27,z+d/2+2,15,2,1)}}
   }
   yield {progress:.56};
