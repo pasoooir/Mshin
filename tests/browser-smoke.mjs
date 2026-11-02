@@ -525,19 +525,22 @@ try {
         const lateral = Number(telemetry.playerLateral) || 0;
         const lateralVelocity = Number(telemetry.playerLateralVelocity) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
-        const speed = Math.max(60, Number(telemetry.playerSpeed) || 0);
+        const speed = Math.max(0, Number(telemetry.playerSpeed) || 0);
         const trackCurvature = Number(telemetry.playerTrackCurvature) || 0;
-        // Pure-pursuit path tracking: compensate for road curvature and
-        // project both heading and lateral drift onto a look-ahead point.
-        // The velocity term damps an outward slide before it reaches the
-        // road edge, while the curvature feed-forward follows actual bends.
-        const lookAhead = 360;
-        const predictedLateral = lateral + lookAhead * Math.sin(yaw)
-          + lookAhead * lateralVelocity / speed;
-        const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
-        const targetCurvature = trackCurvature + correctionCurvature;
-        const steering = Math.max(-.92, Math.min(.92, Math.atan(128 * targetCurvature) / .48));
-        return { steering, brake: speed > 205 };
+
+        // Track the road centre with a bounded heading/lateral controller.
+        // A pure look-ahead projection can cancel the lateral error when the
+        // car is already pointing back toward the road edge, then command the
+        // wrong steering direction before the chassis has actually recovered.
+        // Keep road curvature as feed-forward, but independently damp heading
+        // error, lateral displacement and outward lateral velocity.
+        const lookAhead = 320;
+        const roadWheelAngle = Math.atan(128 * trackCurvature)
+          - 2 * Math.atan2(lateral, lookAhead)
+          - yaw * .65
+          - Math.atan2(lateralVelocity, Math.max(80, speed)) * .45;
+        const steering = Math.max(-.92, Math.min(.92, roadWheelAngle / .48));
+        return { steering, brake: speed > 245 };
       });
       const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
       await economy.mouse.move(
@@ -563,6 +566,12 @@ try {
       performance: window.MshinPerformance ?? null,
       progress: localStorage.getItem("mshin-progress-v1"),
       telemetry: window.MshinPerformance ?? null,
+      controls: window.MshinPerformance ? {
+        steer: window.MshinPerformance.playerSteer,
+        steerTarget: window.MshinPerformance.playerSteerTarget,
+        gas: window.MshinPerformance.playerGas,
+        brake: window.MshinPerformance.playerBrake
+      } : null,
       bodyClass: document.body.className
     }));
     throw new Error("Economy race did not reach a finish state: " + JSON.stringify(raceState) + "; " + error.message);
