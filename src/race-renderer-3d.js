@@ -114,7 +114,9 @@ export function createRaceRenderer(canvas){
   sand:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sand_01/sand_01_diff_1k.jpg",
   snow:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/snow_03/snow_03_diff_1k.jpg",
   rock:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_diff_1k.jpg",
-  concrete:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_diff_1k.jpg"
+  concrete:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_diff_1k.jpg",
+  bark:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg",
+  foliage:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg"
  };
  state.surfaceTextures={provider:"Poly Haven CDN",license:"CC0",requested:Object.keys(surfaceSources).length,loaded:0,failed:0,errors:[]};
  for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
@@ -138,7 +140,7 @@ export function createRaceRenderer(canvas){
   }
   const nextRoad=part(roadTris,theme[1],0,"environment","asphalt");nextDecor.push(part(shoulderTris,theme[2],0,"environment","concrete"),part(laneTris,"#e8e9e5"),part(groundTris,theme[0],0,"environment",terrainTexture));
   yield {parts:[nextRoad,...nextDecor],progress:.34};
-  state.petCoats=[];const trees=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
+  state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?18:softwareRenderer?22:48,buildingCount=mobile?8:softwareRenderer?12:22;
   const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
   // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
@@ -155,8 +157,8 @@ export function createRaceRenderer(canvas){
   for(let i=0;i<treeCount;i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=270+(i%7)*66,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0;
    disk(treeShadows,x,base+.6,z,24+(i%3)*4,10);
    // Trunk, branching limbs and layered foliage; mobile uses fewer repeated instances.
-   box(trees,x,base+19,z,8,38,8);cylinder(trees,x-12,base+25,z,3,22,7);cylinder(trees,x+8,base+32,z,3,19,7);
-   const foliage=[];sphere(foliage,x,base+48,z,22+(i%4)*4,28+(i%3)*5,22+(i%4)*4,mobile?8:12,mobile?5:7);sphere(foliage,x-13,base+62,z-4,16,19,16,7,5);sphere(foliage,x+12,base+59,z+5,17,20,17,7,5);trees.push(...foliage);if(i%4===3)yield {progress:.46+(i/treeCount)*.06};
+   box(treeTrunks,x,base+19,z,8,38,8);cylinder(treeTrunks,x-12,base+25,z,3,22,7);cylinder(treeTrunks,x+8,base+32,z,3,19,7);
+   const foliage=[];sphere(foliage,x,base+48,z,22+(i%4)*4,28+(i%3)*5,22+(i%4)*4,mobile?8:12,mobile?5:7);sphere(foliage,x-13,base+62,z-4,16,19,16,7,5);sphere(foliage,x+12,base+59,z+5,17,20,17,7,5);treeFoliage.push(...foliage);if(i%4===3)yield {progress:.46+(i/treeCount)*.06};
   }
   // Residential blocks: pitched roof silhouettes, recessed doors, glazing and porches.
   for(let i=0;i<buildingCount;i++){const t=(i+.25)/buildingCount*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=520+(i%4)*125,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0,w=96+(i%3)*22,h=58+(i%4)*12,d=84+(i%2)*18;
@@ -227,7 +229,7 @@ export function createRaceRenderer(canvas){
   // the scene arrays is cheap compared with normal generation + bufferData for
   // one enormous mesh; keep each render() call below a small upload budget.
   const uploadQueue=[
-   [landscape,"#778b78",0,terrainTexture],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[trees,theme[3]],
+   [landscape,"#778b78",0,terrainTexture],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[treeTrunks,"#70533b",0,"bark"],[treeFoliage,theme[3],0,"foliage"],
    [houses,"#d6c6a4",0,"concrete"],[buildings,urban?"#5c4d85":"#747b82",0,"concrete"],[roofTris,urban?"#343b4a":"#9b5942",0,"concrete"],
    [windows,"#8ec7d4",.05],[doors,"#493b34"],[shops,"#c8b08b",0,"concrete"],[crowdBodies,"#e85b47"],
    [crowdHeads,"#d4a47e"],[crowdArms,"#e2b18c"],[crowdLegs,"#263344"],[petBodies,"#b88c5c"],
