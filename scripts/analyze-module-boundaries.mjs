@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile, stat } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,15 +20,14 @@ async function walk(directory) {
 
 function domain(file) {
   const value = normalize(file);
-  if (/(^|\\/)city(\\/|[-.]|$)|city\\.html$/.test(value)) return "city";
+  if (/(^|\/)city(\/|[-.]|$)|city\.html$/.test(value)) return "city";
   if (value.startsWith("src/") || value.startsWith("assets/scripts/")) return "racing";
   return "shared";
 }
 
 function resolveLocalImport(from, specifier) {
   if (!specifier.startsWith(".")) return null;
-  const candidate = path.posix.normalize(path.posix.join(path.posix.dirname(from), specifier));
-  return candidate.startsWith("../") ? candidate : candidate;
+  return path.posix.normalize(path.posix.join(path.posix.dirname(from), specifier));
 }
 
 const sourceFiles = (await walk(root))
@@ -40,7 +39,7 @@ const edges = [];
 for (const file of sourceFiles) {
   const source = await readFile(path.join(root, file), "utf8");
   const imports = new Set();
-  const pattern = /(?:\\bfrom\\s*|\\bimport\\s*\\(|\\bimport\\s*)["']([^"']+)["']/g;
+  const pattern = /(?:\bfrom\s*|\bimport\s*\(|\bimport\s*)["']([^"']+)["']/g;
   for (const match of source.matchAll(pattern)) {
     const target = resolveLocalImport(file, match[1]);
     if (target) imports.add(target);
@@ -56,7 +55,7 @@ const entryPoints = [];
 for (const file of htmlFiles) {
   try {
     const html = await readFile(path.join(root, file), "utf8");
-    const refs = [...html.matchAll(/(?:src|href)=["']([^"']+\\.(?:js|mjs|css))["']/g)]
+    const refs = [...html.matchAll(/(?:src|href)=["']([^"']+\.(?:js|mjs|css))["']/g)]
       .map(match => match[1])
       .filter(ref => !/^(?:https?:|data:|#)/.test(ref));
     entryPoints.push({ html: file, domain: domain(file), references: [...new Set(refs)].sort() });
@@ -73,12 +72,12 @@ const report = {
   largestModules: [...modules].sort((a, b) => b.bytes - a.bytes).slice(0, 12)
 };
 
-const json = JSON.stringify(report, null, 2) + "\\n";
+const json = JSON.stringify(report, null, 2) + "\n";
 const outputIndex = process.argv.indexOf("--write");
 if (outputIndex >= 0) {
   const destination = process.argv[outputIndex + 1] || "docs/architecture-dependency-map.json";
   await writeFile(path.resolve(root, destination), json);
-  console.log(`Wrote ${destination}: ${modules.length} source files, ${edges.length} local import edges, ${report.crossDomainEdges.length} cross-domain edges.`);
+  console.log(\`Wrote \${destination}: \${modules.length} source files, \${edges.length} local import edges, \${report.crossDomainEdges.length} cross-domain edges.\`);
 } else {
   console.log(JSON.stringify({
     sourceFileCount: report.sourceFileCount,
