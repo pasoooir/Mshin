@@ -1,6 +1,6 @@
 /** Convert a screen-relative steering command to the game's steering convention. */
 export function invertSteerDirection(value) {
-  if (!Number.isFinite(value)) return 0;
+  if (!Number.isFinite(value) || value === 0) return 0;
   return Math.max(-1, Math.min(1, -value));
 }
 
