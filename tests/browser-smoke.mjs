@@ -169,7 +169,7 @@ try {
   await page.locator("#tab-race").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
-  await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
+  await page.locator(".stage").nth(4).click();
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
   await page.waitForFunction(() => window.MshinAssets?.audioReady === true, undefined, { timeout: 30000 });
