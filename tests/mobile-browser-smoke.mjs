@@ -74,9 +74,11 @@ try {
   const canvasBounds = await mobile.locator("#game3d").boundingBox();
   assert.ok(canvasBounds && Math.abs(canvasBounds.width - 390) <= 2 && Math.abs(canvasBounds.height - 845) <= 2, "WebGL canvas must cover the complete phone viewport: " + JSON.stringify(canvasBounds));
 
-  const standings = await mobile.evaluate(() => window.MshinRaceStandings?.() ?? null);
+  const standings = await mobile.evaluate(() => window.MshinRaceStandings ?? null);
   assert.ok(Array.isArray(standings) && standings.length === 5, "live mobile race must track the player and four rivals: " + JSON.stringify(standings));
-  assert.ok(mobile.locator("#racePositionOverlay").count(), "mobile page must contain the per-car rank cloud overlay");
+  assert.deepEqual([...new Set(standings.map(row => row.rank))].sort(), [1, 2, 3, 4, 5], "mobile race must expose five distinct live ranks");
+  assert.ok(standings.every(row => Number.isFinite(row.elapsed) && row.elapsed >= 0), "each mobile racer must expose an independent stopwatch");
+  assert.equal(await mobile.locator("#racePositionOverlay").count(), 1, "mobile page must contain the per-car rank cloud overlay");
 
   await mobile.locator("#pause").click();
   const pauseBounds = await mobile.locator("#pausePanel .pauseScreen").boundingBox();
