@@ -12,7 +12,7 @@ test("race environment builds a complete local 3D roadside scene", async () => {
   ]) assert.ok(source.includes(feature), "missing environment feature: " + feature);
   for (const budget of [
     "treeCount=mobile?18:softwareRenderer?22:48",
-    "buildingCount=mobile?8:22",
+    "buildingCount=mobile?8:softwareRenderer?12:22",
     "shopCount=mobile?3:7",
     "spectatorCount=mobile?10:softwareRenderer?14:36",
     "petCount=mobile?3:9"
