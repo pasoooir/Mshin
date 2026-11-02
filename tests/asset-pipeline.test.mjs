@@ -226,7 +226,7 @@ test("vehicle-specific sound profiles include an EV motor whine", async () => {
 test("race intro, progressive traffic classes and impact coin rewards are wired into gameplay", async () => {
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   assert.ok(game.includes("function drawCountdownIntro()"));
-  assert.ok(game.includes('state==="countdown"){drawCountdownIntro();return}'));
+  assert.ok(game.includes('state==="countdown"){drawCountdownIntro();drawRacePositionOverlay([]);return}'));
   for (const kind of ['types.push("pickup")','types.push("formula")','types.push("truck")','types.push("bus","motorcycle")']) assert.ok(game.includes(kind), kind + " must be introduced in later stages");
   assert.ok(game.includes("function drawTrafficBody(r)"));
   assert.ok(game.includes("function awardImpactReward(hit,forwardDot)"));
