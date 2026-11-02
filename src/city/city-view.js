@@ -1,13 +1,13 @@
 import { CITY_ZONES, placeCityZone, developCityZones, isCityZoneCell } from "./city-zoning.js";
 import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
-const SIZE=32,KEY="mshin-city-save-v1",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
+const SIZE=32,KEY="mshin-city-save-v2",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
 const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b)&&g[y+b][x+a]==="road");
 export function createInitialCity(seed=20261102){
  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill("grass"));
  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if([7,8,15,16,23,24].includes(x)||[7,8,15,16,23,24].includes(y))grid[y][x]="road";
- return {schemaVersion:1,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],animals:[],nextBuildingId:1,stats:{income:0,expenses:0,jobs:0,traffic:0}};
+ return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],animals:[],nextBuildingId:1,stats:{income:0,expenses:0,jobs:0,traffic:0}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==1||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
@@ -36,7 +36,7 @@ export function placeCityItem(city,x,y,type){
  const residents=type==="home"?12:0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents};
  city.grid[y][x]="building";city.buildings.push(b);city.population+=residents;return{ok:true,item:b,cost:COST[type]};
 }
-export function isValidCitySave(v){return!!(v&&v.schemaVersion===1&&typeof v.cityId==="string"&&typeof v.name==="string"&&Number.isSafeInteger(v.seed)&&Number.isSafeInteger(v.tick)&&v.tick>=0&&Number.isFinite(v.treasury)&&Number.isInteger(v.population)&&Array.isArray(v.grid)&&v.grid.length===SIZE&&v.grid.every(row=>Array.isArray(row)&&row.length===SIZE&&row.every(t=>["grass","road","building","water"].includes(t)||isCityZoneCell(t)))&&["buildings","trees","citizens","traffic"].every(k=>Array.isArray(v[k]))&&(v.zones===undefined||Array.isArray(v.zones)))}
+export function isValidCitySave(v){return!!(v&&v.schemaVersion===2&&typeof v.cityId==="string"&&typeof v.name==="string"&&Number.isSafeInteger(v.seed)&&Number.isSafeInteger(v.tick)&&v.tick>=0&&Number.isFinite(v.treasury)&&Number.isInteger(v.population)&&Array.isArray(v.grid)&&v.grid.length===SIZE&&v.grid.every(row=>Array.isArray(row)&&row.length===SIZE&&row.every(t=>["grass","road","building","water"].includes(t)||isCityZoneCell(t)))&&["buildings","trees","citizens","traffic"].every(k=>Array.isArray(v[k]))&&(v.zones===undefined||Array.isArray(v.zones)))}
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
 function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(!isValidCitySave(v))return createInitialCity();v.zones=Array.isArray(v.zones)?v.zones:[];return v}catch{return createInitialCity()}}
 function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return true}catch{return false}}
