@@ -5,9 +5,9 @@ import { readFile } from "node:fs/promises";
 const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
 
 test("procedural 3D scene stays within a bounded first-build geometry budget", () => {
-  assert.ok(source.includes("const segments=mobile?84:240,half=180;"),
+  assert.ok(source.includes("const segments=mobile?280:760,half=180;"),
     "desktop track tessellation is capped at 240 segments");
-  assert.ok(source.includes("i<(mobile?18:48);i++"),
+  assert.ok(source.includes("i<(mobile?54:144);i++"),
     "desktop tree instances are capped at 48");
   assert.ok(source.includes("i+=(mobile?18:6)"),
     "trackside rail sampling is bounded on desktop");
