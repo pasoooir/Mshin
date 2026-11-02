@@ -110,7 +110,11 @@ function mount(){
  addEventListener("resize",()=>{resize();threeRenderer?.resize();draw()});addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
  resize();import("./city-three-renderer.js").then(({createCityThreeRenderer})=>createCityThreeRenderer(canvas)).then(renderer=>{threeRenderer=renderer;window.MshinCity3DStats=renderer.getStats();window.MshinCity3DReady=true;draw()}).catch(error=>{window.MshinCity3DError=String(error);console.error("3D city renderer failed to load",error)});window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){if(threeRenderer)return threeRenderer.screenForTile(x,y);const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t)};
  document.documentElement.dataset.cityReady="true";
- function frame(now){const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}}if(city.tick-lastPersistTick>=6){if(persist(city))lastPersistTick=city.tick}draw();raf=requestAnimationFrame(frame)}
- raf=requestAnimationFrame(frame);addEventListener("pagehide",()=>{cancelAnimationFrame(raf);persist(city)},{once:true});
+ let lastRender=0;
+ function frame(now){if(document.hidden){raf=0;return}const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}}if(city.tick-lastPersistTick>=6){if(persist(city))lastPersistTick=city.tick}if(now-lastRender>=33){draw();lastRender=now}raf=requestAnimationFrame(frame)}
+ function resumeCityLoop(){if(document.hidden||raf)return;last=0;lastRender=0;raf=requestAnimationFrame(frame)}
+ function pauseCityLoop(){if(raf)cancelAnimationFrame(raf);raf=0;persist(city)}
+ document.addEventListener("visibilitychange",()=>{if(document.hidden)pauseCityLoop();else resumeCityLoop()});
+ raf=requestAnimationFrame(frame);addEventListener("pagehide",pauseCityLoop,{once:true});
 }
 if(typeof document!=="undefined"){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});else mount()}
