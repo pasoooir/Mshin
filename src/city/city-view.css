@@ -24,4 +24,6 @@
 #cityEnterLandscape{border:0;border-radius:14px;padding:14px 22px;background:linear-gradient(145deg,#f5d47c,#d99542);color:#2d2417;font-weight:1000;min-height:52px}
 @media(orientation:portrait){#cityOrientationGate{display:grid}}
 #cityOrientationGate.ready{display:none}
-.cityShell{z-index:2}\n#cityViewport{z-index:0}\n#cityThreeViewport{z-index:1;touch-action:none}
+.cityShell{z-index:2}
+#cityViewport{z-index:0}
+#cityThreeViewport{z-index:1;touch-action:none}
