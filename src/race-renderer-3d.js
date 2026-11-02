@@ -57,7 +57,7 @@ function hexColor(value){const h=String(value||"#e94f45").replace("#","");return
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
 export function createRaceRenderer(canvas){
  const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,maxTrackBuildStepMs:0,lastTrackBuildStepMs:0,maxDrawPartMs:0,maxDrawArraysMs:0,lastDrawArraysMs:0,maxDrawPartVertices:0,lastDrawPartVertices:0,lastDrawPartColor:null,drawPartCount:0,maxTrianglesPerFrame:0,lastFrameTriangles:0,maxVehicleBuildMs:0,lastVehicleBuildMs:0,vehicleBuildCount:0,maxResizeMs:0,lastResizeMs:0,maxClearMs:0,lastClearMs:0,maxRendererRenderMs:0,lastRendererRenderMs:0,softwareRenderer:false,gpuProfile:'detecting',captureNextFrameSample:false,lastFramePixelSample:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
- let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,road=null,decor=[],carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
+ let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,road=null,decor=[],surfaceTextures=new Map(),surfaceImages=new Set(),surfaceLoadGeneration=0,rendererDestroyed=false,carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
   // Create the WebGL context before sizing the canvas. The GPU profile must
@@ -77,7 +77,7 @@ export function createRaceRenderer(canvas){
   // This is the only initial framebuffer allocation, now using the detected
   // GPU profile (including the lower software-rendering scale).
   resize();
-  program=makeProgram(gl);environment=createVehicleEnvironment(gl);state.environmentMapReady=!!environment;attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive")};
+  program=makeProgram(gl);environment=createVehicleEnvironment(gl);state.environmentMapReady=!!environment;attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive"),surface:gl.getUniformLocation(program,"uSurfaceTexture"),surfaceEnabled:gl.getUniformLocation(program,"uSurfaceEnabled")};
   // Force the browser/driver to compile and execute the linked shader pipeline
   // before the first countdown frame. Some headless and mobile GPUs defer this
   // work until the first real draw, producing a multi-second gameplay hitch.
@@ -93,19 +93,68 @@ export function createRaceRenderer(canvas){
   gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);
   const identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
   gl.uniformMatrix4fv(uniforms.mvp,false,identity);gl.uniformMatrix4fv(uniforms.model,false,identity);
-  gl.uniform3f(uniforms.color,.5,.6,.7);gl.uniform3f(uniforms.camera,0,0,2);gl.uniform3f(uniforms.light,-.4,.8,.4);gl.uniform3f(uniforms.lightColor,3,3,3);gl.uniform1f(uniforms.metal,.5);gl.uniform1f(uniforms.roughness,.4);gl.uniform1f(uniforms.clearcoat,.5);gl.uniform1f(uniforms.kind,1);gl.uniform1f(uniforms.emissive,0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(uniforms.env,0);
+  gl.uniform3f(uniforms.color,.5,.6,.7);gl.uniform3f(uniforms.camera,0,0,2);gl.uniform3f(uniforms.light,-.4,.8,.4);gl.uniform3f(uniforms.lightColor,3,3,3);gl.uniform1f(uniforms.metal,.5);gl.uniform1f(uniforms.roughness,.4);gl.uniform1f(uniforms.clearcoat,.5);gl.uniform1f(uniforms.kind,1);gl.uniform1f(uniforms.emissive,0);gl.uniform1i(uniforms.surface,1);gl.uniform1f(uniforms.surfaceEnabled,0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(uniforms.env,0);
   gl.viewport(0,0,1,1);gl.drawArrays(gl.TRIANGLES,0,3);gl.finish();
   gl.deleteBuffer(warmupBuffer);gl.bindBuffer(gl.ARRAY_BUFFER,null);
   state.pipelineWarmupMs=performance.now()-warmupStarted;
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
- function part(tris,color,emissive=0,materialName="environment"){const material=VEHICLE_MATERIALS[materialName]||{metallic:.06,roughness:.78,clearcoat:0,kind:0},started=performance.now(),mesh=makeGeometry(gl,tris),elapsed=performance.now()-started;state.maxMeshUploadMs=Math.max(state.maxMeshUploadMs||0,elapsed);state.meshUploadCount=(state.meshUploadCount||0)+1;return {mesh,color:hexColor(color),...material,emissive}}
+ function loadSurfaceTexture(key,url){
+  const generation=surfaceLoadGeneration,texture=gl.createTexture();
+  if(!texture){state.surfaceTextures.failed++;return}
+  gl.bindTexture(gl.TEXTURE_2D,texture);
+  // Neutral fallback is immediately usable; remote textures never gate racing.
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  surfaceTextures.set(key,texture);
+  // Avoid spending mobile bandwidth/CPU on software renderers or data-saver sessions.
+  if(softwareRenderer||navigator.connection?.saveData){state.surfaceTextures.skipped++;return}
+  const image=new Image();surfaceImages.add(image);image.crossOrigin="anonymous";image.decoding="async";
+  let settled=false;
+  const finish=()=>{settled=true;clearTimeout(timer);surfaceImages.delete(image)};
+  const timer=setTimeout(()=>{
+   if(settled)return;finish();image.onload=null;image.onerror=null;image.src="";
+   if(generation===surfaceLoadGeneration&&!rendererDestroyed){state.surfaceTextures.failed++;state.surfaceTextures.errors.push("CDN texture timed out: "+key)}
+  },6500);
+  image.onload=()=>{
+   if(settled)return;finish();
+   if(rendererDestroyed||lost||generation!==surfaceLoadGeneration)return;
+   try{
+    gl.bindTexture(gl.TEXTURE_2D,texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);state.surfaceTextures.loaded++;
+   }catch(error){state.surfaceTextures.failed++;state.surfaceTextures.errors.push(String(error?.message||error))}
+  };
+  image.onerror=()=>{
+   if(settled)return;finish();
+   if(generation===surfaceLoadGeneration&&!rendererDestroyed){state.surfaceTextures.failed++;state.surfaceTextures.errors.push("CDN texture failed: "+key)}
+  };
+  image.src=url;
+ }
+ const surfaceSources={
+  asphalt:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_03/asphalt_03_diff_1k.jpg",
+  grass:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_diff_1k.jpg",
+  sand:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sand_01/sand_01_diff_1k.jpg",
+  snow:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/snow_03/snow_03_diff_1k.jpg",
+  rock:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_diff_1k.jpg",
+  concrete:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_diff_1k.jpg",
+  bark:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg",
+  foliage:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg"
+ };
+ state.surfaceTextures={provider:"Poly Haven CDN",license:"CC0",requested:Object.keys(surfaceSources).length,loaded:0,failed:0,skipped:0,errors:[]};
+ for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
+ function part(tris,color,emissive=0,materialName="environment",surfaceKey=null){const material=VEHICLE_MATERIALS[materialName]||{metallic:.06,roughness:.78,clearcoat:0,kind:0},started=performance.now(),mesh=makeGeometry(gl,tris),elapsed=performance.now()-started;state.maxMeshUploadMs=Math.max(state.maxMeshUploadMs||0,elapsed);state.meshUploadCount=(state.meshUploadCount||0)+1;return {mesh,color:hexColor(color),...material,emissive,texture:surfaceKey?surfaceTextures.get(surfaceKey)||null:null}}
  function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
  function* buildTrack(snapshot){
   const nextDecor=[];
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
+  const terrainTexture=["grass","sand","snow","grass","rock","rock","grass","sand","rock","grass"][snapshot.world||0]||"grass";
   const segments=mobile?84:softwareRenderer?96:240,half=180;
+  quad(groundTris,[-6500,-40,-6500],[6500,-40,-6500],[6500,-40,6500],[-6500,-40,6500]);
   for(let i=0;i<segments;i++){
    const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,(f.height||0)+y,-(f.p.y+f.ny*offset)];
@@ -116,9 +165,9 @@ export function createRaceRenderer(canvas){
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
    quad(groundTris,outerL,outerL1,outerR1,outerR);
   }
-  const nextRoad=part(roadTris,theme[1]);nextDecor.push(part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0]));
+  const nextRoad=part(roadTris,theme[1],0,"environment","asphalt");nextDecor.push(part(shoulderTris,theme[2],0,"environment","concrete"),part(laneTris,"#e8e9e5"),part(groundTris,theme[0],0,"environment",terrainTexture));
   yield {parts:[nextRoad,...nextDecor],progress:.34};
-  state.petCoats=[];const trees=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
+  state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?18:softwareRenderer?22:48,buildingCount=mobile?8:softwareRenderer?12:22;
   const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
   // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
@@ -135,8 +184,8 @@ export function createRaceRenderer(canvas){
   for(let i=0;i<treeCount;i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=270+(i%7)*66,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0;
    disk(treeShadows,x,base+.6,z,24+(i%3)*4,10);
    // Trunk, branching limbs and layered foliage; mobile uses fewer repeated instances.
-   box(trees,x,base+19,z,8,38,8);cylinder(trees,x-12,base+25,z,3,22,7);cylinder(trees,x+8,base+32,z,3,19,7);
-   const foliage=[];sphere(foliage,x,base+48,z,22+(i%4)*4,28+(i%3)*5,22+(i%4)*4,mobile?8:12,mobile?5:7);sphere(foliage,x-13,base+62,z-4,16,19,16,7,5);sphere(foliage,x+12,base+59,z+5,17,20,17,7,5);trees.push(...foliage);if(i%4===3)yield {progress:.46+(i/treeCount)*.06};
+   box(treeTrunks,x,base+19,z,8,38,8);cylinder(treeTrunks,x-12,base+25,z,3,22,7);cylinder(treeTrunks,x+8,base+32,z,3,19,7);
+   const foliage=[];sphere(foliage,x,base+48,z,22+(i%4)*4,28+(i%3)*5,22+(i%4)*4,mobile?8:12,mobile?5:7);sphere(foliage,x-13,base+62,z-4,16,19,16,7,5);sphere(foliage,x+12,base+59,z+5,17,20,17,7,5);treeFoliage.push(...foliage);if(i%4===3)yield {progress:.46+(i/treeCount)*.06};
   }
   // Residential blocks: pitched roof silhouettes, recessed doors, glazing and porches.
   for(let i=0;i<buildingCount;i++){const t=(i+.25)/buildingCount*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=520+(i%4)*125,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0,w=96+(i%3)*22,h=58+(i%4)*12,d=84+(i%2)*18;
@@ -207,9 +256,9 @@ export function createRaceRenderer(canvas){
   // the scene arrays is cheap compared with normal generation + bufferData for
   // one enormous mesh; keep each render() call below a small upload budget.
   const uploadQueue=[
-   [landscape,"#778b78"],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[trees,theme[3]],
-   [houses,"#d6c6a4"],[buildings,urban?"#5c4d85":"#747b82"],[roofTris,urban?"#343b4a":"#9b5942"],
-   [windows,"#8ec7d4",.05],[doors,"#493b34"],[shops,"#c8b08b"],[crowdBodies,"#e85b47"],
+   [landscape,"#778b78",0,terrainTexture],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[treeTrunks,"#70533b",0,"bark"],[treeFoliage,theme[3],0,"foliage"],
+   [houses,"#d6c6a4",0,"concrete"],[buildings,urban?"#5c4d85":"#747b82",0,"concrete"],[roofTris,urban?"#343b4a":"#9b5942",0,"concrete"],
+   [windows,"#8ec7d4",.05],[doors,"#493b34"],[shops,"#c8b08b",0,"concrete"],[crowdBodies,"#e85b47"],
    [crowdHeads,"#d4a47e"],[crowdArms,"#e2b18c"],[crowdLegs,"#263344"],[petBodies,"#b88c5c"],
    [petHeads,"#b88c5c"],[petLegs,"#75543c"],[petEars,"#8b5d4a"],[petTails,"#8b5d4a"],
    [billboardPosts,"#303d4b"],[billboardFaces,"#17324b"],[billboardFrames,"#d9e2e8"],
@@ -218,10 +267,10 @@ export function createRaceRenderer(canvas){
   const uploadValues=uploadQueue.reduce((sum,item)=>sum+item[0].length,0);
   const maxUploadValues=4096*9;
   let uploadedValues=0;
-  for(const [vertices,color,emissive=0] of uploadQueue){
+  for(const [vertices,color,emissive=0,surfaceKey=null] of uploadQueue){
    for(let offset=0;offset<vertices.length;offset+=maxUploadValues){
     const end=Math.min(vertices.length,offset+maxUploadValues);
-    nextDecor.push(part(vertices.slice(offset,end),color,emissive));
+    nextDecor.push(part(vertices.slice(offset,end),color,emissive,"environment",surfaceKey));
     uploadedValues+=end-offset;
     yield {parts:[nextRoad,...nextDecor],progress:.68+.30*(uploadedValues/Math.max(1,uploadValues))};
    }
@@ -256,7 +305,7 @@ export function createRaceRenderer(canvas){
   return carPartSets.values().next().value;
  }
  function resize(){const started=performance.now(),portrait=matchMedia("(orientation: portrait)").matches,cssWidth=portrait?innerHeight:innerWidth,cssHeight=portrait?innerWidth:innerHeight,dpr=Math.min(devicePixelRatio||1,mobile?.68:1.5)*qualityScale,w=Math.max(1,Math.round(cssWidth*dpr)),h=Math.max(1,Math.round(cssHeight*dpr)),key=w+"x"+h;if(key===lastSize){const elapsed=performance.now()-started;state.maxResizeMs=Math.max(state.maxResizeMs||0,elapsed);return}lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);state.quality={mobile,pixelRatio:dpr,detail:mobile?"mobile-balanced":softwareRenderer?"software-balanced":"high",renderScale:qualityScale,width:w,height:h};const elapsed=performance.now()-started;state.lastResizeMs=elapsed;state.maxResizeMs=Math.max(state.maxResizeMs||0,elapsed)}
- function drawPart(p,vp,model){const started=performance.now();gl.uniformMatrix4fv(uniforms.model,false,model);gl.uniformMatrix4fv(uniforms.mvp,false,mul(vp,model));gl.uniform3fv(uniforms.color,p.color);gl.uniform1f(uniforms.metal,p.metallic);gl.uniform1f(uniforms.roughness,p.roughness);gl.uniform1f(uniforms.clearcoat,p.clearcoat);gl.uniform1f(uniforms.kind,p.kind);gl.uniform1f(uniforms.emissive,p.emissive);gl.bindBuffer(gl.ARRAY_BUFFER,p.mesh.buffer);gl.enableVertexAttribArray(attributes.position);gl.vertexAttribPointer(attributes.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);const drawStarted=performance.now();gl.drawArrays(gl.TRIANGLES,0,p.mesh.count);const drawArraysMs=performance.now()-drawStarted,elapsed=performance.now()-started;state.maxDrawArraysMs=Math.max(state.maxDrawArraysMs||0,drawArraysMs);state.lastDrawArraysMs=drawArraysMs;state.maxDrawPartVertices=Math.max(state.maxDrawPartVertices||0,p.mesh.count);state.lastDrawPartVertices=p.mesh.count;state.lastDrawPartColor=p.color;state.maxDrawPartMs=Math.max(state.maxDrawPartMs||0,elapsed);state.drawPartCount=(state.drawPartCount||0)+1;state.triangles+=p.mesh.count/3}
+ function drawPart(p,vp,model){const started=performance.now();gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,p.texture||null);gl.uniform1i(uniforms.surface,1);gl.uniform1f(uniforms.surfaceEnabled,p.texture?1:0);gl.uniformMatrix4fv(uniforms.model,false,model);gl.uniformMatrix4fv(uniforms.mvp,false,mul(vp,model));gl.uniform3fv(uniforms.color,p.color);gl.uniform1f(uniforms.metal,p.metallic);gl.uniform1f(uniforms.roughness,p.roughness);gl.uniform1f(uniforms.clearcoat,p.clearcoat);gl.uniform1f(uniforms.kind,p.kind);gl.uniform1f(uniforms.emissive,p.emissive);gl.bindBuffer(gl.ARRAY_BUFFER,p.mesh.buffer);gl.enableVertexAttribArray(attributes.position);gl.vertexAttribPointer(attributes.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);const drawStarted=performance.now();gl.drawArrays(gl.TRIANGLES,0,p.mesh.count);const drawArraysMs=performance.now()-drawStarted,elapsed=performance.now()-started;state.maxDrawArraysMs=Math.max(state.maxDrawArraysMs||0,drawArraysMs);state.lastDrawArraysMs=drawArraysMs;state.maxDrawPartVertices=Math.max(state.maxDrawPartVertices||0,p.mesh.count);state.lastDrawPartVertices=p.mesh.count;state.lastDrawPartColor=p.color;state.maxDrawPartMs=Math.max(state.maxDrawPartMs||0,elapsed);state.drawPartCount=(state.drawPartCount||0)+1;state.triangles+=p.mesh.count/3}
  function drawVehicle(t,lateral,yaw,color,damage=0,kind="car",vehicleId=0,snapshot){
   const f=snapshot.frameAt(t),x=f.p.x+f.nx*lateral,z=-(f.p.y+f.ny*lateral),heading=vehicleModelHeading(f.angle,yaw);
   const carParts=getCarParts(vehicleShapeFor(kind,vehicleId));
@@ -306,7 +355,8 @@ export function createRaceRenderer(canvas){
    // Recreate the complete GPU pipeline before allowing the next frame to render.
    program=makeProgram(gl);environment=createVehicleEnvironment(gl);state.environmentMapReady=!!environment;
    attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};
-   uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive")};
+   uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive"),surface:gl.getUniformLocation(program,"uSurfaceTexture"),surfaceEnabled:gl.getUniformLocation(program,"uSurfaceEnabled")};
+   surfaceLoadGeneration++;surfaceTextures.clear();state.surfaceTextures.loaded=0;state.surfaceTextures.failed=0;state.surfaceTextures.skipped=0;state.surfaceTextures.errors.length=0;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
    gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
    road=null;decor=[];carPartSets.clear();carBuildQueue.length=0;carBuildQueued.clear();lastStage=-1;lastSize="";trackBuildJob=null;trackBuildStage=-1;pendingTrackParts=[];state.trackBuildProgress=0;
    state.status="webgl-ready";state.error=null;
@@ -314,5 +364,5 @@ export function createRaceRenderer(canvas){
   }catch(e){state.status="unavailable";state.error=String(e?.message||e)}
  }
  canvas.addEventListener("webglcontextlost",onLost);canvas.addEventListener("webglcontextrestored",onRestored);
- return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();if(program)gl.deleteProgram(program);if(environment)gl.deleteTexture(environment)}};
+ return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){rendererDestroyed=true;surfaceLoadGeneration++;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();for(const texture of surfaceTextures.values())try{gl.deleteTexture(texture)}catch{}surfaceTextures.clear();if(program)gl.deleteProgram(program);if(environment)gl.deleteTexture(environment)}};
 }
