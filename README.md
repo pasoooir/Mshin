@@ -52,7 +52,7 @@ This branch introduces a native, repository-local WebGL perspective renderer for
 
 ## Latest published release on main: 0.15.2
 
-Version 0.15.2 is merged on `main`. The portable validation suite passed; GitHub Pages deployment verification is being checked. The offline service-worker cache is `mshin-arcade-v53`.
+Version 0.15.2 is published on GitHub Pages. The portable validation suite passed (229 tests, 0 failures), and GitHub Pages build/deployment run 41391832740 completed successfully. The offline service-worker cache is `mshin-arcade-v53`.
 
 Versions 0.11.0–0.11.6 were published on GitHub Pages; the in-race vehicle geometry was merged afterward in pull request #77. Version 0.14.0 remains a separate draft and is not claimed as live.
 
