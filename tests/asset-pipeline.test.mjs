@@ -22,6 +22,17 @@ test("all 10 world illustrations and five car sprites are bundled SVG vectors", 
     assert.ok(source.length < 12000, asset.src + " should remain lightweight");
   }
 });
+test("all gameplay control icons are bundled locally and decode as SVG sources", async () => {
+  assert.equal(manifest.icons.length, 3);
+  for (const asset of manifest.icons) {
+    assert.equal(asset.cdn, undefined, asset.src + " must not depend on a remote CDN fallback");
+    assert.ok(asset.src.startsWith("./cdn/assets/icons/"), asset.src + " must resolve to the bundled icon directory");
+    const source = await readFile(path.join(root, asset.src.replace(/^\.\//, "")), "utf8");
+    assert.match(source, /<svg[\s>]/, asset.src + " should be an SVG document");
+    assert.match(source, /viewBox=/, asset.src + " should define scalable vector bounds");
+  }
+});
+
 test("asset boot waits for bounded preload before starting the game module", async () => {
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   const loader = await readFile(path.join(root, "src/asset-loader.js"), "utf8");
