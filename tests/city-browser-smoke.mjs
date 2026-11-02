@@ -75,10 +75,20 @@ try{
   await compactPage.waitForFunction(()=>window.__cityOrientationCalls.includes("lock:landscape"));
   assert.deepEqual(await compactPage.evaluate(()=>window.__cityOrientationCalls),["fullscreen","lock:landscape"],"city entry must request fullscreen then native landscape lock from a user gesture");
   assert.equal(await compactPage.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"grid","portrait gate must remain visible when the browser cannot rotate the device");
-  await compactPage.setViewportSize({width:844,height:390});
-  await compactPage.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display==="none");
-  await compactPage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
  }finally{await compactPage.close()}
+ // Chromium can reject Browser.setWindowBounds after fullscreen/orientation APIs
+ // have been exercised. Verify landscape in a fresh page with its final viewport.
+ const landscapePage=await browser.newPage({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ try{
+  await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
+  await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  await landscapePage.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display==="none");
+  const landscape=await landscapePage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,height:innerHeight,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));
+  assert.equal(landscape.gate,"none","landscape page must show the city rather than the portrait gate");
+  assert.equal(landscape.width,landscape.viewport,"landscape city must not overflow horizontally");
+  fs.mkdirSync("artifacts",{recursive:true});
+  await landscapePage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
+ }finally{await landscapePage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, service coverage, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
