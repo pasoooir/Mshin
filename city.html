@@ -2,7 +2,7 @@
 <html lang="fa-IR" dir="rtl">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#182b3b"><meta name="description" content="دره سبز؛ نخستین شهر زنده مِشین با خیابان‌ها، ساختمان‌ها، شهروندان و اقتصاد پویا."><title>شهر من | مِشین</title><link rel="stylesheet" href="./src/city/city-view.css"><link rel="stylesheet" href="./src/city/city-mobile-layout.css"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icons/mshin.svg" type="image/svg+xml"></head>
 <body>
-<div id="cityOrientationGate" role="dialog" aria-live="polite"><div class="orientationCard"><div class="phoneTurn">▯ ↻</div><h1>شهر تو در حالت افقی زنده می‌شود</h1><p>برای دیدن نقشه سه‌بعدی کامل، گوشی را افقی کن. سپس ورود تمام‌صفحه را فعال کن.</p><button id="cityEnterLandscape" type="button" onclick="window.__mshinEnterCityLandscape?.()">ورود به شهر سه‌بعدی</button></div></div>
+<div id="cityOrientationGate" role="dialog" aria-live="polite"><div class="orientationCard"><div class="phoneTurn">▯ ↻</div><h1>شهر تو در حالت افقی زنده می‌شود</h1><p>برای دیدن نقشه سه‌بعدی کامل، گوشی را افقی کن. سپس ورود تمام‌صفحه را فعال کن.</p><button id="cityEnterLandscape" type="button" onpointerdown="window.__mshinEnterCityLandscape?.()" onclick="window.__mshinEnterCityLandscape?.()">ورود به شهر سه‌بعدی</button></div></div>
 <canvas id="cityViewport" aria-label="نمای ایزومتریک شهر دره سبز؛ برای جابه‌جایی بکشید و برای ساخت یک ابزار انتخاب کنید."></canvas>
 <div class="cityShell">
 <header class="cityTop"><div class="cityBrand"><strong>🏙️ شهر من · دره سبز</strong><small><span id="cityClock">08:15</span> · <span id="cityTick">روز ۱</span> · شبیه‌سازی زنده</small></div>
