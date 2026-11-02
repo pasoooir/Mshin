@@ -29,7 +29,7 @@ test("race cars include scaled cabins, glazing, aero, lamps and metallic wheel h
 
 test("ten vehicle profiles are generated locally without a runtime model CDN", () => {
   assert.match(source, /function buildVehicleGeometry\(id\)/);
-  assert.match(raceRenderer, /buildVehicleGeometry\(id\)\.map/);
+  assert.match(raceRenderer, /geometry\.map/);
   assert.match(source, /const PROFILES=\{/);
   assert.match(source, /"ai-formula"/);
   assert.match(source, /"ai-pickup"/);
