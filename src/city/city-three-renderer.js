@@ -192,30 +192,34 @@ export async function createCityThreeRenderer(sourceCanvas) {
   markingGeometry.setAttribute("position", new THREE.Float32BufferAttribute(roadMarkings, 3));
   scene.add(new THREE.LineSegments(markingGeometry, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 })));
 
-  const crossings = new THREE.Group();
   const stripeGeometry = new THREE.BoxGeometry(0.14, 0.025, 0.72);
-  const stripeGeometryRotated = new THREE.BoxGeometry(0.72, 0.025, 0.14);
   const stripeMaterial = new THREE.MeshStandardMaterial({ color: "#f7f0dc", roughness: 0.8 });
   const intersectionCenters = [7.5, 15.5, 23.5];
+  const crosswalkCount = intersectionCenters.length * intersectionCenters.length * 28;
+  const crossings = new THREE.InstancedMesh(stripeGeometry, stripeMaterial, crosswalkCount);
+  let stripeIndex = 0;
   for (const ix of intersectionCenters) {
     for (const iz of intersectionCenters) {
       const cx = (ix - 15.5) * 2, cz = (iz - 15.5) * 2;
       for (let n = -3; n <= 3; n++) {
-        const s1 = new THREE.Mesh(stripeGeometry, stripeMaterial);
-        s1.position.set(cx + n * 0.24, 0.09, cz - 2.05);
-        crossings.add(s1);
-        const s2 = new THREE.Mesh(stripeGeometry, stripeMaterial);
-        s2.position.set(cx + n * 0.24, 0.09, cz + 2.05);
-        crossings.add(s2);
-        const s3 = new THREE.Mesh(stripeGeometryRotated, stripeMaterial);
-        s3.position.set(cx - 2.05, 0.09, cz + n * 0.24);
-        crossings.add(s3);
-        const s4 = new THREE.Mesh(stripeGeometryRotated, stripeMaterial);
-        s4.position.set(cx + 2.05, 0.09, cz + n * 0.24);
-        crossings.add(s4);
+        for (const offset of [-2.05, 2.05]) {
+          dummy.position.set(cx + n * 0.24, 0.09, cz + offset);
+          dummy.rotation.set(0, 0, 0);
+          dummy.scale.set(1, 1, 1);
+          dummy.updateMatrix();
+          crossings.setMatrixAt(stripeIndex++, dummy.matrix);
+          dummy.position.set(cx + offset, 0.09, cz + n * 0.24);
+          dummy.rotation.set(0, Math.PI / 2, 0);
+          dummy.updateMatrix();
+          crossings.setMatrixAt(stripeIndex++, dummy.matrix);
+        }
       }
     }
   }
+  crossings.count = stripeIndex;
+  crossings.instanceMatrix.needsUpdate = true;
+  crossings.castShadow = false;
+  crossings.receiveShadow = true;
   scene.add(crossings);
 
   // Subtle parcel subdivision lines create smaller build pads inside each city block.
@@ -337,7 +341,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         plots: grassCountA + grassCountB,
         roadTiles: roadCount,
         raisedCurbs: curbInstances.length,
-        crosswalkStripes: crossings.children.length,
+        crosswalkStripes: crossings.count,
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio()
       };
