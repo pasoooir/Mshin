@@ -10,7 +10,7 @@ export function createInitialCity(seed=20261102){
  return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],animals:[],nextBuildingId:1,stats:{income:0,expenses:0,jobs:0,traffic:0}};
 }
 export function stepCity(city,seconds=1){
- if(!city||city.schemaVersion!==1||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
+ if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
  city.tick++;city.minuteOfDay=(city.minuteOfDay+10)%1440;
  if(city.tick%12===0)developCityZones(city);
  const infrastructure=computeCityServices(city);
