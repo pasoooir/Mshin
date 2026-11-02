@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { vehicleModelHeading, screenRelativeTilt, tiltToSteer } from "../src/vehicle-controls.js";
+import { vehicleModelHeading, screenRelativeTilt, tiltToSteer, invertSteerDirection } from "../src/vehicle-controls.js";
 
 test("model local forward axis follows the track tangent", () => {
   assert.ok(Math.abs(vehicleModelHeading(0) - Math.PI / 2) < 1e-9);
@@ -31,4 +31,14 @@ test("gyro steering remains bounded and responds strongly to small calibrated ti
   assert.ok(tiltToSteer(-6, 1.45) < tiltToSteer(-6, 1));
   assert.equal(tiltToSteer(90, 1.45), 1);
   assert.equal(tiltToSteer(-90, 1.45), -1);
+});
+
+
+test("screen-left and screen-right steering are mapped to the corrected vehicle direction", () => {
+  assert.equal(invertSteerDirection(-1), 1);
+  assert.equal(invertSteerDirection(1), -1);
+  assert.equal(invertSteerDirection(0), 0);
+  assert.equal(invertSteerDirection(4), -1);
+  assert.equal(invertSteerDirection(-4), 1);
+  assert.equal(invertSteerDirection(Number.NaN), 0);
 });
