@@ -542,7 +542,9 @@ try {
         const steering = Math.max(-.92, Math.min(.92, roadWheelAngle / .48));
         return { steering, brake: speed > 245 };
       });
-      const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
+      // The steering-pad pointer axis is inverted relative to the road-wheel controller.
+      // Convert controller-positive (right) into the pad direction that produces right yaw.
+      const pointerSteering = -Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
       await economy.mouse.move(
         steeringCenter.x + pointerSteering * steeringLimit,
         steeringCenter.y
