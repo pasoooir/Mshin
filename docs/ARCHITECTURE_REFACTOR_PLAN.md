@@ -331,3 +331,36 @@ Not yet verified: every Cocos scene UUID/reference, all dynamically constructed 
 
 **Phase 1 status: partially complete.** Do not start mass file moves yet. Next, audit PR changed-path overlap and complete Cocos scene/asset UUID tracing; then add boundary checks in a separate, testable change.
 
+## 12. Open-PR overlap audit (2026-11-02)
+
+Changed-file lists were retrieved from GitHub for the open PR inventory. This is a path-overlap audit, not a claim that the PRs are semantically compatible or that their checks pass.
+
+### 12.1 High-contention files
+
+| Hotspot | PRs touching the path | Consequence |
+|---|---|---|
+| `src/web-game.js` | #132, #136, #141, #99, #114, #65, #74, #113, #112, #111, #110, #115, #107, #117, #116, #108, #62 | Critical serialization point. Do not merge these branches in parallel or assume one branch includes another. |
+| `tests/browser-smoke.mjs` | #132, #136, #141, #142, #99, #114, #65, #74, #102, #113, #112, #111, #110, #115, #107, #117, #116, #108, #62 | Same test file is a shared integration contract; changes need ordered rebasing and one final full browser run. |
+| `src/race-renderer-3d.js` | #132, #136, #141, #142, #140, #146, #94, #92, #89 | Renderer work is heavily stacked/overlapping; merge order must be dependency-driven. |
+| `index.html` | #132, #140, #114, #65, #113, #112, #111, #117, #116, #108, #62, #93 | UI, input, viewport and asset changes collide in the main page. |
+| `service-worker.js` | #99, #114, #65, #74, #108, #62 | Offline cache updates must be coordinated with runtime and asset-manifest changes. |
+| City view | #144 and #145 both change `src/city/city-view.js`; #143/#144 both change `city.html`; #143/#144/#145 all change `tests/city-browser-smoke.mjs` | City PRs are not independent despite their descriptions. They need a single integration sequence. |
+
+### 12.2 Recommended integration lanes
+
+1. **City lane:** #145 (view/performance) and #144 (map/navigation) share `city-view.js`; #143 shares the city browser test and overlaps #144 on `city.html`. Integrate only after reviewing combined diffs and running the complete city browser smoke on the combined candidate. Do not merge them as independent PRs based only on their titles.
+2. **Renderer lane:** #136/#141/#142/#140/#146/#132 all touch the renderer directly or its smoke acceptance. Resolve the underlying renderer-budget and mobile-canvas behavior first; then layer visual materials (#146) after renderer behavior is stable. #142 is explicitly diagnostic and should not be treated as a fix by itself.
+3. **Controls/physics lane:** #132, #99 and #117 overlap control/dynamics and the browser smoke. Select the intended latest implementation by comparing base/head ancestry and patches, not by PR number alone.
+4. **Legacy runtime lane:** #65/#62/#74 and the later menu/input/asset PRs overlap entry HTML, asset manifest, service worker and web-game. Verify whether these branches are superseded by main before attempting integration.
+5. **Shared smoke-test lane:** any PR changing `tests/browser-smoke.mjs` must be rebased against the current integrated candidate and run after all runtime changes it validates.
+
+### 12.3 Operational policy from this audit
+
+- Do not start more feature PRs against the high-contention files while an integration candidate is being assembled.
+- Do not merge a PR solely because its own branch CI is green: branch checks can be stale and can omit later changes from another PR.
+- Before merging a cluster, build one candidate branch from current `main`, apply the selected changes in dependency order, resolve conflicts once, then run unit checks and the full desktop/mobile browser smoke against that exact candidate.
+- Keep PRs that are superseded or no longer relevant open until their patches have been compared; close only after confirming their changes are included or intentionally abandoned.
+- Prefer future module work to use domain-owned files and tests, with compatibility adapters at the current entry points. This is the concrete way to reduce merge conflicts; simply combining files would make the hotspots worse.
+
+**Phase 1 status: dependency map recorded; overlap audit recorded.** Full Cocos scene/UUID tracing and exact branch ancestry/supersession analysis remain open. No runtime code has been moved.
+
