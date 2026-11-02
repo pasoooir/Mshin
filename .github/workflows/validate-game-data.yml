@@ -4,7 +4,7 @@ concurrency:
   cancel-in-progress: true
 on:
   push:
-    branches: [main]
+    branches: [main, "fix/browser-smoke-autonomous-race-driver"]
   pull_request:
   workflow_dispatch:
 permissions:
