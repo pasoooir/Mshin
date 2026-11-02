@@ -1,7 +1,32 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
-await mkdir("artifacts", { recursive: true });
+import { mkdir, writeFile } from "node:fs/promises";
+
+async function captureScreenshot(page, path, { fullPage = false } = {}) {
+  // Avoid Playwright's screenshot preflight (font/animation waits), which has
+  // stalled on this WebGL-heavy page in GitHub Actions after fonts were ready.
+  const session = await page.context().newCDPSession(page);
+  try {
+    await session.send("Page.enable");
+    const metrics = await session.send("Page.getLayoutMetrics");
+    const size = metrics.cssContentSize || metrics.contentSize;
+    const params = { format: "png", fromSurface: true, captureBeyondViewport: fullPage };
+    if (fullPage) {
+      params.clip = {
+        x: 0, y: 0,
+        width: Math.max(1, Math.ceil(size.width)),
+        height: Math.max(1, Math.ceil(size.height)),
+        scale: 1
+      };
+    }
+    const { data } = await session.send("Page.captureScreenshot", params);
+    await writeFile(path, Buffer.from(data, "base64"));
+  } finally {
+    await session.detach();
+  }
+}
+
+
 async function waitForGameBoot(page, label = "game") {
   await page.waitForFunction(() => {
     const stage = window.MshinBootStage;
@@ -53,10 +78,17 @@ async function waitForGameBoot(page, label = "game") {
   }
   return state;
 }
+
+
+await mkdir("artifacts", { recursive: true });
 const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--disable-features=CalculateNativeWinOcclusion", "--disable-frame-rate-limit", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
 const errors = [];
+let activePhase = "mobile browser launch";
+const progressHeartbeat = setInterval(() => console.log("[mobile-browser-smoke] still running; current phase: " + activePhase), 15000);
+progressHeartbeat.unref();
 try {
-const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  activePhase = "mobile viewport and touch controls";
+  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.stack || error.message));
   mobile.setDefaultTimeout(60000);
   mobile.setDefaultNavigationTimeout(60000);
@@ -135,7 +167,20 @@ const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, is
   assert.equal(await mobile.locator("#mostWantedList li").count(), 5, "mobile MOST WANTED panel must show five standings");
   await mobile.locator("#resume").click();
   const mobileStickBounds = await mobile.locator("#stick").boundingBox();
-  assert.ok(Math.max(mobileStickBounds.width, mobileStickBounds.height) >= 120 && Math.min(mobileStickBounds.width, mobileStickBounds.height) >= 100, "rotated mobile steering pad should preserve a 120×100 touch surface");
+  assert.ok(Math.max(mobileStickBounds.width, mobileStickBounds.height) >= 160 && Math.min(mobileStickBounds.width, mobileStickBounds.height) >= 130, "rotated mobile steering pad should provide a larger 160×130 touch surface");
+  const steerCenter = { x: mobileStickBounds.x + mobileStickBounds.width / 2, y: mobileStickBounds.y + mobileStickBounds.height / 2 };
+  await mobile.locator("#stick").dispatchEvent("pointerdown", { pointerId: 201, pointerType: "touch", clientX: steerCenter.x, clientY: steerCenter.y });
+  await mobile.locator("#stick").dispatchEvent("pointermove", { pointerId: 201, pointerType: "touch", clientX: steerCenter.x, clientY: steerCenter.y + 32 });
+  const steerRight = Number(await mobile.locator("#stick").getAttribute("data-steer"));
+  assert.ok(steerRight < 0, "dragging the joystick toward physical screen-right must command a right turn: " + steerRight);
+  await mobile.locator("#stick").dispatchEvent("pointerup", { pointerId: 201, pointerType: "touch", clientX: steerCenter.x, clientY: steerCenter.y + 32 });
+  await mobile.locator("#stick").dispatchEvent("pointerdown", { pointerId: 202, pointerType: "touch", clientX: steerCenter.x, clientY: steerCenter.y });
+  await mobile.locator("#stick").dispatchEvent("pointermove", { pointerId: 202, pointerType: "touch", clientX: steerCenter.x, clientY: steerCenter.y - 32 });
+  const steerLeft = Number(await mobile.locator("#stick").getAttribute("data-steer"));
+  assert.ok(steerLeft > 0, "dragging the joystick toward physical screen-left must command a left turn: " + steerLeft);
+  await mobile.locator("#stick").dispatchEvent("pointerup", { pointerId: 202, pointerType: "touch", clientX: steerCenter.x, clientY: steerCenter.y - 32 });
+  const gyroBounds = await mobile.locator("#gyroToggle").boundingBox();
+  assert.ok(gyroBounds.width >= 52 && gyroBounds.height >= 52, "gyro toggle must remain a large mobile touch target");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
   assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "گاز", "gas pedal should use a CDN icon with accessible alternative text");
   assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
@@ -146,7 +191,15 @@ const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, is
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
 
-
-  assert.deepEqual(errors, [], "mobile gameplay must not throw runtime exceptions");
-  process.stdout.write("Mobile browser smoke passed: portrait entry, touch showroom, fullscreen landscape race, mobile WebGL, HUD, pause and touch controls.\\n");
-} finally { await browser.close(); }
+  // The desktop and mobile smoke pages keep their own requestAnimationFrame
+  // loops alive. Leaving the WebGL race scene mounted while the long economy
+  // simulation runs can retain GPU resources and continue background rendering
+  // in Chromium, starving the economy page's main thread. The later PWA checks
+  // only need the same browser context/origin, so release both scenes now.
+  await mobile.close();
+  assert.deepEqual(errors, [], "mobile page should not throw runtime exceptions");
+  console.log("PASS: mobile-only browser smoke completed, including touch controls, mobile rendering, and race HUD.");
+} finally {
+  clearInterval(progressHeartbeat);
+  await browser.close();
+}

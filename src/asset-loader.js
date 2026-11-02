@@ -14,7 +14,7 @@ async function fetchImage(asset) {
     // Mobile emulation and cold GitHub runners can contend for bandwidth while
     // scene textures decode. Keep local assets independent of that contention
     // and retry transient fetch/abort failures before declaring an asset lost.
-    const limit = remote ? (asset.group === "scene" ? 5000 : 4000) : 12000;
+    const limit = remote ? (asset.group === "scene" ? 10000 : 8000) : 20000;
     for (let attempt = 0; attempt < 3; attempt++) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), limit);
@@ -42,7 +42,7 @@ async function loadVector(asset) {
   const objectUrl = URL.createObjectURL(blob);
   try {
     image.src = objectUrl;
-    if (image.decode) await timeout(image.decode(), 5000, asset.src);
+    if (image.decode) await timeout(image.decode(), 15000, asset.src);
     else await timeout(new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; }), 10000, asset.src);
     return image;
   } finally { URL.revokeObjectURL(objectUrl); }

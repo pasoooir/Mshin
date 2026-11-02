@@ -26,3 +26,22 @@ export function tiltToSteer(tiltDegrees, sensitivity = 1, deadZone = 1.8, fullSc
   const gain = Math.max(.35, Math.min(1.8, Number.isFinite(sensitivity) ? sensitivity : 1));
   return Math.sign(tiltDegrees) * Math.min(1, Math.pow(normalized, 1.12) * gain);
 }
+
+/** Map a horizontal joystick drag to steering in the game's world-space convention. */
+export function joystickDeltaToSteer(delta, limit) {
+  if (!Number.isFinite(delta) || !Number.isFinite(limit) || limit <= 0) return 0;
+  const raw = Math.max(-1, Math.min(1, delta / limit));
+  const magnitude = Math.abs(raw);
+  const deadZone = 0.07;
+  if (magnitude <= deadZone) return 0;
+  const linear = (magnitude - deadZone) / (1 - deadZone);
+  // Positive screen-right must yaw toward world-right. The track tangent and
+  // canvas Y-down coordinate system make that the negative physics steer sign.
+  return -Math.sign(raw) * Math.pow(linear, 1.28);
+}
+
+/** Convert a physical rightward phone tilt into the matching right-turn command. */
+export function screenTiltToSteer(tiltDegrees, sensitivity = 1) {
+  const steering = tiltToSteer(tiltDegrees, sensitivity);
+  return steering === 0 ? 0 : -steering;
+}

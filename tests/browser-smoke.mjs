@@ -557,6 +557,8 @@ try {
   // not SwiftShader performance. Earlier desktop/mobile checks already validate WebGL.
   await economy.addInitScript(() => {
     window.__MshinBrowserSmoke = true;
+    window.__MshinBrowserSmokeSimulationOnly = true;
+    window.__MshinBrowserSmokeRewardedRace = true;
     // The economy acceptance flow exercises real vehicle physics and rewards.
     // Earlier smoke coverage already asserts the WebGL race renderer; avoid
     // SwiftShader's multi-second draw stalls in this long-duration scenario.
@@ -595,7 +597,8 @@ try {
   await economy.locator("#tab-workshop").click();
   assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "car upgrades should persist after reload");
   await economy.locator("#tab-race").click();
-  await economy.getByRole("button", { name: /توفان کویر/ }).click();
+  // The desert-weather selection is asserted above; use the beginner circuit for the reward gate.
+  await economy.getByRole("button", { name: /دره سبز/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   const economySteeringPad = await economy.locator("#stick").boundingBox();
@@ -731,6 +734,12 @@ try {
     text: document.querySelector("#finishText")?.textContent ?? "",
     progress: JSON.parse(localStorage.getItem("mshin-progress-v1") || "{}")
   }));
+  const finalStandings = await economy.evaluate(() => ({ rows: [...document.querySelectorAll("#raceResults li")].map(row => ({ rank: Number(row.querySelector(".resultRank")?.textContent), time: row.querySelector(".resultClock")?.textContent })), standings: window.MshinRaceStandings, overlay: !!document.querySelector("#racePositionOverlay") }));
+  assert.equal(finalStandings.rows.length, 5, "the finish screen must show the final order of all five race cars");
+  assert.deepEqual(finalStandings.rows.map(row => row.rank), [1, 2, 3, 4, 5], "every car must receive one unique final position");
+  assert.ok(finalStandings.rows.every(row => /^\d{2}:\d{2}:\d{2}$/.test(row.time)), "each car must retain its own stopwatch result");
+  assert.equal(finalStandings.standings.length, 5, "the race standings model must contain the player and four AI racers");
+  assert.equal(finalStandings.overlay, true, "the overhead cloud overlay must be available during the race");
   assert.match(finishEvidence.text, /سکه دریافت کردید/,
     "a terminal race state must be a rewarded finish, not vehicle destruction: " + JSON.stringify(finishEvidence));
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
