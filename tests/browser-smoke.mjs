@@ -510,10 +510,18 @@ try {
   // previous test polled telemetry and moved the mouse over CDP for every
   // 70ms slice; that throttled the game to ~1.5 rendered frames/second and
   // advanced only a fraction of the simulation time before the wall timeout.
-  await economy.keyboard.down("ArrowUp");
   await economy.evaluate(({ center, limit }) => {
     const stick = document.querySelector("#stick");
+    const gas = document.querySelector("#gas");
+    const brake = document.querySelector("#brake");
     const pointerId = 7319;
+    const gasPointerId = 7320;
+    const brakePointerId = 7321;
+    const dispatchButton = (element, type, id) => element.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId: id, pointerType: "mouse",
+      clientX: 0, clientY: 0, button: 0, buttons: type === "pointerup" ? 0 : 1
+    }));
+    dispatchButton(gas, "pointerdown", gasPointerId);
     let braking = false;
     let lastControls = { steering: 0, brake: false };
     const dispatchPointer = (type, x) => stick.dispatchEvent(new PointerEvent(type, {
@@ -539,12 +547,12 @@ try {
         if (speed > 185) braking = true;
         else if (speed < 145) braking = false;
         lastControls = { steering, brake: braking, speed, lateral, yaw, curvature };
-        const pointerSteering = Math.sign(steering) * Math.pow(Math.abs(steering), 1 / 1.28);
+        // The on-screen wheel axis is mirrored by the desktop HUD transform.
+        // Invert the pointer displacement so path correction matches chassis steering.
+        const pointerSteering = -Math.sign(steering) * Math.pow(Math.abs(steering), 1 / 1.28);
         dispatchPointer("pointermove", pointerSteering);
         if (braking !== Boolean(window.__mshinRaceBrake)) {
-          window.dispatchEvent(new KeyboardEvent(braking ? "keydown" : "keyup", {
-            key: "ArrowDown", bubbles: true, cancelable: true
-          }));
+          dispatchButton(brake, braking ? "pointerdown" : "pointerup", brakePointerId);
           window.__mshinRaceBrake = braking;
         }
       }
@@ -571,6 +579,7 @@ try {
       renderer: window.Mshin3DRenderer ? { status: window.Mshin3DRenderer.status, frames: window.Mshin3DRenderer.frames, triangles: window.Mshin3DRenderer.triangles } : null,
       performance: window.MshinPerformance ?? null,
       driver: window.__mshinRaceDriver?.controls ?? null,
+      controlState: { gas: window.MshinPerformance?.playerGas, brake: window.MshinPerformance?.playerBrake, steer: window.MshinPerformance?.playerSteer, steerTarget: window.MshinPerformance?.playerSteerTarget, stick: document.querySelector("#stick")?.dataset.steer },
       progress: localStorage.getItem("mshin-progress-v1"),
       visibility: document.visibilityState,
       bodyClass: document.body.className
@@ -585,9 +594,9 @@ try {
         bubbles: true, cancelable: true, pointerId: 7319, pointerType: "mouse",
         clientX: 0, clientY: 0, button: 0, buttons: 0
       }));
-      if (window.__mshinRaceBrake) window.dispatchEvent(new KeyboardEvent("keyup", { key: "ArrowDown", bubbles: true }));
+      document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType: "mouse", button: 0, buttons: 0 }));
+      if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType: "mouse", button: 0, buttons: 0 }));
     });
-    await economy.keyboard.up("ArrowUp");
   }
   assert.match(await economy.locator("#finishText").textContent(), /سکه دریافت کردید/, "finishing a stage should award coins");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
