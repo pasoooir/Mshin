@@ -16,6 +16,17 @@ test("race renderer uses real Poly Haven CDN surfaces for asphalt and biome terr
  assert.match(renderer,/texture:surfaceKey\?surfaceTextures\.get\(surfaceKey\)/);
 });
 
+test("optional CDN textures have bounded mobile loading and preserve fallback rendering",()=>{
+ assert.match(renderer,/6500/);
+ assert.match(renderer,/CDN texture timed out/);
+ assert.match(renderer,/new Uint8Array\(\[126,126,126,255\]\)/);
+ assert.match(renderer,/navigator\.connection\?\.saveData/);
+ assert.match(renderer,/softwareRenderer\|\|navigator\.connection/);
+ assert.match(renderer,/rendererDestroyed\|\|lost\|\|generation!==surfaceLoadGeneration/);
+ assert.match(renderer,/surfaceImages\.clear\(\)/);
+ assert.match(renderer,/gl\.deleteTexture\(texture\)/);
+});
+
 test("world-space PBR shader samples scanned textures without requiring UV vertex buffers",()=>{
  assert.match(pbr,/uniform sampler2D uSurfaceTexture/);
  assert.match(pbr,/uniform float uSurfaceEnabled/);
