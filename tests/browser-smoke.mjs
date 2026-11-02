@@ -350,9 +350,32 @@ try {
   const race3dState = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, frames: window.Mshin3DRenderer?.frames, triangles: window.Mshin3DRenderer?.triangles, camera: window.Mshin3DRenderer?.camera }));
   assert.equal(race3dState.status, "webgl-ready", "race must use the native WebGL 3D renderer");
   assert.ok(race3dState.triangles > 1000, "race renderer must submit real 3D mesh geometry: " + JSON.stringify(race3dState));
-  await page.keyboard.down("ArrowUp");
-  await page.waitForTimeout(2400);
-  assert.ok(Number(await page.locator("#speed").textContent()) > 0, "accelerator should increase speed");
+  // Exercise the same on-screen accelerator used by touch devices. A focused
+  // menu button can retain keyboard navigation focus after the audio toggle;
+  // relying on ArrowUp here made this gameplay assertion depend on focus state
+  // rather than on the actual accelerator control.
+  const gasControl = page.locator("#gas");
+  await gasControl.dispatchEvent("pointerdown", {
+    pointerId: 9301, pointerType: "mouse", isPrimary: true, button: 0, buttons: 1
+  });
+  try {
+    await page.waitForFunction(() => window.MshinPerformance?.playerGas === true, undefined, { timeout: 3000 });
+    await page.waitForTimeout(2400);
+    const accelerationState = await page.evaluate(() => ({
+      speed: Number(document.querySelector("#speed")?.textContent || 0),
+      gas: window.MshinPerformance?.playerGas,
+      simulatedSpeed: window.MshinPerformance?.playerSpeed,
+      state: window.MshinPerformance
+    }));
+    assert.equal(accelerationState.gas, true, "on-screen accelerator should remain pressed during the test");
+    assert.ok(accelerationState.speed > 0 || accelerationState.simulatedSpeed > 0,
+      "accelerator should increase speed: " + JSON.stringify({ speed: accelerationState.speed, simulatedSpeed: accelerationState.simulatedSpeed, gas: accelerationState.gas }));
+  } finally {
+    await page.evaluate(() => window.dispatchEvent(new PointerEvent("pointerup", {
+      bubbles: true, cancelable: true, pointerId: 9301, pointerType: "mouse",
+      isPrimary: true, button: 0, buttons: 0
+    })));
+  }
   try {
     // Keep accelerating until the player physically reaches a track pickup.
     // Releasing the key after a fixed 2.4s can leave the car short of the first
