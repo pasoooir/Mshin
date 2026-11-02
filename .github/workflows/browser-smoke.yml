@@ -80,7 +80,7 @@ jobs:
           if [ -f /tmp/mshin-http.pid ]; then
             kill "$(cat /tmp/mshin-http.pid)" 2>/dev/null || true
           fi
-      - name: Upload desktop and mobile gameplay previews
+      - name: Upload mobile gameplay previews
         if: always()
         uses: actions/upload-artifact@v4
         with:
