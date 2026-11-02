@@ -238,6 +238,13 @@ try {
   assert.equal(rigidCheck.angular,true,"off-centre browser collision should preserve finite angular response");
   assert.equal(rigidCheck.swept,true,"swept collision should detect fast body traversal");
 
+  // SwiftShader may compile the first race shader on demand. Let that
+  // one-time initialization frame age out of the 120-frame rolling window,
+  // then assert steady-state frame pacing without masking recurring stalls.
+  await page.waitForFunction(() => {
+    const metrics = window.MshinPerformance;
+    return metrics && metrics.samples >= 120 && metrics.maxFrameMs < 1500;
+  }, undefined, { timeout: 30000, polling: 100 });
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
   console.log("[browser-smoke] MshinPerformance:", JSON.stringify(frameMetrics));
   for (const key of ["maxUpdateCostMs", "maxAudioCostMs", "maxDrawCostMs", "maxLoopCostMs"]) {
