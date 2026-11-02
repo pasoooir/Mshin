@@ -81,7 +81,7 @@ async function waitForGameBoot(page, label = "game") {
   return state;
 }
 
-const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
+const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -531,7 +531,7 @@ try {
         // project both heading and lateral drift onto a look-ahead point.
         // The velocity term damps an outward slide before it reaches the
         // road edge, while the curvature feed-forward follows actual bends.
-        const lookAhead = 220;
+        const lookAhead = 360;
         const predictedLateral = lateral + lookAhead * Math.sin(yaw)
           + lookAhead * lateralVelocity / speed;
         const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
