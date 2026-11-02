@@ -92,3 +92,9 @@ test("late track construction yields between rail, crowd and billboard batches",
   assert.match(source, /state\.maxTrackBuildStepMs=Math\.max/);
   assert.match(source, /state\.maxDrawPartMs=Math\.max/);
 });
+
+
+test("procedural vehicle mesh construction exposes its synchronous cost", () => {
+  assert.match(source, /state\.maxVehicleBuildMs=Math\.max/);
+  assert.match(source, /vehicleBuildCount:0/);
+});
