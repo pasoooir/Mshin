@@ -373,6 +373,8 @@ try {
   await page.mouse.up();
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "releasing the steering pad should return the control to center");
   assert.match(await steeringPad.getAttribute("aria-label"), /برای چرخیدن به چپ یا راست بکشید و رها کنید/, "steering instructions should be accessible in Persian");
+  await page.locator("#pause").click();
+  assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   await page.waitForFunction(() => window.Mshin3DRenderer?.trackBuildProgress >= 1 && window.Mshin3DRenderer?.frames > 0, undefined, { timeout: 15000 });
   const canvasState = await page.locator("#game3d").evaluate(canvas => new Promise(resolve => {
     const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -400,8 +402,6 @@ try {
   assert.equal(canvasState.glError, 0, "3D renderer must not leave a WebGL error: " + JSON.stringify(canvasState));
   assert.ok(canvasState.pixelBytes > 1000, "3D gameplay frame should not be a blank image");
   await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
-  await page.locator("#pause").click();
-  assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
   await captureScreenshot(page, "artifacts/mshin-pause-desktop.png");
