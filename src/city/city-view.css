@@ -15,3 +15,13 @@
 .citySaveState{font-size:10px;color:#c3d7dc;margin-top:5px}.hidden{display:none!important}
 @media(max-width:760px){.cityShell{padding:7px}.cityTop{flex-direction:column;gap:7px}.cityBrand{padding:7px 11px;min-width:0}.cityBrand strong{font-size:15px}.cityBrand small{font-size:9px}.cityMetrics{justify-content:flex-start;gap:4px}.cityMetric{min-width:69px;padding:5px 7px;border-radius:11px}.cityMetric small{font-size:8px}.cityMetric b{font-size:12px}.cityActions{position:absolute;top:7px;left:7px}.cityAction{padding:7px 9px;font-size:10px}.cityMiddle{align-items:flex-end}.cityTools{gap:5px;padding:6px;margin-bottom:8px}.cityTool{width:44px;height:44px;font-size:18px}.cityTool small{font-size:8px}.cityBottom{align-items:flex-end}.cityBottomInfo{max-width:220px;padding:8px 10px}.cityBottomInfo strong{font-size:11px}.cityBottomInfo small{font-size:9px}.citySpeed{gap:2px;padding:4px}.citySpeed button{padding:8px 9px;font-size:11px}.cityToast{bottom:75px;font-size:10px}}
 @media(max-width:420px){.cityMetric{min-width:61px}.cityMetric b{font-size:11px}.cityBrand{max-width:155px}.cityTool{width:40px;height:40px}.cityBottomInfo{max-width:170px}}
+
+/* Immersive mobile city: force landscape before exposing the playable world. */
+#cityOrientationGate{display:none;position:fixed;inset:0;z-index:50;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 20%,#355b76,#0b1728 72%);text-align:center}
+.orientationCard{width:min(420px,92vw);padding:28px;border:1px solid #ffffff40;border-radius:26px;background:#122b42ed;box-shadow:0 22px 70px #0008}
+.orientationCard h1{font-size:clamp(22px,5vw,32px);margin:14px 0 8px}.orientationCard p{color:#c2d6e2;line-height:1.8;font-size:13px}
+.phoneTurn{font-size:72px;line-height:1.2;color:#e6bd66;text-shadow:0 8px 28px #0008}
+#cityEnterLandscape{border:0;border-radius:14px;padding:14px 22px;background:linear-gradient(145deg,#f5d47c,#d99542);color:#2d2417;font-weight:1000;min-height:52px}
+@media(orientation:portrait){#cityOrientationGate{display:grid}}
+#cityOrientationGate.ready{display:none}
+#cityThreeViewport{touch-action:none}
