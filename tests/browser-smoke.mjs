@@ -540,18 +540,18 @@ try {
         // project both heading and lateral drift onto a look-ahead point.
         // The velocity term damps an outward slide before it reaches the
         // road edge, while the curvature feed-forward follows actual bends.
-        const lookAhead = 360;
+        const lookAhead = 520;
         const predictedLateral = lateral + lookAhead * Math.sin(yaw)
           + lookAhead * lateralVelocity / speed;
         const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
         const targetCurvature = trackCurvature + correctionCurvature;
-        const steering = Math.max(-.92, Math.min(.92, Math.atan(128 * targetCurvature) / .48));
+        const steering = Math.max(-.78, Math.min(.78, Math.atan(80 * targetCurvature) / .55));
         return { steering, speed };
       });
       const now = Date.now();
-      if (controls.speed > 265 && now >= economyBrakeCooldownUntil && now >= economyBrakeUntil) {
-        economyBrakeUntil = now + 85;
-        economyBrakeCooldownUntil = now + 520;
+      if (controls.speed > 330 && now >= economyBrakeCooldownUntil && now >= economyBrakeUntil) {
+        economyBrakeUntil = now + 55;
+        economyBrakeCooldownUntil = now + 800;
       }
       const economyBrakeActive = now < economyBrakeUntil;
       const pointerSteering = Math.sign(controls.steering) * Math.pow(Math.abs(controls.steering), 1 / 1.28);
