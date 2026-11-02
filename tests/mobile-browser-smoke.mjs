@@ -7,7 +7,7 @@ async function waitForGameBoot(page) {
     window.MshinAssets?.ready === true && Boolean(document.querySelector("#home")),
     undefined, { timeout: 120000 }
   );
-  assert.equal(window.MshinBootError ?? null, null, "mobile game boot must not report an error");
+  assert.equal(await page.evaluate(() => window.MshinBootError ?? null), null, "mobile game boot must not report an error");
   await page.locator("#home").waitFor({ state: "visible", timeout: 15000 });
 }
 
