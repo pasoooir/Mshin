@@ -55,7 +55,17 @@ export class SimulationClock {
     }
     if (typeof onTick !== "function") throw new TypeError("onTick callback is required");
 
-    if (this.currentSpeed > 0) this.accumulatorSeconds += realDeltaSeconds * this.currentSpeed;
+    if (this.currentSpeed === 0) {
+      return {
+        ticksRun: 0,
+        firstTick: null,
+        lastTick: null,
+        simulatedSeconds: 0,
+        pendingTicks: this.pendingTicks,
+        interpolationAlpha: this.interpolationAlpha
+      };
+    }
+    this.accumulatorSeconds += realDeltaSeconds * this.currentSpeed;
     const due = this.pendingTicks;
     const ticksToRun = Math.min(due, this.maxTicksPerAdvance);
     const firstTick = ticksToRun > 0 ? this.currentTick + 1 : null;
