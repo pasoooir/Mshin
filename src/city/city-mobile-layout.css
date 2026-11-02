@@ -39,3 +39,8 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
  .cityTop{gap:4px}.cityBrand{padding:5px 8px}.cityMetrics{gap:3px}.cityMetric{padding:3px}.cityTool{height:42px}
  .cityTools{bottom:calc(env(safe-area-inset-bottom) + 62px)}.cityBottomInfo{padding:5px 7px}
 }
+
+/* Touch-first map navigation controls for mobile city exploration. */
+.cityMapControls{position:fixed;z-index:5;right:max(8px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:grid;gap:7px;pointer-events:auto}
+.cityMapControls button{width:44px;height:44px;border:1px solid #ffffff55;border-radius:13px;background:#122337e8;color:#fff;font-size:22px;font-weight:900;box-shadow:0 5px 18px #07152266;backdrop-filter:blur(10px);touch-action:manipulation}
+.cityMapControls button:active{transform:scale(.94);background:#e2b85e;color:#30291d}
