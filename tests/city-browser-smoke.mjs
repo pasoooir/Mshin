@@ -48,6 +48,5 @@ try{
  assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
  assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
  fs.mkdirSync("artifacts",{recursive:true});await page.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});assert.deepEqual(errors,[],"city route must not throw runtime errors");
- process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, wildlife, pinch zoom, residential zoning, utility and public service construction, service coverage, demolition persistence, autosave and live simulation.
-");
+ process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, service coverage, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
