@@ -8,7 +8,7 @@ test("procedural 3D scene stays within a bounded first-build geometry budget", (
   assert.ok(source.includes("const segments=mobile?280:760,half=180;"),
     "desktop track tessellation is capped at 760 segments");
   assert.ok(source.includes("i<(mobile?54:144);i++"),
-    "desktop tree instances are capped at 48");
+    "desktop tree instances are capped at 144");
   assert.ok(source.includes("i+=(mobile?18:6)"),
     "trackside rail sampling is bounded on desktop");
   assert.ok(source.includes("i<(mobile?10:36);i++"),
@@ -16,7 +16,7 @@ test("procedural 3D scene stays within a bounded first-build geometry budget", (
 });
 
 test("the scene keeps its full road width while reducing mesh density", () => {
-  assert.ok(source.includes("const segments=mobile?84:240,half=180;"));
+  assert.ok(source.includes("const segments=mobile?280:760,half=180;"));
   assert.ok(source.includes("quad(roadTris,l0,l1,r1,r0)"),
     "the asphalt remains a continuous closed road ribbon");
 });
