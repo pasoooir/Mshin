@@ -43,10 +43,12 @@ try{
  assert.ok(mobile.toolButtons.every(b=>b.width>=40&&b.height>=44),"mobile touch targets must be at least 40×44 CSS pixels");assert.ok(await page.locator(".cityTools").evaluate(el=>el.scrollWidth>el.clientWidth),"extended city construction tools must remain horizontally reachable on phones");
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
  await page.screenshot({path:"artifacts/city-mobile-390x844.png"});
- await page.setViewportSize({width:360,height:640});await page.waitForTimeout(80);
- const compact=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
- assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
- assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
- fs.mkdirSync("artifacts",{recursive:true});await page.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});assert.deepEqual(errors,[],"city route must not throw runtime errors");
+ const compactPage=await browser.newPage({viewport:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ try{await compactPage.goto(base+"/city.html");await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  const compact=await compactPage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
+  assert.equal(compact.gate,"grid","portrait phones must be stopped at the landscape orientation gate");assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
+  fs.mkdirSync("artifacts",{recursive:true});await compactPage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
+ }finally{await compactPage.close()}
+ assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, service coverage, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
