@@ -15,7 +15,8 @@ export function createInitialCity(seed=20261102){
  const trees=[];for(let y=2;y<SIZE-2;y++)for(let x=2;x<SIZE-2;x++)if(grid[y][x]==="grass"&&f(r)>.91)trees.push({x,y,size:.75+f(r)*.55});
  const citizens=Array.from({length:28},(_,i)=>({id:i+1,x:10+f(r)*12,y:10+f(r)*12,phase:f(r)*6.28,pace:.12+f(r)*.12}));
  const traffic=Array.from({length:9},(_,i)=>({id:i+1,x:1+i*3.5,y:i%3===0?15:i%3===1?7:23,speed:.8+f(r)*.55,color:["#f5bd58","#e76c59","#75b9d6","#d6e1ec","#a7c77a"][i%5]}));
- return {schemaVersion:1,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:buildings.filter(b=>b.type==="home").reduce((n,b)=>n+b.residents,0),happiness:76,grid,buildings,trees,citizens,traffic,nextBuildingId:id,stats:{income:0,expenses:0,jobs:42,traffic:18}};
+ const animals=Array.from({length:10},(_,i)=>({id:i+1,type:["cat","dog","bird"][i%3],x:9+f(r)*14,y:9+f(r)*14,phase:f(r)*6.28,pace:.08+f(r)*.1}));
+ return {schemaVersion:1,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:buildings.filter(b=>b.type==="home").reduce((n,b)=>n+b.residents,0),happiness:76,grid,buildings,trees,citizens,traffic,animals,nextBuildingId:id,stats:{income:0,expenses:0,jobs:42,traffic:18}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==1||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
@@ -28,6 +29,7 @@ export function stepCity(city,seconds=1){
  city.happiness=Math.max(25,Math.min(98,city.happiness+(coverage>.5?.2:-.08)+(parks.length>2?.05:0)));
  for(const p of city.citizens){p.phase+=p.pace*seconds;p.x+=Math.cos(p.phase)*.012;p.y+=Math.sin(p.phase)*.009;if(p.x<7||p.x>24)p.phase=Math.PI-p.phase;if(p.y<7||p.y>24)p.phase=-p.phase;p.x=Math.max(7,Math.min(24,p.x));p.y=Math.max(7,Math.min(24,p.y))}
  for(const v of city.traffic){v.x+=v.speed*seconds*.24;if(v.x>SIZE+1)v.x=-1}
+ for(const a of city.animals||[]){a.phase+=a.pace*seconds;a.x+=Math.cos(a.phase)*.009;a.y+=Math.sin(a.phase)*.007;a.x=Math.max(8,Math.min(25,a.x));a.y=Math.max(8,Math.min(25,a.y))}
  return city;
 }
 export function placeCityItem(city,x,y,type){
@@ -47,7 +49,7 @@ function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return
 function mount(){
  const canvas=document.getElementById("cityViewport"),ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;
  const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1};
- let tool="select",speed=1,acc=0,last=0,selected=null,pointer=null,drag=0,toastFrames=0,raf=0;
+ let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,lastPersistTick=city.tick;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};
  function resize(){view.w=innerWidth;view.h=innerHeight;view.dpr=Math.min(devicePixelRatio||1,1.6);canvas.width=Math.round(view.w*view.dpr);canvas.height=Math.round(view.h*view.dpr);canvas.style.width=view.w+"px";canvas.style.height=view.h+"px";cam.zoom=Math.max(.42,Math.min(1.18,Math.min(view.w/1040,view.h/740)*1.08))}
@@ -71,6 +73,7 @@ function mount(){
  function tree(t){const p=tilePoint(t.x,t.y),s=t.size;ctx.fillStyle="#233d2e55";ctx.beginPath();ctx.ellipse(p.x+2,p.y+3,7*s,3*s,0,0,6.28);ctx.fill();ctx.fillStyle="#74583b";ctx.fillRect(p.x-1.5,p.y-9*s,3,10*s);ctx.fillStyle="#36774b";ctx.beginPath();ctx.arc(p.x,p.y-12*s,7*s,0,6.28);ctx.fill();ctx.fillStyle="#65a85d";ctx.beginPath();ctx.arc(p.x-2*s,p.y-15*s,4*s,0,6.28);ctx.fill()}
  function people(){for(const p of city.citizens){const q=tilePoint(p.x,p.y);ctx.fillStyle="#25364b55";ctx.beginPath();ctx.ellipse(q.x,q.y+2,2.8,1.4,0,0,6.28);ctx.fill();ctx.fillStyle=p.id%3===0?"#e9c56b":p.id%3===1?"#e7edf2":"#d98b75";ctx.beginPath();ctx.arc(q.x,q.y-4,2.1,0,6.28);ctx.fill();ctx.strokeStyle="#f5dfbd";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(q.x,q.y-2);ctx.lineTo(q.x,q.y+1);ctx.stroke()}}
  function cars(){for(const v of city.traffic){const p=tilePoint(v.x,v.y);ctx.save();ctx.translate(p.x,p.y-1);ctx.fillStyle="#1a2635aa";ctx.beginPath();ctx.ellipse(0,3,7,2.8,0,0,6.28);ctx.fill();ctx.fillStyle=v.color;ctx.beginPath();ctx.roundRect(-6,-4,12,7,2);ctx.fill();ctx.fillStyle="#d8efff";ctx.beginPath();ctx.roundRect(-3.5,-3,5,3,1);ctx.fill();ctx.restore()}}
+ function animals(){for(const a of city.animals||[]){const p=tilePoint(a.x,a.y);ctx.save();ctx.translate(p.x,p.y);if(a.type==="bird"){ctx.strokeStyle="#eaf4dc";ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(-2,-2,3,Math.PI,Math.PI*1.85);ctx.arc(2,-2,3,Math.PI*1.15,Math.PI*2);ctx.stroke()}else{ctx.fillStyle=a.type==="cat"?"#d9b28a":"#b7c2ca";ctx.beginPath();ctx.ellipse(0,-2,4.2,2.8,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(-2,-5,1.8,0,6.28);ctx.arc(2,-5,1.8,0,6.28);ctx.fill();ctx.strokeStyle="#f4e7d6";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(3,0);ctx.lineTo(6,-2);ctx.stroke()}ctx.restore()}}
  function toolName(){return({select:"انتخاب",road:"خیابان",home:"مسکونی",shop:"تجاری",service:"خدمات",park:"پارک",bulldoze:"تخریب"})[tool]}
  function draw(){
   ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
@@ -78,7 +81,7 @@ function mount(){
   ctx.save();ctx.translate(view.w/2+cam.x,view.h*.23+cam.y);ctx.scale(cam.zoom,cam.zoom);
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)ground(x,y,city.grid[y][x]);
   [...city.trees.map(t=>({d:t.x+t.y,draw:()=>tree(t)})),...city.buildings.map(b=>({d:b.x+b.y,draw:()=>building(b)}))].sort((a,b)=>a.d-b.d).forEach(v=>v.draw());
-  cars();people();if(selected){const p=tilePoint(selected.x,selected.y);ctx.strokeStyle="#fff1a6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y-8);ctx.lineTo(p.x+16,p.y);ctx.lineTo(p.x,p.y+8);ctx.lineTo(p.x-16,p.y);ctx.closePath();ctx.stroke()}ctx.restore();
+  cars();people();animals();if(selected){const p=tilePoint(selected.x,selected.y);ctx.strokeStyle="#fff1a6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y-8);ctx.lineTo(p.x+16,p.y);ctx.lineTo(p.x,p.y+8);ctx.lineTo(p.x-16,p.y);ctx.closePath();ctx.stroke()}ctx.restore();
   $("cityPopulation").textContent=city.population.toLocaleString("fa-IR");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("fa-IR")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("fa-IR");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("fa-IR")+"٪";
   $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="روز "+(1+Math.floor(city.tick/144)).toLocaleString("fa-IR");
   $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را انتخاب کن.":"ابزار فعال: "+toolName();$("cityBudgetHint").textContent="درآمد +"+city.stats.income.toLocaleString("fa-IR")+" · هزینه -"+city.stats.expenses.toLocaleString("fa-IR");$("citySaveState").textContent=toastFrames>0?"ذخیره شد ✓":"ذخیره محلی";if(toastFrames>0)toastFrames--;
@@ -87,22 +90,22 @@ function mount(){
  function apply(x,y){
   if(!inside(x,y))return;selected={x,y};
   if(tool==="select"){draw();return}
-  if(tool==="bulldoze"){if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home")city.population=Math.max(0,city.population-b.residents);city.grid[y][x]="grass";city.treasury+=80;$("cityToast").textContent="ساختمان تخریب شد؛ بخشی از هزینه بازیابی شد."}}else if(city.grid[y][x]==="road"){city.grid[y][x]="grass";$("cityToast").textContent="قطعه خیابان حذف شد."}draw();return}
+  if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home")city.population=Math.max(0,city.population-b.residents);city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="ساختمان تخریب شد؛ ۳۵٪ هزینه بازیابی شد.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="این خیابان تنها مسیر دسترسی یک ساختمان است."}else{city.grid[y][x]="grass";$("cityToast").textContent="قطعه خیابان حذف شد.";changed=true}}if(changed)persist(city);draw();return}
   const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"ساخت انجام شد · هزینه "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
  }
  document.querySelectorAll("[data-city-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.cityTool)));
  document.querySelectorAll("[data-city-speed]").forEach(b=>b.addEventListener("click",()=>{speed=Number(b.dataset.citySpeed);document.querySelectorAll("[data-city-speed]").forEach(v=>v.classList.toggle("active",v===b));$("citySpeedLabel").textContent=speed===0?"متوقف":speed+"×"}));
- $("citySave").addEventListener("click",()=>{const ok=persist(city);$("cityToast").textContent=ok?"شهر با موفقیت ذخیره شد.":"ذخیره‌سازی در این مرورگر در دسترس نیست.";toastFrames=120;draw()});
+ $("citySave").addEventListener("click",()=>{const ok=persist(city);if(ok)lastPersistTick=city.tick;$("cityToast").textContent=ok?"شهر با موفقیت ذخیره شد.":"ذخیره‌سازی در این مرورگر در دسترس نیست.";toastFrames=120;draw()});
  $("cityReset").addEventListener("click",()=>{if(!confirm("شهر فعلی با یک شهر تازه جایگزین شود؟"))return;const fresh=createInitialCity((city.seed+7919)>>>0);Object.keys(city).forEach(k=>delete city[k]);Object.assign(city,fresh);persist(city);draw()});
  $("cityHelp").addEventListener("click",()=>$("cityHelpPanel").classList.toggle("hidden"));$("cityCloseHelp").addEventListener("click",()=>$("cityHelpPanel").classList.add("hidden"));
- canvas.addEventListener("pointerdown",e=>{pointer={id:e.pointerId,x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y};drag=0;canvas.setPointerCapture?.(e.pointerId)});
- canvas.addEventListener("pointermove",e=>{if(!pointer||pointer.id!==e.pointerId)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;drag=Math.max(drag,Math.hypot(dx,dy));if(drag>5){cam.x=pointer.cx+dx;cam.y=pointer.cy+dy;canvas.style.cursor="grabbing";draw()}});
- canvas.addEventListener("pointerup",e=>{if(!pointer||pointer.id!==e.pointerId)return;if(drag<=5){const p=tileAt(e.clientX,e.clientY);apply(p.x,p.y)}pointer=null;canvas.style.cursor=tool==="select"?"grab":"crosshair"});
- canvas.addEventListener("pointercancel",()=>pointer=null);canvas.addEventListener("wheel",e=>{e.preventDefault();cam.zoom=Math.max(.42,Math.min(1.5,cam.zoom*(e.deltaY<0?1.08:.92)));draw()},{passive:false});
+ canvas.addEventListener("pointerdown",e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});try{canvas.setPointerCapture?.(e.pointerId)}catch{}if(pointers.size===1){gesture={mode:"pan",id:e.pointerId,cx:cam.x,cy:cam.y,moved:false}}else if(pointers.size===2){const pts=[...pointers.values()],dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y,distance=Math.max(1,Math.hypot(dx,dy)),midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;gesture={mode:"pinch",distance,zoom:cam.zoom,worldX:(midX-view.w/2-cam.x)/cam.zoom,worldY:(midY-view.h*.23-cam.y)/cam.zoom,moved:true}}});
+ canvas.addEventListener("pointermove",e=>{const point=pointers.get(e.pointerId);if(!point)return;point.x=e.clientX;point.y=e.clientY;if(pointers.size>=2&&gesture?.mode==="pinch"){const pts=[...pointers.values()].slice(0,2),dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y,distance=Math.max(1,Math.hypot(dx,dy)),midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;cam.zoom=Math.max(.42,Math.min(1.5,gesture.zoom*distance/gesture.distance));cam.x=midX-view.w/2-gesture.worldX*cam.zoom;cam.y=midY-view.h*.23-gesture.worldY*cam.zoom;draw();return}if(pointers.size===1&&gesture?.mode==="pan"){const dx=point.x-point.startX,dy=point.y-point.startY;if(Math.hypot(dx,dy)>5)gesture.moved=true;cam.x=gesture.cx+dx;cam.y=gesture.cy+dy;if(gesture.moved){canvas.style.cursor="grabbing";draw()}}});
+ const finishPointer=e=>{if(!pointers.has(e.pointerId))return;const point=pointers.get(e.pointerId),wasPinching=gesture?.mode==="pinch";if(!wasPinching&&pointers.size===1&&gesture?.mode==="pan"&&!gesture.moved&&Math.hypot(e.clientX-point.startX,e.clientY-point.startY)<=5){const p=tileAt(e.clientX,e.clientY);apply(p.x,p.y)}pointers.delete(e.pointerId);if(pointers.size===1){const [id,remaining]=[...pointers.entries()][0];gesture={mode:"pan",id,cx:cam.x,cy:cam.y,startX:remaining.x,startY:remaining.y,moved:wasPinching||Boolean(gesture?.moved)}}else if(pointers.size===0)gesture=null;canvas.style.cursor=tool==="select"?"grab":"crosshair"};
+ canvas.addEventListener("pointerup",finishPointer);canvas.addEventListener("pointercancel",finishPointer);canvas.addEventListener("wheel",e=>{e.preventDefault();cam.zoom=Math.max(.42,Math.min(1.5,cam.zoom*(e.deltaY<0?1.08:.92)));draw()},{passive:false});
  addEventListener("resize",()=>{resize();draw()});addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
- resize();window.MshinCityDebug={get city(){return city},get activeTool(){return tool},screenForTile(x,y){const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t)};
+ resize();window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t)};
  document.documentElement.dataset.cityReady="true";
- function frame(now){const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}}draw();raf=requestAnimationFrame(frame)}
+ function frame(now){const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}}if(city.tick-lastPersistTick>=6){if(persist(city))lastPersistTick=city.tick}draw();raf=requestAnimationFrame(frame)}
  raf=requestAnimationFrame(frame);addEventListener("pagehide",()=>{cancelAnimationFrame(raf);persist(city)},{once:true});
 }
 if(typeof document!=="undefined"){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});else mount()}

@@ -8,11 +8,19 @@ try{
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
  await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:10000});
  assert.equal(await page.title(),"شهر من | مِشین");
- const initial=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,buildings:window.MshinCityDebug.city.buildings.length,roads:window.MshinCityDebug.city.grid.flat().filter(t=>t==="road").length,citizens:window.MshinCityDebug.city.citizens.length,traffic:window.MshinCityDebug.city.traffic.length,width:document.querySelector("#cityViewport").width}));
- assert.ok(initial.population>100,"entry page must show a populated city");assert.ok(initial.buildings>=30,"initial buildings should be visible");assert.ok(initial.roads>=100,"city should have a street grid");assert.ok(initial.citizens>=20&&initial.traffic>=6,"citizens and traffic should be present");assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
+ const initial=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,buildings:window.MshinCityDebug.city.buildings.length,roads:window.MshinCityDebug.city.grid.flat().filter(t=>t==="road").length,citizens:window.MshinCityDebug.city.citizens.length,traffic:window.MshinCityDebug.city.traffic.length,animals:window.MshinCityDebug.city.animals.length,width:document.querySelector("#cityViewport").width}));
+ assert.ok(initial.population>100,"entry page must show a populated city");assert.ok(initial.buildings>=30,"initial buildings should be visible");assert.ok(initial.roads>=100,"city should have a street grid");assert.ok(initial.citizens>=20&&initial.traffic>=6&&initial.animals>=8,"citizens, traffic and wildlife should be present");assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
  await page.locator('[data-city-tool="park"]').click();const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][14]),"building","park tool should place a city asset");
  await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v1"))?.buildings?.some(b=>b.x===14&&b.y===14)),"city changes should persist");
+ const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",91,120,420);send("pointerdown",92,260,420);send("pointermove",92,320,420);send("pointerup",92,320,420);send("pointerup",91,120,420)});
+ const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");
+ const building=await page.evaluate(()=>window.MshinCityDebug.city.buildings.find(b=>b.type==="home"));
+ await page.locator('[data-city-tool="bulldoze"]').click();const demolition=await page.evaluate(b=>window.MshinCityDebug.screenForTile(b.x,b.y),building);await page.mouse.click(demolition.x,demolition.y);
+ assert.ok(await page.evaluate(b=>JSON.parse(localStorage.getItem("mshin-city-save-v1"))?.grid?.[b.y]?.[b.x]==="grass",building),"demolition must persist immediately");
+ await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
+ assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v1"))?.tick>=6),"simulation must autosave without a manual save");
  const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(1300);const after=await page.evaluate(()=>window.MshinCityDebug.city.tick);assert.ok(after>before,"simulation should advance");
  const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),toolButtons:[...document.querySelectorAll(".cityTool")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,right:r.right,left:r.left}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
@@ -26,5 +34,5 @@ try{
  assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
  assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
  fs.mkdirSync("artifacts",{recursive:true});await page.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});assert.deepEqual(errors,[],"city route must not throw runtime errors");
- process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, construction, local save and live simulation.\n");
+ process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, wildlife, pinch zoom, demolition persistence, autosave and live simulation.\n");
 }finally{await browser.close()}

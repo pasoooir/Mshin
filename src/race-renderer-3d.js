@@ -60,13 +60,9 @@ export function createRaceRenderer(canvas){
  let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,road=null,decor=[],carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
-  // Allocate the final drawing buffer before gameplay starts; resizing a live WebGL canvas on its first race frame can stall the main loop for seconds.
-  const initialPortrait=matchMedia("(orientation: portrait)").matches;
-  const initialDpr=Math.min(devicePixelRatio||1,mobile?.68:1.5)*qualityScale;
-  const initialWidth=Math.max(1,Math.round((initialPortrait?innerHeight:innerWidth)*initialDpr));
-  const initialHeight=Math.max(1,Math.round((initialPortrait?innerWidth:innerHeight)*initialDpr));
-  canvas.width=initialWidth;canvas.height=initialHeight;lastSize=initialWidth+"x"+initialHeight;
-  state.quality={mobile,pixelRatio:initialDpr,detail:mobile?"mobile-balanced":"high",width:initialWidth,height:initialHeight};
+  // Create the WebGL context before sizing the canvas. The GPU profile must
+  // determine the first drawing-buffer dimensions; otherwise software GPUs
+  // allocate a full-resolution buffer and immediately reallocate it.
  try{
   gl=canvas.getContext("webgl",{alpha:false,antialias:!mobile,depth:true,powerPreference:"high-performance",preserveDrawingBuffer:false})||canvas.getContext("experimental-webgl");
   if(!gl)throw new Error("WebGL is unavailable on this device");
@@ -77,7 +73,10 @@ export function createRaceRenderer(canvas){
   const gpuProfile=debugRenderer?String(gl.getParameter(debugRenderer.UNMASKED_RENDERER_WEBGL)||""):String(gl.getParameter(gl.RENDERER)||"");
   softwareRenderer=/swiftshader|llvmpipe|lavapipe|software raster/i.test(gpuProfile);
   state.softwareRenderer=softwareRenderer;state.gpuProfile=gpuProfile.slice(0,120);
-  if(softwareRenderer){qualityScale=.58;resize();}
+  if(softwareRenderer)qualityScale=.58;
+  // This is the only initial framebuffer allocation, now using the detected
+  // GPU profile (including the lower software-rendering scale).
+  resize();
   program=makeProgram(gl);environment=createVehicleEnvironment(gl);state.environmentMapReady=!!environment;attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive")};
   // Force the browser/driver to compile and execute the linked shader pipeline
   // before the first countdown frame. Some headless and mobile GPUs defer this
