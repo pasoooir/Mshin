@@ -487,8 +487,15 @@ try {
   assert.deepEqual(errors, [], "desktop and mobile pages should not throw runtime exceptions");
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
-  // This scenario measures a full live race, so make its tab foreground first.
+  // Bring the page forward and explicitly reactivate its lifecycle before the
+  // long simulation; headless bringToFront() alone does not always clear the
+  // background lifecycle state in GitHub Actions.
   await economy.bringToFront();
+  const economySession = await economy.context().newCDPSession(economy);
+  await economySession.send("Page.setWebLifecycleState", { state: "active" });
+  await economy.evaluate(() => window.focus());
+  assert.equal(await economy.evaluate(() => document.visibilityState), "visible",
+    "economy race tab must be active so requestAnimationFrame runs at foreground cadence");
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   // The dedicated race-completion scenario validates gameplay physics and economy,
   // not SwiftShader performance. Earlier desktop/mobile checks already validate WebGL.
