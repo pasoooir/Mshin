@@ -5,7 +5,7 @@
 
 | Feature ID | Feature | Purpose / acceptance criteria | Priority | Dependencies | Status | Test / evidence | Target |
 |---|---|---|---|---|---|---|---|
-| SC-CORE-001 | Deterministic simulation clock | Fixed ticks; pause/speed controls; same seed/ticks yield same state | P1 | None | ⬜ | Unit determinism tests | VS |
+| SC-CORE-001 | Deterministic simulation clock and root state | Immutable versioned city state, seeded PRNG, fixed ticks, pause/1x/2x/4x controls and bounded catch-up without dropped ticks | P1 | None | 🟡 | PR #137: 237 tests pass, 0 fail in portable suite; browser smoke pending; city gameplay acceptance not yet complete | VS |
 | SC-WORLD-001 | World grid and parcels | Selectable buildable/non-buildable cells; coordinate round-trip | P1 | CORE | ⬜ | Grid, terrain and boundary tests | VS |
 | SC-TERR-001 | Terrain data | Height, slope and water constraints affect build validation | P2 | WORLD | ⬜ | Terrain rule tests | v0.2 |
 | SC-ROAD-001 | Road drawing | Straight/polyline placement preview, costs, snapping, obstacle and connection validation | P1 | WORLD | ⬜ | Road geometry and transaction tests | VS |
