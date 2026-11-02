@@ -118,7 +118,18 @@ The diagnostic reported:
 
 The server startup succeeded; the browser test ran and failed on the runtime performance assertion. The captured telemetry points to a single very long draw/loop frame, not a server startup failure. Root cause still requires profiling the exact draw path; do not weaken or delete the assertion to make CI green.
 
-### 4.2 Workflow inventory
+### 4.2 Follow-up CI diagnosis — 2026-11-02 10:37 UTC
+
+Renderer PR #136 was re-run after the bounded-upload change. Browser smoke run 41428176634 failed at tests/browser-smoke.mjs:396 with only two sampled framebuffer colors, despite a live WebGL context and zero GL errors. Telemetry showed trackBuildProgress=0.916. The renderer retained partially uploaded meshes in pendingTrackParts but drew only completed road/decor arrays. The early gameplay frame therefore showed only the clear color until the replacement track finished building.
+
+A follow-up correction was committed to PR #136:
+- draw pendingTrackParts while the track is being assembled;
+- switch to completed road/decor arrays after build completion;
+- add a regression assertion requiring progressive geometry to be drawn.
+
+Commit: 6128c2c3b0070182b157af94607eb57215338eb8. Portable validation passed; browser-smoke run 41430262465 was still in progress at this follow-up. The fix is not yet accepted until browser smoke passes.
+
+### 4.3 Workflow inventory
 
 The default branch has three focused workflows:
 - `.github/workflows/browser-smoke.yml`
@@ -129,7 +140,7 @@ The latest observed data/core validation passed. Browser smoke remains a P0/P1 q
 
 ## 5. Pull request and branch audit
 
-The GitHub API returned **20 open PRs** at audit time. They include:
+The GitHub API returned **22 open PRs** in the follow-up inspection at 2026-11-02 10:37 UTC (the initial phase-zero snapshot recorded 20). They include:
 - PR #132: tenfold track length and mobile steering correction (open, base `main`, CI on its head: core validation passed; browser smoke failed).
 - PRs #99, #107, #108, #110–#117 and #62, #65, #74, #89, #92–#94, #102: racing physics, controls, smoke driver, track environment, camera, menu and input work.
 - Many are stacked on other feature branches rather than directly targeting `main`; several are drafts.
@@ -181,14 +192,14 @@ These are **not implemented/verified**, not merely “hidden” by the existing 
 The current ChatGPT tool surface exposes integrations/capabilities for GitHub, Context7, Amazing Drawing, OpenArt, Runchat, Figma, Canva, SketchMonkey Design Studio, and the Build 3D Game Rooms workflow skill. These are available tool surfaces, not proof that every external desktop bridge or paid generation service is currently running or authorized.
 
 - GitHub: repository inspection, branches, files, PRs, CI logs and commits.
-- Context7: version-specific Cocos documentation lookup; used to confirm Creator 3.8 project structure and component conventions.
+- Context7: resolved the exact /cocos/cocos-engine/3.8.6 library. Retrieved excerpts were limited to engine error/configuration references, so each API still requires verification against official 3.8.6 documentation.
 - Amazing Drawing: suitable for city/block/road-network diagrams.
-- OpenArt: reference/concept image generation when the art brief and asset gate are ready.
+- OpenArt: connected, but the account balance reported 0 credits; image generation was not run.
 - Build 3D Game Rooms: structured concept-to-asset-to-runtime workflow; requires its prescribed gates and reference documents before execution.
-- Runchat: available workflow/geometry automation tools; Rhino/Blender bridge availability must be checked at execution time.
-- Figma/Canva: UI/design system and communication assets.
+- Runchat: connected, but no existing runchats/workflows were returned in the current account. Rhino/Blender bridge availability must be checked at execution time.
+- Figma: authenticated with a View seat on the Starter team; a FigJam runtime architecture diagram was generated. Canva: connected; no marketing artifact is required yet.
 - SketchMonkey Design Studio: industrial/CMF concept exploration where relevant.
-- Meshy and Contour3D were not present as direct tool namespaces in the inspected current tool list; do not claim to have used or connected them.
+- UI/UX Designer and Product Design connectors were not present in the current tool list. Meshy and Contour3D were not present as direct tool namespaces.
 - Sketchy Medical tools are present, but medical-reference use is not currently on the critical path.
 
 ## 10. Phase-zero exit criteria
@@ -201,7 +212,7 @@ The current ChatGPT tool surface exposes integrations/capabilities for GitHub, C
 - [x] Latest Actions run and failing browser-smoke job logs inspected.
 - [x] Open PR inventory inspected.
 - [x] Current-session design/tool surfaces inventoried.
-- [ ] Full PR dependency/diff review and resolution of browser performance failure.
+- [ ] Full PR dependency/diff review and acceptance of the renderer fix after browser smoke passes.
 - [ ] Editor-opened Cocos scene and engine-aware Web build verification.
 - [ ] Competitor research and public community-feedback synthesis.
 - [ ] Approved city art direction and first professionally produced asset pack.
