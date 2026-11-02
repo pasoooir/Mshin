@@ -25,7 +25,7 @@ test("residential zoning grows into housing and increases population", () => {
   assert.equal(placeCityItem(city,17,14,"zone-residential").ok,true);
   for(let i=0;i<12;i++) stepCity(city);
   assert.equal(city.grid[14][17],"building");
-  assert.ok(city.buildings.some(building=>building.x===16&&building.y===14&&building.type==="home"));
+  assert.ok(city.buildings.some(building=>building.x===17&&building.y===14&&building.type==="home"));
   assert.ok(city.population>=before+12);
   assert.equal(city.zones.length,0);
 });
@@ -35,8 +35,8 @@ test("commercial, industrial, administrative and recreational zones develop when
   const zones = [
     [14,14,"commercial"],
     [17,14,"industrial"],
-    [14,16,"administrative"],
-    [16,16,"recreational"]
+    [14,17,"administrative"],
+    [17,17,"recreational"]
   ];
   for(const [x,y,type] of zones) assert.equal(placeCityItem(city,x,y,"zone-"+type).ok,true);
   for(let i=0;i<48;i++) stepCity(city);
