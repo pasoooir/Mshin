@@ -52,7 +52,7 @@
 
 | ID | Task | Owner | Dependencies | Priority | Status | Start | Complete | Test / evidence | Commit | PR |
 |---|---|---|---|---|---|---|---|---|---|---|
-| SC-QA-001 | Profile and fix the single-frame 5.3-second draw stall | Runtime/performance | SC-AUD-004 | P0 | 🟡 در حال اجرا | 2026-11-02 | — | First cause found: late crowd/billboard/rail meshes bypassed the upload queue. Bounded uploads exposed a second issue: pending meshes were not drawn until track-build completion, causing a two-color blank scene at 91.6% build progress. Commit 6128c2c draws pending geometry and adds a regression assertion; portable validation passed, browser smoke is running | dd561dc | #136 |
+| SC-QA-001 | Profile and fix the single-frame 5.3-second draw stall | Runtime/performance | SC-AUD-004 | P0 | 🟡 در حال اجرا | 2026-11-02 | — | First cause found: late crowd/billboard/rail meshes bypassed the upload queue. Bounded uploads exposed a second issue: pending meshes were not drawn until track-build completion, causing a two-color blank scene at 91.6% build progress. Commit 6128c2c draws pending geometry and adds a regression assertion; portable validation passed, browser smoke is running | 6128c2c | #136 |
 | SC-QA-002 | Review PR #132 and its CI/diff; preserve current driving controls | Gameplay/QA | SC-QA-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Core validation passed on the inspected head; browser smoke previously failed at framebuffer color assertion on PR #136 and is being re-run after progressive-render fix | — | #132 / #136 |
 | SC-QA-003 | Review stacked open PR dependency graph and test evidence | Technical lead | SC-AUD-004 | P1 | ⬜ شروع‌نشده | — | — | Per-PR diff, base/head, checks and review state | — | — |
 
@@ -60,7 +60,7 @@
 
 | ID | Feature | Acceptance target | Dependencies | Priority | Status |
 |---|---|---|---|---|---|
-| SC-CORE-001 | Deterministic simulation clock and world state | Seeded fixed-tick simulation with pause/speed controls | SC-ARC-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Implementation in PR #137: immutable city state, fixed-tick clock, seeded PRNG and six Node tests; CI pending | f0df58d | #137 |
+| SC-CORE-001 | Deterministic simulation clock and world state | Seeded fixed-tick simulation with pause/speed controls | SC-ARC-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Implementation in PR #137: immutable city state, fixed-tick clock, seeded PRNG and six Node tests; PR #137 portable validation passed (237 tests, 0 failures); browser smoke remains pending | f0df58d | #137 |
 | SC-WORLD-001 | Small city map/grid and terrain | Selectable buildable parcels; persistent coordinates | SC-CORE-001 | P2 | ⬜ شروع‌نشده |
 | SC-ROAD-001 | Road placement and road graph | Validated connected road segments; costs, undo-safe placement | SC-WORLD-001 | P1 | ⬜ شروع‌نشده |
 | SC-BLD-001 | Building placement and occupancy | Data-driven residential/commercial/public buildings attached to road access | SC-ROAD-001 | P2 | ⬜ شروع‌نشده |
