@@ -77,7 +77,7 @@ const outputIndex = process.argv.indexOf("--write");
 if (outputIndex >= 0) {
   const destination = process.argv[outputIndex + 1] || "docs/architecture-dependency-map.json";
   await writeFile(path.resolve(root, destination), json);
-  console.log(\`Wrote \${destination}: \${modules.length} source files, \${edges.length} local import edges, \${report.crossDomainEdges.length} cross-domain edges.\`);
+  console.log("Wrote " + destination + ": " + modules.length + " source files, " + edges.length + " local import edges, " + report.crossDomainEdges.length + " cross-domain edges.");
 } else {
   console.log(JSON.stringify({
     sourceFileCount: report.sourceFileCount,
