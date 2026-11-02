@@ -102,11 +102,14 @@ test("procedural vehicle mesh construction exposes its synchronous cost", () => 
 });
 
 
-test("the full WebGL drawing buffer is sized before the first gameplay frame", () => {
-  const initialSize = source.indexOf("canvas.width=initialWidth;canvas.height=initialHeight");
+test("the WebGL drawing buffer is allocated after the GPU profile is known", () => {
   const contextCreation = source.indexOf("gl=canvas.getContext");
-  assert.ok(initialSize >= 0 && contextCreation > initialSize,
-    "the first full-resolution drawing buffer must be allocated before the renderer enters the game loop");
+  const profileDetection = source.indexOf("softwareRenderer=/swiftshader");
+  const bufferAllocation = source.indexOf("resize();", profileDetection);
+  assert.ok(contextCreation >= 0 && profileDetection > contextCreation && bufferAllocation > profileDetection,
+    "the renderer must identify the GPU and select its quality profile before allocating the drawing buffer");
+  assert.equal(source.includes("canvas.width=initialWidth;canvas.height=initialHeight"), false,
+    "initialization must not allocate a full-resolution drawing buffer before GPU profiling");
 });
 
 
@@ -117,13 +120,14 @@ test("WebGL pixel acceptance can sample the submitted frame before buffer presen
 });
 
 
+// The selected software profile must be applied before the first framebuffer allocation.
 test("software WebGL devices automatically use a bounded render target and scene profile", () => {
   assert.match(source, /WEBGL_debug_renderer_info/,
     "the renderer should identify CPU-backed WebGL implementations when available");
   assert.match(source, /softwareRenderer=\/swiftshader\|llvmpipe\|lavapipe\|software raster\/i\.test\(gpuProfile\)/,
     "SwiftShader, llvmpipe and lavapipe should activate the software profile");
-  assert.match(source, /if\(softwareRenderer\)\{qualityScale=\.58;resize\(\);\}/,
-    "software render targets should reduce pixel workload before gameplay begins");
+  assert.match(source, /if\(softwareRenderer\)qualityScale=\.58;[\s\S]*?resize\(\);/,
+    "software render targets should reduce pixel workload before the single framebuffer allocation");
   assert.match(source, /softwareRenderer\?96:240/,
     "software rendering should reduce track tessellation without changing road dimensions");
   assert.match(source, /softwareRenderer\?2:7/,

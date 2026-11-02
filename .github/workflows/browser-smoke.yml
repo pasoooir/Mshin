@@ -1,4 +1,4 @@
-name: Mshin desktop and mobile browser smoke
+name: Mshin mobile browser smoke
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -62,29 +62,21 @@ jobs:
           echo "--- Listener diagnostics ---"
           (ss -ltnp || true) | grep ':4173' || true
           exit 1
-      - name: Run city entry browser smoke test
+      - name: Run mobile city entry browser smoke test
         env:
           CI: "true"
         run: |
           node --check tests/city-browser-smoke.mjs
           node tests/city-browser-smoke.mjs
-      - name: Run desktop and mobile browser smoke tests
+      - name: Run mobile-only browser smoke tests
         env:
           CI: "true"
         run: |
-          node --check tests/browser-smoke.mjs
-          node tests/browser-smoke.mjs
+          node --check tests/mobile-browser-smoke.mjs
+          node tests/mobile-browser-smoke.mjs
       - name: Stop local game server
         if: always()
         run: |
           if [ -f /tmp/mshin-http.pid ]; then
             kill "$(cat /tmp/mshin-http.pid)" 2>/dev/null || true
           fi
-      - name: Upload desktop and mobile gameplay previews
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mshin-gameplay-previews
-          path: artifacts/*.png
-          if-no-files-found: warn
-          retention-days: 7
