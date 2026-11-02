@@ -7,7 +7,7 @@ async function driveRaceWithFeedback(page, timeoutMs = 120000) {
   const stick=page.locator("#stick"),bounds=await stick.boundingBox();
   assert.ok(bounds&&bounds.width>58,"race steering pad must be available to the smoke driver");
   const center={x:bounds.x+bounds.width/2,y:bounds.y+bounds.height/2},limit=Math.max(1,(bounds.width-58)/2);
-  const startedAt=Date.now(),telemetry=[];let lastSteer=Number.NaN,lastTelemetryAt=0,throttleHeld=false;
+  const startedAt=Date.now(),telemetry=[];let lastSteer=Number.NaN,lastTelemetryAt=0,throttleHeld=false,brakeHeld=false;
   await page.mouse.move(center.x,center.y);await page.mouse.down();
   try{
     while(Date.now()-startedAt<timeoutMs){
