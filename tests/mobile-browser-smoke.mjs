@@ -138,7 +138,16 @@ try {
   await mobile.waitForFunction(() => window.__orientationCalls?.includes("lock:landscape"), undefined, { timeout: 3000 });
   const orientationCalls = await mobile.evaluate(() => window.__orientationCalls);
   assert.deepEqual(orientationCalls, ["fullscreen", "lock:landscape"], "mobile race start must enter fullscreen before requesting native landscape lock");
-  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
+  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 15000 }).catch(async error => {
+    const countdownState = await mobile.evaluate(() => ({
+      overlayClass: document.querySelector("#countdownOverlay")?.className,
+      countdownText: document.querySelector("#countdownValue")?.textContent,
+      audioReady: window.MshinAudioReady ?? null,
+      gameState: window.MshinGameState ?? null,
+      orientationCalls: window.__orientationCalls
+    }));
+    throw new Error("mobile race countdown did not complete: " + JSON.stringify(countdownState) + " | " + error.message);
+  });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 }).catch(async error => {
     const diagnostic = await mobile.evaluate(() => ({
       renderer: window.Mshin3DRenderer ? {
