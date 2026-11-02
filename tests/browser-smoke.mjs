@@ -544,12 +544,16 @@ try {
         const yaw = Number(telemetry.playerYaw) || 0;
         const speed = Math.max(60, Number(telemetry.playerSpeed) || 0);
         const curvature = Number(telemetry.playerTrackCurvature) || 0;
-        const lookAhead = Math.max(190, Math.min(330, 150 + speed * .48));
-        const predictedLateral = lateral + lookAhead * Math.sin(yaw)
-          + lookAhead * lateralVelocity / speed;
-        const correctionCurvature = -2 * predictedLateral / (lookAhead * lookAhead);
-        const targetCurvature = curvature + correctionCurvature;
-        const steering = Math.max(-.86, Math.min(.86, Math.atan(128 * targetCurvature) / .48));
+        const lookAhead = 320;
+        // Keep road curvature as feed-forward while independently correcting
+        // lateral displacement, chassis heading and outward lateral velocity.
+        // Unlike a single look-ahead projection, these terms cannot cancel a
+        // large road-edge error merely because the nose points back inward.
+        const roadWheelAngle = Math.atan(128 * curvature)
+          - 2 * Math.atan2(lateral, lookAhead)
+          - yaw * .65
+          - Math.atan2(lateralVelocity, Math.max(80, speed)) * .45;
+        const steering = Math.max(-.86, Math.min(.86, roadWheelAngle / .48));
         if (speed > 185) braking = true;
         else if (speed < 145) braking = false;
         lastControls = { steering, brake: braking, speed, lateral, yaw, curvature };
