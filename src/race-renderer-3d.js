@@ -57,7 +57,7 @@ function hexColor(value){const h=String(value||"#e94f45").replace("#","");return
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
 export function createRaceRenderer(canvas){
  const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,maxTrackBuildStepMs:0,lastTrackBuildStepMs:0,maxDrawPartMs:0,maxDrawArraysMs:0,lastDrawArraysMs:0,maxDrawPartVertices:0,lastDrawPartVertices:0,lastDrawPartColor:null,drawPartCount:0,maxTrianglesPerFrame:0,lastFrameTriangles:0,maxVehicleBuildMs:0,lastVehicleBuildMs:0,vehicleBuildCount:0,maxResizeMs:0,lastResizeMs:0,maxClearMs:0,lastClearMs:0,maxRendererRenderMs:0,lastRendererRenderMs:0,softwareRenderer:false,gpuProfile:'detecting',captureNextFrameSample:false,lastFramePixelSample:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
- let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,road=null,decor=[],surfaceTextures=new Map(),carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
+ let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,road=null,decor=[],surfaceTextures=new Map(),surfaceImages=new Set(),surfaceLoadGeneration=0,rendererDestroyed=false,carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
   // Allocate the final drawing buffer before gameplay starts; resizing a live WebGL canvas on its first race frame can stall the main loop for seconds.
@@ -102,11 +102,39 @@ export function createRaceRenderer(canvas){
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
  function loadSurfaceTexture(key,url){
-  const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);surfaceTextures.set(key,texture);
-  const image=new Image();image.crossOrigin="anonymous";image.decoding="async";
-  image.onload=()=>{try{gl.bindTexture(gl.TEXTURE_2D,texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);state.surfaceTextures.loaded++;}catch(error){state.surfaceTextures.failed++;state.surfaceTextures.errors.push(String(error?.message||error))}};
-  image.onerror=()=>{state.surfaceTextures.failed++;state.surfaceTextures.errors.push("CDN texture failed: "+key)};image.src=url;
+  const generation=surfaceLoadGeneration,texture=gl.createTexture();
+  if(!texture){state.surfaceTextures.failed++;return}
+  gl.bindTexture(gl.TEXTURE_2D,texture);
+  // Neutral fallback is immediately usable; remote textures never gate racing.
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  surfaceTextures.set(key,texture);
+  // Avoid spending mobile bandwidth/CPU on software renderers or data-saver sessions.
+  if(softwareRenderer||navigator.connection?.saveData){state.surfaceTextures.skipped++;return}
+  const image=new Image();surfaceImages.add(image);image.crossOrigin="anonymous";image.decoding="async";
+  let settled=false;
+  const finish=()=>{settled=true;clearTimeout(timer);surfaceImages.delete(image)};
+  const timer=setTimeout(()=>{
+   if(settled)return;finish();image.onload=null;image.onerror=null;image.src="";
+   if(generation===surfaceLoadGeneration&&!rendererDestroyed){state.surfaceTextures.failed++;state.surfaceTextures.errors.push("CDN texture timed out: "+key)}
+  },6500);
+  image.onload=()=>{
+   if(settled)return;finish();
+   if(rendererDestroyed||lost||generation!==surfaceLoadGeneration)return;
+   try{
+    gl.bindTexture(gl.TEXTURE_2D,texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);state.surfaceTextures.loaded++;
+   }catch(error){state.surfaceTextures.failed++;state.surfaceTextures.errors.push(String(error?.message||error))}
+  };
+  image.onerror=()=>{
+   if(settled)return;finish();
+   if(generation===surfaceLoadGeneration&&!rendererDestroyed){state.surfaceTextures.failed++;state.surfaceTextures.errors.push("CDN texture failed: "+key)}
+  };
+  image.src=url;
  }
  const surfaceSources={
   asphalt:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_03/asphalt_03_diff_1k.jpg",
@@ -118,7 +146,7 @@ export function createRaceRenderer(canvas){
   bark:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg",
   foliage:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg"
  };
- state.surfaceTextures={provider:"Poly Haven CDN",license:"CC0",requested:Object.keys(surfaceSources).length,loaded:0,failed:0,errors:[]};
+ state.surfaceTextures={provider:"Poly Haven CDN",license:"CC0",requested:Object.keys(surfaceSources).length,loaded:0,failed:0,skipped:0,errors:[]};
  for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
  function part(tris,color,emissive=0,materialName="environment",surfaceKey=null){const material=VEHICLE_MATERIALS[materialName]||{metallic:.06,roughness:.78,clearcoat:0,kind:0},started=performance.now(),mesh=makeGeometry(gl,tris),elapsed=performance.now()-started;state.maxMeshUploadMs=Math.max(state.maxMeshUploadMs||0,elapsed);state.meshUploadCount=(state.meshUploadCount||0)+1;return {mesh,color:hexColor(color),...material,emissive,texture:surfaceKey?surfaceTextures.get(surfaceKey)||null:null}}
  function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
@@ -329,7 +357,7 @@ export function createRaceRenderer(canvas){
    program=makeProgram(gl);environment=createVehicleEnvironment(gl);state.environmentMapReady=!!environment;
    attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};
    uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive"),surface:gl.getUniformLocation(program,"uSurfaceTexture"),surfaceEnabled:gl.getUniformLocation(program,"uSurfaceEnabled")};
-   surfaceTextures.clear();state.surfaceTextures.loaded=0;state.surfaceTextures.failed=0;state.surfaceTextures.errors.length=0;for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
+   surfaceLoadGeneration++;surfaceTextures.clear();state.surfaceTextures.loaded=0;state.surfaceTextures.failed=0;state.surfaceTextures.skipped=0;state.surfaceTextures.errors.length=0;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
    gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
    road=null;decor=[];carPartSets.clear();carBuildQueue.length=0;carBuildQueued.clear();lastStage=-1;lastSize="";trackBuildJob=null;trackBuildStage=-1;pendingTrackParts=[];state.trackBuildProgress=0;
    state.status="webgl-ready";state.error=null;
@@ -337,5 +365,5 @@ export function createRaceRenderer(canvas){
   }catch(e){state.status="unavailable";state.error=String(e?.message||e)}
  }
  canvas.addEventListener("webglcontextlost",onLost);canvas.addEventListener("webglcontextrestored",onRestored);
- return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();if(program)gl.deleteProgram(program);if(environment)gl.deleteTexture(environment)}};
+ return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){rendererDestroyed=true;surfaceLoadGeneration++;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();for(const texture of surfaceTextures.values())try{gl.deleteTexture(texture)}catch{}surfaceTextures.clear();if(program)gl.deleteProgram(program);if(environment)gl.deleteTexture(environment)}};
 }
