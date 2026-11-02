@@ -520,6 +520,15 @@ try {
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
+
+  // The desktop and mobile smoke pages keep their own requestAnimationFrame
+  // loops alive. Leaving the WebGL race scene mounted while the long economy
+  // simulation runs can retain GPU resources and continue background rendering
+  // in Chromium, starving the economy page's main thread. The later PWA checks
+  // only need the same browser context/origin, so release both scenes now.
+  await mobile.close();
+  await page.goto("about:blank");
+
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // Bring the page forward and explicitly reactivate its lifecycle before the
@@ -719,6 +728,12 @@ try {
   assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
+
+  // Re-enter the original origin after releasing its earlier WebGL scene.
+  // Service-worker registration and Cache Storage belong to the browser
+  // context, not the old document, and remain available across this navigation.
+  await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "service-worker control reload");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "service-worker control reload");
