@@ -258,6 +258,12 @@ try {
     maxVehicleBuildMs: window.Mshin3DRenderer?.maxVehicleBuildMs,
     lastVehicleBuildMs: window.Mshin3DRenderer?.lastVehicleBuildMs,
     vehicleBuildCount: window.Mshin3DRenderer?.vehicleBuildCount,
+    maxResizeMs: window.Mshin3DRenderer?.maxResizeMs,
+    lastResizeMs: window.Mshin3DRenderer?.lastResizeMs,
+    maxClearMs: window.Mshin3DRenderer?.maxClearMs,
+    lastClearMs: window.Mshin3DRenderer?.lastClearMs,
+    maxRendererRenderMs: window.Mshin3DRenderer?.maxRendererRenderMs,
+    lastRendererRenderMs: window.Mshin3DRenderer?.lastRendererRenderMs,
     lastTrackBuildProgress: window.Mshin3DRenderer?.lastTrackBuildProgress
   }));
   console.log("[browser-smoke] RendererDiagnostics:", JSON.stringify(uploadMetrics));
