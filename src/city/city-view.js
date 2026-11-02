@@ -27,7 +27,6 @@ export function stepCity(city,seconds=1){
  const infrastructure=computeCityServices(city);
  const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
  const income=Math.round(homes.length*13+shops.length*46+industrial.length*72+administrative.length*28+services.length*8),expenses=Math.round(services.length*31+parks.length*7+industrial.length*24+administrative.length*12+city.buildings.length*2);
- city.stats={income,expenses,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2))};
  city.stats={income,expenses:expenses+infrastructure.upkeep,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage};
  city.treasury+=income-expenses-infrastructure.upkeep;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
  const serviceScore=(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
