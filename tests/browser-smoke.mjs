@@ -81,7 +81,7 @@ async function waitForGameBoot(page, label = "game") {
   return state;
 }
 
-const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
+const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -455,6 +455,10 @@ try {
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // This scenario measures a full live race, so make its tab foreground first.
   await economy.bringToFront();
+  const economySession = await economy.context().newCDPSession(economy);
+  await economySession.send("Page.setWebLifecycleState", { state: "active" });
+  await economy.evaluate(() => window.focus());
+  assert.equal(await economy.evaluate(() => document.visibilityState), "visible", "economy race tab must be active so requestAnimationFrame runs at foreground cadence");
   await economy.addInitScript(() => { if (!localStorage.getItem("mshin-progress-v1")) localStorage.setItem("mshin-progress-v1", JSON.stringify({ completed: [], best: {}, credits: 1000 })); });
   // The dedicated race-completion scenario validates gameplay physics and economy,
   // not SwiftShader performance. Earlier desktop/mobile checks already validate WebGL.
