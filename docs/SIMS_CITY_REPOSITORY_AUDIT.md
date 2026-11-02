@@ -140,8 +140,11 @@ The latest observed data/core validation passed. Browser smoke remains a P0/P1 q
 
 ## 5. Pull request and branch audit
 
-The GitHub API returned **22 open PRs** in the follow-up inspection at 2026-11-02 10:37 UTC (the initial phase-zero snapshot recorded 20). They include:
+The GitHub API returned **23 open PRs** in the follow-up inspection at 2026-11-02 10:41 UTC (the initial phase-zero snapshot recorded 20; PR #137 was added for the first city-core implementation). They include:
 - PR #132: tenfold track length and mobile steering correction (open, base `main`, CI on its head: core validation passed; browser smoke failed).
+- PR #135: phase-zero audit and design-document package (open, documentation-only; portable validation passed, browser-smoke remains a baseline gate).
+- PR #136: bounded renderer uploads and progressive mesh display fix (open, base `main`; portable validation passed on the latest inspected commit, browser smoke still running).
+- PR #137: deterministic city simulation core foundation (open, base `main`; portable validation passed: 237 tests, 0 failures; browser smoke still running).
 - PRs #99, #107, #108, #110–#117 and #62, #65, #74, #89, #92–#94, #102: racing physics, controls, smoke driver, track environment, camera, menu and input work.
 - Many are stacked on other feature branches rather than directly targeting `main`; several are drafts.
 
