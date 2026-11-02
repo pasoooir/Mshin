@@ -344,6 +344,20 @@ try {
   // browser has displayed a valid frame. Verify the actual render pipeline
   // and capture the composited page screenshot instead of reading a discarded
   // default framebuffer.
+  await page.waitForFunction(() => {
+    const renderer = window.Mshin3DRenderer;
+    return renderer?.status === "webgl-ready" && renderer.frames > 0 && renderer.triangles > 1000;
+  }, undefined, { timeout: 15000 }).catch(async error => {
+    const state = await page.evaluate(() => ({
+      renderer: window.Mshin3DRenderer ?? null,
+      gameState: window.MshinGameState ?? null,
+      canvas: {
+        width: document.querySelector("#game3d")?.width ?? 0,
+        height: document.querySelector("#game3d")?.height ?? 0
+      }
+    }));
+    throw new Error("3D renderer did not submit scene geometry before canvas validation: " + JSON.stringify(state) + "; " + error.message);
+  });
   const canvasState = await page.locator("#game3d").evaluate(canvas => {
     const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     const renderer = window.Mshin3DRenderer;
