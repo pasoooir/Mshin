@@ -91,7 +91,7 @@ export function createRaceRenderer(canvas){
  function* buildTrack(snapshot){
   const nextDecor=[];
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
-  const segments=mobile?84:240,half=180;
+  const segments=mobile?840:2400,half=180;
   for(let i=0;i<segments;i++){
    const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,(f.height||0)+y,-(f.p.y+f.ny*offset)];
@@ -105,7 +105,7 @@ export function createRaceRenderer(canvas){
   const nextRoad=part(roadTris,theme[1]);nextDecor.push(part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0]));
   yield {parts:[nextRoad,...nextDecor],progress:.34};
   const trees=[],buildings=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
-  for(let i=0;i<(mobile?18:48);i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
+  for(let i=0;i<(mobile?180:480);i++){const t=i/(mobile?240:700)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
    if((snapshot.world||0)===4||(snapshot.world||0)===8){box(buildings,x,48,z,44+(i%3)*16,95+(i%4)*32,42);box(buildings,x,100+(i%4)*32,z,48+(i%3)*16,5,46)}
    else{box(trees,x,(f.height||0)+18,z,9,36,9);const cone=[];const baseY=(f.height||0)+22,rad=24+(i%3)*7,top=(f.height||0)+74+(i%4)*8;for(let j=0;j<8;j++){const aa=j/8*Math.PI*2,bb=(j+1)/8*Math.PI*2;tri(cone,[x+Math.cos(aa)*rad,baseY,z+Math.sin(aa)*rad],[x+Math.cos(bb)*rad,baseY,z+Math.sin(bb)*rad],[x,top,z])}trees.push(...cone)}
   }
