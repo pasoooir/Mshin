@@ -501,7 +501,6 @@ try {
   await economy.getByRole("button", { name: /توفان کویر/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
-  await economy.keyboard.down("ArrowUp");
   const economySteeringPad = await economy.locator("#stick").boundingBox();
   assert.ok(economySteeringPad && economySteeringPad.width > 0, "economy race must expose the analog steering pad");
   const steeringCenter = { x: economySteeringPad.x + economySteeringPad.width / 2, y: economySteeringPad.y + economySteeringPad.height / 2 };
