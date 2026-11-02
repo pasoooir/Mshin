@@ -44,7 +44,7 @@ try{
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
  await page.screenshot({path:"artifacts/city-mobile-390x844.png"});
  const compactPage=await browser.newPage({viewport:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
- try{await compactPage.goto(base+"/city.html");await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+ try{await compactPage.goto("http://127.0.0.1:4173/city.html");await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
   const compact=await compactPage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
   assert.equal(compact.gate,"grid","portrait phones must be stopped at the landscape orientation gate");assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
   fs.mkdirSync("artifacts",{recursive:true});await compactPage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
