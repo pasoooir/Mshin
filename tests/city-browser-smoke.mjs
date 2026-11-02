@@ -71,8 +71,10 @@ try{
   assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
   fs.mkdirSync("artifacts",{recursive:true});
   await compactPage.screenshot({path:"artifacts/city-portrait-orientation-gate.png",fullPage:true});
+  const orientationShim=await compactPage.evaluate(()=>({lockType:typeof screen.orientation?.lock,orientationType:screen.orientation?.type,buttonVisible:(()=>{const r=document.querySelector("#cityEnterLandscape").getBoundingClientRect();return r.width>0&&r.height>0})()}));
+  assert.equal(orientationShim.lockType,"function","orientation shim missing: "+JSON.stringify(orientationShim));
   await compactPage.locator("#cityEnterLandscape").click();
-  await compactPage.waitForFunction(()=>window.__cityOrientationCalls.includes("lock:landscape"));
+  try{await compactPage.waitForFunction(()=>window.__cityOrientationCalls.includes("lock:landscape"),undefined,{timeout:5000})}catch(error){const diagnostic=await compactPage.evaluate(()=>({calls:window.__cityOrientationCalls,lockType:typeof screen.orientation?.lock,orientationType:screen.orientation?.type,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));throw new Error("orientation lock not requested: "+JSON.stringify(diagnostic)+"; "+error.message)}
   assert.deepEqual(await compactPage.evaluate(()=>window.__cityOrientationCalls),["fullscreen","lock:landscape"],"city entry must request fullscreen then native landscape lock from a user gesture");
   assert.equal(await compactPage.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"grid","portrait gate must remain visible when the browser cannot rotate the device");
  }finally{await compactPage.close()}
