@@ -1,4 +1,5 @@
-const SIZE=32,KEY="mshin-city-save-v1",COST={road:120,home:900,shop:1500,service:2800,park:650};
+import { CITY_ZONES, placeCityZone, developCityZones, isCityZoneCell } from "./city-zoning.js";
+const SIZE=32,KEY="mshin-city-save-v1",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
 const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b)&&g[y+b][x+a]==="road");
@@ -16,14 +17,15 @@ export function createInitialCity(seed=20261102){
  const citizens=Array.from({length:28},(_,i)=>({id:i+1,x:10+f(r)*12,y:10+f(r)*12,phase:f(r)*6.28,pace:.12+f(r)*.12}));
  const traffic=Array.from({length:9},(_,i)=>({id:i+1,x:1+i*3.5,y:i%3===0?15:i%3===1?7:23,speed:.8+f(r)*.55,color:["#f5bd58","#e76c59","#75b9d6","#d6e1ec","#a7c77a"][i%5]}));
  const animals=Array.from({length:10},(_,i)=>({id:i+1,type:["cat","dog","bird"][i%3],x:9+f(r)*14,y:9+f(r)*14,phase:f(r)*6.28,pace:.08+f(r)*.1}));
- return {schemaVersion:1,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:buildings.filter(b=>b.type==="home").reduce((n,b)=>n+b.residents,0),happiness:76,grid,buildings,trees,citizens,traffic,animals,nextBuildingId:id,stats:{income:0,expenses:0,jobs:42,traffic:18}};
+ return {schemaVersion:1,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:buildings.filter(b=>b.type==="home").reduce((n,b)=>n+b.residents,0),happiness:76,grid,buildings,zones:[],trees,citizens,traffic,animals,nextBuildingId:id,stats:{income:0,expenses:0,jobs:42,traffic:18}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==1||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
  city.tick++;city.minuteOfDay=(city.minuteOfDay+10)%1440;
- const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
- const income=Math.round(homes.length*13+shops.length*46+services.length*8),expenses=Math.round(services.length*31+parks.length*7+city.buildings.length*2);
- city.stats={income,expenses,jobs:shops.length*9+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4))};
+ if(city.tick%12===0)developCityZones(city);
+ const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
+ const income=Math.round(homes.length*13+shops.length*46+industrial.length*72+administrative.length*28+services.length*8),expenses=Math.round(services.length*31+parks.length*7+industrial.length*24+administrative.length*12+city.buildings.length*2);
+ city.stats={income,expenses,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2))};
  city.treasury+=income-expenses;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
  const coverage=Math.min(1,services.length/Math.max(1,Math.ceil(city.buildings.length/12)));
  city.happiness=Math.max(25,Math.min(98,city.happiness+(coverage>.5?.2:-.08)+(parks.length>2?.05:0)));
@@ -33,6 +35,7 @@ export function stepCity(city,seconds=1){
  return city;
 }
 export function placeCityItem(city,x,y,type){
+ if(typeof type==="string"&&type.startsWith("zone-"))return placeCityZone(city,x,y,type.slice(5));
  if(!inside(x,y))return{ok:false,reason:"خارج از محدوده شهر"};
  if(!Object.hasOwn(COST,type))return{ok:false,reason:"ابزار ناشناخته است"};
  if(city.grid[y][x]!=="grass")return{ok:false,reason:"این قطعه زمین اشغال شده است"};
@@ -42,9 +45,9 @@ export function placeCityItem(city,x,y,type){
  const residents=type==="home"?12:0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents};
  city.grid[y][x]="building";city.buildings.push(b);city.population+=residents;return{ok:true,item:b,cost:COST[type]};
 }
-export function isValidCitySave(v){return!!(v&&v.schemaVersion===1&&typeof v.cityId==="string"&&typeof v.name==="string"&&Number.isSafeInteger(v.seed)&&Number.isSafeInteger(v.tick)&&v.tick>=0&&Number.isFinite(v.treasury)&&Number.isInteger(v.population)&&Array.isArray(v.grid)&&v.grid.length===SIZE&&v.grid.every(row=>Array.isArray(row)&&row.length===SIZE&&row.every(t=>["grass","road","building","water"].includes(t)))&&["buildings","trees","citizens","traffic"].every(k=>Array.isArray(v[k])))}
+export function isValidCitySave(v){return!!(v&&v.schemaVersion===1&&typeof v.cityId==="string"&&typeof v.name==="string"&&Number.isSafeInteger(v.seed)&&Number.isSafeInteger(v.tick)&&v.tick>=0&&Number.isFinite(v.treasury)&&Number.isInteger(v.population)&&Array.isArray(v.grid)&&v.grid.length===SIZE&&v.grid.every(row=>Array.isArray(row)&&row.length===SIZE&&row.every(t=>["grass","road","building","water"].includes(t)||isCityZoneCell(t)))&&["buildings","trees","citizens","traffic"].every(k=>Array.isArray(v[k]))&&(v.zones===undefined||Array.isArray(v.zones)))}
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
-function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");return isValidCitySave(v)?v:createInitialCity()}catch{return createInitialCity()}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(!isValidCitySave(v))return createInitialCity();v.zones=Array.isArray(v.zones)?v.zones:[];return v}catch{return createInitialCity()}}
 function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return true}catch{return false}}
 function mount(){
  const canvas=document.getElementById("cityViewport"),ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;
@@ -57,24 +60,27 @@ function mount(){
  function poly(points,fill,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=.8;ctx.stroke()}}
  function ground(x,y,type){const p=tilePoint(x,y),park=city.buildings.some(b=>b.type==="park"&&b.x===x&&b.y===y),colors=type==="road"?["#414b56","#343e49"]:type==="water"?["#4b9fc0","#397fa4"]:park?["#5b9a60","#478452"]:["#7eaa68","#71995d"];
  poly([{x:p.x,y:p.y-8},{x:p.x+16,y:p.y},{x:p.x,y:p.y+8},{x:p.x-16,y:p.y}],colors[(x+y)%2],"#ffffff0c");
+ if(zoneType){ctx.save();ctx.globalAlpha=.35;ctx.fillStyle="#102337";ctx.font="900 9px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(CITY_ZONES[zoneType].label.slice(0,1),p.x,p.y);ctx.restore()}
  if(type==="road"){const h=city.grid[y][Math.max(0,x-1)]==="road"||city.grid[y][Math.min(SIZE-1,x+1)]==="road",v=city.grid[Math.max(0,y-1)][x]==="road"||city.grid[Math.min(SIZE-1,y+1)][x]==="road";ctx.save();ctx.strokeStyle="#f4d98c88";ctx.lineWidth=1;ctx.setLineDash([4,5]);ctx.beginPath();if(h&&v){ctx.moveTo(p.x-7,p.y-3.5);ctx.lineTo(p.x+7,p.y+3.5)}else if(h){ctx.moveTo(p.x-10,p.y);ctx.lineTo(p.x+10,p.y)}else if(v){ctx.moveTo(p.x,p.y-5);ctx.lineTo(p.x,p.y+5)}ctx.stroke();ctx.restore()}
  if(type==="water"){ctx.fillStyle="#c5f3f766";ctx.beginPath();ctx.ellipse(p.x-3,p.y-2,5,1.6,-.25,0,6.28);ctx.fill()}
  }
  function building(b){const p=tilePoint(b.x,b.y),t=b.type;if(t==="park"){ctx.fillStyle="#244b3155";ctx.beginPath();ctx.ellipse(p.x+1,p.y+2,14,5,0,0,6.28);ctx.fill();ctx.fillStyle="#3c7d48";ctx.beginPath();ctx.arc(p.x,p.y-8,7,0,6.28);ctx.fill();ctx.fillStyle="#82b76c";ctx.beginPath();ctx.arc(p.x-2,p.y-11,4,0,6.28);ctx.fill();ctx.fillStyle="#806a4b";ctx.fillRect(p.x-1,p.y-7,2,9);return}
- const h=t==="home"?22+b.level*8:t==="shop"?27+b.level*5:35,w=18,d=10,top=p.y-h;
+ const h=t==="home"?22+b.level*8:t==="shop"?27+b.level*5:t==="industrial"?42:t==="administrative"?40:35,w=t==="industrial"?22:18,d=10,top=p.y-h;
  ctx.fillStyle="#1a2c2b44";ctx.beginPath();ctx.ellipse(p.x+2,p.y+4,16,6,0,0,6.28);ctx.fill();
- poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top+d},{x:p.x,y:p.y+d/2},{x:p.x-w/2,y:p.y}],t==="home"?"#d9a978":t==="shop"?"#5b9eaa":"#b9c9d8","#253c4933");
- poly([{x:p.x,y:top+d},{x:p.x+w/2,y:top+d/2},{x:p.x+w/2,y:p.y},{x:p.x,y:p.y+d/2}],t==="home"?"#a97759":t==="shop"?"#3f7888":"#849bae","#253c4933");
- poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top},{x:p.x+w/2,y:top+d/2},{x:p.x,y:top+d}],t==="home"?"#e8c68b":t==="shop"?"#7fc1c0":"#d8e2ed","#ffffff55");
+ poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top+d},{x:p.x,y:p.y+d/2},{x:p.x-w/2,y:p.y}],t==="home"?"#d9a978":t==="shop"?"#5b9eaa":t==="industrial"?"#89949d":t==="administrative"?"#9b8ac2":"#b9c9d8","#253c4933");
+ poly([{x:p.x,y:top+d},{x:p.x+w/2,y:top+d/2},{x:p.x+w/2,y:p.y},{x:p.x,y:p.y+d/2}],t==="home"?"#a97759":t==="shop"?"#3f7888":t==="industrial"?"#59636d":t==="administrative"?"#76669c":"#849bae","#253c4933");
+ poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top},{x:p.x+w/2,y:top+d/2},{x:p.x,y:top+d}],t==="home"?"#e8c68b":t==="shop"?"#7fc1c0":t==="industrial"?"#b9c3ca":t==="administrative"?"#c8b9e7":"#d8e2ed","#ffffff55");
  if(t==="service"){ctx.fillStyle="#d34d4d";ctx.fillRect(p.x-2,top+5,4,15);ctx.fillRect(p.x-7,top+10,14,4)}
- else{for(let row=0;row<(t==="home"?2:1);row++)for(let col=0;col<2;col++){ctx.fillStyle="#d8f5f2";ctx.fillRect(p.x-w/2+4+col*6,top+7+row*9,3.2,4.5)}}
+ else{const rows=t==="home"?2:t==="industrial"?3:t==="administrative"?2:1,cols=t==="industrial"?3:2;for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){ctx.fillStyle="#d8f5f2";ctx.fillRect(p.x-w/2+4+col*6,top+7+row*9,3.2,4.5)}}
  if(t==="shop"){ctx.fillStyle="#f4d27a";ctx.fillRect(p.x-7,top+d+2,14,4)}
+ if(t==="industrial"){ctx.fillStyle="#4c5860";ctx.fillRect(p.x+5,top-13,5,16);ctx.fillStyle="#b6c1c8";ctx.beginPath();ctx.arc(p.x+7,top-16,4,0,6.28);ctx.fill()}
+ if(t==="administrative"){ctx.fillStyle="#d7c7ee";ctx.fillRect(p.x-1,top-10,2,11);ctx.fillStyle="#d7a96d";ctx.fillRect(p.x+1,top-10,7,4)}
  }
  function tree(t){const p=tilePoint(t.x,t.y),s=t.size;ctx.fillStyle="#233d2e55";ctx.beginPath();ctx.ellipse(p.x+2,p.y+3,7*s,3*s,0,0,6.28);ctx.fill();ctx.fillStyle="#74583b";ctx.fillRect(p.x-1.5,p.y-9*s,3,10*s);ctx.fillStyle="#36774b";ctx.beginPath();ctx.arc(p.x,p.y-12*s,7*s,0,6.28);ctx.fill();ctx.fillStyle="#65a85d";ctx.beginPath();ctx.arc(p.x-2*s,p.y-15*s,4*s,0,6.28);ctx.fill()}
  function people(){for(const p of city.citizens){const q=tilePoint(p.x,p.y);ctx.fillStyle="#25364b55";ctx.beginPath();ctx.ellipse(q.x,q.y+2,2.8,1.4,0,0,6.28);ctx.fill();ctx.fillStyle=p.id%3===0?"#e9c56b":p.id%3===1?"#e7edf2":"#d98b75";ctx.beginPath();ctx.arc(q.x,q.y-4,2.1,0,6.28);ctx.fill();ctx.strokeStyle="#f5dfbd";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(q.x,q.y-2);ctx.lineTo(q.x,q.y+1);ctx.stroke()}}
  function cars(){for(const v of city.traffic){const p=tilePoint(v.x,v.y);ctx.save();ctx.translate(p.x,p.y-1);ctx.fillStyle="#1a2635aa";ctx.beginPath();ctx.ellipse(0,3,7,2.8,0,0,6.28);ctx.fill();ctx.fillStyle=v.color;ctx.beginPath();ctx.roundRect(-6,-4,12,7,2);ctx.fill();ctx.fillStyle="#d8efff";ctx.beginPath();ctx.roundRect(-3.5,-3,5,3,1);ctx.fill();ctx.restore()}}
  function animals(){for(const a of city.animals||[]){const p=tilePoint(a.x,a.y);ctx.save();ctx.translate(p.x,p.y);if(a.type==="bird"){ctx.strokeStyle="#eaf4dc";ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(-2,-2,3,Math.PI,Math.PI*1.85);ctx.arc(2,-2,3,Math.PI*1.15,Math.PI*2);ctx.stroke()}else{ctx.fillStyle=a.type==="cat"?"#d9b28a":"#b7c2ca";ctx.beginPath();ctx.ellipse(0,-2,4.2,2.8,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(-2,-5,1.8,0,6.28);ctx.arc(2,-5,1.8,0,6.28);ctx.fill();ctx.strokeStyle="#f4e7d6";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(3,0);ctx.lineTo(6,-2);ctx.stroke()}ctx.restore()}}
- function toolName(){return({select:"انتخاب",road:"خیابان",home:"مسکونی",shop:"تجاری",service:"خدمات",park:"پارک",bulldoze:"تخریب"})[tool]}
+ function toolName(){return({select:"انتخاب",road:"خیابان",home:"مسکونی",shop:"تجاری",industrial:"صنعتی",administrative:"اداری",service:"خدمات",park:"پارک","zone-residential":"زون مسکونی","zone-commercial":"زون تجاری","zone-industrial":"زون صنعتی","zone-administrative":"زون اداری","zone-recreational":"زون تفریحی",bulldoze:"تخریب"})[tool]||tool}
  function draw(){
   ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
   const sky=ctx.createLinearGradient(0,0,0,view.h);sky.addColorStop(0,"#a7cbd1");sky.addColorStop(.52,"#c9d8c0");sky.addColorStop(1,"#718c75");ctx.fillStyle=sky;ctx.fillRect(0,0,view.w,view.h);
