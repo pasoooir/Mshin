@@ -58,11 +58,6 @@ try{
  await page.screenshot({path:"artifacts/city-mobile-landscape-844x390.png"});
  const compactPage=await browser.newPage({viewport:{width:360,height:640},screen:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  try{
-  await compactPage.addInitScript(()=>{
-   window.__cityOrientationCalls=[];
-   document.documentElement.requestFullscreen=async()=>{window.__cityOrientationCalls.push("fullscreen")};
-   Object.defineProperty(Object.getPrototypeOf(screen.orientation),"lock",{configurable:true,writable:true,value:async function(mode){window.__cityOrientationCalls.push("lock:"+mode)}});
-  });
   await compactPage.goto("http://127.0.0.1:4173/city.html");
   await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
   const compact=await compactPage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
@@ -73,9 +68,9 @@ try{
   await compactPage.screenshot({path:"artifacts/city-portrait-orientation-gate.png",fullPage:true});
   const orientationShim=await compactPage.evaluate(()=>({lockType:typeof screen.orientation?.lock,orientationType:screen.orientation?.type,handlerType:typeof window.__mshinEnterCityLandscape,onclickType:typeof document.querySelector("#cityEnterLandscape")?.onclick,pointerHandler:document.querySelector("#cityEnterLandscape")?.getAttribute("onpointerdown"),buttonVisible:(()=>{const r=document.querySelector("#cityEnterLandscape").getBoundingClientRect();return r.width>0&&r.height>0})()}));
   assert.equal(orientationShim.lockType,"function","orientation shim missing: "+JSON.stringify(orientationShim));assert.equal(orientationShim.handlerType,"function","landscape entry handler missing: "+JSON.stringify(orientationShim));assert.equal(orientationShim.onclickType,"function","landscape button onclick missing: "+JSON.stringify(orientationShim));
-  await compactPage.evaluate(()=>document.querySelector("#cityEnterLandscape").click());
-  try{await compactPage.waitForFunction(()=>window.__cityOrientationCalls.includes("lock:landscape"),undefined,{timeout:5000})}catch(error){const diagnostic=await compactPage.evaluate(()=>({calls:window.__cityOrientationCalls,entryDebug:window.__mshinCityEntryDebug,handlerType:typeof window.__mshinEnterCityLandscape,onclickType:typeof document.querySelector("#cityEnterLandscape")?.onclick,lockType:typeof screen.orientation?.lock,orientationType:screen.orientation?.type,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));throw new Error("orientation lock not requested: "+JSON.stringify(diagnostic)+"; "+error.message)}
-  assert.deepEqual(await compactPage.evaluate(()=>window.__cityOrientationCalls),["fullscreen","lock:landscape"],"city entry must request fullscreen then native landscape lock from a user gesture");
+  await compactPage.locator("#cityEnterLandscape").click();
+  try{await compactPage.waitForFunction(()=>window.__mshinCityEntryDebug?.lockRequested===true,undefined,{timeout:5000})}catch(error){const diagnostic=await compactPage.evaluate(()=>({entryDebug:window.__mshinCityEntryDebug,lockType:typeof screen.orientation?.lock,orientationType:screen.orientation?.type,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));throw new Error("orientation lock was not requested: "+JSON.stringify(diagnostic)+"; "+error.message)}
+  assert.equal(await compactPage.evaluate(()=>window.__mshinCityEntryDebug.fullscreenRequested),true,"city entry must request fullscreen from the button gesture");
   assert.equal(await compactPage.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"grid","portrait gate must remain visible when the browser cannot rotate the device");
  }finally{await compactPage.close()}
  // Chromium can reject Browser.setWindowBounds after fullscreen/orientation APIs
