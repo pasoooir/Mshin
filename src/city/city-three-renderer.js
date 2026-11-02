@@ -198,20 +198,16 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   // Road dashes and crosswalks are instanced to keep the mobile GPU draw-call count low.
   const roadMarkings = [];
-  for (let y = 0; y < VISUAL_GRID; y++) {
-    if (!isRoadCell(y)) continue;
-    for (let x = 0; x < VISUAL_GRID; x++) {
-      if (isRoadCell(x) || x % 2 !== 0) continue;
-      const z = (y - 31.5) * 2;
-      roadMarkings.push((x - 31.5) * 2 - 0.36, 0.078, z, (x - 31.5) * 2 + 0.36, 0.078, z);
-    }
-  }
-  for (let x = 0; x < VISUAL_GRID; x++) {
-    if (!isRoadCell(x)) continue;
-    for (let y = 0; y < VISUAL_GRID; y++) {
-      if (isRoadCell(y) || y % 2 !== 0) continue;
-      const px = (x - 31.5) * 2;
-      roadMarkings.push(px, 0.078, (y - 31.5) * 2 - 0.36, px, 0.078, (y - 31.5) * 2 + 0.36);
+  const roadCenters = [7.5, 15, 23.5, 31.5, 39.5, 48, 55.5];
+  for (const center of roadCenters) {
+    const z = (center - 31.5) * 2;
+    const x = (center - 31.5) * 2;
+    for (let index = 0; index < VISUAL_GRID; index++) {
+      if (!isRoadCell(index) && index % 2 === 0) {
+        const along = (index - 31.5) * 2;
+        roadMarkings.push(along - 0.36, 0.078, z, along + 0.36, 0.078, z);
+        roadMarkings.push(x, 0.078, along - 0.36, x, 0.078, along + 0.36);
+      }
     }
   }
   addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
