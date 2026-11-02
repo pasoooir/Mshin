@@ -47,7 +47,7 @@ function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return
 function mount(){
  const canvas=document.getElementById("cityViewport");let ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;
  const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1};
- let mainContext=ctx,staticLayer=null,needsDraw=true,lastDrawAt=0,lastHudUpdate=0;
+ let mainContext=ctx,staticLayer=null,needsDraw=true,lastDrawAt=0,lastHudUpdate=0,frameCount=0,drawCount=0;
  let tool="select",speed=1,acc=0,last=0,selected=null,pointer=null,drag=0,toastFrames=0,raf=0;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};
@@ -83,7 +83,7 @@ function mount(){
  }
  function toolName(){return({select:"انتخاب",road:"خیابان",home:"مسکونی",shop:"تجاری",service:"خدمات",park:"پارک",bulldoze:"تخریب"})[tool]}
  function draw(){
-  ctx=mainContext;ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
+  drawCount++;ctx=mainContext;ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
   const sky=ctx.createLinearGradient(0,0,0,view.h);sky.addColorStop(0,"#a7cbd1");sky.addColorStop(.52,"#c9d8c0");sky.addColorStop(1,"#718c75");ctx.fillStyle=sky;ctx.fillRect(0,0,view.w,view.h);
   ctx.save();ctx.translate(view.w/2+cam.x,view.h*.49+cam.y);ctx.scale(cam.zoom,cam.zoom);
   if(staticLayer)ctx.drawImage(staticLayer,-staticLayer.width/2,-centerY-80);
@@ -107,9 +107,9 @@ function mount(){
  canvas.addEventListener("pointerup",e=>{if(!pointer||pointer.id!==e.pointerId)return;if(drag<=5){const p=tileAt(e.clientX,e.clientY);apply(p.x,p.y)}pointer=null;canvas.style.cursor=tool==="select"?"grab":"crosshair"});
  canvas.addEventListener("pointercancel",()=>pointer=null);canvas.addEventListener("wheel",e=>{e.preventDefault();cam.zoom=Math.max(.42,Math.min(1.5,cam.zoom*(e.deltaY<0?1.08:.92)));draw()},{passive:false});
  addEventListener("resize",()=>{resize();draw()});addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
- resize();rebuildStaticLayer();window.MshinCityDebug={get city(){return city},get activeTool(){return tool},screenForTile(x,y){const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t)};
+ resize();rebuildStaticLayer();window.MshinCityPerformance={get frames(){return frameCount},get draws(){return drawCount},get staticLayerReady(){return!!staticLayer}};window.MshinCityDebug={get city(){return city},get activeTool(){return tool},screenForTile(x,y){const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t)};
  document.documentElement.dataset.cityReady="true";
- function frame(now){const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}needsDraw=true}if(needsDraw&&now-lastDrawAt>=50){draw();lastDrawAt=now}raf=requestAnimationFrame(frame)}
+ function frame(now){frameCount++;const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}needsDraw=true}if(needsDraw&&now-lastDrawAt>=50){draw();lastDrawAt=now}raf=requestAnimationFrame(frame)}
  raf=requestAnimationFrame(frame);addEventListener("pagehide",()=>{cancelAnimationFrame(raf);persist(city)},{once:true});
 }
 if(typeof document!=="undefined"){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});else mount()}
