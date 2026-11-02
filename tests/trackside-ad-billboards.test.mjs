@@ -8,8 +8,8 @@ test("trackside sponsor boards are generated as visible 3D roadside structures",
   assert.match(renderer, /Trackside advertising inventory/);
   assert.match(renderer, /const billboardCount=mobile\?8:20/);
   assert.match(renderer, /quad\(billboardFaces,a,b,c,d\)/);
-  assert.match(renderer, /part\(billboardPosts,"#303d4b"\)/);
-  assert.match(renderer, /part\(billboardFaces,"#17324b"\)/);
+  assert.match(renderer, /\[billboardPosts,"#303d4b"\]/, "billboard posts must use the bounded GPU upload queue");
+  assert.match(renderer, /\[billboardFaces,"#17324b"\]/, "billboard faces must use the bounded GPU upload queue");
 });
 
 test("billboard locations expose stable world-scoped ad inventory metadata", () => {

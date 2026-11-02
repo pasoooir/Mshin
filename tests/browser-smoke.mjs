@@ -92,6 +92,9 @@ async function waitForGameBoot(page, label = "game") {
 }
 
 const browser = await chromium.launch({ headless: true, args: process.env.CI === "true" ? ["--no-sandbox", "--disable-dev-shm-usage", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--disable-features=CalculateNativeWinOcclusion", "--disable-frame-rate-limit", "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] });
+let activePhase = "browser launch";
+const progressHeartbeat = setInterval(() => console.log("[browser-smoke] still running; current phase: " + activePhase), 15000);
+progressHeartbeat.unref();
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -100,6 +103,7 @@ try {
   page.setDefaultNavigationTimeout(60000);
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   page.on("requestfailed", request => errors.push("requestfailed: " + request.url() + " — " + (request.failure()?.errorText || "unknown")));
+  activePhase = "initial desktop boot and asset preload";
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(page, "initial desktop boot");
   const preloadState = await page.evaluate(() => ({ worlds: window.MshinAssets.worlds.filter(Boolean).length, cars: Object.values(window.MshinAssets.cars).filter(Boolean).length, scenes: Object.values(window.MshinAssets.scenes).filter(image => image && image.naturalWidth > 0).length, failures: window.MshinAssets.failures.length, menuArt: getComputedStyle(document.querySelector("#home .panel"), "::before").backgroundImage }));
@@ -180,6 +184,7 @@ try {
   assert.equal(await page.locator("#showroomVehicle").evaluate(el => el.tagName), "CANVAS", "the selected vehicle should render in the real WebGL showroom");
   await page.waitForFunction(() => window.MshinVehicleShowroom?.vehicle === "comet", undefined, { timeout: 5000 });
   assert.match(await page.locator("#showroomCarName").textContent(), /(?:Zola GT|Zola GT)/, "showroom identity should follow the selected vehicle");
+  activePhase = "audio persistence reload";
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "persistence reload");
   await page.locator("#play").click();
@@ -247,6 +252,51 @@ try {
   assert.ok(Math.abs(rigidCheck.shareTotal-rigidCheck.energy)<1e-6,"impact damage energy should be conserved across vehicle shares");
   assert.equal(rigidCheck.angular,true,"off-centre browser collision should preserve finite angular response");
   assert.equal(rigidCheck.swept,true,"swept collision should detect fast body traversal");
+
+  activePhase = "desktop WebGL renderer and frame-budget diagnostics";
+  const uploadMetrics = await page.evaluate(() => ({
+    maxMeshUploadMs: window.Mshin3DRenderer?.maxMeshUploadMs,
+    meshUploadCount: window.Mshin3DRenderer?.meshUploadCount,
+    maxTrackBuildStepMs: window.Mshin3DRenderer?.maxTrackBuildStepMs,
+    lastTrackBuildStepMs: window.Mshin3DRenderer?.lastTrackBuildStepMs,
+    maxDrawPartMs: window.Mshin3DRenderer?.maxDrawPartMs,
+    drawPartCount: window.Mshin3DRenderer?.drawPartCount,
+    maxDrawArraysMs: window.Mshin3DRenderer?.maxDrawArraysMs,
+    lastDrawArraysMs: window.Mshin3DRenderer?.lastDrawArraysMs,
+    maxDrawPartVertices: window.Mshin3DRenderer?.maxDrawPartVertices,
+    lastDrawPartVertices: window.Mshin3DRenderer?.lastDrawPartVertices,
+    lastDrawPartColor: window.Mshin3DRenderer?.lastDrawPartColor,
+    lastFrameTriangles: window.Mshin3DRenderer?.lastFrameTriangles,
+    maxTrianglesPerFrame: window.Mshin3DRenderer?.maxTrianglesPerFrame,
+    lastFrameDrawCalls: window.Mshin3DRenderer?.lastFrameDrawCalls,
+    renderWidth: window.Mshin3DRenderer?.quality?.width,
+    renderHeight: window.Mshin3DRenderer?.quality?.height,
+    maxVehicleBuildMs: window.Mshin3DRenderer?.maxVehicleBuildMs,
+    lastVehicleBuildMs: window.Mshin3DRenderer?.lastVehicleBuildMs,
+    vehicleBuildCount: window.Mshin3DRenderer?.vehicleBuildCount,
+    maxResizeMs: window.Mshin3DRenderer?.maxResizeMs,
+    lastResizeMs: window.Mshin3DRenderer?.lastResizeMs,
+    maxClearMs: window.Mshin3DRenderer?.maxClearMs,
+    lastClearMs: window.Mshin3DRenderer?.lastClearMs,
+    maxRendererRenderMs: window.Mshin3DRenderer?.maxRendererRenderMs,
+    lastRendererRenderMs: window.Mshin3DRenderer?.lastRendererRenderMs,
+    lastTrackBuildProgress: window.Mshin3DRenderer?.lastTrackBuildProgress,
+    softwareRenderer: window.Mshin3DRenderer?.softwareRenderer,
+    gpuProfile: window.Mshin3DRenderer?.gpuProfile,
+    renderScale: window.Mshin3DRenderer?.quality?.renderScale
+  }));
+  console.log("[browser-smoke] RendererDiagnostics:", JSON.stringify(uploadMetrics));
+  const renderTiming = await page.evaluate(() => window.MshinRenderTiming ?? null);
+  console.log("[browser-smoke] RenderTiming:", JSON.stringify(renderTiming));
+  assert.ok(Number.isFinite(uploadMetrics.maxMeshUploadMs) && uploadMetrics.maxMeshUploadMs < 1500, "individual WebGL mesh uploads must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isInteger(uploadMetrics.meshUploadCount) && uploadMetrics.meshUploadCount > 0, "renderer should expose completed mesh-upload diagnostics");
+  if (uploadMetrics.softwareRenderer) assert.ok(uploadMetrics.renderScale <= 0.65, "software WebGL render targets must use the bounded software-GPU profile: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isFinite(uploadMetrics.maxTrackBuildStepMs) && uploadMetrics.maxTrackBuildStepMs < 1500, "individual track construction steps must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isFinite(uploadMetrics.maxDrawPartMs) && uploadMetrics.maxDrawPartMs < 1500, "individual WebGL draw parts must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isInteger(uploadMetrics.drawPartCount) && uploadMetrics.drawPartCount > 0, "renderer should expose draw-part diagnostics");
+  assert.ok(Number.isFinite(uploadMetrics.maxVehicleBuildMs) && uploadMetrics.maxVehicleBuildMs < 1500, "procedural vehicle mesh generation must not stall the game loop: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isFinite(uploadMetrics.maxResizeMs) && uploadMetrics.maxResizeMs < 1500, "WebGL drawing buffer resize must not stall an active frame: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isFinite(uploadMetrics.maxRendererRenderMs) && uploadMetrics.maxRendererRenderMs < 1500, "complete WebGL render work must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
 
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
   console.log("[browser-smoke] MshinPerformance:", JSON.stringify(frameMetrics));
@@ -333,34 +383,41 @@ try {
   await page.mouse.up();
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "releasing the steering pad should return the control to center");
   assert.match(await steeringPad.getAttribute("aria-label"), /برای چرخیدن به چپ یا راست بکشید و رها کنید/, "steering instructions should be accessible in Persian");
-  const canvasState = await page.locator("#game3d").evaluate(canvas => new Promise(resolve => {
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) return resolve({ width: canvas.width, height: canvas.height, visiblePixels: 0, pixelBytes: 0, context: false });
-    // Read during the next animation frame, immediately after the game's own
-    // renderer submits its scene. The browser may discard the default WebGL
-    // drawing buffer after compositing when preserveDrawingBuffer is false.
-    requestAnimationFrame(() => {
-      gl.finish();
-      const width = canvas.width, height = canvas.height;
-      const pixels = new Uint8Array(width * height * 4);
-      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      let visible = 0;
-      const colors = new Set();
-      for (let i = 0; i < pixels.length; i += 4 * 16) {
-        if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 24) visible++;
-        colors.add((pixels[i] >> 4) + ":" + (pixels[i + 1] >> 4) + ":" + (pixels[i + 2] >> 4));
-      }
-      resolve({ width, height, visiblePixels: visible, uniqueColors: colors.size, pixelBytes: pixels.byteLength, context: true, glError: gl.getError() });
-    });
-  }));
-  assert.ok(canvasState.context && canvasState.width > 0 && canvasState.height > 0, "3D game canvas should have a real WebGL drawing surface");
-  assert.ok(canvasState.visiblePixels > 100, "3D game canvas should contain visible rendered pixels: " + JSON.stringify(canvasState));
-  assert.ok(canvasState.uniqueColors > 6, "3D scene must contain actual mesh color variation, not only the clear-color background: " + JSON.stringify(canvasState));
-  assert.equal(canvasState.glError, 0, "3D renderer must not leave a WebGL error: " + JSON.stringify(canvasState));
-  assert.ok(canvasState.pixelBytes > 1000, "3D gameplay frame should not be a blank image");
-  await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
+  await page.waitForFunction(() => {
+    const renderer = window.Mshin3DRenderer;
+    if (!renderer || renderer.trackBuildProgress < 1 || renderer.frames <= 0) return false;
+    const stageId = renderer.stageId;
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => {
+      const current = window.Mshin3DRenderer;
+      resolve(Boolean(current && current.stageId === stageId && current.trackBuildProgress >= 1));
+    })));
+  }, undefined, { timeout: 30000 });
+  const renderedScene = await page.evaluate(() => {
+    const renderer = window.Mshin3DRenderer;
+    const canvas = document.querySelector("#game3d");
+    return {
+      width: canvas?.width || 0,
+      height: canvas?.height || 0,
+      status: renderer?.status,
+      trackBuildProgress: renderer?.trackBuildProgress,
+      frames: renderer?.frames,
+      triangles: renderer?.lastFrameTriangles,
+      drawCalls: renderer?.lastFrameDrawCalls,
+      maxPartVertices: renderer?.maxDrawPartVertices,
+      meshUploads: renderer?.meshUploadCount,
+      error: renderer?.error
+    };
+  });
+  assert.ok(renderedScene.width > 0 && renderedScene.height > 0, "3D game canvas should have a real drawing surface");
+  assert.equal(renderedScene.status, "webgl-ready", "3D renderer should remain initialized: " + JSON.stringify(renderedScene));
+  assert.equal(renderedScene.trackBuildProgress, 1, "3D track and scenery build should complete: " + JSON.stringify(renderedScene));
+  assert.ok(renderedScene.frames > 0 && renderedScene.triangles > 0, "3D renderer must submit actual scene geometry: " + JSON.stringify(renderedScene));
+  assert.ok(renderedScene.drawCalls > 0 && renderedScene.maxPartVertices >= 3, "3D scene should contain real mesh draw calls: " + JSON.stringify(renderedScene));
+  assert.ok(renderedScene.meshUploads > 0, "3D scene should upload GPU mesh buffers: " + JSON.stringify(renderedScene));
+  assert.equal(renderedScene.error, null, "3D renderer should not report a runtime error");
+  await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
   await captureScreenshot(page, "artifacts/mshin-pause-desktop.png");
@@ -384,6 +441,7 @@ try {
   await page.locator("#quitRace").click();
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
+  activePhase = "mobile viewport and touch controls";
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
   mobile.setDefaultTimeout(60000);
@@ -473,6 +531,16 @@ try {
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
   assert.ok(await mobile.locator("#pause").evaluate(el => el.getBoundingClientRect().right <= innerWidth), "mobile pause control should remain inside the viewport");
+
+  // The desktop and mobile smoke pages keep their own requestAnimationFrame
+  // loops alive. Leaving the WebGL race scene mounted while the long economy
+  // simulation runs can retain GPU resources and continue background rendering
+  // in Chromium, starving the economy page's main thread. The later PWA checks
+  // only need the same browser context/origin, so release both scenes now.
+  await mobile.close();
+  await page.goto("about:blank");
+
+  activePhase = "economy progression, AI driver and rewarded race";
   const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // Bring the page forward and explicitly reactivate its lifecycle before the
@@ -672,6 +740,13 @@ try {
   assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
+
+  activePhase = "service-worker, cache and offline PWA acceptance";
+  // Re-enter the original origin after releasing its earlier WebGL scene.
+  // Service-worker registration and Cache Storage belong to the browser
+  // context, not the old document, and remain available across this navigation.
+  await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded" });
+  await waitForGameBoot(page, "service-worker control reload");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "service-worker control reload");
@@ -696,5 +771,6 @@ try {
   process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
 ");
 } finally {
+  clearInterval(progressHeartbeat);
   await browser.close();
 }
