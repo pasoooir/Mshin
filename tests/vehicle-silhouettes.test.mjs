@@ -44,7 +44,7 @@ test("additional AI meshes are queued and uploaded progressively", () => {
 });
 
 test("race and showroom renderers consume the same sculpted race-car body meshes", () => {
-  assert.match(renderer, //geometry\\.map//);
+  assert.match(renderer, /geometry\.map/);
   assert.match(models, /Deep wheel arches, flared fenders/);
   assert.match(models, /quad\(trim,point\(p\.wheel\+8/);
   assert.match(models, /Hood creases, front grille, intakes and LED signatures/);
