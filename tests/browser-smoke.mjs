@@ -727,5 +727,13 @@ try {
   process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
 ");
 } finally {
-  await withTimeout(browser.close(), 15000, "browser shutdown");
+  try {
+    await withTimeout(browser.close(), 15000, "browser shutdown");
+  } catch (error) {
+    // A stuck SwiftShader/WebGL renderer can prevent Chromium's graceful close.
+    // Preserve any real assertion/race error from the test body, then force
+    // terminate the child so CI does not mask the useful failure diagnostics.
+    console.warn("[browser-smoke] graceful browser shutdown failed: " + error.message);
+    browser.process()?.kill("SIGKILL");
+  }
 }
