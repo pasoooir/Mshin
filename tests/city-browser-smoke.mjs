@@ -13,7 +13,7 @@ try{
  await page.locator('[data-city-tool="park"]').click();const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][14]),"building","park tool should place a city asset");
  await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v1"))?.buildings?.some(b=>b.x===14&&b.y===14)),"city changes should persist");
- const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(1300);const after=await page.evaluate(()=>window.MshinCityDebug.city.tick);assert.ok(after>before,"simulation should advance");
+ const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(1300);const after=await page.evaluate(()=>window.MshinCityDebug.city.tick);assert.ok(after>before,"simulation should advance");const perf=await page.evaluate(()=>({frames:window.MshinCityPerformance.frames,draws:window.MshinCityPerformance.draws,staticLayerReady:window.MshinCityPerformance.staticLayerReady}));assert.ok(perf.staticLayerReady,"static terrain and buildings should be cached in one offscreen layer");assert.ok(perf.frames>perf.draws*1.5,"the renderer should skip redundant animation-frame redraws");
  fs.mkdirSync("artifacts",{recursive:true});await page.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, construction, local save and live simulation.\n");
 }finally{await browser.close()}
