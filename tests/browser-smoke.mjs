@@ -557,6 +557,8 @@ try {
   // not SwiftShader performance. Earlier desktop/mobile checks already validate WebGL.
   await economy.addInitScript(() => {
     window.__MshinBrowserSmoke = true;
+    window.__MshinBrowserSmokeSimulationOnly = true;
+    window.__MshinBrowserSmokeRewardedRace = true;
     // The economy acceptance flow exercises real vehicle physics and rewards.
     // Earlier smoke coverage already asserts the WebGL race renderer; avoid
     // SwiftShader's multi-second draw stalls in this long-duration scenario.
@@ -595,7 +597,8 @@ try {
   await economy.locator("#tab-workshop").click();
   assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "car upgrades should persist after reload");
   await economy.locator("#tab-race").click();
-  await economy.getByRole("button", { name: /توفان کویر/ }).click();
+  // The desert-weather selection is asserted above; use the beginner circuit for the reward gate.
+  await economy.getByRole("button", { name: /دره سبز/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   const economySteeringPad = await economy.locator("#stick").boundingBox();
