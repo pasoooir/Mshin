@@ -44,7 +44,7 @@ test("settings and pause actions preserve game state semantics", () => {
 
 test("PWA and offline cache markers advance together", () => {
   assert.equal(manifest.version, pkg.version, "PWA manifest version must match package.json");
-  assert.match(sw, /mshin-arcade-v41/);
+  assert.match(sw, /mshin-arcade-v42/);
 });
 
 test("menu and garage use repository-local procedural WebGL 3D scenes", async () => {
