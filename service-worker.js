@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v53";
+const CACHE_NAME = "mshin-arcade-v58";
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./icons/mshin.svg",
   "./src/web-game.js", "./src/multitouch-input.js", "./src/vehicle-pbr.js", "./src/vehicle-showroom-3d.js", "./src/race-renderer-3d.js", "./src/aerial-environment.js", "./src/tire-physics.js", "./src/vehicle-dynamics.js", "./src/pickup-collection.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",

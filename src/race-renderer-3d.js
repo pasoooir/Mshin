@@ -104,12 +104,41 @@ export function createRaceRenderer(canvas){
   }
   const nextRoad=part(roadTris,theme[1]);nextDecor.push(part(shoulderTris,theme[2]),part(laneTris,"#e8e9e5"),part(groundTris,theme[0]));
   yield {parts:[nextRoad,...nextDecor],progress:.34};
-  const trees=[],buildings=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
-  for(let i=0;i<(mobile?18:48);i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=260+(i%5)*52,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist);
-   if((snapshot.world||0)===4||(snapshot.world||0)===8){box(buildings,x,48,z,44+(i%3)*16,95+(i%4)*32,42);box(buildings,x,100+(i%4)*32,z,48+(i%3)*16,5,46)}
-   else{box(trees,x,(f.height||0)+18,z,9,36,9);const cone=[];const baseY=(f.height||0)+22,rad=24+(i%3)*7,top=(f.height||0)+74+(i%4)*8;for(let j=0;j<8;j++){const aa=j/8*Math.PI*2,bb=(j+1)/8*Math.PI*2;tri(cone,[x+Math.cos(aa)*rad,baseY,z+Math.sin(aa)*rad],[x+Math.cos(bb)*rad,baseY,z+Math.sin(bb)*rad],[x,top,z])}trees.push(...cone)}
+  state.petCoats=[];const trees=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
+  const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?18:48,buildingCount=mobile?8:22;
+  const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
+  // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
+  const skyTris=[],cloudTris=[],sunTris=[];
+  sphere(skyTris,0,0,0,5600,3000,5600,mobile?20:36,mobile?10:18);
+  for(let i=0;i<(mobile?5:12);i++){const a=i/12*Math.PI*2,r=1900+(i%3)*210,x=Math.cos(a)*r,y=760+(i%4)*95,z=Math.sin(a)*r;sphere(cloudTris,x,y,z,280+(i%3)*55,58+(i%2)*25,125+(i%4)*28,mobile?8:14,mobile?4:7);sphere(cloudTris,x+125,y+18,z-35,185,46,90,mobile?8:12,mobile?4:6);}
+  sphere(sunTris,-2200,1900,-2450,175,175,175,16,10);
+  nextDecor.push(part(skyTris,"#70b7ee",.42),part(cloudTris,"#f3f8ff",.22),part(sunTris,"#fff0bd",.72));
+
+  const disk=(out,x,y,z,r,segments=12)=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2,b=(j+1)/segments*Math.PI*2;tri(out,[x,y,z],[x+Math.cos(a)*r,y,z+Math.sin(a)*r],[x+Math.cos(b)*r,y,z+Math.sin(b)*r]);}};
+  // A layered distant terrain silhouette gives every biome a readable horizon.
+  for(let i=0;i<(mobile?32:72);i++){const count=mobile?32:72,a=i/count*Math.PI*2,r=2780+(i%5)*190,x=Math.cos(a)*r,z=Math.sin(a)*r,h=68+(i%7)*24;const hill=[];sphere(hill,x,h*.34,z,250+(i%4)*48,h,220+(i%3)*38,mobile?9:16,mobile?5:8);landscape.push(...hill)}
+  for(let i=0;i<treeCount;i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=270+(i%7)*66,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0;
+   disk(treeShadows,x,base+.6,z,24+(i%3)*4,10);
+   // Trunk, branching limbs and layered foliage; mobile uses fewer repeated instances.
+   box(trees,x,base+19,z,8,38,8);cylinder(trees,x-12,base+25,z,3,22,7);cylinder(trees,x+8,base+32,z,3,19,7);
+   const foliage=[];sphere(foliage,x,base+48,z,22+(i%4)*4,28+(i%3)*5,22+(i%4)*4,mobile?8:12,mobile?5:7);sphere(foliage,x-13,base+62,z-4,16,19,16,7,5);sphere(foliage,x+12,base+59,z+5,17,20,17,7,5);trees.push(...foliage);
   }
-  nextDecor.push(part(trees,theme[3]),part(buildings,(snapshot.world||0)===4?"#5c4d85":"#747b82"));
+  // Residential blocks: pitched roof silhouettes, recessed doors, glazing and porches.
+  for(let i=0;i<buildingCount;i++){const t=(i+.25)/buildingCount*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=520+(i%4)*125,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0,w=96+(i%3)*22,h=58+(i%4)*12,d=84+(i%2)*18;
+   disk(buildingShadows,x,base+.5,z,58,12);
+   if(urban){box(buildings,x,base+h/2,z,w,h,d);box(roofTris,x,base+h+5,z,w+10,10,d+10);for(let floor=0;floor<Math.max(1,Math.floor(h/28));floor++)for(let sideX of [-1,1]){box(windows,x+sideX*w*.27,base+17+floor*25,z+d/2+.8,13,12,2);box(windows,x+sideX*w*.27,base+17+floor*25,z-d/2-.8,13,12,2)}}
+   else{box(houses,x,base+h/2,z,w,h,d);const roof=[];const eave=base+h,peak=eave+40;quad(roof,[x-w/2-7,eave,z-d/2-7],[x+w/2+7,eave,z-d/2-7],[x,peak,z-d/2-7]);quad(roof,[x+w/2+7,eave,z+d/2+7],[x-w/2-7,eave,z+d/2+7],[x,peak,z+d/2+7]);quad(roof,[x-w/2-7,eave,z-d/2-7],[x-w/2-7,eave,z+d/2+7],[x,peak,z]);quad(roof,[x+w/2+7,eave,z+d/2+7],[x+w/2+7,eave,z-d/2-7],[x,peak,z]);roofTris.push(...roof);
+    box(doors,x,base+14,z+d/2+1,13,28,2);for(const wx of [-w*.28,w*.28]){box(windows,x+wx,base+27,z+d/2+1,15,14,2);box(windows,x+wx,base+27,z+d/2+2,2,14,1);box(windows,x+wx,base+27,z+d/2+2,15,2,1)}}
+  }
+  // Small roadside shops with awnings, display windows and a sign fascia.
+  const shopCount=mobile?3:7;for(let i=0;i<shopCount;i++){const t=(i+.4)/shopCount*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,x=f.p.x+f.nx*side*(690+(i%3)*75),z=-(f.p.y+f.ny*side*(690+(i%3)*75)),base=f.height||0;box(shops,x,base+38,z,116,76,76);box(shops,x,base+79,z+39,132,10,10);box(shops,x,base+60,z+43,132,20,11);box(windows,x,base+36,z+40,76,32,3);box(doors,x-43,base+29,z+42,18,56,4);box(roofTris,x,base+84,z,138,7,86)}
+  // Spectators with distinct torso, head, arms and legs rather than flat crowd blocks.
+  const spectatorCount=mobile?10:36;for(let i=0;i<spectatorCount;i++){const t=(i+.5)/(mobile?16:54)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,offset=242+(i%4)*16,x=f.p.x+f.nx*side*offset,z=-(f.p.y+f.ny*side*offset),base=f.height||0;box(crowdBodies,x,base+28,z,10,22,8);sphere(crowdHeads,x,base+45,z,6,7,6,7,4);box(crowdArms,x-9,base+30,z,4,18,4);box(crowdArms,x+9,base+30,z,4,18,4);box(crowdLegs,x-3,base+12,z,4,13,5);box(crowdLegs,x+3,base+12,z,4,13,5)}
+  // Leashed dogs and cats near spectator lawns: four-legged silhouettes, tails and ears.
+  const petCount=mobile?3:9;for(let i=0;i<petCount;i++){const t=(i+.7)/petCount*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,x=f.p.x+f.nx*side*(305+(i%3)*22),z=-(f.p.y+f.ny*side*(305+(i%3)*22)),base=f.height||0,cat=i%2===1,coat=cat?"#777b83":"#b88c5c";sphere(petBodies,x,base+9,z,cat?13:18,8,cat?8:10,8,4);sphere(petHeads,x+13,base+14,z,8,8,8,8,4);for(const lx of [-8,7])for(const lz of [-5,5])box(petLegs,x+lx,base+3,z+lz,3,8,3);sphere(petTails,x-17,base+15,z-4,cat?3:4,cat?12:10,3,6,3);for(const ex of [-4,4]){const ear=[];tri(ear,[x+13+ex,base+19,z],[x+13+ex+3,base+14,z+2],[x+13+ex+1,base+27,z]);petEars.push(...ear)}if(!state.petCoats)state.petCoats=[];state.petCoats.push(coat)}
+  // Soft contact-shadow decals sit directly on the ground under structures.
+  nextDecor.push(part(landscape,"#778b78"),part(treeShadows,"#26332b"),part(buildingShadows,"#303a35"),part(trees,theme[3]),part(houses,"#d6c6a4"),part(buildings,urban?"#5c4d85":"#747b82"),part(roofTris,urban?"#343b4a":"#9b5942"),part(windows,"#8ec7d4",.05),part(doors,"#493b34"),part(shops,"#c8b08b"),part(crowdBodies,"#e85b47"),part(crowdHeads,"#d4a47e"),part(crowdArms,"#e2b18c"),part(crowdLegs,"#263344"),part(petBodies,"#b88c5c"),part(petHeads,"#b88c5c"),part(petLegs,"#75543c"),part(petEars,"#8b5d4a"),part(petTails,"#8b5d4a"));
+  state.environmentCounts={trees:treeCount,houses:urban?0:buildingCount,shops:shopCount,buildings:urban?buildingCount:0,spectators:spectatorCount,dogs:Math.ceil(petCount/2),cats:Math.floor(petCount/2),contactShadows:treeCount+buildingCount};
   yield {parts:[nextRoad,...nextDecor],progress:.67};
   for(let i=0;i<360;i+=(mobile?18:6)){
    const a=i/360*Math.PI*2,b=(i+1)/360*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);

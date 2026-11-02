@@ -175,11 +175,11 @@ try {
   assert.ok(worldCards.every((src, index) => src === "./assets/vector/world-" + String(index + 1).padStart(2, "0") + ".svg"), "each world card should use its own text-free vector artwork");
   assert.equal(await page.locator(".carChoice").count(), 5, "garage should offer three starter and two unlockable cars");
   await page.locator("#tab-cars").click();
-  await page.getByRole("button", { name: /دنباله‌دار GT/ }).click();
+  await page.getByRole("button", { name: /(?:Zola GT|Zola GT)/ }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("mshin-settings-v1")).carId), "comet", "selected car should persist");
   assert.equal(await page.locator("#showroomVehicle").evaluate(el => el.tagName), "CANVAS", "the selected vehicle should render in the real WebGL showroom");
   await page.waitForFunction(() => window.MshinVehicleShowroom?.vehicle === "comet", undefined, { timeout: 5000 });
-  assert.match(await page.locator("#showroomCarName").textContent(), /دنباله‌دار GT/, "showroom identity should follow the selected vehicle");
+  assert.match(await page.locator("#showroomCarName").textContent(), /(?:Zola GT|Zola GT)/, "showroom identity should follow the selected vehicle");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "persistence reload");
   await page.locator("#play").click();
@@ -187,7 +187,7 @@ try {
   assert.equal(await page.locator("#musicVolume").inputValue(), "37", "music volume should restore after reload");
   assert.equal(await page.locator("#sfxVolume").inputValue(), "62", "SFX volume should restore after reload");
   await page.locator("#tab-cars").click();
-  assert.match(await page.locator(".carChoice.active").textContent(), /دنباله‌دار GT/, "garage should restore the saved car");
+  assert.match(await page.locator(".carChoice.active").textContent(), /(?:Zola GT|Zola GT)/, "garage should restore the saved car");
   await page.locator("#tab-race").click();
   await page.getByRole("button", { name: /شهر نئونی/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
@@ -435,7 +435,21 @@ try {
   const orientationCalls = await mobile.evaluate(() => window.__orientationCalls);
   assert.deepEqual(orientationCalls, ["fullscreen", "lock:landscape"], "mobile race start must enter fullscreen before requesting native landscape lock");
   await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
-  await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 });
+  await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 }).catch(async error => {
+    const diagnostic = await mobile.evaluate(() => ({
+      renderer: window.Mshin3DRenderer ? {
+        status: window.Mshin3DRenderer.status,
+        error: window.Mshin3DRenderer.error,
+        frames: window.Mshin3DRenderer.frames,
+        quality: window.Mshin3DRenderer.quality,
+        trackBuildProgress: window.Mshin3DRenderer.trackBuildProgress,
+        environmentCounts: window.Mshin3DRenderer.environmentCounts
+      } : null,
+      canvas: { width: document.querySelector("#game3d")?.width, height: document.querySelector("#game3d")?.height },
+      bodyClass: document.body.className,
+    }));
+    throw new Error("mobile WebGL renderer did not reach a stable frame state: " + JSON.stringify(diagnostic) + " | " + error.message);
+  });
   const mobileRenderQuality = await mobile.evaluate(() => window.Mshin3DRenderer.quality);
   assert.ok(mobileRenderQuality.pixelRatio <= 0.8 && mobileRenderQuality.width <= 700 && mobileRenderQuality.height <= 700, "mobile WebGL must use a reduced render resolution to protect frame pacing: " + JSON.stringify(mobileRenderQuality));
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
