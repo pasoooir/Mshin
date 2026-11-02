@@ -657,6 +657,9 @@ try {
   assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
   assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
+w the earned badge after returning to the menu");
+  assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
+  assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "service-worker control reload");
