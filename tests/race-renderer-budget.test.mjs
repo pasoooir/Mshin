@@ -98,3 +98,11 @@ test("procedural vehicle mesh construction exposes its synchronous cost", () => 
   assert.match(source, /state\.maxVehicleBuildMs=Math\.max/);
   assert.match(source, /vehicleBuildCount:0/);
 });
+
+
+test("the full WebGL drawing buffer is sized before the first gameplay frame", () => {
+  const initialSize = source.indexOf("canvas.width=initialWidth;canvas.height=initialHeight");
+  const contextCreation = source.indexOf("gl=canvas.getContext");
+  assert.ok(initialSize >= 0 && contextCreation > initialSize,
+    "the first full-resolution drawing buffer must be allocated before the renderer enters the game loop");
+});
