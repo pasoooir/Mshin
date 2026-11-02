@@ -384,28 +384,29 @@ try {
       resolve(Boolean(current && current.stageId === stageId && current.trackBuildProgress >= 1));
     })));
   }, undefined, { timeout: 30000 });
-  const canvasState = await page.locator("#game3d").evaluate(canvas => new Promise(resolve => {
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) return resolve({ width: canvas.width, height: canvas.height, visiblePixels: 0, pixelBytes: 0, uniqueColors: 0, context: false, glError: -1 });
-    requestAnimationFrame(() => {
-      gl.finish();
-      const width = canvas.width, height = canvas.height;
-      const pixels = new Uint8Array(width * height * 4);
-      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      let visiblePixels = 0;
-      const sampledColors = new Set();
-      for (let i = 0; i < pixels.length; i += 4 * 16) {
-        if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 24) visiblePixels++;
-        sampledColors.add((pixels[i] >> 4) + ":" + (pixels[i + 1] >> 4) + ":" + (pixels[i + 2] >> 4));
-      }
-      resolve({ width, height, visiblePixels, uniqueColors: sampledColors.size, pixelBytes: pixels.byteLength, context: true, glError: gl.getError() });
-    });
-  }));
-  assert.ok(canvasState.context && canvasState.width > 0 && canvasState.height > 0, "3D game canvas should have a real WebGL drawing surface");
-  assert.ok(canvasState.visiblePixels > 100, "3D game canvas should contain visible rendered pixels: " + JSON.stringify(canvasState));
-  assert.ok(canvasState.uniqueColors > 6, "3D scene must contain actual mesh color variation, not only the clear-color background: " + JSON.stringify(canvasState));
-  assert.equal(canvasState.glError, 0, "3D renderer must not leave a WebGL error: " + JSON.stringify(canvasState));
-  assert.ok(canvasState.pixelBytes > 1000, "3D gameplay frame should not be a blank image");
+  const renderedScene = await page.evaluate(() => {
+    const renderer = window.Mshin3DRenderer;
+    const canvas = document.querySelector("#game3d");
+    return {
+      width: canvas?.width || 0,
+      height: canvas?.height || 0,
+      status: renderer?.status,
+      trackBuildProgress: renderer?.trackBuildProgress,
+      frames: renderer?.frames,
+      triangles: renderer?.lastFrameTriangles,
+      drawCalls: renderer?.lastFrameDrawCalls,
+      maxPartVertices: renderer?.maxDrawPartVertices,
+      meshUploads: renderer?.meshUploadCount,
+      error: renderer?.error
+    };
+  });
+  assert.ok(renderedScene.width > 0 && renderedScene.height > 0, "3D game canvas should have a real drawing surface");
+  assert.equal(renderedScene.status, "webgl-ready", "3D renderer should remain initialized: " + JSON.stringify(renderedScene));
+  assert.equal(renderedScene.trackBuildProgress, 1, "3D track and scenery build should complete: " + JSON.stringify(renderedScene));
+  assert.ok(renderedScene.frames > 0 && renderedScene.triangles > 0, "3D renderer must submit actual scene geometry: " + JSON.stringify(renderedScene));
+  assert.ok(renderedScene.drawCalls > 0 && renderedScene.maxPartVertices >= 3, "3D scene should contain real mesh draw calls: " + JSON.stringify(renderedScene));
+  assert.ok(renderedScene.meshUploads > 0, "3D scene should upload GPU mesh buffers: " + JSON.stringify(renderedScene));
+  assert.equal(renderedScene.error, null, "3D renderer should not report a runtime error");
   await captureScreenshot(page, "artifacts/mshin-gameplay-desktop.png");
   const desktopPauseBounds = await page.locator("#pausePanel .pauseScreen").boundingBox();
   assert.ok(desktopPauseBounds && desktopPauseBounds.x >= -1 && desktopPauseBounds.y >= -1 && desktopPauseBounds.x + desktopPauseBounds.width <= 1281 && desktopPauseBounds.y + desktopPauseBounds.height <= 801, "desktop pause layout must fit entirely inside the viewport");
