@@ -16,7 +16,11 @@ try{
  const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",91,120,420);send("pointerdown",92,260,420);send("pointermove",92,320,420);send("pointerup",92,320,420);send("pointerup",91,120,420)});
  const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");
- const building=await page.evaluate(()=>window.MshinCityDebug.city.buildings.find(b=>b.type==="home"));
+ await page.locator('[data-city-tool="zone-residential"]').click();const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(16,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
+ assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][16]),"zone-residential","mobile players must be able to zone a road-connected tile");
+ await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
+ assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===16&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
+ const building=await page.evaluate(()=>window.MshinCityDebug.city.buildings.find(b=>b.type==="home"&&!(b.x===16&&b.y===14)));
  await page.locator('[data-city-tool="bulldoze"]').click();const demolition=await page.evaluate(b=>window.MshinCityDebug.screenForTile(b.x,b.y),building);await page.mouse.click(demolition.x,demolition.y);
  assert.ok(await page.evaluate(b=>JSON.parse(localStorage.getItem("mshin-city-save-v1"))?.grid?.[b.y]?.[b.x]==="grass",building),"demolition must persist immediately");
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
@@ -34,5 +38,5 @@ try{
  assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
  assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
  fs.mkdirSync("artifacts",{recursive:true});await page.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});assert.deepEqual(errors,[],"city route must not throw runtime errors");
- process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, wildlife, pinch zoom, demolition persistence, autosave and live simulation.\n");
+ process.stdout.write("City browser smoke passed: initial city, street grid, buildings, citizens, traffic, wildlife, pinch zoom, residential zoning growth, demolition persistence, autosave and live simulation.\n");
 }finally{await browser.close()}
