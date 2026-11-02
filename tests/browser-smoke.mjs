@@ -248,6 +248,10 @@ try {
   assert.equal(rigidCheck.angular,true,"off-centre browser collision should preserve finite angular response");
   assert.equal(rigidCheck.swept,true,"swept collision should detect fast body traversal");
 
+  const uploadMetrics = await page.evaluate(() => ({ maxMeshUploadMs: window.Mshin3DRenderer?.maxMeshUploadMs, meshUploadCount: window.Mshin3DRenderer?.meshUploadCount }));
+  assert.ok(Number.isFinite(uploadMetrics.maxMeshUploadMs) && uploadMetrics.maxMeshUploadMs < 1500, "individual WebGL mesh uploads must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
+  assert.ok(Number.isInteger(uploadMetrics.meshUploadCount) && uploadMetrics.meshUploadCount > 0, "renderer should expose completed mesh-upload diagnostics");
+
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
   console.log("[browser-smoke] MshinPerformance:", JSON.stringify(frameMetrics));
   for (const key of ["maxUpdateCostMs", "maxAudioCostMs", "maxDrawCostMs", "maxLoopCostMs"]) {
