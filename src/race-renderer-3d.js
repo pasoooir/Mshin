@@ -120,7 +120,7 @@ export function createRaceRenderer(canvas){
   for(let i=0;i<treeCount;i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=270+(i%7)*66,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0;
    disk(treeShadows,x,base+.6,z,24+(i%3)*4,10);
    // Trunk, branching limbs and layered foliage; mobile uses fewer repeated instances.
-   cylinder(trees,x-2,base+3,z,5,4,8);cylinder(trees,x-12,base+25,z,3,22,7);cylinder(trees,x+8,base+32,z,3,19,7);
+   box(trees,x,base+19,z,8,38,8);cylinder(trees,x-12,base+25,z,3,22,7);cylinder(trees,x+8,base+32,z,3,19,7);
    const foliage=[];sphere(foliage,x,base+48,z,22+(i%4)*4,28+(i%3)*5,22+(i%4)*4,8,5);sphere(foliage,x-13,base+62,z-4,16,19,16,7,4);sphere(foliage,x+12,base+59,z+5,17,20,17,7,4);trees.push(...foliage);
   }
   // Residential blocks: pitched roof silhouettes, recessed doors, glazing and porches.
