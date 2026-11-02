@@ -573,8 +573,11 @@ try {
           - yaw * .65
           - Math.atan2(lateralVelocity, Math.max(80, speed)) * .45;
         const steering = Math.max(-.86, Math.min(.86, roadWheelAngle / .48));
-        if (speed > 185) braking = true;
-        else if (speed < 145) braking = false;
+        // Telemetry is published every 30 simulation frames. A low threshold can
+        // hold full braking across a stale sample and stop the test car; use a
+        // wider high-speed hysteresis band to avoid brake chatter/stalling.
+        if (speed > 340) braking = true;
+        else if (speed < 240) braking = false;
         lastControls = {
           steering, brake: braking, speed, lateral, yaw, curvature,
           observedSteer: Number(telemetry.playerSteer) || 0,
