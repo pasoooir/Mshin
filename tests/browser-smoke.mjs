@@ -217,8 +217,12 @@ try {
   await page.locator("#gyroSensitivity").click();
   assert.notEqual(await page.locator("#gyroSensitivity").textContent(), initialGyroSensitivity, "gyro sensitivity should be adjustable");
   await page.evaluate(() => {
-    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 0 }));
-    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta: 0, gamma: 12 }));
+    const angle = ((Number(screen.orientation?.angle ?? window.orientation ?? 0) % 360) + 360) % 360;
+    const betaAxis = (angle >= 45 && angle < 135) || (angle >= 225 && angle < 315);
+    const neutral = { beta: 0, gamma: 0 };
+    const tilted = betaAxis ? { beta: 12, gamma: 0 } : { beta: 0, gamma: 12 };
+    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", neutral));
+    window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", tilted));
   });
   await page.waitForFunction(() => Math.abs(window.MshinPerformance?.steerTarget || 0) > .1, undefined, { timeout: 5000 });
   await page.locator("#gyroCalibrate").click();
