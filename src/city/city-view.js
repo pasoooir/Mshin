@@ -75,7 +75,7 @@ function mount(){
  function draw(){
   ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
   const sky=ctx.createLinearGradient(0,0,0,view.h);sky.addColorStop(0,"#a7cbd1");sky.addColorStop(.52,"#c9d8c0");sky.addColorStop(1,"#718c75");ctx.fillStyle=sky;ctx.fillRect(0,0,view.w,view.h);
-  ctx.save();ctx.translate(view.w/2+cam.x,view.h*.23+cam.y);ctx.scale(cam.zoom,cam.zoom);
+  ctx.save();ctx.translate(view.w/2+cam.x,view.h*.49+cam.y);ctx.scale(cam.zoom,cam.zoom);
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)ground(x,y,city.grid[y][x]);
   [...city.trees.map(t=>({d:t.x+t.y,draw:()=>tree(t)})),...city.buildings.map(b=>({d:b.x+b.y,draw:()=>building(b)}))].sort((a,b)=>a.d-b.d).forEach(v=>v.draw());
   cars();people();if(selected){const p=tilePoint(selected.x,selected.y);ctx.strokeStyle="#fff1a6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y-8);ctx.lineTo(p.x+16,p.y);ctx.lineTo(p.x,p.y+8);ctx.lineTo(p.x-16,p.y);ctx.closePath();ctx.stroke()}ctx.restore();
