@@ -65,7 +65,7 @@ export function createRaceRenderer(canvas){
   const initialDpr=Math.min(devicePixelRatio||1,mobile?.68:1.5)*qualityScale;
   const initialWidth=Math.max(1,Math.round((initialPortrait?innerHeight:innerWidth)*initialDpr));
   const initialHeight=Math.max(1,Math.round((initialPortrait?innerWidth:innerHeight)*initialDpr));
-  // Defer drawing-buffer allocation until the GPU profile is known.
+  canvas.width=initialWidth;canvas.height=initialHeight;lastSize=initialWidth+"x"+initialHeight;
   state.quality={mobile,pixelRatio:initialDpr,detail:mobile?"mobile-balanced":"high",width:initialWidth,height:initialHeight};
  try{
   gl=canvas.getContext("webgl",{alpha:false,antialias:!mobile,depth:true,powerPreference:"high-performance",preserveDrawingBuffer:false})||canvas.getContext("experimental-webgl");
@@ -77,9 +77,7 @@ export function createRaceRenderer(canvas){
   const gpuProfile=debugRenderer?String(gl.getParameter(debugRenderer.UNMASKED_RENDERER_WEBGL)||""):String(gl.getParameter(gl.RENDERER)||"");
   softwareRenderer=/swiftshader|llvmpipe|lavapipe|software raster/i.test(gpuProfile);
   state.softwareRenderer=softwareRenderer;state.gpuProfile=gpuProfile.slice(0,120);
-  if(softwareRenderer)qualityScale=.58;
-  // Allocate once at the final profile-specific size, avoiding a transient full-resolution buffer.
-  resize();
+  if(softwareRenderer){qualityScale=.58;resize();}
   program=makeProgram(gl);environment=createVehicleEnvironment(gl);state.environmentMapReady=!!environment;attributes={position:gl.getAttribLocation(program,"aPosition"),normal:gl.getAttribLocation(program,"aNormal")};uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive")};
   // Force the browser/driver to compile and execute the linked shader pipeline
   // before the first countdown frame. Some headless and mobile GPUs defer this
@@ -290,10 +288,6 @@ export function createRaceRenderer(canvas){
   // Draw the latest bounded build snapshot while the replacement track is still being assembled.\n  // Without this, the first gameplay frames show only the clear color until every city/track mesh finishes uploading.\n  const drawParts=road?[road,...decor]:pendingTrackParts;for(const p of drawParts)drawPart(p,vp,translate(0,0,0));
   const playerT=snapshot.player.t,maxVisible=mobile?3:softwareRenderer?2:7;visibleRivals.length=0;visibleDistances.length=0;for(const r of snapshot.rivals){if(r.despawned||r.destruction?.despawned)continue;const rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta);if(distance>=.72)continue;let slot=visibleDistances.length;while(slot>0&&distance<visibleDistances[slot-1])slot--;if(slot>=maxVisible)continue;visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance);if(visibleRivals.length>maxVisible){visibleRivals.pop();visibleDistances.pop()}}for(let i=0;i<visibleRivals.length;i++){const r=visibleRivals[i];drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage?.total||r.damage||0,r.type,r.id,snapshot)}
   drawVehicle(snapshot.player.t,snapshot.player.lateral,snapshot.player.yaw,snapshot.player.color,snapshot.player.damage,"player",snapshot.player.modelId,snapshot);
-  const labelPositions=[],projectLabel=(t,lateral,rank,timerElapsed,finished,id)=>{const f=snapshot.frameAt(t),wx=f.p.x+f.nx*lateral,wy=(f.height||0)+105,wz=-(f.p.y+f.ny*lateral),cx=vp[0]*wx+vp[4]*wy+vp[8]*wz+vp[12],cy=vp[1]*wx+vp[5]*wy+vp[9]*wz+vp[13],cw=vp[3]*wx+vp[7]*wy+vp[11]*wz+vp[15];if(cw<=0)return;const width=canvas.clientWidth||canvas.width,height=canvas.clientHeight||canvas.height;labelPositions.push({id,x:(cx/cw*.5+.5)*width,y:(1-(cy/cw*.5+.5))*height,rank,timerElapsed,elapsed:timerElapsed,finished:!!finished})};
-  projectLabel(snapshot.player.t,snapshot.player.lateral,snapshot.player.rank||5,snapshot.player.timerElapsed||0,snapshot.player.finished,"player");
-  for(const rival of snapshot.rivals){if(rival.id>=4||rival.despawned||rival.destruction?.despawned)continue;projectLabel(rival.distance,rival.lateral,rival.rank||rival.id+2,rival.timerElapsed||0,rival.finishTime!==null&&rival.finishTime!==undefined,"rival-"+rival.id)}
-  state.positionLabelCount=labelPositions.length;
   if(state.captureNextFrameSample){
    gl.finish();
    const sampleWidth=canvas.width,sampleHeight=canvas.height,samplePixels=new Uint8Array(sampleWidth*sampleHeight*4);
@@ -304,7 +298,6 @@ export function createRaceRenderer(canvas){
    state.captureNextFrameSample=false;
   }
   state.frames++;state.stageId=snapshot.stageId;state.playerPosition={x,z};state.camera="perspective-chase";state.lastFrameTriangles=state.triangles;state.maxTrianglesPerFrame=Math.max(state.maxTrianglesPerFrame||0,state.lastFrameTriangles);state.lastFrameDrawCalls=(state.drawPartCount||0)-drawCountAtStart;state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs=performance.now()-rendererStarted);state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs);
-  return labelPositions;
  }
  function onLost(e){e.preventDefault();lost=true;state.status="context-lost"}
  function onRestored(){
