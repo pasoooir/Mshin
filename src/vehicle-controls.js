@@ -42,5 +42,6 @@ export function joystickDeltaToSteer(delta, limit) {
 
 /** Convert a physical rightward phone tilt into the matching right-turn command. */
 export function screenTiltToSteer(tiltDegrees, sensitivity = 1) {
-  return -tiltToSteer(tiltDegrees, sensitivity);
+  const steering = tiltToSteer(tiltDegrees, sensitivity);
+  return steering === 0 ? 0 : -steering;
 }
