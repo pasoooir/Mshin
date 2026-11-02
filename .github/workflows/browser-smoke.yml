@@ -1,4 +1,4 @@
-name: Mshin desktop and mobile browser smoke
+name: Mshin mobile browser smoke
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -68,12 +68,12 @@ jobs:
         run: |
           node --check tests/city-browser-smoke.mjs
           node tests/city-browser-smoke.mjs
-      - name: Run desktop and mobile browser smoke tests
+      - name: Run mobile-only browser smoke tests
         env:
           CI: "true"
         run: |
-          node --check tests/browser-smoke.mjs
-          node tests/browser-smoke.mjs
+          node --check tests/mobile-browser-smoke.mjs
+          node tests/mobile-browser-smoke.mjs
       - name: Stop local game server
         if: always()
         run: |
@@ -84,7 +84,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mshin-gameplay-previews
-          path: artifacts/*.png
+          name: mshin-mobile-gameplay-previews
+          path: artifacts/mobile/*.png
           if-no-files-found: warn
           retention-days: 7
