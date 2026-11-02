@@ -52,7 +52,7 @@ export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
 function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(!isValidCitySave(v))return createInitialCity();v.zones=Array.isArray(v.zones)?v.zones:[];return v}catch{return createInitialCity()}}
 function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return true}catch{return false}}
 function mount(){
- const canvas=document.getElementById("cityViewport"),ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;
+ const canvas=document.getElementById("cityViewport");let ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;
  const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1};
  let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,lastPersistTick=city.tick;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
