@@ -32,7 +32,7 @@
 
 | ID | Task | Owner | Dependencies | Priority | Status | Start | Complete | Test / evidence | Commit | PR |
 |---|---|---|---|---|---|---|---|---|---|---|
-| SC-RSH-001 | Research city-builder references and public player feedback | Product/design | SC-AUD-001 | P1 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Research synthesis and source list in GAME_DESIGN_DOCUMENT; includes SimCity 4 Rush Hour, SimCity 2013, BuildIt, Cities: Skylines II community feedback and Cities of Tomorrow | 86d52be | #135 |
+| SC-RSH-001 | Research city-builder references and public player feedback | Product/design | SC-AUD-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Initial qualitative synthesis and 2026 player-feedback follow-up added to GAME_DESIGN_DOCUMENT; structured comparison across all requested titles and 12 review dimensions remains | 0353e4c | #135 |
 | SC-ARC-001 | Define engine-independent simulation/domain boundaries | Software architecture | SC-AUD-001 | P1 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Layer boundaries, module map, events, scheduling and Cocos adapter boundary documented | 86d52be | #135 |
 | SC-ARC-002 | Define coordinate, road graph and city-save schemas | Software architecture | SC-ARC-001 | P1 | 🟡 در حال اجرا | 2026-11-02 | — | Coordinate conventions, graph topology and save envelope outlined; detailed typed schemas and migration fixtures remain | — | #135 |
 | SC-ART-001 | Define cohesive city art direction and asset acceptance gates | Art direction | SC-RSH-001 | P1 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Art direction, asset families, plugin-led pipeline and runtime QA criteria documented | 86d52be | #135 |
