@@ -556,9 +556,9 @@ try {
         if (speed > 185) braking = true;
         else if (speed < 145) braking = false;
         lastControls = { steering, brake: braking, speed, lateral, yaw, curvature };
-        // The on-screen wheel axis is mirrored by the desktop HUD transform.
-        // Invert the pointer displacement so path correction matches chassis steering.
-        const pointerSteering = -Math.sign(steering) * Math.pow(Math.abs(steering), 1 / 1.28);
+        // Pointer displacement and the simulation's positive steering axis share the same direction.
+        // Keep the sign intact: inverting it drives the car farther away from the road centre.
+        const pointerSteering = Math.sign(steering) * Math.pow(Math.abs(steering), 1 / 1.28);
         dispatchPointer("pointermove", pointerSteering);
         if (braking !== Boolean(window.__mshinRaceBrake)) {
           dispatchButton(brake, braking ? "pointerdown" : "pointerup", brakePointerId);
