@@ -255,6 +255,9 @@ try {
     lastTrackBuildStepMs: window.Mshin3DRenderer?.lastTrackBuildStepMs,
     maxDrawPartMs: window.Mshin3DRenderer?.maxDrawPartMs,
     drawPartCount: window.Mshin3DRenderer?.drawPartCount,
+    maxVehicleBuildMs: window.Mshin3DRenderer?.maxVehicleBuildMs,
+    lastVehicleBuildMs: window.Mshin3DRenderer?.lastVehicleBuildMs,
+    vehicleBuildCount: window.Mshin3DRenderer?.vehicleBuildCount,
     lastTrackBuildProgress: window.Mshin3DRenderer?.lastTrackBuildProgress
   }));
   console.log("[browser-smoke] RendererDiagnostics:", JSON.stringify(uploadMetrics));
@@ -263,6 +266,7 @@ try {
   assert.ok(Number.isFinite(uploadMetrics.maxTrackBuildStepMs) && uploadMetrics.maxTrackBuildStepMs < 1500, "individual track construction steps must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isFinite(uploadMetrics.maxDrawPartMs) && uploadMetrics.maxDrawPartMs < 1500, "individual WebGL draw parts must stay below the frame-stall threshold: " + JSON.stringify(uploadMetrics));
   assert.ok(Number.isInteger(uploadMetrics.drawPartCount) && uploadMetrics.drawPartCount > 0, "renderer should expose draw-part diagnostics");
+  assert.ok(Number.isFinite(uploadMetrics.maxVehicleBuildMs) && uploadMetrics.maxVehicleBuildMs < 1500, "procedural vehicle mesh generation must not stall the game loop: " + JSON.stringify(uploadMetrics));
 
   const frameMetrics = await page.evaluate(() => window.MshinPerformance);
   console.log("[browser-smoke] MshinPerformance:", JSON.stringify(frameMetrics));
