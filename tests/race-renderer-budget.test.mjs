@@ -49,4 +49,7 @@ test("track geometry is assembled in bounded frame-sized phases", () => {
     "the renderer must remain safe before the first complete road mesh exists");
   assert.match(source, /disposeParts\(previous\)/,
     "old stage GPU buffers must be released only after the replacement is ready");
+  assert.match(source, /yield \{progress:\.39\}/, "sky construction must yield before scenery generation");
+  assert.match(source, /if\(i%4===3\)yield \{progress:/, "large scenery loops must yield in bounded chunks");
+  assert.match(source, /if\(step\.value\.parts\)pendingTrackParts=step\.value\.parts/, "progress-only yields must preserve pending GPU buffers");
 });
