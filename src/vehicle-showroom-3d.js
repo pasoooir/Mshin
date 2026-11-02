@@ -2,7 +2,7 @@ import { PBR_VERTEX, PBR_FRAGMENT, createVehicleEnvironment, VEHICLE_MATERIALS }
 // True WebGL vehicle showroom: real orbitable 3D geometry, not a flat SVG rotated with CSS.
 const PROFILES={
  rally:{paint:"#d83b35",accent:"#f4f0e8",width:1,length:1,height:1,cabin:1,wheel:15,ride:0,style:"rally"},
- comet:{paint:"#167bd2",accent:"#e7f5ff",width:1.04,length:1.15,height:.86,cabin:.78,wheel:14,ride:-2,style:"gt"},
+ comet:{paint:"#343b43",accent:"#e63d4b",width:1.08,length:1.18,height:.78,cabin:.72,wheel:14,ride:-3,style:"gt"},
  lynx:{paint:"#73818a",accent:"#f1a52d",width:1.15,length:1.02,height:1.18,cabin:1.2,wheel:19,ride:8,style:"suv"},
  thunder:{paint:"#20a9a5",accent:"#d9ffff",width:1.08,length:1.08,height:.82,cabin:.75,wheel:15,ride:-1,style:"electric"},
  raptor:{paint:"#c58b36",accent:"#252d32",width:1.18,length:1.06,height:1.12,cabin:1.04,wheel:20,ride:11,style:"offroad"},
@@ -81,7 +81,25 @@ export function buildVehicleGeometry(id){
  if(p.style!=="electric"){box(aero,0,53*p.cabin,-63*L,62*w,3,6);box(aero,-27*w,44*p.cabin,-63*L,3,13,5);box(aero,27*w,44*p.cabin,-63*L,3,13,5)}
  if(p.style==="offroad"||p.style==="suv"){box(aero,0,59*h,-5*L,52*w,3,46*L);box(aero,-24*w,51*h,-5*L,3,15,42*L);box(aero,24*w,51*h,-5*L,3,15,42*L);box(trim,0,68*h,0,4,3,105*L)}
  if(p.style==="rally"){for(const side of [-1,1])box(decals,side*20*w,35*h,-2*L,5,1,100*L);box(aero,0,59*h,-59*L,72*w,3,5)}
- if(p.style==="gt"){box(aero,0,12*h,70*L,72*w,3,10);box(aero,0,61*h,-61*L,76*w,3,5)}
+ if(p.style==="gt"){
+  // Zola-inspired graphite supercar package: low nose, deep side intakes,
+  // carbon splitter, sculpted rear diffuser and a wide, supported rear wing.
+  box(aero,0,10*h,70*L,82*w,3,16);
+  box(aero,0,12*h,73*L,94*w,3,8);
+  for(const side of [-1,1]){
+   box(aero,side*34*w,20*h,3*L,5,12*h,34*L);
+   box(trim,side*36*w,23*h,4*L,2,8*h,26*L);
+   box(aero,side*28*w,11*h,-57*L,8,5,23*L);
+   box(trim,side*21*w,27*h,55*L,13*w,2,12*L);
+   box(lights,side*25*w,25*h,65*L,15*w,2.2,3);
+  }
+  box(aero,0,8*h,-68*L,78*w,4,9);
+  for(const fin of [-3,-1,1,3])box(aero,fin*9*w,8*h,-67*L,2,5,16);
+  box(aero,0,58*h,-62*L,88*w,3,6);
+  box(aero,-34*w,43*h,-62*L,3,15,6);
+  box(aero,34*w,43*h,-62*L,3,15,6);
+  box(trim,0,18*h,69*L,18*w,5,2);
+ }
  if(p.style==="electric"){box(decals,0,35*h,-2*L,7,1,100*L);box(aero,0,13*h,-67*L,50*w,4,5)}
  if(p.style==="suv"||p.style==="offroad"){box(body,0,31*h,-44*L,48*w,7*h,34*L)}
  if(p.style==="offroad"){box(trim,0,64*h,0,4,4,115*L);box(aero,0,8*h,0,68*w,4,12)}
