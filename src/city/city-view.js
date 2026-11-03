@@ -97,7 +97,7 @@ export function isValidCitySave(v) {
   for (let y=0;y<SIZE;y++) for (let x=0;x<SIZE;x++) {
     const tile=v.grid[y][x],key=x+":"+y;
     if (tile==="building" && !buildings.has(key)) return false;
-    if (isCityZoneCell(tile) && !zones.has(key)) return false;
+    if (isCityZoneCell(tile) && Array.isArray(v.zones) && !zones.has(key)) return false;
   }
 
   for (const tree of v.trees) {
@@ -148,7 +148,7 @@ export function normalizeCitySave(value) {
   if (!isValidCitySave(value)) return createInitialCity();
   const city = {
     ...value,
-    zones: Array.isArray(value.zones) ? value.zones : [],
+    zones: Array.isArray(value.zones) ? value.zones : value.grid.flatMap((row,y)=>row.flatMap((tile,x)=>isCityZoneCell(tile)?[{x,y,type:tile.slice(5),createdAt:0}]:[])),
     animals: Array.isArray(value.animals) ? value.animals : [],
     minuteOfDay: Number.isInteger(value.minuteOfDay) ? value.minuteOfDay : 495,
     happiness: Number.isFinite(value.happiness) ? value.happiness : 100,
