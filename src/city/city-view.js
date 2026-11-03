@@ -2,6 +2,7 @@ import { CITY_ZONES, placeCityZone, developCityZones, isCityZoneCell } from "./c
 import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
 import { stepCityTraffic } from "./city-traffic.js";
 import { syncCityCitizens, stepCityCitizens } from "./city-population.js";
+import { CITY_DEFAULT_TAX_RATES, CITY_TAX_RATE_LIMIT, normalizeCityTaxRates, setCityTaxRate, computeCityEconomy, cityTaxPressure } from "./city-economy.js";
 const SIZE=32,KEY="mshin-city-save-v2",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
@@ -9,7 +10,7 @@ const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b
 export function createInitialCity(seed=20261102){
  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill("grass"));
  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if([7,8,15,16,23,24].includes(x)||[7,8,15,16,23,24].includes(y))grid[y][x]="road";
- return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,jobs:0,traffic:0}};
+ return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,taxRates:{...CITY_DEFAULT_TAX_RATES},grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,net:0,taxRevenue:0,maintenance:0,serviceUpkeep:0,jobs:0,traffic:0}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
@@ -17,12 +18,12 @@ export function stepCity(city,seconds=1){
  if(city.tick%12===0)developCityZones(city);
  const infrastructure=computeCityServices(city);
  const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
- const income=Math.round(homes.length*13+shops.length*46+industrial.length*72+administrative.length*28+services.length*8),expenses=Math.round(services.length*31+parks.length*7+industrial.length*24+administrative.length*12+city.buildings.length*2);
- city.stats={income,expenses:expenses+infrastructure.upkeep,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage};
- city.treasury+=income-expenses-infrastructure.upkeep;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
+ const economy=computeCityEconomy(city,infrastructure);
+ city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage};
+ city.treasury+=economy.net;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
  syncCityCitizens(city);stepCityCitizens(city,seconds);
  const serviceScore=(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
- city.happiness=Math.max(25,Math.min(98,city.happiness+(serviceScore-.35)*.08+(parks.length>2?.05:0)));
+ city.happiness=Math.max(25,Math.min(98,city.happiness+(serviceScore-.35)*.08+(parks.length>2?.05:0)-cityTaxPressure(city.taxRates)));
  
  stepCityTraffic(city,seconds);
  for(const a of city.animals||[]){a.phase+=a.pace*seconds;a.x+=Math.cos(a.phase)*.009;a.y+=Math.sin(a.phase)*.007;a.x=Math.max(8,Math.min(25,a.x));a.y=Math.max(8,Math.min(25,a.y))}
@@ -72,7 +73,10 @@ export function isValidCitySave(v) {
     || (v.stats !== undefined && !isRecord(v.stats))
     || (v.nextBuildingId !== undefined && !validId(v.nextBuildingId))
     || (v.nextTrafficId !== undefined && !validId(v.nextTrafficId))
-    || (v.nextCitizenId !== undefined && !validId(v.nextCitizenId))) return false;
+    || (v.nextCitizenId !== undefined && !validId(v.nextCitizenId))
+    || (v.taxRates !== undefined && (!isRecord(v.taxRates)
+      || Object.keys(v.taxRates).some(key => !Object.hasOwn(CITY_DEFAULT_TAX_RATES,key))
+      || Object.entries(v.taxRates).some(([key,rate]) => !Object.hasOwn(CITY_DEFAULT_TAX_RATES,key) || !Number.isInteger(rate) || rate < 0 || rate > CITY_TAX_RATE_LIMIT)))) return false;
 
   const buildings = new Set();
   const buildingIds = new Set();
@@ -152,7 +156,7 @@ export function isValidCitySave(v) {
   if (citizenIds.size !== v.citizens.length) return false;
   if (v.nextCitizenId !== undefined && citizenIds.size && v.nextCitizenId <= Math.max(...citizenIds)) return false;
   if (v.stats) {
-    for (const key of ["income","expenses","jobs","traffic","utilityCoverage","publicServiceCoverage","overallCoverage"]) {
+    for (const key of ["income","expenses","net","taxRevenue","maintenance","serviceUpkeep","jobs","traffic","utilityCoverage","publicServiceCoverage","overallCoverage"]) {
       if (v.stats[key] !== undefined && !Number.isFinite(v.stats[key])) return false;
     }
     if (v.stats.serviceCoverage !== undefined
@@ -172,6 +176,7 @@ export function normalizeCitySave(value) {
     nextBuildingId: validId(value.nextBuildingId) ? value.nextBuildingId : Math.max(0,...value.buildings.map(item=>item.id))+1,
     nextTrafficId: validId(value.nextTrafficId) ? value.nextTrafficId : Math.max(0,...value.traffic.map(item=>item.id))+1,
     nextCitizenId: validId(value.nextCitizenId) ? value.nextCitizenId : Math.max(0,...value.citizens.map(item=>item.id))+1,
+    taxRates: normalizeCityTaxRates(value.taxRates),
     stats: { income:0, expenses:0, jobs:0, traffic:0, ...(isRecord(value.stats) ? value.stats : {}) }
   };
   for (const building of city.buildings) {
@@ -235,10 +240,28 @@ function mount(){
  function cars(){for(const v of city.traffic){const p=tilePoint(v.x,v.y);ctx.save();ctx.translate(p.x,p.y-1);ctx.fillStyle="#1a2635aa";ctx.beginPath();ctx.ellipse(0,3,7,2.8,0,0,6.28);ctx.fill();ctx.fillStyle=v.color;ctx.beginPath();ctx.roundRect(-6,-4,12,7,2);ctx.fill();ctx.fillStyle="#d8efff";ctx.beginPath();ctx.roundRect(-3.5,-3,5,3,1);ctx.fill();ctx.restore()}}
  function animals(){for(const a of city.animals||[]){const p=tilePoint(a.x,a.y);ctx.save();ctx.translate(p.x,p.y);if(a.type==="bird"){ctx.strokeStyle="#eaf4dc";ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(-2,-2,3,Math.PI,Math.PI*1.85);ctx.arc(2,-2,3,Math.PI*1.15,Math.PI*2);ctx.stroke()}else{ctx.fillStyle=a.type==="cat"?"#d9b28a":"#b7c2ca";ctx.beginPath();ctx.ellipse(0,-2,4.2,2.8,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(-2,-5,1.8,0,6.28);ctx.arc(2,-5,1.8,0,6.28);ctx.fill();ctx.strokeStyle="#f4e7d6";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(3,0);ctx.lineTo(6,-2);ctx.stroke()}ctx.restore()}}
  function toolName(){return({select:"انتخاب",road:"خیابان",home:"مسکونی",shop:"تجاری",industrial:"صنعتی",administrative:"اداری",service:"خدمات",park:"پارک",power:"برق",water:"آب",sewage:"فاضلاب",waste:"پسماند",police:"پلیس",fire:"آتش‌نشانی",health:"درمان",education:"آموزش","zone-residential":"زون مسکونی","zone-commercial":"زون تجاری","zone-industrial":"زون صنعتی","zone-administrative":"زون اداری","zone-recreational":"زون تفریحی",bulldoze:"تخریب"})[tool]||tool}
+ function updateBudgetPanel(){
+  const panel=$("cityBudgetPanel");if(!panel||panel.classList.contains("hidden"))return;
+  const fmt=value=>Math.round(value||0).toLocaleString("fa-IR");
+  $("cityBudgetIncome").textContent=fmt(city.stats.income);
+  $("cityBudgetExpenses").textContent=fmt(city.stats.expenses);
+  $("cityBudgetNet").textContent=(city.stats.net>=0?"+":"")+fmt(city.stats.net);
+  $("cityBudgetTreasury").textContent=fmt(city.treasury);
+  for(const sector of Object.keys(CITY_DEFAULT_TAX_RATES)){
+   const slider=$("cityTax"+sector[0].toUpperCase()+sector.slice(1));
+   const output=$("cityTax"+sector[0].toUpperCase()+sector.slice(1)+"Value");
+   if(slider)slider.value=city.taxRates[sector];
+   if(output)output.textContent=city.taxRates[sector].toLocaleString("fa-IR")+"٪";
+  }
+  $("cityBudgetTaxRevenue").textContent=fmt(city.stats.taxRevenue);
+  $("cityBudgetMaintenance").textContent=fmt(city.stats.maintenance);
+  $("cityBudgetServiceUpkeep").textContent=fmt(city.stats.serviceUpkeep);
+ }
  function hud(){
   $("cityPopulation").textContent=city.population.toLocaleString("fa-IR");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("fa-IR")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("fa-IR");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("fa-IR")+"٪";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"٪";
   $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="روز "+(1+Math.floor(city.tick/144)).toLocaleString("fa-IR");
-  $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را انتخاب کن.":"ابزار فعال: "+toolName();$("cityBudgetHint").textContent="درآمد +"+city.stats.income.toLocaleString("fa-IR")+" · هزینه -"+city.stats.expenses.toLocaleString("fa-IR")+" · زیرساخت "+(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"٪";$("citySaveState").textContent=toastFrames>0?"ذخیره شد ✓":"ذخیره محلی";if(toastFrames>0)toastFrames--;
+  $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را انتخاب کن.":"ابزار فعال: "+toolName();$("cityBudgetHint").textContent="درآمد +"+city.stats.income.toLocaleString("fa-IR")+" · هزینه -"+city.stats.expenses.toLocaleString("fa-IR")+" · تراز "+(city.stats.net>=0?"+":"")+Math.round(city.stats.net||0).toLocaleString("fa-IR");$("citySaveState").textContent=toastFrames>0?"ذخیره شد ✓":"ذخیره محلی";if(toastFrames>0)toastFrames--;
+  updateBudgetPanel();
  }
  function draw(){if(threeRenderer){threeRenderer.render(city,view,cam);window.MshinCity3DStats=threeRenderer.getStats();hud();return}
 
@@ -265,12 +288,21 @@ function mount(){
  $("citySave").addEventListener("click",()=>{const ok=persist(city);if(ok)lastPersistTick=city.tick;$("cityToast").textContent=ok?"شهر با موفقیت ذخیره شد.":"ذخیره‌سازی در این مرورگر در دسترس نیست.";toastFrames=120;draw()});
  $("cityReset").addEventListener("click",()=>{if(!confirm("شهر فعلی با یک شهر تازه جایگزین شود؟"))return;const fresh=createInitialCity((city.seed+7919)>>>0);Object.keys(city).forEach(k=>delete city[k]);Object.assign(city,fresh);persist(city);draw()});
  $("cityHelp").addEventListener("click",()=>$("cityHelpPanel").classList.toggle("hidden"));$("cityCloseHelp").addEventListener("click",()=>$("cityHelpPanel").classList.add("hidden"));
+ $("cityBudget").addEventListener("click",()=>{$("cityBudgetPanel").classList.remove("hidden");updateBudgetPanel()});
+ $("cityCloseBudget").addEventListener("click",()=>$("cityBudgetPanel").classList.add("hidden"));
+ for(const sector of Object.keys(CITY_DEFAULT_TAX_RATES)){
+  const slider=$("cityTax"+sector[0].toUpperCase()+sector.slice(1));
+  slider.addEventListener("input",()=>{
+   const result=setCityTaxRate(city,sector,Number(slider.value));
+   if(result.ok){persist(city);updateBudgetPanel()}
+  });
+ }
  canvas.addEventListener("pointerdown",e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});try{canvas.setPointerCapture?.(e.pointerId)}catch{}if(pointers.size===1){gesture={mode:"pan",id:e.pointerId,cx:cam.x,cy:cam.y,moved:false}}else if(pointers.size===2){const pts=[...pointers.values()],dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y,distance=Math.max(1,Math.hypot(dx,dy)),midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;gesture={mode:"pinch",distance,zoom:cam.zoom,worldX:(midX-view.w/2-cam.x)/cam.zoom,worldY:(midY-view.h*.23-cam.y)/cam.zoom,moved:true}}});
  canvas.addEventListener("pointermove",e=>{const point=pointers.get(e.pointerId);if(!point)return;point.x=e.clientX;point.y=e.clientY;if(pointers.size>=2&&gesture?.mode==="pinch"){const pts=[...pointers.values()].slice(0,2),dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y,distance=Math.max(1,Math.hypot(dx,dy)),midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;cam.zoom=Math.max(.42,Math.min(1.5,gesture.zoom*distance/gesture.distance));cam.x=midX-view.w/2-gesture.worldX*cam.zoom;cam.y=midY-view.h*.23-gesture.worldY*cam.zoom;draw();return}if(pointers.size===1&&gesture?.mode==="pan"){const dx=point.x-point.startX,dy=point.y-point.startY;if(Math.hypot(dx,dy)>5)gesture.moved=true;cam.x=gesture.cx+dx;cam.y=gesture.cy+dy;if(gesture.moved){canvas.style.cursor="grabbing";draw()}}});
  const finishPointer=e=>{if(!pointers.has(e.pointerId))return;const point=pointers.get(e.pointerId),wasPinching=gesture?.mode==="pinch";if(!wasPinching&&pointers.size===1&&gesture?.mode==="pan"&&!gesture.moved&&Math.hypot(e.clientX-point.startX,e.clientY-point.startY)<=5){const p=tileAt(e.clientX,e.clientY);apply(p.x,p.y)}pointers.delete(e.pointerId);if(pointers.size===1){const [id,remaining]=[...pointers.entries()][0];gesture={mode:"pan",id,cx:cam.x,cy:cam.y,startX:remaining.x,startY:remaining.y,moved:wasPinching||Boolean(gesture?.moved)}}else if(pointers.size===0)gesture=null;canvas.style.cursor=tool==="select"?"grab":"crosshair"};
  canvas.addEventListener("pointerup",finishPointer);canvas.addEventListener("pointercancel",finishPointer);canvas.addEventListener("wheel",e=>{e.preventDefault();cam.zoom=Math.max(.42,Math.min(1.5,cam.zoom*(e.deltaY<0?1.08:.92)));draw()},{passive:false});
  addEventListener("resize",()=>{resize();threeRenderer?.resize();draw()});addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
- resize();import("./city-three-renderer.js").then(({createCityThreeRenderer})=>createCityThreeRenderer(canvas)).then(renderer=>{threeRenderer=renderer;window.MshinCity3DStats=renderer.getStats();window.MshinCity3DReady=true;draw()}).catch(error=>{window.MshinCity3DError=String(error);console.error("3D city renderer failed to load",error)});window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){if(threeRenderer)return threeRenderer.screenForTile(x,y);const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t)};
+ resize();import("./city-three-renderer.js").then(({createCityThreeRenderer})=>createCityThreeRenderer(canvas)).then(renderer=>{threeRenderer=renderer;window.MshinCity3DStats=renderer.getStats();window.MshinCity3DReady=true;draw()}).catch(error=>{window.MshinCity3DError=String(error);console.error("3D city renderer failed to load",error)});window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){if(threeRenderer)return threeRenderer.screenForTile(x,y);const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t),setTaxRate:(sector,rate)=>{const result=setCityTaxRate(city,sector,rate);if(result.ok){persist(city);draw()}return result},get economy(){return computeCityEconomy(city,computeCityServices(city))}};
  document.documentElement.dataset.cityReady="true";
  let lastRender=0;
  function frame(now){if(document.hidden){raf=0;return}const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}}if(city.tick-lastPersistTick>=6){if(persist(city))lastPersistTick=city.tick}if(now-lastRender>=33){draw();lastRender=now}raf=requestAnimationFrame(frame)}
