@@ -16,6 +16,58 @@
 <div class="cityToast" id="cityToast" role="status" aria-live="polite">به دره سبز خوش آمدی؛ شهر در حال زندگی است.</div></div>
 <section class="cityHelpPanel hidden" id="cityHelpPanel" role="dialog" aria-modal="true" aria-labelledby="cityHelpTitle"><h2 id="cityHelpTitle">راهنمای شهرسازی</h2><p>با کشیدن انگشت یا ماوس، نقشه را جابه‌جا کن. با چرخ ماوس یا دو انگشت بزرگ‌نمایی کن. ابزار خیابان را انتخاب کن و روی زمین خالی بزن؛ ساختمان‌ها فقط در قطعات متصل به خیابان ساخته می‌شوند. زون‌های مسکونی، تجاری، صنعتی، اداری و تفریحی را مشخص کن؛ شهر بر اساس تقاضا به‌تدریج آن‌ها را توسعه می‌دهد.</p><p>شهروندان حرکت می‌کنند، خودروها در خیابان‌ها رفت‌وآمد دارند و خزانه با درآمد و هزینه خدمات تغییر می‌کند. نیروگاه، آب، فاضلاب، پسماند، پلیس، آتش‌نشانی، درمانگاه و مدرسه بساز تا پوشش خدمات شهر افزایش یابد. سرعت زمان را از پایین صفحه تنظیم کن. ذخیره شهر روی همین دستگاه نگهداری می‌شود.</p><button id="cityCloseHelp" type="button">متوجه شدم</button></section>
 <script>
-(()=>{let entered=false;window.__mshinCityEntryDebug={attempts:0,entered:false,fullscreenRequested:false,lockRequested:false};window.__mshinEnterCityLandscape=async function(){window.__mshinCityEntryDebug.attempts++;if(entered)return;entered=true;window.__mshinCityEntryDebug.entered=true;const requests=[];try{const root=document.documentElement;if(!document.fullscreenElement&&typeof root.requestFullscreen==="function"){window.__mshinCityEntryDebug.fullscreenRequested=true;requests.push(Promise.resolve(root.requestFullscreen.call(root)))}}catch(error){window.__mshinCityEntryDebug.fullscreenError=String(error)}try{const orientation=window.screen?.orientation;if(typeof orientation?.lock==="function"){window.__mshinCityEntryDebug.lockRequested=true;requests.push(Promise.resolve(orientation.lock.call(orientation,"landscape")))}}catch(error){window.__mshinCityEntryDebug.lockError=String(error)}await Promise.allSettled(requests);document.getElementById("cityOrientationGate")?.classList.toggle("ready",innerWidth>innerHeight)};addEventListener("orientationchange",()=>document.getElementById("cityOrientationGate")?.classList.toggle("ready",innerWidth>innerHeight));addEventListener("resize",()=>document.getElementById("cityOrientationGate")?.classList.toggle("ready",innerWidth>innerHeight));})();
-</script><script type="module" src="./src/city/city-view.js"></script><script>if("serviceWorker"in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}))}</script>
+(()=> {
+ const gate=document.getElementById("cityOrientationGate");
+ const button=document.getElementById("cityEnterLandscape");
+ const debug=window.__mshinCityEntryDebug={attempts:0,entered:false,fullscreenRequested:false,lockRequested:false,fullscreenGranted:false,lockGranted:false};
+ let inFlight=false,entered=false;
+ const updateLayout=()=>{
+   const landscape=window.matchMedia("(orientation: landscape)").matches||innerWidth>innerHeight;
+   gate?.classList.toggle("ready",landscape);
+   document.documentElement.dataset.cityOrientation=landscape?"landscape":"portrait";
+ };
+ window.__mshinEnterCityLandscape=async function(){
+   debug.attempts++;
+   if(inFlight||entered)return;
+   inFlight=true;
+   let fullscreenOk=!!document.fullscreenElement;
+   try{
+     const root=document.documentElement;
+     if(!fullscreenOk&&typeof root.requestFullscreen==="function"){
+       debug.fullscreenRequested=true;
+       await root.requestFullscreen({navigationUI:"hide"});
+       fullscreenOk=true;
+       debug.fullscreenGranted=true;
+     }
+   }catch(error){debug.fullscreenError=String(error)}
+   if(fullscreenOk){
+     try{
+       const orientation=screen.orientation;
+       if(typeof orientation?.lock==="function"){
+         debug.lockRequested=true;
+         await orientation.lock("landscape");
+         debug.lockGranted=true;
+       }
+     }catch(error){debug.lockError=String(error)}
+   }
+   entered=fullscreenOk;
+   debug.entered=entered;
+   inFlight=false;
+   updateLayout();
+   if(!fullscreenOk&&button){
+     button.textContent="برای ورود تمام‌صفحه دوباره لمس کن";
+     gate?.classList.remove("ready");
+   }
+ };
+ // Fullscreen requires a trusted user gesture in modern mobile browsers.
+ // Try early where permitted, then retry on the first real city interaction.
+ const tryEarly=()=>window.__mshinEnterCityLandscape().catch(()=>{});
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",tryEarly,{once:true});else tryEarly();
+ document.addEventListener("pointerdown",()=>window.__mshinEnterCityLandscape(),{capture:true,once:true});
+ addEventListener("orientationchange",updateLayout);
+ addEventListener("resize",updateLayout);
+ document.addEventListener("fullscreenchange",updateLayout);
+ updateLayout();
+})();
+</script>><script type="module" src="./src/city/city-view.js"></script><script>if("serviceWorker"in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}))}</script>
 </body></html>
