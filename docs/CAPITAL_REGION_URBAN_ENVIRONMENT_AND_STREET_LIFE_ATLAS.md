@@ -196,3 +196,8 @@ Utility/service overlays and physical asset families are specified in [Capital R
 ## Tourism public-realm and visual integration
 
 The tourism destination model is specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Parks, landmarks, signage, visitor characters, hotel exteriors and event staging must have clear decorative versus operational roles. A decorative asset cannot generate visitors, demand or revenue. Runtime visual assets require editable specialist-tool/plugin deliverables, mobile optimization, explicit commercial-use license, provenance and content hash. This reference approves no new asset or attraction ID.
+
+
+## Day/night, seasons and weather visual integration
+
+The environmental presentation and causal-state boundary is specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Sky, lighting, rain, snow, fog, wet surfaces, foliage and seasonal variants must reflect authoritative state or be explicitly decorative-only. Professional editable assets/shaders via specialist tools/plugins, mobile optimization, explicit commercial license, provenance and hashes remain mandatory. Visual changes cannot grant unmodeled gameplay or ecological scores.
