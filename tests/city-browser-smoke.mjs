@@ -84,6 +84,29 @@ try{
  assert.equal(pedestrianAcceptance.rendered,pedestrianAcceptance.agents,"every active citizen agent must be rendered in the 3D city");
  assert.equal(pedestrianAcceptance.onRoad,true,"pedestrian route nodes must remain on connected road tiles");
  assert.ok(pedestrianAcceptance.drawCalls<80,"instanced pedestrians must preserve the mobile draw-call budget");
+ await page.locator("#cityBudget").click();
+ const budgetLayout=await page.evaluate(()=>{
+  const panel=document.querySelector("#cityBudgetPanel"),r=panel.getBoundingClientRect();
+  return{display:getComputedStyle(panel).display,left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight,
+   sliders:[...panel.querySelectorAll('input[type="range"]')].map(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height}))};
+ });
+ assert.equal(budgetLayout.display,"grid","budget controls must open as a styled dialog");
+ assert.ok(budgetLayout.left>=0&&budgetLayout.top>=0&&budgetLayout.right<=budgetLayout.width&&budgetLayout.bottom<=budgetLayout.height,"budget dialog must fit inside the landscape mobile viewport");
+ assert.equal(budgetLayout.sliders.length,3,"all three tax sectors must be adjustable");
+ assert.ok(budgetLayout.sliders.every(slider=>slider.width>=180&&slider.height>=38),"tax sliders must remain usable touch targets on landscape phones");
+ const baselineTax=await page.evaluate(()=>window.MshinCityDebug.economy.taxRevenue);
+ await page.locator("#cityTaxResidential").evaluate(el=>{el.value="14";el.dispatchEvent(new Event("input",{bubbles:true}))});
+ const taxPersistence=await page.evaluate(()=>({rate:window.MshinCityDebug.city.taxRates.residential,saved:JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.taxRates?.residential}));
+ assert.equal(taxPersistence.rate,14,"residential tax slider must update the simulation policy");
+ assert.equal(taxPersistence.saved,14,"tax policy must persist immediately to the local city save");
+ await page.evaluate(()=>window.MshinCityDebug.step());
+ assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.stats.taxRevenue>0&&window.MshinCityDebug.economy.taxRevenue>0),"tax changes must feed the live city economy");
+ await page.locator("#cityBudgetDone").click();
+ assert.ok(await page.locator("#cityBudgetPanel").evaluate(el=>el.classList.contains("hidden")),"budget dialog close button must restore the city view");
+ await page.locator("#cityBudget").click();
+ await page.keyboard.press("Escape");
+ assert.ok(await page.locator("#cityBudgetPanel").evaluate(el=>el.classList.contains("hidden")),"Escape must close the budget dialog on mobile browsers");
+
  for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,14]]){await page.locator('[data-city-tool="'+type+'"]').click();const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
  await page.evaluate(()=>window.MshinCityDebug.step());
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
