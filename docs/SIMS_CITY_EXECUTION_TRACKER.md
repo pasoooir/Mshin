@@ -1,9 +1,19 @@
 # Sims City — Execution Tracker
 
+> **Current-state authority (2026-11-03):** This file preserves the phase-zero audit and design baseline as a historical record. The live execution status and acceptance decisions are maintained in [docs/PROJECT_EXECUTION_TRACKER.md](./PROJECT_EXECUTION_TRACKER.md), and the active mission/priority order is maintained in [docs/REPOSITORY_ENHANCEMENT_ROADMAP.md](./REPOSITORY_ENHANCEMENT_ROADMAP.md). Historical branch names, PR states and percentages below must not be interpreted as today's repository status.
+
+## Current mainline implementation snapshot — 2026-11-03
+
+- **Main baseline:** `0808fd82bd3a353412477289f009433c1fe539de`.
+- **City road traffic:** merged in PR #166. Deterministic vehicles follow connected road tiles and render through bounded 3D instancing. Exact-head validation run [41593851265](https://github.com/pasoooir/Mshin/actions/runs/41593851265) and mobile browser run [41593851286](https://github.com/pasoooir/Mshin/actions/runs/41593851286) succeeded.
+- **Independent mobile controls:** merged in PR #167. Four-pointer steering/gas/brake/nitro overlap, pointer cancellation, lost capture, orientation change, pause and retry are covered by mobile smoke. Exact-head validation run [41594645843](https://github.com/pasoooir/Mshin/actions/runs/41594645843) and mobile browser run [41594645846](https://github.com/pasoooir/Mshin/actions/runs/41594645846) succeeded.
+- **Tenfold racing circuit:** active implementation work; do not mark accepted until the exact final commit passes validation, mobile gameplay smoke and deployment.
+- **Offline city traffic:** the new city traffic module must be included in the service-worker app shell before offline acceptance is claimed.
+- **Cocos Creator 3.8.6:** Editor import, startup scene and Editor-generated Web build remain unverified and are still an external P3 acceptance gate.
+
 **Repository:** `pasoooir/Mshin`  
 **Baseline:** Phase-zero audit and initial design package, 2026-11-02  
-**Documentation branch:** `docs/sims-city-phase-zero-audit`  
-**Documentation PR:** [#135](https://github.com/pasoooir/Mshin/pull/135)  
+**Documentation branch:** `docs/sims-city-design-system-rebased`  
 **Rule:** only verified runtime features with passing acceptance evidence may be marked 🟢. Documents, commits, file creation and a passing workflow alone do not count as gameplay completion.
 
 ## Status legend
@@ -24,7 +34,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|
 | SC-AUD-001 | Inspect repository, package, source tree and engine declarations | Technical lead | None | P0 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | GitHub API tree (206 entries), package.json, Cocos setup docs | 86d52be | #135 |
 | SC-AUD-002 | Audit browser racing runtime and reusable vehicle systems | Technical lead | SC-AUD-001 | P0 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Source inventory and existing vertical-slice documentation | 86d52be | #135 |
-| SC-AUD-003 | Verify Cocos Creator scene/build readiness | Technical lead | SC-AUD-001 | P0 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Cocos 3.8.6 declared; assets/scenes contains only .gitkeep; no Editor build evidence | 86d52be | #135 |
+| SC-AUD-003 | Audit Cocos Creator scene/build readiness and record the external Editor gate | Technical lead | SC-AUD-001 | P0 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Cocos 3.8.6 declared; assets/scenes contains only .gitkeep; no Editor build evidence | 86d52be | #135 |
 | SC-AUD-004 | Inspect open PRs and latest CI failure | Technical lead | SC-AUD-001 | P0 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | 20 open PRs; latest browser smoke failure at tests/browser-smoke.mjs:260, 5321.6ms draw stall | 86d52be | #135 |
 | SC-AUD-005 | Inventory current-session plugin/tool surfaces | Technical lead | None | P1 | 🟢 تکمیل‌شده و تأییدشده | 2026-11-02 | 2026-11-02 | Available namespaces/skills inspected; unavailable Meshy/Contour3D not assumed | 86d52be | #135 |
 
