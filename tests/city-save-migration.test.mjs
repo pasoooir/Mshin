@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave, migrateCitySave, createCitySaveBackup } from "../src/city/city-view.js";
@@ -83,4 +84,13 @@ test("current version-two saves normalize optional fields without changing core 
 
 test("backup export refuses invalid in-memory state", () => {
   assert.throws(()=>createCitySaveBackup({schemaVersion:99}),/valid city snapshot/);
+});
+
+
+test("offline app shell precaches every city simulation and persistence module", () => {
+  const serviceWorker=fs.readFileSync(new URL("../service-worker.js",import.meta.url),"utf8");
+  for(const modulePath of ["city-view.js","city-zoning.js","city-services.js","city-traffic.js","city-population.js","city-economy.js","city-save.js"]){
+    assert.ok(serviceWorker.includes("./src/city/"+modulePath),"offline app shell is missing "+modulePath);
+  }
+  assert.match(serviceWorker,/mshin-arcade-v63/,"city persistence release must advance the offline cache version");
 });
