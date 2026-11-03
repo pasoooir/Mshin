@@ -423,6 +423,48 @@ function mount(){
    if(result.ok){persist(city);updateBudgetPanel()}
   });
  }
+ const storagePanel=$("cityStoragePanel"),storageTrigger=$("cityBackup"),importFile=$("cityImportFile");
+ function closeCityStorage(){
+  if(storagePanel.classList.contains("hidden"))return;
+  storagePanel.classList.add("hidden");
+  storageTrigger?.focus();
+ }
+ storageTrigger.addEventListener("click",()=>{
+  storagePanel.classList.remove("hidden");
+  $("cityCloseStorage").focus();
+ });
+ $("cityCloseStorage").addEventListener("click",closeCityStorage);
+ $("cityExportBackup").addEventListener("click",()=>{
+  try{
+   const payload=createCitySaveBackup(city),blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+   const url=URL.createObjectURL(blob),link=document.createElement("a");
+   link.href=url;link.download="mshin-city-"+new Date().toISOString().slice(0,10)+".json";
+   document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+   $("cityToast").textContent="نسخه پشتیبان شهر دانلود شد.";toastFrames=120;draw();
+  }catch(error){$("cityToast").textContent="ساخت نسخه پشتیبان ناموفق بود: "+String(error.message||error);toastFrames=150;draw()}
+ });
+ $("cityImportBackup").addEventListener("click",()=>importFile.click());
+ importFile.addEventListener("change",async event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  try{
+   if(file.size>2_000_000)throw new Error("حجم فایل پشتیبان بیش از ۲ مگابایت است");
+   const payload=JSON.parse(await file.text()),restored=migrateCitySave(payload);
+   if(!restored||!isValidCitySave(restored))throw new Error("ساختار فایل پشتیبان معتبر نیست");
+   if(!confirm("شهر فعلی با نسخه پشتیبان انتخاب‌شده جایگزین شود؟"))return;
+   if(!persist(restored))throw new Error("ذخیره نسخه بازیابی‌شده در این مرورگر ممکن نیست");
+   Object.keys(city).forEach(key=>delete city[key]);Object.assign(city,restored);
+   lastPersistTick=city.tick;closeCityStorage();$("cityToast").textContent="شهر از نسخه پشتیبان بازیابی شد.";toastFrames=150;draw();
+  }catch(error){$("cityToast").textContent="بازیابی انجام نشد: "+String(error.message||error);toastFrames=150;draw()}
+  finally{importFile.value=""}
+ });
+ storagePanel.addEventListener("keydown",event=>{
+  if(event.key==="Escape"){event.preventDefault();event.stopPropagation();closeCityStorage();return}
+  if(event.key!=="Tab")return;
+  const focusable=[...storagePanel.querySelectorAll('button:not([disabled]),input:not([disabled]),[href],[tabindex]:not([tabindex="-1"])')].filter(element=>element.getClientRects().length);
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+ });
  canvas.addEventListener("pointerdown",e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});try{canvas.setPointerCapture?.(e.pointerId)}catch{}if(pointers.size===1){gesture={mode:"pan",id:e.pointerId,cx:cam.x,cy:cam.y,moved:false}}else if(pointers.size===2){const pts=[...pointers.values()],dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y,distance=Math.max(1,Math.hypot(dx,dy)),midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;gesture={mode:"pinch",distance,zoom:cam.zoom,worldX:(midX-view.w/2-cam.x)/cam.zoom,worldY:(midY-view.h*.23-cam.y)/cam.zoom,moved:true}}});
  canvas.addEventListener("pointermove",e=>{const point=pointers.get(e.pointerId);if(!point)return;point.x=e.clientX;point.y=e.clientY;if(pointers.size>=2&&gesture?.mode==="pinch"){const pts=[...pointers.values()].slice(0,2),dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y,distance=Math.max(1,Math.hypot(dx,dy)),midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;cam.zoom=Math.max(.42,Math.min(1.5,gesture.zoom*distance/gesture.distance));cam.x=midX-view.w/2-gesture.worldX*cam.zoom;cam.y=midY-view.h*.23-gesture.worldY*cam.zoom;draw();return}if(pointers.size===1&&gesture?.mode==="pan"){const dx=point.x-point.startX,dy=point.y-point.startY;if(Math.hypot(dx,dy)>5)gesture.moved=true;cam.x=gesture.cx+dx;cam.y=gesture.cy+dy;if(gesture.moved){canvas.style.cursor="grabbing";draw()}}});
  const finishPointer=e=>{if(!pointers.has(e.pointerId))return;const point=pointers.get(e.pointerId),wasPinching=gesture?.mode==="pinch";if(!wasPinching&&pointers.size===1&&gesture?.mode==="pan"&&!gesture.moved&&Math.hypot(e.clientX-point.startX,e.clientY-point.startY)<=5){const p=tileAt(e.clientX,e.clientY);apply(p.x,p.y)}pointers.delete(e.pointerId);if(pointers.size===1){const [id,remaining]=[...pointers.entries()][0];gesture={mode:"pan",id,cx:cam.x,cy:cam.y,startX:remaining.x,startY:remaining.y,moved:wasPinching||Boolean(gesture?.moved)}}else if(pointers.size===0)gesture=null;canvas.style.cursor=tool==="select"?"grab":"crosshair"};
