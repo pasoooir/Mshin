@@ -81,3 +81,14 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
  .cityTaxControls{gap:9px;margin:12px 0}.cityTaxControl{padding:9px 11px}.cityTaxControl input{min-height:40px}
  .cityBudgetBreakdown{grid-template-columns:1fr;gap:6px}.cityBudgetBreakdown p{font-size:11px}
 }
+
+/* Wide, short landscape phones need the same generous budget slider hit area. */
+@media (max-height:520px) and (min-width:761px) {
+ .cityBudgetPanel{width:min(500px,88vw);max-height:88dvh;padding:15px}
+ .cityBudgetHeader h2{font-size:18px}.cityBudgetHeader p{font-size:11px;margin-bottom:10px}
+ .cityBudgetTotals>div{padding:7px}.cityBudgetTotals b{font-size:14px}
+ .cityTaxControls{gap:8px;margin:10px 0}.cityTaxControl{padding:8px 11px}
+ .cityTaxControl input{display:block;width:100%;height:40px;min-height:40px}
+ .cityBudgetBreakdown{gap:6px}.cityBudgetBreakdown p{font-size:9px;padding:7px}
+ .cityBudgetClose{min-height:44px;margin-top:10px}
+}
