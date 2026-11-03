@@ -59,15 +59,14 @@ export class CityBuildingProgression extends Component {
   /** Starts a new construction cycle without changing the building level. */
   beginConstruction(durationSeconds = this.constructionDuration): void {
     const duration = Number.isFinite(durationSeconds) ? Math.max(0, durationSeconds) : 0;
+    const currentLevel = this.progression?.level ?? 1;
     this.constructionDuration = duration;
     this.progression = createCityBuildingProgression({
       constructionDuration: duration,
       maxLevel: this.maxLevel,
       upgradeDuration: this.upgradeDuration
     });
-    if (this.progression) {
-      this.progression.level = this.level;
-    }
+    this.progression.level = Math.min(Math.max(1, currentLevel), this.progression.maxLevel);
   }
 
   /** Starts the next upgrade cycle, or returns false if the building cannot upgrade. */
