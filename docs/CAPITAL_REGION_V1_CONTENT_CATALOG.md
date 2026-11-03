@@ -243,3 +243,10 @@ The detailed conceptual architecture for electricity, potable water, wastewater,
 The proposed education, research, residential occupancy and city wellbeing architecture is documented in [Capital Region Education, Research, Housing Growth & City Wellbeing Atlas](CAPITAL_REGION_EDUCATION_RESEARCH_HOUSING_AND_CITY_WELLBEING_ATLAS.md).
 
 This reference does not add operational IDs or change V1 statuses. Schools, vocational institutions, universities, research facilities, new housing tiers, migration/housing-market mechanics and new city-score dimensions remain proposed until individually approved in this catalog. Existing residence/workplace entries and current rules remain authoritative. A placed home increases potential capacity only; it does not create residents. No score bonus is granted for building count. Numeric capacities, migration rates, score weights and targets remain TBD.
+
+
+## Citizen needs, satisfaction and city feedback — design reference
+
+The proposed causal model for resident needs, demand, effective/accessibile capacity, service delivery, unmet demand, satisfaction indicators and the city scorecard is documented in [Capital Region Citizen Needs, Satisfaction & City Feedback System](CAPITAL_REGION_CITIZEN_NEEDS_SATISFACTION_AND_CITY_FEEDBACK_SPEC.md).
+
+This reference adds no operational IDs and changes no V1 status. It does not approve migration feedback, new service domains, satisfaction formulas or score weights. Building count, decorative density and visual effects grant no direct score. Domains without authoritative modeled data remain Not modeled and are excluded transparently. Existing catalog entries and statuses remain authoritative; all numeric values remain TBD.
