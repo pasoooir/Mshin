@@ -70,3 +70,14 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
  .citySpeed button{padding:6px 8px;min-height:36px;font-size:10px}
  .cityToast{bottom:calc(env(safe-area-inset-bottom) + 116px);font-size:10px}
 }
+
+
+@media(max-width:760px){
+ .cityActions{max-width:calc(100vw - 150px);flex-wrap:wrap;justify-content:flex-end;gap:4px}
+ .cityAction{min-height:40px;padding:6px 8px;font-size:10px}
+ .cityBudgetPanel{width:min(460px,94vw);max-height:82dvh;padding:15px;border-radius:18px}
+ .cityBudgetHeader h2{font-size:18px}.cityBudgetHeader p{font-size:11px;margin-bottom:11px}.cityBudgetHeader button{width:44px;height:44px}
+ .cityBudgetTotals{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.cityBudgetTotals>div{padding:8px}.cityBudgetTotals b{font-size:14px}
+ .cityTaxControls{gap:9px;margin:12px 0}.cityTaxControl{padding:9px 11px}.cityTaxControl input{min-height:40px}
+ .cityBudgetBreakdown{grid-template-columns:1fr;gap:6px}.cityBudgetBreakdown p{font-size:11px}
+}
