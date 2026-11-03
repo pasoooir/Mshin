@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {createInitialCity,stepCity,placeCityItem,isValidCitySave,projectCityTile} from "../src/city/city-view.js";
+import {createInitialCity,stepCity,placeCityItem,isValidCitySave,normalizeCitySave,projectCityTile} from "../src/city/city-view.js";
 test("new city starts as an empty, deterministic, fully gridded world",()=>{const a=createInitialCity(42),b=createInitialCity(42);assert.equal(a.name,"دره سبز");assert.equal(a.grid.length,32);assert.equal(a.grid[15][15],"road");assert.equal(a.buildings.length,0);assert.equal(a.population,0);assert.equal(a.trees.length,0);assert.equal(a.citizens.length,0);assert.equal(a.traffic.length,0);assert.equal(a.animals.length,0);assert.ok(a.grid.flat().filter(t=>t==="road").length>=300);assert.equal(a.population,b.population);assert.deepEqual(a.grid,b.grid);assert.equal(isValidCitySave(a),true)});
 test("simulation ticks advance time, economy, citizens and traffic",()=>{const c=createInitialCity(7),money=c.treasury;stepCity(c,1);assert.equal(c.tick,1);assert.equal(c.minuteOfDay,505);assert.equal(c.traffic.length,0);assert.equal(c.animals.length,0);assert.equal(c.treasury,money);assert.equal(c.stats.income,0);assert.equal(c.stats.jobs,0)});
 test("roads and buildings enforce budget and street access",()=>{const c=createInitialCity(99);assert.equal(placeCityItem(c,17,14,"road").ok,true);assert.equal(c.grid[14][17],"road");assert.equal(placeCityItem(c,17,13,"home").ok,true);assert.equal(c.grid[13][17],"building");assert.ok(c.population>=12);const blocked=placeCityItem(c,2,2,"shop");assert.equal(blocked.ok,false);assert.match(blocked.reason,/دسترسی/);assert.equal(placeCityItem(c,17,13,"shop").ok,false)});
@@ -38,4 +38,76 @@ test("traffic remains bounded and does not spawn overlapping vehicles",()=>{
   assert.ok(Math.hypot(city.traffic[i].x-city.traffic[j].x,city.traffic[i].y-city.traffic[j].y)>0.15,
    "traffic vehicles must not occupy the same point");
  }
+});
+
+test("save validation rejects malformed entities and grid/entity mismatches",()=>{
+ const city=createInitialCity(414);
+ const badBuilding=structuredClone(city);
+ badBuilding.buildings.push({id:1,type:"home",x:17,y:13,level:1,age:0,residents:12});
+ assert.equal(isValidCitySave(badBuilding),false,"a building record cannot exist on a grass tile");
+ const validBuilding=structuredClone(city);
+ validBuilding.grid[13][17]="building";
+ validBuilding.buildings.push({id:1,type:"home",x:17,y:13,level:1,age:0,residents:12});
+ validBuilding.nextBuildingId=2;
+ assert.equal(isValidCitySave(validBuilding),true);
+ const brokenGrid=structuredClone(validBuilding);
+ brokenGrid.grid[13]=[];
+ assert.equal(isValidCitySave(brokenGrid),false);
+ const brokenStats=structuredClone(city);
+ brokenStats.stats.income=Number.NaN;
+ assert.equal(isValidCitySave(brokenStats),false);
+});
+test("save validation checks zone and traffic route consistency",()=>{
+ const zoneCity=createInitialCity(515);
+ zoneCity.grid[13][17]="zone-residential";
+ zoneCity.zones=[{x:17,y:13,type:"residential",createdAt:0}];
+ assert.equal(isValidCitySave(zoneCity),true);
+ const trafficCity=createInitialCity(616);
+ trafficCity.traffic=[{id:1,x:7,y:7,previousX:null,previousY:null,targetX:8,targetY:7,headingX:1,headingY:0,heading:0,routeStep:0,speed:.4,color:"#f2bd4d"}];
+ trafficCity.nextTrafficId=2;
+ assert.equal(isValidCitySave(trafficCity),true);
+ const offRoad=structuredClone(trafficCity);
+ offRoad.traffic[0].targetX=10;
+ offRoad.traffic[0].targetY=10;
+ assert.equal(isValidCitySave(offRoad),false,"traffic targets must remain on the road network");
+ const missingZone=structuredClone(zoneCity);
+ missingZone.zones=[];
+ assert.equal(isValidCitySave(missingZone),false,"zoned grid cells must have matching zone records");
+});
+test("legacy version-two saves normalize optional fields without losing valid city data",()=>{
+ const legacy=createInitialCity(717);
+ legacy.grid[13][17]="building";
+ legacy.buildings=[{id:1,type:"home",x:17,y:13,residents:12}];
+ delete legacy.zones;
+ delete legacy.animals;
+ delete legacy.nextTrafficId;
+ delete legacy.nextBuildingId;
+ delete legacy.stats;
+ delete legacy.minuteOfDay;
+ delete legacy.happiness;
+ assert.equal(isValidCitySave(legacy),true);
+ const normalized=normalizeCitySave(legacy);
+ assert.equal(normalized.buildings[0].level,1);
+ assert.equal(normalized.buildings[0].age,0);
+ assert.equal(normalized.nextBuildingId,2);
+ assert.equal(normalized.nextTrafficId,1);
+ assert.deepEqual(normalized.zones,[]);
+ assert.deepEqual(normalized.animals,[]);
+ assert.equal(normalized.minuteOfDay,495);
+ assert.equal(normalized.happiness,100);
+ assert.deepEqual(normalized.stats,{income:0,expenses:0,jobs:0,traffic:0});
+ const legacyZone=createInitialCity(919);legacyZone.grid[13][17]="zone-residential";delete legacyZone.zones;
+ assert.equal(isValidCitySave(legacyZone),true,"legacy v2 saves without zone records must preserve zoning tiles");
+ assert.deepEqual(normalizeCitySave(legacyZone).zones,[{x:17,y:13,type:"residential",createdAt:0}]);
+});
+
+test("road demolition retires stranded traffic before the next save",()=>{
+ const city=createInitialCity(818);
+ for(let i=0;i<8;i++)stepCity(city);
+ assert.equal(city.traffic.length,1);
+ const stranded=city.traffic[0],x=Math.round(stranded.x),y=Math.round(stranded.y);
+ city.grid[y][x]="grass";
+ stepCity(city);
+ assert.equal(city.traffic.some(vehicle=>vehicle.id===stranded.id),false);
+ assert.equal(isValidCitySave(city),true);
 });

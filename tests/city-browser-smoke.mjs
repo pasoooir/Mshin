@@ -116,7 +116,23 @@ try{
   assert.equal(landscape.width,landscape.viewport,"landscape city must not overflow horizontally");
   fs.mkdirSync("artifacts",{recursive:true});
   await landscapePage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
+  await landscapePage.evaluate(()=>localStorage.setItem("mshin-city-save-v2",JSON.stringify({schemaVersion:2,cityId:"corrupt",name:"broken",seed:1,tick:0,treasury:0,population:0,grid:[[]]})));
+  await landscapePage.reload({waitUntil:"domcontentloaded"});
+  await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  const recovery=await landscapePage.evaluate(()=>({
+    gridRows:window.MshinCityDebug.city.grid.length,
+    gridColumns:window.MshinCityDebug.city.grid.every(row=>row.length===32),
+    buildings:window.MshinCityDebug.city.buildings.length,
+    zones:window.MshinCityDebug.city.zones.length,
+    traffic:window.MshinCityDebug.city.traffic.length,
+    saved:window.MshinCityDebug.save()
+  }));
+  assert.equal(recovery.gridRows,32,"malformed local saves must recover to a complete city grid");
+  assert.equal(recovery.gridColumns,true,"save recovery must restore all 32 columns");
+  assert.equal(recovery.buildings,0,"malformed save recovery must not retain invalid building records");
+  assert.equal(recovery.zones,0,"malformed save recovery must not retain invalid zones");
+  assert.equal(recovery.traffic,0,"malformed save recovery must not retain invalid traffic");
  }finally{await landscapePage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
- process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, demolition persistence, autosave and live simulation.\\n");
+ process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, deep save validation/recovery, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}

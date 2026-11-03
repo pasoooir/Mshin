@@ -148,6 +148,8 @@ export function stepCityTraffic(city, seconds = 1) {
     || !Number.isFinite(seconds) || seconds <= 0) {
     throw new TypeError("A valid city traffic state and positive step are required");
   }
+  // Road demolition may strand a car mid-segment; retire it before it can be saved off-road.
+  city.traffic = city.traffic.filter(vehicle => isRoad(city.grid, Math.round(vehicle.x), Math.round(vehicle.y)));
   spawnVehicle(city);
   for (const vehicle of city.traffic) {
     if (!Number.isFinite(vehicle.speed) || vehicle.speed <= 0) vehicle.speed = 0.4;
