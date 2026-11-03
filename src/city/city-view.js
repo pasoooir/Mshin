@@ -25,7 +25,9 @@ export function stepCity(city,seconds=1){
  const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
  const economy=computeCityEconomy(city,infrastructure);
  const employment=computeCityEmployment(city);
- const commuting=computeCityCommuting(city,employment);
+ const commuting=(city.tick%6===1||!Number.isFinite(city.stats?.commuteCoverage))
+  ?computeCityCommuting(city,employment)
+  :{assignedWorkers:city.stats.commutingWorkers??0,commuteCoverage:city.stats.commuteCoverage??0,averageCommuteDistance:city.stats.averageCommuteDistance??0,unreachableWorkers:city.stats.unreachableWorkers??0};
  const residentServiceSatisfaction=computeCityResidentServiceSatisfaction(city);
  const occupiedResidents=homes.reduce((sum,home)=>sum+Math.max(0,Number(home.residents)||0),0);
  city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,commutingWorkers:commuting.assignedWorkers,commuteCoverage:commuting.commuteCoverage,averageCommuteDistance:commuting.averageCommuteDistance,unreachableWorkers:commuting.unreachableWorkers,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage,serviceDemandCoverage:infrastructure.demandCoverage,serviceCapacityUsage:infrastructure.capacityUsage,residentServiceSatisfaction};
