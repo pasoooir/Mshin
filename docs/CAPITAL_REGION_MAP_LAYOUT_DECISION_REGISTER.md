@@ -122,6 +122,32 @@ The road/access graph is separate from its rendered road mesh. The graph is also
 
 A visual crossing, road stripe, curb, lamp, road mesh or adjacency check does not create graph connectivity. Public transport, bridge, highway and other Deferred/Candidate assets remain governed by the V1 catalog and cannot be promoted here.
 
+### 7.1 Map-to-freight, inventory and economy handoff
+
+The map sheet must show the spatial interfaces needed by the approved starter logistics loop, but this register does not activate any trade, shipment, vehicle or economy feature. Operational IDs and statuses remain governed exclusively by the V1 catalog, item/recipe registry and fleet specification.
+
+| Decision key | Required definition | Required evidence | Current value | Status |
+|---|---|---|---|---|
+| FREIGHT-ORIGIN-DESTINATION | Exact approved producer, warehouse, workshop and consumer site references; origin/destination access anchors | Catalog/registry reference validation and map overlay | TBD | TBD |
+| FREIGHT-ROAD-COMPATIBILITY | Which approved vehicle classes may use each road edge and loading/access point | Fleet-to-edge compatibility matrix and route fixtures | TBD | TBD |
+| FREIGHT-LOAD-UNLOAD-ACCESS | Loading/unloading footprint, approach, stopping and destination access constraints | Vehicle envelope, building access and obstruction tests | TBD | TBD |
+| FREIGHT-SOURCE-RESERVATION | Source stock reservation and custody transition boundary | Item-ledger conservation and duplicate-dispatch tests | TBD | TBD |
+| FREIGHT-DESTINATION-CAPACITY | Destination storage/output capacity reservation and overflow behavior | Full-capacity, partial-delivery and blocked-output tests | TBD | TBD |
+| FREIGHT-SHIPMENT-RECOVERY | Route closure, cancellation, process death, return/recovery and cargo-loss policy | Deterministic reroute/recovery and save-resume fixtures | TBD | TBD |
+| WAREHOUSE-SITE-CAPACITY | Spatial placement/access of the exact approved warehouse entry and its capacity boundary | Catalog ID/status match, footprint and inventory capacity contract | TBD | TBD |
+| RECIPE-RESOURCE-SOURCE | Map deposits, if any, linked only to approved item/recipe producer and extraction rules | Registry ID/unit/recipe graph and bounded-reserve evidence | TBD | TBD |
+| ECONOMIC-LEDGER-LINK | Map-linked construction, operating, logistics and maintenance costs connected to approved ledger sources/sinks | Finance reconciliation scenarios; no unowned currency mutation | TBD | TBD |
+| WORKFORCE-ACCESS | Valid access relationship between approved workplaces, household cohorts and workforce travel abstraction | Approved workforce model and graph-cost fixtures | TBD | TBD |
+
+These rows must be reconciled against the canonical authorities:
+- CAPITAL_REGION_V1_CONTENT_CATALOG.md for building/facility IDs and statuses;
+- CAPITAL_REGION_V1_ITEM_RECIPE_REGISTRY.md for item IDs, units, recipes and inventory conservation;
+- VEHICLE_FLEET_FREIGHT_TRAFFIC_SPEC.md for vehicle classes, trip/dispatch, route compatibility and freight lifecycle;
+- POPULATION_WORKFORCE_MUNICIPAL_ECONOMY.md for cohort employment, household demand and municipal ledger;
+- CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md for order, custody, delivery and settlement boundaries.
+
+The starter logistics chain must not be inferred from a freight-terminal concept: LOG-FREIGHT-TERMINAL remains Candidate, VEH-HEAVY-TRUCK remains Candidate, and interregional commerce remains proposal-only. The catalog-approved LOG-WAREHOUSE-STARTER is V1-Required; TRADE-DEPOT is V1-Support. Vehicle class status remains exactly as recorded in the fleet specification; this register does not promote it. ETA is not arrival, dispatch is not delivery, and visual truck placement is not a stock transaction.
+
 ## 8. Starter composition and spatial relationships
 
 The spatial specification calls for these functional relationships, but the actual positions and dimensions are not selected here.
@@ -189,6 +215,6 @@ No approval is granted by filling this template. Each decision needs a separate 
 
 ## 12. Current non-decisions
 
-The following remain explicitly TBD: map dimensions, grid scale, orientation, natural feature, terrain/elevation/slope data, water clearance, resource types/locations/reserves, parcel count and IDs, starter parcel placement, district boundaries/IDs/ownership, road/access graph and revision, utility graph topology/revision, pedestrian graph scope/topology/revision, road classes/width/capacity/speed/cost, freight entry, expansion sequence/cost, utility reserve geometry, spatial schema version, save/offline migration behavior, camera projection, chunk size and device performance budgets.
+The following remain explicitly TBD: map dimensions, grid scale, orientation, natural feature, terrain/elevation/slope data, water clearance, resource types/locations/reserves, parcel count and IDs, starter parcel placement, district boundaries/IDs/ownership, road/access graph and revision, utility graph topology/revision, pedestrian graph scope/topology/revision, road classes/width/capacity/speed/cost, freight entry and road compatibility, freight origin/destination/access anchors, loading/unloading envelopes, source/destination reservations, custody and recovery policy, warehouse site/capacity mapping, resource-to-recipe extraction mapping, workforce access, economic ledger linkage, expansion sequence/cost, utility reserve geometry, spatial schema version, save/offline migration behavior, camera projection, chunk size and device performance budgets.
 
 **No implementation scope is authorized.** This register is complete only as a checklist/template; the Capital Region map itself remains unselected, uncalibrated and unapproved.
