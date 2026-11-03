@@ -137,3 +137,8 @@ The proposed tourism model is documented in [Capital Region Tourism, Visitors, A
 ## Environmental time and spatial integration
 
 The authoritative time, calendar, day/night and weather model is specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). All schedules and weather footprints must align with the same versioned simulation clock and spatial authority. A visual weather layer or nearby effect is not proof of an operational hazard, road condition or service disruption.
+
+
+## Emergency coverage and station access
+
+The route-based station catchment and emergency access model is specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Straight-line proximity is only a visual hint; coverage requires a valid route, current graph version, reachable incident access point and an available compatible crewed unit. Emergency vehicles must leave a real station access/bay and travel through the road graph; no teleportation is allowed.
