@@ -136,6 +136,8 @@ The map sheet must show the spatial interfaces needed by the approved starter lo
 | FREIGHT-SHIPMENT-RECOVERY | Route closure, cancellation, process death, return/recovery and cargo-loss policy | Deterministic reroute/recovery and save-resume fixtures | TBD | TBD |
 | WAREHOUSE-SITE-CAPACITY | Spatial placement/access of the exact approved warehouse entry and its capacity boundary | Catalog ID/status match, footprint and inventory capacity contract | TBD | TBD |
 | RECIPE-RESOURCE-SOURCE | Map deposits, if any, linked only to approved item/recipe producer and extraction rules | Registry ID/unit/recipe graph and bounded-reserve evidence | TBD | TBD |
+| REQUIRED-ITEM-PRODUCER-COVERAGE | Every V1-Required item has an approved V1-Required producer path to its Required consumer | Item/recipe status join; specifically resolve Required `MAT-CEMENT` with Candidate `REC-CEMENT-01` | TBD | TBD |
+| RAW-ITEM-OPERATING-SOURCE | Inputs behind `REC-RAW-METAL-01` and `REC-RAW-WOOD-01` are identified as owned finite/renewable sources or explicitly budgeted operating inputs | Versioned source/operating-input definitions, ownership, replenishment and conservation tests | TBD | TBD |
 | ECONOMIC-LEDGER-LINK | Map-linked construction, operating, logistics and maintenance costs connected to approved ledger sources/sinks | Finance reconciliation scenarios; no unowned currency mutation | TBD | TBD |
 | WORKFORCE-ACCESS | Valid access relationship between approved workplaces, household cohorts and workforce travel abstraction | Approved workforce model and graph-cost fixtures | TBD | TBD |
 
