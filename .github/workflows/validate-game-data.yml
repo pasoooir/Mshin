@@ -1,6 +1,6 @@
 name: Validate Mshin game data and portable TypeScript core
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 on:
   push:
