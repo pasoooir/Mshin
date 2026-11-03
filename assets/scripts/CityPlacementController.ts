@@ -9,7 +9,7 @@ import {
 const { ccclass, property } = _decorator;
 
 /**
- * Single-pointer touch placement controller for the native city scene.
+ * Occupancy-aware single-pointer touch placement controller for the native city scene.
  * Assign a camera, a building prefab and a world-space placement root.
  */
 @ccclass("MshinCityPlacementController")
