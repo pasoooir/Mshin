@@ -359,8 +359,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const pedestrianHeads = new THREE.InstancedMesh(pedestrianHeadGeometry, pedestrianHeadMaterial, 64);
   pedestrianBodies.castShadow = false;
   pedestrianBodies.receiveShadow = false;
+  pedestrianBodies.frustumCulled = false;
   pedestrianHeads.castShadow = false;
   pedestrianHeads.receiveShadow = false;
+  pedestrianHeads.frustumCulled = false;
   pedestrianGroup.add(pedestrianBodies, pedestrianHeads);
   const pedestrianDummy = new THREE.Object3D();
   const pedestrianPalette = ["#e9c56b", "#e7edf2", "#d98b75", "#8bc7b5", "#b69be8"];
