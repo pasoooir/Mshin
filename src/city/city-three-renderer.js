@@ -347,6 +347,49 @@ export async function createCityThreeRenderer(sourceCanvas) {
     trafficWindows.instanceMatrix.needsUpdate = true;
     if (trafficBodies.instanceColor) trafficBodies.instanceColor.needsUpdate = true;
   }
+
+  // Pedestrians are instanced in two batches; agent count never adds per-person draw calls.
+  const pedestrianGroup = new THREE.Group();
+  scene.add(pedestrianGroup);
+  const pedestrianBodyGeometry = new THREE.CylinderGeometry(0.12, 0.14, 0.42, 6);
+  const pedestrianHeadGeometry = new THREE.SphereGeometry(0.13, 8, 6);
+  const pedestrianBodyMaterial = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.88 });
+  const pedestrianHeadMaterial = new THREE.MeshStandardMaterial({ color: "#f0d1b2", roughness: 0.92 });
+  const pedestrianBodies = new THREE.InstancedMesh(pedestrianBodyGeometry, pedestrianBodyMaterial, 64);
+  const pedestrianHeads = new THREE.InstancedMesh(pedestrianHeadGeometry, pedestrianHeadMaterial, 64);
+  pedestrianBodies.castShadow = false;
+  pedestrianBodies.receiveShadow = false;
+  pedestrianHeads.castShadow = false;
+  pedestrianHeads.receiveShadow = false;
+  pedestrianGroup.add(pedestrianBodies, pedestrianHeads);
+  const pedestrianDummy = new THREE.Object3D();
+  const pedestrianPalette = ["#e9c56b", "#e7edf2", "#d98b75", "#8bc7b5", "#b69be8"];
+
+  function updatePedestrians(city) {
+    const citizens = Array.isArray(city.citizens) ? city.citizens.slice(0, 64) : [];
+    for (let index = 0; index < citizens.length; index++) {
+      const citizen = citizens[index];
+      const x = (citizen.x - 15.5) * 2;
+      const z = (citizen.y - 15.5) * 2;
+      const rotation = Number.isFinite(citizen.heading) ? Math.PI / 2 - citizen.heading : 0;
+      pedestrianDummy.position.set(x, 0.48, z);
+      pedestrianDummy.rotation.set(0, rotation, 0);
+      pedestrianDummy.scale.set(1, 1, 1);
+      pedestrianDummy.updateMatrix();
+      pedestrianBodies.setMatrixAt(index, pedestrianDummy.matrix);
+      pedestrianBodies.setColorAt(index, new THREE.Color(pedestrianPalette[(citizen.id - 1) % pedestrianPalette.length]));
+      pedestrianDummy.position.set(x, 0.78, z);
+      pedestrianDummy.rotation.set(0, 0, 0);
+      pedestrianDummy.updateMatrix();
+      pedestrianHeads.setMatrixAt(index, pedestrianDummy.matrix);
+    }
+    pedestrianBodies.count = citizens.length;
+    pedestrianHeads.count = citizens.length;
+    pedestrianBodies.instanceMatrix.needsUpdate = true;
+    pedestrianHeads.instanceMatrix.needsUpdate = true;
+    if (pedestrianBodies.instanceColor) pedestrianBodies.instanceColor.needsUpdate = true;
+  }
+
   let buildingSignature = "";
   let buildingRebuilds = 0;
   const windowGeometry = new THREE.BoxGeometry(0.22, 0.28, 0.055);
@@ -575,6 +618,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     updateCamera(cam);
     updateBuildings(city);
     updateTraffic(city);
+    updatePedestrians(city);
     renderer.render(scene, camera);
   }
 
@@ -610,6 +654,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
         trafficVehicles: trafficBodies.count,
+        pedestrians: pedestrianBodies.count,
         plots: activeGrassA + activeGrassB,
         roadTiles: activeRoads,
         lockedPlots: lockedGrassCountA + lockedGrassCountB,
