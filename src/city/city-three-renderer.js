@@ -48,7 +48,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   scene.background = new THREE.Color("#9bd4ee");
   scene.fog = new THREE.Fog("#9bd4ee", 145, 260);
   const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 320);
-  camera.position.set(48, 58, 48);
+  camera.position.set(48, 38, 48);
   camera.lookAt(0, 0, 0);
 
   const hemisphere = new THREE.HemisphereLight("#fff7e8", "#537c48", 2.25);
@@ -110,7 +110,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(160, 160),
+    new THREE.PlaneGeometry(140, 140),
     new THREE.MeshStandardMaterial({ color: "#80b86d", roughness: 1 })
   );
   ground.rotation.x = -Math.PI / 2;
@@ -620,7 +620,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const worldScale = height / 50;
     const targetX = -(cam.x || 0) / worldScale;
     const targetZ = -(cam.y || 0) / worldScale;
-    camera.position.set(48 + targetX, 58, 48 + targetZ);
+    camera.position.set(48 + targetX, 38, 48 + targetZ);
     camera.lookAt(targetX, 0, targetZ);
     camera.updateProjectionMatrix();
   }
