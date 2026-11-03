@@ -1,0 +1,64 @@
+name: City mobile browser and rendering performance
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/city/**"
+      - "tests/city-browser-smoke.mjs"
+      - "tests/mobile-rendering-performance.test.mjs"
+      - ".github/workflows/city-mobile-performance.yml"
+permissions:
+  contents: read
+concurrency:
+  group: city-mobile-performance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mobile-city:
+    name: Android-sized city viewport, rendering budget and browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local game server
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory "$GITHUB_WORKSPACE" >/tmp/mshin-city-server.log 2>&1 &
+          echo $! > /tmp/mshin-city-server.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/city.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/mshin-city-server.log
+          exit 1
+      - name: Run city mobile browser acceptance
+        env:
+          CI: "true"
+        run: node tests/city-browser-smoke.mjs
+      - name: Run mobile-only browser acceptance
+        env:
+          CI: "true"
+        run: node tests/mobile-browser-smoke.mjs
+      - name: Run rendering performance regression tests
+        run: node --test tests/mobile-rendering-performance.test.mjs
+      - name: Stop local game server
+        if: always()
+        run: |
+          if [ -f /tmp/mshin-city-server.pid ]; then kill "$(cat /tmp/mshin-city-server.pid)" 2>/dev/null || true; fi
+      - name: Upload city/mobile screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mshin-city-mobile-acceptance
+          path: artifacts/*
+          if-no-files-found: warn
+          retention-days: 7
