@@ -65,14 +65,14 @@ try{
  const nightLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
  assert.equal(nightLighting.phase,"night","midnight must activate the night lighting state");
  assert.equal(nightLighting.daylight,0,"midnight must have no direct daylight");
- assert.equal(nightLighting.celestialBodies,1,"night must display the moon and hide the sun");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"night must display the moon and hide the sun");
  assert.ok(nightLighting.windowGlow>=1,"building windows must illuminate at night");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),72,"night scene must render the deterministic star field");
  await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=720;window.MshinCityDebug.draw()});
  const noonLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
  assert.equal(noonLighting.phase,"day","midday must activate the daylight state");
  assert.equal(noonLighting.daylight,1,"midday must have full daylight");
- assert.equal(noonLighting.celestialBodies,1,"day must display the sun and hide the moon");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"day must display the sun and hide the moon");
  assert.notEqual(nightLighting.skyColor,noonLighting.skyColor,"the visible sky color must change between night and day");
  assert.ok(noonLighting.windowGlow<0.1,"building window glow must be subdued during daytime");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),0,"day scene must hide stars");
