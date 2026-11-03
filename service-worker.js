@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v64";
+const CACHE_NAME = "mshin-arcade-v65";
 const APP_SHELL = [
   "./", "./index.html", "./city.html", "./src/city/city-view.js", "./src/city/city-three-renderer.js", "./src/city/city-view.css", "./src/city/city-mobile-layout.css", "./src/city/city-zoning.js", "./src/city/city-services.js", "./src/city/city-traffic.js", "./src/city/city-population.js", "./src/city/city-economy.js","./src/city/city-employment.js", "./src/city/city-save.js", "./manifest.webmanifest", "./icons/mshin.svg",
   "./src/web-game.js", "./src/multitouch-input.js", "./src/vehicle-pbr.js", "./src/vehicle-showroom-3d.js", "./src/race-renderer-3d.js", "./src/aerial-environment.js", "./src/tire-physics.js", "./src/vehicle-dynamics.js", "./src/pickup-collection.js", "./src/rigid-body-physics.js", "./src/traffic-ai.js", "./src/vehicle-destruction.js", "./src/vehicle-damage-visuals.js", "./src/audio.js", "./src/collision-physics.js", "./src/boot.js", "./src/asset-loader.js", "./src/asset-manifest.json",
