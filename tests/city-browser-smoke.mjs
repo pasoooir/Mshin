@@ -59,6 +59,10 @@ try{
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.version,"180");
  assert.equal(renderStats.visualStyle,"vibrant-stylized-3d","the city renderer must use the approved vivid 3D art direction");
+ assert.equal(renderStats.proceduralTextures,4,"ground, road, building facade and roof must use generated texture maps");
+ assert.equal(renderStats.texturedBuildingMaterials,3,"building wall and roof materials must use visible procedural texture maps");
+ assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۳"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
