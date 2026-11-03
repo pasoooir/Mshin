@@ -380,3 +380,8 @@ The education/housing/wellbeing model is defined in [Capital Region Education, R
 
 ## District allocation and crisis operations integration
 The district allocation and crisis model is specified in [Capital Region District Resource Allocation & Crisis Management](CAPITAL_REGION_DISTRICT_RESOURCE_ALLOCATION_AND_CRISIS_MANAGEMENT_SPEC.md). Service requests, utility work, emergency response and maintenance must use a shared auditable resource lifecycle while retaining domain-specific units and safety rules. A resource reservation is exclusive; dispatch is not delivery; restoration requires service acceptance evidence. Typed utility graphs and the authoritative road/access graph remain distinct. No additional service, incident or dispatch capability is approved by this cross-reference.
+
+
+## Municipal finance and funded-service integration
+
+Operating and capital funding rules are specified in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md). Utility and public-service operations must account for funded OPEX, staffing, energy, supplies, maintenance, procurement and asset lifecycle obligations. Budget authority, available cash, commitment, accepted input delivery and actual service output remain separate states. A facility cannot be treated as sustainably operational merely because construction is complete; commissioning, staffing, network dependencies and operating funding must be valid. This cross-reference creates no new V1 service IDs or operating guarantees.
