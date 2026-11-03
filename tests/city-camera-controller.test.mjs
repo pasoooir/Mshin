@@ -32,10 +32,10 @@ test("orbit remains continuous across the 2π boundary and supports repeated ful
   for (let i = 0; i < 9; i++) {
     h.send("pointerdown", 1, 100, 100);
     h.send("pointerdown", 2, 200, 100);
-    h.send("pointermove", 1, 150, 100);
-    h.send("pointermove", 2, 250, 100);
-    h.send("pointerup", 1, 150, 100);
-    h.send("pointerup", 2, 250, 100);
+    h.send("pointermove", 1, 200, 100);
+    h.send("pointermove", 2, 300, 100);
+    h.send("pointerup", 1, 200, 100);
+    h.send("pointerup", 2, 300, 100);
   }
   assert.ok(h.camera.orbit > initial + Math.PI * 2, "orbit must accumulate beyond one complete revolution");
   assert.ok(Number.isFinite(h.camera.orbit));
