@@ -15,7 +15,7 @@ try {
  page.on("response",response=>{if(response.url().includes("/assets/city/models/"))responses.set(response.url(),response.status());});
  const response=await page.goto("http://127.0.0.1:4173/city-neighborhood-preview.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert.equal(response?.status(),200,"neighborhood preview route must load");
- await page.waitForFunction(()=>window.__MSHIN_NEIGHBORHOOD_PREVIEW__?.architectureModels?.size===3,{timeout:25000});
+ await page.waitForFunction(()=>window.__MSHIN_NEIGHBORHOOD_PREVIEW__?.architectureModels?.size===3 && window.__MSHIN_NEIGHBORHOOD_PREVIEW__?.renderer?.info?.render?.calls>0,null,{timeout:25000});
  const runtime=await page.evaluate(()=>{
   const app=window.__MSHIN_NEIGHBORHOOD_PREVIEW__;
   return {models:[...app.architectureModels.keys()],meshCount:app.scene.children.filter(item=>item.isMesh||item.isGroup).length,renderer:app.renderer.info.render,bodyClass:document.body.className};
