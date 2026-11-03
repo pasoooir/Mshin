@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
-**Reviewed:** 2026-11-03 after PRs #204, #205, #208 and #211  
-**Baseline:** `main` at `ceaec1375400ed3fd075082ae40b190de197ae5a`  
+**Reviewed:** 2026-11-03 after PRs #204, #205, #208, #209, #211, #217, #221 and #222  
+**Baseline:** `main` at `2da40fe8954f8e363b60bedf9ec5ff6326599875`  
 **Primary users:** mobile browsers (Android-first), with native Cocos Android delivery as the city visual target  
 **Delivery:** GitHub Pages for browser racing/city experience; Cocos Creator 3.8.6 is the intended native city runtime.
 
@@ -11,13 +11,17 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ## Verified baseline
 
-- **Current main:** `ceaec1375400ed3fd075082ae40b190de197ae5a`.
+- **Current main:** `2da40fe8954f8e363b60bedf9ec5ff6326599875`.
 - **Merged city milestones:** PRs #188, #190, #192, #193, #195, #197, #199, #200, #201, #202, #204 and #211 are present on main. They cover save migration/recovery, workforce and service capacity, resident wellbeing, zoning growth, service satisfaction, road-connected job assignment, pedestrian commute agents, traffic-aware pedestrian pace and congestion-related wellbeing.
 - **Congestion regression follow-up:** PR #205 is merged; it isolates save telemetry validation from transient vehicle positions. Exact-head checks on #205 passed: `validate`, `browser-smoke`, road/zoning/traffic regression and population/employment regression.
-- **Latest release:** Pages `build`, `deploy` and main `validate` passed on merge commit `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`. Main mobile browser smoke run `41647308147` passed: city entry, mobile-only browser acceptance, rewarded three-lap finish and offline acceptance all succeeded; mobile gameplay previews were uploaded.
-- **PR #211 — Congestion-driven business productivity:** 🟢 merged as `ceaec1375400ed3fd075082ae40b190de197ae5a`; exact-head validation, city regression suites and mobile browser acceptance all passed (runs `41648207345`, `41648207411`, `41648207413`, `41648207450`, `41648207532`, `41648207541`, `41648207909`). Commercial/industrial productivity is reduced by a deterministic 0–15% proxy; residential tax and public funding are unchanged; metrics are persisted and shown in the mobile budget panel.
-- **PR #209:** documentation refresh remains open while its baseline/evidence is reconciled with #211; exact-head validation and browser smoke passed on the previous docs head, but rerun after this update.
-- **Open PR inventory:** #209 documentation refresh; #92 stale draft billboard branch outside active delivery.
+- **Latest main delivery:** PR #209 documentation refresh merged at `e1e0b5aac47258d093a2cfd0be5fe806d275dab2`; PR #217 building lifecycle merged at `bc77aeaec62ea65b4620388cd3b7ec5674b165d9`; PR #221 architecture fix merged at `b586574af4d13a7836fb6ccd63e7d9df3f8a5955`; PR #222 touch placement merged as current main `2da40fe8954f8e363b60bedf9ec5ff6326599875`. Main validate run `41665828847` and Pages build/deploy run `41665827195` passed; mobile browser smoke run `41665829229` was pending at this snapshot.
+- **PR #211 — Congestion-driven business productivity:** 🟢 merged as `2da40fe8954f8e363b60bedf9ec5ff6326599875`; exact-head validation, city regression suites and mobile browser acceptance all passed (runs `41648207345`, `41648207411`, `41648207413`, `41648207450`, `41648207532`, `41648207541`, `41648207909`). Commercial/industrial productivity is reduced by a deterministic 0–15% proxy; residential tax and public funding are unchanged; metrics are persisted and shown in the mobile budget panel.
+- **PR #209 — Documentation evidence refresh:** 🟢 merged; exact-head validation run `41657282760` and mobile browser smoke run `41657282312` passed.
+- **PR #217 — Native building construction/upgrade lifecycle:** 🟢 merged in mainline commit `bc77aeaec62ea65b4620388cd3b7ec5674b165d9`; deterministic lifecycle core and unit tests included. Placement/economy/save/UI remain separate work.
+- **PR #221 — Architecture audit fix:** 🟢 merged as `b586574af4d13a7836fb6ccd63e7d9df3f8a5955`; NodeNext `.js` specifiers resolve to `.ts` source and native city scripts are classified in the city domain. Exact-head validation run `41662862217` and mobile browser smoke run `41662862281` passed.
+- **PR #222 — Native touch building placement:** 🟢 merged as `2da40fe8954f8e363b60bedf9ec5ff6326599875`; single-touch ownership, validated ground projection, grid snapping and geometry tests. Exact-head validation `41664114866`, browser smoke `41664114851`, road regression `41664114885`, utility regression `41664114960`, employment regression `41664114850` and city mobile/rendering `41664115149` all passed.
+- **City texture pipeline:** main already contains `Validate and rasterize city texture sources`; run `41664553375` generated six 512×512 textures and uploaded artifact `mshin-city-textures-512` (artifact ID `13245380566`). The workflow's runtime-publish job is separate from PR artifact validation; Cocos material wiring and Android GPU profiling remain open.
+- **Open PR inventory:** #225 documentation reconciliation and stale draft #92.
 - **PR #208:** 🟢 merged as `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`; exact-head `validate` passed. The native sample district includes distinct house, apartment, shop, factory, park, roads, sidewalks and street furniture. Main mobile browser smoke run `41647308147` passed. The PR remains a blockout: final textures, Editor import, APK and physical Android acceptance are not verified.
 - CI browser emulation does not certify physical Android devices or Cocos Creator Editor/Web build acceptance.
 
@@ -44,7 +48,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 - Treat the city as a separate product domain with its own state model, simulation clock, renderer, input and persistence adapter.
 - Build in vertical slices: roads/connectivity → zoning → buildings and growth → population/jobs → utilities/services → traffic → budget/economy → save/load.
-- Each system must have deterministic unit tests, integration tests and mobile browser acceptance for placement, simulation progression and persistence. Budget/tax controls and their accessible mobile dialog are accepted in PRs #182 and #185; versioned save migration/recovery is accepted in PR #188; workforce matching is accepted in PR #190; finite service capacity is accepted in PR #192; resident wellbeing integration is accepted in PR #193. Workforce-aware zoning growth is accepted in PR #195. Resident-weighted service satisfaction is accepted in PR #197. PRs #199–#204 add road-network commuting, pedestrian commute agents, congestion-aware pedestrian movement and a bounded congestion wellbeing effect; PR #211 adds a bounded congestion-to-business-productivity feedback.
+- Each system must have deterministic unit tests, integration tests and mobile browser acceptance for placement, simulation progression and persistence. Budget/tax controls and their accessible mobile dialog are accepted in PRs #182 and #185; versioned save migration/recovery is accepted in PR #188; workforce matching is accepted in PR #190; finite service capacity is accepted in PR #192; resident wellbeing integration is accepted in PR #193. Workforce-aware zoning growth is accepted in PR #195. Resident-weighted service satisfaction is accepted in PR #197. PRs #199–#204 add road-network commuting, pedestrian commute agents, congestion-aware pedestrian movement and a bounded congestion wellbeing effect; PR #211 adds a bounded congestion-to-business-productivity feedback; PR #217 adds the native building lifecycle; PR #222 adds native touch placement.
 - Keep rendering and DOM/HUD work bounded; avoid rebuilding static layers or updating the HUD every animation frame.
 - Prevent city changes from importing private racing modules and vice versa.
 
