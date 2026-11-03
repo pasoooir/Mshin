@@ -257,3 +257,10 @@ This reference adds no operational IDs and changes no V1 status. It does not app
 The proposed district-level allocation, fairness, municipal resource governance, emergency dispatch and crisis lifecycle are specified in [Capital Region District Resource Allocation & Crisis Management](CAPITAL_REGION_DISTRICT_RESOURCE_ALLOCATION_AND_CRISIS_MANAGEMENT_SPEC.md).
 
 This reference creates no operational IDs and changes no V1 status. It does not approve new service types, incidents, emergency units, rationing policies or budget mechanics. Resources remain finite and auditable; allocation requires compatibility, availability, access, staffing and funding. Dispatch is not proof of arrival or restoration. Existing catalog entries/statuses remain authoritative and all quantities/thresholds remain TBD.
+
+
+## Municipal finance, taxation, budgeting and governance — design reference
+
+The proposed municipal finance, tax administration, treasury, budgeting, procurement finance, capital investment, debt/grant and policy-governance model is specified in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md).
+
+This reference adds no operational IDs and changes no V1 status. It does not approve any tax type, fee, accounting basis, debt instrument, grant mechanism, budget policy or governance control for V1. Candidate features remain subject to explicit catalog approval; all numeric rates, amounts, periods and thresholds remain TBD.
