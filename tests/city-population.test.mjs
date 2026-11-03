@@ -115,7 +115,7 @@ test("demolished homes remove their pedestrian agents and invalid home reference
 });
 
 
-test("assigned pedestrian workers travel to workplaces and return home on the same connected route", async () => {
+test("assigned pedestrian workers travel to workplaces and return home on the same connected route", () => {
   const city = createInitialCity(907);
   const home = placeCityItem(city,17,14,"home").item;
   const shop = placeCityItem(city,18,14,"shop").item;
