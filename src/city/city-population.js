@@ -110,7 +110,7 @@ function trafficSpeedFactor(city, citizen) {
   return Math.max(0.4, 1 - nearbyVehicles * 0.18);
 }
 
-function advanceCommute(city, citizen, flow, seconds) {
+function advanceCommute(city, citizen, flow, seconds, effectivePace) {
   const route = flow.route;
   if (!route.length || !isRoad(city, route[0].x, route[0].y) || !isRoad(city, route[route.length - 1].x, route[route.length - 1].y)) return false;
   if (citizen.commuteWorkplaceId !== flow.workplaceId
@@ -144,7 +144,7 @@ function advanceCommute(city, citizen, flow, seconds) {
       citizen.x = start.x; citizen.y = start.y;
     }
   }
-  let remaining = Math.min(0.5, Number.isFinite(citizen.pace) && citizen.pace > 0 ? citizen.pace : 0.15) * trafficSpeedFactor(city, citizen) * seconds;
+  let remaining = effectivePace * seconds;
   let transitions = 0;
   while (remaining > 1e-8 && transitions < 8) {
     if (index >= route.length - 1) {
@@ -273,8 +273,10 @@ export function stepCityCitizens(city, seconds = 1, commuteAssignments = []) {
   const commuteByCitizen = mapCommuteAgents(city, commuteAssignments);
   for (const citizen of city.citizens) {
     const commute = commuteByCitizen.get(citizen.id);
-    if (commute && advanceCommute(city, citizen, commute, seconds)) {
-      citizen.phase = (citizen.phase || 0) + Math.min(0.5, citizen.pace || 0.15) * seconds;
+    const pace = Number.isFinite(citizen.pace) && citizen.pace > 0 ? Math.min(0.5, citizen.pace) : 0.15;
+    const effectivePace = pace * trafficSpeedFactor(city, citizen);
+    if (commute && advanceCommute(city, citizen, commute, seconds, effectivePace)) {
+      citizen.phase = (citizen.phase || 0) + effectivePace * seconds;
       continue;
     }
     if (!commute) {
@@ -283,8 +285,6 @@ export function stepCityCitizens(city, seconds = 1, commuteAssignments = []) {
       delete citizen.commuteRouteStep;
       delete citizen.commuteWait;
     }
-    const pace = Number.isFinite(citizen.pace) && citizen.pace > 0 ? Math.min(0.5, citizen.pace) : 0.15;
-    const effectivePace = pace * trafficSpeedFactor(city, citizen);
     let remaining = effectivePace * seconds;
     let transitions = 0;
     while (remaining > 1e-8 && transitions < 8) {

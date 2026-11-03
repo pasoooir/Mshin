@@ -166,3 +166,37 @@ test("nearby road traffic slows pedestrians without stopping their movement", ()
   assert.ok(congestedDistance < baselineDistance, "nearby vehicles must reduce pedestrian travel speed");
 });
 
+
+
+test("traffic slowdown also advances assigned commuter animation phase at the reduced pace", () => {
+  const city = createInitialCity(910);
+  const home = placeCityItem(city, 17, 14, "home").item;
+  const shop = placeCityItem(city, 18, 14, "shop").item;
+  city.population = 12;
+  const assignments = computeCityCommuting(city, computeCityEmployment(city)).assignments;
+  const flow = assignments.find(item => item.homeId === home.id && item.workplaceId === shop.id);
+  assert.ok(flow, "a connected workplace commute must be assigned");
+  const commuter = city.citizens[0];
+  commuter.x = flow.route[0].x;
+  commuter.y = flow.route[0].y;
+  commuter.roadX = flow.route[0].x;
+  commuter.roadY = flow.route[0].y;
+  commuter.targetX = flow.route[1]?.x ?? flow.route[0].x;
+  commuter.targetY = flow.route[1]?.y ?? flow.route[0].y;
+  const baseline = structuredClone(city);
+  const congested = structuredClone(city);
+  congested.traffic = [{ id: 1, x: flow.route[0].x, y: flow.route[0].y }];
+  const baselineCommuter = baseline.citizens[0];
+  const congestedCommuter = congested.citizens[0];
+  const beforeBaselinePhase = baselineCommuter.phase;
+  const beforeCongestedPhase = congestedCommuter.phase;
+
+  stepCityCitizens(baseline, 1, assignments);
+  stepCityCitizens(congested, 1, assignments);
+
+  const baselinePhaseAdvance = baselineCommuter.phase - beforeBaselinePhase;
+  const congestedPhaseAdvance = congestedCommuter.phase - beforeCongestedPhase;
+  assert.ok(congestedPhaseAdvance > 0, "commuter animation must continue under congestion");
+  assert.ok(congestedPhaseAdvance < baselinePhaseAdvance,
+    "commuter animation phase must reflect the same reduced pace as route movement");
+});
