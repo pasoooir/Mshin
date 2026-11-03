@@ -49,8 +49,11 @@ try{
  assert.equal(renderStats.crosswalkStripes,0,"do not paint pedestrian crossings until pedestrian graph and crossing priority are implemented");
  assert.ok(renderStats.lockedPlots>=1600&&renderStats.visiblePlots>=2300,"the visible world must include a large locked expansion grid, not blank margins");
  assert.equal(renderStats.visibleRoadTiles,1392,"the expanded 64×64 world must have a continuous road network");
- await page.mouse.click(100,100);
+ await page.setViewportSize({width:390,height:844});
+ await page.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display!=="none",undefined,{timeout:5000});
+ await page.locator("#cityEnterLandscape").click();
  await page.waitForFunction(()=>window.__mshinCityEntryDebug?.lockRequested===true,undefined,{timeout:5000});
+ await page.setViewportSize({width:844,height:390});
  const entryAcceptance=await page.evaluate(()=>({order:window.__cityEntryOrder,debug:window.__mshinCityEntryDebug}));
  assert.deepEqual(entryAcceptance.order,["fullscreen","orientation:landscape"],"mobile city must request fullscreen before locking landscape orientation");
  assert.equal(entryAcceptance.debug.fullscreenGranted,true,"fullscreen must be granted from the first trusted mobile gesture");
