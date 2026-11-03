@@ -1,0 +1,68 @@
+name: Validate and rasterize city texture sources
+
+on:
+  pull_request:
+    paths:
+      - "assets/city/textures/**"
+      - "tools/rasterize-city-textures.py"
+      - ".github/workflows/city-texture-assets.yml"
+  push:
+    branches: [main]
+    paths:
+      - "assets/city/textures/**"
+      - "tools/rasterize-city-textures.py"
+      - ".github/workflows/city-texture-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rasterize:
+    name: Rasterize procedural city textures
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install rasterization dependencies
+        run: python -m pip install --disable-pip-version-check pillow cairosvg
+
+      - name: Generate PNG textures
+        run: python tools/rasterize-city-textures.py --size 512
+
+      - name: Verify generated texture outputs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          root = Path("assets/city/textures/generated")
+          expected = {"grass", "asphalt", "sidewalk", "brick", "concrete", "roof"}
+          actual = {p.stem for p in root.glob("*.png")}
+          if actual != expected:
+              raise SystemExit(f"Texture set mismatch: expected={sorted(expected)}, actual={sorted(actual)}")
+          for path in sorted(root.glob("*.png")):
+              with Image.open(path) as image:
+                  image.verify()
+              with Image.open(path) as image:
+                  if image.size != (512, 512) or image.mode not in {"RGB", "RGBA"}:
+                      raise SystemExit(f"Invalid texture {path}: {image.size}, {image.mode}")
+              print(f"OK {path}")
+
+          PY
+
+      - name: Upload generated texture preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mshin-city-textures-512
+          path: assets/city/textures/generated/*.png
+          if-no-files-found: error
+          retention-days: 14
