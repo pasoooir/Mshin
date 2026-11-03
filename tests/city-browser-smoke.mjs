@@ -20,6 +20,19 @@ try{
  });
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
  await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+ const viewportMeta=await page.locator('meta[name="viewport"]').getAttribute("content");
+ assert.match(viewportMeta,/viewport-fit=cover/,"city must opt into safe-area-aware mobile viewport sizing");
+ const initialVisualViewport=await page.evaluate(()=>({width:visualViewport.width,height:visualViewport.height}));
+ assert.ok(Math.abs(initialVisualViewport.width-844)<=1&&Math.abs(initialVisualViewport.height-390)<=1,"city must start sized to the visible landscape viewport");
+ await page.setViewportSize({width:780,height:360});
+ await page.waitForFunction(()=>Math.abs(parseFloat(document.querySelector("#cityViewport").style.width)-visualViewport.width)<=1
+  &&Math.abs(parseFloat(document.querySelector("#cityViewport").style.height)-visualViewport.height)<=1,undefined,{timeout:5000});
+ const resizedCityViewport=await page.evaluate(()=>({visualWidth:visualViewport.width,visualHeight:visualViewport.height,canvasWidth:parseFloat(document.querySelector("#cityViewport").style.width),canvasHeight:parseFloat(document.querySelector("#cityViewport").style.height)}));
+ assert.ok(Math.abs(resizedCityViewport.canvasWidth-780)<=1&&Math.abs(resizedCityViewport.canvasHeight-360)<=1,"city canvas must follow browser chrome/visible viewport resizing");
+ await page.setViewportSize({width:844,height:390});
+ await page.waitForFunction(()=>Math.abs(parseFloat(document.querySelector("#cityViewport").style.width)-844)<=1
+  &&Math.abs(parseFloat(document.querySelector("#cityViewport").style.height)-390)<=1,undefined,{timeout:5000});
+
  assert.ok(await page.locator("#cityThreeViewport").count()===1,"city must render through the Three.js WebGL scene");
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");

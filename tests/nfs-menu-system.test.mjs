@@ -15,10 +15,14 @@ test("portrait devices receive a rotated landscape game surface without a rotate
   assert.equal(manifest.orientation, "landscape");
 });
 
-test("canvas backing store uses landscape logical dimensions in portrait mode", () => {
-  assert.match(game, /portrait\?Math\.max\(innerWidth,innerHeight\):innerWidth/);
-  assert.match(game, /portrait\?Math\.min\(innerWidth,innerHeight\):innerHeight/);
-  assert.match(game, /softwareLandscape:portrait/);
+test("canvas backing store follows VisualViewport while preserving landscape logical dimensions", () => {
+  assert.ok(game.includes("const viewport=window.visualViewport;"));
+  assert.ok(game.includes("viewport?.width||innerWidth"));
+  assert.ok(game.includes("viewport?.height||innerHeight"));
+  assert.ok(game.includes("width=portrait?Math.max(viewportWidth,viewportHeight):viewportWidth;"));
+  assert.ok(game.includes("height=portrait?Math.min(viewportWidth,viewportHeight):viewportHeight;"));
+  assert.ok(game.includes('window.visualViewport?.addEventListener("resize",scheduleViewportResize,{passive:true});'));
+  assert.ok(game.includes("softwareLandscape:portrait"));
 });
 
 test("pause menu exposes ten actions and a data-driven five-row leaderboard", () => {
