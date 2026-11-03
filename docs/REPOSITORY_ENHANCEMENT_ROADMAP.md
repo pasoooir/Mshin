@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
-**Reviewed:** 2026-11-03  
-**Baseline:** `main` at `bb2eea0ba62fdc55a59a31584cb9342ca29ff4df`  
+**Reviewed:** 2026-11-03 after PR #192  
+**Baseline:** `main` at `98f152105c7716c6a0a323a4f680129070152363`  
 **Primary users:** mobile browsers (Android-first)  
 **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
 
@@ -27,6 +27,13 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 - PRs #181, #183 and #184 were closed as superseded duplicates of PR #182. PR #179 was a historical documentation snapshot; this refresh supersedes its baseline.
 - Mobile gameplay preview artifact: [mshin-mobile-gameplay-previews](https://github.com/pasoooir/Mshin/actions/runs/41614496592/artifacts/13216086671).
 - CI success is not equivalent to physical Android-device certification or Cocos Creator Editor/Web build acceptance.
+
+
+- PR #188 merged as `1b2c99a6a8669dff42bde3768726df5d08106b3d`; versioned city-save migration, backup/recovery and offline precache acceptance.
+- PR #190 merged as `5f20315e9c267aeefdf77f8bb5cda27d8da0c22f`; deterministic workforce matching, job capacity, employment, unemployment and vacancies.
+- PR #192 merged as `98f152105c7716c6a0a323a4f680129070152363`; finite utility/public-service capacity, demand coverage and per-building satisfaction telemetry.
+- Post-PR #192 main validation and Pages build/deploy succeeded in run `41623889163`; main browser-smoke is still in progress.
+- PR #193 (resident wellbeing integration) and PR #195 (workforce-aware zoning growth) are open; their checks are tracked in the execution tracker. Neither is accepted until all exact-head mobile/browser checks pass.
 
 ## Product priorities
 
