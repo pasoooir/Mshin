@@ -139,3 +139,10 @@ For every feature, record:
 - No desktop-browser gate that blocks mobile-first delivery.
 - No claim of physical Android or Cocos Editor acceptance without actual device/Editor evidence.
 - No production Worker deployment or paid infrastructure dependency without a product requirement.
+
+
+## Next city visual milestone — two-finger orbit camera (2026-11-03)
+
+- Add a real Three.js orbit camera interaction for mobile: two-finger horizontal drag rotates around the city; twisting the two-finger span also rotates; pinch distance continues to zoom; centroid movement keeps the inspected area anchored.
+- Preserve one-finger pan and single-tap placement semantics. Camera orbit must remain disabled implicitly in the 2D fallback and must not interfere with the placement lock contract.
+- Acceptance requires browser tests proving orbit angle changes and pinch zoom still works on the same two-finger gesture, plus unchanged one-finger placement and mobile rendering budgets. Physical Android QA remains a separate gate.
