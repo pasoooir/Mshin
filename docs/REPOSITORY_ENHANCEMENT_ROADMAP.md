@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
-**Reviewed:** 2026-11-03 after PR #195  
-**Baseline:** `main` at `f4a8fa320ad08c1611f596b2ccead8688e824e49`  
+**Reviewed:** 2026-11-03 after PR #197  
+**Baseline:** `main` at `7bdf75b2ad98d9f54d553cd47f95913e671bf816`  
 **Primary users:** mobile browsers (Android-first)  
 **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
 
@@ -13,9 +13,11 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 - **Current main:** `f4a8fa320ad08c1611f596b2ccead8688e824e49`, after PR #195.
 - **Merged city milestones:** PR #188 versioned save migration/backup recovery; PR #190 workforce matching and employment demand; PR #192 finite utility and civic-service capacity; PR #193 resident wellbeing integration; PR #195 workforce-aware zoning growth.
-- **Main release evidence:** run `41625952666` — build, validation and GitHub Pages deployment succeeded. Main mobile browser smoke run `41625957359` was still running at this review.
-- **PR #197:** resident-weighted service satisfaction is under review. Exact-head portable validation, city services/economy, road/zoning/traffic, population/employment and save-recovery regressions pass; Android-sized city viewport/rendering acceptance passes. Mobile rewarded-race/offline browser smoke remains in progress.
-- **PR #196:** this evidence refresh is open; portable validation passes, and its mobile browser workflow is pending.
+- **Main release evidence:** after PR #195, run `41625952666` — build, validation and GitHub Pages deployment succeeded. Main mobile browser smoke run `41625957359` remained in progress.
+- **Main after PR #197:** commit `7bdf75b2ad98d9f54d553cd47f95913e671bf816`; `validate` was in progress and `build` queued at the time of this review; deployment must be checked after these finish.
+- **PR #197:** merged as `7bdf75b2ad98d9f54d553cd47f95913e671bf816`; occupied-home service satisfaction is weighted by resident count and now affects city happiness. Exact-head portable validation, city services/economy, road/zoning/traffic, population/employment, save-recovery, Android-sized viewport and PR browser-smoke checks passed.
+- **PR #198:** workflow concurrency correction is open; portable validation passes and browser smoke is running.
+- **PR #196:** this evidence refresh is open; portable validation passes; mobile browser smoke is running.
 - **Primary users:** mobile browsers (Android-first). **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
 - CI browser emulation does not certify physical Android devices or Cocos Creator Editor/Web build acceptance.
 
@@ -102,7 +104,7 @@ For every feature, record:
 | P1 | Racing stability and real-finish regression | 🟢 PR #195 exact-head browser acceptance verified | Full three-lap mobile race, five-car standings, rewards, achievement persistence and offline launch pass; continue real-device physics/performance tuning |
 | P1 | City simulation vertical slices | 🟡 in progress | Roads, zoning, growth, pedestrians, traffic, budget/tax, workforce matching, finite services, save migration and wellbeing are implemented; PR #197 connects per-building resident-weighted service satisfaction. Next: job assignment/commuting and deeper economic feedback |
 | P2 | Enforce dependency boundaries | 🟢 implemented and CI-verified | Continue monitoring domain imports, unresolved paths, cycles and module size |
-| P2 | Reproducible CI and release gates | 🟡 in progress | Keep lockfile-backed install, least privilege, exact-head checks, reviewed workflow concurrency and successful main Pages deployment |
+| P2 | Reproducible CI and release gates | 🟡 in progress | Keep lockfile-backed install, least privilege, exact-head checks, PR #198 is testing a shared push/PR concurrency key and successful main Pages deployment |
 | P3 | Cocos Editor import and Web build | 🔴 not yet verified | Editor-generated Web build runs on Android; requires Cocos Creator 3.8.6 environment |
 ## Non-goals for this phase
 
