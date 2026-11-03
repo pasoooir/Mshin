@@ -1,5 +1,5 @@
 import { CITY_ZONES, placeCityZone, developCityZones } from "./city-zoning.js";
-import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
+import { CITY_SERVICE_TYPES, computeCityServices, computeCityResidentServiceSatisfaction } from "./city-services.js";
 import { stepCityTraffic } from "./city-traffic.js";
 import { syncCityCitizens, stepCityCitizens } from "./city-population.js";
 import { computeCityEmployment } from "./city-employment.js";
@@ -24,10 +24,12 @@ export function stepCity(city,seconds=1){
  const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
  const economy=computeCityEconomy(city,infrastructure);
  const employment=computeCityEmployment(city);
- city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage,serviceDemandCoverage:infrastructure.demandCoverage,serviceCapacityUsage:infrastructure.capacityUsage};
+ const residentServiceSatisfaction=computeCityResidentServiceSatisfaction(city);
+ const occupiedResidents=homes.reduce((sum,home)=>sum+Math.max(0,Number(home.residents)||0),0);
+ city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage,serviceDemandCoverage:infrastructure.demandCoverage,serviceCapacityUsage:infrastructure.capacityUsage,residentServiceSatisfaction};
  city.treasury+=economy.net;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
  syncCityCitizens(city);stepCityCitizens(city,seconds);
- const serviceScore=(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
+ const serviceScore=occupiedResidents>0?residentServiceSatisfaction/100:(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
  city.happiness=Math.max(25,Math.min(98,city.happiness+(serviceScore-.35)*.08+(parks.length>2?.05:0)-cityTaxPressure(city.taxRates)-employment.unemploymentRate*.0003));
  
  stepCityTraffic(city,seconds);
