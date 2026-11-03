@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
-**Reviewed:** 2026-11-02  
-**Baseline:** `main` at `0c51682fb581225d7fad4069d5fef1a39c9186c7`  
+**Reviewed:** 2026-11-03  
+**Baseline:** `main` at `2fdb78e7385ee18c82e4492d86d91bb3b2b0bb80`  
 **Primary users:** mobile browsers (Android-first)  
 **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
 
@@ -12,9 +12,9 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 ## Verified baseline
 
 - Main contains separate browser racing and city entry points, portable TypeScript/Cocos source, a service worker, local assets, data validation, unit tests and GitHub Actions.
-- Latest main mobile browser workflow succeeded: [run 41472577109](https://github.com/pasoooir/Mshin/actions/runs/41472577109). It ran the city browser smoke and mobile-only browser smoke.
-- Latest main portable validation succeeded: [run 41472577086](https://github.com/pasoooir/Mshin/actions/runs/41472577086).
-- Latest merged city work includes PRs #150, #153 and #154; racing mobile steering fix #152 is merged.
+- Latest merged-main mobile browser evidence: [PR #174 mobile smoke run 41597768482](https://github.com/pasoooir/Mshin/actions/runs/41597768482) — success.
+- Latest merged-main portable validation evidence: [PR #174 validation run 41597768523](https://github.com/pasoooir/Mshin/actions/runs/41597768523) — success.
+- PRs #161–#174 are merged (including the city visual/mobile slices, traffic, save validation, renderer telemetry and enforceable architecture checks); PR #174 is the current main baseline.
 - CI success is not equivalent to Android-device certification or Cocos Creator Editor/Web build acceptance.
 
 ## Product priorities
@@ -96,11 +96,11 @@ For every feature, record:
 | Priority | Work item | Status | Exit condition |
 |---|---|---|---|
 | P0 | Refresh stale tracker and define repository-wide acceptance policy | 🟢 completed in this documentation change | Current baseline and evidence links recorded |
-| P0 | Reconcile open PR inventory and stacked dependencies | 🟡 in progress | Every active PR classified: merge, rebase, duplicate, stale or blocked |
+| P0 | Reconcile open PR inventory and stacked dependencies | 🟡 in progress | Only open PR #92 remains; draft is 436 commits behind main, non-mergeable and lacks visual/mobile billboard acceptance. Keep isolated; do not merge until rebased and revalidated. |
 | P0 | Mobile race + city acceptance matrix | 🟡 in progress | Automated coverage includes touch, orientation, persistence, console and performance checks |
 | P1 | Racing stability and real-finish regression | 🟡 in progress | Real three-lap finish and rewards pass on current main |
 | P1 | City simulation vertical slices | 🟡 in progress | Each system passes deterministic, integration and mobile acceptance |
-| P2 | Enforce dependency boundaries | 🟡 in progress | Architecture checker fails on forbidden imports and unresolved local dependencies |
+| P2 | Enforce dependency boundaries | 🟢 implemented and CI-verified | PR #174 merged; mobile run 41597768482 and validation run 41597768523 passed. Continue monitoring as modules evolve. |
 | P2 | Reproducible CI and release gates | 🟡 in progress | Lockfile-backed install, least privilege, isolated Pages deployment |
 | P3 | Cocos Editor import and Web build | 🔴 not yet verified | Editor-generated Web build runs on Android |
 
