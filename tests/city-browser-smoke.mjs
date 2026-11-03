@@ -145,6 +145,7 @@ try{
  await page.evaluate(({x,y})=>{const c=document.querySelector("#cityViewport"),event=type=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:601,pointerType:"touch",clientX:x,clientY:y}));event("pointerdown");event("pointerup")},focusTile);
  const focusedCamera=await page.evaluate(()=>window.MshinCityDebug.view);
  assert.ok(Number.isFinite(focusedCamera.targetX)&&Number.isFinite(focusedCamera.targetZ),"tapping the world must set a raycast-derived camera focus target");
+ await page.waitForTimeout(450);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),1,"camera gestures and focus must not mutate city construction data");
  fs.mkdirSync("artifacts",{recursive:true});
  await page.screenshot({path:"artifacts/city-camera-orbit-focus.png"});
