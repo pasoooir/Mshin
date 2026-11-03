@@ -45,7 +45,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     moonDisc.position.set(skyWidth * 0.36, 17, -116);
     const positions = starGeometry.getAttribute("position");
     for (let index = 0; index < 72; index++) {
-      positions.setXYZ(index, (starPositions[index * 3] - 0.5) * skyWidth * 1.8,
+      positions.setXYZ(index, starPositions[index * 3] * skyWidth * 1.8,
         starPositions[index * 3 + 1] * 42, -118);
     }
     positions.needsUpdate = true;
