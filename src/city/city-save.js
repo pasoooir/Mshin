@@ -15,17 +15,6 @@ const validOptionalPointPair = (x,y,allowNull=false) =>
   || (allowNull && x === null && y === null)
   || validPoint(x,y,true);
 
-const BUILDING_TYPES = new Set(["home","shop","industrial","administrative","service","park",...Object.keys(CITY_SERVICE_TYPES)]);
-const isRecord = value => !!value && typeof value === "object" && !Array.isArray(value);
-const validId = value => Number.isSafeInteger(value) && value > 0;
-const validPoint = (x,y,integer=false) => Number.isFinite(x) && Number.isFinite(y)
-  && x >= 0 && y >= 0 && x <= SIZE - 1 && y <= SIZE - 1
-  && (!integer || (Number.isInteger(x) && Number.isInteger(y)));
-const validOptionalPointPair = (x,y,allowNull=false) =>
-  (x === undefined && y === undefined)
-  || (allowNull && x === null && y === null)
-  || validPoint(x,y,true);
-
 export function isValidCitySave(v) {
   if (!isRecord(v) || v.schemaVersion !== 2
     || typeof v.cityId !== "string" || !v.cityId.trim() || v.cityId.length > 100
