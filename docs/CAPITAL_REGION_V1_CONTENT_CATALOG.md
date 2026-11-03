@@ -205,3 +205,14 @@ Each tier defines functional delta (capacity/output/demand/coverage/resilience/e
 
 ## 9. Open decisions
 Map dimensions/grid scale; Capital climate and resource deposits; final footprints after art blockout; utility topology (graph, cells or hybrid); household cohort and agent limits per device profile; whether construction requires workers, materials or both; sellable goods and NPC trade rules. Do not resolve these by inventing values.
+
+
+---
+
+## 10. Visual design and delivery references
+
+The visual identity and tier presentation of Capital Region catalog entries are specified in:
+- [Building Visual Progression Atlas](BUILDING_VISUAL_PROGRESSION_ATLAS.md): building-by-building architectural direction, required reference views, state visuals and mobile art handoff.
+- [Capital Region Building Visual Matrix](CAPITAL_REGION_BUILDING_VISUAL_MATRIX.md): catalog ID coverage, operational class, visual identity, required facade/roof elements and delivery status.
+
+These documents do not change catalog status, gameplay balance, provisional footprints or implementation authorization. All unknown numeric values remain TBD. Asset/model/prefab/device verification must be evidenced independently.
