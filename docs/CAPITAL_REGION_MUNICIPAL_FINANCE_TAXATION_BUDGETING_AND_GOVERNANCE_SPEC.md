@@ -252,3 +252,8 @@ The proposed market/order and freight lifecycle is specified in [Capital Region 
 ## Tourism transactions and municipal fiscal boundary
 
 Visitor spending and hospitality settlement are specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Merchant gross sales, merchant net proceeds, public-venue receipts, approved taxes/fees, refunds and municipal cash are distinct. Visitor spending does not automatically become municipal revenue. Bookings, check-in, delivered service, payment and settlement are separate states and must reconcile with the approved accounting basis. This reference approves no tourism levy, tax or new V1 revenue type.
+
+
+## Environmental events and municipal finance
+
+Weather-related incidents, maintenance, repairs and resilience costs are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Warnings, incidents, damage, work orders, resource consumption, invoices and payments remain separate auditable events. No disaster aid, insurance, compensation, reserve, levy or new municipal revenue rule is approved by this reference.
