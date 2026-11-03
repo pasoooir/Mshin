@@ -259,11 +259,12 @@ try{
   },backupPayload.city);
   await recoveryPage.goto("http://127.0.0.1:4173/city.html");
   await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
-  const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery"),legacyRecovery:localStorage.getItem("mshin-city-save-v1.recovery")}));
+  const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery"),legacyRaw:localStorage.getItem("mshin-city-save-v1"),legacyRecovery:localStorage.getItem("mshin-city-save-v1.recovery")}));
   assert.equal(recovered.treasury,backupPayload.city.treasury,"a valid previous snapshot must recover after the active save is corrupted");
   assert.equal(recovered.rows,32,"backup recovery must restore the complete city grid");
   assert.equal(recovered.stored.schemaVersion,2,"backup recovery must rewrite the active save");
   assert.equal(recovered.recovery,"{corrupt","the rejected raw save must remain available for manual recovery");
+  assert.equal(recovered.legacyRaw,"{corrupt-legacy","the legacy test fixture must survive page boot");
   assert.equal(recovered.legacyRecovery,"{corrupt-legacy","the malformed legacy save must be preserved separately");
   assert.deepEqual(recoveryErrors,[],"backup recovery must not throw browser errors");
  }finally{await recoveryPage.close()}
