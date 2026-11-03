@@ -212,32 +212,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
 
-  const stripeGeometry = new THREE.BoxGeometry(0.14, 0.025, 0.72);
-  const stripeMaterial = new THREE.MeshStandardMaterial({ color: "#f7f0dc", roughness: 0.8 });
-  const intersectionCenters = [7.5, 23.5, 31.5, 39.5, 55.5];
-  const crosswalks = new THREE.InstancedMesh(stripeGeometry, stripeMaterial, intersectionCenters.length ** 2 * 28);
-  let stripeIndex = 0;
-  for (const ix of intersectionCenters) {
-    for (const iz of intersectionCenters) {
-      const cx = (ix - 31.5) * 2, cz = (iz - 31.5) * 2;
-      for (let n = -3; n <= 3; n++) {
-        for (const offset of [-2.05, 2.05]) {
-          dummy.position.set(cx + n * 0.24, 0.09, cz + offset);
-          dummy.rotation.set(0, 0, 0);
-          dummy.scale.set(1, 1, 1);
-          dummy.updateMatrix();
-          crosswalks.setMatrixAt(stripeIndex++, dummy.matrix);
-          dummy.position.set(cx + offset, 0.09, cz + n * 0.24);
-          dummy.rotation.set(0, Math.PI / 2, 0);
-          dummy.updateMatrix();
-          crosswalks.setMatrixAt(stripeIndex++, dummy.matrix);
-        }
-      }
-    }
-  }
-  crosswalks.count = stripeIndex;
-  crosswalks.instanceMatrix.needsUpdate = true;
-  scene.add(crosswalks);
+  // Pedestrian crossings are intentionally not rendered until a pedestrian graph,
+  // legal crossing nodes and signal/priority state exist. Painted zebra stripes would
+  // falsely advertise a safe/operational crossing on the current road-only graph.
+  const crosswalkStripeCount = 0;
 
   const lotLines = [];
   for (let y = 0; y < VISUAL_GRID; y += 2) {
@@ -642,7 +620,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         visiblePlots: activeGrassA + activeGrassB + lockedGrassCountA + lockedGrassCountB,
         visibleRoadTiles: activeRoads + lockedRoadCount,
         raisedCurbs: curbInstances.length,
-        crosswalkStripes: crosswalks.count,
+        crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio()
       };
