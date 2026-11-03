@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
-**Reviewed:** 2026-11-03 after PR #193  
-**Baseline:** `main` at `828b8705dfb51143e7d56f254a5c7464fb922a64`  
+**Reviewed:** 2026-11-03 after PR #195  
+**Baseline:** `main` at `f4a8fa320ad08c1611f596b2ccead8688e824e49`  
 **Primary users:** mobile browsers (Android-first)  
 **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
 
@@ -39,8 +39,9 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 - PR #190 merged as `5f20315e9c267aeefdf77f8bb5cda27d8da0c22f`; deterministic workforce matching, job capacity, employment, unemployment and vacancies.
 - PR #192 merged as `98f152105c7716c6a0a323a4f680129070152363`; finite utility/public-service capacity, demand coverage and per-building satisfaction telemetry.
 - PR #193 merged as `828b8705dfb51143e7d56f254a5c7464fb922a64`; resident wellbeing now reflects unemployment and service coverage/capacity metrics are exposed in city stats.
-- Main validation/build/deploy succeeded in run `41624866155`; browser smoke is still running at the time of this refresh.
-- PR #195 remains open; exact-head validation, employment and zoning regressions, and mobile viewport acceptance pass; mobile rewarded race/offline browser smoke is still running.
+- PR #195 merged as `f4a8fa320ad08c1611f596b2ccead8688e824e49`; commercial, industrial and administrative zone growth now respects available resident workforce, with exact-head mobile/browser checks passing.
+- Main `build` and `validate` checks after PR #195 were still running at the time of this refresh; Pages deployment is not yet claimed.
+- PR #197 adds resident-weighted satisfaction from finite per-building service allocation; validation and city service tests pass while mobile/browser acceptance remains in progress.
 
 ## Product priorities
 
@@ -65,7 +66,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 - Treat the city as a separate product domain with its own state model, simulation clock, renderer, input and persistence adapter.
 - Build in vertical slices: roads/connectivity → zoning → buildings and growth → population/jobs → utilities/services → traffic → budget/economy → save/load.
-- Each system must have deterministic unit tests, integration tests and mobile browser acceptance for placement, simulation progression and persistence. Budget/tax controls and their accessible mobile dialog are accepted in PRs #182 and #185; versioned save migration/recovery is accepted in PR #188; workforce matching is accepted in PR #190; finite service capacity is accepted in PR #192; resident wellbeing integration is accepted in PR #193. Workforce-aware zoning growth is under validation in PR #195.
+- Each system must have deterministic unit tests, integration tests and mobile browser acceptance for placement, simulation progression and persistence. Budget/tax controls and their accessible mobile dialog are accepted in PRs #182 and #185; versioned save migration/recovery is accepted in PR #188; workforce matching is accepted in PR #190; finite service capacity is accepted in PR #192; resident wellbeing integration is accepted in PR #193. Workforce-aware zoning growth is accepted in PR #195. Resident-weighted service satisfaction is under validation in PR #197.
 - Keep rendering and DOM/HUD work bounded; avoid rebuilding static layers or updating the HUD every animation frame.
 - Prevent city changes from importing private racing modules and vice versa.
 
