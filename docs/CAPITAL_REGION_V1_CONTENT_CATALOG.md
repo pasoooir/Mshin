@@ -283,3 +283,10 @@ This reference adds no operational IDs and changes no V1 status. It does not app
 ## Weather, seasons and day/night — design reference
 
 The proposed authoritative clock, seasonal calendar, observed/forecast weather, surface conditions and cross-system environmental effects are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). This reference adds no operational IDs and changes no V1 status. It does not approve a climate model, weather variables, hazards, agriculture or new environmental gameplay systems; all numeric parameters remain TBD.
+
+
+## Emergency services and public-safety design reference
+
+The proposed fire, police, ambulance, hospital, incident and disaster-response architecture is specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md).
+
+This reference adds no operational IDs and changes no V1 status. It does not approve fire/police/hospital facilities, emergency vehicle classes, burglary simulation, sirens, emergency-priority traffic or disaster classes. All numeric parameters and score weights remain TBD.
