@@ -177,13 +177,17 @@ function lamp(x,z){
  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.18,10,8),new THREE.MeshStandardMaterial({color:"#fff3c0",emissive:"#ffdc7c",emissiveIntensity:.7}));bulb.position.set(.65,3.0,0);g.add(bulb);
 }
 function curbRunX(z){
- const gaps=[-10,10].map(center=>[center-3.55,center+3.55]);
+ const rawGaps=[-10,10].flatMap(center=>[[center-3.55,center+3.55],[center-4.4-1.35,center-4.4+1.35],[center+4.4-1.35,center+4.4+1.35]]).sort((a,b)=>a[0]-b[0]);
+ const gaps=[];
+ for(const gap of rawGaps){const last=gaps[gaps.length-1];if(last&&gap[0]<=last[1])last[1]=Math.max(last[1],gap[1]);else gaps.push([...gap]);}
  let cursor=-29;
  for(const [start,end] of gaps){if(start>cursor){const segment=box(scene,start-cursor,.14,.18,curb,(start+cursor)/2,.12,z,false);segment.name="city-road-curb";}cursor=end;}
  if(cursor<29){const segment=box(scene,29-cursor,.14,.18,curb,(29+cursor)/2,.12,z,false);segment.name="city-road-curb";}
 }
 function curbRunZ(x){
- const gaps=[-9,10].map(center=>[center-3.55,center+3.55]);
+ const rawGaps=[-9,10].flatMap(center=>[[center-3.55,center+3.55],[center-4.4-1.35,center-4.4+1.35],[center+4.4-1.35,center+4.4+1.35]]).sort((a,b)=>a[0]-b[0]);
+ const gaps=[];
+ for(const gap of rawGaps){const last=gaps[gaps.length-1];if(last&&gap[0]<=last[1])last[1]=Math.max(last[1],gap[1]);else gaps.push([...gap]);}
  let cursor=-29;
  for(const [start,end] of gaps){if(start>cursor){const segment=box(scene,.18,.14,start-cursor,curb,x,.12,(start+cursor)/2,false);segment.name="city-road-curb";}cursor=end;}
  if(cursor<29){const segment=box(scene,.18,.14,29-cursor,curb,x,.12,(29+cursor)/2,false);segment.name="city-road-curb";}
@@ -229,8 +233,10 @@ for(const [x,z] of [[-10,-9],[10,-9],[-10,10],[10,10]]){
   addCrosswalkStripe(x-4.4,z+i*1.15,"vertical");
   addCrosswalkStripe(x+4.4,z+i*1.15,"vertical");
  }
- addCurbRamp(x,z-3.95,"horizontal",-1);addCurbRamp(x,z+3.95,"horizontal",1);
- addCurbRamp(x-3.95,z,"vertical",-1);addCurbRamp(x+3.95,z,"vertical",1);
+ for(const offset of [-4.4,4.4]){
+  addCurbRamp(x+offset,z-3.95,"horizontal",-1);addCurbRamp(x+offset,z+3.95,"horizontal",1);
+  addCurbRamp(x-3.95,z+offset,"vertical",-1);addCurbRamp(x+3.95,z+offset,"vertical",1);
+ }
 }
 const modelFallbacks = [
  {type:"house",group:house(-20,-20,"#efc58b","#b95d49",.08),position:[-20,0,-20],rotation:.08},
