@@ -624,7 +624,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const worldScale = height / 50;
     const targetX = -(cam.x || 0) / worldScale;
     const targetZ = -(cam.y || 0) / worldScale;
-    camera.position.set(48 + targetX, 38, 48 + targetZ);
+    const orbit = Number.isFinite(cam.orbit) ? cam.orbit : 0;
+    const orbitAngle = Math.PI / 4 + orbit;
+    const orbitRadius = Math.hypot(48, 48);
+    camera.position.set(targetX + Math.sin(orbitAngle) * orbitRadius, 38, targetZ + Math.cos(orbitAngle) * orbitRadius);
     camera.lookAt(targetX, 0, targetZ);
     camera.updateProjectionMatrix();
   }
@@ -662,6 +665,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getStats() {
       return {
         renderer: "three.js",
+        cameraOrbit: Number.isFinite(camera.rotation?.y) ? camera.rotation.y : 0,
         version: THREE.REVISION,
         visualStyle: "vibrant-stylized-3d",
         proceduralTextures: 4,
