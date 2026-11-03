@@ -208,6 +208,81 @@ try {
   assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
   assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "نیترو", "nitro control should use a CDN icon with accessible alternative text");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
+  const fourPointerState = await mobile.evaluate(() => {
+    const element = id => document.querySelector("#" + id);
+    const send = (target, type, pointerId, x, y) => target.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId, pointerType: "touch",
+      clientX: x, clientY: y, button: 0, buttons: type === "pointerup" ? 0 : 1
+    }));
+    const stick = element("stick"), gas = element("gas"), brake = element("brake"), nitro = element("nitro");
+    const pad = stick.getBoundingClientRect(), center = { x: pad.x + pad.width / 2, y: pad.y + pad.height / 2 };
+    const nitroBefore = Number.parseFloat(element("nitroFill").style.width || "0");
+    send(stick, "pointerdown", 401, center.x, center.y);
+    send(stick, "pointermove", 401, center.x, center.y + 38);
+    const gasRect = gas.getBoundingClientRect(), brakeRect = brake.getBoundingClientRect(), nitroRect = nitro.getBoundingClientRect();
+    send(gas, "pointerdown", 402, gasRect.x + gasRect.width / 2, gasRect.y + gasRect.height / 2);
+    send(brake, "pointerdown", 403, brakeRect.x + brakeRect.width / 2, brakeRect.y + brakeRect.height / 2);
+    send(nitro, "pointerdown", 404, nitroRect.x + nitroRect.width / 2, nitroRect.y + nitroRect.height / 2);
+    return {
+      steer: Number(stick.dataset.steer),
+      gas: gas.getAttribute("aria-pressed"),
+      brake: brake.getAttribute("aria-pressed"),
+      nitroBefore,
+      nitroAfter: Number.parseFloat(element("nitroFill").style.width || "0")
+    };
+  });
+  assert.ok(Math.abs(fourPointerState.steer) > 0.1, "steering must remain active while three other independent touch controls are pressed");
+  assert.equal(fourPointerState.gas, "true", "gas must retain its own pointer while the other controls are active");
+  assert.equal(fourPointerState.brake, "true", "brake must retain its own pointer while the other controls are active");
+  assert.ok(fourPointerState.nitroAfter < fourPointerState.nitroBefore, "nitro must activate independently during simultaneous steering, gas and brake input");
+
+  await mobile.evaluate(() => {
+    const element = id => document.querySelector("#" + id);
+    const cancel = (target, pointerId) => target.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, cancelable: true, pointerId, pointerType: "touch" }));
+    cancel(element("stick"), 401);
+    window.dispatchEvent(new PointerEvent("pointercancel", { pointerId: 402, pointerType: "touch" }));
+    window.dispatchEvent(new PointerEvent("pointercancel", { pointerId: 403, pointerType: "touch" }));
+  });
+  assert.equal(await mobile.locator("#gas").getAttribute("aria-pressed"), "false", "pointercancel must release gas without waiting for pointerup");
+  assert.equal(await mobile.locator("#brake").getAttribute("aria-pressed"), "false", "pointercancel must release brake without waiting for pointerup");
+  assert.equal(Number(await mobile.locator("#stick").getAttribute("data-steer")), 0, "pointercancel must neutralize steering");
+
+  await mobile.evaluate(() => {
+    const gas = document.querySelector("#gas"), stick = document.querySelector("#stick");
+    const pad = stick.getBoundingClientRect(), gasRect = gas.getBoundingClientRect();
+    gas.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 405, pointerType: "touch", clientX: gasRect.x + gasRect.width / 2, clientY: gasRect.y + gasRect.height / 2 }));
+    stick.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 406, pointerType: "touch", clientX: pad.x + pad.width / 2, clientY: pad.y + pad.height / 2 }));
+    gas.dispatchEvent(new PointerEvent("lostpointercapture", { bubbles: true, pointerId: 405, pointerType: "touch" }));
+    stick.dispatchEvent(new PointerEvent("lostpointercapture", { bubbles: true, pointerId: 406, pointerType: "touch" }));
+  });
+  assert.equal(await mobile.locator("#gas").getAttribute("aria-pressed"), "false", "lost pointer capture must release gas");
+  assert.equal(Number(await mobile.locator("#stick").getAttribute("data-steer")), 0, "lost pointer capture must release steering");
+
+  await mobile.evaluate(() => {
+    const gas = document.querySelector("#gas"), brake = document.querySelector("#brake"), stick = document.querySelector("#stick");
+    const pad = stick.getBoundingClientRect(), gasRect = gas.getBoundingClientRect(), brakeRect = brake.getBoundingClientRect();
+    gas.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 407, pointerType: "touch", clientX: gasRect.x + gasRect.width / 2, clientY: gasRect.y + gasRect.height / 2 }));
+    brake.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 408, pointerType: "touch", clientX: brakeRect.x + brakeRect.width / 2, clientY: brakeRect.y + brakeRect.height / 2 }));
+    stick.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 409, pointerType: "touch", clientX: pad.x + pad.width / 2, clientY: pad.y + pad.height / 2 }));
+    window.dispatchEvent(new Event("orientationchange"));
+  });
+  assert.equal(await mobile.locator("#gas").getAttribute("aria-pressed"), "false", "orientation changes must clear gas");
+  assert.equal(await mobile.locator("#brake").getAttribute("aria-pressed"), "false", "orientation changes must clear brake");
+  assert.equal(Number(await mobile.locator("#stick").getAttribute("data-steer")), 0, "orientation changes must neutralize steering");
+
+  await mobile.evaluate(() => {
+    const gas = document.querySelector("#gas"), stick = document.querySelector("#stick"), pad = stick.getBoundingClientRect(), rect = gas.getBoundingClientRect();
+    gas.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 410, pointerType: "touch", clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2 }));
+    stick.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 411, pointerType: "touch", clientX: pad.x + pad.width / 2, clientY: pad.y + pad.height / 2 }));
+  });
+  await mobile.locator("#pause").click();
+  assert.equal(await mobile.locator("#gas").getAttribute("aria-pressed"), "false", "pause must release all held controls");
+  assert.equal(Number(await mobile.locator("#stick").getAttribute("data-steer")), 0, "pause must neutralize steering");
+  await mobile.locator("#retryRace").click();
+  await mobile.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 15000 });
+  assert.equal(await mobile.locator("#gas").getAttribute("aria-pressed"), "false", "retry must start with no stale throttle pointer");
+  assert.equal(Number(await mobile.locator("#stick").getAttribute("data-steer")), 0, "retry must start with neutral steering");
+
   const mobileStatsBounds = await mobile.locator(".stats").boundingBox(), mobileSoundBounds = await mobile.locator("#soundToggle").boundingBox();
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
   assert.equal(mobileHudOverlap, false, "compact mobile race stats should not overlap sound controls: " + JSON.stringify({mobileStatsBounds,mobileSoundBounds}));
