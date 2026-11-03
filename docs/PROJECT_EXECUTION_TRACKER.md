@@ -7,8 +7,8 @@
 - **main:** `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`.
 - **PRهای #199 تا #204:** 🟢 ادغام‌شده؛ شامل مسیر‌یابی جاده‌ای محل کار، حرکت عابرهای شاغل، کاهش سرعت وابسته به تراکم و اثر محدود تراکم بر رفاه شهروندان.
 - **PR #205 — اصلاح رگرسیون ذخیره:** 🟢 ادغام‌شده در `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`. چهار بررسی exact-head موفق شدند: `validate`, `browser-smoke`, `Road connectivity, zoning, growth and traffic regression` و `Population baseline and employment-slice regression`.
-- **انتشار main:** `validate`, `build` و GitHub Pages `deploy` روی commit `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b` موفق‌اند. اجرای browser smoke شماره `41647308147` در حال اجراست؛ نتیجه city entry، mobile-only، سه دور مسابقه و offline هنوز نهایی نشده است.
-- **PR #208 — Native Cocos city visual vertical slice:** 🟢 ادغام‌شده در `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`؛ exact-head `validate` موفق شد. blockout هندسی شامل خانه، آپارتمان، فروشگاه، کارخانه، پارک، خیابان و مبلمان شهری است. main mobile smoke شماره `41647308147` در حال اجراست. تکسچر نهایی، Cocos Editor import، اتصال به scene، APK و QA دستگاه Android هنوز تأیید نشده‌اند.
+- **انتشار main:** `validate`, `build` و GitHub Pages `deploy` روی commit `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b` موفق‌اند. اجرای browser smoke شماره `41647308147` 🟢 موفق شد؛ city entry، mobile-only، مسابقه سه‌دور با پاداش و offline همگی موفق شدند و پیش‌نمایش‌های موبایل بارگذاری شدند.
+- **PR #208 — Native Cocos city visual vertical slice:** 🟢 ادغام‌شده در `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`؛ exact-head `validate` موفق شد. blockout هندسی شامل خانه، آپارتمان، فروشگاه، کارخانه، پارک، خیابان و مبلمان شهری است. main mobile smoke شماره `41647308147` موفق شد. تکسچر نهایی، Cocos Editor import، اتصال به scene، APK و QA دستگاه Android هنوز تأیید نشده‌اند.
 - **PR #209:** باز؛ به‌روزرسانی roadmap و tracker با شواهد PRهای #204، #205 و #208. exact-head validation و browser smoke در حال اجرا هستند.
 - **PR #92:** پیش‌نویس قدیمی تبلیغات کنار جاده؛ خارج از مسیر فعال توسعه و نیازمند تعیین تکلیف جداگانه.
 - **Android فیزیکی و Cocos Creator Editor:** تأییدنشده؛ شبیه‌سازی مرورگر جایگزین این دروازه‌ها نیست.
@@ -21,9 +21,9 @@
 | اشتغال و رشد منطقه‌ای | 🟢 PR #190 و #195 | ظرفیت شغل، نیروی کار، بیکاری و محدودیت رشد مناطق بر اساس نیروی کار. |
 | خدمات شهری و رفاه | 🟢 PR #192، #193 و #197 | ظرفیت محدود خدمات و رضایت وزن‌دار ساکنان؛ اثر تراکم بر رفاه در PR #204 افزوده شد. |
 | تخصیص محل کار و رفت‌وآمد | 🟢 PR #199، #200، #201 و #202 | مسیر کوتاه جاده‌ای، عامل‌های عابر شاغل و حرکت وابسته به تراکم؛ اثر congestion بر رضایت شهروندان در #204. |
-| تجربه موبایل شهر | 🟡 CI | اجرای main شماره `41647308147` در حال اجراست؛ Android واقعی باز است. |
+| تجربه موبایل شهر | 🟡 CI | اجرای main شماره `41647308147` 🟢 موفق؛ Android واقعی باز است. |
 | گرافیک بومی Cocos شهر | 🟡 blockout در PR #208 ادغام شد | palette، خانه، آپارتمان، فروشگاه، کارخانه، پارک، خیابان و مبلمان شهری؛ Editor/scene/texture/APK/device acceptance باز است. |
-| CI و انتشار | 🟡 تأیید جزئی main | validate/build/deploy موفق؛ browser smoke نهایی هنوز pending است. |
+| CI و انتشار | 🟡 تأیید جزئی main | validate/build/deploy و browser smoke شماره `41647308147` همگی موفق‌اند. |
 
 ## قواعد ثبت پیشرفت
 
