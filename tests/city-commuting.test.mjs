@@ -98,3 +98,44 @@ test("commute telemetry is bounded and validated in city saves", () => {
   invalidDistance.stats.averageCommuteDistance = -0.1;
   assert.equal(isValidCitySave(invalidDistance),false);
 });
+
+
+test("commute traffic delay is zero on clear roads and bounded under congestion", () => {
+  const { city } = connectedWorkCity(3106);
+  city.population = 24;
+  const clear = computeCityCommuting(city, computeCityEmployment(city));
+  assert.equal(clear.averageCongestionDelay, 0);
+  const routePoint = clear.assignments[0].route[Math.floor(clear.assignments[0].route.length / 2)];
+  city.traffic = Array.from({ length: 8 }, (_, index) => ({
+    id: index + 1, x: routePoint.x, y: routePoint.y
+  }));
+  const congested = computeCityCommuting(city, computeCityEmployment(city));
+  assert.ok(congested.averageCongestionDelay > 0);
+  assert.ok(congested.averageCongestionDelay <= 150);
+  assert.equal(congested.assignedWorkers, clear.assignedWorkers,
+    "traffic changes commute burden, not the underlying job assignment");
+});
+
+test("congestion delay is persisted safely and feeds a bounded resident wellbeing penalty", () => {
+  const { city } = connectedWorkCity(3107);
+  city.population = 24;
+  const baseline = structuredClone(city);
+  const route = computeCityCommuting(city, computeCityEmployment(city)).assignments[0].route;
+  const point = route[Math.floor(route.length / 2)];
+  const congested = structuredClone(city);
+  congested.traffic = [{
+    id: 1, x: point.x, y: point.y, speed: 0.4, heading: 0,
+    headingX: 1, headingY: 0, routeStep: 0, color: "#fff",
+    targetX: null, targetY: null, previousX: null, previousY: null
+  }];
+  stepCity(baseline);
+  stepCity(congested);
+  assert.ok(congested.stats.averageCongestionDelay > 0);
+  assert.ok(congested.happiness < baseline.happiness,
+    "residents should experience a small wellbeing cost when their commutes are congested");
+  assert.ok(congested.happiness >= 25);
+  assert.equal(isValidCitySave(congested), true);
+  const invalid = structuredClone(congested);
+  invalid.stats.averageCongestionDelay = 151;
+  assert.equal(isValidCitySave(invalid), false);
+});
