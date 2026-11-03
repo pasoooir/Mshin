@@ -11,7 +11,8 @@ async function clickCityTool(page,type){
 }
 
 const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--enable-webgl","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]});
-const page=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+const cameraContext=await browser.newContext({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true,recordVideo:{dir:"artifacts/city-camera-video",size:{width:844,height:390}}});
+const page=await cameraContext.newPage();
 const errors=[];page.on("pageerror",e=>errors.push(e.stack||String(e)));page.on("console",m=>{if(m.type()==="error")errors.push("console: "+m.text())});page.on("requestfailed",r=>errors.push("request failed: "+r.url()+" "+r.failure()?.errorText));
 try{
  await page.addInitScript(()=>{
@@ -134,11 +135,18 @@ try{
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",501,120,420);send("pointerdown",502,280,420);send("pointermove",502,180,420);send("pointerup",502,180,420);send("pointerup",501,120,420)});
  const pinchOut=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  assert.ok(pinchOut<pinchStart,"bringing two fingers together must zoom out");
- const focusTile=await page.evaluate(()=>window.MshinCityDebug.screenForTile(15,15));
+ const transitionBefore=await page.evaluate(()=>window.MshinCityDebug.view);
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",551,100,420);send("pointerdown",552,200,420);send("pointerup",552,200,420);send("pointerup",551,100,420);send("pointerdown",553,100,420);send("pointerdown",554,200,420);send("pointercancel",554,200,420);send("pointerup",553,100,420)});
+ const transitionAfter=await page.evaluate(()=>window.MshinCityDebug.view);
+ assert.equal(transitionAfter.zoom,transitionBefore.zoom,"pointer-count transitions and cancellation must not alter zoom");
+ assert.equal(transitionAfter.orbit,transitionBefore.orbit,"pointer-count transitions and cancellation must not jump orbit");
+ const focusTile=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));
  await page.evaluate(({x,y})=>{const c=document.querySelector("#cityViewport"),event=type=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:601,pointerType:"touch",clientX:x,clientY:y}));event("pointerdown");event("pointerup")},focusTile);
  const focusedCamera=await page.evaluate(()=>window.MshinCityDebug.view);
  assert.ok(Number.isFinite(focusedCamera.targetX)&&Number.isFinite(focusedCamera.targetZ),"tapping the world must set a raycast-derived camera focus target");
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),1,"camera gestures and focus must not mutate city construction data");
+ fs.mkdirSync("artifacts",{recursive:true});
+ await page.screenshot({path:"artifacts/city-camera-orbit-focus.png"});
 
  await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
@@ -400,5 +408,8 @@ try{
   assert.deepEqual(deniedFullscreenErrors,[],"denied-fullscreen landscape entry must not throw browser errors");
  }finally{await deniedFullscreenPage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
+ await page.close();
+ const cameraVideoPath=await page.video().path();
+ fs.copyFileSync(cameraVideoPath,"artifacts/city-camera-gesture.webm");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, deep save validation/recovery, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
