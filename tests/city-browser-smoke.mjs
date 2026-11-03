@@ -63,6 +63,23 @@ try{
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.tick>=6),"simulation must autosave without a manual save");
  await page.bringToFront();await page.locator('[data-city-speed="1"]').click();await page.waitForFunction(()=>document.visibilityState==="visible");const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(4000);const simulation=await page.evaluate(()=>({tick:window.MshinCityDebug.city.tick,visibility:document.visibilityState,speedLabel:document.querySelector("#citySpeedLabel")?.textContent}));assert.ok(simulation.tick>before,"simulation should advance while the mobile city is visible at 1x speed: "+JSON.stringify({before,...simulation}));
+ await page.waitForFunction(()=>window.MshinCity3DStats?.trafficVehicles>0,undefined,{timeout:8000});
+ const trafficAcceptance=await page.evaluate(()=>{
+  const city=window.MshinCityDebug.city;
+  return {
+   vehicles:city.traffic.length,
+   rendered:window.MshinCity3DStats.trafficVehicles,
+   onRoad:city.traffic.every(vehicle=>city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"),
+   moving:city.traffic.some(vehicle=>(vehicle.routeStep||0)>0||Math.abs(vehicle.x-Math.round(vehicle.x))>.05||Math.abs(vehicle.y-Math.round(vehicle.y))>.05),
+   drawCalls:window.MshinCity3DStats.drawCalls
+  };
+ });
+ assert.ok(trafficAcceptance.vehicles>0,"the live city simulation must spawn road traffic");
+ assert.equal(trafficAcceptance.rendered,trafficAcceptance.vehicles,"every active vehicle must be rendered by the 3D city renderer");
+ assert.equal(trafficAcceptance.onRoad,true,"mobile traffic must stay on connected road tiles");
+ assert.equal(trafficAcceptance.moving,true,"vehicles must progress along their road routes rather than remain static");
+ assert.ok(trafficAcceptance.drawCalls<80,"instanced traffic must preserve the mobile draw-call budget");
+ assert.ok(await page.evaluate(()=>window.MshinCityDebug.save()),"traffic state must remain persistable with the city save");
  const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),toolButtons:[...document.querySelectorAll(".cityTool")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,right:r.right,left:r.left}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
  assert.ok(mobile.tools.y>mobile.metrics.bottom,"mobile construction dock must sit below the city metrics");
@@ -101,5 +118,5 @@ try{
   await landscapePage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
  }finally{await landscapePage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
- process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, service coverage, demolition persistence, autosave and live simulation.\\n");
+ process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
