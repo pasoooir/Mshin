@@ -1,3 +1,36 @@
+# وضعیت اجرایی به‌روزشده — 2026-11-03 20:27 UTC
+
+> این بخش جدیدترین وضعیت را ثبت می‌کند و بر snapshotهای قدیمی‌تر پایین فایل اولویت دارد.
+
+## شواهد انتشار و milestoneهای بصری
+
+- **main فعلی:** `0876027e09b46a7ffc1beaf8766e5363fcaf0ec2`. این commit پاک‌سازی بازگشت فایل تست موقت است؛ runtime با merge قبلی PR #236 تغییر نکرده است.
+- **PR #233 — orbit دو انگشتی:** 🟢 ادغام‌شده؛ main browser smoke run `41707299966` شامل city entry، mobile-only، سه دور مسابقه و offline موفق شد.
+- **PR #236 — GLTF architecture asset pipeline:** 🟢 ادغام‌شده با commit `0debc46d38709472446eee75875eef95f24c9236`.
+  - سه مدل GLTF 2.0 خودساخته: خانه شیروانی، آپارتمان بالکن‌دار، فروشگاه با ویترین و سایبان.
+  - manifest محلی، embedded geometry، PBR material factors، ابعاد/scale و provenance با مجوز CC0-1.0.
+  - مدل‌ها و preview در Service Worker cache `mshin-arcade-v67` precache شدند.
+  - mobile GLTF preview acceptance و سایر browser smokeها روی main در run `41710669198` موفق‌اند؛ artifact تصویر/diagnostics همان run موجود است.
+  - main validate run `41710669284` و Pages build/deploy run `41710668169` موفق‌اند.
+- **PR #237 — accessible road crossings:** 🟡 در حال اعتبارسنجی؛ head فعلی `4586a73c7902ed720cc607835bc29ce741a6c99e`.
+  - curb runs در محل تقاطع و گذرگاه‌ها قطع می‌شوند.
+  - ۳۲ رمپ جدول جهت‌دار و ۱۶۰ قطعه tactile paving برای چهار تقاطع.
+  - ۸۰ خط گذرگاه عابر در هر دو جهت.
+  - این گذرگاه‌ها در preview صرفاً نشانه بصری‌اند؛ مسیریابی و حق تقدم واقعی همچنان از pedestrian graph شهر اصلی تبعیت می‌کند.
+  - تست مرورگر موبایل باید تعداد رمپ‌ها، tactile paving، گذرگاه‌ها و رندر GLTF را تأیید کند.
+- **مرزهای باز:** LOD، texture maps، بودجه GPU/frame time روی Android واقعی، Cocos Creator Editor import و QA دستگاه Android واقعی هنوز تأیید نشده‌اند.
+- **شروع شهر اصلی:** خالی می‌ماند؛ محله GLTF و جزئیات خیابان فقط در صفحه preview مستقل هستند.
+
+## صف اجرایی
+
+1. تکمیل exact-head validate و mobile browser acceptance در PR #237؛ هیچ check در حال اجرا یا شکست‌خورده نادیده گرفته نشود.
+2. پس از merge، Pages deploy و preview نهایی بررسی شود.
+3. Slice C: تنوع درخت، فضای سبز و props با instancing و محدودیت draw-call.
+4. Slice D: چرخه روز/شب و سایه‌های با بودجه موبایل.
+5. سپس Android physical QA و Cocos Editor verification به‌عنوان gateهای مستقل.
+
+---
+
 # وضعیت اجرایی به‌روزشده — 2026-11-03 19:59 UTC
 
 > این بخش جدیدترین شواهد است و بر snapshotهای قدیمی‌تر پایین همین فایل اولویت دارد.
