@@ -119,6 +119,7 @@ test("commute traffic delay is zero on clear roads and bounded under congestion"
 test("congestion delay is persisted safely and feeds a bounded resident wellbeing penalty", () => {
   const { city } = connectedWorkCity(3107);
   city.population = 24;
+  city.happiness = 70; // Keep the comparison below the happiness ceiling so the marginal penalty is observable.
   const baseline = structuredClone(city);
   const route = computeCityCommuting(city, computeCityEmployment(city)).assignments[0].route;
   const point = route[Math.floor(route.length / 2)];
