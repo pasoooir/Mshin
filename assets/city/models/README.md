@@ -17,4 +17,4 @@ Original, self-contained glTF 2.0 building assets for Mshin.
 
 ## Runtime note
 
-The model files and manifest are same-origin and precached by the service worker. The preview page currently imports the existing Three.js runtime through its CDN import map; therefore a first offline visit may show the built-in SVG fallback rather than the WebGL scene. The procedural building fallback also remains active if an individual GLTF request fails.
+The model files and manifest are same-origin and precached by the service worker. Per-model `scale` values in the manifest align the GLTF dimensions with the procedural blockout footprints. The preview page currently imports the existing Three.js runtime through its CDN import map; therefore a first offline visit may show the built-in SVG fallback rather than the WebGL scene. The procedural building fallback also remains active if an individual GLTF request fails.
