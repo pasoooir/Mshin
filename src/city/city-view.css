@@ -29,7 +29,8 @@
 #cityThreeViewport{z-index:1;touch-action:none}
 
 /* Compact, accessible city finance dialog and touch-first tax controls. */
-.cityBudgetPanel{position:fixed;z-index:30;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:clamp(14px,2.5vw,22px);border:1px solid #ffffff35;border-radius:20px;background:linear-gradient(145deg,#17334a,#0d1d30);color:#f3f7fb;box-shadow:0 24px 80px #06111dcc;overscroll-behavior:contain}
+.cityBudgetPanel{position:fixed;z-index:30;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;gap:14px;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:clamp(14px,2.5vw,22px);border:1px solid #ffffff35;border-radius:20px;background:linear-gradient(145deg,#17334a,#0d1d30);color:#f3f7fb;box-shadow:0 20px 70px #06111dcc,0 0 0 100vmax #071521c9;backdrop-filter:blur(16px);overscroll-behavior:contain;pointer-events:auto}
+.cityBudgetPanel button:focus-visible,.cityBudgetPanel input:focus-visible{outline:3px solid #f6d98b;outline-offset:3px}
 .cityBudgetPanel.hidden{display:none!important}
 .cityBudgetHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .cityBudgetHeader h2{margin:0;font-size:clamp(17px,2.6vw,22px)}
