@@ -188,3 +188,8 @@ The proposed financial model is documented in [Capital Region Municipal Finance,
 ## Visitor needs and resident-service protection
 
 Tourism service impacts are specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Temporary visitor demand must be measured separately from resident household demand and may affect service delivery only through approved consumption and access rules. Resident and visitor fulfillment, affordability, access and unmet demand must not be collapsed into an opaque happiness score. Visitor presence does not change permanent population, and unmodeled visitor needs remain Not modeled.
+
+
+## Environmental conditions and citizen needs
+
+The proposed weather/time effects on comfort, outdoor access, resident services and public safety are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). These effects require explicit causal models, valid denominators and separate actual/forecast states; weather must not silently modify happiness, health or productivity through opaque multipliers. Unmodeled effects remain Not modeled.
