@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
-**Reviewed:** 2026-11-03 after PRs #204, #205, #208 and #211  
-**Baseline:** `main` at `ceaec1375400ed3fd075082ae40b190de197ae5a`  
+**Reviewed:** 2026-11-03 after PRs #217, #221, #222 and #227  
+**Baseline:** `main` at `9282953a6af2922d5da0616919f79cee53f04822`  
 **Primary users:** mobile browsers (Android-first), with native Cocos Android delivery as the city visual target  
 **Delivery:** GitHub Pages for browser racing/city experience; Cocos Creator 3.8.6 is the intended native city runtime.
 
@@ -11,7 +11,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ## Verified baseline
 
-- **Current main:** `ceaec1375400ed3fd075082ae40b190de197ae5a`.
+- **Current main:** `9282953a6af2922d5da0616919f79cee53f04822`.
 - **Merged city milestones:** PRs #188, #190, #192, #193, #195, #197, #199, #200, #201, #202, #204 and #211 are present on main. They cover save migration/recovery, workforce and service capacity, resident wellbeing, zoning growth, service satisfaction, road-connected job assignment, pedestrian commute agents, traffic-aware pedestrian pace and congestion-related wellbeing.
 - **Congestion regression follow-up:** PR #205 is merged; it isolates save telemetry validation from transient vehicle positions. Exact-head checks on #205 passed: `validate`, `browser-smoke`, road/zoning/traffic regression and population/employment regression.
 - **Latest release:** Pages `build`, `deploy` and main `validate` passed on merge commit `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`. Main mobile browser smoke run `41647308147` passed: city entry, mobile-only browser acceptance, rewarded three-lap finish and offline acceptance all succeeded; mobile gameplay previews were uploaded.
