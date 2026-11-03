@@ -11,7 +11,7 @@ export const CITY_SERVICE_TYPES = Object.freeze({
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const demandFor=building=>{
-  if(building.type==="home")return Math.max(1,Number.isFinite(building.residents)?building.residents:12);
+  if(building.type==="home")return Number.isFinite(building.residents)?Math.max(0,building.residents):12;
   return ({shop:10,industrial:18,administrative:8,service:6,park:3})[building.type]??8;
 };
 
@@ -30,7 +30,7 @@ export function computeCityServices(city) {
     const demandByTarget=new Map(targets.map(target=>[target,demandFor(target)]));
     const servedByTarget=new Map(targets.map(target=>[target,0]));
     const totalDemand=[...demandByTarget.values()].reduce((sum,value)=>sum+value,0);
-    const routes=targets.flatMap(target=>stations
+    const routes=targets.filter(target=>demandByTarget.get(target)>0).flatMap(target=>stations
       .filter(station=>distance(target,station)<=definition.radius)
       .map(station=>({target,station,distance:distance(target,station)})))
       .sort((a,b)=>a.distance-b.distance
@@ -48,7 +48,7 @@ export function computeCityServices(city) {
     for(const target of targets){
       if(!target.serviceSatisfaction)target.serviceSatisfaction={};
       const demand=demandByTarget.get(target);
-      target.serviceSatisfaction[type]=Math.round(servedByTarget.get(target)/demand*100);
+      target.serviceSatisfaction[type]=demand>0?Math.round(servedByTarget.get(target)/demand*100):100;
     }
     demandCoverage[type]=totalDemand?Math.round(servedDemand/totalDemand*100):0;
     capacityUsage[type]=stations.reduce((sum,station)=>sum+definition.capacity-(remaining.get(station)||0),0);
