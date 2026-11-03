@@ -31,6 +31,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // City buildings and the sun are static between construction changes; avoid
+  // regenerating the full shadow map on every mobile frame.
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
 
   const canvas = renderer.domElement;
   canvas.id = "cityThreeViewport";
@@ -299,6 +303,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const buildings = new THREE.Group();
   scene.add(buildings);
   let buildingSignature = "";
+  let buildingRebuilds = 0;
   const windowGeometry = new THREE.BoxGeometry(0.22, 0.28, 0.055);
   const balconyGeometry = new THREE.BoxGeometry(0.62, 0.07, 0.10);
   const columnGeometry = new THREE.BoxGeometry(0.11, 1, 0.11);
@@ -477,6 +482,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const next = city.buildings.map(v => [v.id, v.type, v.x, v.y, v.level].join(":")).join("|");
     if (next === buildingSignature) return;
     buildingSignature = next;
+    buildingRebuilds++;
+    renderer.shadowMap.needsUpdate = true;
     for (const child of [...buildings.children]) {
       buildings.remove(child);
       child.traverse(object => {
@@ -565,7 +572,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
         raisedCurbs: curbInstances.length,
         crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
-        pixelRatio: renderer.getPixelRatio()
+        pixelRatio: renderer.getPixelRatio(),
+        shadowAutoUpdate: renderer.shadowMap.autoUpdate,
+        buildingRebuilds
       };
     },
     destroy() {
