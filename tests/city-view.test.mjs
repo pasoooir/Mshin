@@ -96,6 +96,9 @@ test("legacy version-two saves normalize optional fields without losing valid ci
  assert.equal(normalized.minuteOfDay,495);
  assert.equal(normalized.happiness,100);
  assert.deepEqual(normalized.stats,{income:0,expenses:0,jobs:0,traffic:0});
+ const legacyZone=createInitialCity(919);legacyZone.grid[13][17]="zone-residential";delete legacyZone.zones;
+ assert.equal(isValidCitySave(legacyZone),true,"legacy v2 saves without zone records must preserve zoning tiles");
+ assert.deepEqual(normalizeCitySave(legacyZone).zones,[{x:17,y:13,type:"residential",createdAt:0}]);
 });
 
 test("road demolition retires stranded traffic before the next save",()=>{
