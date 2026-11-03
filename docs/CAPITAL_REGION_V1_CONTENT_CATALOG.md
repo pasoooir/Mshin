@@ -250,3 +250,10 @@ This reference does not add operational IDs or change V1 statuses. Schools, voca
 The proposed causal model for resident needs, demand, effective/accessibile capacity, service delivery, unmet demand, satisfaction indicators and the city scorecard is documented in [Capital Region Citizen Needs, Satisfaction & City Feedback System](CAPITAL_REGION_CITIZEN_NEEDS_SATISFACTION_AND_CITY_FEEDBACK_SPEC.md).
 
 This reference adds no operational IDs and changes no V1 status. It does not approve migration feedback, new service domains, satisfaction formulas or score weights. Building count, decorative density and visual effects grant no direct score. Domains without authoritative modeled data remain Not modeled and are excluded transparently. Existing catalog entries and statuses remain authoritative; all numeric values remain TBD.
+
+
+## District resource allocation and crisis management — design reference
+
+The proposed district-level allocation, fairness, municipal resource governance, emergency dispatch and crisis lifecycle are specified in [Capital Region District Resource Allocation & Crisis Management](CAPITAL_REGION_DISTRICT_RESOURCE_ALLOCATION_AND_CRISIS_MANAGEMENT_SPEC.md).
+
+This reference creates no operational IDs and changes no V1 status. It does not approve new service types, incidents, emergency units, rationing policies or budget mechanics. Resources remain finite and auditable; allocation requires compatibility, availability, access, staffing and funding. Dispatch is not proof of arrival or restoration. Existing catalog entries/statuses remain authoritative and all quantities/thresholds remain TBD.
