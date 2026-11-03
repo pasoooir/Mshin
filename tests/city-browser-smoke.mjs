@@ -324,6 +324,21 @@ try{
   assert.equal(preserved.gridRows,32,"corrupt-save fallback must produce a complete city grid");
   assert.deepEqual(invalidRecoveryErrors,[],"corrupt-save fallback must not throw browser errors");
  }finally{await invalidRecoveryPage.close()}
+ const noFullscreenPage=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const noFullscreenErrors=[];noFullscreenPage.on("pageerror",error=>noFullscreenErrors.push(String(error)));
+ try{
+  await noFullscreenPage.addInitScript(()=>{
+   Object.defineProperty(HTMLElement.prototype,"requestFullscreen",{configurable:true,value:undefined});
+   Object.defineProperty(screen,"orientation",{configurable:true,value:undefined});
+  });
+  await noFullscreenPage.goto("http://127.0.0.1:4173/city.html");
+  await noFullscreenPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  const fallback=await noFullscreenPage.evaluate(()=>({hidden:document.querySelector("#cityOrientationGate").hidden,entered:window.__mshinCityEntryDebug.entered,mode:document.documentElement.dataset.cityOrientation}));
+  assert.equal(fallback.mode,"landscape","fallback fixture must represent a landscape phone");
+  assert.equal(fallback.hidden,true,"landscape play must not be blocked when fullscreen and orientation APIs are unavailable");
+  assert.equal(fallback.entered,true,"the no-fullscreen fallback must publish a successful city entry");
+  assert.deepEqual(noFullscreenErrors,[],"no-fullscreen landscape entry must not throw browser errors");
+ }finally{await noFullscreenPage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, deep save validation/recovery, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
