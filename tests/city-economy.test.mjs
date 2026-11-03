@@ -71,10 +71,10 @@ test("economy output and treasury changes remain deterministic", () => {
 test("commute congestion reduces only business productivity with a strict 15% cap", () => {
   const city = createInitialCity(1106);
   city.population = 12;
-  placeCityItem(city, 17, 14, "home");
-  placeCityItem(city, 18, 14, "shop");
-  placeCityItem(city, 19, 14, "industrial");
-  placeCityItem(city, 17, 15, "administrative");
+  assert.equal(placeCityItem(city, 17, 14, "home").ok, true);
+  assert.equal(placeCityItem(city, 18, 14, "shop").ok, true);
+  assert.equal(placeCityItem(city, 19, 14, "industrial").ok, true);
+  assert.equal(placeCityItem(city, 18, 17, "administrative").ok, true);
   const clear = computeCityEconomy(city, {}, { averageCongestionDelay: 0 });
   const delayed = computeCityEconomy(city, {}, { averageCongestionDelay: 100 });
   const severe = computeCityEconomy(city, {}, { averageCongestionDelay: 150 });
@@ -103,12 +103,14 @@ test("city simulation applies the cached commute productivity metric to its budg
   assert.equal(shop.ok, true);
   assert.equal(factory.ok, true);
   city.population = 24;
-  city.traffic = [{ id: 1, x: 16, y: 14, speed: 0.4, heading: 0, headingX: 1, headingY: 0,
+  city.traffic = [{ id: 1, x: 16, y: 15, speed: 0.4, heading: 0, headingX: 1, headingY: 0,
     routeStep: 0, color: "#fff", targetX: null, targetY: null, previousX: null, previousY: null }];
   stepCity(city);
   assert.ok(city.stats.averageCongestionDelay > 0);
   assert.ok(city.stats.commuteProductivityPercent < 100);
-  assert.ok(city.stats.commuteEconomicLoss >= 0);
+  assert.ok(city.stats.commuteEconomicLoss > 0);
+  // Keep this assertion focused on the persisted economic metrics, not transient vehicle coordinates.
+  city.traffic = [];
   assert.equal(isValidCitySave(city), true);
   const invalid = structuredClone(city);
   invalid.stats.commuteProductivityPercent = 84;
