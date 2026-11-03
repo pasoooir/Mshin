@@ -75,3 +75,8 @@ test("the tenfold circuit scales world geometry, horizon and longitudinal progre
  assert.ok(renderer.includes("perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,60000)"));
  assert.ok(renderer.includes("const segments=mobile?280:softwareRenderer?360:760,half=180"));
 });
+
+test("longitudinal world scaling uses swept hazard contacts to prevent high-speed tunnelling",()=>{
+ assert.ok(game.includes("sweptPickupContact(previousPlayerPosition,c,{x,y},42)"));
+ assert.ok(game.includes("sweptPickupContact(previousPlayerPosition,pickupCurrentPosition,{x,y},66)"));
+});
