@@ -395,3 +395,8 @@ The tourism model is specified in [Capital Region Tourism, Visitors, Attractions
 ## Weather and essential-service dependencies
 
 Weather-related utility demand, drainage, outages and restoration boundaries are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Environmental effects may alter electricity, water, wastewater, waste, healthcare, emergency response or maintenance only through explicit authoritative demand/incident rules. A weather visual cannot cause an outage; restoration requires service evidence. No new service ID is approved.
+
+
+## Emergency service operational contracts
+
+Fire, police, ambulance and hospital capability boundaries are specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Nominal facility capacity must remain distinct from staffed, equipped, available and delivered capacity. Outages, staffing gaps and incident commitments affect effective service only through authoritative state. No emergency facility or service ID is activated here.
