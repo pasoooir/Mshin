@@ -33,6 +33,7 @@ try{
  await page.waitForFunction(()=>Math.abs(parseFloat(document.querySelector("#cityViewport").style.width)-844)<=1
   &&Math.abs(parseFloat(document.querySelector("#cityViewport").style.height)-390)<=1,undefined,{timeout:5000});
 
+
  assert.ok(await page.locator("#cityThreeViewport").count()===1,"city must render through the Three.js WebGL scene");
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
@@ -133,6 +134,24 @@ try{
  await page.keyboard.press("Escape");
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),false,"Escape must close the budget dialog on mobile browsers");
  assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBudget","Escape dismissal must restore focus to the budget trigger");
+ await page.locator("#cityBackup").click();
+ assert.equal(await page.locator("#cityStoragePanel").isVisible(),true,"mobile players must be able to open save and backup management");
+ const downloadPromise=page.waitForEvent("download");
+ await page.locator("#cityExportBackup").click();
+ const backupDownload=await downloadPromise;
+ assert.match(backupDownload.suggestedFilename(),/^mshin-city-\d{4}-\d{2}-\d{2}\.json$/,"city backup must download as a dated JSON file");
+ const backupPath=await backupDownload.path();
+ const backupPayload=JSON.parse(fs.readFileSync(backupPath,"utf8"));
+ assert.equal(backupPayload.format,"mshin-city-save","export must use the portable city backup envelope");
+ assert.equal(backupPayload.city.schemaVersion,2,"export must contain the current validated city schema");
+ assert.equal(backupPayload.city.taxRates.residential,14,"backup must include the current tax policy");
+ const backupTreasury=backupPayload.city.treasury;
+ await page.evaluate(()=>{window.MshinCityDebug.city.treasury=999;window.MshinCityDebug.save()});
+ page.once("dialog",dialog=>dialog.accept());
+ await page.locator("#cityImportFile").setInputFiles({name:"mshin-city-restore.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(backupPayload))});
+ await page.waitForFunction(expected=>window.MshinCityDebug.city.treasury===expected,backupTreasury);
+ assert.equal(await page.locator("#cityStoragePanel").isVisible(),false,"successful restore must close the storage dialog");
+ assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBackup","closing storage must restore focus to its trigger");
  const demolition=await page.evaluate(()=>{const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));if(!b)throw new Error("test fixture needs a second residential building");return window.MshinCityDebug.actAt(b.x,b.y,"bulldoze")});
  assert.equal(demolition.cell,"grass","bulldoze action must remove the selected residential building");assert.equal(demolition.saved.grid.flat().filter(v=>v==="building").length,await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),"demolition must persist immediately");
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
@@ -208,6 +227,44 @@ try{
   assert.equal(recovery.zones,0,"malformed save recovery must not retain invalid zones");
   assert.equal(recovery.traffic,0,"malformed save recovery must not retain invalid traffic");
  }finally{await landscapePage.close()}
+ const legacyGrid=Array.from({length:32},()=>Array(32).fill("grass"));
+ for(let y=0;y<32;y++)for(let x=0;x<32;x++)if([7,15,23].includes(x)||[7,15,23].includes(y))legacyGrid[y][x]="road";
+ for(let y=0;y<5;y++)for(let x=26;x<31;x++)legacyGrid[y][x]="water";
+ legacyGrid[14][17]="building";
+ const legacyFixture={schemaVersion:1,cityId:"legacy-city-01",name:"شهر قدیمی",seed:20261102,tick:42,minuteOfDay:815,treasury:12345,population:12,happiness:76,grid:legacyGrid,buildings:[{id:1,type:"home",x:17,y:14,level:1,age:4,residents:12}],trees:[{x:10,y:10,size:1.2}],citizens:[{id:1,x:11.5,y:12.2,phase:1.4,pace:.16}],traffic:[{id:1,x:15,y:15,speed:1.2,color:"#f5bd58"}],nextBuildingId:2,stats:{income:13,expenses:2,jobs:8,traffic:3}};
+ const migrationPage=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const migrationErrors=[];migrationPage.on("pageerror",error=>migrationErrors.push(String(error)));
+ try{
+  await migrationPage.addInitScript(legacy=>localStorage.setItem("mshin-city-save-v1",JSON.stringify(legacy)),legacyFixture);
+  await migrationPage.goto("http://127.0.0.1:4173/city.html");
+  await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  const migrated=await migrationPage.evaluate(()=>({city:window.MshinCityDebug.city,current:JSON.parse(localStorage.getItem("mshin-city-save-v2")),legacy:localStorage.getItem("mshin-city-save-v1")}));
+  assert.equal(migrated.city.schemaVersion,2,"legacy v1 saves must migrate to the current v2 schema");
+  assert.equal(migrated.city.treasury,12345,"migration must preserve treasury");
+  assert.equal(migrated.city.buildings.length,1,"migration must preserve constructed buildings");
+  assert.equal(migrated.city.population,12,"migration must preserve population");
+  assert.equal(migrated.city.citizens.length,4,"legacy citizens must be rebuilt on the current road network");
+  assert.equal(migrated.city.traffic.length,0,"legacy rail traffic must be regenerated by the current traffic simulation");
+  assert.equal(migrated.current.schemaVersion,2,"migrated state must be written to the current local save key");
+  assert.equal(migrated.legacy,null,"legacy storage key must be retired only after successful migration");
+  assert.deepEqual(migrationErrors,[],"legacy save migration must not throw browser errors");
+ }finally{await migrationPage.close()}
+ const recoveryPage=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const recoveryErrors=[];recoveryPage.on("pageerror",error=>recoveryErrors.push(String(error)));
+ try{
+  await recoveryPage.addInitScript(snapshot=>{
+   localStorage.setItem("mshin-city-save-v2","{corrupt");
+   localStorage.setItem("mshin-city-save-v2.backup",JSON.stringify(snapshot));
+  },backupPayload.city);
+  await recoveryPage.goto("http://127.0.0.1:4173/city.html");
+  await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery")}));
+  assert.equal(recovered.treasury,backupPayload.city.treasury,"a valid previous snapshot must recover after the active save is corrupted");
+  assert.equal(recovered.rows,32,"backup recovery must restore the complete city grid");
+  assert.equal(recovered.stored.schemaVersion,2,"backup recovery must rewrite the active save");
+  assert.equal(recovered.recovery,"{corrupt","the rejected raw save must remain available for manual recovery");
+  assert.deepEqual(recoveryErrors,[],"backup recovery must not throw browser errors");
+ }finally{await recoveryPage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, deep save validation/recovery, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
