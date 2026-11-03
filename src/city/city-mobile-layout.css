@@ -109,3 +109,8 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
  .cityTools .cityTool small{font-size:8px;white-space:nowrap}
  .cityToolPanel[hidden]{display:none!important}
 }
+
+/* Explicit visibility matrix: expanded tool columns on desktop, collapsed on phones. */
+@media(max-width:760px){.cityToolPanel[hidden]{display:none!important}}
+@media(max-height:520px) and (min-width:761px){.cityToolPanel[hidden]{display:none!important}}
+@media(min-width:761px) and (min-height:521px){.cityToolPanel[hidden]{display:flex!important}}
