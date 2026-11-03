@@ -5,12 +5,14 @@
 ## خط مبنای تأییدشده روی main
 
 - **شاخه:** `main`
-- **Commit مبنا:** `c19e7273f4ec5bb9bb583cda58038a749872734f` — ادغام squash مربوط به PR #178.
+- **Commit مبنا:** `bc329187b39e1e2d0bb84b57e53b2e24ca436bde` — آخرین commit مستندات روی main پس از PR #180.
 - **تست مرورگر موبایل مسابقه:** 🟢 موفق — [run 41604548181](https://github.com/pasoooir/Mshin/actions/runs/41604548181)، شامل مسابقه سه‌دور و PWA آفلاین.
 - **تست شهر تمام‌صفحه:** 🟢 موفق — PR #178، [run 41606148309](https://github.com/pasoooir/Mshin/actions/runs/41606148309)؛ Fullscreen پیش از Landscape lock، retry با اولین لمس معتبر و fallback عمودی.
 - **تست شهروندان سه‌بعدی:** 🟢 موفق — PR #177، [run 41606720997](https://github.com/pasoooir/Mshin/actions/runs/41606720997)؛ جمعیت قابل مشاهده، مسیر خیابانی و InstancedMesh.
 - **اعتبارسنجی داده و هسته:** 🟢 موفق — [run 41607752900](https://github.com/pasoooir/Mshin/actions/runs/41607752900)، شامل 41 تست Node و بررسی‌های syntax/architecture.
-- **انتشار GitHub Pages:** 🟡 در حال اجرا — [run 41607969826](https://github.com/pasoooir/Mshin/actions/runs/41607969826) برای commit جاری؛ build/deploy باید قبل از اعلام انتشار نهایی شود.
+- **اعتبارسنجی main:** 🟢 موفق — [run 41608035350](https://github.com/pasoooir/Mshin/actions/runs/41608035350).
+- **انتشار GitHub Pages:** 🟢 موفق — [run 41608035227](https://github.com/pasoooir/Mshin/actions/runs/41608035227) برای commit `bc329187b39e1e2d0bb84b57e53b2e24ca436bde`.
+- **تست مرورگر موبایل main:** 🟡 در حال اجرا — [run 41608035368](https://github.com/pasoooir/Mshin/actions/runs/41608035368).
 - **پذیرش مسابقه موبایل:** مسیر مستقل `MSHIN_MOBILE_ONLY=true` در viewport عمودی 390×844 اجرا شد؛ software-landscape، ورودی لمسی، مسابقه کامل سه‌دور، جدول پنج خودرو، پاداش سکه، achievement، ذخیره پیشرفت، عدم overflow صفحه پایان، دسترسی دکمه «انتخاب مرحله» و اجرای آفلاین PWA همگی قبول شدند.
 - **Artifact تصویری:** [mshin-mobile-gameplay-previews](https://github.com/pasoooir/Mshin/actions/runs/41604548181/artifacts/13216086671)؛ شامل screenshot صفحه پایان مسابقه موبایل و نماهای شهر.
 - **PR #178:** ادغام شد؛ ورود immersive شهر با ترتیب Fullscreen سپس Landscape و fallback مرورگر.
