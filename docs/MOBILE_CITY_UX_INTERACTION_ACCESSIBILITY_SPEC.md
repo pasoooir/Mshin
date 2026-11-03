@@ -276,3 +276,7 @@ Decoration باید ظاهر زیبا داشته باشد اما نشانگر ع
 10. thumbnail با مدل واقعی همخوان باشد.
 11. هیچ Asset یا فونت بدون provenance وارد build نشود.
 12. آزمون روی دستگاه واقعی و ثبت build hash انجام شود.
+
+
+## World presentation integration
+Street furniture, neighborhood readability, road markings, lighting, vehicle visibility and the relationship between the city camera and HUD are specified in [Capital Region Urban Environment & Street Life Atlas](CAPITAL_REGION_URBAN_ENVIRONMENT_AND_STREET_LIFE_ATLAS.md). All final visual checks must use mobile captures with the actual HUD and safe areas visible.
