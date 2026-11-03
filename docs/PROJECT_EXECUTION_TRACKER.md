@@ -1,10 +1,10 @@
-# وضعیت اجرایی جاری — بازبینی 2026-11-03 پس از ادغام PR #211
+# وضعیت اجرایی جاری — بازبینی 2026-11-03 پس از ادغام PR #222
 
 > وضعیت‌ها فقط بر اساس commit و checkهای قابل مشاهده ثبت شده‌اند. CI موبایل معادل QA دستگاه Android واقعی نیست.
 
 ## خط مبنای main
 
-- **main:** `ceaec1375400ed3fd075082ae40b190de197ae5a`.
+- **main:** `2da40fe8954f8e363b60bedf9ec5ff6326599875`.
 - **PR #211 — بهره‌وری کسب‌وکار وابسته به تراکم:** 🟢 ادغام‌شده؛ مدل deterministic با سقف کاهش ۱۵٪ برای درآمد تجاری/صنعتی، بدون جریمه مالیات مسکونی و بودجه عمومی. شاخص بهره‌وری و زیان در بودجه موبایل و ذخیره ثبت می‌شوند.
 - **شواهد exact-head PR #211:** runهای `41648207345` (mobile browser)، `41648207411` (city mobile/rendering)، `41648207413` (save recovery)، `41648207450` (employment)، `41648207532` (utilities/services)، `41648207541` (roads/zoning/traffic) و `41648207909` (validate) همگی موفق شدند.
 - **پذیرش موبایل PR #211:** city entry، mobile-only، مسابقه سه‌دور با پاداش، offline و بارگذاری پیش‌نمایش‌ها همگی در browser-smoke موفق شدند؛ این شبیه‌سازی مرورگر است، نه دستگاه Android واقعی.
@@ -33,7 +33,7 @@
 
 # Mshin — Project Execution Tracker
 
-Last evidence refresh: 2026-10-31 (after PR #54 and Cocos menu source update)
+Last evidence refresh: 2026-11-03 (after PR #217, #221 and #222; main `2da40fe8954f8e363b60bedf9ec5ff6326599875`)
 
 ## Verified release 0.9.3 — repository-local runtime assets
 
