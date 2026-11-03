@@ -103,3 +103,10 @@ Final map dimensions; grid scale; camera projection and angle; exact natural fea
 
 ## Visual environment integration
 The detailed street hierarchy, neighborhood identity, street furniture, placement envelopes, lighting and mobile visual acceptance rules are maintained in [Capital Region Urban Environment & Street Life Atlas](CAPITAL_REGION_URBAN_ENVIRONMENT_AND_STREET_LIFE_ATLAS.md). Spatial graph and terrain definitions remain authoritative for connectivity and placement; visual appearance must not override them.
+
+
+## Public transport and road infrastructure visual/design integration
+
+The detailed future-facing hierarchy and design contracts for highways, bridges, intersections, transit corridors, bus stops, terminals, public parking and network expansion are maintained in [Capital Region Public Transport & Road Infrastructure Atlas](CAPITAL_REGION_PUBLIC_TRANSPORT_AND_ROAD_INFRASTRUCTURE_ATLAS.md).
+
+This atlas does not override the spatial graph. Node/edge connectivity, terrain, placement, frontage, grade and route validity remain authoritative here. Bridges and grade-separated roads require explicit terrain/height/clearance support; a visual crossing is never connectivity. Public transport remains Deferred in the V1 catalog.
