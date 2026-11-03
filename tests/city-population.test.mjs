@@ -60,6 +60,7 @@ test("demolishing a home reassigns surviving pedestrians to an occupied home", (
   assert.equal(second.ok, true);
   assert.ok(city.citizens.some(citizen => citizen.homeId === first.item.id));
   city.buildings = city.buildings.filter(building => building.id !== first.item.id);
+  city.grid[first.item.y][first.item.x] = "grass";
   city.population -= first.item.residents;
   syncCityCitizens(city);
   assert.ok(city.citizens.every(citizen => citizen.homeId === second.item.id));
