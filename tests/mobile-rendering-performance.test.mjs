@@ -87,3 +87,10 @@ test("mobile camera shake is deterministic, bounded and time-decayed",()=>{
  assert.ok(game.includes("Math.sin(shakePhase*1.13)*shake"));
  assert.ok(!game.includes("Math.random()-.5)*shake"),"camera shake must not use per-frame random offsets");
 });
+
+test("WebGL draw timing separates uniform work, buffer setup and GPU submission",()=>{
+ for(const metric of ["maxDrawUniformsMs","lastDrawUniformsMs","maxDrawBufferSetupMs","lastDrawBufferSetupMs","maxDrawSubmitMs","lastDrawSubmitMs"]) assert.ok(renderer.includes(metric),metric+" must be measured");
+ assert.ok(renderer.includes("const uniformMs=performance.now()-uniformStarted"));
+ assert.ok(renderer.includes("const bufferSetupMs=performance.now()-bufferStarted"));
+ assert.ok(renderer.includes("const drawArraysMs=performance.now()-drawStarted"));
+});
