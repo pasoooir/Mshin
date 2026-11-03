@@ -62,7 +62,7 @@ try{
  assert.equal(renderStats.proceduralTextures,4,"ground, road, building facade and roof must use generated texture maps");
  assert.equal(renderStats.texturedBuildingMaterials,3,"building wall and roof materials must use visible procedural texture maps");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
- assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۳"),"the city UI must expose the deployed version");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۴"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
@@ -122,9 +122,9 @@ try{
  await page.waitForTimeout(150);
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds),1,"unchanged buildings must not be recreated during subsequent render frames");
  await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.buildings?.some(b=>b.x===14&&b.y===14)),"city changes should persist");
- const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
+ const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",91,120,420);send("pointerdown",92,260,420);send("pointermove",92,320,420);send("pointerup",92,320,420);send("pointerup",91,120,420)});
- const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");
+ const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitAfter=await page.evaluate(()=>window.MshinCityDebug.view.orbit);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");assert.notEqual(orbitAfter,orbitBefore,"two-finger horizontal drag must orbit the 3D camera around the buildings");
  await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});

@@ -58,3 +58,9 @@
 .cityStorageActions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cityStorageActions button{min-height:52px;padding:10px;border:1px solid #ffffff25;border-radius:13px;background:#ffffff10;color:#f5f7fb;font-weight:850;touch-action:manipulation}.cityStorageActions button:first-child{background:linear-gradient(145deg,#f2d17d,#d99847);color:#2d2417;border:0}
 .cityStorageHint{margin:0;color:#a9c4d1;font-size:11px;line-height:1.7}.cityStoragePanel button:focus-visible{outline:3px solid #f6d98b;outline-offset:3px}
 @media(max-height:520px) and (min-width:761px){.cityStoragePanel{width:min(560px,calc(100vw - 110px));max-height:calc(100dvh - 16px);padding:14px;gap:10px}.cityStorageHeader h2{font-size:18px}.cityStorageActions button{min-height:44px}}
+
+
+/* Compact mobile hint for the new two-finger 3D orbit gesture. */
+.cityGestureHint{position:fixed;z-index:4;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:7px 12px;border:1px solid #ffffff55;border-radius:20px;background:#13263bd9;color:#fff;font-size:11px;font-weight:800;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px #0004}
+@media(min-width:761px){.cityGestureHint{bottom:14px;font-size:12px}}
+@media(max-width:420px){.cityGestureHint{font-size:10px;padding:6px 10px;bottom:max(8px,env(safe-area-inset-bottom))}}

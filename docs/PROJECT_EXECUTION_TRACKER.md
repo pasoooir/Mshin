@@ -278,3 +278,11 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 | `city-mobile-performance.yml` | smoke موبایل شهر، rendering budget و artifactها | Playwright شبیه‌سازی موبایل است؛ اندازه‌گیری Android واقعی همچنان باز است. |
 
 این workflowها ابزار اجرای دستی تست و دروازه پذیرش هستند، نه ادعای تکمیل خودکار قابلیت‌های مفقود. هر نتیجه فقط پس از اجرای واقعی و بررسی log/artifact می‌تواند وضعیت tracker را تغییر دهد.
+
+
+## PR — two-finger 3D city orbit camera (2026-11-03)
+
+- 🟡 پیاده‌سازی در شاخه `feat/city-two-finger-orbit-camera`: ژست دو انگشتی هم‌زمان زوم و چرخش دوربین Three.js را انجام می‌دهد؛ حرکت افقی مرکز دو انگشت و چرخش مچ (twist) هر دو زاویه دید را تغییر می‌دهند.
+- دوربین از نمای ثابت ایزومتریک به orbit واقعی حول مرکز دید تغییر می‌کند؛ حرکت تک‌انگشتی همچنان برای pan و انتخاب/ساخت تک‌لمسی حفظ می‌شود.
+- تست مرورگر موبایل باید هم‌زمان افزایش zoom و تغییر orbit را روی canvas شهر تأیید کند. تأیید دستگاه Android واقعی و بررسی عملکرد GPU همچنان باز است.
+- نسخه وب هدف: `0.15.4`؛ service-worker cache: `mshin-arcade-v66`؛ asset marker: `2026.11.03.02`.

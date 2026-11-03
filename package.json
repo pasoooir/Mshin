@@ -1,6 +1,6 @@
 {
   "name": "mshin-3d-racing",
-  "version": "0.15.3",
+  "version": "0.15.4",
   "private": true,
   "type": "module",
   "description": "Mshin true 3D arcade racing game; WebGL perspective renderer, Cocos Creator 3.8.6 and TypeScript",
