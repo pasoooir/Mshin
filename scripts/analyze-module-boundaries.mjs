@@ -27,7 +27,7 @@ async function walk(directory) {
 
 function domain(file) {
   const value = normalize(file);
-  if (value === "city.html" || value.startsWith("src/city/")) return "city";
+  if (value === "city.html" || value.startsWith("src/city/") || value.startsWith("assets/scripts/City")) return "city";
   if (value.startsWith("src/shared/") || value.startsWith("shared/")) return "shared";
   if (value.startsWith("src/") || value.startsWith("assets/scripts/") || value === "index.html") return "racing";
   return "shared";
@@ -43,6 +43,9 @@ async function resolveExistingTarget(candidate) {
   const clean = path.posix.normalize(candidate).replace(/^\.\//, "");
   const attempts = [
     clean,
+    // NodeNext TypeScript source commonly imports the emitted .js specifier.
+    // Resolve that specifier to its .ts source counterpart for static analysis.
+    ...(clean.endsWith(".js") ? [clean.slice(0, -3) + ".ts"] : []),
     ...[".js", ".mjs", ".cjs", ".ts", ".json", ".css", ".svg"].map(extension => clean + extension),
     ...["index.js", "index.mjs", "index.ts"].map(index => path.posix.join(clean, index))
   ];
