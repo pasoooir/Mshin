@@ -195,6 +195,7 @@ const modelFallbacks = [
 house(-1,-20,"#e5a5a0","#52778b",-.06);house(20,-20,"#c6dca4","#c87950",.12);
 shop(20,1,Math.PI);apartment(-20,21,.06);house(0,21,"#e6d49b","#5c8c7a",-.1);shop(20,21,.03);
 const architectureLoader = new GLTFLoader();
+const architectureModels = new Map();
 const architectureManifest = await fetch("./assets/city/models/manifest.json").then(response=>{if(!response.ok)throw new Error("City architecture manifest unavailable");return response.json();});
 await Promise.all(architectureManifest.assets.map(async asset=>{
  try{
@@ -203,6 +204,7 @@ await Promise.all(architectureManifest.assets.map(async asset=>{
   if(!fallback)return;
   fallback.group.removeFromParent();
   const model=gltf.scene;model.name=asset.id;model.position.set(...fallback.position);model.rotation.y=fallback.rotation;
+  architectureModels.set(asset.buildingType,model);
   model.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;}});
   scene.add(model);
  }catch(error){console.warn("Using procedural city building fallback:",asset.buildingType,error);}
@@ -223,7 +225,7 @@ document.querySelector("#reset").onclick=()=>{camera.position.set(34,29,38);cont
 document.querySelector("#full").onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.()};
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.setSize(innerWidth,innerHeight)});
 function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);if(!document.body.classList.contains("webgl-ready"))document.body.classList.add("webgl-ready")}animate();
-window.__MSHIN_NEIGHBORHOOD_PREVIEW__={scene,camera,renderer,controls,buildingCount:9};
+window.__MSHIN_NEIGHBORHOOD_PREVIEW__={scene,camera,renderer,controls,buildingCount:9,architectureModels};
 </script>
 </body>
 </html>
