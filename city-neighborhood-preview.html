@@ -199,10 +199,12 @@ function roadZ(x){
  for(let z=-27;z<28;z+=4)box(scene,.12,.025,1.8,line,x,.095,z,false);
 }
 function addCurbRamp(x,z,orientation,sign){
- const ramp=box(scene,2.6,.08,1.15,sidewalk,x,.13,z,false);
+ const ramp=orientation==="horizontal"
+  ? box(scene,2.6,.08,1.15,sidewalk,x,.13,z,false)
+  : box(scene,1.15,.08,2.6,sidewalk,x,.13,z,false);
  ramp.name="city-curb-ramp";
- if(orientation==="horizontal")ramp.rotation.x=sign*.11;
- else ramp.rotation.z=-sign*.11;
+ if(orientation==="horizontal")ramp.rotation.x=-sign*.11;
+ else ramp.rotation.z=sign*.11;
  for(let i=-2;i<=2;i++){
   const tile=box(scene,.18,.025,.16,tactile,x+i*.34,.19,z+(orientation==="horizontal"?sign*.5:0),false);
   if(orientation==="vertical"){tile.position.x=x+sign*.5;tile.position.z=z+i*.34;}
