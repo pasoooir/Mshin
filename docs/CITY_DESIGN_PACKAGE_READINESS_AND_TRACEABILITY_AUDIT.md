@@ -116,6 +116,14 @@ Finance, trade, tourism, weather, education/wellbeing, citizen needs, crisis man
 
 Every implementation handoff must point to the exact catalog-approved ID/status and the approved subset of the domain specification. Proposal-only sections remain non-operational.
 
+### 4.7 Material-to-cash chain — audited, unresolved
+
+A dedicated `CITY_V1_MATERIAL_TO_CASH_TRACEABILITY_AUDIT.md` maps existing canonical item/recipe IDs through producer, warehouse, fleet, destination/consumer and finance authority. The closest Required-only chain is `RAW-WOOD` → `MAT-PLANK` → `GOODS-TOOLS` → `CONS-BUILD-UPGRADE`, with a parallel `RAW-METAL` → `MAT-METAL-PART` branch. This is only a dependency sketch: raw-source ownership/replenishment, recipe quantities and profiles, warehouse capacity, workforce/utilities, upgrade material rules, freight activation, accepted delivery, finance authority and offline replay remain unresolved.
+
+The audit preserves exact catalog/registry statuses. `MAT-CEMENT` / `REC-CEMENT-01` remain Candidate; `TRADE-DEPOT` and `VEH-DELIVERY-VAN` remain V1-Support only; market and municipal finance documents remain proposal-only. No NPC trade, household item consumption, freight shipment or monetary-ledger behavior is approved by this cross-review. Item conservation, custody, reservation, idempotency and accounting invariants are recorded as future acceptance requirements, not claimed implementation evidence.
+
+This review does not close section 46 or authorize production code.
+
 ## 5. Dependency traceability that must be completed before implementation
 
 | End-to-end capability | Required authoritative dependency chain | Required failure/recovery evidence |
@@ -161,6 +169,7 @@ Safe work remains limited to design consistency, traceability, source audits, do
 - `docs/CAPITAL_REGION_V1_ITEM_RECIPE_REGISTRY.md`.
 - `docs/CAPITAL_REGION_WORLD_SPATIAL_SPEC.md`.
 - `docs/CAPITAL_REGION_MAP_LAYOUT_DECISION_REGISTER.md` (structured decision template; map values and spatial-to-freight/economy handoffs remain TBD).
+- `docs/CITY_V1_MATERIAL_TO_CASH_TRACEABILITY_AUDIT.md` (Required-only material chain, inventory conservation, custody, finance and replay gaps).
 - `docs/VEHICLE_FLEET_FREIGHT_TRAFFIC_SPEC.md`.
 - `docs/CAPITAL_REGION_PUBLIC_TRANSPORT_AND_ROAD_INFRASTRUCTURE_ATLAS.md`.
 - `docs/CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md`.
