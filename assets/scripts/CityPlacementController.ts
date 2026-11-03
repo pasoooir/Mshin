@@ -1,16 +1,15 @@
 import { _decorator, Camera, Component, EventTouch, geometry, Input, instantiate, input, Node, Prefab, Vec3 } from "cc";
 import { CityBuildingProgression } from "./CityBuildingProgression";
+import { CityOrbitCamera } from "./CityOrbitCamera";
 import {
   intersectCityPlacementGround,
+  isCityPlacementOccupied,
   snapCityPlacementPoint
 } from "../../src/city/core/placement-geometry.js";
 
 const { ccclass, property } = _decorator;
 
-/**
- * Single-pointer touch placement controller for the native city scene.
- * Assign a camera, a building prefab and a world-space placement root.
- */
+/** Single-pointer placement controller with occupied-cell and orbit-input protection. */
 @ccclass("MshinCityPlacementController")
 export class CityPlacementController extends Component {
   @property({ type: Camera, tooltip: "Scene camera used to project screen touches into the city." })
@@ -21,6 +20,9 @@ export class CityPlacementController extends Component {
 
   @property({ type: Node, tooltip: "Parent node for preview and placed buildings." })
   placementRoot: Node | null = null;
+
+  @property({ type: CityOrbitCamera, tooltip: "Optional orbit controller paused during placement." })
+  orbitCamera: CityOrbitCamera | null = null;
 
   @property({ tooltip: "World-space height of the placement ground plane." })
   groundHeight = 0;
@@ -33,6 +35,9 @@ export class CityPlacementController extends Component {
 
   @property({ tooltip: "Initial construction duration assigned to placed buildings." })
   constructionDuration = 30;
+
+  @property({ tooltip: "Minimum separation for unsnapped building placements." })
+  occupancyTolerance = 0.35;
 
   private preview: Node | null = null;
   private readonly ray = new geometry.Ray();
@@ -56,9 +61,8 @@ export class CityPlacementController extends Component {
     this.cancelPlacement();
   }
 
-  /** Arms placement and creates a local preview instance. */
   beginPlacement(): boolean {
-    if (!this.cityCamera || !this.cityCamera.isValid || !this.buildingPrefab || !this.placementRoot || !this.placementRoot.isValid) {
+    if (!this.cityCamera?.isValid || !this.buildingPrefab || !this.placementRoot?.isValid) {
       console.warn("[MshinCity] Placement requires a valid camera, prefab and placement root.");
       return false;
     }
@@ -69,22 +73,21 @@ export class CityPlacementController extends Component {
     this.preview.setScale(0.92, 0.92, 0.92);
     this.placementArmed = true;
     this.previewValid = false;
+    this.orbitCamera?.setPlacementMode(true);
     return true;
   }
 
-  /** Cancels placement and removes the preview without committing a building. */
   cancelPlacement(): void {
     this.placementArmed = false;
     this.previewValid = false;
     this.activeTouchId = null;
-    if (this.preview && this.preview.isValid) this.preview.destroy();
+    if (this.preview?.isValid) this.preview.destroy();
     this.preview = null;
+    this.orbitCamera?.setPlacementMode(false);
   }
 
   private onTouchStart(event: EventTouch): void {
-    if (this.placementArmed && this.activeTouchId === null) {
-      this.activeTouchId = event.getID();
-    }
+    if (this.placementArmed && this.activeTouchId === null) this.activeTouchId = event.getID();
   }
 
   private onTouchMove(event: EventTouch): void {
@@ -95,14 +98,17 @@ export class CityPlacementController extends Component {
     if (!this.placementArmed || this.activeTouchId !== event.getID()) return;
     this.updatePreview(event);
     this.activeTouchId = null;
-    if (!this.previewValid || !this.preview || !this.preview.isValid || !this.placementRoot || !this.buildingPrefab) return;
-
+    if (!this.previewValid || !this.preview?.isValid || !this.placementRoot?.isValid || !this.buildingPrefab) return;
+    if (this.isOccupied(this.previewPosition)) {
+      this.previewValid = false;
+      this.preview.active = false;
+      return;
+    }
     const building = instantiate(this.buildingPrefab);
     building.name = this.buildingPrefab.name;
     building.setParent(this.placementRoot);
     building.setWorldPosition(this.previewPosition);
-    const progression = building.addComponent(CityBuildingProgression);
-    progression.beginConstruction(this.constructionDuration);
+    building.addComponent(CityBuildingProgression).beginConstruction(this.constructionDuration);
     this.cancelPlacement();
   }
 
@@ -110,11 +116,22 @@ export class CityPlacementController extends Component {
     if (this.activeTouchId !== event.getID()) return;
     this.activeTouchId = null;
     this.previewValid = false;
-    if (this.preview && this.preview.isValid) this.preview.active = false;
+    if (this.preview?.isValid) this.preview.active = false;
+  }
+
+  private isOccupied(position: Vec3): boolean {
+    if (!this.placementRoot?.isValid) return true;
+    const occupants = this.placementRoot.children
+      .filter(child => child !== this.preview && child.isValid && child.active && child.getComponent(CityBuildingProgression))
+      .map(child => ({ x: child.worldPosition.x, z: child.worldPosition.z }));
+    const tolerance = Number.isFinite(this.occupancyTolerance)
+      ? Math.max(0.01, this.occupancyTolerance)
+      : 0.35;
+    return isCityPlacementOccupied({ x: position.x, y: position.y, z: position.z }, occupants, this.gridSize, tolerance);
   }
 
   private updatePreview(event: EventTouch): void {
-    if (!this.cityCamera || !this.cityCamera.isValid || !this.preview || !this.preview.isValid) return;
+    if (!this.cityCamera?.isValid || !this.preview?.isValid) return;
     const location = event.getLocation();
     this.cityCamera.screenPointToRay(this.ray, location.x, location.y);
     const intersection = intersectCityPlacementGround({
@@ -126,7 +143,6 @@ export class CityPlacementController extends Component {
       this.preview.active = false;
       return;
     }
-
     const snapped = snapCityPlacementPoint(intersection, this.gridSize);
     if (!snapped) {
       this.previewValid = false;
@@ -135,7 +151,8 @@ export class CityPlacementController extends Component {
     }
     this.previewPosition.set(snapped.x, snapped.y, snapped.z);
     this.preview.setWorldPosition(this.previewPosition);
-    this.preview.active = true;
-    this.previewValid = true;
+    const occupied = this.isOccupied(this.previewPosition);
+    this.preview.active = !occupied;
+    this.previewValid = !occupied;
   }
 }
