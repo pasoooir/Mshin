@@ -1,6 +1,15 @@
 import {chromium} from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+
+const cityToolCategories={select:"manage",bulldoze:"manage",road:"roads","zone-residential":"roads","zone-commercial":"roads","zone-industrial":"roads","zone-administrative":"roads","zone-recreational":"roads",home:"buildings",shop:"buildings",power:"services",water:"services",sewage:"services",waste:"services",police:"services",fire:"services",health:"services",education:"services",service:"services",park:"services"};
+async function clickCityTool(page,type){
+ const category=cityToolCategories[type];
+ if(!category)throw new Error("Missing city tool category: "+type);
+ await page.locator('[data-city-category="'+category+'"]').click();
+ await page.locator('[data-city-tool="'+type+'"]').click();
+}
+
 const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--enable-webgl","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]});
 const page=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
 const errors=[];page.on("pageerror",e=>errors.push(e.stack||String(e)));page.on("console",m=>{if(m.type()==="error")errors.push("console: "+m.text())});page.on("requestfailed",r=>errors.push("request failed: "+r.url()+" "+r.failure()?.errorText));
@@ -34,11 +43,26 @@ try{
   &&Math.abs(parseFloat(document.querySelector("#cityViewport").style.height)-390)<=1,undefined,{timeout:5000});
 
 
+
+ const toolMenu=await page.evaluate(()=>({categories:[...document.querySelectorAll("[data-city-category]")].map(b=>b.textContent.trim()),panels:[...document.querySelectorAll("[data-city-panel]")].map(p=>p.hidden),tools:document.querySelectorAll("[data-city-tool]").length}));
+ assert.equal(toolMenu.categories.length,4,"mobile construction controls must be grouped into four clear categories");
+ assert.equal(toolMenu.tools,20,"grouping must preserve every existing city tool");
+ assert.ok(toolMenu.panels.every(Boolean),"all tool panels must start auto-hidden to keep the map uncluttered");
+ await page.locator('[data-city-category="buildings"]').click();
+ assert.equal(await page.locator('[data-city-panel="buildings"]').isVisible(),true,"tapping a category must reveal only its tool panel");
+ await page.locator('[data-city-tool="home"]').click();
+ assert.equal(await page.locator('[data-city-panel="buildings"]').isVisible(),false,"choosing a tool must automatically hide its category panel");
+ assert.equal(await page.locator('[data-city-tool="home"]').getAttribute("aria-pressed"),"true","the chosen city tool must remain selected after auto-hide");
+
  assert.ok(await page.locator("#cityThreeViewport").count()===1,"city must render through the Three.js WebGL scene");
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.version,"180");
  assert.equal(renderStats.visualStyle,"vibrant-stylized-3d","the city renderer must use the approved vivid 3D art direction");
+ assert.equal(renderStats.proceduralTextures,4,"ground, road, building facade and roof must use generated texture maps");
+ assert.equal(renderStats.texturedBuildingMaterials,3,"building wall and roof materials must use visible procedural texture maps");
+ assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۳"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
@@ -89,7 +113,7 @@ try{
  assert.equal(await page.title(),"شهر من | مِشین");
  const initial=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,buildings:window.MshinCityDebug.city.buildings.length,roads:window.MshinCityDebug.city.grid.flat().filter(t=>t==="road").length,citizens:window.MshinCityDebug.city.citizens.length,traffic:window.MshinCityDebug.city.traffic.length,animals:window.MshinCityDebug.city.animals.length,width:document.querySelector("#cityViewport").width}));
  assert.equal(initial.population,0,"new city must start without residents");assert.equal(initial.buildings,0,"new city must contain no buildings");assert.ok(initial.roads>=300,"the whole map must be subdivided by a complete road grid");assert.equal(initial.citizens,0);assert.equal(initial.traffic,0);assert.equal(initial.animals,0);assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
- await page.locator('[data-city-tool="park"]').click();const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
+ await clickCityTool(page,"park");const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][14]),"building","park tool should place a city asset");
  const parkVisual=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(parkVisual.stylizedBuildings,1,"placed park must become a rendered 3D scene object");
@@ -101,7 +125,7 @@ try{
  const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",91,120,420);send("pointerdown",92,260,420);send("pointermove",92,320,420);send("pointerup",92,320,420);send("pointerup",91,120,420)});
  const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");
- await page.locator('[data-city-tool="zone-residential"]').click();const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
+ await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
@@ -119,7 +143,7 @@ try{
  assert.equal(pedestrianAcceptance.rendered,pedestrianAcceptance.agents,"every active citizen agent must be rendered in the 3D city");
  assert.equal(pedestrianAcceptance.onRoad,true,"pedestrian route nodes must remain on connected road tiles");
  assert.ok(pedestrianAcceptance.drawCalls<80,"instanced pedestrians must preserve the mobile draw-call budget");
- for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,14]]){await page.locator('[data-city-tool="'+type+'"]').click();const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
+ for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,14]]){await clickCityTool(page,type);const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
  await page.evaluate(()=>window.MshinCityDebug.step());
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
@@ -209,11 +233,11 @@ try{
  assert.equal(trafficAcceptance.moving,true,"vehicles must progress along their road routes rather than remain static");
  assert.ok(trafficAcceptance.drawCalls<80,"instanced traffic must preserve the mobile draw-call budget");
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.save()),"traffic state must remain persistable with the city save");
- const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),toolButtons:[...document.querySelectorAll(".cityTool")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,right:r.right,left:r.left}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
+ const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),categoryButtons:[...document.querySelectorAll(".cityToolCategory")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
  assert.ok(mobile.tools.y>mobile.metrics.bottom,"mobile construction dock must sit below the city metrics");
  assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile tool dock must not overlap the bottom status bar");
- assert.ok(mobile.toolButtons.every(b=>b.width>=40&&b.height>=44),"mobile touch targets must be at least 40×44 CSS pixels");assert.ok(await page.locator(".cityTools").evaluate(el=>el.scrollWidth>el.clientWidth),"extended city construction tools must remain horizontally reachable on phones");
+ assert.ok(mobile.categoryButtons.length===4&&mobile.categoryButtons.every(b=>b.width>=40&&b.height>=44),"all four mobile category controls must remain at least 40×44 CSS pixels");await page.locator('[data-city-category="roads"]').click();const openToolTargets=await page.locator('[data-city-panel="roads"] .cityTool').evaluateAll(items=>items.map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}));assert.ok(openToolTargets.length===6&&openToolTargets.every(b=>b.width>=40&&b.height>=44),"every revealed construction tool must remain a usable mobile touch target");await page.locator('[data-city-category="roads"]').click();
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
  await page.screenshot({path:"artifacts/city-mobile-landscape-844x390.png"});
  const compactPage=await browser.newPage({viewport:{width:360,height:640},screen:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
