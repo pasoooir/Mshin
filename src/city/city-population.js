@@ -94,6 +94,22 @@ function mapCommuteAgents(city, assignments) {
   return result;
 }
 
+function trafficSpeedFactor(city, citizen) {
+  if (!Array.isArray(city.traffic) || city.traffic.length === 0) return 1;
+  let nearbyVehicles = 0;
+  const targetX = Number.isFinite(citizen.targetX) ? citizen.targetX : citizen.roadX;
+  const targetY = Number.isFinite(citizen.targetY) ? citizen.targetY : citizen.roadY;
+  for (const vehicle of city.traffic) {
+    if (!Number.isFinite(vehicle.x) || !Number.isFinite(vehicle.y)) continue;
+    const currentDistance = Math.hypot(vehicle.x - citizen.x, vehicle.y - citizen.y);
+    const targetDistance = Math.hypot(vehicle.x - targetX, vehicle.y - targetY);
+    if (currentDistance <= 1.15 || targetDistance <= 0.8) nearbyVehicles++;
+  }
+  // Traffic is a local speed influence, not a hard stop: pedestrians always
+  // retain at least 40% of their normal pace so congestion cannot deadlock them.
+  return Math.max(0.4, 1 - nearbyVehicles * 0.18);
+}
+
 function advanceCommute(city, citizen, flow, seconds) {
   const route = flow.route;
   if (!route.length || !isRoad(city, route[0].x, route[0].y) || !isRoad(city, route[route.length - 1].x, route[route.length - 1].y)) return false;
@@ -128,7 +144,7 @@ function advanceCommute(city, citizen, flow, seconds) {
       citizen.x = start.x; citizen.y = start.y;
     }
   }
-  let remaining = Math.min(0.5, Number.isFinite(citizen.pace) && citizen.pace > 0 ? citizen.pace : 0.15) * seconds;
+  let remaining = Math.min(0.5, Number.isFinite(citizen.pace) && citizen.pace > 0 ? citizen.pace : 0.15) * trafficSpeedFactor(city, citizen) * seconds;
   let transitions = 0;
   while (remaining > 1e-8 && transitions < 8) {
     if (index >= route.length - 1) {
@@ -268,7 +284,8 @@ export function stepCityCitizens(city, seconds = 1, commuteAssignments = []) {
       delete citizen.commuteWait;
     }
     const pace = Number.isFinite(citizen.pace) && citizen.pace > 0 ? Math.min(0.5, citizen.pace) : 0.15;
-    let remaining = pace * seconds;
+    const effectivePace = pace * trafficSpeedFactor(city, citizen);
+    let remaining = effectivePace * seconds;
     let transitions = 0;
     while (remaining > 1e-8 && transitions < 8) {
       if (!isRoad(city, citizen.targetX, citizen.targetY) && !chooseNextRoad(city, citizen)) break;
@@ -302,7 +319,7 @@ export function stepCityCitizens(city, seconds = 1, commuteAssignments = []) {
         remaining = 0;
       }
     }
-    citizen.phase = (citizen.phase || 0) + pace * seconds;
+    citizen.phase = (citizen.phase || 0) + effectivePace * seconds;
   }
   return city.citizens;
 }
