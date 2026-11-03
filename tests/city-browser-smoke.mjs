@@ -427,8 +427,9 @@ try{
   assert.deepEqual(deniedFullscreenErrors,[],"denied-fullscreen landscape entry must not throw browser errors");
  }finally{await deniedFullscreenPage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
- await page.close();
- const cameraVideoPath=await page.video().path();
+ const cameraVideo=page.video();
+ await cameraContext.close();
+ const cameraVideoPath=await cameraVideo.path();
  fs.copyFileSync(cameraVideoPath,"artifacts/city-camera-gesture.webm");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, deep save validation/recovery, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
