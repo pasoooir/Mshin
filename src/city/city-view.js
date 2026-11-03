@@ -1,5 +1,6 @@
 import { CITY_ZONES, placeCityZone, developCityZones, isCityZoneCell } from "./city-zoning.js";
 import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
+import { stepCityTraffic } from "./city-traffic.js";
 const SIZE=32,KEY="mshin-city-save-v2",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
@@ -7,7 +8,7 @@ const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b
 export function createInitialCity(seed=20261102){
  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill("grass"));
  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if([7,8,15,16,23,24].includes(x)||[7,8,15,16,23,24].includes(y))grid[y][x]="road";
- return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],animals:[],nextBuildingId:1,stats:{income:0,expenses:0,jobs:0,traffic:0}};
+ return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,jobs:0,traffic:0}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
@@ -21,7 +22,7 @@ export function stepCity(city,seconds=1){
  const serviceScore=(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
  city.happiness=Math.max(25,Math.min(98,city.happiness+(serviceScore-.35)*.08+(parks.length>2?.05:0)));
  for(const p of city.citizens){p.phase+=p.pace*seconds;p.x+=Math.cos(p.phase)*.012;p.y+=Math.sin(p.phase)*.009;if(p.x<7||p.x>24)p.phase=Math.PI-p.phase;if(p.y<7||p.y>24)p.phase=-p.phase;p.x=Math.max(7,Math.min(24,p.x));p.y=Math.max(7,Math.min(24,p.y))}
- for(const v of city.traffic){v.x+=v.speed*seconds*.24;if(v.x>SIZE+1)v.x=-1}
+ stepCityTraffic(city,seconds);
  for(const a of city.animals||[]){a.phase+=a.pace*seconds;a.x+=Math.cos(a.phase)*.009;a.y+=Math.sin(a.phase)*.007;a.x=Math.max(8,Math.min(25,a.x));a.y=Math.max(8,Math.min(25,a.y))}
  return city;
 }
