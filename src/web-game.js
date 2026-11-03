@@ -49,8 +49,24 @@ function loadProgress(){try{const p=JSON.parse(localStorage.getItem("mshin-progr
 function saveProgress(){try{localStorage.setItem("mshin-progress-v1",JSON.stringify(progress))}catch{}}
 function saveSettings(){try{localStorage.setItem("mshin-settings-v1",JSON.stringify(settings))}catch{}}
 function activeCar(){const base=carModels.find(c=>c.id===selectedCar)||carModels[0],u=progress.upgrades[selectedCar]||{};return {...base,max:base.max*(1+(u.engine||0)*.055),accel:base.accel*(1+(u.engine||0)*.06),grip:base.grip*(1+(u.grip||0)*.07),nitroDuration:1.8+(u.nitro||0)*.25}}
-function resize(){dpr=Math.min(devicePixelRatio||1,2);const portrait=matchMedia("(orientation: portrait)").matches;width=portrait?Math.max(innerWidth,innerHeight):innerWidth;height=portrait?Math.min(innerWidth,innerHeight):innerHeight;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);if(racePositionCanvas){racePositionCanvas.width=Math.round(width*dpr);racePositionCanvas.height=Math.round(height*dpr)}zoom=Math.min(width/1000,height/650,1)*.96;ctx.setTransform(dpr,0,0,dpr,0,0);window.MshinViewport={width,height,softwareLandscape:portrait}}
-addEventListener("resize",resize);resize();
+function resize(){
+ const viewport=window.visualViewport;
+ const viewportWidth=Math.max(1,Math.round(viewport?.width||innerWidth));
+ const viewportHeight=Math.max(1,Math.round(viewport?.height||innerHeight));
+ dpr=Math.min(devicePixelRatio||1,2);
+ const portrait=matchMedia("(orientation: portrait)").matches;
+ width=portrait?Math.max(viewportWidth,viewportHeight):viewportWidth;
+ height=portrait?Math.min(viewportWidth,viewportHeight):viewportHeight;
+ canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);
+ if(racePositionCanvas){racePositionCanvas.width=Math.round(width*dpr);racePositionCanvas.height=Math.round(height*dpr)}
+ zoom=Math.min(width/1000,height/650,1)*.96;ctx.setTransform(dpr,0,0,dpr,0,0);
+ window.MshinViewport={width,height,softwareLandscape:portrait,visualViewportWidth:viewportWidth,visualViewportHeight:viewportHeight,visualViewportScale:viewport?.scale||1};
+}
+let resizeFrame=0;
+function scheduleViewportResize(){if(resizeFrame)return;resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;resize()})}
+addEventListener("resize",scheduleViewportResize,{passive:true});
+window.visualViewport?.addEventListener("resize",scheduleViewportResize,{passive:true});
+resize();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),fmt=s=>{let m=Math.floor(s/60),v=Math.floor(s%60);return String(m).padStart(2,"0")+":"+String(v).padStart(2,"0")};
 const TRACK_LENGTH_SCALE=10,TRACK_RADIUS_X=1180*TRACK_LENGTH_SCALE,TRACK_RADIUS_Y=760*TRACK_LENGTH_SCALE,ROAD_HALF_WIDTH=180;
 function center(t){const s=stage,phase=s.seed*.017,amp=[.025,.07,.12,.095,.14][s.slot],harm=[2,2,6,3,7][s.slot],wave=1+amp*Math.sin(harm*t+phase)+.045*Math.cos(3*t+s.seed*.031)+.022*Math.sin(5*t+s.seed*.013);return {x:Math.cos(t)*TRACK_RADIUS_X*wave,y:Math.sin(t)*TRACK_RADIUS_Y*(wave-.025*Math.sin(2*t+phase))}}
