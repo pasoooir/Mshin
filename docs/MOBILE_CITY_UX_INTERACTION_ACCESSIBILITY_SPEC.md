@@ -280,3 +280,8 @@ Decoration باید ظاهر زیبا داشته باشد اما نشانگر ع
 
 ## World presentation integration
 Street furniture, neighborhood readability, road markings, lighting, vehicle visibility and the relationship between the city camera and HUD are specified in [Capital Region Urban Environment & Street Life Atlas](CAPITAL_REGION_URBAN_ENVIRONMENT_AND_STREET_LIFE_ATLAS.md). All final visual checks must use mobile captures with the actual HUD and safe areas visible.
+
+
+## Emergency management mobile UX
+
+Mobile emergency overview, coverage map, station/fleet details, incident lifecycle, service scorecard and accessibility behavior are specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Dispatch and incident inspection must remain usable on portrait phones with large touch targets, readable state labels and accessible siren/flashing controls.
