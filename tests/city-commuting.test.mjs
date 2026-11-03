@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createInitialCity, placeCityItem, stepCity } from "../src/city/city-view.js";
+import { createInitialCity, placeCityItem, stepCity, isValidCitySave } from "../src/city/city-view.js";
 import { computeCityEmployment } from "../src/city/city-employment.js";
 import { computeCityCommuting } from "../src/city/city-commuting.js";
 
@@ -81,4 +81,20 @@ test("commute assignments are deterministic and integrated into city simulation 
   const a = computeCityCommuting(first,computeCityEmployment(first));
   const b = computeCityCommuting(second,computeCityEmployment(second));
   assert.deepEqual(a,b);
+});
+
+test("commute telemetry is bounded and validated in city saves", () => {
+  const { city } = connectedWorkCity(3105);
+  city.population = 24;
+  stepCity(city);
+  assert.equal(isValidCitySave(city),true);
+  const invalidCoverage = structuredClone(city);
+  invalidCoverage.stats.commuteCoverage = 101;
+  assert.equal(isValidCitySave(invalidCoverage),false);
+  const invalidWorkers = structuredClone(city);
+  invalidWorkers.stats.commutingWorkers = -1;
+  assert.equal(isValidCitySave(invalidWorkers),false);
+  const invalidDistance = structuredClone(city);
+  invalidDistance.stats.averageCommuteDistance = -0.1;
+  assert.equal(isValidCitySave(invalidDistance),false);
 });
