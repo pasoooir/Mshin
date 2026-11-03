@@ -14,3 +14,7 @@ Original, self-contained glTF 2.0 building assets for Mshin.
 | House | Gabled terracotta roof, entrance, windows | 2.45 × 2.55 × 2.05 |
 | Apartment | Four balcony/window bands, flat roof | 2.45 × 3.95 × 2.08 |
 | Shop | Glazed storefront, striped awning | 2.65 × 2.10 × 2.72 |
+
+## Runtime note
+
+The model files and manifest are same-origin and precached by the service worker. The preview page currently imports the existing Three.js runtime through its CDN import map; therefore a first offline visit may show the built-in SVG fallback rather than the WebGL scene. The procedural building fallback also remains active if an individual GLTF request fails.
