@@ -127,3 +127,8 @@ The proposed district allocation and crisis system is documented in [Capital Reg
 ## Interregional trade access and freight routing integration
 
 The proposed interregional commerce system is documented in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). Regional market identity, region unlock state, physical/logical trade connections, road/access graph versions, transfer capacity and destination receiving capacity must be separate explicit authorities. Visual proximity or an unlocked region does not imply a valid freight route or instant transfer. Route changes invalidate stale shipment paths; delivery requires arrival and acceptance evidence. This cross-reference approves no new region, route, freight mode or V1 ID.
+
+
+## Tourism destinations and visitor-access integration
+
+The proposed tourism model is documented in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Attractions and lodging venues require explicit destination records, entrances, accessible paths, operating state and capacity; visual proximity is not proof of access. Visitor routes must reference a versioned authoritative access graph, and graph changes invalidate stale itineraries. A visitor's ETA is not arrival. This reference creates no attraction, district, route or operational ID.
