@@ -87,6 +87,8 @@ export class CityPlacementController extends Component {
     const spacing = Math.max(0, this.gridSize);
     for (const child of this.placementRoot.children) {
       if (child === this.preview || !child.isValid || !child.active) continue;
+      // Only placed buildings reserve a cell; roads, trees, lamps and scenery do not.
+      if (!child.getComponent(CityBuildingProgression)) continue;
       const occupied = child.worldPosition;
       if (spacing > 0) {
         if (Math.round(occupied.x / spacing) === Math.round(position.x / spacing)
