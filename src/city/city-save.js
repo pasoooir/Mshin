@@ -120,7 +120,7 @@ export function isValidCitySave(v) {
   if (citizenIds.size !== v.citizens.length) return false;
   if (v.nextCitizenId !== undefined && citizenIds.size && v.nextCitizenId <= Math.max(...citizenIds)) return false;
   if (v.stats) {
-    for (const key of ["income","expenses","net","taxRevenue","maintenance","serviceUpkeep","jobs","traffic","utilityCoverage","publicServiceCoverage","overallCoverage"]) {
+    for (const key of ["income","expenses","net","taxRevenue","maintenance","serviceUpkeep","jobs","traffic","utilityCoverage","publicServiceCoverage","overallCoverage","commutingWorkers","commuteCoverage","averageCommuteDistance","unreachableWorkers"]) {
       if (v.stats[key] !== undefined && !Number.isFinite(v.stats[key])) return false;
     }
     if (v.stats.serviceCoverage !== undefined
