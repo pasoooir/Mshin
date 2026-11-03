@@ -96,13 +96,15 @@ let activePhase = "browser launch";
 const progressHeartbeat = setInterval(() => console.log("[browser-smoke] still running; current phase: " + activePhase), 15000);
 progressHeartbeat.unref();
 const errors = [];
+const mobileOnly = process.env.MSHIN_MOBILE_ONLY === "true";
 try {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const page = await browser.newPage({ viewport: mobileOnly ? { width: 844, height: 390 } : { width: 1280, height: 800 }, isMobile: mobileOnly, hasTouch: mobileOnly });
   page.on("pageerror", error => errors.push(error.message));
   page.setDefaultTimeout(60000);
   page.setDefaultNavigationTimeout(60000);
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   page.on("requestfailed", request => errors.push("requestfailed: " + request.url() + " — " + (request.failure()?.errorText || "unknown")));
+  if (!mobileOnly) {
   activePhase = "initial desktop boot and asset preload";
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(page, "initial desktop boot");
@@ -442,6 +444,8 @@ try {
   await page.locator("#quitRace").click();
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
+  }
+  if (!mobileOnly) {
   activePhase = "mobile viewport and touch controls";
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
@@ -539,10 +543,11 @@ try {
   // in Chromium, starving the economy page's main thread. The later PWA checks
   // only need the same browser context/origin, so release both scenes now.
   await mobile.close();
+  }
   await page.goto("about:blank");
 
   activePhase = "economy progression, AI driver and rewarded race";
-  const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const economy = await browser.newPage({ viewport: mobileOnly ? { width: 844, height: 390 } : { width: 1280, height: 800 }, isMobile: mobileOnly, hasTouch: mobileOnly });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // Bring the page forward and explicitly reactivate its lifecycle before the
   // long simulation; headless bringToFront() alone does not always clear the
@@ -610,7 +615,7 @@ try {
   // previous test polled telemetry and moved the mouse over CDP for every
   // 70ms slice; that throttled the game to ~1.5 rendered frames/second and
   // advanced only a fraction of the simulation time before the wall timeout.
-  await withTimeout(economy.evaluate(({ center, limit }) => {
+  await withTimeout(economy.evaluate(({ center, limit, pointerType }) => {
     const stick = document.querySelector("#stick");
     const gas = document.querySelector("#gas");
     const brake = document.querySelector("#brake");
@@ -618,7 +623,7 @@ try {
     const gasPointerId = 7320;
     const brakePointerId = 7321;
     const dispatchButton = (element, type, id) => element.dispatchEvent(new PointerEvent(type, {
-      bubbles: true, cancelable: true, pointerId: id, pointerType: "mouse",
+      bubbles: true, cancelable: true, pointerId: id, pointerType,
       clientX: 0, clientY: 0, button: 0, buttons: type === "pointerup" ? 0 : 1
     }));
     dispatchButton(gas, "pointerdown", gasPointerId);
@@ -630,7 +635,7 @@ try {
     // requested sign is the sign received by the game simulation.
     const portrait = matchMedia("(orientation: portrait)").matches;
     const dispatchPointer = (type, x) => stick.dispatchEvent(new PointerEvent(type, {
-      bubbles: true, cancelable: true, pointerId, pointerType: "mouse",
+      bubbles: true, cancelable: true, pointerId, pointerType,
       clientX: portrait ? center.x : center.x + x * limit,
       clientY: portrait ? center.y + x * limit : center.y,
       button: 0, buttons: type === "pointerup" ? 0 : 1
@@ -643,7 +648,7 @@ try {
         const lateralVelocity = Number(telemetry.playerLateralVelocity) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
         const speed = Math.max(60, Number(telemetry.playerSpeed) || 0);
-        const curvature = Number(telemetry.playerTrackCurvature) || 0;
+        const curvature = (Number(telemetry.playerTrackCurvature) || 0) * (Number(telemetry.trackLengthScale) || 1);
         const lookAhead = 320;
         // Keep road curvature as feed-forward while independently correcting
         // lateral displacement, chassis heading and outward lateral velocity.
@@ -677,7 +682,7 @@ try {
     };
     window.__mshinRaceDriver = { get controls() { return lastControls; }, pointerId };
     window.__mshinRaceDriverFrame = requestAnimationFrame(drive);
-  }, { center: steeringCenter, limit: steeringLimit }), 15000, "economy race driver installation");
+  }, { center: steeringCenter, limit: steeringLimit, pointerType: mobileOnly ? "touch" : "mouse" }), 15000, "economy race driver installation");
   const raceDeadline = 180000;
   let raceDeadlineTimer;
   try {
@@ -778,8 +783,7 @@ try {
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
   await page.context().setOffline(false);
-  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
-");
+  process.stdout.write(mobileOnly ? "Mobile rewarded-race smoke passed: full three-lap finish, AI standings, coin rewards, achievements, persistent progress and offline PWA launch.\n" : "Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\n");
 } finally {
   clearInterval(progressHeartbeat);
   await browser.close();
