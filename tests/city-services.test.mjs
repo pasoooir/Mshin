@@ -113,6 +113,8 @@ test("resident wellbeing reflects finite service demand and workforce unemployme
     assert.equal(placeCityItem(city,17,12,"home").ok,true);
   }
   assert.equal(placeCityItem(employed,17,14,"industrial").ok,true);
+  underemployed.happiness=70;
+  employed.happiness=70;
   stepCity(underemployed);
   stepCity(employed);
   assert.equal(underemployed.stats.unemploymentRate,100);
