@@ -7,10 +7,45 @@
 <title>پیش‌نمایش محله سه‌بعدی | مِشین</title>
 <style>
 :root{color-scheme:dark;font-family:Tahoma,Arial,sans-serif}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bcfe1}canvas{display:block;position:fixed;inset:0;touch-action:none}.hud{position:fixed;z-index:2;inset:env(safe-area-inset-top) 0 auto 0;padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}.title,.actions,.hint{background:#102b35d9;color:#fff;border:1px solid #ffffff30;border-radius:15px;box-shadow:0 8px 28px #17323b30;backdrop-filter:blur(12px)}.title{padding:10px 14px}.title strong{display:block;font-size:15px}.title small{display:block;color:#c9e5e9;font-size:11px;margin-top:5px}.actions{display:flex;gap:6px;padding:6px;pointer-events:auto}.actions button{border:0;border-radius:10px;padding:10px 12px;background:#ffffff18;color:white;font:inherit;font-size:12px;min-height:42px}.actions button:active{background:#ffffff38}.hint{position:fixed;z-index:2;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:10px 14px;font-size:12px;white-space:nowrap;color:#eaf8f5;text-align:center;pointer-events:none}.badge{position:fixed;z-index:2;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));background:#fff;color:#25443e;border-radius:12px;padding:8px 11px;font-size:11px;font-weight:bold}@media(max-width:650px){.hud{padding:8px;flex-direction:column}.title{padding:8px 11px}.actions{align-self:flex-end}.actions button{padding:8px 10px}.hint{bottom:calc(56px + env(safe-area-inset-bottom));font-size:10px}.badge{bottom:calc(10px + env(safe-area-inset-bottom));left:10px;right:auto}}
+
+#visualFallback{position:fixed;inset:0;width:100%;height:100%;z-index:0;background:linear-gradient(#a9d8e9 0 56%,#78ad68 56%);transition:opacity .35s ease}
+#visualFallback .road{fill:#46515b;stroke:#d8d4c5;stroke-width:9}
+#visualFallback .mark{stroke:#f3e6b9;stroke-width:5;stroke-dasharray:22 18}
+#visualFallback .side{fill:#d0cbbb}
+#visualFallback .wall{stroke:#fff0d3;stroke-width:3}
+#visualFallback .win{fill:#91d4df;stroke:#fff1d4;stroke-width:3}
+#visualFallback .tree{fill:#347c49;stroke:#245f3c;stroke-width:4}
+#visualFallback .trunk{stroke:#795037;stroke-width:9}
+#visualFallback .roof{stroke:#8e493d;stroke-width:3}
+body.webgl-ready #visualFallback{opacity:0;visibility:hidden}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
-<body>
+<body>\n<svg id="visualFallback" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" aria-label="نمای جایگزین محله سه‌بعدی">
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#9bd1e4"/><stop offset="1" stop-color="#d5e9d8"/></linearGradient>
+ <linearGradient id="grass" x2="0" y2="1"><stop stop-color="#91c47b"/><stop offset="1" stop-color="#639c5c"/></linearGradient>
+ <filter id="shadow"><feGaussianBlur stdDeviation="7"/></filter>
+</defs>
+<rect width="1000" height="700" fill="url(#sky)"/><path d="M0 360 Q250 320 500 365 T1000 350 V700 H0Z" fill="url(#grass)"/>
+<path d="M0 300 L1000 300 L1000 475 L0 475Z" class="road"/><path d="M0 386H1000" class="mark"/>
+<path d="M405 0H595V700H405Z" class="road"/><path d="M500 0V700" class="mark"/>
+<path d="M0 285H1000V310H0ZM0 465H1000V490H0ZM390 0H415V700H390ZM585 0H610V700H585Z" class="side"/>
+<g opacity=".95">
+ <g transform="translate(95 95)"><ellipse cx="90" cy="190" rx="105" ry="25" fill="#35513b" opacity=".25"/><path d="M20 75L100 25L180 75V180H20Z" fill="#e9bd88" class="wall"/><path d="M8 78L100 10L192 78L178 88L100 34L22 88Z" fill="#a95345" class="roof"/><rect x="42" y="105" width="30" height="40" class="win"/><rect x="120" y="105" width="30" height="40" class="win"/><rect x="84" y="130" width="30" height="50" fill="#795037"/></g>
+ <g transform="translate(675 80)"><ellipse cx="95" cy="205" rx="115" ry="25" fill="#35513b" opacity=".25"/><path d="M15 55L105 15L190 55V190H15Z" fill="#dba5a0" class="wall"/><path d="M5 58L105 0L200 58L185 70L105 22L20 70Z" fill="#55798b"/><rect x="40" y="90" width="35" height="45" class="win"/><rect x="125" y="90" width="35" height="45" class="win"/><rect x="82" y="140" width="40" height="50" fill="#795037"/></g>
+ <g transform="translate(80 505)"><path d="M0 55L95 0L190 55V150H0Z" fill="#e7c98e" class="wall"/><path d="M-12 58L95 -10L202 58L185 70L95 20L5 70Z" fill="#527c70"/><rect x="35" y="85" width="35" height="40" class="win"/><rect x="120" y="85" width="35" height="40" class="win"/></g>
+ <g transform="translate(690 505)"><path d="M0 45H190V155H0Z" fill="#e6b46f" class="wall"/><path d="M-8 45H198V70H-8Z" fill="#247f83"/><rect x="30" y="80" width="75" height="65" class="win"/><rect x="125" y="80" width="35" height="65" fill="#8b6048"/><path d="M-5 72H195L180 90H10Z" fill="#f3e6c8"/></g>
+ <g transform="translate(700 280)"><path d="M0 35L85 0L170 35V165H0Z" fill="#d7c39f" class="wall"/><path d="M-8 35L85 -8L178 35V48L85 12L0 48Z" fill="#536e78"/><g class="win"><rect x="20" y="60" width="30" height="32"/><rect x="70" y="60" width="30" height="32"/><rect x="120" y="60" width="30" height="32"/><rect x="20" y="112" width="30" height="32"/><rect x="70" y="112" width="30" height="32"/><rect x="120" y="112" width="30" height="32"/></g></g>
+</g>
+<g>
+ <g transform="translate(290 180)"><path d="M0 70V0" class="trunk"/><circle cx="0" cy="-12" r="37" class="tree"/><circle cx="-22" cy="-28" r="25" class="tree"/><circle cx="23" cy="-32" r="26" class="tree"/></g>
+ <g transform="translate(745 210)"><path d="M0 70V0" class="trunk"/><circle cx="0" cy="-12" r="37" class="tree"/><circle cx="-22" cy="-28" r="25" class="tree"/><circle cx="23" cy="-32" r="26" class="tree"/></g>
+ <g transform="translate(300 550)"><path d="M0 70V0" class="trunk"/><circle cx="0" cy="-12" r="37" class="tree"/><circle cx="-22" cy="-28" r="25" class="tree"/><circle cx="23" cy="-32" r="26" class="tree"/></g>
+ <g transform="translate(850 550)"><path d="M0 70V0" class="trunk"/><circle cx="0" cy="-12" r="37" class="tree"/><circle cx="-22" cy="-28" r="25" class="tree"/><circle cx="23" cy="-32" r="26" class="tree"/></g>
+</g>
+<g fill="#fff0c0" stroke="#52666a" stroke-width="5"><path d="M350 260V205h12v55M650 520v-55h12v55"/></g>
+</svg>
 <div class="hud"><div class="title"><strong>🏡 محله نمونه مِشین</strong><small>3D VISUAL QUALITY · PROTOTYPE 01</small></div><div class="actions"><button id="day">☀ روز</button><button id="night">☾ شب</button><button id="reset">بازنشانی دوربین</button><button id="full">تمام‌صفحه</button></div></div>
 <div class="hint">👆 یک انگشت: جابه‌جایی دوربین · ✌️ دو انگشت: چرخش و زوم · 🖱 کشیدن: چرخش</div>
 <div class="badge">Three.js · WebGL</div>
@@ -171,7 +206,7 @@ document.querySelector("#night").onclick=()=>setTime(true);
 document.querySelector("#reset").onclick=()=>{camera.position.set(34,29,38);controls.target.set(0,0,0);controls.update()};
 document.querySelector("#full").onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.()};
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.setSize(innerWidth,innerHeight)});
-function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);if(!document.body.classList.contains("webgl-ready"))document.body.classList.add("webgl-ready")}animate();
 window.__MSHIN_NEIGHBORHOOD_PREVIEW__={scene,camera,renderer,controls,buildingCount:9};
 </script>
 </body>
