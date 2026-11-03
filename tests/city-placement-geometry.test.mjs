@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   intersectCityPlacementGround,
-  snapCityPlacementPoint
+  snapCityPlacementPoint,
+  isCityPlacementOccupied
 } from "../.test-build/src/city/core/placement-geometry.js";
 
 test("ground projection intersects the forward ray at the configured height", () => {
@@ -36,4 +37,21 @@ test("grid snapping is deterministic and preserves the ground plane", () => {
 test("invalid grid values and coordinates are rejected", () => {
   assert.equal(snapCityPlacementPoint({ x: 1, y: 2, z: 3 }, Number.NaN), null);
   assert.equal(snapCityPlacementPoint({ x: 1, y: Number.POSITIVE_INFINITY, z: 3 }, 1), null);
+});
+
+test("occupied snapped cells reject a second building but ignore distant cells", () => {
+  const occupants = [{ x: 2, z: 3 }, { x: 8, z: 8 }];
+  assert.equal(isCityPlacementOccupied({ x: 2.2, y: 0, z: 3.1 }, occupants, 1), true);
+  assert.equal(isCityPlacementOccupied({ x: 4, y: 0, z: 3 }, occupants, 1), false);
+});
+
+test("unsnapped placements enforce a configurable separation radius", () => {
+  const occupants = [{ x: 0, z: 0 }];
+  assert.equal(isCityPlacementOccupied({ x: 0.2, y: 0, z: 0.2 }, occupants, 0, 0.35), true);
+  assert.equal(isCityPlacementOccupied({ x: 1, y: 0, z: 1 }, occupants, 0, 0.35), false);
+});
+
+test("invalid occupancy configuration fails closed", () => {
+  assert.equal(isCityPlacementOccupied({ x: Number.NaN, y: 0, z: 0 }, [], 1), true);
+  assert.equal(isCityPlacementOccupied({ x: 0, y: 0, z: 0 }, [], Number.NaN), true);
 });
