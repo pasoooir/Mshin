@@ -1,12 +1,15 @@
 import { _decorator, Camera, Component, EventTouch, geometry, Input, instantiate, input, Node, Prefab, Vec3 } from "cc";
 import { CityBuildingProgression } from "./CityBuildingProgression";
+import {
+  intersectCityPlacementGround,
+  snapCityPlacementPoint
+} from "../../src/city/core/placement-geometry.js";
 
 const { ccclass, property } = _decorator;
 
 /**
- * Touch placement controller for the native city scene.
+ * Single-pointer touch placement controller for the native city scene.
  * Assign a camera, a building prefab and a world-space placement root.
- * The preview follows the ground plane; touch release commits a new building.
  */
 @ccclass("MshinCityPlacementController")
 export class CityPlacementController extends Component {
@@ -33,18 +36,20 @@ export class CityPlacementController extends Component {
 
   private preview: Node | null = null;
   private readonly ray = new geometry.Ray();
-  private readonly hitPoint = new Vec3();
   private readonly previewPosition = new Vec3();
   private placementArmed = false;
   private previewValid = false;
+  private activeTouchId: number | null = null;
 
   onEnable(): void {
+    input.on(Input.EventType.TOUCH_START, this.onTouchStart, this);
     input.on(Input.EventType.TOUCH_MOVE, this.onTouchMove, this);
     input.on(Input.EventType.TOUCH_END, this.onTouchEnd, this);
     input.on(Input.EventType.TOUCH_CANCEL, this.onTouchCancel, this);
   }
 
   onDisable(): void {
+    input.off(Input.EventType.TOUCH_START, this.onTouchStart, this);
     input.off(Input.EventType.TOUCH_MOVE, this.onTouchMove, this);
     input.off(Input.EventType.TOUCH_END, this.onTouchEnd, this);
     input.off(Input.EventType.TOUCH_CANCEL, this.onTouchCancel, this);
@@ -71,21 +76,29 @@ export class CityPlacementController extends Component {
   cancelPlacement(): void {
     this.placementArmed = false;
     this.previewValid = false;
+    this.activeTouchId = null;
     if (this.preview && this.preview.isValid) this.preview.destroy();
     this.preview = null;
   }
 
+  private onTouchStart(event: EventTouch): void {
+    if (this.placementArmed && this.activeTouchId === null) {
+      this.activeTouchId = event.getID();
+    }
+  }
+
   private onTouchMove(event: EventTouch): void {
-    if (this.placementArmed) this.updatePreview(event);
+    if (this.placementArmed && this.activeTouchId === event.getID()) this.updatePreview(event);
   }
 
   private onTouchEnd(event: EventTouch): void {
-    if (!this.placementArmed) return;
+    if (!this.placementArmed || this.activeTouchId !== event.getID()) return;
     this.updatePreview(event);
-    if (!this.previewValid || !this.preview || !this.preview.isValid || !this.placementRoot) return;
+    this.activeTouchId = null;
+    if (!this.previewValid || !this.preview || !this.preview.isValid || !this.placementRoot || !this.buildingPrefab) return;
 
-    const building = instantiate(this.buildingPrefab!);
-    building.name = this.buildingPrefab!.name;
+    const building = instantiate(this.buildingPrefab);
+    building.name = this.buildingPrefab.name;
     building.setParent(this.placementRoot);
     building.setWorldPosition(this.previewPosition);
     const progression = building.addComponent(CityBuildingProgression);
@@ -93,8 +106,9 @@ export class CityPlacementController extends Component {
     this.cancelPlacement();
   }
 
-  private onTouchCancel(): void {
-    // Keep the placement tool armed, but hide a stale preview until the next valid move.
+  private onTouchCancel(event: EventTouch): void {
+    if (this.activeTouchId !== event.getID()) return;
+    this.activeTouchId = null;
     this.previewValid = false;
     if (this.preview && this.preview.isValid) this.preview.active = false;
   }
@@ -103,33 +117,23 @@ export class CityPlacementController extends Component {
     if (!this.cityCamera || !this.cityCamera.isValid || !this.preview || !this.preview.isValid) return;
     const location = event.getLocation();
     this.cityCamera.screenPointToRay(this.ray, location.x, location.y);
-
-    const directionY = this.ray.d.y;
-    if (Math.abs(directionY) < 0.0001) {
+    const intersection = intersectCityPlacementGround({
+      origin: { x: this.ray.o.x, y: this.ray.o.y, z: this.ray.o.z },
+      direction: { x: this.ray.d.x, y: this.ray.d.y, z: this.ray.d.z }
+    }, this.groundHeight, this.maxPlacementDistance);
+    if (!intersection) {
       this.previewValid = false;
       this.preview.active = false;
       return;
     }
 
-    const distance = (this.groundHeight - this.ray.o.y) / directionY;
-    if (distance < 0 || distance > this.maxPlacementDistance) {
+    const snapped = snapCityPlacementPoint(intersection, this.gridSize);
+    if (!snapped) {
       this.previewValid = false;
       this.preview.active = false;
       return;
     }
-
-    Vec3.scaleAndAdd(this.hitPoint, this.ray.o, this.ray.d, distance);
-    const spacing = Math.max(0, this.gridSize);
-    if (spacing > 0) {
-      this.previewPosition.set(
-        Math.round(this.hitPoint.x / spacing) * spacing,
-        this.groundHeight,
-        Math.round(this.hitPoint.z / spacing) * spacing
-      );
-    } else {
-      this.previewPosition.set(this.hitPoint.x, this.groundHeight, this.hitPoint.z);
-    }
-
+    this.previewPosition.set(snapped.x, snapped.y, snapped.z);
     this.preview.setWorldPosition(this.previewPosition);
     this.preview.active = true;
     this.previewValid = true;
