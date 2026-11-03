@@ -34,7 +34,7 @@ test("pedestrians move deterministically along connected road routes", () => {
 
 test("pedestrian agents remain capped and reconcile when residential population falls", () => {
   const city = createInitialCity(903);
-  const homes = [[6,7],[9,7],[14,7],[17,7],[22,7],[25,7],[6,17],[9,17]];
+  const homes = [[6,6],[9,6],[14,6],[17,6],[22,6],[25,6],[6,9],[9,9]];
   for (const [x, y] of homes) assert.equal(placeCityItem(city, x, y, "home").ok, true);
   city.population = 10000;
   syncCityCitizens(city);
