@@ -5,6 +5,19 @@ const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disab
 const page=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
 const errors=[];page.on("pageerror",e=>errors.push(e.stack||String(e)));page.on("console",m=>{if(m.type()==="error")errors.push("console: "+m.text())});page.on("requestfailed",r=>errors.push("request failed: "+r.url()+" "+r.failure()?.errorText));
 try{
+ await page.addInitScript(()=>{
+  window.__cityFullscreen=false;window.__cityEntryOrder=[];
+  Object.defineProperty(Document.prototype,"fullscreenElement",{configurable:true,get(){return window.__cityFullscreen?document.documentElement:null}});
+  HTMLElement.prototype.requestFullscreen=async function(){
+   if(!navigator.userActivation?.isActive)throw new DOMException("User activation required","NotAllowedError");
+   window.__cityEntryOrder.push("fullscreen");window.__cityFullscreen=true;
+   document.dispatchEvent(new Event("fullscreenchange"));
+  };
+  Object.defineProperty(screen,"orientation",{configurable:true,value:{lock:async value=>{
+   if(!window.__cityFullscreen)throw new Error("orientation lock must follow fullscreen");
+   window.__cityEntryOrder.push("orientation:"+value);
+  }}});
+ });
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
  await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
  assert.ok(await page.locator("#cityThreeViewport").count()===1,"city must render through the Three.js WebGL scene");
@@ -22,6 +35,12 @@ try{
  assert.equal(renderStats.crosswalkStripes,0,"do not paint pedestrian crossings until pedestrian graph and crossing priority are implemented");
  assert.ok(renderStats.lockedPlots>=1600&&renderStats.visiblePlots>=2300,"the visible world must include a large locked expansion grid, not blank margins");
  assert.equal(renderStats.visibleRoadTiles,1392,"the expanded 64×64 world must have a continuous road network");
+ await page.locator("#cityEnterLandscape").dispatchEvent("pointerdown",{pointerId:7,pointerType:"touch",isPrimary:true});
+ await page.waitForFunction(()=>window.__mshinCityEntryDebug?.lockRequested===true,undefined,{timeout:5000});
+ const entryAcceptance=await page.evaluate(()=>({order:window.__cityEntryOrder,debug:window.__mshinCityEntryDebug}));
+ assert.deepEqual(entryAcceptance.order,["fullscreen","orientation:landscape"],"mobile city must request fullscreen before locking landscape orientation");
+ assert.equal(entryAcceptance.debug.fullscreenGranted,true,"fullscreen must be granted from the first trusted mobile gesture");
+ assert.equal(entryAcceptance.debug.lockGranted,true,"landscape orientation lock must be attempted after fullscreen");
  assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
  await page.screenshot({path:"artifacts/city-empty-world-landscape.png"});
 
