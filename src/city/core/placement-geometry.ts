@@ -44,3 +44,18 @@ export function snapCityPlacementPoint(
     z: Math.round(point.z / spacing) * spacing
   };
 }
+
+
+/** Returns whether a snapped or free placement overlaps an existing building. */
+export function isCityPlacementOccupied(position: CityPlacementVector3, occupants: Array<{ x: number; z: number }>, gridSize: number, tolerance = 0.35): boolean {
+  if (![position.x, position.z, gridSize, tolerance].every(Number.isFinite) || !Array.isArray(occupants)) return true;
+  const spacing = Math.max(0, gridSize);
+  const safeTolerance = Math.max(0.01, tolerance);
+  for (const occupant of occupants) {
+    if (!occupant || !Number.isFinite(occupant.x) || !Number.isFinite(occupant.z)) continue;
+    if (spacing > 0) {
+      if (Math.round(occupant.x / spacing) === Math.round(position.x / spacing) && Math.round(occupant.z / spacing) === Math.round(position.z / spacing)) return true;
+    } else if (Math.hypot(occupant.x - position.x, occupant.z - position.z) < safeTolerance) return true;
+  }
+  return false;
+}
