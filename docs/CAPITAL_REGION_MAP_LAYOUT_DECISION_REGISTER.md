@@ -88,7 +88,9 @@ If a resource type, building or recipe is not approved by the V1 catalog/registr
 
 | Decision key | Required definition | Required evidence | Current value | Status |
 |---|---|---|---|---|
-| DISTRICT-BOUNDARIES | District polygons and stable IDs, if districts are in V1 | Ownership/behavior distinction and UI map | TBD | TBD |\n| DISTRICT-IDENTITY | Stable district IDs, lifecycle and map-revision compatibility | Registry, duplicate checks and save/load migration tests | TBD | TBD |\n| LAND-OWNERSHIP | Owner/claim state for each parcel/cell and its authority, if modeled | Ownership transition rules and authorization/consistency tests | TBD | TBD |
+| DISTRICT-BOUNDARIES | District polygons and stable IDs, if districts are in V1 | Ownership/behavior distinction and UI map | TBD | TBD |
+| DISTRICT-IDENTITY | Stable district IDs, lifecycle and map-revision compatibility | Registry, duplicate checks and save/load migration tests | TBD | TBD |
+| LAND-OWNERSHIP | Owner/claim state for each parcel/cell and its authority, if modeled | Ownership transition rules and authorization/consistency tests | TBD | TBD |
 | PARCEL-IDS | Stable parcel IDs and map-version relationship | Parcel table and duplicate/overlap checks | TBD | TBD |
 | PARCEL-FOOTPRINTS | Exact cell sets, shape and rotation support | Footprint fixtures and atomic placement tests | TBD | TBD |
 | BUILDABILITY | Per-cell buildable/protected/occupied/unlocked state | Terrain and parcel validation matrix | TBD | TBD |
@@ -110,7 +112,10 @@ The road/access graph is separate from its rendered road mesh. The graph is also
 | ROAD-CLASSES | Exact approved V1 road classes and constraints | Catalog alignment and vehicle compatibility | TBD | TBD |
 | ROAD-CAPACITY | Capacity/speed/maintenance only if modeled | Calibrated traffic/fleet scenarios | TBD | TBD |
 | TURN-CONNECTIVITY | Legal movements and restrictions per intersection | Turn graph fixtures and route tests | TBD | TBD |
-| ROAD-CLOSURES | Blocked state, graph versioning and replanning behavior | Closure/recovery deterministic tests | TBD | TBD |\n| ROAD-GRAPH-MIGRATION | Compatibility of road node/edge IDs and saved route references across revisions | Old-save fixtures, graph-diff and deterministic replan tests | TBD | TBD |\n| UTILITY-TOPOLOGY | Typed utility nodes/edges, endpoints, direction, elevation constraints, capacity and lifecycle, only for approved V1 networks | Utility-specific topology and flow validation; must not infer road access | TBD | TBD |\n| PEDESTRIAN-TOPOLOGY | Pedestrian nodes/edges, legal crossings, permissions and signal/priority state, only if approved | Approved pedestrian scope and crossing/path validation | TBD | TBD |
+| ROAD-CLOSURES | Blocked state, graph versioning and replanning behavior | Closure/recovery deterministic tests | TBD | TBD |
+| ROAD-GRAPH-MIGRATION | Compatibility of road node/edge IDs and saved route references across revisions | Old-save fixtures, graph-diff and deterministic replan tests | TBD | TBD |
+| UTILITY-TOPOLOGY | Typed utility nodes/edges, endpoints, direction, elevation constraints, capacity and lifecycle, only for approved V1 networks | Utility-specific topology and flow validation; must not infer road access | TBD | TBD |
+| PEDESTRIAN-TOPOLOGY | Pedestrian nodes/edges, legal crossings, permissions and signal/priority state, only if approved | Approved pedestrian scope and crossing/path validation | TBD | TBD |
 | BUILDING-FRONTAGE | Road edge to parcel/building frontage relationship | Explicit edge/cell reference validation | TBD | TBD |
 | FREIGHT-ENTRY | Regional delivery approach and edge connection | Fleet-compatible route and delivery acceptance | TBD | TBD |
 | FREIGHT-ENVELOPE | Vehicle turning/loading/access envelopes | Vehicle class geometry and route constraints | TBD | TBD |
@@ -161,7 +166,9 @@ Concept images generated with plugins may support visual exploration, but editab
 - Resource deposits have bounded reserves and a valid approved recipe/extraction owner.
 - Expansion does not create inaccessible isolated parcels or invalidate existing saves.
 - Freight entry reaches valid destinations under the approved road graph.
-- Save/load preserves spatial schema, map revision, parcel/district identity, grid positions and each applicable graph revision.\n- Road, utility and (if approved) pedestrian graph revisions migrate independently; stale routes/caches are invalidated deterministically.\n- Offline progression follows the approved spatial/network contract; graph changes cannot silently preserve invalid routes or duplicate deliveries/operations.
+- Save/load preserves spatial schema, map revision, parcel/district identity, grid positions and each applicable graph revision.
+- Road, utility and (if approved) pedestrian graph revisions migrate independently; stale routes/caches are invalidated deterministically.
+- Offline progression follows the approved spatial/network contract; graph changes cannot silently preserve invalid routes or duplicate deliveries/operations.
 - Map overlays remain legible on the smallest supported viewport.
 - Dense-scene performance is measured on named physical phones; no budget is guessed.
 
