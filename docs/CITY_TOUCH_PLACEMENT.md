@@ -19,6 +19,9 @@
 - Optional grid snapping is controlled by `gridSize`.
 - Rays parallel to the ground plane and intersections outside the configured distance are rejected.
 - Placement tracks one active touch identifier; unrelated fingers cannot move or commit the preview.
+- Only placed building roots with `CityBuildingProgression` reserve a cell; scenery, roads and street furniture do not block placement.
+- Occupied grid cells are rejected; with snapping disabled, `occupancyTolerance` prevents near-overlaps.
+- The optional `CityOrbitCamera` pauses orbit gestures while placement owns touch input and restores them on commit/cancel.
 - Touch cancellation does not commit a building; listeners are removed when the controller is disabled.
 - Non-finite ray coordinates, ground heights, distances and grid sizes are rejected by an engine-independent geometry helper.
 
@@ -28,7 +31,7 @@ This is a foundational placement flow, not the complete city build/economy syste
 
 ## Automated acceptance
 
-`src/city/core/placement-geometry.ts` is engine-independent and covered by `tests/city-placement-geometry.test.mjs` for ray-plane intersection, parallel/backward/out-of-range rejection, invalid numeric input and deterministic grid snapping. The Cocos adapter is syntax-checked by CI; Editor/runtime touch testing remains outstanding.
+`src/city/core/placement-geometry.ts` is engine-independent and covered by `tests/city-placement-geometry.test.mjs` for ray-plane intersection, parallel/backward/out-of-range rejection, invalid numeric input, deterministic grid snapping and occupied-cell/overlap rejection. The Cocos adapter is syntax-checked by CI; Editor/runtime touch testing remains outstanding.
 
 ## Acceptance checks
 
