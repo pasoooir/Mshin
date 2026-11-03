@@ -515,3 +515,8 @@ interface MobilityFacilityDefinition {
 ## 21. وضعیت تکمیل
 
 این اطلس قرارداد طراحی و handoff آینده است. در این مرحله هیچ اتوبوس، ایستگاه، پایانه، پارکینگ عمومی، پل، بزرگراه، چراغ تطبیقی، خط حمل‌ونقل، گراف جدید، prefab، asset دانلودشده یا simulation عملیاتی ساخته/تست نشده است. وضعیت Public transport و BUS همچنان Deferred، پل Deferred، road upgrade Candidate و freight terminal Candidate باقی می‌ماند. گیت عدم شروع پیاده‌سازی سیستم اصلی شهرسازی تا تکمیل طراحی و تأیید صریح پابرجاست.
+
+
+## Visitor mobility boundary
+
+Tourism visitor movement is specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Passenger trips must remain distinct from freight shipments and must use only approved mobility modes, routes, capacities and schedules. This cross-reference does not activate public transport or alter the existing Deferred status of buses and passenger transport; no stations, terminals, bus lanes or passenger-service IDs are approved here.
