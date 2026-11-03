@@ -134,6 +134,7 @@ Safe work remains limited to design consistency, traceability, source audits, do
 - `docs/CAPITAL_REGION_V1_CONTENT_CATALOG.md`.
 - `docs/CAPITAL_REGION_V1_ITEM_RECIPE_REGISTRY.md`.
 - `docs/CAPITAL_REGION_WORLD_SPATIAL_SPEC.md`.
+- `docs/CAPITAL_REGION_MAP_LAYOUT_DECISION_REGISTER.md` (structured decision template; map values remain TBD).
 - `docs/VEHICLE_FLEET_FREIGHT_TRAFFIC_SPEC.md`.
 - `docs/CAPITAL_REGION_PUBLIC_TRANSPORT_AND_ROAD_INFRASTRUCTURE_ATLAS.md`.
 - `docs/CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md`.
