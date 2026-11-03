@@ -23,6 +23,8 @@ jobs:
           node-version: 22
       - name: Install project dependencies
         run: npm install --no-audit --no-fund
+      - name: Build isolated city core test fixtures
+        run: npm run build:core
       - name: Validate city core and population behavior
         run: node --test tests/city-core.test.mjs tests/city-population.test.mjs
       - name: Record outstanding employment acceptance gap
