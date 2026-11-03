@@ -6,7 +6,7 @@ const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.
 
 test("procedural 3D scene stays within a bounded first-build geometry budget", () => {
   assert.ok(source.includes("const segments=mobile?280:softwareRenderer?360:760,half=180;"),
-    "desktop track tessellation is capped at 240 segments");
+    "tenfold mobile circuit tessellation remains dense enough to avoid visible road facets");
   assert.ok(source.includes("treeCount=mobile?18:softwareRenderer?22:48"),
     "desktop tree instances are capped at 48");
   assert.ok(source.includes("i+=(mobile?18:softwareRenderer?12:6)"),
@@ -16,7 +16,7 @@ test("procedural 3D scene stays within a bounded first-build geometry budget", (
 });
 
 test("the scene keeps its full road width while reducing mesh density", () => {
-  assert.ok(source.includes("const segments=mobile?84:softwareRenderer?96:240,half=180;"));
+  assert.ok(source.includes("const segments=mobile?280:softwareRenderer?360:760,half=180;"));
   assert.ok(source.includes("quad(roadTris,l0,l1,r1,r0)"),
     "the asphalt remains a continuous closed road ribbon");
 });
