@@ -14,8 +14,8 @@ try{
  assert.equal(renderStats.visualStyle,"vibrant-stylized-3d","the city renderer must use the approved vivid 3D art direction");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
- assert.ok(renderStats.decorativeStreetLights>=100,"road corridors must include instanced decorative street lighting");
- assert.ok(renderStats.streetLightSetback>2.06,"street lamps must sit outside the road curb, not inside vehicle lanes");
+ assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
+ assert.equal(renderStats.streetFurniturePlacementReady,false,"street furniture requires a non-buildable sidewalk/ROW contract");
  assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
  assert.equal(renderStats.roadTiles,348,"the complete road grid must be rendered in 3D");
  assert.ok(renderStats.raisedCurbs>0,"street grid must retain raised curb geometry");
