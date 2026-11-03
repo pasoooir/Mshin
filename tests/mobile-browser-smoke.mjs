@@ -163,6 +163,11 @@ try {
     }));
     throw new Error("mobile WebGL renderer did not reach a stable frame state: " + JSON.stringify(diagnostic) + " | " + error.message);
   });
+  const trackScaleMetrics = await mobile.evaluate(() => window.MshinPerformance);
+  assert.equal(trackScaleMetrics.trackLengthScale, 10, "mobile race runtime must use the tenfold circuit scale");
+  assert.equal(trackScaleMetrics.trackRadiusX, 11800, "mobile race runtime must expose the extended horizontal circuit radius");
+  assert.equal(trackScaleMetrics.trackRadiusY, 7600, "mobile race runtime must expose the extended vertical circuit radius");
+  assert.equal(trackScaleMetrics.roadWidth, 360, "the tenfold track must preserve the original road width");
   const mobileRenderQuality = await mobile.evaluate(() => window.Mshin3DRenderer.quality);
   assert.ok(mobileRenderQuality.pixelRatio <= 0.8 && mobileRenderQuality.width <= 700 && mobileRenderQuality.height <= 700, "mobile WebGL must use a reduced render resolution to protect frame pacing: " + JSON.stringify(mobileRenderQuality));
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
