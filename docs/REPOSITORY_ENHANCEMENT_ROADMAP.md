@@ -15,7 +15,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 - **Merged city milestones:** PR #188 versioned save migration/backup recovery; PR #190 workforce matching; PR #192 finite service capacity; PR #193 resident wellbeing; PR #195 workforce-aware zoning; PR #197 resident-weighted service satisfaction.
 - **CI maintenance:** PR #198 merged as `fa908005767d8da79d314a06fdc5e97a6c5de00a`; Push and Pull Request events now share branch concurrency groups for the affected validation/browser workflows.
 - **Documentation:** PR #196 merged as `27fe3aff76419d11106d1a813db1d86056e09016`.
-- **Main release:** `validate`, `build`, and GitHub Pages `deploy` passed on main. A main `browser-smoke` run remains in progress after the concurrency change.
+- **Main release:** `validate`, `build`, GitHub Pages `deploy`, and `browser-smoke` all passed on main; successful browser run `41628343186`. A superseded duplicate run was cancelled by the concurrency policy.
 - **PR #199:** shortest-road-path resident-to-workplace assignment is under review. It reports assigned commuters, unreachable employed workers, commute coverage and average road distance; exact-head mobile/browser acceptance is pending.
 - **Open PR inventory:** #199 active feature; #92 is a stale draft billboard branch and not an active release candidate.
 - **Primary users:** mobile browsers (Android-first). **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
