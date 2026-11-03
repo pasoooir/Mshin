@@ -110,3 +110,7 @@ The detailed street hierarchy, neighborhood identity, street furniture, placemen
 The detailed future-facing hierarchy and design contracts for highways, bridges, intersections, transit corridors, bus stops, terminals, public parking and network expansion are maintained in [Capital Region Public Transport & Road Infrastructure Atlas](CAPITAL_REGION_PUBLIC_TRANSPORT_AND_ROAD_INFRASTRUCTURE_ATLAS.md).
 
 This atlas does not override the spatial graph. Node/edge connectivity, terrain, placement, frontage, grade and route validity remain authoritative here. Bridges and grade-separated roads require explicit terrain/height/clearance support; a visual crossing is never connectivity. Public transport remains Deferred in the V1 catalog.
+
+
+## Essential utility and municipal service network integration
+The conceptual service-network architecture is specified in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md). Utility graphs are typed graphs distinct from the road/access graph. A pipe/cable crossing or visual line never creates road or utility connectivity. Node/edge endpoints, direction, terrain/elevation constraints, graph versioning, route invalidation and save/load integrity must be explicit. Maintenance and emergency crews use the authoritative road/access graph; underground utility topology does not grant vehicle access. No new network or facility is approved for V1 by this cross-reference.
