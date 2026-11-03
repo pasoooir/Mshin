@@ -45,8 +45,6 @@ test("orbit remains continuous across the 2π boundary and supports repeated ful
 
 test("pinch zoom and horizontal orbit work together while retaining the ground anchor", () => {
   const h = harness();
-  const midpointBefore = { x: 150, y: 100 };
-  const worldBefore = h.controller.getState();
   h.send("pointerdown", 1, 100, 100);
   h.send("pointerdown", 2, 200, 100);
   h.send("pointermove", 2, 300, 100);
