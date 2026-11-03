@@ -128,7 +128,7 @@ export function isValidCitySave(v) {
       || ((vehicle.targetX === null) !== (vehicle.targetY === null))
       || (vehicle.targetX !== null && (!validPoint(vehicle.targetX,vehicle.targetY,true) || v.grid[vehicle.targetY][vehicle.targetX] !== "road"))
       || ((vehicle.previousX === null) !== (vehicle.previousY === null))
-      || (vehicle.previousX !== null && (!validPoint(vehicle.previousX,vehicle.previousY,true) || v.grid[vehicle.previousY][vehicle.previousX] !== "road"))) return false;
+      || (vehicle.previousX !== null && !validPoint(vehicle.previousX,vehicle.previousY,true))) return false;
     trafficIds.add(vehicle.id);
   }
 
