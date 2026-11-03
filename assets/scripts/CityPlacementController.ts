@@ -1,5 +1,6 @@
 import { _decorator, Camera, Component, EventTouch, geometry, Input, instantiate, input, Node, Prefab, Vec3 } from "cc";
 import { CityBuildingProgression } from "./CityBuildingProgression";
+import { CityOrbitCamera } from "./CityOrbitCamera";
 import {
   intersectCityPlacementGround,
   isCityPlacementOccupied,
@@ -22,6 +23,9 @@ export class CityPlacementController extends Component {
 
   @property({ type: Node, tooltip: "Parent node for preview and placed buildings." })
   placementRoot: Node | null = null;
+
+  @property({ type: CityOrbitCamera, tooltip: "Optional orbit controller paused while placement owns touch input." })
+  orbitCamera: CityOrbitCamera | null = null;
 
   @property({ tooltip: "World-space height of the placement ground plane." })
   groundHeight = 0;
@@ -73,6 +77,7 @@ export class CityPlacementController extends Component {
     this.preview.setScale(0.92, 0.92, 0.92);
     this.placementArmed = true;
     this.previewValid = false;
+    this.orbitCamera?.setPlacementMode(true);
     return true;
   }
 
@@ -83,6 +88,7 @@ export class CityPlacementController extends Component {
     this.activeTouchId = null;
     if (this.preview && this.preview.isValid) this.preview.destroy();
     this.preview = null;
+    this.orbitCamera?.setPlacementMode(false);
   }
 
   private onTouchStart(event: EventTouch): void {
