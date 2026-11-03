@@ -91,7 +91,7 @@ scene.add(sun);
 const fill = new THREE.DirectionalLight("#a8dfff",.8);fill.position.set(28,18,32);scene.add(fill);
 
 const mat=(color,roughness=.85,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
-const grass=mat("#75ae63"), grass2=mat("#83b86b"), asphalt=mat("#343f49",.98), sidewalk=mat("#c7c5b7"), curb=mat("#e5dfc9"), line=mat("#f7e9b7"), soil=mat("#896847"), white=mat("#fff1d1");
+const grass=mat("#75ae63"), grass2=mat("#83b86b"), asphalt=mat("#343f49",.98), sidewalk=mat("#c7c5b7"), curb=mat("#e5dfc9"), line=mat("#f7e9b7"), soil=mat("#896847"), white=mat("#fff1d1"), tactile=mat("#d6b96f");
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(130,130),grass);ground.rotation.x=-Math.PI/2;ground.position.y=-.18;ground.receiveShadow=true;scene.add(ground);
 
 function box(parent,w,h,d,material,x,y,z,cast=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=true;parent.add(m);return m}
@@ -176,16 +176,59 @@ function lamp(x,z){
  const arm=box(g,.75,.07,.07,dark,.34,3.12,0,false);arm.rotation.z=-.12;
  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.18,10,8),new THREE.MeshStandardMaterial({color:"#fff3c0",emissive:"#ffdc7c",emissiveIntensity:.7}));bulb.position.set(.65,3.0,0);g.add(bulb);
 }
-function roadX(z){box(scene,58,.12,7,asphalt,0,.02,z);box(scene,58,.14,.18,curb,0,.12,z-3.58);box(scene,58,.14,.18,curb,0,.12,z+3.58);box(scene,58,.08,1.35,sidewalk,0,.08,z-4.35);box(scene,58,.08,1.35,sidewalk,0,.08,z+4.35);
- for(let x=-27;x<28;x+=4)box(scene,1.8,.025,.12,line,x,.095,z,false)}
-function roadZ(x){box(scene,7,.13,58,asphalt,x,.025,0);box(scene,.18,.14,58,curb,x-3.58,.12,0);box(scene,.18,.14,58,curb,x+3.58,.12,0);box(scene,1.35,.08,58,sidewalk,x-4.35,.08,0);box(scene,1.35,.08,58,sidewalk,x+4.35,.08,0);
- for(let z=-27;z<28;z+=4)box(scene,.12,.025,1.8,line,x,.095,z,false)}
+function curbRunX(z){
+ const gaps=[-10,10].map(center=>[center-3.55,center+3.55]);
+ let cursor=-29;
+ for(const [start,end] of gaps){if(start>cursor){const segment=box(scene,start-cursor,.14,.18,curb,(start+cursor)/2,.12,z,false);segment.name="city-road-curb";}cursor=end;}
+ if(cursor<29){const segment=box(scene,29-cursor,.14,.18,curb,(29+cursor)/2,.12,z,false);segment.name="city-road-curb";}
+}
+function curbRunZ(x){
+ const gaps=[-9,10].map(center=>[center-3.55,center+3.55]);
+ let cursor=-29;
+ for(const [start,end] of gaps){if(start>cursor){const segment=box(scene,.18,.14,start-cursor,curb,x,.12,(start+cursor)/2,false);segment.name="city-road-curb";}cursor=end;}
+ if(cursor<29){const segment=box(scene,.18,.14,29-cursor,curb,x,.12,(29+cursor)/2,false);segment.name="city-road-curb";}
+}
+function roadX(z){
+ box(scene,58,.12,7,asphalt,0,.02,z);curbRunX(z-3.58);curbRunX(z+3.58);
+ box(scene,58,.08,1.35,sidewalk,0,.08,z-4.35);box(scene,58,.08,1.35,sidewalk,0,.08,z+4.35);
+ for(let x=-27;x<28;x+=4)box(scene,1.8,.025,.12,line,x,.095,z,false);
+}
+function roadZ(x){
+ box(scene,7,.13,58,asphalt,x,.025,0);curbRunZ(x-3.58);curbRunZ(x+3.58);
+ box(scene,1.35,.08,58,sidewalk,x-4.35,.08,0);box(scene,1.35,.08,58,sidewalk,x+4.35,.08,0);
+ for(let z=-27;z<28;z+=4)box(scene,.12,.025,1.8,line,x,.095,z,false);
+}
+function addCurbRamp(x,z,orientation,sign){
+ const ramp=box(scene,2.6,.08,1.15,sidewalk,x,.13,z,false);
+ ramp.name="city-curb-ramp";
+ if(orientation==="horizontal")ramp.rotation.x=sign*.11;
+ else ramp.rotation.z=-sign*.11;
+ for(let i=-2;i<=2;i++){
+  const tile=box(scene,.18,.025,.16,tactile,x+i*.34,.19,z+(orientation==="horizontal"?sign*.5:0),false);
+  if(orientation==="vertical"){tile.position.x=x+sign*.5;tile.position.z=z+i*.34;}
+  tile.name="city-tactile-paving";
+ }
+}
+function addCrosswalkStripe(x,z,orientation){
+ const stripe=orientation==="horizontal"
+  ? box(scene,.75,.035,.18,white,x,.14,z,false)
+  : box(scene,.18,.035,.75,white,x,.14,z,false);
+ stripe.name="city-crosswalk-marking";
+}
 // A compact four-block neighborhood: two intersecting streets and distinct building types.
 roadX(-9);roadX(10);roadZ(-10);roadZ(10);
-// Junctions get a subtle stone apron and zebra crossings.
+// These painted crossings are preview-only visual cues at the four road junctions;
+// live pedestrian priority and routing remain governed by the city pedestrian graph.
 for(const [x,z] of [[-10,-9],[10,-9],[-10,10],[10,10]]){
  box(scene,7.1,.04,7.1,mat("#65727a"),x,.105,z,false);
- for(let i=-2;i<=2;i++){box(scene,.75,.035,.18,white,x+i*1.15,.14,z-4.4,false);box(scene,.75,.035,.18,white,x+i*1.15,.14,z+4.4,false)}
+ for(let i=-2;i<=2;i++){
+  addCrosswalkStripe(x+i*1.15,z-4.4,"horizontal");
+  addCrosswalkStripe(x+i*1.15,z+4.4,"horizontal");
+  addCrosswalkStripe(x-4.4,z+i*1.15,"vertical");
+  addCrosswalkStripe(x+4.4,z+i*1.15,"vertical");
+ }
+ addCurbRamp(x,z-3.95,"horizontal",-1);addCurbRamp(x,z+3.95,"horizontal",1);
+ addCurbRamp(x-3.95,z,"vertical",-1);addCurbRamp(x+3.95,z,"vertical",1);
 }
 const modelFallbacks = [
  {type:"house",group:house(-20,-20,"#efc58b","#b95d49",.08),position:[-20,0,-20],rotation:.08},
