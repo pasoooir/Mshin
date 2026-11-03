@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "assetVersion": "1.0.0",
+  "coordinateSystem": "right-handed-y-up",
+  "units": "meters",
+  "offlinePolicy": "same-origin",
+  "license": "CC0-1.0",
+  "assets": [
+    {
+      "id": "building-house",
+      "type": "building",
+      "buildingType": "house",
+      "uri": "./assets/city/models/house.gltf",
+      "format": "glTF 2.0",
+      "license": "CC0-1.0",
+      "source": "Original procedural mesh authored for Mshin",
+      "dimensions": [
+        2.45,
+        2.55,
+        2.05
+      ],
+      "lod": "not-yet-authored",
+      "textures": "embedded PBR material factors; no external texture dependencies",
+      "scale": [
+        1.45,
+        1.8,
+        1.5
+      ]
+    },
+    {
+      "id": "building-apartment",
+      "type": "building",
+      "buildingType": "apartment",
+      "uri": "./assets/city/models/apartment.gltf",
+      "format": "glTF 2.0",
+      "license": "CC0-1.0",
+      "source": "Original procedural mesh authored for Mshin",
+      "dimensions": [
+        2.45,
+        3.95,
+        2.08
+      ],
+      "lod": "not-yet-authored",
+      "textures": "embedded PBR material factors; no external texture dependencies",
+      "scale": [
+        2,
+        1.85,
+        2
+      ]
+    },
+    {
+      "id": "building-shop",
+      "type": "building",
+      "buildingType": "shop",
+      "uri": "./assets/city/models/shop.gltf",
+      "format": "glTF 2.0",
+      "license": "CC0-1.0",
+      "source": "Original procedural mesh authored for Mshin",
+      "dimensions": [
+        2.65,
+        2.1,
+        2.72
+      ],
+      "lod": "not-yet-authored",
+      "textures": "embedded PBR material factors; no external texture dependencies",
+      "scale": [
+        1.55,
+        1.6,
+        1.4
+      ]
+    }
+  ]
+}

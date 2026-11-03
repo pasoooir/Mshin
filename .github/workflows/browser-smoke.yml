@@ -52,6 +52,12 @@ jobs:
           cat /tmp/mshin-http.log || true
           (ss -ltnp || true) | grep ':4173' || true
           exit 1
+      - name: Run mobile GLTF neighborhood preview acceptance
+        env:
+          CI: "true"
+        run: |
+          node --check tests/city-neighborhood-gltf-browser.mjs
+          node tests/city-neighborhood-gltf-browser.mjs
       - name: Run city entry browser smoke test
         env:
           CI: "true"

@@ -1,3 +1,15 @@
+# آخرین بازبینی اجرایی — 2026-11-03 19:59 UTC
+
+این افزوده snapshotهای تاریخی پایین سند را به‌روزرسانی می‌کند:
+
+- PR #233 با merge commit `3a1d527e300f51bffe2ded9a6907b3602cb65736` ادغام شده است؛ orbit دو انگشتی به دوربین شهر اضافه شد.
+- Pages build/deploy run `41707298289` و main validate run `41707531890` موفق‌اند.
+- browser smoke روی main در run `41707299966` هنوز در مرحله سه دور مسابقه و offline است؛ تست‌های ورود شهر و mobile-only موفق شده‌اند.
+- PR #236 در حال توسعه Slice A است: سه مدل معماری خودساخته GLTF 2.0، manifest محلی با provenance و PBR factors، geometry embedded، بارگذاری در preview مستقل و fallback رویه‌ای.
+- مدل‌ها و صفحه preview در cache `mshin-arcade-v67` قرار گرفته‌اند. شروع شهر اصلی تغییر نکرده و خالی می‌ماند.
+- روی head فعلی PR #236، regressionهای جمعیت/اشتغال، جاده/زونینگ/ترافیک و مهاجرت/بازیابی/offline موفق‌اند؛ validate و mobile browser preview هنوز در حال اجرا هستند.
+- LOD، تکسچرهای PBR، frame-time/GPU budget روی Android واقعی و Cocos Creator Editor import هنوز باز هستند و تکمیل‌شده محسوب نمی‌شوند.
+
 # Mshin Repository Enhancement Roadmap
 
 **Reviewed:** 2026-11-03 after PRs #217, #221, #222 and #227; PR #229 is under validation  
