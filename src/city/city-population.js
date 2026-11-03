@@ -69,10 +69,28 @@ export function syncCityCitizens(city) {
   }
   if (!Array.isArray(city.citizens)) city.citizens = [];
   const homes = city.buildings.filter(building => building.type === "home" && building.residents > 0);
+  const homeIds = new Set(homes.map(home => home.id));
+  let changed = false;
+
+  // Reconcile agents whose home was demolished. Legacy agents without a home
+  // assignment are deterministically attached to an existing residence.
+  const reconciled = [];
+  for (const citizen of city.citizens) {
+    if (homeIds.has(citizen.homeId)) {
+      reconciled.push(citizen);
+    } else if (citizen.homeId === undefined && homes.length) {
+      citizen.homeId = homes[(Math.max(1, citizen.id) - 1) % homes.length].id;
+      reconciled.push(citizen);
+    } else {
+      changed = true;
+    }
+  }
+  if (reconciled.length !== city.citizens.length) changed = true;
+  city.citizens = reconciled;
+
   const desired = homes.length
     ? Math.min(CITY_MAX_CITIZEN_AGENTS, Math.ceil(Math.max(0, city.population || 0) / CITY_RESIDENTS_PER_AGENT), homes.length * 8)
     : 0;
-  let changed = false;
 
   const nextAvailableCitizenId = Math.max(0, ...city.citizens.map(citizen => Number.isSafeInteger(citizen.id) ? citizen.id : 0)) + 1;
   if (!Number.isSafeInteger(city.nextCitizenId) || city.nextCitizenId < nextAvailableCitizenId) {
