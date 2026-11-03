@@ -242,3 +242,8 @@ Related specifications:
 Before implementation: approve finance/tax/governance scope and catalog IDs; select accounting depth; define currency, account mapping, budget period and transactional contracts; approve policy authority; establish deterministic ledger/reconciliation tests; integrate procurement and service funding; create professional editable assets through specialist tools/plugins; verify licenses/provenance/hashes; conduct mobile UX and real-device profiling; obtain explicit approval to leave design phase.
 
 **Evidence status:** Documentation only. No tax engine, treasury, accounting ledger, budget workflow, procurement finance, debt, policy simulation or gameplay behavior is implemented or device-tested by this document. Existing V1 IDs and statuses remain unchanged.
+
+
+## Market settlement, trade revenue and procurement integration
+
+The proposed market/order and freight lifecycle is specified in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). Quotes, accepted orders, dispatch, delivery, inspection and settlement are distinct financial recognition points. Gross proceeds, fees, freight, taxes where approved, refunds, returns and net settlement must map to auditable ledger events without double-counting receivables or cash. Municipal procurement links purchase commitments to accepted quantities and invoices; a purchase order does not create inventory. This reference approves no tax, tariff, accounting-recognition rule or new V1 trade capability.
