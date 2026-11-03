@@ -84,6 +84,14 @@ The spatial spec requires explicit terrain metadata, stable parcel IDs, a versio
 
 The current browser implementation must remain classified as a prototype/visual vertical slice, not as conformance to the spatial production contract. Preserve the existing safety guards and do not add ROW/sidewalk, crossings, street furniture or new simulation until the section-46 and spatial design gates are approved.
 
+### 4.5 Master-document status wording — reconciled
+
+`CITY_GAME_DESIGN_MASTER.md` has also been aligned:
+- Section 46 now explicitly distinguishes the existing browser prototype from the not-yet-approved production Cocos city-building vertical slice and full simulation loop.
+- Section 60.5 now points to the exact existing catalog statuses for the named utility and support-service entries, while preserving the hold on unapproved networks, additional facilities and expanded simulation.
+
+This is a wording/traceability correction only. It does not close section 46 or authorize implementation.
+
 ### 4.4 Proposal documents and catalog authority — ongoing governance rule
 
 Finance, trade, tourism, weather, education/wellbeing, citizen needs, crisis management and utilities documents are proposals/future-facing specifications. Their entities, fields, IDs used as discussion labels, example rates and process descriptions must not silently become production schema or V1 content.
