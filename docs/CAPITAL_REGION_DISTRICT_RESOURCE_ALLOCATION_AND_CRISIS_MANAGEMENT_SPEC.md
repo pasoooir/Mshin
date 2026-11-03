@@ -298,3 +298,8 @@ Before implementation: approve the service/resource/incident IDs and V1 scope; d
 ## Municipal finance and budget-control integration
 
 Financial authority and cash constraints are specified in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md). District requests may reserve only resources backed by valid appropriation and available inventory/cash under the approved policy. Emergency commitments, procurement, accepted deliveries, incident expenditure, recovery costs and released reservations must reconcile exactly once with municipal journals. A budget allocation is not payment; a commitment is not delivery; a dispatch is not restoration. Restricted funds and emergency reserves remain subject to their own authorization and cannot be spent twice. This integration adds no operational IDs, budget policy or crisis capability to V1.
+
+
+## Emergency incident resource and dispatch integration
+
+The agency/unit dispatch and crisis lifecycle are detailed in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Crew, vehicle, equipment, material and budget reservations must be atomic, idempotent and released only through explicit lifecycle events. A dispatch is not arrival, a commitment is not delivery and a cleared incident is not infrastructure restoration. No new agency or resource ID is approved by this reference.
