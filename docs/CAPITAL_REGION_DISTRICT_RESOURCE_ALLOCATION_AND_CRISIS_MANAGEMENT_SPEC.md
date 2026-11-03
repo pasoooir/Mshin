@@ -293,3 +293,8 @@ Related specifications:
 Before implementation: approve the service/resource/incident IDs and V1 scope; define units, allocation and fairness rules; approve safe operational constraints; define transactional data and save contracts; implement deterministic tests; produce editable professional assets via specialist tools/plugins; verify commercial licenses/provenance/hashes; perform mobile UX and real-device profiling; obtain explicit approval to leave design phase.
 
 **Evidence status:** Documentation only. No allocation engine, district policy, budget reservation, incident simulation, emergency dispatch, utility rationing or crisis gameplay is implemented or device-tested by this document. Existing catalog IDs and statuses remain unchanged.
+
+
+## Municipal finance and budget-control integration
+
+Financial authority and cash constraints are specified in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md). District requests may reserve only resources backed by valid appropriation and available inventory/cash under the approved policy. Emergency commitments, procurement, accepted deliveries, incident expenditure, recovery costs and released reservations must reconcile exactly once with municipal journals. A budget allocation is not payment; a commitment is not delivery; a dispatch is not restoration. Restricted funds and emergency reserves remain subject to their own authorization and cannot be spent twice. This integration adds no operational IDs, budget policy or crisis capability to V1.
