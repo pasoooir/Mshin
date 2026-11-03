@@ -10,7 +10,7 @@
 - **PR #192 — Finite utility and civic service capacity:** 🟢 ادغام‌شده؛ ظرفیت محدود خدمات و تفکیک پوشش جغرافیایی از پوشش تقاضا.
 - **PR #193 — Resident wellbeing integration:** 🟢 ادغام‌شده در `828b8705dfb51143e7d56f254a5c7464fb922a64`؛ تمام checkهای exact-head از جمله دو `browser-smoke` و پذیرش viewport موبایل موفق شدند.
 - **PR #195 — Workforce-aware zoning growth:** 🟢 ادغام‌شده در `f4a8fa320ad08c1611f596b2ccead8688e824e49`؛ اعتبارسنجی، اشتغال، منطقه‌بندی/ترافیک، خدمات، ذخیره و پذیرش viewport موبایل و هر دو browser-smoke موفق شدند.
-- **main پس از PR #195:** `build` و `validate` در حال اجرا؛ انتشار Pages باید پس از تکمیل آن‌ها بررسی شود.
+- **main پس از PR #197:** `build` و `validate` موفق؛ `deploy` در حال اجرا و `browser-smoke` هنوز باید نهایی شود.
 - **PR #197 — Resident-weighted service satisfaction:** 🟢 ادغام‌شده در `7bdf75b2ad98d9f54d553cd47f95913e671bf816`؛ تست resident-weighting، خدمات/اقتصاد، اشتغال، منطقه‌بندی، ذخیره، viewport موبایل و browser-smoke مربوط به PR موفق شدند.
 - **PR #198 — Workflow concurrency deduplication:** باز؛ اعتبارسنجی موفق و browser-smoke در حال اجرا؛ هدف حذف اجرای تکراری push و pull_request برای یک شاخه است.
 - **تست دستگاه فیزیکی Android و Cocos Creator Editor:** همچنان تأییدنشده؛ CI مرورگر جایگزین آن نیست.
@@ -24,8 +24,8 @@
 | خدمات شهری با ظرفیت محدود | 🟢 ادغام‌شده در PR #192 | ظرفیت برق، آب، فاضلاب، پسماند، پلیس، آتش‌نشانی، درمان و آموزش؛ اتصال کامل به رفاه/رشد در ادامه کار. |
 | رفاه شهروندان و تقاضای خدمات | 🟢 PR #193 و #197 ادغام‌شده | بیکاری و رضایت خدماتی هر خانه با وزن تعداد ساکنان در شاخص رضایت شهر اثر می‌گذارند. |
 | منطقه‌بندی و رشد متوازن شغل | 🟢 PR #195 ادغام‌شده | رشد تجاری/صنعتی/اداری با نیروی کار موجود هماهنگ است؛ regression اشتغال و رشد و browser-smoke موفق شدند. |
-| تجربه موبایل شهر | 🟡 CI در حال تکمیل | viewport و rendering acceptance موفق در PR #193؛ browser race/offline acceptance هنوز فعال است؛ QA فیزیکی Android باز است. |
-| انتشار | 🟢 build/deploy موفق | پس از هر ادغام، main و URL زنده مجدداً بررسی شود. |
+| تجربه موبایل شهر | 🟡 CI در حال تکمیل | viewport و rendering acceptance موفق در PR #197؛ browser race/offline پذیرش main پس از merge هنوز فعال است؛ QA فیزیکی Android باز است. |
+| انتشار | 🟡 deploy در حال اجرا | build و validate برای main پس از PR #197 موفق‌اند؛ نتیجه deploy و browser smoke باید ثبت شود. |
 
 ## قواعد ثبت پیشرفت
 
