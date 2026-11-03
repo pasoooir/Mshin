@@ -125,7 +125,7 @@ try{
  const downloadPromise=page.waitForEvent("download");
  await page.locator("#cityExportBackup").click();
  const backupDownload=await downloadPromise;
- assert.match(backupDownload.suggestedFilename(),/^mshin-city-\\d{4}-\\d{2}-\\d{2}\\.json$/,"city backup must download as a dated JSON file");
+ assert.match(backupDownload.suggestedFilename(),/^mshin-city-\d{4}-\d{2}-\d{2}\.json$/,"city backup must download as a dated JSON file");
  const backupPath=await backupDownload.path();
  const backupPayload=JSON.parse(fs.readFileSync(backupPath,"utf8"));
  assert.equal(backupPayload.format,"mshin-city-save","export must use the portable city backup envelope");
