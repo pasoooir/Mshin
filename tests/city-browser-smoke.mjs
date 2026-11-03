@@ -13,6 +13,7 @@ try{
  assert.equal(renderStats.version,"180");
  assert.equal(renderStats.visualStyle,"vibrant-stylized-3d","the city renderer must use the approved vivid 3D art direction");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
+ assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.ok(renderStats.decorativeStreetLights>=100,"road corridors must include instanced decorative street lighting");
  assert.ok(renderStats.streetLightSetback>2.06,"street lamps must sit outside the road curb, not inside vehicle lanes");
  assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
