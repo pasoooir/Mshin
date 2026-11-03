@@ -113,6 +113,20 @@ export class CityPlacementController extends Component {
     if (this.preview && this.preview.isValid) this.preview.active = false;
   }
 
+
+  private isOccupied(position: Vec3): boolean {
+    if (!this.placementRoot || !this.placementRoot.isValid) return true;
+    const occupants = this.placementRoot.children
+      .filter(child => child !== this.preview && child.isValid && child.active && child.getComponent(CityBuildingProgression))
+      .map(child => ({ x: child.worldPosition.x, z: child.worldPosition.z }));
+    const tolerance = Number.isFinite(this.occupancyTolerance) ? Math.max(0.01, this.occupancyTolerance) : 0.35;
+    return isCityPlacementOccupied({
+      x: position.x,
+      y: position.y,
+      z: position.z
+    }, occupants, this.gridSize, tolerance);
+  }
+
   private updatePreview(event: EventTouch): void {
     if (!this.cityCamera || !this.cityCamera.isValid || !this.preview || !this.preview.isValid) return;
     const location = event.getLocation();
