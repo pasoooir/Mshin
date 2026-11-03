@@ -11,8 +11,13 @@ This folder contains six original, seamless SVG texture masters authored procedu
 - roof.svg — staggered roof-tile pattern
 - texture-manifest.json — material intent and raster targets
 
-## Import rule
-SVG files are editable source masters, **not runtime Cocos textures**. Rasterize to PNG (minimum 256×256; 512×512 recommended for close views), then import the PNG into Cocos Creator 3.8.6 and configure repeat/wrap sampling in the material. Keep source SVG and generated PNG together so texture changes remain reproducible.
+## Reproducible rasterization
+Install the open-source Python packages Pillow and CairoSVG, then run:
+```sh
+python -m pip install pillow cairosvg
+python tools/rasterize-city-textures.py --size 512
+```
+The script writes PNGs to `assets/city/textures/generated/`. Import those PNGs into Cocos Creator 3.8.6; the SVGs remain editable source masters. Configure repeat/wrap sampling in the Cocos material.
 
 ## Quality boundary
 These are first-pass procedural albedo patterns. They do not yet include normal/roughness maps, UV validation, mipmap inspection, or Android GPU profiling. Do not mark final PBR material acceptance complete until those checks pass.
