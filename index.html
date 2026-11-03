@@ -440,7 +440,23 @@ body{font-size:16px}
 @media(prefers-reduced-motion:reduce){#home .panel:before,#select .menuTab{transition:none!important}}
 
 .pedal.is-pressed{transform:translateY(3px) scale(.97);filter:brightness(1.18);box-shadow:0 2px 0 #0008,inset 0 0 0 3px #ffffff55}.nitroButton:active{transform:translateY(2px) scale(.97)}.controls,.controls *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.pedal,.nitroButton,.stick{touch-action:none;-webkit-tap-highlight-color:transparent}
-.cityEntry{display:inline-flex;align-items:center;justify-content:center;margin-top:11px;min-height:46px;padding:10px 24px;border:1px solid #b8d5a6;border-radius:14px;background:linear-gradient(135deg,#2e7957,#174d43);color:#f4fff1;text-decoration:none;font-weight:950;box-shadow:0 4px 0 #123c32,0 8px 22px #123c3255}.cityEntry:focus-visible{outline:3px solid #f7d36b;outline-offset:3px}.cityEntry:hover{filter:brightness(1.12);transform:translateY(-1px)}</style></head><body>
+.cityEntry{display:inline-flex;align-items:center;justify-content:center;margin-top:11px;min-height:46px;padding:10px 24px;border:1px solid #b8d5a6;border-radius:14px;background:linear-gradient(135deg,#2e7957,#174d43);color:#f4fff1;text-decoration:none;font-weight:950;box-shadow:0 4px 0 #123c32,0 8px 22px #123c3255}.cityEntry:focus-visible{outline:3px solid #f7d36b;outline-offset:3px}.cityEntry:hover{filter:brightness(1.12);transform:translateY(-1px)}
+/* Compact rewarded finish screen for the rotated portrait-phone viewport. */
+@media(orientation:portrait){
+ #finish{padding:8px!important}
+ #finish .panel.narrow{width:min(520px,94dvh);max-height:calc(100dvw - 16px);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px}
+ #finish .panel h1{font-size:clamp(18px,4.6dvw,24px);line-height:1.2;margin:0 0 3px}
+ #finish .panel p{font-size:clamp(11px,2.8dvw,14px);line-height:1.45;margin:4px 0 6px}
+ #finish .raceResults{gap:3px;margin:6px 0;padding:0}
+ #finish .raceResults li{grid-template-columns:24px minmax(0,1fr) auto;gap:6px;padding:3px 6px;min-height:0}
+ #finish .raceResults .resultRank{width:22px;height:22px;font-size:11px}
+ #finish .raceResults .resultDriver,#finish .raceResults .resultClock{font-size:11px;line-height:1.2}
+ #finish .raceResults .resultStatus{display:none}
+ #finish .primary,#finish .secondary{min-height:32px;padding:6px 12px;font-size:12px}
+ #finish #finishSelect{margin:0}
+}
+
+</style></head><body>
 <canvas id="game" aria-label="Mshin racing game"></canvas>\n<canvas id="game3d" aria-label="Three-dimensional Mshin racing scene"></canvas>\n<canvas id="racePositionOverlay" aria-hidden="true"></canvas>
 <div id="assetLoader" role="status" aria-live="polite">
 <section class="splash">
