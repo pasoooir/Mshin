@@ -622,8 +622,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const zoom = Math.max(0.4, Math.min(1.7, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
     const worldScale = height / 50;
-    const targetX = Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
-    const targetZ = Number.isFinite(cam.targetZ) ? cam.targetZ : -(cam.y || 0) / worldScale;
+    const targetX = Number.isFinite(cam.currentTargetX) ? cam.currentTargetX : Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
+    const targetZ = Number.isFinite(cam.currentTargetZ) ? cam.currentTargetZ : Number.isFinite(cam.targetZ) ? cam.targetZ : -(cam.y || 0) / worldScale;
     const orbit = Number.isFinite(cam.orbit) ? cam.orbit : 0;
     cameraOrbit = orbit;
     const orbitAngle = Math.PI / 4 + orbit;
