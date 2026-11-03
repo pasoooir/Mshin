@@ -44,3 +44,30 @@ export function snapCityPlacementPoint(
     z: Math.round(point.z / spacing) * spacing
   };
 }
+
+export interface CityPlacementOccupant {
+  x: number;
+  z: number;
+}
+
+/** Rejects an occupied grid cell, or a near-overlap when snapping is disabled. */
+export function isCityPlacementOccupied(
+  position: CityPlacementVector3,
+  occupants: CityPlacementOccupant[],
+  gridSize: number,
+  tolerance = 0.35
+): boolean {
+  if (![position.x, position.y, position.z, gridSize, tolerance].every(Number.isFinite)) return true;
+  const spacing = Math.max(0, gridSize);
+  const radius = Math.max(0.01, tolerance);
+  for (const occupant of occupants) {
+    if (!Number.isFinite(occupant.x) || !Number.isFinite(occupant.z)) continue;
+    if (spacing > 0) {
+      if (Math.round(occupant.x / spacing) === Math.round(position.x / spacing)
+        && Math.round(occupant.z / spacing) === Math.round(position.z / spacing)) return true;
+    } else if (Math.hypot(occupant.x - position.x, occupant.z - position.z) < radius) {
+      return true;
+    }
+  }
+  return false;
+}
