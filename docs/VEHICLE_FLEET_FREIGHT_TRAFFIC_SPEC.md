@@ -123,3 +123,8 @@ The proposed trade and shipment lifecycle is documented in [Capital Region Marke
 ## Weather and mobility conditions
 
 The proposed environmental effects on road conditions, visibility, travel forecasts and maintenance are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Weather changes vehicle or freight movement only through explicit road-surface, route, vehicle and incident rules. A forecast is not a closure, ETA is not arrival, and weather VFX cannot cause crashes or block routes by itself.
+
+
+## Emergency vehicle interaction with road traffic
+
+Emergency fleet behavior is specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Fire, police and ambulance trips must use the authoritative road graph, valid vehicle compatibility and bounded traffic-yield behavior. Sirens or emergency priority do not permit phasing through traffic, ignoring closures or inventing a route. Emergency vehicles remain distinct from freight and passenger service fleets.
