@@ -83,3 +83,23 @@ test("a stationary single-pointer gesture focuses and selects the raycast tile",
   assert.notEqual(h.camera.targetZ, 0);
   h.controller.destroy();
 });
+
+test("the 2D renderer fallback retains tile selection when Three.js is unavailable", () => {
+  const listeners = new Map();
+  const canvas = {
+    style: {},
+    addEventListener(type, fn) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(fn); },
+    removeEventListener(type, fn) { listeners.get(type)?.delete(fn); },
+    setPointerCapture() {}, hasPointerCapture() { return false; }, releasePointerCapture() {},
+    dispatch(type, event) { for (const fn of listeners.get(type) || []) fn({ type, pointerType: "touch", button: 0, preventDefault() {}, ...event }); }
+  };
+  const taps = [];
+  const controller = createCityCameraController({
+    canvas, camera: { zoom: 1, orbit: 0 }, getRenderer: () => null,
+    getTileAt: () => ({ x: 8, y: 9 }), onTap: (x, y) => taps.push([x, y])
+  });
+  canvas.dispatch("pointerdown", { pointerId: 1, clientX: 120, clientY: 130 });
+  canvas.dispatch("pointerup", { pointerId: 1, clientX: 120, clientY: 130 });
+  assert.deepEqual(taps, [[8, 9]]);
+  controller.destroy();
+});
