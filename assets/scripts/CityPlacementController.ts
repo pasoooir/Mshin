@@ -1,5 +1,6 @@
 import { _decorator, Camera, Component, EventTouch, geometry, Input, instantiate, input, Node, Prefab, Vec3 } from "cc";
 import { CityBuildingProgression } from "./CityBuildingProgression";
+import { CityOrbitCamera } from "./CityOrbitCamera";
 import {
   intersectCityPlacementGround,
   snapCityPlacementPoint
