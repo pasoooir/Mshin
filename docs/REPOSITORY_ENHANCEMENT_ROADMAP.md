@@ -32,7 +32,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ### P1 — Stabilize the racing game
 
-- Reconcile any newly opened racing PR against main before feature work. The current sole open PR is #92 (draft, 441 commits behind main, four commits ahead, diverged and non-mergeable); keep it blocked until rebased and its rendered billboard output is accepted on mobile.
+- Reconcile any newly opened racing PR against main before feature work. The remaining open PRs are #92 (stale draft billboard branch, diverged/non-mergeable) and #179 (documentation-only snapshot superseded by this current evidence refresh). A city economy implementation branch is being tested separately and is not yet a PR.
 - Confirm the tenfold track-length and steering correction in PR #132 against current main behavior and automated evidence.
 - Keep vehicle physics, input sampling, rendering and progression as separate testable domains.
 - Verify a complete real race: countdown, driving, collisions, pickups, laps, finish, reward and persisted progress. Do not weaken finish/reward assertions to make smoke tests pass.
@@ -98,11 +98,11 @@ For every feature, record:
 | Priority | Work item | Status | Exit condition |
 |---|---|---|---|
 | P0 | Refresh stale tracker and define repository-wide acceptance policy | 🟢 completed in this documentation change | Current baseline and evidence links recorded |
-| P0 | Reconcile open PR inventory and stacked dependencies | 🟢 inventory reconciled | PR #161–#174 and #176 are merged; #175 was closed as superseded; only #92 remains open and is explicitly stale/blocked (441 commits behind, four ahead, draft, diverged, non-mergeable, visual acceptance missing). Recheck after any new PR activity. |
+| P0 | Reconcile open PR inventory and stacked dependencies | 🟢 inventory reconciled | PRs #161–#178 and #180 are merged; #175 was closed as superseded. PR #92 remains stale/blocked; PR #179 is a stale documentation snapshot to close after this evidence refresh. Recheck after any new PR activity. |
 | P0 | Mobile race + city acceptance matrix | 🟡 in progress | Main run 41604548181 passes portrait 390×844 software-landscape touch race; PR #178 run 41606148309 additionally verifies city fullscreen-before-landscape sequencing and mobile city interactions. Broaden to safe-area/visual-viewport changes, pointer cancellation, gyro and representative physical Android devices. |
 | P1 | Racing stability and real-finish regression | 🟢 browser acceptance verified | Main run 41604548181 passes the full three-lap mobile race, five-car standings, rewards, first-finish achievement and persisted progress. Physical Android performance/balance remains a separate gate. |
 | P1 | City simulation vertical slices | 🟡 in progress | Each system passes deterministic, integration and mobile acceptance |
-| P2 | Enforce dependency boundaries | 🟢 implemented and CI-verified | PR #174 merged; latest main validation run 41604547975 passes. Continue monitoring as modules evolve. |
+| P2 | Enforce dependency boundaries | 🟢 implemented and CI-verified | PR #174 merged; latest accepted main validation before current queued run is 41607496456, and exact-head validation for pedestrian regression is 41607752900. Continue monitoring as modules evolve. |
 | P2 | Reproducible CI and release gates | 🟡 in progress | Lockfile-backed install, least privilege, isolated Pages deployment |
 | P3 | Cocos Editor import and Web build | 🔴 not yet verified | Editor-generated Web build runs on Android |
 
