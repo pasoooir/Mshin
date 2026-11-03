@@ -158,6 +158,8 @@ try{
  const focusTile=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));
  await page.evaluate(({x,y})=>{const c=document.querySelector("#cityViewport"),event=type=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:601,pointerType:"touch",clientX:x,clientY:y}));event("pointerdown");event("pointerup")},focusTile);
  const focusedCamera=await page.evaluate(()=>window.MshinCityDebug.view);
+ const selectedBuildingTile=await page.evaluate(()=>window.MshinCityDebug.selected);
+ assert.deepEqual(selectedBuildingTile,{x:14,y:14},"tapping a building must retain normal building selection while focusing the camera");
  assert.ok(Number.isFinite(focusedCamera.targetX)&&Number.isFinite(focusedCamera.targetZ),"tapping the world must set a raycast-derived camera focus target");
  await page.waitForTimeout(450);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),1,"camera gestures and focus must not mutate city construction data");
