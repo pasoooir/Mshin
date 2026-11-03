@@ -70,3 +70,52 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
  .citySpeed button{padding:6px 8px;min-height:36px;font-size:10px}
  .cityToast{bottom:calc(env(safe-area-inset-bottom) + 116px);font-size:10px}
 }
+
+
+/* Budget dialog: readable, scroll-safe and touch-first on landscape phones. */
+.cityBudgetPanel{
+ position:fixed;z-index:30;top:50%;left:50%;transform:translate(-50%,-50%);
+ width:min(560px,calc(100vw - 24px));max-height:min(88dvh,560px);overflow:auto;
+ display:grid;gap:14px;padding:clamp(14px,3vw,22px);
+ color:#f4f7f5;background:linear-gradient(155deg,#18344d,#0d1d30);
+ border:1px solid #ffffff40;border-radius:22px;
+ box-shadow:0 20px 70px #000b,0 0 0 100vmax #071521c9;
+ backdrop-filter:blur(16px);pointer-events:auto;overscroll-behavior:contain;
+}
+.cityBudgetPanel.hidden{display:none!important}
+.cityBudgetHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.cityBudgetHeader h2{margin:0 0 5px;font-size:clamp(18px,3vw,24px)}
+.cityBudgetHeader p{margin:0;color:#b7cbd8;font-size:12px;line-height:1.7}
+.cityBudgetHeader button{flex:0 0 44px;width:44px;height:44px;border:1px solid #ffffff35;border-radius:12px;background:#263f55;color:#fff;font-size:26px}
+.cityBudgetTotals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.cityBudgetTotals>div{min-width:0;padding:9px 6px;text-align:center;border:1px solid #ffffff20;border-radius:12px;background:#ffffff0b}
+.cityBudgetTotals small{display:block;color:#a9c3d2;font-size:10px}
+.cityBudgetTotals b{display:block;margin-top:4px;font-size:clamp(13px,2vw,17px);overflow-wrap:anywhere}
+.cityTaxControls{display:grid;gap:8px}
+.cityTaxControl{display:grid;gap:5px;padding:8px 11px;border:1px solid #ffffff20;border-radius:12px;background:#ffffff09;font-size:13px}
+.cityTaxControl>span{display:flex;justify-content:space-between;gap:10px}
+.cityTaxControl>span b{color:#f1ca72}
+.cityTaxControl input[type=range]{display:block;width:100%;min-height:44px;margin:0;accent-color:#e8bd65;touch-action:pan-y;cursor:pointer}
+.cityBudgetBreakdown{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.cityBudgetBreakdown p{margin:0;padding:8px;border-radius:10px;background:#ffffff0b;color:#b8cbd7;font-size:10px;line-height:1.6}
+.cityBudgetBreakdown b{display:block;color:#fff;font-size:13px}
+.cityBudgetClose{min-height:48px;border:0;border-radius:13px;background:linear-gradient(145deg,#f1cf78,#d99b4b);color:#302515;font-weight:900}
+.cityBudgetPanel button:focus-visible,.cityBudgetPanel input:focus-visible{outline:3px solid #f6d98b;outline-offset:3px}
+@media(max-width:480px){
+ .cityBudgetPanel{width:calc(100vw - 18px);max-height:90dvh;padding:13px;gap:10px;border-radius:18px}
+ .cityBudgetTotals{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cityBudgetBreakdown{grid-template-columns:1fr}
+ .cityBudgetBreakdown p{display:flex;justify-content:space-between;align-items:center;gap:8px}
+ .cityBudgetBreakdown b{display:inline}
+}
+@media(max-height:520px){
+ .cityBudgetPanel{width:min(620px,calc(100vw - 20px));max-height:92dvh;padding:10px 14px;gap:8px}
+ .cityBudgetHeader h2{font-size:17px}
+ .cityBudgetHeader p{font-size:10px}
+ .cityBudgetTotals>div{padding:5px}
+ .cityTaxControls{gap:5px}
+ .cityTaxControl{padding:4px 9px;gap:2px;font-size:11px}
+ .cityTaxControl input[type=range]{min-height:38px}
+ .cityBudgetBreakdown p{padding:5px;font-size:9px}
+ .cityBudgetClose{min-height:40px}
+}
