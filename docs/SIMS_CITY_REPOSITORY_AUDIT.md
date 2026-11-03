@@ -22,7 +22,7 @@ The safest strategy is an incremental expansion of the existing game, not a rewr
 | Repository | Public GitHub repository `pasoooir/Mshin` |
 | Default branch | `main` |
 | GitHub Pages | Enabled; deployment workflow currently reports success |
-| Package | `mshin-3d-racing`, version `0.15.2` |
+| Package | `mshin-3d-racing`, version `0.15.3` |
 | Cocos Creator version declared | `3.8.6` in root `package.json` |
 | TypeScript | `^5.8.3` |
 | Node requirement | `>=20`; latest observed Actions runner used Node `22.23.4` |
