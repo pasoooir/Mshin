@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
 **Reviewed:** 2026-11-03  
-**Baseline:** `main` at `616be0381f3eeda0c8923b288e33467361493a5d`  
+**Baseline:** `main` at `c19e7273f4ec5bb9bb583cda58038a749872734f`  
 **Primary users:** mobile browsers (Android-first)  
 **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
 
@@ -17,7 +17,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 - Latest merged-main GitHub Pages deployment: [run 41604546842](https://github.com/pasoooir/Mshin/actions/runs/41604546842) — success.
 - PR #176 is merged as `616be0381f3eeda0c8923b288e33467361493a5d`; it adds portrait-mobile full-race acceptance, compact finish-screen layout, screenshot evidence and offline acceptance. PR #175 was closed as a superseded duplicate. PRs #161–#174 and #176 are merged.
 - Mobile gameplay preview artifact: [mshin-mobile-gameplay-previews](https://github.com/pasoooir/Mshin/actions/runs/41604548181/artifacts/13216086671).
-- CI success is not equivalent to physical Android-device certification or Cocos Creator Editor/Web build acceptance.
+- PR #178 merged as `c19e7273f4ec5bb9bb583cda58038a749872734f`; city entry now requests browser fullscreen before `screen.orientation.lock("landscape")`, retries on the first trusted touch/click, and retains a portrait fallback. Mobile city smoke and portable validation passed on PR head (runs 41606148309 and 41606148420). GitHub Pages deployment for this merge is still awaiting verification.\n- CI success is not equivalent to physical Android-device certification or Cocos Creator Editor/Web build acceptance.
 
 ## Product priorities
 
@@ -99,7 +99,7 @@ For every feature, record:
 |---|---|---|---|
 | P0 | Refresh stale tracker and define repository-wide acceptance policy | 🟢 completed in this documentation change | Current baseline and evidence links recorded |
 | P0 | Reconcile open PR inventory and stacked dependencies | 🟢 inventory reconciled | PR #161–#174 and #176 are merged; #175 was closed as superseded; only #92 remains open and is explicitly stale/blocked (441 commits behind, four ahead, draft, diverged, non-mergeable, visual acceptance missing). Recheck after any new PR activity. |
-| P0 | Mobile race + city acceptance matrix | 🟡 in progress | Main run 41604548181 passes portrait 390×844 software-landscape touch race, finish-panel bounds, persistence and offline PWA; broaden to safe-area/visual-viewport changes, pointer cancellation, gyro and representative physical Android devices. |
+| P0 | Mobile race + city acceptance matrix | 🟡 in progress | Main run 41604548181 passes portrait 390×844 software-landscape touch race; PR #178 run 41606148309 additionally verifies city fullscreen-before-landscape sequencing and mobile city interactions. Broaden to safe-area/visual-viewport changes, pointer cancellation, gyro and representative physical Android devices. |
 | P1 | Racing stability and real-finish regression | 🟢 browser acceptance verified | Main run 41604548181 passes the full three-lap mobile race, five-car standings, rewards, first-finish achievement and persisted progress. Physical Android performance/balance remains a separate gate. |
 | P1 | City simulation vertical slices | 🟡 in progress | Each system passes deterministic, integration and mobile acceptance |
 | P2 | Enforce dependency boundaries | 🟢 implemented and CI-verified | PR #174 merged; latest main validation run 41604547975 passes. Continue monitoring as modules evolve. |
