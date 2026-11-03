@@ -328,6 +328,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const lampArms = new THREE.InstancedMesh(lampArmGeometry, lampArmMaterial, 320);
   const lampHeads = new THREE.InstancedMesh(lampHeadGeometry, lampHeadMaterial, 320);
   let decorativeStreetLightCount = 0;
+  const streetLightSetback = 2.4; // beyond the 2.06-unit curb edge; never inside the road surface
   const lampRoadCenters = [7.5, 15.5, 23.5, 31.5, 39.5, 47.5, 55.5];
   const lampOffsets = [3.5, 11.5, 19.5, 27.5, 35.5, 43.5, 51.5, 59.5];
   function addStreetLamp(px, pz, horizontalRoad, side) {
@@ -362,8 +363,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
       if (isRoadCell(Math.round(along))) continue;
       const alongCoordinate = (along - 31.5) * 2;
       for (const side of [-1, 1]) {
-        addStreetLamp(roadCoordinate + side * 2.4, alongCoordinate, false, side);
-        addStreetLamp(alongCoordinate, roadCoordinate + side * 2.4, true, side);
+        addStreetLamp(roadCoordinate + side * streetLightSetback, alongCoordinate, false, side);
+        addStreetLamp(alongCoordinate, roadCoordinate + side * streetLightSetback, true, side);
       }
     }
   }
@@ -632,6 +633,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         visualStyle: "vibrant-stylized-3d",
         decorativeTrees: decorativeTreeCount,
         decorativeStreetLights: decorativeStreetLightCount,
+        streetLightSetback,
         stylizedBuildings: buildings.children.length,
         plots: activeGrassA + activeGrassB,
         roadTiles: activeRoads,
