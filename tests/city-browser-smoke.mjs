@@ -147,6 +147,7 @@ try{
  assert.ok(Number.isFinite(focusedCamera.targetX)&&Number.isFinite(focusedCamera.targetZ),"tapping the world must set a raycast-derived camera focus target");
  await page.waitForTimeout(450);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),1,"camera gestures and focus must not mutate city construction data");
+ await page.locator("#cityRecenter").click();
  fs.mkdirSync("artifacts",{recursive:true});
  await page.screenshot({path:"artifacts/city-camera-orbit-focus.png"});
 
