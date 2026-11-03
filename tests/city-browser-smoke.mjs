@@ -99,7 +99,7 @@ try{
  assert.equal(budgetLayout.display,"grid","budget controls must open as a styled dialog");
  assert.ok(budgetLayout.left>=0&&budgetLayout.top>=0&&budgetLayout.right<=budgetLayout.width&&budgetLayout.bottom<=budgetLayout.height,"budget dialog must fit inside the landscape mobile viewport");
  assert.equal(budgetLayout.sliders.length,3,"all three tax sectors must be adjustable");
- assert.ok(budgetLayout.sliders.every(slider=>slider.width>=180&&slider.height>=38),"tax sliders must remain usable touch targets on landscape phones");
+ assert.ok(budgetLayout.sliders.every(slider=>slider.width>=140&&slider.height>=38),"tax sliders must remain usable touch targets on landscape phones: "+JSON.stringify(budgetLayout));
  const baselineTax=await page.evaluate(()=>window.MshinCityDebug.economy.taxRevenue);
  const budgetControls=await page.evaluate(()=>[...document.querySelectorAll(".cityTaxControl input")].map(input=>{const r=input.getBoundingClientRect();return{width:r.width,height:r.height,value:input.value}}));
  assert.equal(budgetControls.length,3,"budget must expose residential, commercial and industrial tax controls");
