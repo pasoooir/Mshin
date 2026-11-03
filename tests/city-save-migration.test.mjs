@@ -70,6 +70,14 @@ test("malformed version-one saves are rejected rather than partially imported", 
   assert.equal(migrateCitySave({format:"mshin-city-save",version:2,city:{schemaVersion:9}}),null);
 });
 
+test("backup envelopes reject unsupported versions and invalid timestamps", () => {
+  const city=createInitialCity(1203);
+  const backup=createCitySaveBackup(city,"2026-11-03T09:00:00.000Z");
+  assert.equal(migrateCitySave({...backup,version:3}),null);
+  assert.equal(migrateCitySave({...backup,exportedAt:"not-a-date"}),null);
+  assert.throws(()=>createCitySaveBackup(city,"not-a-date"),/valid city snapshot/);
+});
+
 test("current version-two saves normalize optional fields without changing core progress", () => {
   const city=createInitialCity(1202);
   placeCityItem(city,17,14,"home");
