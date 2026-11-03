@@ -78,7 +78,8 @@ export class CityPlacementController extends Component {
   }
 
   private onTouchCancel(): void {
-    this.invalidatePreview();
+    // A cancelled native gesture must release placement ownership and restore orbit input.
+    this.cancelPlacement();
   }
 
   private isOccupied(position: Vec3): boolean {
