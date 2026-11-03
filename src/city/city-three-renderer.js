@@ -69,7 +69,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const windowMaterials = new Set();
   const atmosphere = createCityAtmosphere(THREE, {
     scene, camera, sun, hemisphere, fill, windowMaterials,
-    getViewport: () => ({ width, height })
+    getViewport: () => ({ width: window.innerWidth, height: window.innerHeight })
   });
 
   function makeSurfaceTexture(base, fleck, seed, count, scale = 1) {
