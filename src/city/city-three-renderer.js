@@ -40,14 +40,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
   sourceCanvas.style.opacity = "0";
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#b9d8e2");
-  scene.fog = new THREE.Fog("#b9d8e2", 125, 235);
+  scene.background = new THREE.Color("#9bd4ee");
+  scene.fog = new THREE.Fog("#9bd4ee", 145, 260);
   const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 320);
   camera.position.set(48, 58, 48);
   camera.lookAt(0, 0, 0);
 
-  scene.add(new THREE.HemisphereLight("#f1fbff", "#526b48", 2.0));
-  const sun = new THREE.DirectionalLight("#fff0d5", 3.0);
+  scene.add(new THREE.HemisphereLight("#fff7e8", "#537c48", 2.25));
+  const sun = new THREE.DirectionalLight("#fff1d2", 3.35);
   sun.position.set(-42, 68, -35);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
@@ -57,7 +57,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   sun.shadow.camera.bottom = -76;
   sun.shadow.bias = -0.00025;
   scene.add(sun);
-  const fill = new THREE.DirectionalLight("#9bd7ff", 0.85);
+  const fill = new THREE.DirectionalLight("#a9e2ff", 1.05);
   fill.position.set(38, 24, 42);
   scene.add(fill);
 
@@ -86,21 +86,21 @@ export async function createCityThreeRenderer(sourceCanvas) {
     return texture;
   }
 
-  const grassMap = makeSurfaceTexture("#86a96d", "#d9e8b9", 741, 11500);
-  const roadMap = makeSurfaceTexture("#353e47", "#b5c0c2", 912, 6800, 0.8);
+  const grassMap = makeSurfaceTexture("#91c875", "#e0f4b5", 741, 11500);
+  const roadMap = makeSurfaceTexture("#46545e", "#c6d1c8", 912, 6800, 0.8);
   const grassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, roughness: 1 });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#dce8c7", roughness: 1 });
   const lockedGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#899783", roughness: 1 });
   const lockedGrassAlternateMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#9aa48e", roughness: 1 });
   const roadMaterial = new THREE.MeshStandardMaterial({ map: roadMap, roughness: 0.96, metalness: 0.015 });
   const lockedRoadMaterial = new THREE.MeshStandardMaterial({ map: roadMap, color: "#aab2b1", roughness: 0.98 });
-  const curbMaterial = new THREE.MeshStandardMaterial({ color: "#e4dfc9", roughness: 0.88 });
-  const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#e6e9ce", transparent: true, opacity: 0.66 });
+  const curbMaterial = new THREE.MeshStandardMaterial({ color: "#f1e8d0", roughness: 0.82 });
+  const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#f8efcf", transparent: true, opacity: 0.72 });
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(230, 230),
-    new THREE.MeshStandardMaterial({ color: "#718d61", roughness: 1 })
+    new THREE.MeshStandardMaterial({ color: "#80b86d", roughness: 1 })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.34;
@@ -260,46 +260,243 @@ export async function createCityThreeRenderer(sourceCanvas) {
   );
   scene.add(boundary);
 
+  // Stylized miniature-city environment: lush canopy on the locked-world perimeter.
+  // These props are explicitly decorative and never occupy buildable simulation cells.
+  const environment = new THREE.Group();
+  scene.add(environment);
+  const trunkGeometry = new THREE.CylinderGeometry(0.10, 0.15, 1.05, 6);
+  const canopyGeometry = new THREE.SphereGeometry(0.62, 9, 7);
+  const canopySmallGeometry = new THREE.SphereGeometry(0.42, 8, 6);
+  const trunkMaterial = new THREE.MeshStandardMaterial({ color: "#8b5b38", roughness: 0.96 });
+  const canopyMaterials = [
+    new THREE.MeshStandardMaterial({ color: "#3f9b58", roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: "#58ad58", roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: "#78bd5d", roughness: 1 })
+  ];
+  const treeTrunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, 180);
+  const treeCanopies = canopyMaterials.map(material => new THREE.InstancedMesh(canopyGeometry, material, 180));
+  const treeHighlights = canopyMaterials.map(material => new THREE.InstancedMesh(canopySmallGeometry, material, 180));
+  let decorativeTreeCount = 0;
+  for (let y = 1; y < VISUAL_GRID - 1; y++) {
+    for (let x = 1; x < VISUAL_GRID - 1; x++) {
+      if (isActiveCell(x, y) || isRoadCell(x) || isRoadCell(y)) continue;
+      if ((x * 37 + y * 17) % 29 !== 0) continue;
+      const px = (x - 31.5) * 2, pz = (y - 31.5) * 2;
+      const species = (x * 13 + y * 7) % canopyMaterials.length;
+      dummy.position.set(px, 0.68, pz);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(0.9 + species * 0.08, 0.9 + species * 0.1, 0.9 + species * 0.08);
+      dummy.updateMatrix();
+      treeTrunks.setMatrixAt(decorativeTreeCount, dummy.matrix);
+      dummy.position.set(px, 1.45, pz);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      treeCanopies[species].setMatrixAt(decorativeTreeCount, dummy.matrix);
+      dummy.position.set(px - 0.22, 1.68, pz - 0.16);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      treeHighlights[species].setMatrixAt(decorativeTreeCount, dummy.matrix);
+      decorativeTreeCount++;
+    }
+  }
+  treeTrunks.count = decorativeTreeCount;
+  treeTrunks.instanceMatrix.needsUpdate = true;
+  environment.add(treeTrunks);
+  for (const mesh of [...treeCanopies, ...treeHighlights]) {
+    mesh.count = decorativeTreeCount;
+    mesh.instanceMatrix.needsUpdate = true;
+    environment.add(mesh);
+  }
+
   const buildings = new THREE.Group();
   scene.add(buildings);
   let buildingSignature = "";
-  const windowMaterial = new THREE.MeshStandardMaterial({ color: "#bfe4ed", emissive: "#477b8c", emissiveIntensity: 0.16, roughness: 0.32, metalness: 0.12 });
-  const roofMaterials = ["#d9d2bb", "#6f8790", "#a9b4ad", "#b58a64"].map(color => new THREE.MeshStandardMaterial({ color, roughness: 0.88 }));
+  const windowGeometry = new THREE.BoxGeometry(0.22, 0.28, 0.055);
+  const balconyGeometry = new THREE.BoxGeometry(0.62, 0.07, 0.10);
+  const columnGeometry = new THREE.BoxGeometry(0.11, 1, 0.11);
+  const signGeometry = new THREE.BoxGeometry(0.92, 0.28, 0.10);
+  const awningGeometry = new THREE.BoxGeometry(1.05, 0.14, 0.48);
+
+  function addBuildingMesh(group, geometry, material, x, y, z, rotationY = 0, castShadow = true) {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    mesh.rotation.y = rotationY;
+    mesh.castShadow = castShadow;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    return mesh;
+  }
+
+  function createBuilding(item) {
+    const group = new THREE.Group();
+    const x = (item.x - 15.5) * 2, z = (item.y - 15.5) * 2;
+    group.position.set(x, 0, z);
+    const type = item.type;
+    if (type === "park") {
+      const lawn = new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.20, 1.76), new THREE.MeshStandardMaterial({ color: "#66b95e", roughness: 1 }));
+      lawn.position.y = 0.22;
+      lawn.receiveShadow = true;
+      group.add(lawn);
+      const parkTree = new THREE.Group();
+      const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+      trunk.position.set(-0.32, 0.85, -0.16);
+      const crown = new THREE.Mesh(canopyGeometry, canopyMaterials[1]);
+      crown.position.set(-0.32, 1.55, -0.16);
+      const crown2 = new THREE.Mesh(canopySmallGeometry, canopyMaterials[2]);
+      crown2.position.set(-0.53, 1.78, -0.28);
+      parkTree.add(trunk, crown, crown2);
+      group.add(parkTree);
+      const path = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.035, 0.24), new THREE.MeshStandardMaterial({ color: "#e9d7a6", roughness: 1 }));
+      path.position.set(0.12, 0.34, 0.38);
+      path.rotation.y = -0.35;
+      group.add(path);
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.10, 0.16), new THREE.MeshStandardMaterial({ color: "#a96e42", roughness: 0.8 }));
+      bench.position.set(0.36, 0.48, -0.36);
+      group.add(bench);
+      return group;
+    }
+
+    const palettes = {
+      home: [
+        { wall: "#f5c77f", side: "#e69a62", roof: "#d65b4e", trim: "#fff0c9", accent: "#36a7a0" },
+        { wall: "#f2a7a0", side: "#d97b79", roof: "#536f9f", trim: "#fff0dc", accent: "#f0c65d" },
+        { wall: "#b5d8a0", side: "#80b78a", roof: "#e37b56", trim: "#f4f0d6", accent: "#447fbb" },
+        { wall: "#f3d98d", side: "#d6ae69", roof: "#5d9c88", trim: "#fff4d8", accent: "#d86e80" }
+      ],
+      shop: [
+        { wall: "#f3ad62", side: "#d98054", roof: "#3d9d9a", trim: "#fff1cf", accent: "#e64f63" },
+        { wall: "#76c8d0", side: "#459da9", roof: "#efb74e", trim: "#effbfa", accent: "#e36c56" },
+        { wall: "#e89db2", side: "#c97698", roof: "#647bb4", trim: "#fff0e5", accent: "#f1c35d" }
+      ],
+      industrial: [
+        { wall: "#c6d5db", side: "#8da5ae", roof: "#e47d55", trim: "#f4f1df", accent: "#f0bd4e" },
+        { wall: "#d7d4bf", side: "#a5b0a1", roof: "#5f7f91", trim: "#f5f0d9", accent: "#e59a4b" }
+      ],
+      civic: [
+        { wall: "#d9c5f2", side: "#a995d1", roof: "#5e76a7", trim: "#fff4df", accent: "#e3b85c" },
+        { wall: "#f0d5a0", side: "#d2ad75", roof: "#4b9e9b", trim: "#fff7e7", accent: "#d66e6c" }
+      ]
+    };
+    const family = type === "home" ? "home" : type === "shop" ? "shop" : type === "industrial" ? "industrial" : "civic";
+    const paletteList = palettes[family];
+    const palette = paletteList[(item.id * 7 + item.x * 3 + item.y) % paletteList.length];
+    const level = Math.max(1, item.level || 1);
+    const height = type === "home" ? 2.15 + level * 0.52 : type === "shop" ? 2.45 + level * 0.28 : type === "industrial" ? 2.7 : 2.5 + level * 0.36;
+    const bodyWidth = type === "industrial" ? 1.52 : 1.34;
+    const bodyDepth = type === "industrial" ? 1.48 : 1.34;
+    const wall = new THREE.MeshStandardMaterial({ color: palette.wall, roughness: 0.82 });
+    const sideWall = new THREE.MeshStandardMaterial({ color: palette.side, roughness: 0.86 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: palette.roof, roughness: 0.88 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: palette.trim, roughness: 0.68 });
+    const accentMat = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.7 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: "#d8f5f6", emissive: "#3e9db0", emissiveIntensity: 0.16, roughness: 0.24, metalness: 0.08 });
+    const darkMat = new THREE.MeshStandardMaterial({ color: "#52616b", roughness: 0.9 });
+    const baseMat = new THREE.MeshStandardMaterial({ color: "#e8dfc8", roughness: 0.96 });
+
+    addBuildingMesh(group, new THREE.BoxGeometry(1.72, 0.20, 1.72), baseMat, 0, 0.22, 0, 0, false);
+    const body = addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth, height, bodyDepth), wall, 0, 0.32 + height / 2, 0);
+    body.material = [wall, sideWall, wall, wall, sideWall, sideWall];
+    addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
+
+    if (type === "home") {
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(1.08, 0.72, 4), roofMat);
+      roof.position.set(0, 0.48 + height, 0);
+      roof.rotation.y = Math.PI / 4;
+      roof.castShadow = true;
+      group.add(roof);
+      const balcony = new THREE.InstancedMesh(balconyGeometry, trimMat, Math.max(2, level * 2));
+      const balconyDummy = new THREE.Object3D();
+      let balconyCount = 0;
+      for (let floor = 0; floor < Math.min(level, 3); floor++) {
+        const y = 0.95 + floor * 0.52;
+        for (const side of [-1, 1]) {
+          balconyDummy.position.set(side * 0.02, y, bodyDepth / 2 + 0.10);
+          balconyDummy.rotation.set(0, 0, 0);
+          balconyDummy.scale.set(1, 1, 1);
+          balconyDummy.updateMatrix();
+          balcony.setMatrixAt(balconyCount++, balconyDummy.matrix);
+        }
+      }
+      balcony.count = balconyCount;
+      balcony.instanceMatrix.needsUpdate = true;
+      group.add(balcony);
+    } else if (type === "shop") {
+      addBuildingMesh(group, signGeometry, accentMat, 0, 1.45, bodyDepth / 2 + 0.075, 0, false);
+      addBuildingMesh(group, awningGeometry, roofMat, 0, 1.08, bodyDepth / 2 + 0.18, 0, false);
+      for (let stripe = -2; stripe <= 2; stripe++) {
+        addBuildingMesh(group, new THREE.BoxGeometry(0.10, 0.15, 0.49), trimMat, stripe * 0.20, 1.08, bodyDepth / 2 + 0.19, 0, false);
+      }
+    } else if (type === "industrial") {
+      const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 1.2, 8), darkMat);
+      chimney.position.set(0.48, 0.95 + height, -0.38);
+      chimney.castShadow = true;
+      group.add(chimney);
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.62, 10), trimMat);
+      tank.position.set(-0.42, 0.65 + height, 0.28);
+      group.add(tank);
+      const tankCap = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), roofMat);
+      tankCap.position.set(-0.42, 0.96 + height, 0.28);
+      group.add(tankCap);
+    } else {
+      const columns = new THREE.InstancedMesh(columnGeometry, trimMat, 4);
+      const columnDummy = new THREE.Object3D();
+      let columnIndex = 0;
+      for (const px of [-0.48, -0.16, 0.16, 0.48]) {
+        columnDummy.position.set(px, 0.92, bodyDepth / 2 + 0.08);
+        columnDummy.scale.set(1, 1.65, 1);
+        columnDummy.updateMatrix();
+        columns.setMatrixAt(columnIndex++, columnDummy.matrix);
+      }
+      columns.count = columnIndex;
+      columns.instanceMatrix.needsUpdate = true;
+      group.add(columns);
+      addBuildingMesh(group, signGeometry, accentMat, 0, 1.85, bodyDepth / 2 + 0.09, 0, false);
+    }
+
+    const windows = new THREE.InstancedMesh(windowGeometry, glassMat, 32);
+    const windowDummy = new THREE.Object3D();
+    let windowCount = 0;
+    const floors = Math.min(4, Math.max(1, Math.floor(height / 0.68)));
+    for (let floor = 0; floor < floors; floor++) {
+      const y = 0.70 + floor * 0.55;
+      for (const wx of [-0.34, 0.34]) {
+        windowDummy.position.set(wx, y, bodyDepth / 2 + 0.03);
+        windowDummy.rotation.set(0, 0, 0);
+        windowDummy.scale.set(1, 1, 1);
+        windowDummy.updateMatrix();
+        windows.setMatrixAt(windowCount++, windowDummy.matrix);
+        windowDummy.position.set(bodyWidth / 2 + 0.03, y, wx);
+        windowDummy.rotation.set(0, Math.PI / 2, 0);
+        windowDummy.updateMatrix();
+        windows.setMatrixAt(windowCount++, windowDummy.matrix);
+      }
+    }
+    windows.count = windowCount;
+    windows.instanceMatrix.needsUpdate = true;
+    group.add(windows);
+
+    // Bright facade fins make each family readable at the normal phone zoom.
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
+    fin.position.set(-bodyWidth / 2 - 0.02, 0.34 + height * 0.52, bodyDepth / 2 + 0.045);
+    group.add(fin);
+    return group;
+  }
+
   function updateBuildings(city) {
     const next = city.buildings.map(v => [v.id, v.type, v.x, v.y, v.level].join(":")).join("|");
     if (next === buildingSignature) return;
     buildingSignature = next;
     for (const child of [...buildings.children]) {
       buildings.remove(child);
-      child.geometry?.dispose();
-      if (Array.isArray(child.material)) child.material.forEach(material => material.dispose());
-      else child.material?.dispose();
+      child.traverse(object => {
+        if (object.geometry && object.geometry !== trunkGeometry && object.geometry !== canopyGeometry && object.geometry !== canopySmallGeometry) object.geometry.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) object.material.forEach(material => material.dispose());
+          else object.material.dispose();
+        }
+      });
     }
-    for (const item of city.buildings) {
-      const x = (item.x - 15.5) * 2, z = (item.y - 15.5) * 2;
-      if (item.type === "park") {
-        const lawn = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.2, 1.72), new THREE.MeshStandardMaterial({ color: "#4d9852", roughness: 1 }));
-        lawn.position.set(x, 0.22, z);
-        buildings.add(lawn);
-        continue;
-      }
-      const height = 1.4 + (item.level || 1) * 0.7;
-      const palette = item.type === "home" ? ["#dfc49a", "#b8c6c8"] : item.type === "shop" ? ["#6aaeb5", "#d5bd8d"] : item.type === "industrial" ? ["#98a7aa", "#677b82"] : ["#9d9ac5", "#d5d1e7"];
-      const wallMaterial = new THREE.MeshStandardMaterial({ color: palette[0], roughness: 0.8 });
-      const body = new THREE.Mesh(new THREE.BoxGeometry(1.28, height, 1.28), wallMaterial);
-      body.position.set(x, 0.22 + height / 2, z);
-      body.castShadow = true;
-      body.receiveShadow = true;
-      buildings.add(body);
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.14, 1.36), roofMaterials[item.id % roofMaterials.length]);
-      roof.position.set(x, 0.22 + height + 0.07, z);
-      buildings.add(roof);
-      for (const side of [-1, 1]) {
-        const window = new THREE.Mesh(new THREE.BoxGeometry(0.045, Math.min(0.9, height * 0.45), 0.46), windowMaterial);
-        window.position.set(x + side * 0.65, 0.45 + height * 0.58, z);
-        buildings.add(window);
-      }
-    }
+    for (const item of city.buildings) buildings.add(createBuilding(item));
   }
 
   const raycaster = new THREE.Raycaster();
@@ -362,6 +559,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
       return {
         renderer: "three.js",
         version: THREE.REVISION,
+        visualStyle: "vibrant-stylized-3d",
+        decorativeTrees: decorativeTreeCount,
+        stylizedBuildings: buildings.children.length,
         plots: activeGrassA + activeGrassB,
         roadTiles: activeRoads,
         lockedPlots: lockedGrassCountA + lockedGrassCountB,
