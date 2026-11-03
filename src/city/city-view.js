@@ -45,6 +45,10 @@ const validId = value => Number.isSafeInteger(value) && value > 0;
 const validPoint = (x,y,integer=false) => Number.isFinite(x) && Number.isFinite(y)
   && x >= 0 && y >= 0 && x <= SIZE - 1 && y <= SIZE - 1
   && (!integer || (Number.isInteger(x) && Number.isInteger(y)));
+const validOptionalPointPair = (x,y,allowNull=false) =>
+  (x === undefined && y === undefined)
+  || (allowNull && x === null && y === null)
+  || validPoint(x,y,true);
 
 export function isValidCitySave(v) {
   if (!isRecord(v) || v.schemaVersion !== 2
@@ -110,14 +114,9 @@ export function isValidCitySave(v) {
   for (const citizen of v.citizens) {
     if (!isRecord(citizen) || !validId(citizen.id) || !validPoint(citizen.x,citizen.y)
       || (citizen.homeId !== undefined && !validId(citizen.homeId))
-      || ((citizen.roadX === undefined) !== (citizen.roadY === undefined))
-      || (citizen.roadX !== undefined && !validPoint(citizen.roadX,citizen.roadY,true))
-      || ((citizen.previousX === undefined) !== (citizen.previousY === undefined))
-      || (citizen.previousX !== undefined && citizen.previousX !== null && !validPoint(citizen.previousX,citizen.previousY,true))
-      || (citizen.previousY !== undefined && citizen.previousY !== null && !Number.isInteger(citizen.previousY))
-      || ((citizen.targetX === undefined) !== (citizen.targetY === undefined))
-      || (citizen.targetX !== undefined && citizen.targetX !== null && !validPoint(citizen.targetX,citizen.targetY,true))
-      || (citizen.targetY !== undefined && citizen.targetY !== null && !Number.isInteger(citizen.targetY))
+      || !validOptionalPointPair(citizen.roadX,citizen.roadY)
+      || !validOptionalPointPair(citizen.previousX,citizen.previousY,true)
+      || !validOptionalPointPair(citizen.targetX,citizen.targetY,true)
       || (citizen.routeStep !== undefined && (!Number.isSafeInteger(citizen.routeStep) || citizen.routeStep < 0))
       || (citizen.heading !== undefined && !Number.isFinite(citizen.heading))
       || (citizen.phase !== undefined && !Number.isFinite(citizen.phase))
