@@ -39,6 +39,13 @@ test("pedestrian agents remain capped and reconcile when residential population 
   city.population = 10000;
   syncCityCitizens(city);
   assert.equal(city.citizens.length, CITY_MAX_CITIZEN_AGENTS);
+  const removedHome = city.buildings[0];
+  city.buildings = city.buildings.filter(building => building.id !== removedHome.id);
+  city.grid[removedHome.y][removedHome.x] = "grass";
+  city.population -= removedHome.residents;
+  syncCityCitizens(city);
+  const remainingHomeIds = new Set(city.buildings.map(building => building.id));
+  assert.ok(city.citizens.every(citizen => remainingHomeIds.has(citizen.homeId)), "citizens from a demolished home must be reassigned to a remaining residence");
   city.population = 0;
   syncCityCitizens(city);
   assert.equal(city.citizens.length, 0);
