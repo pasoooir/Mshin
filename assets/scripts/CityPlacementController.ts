@@ -2,6 +2,7 @@ import { _decorator, Camera, Component, EventTouch, geometry, Input, instantiate
 import { CityBuildingProgression } from "./CityBuildingProgression";
 import {
   intersectCityPlacementGround,
+  isCityPlacementOccupied,
   snapCityPlacementPoint
 } from "../../src/city/core/placement-geometry.js";
 
@@ -33,6 +34,9 @@ export class CityPlacementController extends Component {
 
   @property({ tooltip: "Initial construction duration assigned to placed buildings." })
   constructionDuration = 30;
+
+  @property({ tooltip: "Minimum spacing used to reject near-overlapping unsnapped buildings." })
+  occupancyTolerance = 0.35;
 
   private preview: Node | null = null;
   private readonly ray = new geometry.Ray();
@@ -150,6 +154,7 @@ export class CityPlacementController extends Component {
     this.previewPosition.set(snapped.x, snapped.y, snapped.z);
     this.preview.setWorldPosition(this.previewPosition);
     this.preview.active = true;
-    this.previewValid = true;
+    this.previewValid = !this.isOccupied(this.previewPosition);
+    this.preview.active = this.previewValid;
   }
 }
