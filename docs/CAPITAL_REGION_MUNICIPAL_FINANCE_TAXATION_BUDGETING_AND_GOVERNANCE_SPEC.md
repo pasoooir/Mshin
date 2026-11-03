@@ -247,3 +247,8 @@ Before implementation: approve finance/tax/governance scope and catalog IDs; sel
 ## Market settlement, trade revenue and procurement integration
 
 The proposed market/order and freight lifecycle is specified in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). Quotes, accepted orders, dispatch, delivery, inspection and settlement are distinct financial recognition points. Gross proceeds, fees, freight, taxes where approved, refunds, returns and net settlement must map to auditable ledger events without double-counting receivables or cash. Municipal procurement links purchase commitments to accepted quantities and invoices; a purchase order does not create inventory. This reference approves no tax, tariff, accounting-recognition rule or new V1 trade capability.
+
+
+## Tourism transactions and municipal fiscal boundary
+
+Visitor spending and hospitality settlement are specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Merchant gross sales, merchant net proceeds, public-venue receipts, approved taxes/fees, refunds and municipal cash are distinct. Visitor spending does not automatically become municipal revenue. Bookings, check-in, delivered service, payment and settlement are separate states and must reconcile with the approved accounting basis. This reference approves no tourism levy, tax or new V1 revenue type.
