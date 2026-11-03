@@ -327,6 +327,39 @@ try{
   assert.equal(preserved.gridRows,32,"corrupt-save fallback must produce a complete city grid");
   assert.deepEqual(invalidRecoveryErrors,[],"corrupt-save fallback must not throw browser errors");
  }finally{await invalidRecoveryPage.close()}
+ const noFullscreenPage=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const noFullscreenErrors=[];noFullscreenPage.on("pageerror",error=>noFullscreenErrors.push(String(error)));
+ try{
+  await noFullscreenPage.addInitScript(()=>{
+   Object.defineProperty(HTMLElement.prototype,"requestFullscreen",{configurable:true,value:undefined});
+   Object.defineProperty(screen,"orientation",{configurable:true,value:undefined});
+  });
+  await noFullscreenPage.goto("http://127.0.0.1:4173/city.html");
+  await noFullscreenPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  const fallback=await noFullscreenPage.evaluate(()=>({hidden:document.querySelector("#cityOrientationGate").hidden,entered:window.__mshinCityEntryDebug.entered,mode:document.documentElement.dataset.cityOrientation}));
+  assert.equal(fallback.mode,"landscape","fallback fixture must represent a landscape phone");
+  assert.equal(fallback.hidden,true,"landscape play must not be blocked when fullscreen and orientation APIs are unavailable");
+  assert.equal(fallback.entered,true,"the no-fullscreen fallback must publish a successful city entry");
+  assert.deepEqual(noFullscreenErrors,[],"no-fullscreen landscape entry must not throw browser errors");
+ }finally{await noFullscreenPage.close()}
+ const deniedFullscreenPage=await browser.newPage({viewport:{width:390,height:844},screen:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const deniedFullscreenErrors=[];deniedFullscreenPage.on("pageerror",error=>deniedFullscreenErrors.push(String(error)));
+ try{
+  await deniedFullscreenPage.addInitScript(()=>{
+   HTMLElement.prototype.requestFullscreen=async function(){throw new DOMException("Fullscreen permission denied","NotAllowedError")};
+  });
+  await deniedFullscreenPage.goto("http://127.0.0.1:4173/city.html");
+  await deniedFullscreenPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  await deniedFullscreenPage.locator("#cityEnterLandscape").click();
+  await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.fullscreenRequested===true,undefined,{timeout:5000});
+  await deniedFullscreenPage.setViewportSize({width:844,height:390});
+  await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.entered===true&&document.querySelector("#cityOrientationGate").hidden,undefined,{timeout:5000});
+  const deniedFallback=await deniedFullscreenPage.evaluate(()=>({fallback:window.__mshinCityEntryDebug.fullscreenFallback,hidden:document.querySelector("#cityOrientationGate").hidden,mode:document.documentElement.dataset.cityOrientation}));
+  assert.equal(deniedFallback.mode,"landscape","denied-fullscreen fixture must finish in landscape");
+  assert.equal(deniedFallback.hidden,true,"landscape play must proceed after fullscreen permission is denied");
+  assert.equal(deniedFallback.fallback,"landscape-after-fullscreen-denied","the denied-fullscreen fallback must be observable");
+  assert.deepEqual(deniedFullscreenErrors,[],"denied-fullscreen landscape entry must not throw browser errors");
+ }finally{await deniedFullscreenPage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, deep save validation/recovery, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}

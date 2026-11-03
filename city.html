@@ -50,6 +50,19 @@
    const landscape=window.matchMedia("(orientation: landscape)").matches||innerWidth>innerHeight;
    gate?.classList.toggle("ready",landscape);
    document.documentElement.dataset.cityOrientation=landscape?"landscape":"portrait";
+   // Some mobile browsers do not expose Fullscreen or Screen Orientation APIs.
+   // In that case, landscape itself is a valid entry mode; never trap the player
+   // behind a fullscreen-only gate.
+   const fullscreenUnavailable=typeof document.documentElement.requestFullscreen!=="function";
+   const fullscreenWasDenied=debug.fullscreenRequested&&!document.fullscreenElement;
+   if(landscape&&(fullscreenUnavailable||fullscreenWasDenied)){
+     entered=true;
+     if(gate)gate.hidden=true;
+     debug.entered=true;
+     debug.fullscreenFallback=fullscreenUnavailable
+       ?"landscape-without-fullscreen-api"
+       :"landscape-after-fullscreen-denied";
+   }
  };
  window.__mshinEnterCityLandscape=async function(){
    debug.attempts++;
@@ -75,19 +88,22 @@
        }
      }catch(error){debug.lockError=String(error)}
    }
-   entered=fullscreenOk;
+   const landscape=window.matchMedia("(orientation: landscape)").matches||innerWidth>innerHeight;
+   // If fullscreen is denied or unavailable, allow normal browser-window play
+   // once the device is already landscape. Fullscreen remains an enhancement.
+   entered=fullscreenOk||landscape;
    debug.entered=entered;
    inFlight=false;
    updateLayout();
-   if(!fullscreenOk&&button){
-     button.textContent="برای ورود تمام‌صفحه دوباره لمس کن";
+   if(entered&&gate)gate.hidden=true;
+   if(!entered&&button){
+     button.textContent="گوشی را افقی کن و دوباره لمس کن";
      gate?.classList.remove("ready");
    }
  };
- // Fullscreen requires a trusted user gesture in modern mobile browsers.
- // Try early where permitted, then retry on the first real city interaction.
- const tryEarly=()=>window.__mshinEnterCityLandscape().catch(()=>{});
- if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",tryEarly,{once:true});else tryEarly();
+ // Fullscreen and orientation locking require a trusted user gesture.
+ // Do not consume the entry state during page load: doing so would prevent the
+ // first real touch from requesting fullscreen on browsers already in landscape.
  document.addEventListener("pointerdown",()=>window.__mshinEnterCityLandscape(),{capture:true,once:true});
  addEventListener("orientationchange",updateLayout);
  addEventListener("resize",updateLayout);
