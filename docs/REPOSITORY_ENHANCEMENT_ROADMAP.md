@@ -11,10 +11,10 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ## Verified baseline
 
-- **Current main:** `f4a8fa320ad08c1611f596b2ccead8688e824e49`, after PR #195.
+- **Current main:** `7bdf75b2ad98d9f54d553cd47f95913e671bf816`, after PR #197.
 - **Merged city milestones:** PR #188 versioned save migration/backup recovery; PR #190 workforce matching and employment demand; PR #192 finite utility and civic-service capacity; PR #193 resident wellbeing integration; PR #195 workforce-aware zoning growth.
 - **Main release evidence:** after PR #195, run `41625952666` — build, validation and GitHub Pages deployment succeeded. Main mobile browser smoke run `41625957359` remained in progress.
-- **Main after PR #197:** commit `7bdf75b2ad98d9f54d553cd47f95913e671bf816`; `validate` was in progress and `build` queued at the time of this review; deployment must be checked after these finish.
+- **Main after PR #197:** commit `7bdf75b2ad98d9f54d553cd47f95913e671bf816`; `build` and `validate` succeeded, `deploy` is in progress, and main `browser-smoke` is still in progress.
 - **PR #197:** merged as `7bdf75b2ad98d9f54d553cd47f95913e671bf816`; occupied-home service satisfaction is weighted by resident count and now affects city happiness. Exact-head portable validation, city services/economy, road/zoning/traffic, population/employment, save-recovery, Android-sized viewport and PR browser-smoke checks passed.
 - **PR #198:** workflow concurrency correction is open; portable validation passes and browser smoke is running.
 - **PR #196:** this evidence refresh is open; portable validation passes; mobile browser smoke is running.
@@ -99,10 +99,10 @@ For every feature, record:
 
 | Priority | Work item | Status | Exit condition |
 |---|---|---|---|
-| P0 | Refresh evidence and reconcile PR inventory | 🟡 current main f4a8fa3; build/validate/deploy pass, main browser smoke running | Record final browser-smoke result and refresh the exact open-PR inventory after PR #197/#196 resolve |
+| P0 | Refresh evidence and reconcile PR inventory | 🟡 current main 7bdf75b; build/validate pass, deploy and main browser smoke running | Record final browser-smoke result and refresh the exact open-PR inventory after PR #196/#198 resolve |
 | P0 | Mobile race + city acceptance matrix | 🟢 CI acceptance; 🟡 physical-device gate | PR #195 exact-head mobile viewport and full rewarded-race/offline browser acceptance pass; main-after-merge browser smoke is running. Physical Android safe-area and performance checks remain external |
 | P1 | Racing stability and real-finish regression | 🟢 PR #195 exact-head browser acceptance verified | Full three-lap mobile race, five-car standings, rewards, achievement persistence and offline launch pass; continue real-device physics/performance tuning |
-| P1 | City simulation vertical slices | 🟡 in progress | Roads, zoning, growth, pedestrians, traffic, budget/tax, workforce matching, finite services, save migration and wellbeing are implemented; PR #197 connects per-building resident-weighted service satisfaction. Next: job assignment/commuting and deeper economic feedback |
+| P1 | City simulation vertical slices | 🟡 in progress | Roads, zoning, growth, pedestrians, traffic, budget/tax, workforce matching, finite services, save migration and wellbeing are implemented; PR #197 implements per-building resident-weighted service satisfaction. Next: job assignment/commuting and deeper economic feedback |
 | P2 | Enforce dependency boundaries | 🟢 implemented and CI-verified | Continue monitoring domain imports, unresolved paths, cycles and module size |
 | P2 | Reproducible CI and release gates | 🟡 in progress | Keep lockfile-backed install, least privilege, exact-head checks, PR #198 is testing a shared push/PR concurrency key and successful main Pages deployment |
 | P3 | Cocos Editor import and Web build | 🔴 not yet verified | Editor-generated Web build runs on Android; requires Cocos Creator 3.8.6 environment |
