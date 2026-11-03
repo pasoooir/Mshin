@@ -125,3 +125,8 @@ The detailed proposed model is specified in [Capital Region Education, Research,
 ## Citizen needs, service delivery and city feedback integration
 
 The proposed cross-domain model is documented in [Capital Region Citizen Needs, Satisfaction & City Feedback System](CAPITAL_REGION_CITIZEN_NEEDS_SATISFACTION_AND_CITY_FEEDBACK_SPEC.md). Population/workforce state may generate service demand only through approved, unit-defined conversion rules. Capacity, staffing, network access, delivered/unmet demand and OPEX must reconcile with municipal ledgers. Satisfaction and scorecard indicators must trace to authoritative metrics and formula versions; Not modeled domains are excluded transparently. Migration/attractiveness feedback is not authorized by this reference and must not create same-tick circularity. No operational IDs, new V1 scope or numeric formula are approved here.
+
+
+## Municipal finance and fiscal coupling
+
+The proposed fiscal model is documented in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md). Taxable households, workers, properties and businesses may enter a tax base only when the corresponding population, valuation and economic state is authoritative and approved. Employment, income, property value and business activity must not be inferred from nominal capacity. Tax assessment, billing, collection, household/business affordability and any delayed behavioral response remain distinct. Municipal service OPEX, staffing, CAPEX, delivered outputs and district allocations must reconcile with the finance ledger. This cross-reference approves no new tax, population, migration or economic rule and introduces no V1 ID.
