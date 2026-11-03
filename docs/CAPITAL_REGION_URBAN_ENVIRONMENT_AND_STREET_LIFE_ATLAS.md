@@ -191,3 +191,8 @@ Decorative propها نباید ناخواسته collider، service radius، traf
 
 ## Essential services visual integration and asset governance
 Utility/service overlays and physical asset families are specified in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md). Electricity, water, sewer, waste, emergency, healthcare and maintenance layers must be opt-in diagnostic views with legends, text/pattern cues, source tick and explicit unknown states. Surface props, pipes, hydrants, smoke, sirens, emergency lights and crew animations must reflect authoritative simulation state or be clearly decorative-only. Professional editable mesh/material/UV/LOD/prefab outputs, specialist tool/plugin pipeline, per-file commercial license evidence, provenance and hashes are mandatory before asset acceptance. No new asset or service is approved by this reference.
+
+
+## Tourism public-realm and visual integration
+
+The tourism destination model is specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Parks, landmarks, signage, visitor characters, hotel exteriors and event staging must have clear decorative versus operational roles. A decorative asset cannot generate visitors, demand or revenue. Runtime visual assets require editable specialist-tool/plugin deliverables, mobile optimization, explicit commercial-use license, provenance and content hash. This reference approves no new asset or attraction ID.
