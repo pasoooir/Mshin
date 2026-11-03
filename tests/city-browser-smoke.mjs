@@ -7,7 +7,7 @@ async function clickCityTool(page,type){
  const category=cityToolCategories[type];
  if(!category)throw new Error("Missing city tool category: "+type);
  await page.locator('[data-city-category="'+category+'"]').click();
- await clickCityTool(page,type);
+ await page.locator('[data-city-tool="'+type+'"]').click();
 }
 
 const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--enable-webgl","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]});
