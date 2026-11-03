@@ -257,3 +257,8 @@ All numeric values remain TBD until tested and approved. No guessed score weight
 Before implementation: approve IDs/status in catalog; select minimum coherent V1 scope; define state/data contracts and units; approve population and score formulas; define economy/save migration; implement deterministic tests; produce professional editable assets with verified licenses; validate mobile UX and real-device performance.
 
 **Current status:** documentation only. No population formula, education progression, research system, housing migration, city score, facility, asset or gameplay behavior has been implemented or device-tested by this document. Existing catalog statuses remain unchanged.
+
+
+## 19. Citizen needs and feedback integration
+
+The cross-domain causal model is specified in [Capital Region Citizen Needs, Satisfaction & City Feedback System](CAPITAL_REGION_CITIZEN_NEEDS_SATISFACTION_AND_CITY_FEEDBACK_SPEC.md). Housing capacity, occupied population, education eligibility, employment and public-service demand must remain distinct quantities. Only approved demand-conversion rules may connect these domains. Delivered service depends on effective capacity, staffing, access, operating state and funding—not nominal building count. Satisfaction and city score consume validated, versioned metrics; unmodeled domains are explicitly excluded. This reference does not approve new migration, satisfaction or score formulas and does not change catalog status.
