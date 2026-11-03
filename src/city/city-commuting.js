@@ -84,8 +84,9 @@ function distributeLaborForce(homes, laborForce) {
  */
 export function computeCityCommuting(city, employment = computeCityEmployment(city)) {
   if (!city || !Array.isArray(city.grid) || city.grid.length !== SIZE
-    || !Array.isArray(city.buildings) || !employment || !Number.isFinite(employment.laborForce)
-    || !Number.isFinite(employment.employed)) {
+    || !Array.isArray(city.buildings) || !city.grid.every(row => Array.isArray(row) && row.length === SIZE)
+    || !employment || !Number.isSafeInteger(employment.laborForce) || employment.laborForce < 0
+    || !Number.isSafeInteger(employment.employed) || employment.employed < 0) {
     throw new TypeError("A valid city and employment result are required");
   }
   const homes = city.buildings
