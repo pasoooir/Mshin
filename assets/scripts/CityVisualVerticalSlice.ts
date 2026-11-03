@@ -1,4 +1,4 @@
-import { _decorator, Component, Material, MeshRenderer, Node, Color, primitives, utils, Vec3 } from "cc";
+import { _decorator, Component, Material, MeshRenderer, Node, Color, Texture2D, Vec4, primitives, resources, utils, Vec3 } from "cc";
 
 const { ccclass } = _decorator;
 
@@ -12,6 +12,15 @@ const { ccclass } = _decorator;
 export class CityVisualVerticalSlice extends Component {
   private materials = new Map<string, Material>();
   private meshes = new Map<string, any>();
+  private texturedNodes = new Map<string, MeshRenderer[]>();
+  private readonly texturePaths: Record<string, string> = {
+    grass: "city/textures/generated/grass",
+    asphalt: "city/textures/generated/asphalt",
+    sidewalk: "city/textures/generated/sidewalk",
+    brick: "city/textures/generated/brick",
+    concrete: "city/textures/generated/concrete",
+    roof: "city/textures/generated/roof"
+  };
 
   start(): void { this.buildSampleDistrict(); }
 
@@ -19,6 +28,7 @@ export class CityVisualVerticalSlice extends Component {
     this.node.destroyAllChildren();
     this.materials.clear();
     this.meshes.clear();
+    this.texturedNodes.clear();
     this.box("Grass terrain", 46, 0.35, 34, 0, -0.2, 0, "grass");
     this.box("Road asphalt", 46, 0.16, 7.2, 0, 0.02, 0, "asphalt");
     this.box("North sidewalk", 46, 0.22, 1.25, 0, 0.12, -4.15, "sidewalk");
@@ -30,6 +40,27 @@ export class CityVisualVerticalSlice extends Component {
     this.buildFactory(17, 10);
     this.buildPark(-13, 10);
     this.buildStreetFurniture();
+    this.loadRuntimeTextures();
+  }
+
+  /** Load validated PNG assets imported by Cocos from assets/resources. */
+  private loadRuntimeTextures(): void {
+    for (const [materialKey, resourcePath] of Object.entries(this.texturePaths)) {
+      resources.load(resourcePath, Texture2D, (error, texture) => {
+        if (error || !texture) {
+          console.warn("[MshinCity] Texture unavailable:", resourcePath, error);
+          return;
+        }
+        const renderers = this.texturedNodes.get(materialKey) ?? [];
+        for (const renderer of renderers) {
+          const material = renderer.getMaterial(0);
+          if (!material) continue;
+          material.setProperty("mainTexture", texture);
+          const repeat = materialKey === "grass" ? 8 : materialKey === "asphalt" ? 5 : 2;
+          material.setProperty("tilingOffset", new Vec4(repeat, repeat, 0, 0));
+        }
+      });
+    }
   }
 
   private buildHouse(x: number, z: number): void {
@@ -134,6 +165,11 @@ export class CityVisualVerticalSlice extends Component {
     const renderer = node.addComponent(MeshRenderer);
     renderer.mesh = this.getBoxMesh();
     renderer.material = this.getMaterial(materialKey);
+    if (this.texturePaths[materialKey]) {
+      const renderers = this.texturedNodes.get(materialKey) ?? [];
+      renderers.push(renderer);
+      this.texturedNodes.set(materialKey, renderers);
+    }
     return node;
   }
 
@@ -158,8 +194,11 @@ export class CityVisualVerticalSlice extends Component {
       leaf: "#2F8B45", leafDark: "#17683A", lamp: "#394A50", lampGlow: "#F5D98B"
     };
     material = new Material();
-    material.initialize({ effectName: "builtin-standard" });
-    material.setProperty("albedo", this.hexColor(colors[key] ?? "#FFFFFF"));
+    material.initialize({
+      effectName: "builtin-standard",
+      defines: this.texturePaths[key] ? { USE_ALBEDO_MAP: true } : {}
+    });
+    material.setProperty("albedo", this.texturePaths[key] ? new Color(255, 255, 255, 255) : this.hexColor(colors[key] ?? "#FFFFFF"));
     material.setProperty("roughness", key === "glass" ? 0.24 : 0.82);
     this.materials.set(key, material);
     return material;
