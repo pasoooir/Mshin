@@ -23,7 +23,7 @@ function deterministicIndex(seed, id, step, length) {
   let value = (seed ^ Math.imul(id + 1, 0x9e3779b1) ^ Math.imul(step + 1, 0x85ebca6b)) >>> 0;
   value ^= value >>> 16;
   value = Math.imul(value, 0x7feb352d) >>> 0;
-  value ^= value >>> 15;
+  value = (value ^ (value >>> 15)) >>> 0;
   return length ? value % length : 0;
 }
 
