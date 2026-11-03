@@ -153,8 +153,8 @@ export function createRaceRenderer(canvas){
   const nextDecor=[];
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
   const terrainTexture=["grass","sand","snow","grass","rock","rock","grass","sand","rock","grass"][snapshot.world||0]||"grass";
-  const segments=mobile?84:softwareRenderer?96:240,half=180;
-  quad(groundTris,[-6500,-40,-6500],[6500,-40,-6500],[6500,-40,6500],[-6500,-40,6500]);
+  const segments=mobile?280:softwareRenderer?360:760,half=180;
+  quad(groundTris,[-65000,-40,-65000],[65000,-40,-65000],[65000,-40,65000],[-65000,-40,65000]);
   for(let i=0;i<segments;i++){
    const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,(f.height||0)+y,-(f.p.y+f.ny*offset)];
@@ -172,15 +172,15 @@ export function createRaceRenderer(canvas){
   const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
   // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
   const skyTris=[],cloudTris=[],sunTris=[];
-  sphere(skyTris,0,0,0,5600,3000,5600,mobile?20:36,mobile?10:18);
-  for(let i=0;i<(mobile?5:12);i++){const a=i/12*Math.PI*2,r=1900+(i%3)*210,x=Math.cos(a)*r,y=760+(i%4)*95,z=Math.sin(a)*r;sphere(cloudTris,x,y,z,280+(i%3)*55,58+(i%2)*25,125+(i%4)*28,mobile?8:14,mobile?4:7);sphere(cloudTris,x+125,y+18,z-35,185,46,90,mobile?8:12,mobile?4:6);}
-  sphere(sunTris,-2200,1900,-2450,175,175,175,16,10);
+  sphere(skyTris,0,0,0,56000,30000,56000,mobile?20:36,mobile?10:18);
+  for(let i=0;i<(mobile?5:12);i++){const a=i/12*Math.PI*2,r=19000+(i%3)*2100,x=Math.cos(a)*r,y=7600+(i%4)*950,z=Math.sin(a)*r;sphere(cloudTris,x,y,z,2800+(i%3)*550,580+(i%2)*250,1250+(i%4)*280,mobile?8:14,mobile?4:7);sphere(cloudTris,x+1250,y+180,z-350,1850,460,900,mobile?8:12,mobile?4:6);}
+  sphere(sunTris,-22000,19000,-24500,1750,1750,1750,16,10);
   nextDecor.push(part(skyTris,"#70b7ee",.42),part(cloudTris,"#f3f8ff",.22),part(sunTris,"#fff0bd",.72));
   yield {progress:.39};
 
   const disk=(out,x,y,z,r,segments=12)=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2,b=(j+1)/segments*Math.PI*2;tri(out,[x,y,z],[x+Math.cos(a)*r,y,z+Math.sin(a)*r],[x+Math.cos(b)*r,y,z+Math.sin(b)*r]);}};
   // A layered distant terrain silhouette gives every biome a readable horizon.
-  for(let i=0;i<(mobile?32:72);i++){const count=mobile?32:72,a=i/count*Math.PI*2,r=2780+(i%5)*190,x=Math.cos(a)*r,z=Math.sin(a)*r,h=68+(i%7)*24;const hill=[];sphere(hill,x,h*.34,z,250+(i%4)*48,h,220+(i%3)*38,mobile?9:16,mobile?5:8);landscape.push(...hill);if(i%4===3)yield {progress:.4+(i/(mobile?32:72))*.05}}
+  for(let i=0;i<(mobile?32:72);i++){const count=mobile?32:72,a=i/count*Math.PI*2,r=27800+(i%5)*1900,x=Math.cos(a)*r,z=Math.sin(a)*r,h=(68+(i%7)*24)*10;const hill=[];sphere(hill,x,h*.34,z,(250+(i%4)*48)*10,h,(220+(i%3)*38)*10,mobile?9:16,mobile?5:8);landscape.push(...hill);if(i%4===3)yield {progress:.4+(i/(mobile?32:72))*.05}}
   for(let i=0;i<treeCount;i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=270+(i%7)*66,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0;
    disk(treeShadows,x,base+.6,z,24+(i%3)*4,10);
    // Trunk, branching limbs and layered foliage; mobile uses fewer repeated instances.
@@ -331,7 +331,7 @@ export function createRaceRenderer(canvas){
   const roadHeight=f.height||0;const desiredEye=[x-Math.cos(angle)*270,roadHeight+235,z+Math.sin(angle)*310],desiredTarget=[x+Math.cos(angle)*330,roadHeight+28,z-Math.sin(angle)*330];
   const now=performance.now(),cameraDt=lastRenderAt?Math.min((now-lastRenderAt)/1000,mobile?.05:.1):1/60;lastRenderAt=now;const follow=1-Math.exp(-cameraDt/(mobile?.16:.11));
   if(!cameraEye){cameraEye=desiredEye.slice();cameraTarget=desiredTarget.slice()}else{for(let i=0;i<3;i++){cameraEye[i]+=(desiredEye[i]-cameraEye[i])*follow;cameraTarget[i]+=(desiredTarget[i]-cameraTarget[i])*follow}}
-  const projection=perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,6000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
+  const projection=perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,60000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.useProgram(program);gl.uniform3f(uniforms.camera,cameraEye[0],cameraEye[1],cameraEye[2]);gl.uniform3f(uniforms.light,-.38,.86,.42);gl.uniform3f(uniforms.lightColor,3.8,3.55,3.2);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(uniforms.env,0);const clearStarted=performance.now();gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const clearMs=performance.now()-clearStarted;state.lastClearMs=clearMs;state.maxClearMs=Math.max(state.maxClearMs||0,clearMs);state.triangles=0;
   // Draw the latest bounded build snapshot while the replacement track is still being assembled.\n  // Without this, the first gameplay frames show only the clear color until every city/track mesh finishes uploading.\n  const drawParts=road?[road,...decor]:pendingTrackParts;for(const p of drawParts)drawPart(p,vp,translate(0,0,0));
   const playerT=snapshot.player.t,maxVisible=mobile?3:softwareRenderer?2:7;visibleRivals.length=0;visibleDistances.length=0;for(const r of snapshot.rivals){if(r.despawned||r.destruction?.despawned)continue;const rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta);if(distance>=.72)continue;let slot=visibleDistances.length;while(slot>0&&distance<visibleDistances[slot-1])slot--;if(slot>=maxVisible)continue;visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance);if(visibleRivals.length>maxVisible){visibleRivals.pop();visibleDistances.pop()}}for(let i=0;i<visibleRivals.length;i++){const r=visibleRivals[i];drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage?.total||r.damage||0,r.type,r.id,snapshot)}
