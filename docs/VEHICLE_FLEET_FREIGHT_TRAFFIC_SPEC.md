@@ -113,3 +113,8 @@ This fleet specification remains authoritative for vehicle/trip/dispatch behavio
 
 ## Essential services, fleet and dispatch integration
 The proposed municipal-service and utilities architecture is documented in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md). Waste collection, fire/emergency response and maintenance fleets are future conceptual consumers of this fleet/trip system; they are not activated by this reference. Any operational trip must declare vehicle compatibility, crew/staff availability, road-edge restrictions, route graph version, stops/destination, trip lifecycle and idempotent completion. A blocked road must invalidate affected routes. A decorative truck, ambulance or patrol vehicle has no dispatch, collection or response effect. Existing vehicle catalog statuses remain unchanged.
+
+
+## Commercial freight and market delivery integration
+
+The proposed trade and shipment lifecycle is documented in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). A commercial shipment must reference an order/contract, cargo manifest, item units, origin/destination, vehicle compatibility, capacity reservation, route graph version, custody state and delivery evidence. Dispatch is not delivery; ETA is a forecast; cargo cannot remain available at origin after the approved custody transfer. Freight vehicle classes and interregional routes are not activated by this reference, and existing vehicle/catalog statuses remain unchanged.
