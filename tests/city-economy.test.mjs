@@ -66,3 +66,53 @@ test("economy output and treasury changes remain deterministic", () => {
   };
   assert.deepEqual(simulate(), simulate());
 });
+
+
+test("commute congestion reduces only business productivity with a strict 15% cap", () => {
+  const city = createInitialCity(1106);
+  city.population = 12;
+  assert.equal(placeCityItem(city, 17, 14, "home").ok, true);
+  assert.equal(placeCityItem(city, 18, 14, "shop").ok, true);
+  assert.equal(placeCityItem(city, 19, 14, "industrial").ok, true);
+  assert.equal(placeCityItem(city, 18, 17, "administrative").ok, true);
+  const clear = computeCityEconomy(city, {}, { averageCongestionDelay: 0 });
+  const delayed = computeCityEconomy(city, {}, { averageCongestionDelay: 100 });
+  const severe = computeCityEconomy(city, {}, { averageCongestionDelay: 150 });
+  assert.equal(clear.commuteProductivityPercent, 100);
+  assert.equal(clear.commuteEconomicLoss, 0);
+  assert.equal(delayed.commuteProductivityPercent, 90);
+  assert.ok(delayed.commuteEconomicLoss > 0);
+  assert.equal(delayed.residentialTax, clear.residentialTax);
+  assert.equal(delayed.publicFunding, clear.publicFunding);
+  assert.ok(delayed.commercialTax < clear.commercialTax);
+  assert.ok(delayed.industrialTax < clear.industrialTax);
+  assert.equal(severe.commuteProductivityPercent, 85);
+  assert.ok(severe.commuteEconomicLoss >= delayed.commuteEconomicLoss);
+  const invalidHigh = computeCityEconomy(city, {}, { averageCongestionDelay: 999 });
+  const invalidLow = computeCityEconomy(city, {}, { averageCongestionDelay: -10 });
+  assert.equal(invalidHigh.commuteProductivityPercent, 85);
+  assert.equal(invalidLow.commuteProductivityPercent, 100);
+});
+
+test("city simulation applies the cached commute productivity metric to its budget and save", () => {
+  const city = createInitialCity(1107);
+  const home = placeCityItem(city, 17, 14, "home");
+  const shop = placeCityItem(city, 18, 14, "shop");
+  const factory = placeCityItem(city, 19, 14, "industrial");
+  assert.equal(home.ok, true);
+  assert.equal(shop.ok, true);
+  assert.equal(factory.ok, true);
+  city.population = 24;
+  city.traffic = [{ id: 1, x: 16, y: 15, speed: 0.4, heading: 0, headingX: 1, headingY: 0,
+    routeStep: 0, color: "#fff", targetX: null, targetY: null, previousX: null, previousY: null }];
+  stepCity(city);
+  assert.ok(city.stats.averageCongestionDelay > 0);
+  assert.ok(city.stats.commuteProductivityPercent < 100);
+  assert.ok(city.stats.commuteEconomicLoss > 0);
+  // Keep this assertion focused on the persisted economic metrics, not transient vehicle coordinates.
+  city.traffic = [];
+  assert.equal(isValidCitySave(city), true);
+  const invalid = structuredClone(city);
+  invalid.stats.commuteProductivityPercent = 84;
+  assert.equal(isValidCitySave(invalid), false);
+});

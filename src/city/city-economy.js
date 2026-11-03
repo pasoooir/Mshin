@@ -33,7 +33,7 @@ export function setCityTaxRate(city, sector, value) {
  * Calculate a deterministic per-tick city budget. Tax income scales from the
  * original balanced rates; public funding and upkeep remain explicit line items.
  */
-export function computeCityEconomy(city, infrastructure = {}) {
+export function computeCityEconomy(city, infrastructure = {}, commuting = {}) {
   if (!city || !Array.isArray(city.buildings) || !Number.isFinite(city.population)
     || city.population < 0) {
     throw new TypeError("A valid city economy state is required");
@@ -49,8 +49,18 @@ export function computeCityEconomy(city, infrastructure = {}) {
   const parks = count("park");
 
   const residentialTax = Math.round(city.population * (13 / 12) * rates.residential / CITY_DEFAULT_TAX_RATES.residential);
-  const commercialTax = Math.round(shops * 46 * rates.commercial / CITY_DEFAULT_TAX_RATES.commercial);
-  const industrialTax = Math.round(industrial * 72 * rates.industrial / CITY_DEFAULT_TAX_RATES.industrial);
+  const commercialTaxBeforeCommute = Math.round(shops * 46 * rates.commercial / CITY_DEFAULT_TAX_RATES.commercial);
+  const industrialTaxBeforeCommute = Math.round(industrial * 72 * rates.industrial / CITY_DEFAULT_TAX_RATES.industrial);
+  const delayPercent = Number.isFinite(commuting.averageCongestionDelay)
+    ? Math.max(0, Math.min(150, commuting.averageCongestionDelay)) : 0;
+  // Congestion is a modest productivity proxy, not a full goods/supply-chain simulation.
+  // Even severe delay cannot reduce commercial/industrial output by more than 15%.
+  const commuteProductivity = 1 - Math.min(0.15, delayPercent * 0.001);
+  const commercialTax = Math.round(commercialTaxBeforeCommute * commuteProductivity);
+  const industrialTax = Math.round(industrialTaxBeforeCommute * commuteProductivity);
+  const commuteEconomicLoss = (commercialTaxBeforeCommute + industrialTaxBeforeCommute)
+    - (commercialTax + industrialTax);
+  const commuteProductivityPercent = Math.round(commuteProductivity * 1000) / 10;
   const publicFunding = administrative * 28;
   const serviceFees = services * 8;
   const taxRevenue = residentialTax + commercialTax + industrialTax;
@@ -67,6 +77,8 @@ export function computeCityEconomy(city, infrastructure = {}) {
     residentialTax,
     commercialTax,
     industrialTax,
+    commuteProductivityPercent,
+    commuteEconomicLoss,
     publicFunding,
     serviceFees,
     maintenance,
