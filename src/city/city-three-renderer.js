@@ -1,5 +1,6 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
+import { createCityAtmosphere } from "./city-atmosphere.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -44,56 +45,13 @@ export async function createCityThreeRenderer(sourceCanvas) {
   sourceCanvas.style.opacity = "0";
 
   const scene = new THREE.Scene();
-  const DAY_SKY = new THREE.Color("#9bd4ee");
-  const NIGHT_SKY = new THREE.Color("#101b35");
-  scene.background = DAY_SKY.clone();
-  scene.fog = new THREE.Fog(DAY_SKY.clone(), 145, 260);
+  scene.background = new THREE.Color("#9bd4ee");
+  scene.fog = new THREE.Fog("#9bd4ee", 145, 260);
   const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 320);
   camera.position.set(48, 58, 48);
   camera.lookAt(0, 0, 0);
 
-  // Camera-local celestial objects give the city a real visual day/night cycle
-  // without adding world-space entities or changing any buildable parcel.
-  const skyRig = new THREE.Group();
-  const sunDisc = new THREE.Mesh(
-    new THREE.SphereGeometry(2.35, 18, 12),
-    new THREE.MeshBasicMaterial({ color: "#ffe2a0", depthWrite: false })
-  );
-  const moonDisc = new THREE.Mesh(
-    new THREE.SphereGeometry(1.65, 16, 10),
-    new THREE.MeshBasicMaterial({ color: "#dce8ff", depthWrite: false })
-  );
-  const starPositions = [];
-  let starSeed = 0x4d534849;
-  const nextStarRandom = () => {
-    starSeed = (Math.imul(starSeed, 1664525) + 1013904223) >>> 0;
-    return starSeed / 4294967296;
-  };
-  for (let index = 0; index < 72; index++) {
-    starPositions.push((nextStarRandom() - 0.5) * 90, (nextStarRandom() - 0.5) * 42, -118);
-  }
-  const starGeometry = new THREE.BufferGeometry();
-  starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
-  const stars = new THREE.Points(starGeometry, new THREE.PointsMaterial({
-    color: "#e5edff", size: 0.34, sizeAttenuation: false, transparent: true, opacity: 0.9, depthWrite: false
-  }));
-  skyRig.add(stars, sunDisc, moonDisc);
-  camera.add(skyRig);
-  scene.add(camera);
-  let skyWidth = 80;
-  function positionSkyRig() {
-    skyWidth = 50 * width / Math.max(1, height);
-    sunDisc.position.set(-skyWidth * 0.36, 17, -116);
-    moonDisc.position.set(skyWidth * 0.36, 17, -116);
-    stars.geometry.dispose();
-    const positions = [];
-    for (let index = 0; index < 72; index++) {
-      positions.push((nextStarRandom() - 0.5) * skyWidth * 1.8, (nextStarRandom() - 0.5) * 42, -118);
-    }
-    stars.geometry = new THREE.BufferGeometry();
-    stars.geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  }
-  let hemisphere = new THREE.HemisphereLight("#fff7e8", "#537c48", 2.25);
+  const hemisphere = new THREE.HemisphereLight("#fff7e8", "#537c48", 2.25);
   scene.add(hemisphere);
   const sun = new THREE.DirectionalLight("#fff1d2", 3.35);
   sun.position.set(-42, 68, -35);
@@ -109,39 +67,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   fill.position.set(38, 24, 42);
   scene.add(fill);
   const windowMaterials = new Set();
-  let lightingStats = { minuteOfDay: 495, daylight: 0, windowGlow: 0, phase: "day" };
-  let lightingBucket = -1;
-
-  function updateLighting(city) {
-    const minute = Number.isFinite(city.minuteOfDay) ? ((city.minuteOfDay % 1440) + 1440) % 1440 : 495;
-    const angle = minute / 1440 * Math.PI * 2 - Math.PI / 2;
-    const daylight = Math.max(0, Math.min(1, Math.sin(angle)));
-    const night = 1 - daylight;
-    const bucket = Math.round(daylight * 40);
-    sun.intensity = 0.12 + daylight * 3.23;
-    hemisphere.intensity = 0.62 + daylight * 1.63;
-    fill.intensity = 0.28 + daylight * 0.77;
-    if (bucket !== lightingBucket) {
-      lightingBucket = bucket;
-      const sky = NIGHT_SKY.clone().lerp(DAY_SKY, daylight);
-      scene.background.copy(sky);
-      scene.fog.color.copy(sky);
-      const glow = 0.06 + night * 1.02;
-      for (const material of windowMaterials) {
-        material.emissive.set(night > 0.45 ? "#ffbd70" : "#3e9db0");
-        material.emissiveIntensity = glow;
-      }
-      sunDisc.visible = daylight > 0.08;
-      moonDisc.visible = night > 0.28;
-      stars.visible = night > 0.72;
-      lightingStats = {
-        minuteOfDay: minute,
-        daylight: Number(daylight.toFixed(3)),
-        windowGlow: Number(glow.toFixed(3)),
-        phase: daylight > 0.72 ? "day" : night > 0.72 ? "night" : "twilight"
-      };
-    }
-  }
+  const atmosphere = createCityAtmosphere(THREE, {
+    scene, camera, sun, hemisphere, fill, windowMaterials,
+    getViewport: () => ({ width, height })
+  });
 
   function makeSurfaceTexture(base, fleck, seed, count, scale = 1) {
     const textureCanvas = document.createElement("canvas");
@@ -682,7 +611,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     camera.top = 25;
     camera.bottom = -25;
     camera.updateProjectionMatrix();
-    positionSkyRig();
+    atmosphere.resize();
   }
 
   function updateCamera(cam) {
@@ -698,7 +627,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   function render(city, view, cam) {
     updateCamera(cam);
-    updateLighting(city);
+    atmosphere.update(city);
     updateBuildings(city);
     updateTraffic(city);
     updatePedestrians(city);
@@ -750,16 +679,13 @@ export async function createCityThreeRenderer(sourceCanvas) {
         pixelRatio: renderer.getPixelRatio(),
         shadowAutoUpdate: renderer.shadowMap.autoUpdate,
         buildingRebuilds,
-        lighting: { ...lightingStats },
-        visibleStars: stars.visible ? 72 : 0,
-        celestialBodies: Number(sunDisc.visible) + Number(moonDisc.visible)
+        ...atmosphere.getStats()
       };
     },
     destroy() {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
-      starGeometry.dispose();
-      stars.geometry.dispose();
+      atmosphere.dispose();
       grassMap.dispose();
       roadMap.dispose();
       canvas.remove();
