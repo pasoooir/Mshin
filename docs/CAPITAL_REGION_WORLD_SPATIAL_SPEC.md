@@ -132,3 +132,8 @@ The proposed interregional commerce system is documented in [Capital Region Mark
 ## Tourism destinations and visitor-access integration
 
 The proposed tourism model is documented in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Attractions and lodging venues require explicit destination records, entrances, accessible paths, operating state and capacity; visual proximity is not proof of access. Visitor routes must reference a versioned authoritative access graph, and graph changes invalidate stale itineraries. A visitor's ETA is not arrival. This reference creates no attraction, district, route or operational ID.
+
+
+## Environmental time and spatial integration
+
+The authoritative time, calendar, day/night and weather model is specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). All schedules and weather footprints must align with the same versioned simulation clock and spatial authority. A visual weather layer or nearby effect is not proof of an operational hazard, road condition or service disruption.
