@@ -58,37 +58,37 @@ This audit records readiness gaps and document ambiguities only. It does not cha
 
 No ID or status was added, renamed, promoted or demoted by this audit.
 
-## 4. Cross-document ambiguity requiring editorial reconciliation
+## 4. Cross-document wording reconciliation
 
-### 4.1 Catalog-approved facility entries versus broad utility-atlas wording
+The audit identified two wording ambiguities. They have now been corrected in `CAPITAL_REGION_V1_CONTENT_CATALOG.md` (commit `83673d79eb0d1fbcbb0e3c2f5839639d0219548a`), preserving every existing ID and status.
 
-The V1 catalog explicitly lists:
+### 4.1 Catalog-approved utility facilities versus unapproved network assets
+
+The catalog explicitly lists:
 - `UTL-POWER-PLANT-SMALL` as V1-Required;
 - `UTL-WATER-PUMP` as V1-Required;
 - `UTL-SEWAGE-PLANT` as V1-Required;
 - `ENV-WASTE-DEPOT` as V1-Support.
 
-The utilities atlas and the catalog's utilities-reference paragraph also contain broad language that could be read as saying power generation, water/sewer facilities or waste facilities are not approved for V1.
-
-**Required clarification:** explicitly distinguish the four already cataloged facility IDs above from unapproved network assets and systems such as substations, transmission/distribution graph components, pipe/sewer node-edge infrastructure, additional waste facilities and maintenance depots. The catalog remains authoritative; this audit does not change the statuses.
+The catalog wording now explicitly preserves those exact entries while distinguishing them from unapproved additional substations, generation types, transmission/distribution assets, water/sewer graph components, additional waste facilities and maintenance depots. Facility status does not by itself complete or approve a network topology or full service simulation.
 
 ### 4.2 Catalog-approved support services versus future emergency-service proposal
 
-The catalog explicitly lists fire station, police post and clinic as V1-Support, and the fleet spec lists corresponding emergency vehicle classes as V1-Support. The emergency-service proposal broadly states that it does not approve those facilities or vehicle classes.
+The catalog explicitly lists `SVC-FIRE-STATION-SMALL`, `SVC-POLICE-POST` and `SVC-CLINIC` as V1-Support; the fleet registry lists the corresponding fire engine, police car and ambulance classes as V1-Support.
 
-**Required clarification:** distinguish the exact existing catalog V1-Support entries from any additional hospital, emergency facility, disaster class, incident simulation, new vehicle, siren/priority policy or expanded response feature that remains unapproved. Do not infer broader emergency simulation approval from the existing support entries.
+The catalog wording now preserves those exact entries while distinguishing them from unapproved hospitals, additional facilities/vehicle classes, burglary simulation, sirens, emergency-priority traffic, incident/disaster classes and expanded emergency simulation.
 
-### 4.3 Existing prototype behavior versus spatial specification
+### 4.3 Existing prototype behavior versus spatial specification — unresolved design/implementation gap
 
 The spatial spec requires explicit terrain metadata, stable parcel IDs, a versioned grid/world transform, multi-cell atomic footprints, frontage/access anchors and an authoritative road graph. The current browser prototype uses a 32×32 tile state, a separately generated 64×64 renderer grid, orthogonal road adjacency and Euclidean service distance.
 
-**Required clarification:** classify the current browser implementation as a prototype/visual vertical slice, not as conformance to the spatial production contract. Preserve the existing safety guards and do not add ROW/sidewalk, crossings, street furniture or new simulation until the section-46 and spatial design gates are approved.
+The current browser implementation must remain classified as a prototype/visual vertical slice, not as conformance to the spatial production contract. Preserve the existing safety guards and do not add ROW/sidewalk, crossings, street furniture or new simulation until the section-46 and spatial design gates are approved.
 
-### 4.4 Proposal documents and catalog authority
+### 4.4 Proposal documents and catalog authority — ongoing governance rule
 
 Finance, trade, tourism, weather, education/wellbeing, citizen needs, crisis management and utilities documents are proposals/future-facing specifications. Their entities, fields, IDs used as discussion labels, example rates and process descriptions must not silently become production schema or V1 content.
 
-**Required clarification:** every implementation handoff must point to the exact catalog-approved ID/status and the approved subset of the domain specification. Proposal-only sections remain non-operational.
+Every implementation handoff must point to the exact catalog-approved ID/status and the approved subset of the domain specification. Proposal-only sections remain non-operational.
 
 ## 5. Dependency traceability that must be completed before implementation
 
