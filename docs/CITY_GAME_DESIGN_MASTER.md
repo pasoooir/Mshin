@@ -1985,3 +1985,33 @@ Vertical Slice باید تجربه کوچک اما انتها‌به‌انته�
 
 ## 54.4 وضعیت
 این مرحله رجیستری اولیه و قرارداد آزمون را ایجاد کرده است؛ هنوز فایل‌های Asset دریافت/هش نشده‌اند و صحنه در Cocos ساخته یا روی دستگاه واقعی آزموده نشده است. تکمیل مرحله منوط به دریافت امن، تطبیق مجوز، بررسی فنی و ساخت benchmark قابل اجراست.
+
+
+---
+
+# بخش ۵۵ — استاندارد جامع معماری و وضعیت بصری ساختمان‌ها
+
+## 55.1 کتاب معماری ساختمان‌ها
+مرجع الزامی: [Building Architecture and Visual State Bible](BUILDING_ARCHITECTURE_AND_VISUAL_STATE_BIBLE.md)
+
+این سند خانواده‌های مسکونی کم‌تراکم و پرتراکم، تجاری، بازار، صنعتی، انبار، خدمات مدنی، زیرساخت، پارک و Landmark را تعریف می‌کند. برای هر family، هویت معماری، silhouette، roofline، مصالح، ورودی، variation، نور، tier و نیازهای فنی باید مشخص شود.
+
+## 55.2 اتصال وضعیت simulation به ظاهر
+نمایش ساختمان تابع state معتبر simulation است. Preview، Construction، Operational، Idle، InputShortage، OutputBlocked، UtilityDisconnected، Damaged، Maintenance، Disabled و Abandoned mapping جداگانه دارند. Visual state منبع حقیقت gameplay نیست و هیچ VFX یا انیمیشنی اجازه تغییر اقتصاد یا ظرفیت را ندارد.
+
+## 55.3 قرارداد مدل و prefab
+هر بسته باید مدل runtime، prefab، variant tier، LOD، collider، material/texture، socket، footprint/bounds، preview، thumbnail، manifest مجوز و hash و تست import را ارائه کند. pivot، محور، مقیاس، naming و selection proxy باید یکپارچه باشند.
+
+## 55.4 خانواده‌های ارتقا
+ارتقا باید در silhouette، massing، roofline، facade rhythm، openings، تجهیزات یا محوطه تغییر قابل مشاهده ایجاد کند. افزایش اندازه یا تغییر رنگ به‌تنهایی کافی نیست. مقادیر عملکردی تنها از definition و آزمون simulation پذیرفته می‌شوند.
+
+## 55.5 قالب اجرایی طراحی
+مرجع: [Building Family Art Brief Template](BUILDING_FAMILY_ART_BRIEF_TEMPLATE.md)
+
+برای هر family و هر buildingId یک برگه تکمیل می‌شود. فیلدهای نامعلوم TBD می‌مانند. وضعیت Approved، Integrated و Device Verified سه مرحله مستقل‌اند و هر کدام شواهد جداگانه می‌خواهند.
+
+## 55.6 گیت تکمیل ساختمان
+هر ساختمان تا زمان تأیید شناسه/کارکرد، footprint و دسترسی، تفاوت tierها، provenance، prefab/LOD/collider، state mapping، thumbnail/icon، تست موبایل و نبود نقص بحرانی تکمیل‌شده محسوب نمی‌شود.
+
+## 55.7 مرز این مرحله
+این اسناد قرارداد طراحی و تولیدند؛ مدل سه‌بعدی production، prefab، scene، import یا آزمون دستگاه در این commitها ساخته نشده است. توسعه سیستم اصلی شهرسازی همچنان تابع گیت‌های سند مادر است.
