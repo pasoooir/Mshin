@@ -203,7 +203,7 @@ await Promise.all(architectureManifest.assets.map(async asset=>{
   const fallback=modelFallbacks.find(item=>item.type===asset.buildingType);
   if(!fallback)return;
   fallback.group.removeFromParent();
-  const model=gltf.scene;model.name=asset.id;model.position.set(...fallback.position);model.rotation.y=fallback.rotation;
+  const model=gltf.scene;model.name=asset.id;model.position.set(...fallback.position);model.rotation.y=fallback.rotation;model.scale.set(...(asset.scale ?? [1,1,1]));
   architectureModels.set(asset.buildingType,model);
   model.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;}});
   scene.add(model);
