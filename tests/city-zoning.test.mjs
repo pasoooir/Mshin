@@ -33,13 +33,17 @@ test("residential zoning grows into housing and increases population", () => {
 test("commercial, industrial, administrative and recreational zones develop when demand exists", () => {
   const city = createInitialCity(503);
   const zones = [
+    [13,14,"residential"],
+    [18,14,"residential"],
+    [14,13,"residential"],
+    [17,18,"residential"],
     [14,14,"commercial"],
     [17,14,"industrial"],
     [14,17,"administrative"],
     [17,17,"recreational"]
   ];
   for(const [x,y,type] of zones) assert.equal(placeCityItem(city,x,y,"zone-"+type).ok,true);
-  for(let i=0;i<48;i++) stepCity(city);
+  for(let i=0;i<96;i++) stepCity(city);
   for(const [x,y,type] of zones){
     const expected=CITY_ZONES[type].buildingType;
     assert.ok(city.buildings.some(building=>building.x===x&&building.y===y&&building.type===expected),type+" zone should develop into "+expected);
@@ -55,4 +59,20 @@ test("version-two saves accept zoning tiles and legacy saves without a zones arr
   const legacy={...city,zones:undefined};
   assert.equal(isValidCitySave(legacy),true);
   assert.equal(isValidCitySave({...city,grid:Array.from({length:32},()=>Array(32).fill("zone-unknown"))}),false);
+});
+
+ 
+test("job-producing zones wait for enough residents before expanding labor demand", () => {
+  const city=createInitialCity(505);
+  assert.equal(placeCityItem(city,14,14,"zone-commercial").ok,true);
+  assert.equal(placeCityItem(city,17,14,"zone-industrial").ok,true);
+  for(let i=0;i<24;i++)stepCity(city);
+  assert.ok(city.buildings.some(building=>building.type==="shop"));
+  assert.equal(city.buildings.some(building=>building.type==="industrial"),false,"industrial growth must wait while projected vacancies exceed the allowance");
+  assert.equal(city.grid[14][17],"zone-industrial");
+  assert.equal(placeCityItem(city,13,14,"zone-residential").ok,true);
+  assert.equal(placeCityItem(city,18,14,"zone-residential").ok,true);
+  for(let i=0;i<36;i++)stepCity(city);
+  assert.ok(city.population>=24,"residential growth should expand the available workforce");
+  assert.ok(city.buildings.some(building=>building.type==="industrial"),"industrial zoning should develop once workforce capacity is adequate");
 });
