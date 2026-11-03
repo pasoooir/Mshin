@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity } from "../src/city/city-view.js";
-import { CITY_SERVICE_TYPES, computeCityServices, cityServiceStatus } from "../src/city/city-services.js";
+import { CITY_SERVICE_TYPES, computeCityServices, computeCityResidentServiceSatisfaction, cityServiceStatus } from "../src/city/city-services.js";
 
 test("the city defines all four utilities and four public service departments", () => {
   assert.deepEqual(Object.keys(CITY_SERVICE_TYPES), ["power","water","sewage","waste","police","fire","health","education"]);
@@ -122,4 +122,31 @@ test("resident wellbeing reflects finite service demand and workforce unemployme
   assert.ok(underemployed.happiness<employed.happiness,"unemployment should reduce resident wellbeing");
   assert.deepEqual(Object.keys(employed.stats.serviceDemandCoverage).sort(),["education","fire","health","police","power","sewage","waste","water"]);
   assert.deepEqual(Object.keys(employed.stats.serviceCapacityUsage).sort(),["education","fire","health","police","power","sewage","waste","water"]);
+});
+
+ 
+test("resident service satisfaction weights each occupied home by its residents", () => {
+  const city = { buildings: [
+    { id: 1, type: "home", residents: 12, serviceSatisfaction: Object.fromEntries(Object.keys(CITY_SERVICE_TYPES).map(type => [type, 100])) },
+    { id: 2, type: "home", residents: 12, serviceSatisfaction: Object.fromEntries(Object.keys(CITY_SERVICE_TYPES).map(type => [type, 100])) },
+    { id: 3, type: "home", residents: 12, serviceSatisfaction: Object.fromEntries(Object.keys(CITY_SERVICE_TYPES).map(type => [type, 0])) },
+    { id: 4, type: "shop", residents: 0, serviceSatisfaction: Object.fromEntries(Object.keys(CITY_SERVICE_TYPES).map(type => [type, 0])) }
+  ] };
+  assert.equal(computeCityResidentServiceSatisfaction(city), 67,
+    "two fully served homes and one unserved home contribute equally when their resident counts match");
+  city.buildings[2].residents = 0;
+  assert.equal(computeCityResidentServiceSatisfaction(city), 100,
+    "unoccupied homes must not reduce resident wellbeing");
+  assert.equal(computeCityResidentServiceSatisfaction({ buildings: [] }), 0);
+});
+
+test("city happiness uses resident-weighted service satisfaction from finite allocations", () => {
+  const city = createInitialCity(606);
+  assert.equal(placeCityItem(city, 17, 13, "home").ok, true);
+  const initialHappiness = city.happiness;
+  stepCity(city);
+  assert.equal(city.stats.residentServiceSatisfaction, 0,
+    "occupied homes without service capacity must report zero resident service satisfaction");
+  assert.ok(city.happiness < initialHappiness,
+    "unserved residents must reduce city happiness even when geographic station reach is absent");
 });
