@@ -24,7 +24,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
   };
   for (let index = 0; index < 72; index++) {
     starPositions[index * 3] = nextRandom() - 0.5;
-    starPositions[index * 3 + 1] = nextRandom() - 0.5;
+    starPositions[index * 3 + 1] = 0.44 + nextRandom() * 0.12;
     starPositions[index * 3 + 2] = -118;
   }
   const starGeometry = new THREE.BufferGeometry();
@@ -41,8 +41,8 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
   function resize() {
     const { width, height } = getViewport();
     const skyWidth = 50 * width / Math.max(1, height);
-    sunDisc.position.set(-skyWidth * 0.36, 17, -116);
-    moonDisc.position.set(skyWidth * 0.36, 17, -116);
+    sunDisc.position.set(-skyWidth * 0.36, 21, -116);
+    moonDisc.position.set(skyWidth * 0.36, 21, -116);
     const positions = starGeometry.getAttribute("position");
     for (let index = 0; index < 72; index++) {
       positions.setXYZ(index, starPositions[index * 3] * skyWidth * 1.8,
@@ -76,7 +76,8 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
         minuteOfDay: minute,
         daylight: Number(daylight.toFixed(3)),
         windowGlow: Number(glow.toFixed(3)),
-        phase: daylight > 0.72 ? "day" : night > 0.72 ? "night" : "twilight"
+        phase: daylight > 0.72 ? "day" : night > 0.72 ? "night" : "twilight",
+        skyColor: "#" + sky.getHexString()
       };
     }
   }
