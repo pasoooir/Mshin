@@ -390,3 +390,8 @@ Operating and capital funding rules are specified in [Capital Region Municipal F
 ## Tourism load on essential services
 
 The tourism model is specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Incremental visitor load may affect water, electricity, waste, healthcare, safety, emergency response and maintenance only through explicit authoritative demand rules. Visitor and resident demand must remain separately attributable; staffing, effective capacity and delivered service are distinct. This cross-reference does not activate any new service or guarantee visitor-priority allocation.
+
+
+## Weather and essential-service dependencies
+
+Weather-related utility demand, drainage, outages and restoration boundaries are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Environmental effects may alter electricity, water, wastewater, waste, healthcare, emergency response or maintenance only through explicit authoritative demand/incident rules. A weather visual cannot cause an outage; restoration requires service evidence. No new service ID is approved.
