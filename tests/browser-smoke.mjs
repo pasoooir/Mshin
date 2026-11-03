@@ -547,7 +547,7 @@ try {
   await page.goto("about:blank");
 
   activePhase = "economy progression, AI driver and rewarded race";
-  const economy = await browser.newPage({ viewport: mobileOnly ? { width: 844, height: 390 } : { width: 1280, height: 800 }, isMobile: mobileOnly, hasTouch: mobileOnly });
+  const economy = await browser.newPage({ viewport: mobileOnly ? { width: 390, height: 844 } : { width: 1280, height: 800 }, screen: mobileOnly ? { width: 390, height: 844 } : undefined, deviceScaleFactor: mobileOnly ? 1 : undefined, isMobile: mobileOnly, hasTouch: mobileOnly });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // Bring the page forward and explicitly reactivate its lifecycle before the
   // long simulation; headless bringToFront() alone does not always clear the
