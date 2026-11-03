@@ -23,10 +23,12 @@ jobs:
           node-version: 22
       - name: Install project dependencies
         run: npm install --no-audit --no-fund
+      - name: Compile portable city core test fixtures
+        run: npm run build:core
       - name: Validate city core and population behavior
-        run: node --test tests/city-core.test.mjs tests/city-population.test.mjs
+        run: node --test tests/city-core.test.mjs tests/city-population.test.mjs tests/city-employment.test.mjs
       - name: Record outstanding employment acceptance gap
         run: |
           echo "Population regression passed."
-          echo "IMPORTANT: full resident-to-workplace matching, commute assignment, vacancies and job-demand feedback are not yet implemented/accepted by this workflow."
-          echo "This workflow is a manual regression gate, not evidence that job matching is complete."
+          echo "Employment capacity, workforce matching, unemployment and vacancies are covered by city-employment.test.mjs."
+          echo "Individual citizen commute routing and workplace-level assignment remain outside this aggregate model."

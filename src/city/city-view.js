@@ -2,6 +2,7 @@ import { CITY_ZONES, placeCityZone, developCityZones } from "./city-zoning.js";
 import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
 import { stepCityTraffic } from "./city-traffic.js";
 import { syncCityCitizens, stepCityCitizens } from "./city-population.js";
+import { computeCityEmployment } from "./city-employment.js";
 import { CITY_DEFAULT_TAX_RATES, setCityTaxRate, computeCityEconomy, cityTaxPressure } from "./city-economy.js";
 import { isValidCitySave, normalizeCitySaveData, migrateCitySave, createCitySaveBackup } from "./city-save.js";
 export { isValidCitySave, migrateCitySave, createCitySaveBackup };
@@ -22,7 +23,8 @@ export function stepCity(city,seconds=1){
  const infrastructure=computeCityServices(city);
  const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
  const economy=computeCityEconomy(city,infrastructure);
- city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage};
+ const employment=computeCityEmployment(city);
+ city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage};
  city.treasury+=economy.net;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
  syncCityCitizens(city);stepCityCitizens(city,seconds);
  const serviceScore=(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
