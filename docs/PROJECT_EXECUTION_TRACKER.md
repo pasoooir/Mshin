@@ -1,18 +1,18 @@
-# وضعیت اجرایی جاری — بازبینی 2026-11-03 پس از PR #192
+# وضعیت اجرایی جاری — بازبینی 2026-11-03 پس از PR #193
 
 > وضعیت زیر فقط بر پایه commitها و checkهای قابل مشاهده ثبت شده است؛ اجرای شبیه‌سازی موبایل معادل QA روی دستگاه واقعی نیست.
 
 ## خط مبنای main
 
-- **main:** `98f152105c7716c6a0a323a4f680129070152363` — ادغام PR #192.
+- **main:** `828b8705dfb51143e7d56f254a5c7464fb922a64` — ادغام PR #193؛ PR #192 در تاریخچه خط مبنا قرار دارد.
 - **PR #188 — Versioned save migration and mobile backup recovery:** 🟢 ادغام‌شده؛ مهاجرت ذخیره v1 به v2، پشتیبان‌گیری و بازیابی.
 - **PR #190 — Workforce matching and employment demand:** 🟢 ادغام‌شده؛ ظرفیت شغلی، نیروی کار، اشتغال، بیکاری و فرصت‌های خالی.
 - **PR #192 — Finite utility and civic service capacity:** 🟢 ادغام‌شده؛ ظرفیت محدود خدمات و تفکیک پوشش جغرافیایی از پوشش تقاضا.
-- **اعتبارسنجی main:** 🟢 موفق؛ `validate` و `build` در run `41623889163`.
-- **انتشار GitHub Pages:** 🟢 موفق؛ `deploy` در run `41623889163`.
-- **browser-smoke روی main:** 🟡 در حال اجرا؛ نتیجه نهایی هنوز ثبت نشده است.
-- **PR #193 — Resident wellbeing integration:** باز؛ تست‌های واحد/شبیه‌سازی، خدمات، ذخیره و پذیرش viewport موبایل موفق؛ دو اجرای browser-smoke هنوز در حال اجرا هستند.
-- **PR #195 — Workforce-aware zoning growth:** باز؛ `validate`، `Population baseline and employment-slice regression` و `Road connectivity, zoning, growth and traffic regression` موفق؛ browser-smoke و پذیرش موبایل در حال اجرا.
+- **اعتبارسنجی main:** 🟢 موفق؛ `validate` و `build` در run `41624866155`.
+- **انتشار GitHub Pages:** 🟢 موفق؛ `deploy` در run `41624866155`.
+- **browser-smoke روی main:** 🟡 اجرای پذیرش مسابقه سه‌دور/آفلاین هنوز در حال اجرا است.
+- **PR #193 — Resident wellbeing integration:** 🟢 ادغام‌شده در `828b8705dfb51143e7d56f254a5c7464fb922a64`؛ تمام checkهای exact-head از جمله دو `browser-smoke` و پذیرش viewport موبایل موفق شدند.
+- **PR #195 — Workforce-aware zoning growth:** باز؛ `validate`، `Population baseline and employment-slice regression`، `Road connectivity, zoning, growth and traffic regression` و پذیرش viewport موبایل موفق؛ دو اجرای `browser-smoke` هنوز در حال اجرا هستند.
 - **تست دستگاه فیزیکی Android و Cocos Creator Editor:** همچنان تأییدنشده؛ CI مرورگر جایگزین آن نیست.
 
 ## وضعیت اجرایی حوزه شهر
@@ -22,7 +22,7 @@
 | ذخیره و بازیابی شهر | 🟢 ادغام‌شده در PR #188 | مهاجرت نسخه، backup/restore و offline precache؛ آزمون دستگاه واقعی و کمبود فضای ذخیره باقی است. |
 | اشتغال و تقاضای نیروی کار | 🟢 ادغام‌شده در PR #190 | محاسبه ظرفیت مشاغل، نیروی کار، اشتغال، بیکاری و vacancy؛ اثر بر رفاه و رشد منطقه‌ای در PR #193/#195 در حال تکمیل. |
 | خدمات شهری با ظرفیت محدود | 🟢 ادغام‌شده در PR #192 | ظرفیت برق، آب، فاضلاب، پسماند، پلیس، آتش‌نشانی، درمان و آموزش؛ اتصال کامل به رفاه/رشد در ادامه کار. |
-| رفاه شهروندان | 🟡 PR #193 باز | بیکاری بر رضایت اثر می‌گذارد و telemetry تقاضا/ظرفیت به آمار اضافه می‌شود؛ browser smoke باید تکمیل شود. |
+| رفاه شهروندان | 🟢 PR #193 ادغام‌شده | بیکاری بر رضایت اثر می‌گذارد؛ آمار شهر شامل پوشش تقاضا و مصرف ظرفیت خدمات است. اثر مستقیم رضایت ساختمان‌به‌ساختمان هنوز قابل توسعه است. |
 | منطقه‌بندی و رشد متوازن شغل | 🟡 PR #195 باز | توسعه مشاغل با ظرفیت نیروی کار هماهنگ می‌شود؛ همه پذیرش‌های موبایل و مرورگر باید سبز شوند. |
 | تجربه موبایل شهر | 🟡 CI در حال تکمیل | viewport و rendering acceptance موفق در PR #193؛ browser race/offline acceptance هنوز فعال است؛ QA فیزیکی Android باز است. |
 | انتشار | 🟢 build/deploy موفق | پس از هر ادغام، main و URL زنده مجدداً بررسی شود. |
