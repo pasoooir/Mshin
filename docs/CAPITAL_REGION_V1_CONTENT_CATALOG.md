@@ -237,3 +237,9 @@ Any move into implementation requires a catalog change with stable IDs, data con
 The detailed conceptual architecture for electricity, potable water, wastewater, solid waste, emergency response, healthcare, public safety and municipal maintenance is documented in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md).
 
 **Catalog protection:** this reference adds no operational IDs and changes no V1 status. Unless an item is already explicitly approved here, these services and their facility/asset families remain proposed conceptual scope, not V1-Required. In particular, do not infer approval for power generation, substations, water/sewer networks, waste facilities, fire stations, hospitals, police stations or maintenance depots from the atlas. Each proposed capability requires stable IDs, status, dependencies, economy, save/load and acceptance approval before implementation. Existing catalog entries and statuses remain authoritative; all numeric values remain TBD.
+
+
+## Education, housing growth and city wellbeing design reference
+The proposed education, research, residential occupancy and city wellbeing architecture is documented in [Capital Region Education, Research, Housing Growth & City Wellbeing Atlas](CAPITAL_REGION_EDUCATION_RESEARCH_HOUSING_AND_CITY_WELLBEING_ATLAS.md).
+
+This reference does not add operational IDs or change V1 statuses. Schools, vocational institutions, universities, research facilities, new housing tiers, migration/housing-market mechanics and new city-score dimensions remain proposed until individually approved in this catalog. Existing residence/workplace entries and current rules remain authoritative. A placed home increases potential capacity only; it does not create residents. No score bonus is granted for building count. Numeric capacities, migration rates, score weights and targets remain TBD.
