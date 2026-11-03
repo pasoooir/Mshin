@@ -80,3 +80,10 @@ test("longitudinal world scaling uses swept hazard contacts to prevent high-spee
  assert.ok(game.includes("sweptPickupContact(previousPlayerPosition,c,{x,y},42)"));
  assert.ok(game.includes("sweptPickupContact(previousPlayerPosition,pickupCurrentPosition,{x,y},66)"));
 });
+
+test("mobile camera shake is deterministic, bounded and time-decayed",()=>{
+ assert.ok(game.includes("cameraShake*=Math.exp(-7.5*dt)"));
+ assert.ok(game.includes("const shake=Math.min(3.5,cameraShake*5)"));
+ assert.ok(game.includes("Math.sin(shakePhase*1.13)*shake"));
+ assert.ok(!game.includes("Math.random()-.5)*shake"),"camera shake must not use per-frame random offsets");
+});
