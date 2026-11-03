@@ -75,6 +75,16 @@ test("service demand is limited by station capacity even when buildings are in r
   assert.ok(result.utilityCoverage < 100);
 });
 
+test("empty homes consume no finite service capacity", () => {
+  const emptyHome={id:1,type:"home",x:1,y:1,residents:0};
+  const city={buildings:[emptyHome,{id:2,type:"power",x:0,y:1}]};
+  const result=computeCityServices(city);
+  assert.equal(result.coverage.power,100,"geographic reach remains separate from demand");
+  assert.equal(result.demandCoverage.power,0,"an empty city block contributes no resident demand");
+  assert.equal(result.capacityUsage.power,0,"empty homes must not consume utility capacity");
+  assert.equal(emptyHome.serviceSatisfaction.power,100,"zero-demand buildings are fully satisfied by definition");
+});
+
 test("multiple service stations pool capacity without exceeding their limits", () => {
   const city = { buildings: [
     ...Array.from({ length: 16 }, (_, index) => ({ id: index + 1, type: "home", x: index % 8 + 1, y: Math.floor(index / 8) + 1, residents: 12 })),
