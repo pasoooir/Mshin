@@ -96,7 +96,7 @@ function mapCommuteAgents(city, assignments) {
 
 function advanceCommute(city, citizen, flow, seconds) {
   const route = flow.route;
-  if (!route.length || route.some(point => !isRoad(city, point.x, point.y))) return false;
+  if (!route.length || !isRoad(city, route[0].x, route[0].y) || !isRoad(city, route[route.length - 1].x, route[route.length - 1].y)) return false;
   if (citizen.commuteWorkplaceId !== flow.workplaceId
     || !["outbound", "returning"].includes(citizen.commutePhase)) {
     citizen.commuteWorkplaceId = flow.workplaceId;
