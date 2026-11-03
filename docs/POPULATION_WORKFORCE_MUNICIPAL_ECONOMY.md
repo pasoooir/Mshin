@@ -112,3 +112,7 @@ V1 requires households, occupancy capacity, a small set of workplace slots, empl
 8. Return from offline interval: no duplicate tax, wages or consumption.
 9. Inspect city budget: every displayed number reconciles with ledger.
 10. Run a long simulation: no unbounded population/economy growth.
+
+
+## Essential municipal services and utility demand integration
+The proposed utility/service architecture is detailed in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md). Population, household and workplace demand may feed electricity, potable water, wastewater and waste only after explicit demand-conversion rules and approved service IDs exist. Healthcare/emergency demand must not be invented as arbitrary patient or incident counts. Service delivery, staffing, inventory, operating costs and unmet demand must reconcile with the municipal ledger and deterministic simulation phases. A new service may not silently change occupancy, productivity, health, happiness, tax or population; every causal effect needs an approved rule and acceptance test. All quantities remain TBD until evidence exists.
