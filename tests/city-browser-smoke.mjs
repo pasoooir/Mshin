@@ -11,6 +11,7 @@ async function clickCityTool(page,type){
 }
 
 const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--enable-webgl","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]});
+fs.mkdirSync("artifacts/city-camera-video",{recursive:true});
 const cameraContext=await browser.newContext({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true,recordVideo:{dir:"artifacts/city-camera-video",size:{width:844,height:390}}});
 const page=await cameraContext.newPage();
 const errors=[];page.on("pageerror",e=>errors.push(e.stack||String(e)));page.on("console",m=>{if(m.type()==="error")errors.push("console: "+m.text())});page.on("requestfailed",r=>errors.push("request failed: "+r.url()+" "+r.failure()?.errorText));
