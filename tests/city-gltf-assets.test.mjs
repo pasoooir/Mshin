@@ -15,6 +15,6 @@ test("each model is self-contained glTF 2.0 with PBR materials and embedded geom
 });
 test("neighborhood preview loads local architecture models with a procedural fallback",async()=>{
  const html=await readFile(path.join(root,"city-neighborhood-preview.html"),"utf8");assert.match(html,/GLTFLoader/);
- for(const kind of ["house","apartment","shop"])assert.ok(html.includes(`./assets/city/models/${kind}.gltf`));
+ assert.ok(html.includes("./assets/city/models/manifest.json"));
  assert.match(html,/fallback\.group\.removeFromParent\(\)/);assert.match(html,/catch\(error\)/);
 });
