@@ -100,7 +100,8 @@ try{
  assert.equal(taxPersistence.rate,14,"residential tax slider must update the simulation policy");
  assert.equal(taxPersistence.saved,14,"tax policy must persist immediately to the local city save");
  await page.evaluate(()=>window.MshinCityDebug.step());
- assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.stats.taxRevenue>0&&window.MshinCityDebug.economy.taxRevenue>0),"tax changes must feed the live city economy");
+ const adjustedTax=await page.evaluate(()=>window.MshinCityDebug.city.stats.taxRevenue);
+ assert.ok(adjustedTax>baselineTax,"raising residential tax must increase live tax revenue");
  await page.locator("#cityBudgetDone").click();
  assert.ok(await page.locator("#cityBudgetPanel").evaluate(el=>el.classList.contains("hidden")),"budget dialog close button must restore the city view");
  await page.locator("#cityBudget").click();
