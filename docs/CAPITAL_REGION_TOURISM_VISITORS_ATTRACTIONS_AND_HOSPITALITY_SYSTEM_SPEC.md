@@ -177,3 +177,8 @@ Visitor segment and trip unit; approved attraction and lodging IDs; visitor orig
 All rates, prices, capacities, time intervals, attraction weights, spending distributions, crowd caps and performance thresholds remain TBD. Before implementation, approve tourism scope and IDs in the catalog; define visitor/party accounting; connect attractions to authoritative spatial access; define booking and transaction state machines; reconcile lodging, inventory and finance; define resident-service protection; create professional editable assets with specialist tools/plugins; verify commercial licenses, provenance and hashes; conduct mobile usability, accessibility and real-device performance tests; obtain explicit approval to leave design phase.
 
 **Evidence status:** Documentation only. No tourist agents, attraction operation, hotel booking, visitor spending, event attendance or tourism simulation is implemented or device-tested by this document. Existing V1 IDs and statuses remain unchanged.
+
+
+## Tourism and environmental conditions
+
+Weather, daylight and seasonal impacts on visitor choice, attraction access, outdoor events and itineraries are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Forecasts may inform planning; actual conditions govern operational decisions under approved policies. No weather-driven tourism multiplier, seasonal surge or new attraction capability is approved by this reference.
