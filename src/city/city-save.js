@@ -89,7 +89,11 @@ export function isValidCitySave(v) {
       || (citizen.routeStep !== undefined && (!Number.isSafeInteger(citizen.routeStep) || citizen.routeStep < 0))
       || (citizen.heading !== undefined && !Number.isFinite(citizen.heading))
       || (citizen.phase !== undefined && !Number.isFinite(citizen.phase))
-      || (citizen.pace !== undefined && (!Number.isFinite(citizen.pace) || citizen.pace < 0 || citizen.pace > 20))) return false;
+      || (citizen.pace !== undefined && (!Number.isFinite(citizen.pace) || citizen.pace < 0 || citizen.pace > 20))
+      || (citizen.commuteWorkplaceId !== undefined && !validId(citizen.commuteWorkplaceId))
+      || (citizen.commutePhase !== undefined && !["outbound","returning"].includes(citizen.commutePhase))
+      || (citizen.commuteRouteStep !== undefined && (!Number.isSafeInteger(citizen.commuteRouteStep) || citizen.commuteRouteStep < 0 || citizen.commuteRouteStep >= SIZE * SIZE))
+      || (citizen.commuteWait !== undefined && (!Number.isFinite(citizen.commuteWait) || citizen.commuteWait < 0 || citizen.commuteWait > 60))) return false;
   }
   for (const animal of v.animals || []) {
     if (!isRecord(animal) || !["cat","dog","bird"].includes(animal.type)
