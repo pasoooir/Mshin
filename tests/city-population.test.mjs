@@ -52,6 +52,21 @@ test("pedestrian agents remain capped and reconcile when residential population 
   assert.equal(isValidCitySave(city), true);
 });
 
+test("demolishing a home reassigns surviving pedestrians to an occupied home", () => {
+  const city = createInitialCity(906);
+  const first = placeCityItem(city, 17, 14, "home");
+  const second = placeCityItem(city, 22, 14, "home");
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.ok(city.citizens.some(citizen => citizen.homeId === first.item.id));
+  city.buildings = city.buildings.filter(building => building.id !== first.item.id);
+  city.population -= first.item.residents;
+  syncCityCitizens(city);
+  assert.ok(city.citizens.every(citizen => citizen.homeId === second.item.id));
+  assert.ok(city.citizens.every(citizen => city.grid[citizen.roadY]?.[citizen.roadX] === "road"));
+  assert.equal(isValidCitySave(city), true);
+});
+
 test("legacy citizen saves are normalized into road-agent state without breaking compatibility", () => {
   const city = createInitialCity(904);
   placeCityItem(city, 17, 14, "home");
