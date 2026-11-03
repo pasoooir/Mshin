@@ -60,6 +60,24 @@ try{
 
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
 
+ // The same 3D scene must respond to the deterministic simulation clock.
+ await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw()});
+ const nightLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
+ assert.equal(nightLighting.phase,"night","midnight must activate the night lighting state");
+ assert.equal(nightLighting.daylight,0,"midnight must have no direct daylight");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"night must display the moon and hide the sun");
+ assert.ok(nightLighting.windowGlow>=1,"building windows must illuminate at night");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),72,"night scene must render the deterministic star field");
+ await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=720;window.MshinCityDebug.draw()});
+ const noonLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
+ assert.equal(noonLighting.phase,"day","midday must activate the daylight state");
+ assert.equal(noonLighting.daylight,1,"midday must have full daylight");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"day must display the sun and hide the moon");
+ assert.notEqual(nightLighting.skyColor,noonLighting.skyColor,"the visible sky color must change between night and day");
+ assert.ok(noonLighting.windowGlow<0.1,"building window glow must be subdued during daytime");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),0,"day scene must hide stars");
+ await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=495;window.MshinCityDebug.draw()});
+
  const mapControls=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,buttons:[...document.querySelectorAll(".cityMapControls button")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,visible:r.width>0&&r.height>0}})}));
  assert.ok(mapControls.zoom>=.7,"mobile city should open with a useful exploration zoom");assert.equal(mapControls.buttons.length,3);assert.ok(mapControls.buttons.every(b=>b.visible&&b.width>=44&&b.height>=44),"map zoom controls must be visible 44px touch targets");
  await page.locator("#cityZoomIn").click();const zoomedIn=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomedIn>mapControls.zoom,"zoom-in control must enlarge the map");

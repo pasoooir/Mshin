@@ -1,5 +1,6 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
+import { createCityAtmosphere } from "./city-atmosphere.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -47,10 +48,11 @@ export async function createCityThreeRenderer(sourceCanvas) {
   scene.background = new THREE.Color("#9bd4ee");
   scene.fog = new THREE.Fog("#9bd4ee", 145, 260);
   const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 320);
-  camera.position.set(48, 58, 48);
+  camera.position.set(48, 38, 48);
   camera.lookAt(0, 0, 0);
 
-  scene.add(new THREE.HemisphereLight("#fff7e8", "#537c48", 2.25));
+  const hemisphere = new THREE.HemisphereLight("#fff7e8", "#537c48", 2.25);
+  scene.add(hemisphere);
   const sun = new THREE.DirectionalLight("#fff1d2", 3.35);
   sun.position.set(-42, 68, -35);
   sun.castShadow = true;
@@ -64,6 +66,11 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const fill = new THREE.DirectionalLight("#a9e2ff", 1.05);
   fill.position.set(38, 24, 42);
   scene.add(fill);
+  const windowMaterials = new Set();
+  const atmosphere = createCityAtmosphere(THREE, {
+    scene, camera, sun, hemisphere, fill, windowMaterials,
+    getViewport: () => ({ width: window.innerWidth, height: window.innerHeight })
+  });
 
   function makeSurfaceTexture(base, fleck, seed, count, scale = 1) {
     const textureCanvas = document.createElement("canvas");
@@ -103,7 +110,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(230, 230),
+    new THREE.PlaneGeometry(140, 140),
     new THREE.MeshStandardMaterial({ color: "#80b86d", roughness: 1 })
   );
   ground.rotation.x = -Math.PI / 2;
@@ -476,6 +483,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const trimMat = new THREE.MeshStandardMaterial({ color: palette.trim, roughness: 0.68 });
     const accentMat = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.7 });
     const glassMat = new THREE.MeshStandardMaterial({ color: "#d8f5f6", emissive: "#3e9db0", emissiveIntensity: 0.16, roughness: 0.24, metalness: 0.08 });
+    windowMaterials.add(glassMat);
     const darkMat = new THREE.MeshStandardMaterial({ color: "#52616b", roughness: 0.9 });
     const baseMat = new THREE.MeshStandardMaterial({ color: "#e8dfc8", roughness: 0.96 });
 
@@ -579,8 +587,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
       child.traverse(object => {
         if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry, windowGeometry, balconyGeometry, columnGeometry, signGeometry, awningGeometry].includes(object.geometry)) object.geometry.dispose();
         if (object.material) {
-          if (Array.isArray(object.material)) object.material.forEach(material => material.dispose());
-          else object.material.dispose();
+          if (Array.isArray(object.material)) object.material.forEach(material => { windowMaterials.delete(material); material.dispose(); });
+          else { windowMaterials.delete(object.material); object.material.dispose(); }
         }
       });
     }
@@ -603,6 +611,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     camera.top = 25;
     camera.bottom = -25;
     camera.updateProjectionMatrix();
+    atmosphere.resize();
   }
 
   function updateCamera(cam) {
@@ -611,13 +620,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const worldScale = height / 50;
     const targetX = -(cam.x || 0) / worldScale;
     const targetZ = -(cam.y || 0) / worldScale;
-    camera.position.set(48 + targetX, 58, 48 + targetZ);
+    camera.position.set(48 + targetX, 38, 48 + targetZ);
     camera.lookAt(targetX, 0, targetZ);
     camera.updateProjectionMatrix();
   }
 
   function render(city, view, cam) {
     updateCamera(cam);
+    atmosphere.update(city);
     updateBuildings(city);
     updateTraffic(city);
     updatePedestrians(city);
@@ -668,12 +678,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio(),
         shadowAutoUpdate: renderer.shadowMap.autoUpdate,
-        buildingRebuilds
+        buildingRebuilds,
+        ...atmosphere.getStats()
       };
     },
     destroy() {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
+      atmosphere.dispose();
       grassMap.dispose();
       roadMap.dispose();
       canvas.remove();
