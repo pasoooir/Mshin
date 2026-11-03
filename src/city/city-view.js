@@ -48,11 +48,10 @@ function load(){
  try{
   const currentRaw=localStorage.getItem(KEY);
   if(currentRaw){
-   try{
-    const parsed=JSON.parse(currentRaw),current=migrateCitySave(parsed);
-    if(current){if(parsed?.schemaVersion===1)persist(current);return current}
-    try{localStorage.setItem(RECOVERY_KEY,currentRaw.slice(0,1000000))}catch{}
-   }catch{}
+   let parsed=null,current=null;
+   try{parsed=JSON.parse(currentRaw);current=migrateCitySave(parsed)}catch{}
+   if(current){if(parsed?.schemaVersion===1)persist(current);return current}
+   try{localStorage.setItem(RECOVERY_KEY,currentRaw.slice(0,1000000))}catch{}
   }
   const legacyRaw=localStorage.getItem(LEGACY_KEY);
   if(legacyRaw){
