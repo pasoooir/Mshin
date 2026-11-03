@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
 **Reviewed:** 2026-11-03  
-**Baseline:** `main` at `c19e7273f4ec5bb9bb583cda58038a749872734f`  
+**Baseline:** `main` at `bc329187b39e1e2d0bb84b57e53b2e24ca436bde`  
 **Primary users:** mobile browsers (Android-first)  
 **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
 
@@ -17,7 +17,11 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 - Latest merged-main GitHub Pages deployment: [run 41604546842](https://github.com/pasoooir/Mshin/actions/runs/41604546842) — success.
 - PR #176 is merged as `616be0381f3eeda0c8923b288e33467361493a5d`; it adds portrait-mobile full-race acceptance, compact finish-screen layout, screenshot evidence and offline acceptance. PR #175 was closed as a superseded duplicate. PRs #161–#174 and #176 are merged.
 - Mobile gameplay preview artifact: [mshin-mobile-gameplay-previews](https://github.com/pasoooir/Mshin/actions/runs/41604548181/artifacts/13216086671).
-- PR #178 merged as `c19e7273f4ec5bb9bb583cda58038a749872734f`; city entry now requests browser fullscreen before `screen.orientation.lock("landscape")`, retries on the first trusted touch/click, and retains a portrait fallback. Mobile city smoke and portable validation passed on PR head (runs 41606148309 and 41606148420). GitHub Pages deployment for this merge is still awaiting verification.\n- CI success is not equivalent to physical Android-device certification or Cocos Creator Editor/Web build acceptance.
+- PR #178 merged as `c19e7273f4ec5bb9bb583cda58038a749872734f`; city entry requests fullscreen before landscape lock, retries on the first trusted touch/click, and retains a portrait fallback. Mobile city smoke and portable validation passed (runs 41606148309 and 41606148420).
+- PR #177 merged as `b55ba56bed2c2ebdb08ba0707df9a786a5fa0a72`; deterministic bounded pedestrians follow road tiles, synchronize to residential occupancy, migrate old saves and render through instanced 3D meshes. Exact-head validation and mobile smoke passed (runs 41606720934 and 41606720997).
+- PR #180 merged as `f3e26f981c09ea57afb5395423d53a55471115a3`; adds home-demolition pedestrian reassignment regression coverage. All 41 Node tests and portable checks passed on exact head (run 41607752900).
+- Latest main portable validation and GitHub Pages deployment for `bc329187b39e1e2d0bb84b57e53b2e24ca436bde` passed (runs 41608035350 and 41608035227). The main mobile smoke is still running (run 41608035368); do not claim that run as passed until it completes.
+- CI success is not equivalent to physical Android-device certification or Cocos Creator Editor/Web build acceptance.
 
 ## Product priorities
 
@@ -32,7 +36,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ### P1 — Stabilize the racing game
 
-- Reconcile any newly opened racing PR against main before feature work. The remaining open PRs are #92 (stale draft billboard branch, diverged/non-mergeable) and #179 (documentation-only snapshot superseded by this current evidence refresh). A city economy implementation branch is being tested separately and is not yet a PR.
+- Reconcile any newly opened racing PR against main before feature work. The remaining open PR is #92 (stale draft billboard branch, diverged/non-mergeable). PR #179 was merged as a documentation snapshot; this roadmap refresh supersedes its stale baseline. City budget/tax controls are under mobile acceptance in PR #181.
 - Confirm the tenfold track-length and steering correction in PR #132 against current main behavior and automated evidence.
 - Keep vehicle physics, input sampling, rendering and progression as separate testable domains.
 - Verify a complete real race: countdown, driving, collisions, pickups, laps, finish, reward and persisted progress. Do not weaken finish/reward assertions to make smoke tests pass.
@@ -98,7 +102,7 @@ For every feature, record:
 | Priority | Work item | Status | Exit condition |
 |---|---|---|---|
 | P0 | Refresh stale tracker and define repository-wide acceptance policy | 🟢 completed in this documentation change | Current baseline and evidence links recorded |
-| P0 | Reconcile open PR inventory and stacked dependencies | 🟢 inventory reconciled | PRs #161–#178 and #180 are merged; #175 was closed as superseded. PR #92 remains stale/blocked; PR #179 is a stale documentation snapshot to close after this evidence refresh. Recheck after any new PR activity. |
+| P0 | Reconcile open PR inventory and stacked dependencies | 🟢 inventory reconciled | PRs #161–#180 are merged (PR #179 is documentation-only); #175 was closed as superseded. PR #92 remains stale/blocked pending rebase and mobile billboard acceptance. Recheck after any new PR activity. |
 | P0 | Mobile race + city acceptance matrix | 🟡 in progress | Main run 41604548181 passes portrait 390×844 software-landscape touch race; PR #178 run 41606148309 additionally verifies city fullscreen-before-landscape sequencing and mobile city interactions. Broaden to safe-area/visual-viewport changes, pointer cancellation, gyro and representative physical Android devices. |
 | P1 | Racing stability and real-finish regression | 🟢 browser acceptance verified | Main run 41604548181 passes the full three-lap mobile race, five-car standings, rewards, first-finish achievement and persisted progress. Physical Android performance/balance remains a separate gate. |
 | P1 | City simulation vertical slices | 🟡 in progress | Each system passes deterministic, integration and mobile acceptance |
