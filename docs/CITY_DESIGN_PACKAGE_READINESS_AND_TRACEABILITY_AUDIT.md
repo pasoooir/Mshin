@@ -13,7 +13,7 @@
 
 The design library is extensive and now covers spatial layout, roads/transit, fleet/freight, utilities, finance, trade, housing/education, citizen needs, crisis management, tourism, weather and visual production. However, breadth of documentation is not proof that the end-to-end V1 design is complete, approved, calibrated, implemented or accepted.
 
-The current master document explicitly records section 46 as incomplete and states that city-building coding has not begun. The existing browser city prototype and its tests must not be represented as the approved Cocos city-building vertical slice.
+The current master document explicitly records section 46 as incomplete. A limited browser prototype exists, but it is not the approved vertical slice; production city-building in Cocos Creator and the complete simulation loop have not started/been approved. The existing browser prototype and its tests must not be represented as production Cocos implementation or real-device acceptance.
 
 This audit records readiness gaps and document ambiguities only. It does not change catalog IDs/statuses, numeric balance, save schemas, gameplay behavior, V1 scope or implementation authorization.
 
@@ -82,7 +82,7 @@ The catalog wording now preserves those exact entries while distinguishing them 
 
 The spatial spec requires explicit terrain metadata, stable parcel IDs, a versioned grid/world transform, multi-cell atomic footprints, frontage/access anchors and an authoritative road graph. The current browser prototype uses a 32×32 tile state, a separately generated 64×64 renderer grid, orthogonal road adjacency and Euclidean service distance.
 
-The current browser implementation must remain classified as a prototype/visual vertical slice, not as conformance to the spatial production contract. Preserve the existing safety guards and do not add ROW/sidewalk, crossings, street furniture or new simulation until the section-46 and spatial design gates are approved.
+The current browser implementation must remain classified as a limited browser prototype, not as the approved production Cocos vertical slice or conformance to the spatial production contract. Preserve the existing safety guards and do not add ROW/sidewalk, crossings, street furniture or new simulation until the section-46 and spatial design gates are approved.
 
 ### 4.5 Master-document status wording — reconciled
 
@@ -91,6 +91,24 @@ The current browser implementation must remain classified as a prototype/visual 
 - Section 60.5 now points to the exact existing catalog statuses for the named utility and support-service entries, while preserving the hold on unapproved networks, additional facilities and expanded simulation.
 
 This is a wording/traceability correction only. It does not close section 46 or authorize implementation.
+
+### 4.6 Spatial-to-fleet-to-economy handoff — reviewed, unresolved
+
+Cross-review of the spatial register, fleet specification, item/recipe registry, workforce/economy specification and market proposal confirms that the map cannot be approved from geometry alone. The starter freight/logistics loop requires all of the following to resolve together:
+
+- map-side origin/destination identities and building access anchors;
+- authoritative road graph edges, route version and vehicle-class compatibility;
+- approved vehicle availability, payload and loading/unloading envelopes;
+- source inventory reservation, destination capacity reservation and explicit custody transfer;
+- shipment state, ETA versus actual arrival, cancellation, closure/reroute and process-death recovery;
+- canonical item IDs/units/recipe producers and bounded resource extraction, if map deposits are used;
+- workforce/crew availability and route-feasible access where required;
+- ledger ownership for construction, operating, logistics and maintenance costs;
+- save/load/offline replay that cannot duplicate stock, cargo, money, trips or ledger events.
+
+The map decision register now records these as separate TBD decisions under section 7.1. This is a traceability checklist, not an approval of the proposed trade system or new operational scope.
+
+Status boundary preserved: LOG-WAREHOUSE-STARTER remains V1-Required; TRADE-DEPOT remains V1-Support; LOG-FREIGHT-TERMINAL and VEH-HEAVY-TRUCK remain Candidate; VEH-DELIVERY-VAN, VEH-WASTE-TRUCK, VEH-FIRE-ENGINE, VEH-POLICE-CAR and VEH-AMBULANCE retain only their exact V1-Support status in the fleet specification; VEH-BUS remains Deferred. The market/trade specification remains proposal-only. These references do not activate all listed vehicles or logistics flows.
 
 ### 4.4 Proposal documents and catalog authority — ongoing governance rule
 
@@ -105,7 +123,7 @@ Every implementation handoff must point to the exact catalog-approved ID/status 
 | Building placement | Terrain/buildable parcel → footprint/rotation → zoning → explicit frontage/access → unlock/cost → atomic placement | Occupancy, invalid terrain, locked plot, no frontage, disconnected road, failed payment and rollback |
 | Household occupancy | Approved residential definition → usable capacity → household cohort rule → utility/service availability | No automatic population on placement; capacity, move-in/out and save/load consistency |
 | Production | Recipe registry → input reservation → workforce/utilities → simulation clock → output reservation/capacity → inventory ledger | Missing input, blocked output, pause/cancel, duplicate tick/replay and process death |
-| Freight delivery | Stock reservation → destination capacity reservation → compatible vehicle → route/graph version → load/trip/unload → ledger | Full destination, closure/reroute, cancellation, duplicate completion and cargo custody |
+| Freight delivery | Approved producer/warehouse/consumer IDs → source stock reservation → destination capacity reservation → compatible approved vehicle → road-edge restrictions/route graph version → load/trip/unload/custody → ledger | Full destination, incompatible road/vehicle, closure/reroute, cancellation, process death, duplicate completion and cargo custody |
 | Municipal services | Catalog-approved facility → operational state → network connectivity → staffing/inventory/budget → route and effective capacity → delivered service | Disconnected, under-capacity, unavailable, degraded, maintenance and recovery |
 | Municipal finance | Budget authority → cash/commitment/reservation → posted ledger event → reconciliation | Insufficient funds, retry/idempotency, save/load and offline replay |
 | Visual representation | Authoritative entity/state → asset key/prefab → provenance/license → LOD/material/animation → Cocos scene | Missing asset, unknown state, stale graph version, reduced LOD and no gameplay side effects |
@@ -115,9 +133,9 @@ The table defines required traceability, not permission to implement these syste
 
 ## 6. Required package deliverables still outstanding
 
-1. **Approved Capital map layout sheet:** coordinates and boundaries, terrain/water/resource metadata, initial and locked parcels, road nodes/edges, frontage, utility reserve, industrial/residential relationship and freight entry.
+1. **Approved Capital map layout sheet:** coordinates and boundaries, terrain/water/resource metadata, initial and locked parcels, road nodes/edges, frontage, utility reserve, industrial/residential relationship, freight entry, origin/destination anchors, vehicle/road compatibility and warehouse/loading access.
 2. **V1 catalog/recipe approval record:** explicit approval state, schema versions, complete reference validation, unresolved decisions and non-invented TBD values.
-3. **V1 end-to-end sequence specification:** deterministic simulation tick order and command/event ownership across placement, households, production, inventory, freight, utilities, services and finance.
+3. **V1 end-to-end sequence specification:** deterministic simulation tick order and command/event ownership across placement, households, production, inventory reservations, freight custody/delivery, utilities, services and finance; explicitly separate dispatch, ETA, arrival, acceptance and settlement.
 4. **Economy calibration workbook/scenarios:** source/rationale/version for each value; no arbitrary balance defaults.
 5. **Save/offline contract:** authoritative schema, migrations, idempotency, crash recovery, replay and offline equivalence.
 6. **Mobile UX acceptance pack:** screen inventory, touch flows, build/inspect modes, overlays/legends, accessibility and smallest supported viewport.
@@ -142,7 +160,7 @@ Safe work remains limited to design consistency, traceability, source audits, do
 - `docs/CAPITAL_REGION_V1_CONTENT_CATALOG.md`.
 - `docs/CAPITAL_REGION_V1_ITEM_RECIPE_REGISTRY.md`.
 - `docs/CAPITAL_REGION_WORLD_SPATIAL_SPEC.md`.
-- `docs/CAPITAL_REGION_MAP_LAYOUT_DECISION_REGISTER.md` (structured decision template; map values remain TBD).
+- `docs/CAPITAL_REGION_MAP_LAYOUT_DECISION_REGISTER.md` (structured decision template; map values and spatial-to-freight/economy handoffs remain TBD).
 - `docs/VEHICLE_FLEET_FREIGHT_TRAFFIC_SPEC.md`.
 - `docs/CAPITAL_REGION_PUBLIC_TRANSPORT_AND_ROAD_INFRASTRUCTURE_ATLAS.md`.
 - `docs/CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md`.
@@ -157,4 +175,4 @@ Safe work remains limited to design consistency, traceability, source audits, do
 - `docs/CAPITAL_REGION_URBAN_ENVIRONMENT_AND_STREET_LIFE_ATLAS.md`.
 - `docs/VISUAL_DEVELOPMENT_3D_ASSET_BIBLE.md`, `docs/MSHIN_VISUAL_NORTH_STAR_AND_GRAPHICS_QUALITY_MANDATE.md`, `docs/MOBILE_CITY_VISUAL_BENCHMARK_SPEC.md`, `docs/MOBILE_CITY_UX_INTERACTION_ACCESSIBILITY_SPEC.md`.
 
-**Conclusion:** the design package has broad coverage but is not yet a complete, approved, evidence-backed vertical-slice specification. Resolve the two wording ambiguities in section 4, finish the section-46 deliverables and obtain explicit approval before city implementation resumes.
+**Conclusion:** the design package has broad coverage but is not yet a complete, approved, evidence-backed vertical-slice specification. The browser prototype wording is reconciled; the map-to-fleet/economy handoffs are now explicitly traced but remain unresolved. Finish the section-46 deliverables, validate every canonical dependency and obtain explicit approval before production city implementation resumes.
