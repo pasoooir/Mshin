@@ -132,6 +132,17 @@ try{
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));for(let i=0;i<9;i++){const a=100+i*3,b=200+i*3;send("pointerdown",200+i*2,a,420);send("pointerdown",201+i*2,b,420);send("pointermove",200+i*2,a+100,420);send("pointermove",201+i*2,b+100,420);send("pointerup",200+i*2,a+100,420);send("pointerup",201+i*2,b+100,420)}});
  const fullTurnOrbit=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  assert.ok(fullTurnOrbit>orbitStart+Math.PI*2,"repeated two-finger horizontal gestures must cross 360 degrees without wrapping or jumping");
+ const inertiaReleaseBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",450,100,420);send("pointerdown",451,200,420);send("pointermove",450,130,420);send("pointermove",451,230,420);send("pointerup",450,130,420);send("pointerup",451,230,420)});
+ const orbitAtRelease=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
+ await page.waitForTimeout(120);
+ const orbitAfterRelease=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
+ assert.ok(orbitAfterRelease>orbitAtRelease,"camera orbit must retain a short, damped inertial glide after fingers lift");
+ await page.waitForTimeout(500);
+ const settledOrbit=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
+ await page.waitForTimeout(100);
+ assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.orbit))-settledOrbit)<0.01,"camera inertia must decay to a stable stop");
+
  const pinchStart=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",501,120,420);send("pointerdown",502,280,420);send("pointermove",502,180,420);send("pointerup",502,180,420);send("pointerup",501,120,420)});
  const pinchOut=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
