@@ -74,8 +74,9 @@ export function syncCityCitizens(city) {
     : 0;
   let changed = false;
 
-  if (!Number.isSafeInteger(city.nextCitizenId) || city.nextCitizenId < 1) {
-    city.nextCitizenId = Math.max(0, ...city.citizens.map(citizen => Number.isSafeInteger(citizen.id) ? citizen.id : 0)) + 1;
+  const nextAvailableCitizenId = Math.max(0, ...city.citizens.map(citizen => Number.isSafeInteger(citizen.id) ? citizen.id : 0)) + 1;
+  if (!Number.isSafeInteger(city.nextCitizenId) || city.nextCitizenId < nextAvailableCitizenId) {
+    city.nextCitizenId = nextAvailableCitizenId;
     changed = true;
   }
 
