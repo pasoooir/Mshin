@@ -1,6 +1,15 @@
 import {chromium} from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+
+const cityToolCategories={select:"manage",bulldoze:"manage",road:"roads","zone-residential":"roads","zone-commercial":"roads","zone-industrial":"roads","zone-administrative":"roads","zone-recreational":"roads",home:"buildings",shop:"buildings",power:"services",water:"services",sewage:"services",waste:"services",police:"services",fire:"services",health:"services",education:"services",service:"services",park:"services"};
+async function clickCityTool(page,type){
+ const category=cityToolCategories[type];
+ if(!category)throw new Error("Missing city tool category: "+type);
+ await page.locator('[data-city-category="'+category+'"]').click();
+ await page.locator('[data-city-tool="'+type+'"]').click();
+}
+
 const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--enable-webgl","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]});
 const page=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
 const errors=[];page.on("pageerror",e=>errors.push(e.stack||String(e)));page.on("console",m=>{if(m.type()==="error")errors.push("console: "+m.text())});page.on("requestfailed",r=>errors.push("request failed: "+r.url()+" "+r.failure()?.errorText));
@@ -33,6 +42,17 @@ try{
  await page.waitForFunction(()=>Math.abs(parseFloat(document.querySelector("#cityViewport").style.width)-844)<=1
   &&Math.abs(parseFloat(document.querySelector("#cityViewport").style.height)-390)<=1,undefined,{timeout:5000});
 
+
+
+ const toolMenu=await page.evaluate(()=>({categories:[...document.querySelectorAll("[data-city-category]")].map(b=>b.textContent.trim()),panels:[...document.querySelectorAll("[data-city-panel]")].map(p=>p.hidden),tools:document.querySelectorAll("[data-city-tool]").length}));
+ assert.equal(toolMenu.categories.length,4,"mobile construction controls must be grouped into four clear categories");
+ assert.equal(toolMenu.tools,20,"grouping must preserve every existing city tool");
+ assert.ok(toolMenu.panels.every(Boolean),"all tool panels must start auto-hidden to keep the map uncluttered");
+ await page.locator('[data-city-category="buildings"]').click();
+ assert.equal(await page.locator('[data-city-panel="buildings"]').isVisible(),true,"tapping a category must reveal only its tool panel");
+ await page.locator('[data-city-tool="home"]').click();
+ assert.equal(await page.locator('[data-city-panel="buildings"]').isVisible(),false,"choosing a tool must automatically hide its category panel");
+ assert.equal(await page.locator('[data-city-tool="home"]').getAttribute("aria-pressed"),"true","the chosen city tool must remain selected after auto-hide");
 
  assert.ok(await page.locator("#cityThreeViewport").count()===1,"city must render through the Three.js WebGL scene");
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
@@ -89,7 +109,7 @@ try{
  assert.equal(await page.title(),"شهر من | مِشین");
  const initial=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,buildings:window.MshinCityDebug.city.buildings.length,roads:window.MshinCityDebug.city.grid.flat().filter(t=>t==="road").length,citizens:window.MshinCityDebug.city.citizens.length,traffic:window.MshinCityDebug.city.traffic.length,animals:window.MshinCityDebug.city.animals.length,width:document.querySelector("#cityViewport").width}));
  assert.equal(initial.population,0,"new city must start without residents");assert.equal(initial.buildings,0,"new city must contain no buildings");assert.ok(initial.roads>=300,"the whole map must be subdivided by a complete road grid");assert.equal(initial.citizens,0);assert.equal(initial.traffic,0);assert.equal(initial.animals,0);assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
- await page.locator('[data-city-tool="park"]').click();const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
+ await clickCityTool(page,"park");const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][14]),"building","park tool should place a city asset");
  const parkVisual=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(parkVisual.stylizedBuildings,1,"placed park must become a rendered 3D scene object");
@@ -101,7 +121,7 @@ try{
  const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",91,120,420);send("pointerdown",92,260,420);send("pointermove",92,320,420);send("pointerup",92,320,420);send("pointerup",91,120,420)});
  const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");
- await page.locator('[data-city-tool="zone-residential"]').click();const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
+ await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
