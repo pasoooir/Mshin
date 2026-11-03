@@ -168,6 +168,14 @@ try {
   assert.equal(trackScaleMetrics.trackRadiusX, 11800, "mobile race runtime must expose the extended horizontal circuit radius");
   assert.equal(trackScaleMetrics.trackRadiusY, 7600, "mobile race runtime must expose the extended vertical circuit radius");
   assert.equal(trackScaleMetrics.roadWidth, 360, "the tenfold track must preserve the original road width");
+  const drawStageMetrics = await mobile.evaluate(() => ({
+    uniforms: window.Mshin3DRenderer?.maxDrawUniformsMs,
+    buffers: window.Mshin3DRenderer?.maxDrawBufferSetupMs,
+    submit: window.Mshin3DRenderer?.maxDrawSubmitMs
+  }));
+  for (const [stage, duration] of Object.entries(drawStageMetrics)) {
+    assert.ok(Number.isFinite(duration) && duration >= 0, "mobile WebGL must expose a valid " + stage + " timing: " + JSON.stringify(drawStageMetrics));
+  }
   const mobileRenderQuality = await mobile.evaluate(() => window.Mshin3DRenderer.quality);
   assert.ok(mobileRenderQuality.pixelRatio <= 0.8 && mobileRenderQuality.width <= 700 && mobileRenderQuality.height <= 700, "mobile WebGL must use a reduced render resolution to protect frame pacing: " + JSON.stringify(mobileRenderQuality));
   assert.equal(await mobile.locator("#hud").isVisible(), true, "mobile race HUD should render");
