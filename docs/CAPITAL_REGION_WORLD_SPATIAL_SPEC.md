@@ -142,3 +142,6 @@ The authoritative time, calendar, day/night and weather model is specified in [C
 ## Emergency coverage and station access
 
 The route-based station catchment and emergency access model is specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Straight-line proximity is only a visual hint; coverage requires a valid route, current graph version, reachable incident access point and an available compatible crewed unit. Emergency vehicles must leave a real station access/bay and travel through the road graph; no teleportation is allowed.
+
+## Map layout decision register
+The required map-layout sheet and its approval evidence are tracked in [Capital Region Map Layout Decision Register](CAPITAL_REGION_MAP_LAYOUT_DECISION_REGISTER.md). This register is a structured checklist only: all map dimensions, coordinates, terrain/resource placements, parcels, road graph, freight approach and expansion decisions remain TBD until explicitly reviewed and approved. It does not authorize implementation or override this specification.
