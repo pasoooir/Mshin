@@ -85,6 +85,7 @@ test("demolished homes remove their pedestrian agents and invalid home reference
   const secondHome = placeCityItem(city, 17, 13, "home").item;
   assert.equal(city.citizens.length, 8);
   city.buildings = city.buildings.filter(building => building.id !== firstHome.id);
+  city.grid[firstHome.y][firstHome.x] = "grass";
   city.population -= firstHome.residents;
   syncCityCitizens(city);
   assert.equal(city.citizens.length, 4);
