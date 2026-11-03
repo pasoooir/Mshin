@@ -372,3 +372,7 @@ This atlas does not add operational IDs, change content status, or authorize V1 
 - No 3D asset has been downloaded, licensed, imported, hashed or accepted by this change.
 - No mobile device test, performance profile or gameplay acceptance run is claimed.
 - All canonical catalog statuses remain unchanged.
+
+
+## Education, population growth and service-capacity balancing
+The education/housing/wellbeing model is defined in [Capital Region Education, Research, Housing Growth & City Wellbeing Atlas](CAPITAL_REGION_EDUCATION_RESEARCH_HOUSING_AND_CITY_WELLBEING_ATLAS.md). Utility and municipal service demand must respond to population changes only through approved demand-conversion rules. New homes increase potential residential capacity, not immediate population; new schools or service facilities increase nominal capacity only, and effective delivery remains constrained by staff, utilities, access, operating state and budget. A population increase may raise utility/service demand; a service shortfall may affect migration or wellbeing only if an explicit approved causal rule exists. No decorative facility, assumed coverage or unmodeled score penalty is permitted.
