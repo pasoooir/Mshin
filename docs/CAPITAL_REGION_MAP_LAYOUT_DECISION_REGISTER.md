@@ -41,6 +41,20 @@ A row may not be marked Approved merely because a value appears in a concept ima
 
 Grid/world/screen transforms must remain distinct. Persistent state stores grid-space positions and stable definition IDs, never camera-relative or screen-space positions.
 
+### 3.1 Spatial schema, network revisions and persistence boundary
+
+| Decision key | Required definition | Required evidence | Current value | Status |
+|---|---|---|---|---|
+| SPATIAL-SCHEMA-VERSION | Version of authoritative cell/terrain/parcel/access data schema, compatibility policy | Schema contract, fixtures and migration tests | TBD | TBD |
+| ROAD-GRAPH-VERSION | Independent road/access graph revision and stale-route invalidation policy | Graph diff, route invalidation and save/reload tests | TBD | TBD |
+| UTILITY-GRAPH-VERSION | Independent typed utility-network graph revision; separate from road/access graph | Typed topology contract, endpoint/direction/elevation tests and migration evidence | TBD | TBD |
+| PEDESTRIAN-GRAPH-VERSION | Independent pedestrian graph revision only if pedestrian movement is explicitly approved for V1 | Approved scope, legal crossing/path fixtures and migration evidence | TBD | TBD |
+| SERVICE-ACCESS-REVISION | Version/source identity for route-time and provider-capacity access results, if persisted or cached | Recalculation and invalidation tests against graph/provider changes | TBD | TBD |
+| SAVE-MAP-COMPATIBILITY | Save schema ↔ map revision ↔ graph revision compatibility and migration ordering | Save/load, rollback, old-save and interrupted-migration tests | TBD | TBD |
+| OFFLINE-SPATIAL-STATE | Which spatial/network state advances offline, freezes, or requires reconciliation | Approved offline simulation contract and deterministic time-step tests | TBD | TBD |
+
+Road/access, typed utility and pedestrian graphs are separate authorities. A shared map coordinate system does not make their nodes, edges, permissions, routes or revisions interchangeable. Pedestrian graph rows remain conditional and do not authorize pedestrian features. Save migration must preserve stable IDs and must not silently reinterpret old coordinates or graph references.
+
 ## 4. Geographic composition and landform
 
 | Decision key | Required definition | Required evidence | Current value | Status |
@@ -74,7 +88,7 @@ If a resource type, building or recipe is not approved by the V1 catalog/registr
 
 | Decision key | Required definition | Required evidence | Current value | Status |
 |---|---|---|---|---|
-| DISTRICT-BOUNDARIES | District polygons and stable IDs, if districts are in V1 | Ownership/behavior distinction and UI map | TBD | TBD |
+| DISTRICT-BOUNDARIES | District polygons and stable IDs, if districts are in V1 | Ownership/behavior distinction and UI map | TBD | TBD |\n| DISTRICT-IDENTITY | Stable district IDs, lifecycle and map-revision compatibility | Registry, duplicate checks and save/load migration tests | TBD | TBD |\n| LAND-OWNERSHIP | Owner/claim state for each parcel/cell and its authority, if modeled | Ownership transition rules and authorization/consistency tests | TBD | TBD |
 | PARCEL-IDS | Stable parcel IDs and map-version relationship | Parcel table and duplicate/overlap checks | TBD | TBD |
 | PARCEL-FOOTPRINTS | Exact cell sets, shape and rotation support | Footprint fixtures and atomic placement tests | TBD | TBD |
 | BUILDABILITY | Per-cell buildable/protected/occupied/unlocked state | Terrain and parcel validation matrix | TBD | TBD |
@@ -87,7 +101,7 @@ District labels alone must not create buffs. Expansion must preview buildable ar
 
 ## 7. Road/access graph and freight approach
 
-The road/access graph is separate from its rendered road mesh. The graph is also distinct from utility networks and any pedestrian graph.
+The road/access graph is separate from its rendered road mesh. The graph is also distinct from utility networks and any pedestrian graph. Each network type requires its own schema/revision, identity namespace, validation suite and route/cache invalidation rules; sharing coordinates does not imply shared connectivity.
 
 | Decision key | Required definition | Required evidence | Current value | Status |
 |---|---|---|---|---|
@@ -96,7 +110,7 @@ The road/access graph is separate from its rendered road mesh. The graph is also
 | ROAD-CLASSES | Exact approved V1 road classes and constraints | Catalog alignment and vehicle compatibility | TBD | TBD |
 | ROAD-CAPACITY | Capacity/speed/maintenance only if modeled | Calibrated traffic/fleet scenarios | TBD | TBD |
 | TURN-CONNECTIVITY | Legal movements and restrictions per intersection | Turn graph fixtures and route tests | TBD | TBD |
-| ROAD-CLOSURES | Blocked state, graph versioning and replanning behavior | Closure/recovery deterministic tests | TBD | TBD |
+| ROAD-CLOSURES | Blocked state, graph versioning and replanning behavior | Closure/recovery deterministic tests | TBD | TBD |\n| ROAD-GRAPH-MIGRATION | Compatibility of road node/edge IDs and saved route references across revisions | Old-save fixtures, graph-diff and deterministic replan tests | TBD | TBD |\n| UTILITY-TOPOLOGY | Typed utility nodes/edges, endpoints, direction, elevation constraints, capacity and lifecycle, only for approved V1 networks | Utility-specific topology and flow validation; must not infer road access | TBD | TBD |\n| PEDESTRIAN-TOPOLOGY | Pedestrian nodes/edges, legal crossings, permissions and signal/priority state, only if approved | Approved pedestrian scope and crossing/path validation | TBD | TBD |
 | BUILDING-FRONTAGE | Road edge to parcel/building frontage relationship | Explicit edge/cell reference validation | TBD | TBD |
 | FREIGHT-ENTRY | Regional delivery approach and edge connection | Fleet-compatible route and delivery acceptance | TBD | TBD |
 | FREIGHT-ENVELOPE | Vehicle turning/loading/access envelopes | Vehicle class geometry and route constraints | TBD | TBD |
@@ -147,7 +161,7 @@ Concept images generated with plugins may support visual exploration, but editab
 - Resource deposits have bounded reserves and a valid approved recipe/extraction owner.
 - Expansion does not create inaccessible isolated parcels or invalidate existing saves.
 - Freight entry reaches valid destinations under the approved road graph.
-- Save/load preserves map revision, parcel identity and grid positions.
+- Save/load preserves spatial schema, map revision, parcel/district identity, grid positions and each applicable graph revision.\n- Road, utility and (if approved) pedestrian graph revisions migrate independently; stale routes/caches are invalidated deterministically.\n- Offline progression follows the approved spatial/network contract; graph changes cannot silently preserve invalid routes or duplicate deliveries/operations.
 - Map overlays remain legible on the smallest supported viewport.
 - Dense-scene performance is measured on named physical phones; no budget is guessed.
 
@@ -168,6 +182,6 @@ No approval is granted by filling this template. Each decision needs a separate 
 
 ## 12. Current non-decisions
 
-The following remain explicitly TBD: map dimensions, grid scale, orientation, natural feature, terrain/elevation/slope data, water clearance, resource types/locations/reserves, parcel count and IDs, starter parcel placement, district boundaries, road graph, road classes/width/capacity/speed/cost, freight entry, expansion sequence/cost, utility reserve geometry, camera projection, chunk size and device performance budgets.
+The following remain explicitly TBD: map dimensions, grid scale, orientation, natural feature, terrain/elevation/slope data, water clearance, resource types/locations/reserves, parcel count and IDs, starter parcel placement, district boundaries/IDs/ownership, road/access graph and revision, utility graph topology/revision, pedestrian graph scope/topology/revision, road classes/width/capacity/speed/cost, freight entry, expansion sequence/cost, utility reserve geometry, spatial schema version, save/offline migration behavior, camera projection, chunk size and device performance budgets.
 
 **No implementation scope is authorized.** This register is complete only as a checklist/template; the Capital Region map itself remains unselected, uncalibrated and unapproved.
