@@ -109,3 +109,7 @@ The fleet specification remains authoritative for trip, dispatch, freight, capac
 The future transit network, bus stop/terminal/depot, passenger demand, boarding/capacity, transit priority, parking and road hierarchy design are specified in [Capital Region Public Transport & Road Infrastructure Atlas](CAPITAL_REGION_PUBLIC_TRANSPORT_AND_ROAD_INFRASTRUCTURE_ATLAS.md).
 
 This fleet specification remains authoritative for vehicle/trip/dispatch behavior. `VEH-BUS` and public transport remain Deferred; no passenger trip, bus service or transit benefit is activated by the visual/design atlas. A bus line must eventually resolve to compatible road edges, stops, fleet assignments and authoritative passenger demand before it can be operational.
+
+
+## Essential services, fleet and dispatch integration
+The proposed municipal-service and utilities architecture is documented in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md). Waste collection, fire/emergency response and maintenance fleets are future conceptual consumers of this fleet/trip system; they are not activated by this reference. Any operational trip must declare vehicle compatibility, crew/staff availability, road-edge restrictions, route graph version, stops/destination, trip lifecycle and idempotent completion. A blocked road must invalidate affected routes. A decorative truck, ambulance or patrol vehicle has no dispatch, collection or response effect. Existing vehicle catalog statuses remain unchanged.
