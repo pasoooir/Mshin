@@ -174,3 +174,7 @@ Related references:
 Before implementation: approve capabilities/IDs in the catalog; select coherent V1 scope; approve demand units, causal rules and score formulas; define data/save contracts; implement deterministic accounting/tests; create professional editable assets through specialist tools/plugins; verify commercial licenses, provenance and hashes; profile and QA on supported phones; obtain explicit approval to leave design phase.
 
 **Evidence status:** Documentation only. This does not implement citizen simulation, satisfaction, score, service demand, migration or gameplay behavior. No mobile gameplay/device test or asset delivery is claimed. Existing catalog IDs/statuses remain unchanged.
+
+
+## District allocation and fairness integration
+The allocation and crisis policy is specified in [Capital Region District Resource Allocation & Crisis Management](CAPITAL_REGION_DISTRICT_RESOURCE_ALLOCATION_AND_CRISIS_MANAGEMENT_SPEC.md). Need/demand metrics feed allocation only through approved service contracts; allocation outcomes return as delivered, unmet, deferred or queued quantities with district, interval and policy-version traceability. Fairness diagnostics must use valid denominators and disclose data coverage. Historical under-service may inform a future policy only after explicit approval; it must not create an unbounded same-tick feedback loop or an automatic score bonus.
