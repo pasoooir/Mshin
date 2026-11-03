@@ -19,6 +19,7 @@
 - Optional grid snapping is controlled by `gridSize`.
 - Rays parallel to the ground plane and intersections outside the configured distance are rejected.
 - Placement tracks one active touch identifier; unrelated fingers cannot move or commit the preview.
+- Assign the optional `CityOrbitCamera` component to `orbitCamera` to suspend orbit/pinch gestures while placement is armed; orbit input is restored on commit, explicit cancellation or component disable.
 - Only placed building roots with `CityBuildingProgression` reserve a cell; scenery, roads and street furniture do not block placement.
 - Occupied grid cells are rejected; with snapping disabled, `occupancyTolerance` prevents near-overlaps.
 - The optional `CityOrbitCamera` pauses orbit gestures while placement owns touch input and restores them on commit/cancel.
