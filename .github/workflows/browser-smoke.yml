@@ -58,6 +58,12 @@ jobs:
         run: |
           node --check tests/city-browser-smoke.mjs
           node tests/city-browser-smoke.mjs
+      - name: Run full rewarded-race and offline acceptance
+        env:
+          CI: "true"
+        run: |
+          node --check tests/browser-smoke.mjs
+          node tests/browser-smoke.mjs
       - name: Run mobile-only browser smoke tests
         env:
           CI: "true"
