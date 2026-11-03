@@ -25,10 +25,14 @@ try {
  }
  const runtime=await page.evaluate(()=>{
   const app=window.__MSHIN_NEIGHBORHOOD_PREVIEW__;
-  return {models:[...app.architectureModels.keys()],meshCount:app.scene.children.filter(item=>item.isMesh||item.isGroup).length,renderer:app.renderer.info.render,bodyClass:document.body.className};
+  let curbRampCount=0,crosswalkMarkingCount=0,tactilePavingCount=0;app.scene.traverse(item=>{if(item.name==="city-curb-ramp")curbRampCount++;if(item.name==="city-crosswalk-marking")crosswalkMarkingCount++;if(item.name==="city-tactile-paving")tactilePavingCount++;});
+  return {models:[...app.architectureModels.keys()],meshCount:app.scene.children.filter(item=>item.isMesh||item.isGroup).length,renderer:app.renderer.info.render,bodyClass:document.body.className,curbRampCount,crosswalkMarkingCount,tactilePavingCount};
  });
  assert.deepEqual(runtime.models.sort(),["apartment","house","shop"]);
  assert.ok(runtime.meshCount>=20,"neighborhood scene should contain its architecture and street/landscape meshes");
+ assert.ok(runtime.curbRampCount>=16,"four intersections should provide accessible curb ramps");
+ assert.ok(runtime.crosswalkMarkingCount>=80,"each intersection should have zebra markings in both road directions");
+ assert.ok(runtime.tactilePavingCount>=80,"curb ramps should include tactile warning paving");
  assert.ok(runtime.renderer.calls>=1,"WebGL renderer should draw the neighborhood");
  assert.ok(runtime.bodyClass.includes("webgl-ready"),"successful first frame should reveal the 3D scene");
  for(const type of ["house","apartment","shop"]){
