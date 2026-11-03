@@ -125,6 +125,11 @@ export function isValidCitySave(v) {
     }
     if (v.stats.serviceCoverage !== undefined
       && (!isRecord(v.stats.serviceCoverage) || !Object.values(v.stats.serviceCoverage).every(Number.isFinite))) return false;
+    for (const key of ["commutingWorkers","unreachableWorkers"]) {
+      if (v.stats[key] !== undefined && (!Number.isSafeInteger(v.stats[key]) || v.stats[key] < 0 || v.stats[key] > 1e7)) return false;
+    }
+    if (v.stats.commuteCoverage !== undefined && (v.stats.commuteCoverage < 0 || v.stats.commuteCoverage > 100)) return false;
+    if (v.stats.averageCommuteDistance !== undefined && (v.stats.averageCommuteDistance < 0 || v.stats.averageCommuteDistance > SIZE * SIZE)) return false;
   }
   return true;
 }
