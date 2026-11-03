@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#8cc9df">
+<title>پیش‌نمایش محله سه‌بعدی | مِشین</title>
+<style>
+:root{color-scheme:dark;font-family:Tahoma,Arial,sans-serif}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bcfe1}canvas{display:block;position:fixed;inset:0;touch-action:none}.hud{position:fixed;z-index:2;inset:env(safe-area-inset-top) 0 auto 0;padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}.title,.actions,.hint{background:#102b35d9;color:#fff;border:1px solid #ffffff30;border-radius:15px;box-shadow:0 8px 28px #17323b30;backdrop-filter:blur(12px)}.title{padding:10px 14px}.title strong{display:block;font-size:15px}.title small{display:block;color:#c9e5e9;font-size:11px;margin-top:5px}.actions{display:flex;gap:6px;padding:6px;pointer-events:auto}.actions button{border:0;border-radius:10px;padding:10px 12px;background:#ffffff18;color:white;font:inherit;font-size:12px;min-height:42px}.actions button:active{background:#ffffff38}.hint{position:fixed;z-index:2;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:10px 14px;font-size:12px;white-space:nowrap;color:#eaf8f5;text-align:center;pointer-events:none}.badge{position:fixed;z-index:2;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));background:#fff;color:#25443e;border-radius:12px;padding:8px 11px;font-size:11px;font-weight:bold}@media(max-width:650px){.hud{padding:8px;flex-direction:column}.title{padding:8px 11px}.actions{align-self:flex-end}.actions button{padding:8px 10px}.hint{bottom:calc(56px + env(safe-area-inset-bottom));font-size:10px}.badge{bottom:calc(10px + env(safe-area-inset-bottom));left:10px;right:auto}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div class="hud"><div class="title"><strong>🏡 محله نمونه مِشین</strong><small>3D VISUAL QUALITY · PROTOTYPE 01</small></div><div class="actions"><button id="day">☀ روز</button><button id="night">☾ شب</button><button id="reset">بازنشانی دوربین</button><button id="full">تمام‌صفحه</button></div></div>
+<div class="hint">👆 یک انگشت: جابه‌جایی دوربین · ✌️ دو انگشت: چرخش و زوم · 🖱 کشیدن: چرخش</div>
+<div class="badge">Three.js · WebGL</div>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#a9d8e9");
+scene.fog = new THREE.Fog("#a9d8e9", 65, 145);
+const camera = new THREE.PerspectiveCamera(38, innerWidth/innerHeight, .1, 220);
+camera.position.set(34,29,38);
+const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera,renderer.domElement);
+controls.target.set(0,0,0);
+controls.enableDamping = true;
+controls.dampingFactor = .07;
+controls.minDistance = 18;
+controls.maxDistance = 78;
+controls.maxPolarAngle = Math.PI*.48;
+controls.touches.ONE = THREE.TOUCH.PAN;
+controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+controls.rotateSpeed = .72;
+controls.panSpeed = .8;
+
+const hemi = new THREE.HemisphereLight("#e8f8ff","#6b7650",2.0);scene.add(hemi);
+const sun = new THREE.DirectionalLight("#fff0cf",3.2);
+sun.position.set(-28,48,-22);sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-48;sun.shadow.camera.right=48;sun.shadow.camera.top=48;sun.shadow.camera.bottom=-48;
+sun.shadow.bias=-.00018;sun.shadow.normalBias=.025;
+scene.add(sun);
+const fill = new THREE.DirectionalLight("#a8dfff",.8);fill.position.set(28,18,32);scene.add(fill);
+
+const mat=(color,roughness=.85,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+const grass=mat("#75ae63"), grass2=mat("#83b86b"), asphalt=mat("#343f49",.98), sidewalk=mat("#c7c5b7"), curb=mat("#e5dfc9"), line=mat("#f7e9b7"), soil=mat("#896847");
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(130,130),grass);ground.rotation.x=-Math.PI/2;ground.position.y=-.18;ground.receiveShadow=true;scene.add(ground);
+
+function box(parent,w,h,d,material,x,y,z,cast=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=true;parent.add(m);return m}
+function roofGable(parent,w,d,h,material,x,y,z){
+ const shape=new THREE.Shape();shape.moveTo(-w/2,0);shape.lineTo(w/2,0);shape.lineTo(0,h);shape.closePath();
+ const geo=new THREE.ExtrudeGeometry(shape,{depth:d,bevelEnabled:false});geo.rotateX(-Math.PI/2);
+ const mesh=new THREE.Mesh(geo,material);mesh.position.set(x,y,z-d/2);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
+function windowPane(parent,x,y,z,w=.32,h=.42){
+ box(parent,w+.10,h+.10,.055,mat("#fff0ce"),x,y,z-.012,false);
+ const glass=new THREE.MeshStandardMaterial({color:"#8ed4df",roughness:.22,metalness:.12,emissive:"#255f70",emissiveIntensity:.12});
+ box(parent,w,h,.07,glass,x,y,z+.025,false);
+ box(parent,.035,h+.08,.075,mat("#fff4d9"),x,y,z+.055,false);
+ box(parent,w+.08,.045,.09,mat("#fff4d9"),x,y-h/2-.03,z+.055,false);
+}
+function house(x,z,wallColor,roofColor,rotation=0){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
+ const wall=mat(wallColor),roof=mat(roofColor),trim=mat("#f7e9cb"),door=mat("#76513c");
+ box(g,4.2, .35,3.7,soil,0,.18,0);
+ box(g,3.55,2.8,3.05,wall,0,1.72,0);
+ box(g,3.72,.13,3.2,trim,0,3.13,0,false);
+ roofGable(g,4.05,3.45,1.45,roof,0,3.2,0);
+ for(const wx of [-1.12,1.12]){windowPane(g,wx,2.05,1.56,.52,.65);windowPane(g,wx,2.05,-1.56,.52,.65)}
+ windowPane(g,0,2.05,1.56,.55,.65);
+ box(g,.66,1.25,.09,door,.65,.85,1.57);
+ box(g,.95,.12,.5,trim,.65,1.52,1.78);
+ // porch canopy and columns
+ box(g,1.5,.14,.9,roof,.65,2.25,2.0);
+ for(const px of [.05,1.25])box(g,.10,1.05,.10,trim,px,1.62,2.28);
+ // chimney
+ box(g,.48,.9,.48,mat("#a65c49"),-1.1,4.05,-.65);
+ return g;
+}
+function apartment(x,z,rotation=0){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
+ const wall=mat("#dfc7a1"),side=mat("#c7a77d"),roof=mat("#526f79"),white=mat("#f5e9cf"),glass=mat("#83c9d8",.2,.12),metal=mat("#53666a",.55,.45);
+ box(g,5.2,.3,4.5,soil,0,.16,0);
+ const body=box(g,4.5,7.2,3.8,wall,0,3.9,0);body.material=[side,side,wall,roof,wall,side];
+ box(g,4.8,.22,4.1,white,0,7.58,0);
+ box(g,5,.18,4.3,roof,0,7.78,0);
+ for(let floor=0;floor<4;floor++){
+  const yy=1.35+floor*1.55;
+  for(const xx of [-1.35,0,1.35]){
+   box(g,.76,.9,.08,glass,xx,yy,1.94,false);
+   box(g,.86,.09,.15,white,xx,yy-.52,2.02,false);
+   box(g,.86,.08,.15,metal,xx,yy-.95,2.12,false);
+   box(g,.06,.42,.06,metal,xx-.4,yy-.73,2.13,false);
+   box(g,.06,.42,.06,metal,xx+.4,yy-.73,2.13,false);
+  }
+ }
+ // corner vertical fins and entrance
+ for(const xx of [-2.1,2.1])box(g,.12,6.7,.12,white,xx,3.85,1.94);
+ box(g,.9,1.7,.10,mat("#416a70"),0,1.05,1.97);
+ return g;
+}
+function shop(x,z,rotation=0){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
+ const wall=mat("#e8b46d"),teal=mat("#247f83"),glass=mat("#8fd7dc",.18,.12),white=mat("#fff1d1");
+ box(g,4.6,.28,3.7,soil,0,.15,0);box(g,4.1,3.3,3.2,wall,0,1.85,0);
+ box(g,4.25,.16,3.35,teal,0,3.56,0);
+ box(g,4.25,.32,.22,teal,0,2.95,1.66);
+ box(g,3.2,1.25,.10,glass,0,1.85,1.64,false);
+ box(g,.12,1.3,.12,white,-1.65,1.85,1.73,false);box(g,.12,1.3,.12,white,1.65,1.85,1.73,false);
+ box(g,1.05,1.55,.13,mat("#8c6249"),.65,.95,1.7);
+ // striped awning
+ box(g,4.35,.18,.92,white,0,2.65,2.05);
+ for(let i=-4;i<=4;i++)box(g,.42,.19,.95,i%2?white:teal,i*.48,2.65,2.06,false);
+ box(g,2.4,.46,.14,mat("#f6d17c"),0,3.22,1.72,false);
+ for(let i=-2;i<=2;i++)box(g,.035,.32,.16,teal,i*.4,3.22,1.81,false);
+ return g;
+}
+function tree(x,z,scale=1){
+ const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(scale);scene.add(g);
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.27,2.1,8),mat("#795037"));trunk.position.y=1.05;trunk.castShadow=true;g.add(trunk);
+ const greens=["#2e7948","#398b4d","#5b9c51"];
+ for(let i=0;i<3;i++){const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.0-i*.12,1),mat(greens[i]));crown.position.set((i-1)*.36,2.55+(i%2)*.38,(i%2)*.18);crown.scale.set(1.05,.95,1);crown.castShadow=true;g.add(crown)}
+ return g;
+}
+function lamp(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+ const dark=mat("#38484a",.5,.5);const pole=new THREE.Mesh(new THREE.CylinderGeometry(.055,.08,3.2,8),dark);pole.position.y=1.6;g.add(pole);
+ const arm=box(g,.75,.07,.07,dark,.34,3.12,0,false);arm.rotation.z=-.12;
+ const bulb=new THREE.Mesh(new THREE.SphereGeometry(.18,10,8),new THREE.MeshStandardMaterial({color:"#fff3c0",emissive:"#ffdc7c",emissiveIntensity:.7}));bulb.position.set(.65,3.0,0);g.add(bulb);
+}
+function roadX(z){box(scene,58,.12,7,asphalt,0,.02,z);box(scene,58,.14,.18,curb,0,.12,z-3.58);box(scene,58,.14,.18,curb,0,.12,z+3.58);box(scene,58,.08,1.35,sidewalk,0,.08,z-4.35);box(scene,58,.08,1.35,sidewalk,0,.08,z+4.35);
+ for(let x=-27;x<28;x+=4)box(scene,1.8,.025,.12,line,x,.095,z,false)}
+function roadZ(x){box(scene,7,.13,58,asphalt,x,.025,0);box(scene,.18,.14,58,curb,x-3.58,.12,0);box(scene,.18,.14,58,curb,x+3.58,.12,0);box(scene,1.35,.08,58,sidewalk,x-4.35,.08,0);box(scene,1.35,.08,58,sidewalk,x+4.35,.08,0);
+ for(let z=-27;z<28;z+=4)box(scene,.12,.025,1.8,line,x,.095,z,false)}
+// A compact four-block neighborhood: two intersecting streets and distinct building types.
+roadX(-9);roadX(10);roadZ(-10);roadZ(10);
+// Junctions get a subtle stone apron and zebra crossings.
+for(const [x,z] of [[-10,-9],[10,-9],[-10,10],[10,10]]){
+ box(scene,7.1,.04,7.1,mat("#65727a"),x,.105,z,false);
+ for(let i=-2;i<=2;i++){box(scene,.75,.035,.18,white,x+i*1.15,.14,z-4.4,false);box(scene,.75,.035,.18,white,x+i*1.15,.14,z+4.4,false)}
+}
+house(-20,-20,"#efc58b","#b95d49",.08);
+house(-1,-20,"#e5a5a0","#52778b",-.06);
+house(20,-20,"#c6dca4","#c87950",.12);
+shop(-20,1,.04);apartment(0,1,-.04);shop(20,1,Math.PI);
+apartment(-20,21,.06);house(0,21,"#e6d49b","#5c8c7a",-.1);shop(20,21,.03);
+// Landscaped corners, pocket greens, hedges and ornamental trees.
+for(const [x,z] of [[-27,-27],[-13,-27],[6,-27],[27,-27],[-27,-1],[27,-1],[-27,17],[27,17],[-27,28],[-7,28],[13,28],[27,28]])tree(x,z,.82+((x+z+100)%3)*.08);
+for(const [x,z] of [[-11,-18],[9,-18],[-11,14],[9,14]]){box(scene,3.4,.18,2.1,grass2,x,.08,z);for(let i=0;i<3;i++)tree(x-1+i, z, .42)}
+for(const [x,z] of [[-5,-12],[5,-12],[-5,13],[5,13]])lamp(x,z);
+for(let x=-26;x<=26;x+=4){for(const z of [-5,6]){const shrub=new THREE.Mesh(new THREE.SphereGeometry(.34,8,6),mat("#4e914e"));shrub.position.set(x,.38,z);shrub.scale.set(1,.75,1);shrub.castShadow=true;scene.add(shrub)}}
+
+const skyDay=new THREE.Color("#a9d8e9"),skyNight=new THREE.Color("#101e35");
+function setTime(night){scene.background.copy(night?skyNight:skyDay);scene.fog.color.copy(night?skyNight:skyDay);hemi.intensity=night?.42:2;sun.intensity=night?.08:3.2;fill.intensity=night?.22:.8;renderer.toneMappingExposure=night?.82:1.12;
+ scene.traverse(o=>{if(o.isMesh&&o.material?.emissive){if(o.material.emissiveIntensity!==undefined)o.material.emissiveIntensity=night?.65:.12}});
+}
+document.querySelector("#day").onclick=()=>setTime(false);
+document.querySelector("#night").onclick=()=>setTime(true);
+document.querySelector("#reset").onclick=()=>{camera.position.set(34,29,38);controls.target.set(0,0,0);controls.update()};
+document.querySelector("#full").onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.()};
+addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.setSize(innerWidth,innerHeight)});
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}animate();
+window.__MSHIN_NEIGHBORHOOD_PREVIEW__={scene,camera,renderer,controls,buildingCount:9};
+</script>
+</body>
+</html>
