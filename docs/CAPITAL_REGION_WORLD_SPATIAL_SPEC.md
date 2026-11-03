@@ -122,3 +122,8 @@ The proposed residential growth and education-access model is specified in [Capi
 
 ## District service access and crisis routing integration
 The proposed district allocation and crisis system is documented in [Capital Region District Resource Allocation & Crisis Management](CAPITAL_REGION_DISTRICT_RESOURCE_ALLOCATION_AND_CRISIS_MANAGEMENT_SPEC.md). District boundaries, facility catchments, road/access graphs and typed utility graphs are separate authorities. Cross-district service is valid only through a domain-appropriate route/network and operational capacity; visual proximity is insufficient. Dispatch routes must reference a graph version and invalidate stale paths after network changes. This reference does not approve new roads, districts, services or emergency units.
+
+
+## Interregional trade access and freight routing integration
+
+The proposed interregional commerce system is documented in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). Regional market identity, region unlock state, physical/logical trade connections, road/access graph versions, transfer capacity and destination receiving capacity must be separate explicit authorities. Visual proximity or an unlocked region does not imply a valid freight route or instant transfer. Route changes invalidate stale shipment paths; delivery requires arrival and acceptance evidence. This cross-reference approves no new region, route, freight mode or V1 ID.
