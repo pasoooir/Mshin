@@ -72,6 +72,18 @@ try{
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
  await page.waitForFunction(()=>window.MshinCity3DStats?.stylizedBuildings>=2,undefined,{timeout:5000});
  assert.ok(await page.evaluate(()=>window.MshinCity3DStats.stylizedBuildings>=2),"new residential buildings must be rendered with the 3D building family system");
+ await page.waitForFunction(()=>window.MshinCity3DStats?.pedestrians===window.MshinCityDebug.city.citizens.length&&window.MshinCity3DStats.pedestrians>0,undefined,{timeout:5000});
+ const pedestrianAcceptance=await page.evaluate(()=>({
+  population:window.MshinCityDebug.city.population,
+  agents:window.MshinCityDebug.city.citizens.length,
+  rendered:window.MshinCity3DStats.pedestrians,
+  onRoad:window.MshinCityDebug.city.citizens.every(c=>window.MshinCityDebug.city.grid[c.roadY]?.[c.roadX]==="road"),
+  drawCalls:window.MshinCity3DStats.drawCalls
+ }));
+ assert.ok(pedestrianAcceptance.population>=12&&pedestrianAcceptance.agents>0,"residential population must produce visible pedestrian agents");
+ assert.equal(pedestrianAcceptance.rendered,pedestrianAcceptance.agents,"every active citizen agent must be rendered in the 3D city");
+ assert.equal(pedestrianAcceptance.onRoad,true,"pedestrian route nodes must remain on connected road tiles");
+ assert.ok(pedestrianAcceptance.drawCalls<80,"instanced pedestrians must preserve the mobile draw-call budget");
  for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,14]]){await page.locator('[data-city-tool="'+type+'"]').click();const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
  await page.evaluate(()=>window.MshinCityDebug.step());
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);

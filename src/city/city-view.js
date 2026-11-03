@@ -1,6 +1,7 @@
 import { CITY_ZONES, placeCityZone, developCityZones, isCityZoneCell } from "./city-zoning.js";
 import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
 import { stepCityTraffic } from "./city-traffic.js";
+import { syncCityCitizens, stepCityCitizens } from "./city-population.js";
 const SIZE=32,KEY="mshin-city-save-v2",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
@@ -8,7 +9,7 @@ const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b
 export function createInitialCity(seed=20261102){
  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill("grass"));
  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if([7,8,15,16,23,24].includes(x)||[7,8,15,16,23,24].includes(y))grid[y][x]="road";
- return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,jobs:0,traffic:0}};
+ return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,jobs:0,traffic:0}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
@@ -19,9 +20,10 @@ export function stepCity(city,seconds=1){
  const income=Math.round(homes.length*13+shops.length*46+industrial.length*72+administrative.length*28+services.length*8),expenses=Math.round(services.length*31+parks.length*7+industrial.length*24+administrative.length*12+city.buildings.length*2);
  city.stats={income,expenses:expenses+infrastructure.upkeep,jobs:shops.length*9+industrial.length*18+administrative.length*12+services.length*6,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage};
  city.treasury+=income-expenses-infrastructure.upkeep;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
+ syncCityCitizens(city);stepCityCitizens(city,seconds);
  const serviceScore=(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
  city.happiness=Math.max(25,Math.min(98,city.happiness+(serviceScore-.35)*.08+(parks.length>2?.05:0)));
- for(const p of city.citizens){p.phase+=p.pace*seconds;p.x+=Math.cos(p.phase)*.012;p.y+=Math.sin(p.phase)*.009;if(p.x<7||p.x>24)p.phase=Math.PI-p.phase;if(p.y<7||p.y>24)p.phase=-p.phase;p.x=Math.max(7,Math.min(24,p.x));p.y=Math.max(7,Math.min(24,p.y))}
+ 
  stepCityTraffic(city,seconds);
  for(const a of city.animals||[]){a.phase+=a.pace*seconds;a.x+=Math.cos(a.phase)*.009;a.y+=Math.sin(a.phase)*.007;a.x=Math.max(8,Math.min(25,a.x));a.y=Math.max(8,Math.min(25,a.y))}
  return city;
@@ -35,7 +37,7 @@ export function placeCityItem(city,x,y,type){
  if(type!=="road"&&!roadNear(city.grid,x,y))return{ok:false,reason:"ساختمان باید به خیابان دسترسی داشته باشد"};
  city.treasury-=COST[type];if(type==="road"){city.grid[y][x]="road";return{ok:true,item:"road",cost:COST.road}};
  const residents=type==="home"?12:0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents};
- city.grid[y][x]="building";city.buildings.push(b);city.population+=residents;return{ok:true,item:b,cost:COST[type]};
+ city.grid[y][x]="building";city.buildings.push(b);city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
 }
 const BUILDING_TYPES = new Set(["home","shop","industrial","administrative","service","park",...Object.keys(CITY_SERVICE_TYPES)]);
 const isRecord = value => !!value && typeof value === "object" && !Array.isArray(value);
@@ -43,6 +45,10 @@ const validId = value => Number.isSafeInteger(value) && value > 0;
 const validPoint = (x,y,integer=false) => Number.isFinite(x) && Number.isFinite(y)
   && x >= 0 && y >= 0 && x <= SIZE - 1 && y <= SIZE - 1
   && (!integer || (Number.isInteger(x) && Number.isInteger(y)));
+const validOptionalPointPair = (x,y,allowNull=false) =>
+  (x === undefined && y === undefined)
+  || (allowNull && x === null && y === null)
+  || validPoint(x,y,true);
 
 export function isValidCitySave(v) {
   if (!isRecord(v) || v.schemaVersion !== 2
@@ -65,7 +71,8 @@ export function isValidCitySave(v) {
     || (v.animals !== undefined && (!Array.isArray(v.animals) || v.animals.length > 2048))
     || (v.stats !== undefined && !isRecord(v.stats))
     || (v.nextBuildingId !== undefined && !validId(v.nextBuildingId))
-    || (v.nextTrafficId !== undefined && !validId(v.nextTrafficId))) return false;
+    || (v.nextTrafficId !== undefined && !validId(v.nextTrafficId))
+    || (v.nextCitizenId !== undefined && !validId(v.nextCitizenId))) return false;
 
   const buildings = new Set();
   const buildingIds = new Set();
@@ -104,8 +111,15 @@ export function isValidCitySave(v) {
     if (!isRecord(tree) || !validPoint(tree.x,tree.y,true)
       || (tree.size !== undefined && (!Number.isFinite(tree.size) || tree.size <= 0 || tree.size > 20))) return false;
   }
+  const residentialBuildingIds = new Set(v.buildings.filter(building => building.type === "home").map(building => building.id));
   for (const citizen of v.citizens) {
     if (!isRecord(citizen) || !validId(citizen.id) || !validPoint(citizen.x,citizen.y)
+      || (citizen.homeId !== undefined && (!validId(citizen.homeId) || !residentialBuildingIds.has(citizen.homeId)))
+      || !validOptionalPointPair(citizen.roadX,citizen.roadY)
+      || !validOptionalPointPair(citizen.previousX,citizen.previousY,true)
+      || !validOptionalPointPair(citizen.targetX,citizen.targetY,true)
+      || (citizen.routeStep !== undefined && (!Number.isSafeInteger(citizen.routeStep) || citizen.routeStep < 0))
+      || (citizen.heading !== undefined && !Number.isFinite(citizen.heading))
       || (citizen.phase !== undefined && !Number.isFinite(citizen.phase))
       || (citizen.pace !== undefined && (!Number.isFinite(citizen.pace) || citizen.pace < 0 || citizen.pace > 20))) return false;
   }
@@ -134,6 +148,9 @@ export function isValidCitySave(v) {
 
   if (v.nextBuildingId !== undefined && buildingIds.size && v.nextBuildingId <= Math.max(...buildingIds)) return false;
   if (v.nextTrafficId !== undefined && trafficIds.size && v.nextTrafficId <= Math.max(...trafficIds)) return false;
+  const citizenIds = new Set(v.citizens.map(citizen => citizen.id));
+  if (citizenIds.size !== v.citizens.length) return false;
+  if (v.nextCitizenId !== undefined && citizenIds.size && v.nextCitizenId <= Math.max(...citizenIds)) return false;
   if (v.stats) {
     for (const key of ["income","expenses","jobs","traffic","utilityCoverage","publicServiceCoverage","overallCoverage"]) {
       if (v.stats[key] !== undefined && !Number.isFinite(v.stats[key])) return false;
@@ -154,6 +171,7 @@ export function normalizeCitySave(value) {
     happiness: Number.isFinite(value.happiness) ? value.happiness : 100,
     nextBuildingId: validId(value.nextBuildingId) ? value.nextBuildingId : Math.max(0,...value.buildings.map(item=>item.id))+1,
     nextTrafficId: validId(value.nextTrafficId) ? value.nextTrafficId : Math.max(0,...value.traffic.map(item=>item.id))+1,
+    nextCitizenId: validId(value.nextCitizenId) ? value.nextCitizenId : Math.max(0,...value.citizens.map(item=>item.id))+1,
     stats: { income:0, expenses:0, jobs:0, traffic:0, ...(isRecord(value.stats) ? value.stats : {}) }
   };
   for (const building of city.buildings) {
@@ -164,6 +182,15 @@ export function normalizeCitySave(value) {
   for (const citizen of city.citizens) {
     citizen.phase ??= 0;
     citizen.pace ??= 0.1;
+    citizen.homeId ??= city.buildings.find(building => building.type === "home")?.id;
+    citizen.roadX ??= Math.round(citizen.x);
+    citizen.roadY ??= Math.round(citizen.y);
+    citizen.previousX ??= null;
+    citizen.previousY ??= null;
+    citizen.targetX ??= null;
+    citizen.targetY ??= null;
+    citizen.routeStep ??= 0;
+    citizen.heading ??= 0;
   }
   for (const animal of city.animals) {
     animal.phase ??= 0;
@@ -177,6 +204,7 @@ function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return
 function mount(){
  let canvas=document.getElementById("cityViewport");const ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;let threeRenderer=null;
  const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1};
+ if(syncCityCitizens(city))persist(city);
  let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,lastPersistTick=city.tick;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};
@@ -228,7 +256,7 @@ function mount(){
  function apply(x,y){
   if(!inside(x,y))return;selected={x,y};
   if(tool==="select"){draw();return}
-  if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home")city.population=Math.max(0,city.population-b.residents);city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="ساختمان تخریب شد؛ ۳۵٪ هزینه بازیابی شد.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="این خیابان تنها مسیر دسترسی یک ساختمان است."}else{city.grid[y][x]="grass";$("cityToast").textContent="قطعه خیابان حذف شد.";changed=true}}if(changed)persist(city);draw();return}
+  if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home"){city.population=Math.max(0,city.population-b.residents);syncCityCitizens(city)}city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="ساختمان تخریب شد؛ ۳۵٪ هزینه بازیابی شد.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="این خیابان تنها مسیر دسترسی یک ساختمان است."}else{city.grid[y][x]="grass";$("cityToast").textContent="قطعه خیابان حذف شد.";changed=true}}if(changed)persist(city);draw();return}
   const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"ساخت انجام شد · هزینه "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
  }
  document.querySelectorAll("[data-city-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.cityTool)));
