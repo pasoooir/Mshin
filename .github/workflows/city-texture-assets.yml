@@ -1,0 +1,45 @@
+name: Validate and package city textures
+
+on:
+  pull_request:
+    paths:
+      - "assets/city/textures/**"
+      - "tools/rasterize-city-textures.py"
+      - "tools/validate-city-texture-raster.py"
+      - ".github/workflows/city-texture-assets.yml"
+  push:
+    branches: [main]
+    paths:
+      - "assets/city/textures/**"
+      - "tools/rasterize-city-textures.py"
+      - "tools/validate-city-texture-raster.py"
+      - ".github/workflows/city-texture-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rasterize-and-validate:
+    name: Rasterize SVG masters and validate PNG output
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install rasterization dependencies
+        run: python -m pip install --disable-pip-version-check pillow cairosvg
+      - name: Generate runtime PNG candidates
+        run: python tools/rasterize-city-textures.py --size 512
+      - name: Validate generated PNGs
+        run: python tools/validate-city-texture-raster.py
+      - name: Upload generated texture package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mshin-city-textures-512
+          path: assets/city/textures/generated/*.png
+          if-no-files-found: error
+          retention-days: 30
