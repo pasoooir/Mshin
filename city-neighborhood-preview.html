@@ -52,6 +52,7 @@ body.webgl-ready #visualFallback{opacity:0;visibility:hidden}
 <script type="module">
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#a9d8e9");
@@ -186,11 +187,26 @@ for(const [x,z] of [[-10,-9],[10,-9],[-10,10],[10,10]]){
  box(scene,7.1,.04,7.1,mat("#65727a"),x,.105,z,false);
  for(let i=-2;i<=2;i++){box(scene,.75,.035,.18,white,x+i*1.15,.14,z-4.4,false);box(scene,.75,.035,.18,white,x+i*1.15,.14,z+4.4,false)}
 }
-house(-20,-20,"#efc58b","#b95d49",.08);
-house(-1,-20,"#e5a5a0","#52778b",-.06);
-house(20,-20,"#c6dca4","#c87950",.12);
-shop(-20,1,.04);apartment(0,1,-.04);shop(20,1,Math.PI);
-apartment(-20,21,.06);house(0,21,"#e6d49b","#5c8c7a",-.1);shop(20,21,.03);
+const modelFallbacks = [
+ {type:"house",group:house(-20,-20,"#efc58b","#b95d49",.08),position:[-20,0,-20],rotation:.08},
+ {type:"apartment",group:apartment(0,1,-.04),position:[0,0,1],rotation:-.04},
+ {type:"shop",group:shop(-20,1,.04),position:[-20,0,1],rotation:.04}
+];
+house(-1,-20,"#e5a5a0","#52778b",-.06);house(20,-20,"#c6dca4","#c87950",.12);
+shop(20,1,Math.PI);apartment(-20,21,.06);house(0,21,"#e6d49b","#5c8c7a",-.1);shop(20,21,.03);
+const architectureLoader = new GLTFLoader();
+const architectureManifest = await fetch("./assets/city/models/manifest.json").then(response=>{if(!response.ok)throw new Error("City architecture manifest unavailable");return response.json();});
+await Promise.all(architectureManifest.assets.map(async asset=>{
+ try{
+  const gltf=await architectureLoader.loadAsync(asset.uri);
+  const fallback=modelFallbacks.find(item=>item.type===asset.buildingType);
+  if(!fallback)return;
+  fallback.group.removeFromParent();
+  const model=gltf.scene;model.name=asset.id;model.position.set(...fallback.position);model.rotation.y=fallback.rotation;
+  model.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;}});
+  scene.add(model);
+ }catch(error){console.warn("Using procedural city building fallback:",asset.buildingType,error);}
+}));
 // Landscaped corners, pocket greens, hedges and ornamental trees.
 for(const [x,z] of [[-27,-27],[-13,-27],[6,-27],[27,-27],[-27,-1],[27,-1],[-27,17],[27,17],[-27,28],[-7,28],[13,28],[27,28]])tree(x,z,.82+((x+z+100)%3)*.08);
 for(const [x,z] of [[-11,-18],[9,-18],[-11,14],[9,14]]){box(scene,3.4,.18,2.1,grass2,x,.08,z);for(let i=0;i<3;i++)tree(x-1+i, z, .42)}
