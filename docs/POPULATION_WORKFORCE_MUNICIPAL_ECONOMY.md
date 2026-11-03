@@ -140,3 +140,8 @@ The proposed market architecture is documented in [Capital Region Market, Trade,
 ## Weather and workforce schedules
 
 The environmental time and weather model is specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Workforce shifts and outdoor-work constraints must use the authoritative simulation clock and approved safety rules. Weather cannot arbitrarily reduce all worker productivity or create unmodeled labor costs.
+
+
+## Emergency exposure and workforce integration
+
+Emergency demand must use approved resident/visitor/workforce presence abstractions and must not infer population from building counts. Station readiness requires actual qualified staff and shift availability; nominal jobs do not create staffed emergency units. See [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). This reference approves no new workforce or incident rule.
