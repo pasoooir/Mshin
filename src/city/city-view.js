@@ -6,7 +6,7 @@ import { CITY_DEFAULT_TAX_RATES, setCityTaxRate, computeCityEconomy, cityTaxPres
 import { isValidCitySave, normalizeCitySaveData, migrateCitySave, createCitySaveBackup } from "./city-save.js";
 export { isValidCitySave, migrateCitySave, createCitySaveBackup };
 export function normalizeCitySave(value){return normalizeCitySaveData(value)||createInitialCity();}
-const SIZE=32,KEY="mshin-city-save-v2",LEGACY_KEY="mshin-city-save-v1",BACKUP_KEY=KEY+".backup",RECOVERY_KEY=KEY+".recovery",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
+const SIZE=32,KEY="mshin-city-save-v2",LEGACY_KEY="mshin-city-save-v1",BACKUP_KEY=KEY+".backup",RECOVERY_KEY=KEY+".recovery",LEGACY_RECOVERY_KEY=LEGACY_KEY+".recovery",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
 const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b)&&g[y+b][x+a]==="road");
@@ -58,7 +58,7 @@ function load(){
    try{
     const migrated=migrateCitySave(JSON.parse(legacyRaw));
     if(migrated&&persist(migrated)){localStorage.removeItem(LEGACY_KEY);return migrated}
-    try{localStorage.setItem(RECOVERY_KEY,legacyRaw.slice(0,1000000))}catch{}
+    try{localStorage.setItem(LEGACY_RECOVERY_KEY,legacyRaw.slice(0,1000000))}catch{}
    }catch{}
   }
   const backupRaw=localStorage.getItem(BACKUP_KEY);
