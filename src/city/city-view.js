@@ -3,6 +3,7 @@ import { CITY_SERVICE_TYPES, computeCityServices, computeCityResidentServiceSati
 import { stepCityTraffic } from "./city-traffic.js";
 import { syncCityCitizens, stepCityCitizens } from "./city-population.js";
 import { computeCityEmployment } from "./city-employment.js";
+import { computeCityCommuting } from "./city-commuting.js";
 import { CITY_DEFAULT_TAX_RATES, setCityTaxRate, computeCityEconomy, cityTaxPressure } from "./city-economy.js";
 import { isValidCitySave, normalizeCitySaveData, migrateCitySave, createCitySaveBackup } from "./city-save.js";
 export { isValidCitySave, migrateCitySave, createCitySaveBackup };
@@ -24,9 +25,10 @@ export function stepCity(city,seconds=1){
  const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
  const economy=computeCityEconomy(city,infrastructure);
  const employment=computeCityEmployment(city);
+ const commuting=computeCityCommuting(city,employment);
  const residentServiceSatisfaction=computeCityResidentServiceSatisfaction(city);
  const occupiedResidents=homes.reduce((sum,home)=>sum+Math.max(0,Number(home.residents)||0),0);
- city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage,serviceDemandCoverage:infrastructure.demandCoverage,serviceCapacityUsage:infrastructure.capacityUsage,residentServiceSatisfaction};
+ city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,commutingWorkers:commuting.assignedWorkers,commuteCoverage:commuting.commuteCoverage,averageCommuteDistance:commuting.averageCommuteDistance,unreachableWorkers:commuting.unreachableWorkers,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage,serviceDemandCoverage:infrastructure.demandCoverage,serviceCapacityUsage:infrastructure.capacityUsage,residentServiceSatisfaction};
  city.treasury+=economy.net;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
  syncCityCitizens(city);stepCityCitizens(city,seconds);
  const serviceScore=occupiedResidents>0?residentServiceSatisfaction/100:(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
@@ -138,7 +140,7 @@ function mount(){
   $("cityBudgetServiceUpkeep").textContent=fmt(city.stats.serviceUpkeep);
  }
  function hud(){
-  $("cityPopulation").textContent=city.population.toLocaleString("fa-IR");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("fa-IR")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("fa-IR");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("fa-IR")+"٪";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"٪";if($("cityUnemployment"))$("cityUnemployment").textContent=(city.stats.unemploymentRate??0).toLocaleString("fa-IR")+"٪";
+  $("cityPopulation").textContent=city.population.toLocaleString("fa-IR");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("fa-IR")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("fa-IR");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("fa-IR")+"٪";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"٪";if($("cityUnemployment"))$("cityUnemployment").textContent=(city.stats.unemploymentRate??0).toLocaleString("fa-IR")+"٪";if($("cityCommuteCoverage"))$("cityCommuteCoverage").textContent=(city.stats.commuteCoverage??0).toLocaleString("fa-IR")+"٪";
   $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="روز "+(1+Math.floor(city.tick/144)).toLocaleString("fa-IR");
   $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را انتخاب کن.":"ابزار فعال: "+toolName();$("cityBudgetHint").textContent="درآمد +"+city.stats.income.toLocaleString("fa-IR")+" · هزینه -"+city.stats.expenses.toLocaleString("fa-IR")+" · تراز "+(city.stats.net>=0?"+":"")+Math.round(city.stats.net||0).toLocaleString("fa-IR");$("citySaveState").textContent=toastFrames>0?"ذخیره شد ✓":"ذخیره محلی";if(toastFrames>0)toastFrames--;
   updateBudgetPanel();
