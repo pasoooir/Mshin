@@ -91,6 +91,16 @@ try{
  const secondHome=await page.evaluate(()=>window.MshinCityDebug.place(17,13,"home"));assert.equal(secondHome.ok,true,"a second road-accessible home should be constructible");
  await page.locator("#cityBudget").click();
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),true,"mobile players must be able to open the budget panel");
+ const budgetLayout=await page.evaluate(()=>{
+  const panel=document.querySelector("#cityBudgetPanel"),r=panel.getBoundingClientRect();
+  return{display:getComputedStyle(panel).display,left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight,
+   sliders:[...panel.querySelectorAll('input[type="range"]')].map(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height}))};
+ });
+ assert.equal(budgetLayout.display,"grid","budget controls must open as a styled dialog");
+ assert.ok(budgetLayout.left>=0&&budgetLayout.top>=0&&budgetLayout.right<=budgetLayout.width&&budgetLayout.bottom<=budgetLayout.height,"budget dialog must fit inside the landscape mobile viewport");
+ assert.equal(budgetLayout.sliders.length,3,"all three tax sectors must be adjustable");
+ assert.ok(budgetLayout.sliders.every(slider=>slider.width>=140&&slider.height>=38),"tax sliders must remain usable touch targets on landscape phones: "+JSON.stringify(budgetLayout));
+ const baselineTax=await page.evaluate(()=>window.MshinCityDebug.economy.taxRevenue);
  const budgetControls=await page.evaluate(()=>[...document.querySelectorAll(".cityTaxControl input")].map(input=>{const r=input.getBoundingClientRect();return{width:r.width,height:r.height,value:input.value}}));
  assert.equal(budgetControls.length,3,"budget must expose residential, commercial and industrial tax controls");
  assert.ok(budgetControls.every(control=>control.width>120&&control.height>=40),"tax sliders must remain touch-friendly on mobile landscape");
@@ -100,9 +110,16 @@ try{
  assert.equal(taxAcceptance.saved.residential,14,"tax policy must persist immediately");
  assert.ok(taxAcceptance.economy.taxRevenue>0,"budget must calculate tax revenue from occupied sectors");
  await page.evaluate(()=>window.MshinCityDebug.step());
+ const adjustedTax=await page.evaluate(()=>window.MshinCityDebug.city.stats.taxRevenue);
+ assert.ok(adjustedTax>baselineTax,"raising residential tax must increase live tax revenue");
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.stats.net!==undefined),"city simulation must publish a net budget balance");
  await page.locator("#cityBudgetDone").click();
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),false,"budget panel must close without blocking city controls");
+ assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBudget","closing the budget dialog must restore focus to its trigger");
+ await page.locator("#cityBudget").click();
+ await page.keyboard.press("Escape");
+ assert.equal(await page.locator("#cityBudgetPanel").isVisible(),false,"Escape must close the budget dialog on mobile browsers");
+ assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBudget","Escape dismissal must restore focus to the budget trigger");
  const demolition=await page.evaluate(()=>{const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));if(!b)throw new Error("test fixture needs a second residential building");return window.MshinCityDebug.actAt(b.x,b.y,"bulldoze")});
  assert.equal(demolition.cell,"grass","bulldoze action must remove the selected residential building");assert.equal(demolition.saved.grid.flat().filter(v=>v==="building").length,await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),"demolition must persist immediately");
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);

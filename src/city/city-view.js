@@ -288,9 +288,27 @@ function mount(){
  $("citySave").addEventListener("click",()=>{const ok=persist(city);if(ok)lastPersistTick=city.tick;$("cityToast").textContent=ok?"شهر با موفقیت ذخیره شد.":"ذخیره‌سازی در این مرورگر در دسترس نیست.";toastFrames=120;draw()});
  $("cityReset").addEventListener("click",()=>{if(!confirm("شهر فعلی با یک شهر تازه جایگزین شود؟"))return;const fresh=createInitialCity((city.seed+7919)>>>0);Object.keys(city).forEach(k=>delete city[k]);Object.assign(city,fresh);persist(city);draw()});
  $("cityHelp").addEventListener("click",()=>$("cityHelpPanel").classList.toggle("hidden"));$("cityCloseHelp").addEventListener("click",()=>$("cityHelpPanel").classList.add("hidden"));
- $("cityBudget").addEventListener("click",()=>{$("cityBudgetPanel").classList.remove("hidden");updateBudgetPanel()});
- $("cityCloseBudget").addEventListener("click",()=>$("cityBudgetPanel").classList.add("hidden"));
- $("cityBudgetDone").addEventListener("click",()=>$("cityBudgetPanel").classList.add("hidden"));
+ const budgetPanel=$("cityBudgetPanel"),budgetTrigger=$("cityBudget");
+ function closeCityBudget(){
+  if(budgetPanel.classList.contains("hidden"))return;
+  budgetPanel.classList.add("hidden");
+  budgetTrigger?.focus();
+ }
+ budgetTrigger.addEventListener("click",()=>{
+  budgetPanel.classList.remove("hidden");
+  updateBudgetPanel();
+  $("cityCloseBudget").focus();
+ });
+ $("cityCloseBudget").addEventListener("click",closeCityBudget);
+ $("cityBudgetDone").addEventListener("click",closeCityBudget);
+ budgetPanel.addEventListener("keydown",event=>{
+  if(event.key==="Escape"){event.preventDefault();event.stopPropagation();closeCityBudget();return}
+  if(event.key!=="Tab")return;
+  const focusable=[...budgetPanel.querySelectorAll('button:not([disabled]),input:not([disabled]),[href],[tabindex]:not([tabindex="-1"])')].filter(element=>element.getClientRects().length);
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+ });
  for(const sector of Object.keys(CITY_DEFAULT_TAX_RATES)){
   const slider=$("cityTax"+sector[0].toUpperCase()+sector.slice(1));
   slider.addEventListener("input",()=>{
