@@ -97,3 +97,14 @@ test("legacy version-two saves normalize optional fields without losing valid ci
  assert.equal(normalized.happiness,100);
  assert.deepEqual(normalized.stats,{income:0,expenses:0,jobs:0,traffic:0});
 });
+
+test("road demolition retires stranded traffic before the next save",()=>{
+ const city=createInitialCity(818);
+ for(let i=0;i<8;i++)stepCity(city);
+ assert.equal(city.traffic.length,1);
+ const stranded=city.traffic[0],x=Math.round(stranded.x),y=Math.round(stranded.y);
+ city.grid[y][x]="grass";
+ stepCity(city);
+ assert.equal(city.traffic.some(vehicle=>vehicle.id===stranded.id),false);
+ assert.equal(isValidCitySave(city),true);
+});
