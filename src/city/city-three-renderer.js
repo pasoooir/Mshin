@@ -238,8 +238,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
   );
   scene.add(boundary);
 
-  // Stylized miniature-city environment: lush canopy on the locked-world perimeter.
-  // These props are explicitly decorative and never occupy buildable simulation cells.
+  // Perimeter greenery stays strictly outside the 64x64 parcel grid.
+  // It is decorative-only and cannot overlap locked or unlocked buildable cells.
   const environment = new THREE.Group();
   scene.add(environment);
   const trunkGeometry = new THREE.CylinderGeometry(0.10, 0.15, 1.05, 6);
@@ -255,29 +255,30 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const treeCanopies = canopyMaterials.map(material => new THREE.InstancedMesh(canopyGeometry, material, 180));
   const treeHighlights = canopyMaterials.map(material => new THREE.InstancedMesh(canopySmallGeometry, material, 180));
   let decorativeTreeCount = 0;
+  let decorativeTreesOutsideBuildableGrid = 0;
   const treeSpeciesCounts = canopyMaterials.map(() => 0);
-  for (let y = 1; y < VISUAL_GRID - 1; y++) {
-    for (let x = 1; x < VISUAL_GRID - 1; x++) {
-      if (isActiveCell(x, y) || isRoadCell(x) || isRoadCell(y)) continue;
-      if ((x * 37 + y * 17) % 29 !== 0) continue;
-      const px = (x - 31.5) * 2, pz = (y - 31.5) * 2;
-      const species = (x * 13 + y * 7) % canopyMaterials.length;
-      dummy.position.set(px, 0.68, pz);
-      dummy.rotation.set(0, 0, 0);
-      dummy.scale.set(0.9 + species * 0.08, 0.9 + species * 0.1, 0.9 + species * 0.08);
-      dummy.updateMatrix();
-      treeTrunks.setMatrixAt(decorativeTreeCount, dummy.matrix);
-      dummy.position.set(px, 1.45, pz);
-      dummy.scale.set(1, 1, 1);
-      dummy.updateMatrix();
-      const speciesIndex = treeSpeciesCounts[species]++;
-      treeCanopies[species].setMatrixAt(speciesIndex, dummy.matrix);
-      dummy.position.set(px - 0.22, 1.68, pz - 0.16);
-      dummy.scale.set(1, 1, 1);
-      dummy.updateMatrix();
-      treeHighlights[species].setMatrixAt(speciesIndex, dummy.matrix);
-      decorativeTreeCount++;
-    }
+  const perimeterTreePositions = [];
+  for (let offset = -60; offset <= 60; offset += 10) {
+    perimeterTreePositions.push([-68, offset], [68, offset], [offset, -68], [offset, 68]);
+  }
+  for (const [px, pz] of perimeterTreePositions) {
+    const species = (Math.round(px + 68) * 13 + Math.round(pz + 68) * 7) % canopyMaterials.length;
+    if (Math.abs(px) > 64 || Math.abs(pz) > 64) decorativeTreesOutsideBuildableGrid++;
+    dummy.position.set(px, 0.68, pz);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.set(0.9 + species * 0.08, 0.9 + species * 0.1, 0.9 + species * 0.08);
+    dummy.updateMatrix();
+    treeTrunks.setMatrixAt(decorativeTreeCount, dummy.matrix);
+    dummy.position.set(px, 1.45, pz);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    const speciesIndex = treeSpeciesCounts[species]++;
+    treeCanopies[species].setMatrixAt(speciesIndex, dummy.matrix);
+    dummy.position.set(px - 0.22, 1.68, pz - 0.16);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    treeHighlights[species].setMatrixAt(speciesIndex, dummy.matrix);
+    decorativeTreeCount++;
   }
   treeTrunks.count = decorativeTreeCount;
   treeTrunks.instanceMatrix.needsUpdate = true;
@@ -610,6 +611,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         version: THREE.REVISION,
         visualStyle: "vibrant-stylized-3d",
         decorativeTrees: decorativeTreeCount,
+        decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
         streetLightSetback,
         stylizedBuildings: buildings.children.length,
