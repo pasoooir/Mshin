@@ -496,7 +496,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     for (const child of [...buildings.children]) {
       buildings.remove(child);
       child.traverse(object => {
-        if (object.geometry && object.geometry !== trunkGeometry && object.geometry !== canopyGeometry && object.geometry !== canopySmallGeometry) object.geometry.dispose();
+        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry, windowGeometry, balconyGeometry, columnGeometry, signGeometry, awningGeometry].includes(object.geometry)) object.geometry.dispose();
         if (object.material) {
           if (Array.isArray(object.material)) object.material.forEach(material => material.dispose());
           else object.material.dispose();
