@@ -728,17 +728,17 @@ try {
   } finally {
     clearTimeout(raceDeadlineTimer);
     await Promise.race([
-      economy.evaluate(() => {
+      economy.evaluate(({ pointerType }) => {
         window.__mshinRaceDriverStopped = true;
         if (window.__mshinRaceDriverFrame) cancelAnimationFrame(window.__mshinRaceDriverFrame);
         const stick = document.querySelector("#stick");
         stick?.dispatchEvent(new PointerEvent("pointerup", {
-          bubbles: true, cancelable: true, pointerId: 7319, pointerType: mobileOnly ? "touch" : "mouse",
+          bubbles: true, cancelable: true, pointerId: 7319, pointerType,
           clientX: 0, clientY: 0, button: 0, buttons: 0
         }));
-        document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType: mobileOnly ? "touch" : "mouse", button: 0, buttons: 0 }));
-        if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType: mobileOnly ? "touch" : "mouse", button: 0, buttons: 0 }));
-      }),
+        document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType, button: 0, buttons: 0 }));
+        if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType, button: 0, buttons: 0 }));
+      }, { pointerType: mobileOnly ? "touch" : "mouse" }),
       new Promise(resolve => setTimeout(resolve, 5000))
     ]);
   }
