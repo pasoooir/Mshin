@@ -68,14 +68,14 @@ No status is changed by this audit.
 | Storage → freight pickup | `VEH-DELIVERY-VAN` | Vehicle is V1-Support; route graph, site access, payload, assignment, crew, loading throughput and operational activation are not approved. | **Blocked; do not assume freight is active.** |
 | Freight → destination receipt | Fleet and market specs | Custody, dispatch, ETA, arrival, inspection, accepted quantity and unloading are conceptually separated; no approved V1 shipment state/schema or route graph is demonstrated. | **Blocked; design proposal only.** |
 | Delivered goods → consumer | `CONS-BUILD-UPGRADE` | `GOODS-TOOLS` is named, but tier-material list, construction/upgrade eligibility and atomic consumption/refund rules are incomplete. | Partial; consumer contract unresolved. |
-| Construction foundation | `CONS-BUILD-FOUNDATION` | Requires `MAT-CEMENT`, whose producing recipe `REC-CEMENT-01` is Candidate. | **Not a valid V1-Required starter chain.** |
+| Construction foundation | `CONS-BUILD-FOUNDATION` | Requires `MAT-CEMENT` (V1-Required), but its only listed producer `REC-CEMENT-01` is Candidate. | **Catalog/registry coverage conflict: required item has no Required producer recipe.** |
 | Goods → NPC sale | `CONS-TRADE-NPC` / `TRADE-DEPOT` | Trade depot is V1-Support; NPC demand, budget, pricing, sale eligibility and settlement are proposal-only. | **Not approved for V1 activation.** |
 | Household consumption | `CONS-POPULATION` | `GOODS-FOOD` is Candidate; item-level demand/stock consumption is not approved. | **Not an active V1 sink.** |
 | Cash and ledger | Municipal finance spec | Finance document is proposal-only; currency, chart of accounts, opening balance, accounting basis, tax/fee types and approved V1 ledger are unresolved. | **Blocker — no approved monetary authority.** |
 
 ### 3.1 Candidate starter-chain assessment
 
-The closest existing Required-only transformation chain is:
+The closest existing Required-only transformation chain to an upgrade consumer is:
 
 `RAW-WOOD` → `MAT-PLANK` → `GOODS-TOOLS` → `CONS-BUILD-UPGRADE`
 
@@ -83,7 +83,16 @@ A parallel material branch is:
 
 `RAW-METAL` → `MAT-METAL-PART` ↗
 
-This is a **documented dependency sketch, not a complete playable chain**. It remains blocked by the missing raw-source contract, uncalibrated recipes, workforce/utility/cost profiles, warehouse capacity/reservations, incomplete upgrade material contract, save/offline semantics and lack of an approved finance ledger. It does not require or authorize Candidate `MAT-CEMENT` / `REC-CEMENT-01`, NPC trade or household item consumption.
+This is a **documented dependency sketch, not a complete playable chain**. It remains blocked by the undefined operating inputs behind the two raw-item factory recipes, uncalibrated recipes, workforce/utility/cost profiles, warehouse capacity/reservations, incomplete upgrade material contract, save/offline semantics and lack of an approved finance ledger. Separately, the Required item `MAT-CEMENT` is currently produced only by Candidate `REC-CEMENT-01`, so the foundation consumer is not covered by a Required recipe. This is a catalog/registry dependency mismatch requiring an explicit owner decision; do not silently promote the recipe or demote the item. No NPC trade or household item consumption is authorized.
+
+## 3.2 Producer-status and raw-input coverage defects
+
+The registry contains two precise blockers that must not be hidden by the broad “raw source missing” label:
+
+1. `RAW-METAL` and `RAW-WOOD` are both V1-Required items and their listed Required recipes (`REC-RAW-METAL-01`, `REC-RAW-WOOD-01`) list only **“Operating resources TBD”** as inputs. Their names describe raw materials, but the registry does not identify the actual resource/source, replenishment rule, ownership, cost basis or whether these inputs are consumables, utilities or a budgeted abstract source. The producer recipe exists by ID; its input contract is incomplete.
+2. `MAT-CEMENT` is explicitly **V1-Required**, while its only listed producer `REC-CEMENT-01` is **Candidate** and requires `RAW-MINERAL` (also Candidate) plus operating resources TBD. Meanwhile `CONS-BUILD-FOUNDATION` names `MAT-CEMENT` as a required construction input. This is a Required-item / Candidate-producer coverage conflict. It must be resolved by project-owner decision in the canonical catalog/registry; this audit does not change either status.
+
+Required follow-up evidence: producer coverage for every Required item; exact source/operating-input semantics; approved source ownership and bounded replenishment; and a Required-only recipe path for each Required consumer. A listed item or consumer alone is not proof of an executable end-to-end chain.
 
 ## 4. Conservation, ownership and accounting invariants
 
