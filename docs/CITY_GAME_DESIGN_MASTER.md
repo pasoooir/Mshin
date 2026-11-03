@@ -1952,3 +1952,36 @@ Vertical Slice باید تجربه کوچک اما انتها‌به‌انته�
 - [کتابخانه Asset رایگان و استاندارد نمایش](FREE_ASSET_LIBRARY_AND_VISUAL_PRESENTATION_SPEC.md) — مرجع اصلی منابع و مجوزها.
 
 **وضعیت:** این اسناد استاندارد و طراحی را توسعه می‌دهند؛ هنوز به معنی دانلود و تأیید حقوقی فایل‌های مشخص، ساخت صحنه بصری، import در Cocos یا قبولی عملکرد روی گوشی نیستند. مرحله بعد باید یک Asset Registry واقعی و سپس visual benchmark قابل اجرا ایجاد کند. گیت طراحی و عدم شروع کدنویسی شهرسازی تا تکمیل شواهد و تأیید صریح پابرجاست.
+
+
+---
+
+# بخش ۵۴ — رجیستری واقعی منابع و Visual Benchmark موبایل
+
+## 54.1 رجیستری Asset
+مرجع: [Initial Free Asset Registry](INITIAL_FREE_ASSET_REGISTRY.md)
+
+کاندیدهای مشخص از Kenney، Poly Haven و ambientCG شناسایی شده‌اند؛ وضعیت هر مورد صریحاً Candidate یا LicenseEvidenceCollected است. تا دریافت فایل، بررسی license داخل archive، ثبت SHA-256 و بررسی فنی، هیچ‌کدام Downloaded/Approved/Integrated تلقی نمی‌شوند.
+
+بسته‌های اولویت‌دار:
+- Kenney City Kit (Roads): خیابان، تقاطع، علائم و چراغ.
+- Kenney City Kit (Suburban): ساختمان و props محله مسکونی.
+- Kenney City Kit (Industrial): کارخانه و انبار.
+- Kenney Building Kit: اجزای معماری و variation.
+- Poly Haven Urban Street 01: مرجع نور/محیط شهری و authoring.
+- ambientCG Asphalt010/031، Concrete034 و Grass004: کاندید متریال سطح.
+
+## 54.2 صحنه مرجع بصری موبایل
+مرجع: [Mobile City Visual Benchmark Specification](MOBILE_CITY_VISUAL_BENCHMARK_SPEC.md)
+
+یک بلوک شهری محدود با جاده و تقاطع، چند خانواده ساختمان، دو مرحله ارتقای قابل مشاهده، ساختمان صنعتی، خودرو، پوشش گیاهی، props خیابان، HUD و سه preset نور Day/Golden Hour/Night طراحی می‌شود. هر صحنه در سه فاصله Far/Mid/Near و سه پروفایل Low/Medium/High ارزیابی خواهد شد.
+
+## 54.3 تفکیک نمونه از محصول
+- نمونه‌های نمایشی و داده‌های ساختگی باید Sample Data برچسب بخورند.
+- animation خودرو یا چراغ راهنمایی در benchmark، شبیه‌سازی ترافیک واقعی محسوب نمی‌شود.
+- جلوه بصری نباید state یا اقتصاد را تعیین کند.
+- هیچ Asset فاقد provenance و hash وارد build انتشار نمی‌شود.
+- benchmark بصری به‌تنهایی مجوز شروع سیستم اصلی شهرسازی نیست.
+
+## 54.4 وضعیت
+این مرحله رجیستری اولیه و قرارداد آزمون را ایجاد کرده است؛ هنوز فایل‌های Asset دریافت/هش نشده‌اند و صحنه در Cocos ساخته یا روی دستگاه واقعی آزموده نشده است. تکمیل مرحله منوط به دریافت امن، تطبیق مجوز، بررسی فنی و ساخت benchmark قابل اجراست.
