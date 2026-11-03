@@ -77,3 +77,20 @@ test("invalid citizen route coordinates are rejected by city save validation", (
   city.citizens[0].targetY = 7;
   assert.equal(isValidCitySave(city), false, "partially null route pairs must be rejected");
 });
+
+
+test("demolished homes remove their pedestrian agents and invalid home references are rejected", () => {
+  const city = createInitialCity(906);
+  const firstHome = placeCityItem(city, 17, 14, "home").item;
+  const secondHome = placeCityItem(city, 17, 13, "home").item;
+  assert.equal(city.citizens.length, 8);
+  city.buildings = city.buildings.filter(building => building.id !== firstHome.id);
+  city.population -= firstHome.residents;
+  syncCityCitizens(city);
+  assert.equal(city.citizens.length, 4);
+  assert.ok(city.citizens.every(citizen => citizen.homeId === secondHome.id));
+  assert.equal(isValidCitySave(city), true);
+  const invalid = structuredClone(city);
+  invalid.citizens[0].homeId = firstHome.id;
+  assert.equal(isValidCitySave(invalid), false);
+});
