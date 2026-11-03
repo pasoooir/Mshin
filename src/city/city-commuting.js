@@ -92,9 +92,6 @@ export function computeCityCommuting(city, employment = computeCityEmployment(ci
     .filter(building => building.type === "home" && Number.isSafeInteger(building.id)
       && Number.isFinite(building.residents) && building.residents > 0)
     .sort((a,b) => a.id - b.id);
-  const workersByHome = distributeLaborForce(homes,employment.laborForce);
-  const remainingByHome = new Map(workersByHome);
-  const searches = new Map(homes.map(home => [home.id,searchRoadNetwork(city,home)]));
   const workplacesBySector = Object.fromEntries(SECTOR_ORDER.map(sector => [sector,[]]));
 
   for (const sector of SECTOR_ORDER) {
@@ -109,6 +106,16 @@ export function computeCityCommuting(city, employment = computeCityEmployment(ci
     }
   }
 
+  const availableWorkplaces = SECTOR_ORDER.some(sector => workplacesBySector[sector].length > 0);
+  if (!homes.length || !availableWorkplaces || employment.employed <= 0) {
+    return Object.freeze({ laborForce: employment.laborForce, employed: employment.employed,
+      assignedWorkers: 0, unreachableWorkers: Math.max(0,employment.employed),
+      commuteCoverage: 0, averageCommuteDistance: 0, assignments: Object.freeze([]) });
+  }
+  const workersByHome = distributeLaborForce(homes,employment.laborForce);
+  const remainingByHome = new Map(workersByHome);
+  // Cache one bounded BFS per residence, shared across all employment sectors.
+  const searches = new Map(homes.map(home => [home.id,searchRoadNetwork(city,home)]));
   const assignments = [];
   let assignedWorkers = 0, weightedDistance = 0;
   for (const sector of SECTOR_ORDER) {
