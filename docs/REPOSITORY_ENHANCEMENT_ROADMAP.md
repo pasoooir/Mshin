@@ -1,7 +1,7 @@
 # Mshin Repository Enhancement Roadmap
 
-**Reviewed:** 2026-11-03 after PRs #217, #221, #222 and #227  
-**Baseline:** `main` at `9282953a6af2922d5da0616919f79cee53f04822`  
+**Reviewed:** 2026-11-03 after PRs #217, #221, #222 and #227; PR #229 is under validation  
+**Baseline:** `main` at `bdd0ef8127a8b7e708a49b12645e73cf6c8ec102`  
 **Primary users:** mobile browsers (Android-first), with native Cocos Android delivery as the city visual target  
 **Delivery:** GitHub Pages for browser racing/city experience; Cocos Creator 3.8.6 is the intended native city runtime.
 
@@ -11,13 +11,15 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ## Verified baseline
 
-- **Current main:** `9282953a6af2922d5da0616919f79cee53f04822`.
+- **Current main:** `bdd0ef8127a8b7e708a49b12645e73cf6c8ec102`.
+- **Latest main release evidence:** validation `41674006422`, mobile browser smoke `41674006278`, and GitHub Pages build/deploy `41674005644` all completed successfully on this exact commit.
 - **Merged city milestones:** PRs #188, #190, #192, #193, #195, #197, #199, #200, #201, #202, #204 and #211 are present on main. They cover save migration/recovery, workforce and service capacity, resident wellbeing, zoning growth, service satisfaction, road-connected job assignment, pedestrian commute agents, traffic-aware pedestrian pace and congestion-related wellbeing.
 - **Congestion regression follow-up:** PR #205 is merged; it isolates save telemetry validation from transient vehicle positions. Exact-head checks on #205 passed: `validate`, `browser-smoke`, road/zoning/traffic regression and population/employment regression.
 - **Latest release:** Pages `build`, `deploy` and main `validate` passed on merge commit `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`. Main mobile browser smoke run `41647308147` passed: city entry, mobile-only browser acceptance, rewarded three-lap finish and offline acceptance all succeeded; mobile gameplay previews were uploaded.
 - **PR #211 — Congestion-driven business productivity:** 🟢 merged as `ceaec1375400ed3fd075082ae40b190de197ae5a`; exact-head validation, city regression suites and mobile browser acceptance all passed (runs `41648207345`, `41648207411`, `41648207413`, `41648207450`, `41648207532`, `41648207541`, `41648207909`). Commercial/industrial productivity is reduced by a deterministic 0–15% proxy; residential tax and public funding are unchanged; metrics are persisted and shown in the mobile budget panel.
-- **PR #209:** documentation refresh remains open while its baseline/evidence is reconciled with #211; exact-head validation and browser smoke passed on the previous docs head, but rerun after this update.
-- **Open PR inventory:** #209 documentation refresh; #92 stale draft billboard branch outside active delivery.
+- **PR #217 — building progression, #221 — NodeNext import boundary, #222 — touch building placement, and #227 — camera orbit lock during placement:** 🟢 merged and present on main.
+- **PR #229 — explicit mobile entry gesture:** 🟡 open; `validate` run `41684655346` and city mobile rendering run `41684655094` passed on head `4d9afbe08991192650ffe8ef0cfb9907b1073c4b`; browser smoke run `41684655648` is still running. It replaces a coordinate click with the actual city-entry button while in portrait, then checks fullscreen-before-landscape ordering. Do not merge until browser smoke succeeds.
+- **Open PR inventory:** #229 only (verified from GitHub open-PR listing at this refresh).
 - **PR #208:** 🟢 merged as `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`; exact-head `validate` passed. The native sample district includes distinct house, apartment, shop, factory, park, roads, sidewalks and street furniture. Main mobile browser smoke run `41647308147` passed. The PR remains a blockout: final textures, Editor import, APK and physical Android acceptance are not verified.
 - CI browser emulation does not certify physical Android devices or Cocos Creator Editor/Web build acceptance.
 
@@ -34,7 +36,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ### P1 — Stabilize the racing game
 
-- Reconcile any newly opened racing PR against main before feature work. PR #92 remains a stale draft billboard branch (diverged/non-mergeable), not an active racing delivery. Current open PR inventory: #209 documentation refresh and stale draft #92; PRs #196, #198 and #211 are merged. PR #179 was merged as a documentation snapshot; this roadmap refresh supersedes its stale baseline. City budget/tax controls, accessible budget dialog and VisualViewport/safe-area behavior are merged in PRs #182, #185 and #186.
+- Reconcile any newly opened racing PR against main before feature work. The only open PR at this refresh is #229, a mobile city-entry gesture acceptance test. PRs #196, #198 and #211 are merged. PR #179 was merged as a documentation snapshot; this roadmap refresh supersedes its stale baseline. City budget/tax controls, accessible budget dialog and VisualViewport/safe-area behavior are merged in PRs #182, #185 and #186.
 - Confirm the tenfold track-length and steering correction in PR #132 against current main behavior and automated evidence.
 - Keep vehicle physics, input sampling, rendering and progression as separate testable domains.
 - Verify a complete real race: countdown, driving, collisions, pickups, laps, finish, reward and persisted progress. Do not weaken finish/reward assertions to make smoke tests pass.
@@ -121,8 +123,8 @@ For every feature, record:
 
 | Priority | Work item | Status | Exit condition |
 |---|---|---|---|
-| P0 | Refresh evidence and reconcile PR inventory | 🟡 main at `ceaec137`; PR #211 merged; PR #209 docs checks passed on prior head and require rerun after evidence refresh | Record post-#211 main validate/build/deploy/browser results and exact open-PR inventory |
-| P0 | Mobile race + city acceptance matrix | 🟢 main browser acceptance `41647308147`; 🟡 physical-device gate | Exact-main browser run completes all mobile checks; separately verify physical Android safe areas, touch, thermal and performance |
+| P0 | Refresh evidence and reconcile PR inventory | 🟢 main `bdd0ef8`; exact-main validate, mobile browser and Pages build/deploy all passed; PR #229 is the sole open PR | Refresh after #229 resolves and record exact-head checks and open-PR inventory |
+| P0 | Mobile race + city acceptance matrix | 🟢 main browser acceptance `41674006278`; 🟡 PR #229 explicit-entry check and physical-device gate | Complete PR #229 exact-head browser smoke; separately verify physical Android safe areas, touch, thermal and performance |
 | P1 | Racing stability and real-finish regression | 🟢 main browser smoke `41647308147` | Preserve full three-lap race, five-car standings, rewards, achievement persistence and offline launch; do not weaken finish assertions |
 | P1 | City simulation vertical slices | 🟢 road commuting, pedestrian agents, traffic pace, bounded congestion wellbeing and business productivity feedback merged; 🟡 native Cocos visual slice | Continue with measured commute-time/economic tuning only when deterministic and bounded; Cocos Editor/scene/texture/APK and Android gates remain open |
 | P1 | Native Cocos city visuals | 🟡 source blockout merged in PR #208 | Cocos Creator 3.8.6 Editor import, scene attachment, texture-backed assets, APK build and physical Android visual/performance acceptance |
