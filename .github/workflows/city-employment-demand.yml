@@ -27,8 +27,10 @@ jobs:
         run: npm run build:core
       - name: Validate city core and population behavior
         run: node --test tests/city-core.test.mjs tests/city-population.test.mjs tests/city-employment.test.mjs tests/city-commuting.test.mjs
-      - name: Record outstanding employment acceptance gap
+      - name: Report verified employment acceptance scope
         run: |
-          echo "Population regression passed."
-          echo "Employment capacity, workforce matching, unemployment and vacancies are covered by city-employment.test.mjs."
-          echo "Road-network shortest-path assignment, disconnected-road handling, workplace capacity and commute coverage are verified in city-commuting.test.mjs."
+          echo "Employment regression passed."
+          echo "Verified: sector workplace capacity, deterministic aggregate workforce matching, unemployment, vacancies and labor-demand metrics."
+          echo "Verified: road-network commute assignment, disconnected-road handling, commute coverage and congestion-aware commute metrics."
+          echo "Not covered by this aggregate model: individual employment contracts, wages, shifts or worker-specific schedules."
+          echo "Playwright/browser and physical-device acceptance remain separate gates."
