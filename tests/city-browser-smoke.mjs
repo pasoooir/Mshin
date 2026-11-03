@@ -134,7 +134,9 @@ try{
  assert.ok(fullTurnOrbit>orbitStart+Math.PI*2,"repeated two-finger horizontal gestures must cross 360 degrees without wrapping or jumping");
  const inertiaReleaseBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",450,100,420);send("pointerdown",451,200,420);send("pointermove",450,130,420);send("pointermove",451,230,420);send("pointerup",450,130,420);send("pointerup",451,230,420)});
+ const inertiaStateAtRelease=await page.evaluate(()=>window.MshinCityDebug.view.gesture);
  const orbitAtRelease=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
+ assert.ok(inertiaStateAtRelease.inertiaActive,"lifting the last finger must start inertial motion");
  await page.waitForTimeout(120);
  const orbitAfterRelease=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  assert.ok(orbitAfterRelease>orbitAtRelease,"camera orbit must retain a short, damped inertial glide after fingers lift");
