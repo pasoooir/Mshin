@@ -264,7 +264,7 @@ function mount(){
   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
  });
- const cameraController=createCityCameraController({canvas,camera:cam,getRenderer:()=>threeRenderer,onTap:(x,y)=>apply(x,y),onChange:draw,isCameraLocked:()=>tool!=="select"&&tool!=="bulldoze"});
+ const cameraController=createCityCameraController({canvas,camera:cam,getRenderer:()=>threeRenderer,getTileAt:tileAt,onTap:(x,y)=>apply(x,y),onChange:draw,isCameraLocked:()=>tool!=="select"&&tool!=="bulldoze"});
   const scheduleViewportResize=()=>{if(resizeFrame)return;resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;resize();threeRenderer?.resize();draw()})};
  addEventListener("resize",scheduleViewportResize,{passive:true});
  window.visualViewport?.addEventListener("resize",scheduleViewportResize,{passive:true});addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
