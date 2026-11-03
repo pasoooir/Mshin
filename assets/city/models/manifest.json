@@ -20,7 +20,12 @@
         2.05
       ],
       "lod": "not-yet-authored",
-      "textures": "embedded PBR material factors; no external texture dependencies"
+      "textures": "embedded PBR material factors; no external texture dependencies",
+      "scale": [
+        1.45,
+        1.8,
+        1.5
+      ]
     },
     {
       "id": "building-apartment",
@@ -36,7 +41,12 @@
         2.08
       ],
       "lod": "not-yet-authored",
-      "textures": "embedded PBR material factors; no external texture dependencies"
+      "textures": "embedded PBR material factors; no external texture dependencies",
+      "scale": [
+        2,
+        1.85,
+        2
+      ]
     },
     {
       "id": "building-shop",
@@ -52,7 +62,12 @@
         2.72
       ],
       "lod": "not-yet-authored",
-      "textures": "embedded PBR material factors; no external texture dependencies"
+      "textures": "embedded PBR material factors; no external texture dependencies",
+      "scale": [
+        1.55,
+        1.6,
+        1.4
+      ]
     }
   ]
 }
