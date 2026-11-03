@@ -11,37 +11,13 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ## Verified baseline
 
-- Main contains separate browser racing and city entry points, portable TypeScript/Cocos source, a service worker, local assets, data validation, unit tests and GitHub Actions.
-- Latest merged-main mobile browser evidence: [run 41614496592](https://github.com/pasoooir/Mshin/actions/runs/41614496592) — success on bb2eea0; includes immersive city entry, city budget/viewport checks, mobile-only input checks, a complete three-lap rewarded race and offline PWA acceptance.
-- Latest merged-main portable validation: [run 41614496731](https://github.com/pasoooir/Mshin/actions/runs/41614496731) — success; all validation stages and Node tests passed.
-- Latest merged-main GitHub Pages deployment: [run 41614495844](https://github.com/pasoooir/Mshin/actions/runs/41614495844) — build and deploy succeeded for bb2eea0.
-- PR #176 is merged as 616be0381f3eeda0c8923b288e33467361493a5d; it adds portrait-mobile full-race acceptance, compact finish-screen layout, screenshot evidence and offline acceptance. PR #175 was closed as a superseded duplicate.
-- PR #178 merged as c19e7273f4ec5bb9bb583cda58038a749872734f; city entry requests fullscreen before landscape lock, retries on the first trusted touch/click, and retains a portrait fallback. Mobile city smoke and portable validation passed.
-- PR #177 merged as b55ba56bed2c2ebdb08ba0707df9a786a5fa0a72; deterministic bounded pedestrians follow road tiles, synchronize to residential occupancy, migrate old saves and render through instanced 3D meshes.
-- PR #180 merged as f3e26f981c09ea57afb5395423d53a55471115a3; adds home-demolition pedestrian reassignment regression coverage.
-- PR #182 merged as 7e6b79d94c8a132d71079e89955f8de019922c6d; adds deterministic budget/economy, bounded sector tax rates, persisted tax policy, maintenance and tax-pressure effects on happiness. Merged-main validation, mobile smoke and Pages deployment passed.
-- PR #185 merged as a77d2f0b3951f169509759d99aeaa5f0fe555af6; hardens the budget dialog with touch-sized controls, safe scrolling, focus restoration, Escape dismissal and keyboard focus trapping.
-- PR #186 merged as bb2eea0ba62fdc55a59a31584cb9342ca29ff4df; race and city canvases follow VisualViewport resize events, preserve software-landscape dimensions and respect city budget-dialog safe-area insets.
-- Exact-head checks for PR #185 passed (runs 41610689215 and 41610689302); exact-head portable validation and mobile smoke for PR #186 passed (runs 41613453589 and 41613453754).
-- Main-after-merge validation, mobile browser acceptance and Pages deployment passed (runs 41614496731, 41614496592 and 41614495844).
-- PRs #181, #183 and #184 were closed as superseded duplicates of PR #182. PR #179 was a historical documentation snapshot; this refresh supersedes its baseline.
-- Mobile gameplay preview artifact: [mshin-mobile-gameplay-previews](https://github.com/pasoooir/Mshin/actions/runs/41614496592/artifacts/13216086671).
-- CI success is not equivalent to physical Android-device certification or Cocos Creator Editor/Web build acceptance.
-
-
-- PR #188 merged as `1b2c99a6a8669dff42bde3768726df5d08106b3d`; versioned city-save migration, backup/recovery and offline precache acceptance.
-- PR #190 merged as `5f20315e9c267aeefdf77f8bb5cda27d8da0c22f`; deterministic workforce matching, job capacity, employment, unemployment and vacancies.
-- PR #192 merged as `98f152105c7716c6a0a323a4f680129070152363`; finite utility/public-service capacity, demand coverage and per-building satisfaction telemetry.
-- Post-PR #192 main validation and Pages build/deploy succeeded in run `41623889163`; main browser-smoke is still in progress.
-- PR #193 (resident wellbeing integration) and PR #195 (workforce-aware zoning growth) are open; their checks are tracked in the execution tracker. Neither is accepted until all exact-head mobile/browser checks pass.
-
-- PR #188 merged as `1b2c99a6a8669dff42bde3768726df5d08106b3d`; versioned city-save migration, backup/recovery and offline precache acceptance.
-- PR #190 merged as `5f20315e9c267aeefdf77f8bb5cda27d8da0c22f`; deterministic workforce matching, job capacity, employment, unemployment and vacancies.
-- PR #192 merged as `98f152105c7716c6a0a323a4f680129070152363`; finite utility/public-service capacity, demand coverage and per-building satisfaction telemetry.
-- PR #193 merged as `828b8705dfb51143e7d56f254a5c7464fb922a64`; resident wellbeing now reflects unemployment and service coverage/capacity metrics are exposed in city stats.
-- PR #195 merged as `f4a8fa320ad08c1611f596b2ccead8688e824e49`; commercial, industrial and administrative zone growth now respects available resident workforce, with exact-head mobile/browser checks passing.
-- Main `build` and `validate` checks after PR #195 were still running at the time of this refresh; Pages deployment is not yet claimed.
-- PR #197 adds resident-weighted satisfaction from finite per-building service allocation; validation and city service tests pass while mobile/browser acceptance remains in progress.
+- **Current main:** `f4a8fa320ad08c1611f596b2ccead8688e824e49`, after PR #195.
+- **Merged city milestones:** PR #188 versioned save migration/backup recovery; PR #190 workforce matching and employment demand; PR #192 finite utility and civic-service capacity; PR #193 resident wellbeing integration; PR #195 workforce-aware zoning growth.
+- **Main release evidence:** run `41625952666` — build, validation and GitHub Pages deployment succeeded. Main mobile browser smoke run `41625957359` was still running at this review.
+- **PR #197:** resident-weighted service satisfaction is under review. Exact-head portable validation, city services/economy, road/zoning/traffic, population/employment and save-recovery regressions pass; Android-sized city viewport/rendering acceptance passes. Mobile rewarded-race/offline browser smoke remains in progress.
+- **PR #196:** this evidence refresh is open; portable validation passes, and its mobile browser workflow is pending.
+- **Primary users:** mobile browsers (Android-first). **Delivery:** GitHub Pages; optional Cloudflare Worker remains separate from the playable client.
+- CI browser emulation does not certify physical Android devices or Cocos Creator Editor/Web build acceptance.
 
 ## Product priorities
 
@@ -121,12 +97,12 @@ For every feature, record:
 
 | Priority | Work item | Status | Exit condition |
 |---|---|---|---|
-| P0 | Refresh evidence and reconcile PR inventory | 🟢 verified on main bb2eea0 | Current commit, all required CI runs, Pages deployment and open-PR inventory recorded |
-| P0 | Mobile race + city acceptance matrix | 🟢 CI acceptance; 🟡 physical-device gate | Main run 41614496592 passes city immersive entry, city viewport resizing, mobile touch/gyro/orientation checks, full rewarded three-lap race and offline PWA. Physical Android safe-area and performance checks remain external |
-| P1 | Racing stability and real-finish regression | 🟢 browser acceptance verified | Full three-lap mobile race, five-car standings, rewards, achievement persistence and offline launch pass; continue real-device physics/performance tuning |
-| P1 | City simulation vertical slices | 🟡 in progress | Roads/connectivity, zoning, building growth, bounded pedestrian agents, traffic and budget/tax simulation have browser acceptance; next complete job matching/demand, service effects, save migration/recovery and device performance |
+| P0 | Refresh evidence and reconcile PR inventory | 🟡 current main f4a8fa3; build/validate/deploy pass, main browser smoke running | Record final browser-smoke result and refresh the exact open-PR inventory after PR #197/#196 resolve |
+| P0 | Mobile race + city acceptance matrix | 🟢 CI acceptance; 🟡 physical-device gate | PR #195 exact-head mobile viewport and full rewarded-race/offline browser acceptance pass; main-after-merge browser smoke is running. Physical Android safe-area and performance checks remain external |
+| P1 | Racing stability and real-finish regression | 🟢 PR #195 exact-head browser acceptance verified | Full three-lap mobile race, five-car standings, rewards, achievement persistence and offline launch pass; continue real-device physics/performance tuning |
+| P1 | City simulation vertical slices | 🟡 in progress | Roads, zoning, growth, pedestrians, traffic, budget/tax, workforce matching, finite services, save migration and wellbeing are implemented; PR #197 connects per-building resident-weighted service satisfaction. Next: job assignment/commuting and deeper economic feedback |
 | P2 | Enforce dependency boundaries | 🟢 implemented and CI-verified | Continue monitoring domain imports, unresolved paths, cycles and module size |
-| P2 | Reproducible CI and release gates | 🟡 in progress | Keep lockfile-backed install, least privilege, exact-head checks and successful main Pages deployment |
+| P2 | Reproducible CI and release gates | 🟡 in progress | Keep lockfile-backed install, least privilege, exact-head checks, deduplicated workflow concurrency and successful main Pages deployment |
 | P3 | Cocos Editor import and Web build | 🔴 not yet verified | Editor-generated Web build runs on Android; requires Cocos Creator 3.8.6 environment |
 ## Non-goals for this phase
 
