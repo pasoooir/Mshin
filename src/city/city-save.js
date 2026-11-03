@@ -124,7 +124,7 @@ export function isValidCitySave(v) {
   if (citizenIds.size !== v.citizens.length) return false;
   if (v.nextCitizenId !== undefined && citizenIds.size && v.nextCitizenId <= Math.max(...citizenIds)) return false;
   if (v.stats) {
-    for (const key of ["income","expenses","net","taxRevenue","maintenance","serviceUpkeep","jobs","traffic","utilityCoverage","publicServiceCoverage","overallCoverage","commutingWorkers","commuteCoverage","averageCommuteDistance","unreachableWorkers"]) {
+    for (const key of ["income","expenses","net","taxRevenue","maintenance","serviceUpkeep","jobs","traffic","utilityCoverage","publicServiceCoverage","overallCoverage","commutingWorkers","commuteCoverage","averageCommuteDistance","averageCongestionDelay","unreachableWorkers"]) {
       if (v.stats[key] !== undefined && !Number.isFinite(v.stats[key])) return false;
     }
     if (v.stats.serviceCoverage !== undefined
@@ -134,6 +134,7 @@ export function isValidCitySave(v) {
     }
     if (v.stats.commuteCoverage !== undefined && (v.stats.commuteCoverage < 0 || v.stats.commuteCoverage > 100)) return false;
     if (v.stats.averageCommuteDistance !== undefined && (v.stats.averageCommuteDistance < 0 || v.stats.averageCommuteDistance > SIZE * SIZE)) return false;
+    if (v.stats.averageCongestionDelay !== undefined && (v.stats.averageCongestionDelay < 0 || v.stats.averageCongestionDelay > 150)) return false;
   }
   return true;
 }

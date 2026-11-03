@@ -64,6 +64,33 @@ function shortestWorkplaceRoute(city, search, workplace) {
   return { distance: bestDistance, route };
 }
 
+
+function averageTrafficDelayPercent(city, assignments) {
+  if (!Array.isArray(city.traffic) || city.traffic.length === 0 || !assignments.length) return 0;
+  let weightedDelay = 0;
+  let weightedSegments = 0;
+  for (const flow of assignments) {
+    const segments = Math.max(0, flow.route.length - 1);
+    if (!segments || flow.workers <= 0) continue;
+    let routeDelay = 0;
+    for (let index = 0; index < flow.route.length; index++) {
+      const point = flow.route[index];
+      let nearbyVehicles = 0;
+      for (const vehicle of city.traffic) {
+        if (!Number.isFinite(vehicle.x) || !Number.isFinite(vehicle.y)) continue;
+        if (Math.hypot(vehicle.x - point.x, vehicle.y - point.y) <= 1.15) nearbyVehicles++;
+      }
+      const speedFactor = Math.max(0.4, 1 - nearbyVehicles * 0.18);
+      routeDelay += (1 / speedFactor) - 1;
+    }
+    weightedDelay += (routeDelay / flow.route.length) * flow.workers * segments;
+    weightedSegments += flow.workers * segments;
+  }
+  return weightedSegments
+    ? Math.round(Math.min(150, weightedDelay / weightedSegments * 100) * 10) / 10
+    : 0;
+}
+
 function distributeLaborForce(homes, laborForce) {
   const residents = homes.reduce((sum,home) => sum + Math.max(0,Number(home.residents) || 0),0);
   if (!residents || !laborForce) return new Map(homes.map(home => [home.id,0]));
@@ -111,7 +138,7 @@ export function computeCityCommuting(city, employment = computeCityEmployment(ci
   if (!homes.length || !availableWorkplaces || employment.employed <= 0) {
     return Object.freeze({ laborForce: employment.laborForce, employed: employment.employed,
       assignedWorkers: 0, unreachableWorkers: Math.max(0,employment.employed),
-      commuteCoverage: 0, averageCommuteDistance: 0, assignments: Object.freeze([]) });
+      commuteCoverage: 0, averageCommuteDistance: 0, averageCongestionDelay: 0, assignments: Object.freeze([]) });
   }
   const workersByHome = distributeLaborForce(homes,employment.laborForce);
   const remainingByHome = new Map(workersByHome);
@@ -164,6 +191,7 @@ export function computeCityCommuting(city, employment = computeCityEmployment(ci
 
   const averageCommuteDistance = assignedWorkers
     ? Math.round(weightedDistance / assignedWorkers * 10) / 10 : 0;
+  const averageCongestionDelay = averageTrafficDelayPercent(city, assignments);
   return Object.freeze({
     laborForce: employment.laborForce,
     employed: employment.employed,
@@ -171,6 +199,7 @@ export function computeCityCommuting(city, employment = computeCityEmployment(ci
     unreachableWorkers: Math.max(0,employment.employed - assignedWorkers),
     commuteCoverage: employment.employed ? Math.round(assignedWorkers / employment.employed * 100) : 0,
     averageCommuteDistance,
+    averageCongestionDelay,
     assignments: Object.freeze(assignments.map(assignment => Object.freeze({
       ...assignment,
       route: Object.freeze(assignment.route.map(point => Object.freeze(point)))
