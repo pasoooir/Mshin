@@ -657,6 +657,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
     return raycaster.ray.intersectPlane(groundPlane, point) ? { x: point.x, z: point.z } : null;
   }
 
+  function focusPointAt(screenX, screenY) {
+    pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(buildings.children, true);
+    if (hits.length) return { x: hits[0].point.x, z: hits[0].point.z };
+    return groundPointAt(screenX, screenY);
+  }
+
   function screenForTile(x, y) {
     const point = new THREE.Vector3((x - 15.5) * 2, 0.16, (y - 15.5) * 2).project(camera);
     return { x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2 };
@@ -670,6 +678,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     tileAt,
     screenForTile,
     groundPointAt,
+    focusPointAt,
     updateCamera,
     resize,
     getStats() {
