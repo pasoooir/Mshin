@@ -193,3 +193,8 @@ Tourism service impacts are specified in [Capital Region Tourism, Visitors, Attr
 ## Environmental conditions and citizen needs
 
 The proposed weather/time effects on comfort, outdoor access, resident services and public safety are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). These effects require explicit causal models, valid denominators and separate actual/forecast states; weather must not silently modify happiness, health or productivity through opaque multipliers. Unmodeled effects remain Not modeled.
+
+
+## Emergency service outcomes and resident feedback
+
+Emergency-service coverage and response indicators are specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Risk, preparedness, reachable coverage, actual response, incident outcome and resident sentiment remain distinct. Any score must expose its denominator, formula version, time horizon and data coverage; missing data is not silently treated as failure or success.
