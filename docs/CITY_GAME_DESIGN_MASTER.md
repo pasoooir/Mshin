@@ -2015,3 +2015,24 @@ Vertical Slice باید تجربه کوچک اما انتها‌به‌انته�
 
 ## 55.7 مرز این مرحله
 این اسناد قرارداد طراحی و تولیدند؛ مدل سه‌بعدی production، prefab، scene، import یا آزمون دستگاه در این commitها ساخته نشده است. توسعه سیستم اصلی شهرسازی همچنان تابع گیت‌های سند مادر است.
+
+
+---
+
+# بخش ۵۶ — اطلس بصری ساختمان‌های منطقه پایتخت
+
+## 56.1 اطلس مرجع منطقه
+مرجع: [Building Visual Progression Atlas](BUILDING_VISUAL_PROGRESSION_ATLAS.md)
+
+این اطلس هویت معماری و شیت‌های مرجع ساختمان‌های V1-Required و V1-Support منطقه پایتخت را تعریف می‌کند؛ از خانه آغازین، خانه خانوادگی و کارخانه پایه تا کارگاه، انبار، نیروگاه، پمپ‌خانه، تصفیه‌خانه و خدمات شهری. این سند منبع حقیقت simulation نیست و مقادیر نامعلوم را TBD نگه می‌دارد.
+
+## 56.2 ماتریس تحویل و پوشش
+مرجع: [Capital Region Building Visual Matrix](CAPITAL_REGION_BUILDING_VISUAL_MATRIX.md)
+
+ماتریس شناسه‌های کاتالوگ را به خانواده معماری، نقش عملیاتی، اجزای اجباری نما، stateهای بصری و وابستگی عملکردی متصل می‌کند. وضعیت Blockout/Approved model/Cocos prefab/Device verified عمداً تکمیل‌نشده ثبت شده است.
+
+## 56.3 الزامات تحویل به تیم طراحی سه‌بعدی
+هر ساختمان نیازمند brief، reference board دارای provenance، blockout، silhouette approval، نماهای جلو/پشت/طرفین/سقف، footprint/access overlay، tier comparison، state sheet، LOD، collider، prefab و manifest مجوز است. ابزارها و پلاگین‌های تخصصی باید خروجی قابل ویرایش و قابل آزمون موتور تولید کنند؛ تصویر کانسپت به‌تنهایی دارایی اجرایی نیست.
+
+## 56.4 کنترل دامنه و صداقت وضعیت
+اطلس و ماتریس، اسناد طراحی هستند. هیچ مدل production، asset download، Cocos prefab، simulation behavior یا device test با این commitها ادعا نمی‌شود. توسعه سیستم اصلی شهرسازی همچنان به گیت‌های سند مادر وابسته است.
