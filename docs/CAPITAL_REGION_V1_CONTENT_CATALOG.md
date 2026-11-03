@@ -216,3 +216,18 @@ The visual identity and tier presentation of Capital Region catalog entries are 
 - [Capital Region Building Visual Matrix](CAPITAL_REGION_BUILDING_VISUAL_MATRIX.md): catalog ID coverage, operational class, visual identity, required facade/roof elements and delivery status.
 
 These documents do not change catalog status, gameplay balance, provisional footprints or implementation authorization. All unknown numeric values remain TBD. Asset/model/prefab/device verification must be evidenced independently.
+
+
+## 11. Road, transit and mobility infrastructure design references
+
+The future-facing system design for road hierarchy, highways, bridges, intelligent intersections, bus lines, stops, terminals, public parking, transit corridors and network expansion is documented in [Capital Region Public Transport & Road Infrastructure Atlas](CAPITAL_REGION_PUBLIC_TRANSPORT_AND_ROAD_INFRASTRUCTURE_ATLAS.md).
+
+This reference does not change the statuses in this catalog:
+- `INF-ROAD-LOCAL` and `INF-ROAD-INTERSECTION` remain V1-Required.
+- `INF-ROAD-UPGRADED` remains Candidate.
+- `INF-ROAD-BRIDGE` remains Deferred.
+- `VEH-BUS` and Public transport remain Deferred.
+- `LOG-FREIGHT-TERMINAL` remains Candidate and is not a passenger terminal.
+- Public parking, highway, transit stops/terminals, bus lanes and adaptive signal control have no approved operational catalog IDs yet.
+
+Any move into implementation requires a catalog change with stable IDs, data contracts, lifecycle, economics, save migration and acceptance tests. All numeric values remain TBD until simulation/device evidence exists.
