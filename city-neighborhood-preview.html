@@ -91,7 +91,7 @@ scene.add(sun);
 const fill = new THREE.DirectionalLight("#a8dfff",.8);fill.position.set(28,18,32);scene.add(fill);
 
 const mat=(color,roughness=.85,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
-const grass=mat("#75ae63"), grass2=mat("#83b86b"), asphalt=mat("#343f49",.98), sidewalk=mat("#c7c5b7"), curb=mat("#e5dfc9"), line=mat("#f7e9b7"), soil=mat("#896847");
+const grass=mat("#75ae63"), grass2=mat("#83b86b"), asphalt=mat("#343f49",.98), sidewalk=mat("#c7c5b7"), curb=mat("#e5dfc9"), line=mat("#f7e9b7"), soil=mat("#896847"), white=mat("#fff1d1");
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(130,130),grass);ground.rotation.x=-Math.PI/2;ground.position.y=-.18;ground.receiveShadow=true;scene.add(ground);
 
 function box(parent,w,h,d,material,x,y,z,cast=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=true;parent.add(m);return m}
