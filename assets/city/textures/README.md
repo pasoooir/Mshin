@@ -17,7 +17,7 @@ Install the open-source Python packages Pillow and CairoSVG, then run:
 python -m pip install pillow cairosvg
 python tools/rasterize-city-textures.py --size 512
 ```
-The script writes PNGs to `assets/city/textures/generated/`. Import those PNGs into Cocos Creator 3.8.6; the SVGs remain editable source masters. Configure repeat/wrap sampling in the Cocos material.
+The rasterizer writes PNGs to `assets/city/textures/generated/`. The existing GitHub Actions workflow `Validate and rasterize city texture sources` verifies that all six expected outputs are valid 512×512 PNGs and uploads them as the `mshin-city-textures-512` artifact for 14 days. On pushes to `main` and manual workflow dispatch, a separate job copies the validated PNGs into `assets/resources/city/textures/generated/` and commits them when changed. PR runs validate and publish an artifact but do not commit runtime assets. Import/configure the textures in Cocos Creator 3.8.6 materials separately; the SVGs remain editable source masters.
 
 ## Quality boundary
 These are first-pass procedural albedo patterns. They do not yet include normal/roughness maps, UV validation, mipmap inspection, or Android GPU profiling. Do not mark final PBR material acceptance complete until those checks pass.
