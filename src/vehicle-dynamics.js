@@ -84,7 +84,11 @@ export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
   const before = frameAt(trackT - 0.002);
   const after = frameAt(trackT + 0.002);
   const tangentScale = Math.max(1, Math.hypot(after.p.x - before.p.x, after.p.y - before.p.y) / 0.004);
-  vehicle.t = (trackT + tangentDistance / tangentScale + Math.PI * 2) % (Math.PI * 2);
+  // Stretch only distance travelled along the circuit. Track geometry is ten
+  // times longer, while lane width, lateral handling and calibrated speed stay
+  // unchanged; this preserves race duration and steering feel.
+  const trackDistanceScale = clamp(Number(tuning.trackDistanceScale) || 1, 1, 10);
+  vehicle.t = (trackT + tangentDistance * trackDistanceScale / tangentScale + Math.PI * 2) % (Math.PI * 2);
   vehicle.lateral = clamp((Number(vehicle.lateral) || 0) + normalDistance, -260, 260);
 
   // Preserve the car's world heading while the track's local tangent rotates.
@@ -94,11 +98,14 @@ export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
 
   return {
     tire,
-    worldVelocity: { x: worldVx, y: worldVy },
+    worldVelocity: {
+      x: Math.cos(frame.angle) * (tangentDistance / dt) * (Number(tuning.trackDistanceScale) || 1) + frame.nx * (normalDistance / dt),
+      y: Math.sin(frame.angle) * (tangentDistance / dt) * (Number(tuning.trackDistanceScale) || 1) + frame.ny * (normalDistance / dt)
+    },
     heading: worldHeading,
     slipAngle: Math.atan2(vehicle.lateralVelocity, Math.max(1, longitudinalWorldSpeed)),
     longitudinalAcceleration,
-    tangentSpeed: tangentDistance / dt,
+    tangentSpeed: tangentDistance / dt * (Number(tuning.trackDistanceScale) || 1),
     lateralSpeed: normalDistance / dt
   };
 }

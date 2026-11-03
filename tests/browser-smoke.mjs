@@ -310,8 +310,9 @@ try {
   assert.ok(Number.isFinite(frameMetrics.maxFrameMs) && frameMetrics.maxFrameMs < 1500, "game loop must not stall for multiple seconds in smoke run: " + JSON.stringify(frameMetrics));
   assert.ok(Number.isInteger(frameMetrics.slowFrameCount) && frameMetrics.slowFrameCount <= 1, "at most one isolated scheduler/initialization spike above 200ms is tolerated; repeated long frames must fail: " + JSON.stringify(frameMetrics));
   assert.equal(frameMetrics.trackCacheBuilds, 0, "the WebGL race path must not build or redraw the legacy 2D track cache");
-  assert.equal(frameMetrics.trackRadiusX, 1180, "race should use a large world-space circuit instead of a compact loop");
-  assert.equal(frameMetrics.trackRadiusY, 760, "race should use a deep world-space circuit");
+  assert.equal(frameMetrics.trackLengthScale, 10, "race should use the planned tenfold track scale");
+  assert.equal(frameMetrics.trackRadiusX, 11800, "race should use a tenfold world-space circuit instead of a compact loop");
+  assert.equal(frameMetrics.trackRadiusY, 7600, "race should use a tenfold deep world-space circuit");
   assert.ok(frameMetrics.roadWidth >= 350, "four-lane asphalt should span the full wide road surface");
   assert.equal(frameMetrics.laneCount, 4, "race should expose four driving lanes");
   assert.equal(frameMetrics.playerHeadingOffsetDeg, 90, "player sprite nose should be aligned with the road tangent");

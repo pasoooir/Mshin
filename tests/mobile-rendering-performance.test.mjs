@@ -19,7 +19,7 @@ test("mobile WebGL uses a bounded landscape drawing buffer and lower GPU cost",(
  assert.ok(renderer.includes("antialias:!mobile"));
  assert.ok(renderer.includes("mobile?.68:1.5"));
  assert.ok(renderer.includes("portrait?innerHeight:innerWidth"));
- assert.ok(renderer.includes("mobile?84:softwareRenderer?96:240"));
+ assert.ok(renderer.includes("mobile?280:softwareRenderer?360:760"));
  assert.ok(renderer.includes("mobile?18:softwareRenderer?22:48"));
  assert.ok(renderer.includes("mobile?10:36"));
  assert.ok(renderer.includes("mobile?3:7"));
@@ -65,4 +65,25 @@ test("3D rival selection reuses scratch arrays, avoids sorting, and draws rivals
  assert.ok(!renderer.includes("visibleRivals.sort("));
  assert.ok(renderer.includes("drawVehicle(r.distance,r.lateral,r.yaw||0"));
  assert.ok(renderer.includes("rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta)"));
+});
+
+test("the tenfold circuit scales world geometry, horizon and longitudinal progress without widening the road",()=>{
+ assert.ok(game.includes("TRACK_LENGTH_SCALE=10,TRACK_RADIUS_X=1180*TRACK_LENGTH_SCALE,TRACK_RADIUS_Y=760*TRACK_LENGTH_SCALE,ROAD_HALF_WIDTH=180"));
+ assert.ok(game.includes("trackDistanceScale:TRACK_LENGTH_SCALE"));
+ assert.ok(game.includes("trackLengthScale:TRACK_LENGTH_SCALE"));
+ assert.ok(renderer.includes("sphere(skyTris,0,0,0,56000,30000,56000"));
+ assert.ok(renderer.includes("perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,60000)"));
+ assert.ok(renderer.includes("const segments=mobile?280:softwareRenderer?360:760,half=180"));
+});
+
+test("longitudinal world scaling uses swept hazard contacts to prevent high-speed tunnelling",()=>{
+ assert.ok(game.includes("sweptPickupContact(previousPlayerPosition,c,{x,y},42)"));
+ assert.ok(game.includes("sweptPickupContact(previousPlayerPosition,pickupCurrentPosition,{x,y},66)"));
+});
+
+test("mobile camera shake is deterministic, bounded and time-decayed",()=>{
+ assert.ok(game.includes("cameraShake*=Math.exp(-7.5*dt)"));
+ assert.ok(game.includes("const shake=Math.min(3.5,cameraShake*5)"));
+ assert.ok(game.includes("Math.sin(shakePhase*1.13)*shake"));
+ assert.ok(!game.includes("Math.random()-.5)*shake"),"camera shake must not use per-frame random offsets");
 });
