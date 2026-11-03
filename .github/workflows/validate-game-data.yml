@@ -4,7 +4,7 @@ concurrency:
   cancel-in-progress: true
 on:
   push:
-    branches: [main, "feat/**", "test/**"]
+    branches: [main, "feat/**", "test/**", "docs/**"]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -19,6 +19,8 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npm run validate:data
+      - name: Audit city material and recipe traceability
+        run: npm run audit:city-materials
       - run: npm run build:core
       - run: npm run check:js-syntax
       - name: Audit Racing and City dependency boundaries
