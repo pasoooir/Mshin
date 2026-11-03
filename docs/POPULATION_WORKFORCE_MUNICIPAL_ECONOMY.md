@@ -130,3 +130,8 @@ The proposed cross-domain model is documented in [Capital Region Citizen Needs, 
 ## Municipal finance and fiscal coupling
 
 The proposed fiscal model is documented in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md). Taxable households, workers, properties and businesses may enter a tax base only when the corresponding population, valuation and economic state is authoritative and approved. Employment, income, property value and business activity must not be inferred from nominal capacity. Tax assessment, billing, collection, household/business affordability and any delayed behavioral response remain distinct. Municipal service OPEX, staffing, CAPEX, delivered outputs and district allocations must reconcile with the finance ledger. This cross-reference approves no new tax, population, migration or economic rule and introduces no V1 ID.
+
+
+## Market demand, business activity and trade integration
+
+The proposed market architecture is documented in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). Household demand, business purchases and labor/income effects may enter market calculations only where their source models are authoritative, unit-defined and approved. Nominal jobs, household capacity or business presence do not create actual demand, sales or income. Consumption, employment, wages, business revenue and affordability remain distinct measures; market activity must not create same-interval circular population or satisfaction effects. No new demand source or economic rule is approved by this cross-reference.
