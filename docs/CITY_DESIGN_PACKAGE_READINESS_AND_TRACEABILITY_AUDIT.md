@@ -124,6 +124,12 @@ The audit preserves exact catalog/registry statuses. `MAT-CEMENT` / `REC-CEMENT-
 
 This review does not close section 46 or authorize production code.
 
+### 4.8 Required item producer coverage — conflict found, unresolved
+
+A line-by-line join of the item and recipe registry found a concrete status mismatch: `MAT-CEMENT` is V1-Required, but its only listed producer `REC-CEMENT-01` is Candidate; `CONS-BUILD-FOUNDATION` names `MAT-CEMENT` as an input. In addition, the Required recipes `REC-RAW-METAL-01` and `REC-RAW-WOOD-01` list only “Operating resources TBD”, without defining the actual source/operating-input semantics, ownership or replenishment. These are not implementation details to guess: they are canonical producer-coverage and source-contract gaps.
+
+The material-to-cash audit now records both findings, and the map decision register tracks them as TBD rows `REQUIRED-ITEM-PRODUCER-COVERAGE` and `RAW-ITEM-OPERATING-SOURCE`. No status is promoted/demoted, and no new ID or production behavior is authorized. The closest Required-only recipe path to an upgrade consumer remains incomplete pending source, recipe, storage, workforce/utility, consumer, save/replay and finance contracts.
+
 ## 5. Dependency traceability that must be completed before implementation
 
 | End-to-end capability | Required authoritative dependency chain | Required failure/recovery evidence |
