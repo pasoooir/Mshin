@@ -362,8 +362,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
       if (isRoadCell(Math.round(along))) continue;
       const alongCoordinate = (along - 31.5) * 2;
       for (const side of [-1, 1]) {
-        addStreetLamp(roadCoordinate + side * 1.42, alongCoordinate, false, side);
-        addStreetLamp(alongCoordinate, roadCoordinate + side * 1.42, true, side);
+        addStreetLamp(roadCoordinate + side * 2.4, alongCoordinate, false, side);
+        addStreetLamp(alongCoordinate, roadCoordinate + side * 2.4, true, side);
       }
     }
   }
