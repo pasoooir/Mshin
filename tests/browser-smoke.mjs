@@ -757,10 +757,18 @@ try {
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
   if (mobileOnly) {
-    const finishViewport = await economy.evaluate(() => ({ width: innerWidth, height: innerHeight, finish: document.querySelector("#finish")?.getBoundingClientRect().toJSON(), bodyWidth: document.documentElement.scrollWidth }));
+    const finishViewport = await economy.evaluate(() => ({
+      width: innerWidth, height: innerHeight,
+      finish: document.querySelector("#finish")?.getBoundingClientRect().toJSON(),
+      selectButton: document.querySelector("#finishSelect")?.getBoundingClientRect().toJSON(),
+      bodyWidth: document.documentElement.scrollWidth
+    }));
     assert.equal(finishViewport.width, 390, "the rewarded finish must remain in the compact mobile viewport");
     assert.equal(finishViewport.bodyWidth, finishViewport.width, "the mobile finish screen must not introduce horizontal overflow");
     assert.ok(finishViewport.finish && finishViewport.finish.width > 0 && finishViewport.finish.height > 0, "the finish panel must have a visible mobile layout");
+    assert.ok(finishViewport.selectButton && finishViewport.selectButton.left >= 0 && finishViewport.selectButton.top >= 0
+      && finishViewport.selectButton.right <= finishViewport.width && finishViewport.selectButton.bottom <= finishViewport.height,
+      "the finish navigation action must remain fully inside the mobile viewport: " + JSON.stringify(finishViewport));
     await captureScreenshot(economy, "artifacts/mshin-mobile-rewarded-finish.png");
   }
   await economy.locator("#finishSelect").click();
