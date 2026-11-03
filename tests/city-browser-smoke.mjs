@@ -267,6 +267,30 @@ try{
   assert.equal(recovered.legacyRecovery,"{corrupt-legacy","the malformed legacy save must be preserved separately");
   assert.deepEqual(recoveryErrors,[],"backup recovery must not throw browser errors");
  }finally{await recoveryPage.close()}
+ const invalidRecoveryPage=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const invalidRecoveryErrors=[];invalidRecoveryPage.on("pageerror",error=>invalidRecoveryErrors.push(String(error)));
+ try{
+  await invalidRecoveryPage.addInitScript(()=>{
+   localStorage.setItem("mshin-city-save-v2","{corrupt-active");
+   localStorage.setItem("mshin-city-save-v1","{corrupt-legacy");
+   localStorage.setItem("mshin-city-save-v2.backup","{corrupt-backup");
+  });
+  await invalidRecoveryPage.goto("http://127.0.0.1:4173/city.html");
+  await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  const preserved=await invalidRecoveryPage.evaluate(()=>({
+   active:localStorage.getItem("mshin-city-save-v2.recovery"),
+   legacy:localStorage.getItem("mshin-city-save-v1.recovery"),
+   backup:localStorage.getItem("mshin-city-save-v2.backup.recovery"),
+   population:window.MshinCityDebug.city.population,
+   gridRows:window.MshinCityDebug.city.grid.length
+  }));
+  assert.equal(preserved.active,"{corrupt-active","active v2 raw save must remain recoverable");
+  assert.equal(preserved.legacy,"{corrupt-legacy","legacy v1 raw save must remain recoverable");
+  assert.equal(preserved.backup,"{corrupt-backup","malformed backup raw data must remain recoverable");
+  assert.equal(preserved.population,0,"when no valid snapshot exists, load must start a clean city rather than partially importing corruption");
+  assert.equal(preserved.gridRows,32,"corrupt-save fallback must produce a complete city grid");
+  assert.deepEqual(invalidRecoveryErrors,[],"corrupt-save fallback must not throw browser errors");
+ }finally{await invalidRecoveryPage.close()}
  assert.deepEqual(errors,[],"city route must not throw runtime errors");
  process.stdout.write("City browser smoke passed: empty 3D grid, WebGL renderer, pinch zoom, zoning, construction, services, road-following traffic, 3D vehicle instancing, deep save validation/recovery, demolition persistence, autosave and live simulation.\\n");
 }finally{await browser.close()}
