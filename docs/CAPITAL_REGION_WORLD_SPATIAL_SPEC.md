@@ -99,3 +99,7 @@ The map is partitioned into spatial chunks for culling and incremental loading. 
 
 ## 13. Open decisions
 Final map dimensions; grid scale; camera projection and angle; exact natural feature; resource deposits; slope and water-clearance rules; parcel count and expansion sequence; road classes; environmental simulation depth; minimum device profile. These remain open until greybox review and device profiling.
+
+
+## Visual environment integration
+The detailed street hierarchy, neighborhood identity, street furniture, placement envelopes, lighting and mobile visual acceptance rules are maintained in [Capital Region Urban Environment & Street Life Atlas](CAPITAL_REGION_URBAN_ENVIRONMENT_AND_STREET_LIFE_ATLAS.md). Spatial graph and terrain definitions remain authoritative for connectivity and placement; visual appearance must not override them.
