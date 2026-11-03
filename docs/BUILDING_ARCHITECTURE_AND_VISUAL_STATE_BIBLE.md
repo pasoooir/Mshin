@@ -384,3 +384,8 @@ LODها بر اساس silhouette و screen-space contribution طراحی می‌
 - climate و چرخه شبانه‌روز gameplay.
 
 این موارد باید با blockout، تست روی گوشی، شبیه‌سازی و تصمیم محصول تعیین شوند. هیچ عدد نمونه‌ای در این سند نباید به‌عنوان مقدار production تعبیر شود.
+
+
+## Building occupancy, exposure and emergency risk
+
+Emergency demand and risk depend on actual occupancy, building use, construction/condition and access as defined in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Nominal housing capacity and house count do not equal residents or exposure. A building's visual state cannot independently create fire, burglary or damage; authoritative incident and condition events are required.
