@@ -26,20 +26,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install rasterization dependencies
-        run: python -m pip install --disable-pip-version-check pillow cairosvg
+      - name: Prepare isolated Python environment
+        run: |
+          python3 -m venv .texture-venv
+          .texture-venv/bin/python -m pip install --disable-pip-version-check pillow cairosvg
 
       - name: Generate PNG textures
-        run: python tools/rasterize-city-textures.py --size 512
+        run: .texture-venv/bin/python tools/rasterize-city-textures.py --size 512
 
       - name: Verify generated texture outputs
         run: |
-          python - <<'PY'
+          .texture-venv/bin/python - <<'PY'
           from pathlib import Path
           from PIL import Image
 
