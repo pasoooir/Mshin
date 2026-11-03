@@ -118,3 +118,7 @@ The conceptual service-network architecture is specified in [Capital Region Esse
 
 ## Residential and education placement integration
 The proposed residential growth and education-access model is specified in [Capital Region Education, Research, Housing Growth & City Wellbeing Atlas](CAPITAL_REGION_EDUCATION_RESEARCH_HOUSING_AND_CITY_WELLBEING_ATLAS.md). Placement must use authoritative spatial/road connectivity and approved land-use constraints. Visual proximity does not establish school/service access; reachable capacity requires a valid route and operational facility. Residential construction does not imply occupancy. No new zoning, density, travel-time or catchment rule is introduced by this reference.
+
+
+## District service access and crisis routing integration
+The proposed district allocation and crisis system is documented in [Capital Region District Resource Allocation & Crisis Management](CAPITAL_REGION_DISTRICT_RESOURCE_ALLOCATION_AND_CRISIS_MANAGEMENT_SPEC.md). District boundaries, facility catchments, road/access graphs and typed utility graphs are separate authorities. Cross-district service is valid only through a domain-appropriate route/network and operational capacity; visual proximity is insufficient. Dispatch routes must reference a graph version and invalidate stale paths after network changes. This reference does not approve new roads, districts, services or emergency units.
