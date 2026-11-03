@@ -277,6 +277,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const treeCanopies = canopyMaterials.map(material => new THREE.InstancedMesh(canopyGeometry, material, 180));
   const treeHighlights = canopyMaterials.map(material => new THREE.InstancedMesh(canopySmallGeometry, material, 180));
   let decorativeTreeCount = 0;
+  const treeSpeciesCounts = canopyMaterials.map(() => 0);
   for (let y = 1; y < VISUAL_GRID - 1; y++) {
     for (let x = 1; x < VISUAL_GRID - 1; x++) {
       if (isActiveCell(x, y) || isRoadCell(x) || isRoadCell(y)) continue;
@@ -291,21 +292,24 @@ export async function createCityThreeRenderer(sourceCanvas) {
       dummy.position.set(px, 1.45, pz);
       dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
-      treeCanopies[species].setMatrixAt(decorativeTreeCount, dummy.matrix);
+      const speciesIndex = treeSpeciesCounts[species]++;
+      treeCanopies[species].setMatrixAt(speciesIndex, dummy.matrix);
       dummy.position.set(px - 0.22, 1.68, pz - 0.16);
       dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
-      treeHighlights[species].setMatrixAt(decorativeTreeCount, dummy.matrix);
+      treeHighlights[species].setMatrixAt(speciesIndex, dummy.matrix);
       decorativeTreeCount++;
     }
   }
   treeTrunks.count = decorativeTreeCount;
   treeTrunks.instanceMatrix.needsUpdate = true;
   environment.add(treeTrunks);
-  for (const mesh of [...treeCanopies, ...treeHighlights]) {
-    mesh.count = decorativeTreeCount;
-    mesh.instanceMatrix.needsUpdate = true;
-    environment.add(mesh);
+  for (let species = 0; species < canopyMaterials.length; species++) {
+    for (const mesh of [treeCanopies[species], treeHighlights[species]]) {
+      mesh.count = treeSpeciesCounts[species];
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.count) environment.add(mesh);
+    }
   }
 
   const buildings = new THREE.Group();
@@ -338,11 +342,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
       lawn.receiveShadow = true;
       group.add(lawn);
       const parkTree = new THREE.Group();
-      const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+      const parkTrunk = new THREE.MeshStandardMaterial({ color: "#8b5b38", roughness: 0.96 });
+      const parkCanopy = new THREE.MeshStandardMaterial({ color: "#58ad58", roughness: 1 });
+      const parkHighlight = new THREE.MeshStandardMaterial({ color: "#78bd5d", roughness: 1 });
+      const trunk = new THREE.Mesh(trunkGeometry, parkTrunk);
       trunk.position.set(-0.32, 0.85, -0.16);
-      const crown = new THREE.Mesh(canopyGeometry, canopyMaterials[1]);
+      const crown = new THREE.Mesh(canopyGeometry, parkCanopy);
       crown.position.set(-0.32, 1.55, -0.16);
-      const crown2 = new THREE.Mesh(canopySmallGeometry, canopyMaterials[2]);
+      const crown2 = new THREE.Mesh(canopySmallGeometry, parkHighlight);
       crown2.position.set(-0.53, 1.78, -0.28);
       parkTree.add(trunk, crown, crown2);
       group.add(parkTree);
