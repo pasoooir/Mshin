@@ -259,3 +259,8 @@ World geography and latitude; calendar origin/time zone; day length; season mode
 All numeric values and thresholds remain TBD. Before implementation, approve the world/time model and weather authority; choose the minimal V1 variable set; map every gameplay effect to an authoritative system; approve hazard scope and catalog entries; define deterministic persistence/migration; produce editable specialist-tool/plugin assets and shaders with licenses/provenance/hashes; test accessibility and real-device performance on mobile; obtain explicit approval to leave design phase.
 
 **Evidence status:** Documentation only. No clock, weather generator, season simulation, environmental hazard, weather shader or device test is implemented or claimed by this specification. Existing V1 IDs and statuses remain unchanged.
+
+
+## Weather-driven emergency response integration
+
+The emergency service response to approved hazards is specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Weather warnings, confirmed hazards, incidents, dispatch, arrival, damage and recovery are distinct. Environmental conditions affect emergency operations only through explicit causal rules and the same authoritative clock/spatial state; weather VFX cannot create an incident.
