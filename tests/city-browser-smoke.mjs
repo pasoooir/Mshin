@@ -153,14 +153,14 @@ try{
   return{valid:Boolean(restored&&isValidCitySave(restored)),treasury:restored?.treasury,version:payload.version,exportedAt:payload.exportedAt};
  },backupPayload);
  assert.equal(migrationCheck.valid,true,"exported backup must validate before UI import: "+JSON.stringify(migrationCheck));
- let importDialogSeen=false;
+ await page.evaluate(()=>{window.__cityImportConfirmMessage=null;window.confirm=message=>{window.__cityImportConfirmMessage=String(message);return true}});
  await page.locator("#cityImportFile").evaluate(el=>el.addEventListener("change",()=>{el.dataset.testChangeSeen="true"},{once:true}));
- page.once("dialog",dialog=>{importDialogSeen=true;dialog.accept()});
  await page.locator("#cityImportFile").setInputFiles({name:"mshin-city-restore.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(backupPayload))});
  await page.waitForFunction(()=>document.querySelector("#cityImportFile").dataset.testChangeSeen==="true",undefined,{timeout:5000});
  await page.waitForFunction(expected=>window.MshinCityDebug.city.treasury===expected||document.querySelector("#cityToast").textContent.startsWith("بازیابی انجام نشد:"),backupTreasury,{timeout:10000});
- const importResult=await page.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,toast:document.querySelector("#cityToast").textContent,panelHidden:document.querySelector("#cityStoragePanel").classList.contains("hidden")}));
- assert.equal(importResult.treasury,backupTreasury,"backup import failed: "+JSON.stringify({importResult,migrationCheck,importDialogSeen}));
+ const importResult=await page.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,toast:document.querySelector("#cityToast").textContent,panelHidden:document.querySelector("#cityStoragePanel").classList.contains("hidden"),confirmMessage:window.__cityImportConfirmMessage}));
+ assert.ok(importResult.confirmMessage?.includes("شهر فعلی"),"backup import must ask for explicit replacement confirmation");
+ assert.equal(importResult.treasury,backupTreasury,"backup import failed: "+JSON.stringify({importResult,migrationCheck}));
  assert.equal(await page.locator("#cityStoragePanel").isVisible(),false,"successful restore must close the storage dialog");
  assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBackup","closing storage must restore focus to its trigger");
  const demolition=await page.evaluate(()=>{const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));if(!b)throw new Error("test fixture needs a second residential building");return window.MshinCityDebug.actAt(b.x,b.y,"bulldoze")});
