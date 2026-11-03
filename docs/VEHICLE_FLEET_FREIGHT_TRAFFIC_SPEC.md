@@ -92,3 +92,7 @@ Incidents create demand records with severity, location and response deadline/fa
 - Save/load resumes active trip once.
 - Offline catch-up produces same result as equivalent online simulation interval.
 - Dense traffic remains within target device frame/memory budgets.
+
+
+## Street-scene visual integration
+Vehicle presentation, parking props, visible traffic flows, pedestrians and emergency access must follow [Capital Region Urban Environment & Street Life Atlas](CAPITAL_REGION_URBAN_ENVIRONMENT_AND_STREET_LIFE_ATLAS.md). The fleet/traffic simulation remains the source of truth for moving vehicles and trips; decorative parked vehicles must never block graph routes or imply active trips.
