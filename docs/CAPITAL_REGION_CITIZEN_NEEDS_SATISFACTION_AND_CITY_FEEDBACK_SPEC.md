@@ -178,3 +178,8 @@ Before implementation: approve capabilities/IDs in the catalog; select coherent 
 
 ## District allocation and fairness integration
 The allocation and crisis policy is specified in [Capital Region District Resource Allocation & Crisis Management](CAPITAL_REGION_DISTRICT_RESOURCE_ALLOCATION_AND_CRISIS_MANAGEMENT_SPEC.md). Need/demand metrics feed allocation only through approved service contracts; allocation outcomes return as delivered, unmet, deferred or queued quantities with district, interval and policy-version traceability. Fairness diagnostics must use valid denominators and disclose data coverage. Historical under-service may inform a future policy only after explicit approval; it must not create an unbounded same-tick feedback loop or an automatic score bonus.
+
+
+## Municipal affordability and fiscal feedback integration
+
+The proposed financial model is documented in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md). Affordability indicators may be exposed only when authoritative household/business income, charges and cost data exist. Tax bills are not cash payments; service funding is not delivered service; budget changes do not instantly alter satisfaction. Fiscal pressure, affordability and service outcomes must retain separate raw measures, denominators, intervals and formula versions. No tax burden, sentiment, migration or score formula is approved by this cross-reference; unmodeled domains remain Not modeled.
