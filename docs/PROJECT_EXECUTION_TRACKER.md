@@ -1,16 +1,15 @@
-# وضعیت اجرایی جاری — بازبینی 2026-11-03 پس از PRهای #204، #205 و #208
+# وضعیت اجرایی جاری — بازبینی 2026-11-03 پس از ادغام PR #211
 
 > وضعیت‌ها فقط بر اساس commit و checkهای قابل مشاهده ثبت شده‌اند. CI موبایل معادل QA دستگاه Android واقعی نیست.
 
 ## خط مبنای main
 
-- **main:** `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`.
-- **PRهای #199 تا #204:** 🟢 ادغام‌شده؛ شامل مسیر‌یابی جاده‌ای محل کار، حرکت عابرهای شاغل، کاهش سرعت وابسته به تراکم و اثر محدود تراکم بر رفاه شهروندان.
-- **PR #205 — اصلاح رگرسیون ذخیره:** 🟢 ادغام‌شده در `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`. چهار بررسی exact-head موفق شدند: `validate`, `browser-smoke`, `Road connectivity, zoning, growth and traffic regression` و `Population baseline and employment-slice regression`.
-- **انتشار main:** `validate`, `build` و GitHub Pages `deploy` روی commit `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b` موفق‌اند. اجرای browser smoke شماره `41647308147` 🟢 موفق شد؛ city entry، mobile-only، مسابقه سه‌دور با پاداش و offline همگی موفق شدند و پیش‌نمایش‌های موبایل بارگذاری شدند.
-- **PR #208 — Native Cocos city visual vertical slice:** 🟢 ادغام‌شده در `2d038c8dd084853211c6ea2b8ca93909a2ba9a9b`؛ exact-head `validate` موفق شد. blockout هندسی شامل خانه، آپارتمان، فروشگاه، کارخانه، پارک، خیابان و مبلمان شهری است. main mobile smoke شماره `41647308147` موفق شد. تکسچر نهایی، Cocos Editor import، اتصال به scene، APK و QA دستگاه Android هنوز تأیید نشده‌اند.
-- **PR #209:** باز؛ به‌روزرسانی roadmap و tracker با شواهد PRهای #204، #205 و #208. exact-head validation و browser smoke در حال اجرا هستند.
-- **PR #92:** پیش‌نویس قدیمی تبلیغات کنار جاده؛ خارج از مسیر فعال توسعه و نیازمند تعیین تکلیف جداگانه.
+- **main:** `ceaec1375400ed3fd075082ae40b190de197ae5a`.
+- **PR #211 — بهره‌وری کسب‌وکار وابسته به تراکم:** 🟢 ادغام‌شده؛ مدل deterministic با سقف کاهش ۱۵٪ برای درآمد تجاری/صنعتی، بدون جریمه مالیات مسکونی و بودجه عمومی. شاخص بهره‌وری و زیان در بودجه موبایل و ذخیره ثبت می‌شوند.
+- **شواهد exact-head PR #211:** runهای `41648207345` (mobile browser)، `41648207411` (city mobile/rendering)، `41648207413` (save recovery)، `41648207450` (employment)، `41648207532` (utilities/services)، `41648207541` (roads/zoning/traffic) و `41648207909` (validate) همگی موفق شدند.
+- **پذیرش موبایل PR #211:** city entry، mobile-only، مسابقه سه‌دور با پاداش، offline و بارگذاری پیش‌نمایش‌ها همگی در browser-smoke موفق شدند؛ این شبیه‌سازی مرورگر است، نه دستگاه Android واقعی.
+- **PR #209:** به‌روزرسانی اسناد با شواهد #211 در حال انجام؛ validation و browser smoke روی head قبلی موفق بودند و پس از commit جدید باید دوباره اجرا شوند.
+- **PR #92:** پیش‌نویس قدیمی تبلیغات کنار جاده؛ خارج از مسیر فعال توسعه.
 - **Android فیزیکی و Cocos Creator Editor:** تأییدنشده؛ شبیه‌سازی مرورگر جایگزین این دروازه‌ها نیست.
 
 ## وضعیت اجرایی شهر
