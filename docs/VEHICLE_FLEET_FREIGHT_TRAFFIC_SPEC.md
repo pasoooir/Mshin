@@ -103,3 +103,9 @@ Vehicle presentation, parking props, visible traffic flows, pedestrians and emer
 The detailed class-by-class art, state, animation, road-use, parking, pedestrian-boundary, specialist-tool, provenance and mobile acceptance requirements are defined in [Capital Region Vehicle & Mobility Visual Atlas](CAPITAL_REGION_VEHICLE_AND_MOBILITY_VISUAL_ATLAS.md).
 
 The fleet specification remains authoritative for trip, dispatch, freight, capacity, route and simulation outcomes. The visual atlas cannot add operational vehicle classes or activate Candidate/Deferred content. Presentation consumes authoritative state and cannot write to trip or inventory transactions. All unknown dimensions, rates, agent caps and device budgets remain TBD until measured.
+
+## Public transport and road infrastructure integration
+
+The future transit network, bus stop/terminal/depot, passenger demand, boarding/capacity, transit priority, parking and road hierarchy design are specified in [Capital Region Public Transport & Road Infrastructure Atlas](CAPITAL_REGION_PUBLIC_TRANSPORT_AND_ROAD_INFRASTRUCTURE_ATLAS.md).
+
+This fleet specification remains authoritative for vehicle/trip/dispatch behavior. `VEH-BUS` and public transport remain Deferred; no passenger trip, bus service or transit benefit is activated by the visual/design atlas. A bus line must eventually resolve to compatible road edges, stops, fleet assignments and authoritative passenger demand before it can be operational.
