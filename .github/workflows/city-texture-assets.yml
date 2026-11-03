@@ -61,3 +61,36 @@ jobs:
           path: assets/city/textures/generated/*.png
           if-no-files-found: error
           retention-days: 14
+
+  publish-runtime-textures:
+    name: Publish generated Cocos runtime textures
+    needs: rasterize
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Download validated texture outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: mshin-city-textures-512
+          path: assets/city/textures/generated
+
+      - name: Commit runtime-ready PNG assets when changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/city/textures/generated/*.png
+          if git diff --cached --quiet; then
+            echo "Generated texture assets are already up to date."
+            exit 0
+          fi
+          git commit -m "assets(city): publish generated runtime textures"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
