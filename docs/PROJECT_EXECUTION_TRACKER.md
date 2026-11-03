@@ -277,3 +277,18 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - **Changed files:** `index.html`, `src/audio.js`, `src/web-game.js`, `src/asset-manifest.json`, `service-worker.js`, `package.json`, `manifest.webmanifest`, `tests/browser-smoke.mjs`.
 - **PWA:** app version `0.9.1`, asset marker `2026.10.31.15`, cache `mshin-arcade-v31`; app shell now includes the aerial renderer.
 - **Acceptance still pending:** CI must confirm OGA audio CORS/download/decode; browser assertions for independent switches and persisted slider values must pass; visual mobile settings QA and offline re-entry with the new music assets remain to be verified. No release is accepted until all required checks pass.
+
+
+## اجرای دستی حوزه شهرسازی از GitHub Actions — 2026-11-03
+
+پنج workflow مستقل با رویداد `workflow_dispatch` به شاخه `main` افزوده شدند و در تب Actions قابل اجرای دستی هستند:
+
+| Workflow | دامنه اجرا | محدودیت مهم |
+|---|---|---|
+| `city-employment-demand.yml` | رگرسیون جمعیت و هسته شهر | تطبیق واقعی شهروند با شغل، vacancy و بازخورد تقاضای کار هنوز پیاده‌سازی/پذیرفته نشده؛ این workflow صریحاً baseline را گزارش می‌کند. |
+| `city-service-impact.yml` | پوشش زیرساخت، خدمات عمومی و اقتصاد | تقاضای پویای خدمات، اشباع ظرفیت و اثر رضایت شهروندی هنوز نیازمند توسعه و تست اختصاصی است. |
+| `city-save-recovery.yml` | مهاجرت ذخیره، backup round-trip و سازگاری آفلاین | آزمون‌های موجود را اجرا می‌کند؛ بازیابی‌های خطا/کمبود فضا و UX کامل هنوز باید توسعه یابد. |
+| `city-roads-zoning-traffic.yml` | اتصال جاده، zoning، رشد و ترافیک | رگرسیون سیستم‌های موجود؛ پذیرش دستگاه واقعی را جایگزین نمی‌کند. |
+| `city-mobile-performance.yml` | smoke موبایل شهر، rendering budget و artifactها | Playwright شبیه‌سازی موبایل است؛ اندازه‌گیری Android واقعی همچنان باز است. |
+
+این workflowها ابزار اجرای دستی تست و دروازه پذیرش هستند، نه ادعای تکمیل خودکار قابلیت‌های مفقود. هر نتیجه فقط پس از اجرای واقعی و بررسی log/artifact می‌تواند وضعیت tracker را تغییر دهد.
