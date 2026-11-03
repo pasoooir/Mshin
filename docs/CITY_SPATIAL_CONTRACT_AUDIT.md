@@ -2,7 +2,7 @@
 
 - Status: evidence-based audit; **not an implementation approval**.
 - Audit date: 2026-11-03.
-- Source code inspected: `pasoooir/Mshin`, branch `fix/city-crossings-require-pedestrian-graph`, commit `6a8196f177829a35fef8d9c8c3d930d436e59626`.
+- Source code inspected: `pasoooir/Mshin`, branch `main`, merge commit `cc40ba50c035f3ba458bbb3a4711aada7b567997` (PR #164 merge; source modules re-fetched from current `main` on 2026-11-03).
 - Design references inspected: `CITY_GAME_DESIGN_MASTER.md` sections 46, 47 and 69; `CAPITAL_REGION_WORLD_SPATIAL_SPEC.md`; `CAPITAL_REGION_URBAN_ENVIRONMENT_AND_STREET_LIFE_ATLAS.md`.
 - Purpose: identify spatial-contract mismatches before any ROW, sidewalk, street-furniture, pedestrian or city-simulation implementation.
 
@@ -10,7 +10,7 @@
 
 **Do not implement a new sidewalk/ROW, pedestrian graph, road hierarchy, multi-cell footprint, parcel expansion, or new simulation behavior as part of this audit.**
 
-Master design section 46 remains a hard gate: the city-building vertical slice is not approved for new implementation until the design package, V1 content/recipe set, end-to-end production/economy/service loop, traffic/fleet levels, persistence/offline behavior, mobile HUD/build tools, visual bible and real-device acceptance/performance evidence are complete and explicitly approved. The current master document itself says these items remain incomplete and city-building coding has not begun.
+Master design section 46 remains a hard gate: the city-building vertical slice is not approved for new implementation until the design package, V1 content/recipe set, end-to-end production/economy/service loop, traffic/fleet levels, persistence/offline behavior, mobile HUD/build tools, visual bible and real-device acceptance/performance evidence are complete and explicitly approved. The current master document acknowledges a limited browser prototype, but explicitly states that it is not the approved vertical slice and that production city-building in Cocos Creator plus the complete simulation loop have not started/been approved.
 
 This audit is limited to documenting current behavior, identifying mismatches, and defining evidence required before a future design decision. It does not change IDs, save schema, parcel status, simulation values, gameplay rules, or V1 scope.
 
@@ -105,7 +105,15 @@ All unknown values remain TBD as required by the design documents. No new V1 IDs
 - `src/city/city-view.js`: lines 3, 6–7, 28, 39–40.
 - `src/city/city-zoning.js`: lines 10, 13, 39.
 - `src/city/city-services.js`: lines 12, 16.
-- `src/city/city-three-renderer.js`: lines 3–8, 125, 296, 318–320, 522–536.
-- `tests/city-view.test.mjs` and `tests/city-zoning.test.mjs`: current coverage is for the prototype grid/adjacency/zoning behavior; it does not establish the missing graph/terrain/parcel contracts.
+- `src/city/city-three-renderer.js` on `main`: lines 3–8, 199–218 (formula markings; crossings disabled), 241–297 (perimeter trees and street furniture deferred), 320 (building transform), 528–536 (`tileAt` and coordinate conversion), 549–566 (reported renderer stats).
+- `tests/city-view.test.mjs` and `tests/city-zoning.test.mjs`: current coverage is for the prototype grid/adjacency/zoning behavior; it does not establish the missing graph/terrain/parcel contracts. `tests/city-browser-smoke.mjs` lines 16 and 18 assert perimeter-tree placement and disabled street-furniture readiness; the smoke test is not evidence of a real-device Cocos build.
 
-**Audit conclusion:** preserve the PR #164 safety guards. The next valid step is design reconciliation of the authoritative spatial schema and explicit approval of the section-46 package—not adding more street props or expanding the prototype simulation.
+## 8. Main-branch reconciliation (2026-11-03)
+
+- PR #164 is now merged into `main` at `cc40ba50c035f3ba458bbb3a4711aada7b567997`; the audit source has been re-fetched from `main`, not inferred from the former PR branch.
+- The current renderer still reports `crosswalkStripes: 0`, `decorativeStreetLights: 0` and `streetFurniturePlacementReady: false`; the browser smoke test checks the tree and furniture guards. Perimeter trees remain outside the visual grid.
+- The renderer still generates road markings from visual index formulas, and the gameplay placement/service modules still use local adjacency and Euclidean radius rather than authoritative graph routes.
+- The master-document wording has been reconciled: a limited browser prototype exists; the approved Cocos production vertical slice and complete simulation do not.
+- The map decision register now explicitly tracks spatial schema version, independent road/access, utility and conditional pedestrian graph revisions, service-access cache revision, district identity, save/map compatibility and offline spatial-state behavior. All remain TBD; these additions are design traceability only.
+
+**Audit conclusion:** preserve the merged PR #164 safety guards. The next valid step is design reconciliation of the authoritative spatial schema and explicit approval of the section-46 package—not adding more street props or expanding the prototype simulation.
