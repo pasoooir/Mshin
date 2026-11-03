@@ -271,3 +271,10 @@ This reference adds no operational IDs and changes no V1 status. It does not app
 The proposed market, order/contract, pricing, inventory reservation, freight delivery, settlement and interregional commerce architecture is specified in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md).
 
 This reference adds no operational IDs and changes no V1 status. It does not approve new tradable goods, market venues, NPC buyers, dynamic pricing, tariffs, freight modes or regional trade routes. Existing item and vehicle registry entries/statuses remain authoritative; all quantities, prices, capacities and timing values remain TBD.
+
+
+## Tourism, visitors, attractions and hospitality — design reference
+
+The proposed visitor lifecycle, attraction access/capacity, lodging reservations, visitor spending, events and district/service impacts are specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md).
+
+This reference adds no operational IDs and changes no V1 status. It does not approve attraction types, hotels, visitor agents, events, passenger transport modes, tourism taxes or destination-management features. Existing transport statuses remain unchanged; public transport remains Deferred. All rates, prices, capacities and timing values remain TBD.
