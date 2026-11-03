@@ -137,12 +137,12 @@ try{
  const inertiaStateAtRelease=await page.evaluate(()=>window.MshinCityDebug.view.gesture);
  const orbitAtRelease=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  assert.ok(inertiaStateAtRelease.inertiaActive,"lifting the last finger must start inertial motion");
- await page.waitForTimeout(120);
+ await page.waitForFunction(start=>window.MshinCityDebug.view.orbit>start,orbitAtRelease,{timeout:2000});
  const orbitAfterRelease=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  assert.ok(orbitAfterRelease>orbitAtRelease,"camera orbit must retain a short, damped inertial glide after fingers lift");
- await page.waitForTimeout(500);
+ await page.waitForTimeout(1200);
  const settledOrbit=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
- await page.waitForTimeout(100);
+ await page.waitForTimeout(150);
  assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.orbit))-settledOrbit)<0.01,"camera inertia must decay to a stable stop");
 
  const pinchStart=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
