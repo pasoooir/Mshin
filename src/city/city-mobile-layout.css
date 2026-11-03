@@ -97,7 +97,7 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
 }
 @media(max-height:520px) and (min-width:761px){.cityToolCategories{display:none}.cityToolPanel{flex-direction:row;flex-wrap:nowrap}}
 
-.cityToolPanel[hidden]{display:none!important}
+.cityToolPanel[hidden]{display:flex!important}
 @media(max-height:520px) and (min-width:761px){
  .cityTools{position:fixed;z-index:8;left:50%;bottom:calc(env(safe-area-inset-bottom) + 62px);transform:translateX(-50%);width:min(560px,calc(100vw - 100px));max-width:calc(100vw - 100px);display:flex;flex-direction:column;gap:5px;padding:5px;margin:0;overflow:visible}
  .cityToolCategories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
@@ -107,4 +107,5 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
  .cityToolPanel:not([hidden]){display:grid}
  .cityTools .cityTool{width:100%;height:42px;min-width:0;display:grid;place-items:center;gap:1px;font-size:16px}
  .cityTools .cityTool small{font-size:8px;white-space:nowrap}
+ .cityToolPanel[hidden]{display:none!important}
 }
