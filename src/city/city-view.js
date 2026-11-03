@@ -3,7 +3,7 @@ import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
 import { stepCityTraffic } from "./city-traffic.js";
 import { syncCityCitizens, stepCityCitizens } from "./city-population.js";
 import { CITY_DEFAULT_TAX_RATES, CITY_TAX_RATE_LIMIT, normalizeCityTaxRates, setCityTaxRate, computeCityEconomy, cityTaxPressure } from "./city-economy.js";
-const SIZE=32,KEY="mshin-city-save-v2",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
+const SIZE=32,KEY="mshin-city-save-v2",LEGACY_KEY="mshin-city-save-v1",BACKUP_KEY=KEY+".backup",RECOVERY_KEY=KEY+".recovery",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
 const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b)&&g[y+b][x+a]==="road");
@@ -203,9 +203,116 @@ export function normalizeCitySave(value) {
   }
   return city;
 }
+
+/** Import either a current v2 city snapshot, a v1 local save, or an exported backup envelope. */
+export function migrateCitySave(value) {
+  const snapshot = isRecord(value) && value.format === "mshin-city-save" ? value.city : value;
+  if (isValidCitySave(snapshot)) return normalizeCitySave(snapshot);
+  if (!isRecord(snapshot) || snapshot.schemaVersion !== 1
+    || typeof snapshot.cityId !== "string" || !snapshot.cityId.trim()
+    || typeof snapshot.name !== "string" || !snapshot.name.trim()
+    || !Number.isSafeInteger(snapshot.seed) || snapshot.seed < 0 || snapshot.seed > 0xffffffff
+    || !Number.isSafeInteger(snapshot.tick) || snapshot.tick < 0
+    || !Number.isFinite(snapshot.treasury) || Math.abs(snapshot.treasury) > 1e12
+    || !Number.isInteger(snapshot.population) || snapshot.population < 0 || snapshot.population > 1e7
+    || !Array.isArray(snapshot.grid) || snapshot.grid.length !== SIZE
+    || !snapshot.grid.every(row => Array.isArray(row) && row.length === SIZE
+      && row.every(tile => ["grass","road","building","water"].includes(tile)))
+    || !Array.isArray(snapshot.buildings) || !Array.isArray(snapshot.trees)) return null;
+
+  const buildings = snapshot.buildings.map(building => isRecord(building) ? {
+    ...building,
+    level: Number.isInteger(building.level) && building.level > 0 ? building.level : 1,
+    age: Number.isFinite(building.age) && building.age >= 0 ? building.age : 0,
+    residents: Number.isInteger(building.residents) && building.residents >= 0 ? building.residents : 0
+  } : building);
+  const migrated = {
+    schemaVersion: 2,
+    cityId: snapshot.cityId.slice(0,100),
+    name: snapshot.name.slice(0,80),
+    seed: snapshot.seed,
+    tick: snapshot.tick,
+    minuteOfDay: Number.isInteger(snapshot.minuteOfDay) && snapshot.minuteOfDay >= 0 && snapshot.minuteOfDay < 1440 ? snapshot.minuteOfDay : 495,
+    treasury: snapshot.treasury,
+    population: snapshot.population,
+    happiness: Number.isFinite(snapshot.happiness) && snapshot.happiness >= 0 && snapshot.happiness <= 100 ? snapshot.happiness : 76,
+    grid: snapshot.grid.map(row => [...row]),
+    buildings,
+    zones: [],
+    trees: snapshot.trees.map(tree => isRecord(tree) ? {...tree,size:Number.isFinite(tree.size)&&tree.size>0?tree.size:1} : tree),
+    citizens: [],
+    traffic: [],
+    nextTrafficId: 1,
+    nextCitizenId: 1,
+    animals: [],
+    nextBuildingId: validId(snapshot.nextBuildingId) ? snapshot.nextBuildingId : Math.max(0,...buildings.map(item=>item?.id||0))+1,
+    taxRates: {...CITY_DEFAULT_TAX_RATES},
+    stats: {
+      income: Number.isFinite(snapshot.stats?.income) ? snapshot.stats.income : 0,
+      expenses: Number.isFinite(snapshot.stats?.expenses) ? snapshot.stats.expenses : 0,
+      net: 0,
+      taxRevenue: 0,
+      maintenance: 0,
+      serviceUpkeep: 0,
+      jobs: Number.isFinite(snapshot.stats?.jobs) ? snapshot.stats.jobs : 0,
+      traffic: 0
+    }
+  };
+  if (!isValidCitySave(migrated)) return null;
+  syncCityCitizens(migrated);
+  return isValidCitySave(migrated) ? migrated : null;
+}
+
+export function createCitySaveBackup(city, exportedAt = new Date().toISOString()) {
+  if (!isValidCitySave(city) || typeof exportedAt !== "string") {
+    throw new TypeError("A valid city snapshot is required for backup export");
+  }
+  return {
+    format: "mshin-city-save",
+    version: 2,
+    exportedAt,
+    city: JSON.parse(JSON.stringify(normalizeCitySave(city)))
+  };
+}
+
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
-function load(){try{return normalizeCitySave(JSON.parse(localStorage.getItem(KEY)||"null"))}catch{return createInitialCity()}}
-function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return true}catch{return false}}
+function load(){
+ try{
+  const currentRaw=localStorage.getItem(KEY);
+  if(currentRaw){
+   try{
+    const parsed=JSON.parse(currentRaw),current=migrateCitySave(parsed);
+    if(current){if(parsed?.schemaVersion===1)persist(current);return current}
+    try{localStorage.setItem(RECOVERY_KEY,currentRaw.slice(0,1000000))}catch{}
+   }catch{}
+  }
+  const legacyRaw=localStorage.getItem(LEGACY_KEY);
+  if(legacyRaw){
+   try{
+    const migrated=migrateCitySave(JSON.parse(legacyRaw));
+    if(migrated&&persist(migrated)){localStorage.removeItem(LEGACY_KEY);return migrated}
+    try{localStorage.setItem(RECOVERY_KEY,legacyRaw.slice(0,1000000))}catch{}
+   }catch{}
+  }
+  const backupRaw=localStorage.getItem(BACKUP_KEY);
+  if(backupRaw){
+   try{const backup=migrateCitySave(JSON.parse(backupRaw));if(backup){persist(backup);return backup}}catch{}
+  }
+ }catch{}
+ return createInitialCity();
+}
+function persist(city){
+ if(!isValidCitySave(city))return false;
+ const serialized=JSON.stringify(city);
+ try{
+  const previous=localStorage.getItem(KEY);
+  if(previous){
+   try{if(isValidCitySave(JSON.parse(previous)))localStorage.setItem(BACKUP_KEY,previous)}catch{}
+  }
+  localStorage.setItem(KEY,serialized);
+  return true;
+ }catch{return false}
+}
 function mount(){
  let canvas=document.getElementById("cityViewport");const ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;let threeRenderer=null;
  const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1};
