@@ -183,3 +183,8 @@ The allocation and crisis policy is specified in [Capital Region District Resour
 ## Municipal affordability and fiscal feedback integration
 
 The proposed financial model is documented in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md). Affordability indicators may be exposed only when authoritative household/business income, charges and cost data exist. Tax bills are not cash payments; service funding is not delivered service; budget changes do not instantly alter satisfaction. Fiscal pressure, affordability and service outcomes must retain separate raw measures, denominators, intervals and formula versions. No tax burden, sentiment, migration or score formula is approved by this cross-reference; unmodeled domains remain Not modeled.
+
+
+## Visitor needs and resident-service protection
+
+Tourism service impacts are specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Temporary visitor demand must be measured separately from resident household demand and may affect service delivery only through approved consumption and access rules. Resident and visitor fulfillment, affordability, access and unmet demand must not be collapsed into an opaque happiness score. Visitor presence does not change permanent population, and unmodeled visitor needs remain Not modeled.
