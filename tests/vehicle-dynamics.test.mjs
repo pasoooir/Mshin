@@ -49,3 +49,18 @@ test("zero fixed step leaves vehicle state unchanged",()=>{
  assert.equal(stepVehicleDynamics(car,{throttle:true,brake:false,steer:1},{...tuning,dt:0},frameAt),null);
  assert.deepEqual(car,before);
 });
+
+test("tenfold circuit scaling preserves lateral handling and calibrated race speed",()=>{
+ const normal=makeCar({speed:180}),scaled=makeCar({speed:180});
+ const controls={throttle:false,brake:false,steer:0};
+ const a=stepVehicleDynamics(normal,controls,{...tuning,acceleration:0,trackDistanceScale:1},frameAt);
+ const b=stepVehicleDynamics(scaled,controls,{...tuning,acceleration:0,trackDistanceScale:10},frameAt);
+ assert.ok(scaled.t>normal.t*9.99,"the longer world must advance ten times as far along the circuit per simulation step");
+ assert.equal(scaled.lateral,normal.lateral,"road-relative lane offset must not be multiplied");
+ assert.equal(scaled.speed,normal.speed,"the calibrated speedometer value must remain unchanged");
+ const f=frameAt(0);
+ const tangent=(v)=>v.x*Math.cos(f.angle)+v.y*Math.sin(f.angle);
+ const normalVelocity=(v)=>v.x*f.nx+v.y*f.ny;
+ assert.ok(Math.abs(tangent(b.worldVelocity)-tangent(a.worldVelocity)*10)<1e-6);
+ assert.ok(Math.abs(normalVelocity(b.worldVelocity)-normalVelocity(a.worldVelocity))<1e-6);
+});
