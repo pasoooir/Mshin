@@ -34,7 +34,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ### P1 — Stabilize the racing game
 
-- Reconcile any newly opened racing PR against main before feature work. The remaining open PR is #92 (stale draft billboard branch, diverged/non-mergeable). PR #179 was merged as a documentation snapshot; this roadmap refresh supersedes its stale baseline. City budget/tax controls, accessible budget dialog and VisualViewport/safe-area behavior are merged in PRs #182, #185 and #186.
+- Reconcile any newly opened racing PR against main before feature work. PR #92 remains a stale draft billboard branch (diverged/non-mergeable), not an active racing delivery. Current open PR inventory: #196 (execution documentation), #198 (workflow concurrency), and stale draft #92. PR #179 was merged as a documentation snapshot; this roadmap refresh supersedes its stale baseline. City budget/tax controls, accessible budget dialog and VisualViewport/safe-area behavior are merged in PRs #182, #185 and #186.
 - Confirm the tenfold track-length and steering correction in PR #132 against current main behavior and automated evidence.
 - Keep vehicle physics, input sampling, rendering and progression as separate testable domains.
 - Verify a complete real race: countdown, driving, collisions, pickups, laps, finish, reward and persisted progress. Do not weaken finish/reward assertions to make smoke tests pass.
