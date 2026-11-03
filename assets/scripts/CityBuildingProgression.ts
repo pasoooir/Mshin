@@ -1,12 +1,18 @@
 import { _decorator, Component } from "cc";
+import {
+  advanceCityBuildingProgression,
+  cityBuildingProgress,
+  createCityBuildingProgression,
+  startCityBuildingUpgrade,
+  type CityBuildingProgressionState,
+  type CityBuildingState
+} from "../../src/city/core/building-progression.js";
 
 const { ccclass, property } = _decorator;
 
-export type CityBuildingState = "constructing" | "complete";
-
 /**
- * Construction timer and upgrade progression for a placed city building.
- * Attach this component to the root node of each placed building.
+ * Cocos adapter for the engine-independent city building lifecycle.
+ * Attach to the root node of a placed building.
  */
 @ccclass("MshinCityBuildingProgression")
 export class CityBuildingProgression extends Component {
@@ -16,65 +22,60 @@ export class CityBuildingProgression extends Component {
   @property({ tooltip: "Maximum supported building level." })
   maxLevel = 5;
 
-  @property({ tooltip: "Additional construction time per upgrade level, in seconds." })
+  @property({ tooltip: "Construction time for each upgrade, in seconds." })
   upgradeDuration = 12;
 
-  private remainingSeconds = 0;
-  private currentState: CityBuildingState = "constructing";
-  private currentLevel = 1;
+  private progression: CityBuildingProgressionState | null = null;
 
-  get state(): CityBuildingState {
-    return this.currentState;
-  }
-
-  get level(): number {
-    return this.currentLevel;
-  }
-
-  get constructionProgress(): number {
-    if (this.currentState === "complete") return 1;
-    const duration = Math.max(0.001, this.constructionDuration);
-    return Math.min(1, Math.max(0, 1 - this.remainingSeconds / duration));
-  }
-
-  get secondsRemaining(): number {
-    return Math.max(0, this.remainingSeconds);
-  }
-
-  onEnable(): void {
-    if (this.currentState === "constructing" && this.remainingSeconds <= 0) {
-      this.beginConstruction(this.constructionDuration);
-    }
+  onLoad(): void {
+    this.progression = createCityBuildingProgression({
+      constructionDuration: this.constructionDuration,
+      maxLevel: this.maxLevel,
+      upgradeDuration: this.upgradeDuration
+    });
   }
 
   update(deltaTime: number): void {
-    if (this.currentState !== "constructing") return;
-    this.remainingSeconds = Math.max(0, this.remainingSeconds - Math.max(0, deltaTime));
-    if (this.remainingSeconds === 0) {
-      this.currentState = "complete";
-      console.info("[MshinCity] Building construction completed:", this.node.name);
-    }
+    if (!this.progression) return;
+    this.progression = advanceCityBuildingProgression(this.progression, deltaTime);
   }
 
-  /** Starts or restarts construction for this placed building. */
+  get state(): CityBuildingState {
+    return this.progression?.state ?? "constructing";
+  }
+
+  get level(): number {
+    return this.progression?.level ?? 1;
+  }
+
+  get constructionProgress(): number {
+    return this.progression ? cityBuildingProgress(this.progression) : 0;
+  }
+
+  get secondsRemaining(): number {
+    return this.progression?.secondsRemaining ?? Math.max(0, this.constructionDuration);
+  }
+
+  /** Starts a new construction cycle without changing the building level. */
   beginConstruction(durationSeconds = this.constructionDuration): void {
-    this.constructionDuration = Math.max(0, durationSeconds);
-    this.remainingSeconds = this.constructionDuration;
-    this.currentState = this.remainingSeconds === 0 ? "complete" : "constructing";
+    const duration = Number.isFinite(durationSeconds) ? Math.max(0, durationSeconds) : 0;
+    this.constructionDuration = duration;
+    this.progression = createCityBuildingProgression({
+      constructionDuration: duration,
+      maxLevel: this.maxLevel,
+      upgradeDuration: this.upgradeDuration
+    });
+    if (this.progression) {
+      this.progression.level = this.level;
+    }
   }
 
-  /**
-   * Starts an upgrade cycle when the building is complete and below max level.
-   * Returns false when an upgrade cannot be started.
-   */
+  /** Starts the next upgrade cycle, or returns false if the building cannot upgrade. */
   upgrade(): boolean {
-    if (this.currentState !== "complete" || this.currentLevel >= Math.max(1, this.maxLevel)) {
-      return false;
-    }
-
-    this.currentLevel += 1;
-    this.beginConstruction(this.upgradeDuration);
-    console.info("[MshinCity] Building upgrade started:", this.node.name, "level", this.currentLevel);
+    if (!this.progression) return false;
+    const next = startCityBuildingUpgrade(this.progression);
+    if (!next) return false;
+    this.progression = next;
     return true;
   }
 }
