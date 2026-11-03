@@ -28,7 +28,10 @@ jobs:
         run: node --test tests/city-services.test.mjs
       - name: Test service upkeep and budget interactions
         run: node --test tests/city-economy.test.mjs
-      - name: Report remaining acceptance scope
+      - name: Report verified service acceptance scope
         run: |
-          echo "Current coverage and deterministic service/economy regressions passed."
-          echo "Richer demand, capacity saturation, citizen-level access and measurable satisfaction response still require dedicated implementation and acceptance tests."
+          echo "Service and economy regression passed."
+          echo "Verified: geographic reach, demand-weighted finite capacity allocation, station capacity pooling and per-building service satisfaction."
+          echo "Verified: resident-weighted satisfaction, utility/public-service coverage metrics and service upkeep in the city budget."
+          echo "Known model boundary: service allocation is a deterministic proximity-and-capacity model, not a full travel-time, dispatch or utility-network flow simulation."
+          echo "Playwright/browser and physical-device acceptance remain separate gates."
