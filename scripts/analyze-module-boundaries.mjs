@@ -43,6 +43,9 @@ async function resolveExistingTarget(candidate) {
   const clean = path.posix.normalize(candidate).replace(/^\.\//, "");
   const attempts = [
     clean,
+    // NodeNext TypeScript source commonly imports the emitted .js specifier.
+    // Resolve that specifier to its .ts source counterpart for static analysis.
+    ...(clean.endsWith(".js") ? [clean.slice(0, -3) + ".ts"] : []),
     ...[".js", ".mjs", ".cjs", ".ts", ".json", ".css", ".svg"].map(extension => clean + extension),
     ...["index.js", "index.mjs", "index.ts"].map(index => path.posix.join(clean, index))
   ];
