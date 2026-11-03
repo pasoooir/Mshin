@@ -30,7 +30,7 @@ Improve the repository as a maintainable two-game product (racing + city simulat
 
 ### P1 — Stabilize the racing game
 
-- Reconcile open racing PRs against main before further feature work. Prioritize #140–#146 only where their diffs remain necessary.
+- Reconcile any newly opened racing PR against main before feature work. The current sole open PR is #92 (draft, 436 commits behind main, non-mergeable); keep it blocked until rebased and its rendered billboard output is accepted on mobile.
 - Confirm the tenfold track-length and steering correction in PR #132 against current main behavior and automated evidence.
 - Keep vehicle physics, input sampling, rendering and progression as separate testable domains.
 - Verify a complete real race: countdown, driving, collisions, pickups, laps, finish, reward and persisted progress. Do not weaken finish/reward assertions to make smoke tests pass.
@@ -96,7 +96,7 @@ For every feature, record:
 | Priority | Work item | Status | Exit condition |
 |---|---|---|---|
 | P0 | Refresh stale tracker and define repository-wide acceptance policy | 🟢 completed in this documentation change | Current baseline and evidence links recorded |
-| P0 | Reconcile open PR inventory and stacked dependencies | 🟡 in progress | Only open PR #92 remains; draft is 436 commits behind main, non-mergeable and lacks visual/mobile billboard acceptance. Keep isolated; do not merge until rebased and revalidated. |
+| P0 | Reconcile open PR inventory and stacked dependencies | 🟢 inventory reconciled | PR #161–#174 are merged; only #92 remains open and is explicitly classified stale/blocked (436 commits behind, draft, non-mergeable, visual acceptance missing). Recheck after any new PR activity. |
 | P0 | Mobile race + city acceptance matrix | 🟡 in progress | Automated coverage includes touch, orientation, persistence, console and performance checks |
 | P1 | Racing stability and real-finish regression | 🟡 in progress | Real three-lap finish and rewards pass on current main |
 | P1 | City simulation vertical slices | 🟡 in progress | Each system passes deterministic, integration and mobile acceptance |
