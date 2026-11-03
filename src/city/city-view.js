@@ -111,9 +111,10 @@ export function isValidCitySave(v) {
     if (!isRecord(tree) || !validPoint(tree.x,tree.y,true)
       || (tree.size !== undefined && (!Number.isFinite(tree.size) || tree.size <= 0 || tree.size > 20))) return false;
   }
+  const residentialBuildingIds = new Set(v.buildings.filter(building => building.type === "home").map(building => building.id));
   for (const citizen of v.citizens) {
     if (!isRecord(citizen) || !validId(citizen.id) || !validPoint(citizen.x,citizen.y)
-      || (citizen.homeId !== undefined && !validId(citizen.homeId))
+      || (citizen.homeId !== undefined && (!validId(citizen.homeId) || !residentialBuildingIds.has(citizen.homeId)))
       || !validOptionalPointPair(citizen.roadX,citizen.roadY)
       || !validOptionalPointPair(citizen.previousX,citizen.previousY,true)
       || !validOptionalPointPair(citizen.targetX,citizen.targetY,true)
