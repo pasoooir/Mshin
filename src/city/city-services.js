@@ -27,20 +27,28 @@ export function computeCityServices(city) {
     const geographicallyServed=targets.filter(target=>stations.some(station=>distance(target,station)<=definition.radius)).length;
     coverage[type]=targets.length?Math.round(geographicallyServed/targets.length*100):0;
     const remaining=new Map(stations.map(station=>[station,definition.capacity]));
-    let totalDemand=0,servedDemand=0;
+    const demandByTarget=new Map(targets.map(target=>[target,demandFor(target)]));
+    const servedByTarget=new Map(targets.map(target=>[target,0]));
+    const totalDemand=[...demandByTarget.values()].reduce((sum,value)=>sum+value,0);
+    const routes=targets.flatMap(target=>stations
+      .filter(station=>distance(target,station)<=definition.radius)
+      .map(station=>({target,station,distance:distance(target,station)})))
+      .sort((a,b)=>a.distance-b.distance
+        ||(Number(a.target.id)||0)-(Number(b.target.id)||0)
+        ||(Number(a.station.id)||0)-(Number(b.station.id)||0));
+    for(const {target,station} of routes){
+      const unserved=demandByTarget.get(target)-servedByTarget.get(target);
+      const available=remaining.get(station)||0;
+      const allocated=Math.min(unserved,available);
+      if(allocated<=0)continue;
+      servedByTarget.set(target,servedByTarget.get(target)+allocated);
+      remaining.set(station,available-allocated);
+    }
+    const servedDemand=[...servedByTarget.values()].reduce((sum,value)=>sum+value,0);
     for(const target of targets){
-      const demand=demandFor(target);totalDemand+=demand;let unserved=demand;
-      const nearby=stations.filter(station=>distance(target,station)<=definition.radius)
-        .map(station=>({station,distance:distance(target,station)}))
-        .sort((a,b)=>a.distance-b.distance||(Number(a.station.id)||0)-(Number(b.station.id)||0));
-      for(const {station} of nearby){
-        if(unserved<=0)break;
-        const available=remaining.get(station)||0,allocated=Math.min(available,unserved);
-        remaining.set(station,available-allocated);unserved-=allocated;
-      }
-      const served=demand-unserved;servedDemand+=served;
       if(!target.serviceSatisfaction)target.serviceSatisfaction={};
-      target.serviceSatisfaction[type]=Math.round(served/demand*100);
+      const demand=demandByTarget.get(target);
+      target.serviceSatisfaction[type]=Math.round(servedByTarget.get(target)/demand*100);
     }
     demandCoverage[type]=totalDemand?Math.round(servedDemand/totalDemand*100):0;
     capacityUsage[type]=stations.reduce((sum,station)=>sum+definition.capacity-(remaining.get(station)||0),0);
