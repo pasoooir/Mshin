@@ -264,3 +264,10 @@ This reference creates no operational IDs and changes no V1 status. It does not 
 The proposed municipal finance, tax administration, treasury, budgeting, procurement finance, capital investment, debt/grant and policy-governance model is specified in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md).
 
 This reference adds no operational IDs and changes no V1 status. It does not approve any tax type, fee, accounting basis, debt instrument, grant mechanism, budget policy or governance control for V1. Candidate features remain subject to explicit catalog approval; all numeric rates, amounts, periods and thresholds remain TBD.
+
+
+## Market, trade, supply chain and interregional commerce — design reference
+
+The proposed market, order/contract, pricing, inventory reservation, freight delivery, settlement and interregional commerce architecture is specified in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md).
+
+This reference adds no operational IDs and changes no V1 status. It does not approve new tradable goods, market venues, NPC buyers, dynamic pricing, tariffs, freight modes or regional trade routes. Existing item and vehicle registry entries/statuses remain authoritative; all quantities, prices, capacities and timing values remain TBD.
