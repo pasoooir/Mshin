@@ -93,7 +93,8 @@ This audit does **not** decide:
 - parcel expansion sequence, unlock costs or natural-resource placement;
 - pedestrian graph, crossing rules or signal policy;
 - service catchment formulas, household/traffic counts or economy values;
-- final device performance budgets.
+- final device performance budgets;
+- freight origin/destination anchors, vehicle-to-road compatibility, loading/unloading envelopes, inventory reservations/custody/recovery, warehouse access/capacity, recipe-resource mapping, workforce access and economic-ledger linkage.
 
 All unknown values remain TBD as required by the design documents. No new V1 IDs or status values are introduced.
 
@@ -102,6 +103,9 @@ All unknown values remain TBD as required by the design documents. No new V1 IDs
 - `docs/CITY_GAME_DESIGN_MASTER.md`: sections 46, 47 and 69.
 - `docs/CAPITAL_REGION_WORLD_SPATIAL_SPEC.md`: sections 2, 3, 5, 6, 9, 10, 11 and 12.
 - `docs/CAPITAL_REGION_URBAN_ENVIRONMENT_AND_STREET_LIFE_ATLAS.md`: sections 1, 2, 2.2, 2.3, 4, 6, 9 and 10.
+- `docs/VEHICLE_FLEET_FREIGHT_TRAFFIC_SPEC.md`: trip/dispatch, road compatibility, freight custody and acceptance boundaries.
+- `docs/POPULATION_WORKFORCE_MUNICIPAL_ECONOMY.md`: cohort employment, municipal ledger and demand-source boundaries.
+- `docs/CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md`: stock reservation, custody, shipment, settlement and proposal-only boundary.
 - `src/city/city-view.js`: lines 3, 6–7, 28, 39–40.
 - `src/city/city-zoning.js`: lines 10, 13, 39.
 - `src/city/city-services.js`: lines 12, 16.
@@ -114,6 +118,6 @@ All unknown values remain TBD as required by the design documents. No new V1 IDs
 - The current renderer still reports `crosswalkStripes: 0`, `decorativeStreetLights: 0` and `streetFurniturePlacementReady: false`; the browser smoke test checks the tree and furniture guards. Perimeter trees remain outside the visual grid.
 - The renderer still generates road markings from visual index formulas, and the gameplay placement/service modules still use local adjacency and Euclidean radius rather than authoritative graph routes.
 - The master-document wording has been reconciled: a limited browser prototype exists; the approved Cocos production vertical slice and complete simulation do not.
-- The map decision register now explicitly tracks spatial schema version, independent road/access, utility and conditional pedestrian graph revisions, service-access cache revision, district identity, save/map compatibility and offline spatial-state behavior. All remain TBD; these additions are design traceability only.
+- The map decision register now explicitly tracks spatial schema version, independent road/access, utility and conditional pedestrian graph revisions, service-access cache revision, district identity, save/map compatibility and offline spatial-state behavior. Its new section 7.1 also traces freight origin/destination, road/vehicle compatibility, loading access, stock/capacity reservation, custody/recovery, warehouse, recipe-resource, workforce and ledger dependencies. All remain TBD; these additions are design traceability only.
 
 **Audit conclusion:** preserve the merged PR #164 safety guards. The next valid step is design reconciliation of the authoritative spatial schema and explicit approval of the section-46 package—not adding more street props or expanding the prototype simulation.
