@@ -73,4 +73,7 @@ test("invalid citizen route coordinates are rejected by city save validation", (
   city.citizens[0].targetX = 32;
   city.citizens[0].targetY = 7;
   assert.equal(isValidCitySave(city), false);
+  city.citizens[0].targetX = null;
+  city.citizens[0].targetY = 7;
+  assert.equal(isValidCitySave(city), false, "partially null route pairs must be rejected");
 });
