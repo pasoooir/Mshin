@@ -59,6 +59,114 @@ function relocateCitizen(city, citizen) {
   return chooseNextRoad(city, citizen);
 }
 
+function mapCommuteAgents(city, assignments) {
+  const flowsByHome = new Map();
+  for (const flow of assignments || []) {
+    if (!flow || !Number.isSafeInteger(flow.homeId) || !Number.isSafeInteger(flow.workplaceId)
+      || !Number.isSafeInteger(flow.workers) || flow.workers <= 0 || !Array.isArray(flow.route) || !flow.route.length) continue;
+    if (!flowsByHome.has(flow.homeId)) flowsByHome.set(flow.homeId, []);
+    flowsByHome.get(flow.homeId).push(flow);
+  }
+  const citizensByHome = new Map();
+  for (const citizen of city.citizens) {
+    if (!citizensByHome.has(citizen.homeId)) citizensByHome.set(citizen.homeId, []);
+    citizensByHome.get(citizen.homeId).push(citizen);
+  }
+  const homeById = new Map(city.buildings.filter(building => building.type === "home").map(home => [home.id, home]));
+  const result = new Map();
+  for (const [homeId, citizens] of citizensByHome) {
+    const flows = flowsByHome.get(homeId) || [];
+    const totalWorkers = flows.reduce((sum, flow) => sum + flow.workers, 0);
+    const residents = Math.max(0, Number(homeById.get(homeId)?.residents) || 0);
+    if (!totalWorkers || !residents) continue;
+    citizens.sort((a, b) => a.id - b.id);
+    const workerAgents = Math.min(citizens.length, Math.max(1, Math.round(citizens.length * totalWorkers / residents)));
+    for (let i = 0; i < workerAgents; i++) {
+      const workerSlot = Math.floor(i * totalWorkers / workerAgents);
+      let cumulative = 0;
+      const flow = flows.find(item => {
+        cumulative += item.workers;
+        return workerSlot < cumulative;
+      });
+      if (flow) result.set(citizens[i].id, flow);
+    }
+  }
+  return result;
+}
+
+function advanceCommute(city, citizen, flow, seconds) {
+  const route = flow.route;
+  if (!route.length || !isRoad(city, route[0].x, route[0].y) || !isRoad(city, route[route.length - 1].x, route[route.length - 1].y)) return false;
+  if (citizen.commuteWorkplaceId !== flow.workplaceId
+    || !["outbound", "returning"].includes(citizen.commutePhase)) {
+    citizen.commuteWorkplaceId = flow.workplaceId;
+    citizen.commutePhase = "outbound";
+    citizen.commuteRouteStep = 0;
+    citizen.commuteWait = 0;
+    citizen.roadX = route[0].x;
+    citizen.roadY = route[0].y;
+    citizen.x = route[0].x;
+    citizen.y = route[0].y;
+    citizen.previousX = null;
+    citizen.previousY = null;
+  }
+  if (citizen.commuteWait > 0) {
+    citizen.commuteWait = Math.max(0, citizen.commuteWait - seconds);
+    return true;
+  }
+  const forward = citizen.commutePhase !== "returning";
+  const pointAt = index => route[forward ? index : route.length - 1 - index];
+  let index = Math.max(0, Math.min(route.length - 1, citizen.commuteRouteStep || 0));
+  const current = pointAt(index);
+  if (citizen.roadX !== current.x || citizen.roadY !== current.y) {
+    const recovered = route.findIndex(point => point.x === citizen.roadX && point.y === citizen.roadY);
+    if (recovered >= 0) index = forward ? recovered : route.length - 1 - recovered;
+    else {
+      index = 0;
+      const start = pointAt(index);
+      citizen.roadX = start.x; citizen.roadY = start.y;
+      citizen.x = start.x; citizen.y = start.y;
+    }
+  }
+  let remaining = Math.min(0.5, Number.isFinite(citizen.pace) && citizen.pace > 0 ? citizen.pace : 0.15) * seconds;
+  let transitions = 0;
+  while (remaining > 1e-8 && transitions < 8) {
+    if (index >= route.length - 1) {
+      citizen.commutePhase = forward ? "returning" : "outbound";
+      citizen.commuteRouteStep = 0;
+      citizen.commuteWait = 3;
+      citizen.targetX = null;
+      citizen.targetY = null;
+      return true;
+    }
+    const next = pointAt(index + 1);
+    if (!isRoad(city, next.x, next.y)) return false;
+    const dx = next.x - citizen.x, dy = next.y - citizen.y;
+    const distance = Math.hypot(dx, dy);
+    citizen.targetX = next.x; citizen.targetY = next.y;
+    citizen.heading = Math.atan2(dy, dx);
+    if (distance <= 1e-8) {
+      citizen.previousX = citizen.roadX; citizen.previousY = citizen.roadY;
+      citizen.roadX = next.x; citizen.roadY = next.y;
+      index++; transitions++;
+      continue;
+    }
+    if (remaining >= distance) {
+      remaining -= distance;
+      citizen.x = next.x; citizen.y = next.y;
+      citizen.previousX = citizen.roadX; citizen.previousY = citizen.roadY;
+      citizen.roadX = next.x; citizen.roadY = next.y;
+      index++; transitions++;
+    } else {
+      citizen.x += dx / distance * remaining;
+      citizen.y += dy / distance * remaining;
+      remaining = 0;
+    }
+  }
+  citizen.commuteRouteStep = index;
+  return true;
+}
+
 /**
  * Keep a bounded, deterministic pedestrian population in sync with residential
  * occupancy. Each agent represents three residents and walks only on road tiles.
@@ -135,7 +243,7 @@ export function syncCityCitizens(city) {
 }
 
 /** Advance each pedestrian over connected road segments with a strict work bound. */
-export function stepCityCitizens(city, seconds = 1) {
+export function stepCityCitizens(city, seconds = 1, commuteAssignments = []) {
   if (!city || !Array.isArray(city.grid) || !Array.isArray(city.citizens)
     || !Number.isFinite(seconds) || seconds <= 0) {
     throw new TypeError("A valid city and positive pedestrian step are required");
@@ -146,7 +254,19 @@ export function stepCityCitizens(city, seconds = 1) {
     return true;
   });
 
+  const commuteByCitizen = mapCommuteAgents(city, commuteAssignments);
   for (const citizen of city.citizens) {
+    const commute = commuteByCitizen.get(citizen.id);
+    if (commute && advanceCommute(city, citizen, commute, seconds)) {
+      citizen.phase = (citizen.phase || 0) + Math.min(0.5, citizen.pace || 0.15) * seconds;
+      continue;
+    }
+    if (!commute) {
+      delete citizen.commuteWorkplaceId;
+      delete citizen.commutePhase;
+      delete citizen.commuteRouteStep;
+      delete citizen.commuteWait;
+    }
     const pace = Number.isFinite(citizen.pace) && citizen.pace > 0 ? Math.min(0.5, citizen.pace) : 0.15;
     let remaining = pace * seconds;
     let transitions = 0;

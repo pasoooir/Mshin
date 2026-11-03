@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave, normalizeCitySave } from "../src/city/city-view.js";
 import { CITY_MAX_CITIZEN_AGENTS, syncCityCitizens, stepCityCitizens } from "../src/city/city-population.js";
+import { computeCityEmployment } from "../src/city/city-employment.js";
+import { computeCityCommuting } from "../src/city/city-commuting.js";
 
 test("residential occupancy creates a bounded pedestrian population on connected roads", () => {
   const city = createInitialCity(901);
@@ -110,4 +112,37 @@ test("demolished homes remove their pedestrian agents and invalid home reference
   const invalid = structuredClone(city);
   invalid.citizens[0].homeId = firstHome.id;
   assert.equal(isValidCitySave(invalid), false);
+});
+
+
+test("assigned pedestrian workers travel to workplaces and return home on the same connected route", () => {
+  const city = createInitialCity(907);
+  const home = placeCityItem(city,17,14,"home").item;
+  const shop = placeCityItem(city,18,14,"shop").item;
+  city.population = 12;
+  const assignment = computeCityCommuting(city,computeCityEmployment(city));
+  assert.ok(assignment.assignments.some(flow => flow.homeId === home.id && flow.workplaceId === shop.id));
+  for (let tick=0;tick<1200;tick++) stepCityCitizens(city,1,assignment.assignments);
+  const workers = city.citizens.filter(citizen => citizen.commuteWorkplaceId === shop.id);
+  assert.ok(workers.length > 0,"at least one visible citizen must be assigned to the shop");
+  assert.ok(workers.some(citizen => citizen.commutePhase === "returning" || citizen.commuteRouteStep > 0),
+    "assigned citizens must progress along their commute route");
+  assert.ok(workers.every(citizen => city.grid[citizen.roadY]?.[citizen.roadX] === "road"));
+  assert.equal(isValidCitySave(city),true);
+});
+
+test("commute agents remain deterministic and recover when their road route is removed", async () => {
+  const create = () => {
+    const city = createInitialCity(908);
+    placeCityItem(city,17,14,"home");
+    placeCityItem(city,18,14,"shop");
+    city.population = 12;
+    return {city, assignments:computeCityCommuting(city,computeCityEmployment(city)).assignments};
+  };
+  const a=create(),b=create();
+  for(let tick=0;tick<180;tick++){stepCityCitizens(a.city,1,a.assignments);stepCityCitizens(b.city,1,b.assignments);}
+  assert.deepEqual(a.city.citizens,b.city.citizens);
+  const assigned=a.city.citizens.find(citizen=>citizen.commuteWorkplaceId);
+  assert.ok(assigned);
+  assert.equal(isValidCitySave(a.city),true);
 });
