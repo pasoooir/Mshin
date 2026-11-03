@@ -64,6 +64,22 @@ export function computeCityServices(city) {
   const average=types=>Math.round(types.reduce((sum,type)=>sum+demandCoverage[type],0)/types.length);
   return {coverage,demandCoverage,capacityUsage,utilityCoverage:average(utilityTypes),publicServiceCoverage:average(publicTypes),overallCoverage:Math.round((average(utilityTypes)+average(publicTypes))/2),upkeep};
 }
+
+/** Return resident-weighted satisfaction across all finite utility and public-service types. */
+export function computeCityResidentServiceSatisfaction(city) {
+  const homes = (Array.isArray(city?.buildings) ? city.buildings : [])
+    .filter(building => building.type === "home" && Number.isFinite(building.residents) && building.residents > 0);
+  const residentCount = homes.reduce((sum, home) => sum + home.residents, 0);
+  if (!residentCount) return 0;
+  const serviceTypes = Object.keys(CITY_SERVICE_TYPES);
+  const satisfaction = homes.reduce((sum, home) => {
+    const values = home.serviceSatisfaction || {};
+    const average = serviceTypes.reduce((total, type) => total + clamp(Number(values[type]) || 0, 0, 100), 0) / serviceTypes.length;
+    return sum + average * home.residents;
+  }, 0);
+  return Math.round(satisfaction / residentCount);
+}
+
 export function cityServiceStatus(city) {
   const result=computeCityServices(city);
   return Object.freeze({
