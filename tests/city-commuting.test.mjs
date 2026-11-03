@@ -46,7 +46,7 @@ test("disconnected road islands do not create impossible commutes", () => {
 test("commute assignment respects sector employment and workplace capacity", () => {
   const { city } = connectedWorkCity(3103);
   const secondHome = placeCityItem(city,22,14,"home");
-  const secondShop = placeCityItem(city,23,14,"shop");
+  const secondShop = placeCityItem(city,25,14,"shop");
   assert.equal(secondHome.ok,true);
   assert.equal(secondShop.ok,true);
   city.population = 72;
