@@ -64,6 +64,13 @@ jobs:
         run: |
           node --check tests/mobile-browser-smoke.mjs
           node tests/mobile-browser-smoke.mjs
+      - name: Run mobile rewarded three-lap finish and offline acceptance
+        env:
+          CI: "true"
+          MSHIN_MOBILE_ONLY: "true"
+        run: |
+          node --check tests/browser-smoke.mjs
+          node tests/browser-smoke.mjs
       - name: Stop local game server
         if: always()
         run: |
