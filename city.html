@@ -53,11 +53,15 @@
    // Some mobile browsers do not expose Fullscreen or Screen Orientation APIs.
    // In that case, landscape itself is a valid entry mode; never trap the player
    // behind a fullscreen-only gate.
-   if(landscape&&typeof document.documentElement.requestFullscreen!=="function"){
+   const fullscreenUnavailable=typeof document.documentElement.requestFullscreen!=="function";
+   const fullscreenWasDenied=debug.fullscreenRequested&&!document.fullscreenElement;
+   if(landscape&&(fullscreenUnavailable||fullscreenWasDenied)){
      entered=true;
      if(gate)gate.hidden=true;
      debug.entered=true;
-     debug.fullscreenFallback="landscape-without-fullscreen-api";
+     debug.fullscreenFallback=fullscreenUnavailable
+       ?"landscape-without-fullscreen-api"
+       :"landscape-after-fullscreen-denied";
    }
  };
  window.__mshinEnterCityLandscape=async function(){
