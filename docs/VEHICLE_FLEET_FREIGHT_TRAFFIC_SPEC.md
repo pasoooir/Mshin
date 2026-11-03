@@ -118,3 +118,8 @@ The proposed municipal-service and utilities architecture is documented in [Capi
 ## Commercial freight and market delivery integration
 
 The proposed trade and shipment lifecycle is documented in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). A commercial shipment must reference an order/contract, cargo manifest, item units, origin/destination, vehicle compatibility, capacity reservation, route graph version, custody state and delivery evidence. Dispatch is not delivery; ETA is a forecast; cargo cannot remain available at origin after the approved custody transfer. Freight vehicle classes and interregional routes are not activated by this reference, and existing vehicle/catalog statuses remain unchanged.
+
+
+## Weather and mobility conditions
+
+The proposed environmental effects on road conditions, visibility, travel forecasts and maintenance are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Weather changes vehicle or freight movement only through explicit road-surface, route, vehicle and incident rules. A forecast is not a closure, ETA is not arrival, and weather VFX cannot cause crashes or block routes by itself.
