@@ -622,8 +622,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const zoom = Math.max(0.4, Math.min(1.7, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
     const worldScale = height / 50;
-    const targetX = -(cam.x || 0) / worldScale;
-    const targetZ = -(cam.y || 0) / worldScale;
+    const targetX = Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
+    const targetZ = Number.isFinite(cam.targetZ) ? cam.targetZ : -(cam.y || 0) / worldScale;
     const orbit = Number.isFinite(cam.orbit) ? cam.orbit : 0;
     cameraOrbit = orbit;
     const orbitAngle = Math.PI / 4 + orbit;
@@ -650,7 +650,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
     return { x: Math.floor(point.x / 2 + 16), y: Math.floor(point.z / 2 + 16) };
   }
 
-  function groundPointAt(screenX, screenY) {\n    pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);\n    raycaster.setFromCamera(pointer, camera);\n    const point = new THREE.Vector3();\n    return raycaster.ray.intersectPlane(groundPlane, point) ? { x: point.x, z: point.z } : null;\n  }\n\n  function screenForTile(x, y) {
+  function groundPointAt(screenX, screenY) {
+    pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    const point = new THREE.Vector3();
+    return raycaster.ray.intersectPlane(groundPlane, point) ? { x: point.x, z: point.z } : null;
+  }
+
+  function screenForTile(x, y) {
     const point = new THREE.Vector3((x - 15.5) * 2, 0.16, (y - 15.5) * 2).project(camera);
     return { x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2 };
   }
@@ -662,6 +669,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     render,
     tileAt,
     screenForTile,
+    groundPointAt,
+    updateCamera,
     resize,
     getStats() {
       return {
