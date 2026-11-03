@@ -231,3 +231,9 @@ This reference does not change the statuses in this catalog:
 - Public parking, highway, transit stops/terminals, bus lanes and adaptive signal control have no approved operational catalog IDs yet.
 
 Any move into implementation requires a catalog change with stable IDs, data contracts, lifecycle, economics, save migration and acceptance tests. All numeric values remain TBD until simulation/device evidence exists.
+
+
+## Proposed essential services and utilities atlas — reference only
+The detailed conceptual architecture for electricity, potable water, wastewater, solid waste, emergency response, healthcare, public safety and municipal maintenance is documented in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md).
+
+**Catalog protection:** this reference adds no operational IDs and changes no V1 status. Unless an item is already explicitly approved here, these services and their facility/asset families remain proposed conceptual scope, not V1-Required. In particular, do not infer approval for power generation, substations, water/sewer networks, waste facilities, fire stations, hospitals, police stations or maintenance depots from the atlas. Each proposed capability requires stable IDs, status, dependencies, economy, save/load and acceptance approval before implementation. Existing catalog entries and statuses remain authoritative; all numeric values remain TBD.
