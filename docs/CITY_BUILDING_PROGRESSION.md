@@ -1,30 +1,24 @@
 # Native city building progression
 
-## Component
+## Runtime adapter
 
-`assets/scripts/CityBuildingProgression.ts` provides a reusable construction timer and upgrade lifecycle for placed building roots in Cocos Creator 3.8.6.
+`assets/scripts/CityBuildingProgression.ts` is the Cocos Creator 3.8.6 component adapter. Attach `MshinCityBuildingProgression` to a placed building root. Serialized component properties configure initial construction duration, maximum level and upgrade duration.
 
-- Attach `MshinCityBuildingProgression` to each placed building root.
-- Set `constructionDuration` according to the building's value or category.
-- While constructing, `state` is `constructing`, `constructionProgress` moves from 0 to 1, and `secondsRemaining` counts down.
-- On completion, `state` changes to `complete`.
-- Call `upgrade()` only when complete; it increments `level` and starts a new construction cycle using `upgradeDuration`.
-- `maxLevel` prevents upgrades beyond the configured cap.
+## Engine-independent lifecycle
 
-## API
+The deterministic state machine lives in `src/city/core/building-progression.ts` and is included in the portable TypeScript build. It exposes:
 
-- `beginConstruction(durationSeconds?)`: starts or restarts a construction cycle.
-- `upgrade(): boolean`: starts the next upgrade cycle or returns false when unavailable.
-- Read `state`, `level`, `constructionProgress`, and `secondsRemaining` to drive UI.
+- `createCityBuildingProgression(config)`: initializes level 1 and starts construction; zero duration completes immediately.
+- `advanceCityBuildingProgression(state, deltaSeconds)`: advances using frame delta time and safely ignores negative/non-finite deltas.
+- `cityBuildingProgress(state)`: returns progress clamped to 0..1.
+- `startCityBuildingUpgrade(state)`: returns a new state for a valid upgrade, or `null` when construction is active or max level is reached.
+
+The Cocos adapter delegates state transitions to this module. It does not duplicate timer or level rules.
 
 ## Integration boundary
 
-This component is a progression primitive; it does not yet create a placement ghost, perform touch raycasts, deduct currency, persist state, or render a construction scaffold/progress UI. Those systems require city placement, economy and save integration. The repository still has no serialized Cocos scene, so Editor and Android runtime verification remain outstanding.
+This is a tested lifecycle primitive only. Placement ghost/raycast, currency transactions, persistent save integration, construction scaffold visuals, progress UI and serialized Cocos scene integration are not included yet. Cocos Creator Editor import/build and Android device verification remain external acceptance gates.
 
-## Acceptance checks
+## Automated acceptance
 
-1. New building begins in constructing state and counts down using frame delta time.
-2. Progress is bounded from 0 to 1 and reaches 1 on completion.
-3. Upgrade is rejected during construction and after reaching max level.
-4. A valid upgrade increments level and starts its own construction timer.
-5. Zero-duration construction completes immediately.
+`tests/city-building-progression.test.mjs` covers construction timing, bounded progress, invalid frame deltas, upgrade eligibility, max level, zero-duration flows and defensive configuration normalization. The standard portable TypeScript build and full Node suite exercise the state machine without requiring Cocos Creator.
