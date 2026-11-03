@@ -40,16 +40,9 @@ export function placeCityItem(city,x,y,type){
  if(city.treasury<COST[type])return{ok:false,reason:"بودجه کافی نیست"};
  if(type!=="road"&&!roadNear(city.grid,x,y))return{ok:false,reason:"ساختمان باید به خیابان دسترسی داشته باشد"};
  city.treasury-=COST[type];if(type==="road"){city.grid[y][x]="road";return{ok:true,item:"road",cost:COST.road}};
- const residents=type== new TypeError("A valid city snapshot is required for backup export");
-  }
-  return {
-    format: "mshin-city-save",
-    version: 2,
-    exportedAt,
-    city: JSON.parse(JSON.stringify(normalizeCitySave(city)))
-  };
+ const residents=type==="home"?12:0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents};
+ city.grid[y][x]="building";city.buildings.push(b);city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
 }
-
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
 function load(){
  try{
