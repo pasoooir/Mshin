@@ -170,7 +170,9 @@ export function normalizeCitySaveData(value) {
 
 /** Import either a current v2 city snapshot, a v1 local save, or an exported backup envelope. */
 export function migrateCitySave(value) {
-  const snapshot = isRecord(value) && value.format === "mshin-city-save" ? value.city : value;
+  const isBackup = isRecord(value) && value.format === "mshin-city-save";
+  if (isBackup && (value.version !== 2 || typeof value.exportedAt !== "string" || value.exportedAt.length > 40 || !Number.isFinite(Date.parse(value.exportedAt)))) return null;
+  const snapshot = isBackup ? value.city : value;
   if (isValidCitySave(snapshot)) return normalizeCitySaveData(snapshot);
   if (!isRecord(snapshot) || snapshot.schemaVersion !== 1
     || typeof snapshot.cityId !== "string" || !snapshot.cityId.trim()
@@ -228,7 +230,7 @@ export function migrateCitySave(value) {
 }
 
 export function createCitySaveBackup(city, exportedAt = new Date().toISOString()) {
-  if (!isValidCitySave(city) || typeof exportedAt !== "string") {
+  if (!isValidCitySave(city) || typeof exportedAt !== "string" || exportedAt.length > 40 || !Number.isFinite(Date.parse(exportedAt))) {
     throw new TypeError("A valid city snapshot is required for backup export");
   }
   return {
