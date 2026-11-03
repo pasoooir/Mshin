@@ -212,32 +212,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
 
-  const stripeGeometry = new THREE.BoxGeometry(0.14, 0.025, 0.72);
-  const stripeMaterial = new THREE.MeshStandardMaterial({ color: "#f7f0dc", roughness: 0.8 });
-  const intersectionCenters = [7.5, 23.5, 31.5, 39.5, 55.5];
-  const crosswalks = new THREE.InstancedMesh(stripeGeometry, stripeMaterial, intersectionCenters.length ** 2 * 28);
-  let stripeIndex = 0;
-  for (const ix of intersectionCenters) {
-    for (const iz of intersectionCenters) {
-      const cx = (ix - 31.5) * 2, cz = (iz - 31.5) * 2;
-      for (let n = -3; n <= 3; n++) {
-        for (const offset of [-2.05, 2.05]) {
-          dummy.position.set(cx + n * 0.24, 0.09, cz + offset);
-          dummy.rotation.set(0, 0, 0);
-          dummy.scale.set(1, 1, 1);
-          dummy.updateMatrix();
-          crosswalks.setMatrixAt(stripeIndex++, dummy.matrix);
-          dummy.position.set(cx + offset, 0.09, cz + n * 0.24);
-          dummy.rotation.set(0, Math.PI / 2, 0);
-          dummy.updateMatrix();
-          crosswalks.setMatrixAt(stripeIndex++, dummy.matrix);
-        }
-      }
-    }
-  }
-  crosswalks.count = stripeIndex;
-  crosswalks.instanceMatrix.needsUpdate = true;
-  scene.add(crosswalks);
+  // Pedestrian crossings are intentionally not rendered until a pedestrian graph,
+  // legal crossing nodes and signal/priority state exist. Painted zebra stripes would
+  // falsely advertise a safe/operational crossing on the current road-only graph.
+  const crosswalkStripeCount = 0;
 
   const lotLines = [];
   for (let y = 0; y < VISUAL_GRID; y += 2) {
@@ -260,8 +238,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
   );
   scene.add(boundary);
 
-  // Stylized miniature-city environment: lush canopy on the locked-world perimeter.
-  // These props are explicitly decorative and never occupy buildable simulation cells.
+  // Perimeter greenery stays strictly outside the 64x64 parcel grid.
+  // It is decorative-only and cannot overlap locked or unlocked buildable cells.
   const environment = new THREE.Group();
   scene.add(environment);
   const trunkGeometry = new THREE.CylinderGeometry(0.10, 0.15, 1.05, 6);
@@ -277,29 +255,30 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const treeCanopies = canopyMaterials.map(material => new THREE.InstancedMesh(canopyGeometry, material, 180));
   const treeHighlights = canopyMaterials.map(material => new THREE.InstancedMesh(canopySmallGeometry, material, 180));
   let decorativeTreeCount = 0;
+  let decorativeTreesOutsideBuildableGrid = 0;
   const treeSpeciesCounts = canopyMaterials.map(() => 0);
-  for (let y = 1; y < VISUAL_GRID - 1; y++) {
-    for (let x = 1; x < VISUAL_GRID - 1; x++) {
-      if (isActiveCell(x, y) || isRoadCell(x) || isRoadCell(y)) continue;
-      if ((x * 37 + y * 17) % 29 !== 0) continue;
-      const px = (x - 31.5) * 2, pz = (y - 31.5) * 2;
-      const species = (x * 13 + y * 7) % canopyMaterials.length;
-      dummy.position.set(px, 0.68, pz);
-      dummy.rotation.set(0, 0, 0);
-      dummy.scale.set(0.9 + species * 0.08, 0.9 + species * 0.1, 0.9 + species * 0.08);
-      dummy.updateMatrix();
-      treeTrunks.setMatrixAt(decorativeTreeCount, dummy.matrix);
-      dummy.position.set(px, 1.45, pz);
-      dummy.scale.set(1, 1, 1);
-      dummy.updateMatrix();
-      const speciesIndex = treeSpeciesCounts[species]++;
-      treeCanopies[species].setMatrixAt(speciesIndex, dummy.matrix);
-      dummy.position.set(px - 0.22, 1.68, pz - 0.16);
-      dummy.scale.set(1, 1, 1);
-      dummy.updateMatrix();
-      treeHighlights[species].setMatrixAt(speciesIndex, dummy.matrix);
-      decorativeTreeCount++;
-    }
+  const perimeterTreePositions = [];
+  for (let offset = -60; offset <= 60; offset += 10) {
+    perimeterTreePositions.push([-68, offset], [68, offset], [offset, -68], [offset, 68]);
+  }
+  for (const [px, pz] of perimeterTreePositions) {
+    const species = (Math.round(px + 68) * 13 + Math.round(pz + 68) * 7) % canopyMaterials.length;
+    if (Math.abs(px) > 64 || Math.abs(pz) > 64) decorativeTreesOutsideBuildableGrid++;
+    dummy.position.set(px, 0.68, pz);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.set(0.9 + species * 0.08, 0.9 + species * 0.1, 0.9 + species * 0.08);
+    dummy.updateMatrix();
+    treeTrunks.setMatrixAt(decorativeTreeCount, dummy.matrix);
+    dummy.position.set(px, 1.45, pz);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    const speciesIndex = treeSpeciesCounts[species]++;
+    treeCanopies[species].setMatrixAt(speciesIndex, dummy.matrix);
+    dummy.position.set(px - 0.22, 1.68, pz - 0.16);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    treeHighlights[species].setMatrixAt(speciesIndex, dummy.matrix);
+    decorativeTreeCount++;
   }
   treeTrunks.count = decorativeTreeCount;
   treeTrunks.instanceMatrix.needsUpdate = true;
@@ -312,69 +291,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
 
-  // Street furniture: compact instanced lamps add a readable miniature-city streetscape.
-  // They are decorative-only, sit inside road corridors, and never alter simulation or zoning.
-  const lampPoleGeometry = new THREE.CylinderGeometry(0.055, 0.075, 2.05, 7);
-  const lampArmGeometry = new THREE.BoxGeometry(0.68, 0.075, 0.085);
-  const lampHeadGeometry = new THREE.BoxGeometry(0.34, 0.13, 0.25);
-  const lampPoleMaterial = new THREE.MeshStandardMaterial({ color: "#52636a", roughness: 0.72, metalness: 0.38 });
-  const lampArmMaterial = new THREE.MeshStandardMaterial({ color: "#64777b", roughness: 0.68, metalness: 0.32 });
-  const lampHeadMaterial = new THREE.MeshStandardMaterial({
-    color: "#fff0b5", emissive: "#ffd66b", emissiveIntensity: 0.42, roughness: 0.42
-  });
-  const streetLamps = new THREE.Group();
-  scene.add(streetLamps);
-  const lampPoles = new THREE.InstancedMesh(lampPoleGeometry, lampPoleMaterial, 320);
-  const lampArms = new THREE.InstancedMesh(lampArmGeometry, lampArmMaterial, 320);
-  const lampHeads = new THREE.InstancedMesh(lampHeadGeometry, lampHeadMaterial, 320);
-  let decorativeStreetLightCount = 0;
-  const streetLightSetback = 2.4; // beyond the 2.06-unit curb edge; never inside the road surface
-  const lampRoadCenters = [7.5, 15.5, 23.5, 31.5, 39.5, 47.5, 55.5];
-  const lampOffsets = [3.5, 11.5, 19.5, 27.5, 35.5, 43.5, 51.5, 59.5];
-  function addStreetLamp(px, pz, horizontalRoad, side) {
-    const index = decorativeStreetLightCount++;
-    dummy.position.set(px, 1.025, pz);
-    dummy.rotation.set(0, 0, 0);
-    dummy.scale.set(1, 1, 1);
-    dummy.updateMatrix();
-    lampPoles.setMatrixAt(index, dummy.matrix);
-    const inward = side * -1;
-    dummy.position.set(
-      px + (horizontalRoad ? 0 : inward * 0.31),
-      1.93,
-      pz + (horizontalRoad ? inward * 0.31 : 0)
-    );
-    dummy.rotation.set(0, horizontalRoad ? Math.PI / 2 : 0, 0);
-    dummy.scale.set(1, 1, 1);
-    dummy.updateMatrix();
-    lampArms.setMatrixAt(index, dummy.matrix);
-    dummy.position.set(
-      px + (horizontalRoad ? 0 : inward * 0.62),
-      1.91,
-      pz + (horizontalRoad ? inward * 0.62 : 0)
-    );
-    dummy.rotation.set(0, horizontalRoad ? Math.PI / 2 : 0, 0);
-    dummy.updateMatrix();
-    lampHeads.setMatrixAt(index, dummy.matrix);
-  }
-  for (const roadCenter of lampRoadCenters) {
-    const roadCoordinate = (roadCenter - 31.5) * 2;
-    for (const along of lampOffsets) {
-      if (isRoadCell(Math.round(along))) continue;
-      const alongCoordinate = (along - 31.5) * 2;
-      for (const side of [-1, 1]) {
-        addStreetLamp(roadCoordinate + side * streetLightSetback, alongCoordinate, false, side);
-        addStreetLamp(alongCoordinate, roadCoordinate + side * streetLightSetback, true, side);
-      }
-    }
-  }
-  for (const mesh of [lampPoles, lampArms, lampHeads]) {
-    mesh.count = decorativeStreetLightCount;
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.castShadow = false;
-    mesh.receiveShadow = false;
-    streetLamps.add(mesh);
-  }
+  // Street furniture is deferred: the current spatial grid has no dedicated sidewalk/ROW.
+  // Placing lamps beyond the curb would still occupy adjacent buildable parcel footprints.
+  const decorativeStreetLightCount = 0;
+  const streetFurniturePlacementReady = false;
 
   const buildings = new THREE.Group();
   scene.add(buildings);
@@ -632,8 +552,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
         version: THREE.REVISION,
         visualStyle: "vibrant-stylized-3d",
         decorativeTrees: decorativeTreeCount,
+        decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
-        streetLightSetback,
+        streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
         plots: activeGrassA + activeGrassB,
         roadTiles: activeRoads,
@@ -642,7 +563,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         visiblePlots: activeGrassA + activeGrassB + lockedGrassCountA + lockedGrassCountB,
         visibleRoadTiles: activeRoads + lockedRoadCount,
         raisedCurbs: curbInstances.length,
-        crosswalkStripes: crosswalks.count,
+        crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio()
       };
