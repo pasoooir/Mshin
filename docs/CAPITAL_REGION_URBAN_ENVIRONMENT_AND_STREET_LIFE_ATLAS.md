@@ -187,3 +187,7 @@ Decorative propها نباید ناخواسته collider، service radius، traf
 - assetهای دقیق و مجوز فایل‌به‌فایل.
 
 تا زمان blockout و آزمون دستگاه واقعی، اعداد بالا عمداً TBD هستند.
+
+
+## Essential services visual integration and asset governance
+Utility/service overlays and physical asset families are specified in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md). Electricity, water, sewer, waste, emergency, healthcare and maintenance layers must be opt-in diagnostic views with legends, text/pattern cues, source tick and explicit unknown states. Surface props, pipes, hydrants, smoke, sirens, emergency lights and crew animations must reflect authoritative simulation state or be clearly decorative-only. Professional editable mesh/material/UV/LOD/prefab outputs, specialist tool/plugin pipeline, per-file commercial license evidence, provenance and hashes are mandatory before asset acceptance. No new asset or service is approved by this reference.
