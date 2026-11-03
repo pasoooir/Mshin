@@ -147,9 +147,13 @@ try{
  assert.equal(backupPayload.city.taxRates.residential,14,"backup must include the current tax policy");
  const backupTreasury=backupPayload.city.treasury;
  await page.evaluate(()=>{window.MshinCityDebug.city.treasury=999;window.MshinCityDebug.save()});
+ await page.locator("#cityImportFile").evaluate(el=>el.addEventListener("change",()=>{el.dataset.testChangeSeen="true"},{once:true}));
  page.once("dialog",dialog=>dialog.accept());
  await page.locator("#cityImportFile").setInputFiles({name:"mshin-city-restore.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(backupPayload))});
- await page.waitForFunction(expected=>window.MshinCityDebug.city.treasury===expected,backupTreasury);
+ await page.waitForFunction(()=>document.querySelector("#cityImportFile").dataset.testChangeSeen==="true",undefined,{timeout:5000});
+ await page.waitForFunction(expected=>window.MshinCityDebug.city.treasury===expected||document.querySelector("#cityToast").textContent.startsWith("بازیابی انجام نشد:"),backupTreasury,{timeout:10000});
+ const importResult=await page.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,toast:document.querySelector("#cityToast").textContent,panelHidden:document.querySelector("#cityStoragePanel").classList.contains("hidden")}));
+ assert.equal(importResult.treasury,backupTreasury,"backup import failed: "+importResult.toast);
  assert.equal(await page.locator("#cityStoragePanel").isVisible(),false,"successful restore must close the storage dialog");
  assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBackup","closing storage must restore focus to its trigger");
  const demolition=await page.evaluate(()=>{const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));if(!b)throw new Error("test fixture needs a second residential building");return window.MshinCityDebug.actAt(b.x,b.y,"bulldoze")});
