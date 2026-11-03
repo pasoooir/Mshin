@@ -31,6 +31,7 @@ export class CityOrbitCamera extends Component {
   private elevation = 38 * Math.PI / 180;
   private radius = 42;
   private ready = false;
+  private placementMode = false;
 
   onEnable(): void {
     input.on(Input.EventType.TOUCH_MOVE, this.onTouchMove, this);
@@ -63,8 +64,12 @@ export class CityOrbitCamera extends Component {
     this.applyOrbit();
   }
 
+  setPlacementMode(active: boolean): void {
+    this.placementMode = active;
+  }
+
   private onTouchMove(event: EventTouch): void {
-    if (!this.ready || !this.target || !this.target.isValid) return;
+    if (this.placementMode || !this.ready || !this.target || !this.target.isValid) return;
 
     const touches = event.getAllTouches();
     if (touches.length >= 2) {
