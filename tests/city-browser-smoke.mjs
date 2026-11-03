@@ -17,7 +17,8 @@ try{
  assert.ok(renderStats.streetLightSetback>2.06,"street lamps must sit outside the road curb, not inside vehicle lanes");
  assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
  assert.equal(renderStats.roadTiles,348,"the complete road grid must be rendered in 3D");
- assert.ok(renderStats.raisedCurbs>0&&renderStats.crosswalkStripes>=200,"streets need raised curbs and visible pedestrian crossings");
+ assert.ok(renderStats.raisedCurbs>0,"street grid must retain raised curb geometry");
+ assert.equal(renderStats.crosswalkStripes,0,"do not paint pedestrian crossings until pedestrian graph and crossing priority are implemented");
  assert.ok(renderStats.lockedPlots>=1600&&renderStats.visiblePlots>=2300,"the visible world must include a large locked expansion grid, not blank margins");
  assert.equal(renderStats.visibleRoadTiles,1392,"the expanded 64×64 world must have a continuous road network");
  assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
