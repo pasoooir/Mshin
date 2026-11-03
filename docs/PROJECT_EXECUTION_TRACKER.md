@@ -6,12 +6,16 @@
 
 - **شاخه:** `main`
 - **Commit مبنا:** `c19e7273f4ec5bb9bb583cda58038a749872734f` — ادغام squash مربوط به PR #178.
-- **تست مرورگر موبایل:** 🟢 موفق — [run 41604548181](https://github.com/pasoooir/Mshin/actions/runs/41604548181)، job `browser-smoke`.
-- **اعتبارسنجی داده و هسته:** 🟢 موفق — [run 41604547975](https://github.com/pasoooir/Mshin/actions/runs/41604547975)، job `validate`.
-- **انتشار GitHub Pages:** 🟢 موفق — [run 41604546842](https://github.com/pasoooir/Mshin/actions/runs/41604546842)، شامل build و deploy موفق.
+- **تست مرورگر موبایل مسابقه:** 🟢 موفق — [run 41604548181](https://github.com/pasoooir/Mshin/actions/runs/41604548181)، شامل مسابقه سه‌دور و PWA آفلاین.
+- **تست شهر تمام‌صفحه:** 🟢 موفق — PR #178، [run 41606148309](https://github.com/pasoooir/Mshin/actions/runs/41606148309)؛ Fullscreen پیش از Landscape lock، retry با اولین لمس معتبر و fallback عمودی.
+- **تست شهروندان سه‌بعدی:** 🟢 موفق — PR #177، [run 41606720997](https://github.com/pasoooir/Mshin/actions/runs/41606720997)؛ جمعیت قابل مشاهده، مسیر خیابانی و InstancedMesh.
+- **اعتبارسنجی داده و هسته:** 🟢 موفق — [run 41607752900](https://github.com/pasoooir/Mshin/actions/runs/41607752900)، شامل 41 تست Node و بررسی‌های syntax/architecture.
+- **انتشار GitHub Pages:** 🟡 در حال اجرا — [run 41607969826](https://github.com/pasoooir/Mshin/actions/runs/41607969826) برای commit جاری؛ build/deploy باید قبل از اعلام انتشار نهایی شود.
 - **پذیرش مسابقه موبایل:** مسیر مستقل `MSHIN_MOBILE_ONLY=true` در viewport عمودی 390×844 اجرا شد؛ software-landscape، ورودی لمسی، مسابقه کامل سه‌دور، جدول پنج خودرو، پاداش سکه، achievement، ذخیره پیشرفت، عدم overflow صفحه پایان، دسترسی دکمه «انتخاب مرحله» و اجرای آفلاین PWA همگی قبول شدند.
 - **Artifact تصویری:** [mshin-mobile-gameplay-previews](https://github.com/pasoooir/Mshin/actions/runs/41604548181/artifacts/13216086671)؛ شامل screenshot صفحه پایان مسابقه موبایل و نماهای شهر.
-- **PR #176:** ادغام شد؛ تغییرات شامل تست full-race موبایل، اصلاح واقعی layout صفحه پایان در حالت portrait، و پایدارسازی بررسی آفلاین بود.
+- **PR #178:** ادغام شد؛ ورود immersive شهر با ترتیب Fullscreen سپس Landscape و fallback مرورگر.
+- **PR #177:** ادغام شد؛ عامل‌های عابر deterministic، محدود به 64 عامل، حرکت روی خیابان و رندر InstancedMesh؛ تست موبایل exact-head موفق.
+- **PR #180:** ادغام شد؛ regression test برای تخریب خانه و تخصیص مجدد عابرها؛ 41 تست Node و validation موفق.
 - **PR #175:** به‌عنوان نسخه تکراری، پس از انتقال معیارهای پذیرش به PR #176 بسته شد.
 - **پذیرش شهر تمام‌صفحه:** PR #178 ادغام شد؛ run `41606148309` تست شهر و موبایل را با موفقیت اجرا کرد. تست ترتیب API را به‌صورت صریح تأیید کرد: ابتدا Fullscreen و سپس `landscape`؛ اجرای early-attempt و retry با اولین لمس معتبر مرورگر، همراه fallback مجاز، پوشش داده شد. اعتبارسنجی portable در run `41606148420` موفق شد. انتشار Pages این commit هنوز باید جداگانه تأیید شود.\n- **محدودیت شواهد:** Playwright شبیه‌سازی مرورگر موبایل است؛ تست روی گوشی فیزیکی Android و تأیید import/build در Cocos Creator Editor هنوز انجام نشده است.
 - **سیاست QA:** موبایل معیار اصلی پذیرش است؛ شکست تست موبایل مانع ادغام است و تست دسکتاپ معیار مسدودکننده این فاز نیست.
@@ -32,8 +36,10 @@
 
 ## موجودی PR
 
-- PRهای #161 تا #174 و #176 ادغام شده‌اند؛ commit فعلی main برابر `616be0381f3eeda0c8923b288e33467361493a5d` است.
+- PRهای #161 تا #178 و #180 ادغام شده‌اند؛ commit فعلی main برابر `f3e26f981c09ea57afb5395423d53a55471115a3` است.
 - PR #175 بسته شد، چون PR #176 نسخه یکپارچه و کامل‌تر همان پذیرش را پوشش داد.
+- PR #177 و #178 ادغام شدند؛ PR #180 نیز regression test تخریب خانه را اضافه کرد.
+- PR #179 یک snapshot مستنداتی قدیمی است و پس از ثبت شواهد جدید در این سند، باید بسته شود.
 - تنها PR باز، #92 با عنوان تبلیغات برداری کنار پیست است. این PR همچنان draft و غیرقابل ادغام است؛ head برابر `2cecc22f9197240f127256f49f8ab8f9b35ee067`، چهار commit جلو و ۴۴۱ commit عقب‌تر از main، وضعیت diverged و `mergeable=false`.
 - تغییرات #92 هنوز در main نیستند. تا rebase روی main، بررسی diff جدید و پذیرش بصری billboard روی موبایل، آن را stale/blocked نگه دار؛ موفقیت workflow قدیمی آن برای ادغام کافی نیست.
 
