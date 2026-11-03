@@ -385,3 +385,8 @@ The district allocation and crisis model is specified in [Capital Region Distric
 ## Municipal finance and funded-service integration
 
 Operating and capital funding rules are specified in [Capital Region Municipal Finance, Taxation, Budgeting & Governance](CAPITAL_REGION_MUNICIPAL_FINANCE_TAXATION_BUDGETING_AND_GOVERNANCE_SPEC.md). Utility and public-service operations must account for funded OPEX, staffing, energy, supplies, maintenance, procurement and asset lifecycle obligations. Budget authority, available cash, commitment, accepted input delivery and actual service output remain separate states. A facility cannot be treated as sustainably operational merely because construction is complete; commissioning, staffing, network dependencies and operating funding must be valid. This cross-reference creates no new V1 service IDs or operating guarantees.
+
+
+## Tourism load on essential services
+
+The tourism model is specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md). Incremental visitor load may affect water, electricity, waste, healthcare, safety, emergency response and maintenance only through explicit authoritative demand rules. Visitor and resident demand must remain separately attributable; staffing, effective capacity and delivered service are distinct. This cross-reference does not activate any new service or guarantee visitor-priority allocation.
