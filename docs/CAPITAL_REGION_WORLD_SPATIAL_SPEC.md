@@ -114,3 +114,7 @@ This atlas does not override the spatial graph. Node/edge connectivity, terrain,
 
 ## Essential utility and municipal service network integration
 The conceptual service-network architecture is specified in [Capital Region Essential City Services & Utilities Atlas](CAPITAL_REGION_ESSENTIAL_CITY_SERVICES_AND_UTILITIES_ATLAS.md). Utility graphs are typed graphs distinct from the road/access graph. A pipe/cable crossing or visual line never creates road or utility connectivity. Node/edge endpoints, direction, terrain/elevation constraints, graph versioning, route invalidation and save/load integrity must be explicit. Maintenance and emergency crews use the authoritative road/access graph; underground utility topology does not grant vehicle access. No new network or facility is approved for V1 by this cross-reference.
+
+
+## Residential and education placement integration
+The proposed residential growth and education-access model is specified in [Capital Region Education, Research, Housing Growth & City Wellbeing Atlas](CAPITAL_REGION_EDUCATION_RESEARCH_HOUSING_AND_CITY_WELLBEING_ATLAS.md). Placement must use authoritative spatial/road connectivity and approved land-use constraints. Visual proximity does not establish school/service access; reachable capacity requires a valid route and operational facility. Residential construction does not imply occupancy. No new zoning, density, travel-time or catchment rule is introduced by this reference.
