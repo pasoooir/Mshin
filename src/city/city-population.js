@@ -104,14 +104,6 @@ export function syncCityCitizens(city) {
     changed = true;
   }
 
-  const homeIds = new Set(homes.map(home => home.id));
-  for (const citizen of city.citizens) {
-    if (!homeIds.has(citizen.homeId) && homes.length) {
-      citizen.homeId = homes[(citizen.id - 1) % homes.length].id;
-      changed = true;
-    }
-  }
-
   while (city.citizens.length < desired) {
     const id = city.nextCitizenId++;
     const home = homes[(id - 1) % homes.length];
