@@ -146,3 +146,23 @@ test("commute agents remain deterministic and recover when their road route is r
   assert.ok(assigned);
   assert.equal(isValidCitySave(a.city),true);
 });
+
+test("nearby road traffic slows pedestrians without stopping their movement", () => {
+  const baseline = createInitialCity(909);
+  placeCityItem(baseline, 17, 14, "home");
+  const congested = structuredClone(baseline);
+  const pedestrian = congested.citizens[0];
+  congested.traffic = [{ id: 1, x: pedestrian.x, y: pedestrian.y }];
+  const baselinePedestrian = baseline.citizens[0];
+  const beforeBaseline = { x: baselinePedestrian.x, y: baselinePedestrian.y };
+  const beforeCongested = { x: pedestrian.x, y: pedestrian.y };
+
+  stepCityCitizens(baseline, 1);
+  stepCityCitizens(congested, 1);
+
+  const baselineDistance = Math.hypot(baselinePedestrian.x - beforeBaseline.x, baselinePedestrian.y - beforeBaseline.y);
+  const congestedDistance = Math.hypot(pedestrian.x - beforeCongested.x, pedestrian.y - beforeCongested.y);
+  assert.ok(congestedDistance > 0, "congestion must not permanently stop pedestrians");
+  assert.ok(congestedDistance < baselineDistance, "nearby vehicles must reduce pedestrian travel speed");
+});
+
