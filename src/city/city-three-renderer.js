@@ -99,6 +99,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const grassMap = makeSurfaceTexture("#91c875", "#e0f4b5", 741, 11500);
   const roadMap = makeSurfaceTexture("#46545e", "#c6d1c8", 912, 6800, 0.8);
+  // Procedural facade and roof maps add visible surface detail without large
+  // external image downloads or extra network dependencies on mobile.
+  const facadeMap = makeSurfaceTexture("#f5efdf", "#8e8a7d", 1327, 2600, 0.42);
+  const roofMap = makeSurfaceTexture("#9b6752", "#f4d5a5", 1849, 3400, 0.55);
   const grassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, roughness: 1 });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#dce8c7", roughness: 1 });
   const lockedGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#899783", roughness: 1 });
@@ -477,9 +481,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const height = type === "home" ? 2.15 + level * 0.52 : type === "shop" ? 2.45 + level * 0.28 : type === "industrial" ? 2.7 : 2.5 + level * 0.36;
     const bodyWidth = type === "industrial" ? 1.52 : 1.34;
     const bodyDepth = type === "industrial" ? 1.48 : 1.34;
-    const wall = new THREE.MeshStandardMaterial({ color: palette.wall, roughness: 0.82 });
-    const sideWall = new THREE.MeshStandardMaterial({ color: palette.side, roughness: 0.86 });
-    const roofMat = new THREE.MeshStandardMaterial({ color: palette.roof, roughness: 0.88 });
+    const wall = new THREE.MeshStandardMaterial({ color: palette.wall, map: facadeMap, roughness: 0.82 });
+    const sideWall = new THREE.MeshStandardMaterial({ color: palette.side, map: facadeMap, roughness: 0.86 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: palette.roof, map: roofMap, roughness: 0.88 });
     const trimMat = new THREE.MeshStandardMaterial({ color: palette.trim, roughness: 0.68 });
     const accentMat = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.7 });
     const glassMat = new THREE.MeshStandardMaterial({ color: "#d8f5f6", emissive: "#3e9db0", emissiveIntensity: 0.16, roughness: 0.24, metalness: 0.08 });
@@ -660,6 +664,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         renderer: "three.js",
         version: THREE.REVISION,
         visualStyle: "vibrant-stylized-3d",
+        proceduralTextures: 4,
+        texturedBuildingMaterials: 3,
         decorativeTrees: decorativeTreeCount,
         decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
@@ -688,6 +694,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
       atmosphere.dispose();
       grassMap.dispose();
       roadMap.dispose();
+      facadeMap.dispose();
+      roofMap.dispose();
       canvas.remove();
       sourceCanvas.style.opacity = "";
     }
