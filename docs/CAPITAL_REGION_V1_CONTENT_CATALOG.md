@@ -278,3 +278,8 @@ This reference adds no operational IDs and changes no V1 status. It does not app
 The proposed visitor lifecycle, attraction access/capacity, lodging reservations, visitor spending, events and district/service impacts are specified in [Capital Region Tourism, Visitors, Attractions & Hospitality](CAPITAL_REGION_TOURISM_VISITORS_ATTRACTIONS_AND_HOSPITALITY_SYSTEM_SPEC.md).
 
 This reference adds no operational IDs and changes no V1 status. It does not approve attraction types, hotels, visitor agents, events, passenger transport modes, tourism taxes or destination-management features. Existing transport statuses remain unchanged; public transport remains Deferred. All rates, prices, capacities and timing values remain TBD.
+
+
+## Weather, seasons and day/night — design reference
+
+The proposed authoritative clock, seasonal calendar, observed/forecast weather, surface conditions and cross-system environmental effects are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). This reference adds no operational IDs and changes no V1 status. It does not approve a climate model, weather variables, hazards, agriculture or new environmental gameplay systems; all numeric parameters remain TBD.
