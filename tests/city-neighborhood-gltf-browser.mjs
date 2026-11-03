@@ -30,9 +30,9 @@ try {
  });
  assert.deepEqual(runtime.models.sort(),["apartment","house","shop"]);
  assert.ok(runtime.meshCount>=20,"neighborhood scene should contain its architecture and street/landscape meshes");
- assert.ok(runtime.curbRampCount>=16,"four intersections should provide accessible curb ramps");
+ assert.ok(runtime.curbRampCount>=32,"four intersections should provide accessible curb ramps");
  assert.ok(runtime.crosswalkMarkingCount>=80,"each intersection should have zebra markings in both road directions");
- assert.ok(runtime.tactilePavingCount>=80,"curb ramps should include tactile warning paving");
+ assert.ok(runtime.tactilePavingCount>=160,"curb ramps should include tactile warning paving");
  assert.ok(runtime.renderer.calls>=1,"WebGL renderer should draw the neighborhood");
  assert.ok(runtime.bodyClass.includes("webgl-ready"),"successful first frame should reveal the 3D scene");
  for(const type of ["house","apartment","shop"]){
