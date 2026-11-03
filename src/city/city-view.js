@@ -162,14 +162,32 @@ function mount(){
   $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="روز "+(1+Math.floor(city.tick/144)).toLocaleString("fa-IR");
   $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را انتخاب کن.":"ابزار فعال: "+toolName();$("cityBudgetHint").textContent="درآمد +"+city.stats.income.toLocaleString("fa-IR")+" · هزینه -"+city.stats.expenses.toLocaleString("fa-IR")+" · زیرساخت "+(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"٪";$("citySaveState").textContent=toastFrames>0?"ذخیره شد ✓":"ذخیره محلی";if(toastFrames>0)toastFrames--;
  }
- function setTool(next){tool=next;document.querySelectorAll("[data-city-tool]").forEach(b=>{const active=b.dataset.cityTool===tool;b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active))});canvas.style.cursor=tool==="select"?"grab":"crosshair";draw()}
+ const cityToolsNav=document.querySelector(".cityTools");
+ function closeCityToolPanels(){
+  if(!cityToolsNav)return;
+  cityToolsNav.dataset.openPanel="";
+  cityToolsNav.querySelectorAll("[data-city-panel]").forEach(panel=>{panel.hidden=true});
+  cityToolsNav.querySelectorAll("[data-city-category]").forEach(button=>button.setAttribute("aria-expanded","false"));
+ }
+ function openCityToolPanel(category){
+  if(!cityToolsNav)return;
+  const alreadyOpen=cityToolsNav.dataset.openPanel===category;
+  closeCityToolPanels();
+  if(alreadyOpen)return;
+  const panel=cityToolsNav.querySelector('[data-city-panel="'+category+'"]');
+  const button=cityToolsNav.querySelector('[data-city-category="'+category+'"]');
+  if(panel&&button){panel.hidden=false;cityToolsNav.dataset.openPanel=category;button.setAttribute("aria-expanded","true")}
+ }
+ function setTool(next){tool=next;document.querySelectorAll("[data-city-tool]").forEach(b=>{const active=b.dataset.cityTool===tool;b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active))});closeCityToolPanels();cityToolsNav?.querySelectorAll("[data-city-category]").forEach(button=>{const panel=cityToolsNav.querySelector('[data-city-panel="'+button.dataset.cityCategory+'"]');button.classList.toggle("has-active-tool",Boolean(panel?.querySelector('[data-city-tool="'+tool+'"]')))});canvas.style.cursor=tool==="select"?"grab":"crosshair";draw()}
  function apply(x,y){
   if(!inside(x,y))return;selected={x,y};
   if(tool==="select"){draw();return}
   if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home"){city.population=Math.max(0,city.population-b.residents);syncCityCitizens(city)}city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="ساختمان تخریب شد؛ ۳۵٪ هزینه بازیابی شد.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="این خیابان تنها مسیر دسترسی یک ساختمان است."}else{city.grid[y][x]="grass";$("cityToast").textContent="قطعه خیابان حذف شد.";changed=true}}if(changed)persist(city);draw();return}
   const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"ساخت انجام شد · هزینه "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
  }
+ cityToolsNav?.querySelectorAll("[data-city-category]").forEach(button=>button.addEventListener("click",()=>openCityToolPanel(button.dataset.cityCategory)));
  document.querySelectorAll("[data-city-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.cityTool)));
+ document.addEventListener("keydown",event=>{if(event.key==="Escape")closeCityToolPanels()});
  document.querySelectorAll("[data-city-speed]").forEach(b=>b.addEventListener("click",()=>{speed=Number(b.dataset.citySpeed);document.querySelectorAll("[data-city-speed]").forEach(v=>v.classList.toggle("active",v===b));$("citySpeedLabel").textContent=speed===0?"متوقف":speed+"×"}));
  $("cityZoomIn").addEventListener("click",()=>{cam.zoom=Math.min(1.5,cam.zoom*1.18);draw()});$("cityZoomOut").addEventListener("click",()=>{cam.zoom=Math.max(.42,cam.zoom/1.18);draw()});$("cityRecenter").addEventListener("click",()=>{cam.x=0;cam.y=0;cam.zoom=matchMedia("(max-width:760px), (max-height:520px)").matches?.72:Math.max(.42,Math.min(1.18,Math.min(view.w/1040,view.h/740)*1.08));draw()});
  $("citySave").addEventListener("click",()=>{const ok=persist(city);if(ok)lastPersistTick=city.tick;$("cityToast").textContent=ok?"شهر با موفقیت ذخیره شد.":"ذخیره‌سازی در این مرورگر در دسترس نیست.";toastFrames=120;draw()});
@@ -252,7 +270,7 @@ function mount(){
 const scheduleViewportResize=()=>{if(resizeFrame)return;resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;resize();threeRenderer?.resize();draw()})};
  addEventListener("resize",scheduleViewportResize,{passive:true});
  window.visualViewport?.addEventListener("resize",scheduleViewportResize,{passive:true});addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
- resize();import("./city-three-renderer.js").then(({createCityThreeRenderer})=>createCityThreeRenderer(canvas)).then(renderer=>{threeRenderer=renderer;window.MshinCity3DStats=renderer.getStats();window.MshinCity3DReady=true;draw()}).catch(error=>{window.MshinCity3DError=String(error);console.error("3D city renderer failed to load",error)});window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){if(threeRenderer)return threeRenderer.screenForTile(x,y);const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),step:()=>stepCity(city),draw:()=>draw(),place:(x,y,t)=>placeCityItem(city,x,y,t),setTaxRate:(sector,rate)=>{const result=setCityTaxRate(city,sector,rate);if(result.ok){persist(city);draw()}return result},get economy(){return computeCityEconomy(city,computeCityServices(city))}};
+ resize();import("./city-three-renderer.js").then(({createCityThreeRenderer})=>createCityThreeRenderer(canvas)).then(renderer=>{threeRenderer=renderer;window.MshinCity3DStats=renderer.getStats();window.MshinCity3DReady=true;const renderStatus=document.getElementById("cityRenderStatus");if(renderStatus)renderStatus.textContent="نمای سه‌بعدی فعال";draw()}).catch(error=>{window.MshinCity3DError=String(error);const renderStatus=document.getElementById("cityRenderStatus");if(renderStatus)renderStatus.textContent="حالت دوبعدی · خطای بارگذاری ۳بعدی";console.error("3D city renderer failed to load",error)});window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){if(threeRenderer)return threeRenderer.screenForTile(x,y);const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),step:()=>stepCity(city),draw:()=>draw(),place:(x,y,t)=>placeCityItem(city,x,y,t),setTaxRate:(sector,rate)=>{const result=setCityTaxRate(city,sector,rate);if(result.ok){persist(city);draw()}return result},get economy(){return computeCityEconomy(city,computeCityServices(city))}};
  document.documentElement.dataset.cityReady="true";
  let lastRender=0;
  function frame(now){if(document.hidden){raf=0;return}const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;if(speed>0){acc+=dt*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}}if(city.tick-lastPersistTick>=6){if(persist(city))lastPersistTick=city.tick}if(now-lastRender>=33){draw();lastRender=now}raf=requestAnimationFrame(frame)}
