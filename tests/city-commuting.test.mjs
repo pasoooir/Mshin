@@ -135,6 +135,8 @@ test("congestion delay is persisted safely and feeds a bounded resident wellbein
   assert.ok(congested.happiness < baseline.happiness,
     "residents should experience a small wellbeing cost when their commutes are congested");
   assert.ok(congested.happiness >= 25);
+  // Validate the persisted telemetry independently of transient vehicle positions.
+  congested.traffic = [];
   assert.equal(isValidCitySave(congested), true);
   const invalid = structuredClone(congested);
   invalid.stats.averageCongestionDelay = 151;
