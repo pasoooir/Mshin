@@ -104,3 +104,20 @@ test("service status exposes demand coverage and capacity usage as bounded metri
   assert.equal(status.capacityUsage.water, 12);
   assert.ok(Object.values(status.demandCoverage).every(value => value >= 0 && value <= 100));
 });
+
+
+test("resident wellbeing reflects finite service demand and workforce unemployment", () => {
+  const underemployed=createInitialCity(605),employed=createInitialCity(605);
+  for(const city of [underemployed,employed]){
+    assert.equal(placeCityItem(city,17,13,"home").ok,true);
+    assert.equal(placeCityItem(city,17,12,"home").ok,true);
+  }
+  assert.equal(placeCityItem(employed,17,14,"industrial").ok,true);
+  stepCity(underemployed);
+  stepCity(employed);
+  assert.equal(underemployed.stats.unemploymentRate,100);
+  assert.equal(employed.stats.unemploymentRate,0);
+  assert.ok(underemployed.happiness<employed.happiness,"unemployment should reduce resident wellbeing");
+  assert.deepEqual(Object.keys(employed.stats.serviceDemandCoverage).sort(),["education","fire","health","police","power","sewage","waste","water"]);
+  assert.deepEqual(Object.keys(employed.stats.serviceCapacityUsage).sort(),["education","fire","health","police","power","sewage","waste","water"]);
+});
