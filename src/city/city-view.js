@@ -290,6 +290,7 @@ function mount(){
  $("cityHelp").addEventListener("click",()=>$("cityHelpPanel").classList.toggle("hidden"));$("cityCloseHelp").addEventListener("click",()=>$("cityHelpPanel").classList.add("hidden"));
  $("cityBudget").addEventListener("click",()=>{$("cityBudgetPanel").classList.remove("hidden");updateBudgetPanel()});
  $("cityCloseBudget").addEventListener("click",()=>$("cityBudgetPanel").classList.add("hidden"));
+ $("cityBudgetDone").addEventListener("click",()=>$("cityBudgetPanel").classList.add("hidden"));
  for(const sector of Object.keys(CITY_DEFAULT_TAX_RATES)){
   const slider=$("cityTax"+sector[0].toUpperCase()+sector.slice(1));
   slider.addEventListener("input",()=>{
