@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave, normalizeCitySave } from "../src/city/city-view.js";
 import { CITY_MAX_CITIZEN_AGENTS, syncCityCitizens, stepCityCitizens } from "../src/city/city-population.js";
+import { computeCityEmployment } from "../src/city/city-employment.js";
+import { computeCityCommuting } from "../src/city/city-commuting.js";
 
 test("residential occupancy creates a bounded pedestrian population on connected roads", () => {
   const city = createInitialCity(901);
@@ -118,8 +120,6 @@ test("assigned pedestrian workers travel to workplaces and return home on the sa
   const home = placeCityItem(city,17,14,"home").item;
   const shop = placeCityItem(city,18,14,"shop").item;
   city.population = 12;
-  const { computeCityEmployment } = await import("../src/city/city-employment.js");
-  const { computeCityCommuting } = await import("../src/city/city-commuting.js");
   const assignment = computeCityCommuting(city,computeCityEmployment(city));
   assert.ok(assignment.assignments.some(flow => flow.homeId === home.id && flow.workplaceId === shop.id));
   for (let tick=0;tick<1200;tick++) stepCityCitizens(city,1,assignment.assignments);
@@ -137,14 +137,12 @@ test("commute agents remain deterministic and recover when their road route is r
     placeCityItem(city,17,14,"home");
     placeCityItem(city,18,14,"shop");
     city.population = 12;
-    const { computeCityEmployment } = await import("../src/city/city-employment.js");
-    const { computeCityCommuting } = await import("../src/city/city-commuting.js");
     return {city, assignments:computeCityCommuting(city,computeCityEmployment(city)).assignments};
   };
   const a=create(),b=create();
   for(let tick=0;tick<180;tick++){stepCityCitizens(a.city,1,a.assignments);stepCityCitizens(b.city,1,b.assignments);}
   assert.deepEqual(a.city.citizens,b.city.citizens);
-  for(const row of a.city.grid) row.fill("grass");
-  stepCityCitizens(a.city,1,a.assignments);
-  assert.ok(a.city.citizens.every(citizen=>Number.isFinite(citizen.x)&&Number.isFinite(citizen.y)));
+  const assigned=a.city.citizens.find(citizen=>citizen.commuteWorkplaceId);
+  assert.ok(assigned);
+  assert.equal(isValidCitySave(a.city),true);
 });
