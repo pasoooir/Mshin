@@ -257,3 +257,8 @@ Visitor spending and hospitality settlement are specified in [Capital Region Tou
 ## Environmental events and municipal finance
 
 Weather-related incidents, maintenance, repairs and resilience costs are specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Warnings, incidents, damage, work orders, resource consumption, invoices and payments remain separate auditable events. No disaster aid, insurance, compensation, reserve, levy or new municipal revenue rule is approved by this reference.
+
+
+## Emergency response finance and recovery costs
+
+Emergency incident, resource consumption, repair and service-recovery boundaries are specified in [Capital Region Emergency Services, Fire, Police, Healthcare & Disaster Response](CAPITAL_REGION_EMERGENCY_SERVICES_FIRE_POLICE_HEALTH_AND_DISASTER_RESPONSE_SPEC.md). Dispatch, resource reservation, actual consumption, damage assessment, work order, invoice and payment are separate auditable events. No emergency levy, insurance, disaster aid or new fiscal policy is approved by this reference.
