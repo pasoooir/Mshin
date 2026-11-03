@@ -116,3 +116,8 @@ A transformation may change item count but must not create unbounded economic va
 Do not approve quantities/durations until scenarios prove: a new player understands the first chain; warehouse pressure creates decisions without becoming a chore; no recipe dominates all profit states; NPC trading cannot be exploited for infinite arbitrage; queue waits are meaningful but not forced idle walls; offline return is useful without overwhelming storage; by-products have sinks; and poor choices are recoverable.
 
 Each tuning change records parameter, old/new value, rationale, scenario results, regression impact and balance version.
+
+
+## Market and trade compatibility boundary
+
+The proposed market and commerce system is documented in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). This registry remains authoritative for canonical item IDs, units and recipe transformations. Market orders may reference only approved registry items and compatible units; they must not invent aliases or silently convert quantities. Production outputs enter sellable inventory only after validated recipe completion, and reserved/in-transit stock is unavailable for duplicate sale or consumption. This reference adds no item ID, tradable status or recipe.
