@@ -102,7 +102,42 @@ try {
   assert.equal(await mobile.locator("#select").isVisible(), true, "portrait mode must enter the menu through software landscape rotation");
   const softwareViewport = await mobile.evaluate(() => ({ ...window.MshinViewport, canvasWidth: document.querySelector("#game").width, canvasHeight: document.querySelector("#game").height }));
   assert.equal(softwareViewport.softwareLandscape, true, "portrait mode must activate the software landscape viewport");
-  assert.ok(softwareViewport.width > softwareViewport.height && softwareViewport.canvasWidth > softwareViewport.canvasHeight, "canvas backing dimensions must use landscape coordinates");
+  assert.ok(softwareViewport.width > softwareViewport.height && softwareViewport.canvasWidth > softwareViewport.canvasHeight, "canvas backing dimensions must use landscape coordinates"); 
+  const viewportMeta = await mobile.locator('meta[name="viewport"]').getAttribute("content");
+  assert.match(viewportMeta, /viewport-fit=cover/, "mobile layout must opt into the device safe-area viewport");
+  const initialVisualViewport = await mobile.evaluate(() => ({
+    supported: Boolean(window.visualViewport),
+    width: window.visualViewport?.width,
+    height: window.visualViewport?.height,
+    scale: window.visualViewport?.scale
+  }));
+  assert.equal(initialVisualViewport.supported, true, "mobile browser must expose VisualViewport metrics");
+  assert.ok(Math.abs(initialVisualViewport.width - 390) <= 1 && Math.abs(initialVisualViewport.height - 844) <= 1, "initial VisualViewport must match the visible phone area");
+  assert.ok(initialVisualViewport.scale >= 1, "the game must not unexpectedly zoom the mobile visual viewport");
+  await mobile.setViewportSize({ width: 360, height: 740 });
+  await mobile.waitForFunction(() => Math.abs((window.MshinViewport?.visualViewportWidth || 0) - 360) <= 1
+    && Math.abs((window.MshinViewport?.visualViewportHeight || 0) - 740) <= 1
+    && window.MshinViewport.width === 740 && window.MshinViewport.height === 360, undefined, { timeout: 5000 });
+  const compactVisualViewport = await mobile.evaluate(() => ({
+    logicalWidth: window.MshinViewport.width,
+    logicalHeight: window.MshinViewport.height,
+    canvasWidth: document.querySelector("#game").width,
+    canvasHeight: document.querySelector("#game").height
+  }));
+  assert.ok(compactVisualViewport.canvasWidth > compactVisualViewport.canvasHeight, "canvas must remain landscape after the browser's visible viewport shrinks");
+  await mobile.setViewportSize({ width: 390, height: 844 });
+  await mobile.waitForFunction(() => Math.abs((window.MshinViewport?.visualViewportWidth || 0) - 390) <= 1
+    && Math.abs((window.MshinViewport?.visualViewportHeight || 0) - 844) <= 1, undefined, { timeout: 5000 });
+  const safeAreaLayout = await mobile.evaluate(() => {
+    const rect = selector => {
+      const r = document.querySelector(selector).getBoundingClientRect();
+      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    };
+    return { width: innerWidth, height: innerHeight, topbar: rect(".topbar"), controls: rect(".controls"), nitro: rect(".nitroWrap") };
+  });
+  assert.ok(safeAreaLayout.topbar.left >= 0 && safeAreaLayout.topbar.right <= safeAreaLayout.width, "top HUD must remain inside the safe visible width");
+  assert.ok(safeAreaLayout.topbar.top >= 0 && safeAreaLayout.controls.bottom <= safeAreaLayout.height && safeAreaLayout.nitro.bottom <= safeAreaLayout.height, "HUD and touch controls must remain inside the safe visible height");
+
   const rotatedMenuBounds = await mobile.locator("#select .gtMenu").boundingBox();
   assert.ok(rotatedMenuBounds && rotatedMenuBounds.height > rotatedMenuBounds.width, "rotated landscape menu must fill the portrait viewport while retaining landscape logical dimensions");
   const logicalMenuSize = await mobile.locator("#select .gtMenu").evaluate(el => ({ width: parseFloat(getComputedStyle(el).width), height: parseFloat(getComputedStyle(el).height) }));
