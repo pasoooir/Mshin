@@ -55,10 +55,10 @@ function load(){
   }
   const legacyRaw=localStorage.getItem(LEGACY_KEY);
   if(legacyRaw){
+   try{localStorage.setItem(LEGACY_RECOVERY_KEY,legacyRaw.slice(0,1000000))}catch{}
    let migrated=null;
    try{migrated=migrateCitySave(JSON.parse(legacyRaw))}catch{}
    if(migrated&&persist(migrated)){localStorage.removeItem(LEGACY_KEY);return migrated}
-   try{localStorage.setItem(LEGACY_RECOVERY_KEY,legacyRaw.slice(0,1000000))}catch{}
   }
   const backupRaw=localStorage.getItem(BACKUP_KEY);
   if(backupRaw){
