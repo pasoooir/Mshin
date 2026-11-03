@@ -650,7 +650,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     return { x: Math.floor(point.x / 2 + 16), y: Math.floor(point.z / 2 + 16) };
   }
 
-  function screenForTile(x, y) {
+  function groundPointAt(screenX, screenY) {\n    pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);\n    raycaster.setFromCamera(pointer, camera);\n    const point = new THREE.Vector3();\n    return raycaster.ray.intersectPlane(groundPlane, point) ? { x: point.x, z: point.z } : null;\n  }\n\n  function screenForTile(x, y) {
     const point = new THREE.Vector3((x - 15.5) * 2, 0.16, (y - 15.5) * 2).project(camera);
     return { x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2 };
   }
