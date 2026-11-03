@@ -135,3 +135,8 @@ The proposed fiscal model is documented in [Capital Region Municipal Finance, Ta
 ## Market demand, business activity and trade integration
 
 The proposed market architecture is documented in [Capital Region Market, Trade, Supply Chain & Interregional Commerce](CAPITAL_REGION_MARKET_TRADE_SUPPLY_CHAIN_AND_INTERREGIONAL_COMMERCE_SPEC.md). Household demand, business purchases and labor/income effects may enter market calculations only where their source models are authoritative, unit-defined and approved. Nominal jobs, household capacity or business presence do not create actual demand, sales or income. Consumption, employment, wages, business revenue and affordability remain distinct measures; market activity must not create same-interval circular population or satisfaction effects. No new demand source or economic rule is approved by this cross-reference.
+
+
+## Weather and workforce schedules
+
+The environmental time and weather model is specified in [Capital Region Weather, Seasons, Day/Night & Environmental Impacts](CAPITAL_REGION_WEATHER_SEASONS_DAY_NIGHT_AND_ENVIRONMENTAL_IMPACTS_SPEC.md). Workforce shifts and outdoor-work constraints must use the authoritative simulation clock and approved safety rules. Weather cannot arbitrarily reduce all worker productivity or create unmodeled labor costs.
