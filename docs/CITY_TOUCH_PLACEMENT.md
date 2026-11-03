@@ -10,7 +10,7 @@ Call `beginPlacement()` from the build-menu action. Drag to position the preview
 
 - Screen coordinates are projected through the assigned camera onto a horizontal world plane.
 - Optional grid snapping is controlled by `gridSize`.
-- Active children of the placement root reserve their grid cells; occupied positions cannot be previewed or committed.
+- Only direct child nodes of the placement root that have a `CityBuildingProgression` component reserve grid cells. Roads, trees, lamps and other decorative props do not block building placement; occupied building positions cannot be previewed or committed.
 - When grid snapping is disabled, `occupancyTolerance` prevents near-overlapping placements.
 - Parallel, behind-camera and out-of-range rays are rejected.
 - Touch cancellation never commits a building.
