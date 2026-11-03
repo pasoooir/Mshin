@@ -23,6 +23,8 @@ jobs:
           node-version: 22
       - name: Install project dependencies
         run: npm install --no-audit --no-fund
+      - name: Build isolated city core test fixtures
+        run: npm run build:core
       - name: Validate city grid, placement and simulation
         run: node --test tests/city-core.test.mjs tests/city-view.test.mjs
       - name: Validate zoning and building growth
