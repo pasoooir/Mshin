@@ -1,0 +1,32 @@
+name: City save migration and backup recovery
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/city/city-save.js"
+      - "src/city/city-view.js"
+      - "tests/city-save-migration.test.mjs"
+      - ".github/workflows/city-save-recovery.yml"
+permissions:
+  contents: read
+concurrency:
+  group: city-save-recovery-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  persistence:
+    name: Legacy migration, backup round-trip and offline precache
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run save migration and recovery tests
+        run: node --test tests/city-save-migration.test.mjs
+      - name: Verify persistence module syntax
+        run: node --check src/city/city-save.js
+      - name: Verify full city save and population regression
+        run: node --test tests/city-view.test.mjs tests/city-population.test.mjs
