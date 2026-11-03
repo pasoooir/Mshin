@@ -291,69 +291,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
 
-  // Street furniture: compact instanced lamps add a readable miniature-city streetscape.
-  // They are decorative-only, sit inside road corridors, and never alter simulation or zoning.
-  const lampPoleGeometry = new THREE.CylinderGeometry(0.055, 0.075, 2.05, 7);
-  const lampArmGeometry = new THREE.BoxGeometry(0.68, 0.075, 0.085);
-  const lampHeadGeometry = new THREE.BoxGeometry(0.34, 0.13, 0.25);
-  const lampPoleMaterial = new THREE.MeshStandardMaterial({ color: "#52636a", roughness: 0.72, metalness: 0.38 });
-  const lampArmMaterial = new THREE.MeshStandardMaterial({ color: "#64777b", roughness: 0.68, metalness: 0.32 });
-  const lampHeadMaterial = new THREE.MeshStandardMaterial({
-    color: "#fff0b5", emissive: "#ffd66b", emissiveIntensity: 0.42, roughness: 0.42
-  });
-  const streetLamps = new THREE.Group();
-  scene.add(streetLamps);
-  const lampPoles = new THREE.InstancedMesh(lampPoleGeometry, lampPoleMaterial, 320);
-  const lampArms = new THREE.InstancedMesh(lampArmGeometry, lampArmMaterial, 320);
-  const lampHeads = new THREE.InstancedMesh(lampHeadGeometry, lampHeadMaterial, 320);
-  let decorativeStreetLightCount = 0;
-  const streetLightSetback = 2.4; // beyond the 2.06-unit curb edge; never inside the road surface
-  const lampRoadCenters = [7.5, 15.5, 23.5, 31.5, 39.5, 47.5, 55.5];
-  const lampOffsets = [3.5, 11.5, 19.5, 27.5, 35.5, 43.5, 51.5, 59.5];
-  function addStreetLamp(px, pz, horizontalRoad, side) {
-    const index = decorativeStreetLightCount++;
-    dummy.position.set(px, 1.025, pz);
-    dummy.rotation.set(0, 0, 0);
-    dummy.scale.set(1, 1, 1);
-    dummy.updateMatrix();
-    lampPoles.setMatrixAt(index, dummy.matrix);
-    const inward = side * -1;
-    dummy.position.set(
-      px + (horizontalRoad ? 0 : inward * 0.31),
-      1.93,
-      pz + (horizontalRoad ? inward * 0.31 : 0)
-    );
-    dummy.rotation.set(0, horizontalRoad ? Math.PI / 2 : 0, 0);
-    dummy.scale.set(1, 1, 1);
-    dummy.updateMatrix();
-    lampArms.setMatrixAt(index, dummy.matrix);
-    dummy.position.set(
-      px + (horizontalRoad ? 0 : inward * 0.62),
-      1.91,
-      pz + (horizontalRoad ? inward * 0.62 : 0)
-    );
-    dummy.rotation.set(0, horizontalRoad ? Math.PI / 2 : 0, 0);
-    dummy.updateMatrix();
-    lampHeads.setMatrixAt(index, dummy.matrix);
-  }
-  for (const roadCenter of lampRoadCenters) {
-    const roadCoordinate = (roadCenter - 31.5) * 2;
-    for (const along of lampOffsets) {
-      if (isRoadCell(Math.round(along))) continue;
-      const alongCoordinate = (along - 31.5) * 2;
-      for (const side of [-1, 1]) {
-        addStreetLamp(roadCoordinate + side * streetLightSetback, alongCoordinate, false, side);
-        addStreetLamp(alongCoordinate, roadCoordinate + side * streetLightSetback, true, side);
-      }
-    }
-  }
-  for (const mesh of [lampPoles, lampArms, lampHeads]) {
-    mesh.count = decorativeStreetLightCount;
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.castShadow = false;
-    mesh.receiveShadow = false;
-    streetLamps.add(mesh);
-  }
+  // Street furniture is deferred: the current spatial grid has no dedicated sidewalk/ROW.
+  // Placing lamps beyond the curb would still occupy adjacent buildable parcel footprints.
+  const decorativeStreetLightCount = 0;
+  const streetFurniturePlacementReady = false;
 
   const buildings = new THREE.Group();
   scene.add(buildings);
@@ -613,7 +554,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         decorativeTrees: decorativeTreeCount,
         decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
-        streetLightSetback,
+        streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
         plots: activeGrassA + activeGrassB,
         roadTiles: activeRoads,
