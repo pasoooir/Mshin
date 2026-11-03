@@ -6,12 +6,12 @@ const source = await readFile(new URL("../src/web-game.js", import.meta.url), "u
 
 test("browser race connects every vehicle impact to progressive destruction", () => {
   assert.match(source, /import \{ createDestructionState, applyDestructionImpact, stepDestruction, destructionVisuals \} from "\.\/vehicle-destruction\.js"/);
-  assert.match(source, /function applyDamageAndDestruction\(vehicle,energy,side="front"\)/);
+  assert.match(source, /function applyDamageAndDestruction\(vehicle,energy,side="front",impactScale=1\)/);
   assert.match(source, /applyDestructionImpact\(vehicle\.destruction/);
-  assert.match(source, /applyDamageAndDestruction\(car,energyShare\.a,side\)/);
+  assert.match(source, /applyDamageAndDestruction\(car,energyShare\.a,side,playerImpactScale\)/);
   assert.match(source, /applyDamageAndDestruction\(r,energyShare\.b/);
-  assert.match(source, /applyDamageAndDestruction\(a,energyShare\.a,"front"\)/);
-  assert.match(source, /applyDamageAndDestruction\(b,energyShare\.b,"front"\)/);
+  assert.match(source, /applyDamageAndDestruction\(a,energyShare\.a,"front",impactScaleA\)/);
+  assert.match(source, /applyDamageAndDestruction\(b,energyShare\.b,"front",impactScaleB\)/);
 });
 
 test("browser renderer exposes panel soot, fire, smoke and one-shot explosion feedback", () => {
