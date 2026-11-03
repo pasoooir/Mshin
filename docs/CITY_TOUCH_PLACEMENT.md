@@ -18,11 +18,17 @@
 - Screen coordinates are projected through the assigned camera onto a configurable horizontal world plane.
 - Optional grid snapping is controlled by `gridSize`.
 - Rays parallel to the ground plane and intersections outside the configured distance are rejected.
-- Touch cancellation does not commit a building.
+- Placement tracks one active touch identifier; unrelated fingers cannot move or commit the preview.
+- Touch cancellation does not commit a building; listeners are removed when the controller is disabled.
+- Non-finite ray coordinates, ground heights, distances and grid sizes are rejected by an engine-independent geometry helper.
 
 ## Current limitations
 
 This is a foundational placement flow, not the complete city build/economy system. It does not yet validate plot zoning, road adjacency, collisions, occupied cells, currency, building limits, persistent save data, a translucent shader ghost, or construction visuals. Those must be added before production gameplay. A real Cocos scene, prefab assets, Editor import, APK build and Android device verification are still outstanding.
+
+## Automated acceptance
+
+`src/city/core/placement-geometry.ts` is engine-independent and covered by `tests/city-placement-geometry.test.mjs` for ray-plane intersection, parallel/backward/out-of-range rejection, invalid numeric input and deterministic grid snapping. The Cocos adapter is syntax-checked by CI; Editor/runtime touch testing remains outstanding.
 
 ## Acceptance checks
 
