@@ -542,7 +542,7 @@ try {
   await page.goto("about:blank");
 
   activePhase = "economy progression, AI driver and rewarded race";
-  const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const economy = await browser.newPage({ viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // Bring the page forward and explicitly reactivate its lifecycle before the
   // long simulation; headless bringToFront() alone does not always clear the
@@ -575,6 +575,10 @@ try {
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(economy, "economy initial boot");
   await economy.locator("#play").click();
+  const mobileEconomyViewport = await economy.evaluate(() => ({ viewport: { width: innerWidth, height: innerHeight }, softwareLandscape: window.MshinViewport?.softwareLandscape === true, logical: { width: window.MshinViewport?.width, height: window.MshinViewport?.height } }));
+  assert.equal(mobileEconomyViewport.softwareLandscape, true, "the full rewarded-race acceptance flow must run in the phone portrait-to-landscape experience: " + JSON.stringify(mobileEconomyViewport));
+  assert.equal(mobileEconomyViewport.viewport.width, 390, "rewarded-race acceptance must retain the compact phone viewport");
+  assert.ok(mobileEconomyViewport.logical.width > mobileEconomyViewport.logical.height, "the mobile race must use landscape logical coordinates");
   assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
   assert.equal((await economy.locator("#credits").textContent()).trim(), "1000 🪙", "wallet should load saved coins");
   assert.match(await economy.locator("#weatherInfo").textContent(), /صاف/, "Green Valley should use clear weather");
@@ -618,7 +622,7 @@ try {
     const gasPointerId = 7320;
     const brakePointerId = 7321;
     const dispatchButton = (element, type, id) => element.dispatchEvent(new PointerEvent(type, {
-      bubbles: true, cancelable: true, pointerId: id, pointerType: "mouse",
+      bubbles: true, cancelable: true, pointerId: id, pointerType: "touch",
       clientX: 0, clientY: 0, button: 0, buttons: type === "pointerup" ? 0 : 1
     }));
     dispatchButton(gas, "pointerdown", gasPointerId);
@@ -630,7 +634,7 @@ try {
     // requested sign is the sign received by the game simulation.
     const portrait = matchMedia("(orientation: portrait)").matches;
     const dispatchPointer = (type, x) => stick.dispatchEvent(new PointerEvent(type, {
-      bubbles: true, cancelable: true, pointerId, pointerType: "mouse",
+      bubbles: true, cancelable: true, pointerId, pointerType: "touch",
       clientX: portrait ? center.x : center.x + x * limit,
       clientY: portrait ? center.y + x * limit : center.y,
       button: 0, buttons: type === "pointerup" ? 0 : 1
@@ -722,11 +726,11 @@ try {
         if (window.__mshinRaceDriverFrame) cancelAnimationFrame(window.__mshinRaceDriverFrame);
         const stick = document.querySelector("#stick");
         stick?.dispatchEvent(new PointerEvent("pointerup", {
-          bubbles: true, cancelable: true, pointerId: 7319, pointerType: "mouse",
+          bubbles: true, cancelable: true, pointerId: 7319, pointerType: "touch",
           clientX: 0, clientY: 0, button: 0, buttons: 0
         }));
-        document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType: "mouse", button: 0, buttons: 0 }));
-        if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType: "mouse", button: 0, buttons: 0 }));
+        document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType: "touch", button: 0, buttons: 0 }));
+        if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType: "touch", button: 0, buttons: 0 }));
       }),
       new Promise(resolve => setTimeout(resolve, 5000))
     ]);
@@ -745,6 +749,11 @@ try {
     "a terminal race state must be a rewarded finish, not vehicle destruction: " + JSON.stringify(finishEvidence));
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
+  const finishViewport = await economy.evaluate(() => ({ width: innerWidth, height: innerHeight, finish: document.querySelector("#finish")?.getBoundingClientRect().toJSON(), bodyWidth: document.documentElement.scrollWidth }));
+  assert.equal(finishViewport.width, 390, "the rewarded finish must remain in the compact mobile viewport");
+  assert.equal(finishViewport.bodyWidth, finishViewport.width, "the mobile finish screen must not introduce horizontal overflow");
+  assert.ok(finishViewport.finish && finishViewport.finish.width > 0 && finishViewport.finish.height > 0, "the finish panel must be visibly laid out on the mobile viewport");
+  await captureScreenshot(economy, "artifacts/mshin-mobile-rewarded-finish.png");
   await economy.locator("#finishSelect").click();
   await economy.locator("#tab-career").click();
   assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
