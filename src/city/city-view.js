@@ -1,9 +1,12 @@
-import { CITY_ZONES, placeCityZone, developCityZones, isCityZoneCell } from "./city-zoning.js";
+import { CITY_ZONES, placeCityZone, developCityZones } from "./city-zoning.js";
 import { CITY_SERVICE_TYPES, computeCityServices } from "./city-services.js";
 import { stepCityTraffic } from "./city-traffic.js";
 import { syncCityCitizens, stepCityCitizens } from "./city-population.js";
-import { CITY_DEFAULT_TAX_RATES, CITY_TAX_RATE_LIMIT, normalizeCityTaxRates, setCityTaxRate, computeCityEconomy, cityTaxPressure } from "./city-economy.js";
-const SIZE=32,KEY="mshin-city-save-v2",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
+import { CITY_DEFAULT_TAX_RATES, setCityTaxRate, computeCityEconomy, cityTaxPressure } from "./city-economy.js";
+import { isValidCitySave, normalizeCitySaveData, migrateCitySave, createCitySaveBackup } from "./city-save.js";
+export { isValidCitySave, migrateCitySave, createCitySaveBackup };
+export function normalizeCitySave(value){return normalizeCitySaveData(value)||createInitialCity();}
+const SIZE=32,KEY="mshin-city-save-v2",LEGACY_KEY="mshin-city-save-v1",BACKUP_KEY=KEY+".backup",RECOVERY_KEY=KEY+".recovery",LEGACY_RECOVERY_KEY=LEGACY_KEY+".recovery",BACKUP_RECOVERY_KEY=BACKUP_KEY+".recovery",COST={road:120,home:900,shop:1500,industrial:2600,administrative:3200,service:2800,park:650,...Object.fromEntries(Object.entries(CITY_SERVICE_TYPES).map(([type,definition])=>[type,definition.cost]))};
 const rand=(seed)=>{let s=seed>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;let v=s;v=Math.imul(v^(v>>>15),v|1);v^=v+Math.imul(v^(v>>>7),v|61);return(v^(v>>>14))>>>0}};
 const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;
 const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b)&&g[y+b][x+a]==="road");
@@ -40,172 +43,45 @@ export function placeCityItem(city,x,y,type){
  const residents=type==="home"?12:0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents};
  city.grid[y][x]="building";city.buildings.push(b);city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
 }
-const BUILDING_TYPES = new Set(["home","shop","industrial","administrative","service","park",...Object.keys(CITY_SERVICE_TYPES)]);
-const isRecord = value => !!value && typeof value === "object" && !Array.isArray(value);
-const validId = value => Number.isSafeInteger(value) && value > 0;
-const validPoint = (x,y,integer=false) => Number.isFinite(x) && Number.isFinite(y)
-  && x >= 0 && y >= 0 && x <= SIZE - 1 && y <= SIZE - 1
-  && (!integer || (Number.isInteger(x) && Number.isInteger(y)));
-const validOptionalPointPair = (x,y,allowNull=false) =>
-  (x === undefined && y === undefined)
-  || (allowNull && x === null && y === null)
-  || validPoint(x,y,true);
-
-export function isValidCitySave(v) {
-  if (!isRecord(v) || v.schemaVersion !== 2
-    || typeof v.cityId !== "string" || !v.cityId.trim() || v.cityId.length > 100
-    || typeof v.name !== "string" || !v.name.trim() || v.name.length > 80
-    || !Number.isSafeInteger(v.seed) || v.seed < 0 || v.seed > 0xffffffff
-    || !Number.isSafeInteger(v.tick) || v.tick < 0
-    || (v.minuteOfDay !== undefined && (!Number.isInteger(v.minuteOfDay) || v.minuteOfDay < 0 || v.minuteOfDay >= 1440))
-    || !Number.isFinite(v.treasury) || Math.abs(v.treasury) > 1e12
-    || !Number.isInteger(v.population) || v.population < 0 || v.population > 1e7
-    || (v.happiness !== undefined && (!Number.isFinite(v.happiness) || v.happiness < 0 || v.happiness > 100))
-    || !Array.isArray(v.grid) || v.grid.length !== SIZE
-    || !v.grid.every(row => Array.isArray(row) && row.length === SIZE
-      && row.every(tile => ["grass","road","building","water"].includes(tile) || isCityZoneCell(tile)))
-    || !Array.isArray(v.buildings) || v.buildings.length > 1024
-    || !Array.isArray(v.trees) || v.trees.length > 2048
-    || !Array.isArray(v.citizens) || v.citizens.length > 10000
-    || !Array.isArray(v.traffic) || v.traffic.length > 12
-    || (v.zones !== undefined && (!Array.isArray(v.zones) || v.zones.length > 1024))
-    || (v.animals !== undefined && (!Array.isArray(v.animals) || v.animals.length > 2048))
-    || (v.stats !== undefined && !isRecord(v.stats))
-    || (v.nextBuildingId !== undefined && !validId(v.nextBuildingId))
-    || (v.nextTrafficId !== undefined && !validId(v.nextTrafficId))
-    || (v.nextCitizenId !== undefined && !validId(v.nextCitizenId))
-    || (v.taxRates !== undefined && (!isRecord(v.taxRates)
-      || Object.keys(v.taxRates).some(key => !Object.hasOwn(CITY_DEFAULT_TAX_RATES,key))
-      || Object.entries(v.taxRates).some(([key,rate]) => !Object.hasOwn(CITY_DEFAULT_TAX_RATES,key) || !Number.isInteger(rate) || rate < 0 || rate > CITY_TAX_RATE_LIMIT)))) return false;
-
-  const buildings = new Set();
-  const buildingIds = new Set();
-  for (const building of v.buildings) {
-    if (!isRecord(building) || !validId(building.id) || buildingIds.has(building.id)
-      || !BUILDING_TYPES.has(building.type) || !validPoint(building.x,building.y,true)
-      || v.grid[building.y][building.x] !== "building"
-      || (building.level !== undefined && (!Number.isInteger(building.level) || building.level < 1 || building.level > 100))
-      || (building.age !== undefined && (!Number.isFinite(building.age) || building.age < 0))
-      || (building.residents !== undefined && (!Number.isInteger(building.residents) || building.residents < 0 || building.residents > 10000))
-      || (building.zoneType !== undefined && !Object.hasOwn(CITY_ZONES,building.zoneType))) return false;
-    const key = building.x + ":" + building.y;
-    if (buildings.has(key)) return false;
-    buildings.add(key);
-    buildingIds.add(building.id);
-  }
-
-  const zones = new Set();
-  for (const zone of v.zones || []) {
-    if (!isRecord(zone) || !Object.hasOwn(CITY_ZONES,zone.type)
-      || !validPoint(zone.x,zone.y,true)
-      || v.grid[zone.y][zone.x] !== "zone-" + zone.type
-      || (zone.createdAt !== undefined && (!Number.isSafeInteger(zone.createdAt) || zone.createdAt < 0 || zone.createdAt > v.tick))) return false;
-    const key = zone.x + ":" + zone.y;
-    if (zones.has(key) || buildings.has(key)) return false;
-    zones.add(key);
-  }
-
-  for (let y=0;y<SIZE;y++) for (let x=0;x<SIZE;x++) {
-    const tile=v.grid[y][x],key=x+":"+y;
-    if (tile==="building" && !buildings.has(key)) return false;
-    if (isCityZoneCell(tile) && Array.isArray(v.zones) && !zones.has(key)) return false;
-  }
-
-  for (const tree of v.trees) {
-    if (!isRecord(tree) || !validPoint(tree.x,tree.y,true)
-      || (tree.size !== undefined && (!Number.isFinite(tree.size) || tree.size <= 0 || tree.size > 20))) return false;
-  }
-  const residentialBuildingIds = new Set(v.buildings.filter(building => building.type === "home").map(building => building.id));
-  for (const citizen of v.citizens) {
-    if (!isRecord(citizen) || !validId(citizen.id) || !validPoint(citizen.x,citizen.y)
-      || (citizen.homeId !== undefined && (!validId(citizen.homeId) || !residentialBuildingIds.has(citizen.homeId)))
-      || !validOptionalPointPair(citizen.roadX,citizen.roadY)
-      || !validOptionalPointPair(citizen.previousX,citizen.previousY,true)
-      || !validOptionalPointPair(citizen.targetX,citizen.targetY,true)
-      || (citizen.routeStep !== undefined && (!Number.isSafeInteger(citizen.routeStep) || citizen.routeStep < 0))
-      || (citizen.heading !== undefined && !Number.isFinite(citizen.heading))
-      || (citizen.phase !== undefined && !Number.isFinite(citizen.phase))
-      || (citizen.pace !== undefined && (!Number.isFinite(citizen.pace) || citizen.pace < 0 || citizen.pace > 20))) return false;
-  }
-  for (const animal of v.animals || []) {
-    if (!isRecord(animal) || !["cat","dog","bird"].includes(animal.type)
-      || !validPoint(animal.x,animal.y)
-      || (animal.phase !== undefined && !Number.isFinite(animal.phase))
-      || (animal.pace !== undefined && (!Number.isFinite(animal.pace) || animal.pace < 0 || animal.pace > 20))) return false;
-  }
-
-  const trafficIds = new Set();
-  for (const vehicle of v.traffic) {
-    if (!isRecord(vehicle) || !validId(vehicle.id) || trafficIds.has(vehicle.id)
-      || !validPoint(vehicle.x,vehicle.y)
-      || v.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)] !== "road"
-      || !Number.isFinite(vehicle.speed) || vehicle.speed <= 0 || vehicle.speed > 5
-      || !Number.isFinite(vehicle.heading) || !Number.isFinite(vehicle.headingX) || !Number.isFinite(vehicle.headingY)
-      || !Number.isSafeInteger(vehicle.routeStep) || vehicle.routeStep < 0
-      || typeof vehicle.color !== "string" || vehicle.color.length > 24
-      || ((vehicle.targetX === null) !== (vehicle.targetY === null))
-      || (vehicle.targetX !== null && (!validPoint(vehicle.targetX,vehicle.targetY,true) || v.grid[vehicle.targetY][vehicle.targetX] !== "road"))
-      || ((vehicle.previousX === null) !== (vehicle.previousY === null))
-      || (vehicle.previousX !== null && !validPoint(vehicle.previousX,vehicle.previousY,true))) return false;
-    trafficIds.add(vehicle.id);
-  }
-
-  if (v.nextBuildingId !== undefined && buildingIds.size && v.nextBuildingId <= Math.max(...buildingIds)) return false;
-  if (v.nextTrafficId !== undefined && trafficIds.size && v.nextTrafficId <= Math.max(...trafficIds)) return false;
-  const citizenIds = new Set(v.citizens.map(citizen => citizen.id));
-  if (citizenIds.size !== v.citizens.length) return false;
-  if (v.nextCitizenId !== undefined && citizenIds.size && v.nextCitizenId <= Math.max(...citizenIds)) return false;
-  if (v.stats) {
-    for (const key of ["income","expenses","net","taxRevenue","maintenance","serviceUpkeep","jobs","traffic","utilityCoverage","publicServiceCoverage","overallCoverage"]) {
-      if (v.stats[key] !== undefined && !Number.isFinite(v.stats[key])) return false;
-    }
-    if (v.stats.serviceCoverage !== undefined
-      && (!isRecord(v.stats.serviceCoverage) || !Object.values(v.stats.serviceCoverage).every(Number.isFinite))) return false;
-  }
-  return true;
-}
-
-export function normalizeCitySave(value) {
-  if (!isValidCitySave(value)) return createInitialCity();
-  const city = {
-    ...value,
-    zones: Array.isArray(value.zones) ? value.zones : value.grid.flatMap((row,y)=>row.flatMap((tile,x)=>isCityZoneCell(tile)?[{x,y,type:tile.slice(5),createdAt:0}]:[])),
-    animals: Array.isArray(value.animals) ? value.animals : [],
-    minuteOfDay: Number.isInteger(value.minuteOfDay) ? value.minuteOfDay : 495,
-    happiness: Number.isFinite(value.happiness) ? value.happiness : 100,
-    nextBuildingId: validId(value.nextBuildingId) ? value.nextBuildingId : Math.max(0,...value.buildings.map(item=>item.id))+1,
-    nextTrafficId: validId(value.nextTrafficId) ? value.nextTrafficId : Math.max(0,...value.traffic.map(item=>item.id))+1,
-    nextCitizenId: validId(value.nextCitizenId) ? value.nextCitizenId : Math.max(0,...value.citizens.map(item=>item.id))+1,
-    taxRates: normalizeCityTaxRates(value.taxRates),
-    stats: { income:0, expenses:0, jobs:0, traffic:0, ...(isRecord(value.stats) ? value.stats : {}) }
-  };
-  for (const building of city.buildings) {
-    building.level ??= 1;
-    building.age ??= 0;
-    building.residents ??= 0;
-  }
-  for (const citizen of city.citizens) {
-    citizen.phase ??= 0;
-    citizen.pace ??= 0.1;
-    citizen.homeId ??= city.buildings.find(building => building.type === "home")?.id;
-    citizen.roadX ??= Math.round(citizen.x);
-    citizen.roadY ??= Math.round(citizen.y);
-    citizen.previousX ??= null;
-    citizen.previousY ??= null;
-    citizen.targetX ??= null;
-    citizen.targetY ??= null;
-    citizen.routeStep ??= 0;
-    citizen.heading ??= 0;
-  }
-  for (const animal of city.animals) {
-    animal.phase ??= 0;
-    animal.pace ??= 0.1;
-  }
-  return city;
-}
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
-function load(){try{return normalizeCitySave(JSON.parse(localStorage.getItem(KEY)||"null"))}catch{return createInitialCity()}}
-function persist(city){try{localStorage.setItem(KEY,JSON.stringify(city));return true}catch{return false}}
+function load(){
+ try{
+  const currentRaw=localStorage.getItem(KEY);
+  if(currentRaw){
+   let parsed=null,current=null;
+   try{parsed=JSON.parse(currentRaw);current=migrateCitySave(parsed)}catch{}
+   if(current){if(parsed?.schemaVersion===1)persist(current);return current}
+   try{localStorage.setItem(RECOVERY_KEY,currentRaw.slice(0,1000000))}catch{}
+  }
+  const legacyRaw=localStorage.getItem(LEGACY_KEY);
+  if(legacyRaw){
+   try{localStorage.setItem(LEGACY_RECOVERY_KEY,legacyRaw.slice(0,1000000))}catch{}
+   let migrated=null;
+   try{migrated=migrateCitySave(JSON.parse(legacyRaw))}catch{}
+   if(migrated&&persist(migrated)){localStorage.removeItem(LEGACY_KEY);return migrated}
+  }
+  const backupRaw=localStorage.getItem(BACKUP_KEY);
+  if(backupRaw){
+   let backup=null;
+   try{backup=migrateCitySave(JSON.parse(backupRaw))}catch{}
+   if(backup){persist(backup);return backup}
+   try{localStorage.setItem(BACKUP_RECOVERY_KEY,backupRaw.slice(0,1000000))}catch{}
+  }
+ }catch{}
+ return createInitialCity();
+}
+function persist(city){
+ if(!isValidCitySave(city))return false;
+ const serialized=JSON.stringify(city);
+ try{
+  const previous=localStorage.getItem(KEY);
+  if(previous){
+   try{if(isValidCitySave(JSON.parse(previous)))localStorage.setItem(BACKUP_KEY,previous)}catch{}
+  }
+  localStorage.setItem(KEY,serialized);
+  return true;
+ }catch{return false}
+}
 function mount(){
  let canvas=document.getElementById("cityViewport");const ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;let threeRenderer=null;
  const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1};
@@ -316,11 +192,53 @@ function mount(){
    if(result.ok){persist(city);updateBudgetPanel()}
   });
  }
+ const storagePanel=$("cityStoragePanel"),storageTrigger=$("cityBackup"),importFile=$("cityImportFile");
+ function closeCityStorage(){
+  if(storagePanel.classList.contains("hidden"))return;
+  storagePanel.classList.add("hidden");
+  storageTrigger?.focus();
+ }
+ storageTrigger.addEventListener("click",()=>{
+  storagePanel.classList.remove("hidden");
+  $("cityCloseStorage").focus();
+ });
+ $("cityCloseStorage").addEventListener("click",closeCityStorage);
+ $("cityExportBackup").addEventListener("click",()=>{
+  try{
+   const payload=createCitySaveBackup(city),blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+   const url=URL.createObjectURL(blob),link=document.createElement("a");
+   link.href=url;link.download="mshin-city-"+new Date().toISOString().slice(0,10)+".json";
+   document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+   $("cityToast").textContent="نسخه پشتیبان شهر دانلود شد.";toastFrames=120;draw();
+  }catch(error){$("cityToast").textContent="ساخت نسخه پشتیبان ناموفق بود: "+String(error.message||error);toastFrames=150;draw()}
+ });
+ $("cityImportBackup").addEventListener("click",()=>importFile.click());
+ importFile.addEventListener("change",async event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  try{
+   if(file.size>2_000_000)throw new Error("حجم فایل پشتیبان بیش از ۲ مگابایت است");
+   const payload=JSON.parse(await file.text()),restored=migrateCitySave(payload);
+   if(!restored||!isValidCitySave(restored))throw new Error("ساختار فایل پشتیبان معتبر نیست");
+   if(!confirm("شهر فعلی با نسخه پشتیبان انتخاب‌شده جایگزین شود؟"))return;
+   if(!persist(restored))throw new Error("ذخیره نسخه بازیابی‌شده در این مرورگر ممکن نیست");
+   Object.keys(city).forEach(key=>delete city[key]);Object.assign(city,restored);
+   lastPersistTick=city.tick;closeCityStorage();$("cityToast").textContent="شهر از نسخه پشتیبان بازیابی شد.";toastFrames=150;draw();
+  }catch(error){$("cityToast").textContent="بازیابی انجام نشد: "+String(error.message||error);toastFrames=150;draw()}
+  finally{importFile.value=""}
+ });
+ storagePanel.addEventListener("keydown",event=>{
+  if(event.key==="Escape"){event.preventDefault();event.stopPropagation();closeCityStorage();return}
+  if(event.key!=="Tab")return;
+  const focusable=[...storagePanel.querySelectorAll('button:not([disabled]),input:not([disabled]),[href],[tabindex]:not([tabindex="-1"])')].filter(element=>element.getClientRects().length);
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+ });
  canvas.addEventListener("pointerdown",e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});try{canvas.setPointerCapture?.(e.pointerId)}catch{}if(pointers.size===1){gesture={mode:"pan",id:e.pointerId,cx:cam.x,cy:cam.y,moved:false}}else if(pointers.size===2){const pts=[...pointers.values()],dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y,distance=Math.max(1,Math.hypot(dx,dy)),midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;gesture={mode:"pinch",distance,zoom:cam.zoom,worldX:(midX-view.w/2-cam.x)/cam.zoom,worldY:(midY-view.h*.23-cam.y)/cam.zoom,moved:true}}});
  canvas.addEventListener("pointermove",e=>{const point=pointers.get(e.pointerId);if(!point)return;point.x=e.clientX;point.y=e.clientY;if(pointers.size>=2&&gesture?.mode==="pinch"){const pts=[...pointers.values()].slice(0,2),dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y,distance=Math.max(1,Math.hypot(dx,dy)),midX=(pts[0].x+pts[1].x)/2,midY=(pts[0].y+pts[1].y)/2;cam.zoom=Math.max(.42,Math.min(1.5,gesture.zoom*distance/gesture.distance));cam.x=midX-view.w/2-gesture.worldX*cam.zoom;cam.y=midY-view.h*.23-gesture.worldY*cam.zoom;draw();return}if(pointers.size===1&&gesture?.mode==="pan"){const dx=point.x-point.startX,dy=point.y-point.startY;if(Math.hypot(dx,dy)>5)gesture.moved=true;cam.x=gesture.cx+dx;cam.y=gesture.cy+dy;if(gesture.moved){canvas.style.cursor="grabbing";draw()}}});
  const finishPointer=e=>{if(!pointers.has(e.pointerId))return;const point=pointers.get(e.pointerId),wasPinching=gesture?.mode==="pinch";if(!wasPinching&&pointers.size===1&&gesture?.mode==="pan"&&!gesture.moved&&Math.hypot(e.clientX-point.startX,e.clientY-point.startY)<=5){const p=tileAt(e.clientX,e.clientY);apply(p.x,p.y)}pointers.delete(e.pointerId);if(pointers.size===1){const [id,remaining]=[...pointers.entries()][0];gesture={mode:"pan",id,cx:cam.x,cy:cam.y,startX:remaining.x,startY:remaining.y,moved:wasPinching||Boolean(gesture?.moved)}}else if(pointers.size===0)gesture=null;canvas.style.cursor=tool==="select"?"grab":"crosshair"};
  canvas.addEventListener("pointerup",finishPointer);canvas.addEventListener("pointercancel",finishPointer);canvas.addEventListener("wheel",e=>{e.preventDefault();cam.zoom=Math.max(.42,Math.min(1.5,cam.zoom*(e.deltaY<0?1.08:.92)));draw()},{passive:false});
- const scheduleViewportResize=()=>{if(resizeFrame)return;resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;resize();threeRenderer?.resize();draw()})};
+const scheduleViewportResize=()=>{if(resizeFrame)return;resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;resize();threeRenderer?.resize();draw()})};
  addEventListener("resize",scheduleViewportResize,{passive:true});
  window.visualViewport?.addEventListener("resize",scheduleViewportResize,{passive:true});addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
  resize();import("./city-three-renderer.js").then(({createCityThreeRenderer})=>createCityThreeRenderer(canvas)).then(renderer=>{threeRenderer=renderer;window.MshinCity3DStats=renderer.getStats();window.MshinCity3DReady=true;draw()}).catch(error=>{window.MshinCity3DError=String(error);console.error("3D city renderer failed to load",error)});window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y}},screenForTile(x,y){if(threeRenderer)return threeRenderer.screenForTile(x,y);const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),step:()=>stepCity(city),place:(x,y,t)=>placeCityItem(city,x,y,t),setTaxRate:(sector,rate)=>{const result=setCityTaxRate(city,sector,rate);if(result.ok){persist(city);draw()}return result},get economy(){return computeCityEconomy(city,computeCityServices(city))}};
