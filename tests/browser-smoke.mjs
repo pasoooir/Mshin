@@ -44,7 +44,7 @@ async function waitForGameBoot(page, label = "game") {
     const stage = window.MshinBootStage;
     const ready = window.MshinBootReady === true || stage === "ready";
     return ready && window.MshinAssets?.ready === true && Boolean(document.querySelector("#home"));
-  }, undefined, { timeout: 120000 }).catch(async error => {
+  }, undefined, { timeout: 120000, polling: 100 }).catch(async error => {
     const state = await page.evaluate(() => ({
       stage: window.MshinBootStage,
       bootReady: window.MshinBootReady === true,
@@ -96,13 +96,15 @@ let activePhase = "browser launch";
 const progressHeartbeat = setInterval(() => console.log("[browser-smoke] still running; current phase: " + activePhase), 15000);
 progressHeartbeat.unref();
 const errors = [];
+const mobileOnly = process.env.MSHIN_MOBILE_ONLY === "true";
 try {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const page = await browser.newPage({ viewport: mobileOnly ? { width: 390, height: 844 } : { width: 1280, height: 800 }, screen: mobileOnly ? { width: 390, height: 844 } : undefined, deviceScaleFactor: mobileOnly ? 1 : undefined, isMobile: mobileOnly, hasTouch: mobileOnly });
   page.on("pageerror", error => errors.push(error.message));
   page.setDefaultTimeout(60000);
   page.setDefaultNavigationTimeout(60000);
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   page.on("requestfailed", request => errors.push("requestfailed: " + request.url() + " — " + (request.failure()?.errorText || "unknown")));
+  if (!mobileOnly) {
   activePhase = "initial desktop boot and asset preload";
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(page, "initial desktop boot");
@@ -442,6 +444,8 @@ try {
   await page.locator("#quitRace").click();
   assert.equal(await page.locator("#select").isVisible(), true, "exit should return to stage selection");
   assert.deepEqual(errors, [], "page should not throw runtime exceptions");
+  }
+  if (!mobileOnly) {
   activePhase = "mobile viewport and touch controls";
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on("pageerror", error => errors.push(error.message));
@@ -539,10 +543,11 @@ try {
   // in Chromium, starving the economy page's main thread. The later PWA checks
   // only need the same browser context/origin, so release both scenes now.
   await mobile.close();
+  }
   await page.goto("about:blank");
 
   activePhase = "economy progression, AI driver and rewarded race";
-  const economy = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const economy = await browser.newPage({ viewport: mobileOnly ? { width: 390, height: 844 } : { width: 1280, height: 800 }, screen: mobileOnly ? { width: 390, height: 844 } : undefined, deviceScaleFactor: mobileOnly ? 1 : undefined, isMobile: mobileOnly, hasTouch: mobileOnly });
   // Chromium throttles requestAnimationFrame heavily in background tabs.
   // Bring the page forward and explicitly reactivate its lifecycle before the
   // long simulation; headless bringToFront() alone does not always clear the
@@ -575,6 +580,12 @@ try {
   await economy.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(economy, "economy initial boot");
   await economy.locator("#play").click();
+  if (mobileOnly) {
+    const mobileViewport = await economy.evaluate(() => ({ width: innerWidth, height: innerHeight, softwareLandscape: window.MshinViewport?.softwareLandscape === true, logicalWidth: window.MshinViewport?.width, logicalHeight: window.MshinViewport?.height }));
+    assert.equal(mobileViewport.width, 390, "the race acceptance must retain a compact phone viewport");
+    assert.equal(mobileViewport.softwareLandscape, true, "portrait phone viewport must activate software-landscape gameplay: " + JSON.stringify(mobileViewport));
+    assert.ok(mobileViewport.logicalWidth > mobileViewport.logicalHeight, "mobile gameplay must use landscape logical coordinates");
+  }
   assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
   assert.equal((await economy.locator("#credits").textContent()).trim(), "1000 🪙", "wallet should load saved coins");
   assert.match(await economy.locator("#weatherInfo").textContent(), /صاف/, "Green Valley should use clear weather");
@@ -610,7 +621,7 @@ try {
   // previous test polled telemetry and moved the mouse over CDP for every
   // 70ms slice; that throttled the game to ~1.5 rendered frames/second and
   // advanced only a fraction of the simulation time before the wall timeout.
-  await withTimeout(economy.evaluate(({ center, limit }) => {
+  await withTimeout(economy.evaluate(({ center, limit, pointerType }) => {
     const stick = document.querySelector("#stick");
     const gas = document.querySelector("#gas");
     const brake = document.querySelector("#brake");
@@ -618,7 +629,7 @@ try {
     const gasPointerId = 7320;
     const brakePointerId = 7321;
     const dispatchButton = (element, type, id) => element.dispatchEvent(new PointerEvent(type, {
-      bubbles: true, cancelable: true, pointerId: id, pointerType: "mouse",
+      bubbles: true, cancelable: true, pointerId: id, pointerType,
       clientX: 0, clientY: 0, button: 0, buttons: type === "pointerup" ? 0 : 1
     }));
     dispatchButton(gas, "pointerdown", gasPointerId);
@@ -630,7 +641,7 @@ try {
     // requested sign is the sign received by the game simulation.
     const portrait = matchMedia("(orientation: portrait)").matches;
     const dispatchPointer = (type, x) => stick.dispatchEvent(new PointerEvent(type, {
-      bubbles: true, cancelable: true, pointerId, pointerType: "mouse",
+      bubbles: true, cancelable: true, pointerId, pointerType,
       clientX: portrait ? center.x : center.x + x * limit,
       clientY: portrait ? center.y + x * limit : center.y,
       button: 0, buttons: type === "pointerup" ? 0 : 1
@@ -643,7 +654,7 @@ try {
         const lateralVelocity = Number(telemetry.playerLateralVelocity) || 0;
         const yaw = Number(telemetry.playerYaw) || 0;
         const speed = Math.max(60, Number(telemetry.playerSpeed) || 0);
-        const curvature = Number(telemetry.playerTrackCurvature) || 0;
+        const curvature = (Number(telemetry.playerTrackCurvature) || 0) * (Number(telemetry.trackLengthScale) || 1);
         const lookAhead = 320;
         // Keep road curvature as feed-forward while independently correcting
         // lateral displacement, chassis heading and outward lateral velocity.
@@ -677,7 +688,7 @@ try {
     };
     window.__mshinRaceDriver = { get controls() { return lastControls; }, pointerId };
     window.__mshinRaceDriverFrame = requestAnimationFrame(drive);
-  }, { center: steeringCenter, limit: steeringLimit }), 15000, "economy race driver installation");
+  }, { center: steeringCenter, limit: steeringLimit, pointerType: mobileOnly ? "touch" : "mouse" }), 15000, "economy race driver installation");
   const raceDeadline = 180000;
   let raceDeadlineTimer;
   try {
@@ -717,17 +728,17 @@ try {
   } finally {
     clearTimeout(raceDeadlineTimer);
     await Promise.race([
-      economy.evaluate(() => {
+      economy.evaluate(({ pointerType }) => {
         window.__mshinRaceDriverStopped = true;
         if (window.__mshinRaceDriverFrame) cancelAnimationFrame(window.__mshinRaceDriverFrame);
         const stick = document.querySelector("#stick");
         stick?.dispatchEvent(new PointerEvent("pointerup", {
-          bubbles: true, cancelable: true, pointerId: 7319, pointerType: "mouse",
+          bubbles: true, cancelable: true, pointerId: 7319, pointerType,
           clientX: 0, clientY: 0, button: 0, buttons: 0
         }));
-        document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType: "mouse", button: 0, buttons: 0 }));
-        if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType: "mouse", button: 0, buttons: 0 }));
-      }),
+        document.querySelector("#gas")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7320, pointerType, button: 0, buttons: 0 }));
+        if (window.__mshinRaceBrake) document.querySelector("#brake")?.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7321, pointerType, button: 0, buttons: 0 }));
+      }, { pointerType: mobileOnly ? "touch" : "mouse" }),
       new Promise(resolve => setTimeout(resolve, 5000))
     ]);
   }
@@ -745,6 +756,21 @@ try {
     "a terminal race state must be a rewarded finish, not vehicle destruction: " + JSON.stringify(finishEvidence));
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
+  if (mobileOnly) {
+    const finishViewport = await economy.evaluate(() => ({
+      width: innerWidth, height: innerHeight,
+      finish: document.querySelector("#finish")?.getBoundingClientRect().toJSON(),
+      selectButton: document.querySelector("#finishSelect")?.getBoundingClientRect().toJSON(),
+      bodyWidth: document.documentElement.scrollWidth
+    }));
+    assert.equal(finishViewport.width, 390, "the rewarded finish must remain in the compact mobile viewport");
+    assert.equal(finishViewport.bodyWidth, finishViewport.width, "the mobile finish screen must not introduce horizontal overflow");
+    assert.ok(finishViewport.finish && finishViewport.finish.width > 0 && finishViewport.finish.height > 0, "the finish panel must have a visible mobile layout");
+    assert.ok(finishViewport.selectButton && finishViewport.selectButton.left >= 0 && finishViewport.selectButton.top >= 0
+      && finishViewport.selectButton.right <= finishViewport.width && finishViewport.selectButton.bottom <= finishViewport.height,
+      "the finish navigation action must remain fully inside the mobile viewport: " + JSON.stringify(finishViewport));
+    await captureScreenshot(economy, "artifacts/mshin-mobile-rewarded-finish.png");
+  }
   await economy.locator("#finishSelect").click();
   await economy.locator("#tab-career").click();
   assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
@@ -752,9 +778,15 @@ try {
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
 
   activePhase = "service-worker, cache and offline PWA acceptance";
-  // Re-enter the original origin after releasing its earlier WebGL scene.
-  // Service-worker registration and Cache Storage belong to the browser
-  // context, not the old document, and remain available across this navigation.
+  // The rewarded-race tab has completed its work; close it so Chromium cannot
+  // throttle the original page's requestAnimationFrame-based boot checks.
+  await economy.close();
+  await page.bringToFront();
+  const pageSession = await page.context().newCDPSession(page);
+  await pageSession.send("Page.setWebLifecycleState", { state: "active" });
+  await page.evaluate(() => window.focus());
+  // Service-worker registration and Cache Storage remain attached to the
+  // original browser context across this navigation.
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded" });
   await waitForGameBoot(page, "service-worker control reload");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
@@ -778,8 +810,7 @@ try {
   await page.locator("#play").click();
   assert.equal(await page.locator(".world").count(), 10, "cached game should remain playable offline");
   await page.context().setOffline(false);
-  process.stdout.write("Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\
-");
+  process.stdout.write(mobileOnly ? "Mobile rewarded-race smoke passed: full three-lap finish, AI standings, coin rewards, achievements, persistent progress and offline PWA launch.\n" : "Browser smoke passed: five-car garage, coin unlocks, three persistent upgrades, race rewards, milestone achievements, weather profiles, nitro, saved audio, 10 worlds, 50 stages, desktop/mobile screenshots, offline PWA launch, pause/resume, and touch controls.\n");
 } finally {
   clearInterval(progressHeartbeat);
   await browser.close();
