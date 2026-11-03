@@ -110,7 +110,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(230, 230),
+    new THREE.PlaneGeometry(160, 160),
     new THREE.MeshStandardMaterial({ color: "#80b86d", roughness: 1 })
   );
   ground.rotation.x = -Math.PI / 2;
