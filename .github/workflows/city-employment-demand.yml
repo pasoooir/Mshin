@@ -26,9 +26,9 @@ jobs:
       - name: Compile portable city core test fixtures
         run: npm run build:core
       - name: Validate city core and population behavior
-        run: node --test tests/city-core.test.mjs tests/city-population.test.mjs tests/city-employment.test.mjs
+        run: node --test tests/city-core.test.mjs tests/city-population.test.mjs tests/city-employment.test.mjs tests/city-commuting.test.mjs
       - name: Record outstanding employment acceptance gap
         run: |
           echo "Population regression passed."
           echo "Employment capacity, workforce matching, unemployment and vacancies are covered by city-employment.test.mjs."
-          echo "Individual citizen commute routing and workplace-level assignment remain outside this aggregate model."
+          echo "Road-network shortest-path assignment, disconnected-road handling, workplace capacity and commute coverage are verified in city-commuting.test.mjs."
