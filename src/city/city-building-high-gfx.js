@@ -37,18 +37,18 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   // ─── SimCity BuildIt inspired vibrant palettes ───────────────────────────
   const PALETTES = {
     home: [
-      { wall: "#f2d6b3", side: "#e0c09a", roof: "#c45c4a", trim: "#fff6e8", accent: "#5a9e8a", door: "#6b4a3a" },
-      { wall: "#e8c9a8", side: "#d4b48c", roof: "#5e7a8a", trim: "#f8efe0", accent: "#c4785a", door: "#4a3a32" },
-      { wall: "#dce6d4", side: "#c4d0bc", roof: "#8b5e4a", trim: "#f4f7ef", accent: "#6a8f7a", door: "#5a4a3a" },
-      { wall: "#f0e0c8", side: "#dcc8a8", roof: "#4a5a62", trim: "#fffaf0", accent: "#a87858", door: "#3a2e28" },
-      { wall: "#e4d0b8", side: "#c8b498", roof: "#b85a4a", trim: "#faf4e8", accent: "#5a7a8a", door: "#5a4038" },
-      { wall: "#c8d8e0", side: "#a8c0cc", roof: "#6a5a4a", trim: "#f0f6f8", accent: "#d48a5a", door: "#3a4850" }
+      { wall: "#d9d8d2", side: "#aaa9a3", roof: "#343b43", trim: "#f5f3ec", accent: "#8aab9d", door: "#303a3b" },
+      { wall: "#e8e3d8", side: "#c4beb2", roof: "#4a5055", trim: "#fffdf6", accent: "#b38a68", door: "#3a3430" },
+      { wall: "#cbd5d2", side: "#a8b8b4", roof: "#39484b", trim: "#f1f5f2", accent: "#6d9d98", door: "#29383a" },
+      { wall: "#d7d0c4", side: "#b7aa98", roof: "#51463e", trim: "#faf6ed", accent: "#a47b61", door: "#342e2b" },
+      { wall: "#d8e0e4", side: "#b3c1c8", roof: "#3e4d59", trim: "#f5f8fa", accent: "#7397aa", door: "#2c3942" },
+      { wall: "#e2ded4", side: "#c1b9aa", roof: "#3b4145", trim: "#fbfaf5", accent: "#9caa83", door: "#343a35" }
     ],
     shop: [
-      { wall: "#e8d4b8", side: "#d0bc9c", roof: "#4a5a62", trim: "#fff8ec", accent: "#e07050", door: "#3a3a3a" },
-      { wall: "#d0e0e4", side: "#b0c8d0", roof: "#5a6a72", trim: "#f4fafc", accent: "#50a0b0", door: "#2a3a42" },
-      { wall: "#f0dcc0", side: "#d8c4a0", roof: "#6a5a4e", trim: "#fffaf0", accent: "#c06040", door: "#4a3028" },
-      { wall: "#d8e8d0", side: "#b8d0b0", roof: "#4a5a52", trim: "#f4faf0", accent: "#70a060", door: "#2a3a28" }
+      { wall: "#e5e1d8", side: "#c5c0b6", roof: "#343d45", trim: "#ffffff", accent: "#b9875f", door: "#26343a" },
+      { wall: "#cbd9dc", side: "#a9c0c5", roof: "#344b55", trim: "#f7fbfc", accent: "#5d9eaa", door: "#24363d" },
+      { wall: "#ded8ce", side: "#bbb1a3", roof: "#4a4540", trim: "#fffdf8", accent: "#9b775e", door: "#352f2a" },
+      { wall: "#d5ded4", side: "#b5c4b3", roof: "#3c4940", trim: "#f8fbf5", accent: "#7d9d70", door: "#2c392d" }
     ],
     industrial: [
       { wall: "#a8b0b4", side: "#889098", roof: "#3a444c", trim: "#d0d4d8", accent: "#e0a040", door: "#2a3038" },
