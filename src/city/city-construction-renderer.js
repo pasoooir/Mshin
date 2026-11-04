@@ -49,6 +49,7 @@ export function createCityConstructionRenderer(THREE, buildings) {
       const legs = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.16), dark);
       legs.position.y = 0.1; worker.add(legs);
       worker.userData.armPivot = armPivot;
+      worker.userData.toolType = i === 1 ? "pickaxe" : "shovel";
       worker.userData.phase = i * 2.1;
       workers.push(worker); group.add(worker);
     }
