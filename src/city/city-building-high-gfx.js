@@ -1,46 +1,5 @@
-import { cityTileToWorld, getBuildingVisualScale } from "./city-world-scale.js";
-/**
- * High-graphics procedural buildings for Mshin city (SimCity BuildIt inspired style).
- * Vibrant palettes, multi-style roofs, rich facades, roof props, and readable silhouettes
- * from any orbit angle. Kept low-poly + instanced-friendly for mobile WebGL.
- */
-export function createHighGfxBuilding(THREE, item, shared = {}) {
-  const {
-    trunkGeometry,
-    canopyGeometry,
-    canopySmallGeometry,
-    brickSurface,
-    concreteSurface,
-    roofSurface,
-    windowMaterials
-  } = shared;
-
-  const group = new THREE.Group();
-  const x = cityTileToWorld(item.x);
-  const z = cityTileToWorld(item.y);
-  group.position.set(x, 0, z);
-  const visualScale = getBuildingVisualScale(item.type);
-  group.scale.set(visualScale.x, visualScale.y, visualScale.z);
-  group.userData = { buildingId: item.id, type: item.type, level: item.level || 1 };
-
-  const type = item.type;
-  const level = Math.max(1, Math.min(5, item.level || 1));
-  const seed = ((item.id || 1) * 2654435761) >>> 0;
-
-  const rand = (() => {
-    let s = seed;
-    return () => {
-      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-      return s / 4294967296;
-    };
-  })();
-
-  const pick = (arr) => arr[Math.floor(rand() * arr.length) % arr.length];
-
-  // ─── SimCity BuildIt inspired vibrant palettes ───────────────────────────
-  // Architecture-led mineral, timber, brick and glass palettes.
-  // Deterministic per-building selection keeps variety without random neon colors.
-  const PALETTES = {
+/** Controlled, material-aware building color families; values are sRGB hex colors. */
+export const CITY_ARCHITECTURAL_PALETTES = {
     home: [
       { wall:"#d8c8ad", side:"#a99478", roof:"#62594e", trim:"#eee4d1", accent:"#71806b", door:"#654b38" },
       { wall:"#c7b9a4", side:"#938674", roof:"#514d48", trim:"#e5dac7", accent:"#7d8c91", door:"#594638" },
@@ -102,11 +61,51 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
       { wall:"#cdbfa9", side:"#9a8c76", roof:"#595a54", trim:"#e9dfce", accent:"#8d8067", door:"#5c4e3f" },
       { wall:"#c0c3b9", side:"#8e968c", roof:"#535c56", trim:"#e3e6dc", accent:"#7a8c80", door:"#50594f" }
     ]
-  };
+  };;
 
+import { cityTileToWorld, getBuildingVisualScale } from "./city-world-scale.js";
+/**
+ * High-graphics procedural buildings for Mshin city (SimCity BuildIt inspired style).
+ * Vibrant palettes, multi-style roofs, rich facades, roof props, and readable silhouettes
+ * from any orbit angle. Kept low-poly + instanced-friendly for mobile WebGL.
+ */
+export function createHighGfxBuilding(THREE, item, shared = {}) {
+  const {
+    trunkGeometry,
+    canopyGeometry,
+    canopySmallGeometry,
+    brickSurface,
+    concreteSurface,
+    roofSurface,
+    windowMaterials
+  } = shared;
+
+  const group = new THREE.Group();
+  const x = cityTileToWorld(item.x);
+  const z = cityTileToWorld(item.y);
+  group.position.set(x, 0, z);
+  const visualScale = getBuildingVisualScale(item.type);
+  group.scale.set(visualScale.x, visualScale.y, visualScale.z);
+  group.userData = { buildingId: item.id, type: item.type, level: item.level || 1 };
+
+  const type = item.type;
+  const level = Math.max(1, Math.min(5, item.level || 1));
+  const seed = ((item.id || 1) * 2654435761) >>> 0;
+
+  const rand = (() => {
+    let s = seed;
+    return () => {
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  })();
+
+  const pick = (arr) => arr[Math.floor(rand() * arr.length) % arr.length];
+
+  // ─── SimCity BuildIt inspired vibrant palettes ───────────────────────────
   const serviceTypes = new Set(["power", "water", "sewage", "waste", "police", "fire", "health", "education", "service"]);
-  const paletteKey = serviceTypes.has(type) ? (PALETTES[type] ? type : "service") : type;
-  const paletteList = PALETTES[paletteKey] || PALETTES.home;
+  const paletteKey = serviceTypes.has(type) ? (CITY_ARCHITECTURAL_PALETTES[type] ? type : "service") : type;
+  const paletteList = CITY_ARCHITECTURAL_PALETTES[paletteKey] || CITY_ARCHITECTURAL_PALETTES.home;
   const palette = paletteList[(seed + level) % paletteList.length];
 
   function mat(color, opts = {}) {
