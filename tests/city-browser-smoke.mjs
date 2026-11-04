@@ -306,14 +306,16 @@ try{
    rendered:window.MshinCity3DStats.trafficVehicles,
    onRoad:city.traffic.every(vehicle=>city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"),
    moving:city.traffic.some(vehicle=>(vehicle.routeStep||0)>0||Math.abs(vehicle.x-Math.round(vehicle.x))>.05||Math.abs(vehicle.y-Math.round(vehicle.y))>.05),
-   drawCalls:window.MshinCity3DStats.drawCalls
+   drawCalls:window.MshinCity3DStats.drawCalls,
+   constructionSites:window.MshinCity3DStats.constructionSites,
+   buildings:window.MshinCity3DStats.stylizedBuildings
   };
  });
  assert.ok(trafficAcceptance.vehicles>0,"the live city simulation must spawn road traffic");
  assert.equal(trafficAcceptance.rendered,trafficAcceptance.vehicles,"every active vehicle must be rendered by the 3D city renderer");
  assert.equal(trafficAcceptance.onRoad,true,"mobile traffic must stay on connected road tiles");
  assert.equal(trafficAcceptance.moving,true,"vehicles must progress along their road routes rather than remain static");
- assert.ok(trafficAcceptance.drawCalls<80,"instanced traffic must preserve the mobile draw-call budget: "+JSON.stringify({drawCalls:trafficAcceptance.drawCalls,constructionSites:window.MshinCity3DStats.constructionSites,buildings:window.MshinCity3DStats.stylizedBuildings}));
+ assert.ok(trafficAcceptance.drawCalls<80,"instanced traffic must preserve the mobile draw-call budget: "+JSON.stringify(trafficAcceptance));
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.save()),"traffic state must remain persistable with the city save");
  const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),categoryButtons:[...document.querySelectorAll(".cityToolCategory")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
