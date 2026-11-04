@@ -4,6 +4,7 @@ import { createCityAtmosphere } from "./city-atmosphere.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
+import { createCityStreetLights } from "./city-street-lighting.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityBackgroundSkyline } from "./city-background-skyline.js";
 import { addRealisticArchitecture } from "./city-architecture-realism.js";
@@ -286,11 +287,12 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
 
-  // A dedicated non-buildable pedestrian strip now exists inside each road ROW.
-  // Street lights are intentionally deferred to a later visual slice.
-  const decorativeStreetLightCount = 0;
+  // Sidewalk furniture is kept outside parcel cells and batched into a single
+  // instanced draw call so the night-city lighting detail stays mobile-friendly.
+  const streetLights = createCityStreetLights(THREE, scene, isRoadCell, VISUAL_GRID, windowMaterials);
+  const decorativeStreetLightCount = streetLights.count;
   const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
-  const streetFurniturePlacementReady = sidewalkLayer.count > 0;
+  const streetFurniturePlacementReady = sidewalkLayer.count > 0 && decorativeStreetLightCount > 0;
 
   const buildings = new THREE.Group();
   scene.add(buildings);
@@ -697,6 +699,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
       atmosphere.dispose();
+      streetLights.dispose();
       backgroundSkyline.dispose();
       for (const surface of [grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface]) {
         surface.map.dispose();
