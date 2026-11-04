@@ -65,7 +65,11 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
   const rain = new THREE.LineSegments(rainGeometry, rainMaterial);
   const snow = new THREE.Points(snowGeometry, snowMaterial);
   const leaves = new THREE.Points(leafGeometry, leafMaterial);
-  weatherRig.add(rain, snow, leaves);
+  const heatHazeGeometry = new THREE.PlaneGeometry(64, 30);
+  const heatHazeMaterial = new THREE.MeshBasicMaterial({ color: "#ffd9a6", transparent: true, opacity: 0.06, depthWrite: false, side: THREE.DoubleSide });
+  const heatHaze = new THREE.Mesh(heatHazeGeometry, heatHazeMaterial);
+  heatHaze.position.set(0, -5, -30);
+  weatherRig.add(rain, snow, leaves, heatHaze);
   camera.add(weatherRig);
 
   let lightingBucket = -1;
@@ -101,7 +105,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
 
   function update(city) {
     const seasonal = getCitySeasonalWeather(city);
-    weatherStats = { ...seasonal, rainVisible: seasonal.weather === "rain", snowVisible: seasonal.weather === "snow", leavesVisible: seasonal.weather === "wind" && seasonal.season === "autumn" };
+    weatherStats = { ...seasonal, rainVisible: seasonal.weather === "rain", snowVisible: seasonal.weather === "snow" || seasonal.weather === "frost", leavesVisible: seasonal.weather === "wind" && seasonal.season === "autumn", heatHazeVisible: seasonal.weather === "heat" };
     if (seasonal.seasonIndex !== currentSeason) {
       currentSeason = seasonal.seasonIndex;
       lightingBucket = -1;
@@ -115,6 +119,8 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     rain.visible = weatherStats.rainVisible;
     snow.visible = weatherStats.snowVisible;
     leaves.visible = weatherStats.leavesVisible;
+    heatHaze.visible = weatherStats.heatHazeVisible;
+    heatHazeMaterial.opacity = 0.025 + seasonal.intensity * 0.065;
     rainMaterial.opacity = 0.28 + seasonal.intensity * 0.38;
     snowMaterial.opacity = 0.5 + seasonal.intensity * 0.45;
     leafMaterial.opacity = 0.45 + seasonal.intensity * 0.5;
@@ -167,8 +173,8 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
       starGeometry.dispose(); stars.material.dispose();
       sunDisc.geometry.dispose(); sunDisc.material.dispose();
       moonDisc.geometry.dispose(); moonDisc.material.dispose();
-      rainGeometry.dispose(); snowGeometry.dispose(); leafGeometry.dispose();
-      rainMaterial.dispose(); snowMaterial.dispose(); leafMaterial.dispose();
+      rainGeometry.dispose(); snowGeometry.dispose(); leafGeometry.dispose(); heatHazeGeometry.dispose();
+      rainMaterial.dispose(); snowMaterial.dispose(); leafMaterial.dispose(); heatHazeMaterial.dispose();
     }
   };
 }
