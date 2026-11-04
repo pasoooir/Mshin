@@ -30,7 +30,7 @@ test("street lights are deterministic, sit beside roads and use one instanced dr
   const materials=new Set();
   const isRoadCell=value=>(value%8===7||value%8===0)&&![0,16,47,63].includes(value);
   const result=createCityStreetLights(THREE,scene,isRoadCell,64,materials);
-  assert.ok(result.count>=60,"the road network should receive a useful but sparse lighting layer");
+  assert.ok(result.count>=160,"the road network should receive a useful but sparse lighting layer");
   assert.equal(scene.children.length,1,"all street lamps must be submitted as one instanced mesh");
   assert.equal(result.mesh.count,result.count);
   assert.equal(result.mesh.instances.length,result.count);
@@ -41,7 +41,9 @@ test("street lights are deterministic, sit beside roads and use one instanced dr
   assert.ok(result.mesh.instances.every(point=>Math.abs(point.z)>0&&Math.abs(point.x)>0));
   assert.ok(result.mesh.instances.every(point=>{
     const roadX=Math.round(point.x/2+31.5),roadY=Math.round(point.z/2+31.5);
-    return point.rotation===0 ? isRoadCell(roadY)&&!isRoadCell(roadX) : isRoadCell(roadX)&&!isRoadCell(roadY);
+    return point.rotation===0
+      ? !isRoadCell(roadX)&&(isRoadCell(roadY-1)||isRoadCell(roadY+1))
+      : !isRoadCell(roadY)&&(isRoadCell(roadX-1)||isRoadCell(roadX+1));
   }),"every lamp base must sit on a sidewalk edge beside a road, never in a road intersection");
   result.dispose();
   assert.equal(scene.children.length,0);
