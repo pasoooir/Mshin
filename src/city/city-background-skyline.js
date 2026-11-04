@@ -27,8 +27,8 @@ export function createCityBackgroundSkyline(THREE, scene, concreteSurface, brick
   };
   const positions = [];
   for (let index = 0; index < 18; index++) {
-    const along = -112 + index * 13.2;
-    positions.push([along, -88], [along, 88], [-88, along], [88, along]);
+    const along = -448 + index * 52.8;
+    positions.push([along, -352], [along, 352], [-352, along], [352, along]);
   }
   for (let index = 0; index < positions.length; index++) {
     const [x, z] = positions[index];
