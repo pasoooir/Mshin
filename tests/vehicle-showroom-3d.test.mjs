@@ -38,7 +38,7 @@ test("360-degree interaction changes the real orbit camera and supports a comple
 test("showroom module is loaded locally and precached for offline use", () => {
   assert.match(game, /from "\.\/vehicle-showroom-3d\.js"/);
   assert.match(worker, /\.\/src\/vehicle-showroom-3d\.js/);
-  assert.match(worker, /mshin-arcade-v70/);
+  assert.match(worker, /mshin-arcade-v71/);
   assert.match(renderer, /from "\.\/vehicle-pbr\.js"/);
   assert.match(worker, /\.\/src\/vehicle-pbr\.js/);
 });
