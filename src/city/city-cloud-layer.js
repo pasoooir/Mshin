@@ -1,3 +1,14 @@
+export function getCityCloudLighting(city, atmosphere = {}) {
+  const rawMinute = Number(city?.minuteOfDay);
+  const minute = Number.isFinite(rawMinute) ? ((rawMinute % 1440) + 1440) % 1440 : 720;
+  const weather = atmosphere?.weather?.weather || "clear";
+  const intensity = Number(atmosphere?.weather?.intensity) || 0;
+  const daylight = Math.max(0, Math.min(1, Math.sin(minute / 1440 * Math.PI * 2 - Math.PI / 2)));
+  const coverage = weather === "rain" ? 0.92 : weather === "snow" || weather === "frost" ? 0.78
+    : weather === "wind" ? 0.56 : weather === "heat" ? 0.18 : 0.34 + intensity * 0.18;
+  return { minute, weather, daylight, coverage, opacity: weather === "clear" ? 0.54 : 0.78 };
+}
+
 /**
  * Lightweight procedural cloud shell for the Mshin city sky.
  * Multi-octave noise creates broad cumulus-like fields and wispy edges;
@@ -88,14 +99,10 @@ export function createCityCloudLayer(THREE, { scene, camera }) {
     update(city, atmosphere) {
       const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
       material.uniforms.uTime.value = now;
-      const weather = atmosphere?.weather?.weather || "clear";
-      const intensity = Number(atmosphere?.weather?.intensity) || 0;
-      const minute = Number(city?.minuteOfDay) || 720;
-      const daylight = Math.max(0, Math.min(1, Math.sin(minute / 1440 * Math.PI * 2 - Math.PI / 2)));
-      const coverage = weather === "rain" ? 0.92 : weather === "snow" || weather === "frost" ? 0.78
-        : weather === "wind" ? 0.56 : weather === "heat" ? 0.18 : 0.34 + intensity * 0.18;
-      material.uniforms.uCoverage.value = coverage;
-      material.uniforms.uOpacity.value = weather === "clear" ? 0.54 : 0.78;
+      const lighting = getCityCloudLighting(city, atmosphere);
+      const { minute, daylight } = lighting;
+      material.uniforms.uCoverage.value = lighting.coverage;
+      material.uniforms.uOpacity.value = lighting.opacity;
       material.uniforms.uNight.value = 1 - daylight;
       material.uniforms.uSunDirection.value.set(Math.cos(minute / 1440 * Math.PI * 2 - Math.PI / 2), Math.sin(minute / 1440 * Math.PI * 2 - Math.PI / 2), -0.34).normalize();
       material.uniforms.uSunColor.value.set(atmosphere?.lighting?.sunlightColor || "#fff0d5");
