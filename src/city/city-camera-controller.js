@@ -2,6 +2,8 @@ const MIN_ZOOM = 0.42;
 const MAX_ZOOM = 1.5;
 const ORBIT_SENSITIVITY = 0.009;
 const TAP_SLOP = 5;
+const INERTIA_MAX_SPEED = 0.18;
+const INERTIA_MAX_DURATION_MS = 900;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const midpoint = ([a, b]) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 const distance = ([a, b]) => Math.max(1, Math.hypot(b.x - a.x, b.y - a.y));
@@ -89,8 +91,9 @@ export function createCityCameraController({
 
   function startInertia(velocity) {
     if (Math.abs(velocity) < 0.0008) return;
-    let speed = velocity * 0.72;
+    let speed = clamp(velocity * 0.72, -INERTIA_MAX_SPEED, INERTIA_MAX_SPEED);
     let previousTime = 0;
+    const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
     inertiaActive = true;
     const tick = () => {
       const now = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -101,8 +104,9 @@ export function createCityCameraController({
       speed *= Math.pow(0.84, frameScale);
       lastInertiaVelocity = speed;
       update();
-      if (Math.abs(speed) > 0.00035) inertiaTimer = setTimeout(tick, 16);
-      else {
+      if (Math.abs(speed) > 0.00035 && now - startedAt < INERTIA_MAX_DURATION_MS) {
+        inertiaTimer = setTimeout(tick, 16);
+      } else {
         inertiaTimer = 0;
         inertiaActive = false;
         lastInertiaVelocity = 0;
