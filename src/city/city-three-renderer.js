@@ -2,6 +2,7 @@ const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
 import { createCityConstructionRenderer } from "./city-construction-renderer.js";
+import { createCitySurfaceTexture } from "./city-surface-texture.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -73,37 +74,13 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getViewport: () => ({ width: window.innerWidth, height: window.innerHeight })
   });
 
-  function makeSurfaceTexture(base, fleck, seed, count, scale = 1) {
-    const textureCanvas = document.createElement("canvas");
-    textureCanvas.width = textureCanvas.height = 512;
-    const g = textureCanvas.getContext("2d");
-    g.fillStyle = base;
-    g.fillRect(0, 0, 512, 512);
-    let state = seed >>> 0;
-    const random = () => {
-      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-      return state / 4294967296;
-    };
-    for (let i = 0; i < count; i++) {
-      const size = 0.5 + random() * 3.0 * scale;
-      g.globalAlpha = 0.07 + random() * 0.18;
-      g.fillStyle = fleck;
-      g.fillRect(random() * 512, random() * 512, size, size);
-    }
-    g.globalAlpha = 1;
-    const texture = new THREE.CanvasTexture(textureCanvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 4);
-    return texture;
-  }
 
-  const grassMap = makeSurfaceTexture("#91c875", "#e0f4b5", 741, 11500);
-  const roadMap = makeSurfaceTexture("#46545e", "#c6d1c8", 912, 6800, 0.8);
+  const grassMap = createCitySurfaceTexture(THREE, renderer, "#91c875", "#e0f4b5", 741, 11500);
+  const roadMap = createCitySurfaceTexture(THREE, renderer, "#46545e", "#c6d1c8", 912, 6800, 0.8);
   // Procedural facade and roof maps add visible surface detail without large
   // external image downloads or extra network dependencies on mobile.
-  const facadeMap = makeSurfaceTexture("#f5efdf", "#8e8a7d", 1327, 2600, 0.42);
-  const roofMap = makeSurfaceTexture("#9b6752", "#f4d5a5", 1849, 3400, 0.55);
+  const facadeMap = createCitySurfaceTexture(THREE, renderer, "#f5efdf", "#8e8a7d", 1327, 2600, 0.42);
+  const roofMap = createCitySurfaceTexture(THREE, renderer, "#9b6752", "#f4d5a5", 1849, 3400, 0.55);
   const grassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, roughness: 1 });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#dce8c7", roughness: 1 });
   const lockedGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#899783", roughness: 1 });
