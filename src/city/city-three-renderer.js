@@ -1,7 +1,7 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createHighGfxBuilding } from "./city-building-high-gfx.js";
-import { CITY_TILE_METERS, cityTileToWorld, worldToCityTile } from "./city-world-scale.js";
+import { CITY_TILE_METERS, cityTileToWorld, worldToCityTile, getBuildingVisualScale } from "./city-world-scale.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
@@ -310,14 +310,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
       const rotation = Number.isFinite(vehicle.heading) ? Math.PI / 2 - vehicle.heading : 0;
       trafficDummy.position.set(x, 0.48, z);
       trafficDummy.rotation.set(0, rotation, 0);
-      trafficDummy.scale.set(1, 1, 1);
+      trafficDummy.scale.set(1.76, 1.5, 2.53);
       trafficDummy.updateMatrix();
       trafficBodies.setMatrixAt(index, trafficDummy.matrix);
       trafficBodies.setColorAt(index, new THREE.Color(vehicle.color || trafficPalette[index % trafficPalette.length]));
 
       trafficDummy.position.y = 0.78;
       trafficDummy.position.z = z - 0.08;
-      trafficDummy.scale.set(1, 1, 1);
+      trafficDummy.scale.set(1.76, 1.5, 2.53);
       trafficDummy.updateMatrix();
       trafficWindows.setMatrixAt(index, trafficDummy.matrix);
     }
@@ -352,14 +352,15 @@ export async function createCityThreeRenderer(sourceCanvas) {
       const x = cityTileToWorld(citizen.x);
       const z = cityTileToWorld(citizen.y);
       const rotation = Number.isFinite(citizen.heading) ? Math.PI / 2 - citizen.heading : 0;
-      pedestrianDummy.position.set(x, 0.48, z);
+      pedestrianDummy.position.set(x, 0.70, z);
       pedestrianDummy.rotation.set(0, rotation, 0);
-      pedestrianDummy.scale.set(1, 1, 1);
+      pedestrianDummy.scale.set(1.8, 2.8, 1.8);
       pedestrianDummy.updateMatrix();
       pedestrianBodies.setMatrixAt(index, pedestrianDummy.matrix);
       pedestrianBodies.setColorAt(index, new THREE.Color(pedestrianPalette[(citizen.id - 1) % pedestrianPalette.length]));
-      pedestrianDummy.position.set(x, 0.78, z);
+      pedestrianDummy.position.set(x, 1.48, z);
       pedestrianDummy.rotation.set(0, 0, 0);
+      pedestrianDummy.scale.set(1.3, 1.3, 1.3);
       pedestrianDummy.updateMatrix();
       pedestrianHeads.setMatrixAt(index, pedestrianDummy.matrix);
     }
@@ -390,8 +391,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   function createBuilding(item) {
     const group = new THREE.Group();
-    const x = (item.x - 15.5) * 2, z = (item.y - 15.5) * 2;
+    const x = cityTileToWorld(item.x), z = cityTileToWorld(item.y);
     group.position.set(x, 0, z);
+    const visualScale = getBuildingVisualScale(item.type);
+    group.scale.set(visualScale.x, visualScale.y, visualScale.z);
     const type = item.type;
     if (type === "park") {
       const lawn = new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.20, 1.76), new THREE.MeshStandardMaterial({ color: "#66b95e", roughness: 1 }));
