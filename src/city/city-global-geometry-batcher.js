@@ -11,7 +11,7 @@ export function batchCityStaticGeometry(THREE, root, options = {}) {
   const untouched = [];
   let sourceMeshes = 0;
 
-  const objectGeometryHasAttribute = () => "";\n  const materialKey = (material, geometry) => {
+  const materialKey = (material, geometry) => {
     const color = material.color?.getHexString?.() || "";
     const emissive = material.emissive?.getHexString?.() || "";
     const map = material.map?.uuid || "";
