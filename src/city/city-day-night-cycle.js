@@ -2,6 +2,7 @@
  * Mshin city day/night standard.
  * A complete cycle lasts 330 real seconds: 300 seconds of daylight and
  * 30 seconds of night. The visual sun path remains 06:00–18:00.
+ * Keep this clock independent from economic and traffic simulation ticks.
  */
 export const CITY_DAY_NIGHT_CYCLE = Object.freeze({
   daylightSeconds: 300,
