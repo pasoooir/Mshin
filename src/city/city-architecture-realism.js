@@ -38,12 +38,14 @@ export function addRealisticArchitecture(THREE, options) {
       // Side elevations are equally articulated; these are not front-only shells.
       frames.push(addBox(facadeOffset, windowHeight + 0.10, 0.035, trimMat, x - windowWidth / 2, y, bodyDepth / 2 + 0.045));
       frames.push(addBox(facadeOffset, windowHeight + 0.10, 0.035, trimMat, x + windowWidth / 2, y, -bodyDepth / 2 - 0.045));
-      const sideCount = Math.max(2, Math.floor((bodyDepth - 0.24) / 0.43));
-      for (let sideColumn = 0; sideColumn < sideCount; sideColumn++) {
-        const z = -bodyDepth / 2 + 0.18 + sideColumn * ((bodyDepth - 0.36) / Math.max(1, sideCount - 1));
-        windows.push(addBox(facadeOffset, windowHeight, windowWidth, glassMat, bodyWidth / 2 + facadeOffset, y, z));
-        windows.push(addBox(facadeOffset, windowHeight, windowWidth, glassMat, -bodyWidth / 2 - facadeOffset, y, z));
-      }
+    }
+    // Side windows are placed once per elevation/floor, not once per front column.
+    // This avoids multiplying geometry and draw calls on narrow mobile devices.
+    const sideCount = Math.max(2, Math.floor((bodyDepth - 0.24) / 0.43));
+    for (let sideColumn = 0; sideColumn < sideCount; sideColumn++) {
+      const z = -bodyDepth / 2 + 0.18 + sideColumn * ((bodyDepth - 0.36) / Math.max(1, sideCount - 1));
+      windows.push(addBox(facadeOffset, windowHeight, windowWidth, glassMat, bodyWidth / 2 + facadeOffset, y, z));
+      windows.push(addBox(facadeOffset, windowHeight, windowWidth, glassMat, -bodyWidth / 2 - facadeOffset, y, z));
     }
     if (!isLowRise && floor > 0) {
       floorBands.push(addBox(bodyWidth + 0.045, 0.055, bodyDepth + 0.045, trimMat, 0, 0.32 + floor * height / floors, 0));
