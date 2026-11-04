@@ -5,6 +5,7 @@ import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityStreetLights } from "./city-street-lighting.js";
+import { createCityRaycastTools } from "./city-raycast-tools.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityBackgroundSkyline } from "./city-background-skyline.js";
 import { addRealisticArchitecture } from "./city-architecture-realism.js";
@@ -582,9 +583,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     for (const item of city.buildings) buildings.add(createBuilding(item));
   }
 
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
   let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48));
 
   function resize() {
@@ -618,33 +616,13 @@ export async function createCityThreeRenderer(sourceCanvas) {
     renderer.render(scene, camera);
   }
 
-  function tileAt(screenX, screenY) {
-    pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
-    raycaster.setFromCamera(pointer, camera);
-    const point = new THREE.Vector3();
-    if (!raycaster.ray.intersectPlane(groundPlane, point)) return { x: -1, y: -1 };
-    return { x: Math.floor(point.x / 2 + 16), y: Math.floor(point.z / 2 + 16) };
-  }
-
-  function groundPointAt(screenX, screenY) {
-    pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
-    raycaster.setFromCamera(pointer, camera);
-    const point = new THREE.Vector3();
-    return raycaster.ray.intersectPlane(groundPlane, point) ? { x: point.x, z: point.z } : null;
-  }
-
-  function focusPointAt(screenX, screenY) {
-    pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
-    raycaster.setFromCamera(pointer, camera);
-    const hits = raycaster.intersectObjects(buildings.children, true);
-    if (hits.length) return { x: hits[0].point.x, y: hits[0].point.y, z: hits[0].point.z };
-    return groundPointAt(screenX, screenY);
-  }
-
-  function screenForTile(x, y) {
-    const point = new THREE.Vector3((x - 15.5) * 2, 0.16, (y - 15.5) * 2).project(camera);
-    return { x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2 };
-  }
+  const raycastTools = createCityRaycastTools(THREE, {
+    camera,
+    buildings,
+    groundPlane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14),
+    getViewport: () => ({ width, height })
+  });
+  const { tileAt, groundPointAt, focusPointAt, screenForTile } = raycastTools;
 
   function onResize() { resize(); }
   resize();
