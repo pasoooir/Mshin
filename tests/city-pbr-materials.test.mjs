@@ -3,8 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const renderer = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
-const buildingGeometrySource = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
-const buildingGeometry = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
+const buildingFactory = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
 const textures = await readFile(new URL("../src/city/city-pbr-textures.js", import.meta.url), "utf8");
 const streets = await readFile(new URL("../src/city/city-street-renderer.js", import.meta.url), "utf8");
 
@@ -20,28 +19,39 @@ test("city surfaces use layered tileable albedo, normal and roughness maps", () 
   assert.ok(textures.includes("roughnessMap: roughnessTexture"));
 });
 
-test("roads, terrain, building facades and roofs consume physically based surface maps", () => {
+test("active renderer forwards PBR facade and roof surfaces to the high-graphics building factory", () => {
   assert.ok(renderer.includes("...grassSurface"));
   assert.ok(renderer.includes("...asphaltSurface"));
-  assert.ok(buildingGeometrySource.includes("const facadeSurf = (type === \"industrial\" || type === \"administrative\")"));
-  assert.ok(buildingGeometrySource.includes("...facadeSurf"));
-  assert.ok(buildingGeometrySource.includes("facadeSurf.normalMap ? new THREE.Vector2"));
-
-  assert.ok(buildingGeometrySource.includes("...(roofSurface || {})"));
-  assert.ok(buildingGeometrySource.includes('type === "industrial" || type === "administrative"'));
+  assert.match(renderer, /createHighGfxBuilding\(THREE,\s*item,\s*\{/);
+  for (const surface of ["brickSurface", "concreteSurface", "roofSurface"]) {
+    assert.match(renderer, new RegExp("\\b" + surface + ","));
+  }
   assert.ok(renderer.includes("sidewalkSurface"));
   assert.ok(streets.includes("...(surface || {})"));
 });
 
-test("residential roof silhouette is a rectangular two-slope gable, not a pyramid primitive", () => {
-  assert.ok(buildingGeometry.includes("function addGableRoof(w, d, ridgeH, roofMat, trimMat, baseY)"), "gable roof must be built by the dedicated building-geometry module");
-  assert.ok(buildingGeometry.includes("geo.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7])"), "gable roof must use two rectangular slopes with explicit triangular faces");
-  assert.ok(!buildingGeometry.includes("new THREE.ConeGeometry(1.08, 0.72, 4)"), "residential gable must not regress to a pyramid primitive");
+test("building factory selects brick or concrete maps and applies PBR maps to both wall orientations and roofs", () => {
+  assert.match(buildingFactory, /brickSurface,\s*concreteSurface,\s*roofSurface/);
+  assert.match(buildingFactory, /const facadeSurf = \(type === "industrial" \|\| type === "administrative"\) \? \(concreteSurface \|\| \{\}\) : \(brickSurface \|\| \{\}\);/);
+  assert.equal((buildingFactory.match(/\.\.\.facadeSurf/g) || []).length, 2,
+    "front and side wall materials must both receive the selected facade maps");
+  assert.match(buildingFactory, /body\.material = \[wall, sideWall, wall, wall, sideWall, sideWall\]/);
+  assert.match(buildingFactory, /\.\.\.\(roofSurface \|\| \{\}\)/);
 });
 
-test("city visual identity uses a muted architectural palette and reports PBR acceptance metrics", () => {
+test("residential roof silhouette remains a rectangular two-slope gable", () => {
+  assert.ok(buildingFactory.includes("function addGableRoof(w, d, ridgeH, roofMat, trimMat, baseY)"));
+  assert.ok(buildingFactory.includes("geo.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7])"));
+  assert.ok(!buildingFactory.includes("new THREE.ConeGeometry(1.08, 0.72, 4)"));
+});
+
+test("city keeps the realistic PBR visual identity and neutral tints preserve albedo detail", () => {
   assert.ok(renderer.includes('visualStyle: "realistic-pbr-city"'));
   assert.ok(renderer.includes("pbrMaterialSets: 6"));
   assert.ok(renderer.includes("normalMappedSurfaces: 6"));
-  assert.ok(!renderer.includes('visualStyle: "vibrant-stylized-3d"'));
+  assert.ok(buildingFactory.includes('const facadeTint = type === "industrial" || type === "administrative" ? "#eeeeea" : "#f4eee6"'));
+  assert.ok(buildingFactory.includes('const sideFacadeTint = type === "industrial" || type === "administrative" ? "#d9dcd8" : "#ded7cc"'));
+  assert.ok(buildingFactory.includes('color: "#e9e7e1"'));
+  assert.ok(buildingFactory.includes("roughness: 0.82"));
+  assert.ok(buildingFactory.includes("roughness: 0.85"));
 });

@@ -325,22 +325,25 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   }
 
   const facadeSurf = (type === "industrial" || type === "administrative") ? (concreteSurface || {}) : (brickSurface || {});
+  // Neutral tints preserve the albedo detail in the physically based facade maps.
+  const facadeTint = type === "industrial" || type === "administrative" ? "#eeeeea" : "#f4eee6";
+  const sideFacadeTint = type === "industrial" || type === "administrative" ? "#d9dcd8" : "#ded7cc";
   const wall = new THREE.MeshStandardMaterial({
     ...facadeSurf,
-    color: wallColour,
-    roughness: 0.70,
+    color: facadeTint,
+    roughness: 0.82,
     normalScale: facadeSurf.normalMap ? new THREE.Vector2(0.35, 0.35) : undefined
   });
   const sideWall = new THREE.MeshStandardMaterial({
     ...facadeSurf,
-    color: sideColour,
-    roughness: 0.73,
+    color: sideFacadeTint,
+    roughness: 0.85,
     normalScale: facadeSurf.normalMap ? new THREE.Vector2(0.3, 0.3) : undefined
   });
   const roofMat = new THREE.MeshStandardMaterial({
     ...(roofSurface || {}),
-    color: roofColour,
-    roughness: 0.68,
+    color: "#e9e7e1",
+    roughness: 0.78,
     normalScale: roofSurface?.normalMap ? new THREE.Vector2(0.45, 0.45) : undefined
   });
   const trimMat = mat(trimColour, { roughness: 0.65 });
