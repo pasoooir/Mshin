@@ -97,8 +97,8 @@ test("backup export refuses invalid in-memory state", () => {
 
 test("offline app shell precaches every city simulation and persistence module", () => {
   const serviceWorker=fs.readFileSync(new URL("../service-worker.js",import.meta.url),"utf8");
-  for(const modulePath of ["city-view.js","city-three-renderer.js","city-zoning.js","city-services.js","city-traffic.js","city-population.js","city-economy.js","city-employment.js","city-save.js"]){
+  for(const modulePath of ["city-view.js","city-three-renderer.js","city-camera-controller.js","city-camera-projection.js","city-construction-renderer.js","city-surface-texture.js","city-zoning.js","city-services.js","city-traffic.js","city-population.js","city-economy.js","city-employment.js","city-save.js"]){
     assert.ok(serviceWorker.includes("./src/city/"+modulePath),"offline app shell is missing "+modulePath);
   }
-  assert.match(serviceWorker,/mshin-arcade-v67/,"city persistence release must advance the offline cache version");
+  assert.match(serviceWorker,/mshin-arcade-v69/,"city persistence release must advance the offline cache version");
 });
