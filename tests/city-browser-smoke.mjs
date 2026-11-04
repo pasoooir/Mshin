@@ -60,9 +60,12 @@ try{
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.version,"180");
- assert.equal(renderStats.visualStyle,"vibrant-stylized-3d","the city renderer must use the approved vivid 3D art direction");
- assert.equal(renderStats.proceduralTextures,4,"ground, road, building facade and roof must use generated texture maps");
- assert.equal(renderStats.texturedBuildingMaterials,3,"building wall and roof materials must use visible procedural texture maps");
+ assert.equal(renderStats.visualStyle,"realistic-pbr-city","the city renderer must use the realistic architectural PBR art direction");
+ assert.equal(renderStats.proceduralTextures,6,"terrain, asphalt, brick, concrete, roof and sidewalk must use dedicated texture families");
+ assert.equal(renderStats.pbrMaterialSets,6,"all six city surface families must expose complete PBR map sets");
+ assert.equal(renderStats.normalMappedSurfaces,6,"all six city surface families must use generated normal maps");
+ assert.equal(renderStats.roughnessMappedSurfaces,6,"all six city surface families must use generated roughness maps");
+ assert.equal(renderStats.texturedBuildingMaterials,4,"residential, commercial, industrial and civic materials must use PBR textures");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
  assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۴"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
