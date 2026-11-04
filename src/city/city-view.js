@@ -22,7 +22,7 @@ export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
  city.tick++;city.minuteOfDay=(city.minuteOfDay+10)%1440;
  // Buildings remain unavailable until their visible construction countdown completes.
- for(const building of city.buildings){if(!building.construction)continue;building.construction.remaining=Math.max(0,building.construction.remaining-seconds);if(building.construction.remaining===0)delete building.construction;}
+ for(const building of city.buildings){if(!building.construction)continue;building.construction.remaining=Math.max(0,building.construction.remaining-seconds);if(building.construction.remaining===0){delete building.construction;if(building.type==="home")city.population+=Math.max(0,building.residents||0);}}
  if(city.tick%12===0)developCityZones(city);
  const activeCity=city.buildings.some(b=>b.construction)?{...city,buildings:city.buildings.filter(b=>!b.construction)}:city;
  const infrastructure=computeCityServices(activeCity);
@@ -54,7 +54,7 @@ export function placeCityItem(city,x,y,type){
  if(type!=="road"&&!roadNear(city.grid,x,y))return{ok:false,reason:"ساختمان باید به خیابان دسترسی داشته باشد"};
  city.treasury-=COST[type];if(type==="road"){city.grid[y][x]="road";return{ok:true,item:"road",cost:COST.road}};
  const residents=type==="home"?12:0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents,construction:type==="park"?undefined:{duration:45,remaining:45}};
- city.grid[y][x]="building";city.buildings.push(b);city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
+ city.grid[y][x]="building";city.buildings.push(b);if(!b.construction)city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
 }
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
 function load(){
