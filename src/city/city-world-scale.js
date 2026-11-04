@@ -18,7 +18,7 @@ export const worldToCityTile = coordinate =>
 export function getBuildingVisualScale(type) {
   // Geometry is authored in a compact local architectural kit. Scale it into
   // metre-sized buildings while preserving human-scale doors and floor heights.
-  const horizontal = type === "industrial" ? 4.8 : 4.8;
+  const horizontal = 4.8;
   const vertical = 2.2;
   return { x: horizontal, y: vertical, z: horizontal };
 }
