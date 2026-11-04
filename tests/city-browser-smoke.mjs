@@ -134,14 +134,15 @@ try{
  const initial=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,buildings:window.MshinCityDebug.city.buildings.length,roads:window.MshinCityDebug.city.grid.flat().filter(t=>t==="road").length,citizens:window.MshinCityDebug.city.citizens.length,traffic:window.MshinCityDebug.city.traffic.length,animals:window.MshinCityDebug.city.animals.length,width:document.querySelector("#cityViewport").width}));
  const windowTrafficInvariant=await page.evaluate(()=>window.MshinCityDebug.city.traffic.every(vehicle=>Number.isFinite(vehicle.x)&&Number.isFinite(vehicle.y)&&window.MshinCityDebug.city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"));
  assert.equal(initial.population,0,"new city must start without residents");assert.equal(initial.buildings,0,"new city must contain no buildings");assert.ok(initial.roads>=300,"the whole map must be subdivided by a complete road grid");assert.equal(initial.citizens,0);assert.ok(initial.traffic<=12,"live simulation traffic must stay within its bounded fleet");assert.ok(windowTrafficInvariant,"traffic must remain on valid road tiles");assert.equal(initial.animals,0);assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
+ const rebuildsBeforePlacement=await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds);
  await clickCityTool(page,"park");const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][14]),"building","park tool should place a city asset");
  const parkVisual=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(parkVisual.stylizedBuildings,1,"placed park must become a rendered 3D scene object");
  assert.equal(parkVisual.shadowAutoUpdate,false,"static city shadows must not be regenerated every mobile frame");
- assert.equal(parkVisual.buildingRebuilds,1,"the initial building placement should rebuild the 3D building layer once");
+ assert.equal(parkVisual.buildingRebuilds,rebuildsBeforePlacement+1,"a structural building change should rebuild the 3D building layer exactly once");
  await page.waitForTimeout(150);
- assert.equal(await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds),1,"unchanged buildings must not be recreated during subsequent render frames");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds),rebuildsBeforePlacement+1,"unchanged buildings must not be recreated during subsequent render frames");
  await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.buildings?.some(b=>b.x===14&&b.y===14)),"city changes should persist");
  await clickCityTool(page,"select");
  const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit),focusAnchorBefore=await page.evaluate(()=>window.MshinCityDebug.groundPointAt(190,220));
