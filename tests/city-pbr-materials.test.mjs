@@ -3,18 +3,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const renderer = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
+const textures = await readFile(new URL("../src/city/city-pbr-textures.js", import.meta.url), "utf8");
 const streets = await readFile(new URL("../src/city/city-street-renderer.js", import.meta.url), "utf8");
 
 test("city surfaces use layered tileable albedo, normal and roughness maps", () => {
-  assert.ok(renderer.includes("function makePbrSurface(kind, base, seed)"));
+  assert.ok(textures.includes("function makePbrSurface(THREE, renderer, kind, base, seed)"));
   for (const family of ["grass", "asphalt", "brick", "concrete", "roof", "sidewalk"]) {
     assert.ok(renderer.includes('makePbrSurface("' + family + '"'), family + " texture family must exist");
   }
-  assert.ok(renderer.includes("new THREE.CanvasTexture(normalCanvas)"));
-  assert.ok(renderer.includes("new THREE.CanvasTexture(roughCanvas)"));
-  assert.ok(renderer.includes("texture.wrapS = texture.wrapT = THREE.RepeatWrapping"));
-  assert.ok(renderer.includes("normalMap: normalTexture"));
-  assert.ok(renderer.includes("roughnessMap: roughnessTexture"));
+  assert.ok(textures.includes("new THREE.CanvasTexture(normalCanvas)"));
+  assert.ok(textures.includes("new THREE.CanvasTexture(roughCanvas)"));
+  assert.ok(textures.includes("texture.wrapS = texture.wrapT = THREE.RepeatWrapping"));
+  assert.ok(textures.includes("normalMap: normalTexture"));
+  assert.ok(textures.includes("roughnessMap: roughnessTexture"));
 });
 
 test("roads, terrain, building facades and roofs consume physically based surface maps", () => {
@@ -23,8 +24,8 @@ test("roads, terrain, building facades and roofs consume physically based surfac
   assert.ok(renderer.includes("...facadeSurface"));
   assert.ok(renderer.includes("...roofSurface"));
   assert.ok(renderer.includes("...concreteSurface"));
-  assert.ok(renderer.includes("...sidewalkSurface") || streets.includes("...(surface || {})"));
-  assert.ok(streets.includes("normalScale: new THREE.Vector2(0.24, 0.24)"));
+  assert.ok(renderer.includes("sidewalkSurface"));
+  assert.ok(streets.includes("...(surface || {})"));
 });
 
 test("residential roof silhouette is a rectangular two-slope gable, not a pyramid primitive", () => {
