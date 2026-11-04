@@ -49,11 +49,13 @@ export function createCityStreetLights(THREE, scene, isRoadCell, gridSize, windo
   const placements=[];
   for(let road=1;road<gridSize-1;road++){
     if(!isRoadCell(road))continue;
-    for(let along=4;along<gridSize-2;along+=16){
+    for(let along=4;along<gridSize-2;along+=8){
       if(isRoadCell(along))continue;
       const horizontal=(road-31.5)*2;
       const longitudinal=(along-31.5)*2;
       for(const side of [-1,1]){
+        // Install fixtures only on the exposed sidewalk edge of a road segment.
+        if(isRoadCell(road+side))continue;
         placements.push({x:longitudinal,z:horizontal+side*1.36,rotation:0});
         placements.push({x:horizontal+side*1.36,z:longitudinal,rotation:Math.PI/2});
       }
