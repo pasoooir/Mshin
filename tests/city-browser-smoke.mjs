@@ -395,7 +395,20 @@ try{
  const landscapePage=await browser.newPage({viewport:{width:844,height:390},deviceScaleFactor:1});
  try{
   await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
-  await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  try {
+   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000,polling:100});
+  } catch(error) {
+   const diagnostic=await landscapePage.evaluate(()=>({
+    appReady:document.documentElement.dataset.cityReady,
+    rendererReady:window.MshinCity3DReady===true,
+    rendererError:window.MshinCity3DError||null,
+    renderStatus:document.querySelector("#cityRenderStatus")?.textContent||null,
+    canvasCount:document.querySelectorAll("canvas").length,
+    webgl:typeof WebGLRenderingContext,
+    webgl2:typeof WebGL2RenderingContext
+   }));
+   throw new Error("landscape 3D renderer failed to initialize: "+JSON.stringify(diagnostic)+"; "+error.message);
+  }
   try{await landscapePage.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display==="none",undefined,{timeout:5000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({innerWidth,innerHeight,screenWidth:screen.width,screenHeight:screen.height,mediaLandscape:matchMedia("(orientation: landscape)").matches,mediaPortrait:matchMedia("(orientation: portrait)").matches,orientation:screen.orientation?.type,gateClass:document.querySelector("#cityOrientationGate")?.className,gateHidden:document.querySelector("#cityOrientationGate")?.hidden,gateDisplay:getComputedStyle(document.querySelector("#cityOrientationGate")).display,cityOrientation:document.documentElement.dataset.cityOrientation}));throw new Error("landscape orientation gate did not close: "+JSON.stringify(diagnostic)+"; "+error.message)}
   const landscape=await landscapePage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,height:innerHeight,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));
   assert.equal(landscape.gate,"none","landscape page must show the city rather than the portrait gate");
