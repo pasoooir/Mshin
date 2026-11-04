@@ -120,6 +120,8 @@ export function createCityCameraController({
         lastMidpoint: center,
         lastAngle: angle(points),
         lastDistance: distance(points),
+        baseDistance: distance(points),
+        baseZoom: Number.isFinite(camera.zoom) ? camera.zoom : 0.72,
         anchor: groundAt(center),
         velocity: 0,
         lastMoveTime: 0
@@ -175,7 +177,7 @@ export function createCityCameraController({
       const rotation = (center.x - gestureState.lastMidpoint.x) * ORBIT_SENSITIVITY
         + angleDelta(nextAngle, gestureState.lastAngle);
       // Multiplicative distance ratio makes zoom independent of the starting span.
-      camera.zoom = clamp((camera.zoom || 0.72) * nextDistance / gestureState.lastDistance, MIN_ZOOM, MAX_ZOOM);
+      // Derive zoom from the gesture baseline, not the previously clamped value.\n      // This prevents asynchronous per-pointer move events from causing irreversible\n      // zoom jumps when both fingers translate together and the temporary span collapses.\n      camera.zoom = clamp(gestureState.baseZoom * nextDistance / gestureState.baseDistance, MIN_ZOOM, MAX_ZOOM);
       camera.orbit = (camera.orbit || 0) + rotation;
       gestureState.velocity = rotation / (elapsed / 16.667);
       gestureState.lastMidpoint = center;
