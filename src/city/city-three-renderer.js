@@ -340,7 +340,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     if (trafficBodies.instanceColor) trafficBodies.instanceColor.needsUpdate = true;
   }
 
-  // Pedestrians are instanced in two batches; agent count never adds per-person draw calls.
+  // Pedestrians use two instanced batches.
   const pedestrianGroup = new THREE.Group();
   scene.add(pedestrianGroup);
   const pedestrianBodyGeometry = new THREE.CylinderGeometry(0.12, 0.14, 0.42, 6);
