@@ -439,7 +439,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     body.material = [wall, sideWall, wall, wall, sideWall, sideWall];
     addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
     if (type === "home") {
-      // Rectangular two-slope gable roof: continuous ridge, four-sided silhouette.
       const roofWidth = bodyWidth + 0.28;
       const roofDepth = bodyDepth + 0.28;
       const ridgeHeight = 0.78;
