@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { CITY_ARCHITECTURAL_PALETTES } from "../src/city/city-building-high-gfx.js";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(await readFile(path.join(root, "src/asset-manifest.json"), "utf8"));
 test("all 10 world illustrations and five car sprites are bundled SVG vectors", async () => {
@@ -79,7 +80,7 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v69/);
+  assert.match(sw, /mshin-arcade-v70/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
@@ -210,7 +211,7 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v69/);
+  assert.match(sw, /mshin-arcade-v70/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.03.02");
   assert.equal(pkg.version, "0.15.4");
@@ -264,4 +265,22 @@ test("opening nitro pickup is aligned with the player and protected from early t
   assert.match(game, /t:i===0\?\.075:/, "first pickup should be just ahead of the start line");
   assert.match(game, /lateral:i===0\?0:/, "first pickup should align with the starting lane");
   assert.match(game, /distance:\.32\+i\*\.22,totalProgress:\.32\+i\*\.22/, "opening rivals should leave a clear approach zone");
+});
+
+
+test("city architecture uses controlled natural sRGB material palettes", () => {
+  const required = ["home","shop","industrial","administrative","service","power","water","sewage","waste","police","fire","health","education"];
+  assert.deepEqual(Object.keys(CITY_ARCHITECTURAL_PALETTES).sort(), required.sort());
+  for (const [category, palettes] of Object.entries(CITY_ARCHITECTURAL_PALETTES)) {
+    assert.ok(palettes.length >= 2, category + " needs multiple deterministic facade variants");
+    for (const palette of palettes) {
+      for (const channel of ["wall","side","roof","trim","accent","door"]) {
+        const value = palette[channel];
+        assert.match(value, /^#[0-9a-f]{6}$/i, category + "." + channel + " must be a 24-bit sRGB color");
+        const rgb = value.slice(1).match(/../g).map(hex => parseInt(hex, 16));
+        const chroma = Math.max(...rgb) - Math.min(...rgb);
+        assert.ok(chroma <= 120, category + "." + channel + " must avoid oversaturated neon material colors: " + value);
+      }
+    }
+  }
 });

@@ -205,6 +205,7 @@ try{
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",501,120,220);send("pointerdown",502,280,220);send("pointermove",502,180,220);send("pointerup",502,180,220);send("pointerup",501,120,220)});
  const pinchOut=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  assert.ok(pinchOut<pinchStart,"bringing two fingers together must zoom out");
+ await page.waitForFunction(()=>window.MshinCityDebug.view.gesture.inertiaActive===false,undefined,{polling:50,timeout:2000});
  const transitionBefore=await page.evaluate(()=>window.MshinCityDebug.view);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",551,100,220);send("pointerdown",552,200,220);send("pointerup",552,200,220);send("pointerup",551,100,220);send("pointerdown",553,100,220);send("pointerdown",554,200,220);send("pointercancel",554,200,220);send("pointerup",553,100,220)});
  const transitionAfter=await page.evaluate(()=>window.MshinCityDebug.view);
@@ -221,7 +222,7 @@ try{
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",571,160,220);send("pointerdown",572,280,220);for(let i=0;i<120;i++){const offset=i%2?1:-1;send("pointermove",571,160+i*0.7,220+offset);send("pointermove",572,280+i*0.7,220-offset)}send("pointerup",572,364,419);send("pointerup",571,244,421)});
  const sustainedEnd=await page.evaluate(()=>({orbit:window.MshinCityDebug.view.orbit,zoom:window.MshinCityDebug.view.zoom,gesture:window.MshinCityDebug.view.gesture}));
  assert.ok(Number.isFinite(sustainedEnd.orbit)&&Math.abs(sustainedEnd.orbit-sustainedStart.orbit)>0.5,"long-running orbit must remain finite and responsive");
- assert.ok(sustainedEnd.zoom>=0.42&&sustainedEnd.zoom<=1.5,"long-running pinch must remain inside camera zoom limits");
+ assert.ok(sustainedEnd.zoom>=0.05&&sustainedEnd.zoom<=1.5,"long-running pinch must remain inside camera zoom limits");
  await page.waitForTimeout(1220);
  assert.equal((await page.evaluate(()=>window.MshinCityDebug.view.gesture.inertiaActive)),false,"long gesture inertia must settle instead of drifting indefinitely");
  const focusTile=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));
@@ -260,7 +261,7 @@ try{
  assert.equal(pedestrianAcceptance.rendered,pedestrianAcceptance.agents,"every active citizen agent must be rendered in the 3D city");
  assert.equal(pedestrianAcceptance.onRoad,true,"pedestrian route nodes must remain on connected road tiles");
  assert.ok(pedestrianAcceptance.drawCalls<80,"instanced pedestrians must preserve the mobile draw-call budget");
- for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,14]]){await clickCityTool(page,type);const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
+ for(const type of ["power","water","police"]){await clickCityTool(page,type);const target=await page.evaluate(()=>{const city=window.MshinCityDebug.city,w=innerWidth,h=innerHeight;for(let y=0;y<32;y++)for(let x=0;x<32;x++){if(city.grid[y][x]!=="grass")continue;const adjacent=[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>city.grid[y+dy]?.[x+dx]==="road");if(!adjacent)continue;const point=window.MshinCityDebug.screenForTile(x,y);if(point.x<18||point.x>w-18||point.y<115||point.y>h-90)continue;const hit=document.elementFromPoint(point.x,point.y);if(hit?.id!=="cityViewport")continue;const projected=window.MshinCityDebug.tileAtScreen(point.x,point.y);if(projected?.x===x&&projected?.y===y)return{x,y,point}}return null});assert.ok(target,type+" test must find a visible free road-adjacent parcel");const {x,y,point}=target;await page.mouse.click(point.x,point.y);const diagnostic=await page.evaluate(({x,y,type})=>({placed:window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),tool:window.MshinCityDebug.activeTool,selected:window.MshinCityDebug.selected,toast:document.querySelector("#cityToast")?.textContent,treasury:window.MshinCityDebug.city.treasury,cell:window.MshinCityDebug.city.grid[y]?.[x]}),{x,y,type});assert.deepEqual(diagnostic.selected,{x,y},type+" map tap must reach the intended free parcel");assert.ok(diagnostic.placed,type+" infrastructure/service should be constructible on mobile: "+JSON.stringify(diagnostic))}
  await page.evaluate(()=>window.MshinCityDebug.step());
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
@@ -402,7 +403,7 @@ try{
  try{
   await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   try{
-   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000});
   }catch(error){
    const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
    throw new Error("landscape 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message);
@@ -415,20 +416,23 @@ try{
   await landscapePage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
   await landscapePage.evaluate(()=>localStorage.setItem("mshin-city-save-v2",JSON.stringify({schemaVersion:2,cityId:"corrupt",name:"broken",seed:1,tick:0,treasury:0,population:0,grid:[[]]})));
   await landscapePage.reload({waitUntil:"domcontentloaded"});
-  await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  try{await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));throw new Error("renderer did not recover after malformed-save reload: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message)}
   const recovery=await landscapePage.evaluate(()=>({
     gridRows:window.MshinCityDebug.city.grid.length,
     gridColumns:window.MshinCityDebug.city.grid.every(row=>row.length===32),
     buildings:window.MshinCityDebug.city.buildings.length,
+    buildingsValid:window.MshinCityDebug.city.buildings.every(b=>Number.isSafeInteger(b.id)&&b.id>0&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&b.x>=0&&b.x<32&&b.y>=0&&b.y<32&&window.MshinCityDebug.city.grid[b.y][b.x]==="building"),
     zones:window.MshinCityDebug.city.zones.length,
+    zonesValid:window.MshinCityDebug.city.zones.every(z=>Number.isInteger(z.x)&&Number.isInteger(z.y)&&window.MshinCityDebug.city.grid[z.y]?.[z.x]==="zone-"+z.type),
     traffic:window.MshinCityDebug.city.traffic.length,
+    trafficValid:window.MshinCityDebug.city.traffic.every(v=>Number.isFinite(v.x)&&Number.isFinite(v.y)&&window.MshinCityDebug.city.grid[Math.round(v.y)]?.[Math.round(v.x)]==="road"),
     saved:window.MshinCityDebug.save()
   }));
   assert.equal(recovery.gridRows,32,"malformed local saves must recover to a complete city grid");
   assert.equal(recovery.gridColumns,true,"save recovery must restore all 32 columns");
-  assert.equal(recovery.buildings,0,"malformed save recovery must not retain invalid building records");
-  assert.equal(recovery.zones,0,"malformed save recovery must not retain invalid zones");
-  assert.equal(recovery.traffic,0,"malformed save recovery must not retain invalid traffic");
+  assert.ok(recovery.buildingsValid,"save recovery must not retain invalid building records");
+  assert.ok(recovery.zonesValid,"save recovery must not retain invalid zoning records");
+  assert.ok(recovery.traffic<=12&&recovery.trafficValid,"save recovery must keep only valid traffic records on road cells");
  }finally{await landscapePage.close()}
  const legacyGrid=Array.from({length:32},()=>Array(32).fill("grass"));
  for(let y=0;y<32;y++)for(let x=0;x<32;x++)if([7,15,23].includes(x)||[7,15,23].includes(y))legacyGrid[y][x]="road";

@@ -1,20 +1,19 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createHighGfxBuilding } from "./city-building-high-gfx.js";
+import { CITY_TILE_METERS, cityTileToWorld, worldToCityTile } from "./city-world-scale.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
+import { createCityCloudLayer } from "./city-cloud-layer.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
-import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityBackgroundSkyline } from "./city-background-skyline.js";
-import { addRealisticArchitecture } from "./city-architecture-realism.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
 const ACTIVE_SIZE = 32;
 const isRoadCell = value => (value % 8 === 7 || value % 8 === 0) && value !== 0 && value !== 16 && value !== 47 && value !== 63;
 const isActiveCell = (x, y) => x >= ACTIVE_START && x < ACTIVE_END && y >= ACTIVE_START && y < ACTIVE_END;
-
 export async function createCityThreeRenderer(sourceCanvas) {
   let THREE;
   try { THREE = await import(THREE_CDN); }
@@ -24,7 +23,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
       throw new Error("Three.js could not load from either configured CDN: " + primaryError.message + " | " + fallbackError.message);
     }
   }
-
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -39,25 +37,20 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  // City buildings and the sun are static between construction changes; avoid
-  // regenerating the full shadow map on every mobile frame.
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
-
   const canvas = renderer.domElement;
   canvas.id = "cityThreeViewport";
   canvas.setAttribute("aria-label", "نمای سه‌بعدی شهر خالی با شبکه خیابان‌ها و قطعات زمین");
   canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block;touch-action:none";
   sourceCanvas.parentNode.insertBefore(canvas, sourceCanvas.nextSibling);
   sourceCanvas.style.opacity = "0";
-
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#9bd4ee");
-  scene.fog = new THREE.Fog("#9bd4ee", 145, 260);
-  const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 320);
+  scene.fog = new THREE.Fog("#9bd4ee", 480, 1100);
+  const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 1400);
   camera.position.set(48, 38, 48);
   camera.lookAt(0, 0, 0);
-
   const hemisphere = new THREE.HemisphereLight("#fff7e8", "#537c48", 2.25);
   scene.add(hemisphere);
   const sun = new THREE.DirectionalLight("#fff1d2", 3.35);
@@ -79,7 +72,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getViewport: () => ({ width: window.innerWidth, height: window.innerHeight }),
     getFoliageMaterials: () => canopyMaterials
   });
-
+  const cloudLayer = createCityCloudLayer(THREE, { scene, camera });
   const {
     grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface
   } = createCityPbrSurfaces(THREE, renderer);
@@ -93,18 +86,16 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const curbMaterial = new THREE.MeshStandardMaterial({ color: "#f1e8d0", roughness: 0.82 });
   const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#f8efcf", transparent: true, opacity: 0.72 });
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
-
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(140, 140),
+    new THREE.PlaneGeometry(820, 820),
     new THREE.MeshStandardMaterial({ ...grassSurface, color: "#a6b68a", roughness: 1, normalScale: new THREE.Vector2(0.24, 0.24) })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.34;
   ground.receiveShadow = true;
   scene.add(ground);
-
-  const grassGeometry = new THREE.BoxGeometry(1.94, 0.22, 1.94);
-  const roadGeometry = new THREE.BoxGeometry(1.99, 0.16, 1.99);
+  const grassGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.06, 0.22, CITY_TILE_METERS - 0.06);
+  const roadGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.01, 0.16, CITY_TILE_METERS - 0.01);
   const grassA = new THREE.InstancedMesh(grassGeometry, grassMaterial, 2304);
   const grassB = new THREE.InstancedMesh(grassGeometry, alternateGrassMaterial, 2304);
   const lockedGrassA = new THREE.InstancedMesh(grassGeometry, lockedGrassMaterial, 2304);
@@ -115,47 +106,42 @@ export async function createCityThreeRenderer(sourceCanvas) {
   let activeGrassA = 0, activeGrassB = 0, activeRoads = 0;
   let lockedGrassCountA = 0, lockedGrassCountB = 0, lockedRoadCount = 0;
   const activePlotEdges = [], lockedPlotEdges = [], curbInstances = [];
-
   for (let y = 0; y < VISUAL_GRID; y++) {
     for (let x = 0; x < VISUAL_GRID; x++) {
-      const px = (x - 31.5) * 2;
-      const pz = (y - 31.5) * 2;
+      const px = cityTileToWorld(x - 16);
+      const pz = cityTileToWorld(y - 16);
       const active = isActiveCell(x, y);
       const road = isRoadCell(x) || isRoadCell(y);
       dummy.position.set(px, road ? -0.01 : 0.025, pz);
       dummy.rotation.set(0, 0, 0);
       dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
-
       if (road) {
         (active ? roads : lockedRoads).setMatrixAt(active ? activeRoads++ : lockedRoadCount++, dummy.matrix);
         continue;
       }
-
       const alternate = (x + y) % 2 === 1;
       if (active) {
         (alternate ? grassB : grassA).setMatrixAt(alternate ? activeGrassB++ : activeGrassA++, dummy.matrix);
       } else {
         (alternate ? lockedGrassB : lockedGrassA).setMatrixAt(alternate ? lockedGrassCountB++ : lockedGrassCountA++, dummy.matrix);
       }
-
       const edgeY = 0.142;
+      const edgeHalf = CITY_TILE_METERS * 0.47;
       const edges = active ? activePlotEdges : lockedPlotEdges;
       edges.push(
-        px - 0.91, edgeY, pz - 0.91, px + 0.91, edgeY, pz - 0.91,
-        px + 0.91, edgeY, pz - 0.91, px + 0.91, edgeY, pz + 0.91,
-        px + 0.91, edgeY, pz + 0.91, px - 0.91, edgeY, pz + 0.91,
-        px - 0.91, edgeY, pz + 0.91, px - 0.91, edgeY, pz - 0.91
+        px - edgeHalf, edgeY, pz - edgeHalf, px + edgeHalf, edgeY, pz - edgeHalf,
+        px + edgeHalf, edgeY, pz - edgeHalf, px + edgeHalf, edgeY, pz + edgeHalf,
+        px + edgeHalf, edgeY, pz + edgeHalf, px - edgeHalf, edgeY, pz + edgeHalf,
+        px - edgeHalf, edgeY, pz + edgeHalf, px - edgeHalf, edgeY, pz - edgeHalf
       );
-
-      for (const [dx, dz, sx, sz] of [[1,0,0.08,1.72],[-1,0,0.08,1.72],[0,1,1.72,0.08],[0,-1,1.72,0.08]]) {
+      for (const [dx, dz, sx, sz] of [[1,0,0.12,CITY_TILE_METERS*0.94],[-1,0,0.12,CITY_TILE_METERS*0.94],[0,1,CITY_TILE_METERS*0.94,0.12],[0,-1,CITY_TILE_METERS*0.94,0.12]]) {
         const nx = x + dx, ny = y + dz;
         if (nx < 0 || ny < 0 || nx >= VISUAL_GRID || ny >= VISUAL_GRID || !(isRoadCell(nx) || isRoadCell(ny))) continue;
-        curbInstances.push({ x: px + dx * 0.94, z: pz + dz * 0.94, sx, sz });
+        curbInstances.push({ x: px + dx * CITY_TILE_METERS * 0.47, z: pz + dz * CITY_TILE_METERS * 0.47, sx, sz });
       }
     }
   }
-
   for (const mesh of [grassA, grassB, lockedGrassA, lockedGrassB, roads, lockedRoads]) {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.receiveShadow = true;
@@ -167,7 +153,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   lockedGrassB.count = lockedGrassCountB;
   lockedRoads.count = lockedRoadCount;
   scene.add(grassA, grassB, lockedGrassA, lockedGrassB, roads, lockedRoads);
-
   const curbGeometry = new THREE.BoxGeometry(1, 0.15, 1);
   const curbs = new THREE.InstancedMesh(curbGeometry, curbMaterial, Math.max(1, curbInstances.length));
   curbInstances.forEach((v, i) => {
@@ -181,7 +166,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   curbs.instanceMatrix.needsUpdate = true;
   curbs.receiveShadow = true;
   scene.add(curbs);
-
   function addLineLayer(points, material) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
@@ -191,38 +175,31 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   addLineLayer(activePlotEdges, plotLineMaterial);
   addLineLayer(lockedPlotEdges, lockedPlotLineMaterial);
-
-  // Road dashes and crosswalks are instanced to keep the mobile GPU draw-call count low.
   const roadMarkings = [];
   const roadCenters = [7.5, 15, 23.5, 31.5, 39.5, 48, 55.5];
   for (const center of roadCenters) {
-    const z = (center - 31.5) * 2;
-    const x = (center - 31.5) * 2;
+    const z = cityTileToWorld(center - 16);
+    const x = cityTileToWorld(center - 16);
     for (let index = 0; index < VISUAL_GRID; index++) {
       if (!isRoadCell(index) && index % 2 === 0) {
-        const along = (index - 31.5) * 2;
-        roadMarkings.push(along - 0.36, 0.078, z, along + 0.36, 0.078, z);
-        roadMarkings.push(x, 0.078, along - 0.36, x, 0.078, along + 0.36);
+        const along = cityTileToWorld(index - 16);
+        roadMarkings.push(along - 1.4, 0.078, z, along + 1.4, 0.078, z);
+        roadMarkings.push(x, 0.078, along - 1.4, x, 0.078, along + 1.4);
       }
     }
   }
   addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
-
-  // Crosswalks wait for a pedestrian graph and legal crossing priorities.
   const crosswalkStripeCount = 0;
-
   const lotLines = [];
   for (let y = 0; y < VISUAL_GRID; y += 2) {
     for (let x = 0; x < VISUAL_GRID; x++) {
       if (isRoadCell(y) || isRoadCell(x)) continue;
-      const left = (x - 31.5) * 2, right = left + 2;
-      const z = (y - 31.5) * 2;
+      const left = cityTileToWorld(x - 16) - CITY_TILE_METERS / 2, right = left + CITY_TILE_METERS;
+      const z = cityTileToWorld(y - 16);
       lotLines.push(left, 0.151, z, right, 0.151, z);
     }
   }
   addLineLayer(lotLines, new THREE.LineBasicMaterial({ color: "#f1e8cb", transparent: true, opacity: 0.42 }));
-
-  // Gold boundary clearly separates the initially unlocked district from future expansion.
   const boundary = new THREE.LineLoop(
     new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(-32, 0.19, -32), new THREE.Vector3(32, 0.19, -32),
@@ -231,9 +208,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     new THREE.LineBasicMaterial({ color: "#e7bd69", transparent: true, opacity: 0.92 })
   );
   scene.add(boundary);
-
-  // Perimeter greenery stays strictly outside the 64x64 parcel grid.
-  // It is decorative-only and cannot overlap locked or unlocked buildable cells.
   const environment = new THREE.Group();
   scene.add(environment);
   const trunkGeometry = new THREE.CylinderGeometry(0.10, 0.15, 1.05, 6);
@@ -284,17 +258,11 @@ export async function createCityThreeRenderer(sourceCanvas) {
       if (mesh.count) environment.add(mesh);
     }
   }
-
-  // Sidewalks are non-buildable; street lights are a later visual slice.
   const decorativeStreetLightCount = 0;
   const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
-
   const buildings = new THREE.Group();
   scene.add(buildings);
-
-  // Keep moving city traffic in two instanced batches so the mobile renderer
-  // adds only two draw calls regardless of the number of visible vehicles.
   const trafficGroup = new THREE.Group();
   scene.add(trafficGroup);
   const trafficBodyGeometry = new THREE.BoxGeometry(1.02, 0.42, 1.78);
@@ -310,24 +278,22 @@ export async function createCityThreeRenderer(sourceCanvas) {
   trafficGroup.add(trafficBodies, trafficWindows);
   const trafficDummy = new THREE.Object3D();
   const trafficPalette = ["#f2bd4d", "#65c8dc", "#d77e8b", "#a8c98a", "#b69be8", "#e5e9ef"];
-
   function updateTraffic(city) {
     const vehicles = Array.isArray(city.traffic) ? city.traffic.slice(0, 12) : [];
     for (let index = 0; index < vehicles.length; index++) {
       const vehicle = vehicles[index];
-      const x = (vehicle.x - 15.5) * 2;
-      const z = (vehicle.y - 15.5) * 2;
+      const x = cityTileToWorld(vehicle.x);
+      const z = cityTileToWorld(vehicle.y);
       const rotation = Number.isFinite(vehicle.heading) ? Math.PI / 2 - vehicle.heading : 0;
-      trafficDummy.position.set(x, 0.48, z);
+      trafficDummy.position.set(x, 0.395, z);
       trafficDummy.rotation.set(0, rotation, 0);
-      trafficDummy.scale.set(1, 1, 1);
+      trafficDummy.scale.set(1.76, 1.5, 2.53);
       trafficDummy.updateMatrix();
       trafficBodies.setMatrixAt(index, trafficDummy.matrix);
       trafficBodies.setColorAt(index, new THREE.Color(vehicle.color || trafficPalette[index % trafficPalette.length]));
-
-      trafficDummy.position.y = 0.78;
+      trafficDummy.position.y = 0.57;
       trafficDummy.position.z = z - 0.08;
-      trafficDummy.scale.set(1, 1, 1);
+      trafficDummy.scale.set(1.76, 1.5, 2.53);
       trafficDummy.updateMatrix();
       trafficWindows.setMatrixAt(index, trafficDummy.matrix);
     }
@@ -337,8 +303,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     trafficWindows.instanceMatrix.needsUpdate = true;
     if (trafficBodies.instanceColor) trafficBodies.instanceColor.needsUpdate = true;
   }
-
-  // Pedestrians are instanced in two batches; agent count never adds per-person draw calls.
   const pedestrianGroup = new THREE.Group();
   scene.add(pedestrianGroup);
   const pedestrianBodyGeometry = new THREE.CylinderGeometry(0.12, 0.14, 0.42, 6);
@@ -356,22 +320,22 @@ export async function createCityThreeRenderer(sourceCanvas) {
   pedestrianGroup.add(pedestrianBodies, pedestrianHeads);
   const pedestrianDummy = new THREE.Object3D();
   const pedestrianPalette = ["#e9c56b", "#e7edf2", "#d98b75", "#8bc7b5", "#b69be8"];
-
   function updatePedestrians(city) {
     const citizens = Array.isArray(city.citizens) ? city.citizens.slice(0, 64) : [];
     for (let index = 0; index < citizens.length; index++) {
       const citizen = citizens[index];
-      const x = (citizen.x - 15.5) * 2;
-      const z = (citizen.y - 15.5) * 2;
+      const x = cityTileToWorld(citizen.x);
+      const z = cityTileToWorld(citizen.y);
       const rotation = Number.isFinite(citizen.heading) ? Math.PI / 2 - citizen.heading : 0;
-      pedestrianDummy.position.set(x, 0.48, z);
+      pedestrianDummy.position.set(x, 0.70, z);
       pedestrianDummy.rotation.set(0, rotation, 0);
-      pedestrianDummy.scale.set(1, 1, 1);
+      pedestrianDummy.scale.set(1.8, 2.8, 1.8);
       pedestrianDummy.updateMatrix();
       pedestrianBodies.setMatrixAt(index, pedestrianDummy.matrix);
       pedestrianBodies.setColorAt(index, new THREE.Color(pedestrianPalette[(citizen.id - 1) % pedestrianPalette.length]));
-      pedestrianDummy.position.set(x, 0.78, z);
+      pedestrianDummy.position.set(x, 1.48, z);
       pedestrianDummy.rotation.set(0, 0, 0);
+      pedestrianDummy.scale.set(1.3, 1.3, 1.3);
       pedestrianDummy.updateMatrix();
       pedestrianHeads.setMatrixAt(index, pedestrianDummy.matrix);
     }
@@ -381,184 +345,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     pedestrianHeads.instanceMatrix.needsUpdate = true;
     if (pedestrianBodies.instanceColor) pedestrianBodies.instanceColor.needsUpdate = true;
   }
-
   let buildingSignature = "";
   let buildingRebuilds = 0;
-  const windowGeometry = new THREE.BoxGeometry(0.22, 0.28, 0.055);
-  const balconyGeometry = new THREE.BoxGeometry(0.62, 0.07, 0.10);
-  const columnGeometry = new THREE.BoxGeometry(0.11, 1, 0.11);
-  const signGeometry = new THREE.BoxGeometry(0.92, 0.28, 0.10);
-  const awningGeometry = new THREE.BoxGeometry(1.05, 0.14, 0.48);
-
-  function addBuildingMesh(group, geometry, material, x, y, z, rotationY = 0, castShadow = true) {
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y, z);
-    mesh.rotation.y = rotationY;
-    mesh.castShadow = castShadow;
-    mesh.receiveShadow = true;
-    group.add(mesh);
-    return mesh;
-  }
-
-  function createBuilding(item) {
-    const group = new THREE.Group();
-    const x = (item.x - 15.5) * 2, z = (item.y - 15.5) * 2;
-    group.position.set(x, 0, z);
-    const type = item.type;
-    if (type === "park") {
-      const lawn = new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.20, 1.76), new THREE.MeshStandardMaterial({ color: "#66b95e", roughness: 1 }));
-      lawn.position.y = 0.22;
-      lawn.receiveShadow = true;
-      group.add(lawn);
-      const parkTree = new THREE.Group();
-      const parkTrunk = new THREE.MeshStandardMaterial({ color: "#8b5b38", roughness: 0.96 });
-      const parkCanopy = new THREE.MeshStandardMaterial({ color: "#58ad58", roughness: 1 });
-      const parkHighlight = new THREE.MeshStandardMaterial({ color: "#78bd5d", roughness: 1 });
-      const trunk = new THREE.Mesh(trunkGeometry, parkTrunk);
-      trunk.position.set(-0.32, 0.85, -0.16);
-      const crown = new THREE.Mesh(canopyGeometry, parkCanopy);
-      crown.position.set(-0.32, 1.55, -0.16);
-      const crown2 = new THREE.Mesh(canopySmallGeometry, parkHighlight);
-      crown2.position.set(-0.53, 1.78, -0.28);
-      parkTree.add(trunk, crown, crown2);
-      group.add(parkTree);
-      const path = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.035, 0.24), new THREE.MeshStandardMaterial({ color: "#e9d7a6", roughness: 1 }));
-      path.position.set(0.12, 0.34, 0.38);
-      path.rotation.y = -0.35;
-      group.add(path);
-      const bench = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.10, 0.16), new THREE.MeshStandardMaterial({ color: "#a96e42", roughness: 0.8 }));
-      bench.position.set(0.36, 0.48, -0.36);
-      group.add(bench);
-      return group;
-    }
-
-    const palettes = {
-      home: [
-        { wall: "#c9bba5", side: "#a99b87", roof: "#62534b", trim: "#e4dccd", accent: "#687f7c" },
-        { wall: "#b9b1a4", side: "#948c80", roof: "#4d5962", trim: "#e6e0d4", accent: "#8a6553" },
-        { wall: "#c2c7bd", side: "#9ca69c", roof: "#65594f", trim: "#e9e5da", accent: "#6f8580" },
-        { wall: "#d0c2a9", side: "#ad987b", roof: "#59636a", trim: "#eee5d4", accent: "#92765a" }
-      ],
-      shop: [
-        { wall: "#b9aa96", side: "#918170", roof: "#505b60", trim: "#e7dfd1", accent: "#915b48" },
-        { wall: "#aeb8b8", side: "#87999a", roof: "#4e5a60", trim: "#e5e9e5", accent: "#6e7f70" },
-        { wall: "#c2b5a8", side: "#9c877a", roof: "#5b6269", trim: "#ece4d9", accent: "#a16f54" }
-      ],
-      industrial: [
-        { wall: "#9da7a7", side: "#7f8b8c", roof: "#4e5a60", trim: "#c7cbc5", accent: "#b4864c" },
-        { wall: "#b1b1a5", side: "#898f89", roof: "#59636a", trim: "#d7d4c8", accent: "#a47a4e" }
-      ],
-      civic: [
-        { wall: "#b8b2a5", side: "#918b80", roof: "#4f5d67", trim: "#e9e1d2", accent: "#9b8060" },
-        { wall: "#c5bca9", side: "#9c927e", roof: "#56666b", trim: "#eee7d9", accent: "#8d6a58" }
-      ]
-    };
-    const family = type === "home" ? "home" : type === "shop" ? "shop" : type === "industrial" ? "industrial" : "civic";
-    const paletteList = palettes[family];
-    const palette = paletteList[(item.id * 7 + item.x * 3 + item.y) % paletteList.length];
-    const level = Math.max(1, item.level || 1);
-    const height = type === "home" ? 2.15 + level * 0.52 : type === "shop" ? 2.45 + level * 0.28 : type === "industrial" ? 2.7 : 2.5 + level * 0.36;
-    const bodyWidth = type === "industrial" ? 1.52 : 1.34;
-    const bodyDepth = type === "industrial" ? 1.48 : 1.34;
-    const facadeSurface = type === "industrial" || type === "administrative" ? concreteSurface : brickSurface;
-    const wall = new THREE.MeshStandardMaterial({ ...facadeSurface, color: palette.wall, roughness: 0.88, normalScale: new THREE.Vector2(0.34, 0.34) });
-    const sideWall = new THREE.MeshStandardMaterial({ ...facadeSurface, color: palette.side, roughness: 0.9, normalScale: new THREE.Vector2(0.3, 0.3) });
-    const roofMat = new THREE.MeshStandardMaterial({ ...roofSurface, color: palette.roof, roughness: 0.92, normalScale: new THREE.Vector2(0.48, 0.48) });
-    const trimMat = new THREE.MeshStandardMaterial({ color: palette.trim, roughness: 0.68 });
-    const accentMat = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.7 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: "#d8f5f6", emissive: "#3e9db0", emissiveIntensity: 0.16, roughness: 0.24, metalness: 0.08 });
-    windowMaterials.add(glassMat);
-    const darkMat = new THREE.MeshStandardMaterial({ color: "#52616b", roughness: 0.9 });
-    const baseMat = new THREE.MeshStandardMaterial({ color: "#e8dfc8", roughness: 0.96 });
-
-    addBuildingMesh(group, new THREE.BoxGeometry(1.72, 0.20, 1.72), baseMat, 0, 0.22, 0, 0, false);
-    const body = addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth, height, bodyDepth), wall, 0, 0.32 + height / 2, 0);
-    body.material = [wall, sideWall, wall, wall, sideWall, sideWall];
-    addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
-
-    if (type === "home") {
-      // Rectangular two-slope gable roof with a continuous ridge; unlike the
-      // former pyramid primitive, this reads as a real residential roof from orbit.
-      const roofWidth = bodyWidth + 0.28;
-      const roofDepth = bodyDepth + 0.28;
-      const ridgeHeight = 0.78;
-      const roofGeometry = new THREE.BufferGeometry();
-      roofGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-        -roofWidth / 2, 0, -roofDepth / 2, 0, ridgeHeight, -roofDepth / 2,
-        0, ridgeHeight, roofDepth / 2, -roofWidth / 2, 0, roofDepth / 2,
-        0, ridgeHeight, -roofDepth / 2, roofWidth / 2, 0, -roofDepth / 2,
-        roofWidth / 2, 0, roofDepth / 2, 0, ridgeHeight, roofDepth / 2
-      ], 3));
-      roofGeometry.setAttribute("uv", new THREE.Float32BufferAttribute([
-        0,0, .5,0, .5,1, 0,1, 0,0, .5,0, .5,1, 0,1
-      ], 2));
-      roofGeometry.setIndex([0,1,2,0,2,3,4,5,6,4,6,7]);
-      roofGeometry.computeVertexNormals();
-      const roof = new THREE.Mesh(roofGeometry, roofMat);
-      roof.position.set(0, 0.32 + height, 0);
-      roof.castShadow = true;
-      roof.receiveShadow = true;
-      group.add(roof);
-      const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.10, roofDepth + 0.04), trimMat);
-      ridge.position.set(0, 0.32 + height + ridgeHeight, 0);
-      group.add(ridge);
-      const balcony = new THREE.InstancedMesh(balconyGeometry, trimMat, Math.max(2, level * 2));
-      const balconyDummy = new THREE.Object3D();
-      let balconyCount = 0;
-      for (let floor = 0; floor < Math.min(level, 3); floor++) {
-        const y = 0.95 + floor * 0.52;
-        for (const side of [-1, 1]) {
-          balconyDummy.position.set(side * 0.02, y, bodyDepth / 2 + 0.10);
-          balconyDummy.rotation.set(0, 0, 0);
-          balconyDummy.scale.set(1, 1, 1);
-          balconyDummy.updateMatrix();
-          balcony.setMatrixAt(balconyCount++, balconyDummy.matrix);
-        }
-      }
-      balcony.count = balconyCount;
-      balcony.instanceMatrix.needsUpdate = true;
-      group.add(balcony);
-    } else if (type === "shop") {
-      addBuildingMesh(group, signGeometry, accentMat, 0, 1.45, bodyDepth / 2 + 0.075, 0, false);
-      addBuildingMesh(group, awningGeometry, roofMat, 0, 1.08, bodyDepth / 2 + 0.18, 0, false);
-      for (let stripe = -2; stripe <= 2; stripe++) {
-        addBuildingMesh(group, new THREE.BoxGeometry(0.10, 0.15, 0.49), trimMat, stripe * 0.20, 1.08, bodyDepth / 2 + 0.19, 0, false);
-      }
-    } else if (type === "industrial") {
-      const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 1.2, 8), darkMat);
-      chimney.position.set(0.48, 0.95 + height, -0.38);
-      chimney.castShadow = true;
-      group.add(chimney);
-      const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.62, 10), trimMat);
-      tank.position.set(-0.42, 0.65 + height, 0.28);
-      group.add(tank);
-      const tankCap = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), roofMat);
-      tankCap.position.set(-0.42, 0.96 + height, 0.28);
-      group.add(tankCap);
-    } else {
-      const columns = new THREE.InstancedMesh(columnGeometry, trimMat, 4);
-      const columnDummy = new THREE.Object3D();
-      let columnIndex = 0;
-      for (const px of [-0.48, -0.16, 0.16, 0.48]) {
-        columnDummy.position.set(px, 0.92, bodyDepth / 2 + 0.08);
-        columnDummy.scale.set(1, 1.65, 1);
-        columnDummy.updateMatrix();
-        columns.setMatrixAt(columnIndex++, columnDummy.matrix);
-      }
-      columns.count = columnIndex;
-      columns.instanceMatrix.needsUpdate = true;
-      group.add(columns);
-      addBuildingMesh(group, signGeometry, accentMat, 0, 1.85, bodyDepth / 2 + 0.09, 0, false);
-    }
-
-    addOrbitReadyBuildingDetails(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, windowGeometry });
-    addRealisticArchitecture(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, roofMat });
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
-    fin.position.set(-bodyWidth / 2 - 0.02, 0.34 + height * 0.52, bodyDepth / 2 + 0.045);
-    group.add(fin);
-    return group;
-  }
-
   function updateBuildings(city) {
     const next = city.buildings.map(v => [v.id, v.type, v.x, v.y, v.level].join(":")).join("|");
     if (next === buildingSignature) return;
@@ -568,7 +356,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     for (const child of [...buildings.children]) {
       buildings.remove(child);
       child.traverse(object => {
-        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry, windowGeometry, balconyGeometry, columnGeometry, signGeometry, awningGeometry].includes(object.geometry)) object.geometry.dispose();
+        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose();
         if (object.material) {
           if (Array.isArray(object.material)) object.material.forEach(material => { windowMaterials.delete(material); material.dispose(); });
           else { windowMaterials.delete(object.material); object.material.dispose(); }
@@ -587,12 +375,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }));
     }
   }
-
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
   let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48));
-
   function resize() {
     width = window.innerWidth;
     height = window.innerHeight;
@@ -606,39 +392,35 @@ export async function createCityThreeRenderer(sourceCanvas) {
     camera.updateProjectionMatrix();
     atmosphere.resize();
   }
-
   function updateCamera(cam) {
-    const zoom = Math.max(0.525, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
+    const zoom = Math.max(0.0625, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
     const transform = updateCityCameraTransform(camera, cam, height);
     cameraOrbit = transform.orbit;
     cameraPitch = transform.pitch;
   }
-
   function render(city, view, cam) {
     updateCamera(cam);
     atmosphere.update(city);
+    cloudLayer.update(city, atmosphere.getStats());
     updateBuildings(city);
     updateTraffic(city);
     updatePedestrians(city);
     renderer.render(scene, camera);
   }
-
   function tileAt(screenX, screenY) {
     pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
     const point = new THREE.Vector3();
     if (!raycaster.ray.intersectPlane(groundPlane, point)) return { x: -1, y: -1 };
-    return { x: Math.floor(point.x / 2 + 16), y: Math.floor(point.z / 2 + 16) };
+    return { x: worldToCityTile(point.x), y: worldToCityTile(point.z) };
   }
-
   function groundPointAt(screenX, screenY) {
     pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
     const point = new THREE.Vector3();
     return raycaster.ray.intersectPlane(groundPlane, point) ? { x: point.x, z: point.z } : null;
   }
-
   function focusPointAt(screenX, screenY) {
     pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
@@ -646,12 +428,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     if (hits.length) return { x: hits[0].point.x, y: hits[0].point.y, z: hits[0].point.z };
     return groundPointAt(screenX, screenY);
   }
-
   function screenForTile(x, y) {
-    const point = new THREE.Vector3((x - 15.5) * 2, 0.16, (y - 15.5) * 2).project(camera);
+    const point = new THREE.Vector3(cityTileToWorld(x), 0.16, cityTileToWorld(y)).project(camera);
     return { x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2 };
   }
-
   function onResize() { resize(); }
   resize();
   window.addEventListener("resize", onResize);
@@ -685,6 +465,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
         realisticArchitecture: true,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
+        worldUnitMeters: 1,
+        cityTileMeters: CITY_TILE_METERS,
+        cityWorldExtentMeters: CITY_TILE_METERS * 32,
         plots: activeGrassA + activeGrassB,
         roadTiles: activeRoads,
         lockedPlots: lockedGrassCountA + lockedGrassCountB,
@@ -705,6 +488,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
       atmosphere.dispose();
+      cloudLayer.dispose();
       backgroundSkyline.dispose();
       for (const surface of [grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface]) {
         surface.map.dispose();

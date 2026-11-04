@@ -1,4 +1,4 @@
-const MIN_ZOOM = 0.42;
+const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 1.5;
 const ORBIT_SENSITIVITY = 0.009;
 const TAP_SLOP = 5;
@@ -138,6 +138,10 @@ export function createCityCameraController({
         lastDistance: distance(points),
         baseDistance: distance(points),
         baseZoom: Number.isFinite(camera.zoom) ? camera.zoom : 0.72,
+        baseOrbit: Number.isFinite(camera.orbit) ? camera.orbit : 0,
+        baseMidpoint: center,
+        baseAngle: angle(points),
+        lastAppliedRotation: 0,
         anchor: groundAt(center),
         velocity: 0,
         lastMoveTime: 0
@@ -190,19 +194,27 @@ export function createCityCameraController({
       const elapsed = gestureState.lastMoveTime && now > gestureState.lastMoveTime
         ? clamp(now - gestureState.lastMoveTime, 8, 50) : 16.667;
 
-      const rotation = (center.x - gestureState.lastMidpoint.x) * ORBIT_SENSITIVITY
-        + angleDelta(nextAngle, gestureState.lastAngle);
+      // Derive orbit from the gesture baseline. Pointer events arrive one finger at
+      // a time, so incremental angle accumulation can introduce transient azimuth
+      // drift during a pure vertical two-finger translation.
+      const totalRotation = (center.x - gestureState.baseMidpoint.x) * ORBIT_SENSITIVITY
+        + angleDelta(nextAngle, gestureState.baseAngle);
+      const rotation = totalRotation - gestureState.lastAppliedRotation;
+      camera.orbit = gestureState.baseOrbit + totalRotation;
+      gestureState.lastAppliedRotation = totalRotation;
       // Multiplicative distance ratio makes zoom independent of the starting span.
       // Derive zoom from the gesture baseline, not the previously clamped value.
       // This prevents asynchronous per-pointer move events from causing irreversible
       // zoom jumps when both fingers translate together and the temporary span collapses.
       camera.zoom = clamp(gestureState.baseZoom * nextDistance / gestureState.baseDistance, MIN_ZOOM, MAX_ZOOM);
-      camera.orbit = (camera.orbit || 0) + rotation;
       // Vertical translation of the two-finger midpoint adjusts camera elevation.
       // Rebase is continuous across pointer events and clamped to a usable city view.
       const pitch = Number.isFinite(camera.pitch) ? camera.pitch : 0.51;
       camera.pitch = clamp(pitch - (center.y - gestureState.lastMidpoint.y) * PITCH_SENSITIVITY, MIN_PITCH, MAX_PITCH);
-      const measuredVelocity = rotation / (elapsed / 16.667);
+      // Velocity is measured from the net gesture displacement, not the transient
+      // one-finger intermediate vector. A pure vertical two-finger translation must
+      // not leave a horizontal fling when the second finger catches up.
+      const measuredVelocity = totalRotation / (elapsed / 16.667);
       gestureState.velocity = Number.isFinite(measuredVelocity) ? measuredVelocity : 0;
       gestureState.lastMidpoint = center;
       gestureState.lastAngle = nextAngle;

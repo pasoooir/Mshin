@@ -148,7 +148,7 @@ test("pinch zoom is multiplicative, bounded, and reversible across changing span
   h.send("pointermove", 2, 500, 100);
   assert.equal(h.camera.zoom, 1.5, "maximum zoom must be clamped");
   h.send("pointermove", 2, 101, 100);
-  assert.equal(h.camera.zoom, 0.42, "minimum zoom must be clamped");
+  assert.equal(h.camera.zoom, 0.05, "minimum zoom must be clamped for the expanded 256 m district");
   h.send("pointercancel", 2, 101, 100);
   h.send("pointercancel", 1, 100, 100);
   h.controller.destroy();
