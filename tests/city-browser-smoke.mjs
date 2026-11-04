@@ -165,7 +165,7 @@ try{
  const orbitAfterRelease=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  const inertiaStateAfter=await page.evaluate(()=>window.MshinCityDebug.view.gesture);
  assert.ok(orbitAfterRelease>orbitAtRelease,"camera orbit must retain a short, damped inertial glide after fingers lift: "+JSON.stringify({inertiaStateAtRelease,inertiaStateAfter,orbitAtRelease,orbitAfterRelease}));
- await page.waitForTimeout(1200);
+ await page.waitForFunction(()=>window.MshinCityDebug.view.gesture.inertiaActive===false,undefined,{polling:50,timeout:2500});
  const settledState=await page.evaluate(()=>window.MshinCityDebug.view.gesture);
  assert.equal(settledState.inertiaActive,false,"damped orbit inertia must reach its terminal state");
  const settledOrbit=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
