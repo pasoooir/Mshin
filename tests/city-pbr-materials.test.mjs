@@ -23,9 +23,10 @@ test("city surfaces use layered tileable albedo, normal and roughness maps", () 
 test("roads, terrain, building facades and roofs consume physically based surface maps", () => {
   assert.ok(renderer.includes("...grassSurface"));
   assert.ok(renderer.includes("...asphaltSurface"));
-  assert.ok(buildingGeometrySource.includes("...(brickSurface || {})"));
-  assert.ok(buildingGeometrySource.includes("...(concreteSurface || {})"));
-  assert.ok(buildingGeometrySource.includes("normalMap: facadeSurf.normalMap"));
+  assert.ok(buildingGeometrySource.includes("const facadeSurf = (type === \"industrial\" || type === \"administrative\")"));
+  assert.ok(buildingGeometrySource.includes("...facadeSurf"));
+  assert.ok(buildingGeometrySource.includes("facadeSurf.normalMap ? new THREE.Vector2"));
+
   assert.ok(buildingGeometrySource.includes("...(roofSurface || {})"));
   assert.ok(buildingGeometrySource.includes('type === "industrial" || type === "administrative"'));
   assert.ok(renderer.includes("sidewalkSurface"));
