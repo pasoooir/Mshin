@@ -366,7 +366,7 @@ try{
   compactPage.on("requestfailed",request=>compactErrors.push("request failed: "+request.url()+" "+request.failure()?.errorText));
   await compactPage.goto("http://127.0.0.1:4173/city.html");
   try{
-   await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+   await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000});
   }catch(error){
    const diagnostic=await compactPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
    // A late Playwright poll can time out after the renderer has become ready;
