@@ -1,4 +1,5 @@
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 import {
   CITY_TILE_METERS, CITY_GRID_SIZE, CITY_WORLD_EXTENT_METERS,
@@ -27,4 +28,17 @@ test("architectural visual scale expands procedural buildings into metre-sized a
     assert.equal(scale.z, 4.8);
     assert.equal(scale.y, 2.2);
   }
+});
+
+test("renderer and architecture consume the shared metre scale without legacy 2 m placement", async () => {
+  const renderer = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
+  const buildings = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
+  assert.match(renderer, /cityTileToWorld\(x - 16\)/);
+  assert.match(renderer, /worldToCityTile\(point\.x\)/);
+  assert.match(renderer, /Math\.max\(0\.0625, Math\.min\(1\.875/);
+  assert.match(renderer, /BoxGeometry\(CITY_TILE_METERS - 0\.06/);
+  assert.match(buildings, /group\.scale\.set\(visualScale\.x, visualScale\.y, visualScale\.z\)/);
+  assert.match(buildings, /BoxGeometry\(0\.17, 0\.96, 0\.05\)/);
+  assert.match(buildings, /BoxGeometry\(0\.20, 0\.55, 0\.04\)/);
+  assert.ok(renderer.length < 35_000, "city renderer must remain under its architecture size budget");
 });
