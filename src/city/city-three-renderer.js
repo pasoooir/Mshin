@@ -585,23 +585,23 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
     const palettes = {
       home: [
-        { wall: "#f5c77f", side: "#e69a62", roof: "#d65b4e", trim: "#fff0c9", accent: "#36a7a0" },
-        { wall: "#f2a7a0", side: "#d97b79", roof: "#536f9f", trim: "#fff0dc", accent: "#f0c65d" },
-        { wall: "#b5d8a0", side: "#80b78a", roof: "#e37b56", trim: "#f4f0d6", accent: "#447fbb" },
-        { wall: "#f3d98d", side: "#d6ae69", roof: "#5d9c88", trim: "#fff4d8", accent: "#d86e80" }
+        { wall: "#c9bba5", side: "#a99b87", roof: "#62534b", trim: "#e4dccd", accent: "#687f7c" },
+        { wall: "#b9b1a4", side: "#948c80", roof: "#4d5962", trim: "#e6e0d4", accent: "#8a6553" },
+        { wall: "#c2c7bd", side: "#9ca69c", roof: "#65594f", trim: "#e9e5da", accent: "#6f8580" },
+        { wall: "#d0c2a9", side: "#ad987b", roof: "#59636a", trim: "#eee5d4", accent: "#92765a" }
       ],
       shop: [
-        { wall: "#f3ad62", side: "#d98054", roof: "#3d9d9a", trim: "#fff1cf", accent: "#e64f63" },
-        { wall: "#76c8d0", side: "#459da9", roof: "#efb74e", trim: "#effbfa", accent: "#e36c56" },
-        { wall: "#e89db2", side: "#c97698", roof: "#647bb4", trim: "#fff0e5", accent: "#f1c35d" }
+        { wall: "#b9aa96", side: "#918170", roof: "#505b60", trim: "#e7dfd1", accent: "#915b48" },
+        { wall: "#aeb8b8", side: "#87999a", roof: "#4e5a60", trim: "#e5e9e5", accent: "#6e7f70" },
+        { wall: "#c2b5a8", side: "#9c877a", roof: "#5b6269", trim: "#ece4d9", accent: "#a16f54" }
       ],
       industrial: [
-        { wall: "#c6d5db", side: "#8da5ae", roof: "#e47d55", trim: "#f4f1df", accent: "#f0bd4e" },
-        { wall: "#d7d4bf", side: "#a5b0a1", roof: "#5f7f91", trim: "#f5f0d9", accent: "#e59a4b" }
+        { wall: "#9da7a7", side: "#7f8b8c", roof: "#4e5a60", trim: "#c7cbc5", accent: "#b4864c" },
+        { wall: "#b1b1a5", side: "#898f89", roof: "#59636a", trim: "#d7d4c8", accent: "#a47a4e" }
       ],
       civic: [
-        { wall: "#d9c5f2", side: "#a995d1", roof: "#5e76a7", trim: "#fff4df", accent: "#e3b85c" },
-        { wall: "#f0d5a0", side: "#d2ad75", roof: "#4b9e9b", trim: "#fff7e7", accent: "#d66e6c" }
+        { wall: "#b8b2a5", side: "#918b80", roof: "#4f5d67", trim: "#e9e1d2", accent: "#9b8060" },
+        { wall: "#c5bca9", side: "#9c927e", roof: "#56666b", trim: "#eee7d9", accent: "#8d6a58" }
       ]
     };
     const family = type === "home" ? "home" : type === "shop" ? "shop" : type === "industrial" ? "industrial" : "civic";
@@ -628,11 +628,31 @@ export async function createCityThreeRenderer(sourceCanvas) {
     addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
 
     if (type === "home") {
-      const roof = new THREE.Mesh(new THREE.ConeGeometry(1.08, 0.72, 4), roofMat);
-      roof.position.set(0, 0.48 + height, 0);
-      roof.rotation.y = Math.PI / 4;
+      // Rectangular two-slope gable roof with a continuous ridge; unlike the
+      // former pyramid primitive, this reads as a real residential roof from orbit.
+      const roofWidth = bodyWidth + 0.28;
+      const roofDepth = bodyDepth + 0.28;
+      const ridgeHeight = 0.78;
+      const roofGeometry = new THREE.BufferGeometry();
+      roofGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        -roofWidth / 2, 0, -roofDepth / 2, 0, ridgeHeight, -roofDepth / 2,
+        0, ridgeHeight, roofDepth / 2, -roofWidth / 2, 0, roofDepth / 2,
+        0, ridgeHeight, -roofDepth / 2, roofWidth / 2, 0, -roofDepth / 2,
+        roofWidth / 2, 0, roofDepth / 2, 0, ridgeHeight, roofDepth / 2
+      ], 3));
+      roofGeometry.setAttribute("uv", new THREE.Float32BufferAttribute([
+        0,0, .5,0, .5,1, 0,1, 0,0, .5,0, .5,1, 0,1
+      ], 2));
+      roofGeometry.setIndex([0,1,2,0,2,3,4,5,6,4,6,7]);
+      roofGeometry.computeVertexNormals();
+      const roof = new THREE.Mesh(roofGeometry, roofMat);
+      roof.position.set(0, 0.32 + height, 0);
       roof.castShadow = true;
+      roof.receiveShadow = true;
       group.add(roof);
+      const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.10, roofDepth + 0.04), trimMat);
+      ridge.position.set(0, 0.32 + height + ridgeHeight, 0);
+      group.add(ridge);
       const balcony = new THREE.InstancedMesh(balconyGeometry, trimMat, Math.max(2, level * 2));
       const balconyDummy = new THREE.Object3D();
       let balconyCount = 0;
