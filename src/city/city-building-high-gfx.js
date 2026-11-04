@@ -149,8 +149,8 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   }
 
   function addWindows(bodyW, bodyD, height, glassMat, trimMat, floors, cols) {
-    const winW = 0.22;
-    const winH = 0.28;
+    const winW = type === "home" ? 0.34 : 0.30;
+    const winH = type === "home" ? 0.42 : 0.36;
     const winGeo = new THREE.BoxGeometry(winW, winH, 0.04);
     const frameGeo = new THREE.BoxGeometry(winW + 0.04, winH + 0.04, 0.03);
     const instances = floors * cols * 4;
@@ -243,29 +243,29 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
 
   let height, bodyW, bodyD, floors, cols;
   if (type === "home") {
-    height = 1.9 + level * 0.55;
-    bodyW = 1.28 + (level > 2 ? 0.08 : 0);
-    bodyD = 1.22 + (level > 2 ? 0.06 : 0);
-    floors = Math.min(4, 1 + level);
-    cols = level >= 3 ? 3 : 2;
+    height = 2.55 + level * 0.72;
+    bodyW = 1.66;
+    bodyD = 1.62;
+    floors = Math.min(6, 2 + level);
+    cols = 4;
   } else if (type === "shop") {
-    height = 2.15 + level * 0.35;
-    bodyW = 1.38;
-    bodyD = 1.28;
-    floors = Math.min(3, 1 + Math.floor(level / 2));
-    cols = 3;
+    height = 2.65 + level * 0.48;
+    bodyW = 1.76;
+    bodyD = 1.70;
+    floors = Math.min(4, 2 + Math.floor(level / 2));
+    cols = 4;
   } else if (type === "industrial") {
-    height = 2.4 + level * 0.4;
-    bodyW = 1.55;
-    bodyD = 1.48;
-    floors = 2 + Math.floor(level / 2);
-    cols = 3;
+    height = 2.85 + level * 0.52;
+    bodyW = 1.78;
+    bodyD = 1.76;
+    floors = 3 + Math.floor(level / 2);
+    cols = 4;
   } else if (type === "administrative") {
-    height = 2.6 + level * 0.45;
-    bodyW = 1.42;
-    bodyD = 1.36;
-    floors = 2 + level;
-    cols = 3;
+    height = 3.0 + level * 0.62;
+    bodyW = 1.72;
+    bodyD = 1.68;
+    floors = 3 + level;
+    cols = 4;
   } else {
     height = 2.2 + level * 0.3;
     bodyW = 1.36;
@@ -326,8 +326,9 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     const chimX = (seed % 2 === 0 ? 0.35 : -0.35);
     add(new THREE.BoxGeometry(0.18, 0.45, 0.18), mat("#8a7060"), chimX, roofBaseY + 0.85, -0.2);
     add(new THREE.BoxGeometry(0.22, 0.06, 0.22), trimMat, chimX, roofBaseY + 1.1, -0.2, 0, false);
-    if (level >= 2) addBalcony(bodyW, bodyD, 1.15, trimMat, accentMat);
-    if (level >= 3) addBalcony(bodyW, bodyD, 1.15 + 0.7, trimMat, accentMat);
+    if (level >= 2) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 1.1, trimMat, accentMat);
+    if (level >= 3) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 2.1, trimMat, accentMat);
+    if (level >= 4) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 3.1, trimMat, accentMat);
     add(new THREE.BoxGeometry(0.9, 0.08, 0.22), mat("#4a9a4a", { roughness: 1 }), 0, 0.32, bodyD / 2 + 0.28, 0, false);
     add(new THREE.BoxGeometry(0.5, 0.08, 0.22), mat("#d8d0c0"), 0, 0.3, bodyD / 2 + 0.18, 0, false);
   } else if (type === "shop") {
@@ -401,6 +402,31 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     }
   }
 
+  // Premium real-world inspired facade kit: full-height corner glazing,
+  // deep horizontal floor bands, entrance canopy and rooftop equipment.
+  if (type === "home" || type === "shop" || type === "administrative") {
+    const bandY = 0.34 + height * 0.52;
+    add(new THREE.BoxGeometry(bodyW + 0.10, 0.075, 0.075), trimMat, 0, bandY, bodyD / 2 + 0.035, 0, false);
+    add(new THREE.BoxGeometry(0.075, height * 0.82, 0.075), accentMat, bodyW / 2 - 0.10, 0.36 + height * 0.43, bodyD / 2 + 0.04, 0, false);
+    add(new THREE.BoxGeometry(0.075, height * 0.82, 0.075), accentMat, -bodyW / 2 + 0.10, 0.36 + height * 0.43, bodyD / 2 + 0.04, 0, false);
+    // A broad, layered entrance canopy gives each building a deliberate street presence.
+    add(new THREE.BoxGeometry(bodyW * 0.58, 0.10, 0.34), roofMat, 0, 1.12, bodyD / 2 + 0.20, 0, true);
+    add(new THREE.BoxGeometry(bodyW * 0.58, 0.045, 0.36), trimMat, 0, 1.19, bodyD / 2 + 0.20, 0, false);
+  }
+  if (type === "home" && level >= 3) {
+    // Modern villa roof terrace with a glass balustrade and rooftop garden.
+    add(new THREE.BoxGeometry(bodyW * 0.76, 0.08, bodyD * 0.48), mat("#526b61", { roughness: 0.92 }), 0, roofBaseY + 0.16, 0, 0, false);
+    add(new THREE.BoxGeometry(bodyW * 0.76, 0.045, 0.035), glassMat, 0, roofBaseY + 0.42, bodyD * 0.24, 0, false);
+    add(new THREE.BoxGeometry(0.035, 0.045, bodyD * 0.48), glassMat, bodyW * 0.38, roofBaseY + 0.42, 0, 0, false);
+    for (const gx of [-0.42, 0.42]) {
+      add(new THREE.SphereGeometry(0.12, 8, 6), mat("#4d985d", { roughness: 1 }), gx, roofBaseY + 0.30, -0.30, 0, false);
+    }
+  }
+  if (type === "shop") {
+    // Wide, premium storefront glazing and a clean illuminated sign fascia.
+    add(new THREE.BoxGeometry(bodyW * 0.78, 0.82, 0.045), glassMat, 0, 0.86, bodyD / 2 + 0.065, 0, false);
+    add(new THREE.BoxGeometry(bodyW * 0.82, 0.10, 0.055), accentMat, 0, 1.48, bodyD / 2 + 0.09, 0, false);
+  }
   add(new THREE.BoxGeometry(0.05, height * 0.75, 0.06), accentMat, -bodyW / 2 - 0.01, 0.35 + height * 0.45, bodyD / 2 + 0.02, 0, false);
 
   return group;
