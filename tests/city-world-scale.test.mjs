@@ -42,3 +42,12 @@ test("renderer scales the district, vehicles, pedestrians and zoom range from th
   assert.match(source, /pedestrianDummy\.scale\.set\(1\.8, 2\.8, 1\.8\)/);
   assert.ok(source.length < 35_000, "renderer must stay under its 35 KB architecture budget");
 });
+
+test("renderer has one authoritative building construction path and no unused legacy geometry allocation", async () => {
+  const source = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
+  assert.match(source, /buildings\.add\(createHighGfxBuilding\(THREE, item/);
+  assert.doesNotMatch(source, /function createBuilding\(item\)/);
+  assert.doesNotMatch(source, /new THREE\.BoxGeometry\(0\.22, 0\.28, 0\.055\)/);
+  assert.doesNotMatch(source, /addOrbitReadyBuildingDetails|addRealisticArchitecture/);
+  assert.match(source, /\[trunkGeometry, canopyGeometry, canopySmallGeometry\]\.includes\(object\.geometry\)/);
+});
