@@ -62,7 +62,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
   skyDome.name = "MshinPhotorealisticAtmosphericSky";
   skyDome.frustumCulled = false;
   skyDome.renderOrder = -1000;
-  skyDome.position.copy(camera.position);
+  camera.getWorldPosition(skyDome.position);
   scene.add(skyDome);
 
   const skyRig = new THREE.Group();
@@ -240,6 +240,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     },
     dispose() {
       camera.remove(skyRig, weatherRig);
+      scene.remove(skyDome);
       scene.remove(skyDome);
       skyGeometry.dispose(); skyMaterial.dispose();
       starGeometry.dispose(); stars.material.dispose();
