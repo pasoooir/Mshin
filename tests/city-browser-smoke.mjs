@@ -80,7 +80,7 @@ try{
  assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۴"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
- assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
+ assert.ok(renderStats.decorativeStreetLights>=160,"street furniture must be placed along the dedicated sidewalk/ROW, not in buildable parcels");
  assert.equal(renderStats.streetFurniturePlacementReady,true,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
  assert.ok(renderStats.sidewalkStrips>0,"road edges must render instanced pedestrian sidewalks inside the right-of-way");
  assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
