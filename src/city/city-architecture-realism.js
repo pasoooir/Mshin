@@ -18,7 +18,8 @@ export function addRealisticArchitecture(THREE, options) {
   };
   const addBox = (w, h, d, material, x, y, z, key) => {
     const id = key || [w,h,d,material === glassMat ? "glass" : material === trimMat ? "trim" : "accent"].join(":");
-    addInstance(id, new THREE.BoxGeometry(w,h,d), material, x,y,z);
+    if (!batches.has(id)) batches.set(id, { geometry: new THREE.BoxGeometry(w,h,d), material, positions: [] });
+    batches.get(id).positions.push([x,y,z]);
   };
 
   for (let floor = 0; floor < floors; floor++) {
