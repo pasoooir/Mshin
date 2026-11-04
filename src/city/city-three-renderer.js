@@ -3,6 +3,7 @@ const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.j
 import { createHighGfxBuilding } from "./city-building-high-gfx.js";
 import { CITY_TILE_METERS, cityTileToWorld, worldToCityTile, getBuildingVisualScale } from "./city-world-scale.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
+import { createCityCloudLayer } from "./city-cloud-layer.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
@@ -73,6 +74,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getViewport: () => ({ width: window.innerWidth, height: window.innerHeight }),
     getFoliageMaterials: () => canopyMaterials
   });
+  const cloudLayer = createCityCloudLayer(THREE, { scene, camera });
   const {
     grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface
   } = createCityPbrSurfaces(THREE, renderer);
@@ -571,6 +573,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   function render(city, view, cam) {
     updateCamera(cam);
     atmosphere.update(city);
+    cloudLayer.update(city, atmosphere.getStats());
     updateBuildings(city);
     updateTraffic(city);
     updatePedestrians(city);
@@ -656,6 +659,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
       atmosphere.dispose();
+      cloudLayer.dispose();
       backgroundSkyline.dispose();
       for (const surface of [grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface]) {
         surface.map.dispose();
