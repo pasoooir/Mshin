@@ -17,7 +17,7 @@ const demandFor=building=>{
 
 /** Calculate geographic reach and finite service capacity in deterministic nearest-first order. */
 export function computeCityServices(city) {
-  const buildings=Array.isArray(city?.buildings)?city.buildings:[];
+  const buildings=Array.isArray(city?.buildings)?city.buildings.filter(building=>!building.construction):[];
   const targets=buildings.filter(building=>!Object.hasOwn(CITY_SERVICE_TYPES,building.type));
   const providers=Object.fromEntries(Object.keys(CITY_SERVICE_TYPES).map(type=>[type,buildings.filter(building=>building.type===type)]));
   const coverage={},demandCoverage={},capacityUsage={};
