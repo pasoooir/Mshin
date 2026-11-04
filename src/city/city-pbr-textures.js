@@ -56,13 +56,38 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
   };
 
   if (kind === "grass") {
-    for (let i = 0; i < 1050; i++) {
-      const x = random() * size, y = random() * size, r = 3 + random() * 22;
-      tileDot(x, y, r, random() > 0.5 ? "rgba(151,177,92,.16)" : "rgba(24,57,35,.20)", "#898989");
+    // Broad irregular color fields create the sunlit meadow variation seen in
+    // authored city-builder terrain, while seeded placement keeps saves stable.
+    for (let i = 0; i < 150; i++) {
+      const x = random() * size, y = random() * size;
+      const rx = 8 + random() * 34, ry = 5 + random() * 22;
+      for (const ox of [-size, 0, size]) for (const oy of [-size, 0, size]) {
+        albedo.save();
+        albedo.translate(x + ox, y + oy);
+        albedo.rotate(random() * Math.PI);
+        albedo.scale(1, ry / rx);
+        albedo.fillStyle = ["rgba(171,190,105,.12)","rgba(119,151,72,.16)","rgba(38,70,39,.13)","rgba(190,174,112,.08)"][Math.floor(random()*4)];
+        albedo.beginPath();
+        albedo.moveTo(-rx, 0);
+        albedo.bezierCurveTo(-rx*.8,-rx*.9,rx*.25,-rx*1.1,rx,0);
+        albedo.bezierCurveTo(rx*.7,rx*.8,-rx*.25,rx*1.05,-rx,0);
+        albedo.fill();
+        albedo.restore();
+      }
     }
-    for (let i = 0; i < 5200; i++) {
-      const x = random() * size, y = random() * size, len = 2 + random() * 8;
-      tileLine(x, y, x + (random() - .5) * 3, y - len, random() > .5 ? "rgba(188,202,120,.42)" : "rgba(25,63,36,.38)", .7, "#929292");
+    // Fine blades and tiny soil flecks break up the broad patches without a
+    // checkerboard pattern. The texture remains deterministic and tileable.
+    for (let i = 0; i < 7800; i++) {
+      const x = random() * size, y = random() * size, len = 2 + random() * 9;
+      const shade = random();
+      tileLine(x, y, x + (random() - .5) * 4, y - len,
+        shade > .72 ? "rgba(207,211,139,.38)" : shade > .35 ? "rgba(116,151,72,.34)" : "rgba(24,57,35,.30)",
+        .55 + random() * .35, "#929292");
+    }
+    for (let i = 0; i < 420; i++) {
+      const x = random() * size, y = random() * size;
+      tileDot(x, y, .5 + random() * 2.2,
+        random() > .68 ? "rgba(181,157,101,.24)" : "rgba(30,57,34,.16)", "#858585");
     }
   } else if (kind === "asphalt") {
     for (let i = 0; i < 12500; i++) {
