@@ -499,7 +499,7 @@ try{
    localStorage.setItem("mshin-city-save-v2.backup","{corrupt-backup");
   });
   await invalidRecoveryPage.goto("http://127.0.0.1:4173/city.html");
-  await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  try{await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await invalidRecoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),active:localStorage.getItem("mshin-city-save-v2.recovery"),legacy:localStorage.getItem("mshin-city-save-v1.recovery"),backup:localStorage.getItem("mshin-city-save-v2.backup.recovery")}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="نمای سه‌بعدی فعال"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("city boot did not complete during corrupt-save fallback: "+JSON.stringify({diagnostic,errors:invalidRecoveryErrors})+"; "+error.message)}
   const preserved=await invalidRecoveryPage.evaluate(()=>({
    active:localStorage.getItem("mshin-city-save-v2.recovery"),
    legacy:localStorage.getItem("mshin-city-save-v1.recovery"),
