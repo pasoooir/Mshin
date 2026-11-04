@@ -17,6 +17,10 @@ test("tile/world transforms preserve every cell centre including grid edges", ()
   for (let tile = 0; tile < CITY_GRID_SIZE; tile++) assert.equal(worldToCityTile(cityTileToWorld(tile)), tile);
   assert.equal(cityTileToWorld(0), -124);
   assert.equal(cityTileToWorld(31), 124);
+  assert.equal(worldToCityTile(-128), 0);
+  assert.equal(worldToCityTile(-120), 1);
+  assert.equal(worldToCityTile(0), 16);
+  assert.equal(worldToCityTile(128), 32);
 });
 
 test("procedural buildings fill parcel scale while doors and windows retain human dimensions", async () => {
