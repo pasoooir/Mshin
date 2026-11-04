@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const renderer = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
+const buildingGeometrySource = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
 const buildingGeometry = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
 const textures = await readFile(new URL("../src/city/city-pbr-textures.js", import.meta.url), "utf8");
 const streets = await readFile(new URL("../src/city/city-street-renderer.js", import.meta.url), "utf8");
@@ -22,9 +23,11 @@ test("city surfaces use layered tileable albedo, normal and roughness maps", () 
 test("roads, terrain, building facades and roofs consume physically based surface maps", () => {
   assert.ok(renderer.includes("...grassSurface"));
   assert.ok(renderer.includes("...asphaltSurface"));
-  assert.ok(renderer.includes("...facadeSurface"));
-  assert.ok(renderer.includes("...roofSurface"));
-  assert.ok(renderer.includes("type === \"industrial\" || type === \"administrative\" ? concreteSurface : brickSurface"));
+  assert.ok(buildingGeometrySource.includes("...(brickSurface || {})"));
+  assert.ok(buildingGeometrySource.includes("...(concreteSurface || {})"));
+  assert.ok(buildingGeometrySource.includes("normalMap: facadeSurf.normalMap"));
+  assert.ok(buildingGeometrySource.includes("...(roofSurface || {})"));
+  assert.ok(buildingGeometrySource.includes('type === "industrial" || type === "administrative"'));
   assert.ok(renderer.includes("sidewalkSurface"));
   assert.ok(streets.includes("...(surface || {})"));
 });
