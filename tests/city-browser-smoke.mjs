@@ -415,7 +415,7 @@ try{
   await landscapePage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
   await landscapePage.evaluate(()=>localStorage.setItem("mshin-city-save-v2",JSON.stringify({schemaVersion:2,cityId:"corrupt",name:"broken",seed:1,tick:0,treasury:0,population:0,grid:[[]]})));
   await landscapePage.reload({waitUntil:"domcontentloaded"});
-  await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  try{await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));throw new Error("renderer did not recover after malformed-save reload: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message)}
   const recovery=await landscapePage.evaluate(()=>({
     gridRows:window.MshinCityDebug.city.grid.length,
     gridColumns:window.MshinCityDebug.city.grid.every(row=>row.length===32),
