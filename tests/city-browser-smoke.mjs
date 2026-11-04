@@ -399,7 +399,8 @@ try{
  }finally{await compactPage.close()}
  // Chromium can reject Browser.setWindowBounds after fullscreen/orientation APIs
  // have been exercised. Verify landscape in a fresh page with its final viewport.
- const landscapePage=await browser.newPage({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const landscapeContext=await browser.newContext({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const landscapePage=await landscapeContext.newPage();
  try{
   await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
@@ -425,7 +426,7 @@ try{
   assert.equal(recovery.buildings,0,"malformed save recovery must not retain invalid building records");
   assert.equal(recovery.zones,0,"malformed save recovery must not retain invalid zones");
   assert.equal(recovery.traffic,0,"malformed save recovery must not retain invalid traffic");
- }finally{await landscapePage.close()}
+ }finally{await landscapePage.close();await landscapeContext.close()}
  const legacyGrid=Array.from({length:32},()=>Array(32).fill("grass"));
  for(let y=0;y<32;y++)for(let x=0;x<32;x++)if([7,15,23].includes(x)||[7,15,23].includes(y))legacyGrid[y][x]="road";
  for(let y=0;y<5;y++)for(let x=26;x<31;x++)legacyGrid[y][x]="water";
