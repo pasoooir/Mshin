@@ -7,6 +7,7 @@ import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityBackgroundSkyline } from "./city-background-skyline.js";
 import { addRealisticArchitecture } from "./city-architecture-realism.js";
+import { batchCityStaticGeometry } from "./city-global-geometry-batcher.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -290,6 +291,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
 
   const buildings = new THREE.Group();
+  let buildingBatchStats = { sourceMeshes: 0, batchedMeshes: 0, drawCallBatches: 0, remainingMeshes: 0 };
   scene.add(buildings);
 
   // Keep moving city traffic in two instanced batches so the mobile renderer
@@ -575,6 +577,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       });
     }
     for (const item of city.buildings) buildings.add(createBuilding(item));
+    buildingBatchStats = batchCityStaticGeometry(THREE, buildings);
   }
 
   const raycaster = new THREE.Raycaster();
@@ -603,6 +606,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     cameraOrbit = transform.orbit;
     cameraPitch = transform.pitch;
   }
+
+  function cityBuildingCount() { return buildingSignature ? buildingSignature.split("|").filter(Boolean).length : 0; }
 
   function render(city, view, cam) {
     updateCamera(cam);
@@ -670,7 +675,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
         streetFurniturePlacementReady,
-        stylizedBuildings: buildings.children.length,
+        stylizedBuildings: cityBuildingCount(),
+        globalGeometryBatching: { ...buildingBatchStats, enabled: true },
         realisticArchitecture: true,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
