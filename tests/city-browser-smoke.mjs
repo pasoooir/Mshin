@@ -357,8 +357,17 @@ try{
  await page.screenshot({path:"artifacts/city-mobile-landscape-844x390.png"});
  const compactPage=await browser.newPage({viewport:{width:360,height:640},screen:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  try{
+  const compactErrors=[];
+  compactPage.on("pageerror",error=>compactErrors.push(error.stack||String(error)));
+  compactPage.on("console",message=>{if(message.type()==="error")compactErrors.push("console: "+message.text())});
+  compactPage.on("requestfailed",request=>compactErrors.push("request failed: "+request.url()+" "+request.failure()?.errorText));
   await compactPage.goto("http://127.0.0.1:4173/city.html");
-  await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  try{
+   await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  }catch(error){
+   const diagnostic=await compactPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
+   throw new Error("compact portrait 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:compactErrors})+"; "+error.message);
+  }
   const compact=await compactPage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
   assert.equal(compact.gate,"grid","portrait phones must be stopped at the landscape orientation gate");
   assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
