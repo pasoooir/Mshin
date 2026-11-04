@@ -67,7 +67,7 @@ export function addRealisticArchitecture(THREE, options) {
     addBox(0.12, 0.20, bodyDepth, trimMat, bodyWidth / 2, roofY, 0);
     addBox(0.12, 0.20, bodyDepth, trimMat, -bodyWidth / 2, roofY, 0);
   }
-  if (!isLowRise || type === "home") {
+  if (type === "home" || type === "shop" || !isLowRise) {
     const unitMaterial = roofMat || accentMat;
     const unit = new THREE.Group();
     const casing = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.24, 0.34), unitMaterial);
