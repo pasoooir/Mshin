@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const renderer = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
+const buildingGeometry = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
 const textures = await readFile(new URL("../src/city/city-pbr-textures.js", import.meta.url), "utf8");
 const streets = await readFile(new URL("../src/city/city-street-renderer.js", import.meta.url), "utf8");
 
@@ -29,9 +30,9 @@ test("roads, terrain, building facades and roofs consume physically based surfac
 });
 
 test("residential roof silhouette is a rectangular two-slope gable, not a pyramid primitive", () => {
-  assert.ok(renderer.includes("Rectangular two-slope gable roof"));
-  assert.ok(renderer.includes("roofGeometry.setIndex([0,1,2,0,2,3,4,5,6,4,6,7])"));
-  assert.ok(!renderer.includes("new THREE.ConeGeometry(1.08, 0.72, 4)"));
+  assert.ok(buildingGeometry.includes("function addGableRoof(w, d, ridgeH, roofMat, trimMat, baseY)"), "gable roof must be built by the dedicated building-geometry module");
+  assert.ok(buildingGeometry.includes("geo.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7])"), "gable roof must use two rectangular slopes with explicit triangular faces");
+  assert.ok(!buildingGeometry.includes("new THREE.ConeGeometry(1.08, 0.72, 4)"), "residential gable must not regress to a pyramid primitive");
 });
 
 test("city visual identity uses a muted architectural palette and reports PBR acceptance metrics", () => {
