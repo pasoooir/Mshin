@@ -68,6 +68,14 @@ try{
  assert.equal(renderStats.streetLightInstances,renderStats.decorativeStreetLights,"all decorative street lights must be backed by real instanced geometry");
  assert.equal(renderStats.streetLightBatches,1,"the complete street-light layer must stay within one instanced draw call");
  assert.equal(renderStats.streetFurniturePlacementReady,true,"sidewalks and roadside furniture must both be present");
+ const dayLampGlow=renderStats.lighting.windowGlow;
+ await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw()});
+ const nightLampStats=await page.evaluate(()=>window.MshinCity3DStats);
+ assert.equal(nightLampStats.lighting.phase,"night","the city must switch to night lighting at midnight");
+ assert.ok(nightLampStats.lighting.windowGlow>dayLampGlow,"street-lamp emissive intensity must rise after sunset");
+ await page.screenshot({path:"artifacts/city-night-street-lighting.png"});
+ await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=495;window.MshinCityDebug.draw()});
+
 
  assert.equal(renderStats.proceduralTextures,6,"terrain, asphalt, brick, concrete, roof and sidewalk must use dedicated texture families");
  assert.equal(renderStats.pbrMaterialSets,6,"all six city surface families must expose complete PBR map sets");
