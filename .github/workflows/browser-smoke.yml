@@ -64,6 +64,12 @@ jobs:
         run: |
           node --check tests/city-browser-smoke.mjs
           node tests/city-browser-smoke.mjs
+      - name: Run four-season city weather and atmosphere acceptance
+        env:
+          CI: "true"
+        run: |
+          node --check tests/city-seasonal-weather-browser.mjs
+          node tests/city-seasonal-weather-browser.mjs
       - name: Run mobile-only browser smoke tests
         env:
           CI: "true"
