@@ -13,7 +13,7 @@ export function createCityBackgroundSkyline(THREE, scene, concreteSurface, brick
   const concreteBlocks = new THREE.InstancedMesh(unitGeometry, concreteMaterial, 48);
   const masonryBlocks = new THREE.InstancedMesh(unitGeometry, masonryMaterial, 48);
   const roofUnits = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), concreteMaterial, 48);
-  const windows = new THREE.InstancedMesh(new THREE.BoxGeometry(0.56, 0.72, 0.055), glassMaterial, 9000);
+  const windows = new THREE.InstancedMesh(new THREE.BoxGeometry(0.56, 0.72, 0.055), glassMaterial, 16000);
   for (const mesh of [concreteBlocks, masonryBlocks, roofUnits, windows]) {
     mesh.castShadow = false;
     mesh.receiveShadow = true;
