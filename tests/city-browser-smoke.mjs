@@ -344,6 +344,7 @@ try{
  await page.bringToFront();await page.locator('[data-city-speed="1"]').click();await page.waitForFunction(()=>document.visibilityState==="visible");const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(4000);const simulation=await page.evaluate(()=>({tick:window.MshinCityDebug.city.tick,visibility:document.visibilityState,speedLabel:document.querySelector("#citySpeedLabel")?.textContent}));assert.ok(simulation.tick>before,"simulation should advance while the mobile city is visible at 1x speed: "+JSON.stringify({before,...simulation}));
  const drawCallsBeforeTraffic=await page.evaluate(()=>window.MshinCity3DStats.drawCalls);
  await page.waitForFunction(()=>window.MshinCity3DStats?.trafficVehicles>0,undefined,{timeout:8000});
+ try{await page.waitForFunction(()=>window.MshinCity3DStats?.trafficVehicles===window.MshinCityDebug.city.traffic.length,undefined,{polling:50,timeout:3000})}catch(error){const diagnostic=await page.evaluate(()=>({activeVehicles:window.MshinCityDebug.city.traffic.length,renderedVehicles:window.MshinCity3DStats?.trafficVehicles,drawCalls:window.MshinCity3DStats?.drawCalls,tick:window.MshinCityDebug.city.tick}));throw new Error("3D traffic instances did not synchronize with the active vehicle fleet: "+JSON.stringify(diagnostic)+"; "+error.message)}
  const trafficAcceptance=await page.evaluate(()=>{
   const city=window.MshinCityDebug.city;
   return {
