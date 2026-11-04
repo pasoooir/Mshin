@@ -26,10 +26,9 @@ def main():
         names={"Color":"albedo.jpg","NormalGL":"normal.jpg","Roughness":"roughness.jpg"}
         for member in archive.namelist():
             filename=Path(member).name
-            match=re.search(r"_(Color|NormalGL|Roughness)\\.jpg$",filename,re.I)
-            if match:
-                key=next(k for k in names if k.lower()==match.group(1).lower())
-                output=names[key]; (folder/output).write_bytes(archive.read(member)); maps[output]=surface+"/"+output
+            kind=next((k for k in names if filename.lower().endswith("_"+k.lower()+".jpg")),None)
+            if kind:
+                output=names[kind]; (folder/output).write_bytes(archive.read(member)); maps[output]=surface+"/"+output
         if len(maps)!=3: raise RuntimeError(f"Incomplete maps for {asset_id}: {maps}")
         manifest["materials"][surface]={"assetId":asset_id,"title":found.get("title",asset_id),"sourceUrl":"https://ambientcg.com/view?id="+asset_id,"license":"CC0-1.0","maps":maps}
         print("Mirrored",surface,asset_id)
