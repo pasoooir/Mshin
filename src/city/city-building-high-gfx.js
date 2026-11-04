@@ -37,39 +37,65 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   // ─── SimCity BuildIt inspired vibrant palettes ───────────────────────────
   const PALETTES = {
     home: [
-      { wall: "#d9d8d2", side: "#aaa9a3", roof: "#343b43", trim: "#f5f3ec", accent: "#8aab9d", door: "#303a3b" },
-      { wall: "#e8e3d8", side: "#c4beb2", roof: "#4a5055", trim: "#fffdf6", accent: "#b38a68", door: "#3a3430" },
-      { wall: "#cbd5d2", side: "#a8b8b4", roof: "#39484b", trim: "#f1f5f2", accent: "#6d9d98", door: "#29383a" },
-      { wall: "#d7d0c4", side: "#b7aa98", roof: "#51463e", trim: "#faf6ed", accent: "#a47b61", door: "#342e2b" },
-      { wall: "#d8e0e4", side: "#b3c1c8", roof: "#3e4d59", trim: "#f5f8fa", accent: "#7397aa", door: "#2c3942" },
-      { wall: "#e2ded4", side: "#c1b9aa", roof: "#3b4145", trim: "#fbfaf5", accent: "#9caa83", door: "#343a35" }
+      { wall:"#ff3fa4", side:"#a90075", roof:"#35106f", trim:"#fff36b", accent:"#00f5d4", door:"#5a164f" },
+      { wall:"#ffb52e", side:"#e94a12", roof:"#174bd6", trim:"#fff8a6", accent:"#ff32c8", door:"#7b2512" },
+      { wall:"#35e7ff", side:"#0875d1", roof:"#ff3b9d", trim:"#f7ff73", accent:"#a7ff32", door:"#103b8c" },
+      { wall:"#b95cff", side:"#6420c8", roof:"#ffcf24", trim:"#fff4d0", accent:"#00f0c8", door:"#39106f" },
+      { wall:"#8dff38", side:"#20a84c", roof:"#ff4b32", trim:"#fff77a", accent:"#ff38b8", door:"#14552b" }
     ],
     shop: [
-      { wall: "#e5e1d8", side: "#c5c0b6", roof: "#343d45", trim: "#ffffff", accent: "#b9875f", door: "#26343a" },
-      { wall: "#cbd9dc", side: "#a9c0c5", roof: "#344b55", trim: "#f7fbfc", accent: "#5d9eaa", door: "#24363d" },
-      { wall: "#ded8ce", side: "#bbb1a3", roof: "#4a4540", trim: "#fffdf8", accent: "#9b775e", door: "#352f2a" },
-      { wall: "#d5ded4", side: "#b5c4b3", roof: "#3c4940", trim: "#f8fbf5", accent: "#7d9d70", door: "#2c392d" }
+      { wall:"#ffdb20", side:"#f05a00", roof:"#e90086", trim:"#fffca8", accent:"#00eaff", door:"#7b1457" },
+      { wall:"#00e6d0", side:"#007fbd", roof:"#ff3c9f", trim:"#f4ff8a", accent:"#ffb52e", door:"#064b82" },
+      { wall:"#ff5b35", side:"#bd164d", roof:"#6424db", trim:"#fff27a", accent:"#24f5ff", door:"#64102c" },
+      { wall:"#b9ff24", side:"#299b37", roof:"#ff3c24", trim:"#ffffb0", accent:"#f52dba", door:"#15562b" }
     ],
     industrial: [
-      { wall: "#a8b0b4", side: "#889098", roof: "#3a444c", trim: "#d0d4d8", accent: "#e0a040", door: "#2a3038" },
-      { wall: "#98a0a4", side: "#788088", roof: "#2e363c", trim: "#c8ccd0", accent: "#d08040", door: "#1e2428" },
-      { wall: "#b0b8b4", side: "#909894", roof: "#3a4240", trim: "#d8dcd8", accent: "#60a0b0", door: "#282e2c" }
+      { wall:"#ff9d16", side:"#c92d12", roof:"#3430c9", trim:"#fff15c", accent:"#00f2ff", door:"#7d1c14" },
+      { wall:"#22e5d0", side:"#0875a8", roof:"#f51c83", trim:"#faff70", accent:"#ffb51f", door:"#073d70" },
+      { wall:"#eaff22", side:"#79b900", roof:"#6424c9", trim:"#fff5a0", accent:"#ff4c24", door:"#315900" }
     ],
     administrative: [
-      { wall: "#d8d0e0", side: "#b8b0c8", roof: "#4a4a5a", trim: "#f4f0f8", accent: "#8060b0", door: "#3a3048" },
-      { wall: "#e0d8e8", side: "#c0b8d0", roof: "#5a5060", trim: "#faf6fc", accent: "#a070c0", door: "#403850" }
+      { wall:"#9d48ff", side:"#4a16b8", roof:"#ffcf20", trim:"#fff9a0", accent:"#00f4e4", door:"#321078" },
+      { wall:"#ff4ba8", side:"#b80b75", roof:"#1c50dc", trim:"#fff68a", accent:"#a5ff28", door:"#671052" },
+      { wall:"#22dfff", side:"#0876c9", roof:"#fa3296", trim:"#fff8a0", accent:"#ffb51f", door:"#10417b" }
     ],
     service: [
-      { wall: "#d9e0e3", side: "#b5c1c6", roof: "#35434d", trim: "#f7fafb", accent: "#6596a7", door: "#26363e" }
+      { wall:"#20e5ff", side:"#0758b8", roof:"#ff3d9b", trim:"#fff77a", accent:"#a4ff25", door:"#103778" },
+      { wall:"#ffbd27", side:"#ed4b10", roof:"#5625d8", trim:"#fff8a4", accent:"#00f2db", door:"#77250c" },
+      { wall:"#a7ff2c", side:"#15984d", roof:"#f52e70", trim:"#ffff9c", accent:"#26dfff", door:"#15552b" }
     ],
-    power:  [{ wall: "#e8e0c8", side: "#d0c8a8", roof: "#4a4a3a", trim: "#f8f4e0", accent: "#e0c040", door: "#3a3a28" }],
-    water:  [{ wall: "#c8dce8", side: "#a8c4d4", roof: "#3a5a6a", trim: "#f0f8fc", accent: "#40a0c0", door: "#284858" }],
-    sewage: [{ wall: "#c8d0c0", side: "#a8b0a0", roof: "#4a5440", trim: "#f0f4e8", accent: "#80a060", door: "#384028" }],
-    waste:  [{ wall: "#d0d0b8", side: "#b0b098", roof: "#4a4a3a", trim: "#f4f4e0", accent: "#a0a040", door: "#3a3a28" }],
-    police: [{ wall: "#d0d8e8", side: "#b0bcd0", roof: "#3a4460", trim: "#f0f4fc", accent: "#4060c0", door: "#283848" }],
-    fire:   [{ wall: "#e8d0c8", side: "#d0b0a8", roof: "#5a3a3a", trim: "#fcf0ec", accent: "#e05040", door: "#482828" }],
-    health: [{ wall: "#e8dce0", side: "#d0c0c8", roof: "#5a4a52", trim: "#fcf4f6", accent: "#e07090", door: "#483040" }],
-    education: [{ wall: "#e0d8c8", side: "#c8c0a8", roof: "#4a4a3a", trim: "#f8f4e8", accent: "#a08050", door: "#3a3028" }]
+    power: [
+      { wall:"#ffe21d", side:"#e85b08", roof:"#bd168b", trim:"#fffba2", accent:"#00efff", door:"#77230a" },
+      { wall:"#ff6a22", side:"#c51d39", roof:"#4820c9", trim:"#fff56a", accent:"#a9ff28", door:"#68112b" }
+    ],
+    water: [
+      { wall:"#27eaff", side:"#0877d5", roof:"#4422cf", trim:"#f8ff8a", accent:"#00f4c8", door:"#103c8b" },
+      { wall:"#20f4ce", side:"#087d9e", roof:"#ff3d9a", trim:"#fffaa0", accent:"#ffbd25", door:"#07516a" }
+    ],
+    sewage: [
+      { wall:"#a8f52a", side:"#278d36", roof:"#5a20bd", trim:"#fff46b", accent:"#ff4b9c", door:"#205c24" },
+      { wall:"#ffbd24", side:"#bd4b0c", roof:"#174ac8", trim:"#fffaa0", accent:"#00f0dc", door:"#6b2a0c" }
+    ],
+    waste: [
+      { wall:"#d9ff20", side:"#72b900", roof:"#e92c78", trim:"#fff9a0", accent:"#00eaff", door:"#426600" },
+      { wall:"#ff8c20", side:"#d73516", roof:"#5120c9", trim:"#fff36c", accent:"#23f3c5", door:"#76210d" }
+    ],
+    police: [
+      { wall:"#28dfff", side:"#174fc5", roof:"#18266f", trim:"#fff77a", accent:"#ff3d91", door:"#102c78" },
+      { wall:"#568bff", side:"#2536bb", roof:"#ffca22", trim:"#faff9b", accent:"#00f0e2", door:"#17266c" }
+    ],
+    fire: [
+      { wall:"#ff4a24", side:"#bd1235", roof:"#5120bb", trim:"#fff36a", accent:"#ffcf1f", door:"#70101e" },
+      { wall:"#ff8b20", side:"#e52b16", roof:"#2927a8", trim:"#fff89a", accent:"#00eaff", door:"#7a210b" }
+    ],
+    health: [
+      { wall:"#ff58b5", side:"#bd247d", roof:"#4423c4", trim:"#fffaa0", accent:"#20f3dc", door:"#70124e" },
+      { wall:"#fff02b", side:"#e85a20", roof:"#e82d91", trim:"#ffffff", accent:"#00dfff", door:"#76260e" }
+    ],
+    education: [
+      { wall:"#a94dff", side:"#5120bf", roof:"#ffcf22", trim:"#fff99a", accent:"#00e8dd", door:"#321078" },
+      { wall:"#ffb82b", side:"#e94c16", roof:"#1760d8", trim:"#fffaa0", accent:"#f72b9c", door:"#7a270d" }
+    ]
   };
 
   const serviceTypes = new Set(["power", "water", "sewage", "waste", "police", "fire", "health", "education", "service"]);
@@ -80,7 +106,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   function mat(color, opts = {}) {
     return new THREE.MeshStandardMaterial({
       color,
-      roughness: opts.roughness ?? 0.82,
+      roughness: opts.roughness ?? 0.70,
       metalness: opts.metalness ?? 0.02,
       emissive: opts.emissive ?? "#000000",
       emissiveIntensity: opts.emissiveIntensity ?? 0,
@@ -211,20 +237,20 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   }
 
   if (type === "park") {
-    const lawn = mat("#5cb85a", { roughness: 1 });
+    const lawn = mat("#39ed43", { roughness: 0.88, emissive: "#168d20", emissiveIntensity: 0.12 });
     add(new THREE.BoxGeometry(1.78, 0.18, 1.78), lawn, 0, 0.2, 0, 0, false);
-    add(new THREE.BoxGeometry(0.28, 0.04, 1.5), mat("#e8d8a8", { roughness: 0.95 }), 0.15, 0.3, 0, -0.25, false);
+    add(new THREE.BoxGeometry(0.28, 0.04, 1.5), mat("#ffe36a", { roughness: 0.78 }), 0.15, 0.3, 0, -0.25, false);
     if (trunkGeometry && canopyGeometry) {
       for (const [tx, tz] of [[-0.45, -0.35], [0.4, 0.3], [-0.2, 0.45]]) {
         const trunk = new THREE.Mesh(trunkGeometry, mat("#8b5b38", { roughness: 0.95 }));
         trunk.position.set(tx, 0.75, tz);
         trunk.scale.set(0.85, 0.9, 0.85);
         group.add(trunk);
-        const crown = new THREE.Mesh(canopyGeometry, mat(pick(["#4aa85a", "#5cbc5c", "#6ac86a"]), { roughness: 1 }));
+        const crown = new THREE.Mesh(canopyGeometry, mat(pick(["#16e84a", "#42f52b", "#00c978", "#9bff24", "#00e8a8"]), { roughness: 1 }));
         crown.position.set(tx, 1.4, tz);
         group.add(crown);
         if (canopySmallGeometry) {
-          const hi = new THREE.Mesh(canopySmallGeometry, mat("#7ad070", { roughness: 1 }));
+          const hi = new THREE.Mesh(canopySmallGeometry, mat("#b0ff38", { roughness: 0.86, emissive: "#38a51b", emissiveIntensity: 0.12 }));
           hi.position.set(tx - 0.15, 1.6, tz - 0.1);
           group.add(hi);
         }
@@ -236,7 +262,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     for (let i = 0; i < 5; i++) {
       const fx = -0.6 + rand() * 1.2;
       const fz = -0.55 + rand() * 0.4;
-      add(new THREE.SphereGeometry(0.06, 6, 5), mat(pick(["#e06080", "#e0c040", "#8060c0", "#40a0e0"])), fx, 0.38, fz, 0, false);
+      add(new THREE.SphereGeometry(0.06, 6, 5), mat(pick(["#ff2f9b", "#ffe51f", "#a83dff", "#13dfff", "#ff6a18"])), fx, 0.38, fz, 0, false);
     }
     return group;
   }
@@ -279,19 +305,19 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   const wall = new THREE.MeshStandardMaterial({
     ...facadeSurf,
     color: palette.wall,
-    roughness: 0.86,
+    roughness: 0.70,
     normalScale: facadeSurf.normalMap ? new THREE.Vector2(0.35, 0.35) : undefined
   });
   const sideWall = new THREE.MeshStandardMaterial({
     ...facadeSurf,
     color: palette.side,
-    roughness: 0.88,
+    roughness: 0.73,
     normalScale: facadeSurf.normalMap ? new THREE.Vector2(0.3, 0.3) : undefined
   });
   const roofMat = new THREE.MeshStandardMaterial({
     ...(roofSurface || {}),
     color: palette.roof,
-    roughness: 0.9,
+    roughness: 0.68,
     normalScale: roofSurface?.normalMap ? new THREE.Vector2(0.45, 0.45) : undefined
   });
   const trimMat = mat(palette.trim, { roughness: 0.65 });
@@ -330,7 +356,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     if (level >= 2) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 1.1, trimMat, accentMat);
     if (level >= 3) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 2.1, trimMat, accentMat);
     if (level >= 4) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 3.1, trimMat, accentMat);
-    add(new THREE.BoxGeometry(0.9, 0.08, 0.22), mat("#4a9a4a", { roughness: 1 }), 0, 0.32, bodyD / 2 + 0.28, 0, false);
+    add(new THREE.BoxGeometry(0.9, 0.08, 0.22), mat("#25e84b", { roughness: 0.82 }), 0, 0.32, bodyD / 2 + 0.28, 0, false);
     add(new THREE.BoxGeometry(0.5, 0.08, 0.22), mat("#d8d0c0"), 0, 0.3, bodyD / 2 + 0.18, 0, false);
   } else if (type === "shop") {
     addFlatRoof(bodyW + 0.2, bodyD + 0.2, roofMat, trimMat, roofBaseY, true);
@@ -420,7 +446,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     add(new THREE.BoxGeometry(bodyW * 0.76, 0.045, 0.035), glassMat, 0, roofBaseY + 0.42, bodyD * 0.24, 0, false);
     add(new THREE.BoxGeometry(0.035, 0.045, bodyD * 0.48), glassMat, bodyW * 0.38, roofBaseY + 0.42, 0, 0, false);
     for (const gx of [-0.42, 0.42]) {
-      add(new THREE.SphereGeometry(0.12, 8, 6), mat("#4d985d", { roughness: 1 }), gx, roofBaseY + 0.30, -0.30, 0, false);
+      add(new THREE.SphereGeometry(0.12, 8, 6), mat("#22ed63", { roughness: 0.82 }), gx, roofBaseY + 0.30, -0.30, 0, false);
     }
   }
   if (type === "shop") {
