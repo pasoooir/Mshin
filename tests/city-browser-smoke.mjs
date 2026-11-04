@@ -113,10 +113,10 @@ try{
   city.buildings=types.map((type,index)=>({id:9000+index,type,x:4+(index%5)*5,y:4+Math.floor(index/5)*7,level:Math.min(5,1+index%4),residents:type==="home"?12:0}));
   const orbitAngles=[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2];
   const samples=[];
-  for(const orbit of orbitAngles){window.MshinCityDebug.view;window.MshinCityDebug.setOrbitForAssetTest?.(orbit);window.MshinCityDebug.draw();samples.push(window.MshinCity3DStats.cameraOrbit)}
+  for(const orbit of orbitAngles){window.MshinCityDebug.view;window.MshinCityDebug.setCameraOrbit(orbit);window.MshinCityDebug.draw();samples.push(window.MshinCity3DStats.cameraOrbit)}
   const count=window.MshinCity3DStats.stylizedBuildings;
   city.buildings=original;
-  window.MshinCityDebug.setOrbitForAssetTest?.(0);
+  window.MshinCityDebug.setCameraOrbit(0);
   window.MshinCityDebug.draw();
   return{count,samples,restored:city.buildings.length};
  });
