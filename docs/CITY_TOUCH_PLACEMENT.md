@@ -10,7 +10,7 @@
 4. Assign the city world root to `placementRoot`.
 5. Call `beginPlacement()` from a build-menu button.
 6. Drag to position the preview on the ground plane; release to place the building.
-7. A placed building receives `CityBuildingProgression` and starts its configured construction timer.
+7. In the browser city, homes, shops, factories and service buildings first display an animated construction site with workers and a live countdown; the finished building appears only when the timer completes. The native Cocos prefab workflow still requires its own scene/prefab integration.
 8. Call `cancelPlacement()` to discard the preview.
 
 ## Placement behavior
@@ -43,3 +43,11 @@ This is a foundational placement flow, not the complete city build/economy syste
 5. Touch release commits exactly one building and starts construction progression.
 6. Touch cancellation and explicit cancellation never commit a building.
 7. Disabling the component unregisters all global touch listeners.
+
+
+## Player-facing construction rule
+
+- A construction site must be visually distinct from the finished building; never render the final building model while its construction timer is active.
+- Show a visible countdown above the site and animated workers performing construction actions.
+- Keep unfinished buildings out of population, employment, service-capacity and economic calculations until completion.
+- Completion atomically replaces the construction site with the finished building visual.
