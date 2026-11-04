@@ -29,7 +29,7 @@ test("focus raycast prefers the visible building surface and safely falls back t
   const tools=createCityRaycastTools(THREE,{camera:{},buildings:{children:[{}]},groundPlane:{},getViewport:()=>({width:640,height:360})});
   assert.deepEqual(tools.focusPointAt(320,180),{x:7,y:4.5,z:-3});
   nextHits=[];
-  assert.deepEqual(tools.focusPointAt(320,180),{x:1,y:0.14,z:2});
+  assert.deepEqual(tools.focusPointAt(320,180),{x:1,z:2});
   nextGroundPoint=null;
   assert.deepEqual(tools.tileAt(320,180),{x:-1,y:-1});
   assert.equal(tools.groundPointAt(320,180),null);
