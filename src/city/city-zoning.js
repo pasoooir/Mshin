@@ -30,7 +30,8 @@ function demandAllows(city, type) {
   const activeCity = city.buildings.some(building => building.construction)
     ? { ...city, buildings: city.buildings.filter(building => !building.construction) }
     : city;
-  const count = kind => activeCity.buildings.filter(b => b.type === kind).length;
+  // Reserve planned job capacity while a workplace is under construction, but do not activate it yet.
+  const count = kind => city.buildings.filter(b => b.type === kind).length;
   const population = Math.max(0, city.population || 0);
   if (type === "residential") return population < count("home") * 25 + 60;
   if (type === "commercial" && count("shop") >= Math.max(3, Math.ceil(population / 18))) return false;
@@ -67,11 +68,11 @@ export function developCityZones(city, constructionDuration = 0) {
       level: 1,
       age: 0,
       residents,
-      zoneType: zone.type,
-      construction: constructionDuration > 0 && zone.type !== "recreational"
-        ? { duration: constructionDuration, remaining: constructionDuration }
-        : undefined
+      zoneType: zone.type
     };
+    if (constructionDuration > 0 && zone.type !== "recreational") {
+      building.construction = { duration: constructionDuration, remaining: constructionDuration };
+    }
     city.grid[zone.y][zone.x] = "building";
     city.buildings.push(building);
     if (!building.construction) city.population += residents;
