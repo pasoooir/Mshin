@@ -45,35 +45,44 @@ export function createCityCameraController({
     if (focusFrame && typeof cancelAnimationFrame === "function") cancelAnimationFrame(focusFrame);
     focusFrame = 0;
     if (Number.isFinite(camera.currentTargetX)) camera.targetX = camera.currentTargetX;
+    if (Number.isFinite(camera.currentTargetY)) camera.targetY = camera.currentTargetY;
     if (Number.isFinite(camera.currentTargetZ)) camera.targetZ = camera.currentTargetZ;
     camera.currentTargetX = undefined;
+    camera.currentTargetY = undefined;
     camera.currentTargetZ = undefined;
   }
 
   function animateFocus(point) {
     const startX = Number.isFinite(camera.currentTargetX) ? camera.currentTargetX : (camera.targetX || 0);
+    const startY = Number.isFinite(camera.currentTargetY) ? camera.currentTargetY : (camera.targetY || 0);
     const startZ = Number.isFinite(camera.currentTargetZ) ? camera.currentTargetZ : (camera.targetZ || 0);
+    const targetY = Number.isFinite(point.y) ? point.y : 0;
     camera.targetX = point.x;
+    camera.targetY = targetY;
     camera.targetZ = point.z;
     if (typeof requestAnimationFrame !== "function") {
       camera.currentTargetX = point.x;
+      camera.currentTargetY = targetY;
       camera.currentTargetZ = point.z;
       update();
       return;
     }
     camera.currentTargetX = startX;
+    camera.currentTargetY = startY;
     camera.currentTargetZ = startZ;
     const started = performance.now();
     const tick = now => {
       const t = clamp((now - started) / 420, 0, 1);
       const eased = 1 - Math.pow(1 - t, 3);
       camera.currentTargetX = startX + (point.x - startX) * eased;
+      camera.currentTargetY = startY + (targetY - startY) * eased;
       camera.currentTargetZ = startZ + (point.z - startZ) * eased;
       update();
       if (t < 1) focusFrame = requestAnimationFrame(tick);
       else {
         focusFrame = 0;
         camera.currentTargetX = undefined;
+        camera.currentTargetY = undefined;
         camera.currentTargetZ = undefined;
         update();
       }
