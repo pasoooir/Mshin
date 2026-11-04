@@ -465,15 +465,15 @@ try{
   assert.deepEqual(migrationErrors,[],"legacy save migration must not throw browser errors");
  }finally{await migrationPage.close()}
  const recoveryPage=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
- const recoveryErrors=[];recoveryPage.on("pageerror",error=>recoveryErrors.push(String(error)));
+ const recoveryErrors=[];recoveryPage.on("pageerror",error=>recoveryErrors.push(error.stack||String(error)));recoveryPage.on("console",message=>{if(message.type()==="error")recoveryErrors.push("console: "+message.text())});recoveryPage.on("requestfailed",request=>recoveryErrors.push("request failed: "+request.url()+" "+request.failure()?.errorText));
  try{
   await recoveryPage.addInitScript(snapshot=>{
    localStorage.setItem("mshin-city-save-v2","{corrupt");
    localStorage.setItem("mshin-city-save-v1","{corrupt-legacy");
    localStorage.setItem("mshin-city-save-v2.backup",JSON.stringify(snapshot));
   },backupPayload.city);
-  await recoveryPage.goto("http://127.0.0.1:4173/city.html");
-  await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  await recoveryPage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
+  try{await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await recoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,activeSave:localStorage.getItem("mshin-city-save-v2")?.slice(0,180),backupBytes:localStorage.getItem("mshin-city-save-v2.backup")?.length||0}));throw new Error("3D renderer did not become ready during backup recovery: "+JSON.stringify({diagnostic,errors:recoveryErrors})+"; "+error.message)}
   const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery"),legacyRaw:localStorage.getItem("mshin-city-save-v1"),legacyRecovery:localStorage.getItem("mshin-city-save-v1.recovery")}));
   assert.equal(recovered.treasury,backupPayload.city.treasury,"a valid previous snapshot must recover after the active save is corrupted");
   assert.equal(recovered.rows,32,"backup recovery must restore the complete city grid");
