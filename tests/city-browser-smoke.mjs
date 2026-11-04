@@ -369,7 +369,11 @@ try{
    await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
   }catch(error){
    const diagnostic=await compactPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
-   throw new Error("compact portrait 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:compactErrors})+"; "+error.message);
+   // A late Playwright poll can time out after the renderer has become ready;
+   // trust the immediate diagnostic only when both readiness flags and a canvas exist.
+   if(!(diagnostic.ready==="true"&&diagnostic.rendererReady===true&&diagnostic.canvasCount>0)){
+    throw new Error("compact portrait 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:compactErrors})+"; "+error.message);
+   }
   }
   const compact=await compactPage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
   assert.equal(compact.gate,"grid","portrait phones must be stopped at the landscape orientation gate");
