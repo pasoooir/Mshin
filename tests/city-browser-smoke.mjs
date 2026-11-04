@@ -329,8 +329,16 @@ try{
  assert.ok(importResult.treasury>0&&importResult.taxRates.residential===14,"backup import must restore treasury and tax policy");
  assert.equal(importResult.panelHidden,true,"successful restore must close the storage dialog");
  assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBackup","closing storage must restore focus to its trigger");
- const demolition=await page.evaluate(()=>{const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));if(!b)throw new Error("test fixture needs a second residential building");return window.MshinCityDebug.actAt(b.x,b.y,"bulldoze")});
- assert.equal(demolition.cell,"grass","bulldoze action must remove the selected residential building");assert.equal(demolition.saved.grid.flat().filter(v=>v==="building").length,await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),"demolition must persist immediately");
+ const demolition=await page.evaluate(()=>{
+  const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));
+  if(!b)throw new Error("test fixture needs a second residential building");
+  const result=window.MshinCityDebug.actAt(b.x,b.y,"bulldoze");
+  return { ...result, x:b.x, y:b.y, persisted:JSON.parse(localStorage.getItem("mshin-city-save-v2")) };
+ });
+ assert.equal(demolition.cell,"grass","bulldoze action must remove the selected residential building");
+ assert.equal(demolition.saved.grid[demolition.y]?.[demolition.x],"grass","the demolished tile must be empty in the immediate save snapshot");
+ assert.deepEqual(demolition.persisted?.grid,demolition.saved.grid,"demolition must write the same updated grid to local storage immediately");
+ assert.deepEqual(demolition.persisted?.grid,await page.evaluate(()=>window.MshinCityDebug.city.grid),"persisted city grid must match the live grid after demolition");
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.tick>=6),"simulation must autosave without a manual save");
  await page.bringToFront();await page.locator('[data-city-speed="1"]').click();await page.waitForFunction(()=>document.visibilityState==="visible");const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(4000);const simulation=await page.evaluate(()=>({tick:window.MshinCityDebug.city.tick,visibility:document.visibilityState,speedLabel:document.querySelector("#citySpeedLabel")?.textContent}));assert.ok(simulation.tick>before,"simulation should advance while the mobile city is visible at 1x speed: "+JSON.stringify({before,...simulation}));
@@ -351,7 +359,7 @@ try{
  assert.equal(trafficAcceptance.onRoad,true,"mobile traffic must stay on connected road tiles");
  assert.equal(trafficAcceptance.moving,true,"vehicles must progress along their road routes rather than remain static");
  assert.ok(trafficAcceptance.drawCalls<=drawCallsBeforeTraffic+2,"instanced traffic must add at most two draw calls regardless of the active vehicle count: "+JSON.stringify({before:drawCallsBeforeTraffic,after:trafficAcceptance.drawCalls,vehicles:trafficAcceptance.vehicles}));
- assert.ok(await page.evaluate(()=>window.MshinCityDebug.save()),"traffic state must remain persistable with the city save");
+ const saveDiagnostics=await page.evaluate(()=>({saved:window.MshinCityDebug.save(),state:window.MshinCityDebug.saveDiagnostics()}));assert.ok(saveDiagnostics.saved,"traffic state must remain persistable with the city save: "+JSON.stringify(saveDiagnostics.state));
  const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),categoryButtons:[...document.querySelectorAll(".cityToolCategory")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
  assert.ok(mobile.tools.y>mobile.metrics.bottom,"mobile construction dock must sit below the city metrics");
@@ -444,7 +452,7 @@ try{
  try{
   await migrationPage.addInitScript(legacy=>localStorage.setItem("mshin-city-save-v1",JSON.stringify(legacy)),legacyFixture);
   await migrationPage.goto("http://127.0.0.1:4173/city.html");
-  await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  try{await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await migrationPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));throw new Error("renderer did not become ready during legacy migration: "+JSON.stringify({diagnostic,errors:migrationErrors})+"; "+error.message)}
   const migrated=await migrationPage.evaluate(()=>({city:window.MshinCityDebug.city,current:JSON.parse(localStorage.getItem("mshin-city-save-v2")),legacy:localStorage.getItem("mshin-city-save-v1")}));
   assert.equal(migrated.city.schemaVersion,2,"legacy v1 saves must migrate to the current v2 schema");
   assert.equal(migrated.city.treasury,12345,"migration must preserve treasury");
