@@ -16,7 +16,7 @@ function makeThree() {
 }
 
 test("construction site creates three workers with one pickaxe and two shovels",()=>{
-  const previous=document.createElement;
+  const previous=globalThis.document;
   const drawCalls=[];
   globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({
     clearRect(){},beginPath(){},roundRect(){},fill(){},stroke(){},fillText(text){drawCalls.push(text)}
@@ -38,6 +38,6 @@ test("construction site creates three workers with one pickaxe and two shovels",
     renderer.disposeSite(site);
     assert.equal(site.userData.labelTexture.disposed,true);
   }finally{
-    if(previous)globalThis.document={createElement:previous};else delete globalThis.document;
+    if(previous)globalThis.document=previous;else delete globalThis.document;
   }
 });
