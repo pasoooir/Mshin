@@ -1,4 +1,4 @@
-import { CITY_TILE_METERS, cityTileToWorld, getBuildingVisualScale } from "./city-world-scale.js";
+import { cityTileToWorld, getBuildingVisualScale } from "./city-world-scale.js";
 /**
  * High-graphics procedural buildings for Mshin city (SimCity BuildIt inspired style).
  * Vibrant palettes, multi-style roofs, rich facades, roof props, and readable silhouettes
