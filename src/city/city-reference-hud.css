@@ -12,8 +12,8 @@
 .cityMetric b{color:#fff4cf;text-shadow:0 1px 2px #14251a}
 .cityActions .cityAction{border-radius:11px;min-height:42px}
 .cityActions .cityAction.primary{background:linear-gradient(180deg,#dff6c7,#9dce72);color:#27421e;border:1px solid #f4ffdc;box-shadow:0 3px 0 #547b3d}
-.cityTools{border-radius:15px;padding:7px;background:rgba(232,241,222,.94);border:1px solid rgba(255,255,255,.9);box-shadow:0 8px 24px #10271955}
-.cityToolCategories{display:flex;flex-direction:column;gap:5px}
+.cityTools{border-radius:15px;padding:7px;background:rgba(232,241,222,.94);border:1px solid rgba(255,255,255,.9);box-shadow:0 8px 24px #10271955;max-height:52vh;overflow:auto}
+.cityToolCategories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
 .cityToolCategory{min-height:44px;border:1px solid #d3dfc8;border-radius:10px;background:linear-gradient(180deg,#fff,#e8f1df);color:#355b2e;font-weight:900;padding:7px 9px;box-shadow:0 2px 0 #c4d2b9}
 .cityToolCategory[aria-expanded="true"]{background:linear-gradient(180deg,#d9f3b7,#a6d47a);border-color:#8eb75d}
 .cityToolPanel{display:grid;grid-template-columns:repeat(2,minmax(48px,1fr));gap:6px;padding-top:6px}
