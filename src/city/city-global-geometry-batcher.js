@@ -11,7 +11,7 @@ export function batchCityStaticGeometry(THREE, root, options = {}) {
   const untouched = [];
   let sourceMeshes = 0;
 
-  const materialKey = material => {
+  const objectGeometryHasAttribute = () => "";\n  const materialKey = (material, geometry) => {
     const color = material.color?.getHexString?.() || "";
     const emissive = material.emissive?.getHexString?.() || "";
     const map = material.map?.uuid || "";
@@ -20,7 +20,7 @@ export function batchCityStaticGeometry(THREE, root, options = {}) {
     return [
       material.type, color, emissive, material.roughness ?? "", material.metalness ?? "",
       material.opacity ?? "", material.transparent ? 1 : 0, material.side ?? "",
-      material.vertexColors ? 1 : 0, map, normal, roughnessMap,
+      material.vertexColors ? 1 : 0, geometry.getAttribute("normal") ? 1 : 0, geometry.getAttribute("uv") ? 1 : 0, map, normal, roughnessMap,
       material.emissiveIntensity ?? "", material.wireframe ? 1 : 0
     ].join("|");
   };
@@ -29,7 +29,7 @@ export function batchCityStaticGeometry(THREE, root, options = {}) {
     if (!object.isMesh || object.isInstancedMesh || !object.geometry || Array.isArray(object.material)) return;
     const material = object.material;
     if (!material || !object.geometry.getAttribute("position")) return;
-    const key = materialKey(material);
+    const key = materialKey(material, object.geometry);
     if (!buckets.has(key)) buckets.set(key, { material, entries: [] });
     buckets.get(key).entries.push(object);
     sourceMeshes++;
