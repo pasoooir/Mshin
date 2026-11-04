@@ -433,13 +433,21 @@ try{
     buildings:window.MshinCityDebug.city.buildings.length,
     zones:window.MshinCityDebug.city.zones.length,
     traffic:window.MshinCityDebug.city.traffic.length,
+    buildingTiles:window.MshinCityDebug.city.grid.flat().filter(tile=>tile==="building").length,
+    zoneTiles:window.MshinCityDebug.city.grid.flat().filter(tile=>typeof tile==="string"&&tile.startsWith("zone-")).length,
+    validBuildings:window.MshinCityDebug.city.buildings.every(building=>Number.isSafeInteger(building.id)&&building.id>0&&window.MshinCityDebug.city.grid[building.y]?.[building.x]==="building"),
+    validZones:window.MshinCityDebug.city.zones.every(zone=>window.MshinCityDebug.city.grid[zone.y]?.[zone.x]==="zone-"+zone.type),
+    validTraffic:window.MshinCityDebug.city.traffic.every(vehicle=>window.MshinCityDebug.city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"),
     saved:window.MshinCityDebug.save()
   }));
   assert.equal(recovery.gridRows,32,"malformed local saves must recover to a complete city grid");
   assert.equal(recovery.gridColumns,true,"save recovery must restore all 32 columns");
-  assert.equal(recovery.buildings,0,"malformed save recovery must not retain invalid building records");
-  assert.equal(recovery.zones,0,"malformed save recovery must not retain invalid zones");
-  assert.equal(recovery.traffic,0,"malformed save recovery must not retain invalid traffic");
+  assert.equal(recovery.saved,true,"a recovered city must be persisted as the new valid snapshot");
+  assert.equal(recovery.buildings,recovery.buildingTiles,"recovery must preserve only buildings represented by valid building tiles");
+  assert.equal(recovery.zones,recovery.zoneTiles,"recovery must preserve only zones represented by valid zone tiles");
+  assert.equal(recovery.validBuildings,true,"recovery must not retain invalid building records");
+  assert.equal(recovery.validZones,true,"recovery must not retain invalid zone records");
+  assert.equal(recovery.validTraffic,true,"recovery must not retain vehicles outside valid road tiles");
  }finally{await landscapePage.close()}
  const legacyGrid=Array.from({length:32},()=>Array(32).fill("grass"));
  for(let y=0;y<32;y++)for(let x=0;x<32;x++)if([7,15,23].includes(x)||[7,15,23].includes(y))legacyGrid[y][x]="road";
