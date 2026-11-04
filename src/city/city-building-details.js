@@ -67,17 +67,57 @@ export function addOrbitReadyBuildingDetails(THREE, {
     };
     const serviceColor = new THREE.MeshStandardMaterial({ color: serviceColors[type], roughness: 0.72, metalness: 0.04 });
     addMesh(new THREE.BoxGeometry(0.62, 0.42, 0.10), serviceColor, 0, height + 0.34, bodyDepth / 2 + 0.08, 0, false);
-    if (type === "fire") {
-      const mast = addMesh(new THREE.CylinderGeometry(0.075, 0.09, 0.92, 8), accentMat, 0.48, height + 0.54, -0.42);
-      mast.rotation.z = 0.08;
-    } else if (["health", "education", "police"].includes(type)) {
-      addMesh(new THREE.BoxGeometry(0.12, 0.64, 0.12), trimMat, 0, height + 0.55, 0, 0, false);
-      addMesh(new THREE.BoxGeometry(0.64, 0.12, 0.12), trimMat, 0, height + 0.55, 0, 0, false);
-    } else {
-      const equipment = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, 0.42, 10), serviceColor);
-      equipment.position.set(0, height + 0.36, 0);
-      equipment.castShadow = true;
-      group.add(equipment);
+    const roofY = height + 0.43;
+    if (type === "police") {
+      // Blue beacon and a compact radio mast give the station a readable skyline.
+      addMesh(new THREE.CylinderGeometry(0.10, 0.13, 0.16, 10), serviceColor, 0, roofY + 0.10, 0);
+      addMesh(new THREE.SphereGeometry(0.12, 10, 7), new THREE.MeshStandardMaterial({
+        color: "#eaf7ff", emissive: "#4d9fff", emissiveIntensity: 0.8, roughness: 0.25
+      }), 0, roofY + 0.25, 0);
+      addMesh(new THREE.CylinderGeometry(0.025, 0.035, 0.82, 6), trimMat, 0.48, roofY + 0.42, -0.38);
+      addMesh(new THREE.BoxGeometry(0.42, 0.045, 0.045), trimMat, 0.48, roofY + 0.78, -0.38);
+    } else if (type === "fire") {
+      // Tall hose-drying tower with a crossbar, distinct from a generic roof mast.
+      addMesh(new THREE.BoxGeometry(0.34, 1.08, 0.34), serviceColor, 0.48, roofY + 0.48, -0.36);
+      addMesh(new THREE.BoxGeometry(0.44, 0.10, 0.42), accentMat, 0.48, roofY + 1.06, -0.36);
+      addMesh(new THREE.CylinderGeometry(0.055, 0.055, 0.72, 8), trimMat, 0.48, roofY + 1.40, -0.36);
+    } else if (type === "health") {
+      // Medical cross on a raised, softly rounded sign.
+      addMesh(new THREE.BoxGeometry(0.18, 0.78, 0.18), trimMat, 0, roofY + 0.38, 0, 0, false);
+      addMesh(new THREE.BoxGeometry(0.78, 0.18, 0.18), trimMat, 0, roofY + 0.38, 0, 0, false);
+      addMesh(new THREE.BoxGeometry(0.46, 0.08, 0.46), serviceColor, 0, roofY + 0.02, 0, 0, false);
+    } else if (type === "education") {
+      // School clock and flag pole replace the generic civic cross.
+      addMesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 16), serviceColor, 0, roofY + 0.20, 0);
+      addMesh(new THREE.BoxGeometry(0.035, 0.20, 0.025), trimMat, 0, roofY + 0.31, 0.07, 0, false);
+      addMesh(new THREE.CylinderGeometry(0.025, 0.035, 0.92, 6), trimMat, 0.48, roofY + 0.48, -0.38);
+      addMesh(new THREE.BoxGeometry(0.34, 0.20, 0.035), accentMat, 0.63, roofY + 0.78, -0.38, 0, false);
+    } else if (type === "power") {
+      // Two transformer insulators and a compact distribution frame.
+      for (const x of [-0.34, 0.34]) {
+        addMesh(new THREE.CylinderGeometry(0.075, 0.10, 0.38, 8), serviceColor, x, roofY + 0.20, 0);
+        addMesh(new THREE.CylinderGeometry(0.12, 0.12, 0.07, 8), trimMat, x, roofY + 0.42, 0);
+      }
+      addMesh(new THREE.BoxGeometry(0.92, 0.07, 0.10), trimMat, 0, roofY + 0.50, 0, 0, false);
+    } else if (type === "water") {
+      // Elevated cylindrical reservoir and visible supply pipe.
+      addMesh(new THREE.CylinderGeometry(0.34, 0.34, 0.58, 12), serviceColor, 0, roofY + 0.30, 0);
+      addMesh(new THREE.SphereGeometry(0.34, 12, 7, 0, Math.PI * 2, 0, Math.PI / 2), trimMat, 0, roofY + 0.59, 0);
+      addMesh(new THREE.CylinderGeometry(0.055, 0.055, 0.62, 8), accentMat, 0.42, roofY + 0.18, 0.34);
+    } else if (type === "sewage") {
+      // Paired treatment vents and a horizontal pipe identify wastewater treatment.
+      for (const x of [-0.32, 0.32]) {
+        addMesh(new THREE.CylinderGeometry(0.11, 0.13, 0.52, 10), serviceColor, x, roofY + 0.25, 0);
+        addMesh(new THREE.TorusGeometry(0.11, 0.035, 6, 12), trimMat, x, roofY + 0.52, 0);
+      }
+      addMesh(new THREE.CylinderGeometry(0.07, 0.07, 0.84, 8), accentMat, 0, roofY + 0.14, 0.34, Math.PI / 2);
+    } else if (type === "waste") {
+      // Three colored collection hoppers and a small compactor block.
+      for (const x of [-0.34, 0, 0.34]) {
+        addMesh(new THREE.BoxGeometry(0.22, 0.30, 0.24), serviceColor, x, roofY + 0.15, 0);
+        addMesh(new THREE.BoxGeometry(0.24, 0.055, 0.26), trimMat, x, roofY + 0.33, 0, 0, false);
+      }
+      addMesh(new THREE.BoxGeometry(0.40, 0.30, 0.32), accentMat, 0, roofY + 0.15, 0.42);
     }
   }
 }
