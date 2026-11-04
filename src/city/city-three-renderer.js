@@ -41,8 +41,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  // City buildings and the sun are static between construction changes; avoid
-  // regenerating the full shadow map on every mobile frame.
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
 
@@ -194,8 +192,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   addLineLayer(activePlotEdges, plotLineMaterial);
   addLineLayer(lockedPlotEdges, lockedPlotLineMaterial);
-
-  // Road dashes and crosswalks are instanced to keep the mobile GPU draw-call count low.
   const roadMarkings = [];
   const roadCenters = [7.5, 15, 23.5, 31.5, 39.5, 48, 55.5];
   for (const center of roadCenters) {
@@ -210,8 +206,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
   addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
-
-  // Crosswalks wait for a pedestrian graph and legal crossing priorities.
   const crosswalkStripeCount = 0;
 
   const lotLines = [];
@@ -224,8 +218,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
   addLineLayer(lotLines, new THREE.LineBasicMaterial({ color: "#f1e8cb", transparent: true, opacity: 0.42 }));
-
-  // Gold boundary clearly separates the initially unlocked district from future expansion.
   const boundary = new THREE.LineLoop(
     new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(-32, 0.19, -32), new THREE.Vector3(32, 0.19, -32),
@@ -234,8 +226,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     new THREE.LineBasicMaterial({ color: "#e7bd69", transparent: true, opacity: 0.92 })
   );
   scene.add(boundary);
-
-  // It is decorative-only and cannot overlap locked or unlocked buildable cells.
   const environment = new THREE.Group();
   scene.add(environment);
   const trunkGeometry = new THREE.CylinderGeometry(0.10, 0.15, 1.05, 6);
@@ -337,8 +327,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     trafficWindows.instanceMatrix.needsUpdate = true;
     if (trafficBodies.instanceColor) trafficBodies.instanceColor.needsUpdate = true;
   }
-
-  // Pedestrians are instanced in two batches; agent count never adds per-person draw calls.
   const pedestrianGroup = new THREE.Group();
   scene.add(pedestrianGroup);
   const pedestrianBodyGeometry = new THREE.CylinderGeometry(0.12, 0.14, 0.42, 6);
@@ -477,8 +465,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
 
     if (type === "home") {
-      // Rectangular two-slope gable roof with a continuous ridge; unlike the
-      // former pyramid primitive, this reads as a real residential roof from orbit.
       const roofWidth = bodyWidth + 0.28;
       const roofDepth = bodyDepth + 0.28;
       const ridgeHeight = 0.78;
@@ -608,7 +594,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
 
   function updateCamera(cam) {
-    const zoom = Math.max(0.525, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
+    const zoom = Math.max(0.0625, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
     const transform = updateCityCameraTransform(camera, cam, height);
     cameraOrbit = transform.orbit;
