@@ -15,3 +15,14 @@ test("each civic and utility service has its own rooftop geometry", async () => 
   assert.ok(source.includes("School clock"));
   assert.ok(source.includes("Medical cross"));
 });
+
+test("residential balconies are instanced on all four facades for 360-degree viewing", async () => {
+  const source = await readFile(new URL("../src/city/city-building-details.js", import.meta.url), "utf8");
+  assert.ok(source.includes("balconyPlatforms"));
+  assert.ok(source.includes("balconyRails"));
+  assert.ok(source.includes("bodyWidth / 2 + 0.16"));
+  assert.ok(source.includes("-bodyWidth / 2 - 0.16"));
+  assert.ok(source.includes("bodyDepth / 2 + 0.16"));
+  assert.ok(source.includes("-bodyDepth / 2 - 0.16"));
+  assert.ok(source.includes("balconyFloors * 4"));
+});
