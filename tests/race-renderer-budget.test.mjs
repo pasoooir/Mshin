@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
+const pbrSource = await readFile(new URL("../src/vehicle-pbr.js", import.meta.url), "utf8");
 
 test("procedural 3D scene stays within a bounded first-build geometry budget", () => {
   assert.ok(source.includes("const segments=mobile?280:softwareRenderer?360:760,half=180;"),
