@@ -189,3 +189,21 @@ test("rotating the two-finger line changes orbit without changing pinch scale", 
   h.send("pointercancel", 42, 200, 150);
   h.controller.destroy();
 });
+
+
+test("orbit inertia is speed-capped and always settles within its maximum lifetime", async () => {
+  const h = harness();
+  h.send("pointerdown", 51, 100, 100);
+  h.send("pointerdown", 52, 200, 100);
+  h.send("pointermove", 51, 1100, 100);
+  h.send("pointermove", 52, 1200, 100);
+  h.send("pointerup", 51, 1100, 100);
+  h.send("pointerup", 52, 1200, 100);
+  await new Promise(resolve => setTimeout(resolve, 30));
+  assert.ok(Math.abs(h.controller.getState().lastInertiaVelocity) <= 0.18,
+    "a fast flick must not create an unbounded angular velocity");
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  assert.equal(h.controller.getState().inertiaActive, false,
+    "inertia must terminate within its bounded lifetime");
+  h.controller.destroy();
+});
