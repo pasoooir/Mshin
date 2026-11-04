@@ -1,6 +1,6 @@
 /**
  * High-graphics procedural buildings for Mshin city (SimCity BuildIt inspired style).
- * Vibrant palettes, multi-style roofs, rich facades, roof props, and readable silhouettes
+ * Natural architectural palettes, multi-style roofs, rich facades, roof props, and readable silhouettes
  * from any orbit angle. Kept low-poly + instanced-friendly for mobile WebGL.
  */
 export function createHighGfxBuilding(THREE, item, shared = {}) {
