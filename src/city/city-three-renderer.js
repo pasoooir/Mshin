@@ -6,6 +6,7 @@ import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityBackgroundSkyline } from "./city-background-skyline.js";
+import { addRealisticArchitecture } from "./city-architecture-realism.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -552,6 +553,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
 
     addOrbitReadyBuildingDetails(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, windowGeometry });
+    const architectureStats = addRealisticArchitecture(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, roofMat });
 
     // Bright facade fins make each family readable at the normal phone zoom.
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
@@ -674,6 +676,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         decorativeStreetLights: decorativeStreetLightCount,
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
+        realisticArchitecture: true,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
         plots: activeGrassA + activeGrassB,
