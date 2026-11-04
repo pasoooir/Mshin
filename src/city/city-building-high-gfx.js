@@ -60,7 +60,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
       { wall: "#e0d8e8", side: "#c0b8d0", roof: "#5a5060", trim: "#faf6fc", accent: "#a070c0", door: "#403850" }
     ],
     service: [
-      { wall: "#e0e4e8", side: "#c0c8d0", roof: "#4a5460", trim: "#f8fafc", accent: "#5080c0", door: "#2a3848" }
+      { wall: "#d9e0e3", side: "#b5c1c6", roof: "#35434d", trim: "#f7fafb", accent: "#6596a7", door: "#26363e" }
     ],
     power:  [{ wall: "#e8e0c8", side: "#d0c8a8", roof: "#4a4a3a", trim: "#f8f4e0", accent: "#e0c040", door: "#3a3a28" }],
     water:  [{ wall: "#c8dce8", side: "#a8c4d4", roof: "#3a5a6a", trim: "#f0f8fc", accent: "#40a0c0", door: "#284858" }],
@@ -267,11 +267,12 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     floors = 3 + level;
     cols = 4;
   } else {
-    height = 2.2 + level * 0.3;
-    bodyW = 1.36;
-    bodyD = 1.28;
-    floors = 2;
-    cols = 2;
+    // Civic and utility buildings use the same generous contemporary footprint.
+    height = 2.65 + level * 0.45;
+    bodyW = 1.68;
+    bodyD = 1.62;
+    floors = 3 + Math.floor(level / 2);
+    cols = 4;
   }
 
   const facadeSurf = (type === "industrial" || type === "administrative") ? (concreteSurface || {}) : (brickSurface || {});
