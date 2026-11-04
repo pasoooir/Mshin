@@ -5,6 +5,7 @@ import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
+import { createCityBackgroundSkyline } from "./city-background-skyline.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -79,6 +80,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const {
     grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface
   } = createCityPbrSurfaces(THREE, renderer);
+  const backgroundSkyline = createCityBackgroundSkyline(THREE, scene, concreteSurface, brickSurface, windowMaterials);
   const grassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, roughness: 0.96, normalScale: new THREE.Vector2(0.32, 0.32) });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#dce8c7", roughness: 0.98, normalScale: new THREE.Vector2(0.28, 0.28) });
   const lockedGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#899783", roughness: 1, normalScale: new THREE.Vector2(0.22, 0.22) });
@@ -665,6 +667,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         normalMappedSurfaces: 6,
         roughnessMappedSurfaces: 6,
         texturedBuildingMaterials: 4,
+        backgroundCityBuildings: backgroundSkyline.buildingCount,
+        backgroundCityWindows: backgroundSkyline.windowCount,
         decorativeTrees: decorativeTreeCount,
         decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
@@ -692,6 +696,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
       atmosphere.dispose();
+      backgroundSkyline.dispose();
       for (const surface of [grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface]) {
         surface.map.dispose();
         surface.normalMap.dispose();
