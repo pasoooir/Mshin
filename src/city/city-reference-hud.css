@@ -38,3 +38,16 @@
  .cityTool:active,.cityToolCategory:active,.cityAction:active,.cityMapControls button:active{transform:translateY(1px) scale(.97);filter:brightness(1.04)}
 }
 .cityTool:focus-visible,.cityToolCategory:focus-visible,.cityActions button:focus-visible,.cityActions a:focus-visible,.cityMapControls button:focus-visible{outline:3px solid #f6d56e;outline-offset:2px}
+
+/* Compact illustrated badges: symbols are paired with persistent text labels. */
+.cityMetric:nth-child(1) small::before{content:"♟ ";color:#9ed7ff}
+.cityMetric:nth-child(2) small::before{content:"◉ ";color:#f4d26f}
+.cityMetric:nth-child(3) small::before{content:"▥ ";color:#b5d7a0}
+.cityMetric:nth-child(4) small::before{content:"☺ ";color:#a9e37b}
+.cityMetric:nth-child(5) small::before{content:"⌂ ";color:#9bd6ed}
+.cityMetric:nth-child(6) small::before{content:"↘ ";color:#f0b18b}
+.cityMetric:nth-child(7) small::before{content:"⇄ ";color:#a9d9e9}
+.cityToolCategory[data-city-category="manage"]::before{content:"⚒ ";font-size:15px}
+.cityToolCategory[data-city-category="roads"]::before{content:"▰ ";font-size:15px}
+.cityToolCategory[data-city-category="buildings"]::before{content:"⌂ ";font-size:17px}
+.cityToolCategory[data-city-category="services"]::before{content:"✚ ";font-size:15px}
