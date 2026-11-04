@@ -195,12 +195,14 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     hemisphere.color.copy(zenithColour);
     hemisphere.groundColor.set(seasonal.season === "winter" ? "#89969b" : "#596b4e");
     fill.intensity = 0.22 + daylight * 0.82;
-    skyDome.position.copy(camera.position);
+    camera.getWorldPosition(skyDome.position);
     skyMaterial.uniforms.uZenith.value.copy(zenithColour);
     skyMaterial.uniforms.uHorizon.value.copy(horizonColour);
     skyMaterial.uniforms.uSunDirection.value.copy(sunDirection);
     skyMaterial.uniforms.uSunColor.value.copy(sunColour);
     skyMaterial.uniforms.uSunIntensity.value = daylight * (seasonal.weather === "rain" ? 0.38 : 1);
+    const viewportWidth = 50 * getViewport().width / Math.max(1, getViewport().height);
+    sunDisc.position.set(Math.cos(solarAngle) * viewportWidth * 0.36, -8 + daylight * 35, -116);
     scene.background.copy(zenithColour);
     scene.fog.color.copy(horizonColour);
     const glow = 0.06 + night * 1.02;
@@ -238,6 +240,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     },
     dispose() {
       camera.remove(skyRig, weatherRig);
+      scene.remove(skyDome);
       skyGeometry.dispose(); skyMaterial.dispose();
       starGeometry.dispose(); stars.material.dispose();
       sunDisc.geometry.dispose(); sunDisc.material.dispose();
