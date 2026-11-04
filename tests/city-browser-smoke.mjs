@@ -267,12 +267,13 @@ try{
   agents:window.MshinCityDebug.city.citizens.length,
   rendered:window.MshinCity3DStats.pedestrians,
   onRoad:window.MshinCityDebug.city.citizens.every(c=>window.MshinCityDebug.city.grid[c.roadY]?.[c.roadX]==="road"),
-  drawCalls:window.MshinCity3DStats.drawCalls
+  drawCalls:window.MshinCity3DStats.drawCalls,
+  shadowMapEnabled:window.MshinCity3DStats.shadowMapEnabled
  }));
  assert.ok(pedestrianAcceptance.population>=12&&pedestrianAcceptance.agents>0,"residential population must produce visible pedestrian agents");
  assert.equal(pedestrianAcceptance.rendered,pedestrianAcceptance.agents,"every active citizen agent must be rendered in the 3D city");
  assert.equal(pedestrianAcceptance.onRoad,true,"pedestrian route nodes must remain on connected road tiles");
- assert.ok(pedestrianAcceptance.drawCalls<=80,"instanced pedestrians and the single instanced street-light batch must preserve the 80-call mobile draw-call budget; actual="+pedestrianAcceptance.drawCalls);
+ assert.ok(pedestrianAcceptance.drawCalls<=80,"mobile renderer must stay within 80 calls with touch shadows disabled; stats="+JSON.stringify(pedestrianAcceptance));
  for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,14]]){await clickCityTool(page,type);const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
  await page.evaluate(()=>window.MshinCityDebug.step());
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
