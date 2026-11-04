@@ -1,13 +1,13 @@
 import { getCitySeasonalWeather } from "./city-seasonal-weather.js";
 
-const DAY_SKY = "#9bd4ee";
+const DAY_SKY = "#62cfff";
 const NIGHT_SKY = "#101b35";
-const SEASON_SKIES = ["#a9d9e9", "#82c6eb", "#d7b28f", "#b7c9dc"];
+const SEASON_SKIES = ["#65e0ff", "#4fbaff", "#ffbd78", "#9ecbff"];
 const SEASON_FOLIAGE = [
-  ["#4ba65d", "#65b96a", "#8acb70"],
-  ["#328c4d", "#4da653", "#70b85b"],
-  ["#b66b3e", "#d18a45", "#e0aa58"],
-  ["#718f83", "#8da99a", "#a9bcb0"]
+  ["#20e85a", "#45f52e", "#a4ff32"],
+  ["#12d94f", "#39ed32", "#83f52b"],
+  ["#ff7a24", "#ffb52b", "#ffda42"],
+  ["#36bd75", "#5cdb91", "#a0ed82"]
 ];
 
 export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fill, windowMaterials, getViewport, getFoliageMaterials = () => [] }) {
@@ -18,7 +18,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
 
   const skyRig = new THREE.Group();
   const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(2.35, 18, 12),
-    new THREE.MeshBasicMaterial({ color: "#ffe2a0", depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: "#fff36a", depthWrite: false }));
   const moonDisc = new THREE.Mesh(new THREE.SphereGeometry(1.65, 16, 10),
     new THREE.MeshBasicMaterial({ color: "#dce8ff", depthWrite: false }));
   const starPositions = new Float32Array(72 * 3);
