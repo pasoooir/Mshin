@@ -287,13 +287,13 @@ export async function createCityThreeRenderer(sourceCanvas) {
       const x = cityTileToWorld(vehicle.x);
       const z = cityTileToWorld(vehicle.y);
       const rotation = Number.isFinite(vehicle.heading) ? Math.PI / 2 - vehicle.heading : 0;
-      trafficDummy.position.set(x, 0.48, z);
+      trafficDummy.position.set(x, 0.395, z);
       trafficDummy.rotation.set(0, rotation, 0);
       trafficDummy.scale.set(1.76, 1.5, 2.53);
       trafficDummy.updateMatrix();
       trafficBodies.setMatrixAt(index, trafficDummy.matrix);
       trafficBodies.setColorAt(index, new THREE.Color(vehicle.color || trafficPalette[index % trafficPalette.length]));
-      trafficDummy.position.y = 0.78;
+      trafficDummy.position.y = 0.57;
       trafficDummy.position.z = z - 0.08;
       trafficDummy.scale.set(1.76, 1.5, 2.53);
       trafficDummy.updateMatrix();
