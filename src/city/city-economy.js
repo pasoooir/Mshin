@@ -1,3 +1,4 @@
+import { getCitySeasonalWeather } from "./city-seasonal-weather.js";
 export const CITY_DEFAULT_TAX_RATES = Object.freeze({
   residential: 8,
   commercial: 10,
@@ -56,11 +57,19 @@ export function computeCityEconomy(city, infrastructure = {}, commuting = {}) {
   // Congestion is a modest productivity proxy, not a full goods/supply-chain simulation.
   // Even severe delay cannot reduce commercial/industrial output by more than 15%.
   const commuteProductivity = 1 - Math.min(0.15, delayPercent * 0.001);
-  const commercialTax = Math.round(commercialTaxBeforeCommute * commuteProductivity);
-  const industrialTax = Math.round(industrialTaxBeforeCommute * commuteProductivity);
+  // Keep the opening day as the original baseline; seasonal operating costs begin after day one.
+  const seasonalWeather = city.tick >= 144 ? getCitySeasonalWeather(city) : { weather: "clear", intensity: 0 };
+  const weatherPenaltyRate = ({ rain: 0.025, wind: 0.012, heat: 0.018, snow: 0.08, frost: 0.035 })[seasonalWeather.weather] || 0;
+  const weatherProductivity = 1 - weatherPenaltyRate * seasonalWeather.intensity;
+  const commercialAfterCommute = Math.round(commercialTaxBeforeCommute * commuteProductivity);
+  const industrialAfterCommute = Math.round(industrialTaxBeforeCommute * commuteProductivity);
+  const commercialTax = Math.round(commercialAfterCommute * weatherProductivity);
+  const industrialTax = Math.round(industrialAfterCommute * weatherProductivity);
   const commuteEconomicLoss = (commercialTaxBeforeCommute + industrialTaxBeforeCommute)
-    - (commercialTax + industrialTax);
+    - (commercialAfterCommute + industrialAfterCommute);
+  const weatherEconomicLoss = (commercialAfterCommute + industrialAfterCommute) - (commercialTax + industrialTax);
   const commuteProductivityPercent = Math.round(commuteProductivity * 1000) / 10;
+  const weatherProductivityPercent = Math.round(weatherProductivity * 1000) / 10;
   const publicFunding = administrative * 28;
   const serviceFees = services * 8;
   const taxRevenue = residentialTax + commercialTax + industrialTax;
