@@ -138,6 +138,10 @@ export function createCityCameraController({
         lastDistance: distance(points),
         baseDistance: distance(points),
         baseZoom: Number.isFinite(camera.zoom) ? camera.zoom : 0.72,
+        baseOrbit: Number.isFinite(camera.orbit) ? camera.orbit : 0,
+        baseMidpoint: center,
+        baseAngle: angle(points),
+        lastAppliedRotation: 0,
         anchor: groundAt(center),
         velocity: 0,
         lastMoveTime: 0
@@ -190,14 +194,19 @@ export function createCityCameraController({
       const elapsed = gestureState.lastMoveTime && now > gestureState.lastMoveTime
         ? clamp(now - gestureState.lastMoveTime, 8, 50) : 16.667;
 
-      const rotation = (center.x - gestureState.lastMidpoint.x) * ORBIT_SENSITIVITY
-        + angleDelta(nextAngle, gestureState.lastAngle);
+      // Derive orbit from the gesture baseline. Pointer events arrive one finger at
+      // a time, so incremental angle accumulation can introduce transient azimuth
+      // drift during a pure vertical two-finger translation.
+      const totalRotation = (center.x - gestureState.baseMidpoint.x) * ORBIT_SENSITIVITY
+        + angleDelta(nextAngle, gestureState.baseAngle);
+      const rotation = totalRotation - gestureState.lastAppliedRotation;
+      camera.orbit = gestureState.baseOrbit + totalRotation;
+      gestureState.lastAppliedRotation = totalRotation;
       // Multiplicative distance ratio makes zoom independent of the starting span.
       // Derive zoom from the gesture baseline, not the previously clamped value.
       // This prevents asynchronous per-pointer move events from causing irreversible
       // zoom jumps when both fingers translate together and the temporary span collapses.
       camera.zoom = clamp(gestureState.baseZoom * nextDistance / gestureState.baseDistance, MIN_ZOOM, MAX_ZOOM);
-      camera.orbit = (camera.orbit || 0) + rotation;
       // Vertical translation of the two-finger midpoint adjusts camera elevation.
       // Rebase is continuous across pointer events and clamped to a usable city view.
       const pitch = Number.isFinite(camera.pitch) ? camera.pitch : 0.51;
