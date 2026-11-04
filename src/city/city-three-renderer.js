@@ -1,5 +1,6 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
+import { createHighGfxBuilding } from "./city-building-high-gfx.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
