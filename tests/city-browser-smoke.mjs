@@ -390,7 +390,7 @@ try{
  }finally{await compactPage.close()}
  // Chromium can reject Browser.setWindowBounds after fullscreen/orientation APIs
  // have been exercised. Verify landscape in a fresh page with its final viewport.
- const landscapePage=await browser.newPage({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ const landscapePage=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  try{
   await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
