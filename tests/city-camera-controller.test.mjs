@@ -153,3 +153,39 @@ test("pinch zoom is multiplicative, bounded, and reversible across changing span
   h.send("pointercancel", 1, 100, 100);
   h.controller.destroy();
 });
+
+
+test("same-direction asynchronous finger updates do not create a false pinch zoom", () => {
+  const h = harness();
+  const initialZoom = h.camera.zoom;
+  h.send("pointerdown", 31, 100, 100);
+  h.send("pointerdown", 32, 200, 100);
+  // Pointer Events are delivered per contact. The first finger can report its
+  // full movement before the second contact's next event is dispatched.
+  h.send("pointermove", 31, 200, 100);
+  h.send("pointermove", 32, 300, 100);
+  assert.ok(Math.abs(h.camera.zoom - initialZoom) < 1e-9,
+    "equal translation of both fingers must not be mistaken for a pinch, even when pointer events arrive sequentially");
+  assert.equal(h.controller.getState().gesture, "pinch-orbit");
+  h.send("pointerup", 31, 200, 100);
+  h.send("pointerup", 32, 300, 100);
+  h.controller.destroy();
+});
+
+test("rotating the two-finger line changes orbit without changing pinch scale", () => {
+  const h = harness();
+  const initialZoom = h.camera.zoom;
+  const initialOrbit = h.camera.orbit;
+  h.send("pointerdown", 41, 150, 100);
+  h.send("pointerdown", 42, 250, 100);
+  // Rotate the pair around its midpoint while preserving the 100px span.
+  h.send("pointermove", 41, 200, 50);
+  h.send("pointermove", 42, 200, 150);
+  assert.ok(Math.abs(h.camera.orbit - initialOrbit) > 0.1,
+    "rotating the two-finger line must rotate the camera");
+  assert.ok(Math.abs(h.camera.zoom - initialZoom) < 1e-9,
+    "pure two-finger rotation must not zoom");
+  h.send("pointercancel", 41, 200, 50);
+  h.send("pointercancel", 42, 200, 150);
+  h.controller.destroy();
+});
