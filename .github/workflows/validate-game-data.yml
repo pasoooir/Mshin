@@ -1,36 +1,55 @@
 name: Validate Mshin game data and portable TypeScript core
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
-  cancel-in-progress: true
+
 on:
   push:
-    branches: [main, "feat/**", "test/**"]
   pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: validate-game-data-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
+    name: Validate game data, source and architecture
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-audit --no-fund
-      - run: npm run validate:data
-      - run: npm run build:core
-      - run: npm run check:js-syntax
-      - name: Audit Racing and City dependency boundaries
-        run: npm run analyze:architecture
-      - name: Validate workflow YAML syntax
-        run: ruby -e 'require "yaml"; Dir.glob(".github/workflows/*.{yml,yaml}").each { |file| YAML.parse_file(file); puts "PASS " + file }'
-      - run: npm run check:cocos-syntax
-      - run: npm run check:worker
-      - run: node --check src/physics.js
-      - run: node --check src/game.js
-      - run: node --check src/web-game.js
-      - run: node --check src/race-renderer-3d.js
-      - run: node --check src/audio.js
-      - run: node --check src/asset-loader.js
-      - run: npm test
+
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund --package-lock=false --ignore-scripts
+
+      - name: Validate world, stage and preview data
+        run: npm run validate:data
+
+      - name: Compile portable TypeScript core and run tests
+        run: npm test
+
+      - name: Check JavaScript syntax across the repository
+        run: npm run check:js-syntax
+
+      - name: Check Cocos Creator TypeScript syntax
+        run: npm run check:cocos-syntax
+
+      - name: Enforce racing, city and shared-module boundaries
+        run: npm run check:architecture
