@@ -108,6 +108,24 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   const paletteList = CITY_ARCHITECTURAL_PALETTES[paletteKey] || CITY_ARCHITECTURAL_PALETTES.home;
   const palette = paletteList[(seed + level) % paletteList.length];
 
+  // Per-building mineral variation is deterministic and deliberately subtle:
+  // the facade family stays coherent while avoiding identical flat RGB swatches.
+  function naturalColour(hex, hueRange = 0.012, saturationRange = 0.07, lightnessRange = 0.055) {
+    const value = new THREE.Color(hex);
+    value.offsetHSL(
+      (rand() - 0.5) * hueRange,
+      (rand() - 0.5) * saturationRange,
+      (rand() - 0.5) * lightnessRange
+    );
+    return value;
+  }
+  const wallColour = naturalColour(palette.wall, 0.008, 0.055, 0.045);
+  const sideColour = naturalColour(palette.side, 0.01, 0.06, 0.055);
+  const roofColour = naturalColour(palette.roof, 0.006, 0.05, 0.045);
+  const trimColour = naturalColour(palette.trim, 0.006, 0.035, 0.035);
+  const accentColour = naturalColour(palette.accent, 0.012, 0.08, 0.05);
+  const doorColour = naturalColour(palette.door, 0.008, 0.055, 0.04);
+
   function mat(color, opts = {}) {
     return new THREE.MeshStandardMaterial({
       color,
@@ -146,7 +164,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     roof.receiveShadow = true;
     group.add(roof);
     add(new THREE.BoxGeometry(0.08, 0.08, d + 0.06), trimMat, 0, baseY + ridgeH, 0, 0, false);
-    add(new THREE.BoxGeometry(0.06, ridgeH * 0.92, d * 0.98), mat(palette.wall, { roughness: 0.88 }), -hw + 0.02, baseY + ridgeH * 0.46, 0, 0, false);
+    add(new THREE.BoxGeometry(0.06, ridgeH * 0.92, d * 0.98), mat(wallColour, { roughness: 0.88 }), -hw + 0.02, baseY + ridgeH * 0.46, 0, 0, false);
     add(new THREE.BoxGeometry(0.06, ridgeH * 0.92, d * 0.98), mat(palette.side, { roughness: 0.9 }), hw - 0.02, baseY + ridgeH * 0.46, 0, 0, false);
   }
 
@@ -242,7 +260,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   }
 
   if (type === "park") {
-    const lawn = mat("#39ed43", { roughness: 0.88, emissive: "#168d20", emissiveIntensity: 0.12 });
+    const lawn = mat("#668b4e", { roughness: 0.88, emissive: "#365a32", emissiveIntensity: 0.12 });
     add(new THREE.BoxGeometry(1.78, 0.18, 1.78), lawn, 0, 0.2, 0, 0, false);
     add(new THREE.BoxGeometry(0.28, 0.04, 1.5), mat("#ffe36a", { roughness: 0.78 }), 0.15, 0.3, 0, -0.25, false);
     if (trunkGeometry && canopyGeometry) {
@@ -251,11 +269,11 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
         trunk.position.set(tx, 0.75, tz);
         trunk.scale.set(0.85, 0.9, 0.85);
         group.add(trunk);
-        const crown = new THREE.Mesh(canopyGeometry, mat(pick(["#16e84a", "#42f52b", "#00c978", "#9bff24", "#00e8a8"]), { roughness: 1 }));
+        const crown = new THREE.Mesh(canopyGeometry, mat(pick(["#397b4c", "#5c9250", "#4d8564", "#9aa95a", "#5b9a83"]), { roughness: 1 }));
         crown.position.set(tx, 1.4, tz);
         group.add(crown);
         if (canopySmallGeometry) {
-          const hi = new THREE.Mesh(canopySmallGeometry, mat("#b0ff38", { roughness: 0.86, emissive: "#38a51b", emissiveIntensity: 0.12 }));
+          const hi = new THREE.Mesh(canopySmallGeometry, mat("#b0bb73", { roughness: 0.86, emissive: "#617a3d", emissiveIntensity: 0.12 }));
           hi.position.set(tx - 0.15, 1.6, tz - 0.1);
           group.add(hi);
         }
@@ -267,7 +285,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     for (let i = 0; i < 5; i++) {
       const fx = -0.6 + rand() * 1.2;
       const fz = -0.55 + rand() * 0.4;
-      add(new THREE.SphereGeometry(0.06, 6, 5), mat(pick(["#ff2f9b", "#ffe51f", "#a83dff", "#13dfff", "#ff6a18"])), fx, 0.38, fz, 0, false);
+      add(new THREE.SphereGeometry(0.06, 6, 5), mat(pick(["#bd7180", "#d8b65c", "#9272a5", "#78aebb", "#c98250"])), fx, 0.38, fz, 0, false);
     }
     return group;
   }
@@ -309,30 +327,30 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   const facadeSurf = (type === "industrial" || type === "administrative") ? (concreteSurface || {}) : (brickSurface || {});
   const wall = new THREE.MeshStandardMaterial({
     ...facadeSurf,
-    color: palette.wall,
+    color: wallColour,
     roughness: 0.70,
     normalScale: facadeSurf.normalMap ? new THREE.Vector2(0.35, 0.35) : undefined
   });
   const sideWall = new THREE.MeshStandardMaterial({
     ...facadeSurf,
-    color: palette.side,
+    color: sideColour,
     roughness: 0.73,
     normalScale: facadeSurf.normalMap ? new THREE.Vector2(0.3, 0.3) : undefined
   });
   const roofMat = new THREE.MeshStandardMaterial({
     ...(roofSurface || {}),
-    color: palette.roof,
+    color: roofColour,
     roughness: 0.68,
     normalScale: roofSurface?.normalMap ? new THREE.Vector2(0.45, 0.45) : undefined
   });
-  const trimMat = mat(palette.trim, { roughness: 0.65 });
-  const accentMat = mat(palette.accent, { roughness: 0.7 });
-  const doorMat = mat(palette.door, { roughness: 0.75 });
-  const glassMat = mat("#a8f8ff", {
+  const trimMat = mat(trimColour, { roughness: 0.65 });
+  const accentMat = mat(accentColour, { roughness: 0.7 });
+  const doorMat = mat(doorColour, { roughness: 0.75 });
+  const glassMat = mat("#a9cbd0", {
     roughness: 0.12,
     metalness: 0.08,
-    emissive: "#18cfff",
-    emissiveIntensity: 0.42,
+    emissive: "#526f79",
+    emissiveIntensity: 0.12,
     transparent: true,
     opacity: 0.88
   });
@@ -361,7 +379,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     if (level >= 2) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 1.1, trimMat, accentMat);
     if (level >= 3) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 2.1, trimMat, accentMat);
     if (level >= 4) addBalcony(bodyW, bodyD, 0.55 + ((height - 0.35) / floors) * 3.1, trimMat, accentMat);
-    add(new THREE.BoxGeometry(0.9, 0.08, 0.22), mat("#25e84b", { roughness: 0.82 }), 0, 0.32, bodyD / 2 + 0.28, 0, false);
+    add(new THREE.BoxGeometry(0.9, 0.08, 0.22), mat("#688a52", { roughness: 0.82 }), 0, 0.32, bodyD / 2 + 0.28, 0, false);
     add(new THREE.BoxGeometry(0.5, 0.08, 0.22), mat("#d8d0c0"), 0, 0.3, bodyD / 2 + 0.18, 0, false);
   } else if (type === "shop") {
     addFlatRoof(bodyW + 0.2, bodyD + 0.2, roofMat, trimMat, roofBaseY, true);
@@ -451,7 +469,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     add(new THREE.BoxGeometry(bodyW * 0.76, 0.045, 0.035), glassMat, 0, roofBaseY + 0.42, bodyD * 0.24, 0, false);
     add(new THREE.BoxGeometry(0.035, 0.045, bodyD * 0.48), glassMat, bodyW * 0.38, roofBaseY + 0.42, 0, 0, false);
     for (const gx of [-0.42, 0.42]) {
-      add(new THREE.SphereGeometry(0.12, 8, 6), mat("#22ed63", { roughness: 0.82 }), gx, roofBaseY + 0.30, -0.30, 0, false);
+      add(new THREE.SphereGeometry(0.12, 8, 6), mat("#718d62", { roughness: 0.82 }), gx, roofBaseY + 0.30, -0.30, 0, false);
     }
   }
   if (type === "shop") {
