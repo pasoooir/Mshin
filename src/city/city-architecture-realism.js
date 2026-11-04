@@ -1,7 +1,6 @@
 /**
- * Batched four-elevation architecture details.
- * Reuses a small set of geometries and InstancedMesh batches so facade detail
- * does not multiply draw calls on mobile GPUs.
+ * Batched four-elevation architecture kit.
+ * Reuses geometry and InstancedMesh batches to keep detailed facades mobile-friendly.
  */
 export function addRealisticArchitecture(THREE, options) {
   const { group, type, height, bodyWidth, bodyDepth, glassMat, trimMat, accentMat, roofMat } = options;
@@ -12,74 +11,78 @@ export function addRealisticArchitecture(THREE, options) {
   const windowHeight = isIndustrial ? 0.34 : 0.40;
   const facadeOffset = 0.018;
   const batches = new Map();
-  const addInstance = (key, geometry, material, x, y, z) => {
-    if (!batches.has(key)) batches.set(key, { geometry, material, positions: [] });
-    batches.get(key).positions.push([x, y, z]);
-  };
-  const addBox = (w, h, d, material, x, y, z, key) => {
-    const id = key || [w,h,d,material === glassMat ? "glass" : material === trimMat ? "trim" : "accent"].join(":");
-    if (!batches.has(id)) batches.set(id, { geometry: new THREE.BoxGeometry(w,h,d), material, positions: [] });
-    batches.get(id).positions.push([x,y,z]);
+  const addInstance = (key, geometry, material, position, rotation = [0, 0, 0]) => {
+    let batch = batches.get(key);
+    if (!batch) { batch = { geometry, material, transforms: [] }; batches.set(key, batch); }
+    batch.transforms.push({ position, rotation });
   };
 
   for (let floor = 0; floor < floors; floor++) {
-    const y = 0.40 + floor * (height - 0.48) / floors + (height - 0.48) / floors * 0.52;
+    const floorHeight = (height - 0.48) / floors;
+    const y = 0.40 + floor * floorHeight + floorHeight * 0.52;
     const columns = Math.max(2, Math.floor((bodyWidth - 0.24) / (isIndustrial ? 0.48 : 0.43)));
+    const frontWindow = new THREE.BoxGeometry(windowWidth, windowHeight, facadeOffset);
+    const frameGeometry = new THREE.BoxGeometry(facadeOffset, windowHeight + 0.10, 0.035);
     for (let column = 0; column < columns; column++) {
       const x = -bodyWidth / 2 + 0.18 + column * ((bodyWidth - 0.36) / Math.max(1, columns - 1));
       if (y > height + 0.18) continue;
-      addBox(windowWidth,windowHeight,facadeOffset,glassMat,x,y,bodyDepth/2+facadeOffset,"window-front");
-      addBox(windowWidth,windowHeight,facadeOffset,glassMat,x,y,-bodyDepth/2-facadeOffset,"window-back");
-      addBox(facadeOffset,windowHeight,windowWidth,glassMat,bodyWidth/2+facadeOffset,y,x,"window-east");
-      addBox(facadeOffset,windowHeight,windowWidth,glassMat,-bodyWidth/2-facadeOffset,y,x,"window-west");
-      addBox(0.035,windowHeight+0.10,facadeOffset,trimMat,x-windowWidth/2,y,bodyDepth/2+0.045,"frame-front");
-      addBox(0.035,windowHeight+0.10,facadeOffset,trimMat,x+windowWidth/2,y,-bodyDepth/2-0.045,"frame-back");
+      addInstance("front-windows", frontWindow, glassMat, [x,y,bodyDepth/2+facadeOffset]);
+      addInstance("front-windows", frontWindow, glassMat, [x,y,-bodyDepth/2-facadeOffset], [0,Math.PI,0]);
+      addInstance("front-frames", frameGeometry, trimMat, [x-windowWidth/2,y,bodyDepth/2+0.045]);
+      addInstance("front-frames", frameGeometry, trimMat, [x+windowWidth/2,y,-bodyDepth/2-0.045]);
     }
-    if (!isLowRise && floor > 0) addBox(bodyWidth+0.045,0.055,bodyDepth+0.045,trimMat,0,0.32+floor*height/floors,0,"floor-band");
+    const sideCount = Math.max(2, Math.floor((bodyDepth - 0.24) / 0.43));
+    const sideGeometry = new THREE.BoxGeometry(facadeOffset, windowHeight, windowWidth);
+    for (let side = 0; side < sideCount; side++) {
+      const z = -bodyDepth/2+0.18+side*((bodyDepth-0.36)/Math.max(1,sideCount-1));
+      addInstance("side-windows",sideGeometry,glassMat,[bodyWidth/2+facadeOffset,y,z]);
+      addInstance("side-windows",sideGeometry,glassMat,[-bodyWidth/2-facadeOffset,y,z]);
+    }
+    if (!isLowRise && floor > 0) {
+      addInstance("floor-bands",new THREE.BoxGeometry(bodyWidth+0.045,0.055,bodyDepth+0.045),trimMat,[0,0.32+floor*height/floors,0]);
+    }
   }
 
-  if (type === "shop") {
-    addBox(bodyWidth*0.72,0.82,0.045,glassMat,0,0.82,bodyDepth/2+0.06,"storefront");
-    addBox(bodyWidth+0.18,0.10,0.62,accentMat,0,1.34,bodyDepth/2+0.22,"canopy");
-    addBox(bodyWidth+0.12,0.08,0.08,trimMat,0,1.43,bodyDepth/2+0.10,"canopy-trim");
-  }
-
-  const roofY = 0.34 + height + (type === "home" ? 0.72 : 0.12);
+  const roofY=0.34+height+(type==="home"?0.72:0.12);
+  const addBox=(w,h,d,material,x,y,z)=>{
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+    mesh.position.set(x,y,z); mesh.castShadow=false; mesh.receiveShadow=true; group.add(mesh);
+  };
   if (!isLowRise) {
-    addBox(bodyWidth+0.18,0.20,0.12,trimMat,0,roofY,bodyDepth/2,"parapet-long");
-    addBox(bodyWidth+0.18,0.20,0.12,trimMat,0,roofY,-bodyDepth/2,"parapet-long");
-    addBox(0.12,0.20,bodyDepth,trimMat,bodyWidth/2,roofY,0,"parapet-side");
-    addBox(0.12,0.20,bodyDepth,trimMat,-bodyWidth/2,roofY,0,"parapet-side");
+    addBox(bodyWidth+0.18,0.20,0.12,trimMat,0,roofY,bodyDepth/2);
+    addBox(bodyWidth+0.18,0.20,0.12,trimMat,0,roofY,-bodyDepth/2);
+    addBox(0.12,0.20,bodyDepth,trimMat,bodyWidth/2,roofY,0);
+    addBox(0.12,0.20,bodyDepth,trimMat,-bodyWidth/2,roofY,0);
+  }
+  if (type==="shop") {
+    addBox(bodyWidth*0.72,0.82,0.045,glassMat,0,0.82,bodyDepth/2+0.06);
+    addBox(bodyWidth+0.18,0.10,0.62,accentMat,0,1.34,bodyDepth/2+0.22);
+    addBox(bodyWidth+0.12,0.08,0.08,trimMat,0,1.43,bodyDepth/2+0.10);
   }
 
-  let instanceCount = 0;
-  for (const batch of batches.values()) {
-    const mesh = new THREE.InstancedMesh(batch.geometry,batch.material,batch.positions.length);
-    const dummy = new THREE.Object3D();
-    for (let i=0;i<batch.positions.length;i++) {
-      const [x,y,z] = batch.positions[i];
-      dummy.position.set(x,y,z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i,dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.castShadow = false;
-    mesh.receiveShadow = true;
-    group.add(mesh);
-    instanceCount += batch.positions.length;
+  const dummy=new THREE.Object3D();
+  let windowCount=0,frameCount=0,floorBandCount=0;
+  for (const [key,batch] of batches) {
+    const instances=new THREE.InstancedMesh(batch.geometry,batch.material,batch.transforms.length);
+    instances.castShadow=false; instances.receiveShadow=true;
+    batch.transforms.forEach((entry,index)=>{
+      dummy.position.set(...entry.position); dummy.rotation.set(...entry.rotation);
+      dummy.scale.set(1,1,1); dummy.updateMatrix(); instances.setMatrixAt(index,dummy.matrix);
+    });
+    instances.instanceMatrix.needsUpdate=true; group.add(instances);
+    if (key.includes("windows")) windowCount+=batch.transforms.length;
+    else if (key.includes("frames")) frameCount+=batch.transforms.length;
+    else floorBandCount+=batch.transforms.length;
   }
 
-  if (type === "home" || type === "shop" || !isLowRise) {
-    const unitMaterial = roofMat || accentMat;
-    const unit = new THREE.Group();
-    const casing = new THREE.Mesh(new THREE.BoxGeometry(0.42,0.24,0.34),unitMaterial);
+  if (type==="home"||type==="shop"||!isLowRise) {
+    const unit=new THREE.Group();
+    const casing=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.24,0.34),roofMat||accentMat);
     casing.position.y=0.12; unit.add(casing);
-    const fan = new THREE.Mesh(new THREE.CylinderGeometry(0.105,0.105,0.035,10),trimMat);
+    const fan=new THREE.Mesh(new THREE.CylinderGeometry(0.105,0.105,0.035,10),trimMat);
     fan.position.y=0.26; unit.add(fan);
     unit.position.set(bodyWidth*0.22,roofY+0.04,-bodyDepth*0.20); group.add(unit);
-    if (type !== "home") {
-      const second=unit.clone(); second.position.x=-bodyWidth*0.22; second.position.z=bodyDepth*0.20; group.add(second);
-    }
+    if(type!=="home"){const second=unit.clone();second.position.x=-bodyWidth*0.22;second.position.z=bodyDepth*0.20;group.add(second);}
   }
-  return { windowCount: instanceCount, frameCount: batches.size, floorBandCount: floors-1 > 0 && !isLowRise ? floors-1 : 0, elevations:4, floors, drawCallBatches:batches.size };
+  return {windowCount,frameCount,floorBandCount,elevations:4,floors,facadeBatchCount:batches.size};
 }
