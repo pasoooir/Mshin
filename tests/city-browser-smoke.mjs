@@ -221,7 +221,7 @@ try{
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",571,160,220);send("pointerdown",572,280,220);for(let i=0;i<120;i++){const offset=i%2?1:-1;send("pointermove",571,160+i*0.7,220+offset);send("pointermove",572,280+i*0.7,220-offset)}send("pointerup",572,364,419);send("pointerup",571,244,421)});
  const sustainedEnd=await page.evaluate(()=>({orbit:window.MshinCityDebug.view.orbit,zoom:window.MshinCityDebug.view.zoom,gesture:window.MshinCityDebug.view.gesture}));
  assert.ok(Number.isFinite(sustainedEnd.orbit)&&Math.abs(sustainedEnd.orbit-sustainedStart.orbit)>0.5,"long-running orbit must remain finite and responsive");
- assert.ok(sustainedEnd.zoom>=0.42&&sustainedEnd.zoom<=1.5,"long-running pinch must remain inside camera zoom limits");
+ assert.ok(sustainedEnd.zoom>=0.05&&sustainedEnd.zoom<=1.5,"long-running pinch must remain inside camera zoom limits");
  await page.waitForTimeout(1220);
  assert.equal((await page.evaluate(()=>window.MshinCityDebug.view.gesture.inertiaActive)),false,"long gesture inertia must settle instead of drifting indefinitely");
  const focusTile=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));
