@@ -657,6 +657,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
         constructionSites: buildings.children.filter(child => child.userData.constructionSite).length,
+        constructionWorkers: buildings.children.reduce((sum, child) => sum + (child.userData.workers?.length || 0), 0),
+        pickaxeWorkers: buildings.children.reduce((sum, child) => sum + (child.userData.workers || []).filter(worker => worker.userData.toolType === "pickaxe").length, 0),
         completedBuildings: buildings.children.filter(child => !child.userData.constructionSite).length,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
