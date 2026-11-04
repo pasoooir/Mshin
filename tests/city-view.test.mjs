@@ -126,3 +126,13 @@ test("unfinished construction timers survive save normalization and reject inval
  const invalid={...city,buildings:city.buildings.map(building=>({...building,construction:{duration:45,remaining:46}}))};
  assert.equal(isValidCitySave(invalid),false,"a countdown must never exceed its construction duration");
 });
+
+
+test("traffic epsilon transitions keep previous road coordinates integer-safe for saves",()=>{
+ const city=createInitialCity(7731);
+ for(let i=0;i<144;i++)stepCity(city);
+ assert.ok(city.traffic.length>0);
+ assert.ok(city.traffic.every(vehicle=>vehicle.previousX===null||Number.isInteger(vehicle.previousX)));
+ assert.ok(city.traffic.every(vehicle=>vehicle.previousY===null||Number.isInteger(vehicle.previousY)));
+ assert.equal(isValidCitySave(city),true,"traffic rounding near a road node must not invalidate a long-running city save");
+});
