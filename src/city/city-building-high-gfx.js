@@ -323,13 +323,13 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   const trimMat = mat(palette.trim, { roughness: 0.65 });
   const accentMat = mat(palette.accent, { roughness: 0.7 });
   const doorMat = mat(palette.door, { roughness: 0.75 });
-  const glassMat = mat("#c8eef4", {
-    roughness: 0.22,
-    metalness: 0.12,
-    emissive: "#3a90a8",
-    emissiveIntensity: 0.18,
+  const glassMat = mat("#a8f8ff", {
+    roughness: 0.12,
+    metalness: 0.08,
+    emissive: "#18cfff",
+    emissiveIntensity: 0.42,
     transparent: true,
-    opacity: 0.85
+    opacity: 0.88
   });
   if (windowMaterials) windowMaterials.add(glassMat);
 
