@@ -24,15 +24,16 @@ export function stepCity(city,seconds=1){
  // Buildings remain unavailable until their visible construction countdown completes.
  for(const building of city.buildings){if(!building.construction)continue;building.construction.remaining=Math.max(0,building.construction.remaining-seconds);if(building.construction.remaining===0)delete building.construction;}
  if(city.tick%12===0)developCityZones(city);
- const infrastructure=computeCityServices(city);
- const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
- const employment=computeCityEmployment(city);
+ const activeCity=city.buildings.some(b=>b.construction)?{...city,buildings:city.buildings.filter(b=>!b.construction)}:city;
+ const infrastructure=computeCityServices(activeCity);
+ const homes=activeCity.buildings.filter(b=>b.type==="home"),shops=activeCity.buildings.filter(b=>b.type==="shop"),industrial=activeCity.buildings.filter(b=>b.type==="industrial"),administrative=activeCity.buildings.filter(b=>b.type==="administrative"),services=activeCity.buildings.filter(b=>b.type==="service"),parks=activeCity.buildings.filter(b=>b.type==="park");
+ const employment=computeCityEmployment(activeCity);
  const commuting=(city.tick%6===1||!Number.isFinite(city.stats?.commuteCoverage)||!Array.isArray(city._commuteAssignments))
-  ?computeCityCommuting(city,employment)
+  ?computeCityCommuting(activeCity,employment)
   :{assignedWorkers:city.stats.commutingWorkers??0,commuteCoverage:city.stats.commuteCoverage??0,averageCommuteDistance:city.stats.averageCommuteDistance??0,averageCongestionDelay:city.stats.averageCongestionDelay??0,unreachableWorkers:city.stats.unreachableWorkers??0,assignments:city._commuteAssignments};
- const economy=computeCityEconomy(city,infrastructure,commuting);
+ const economy=computeCityEconomy(activeCity,infrastructure,commuting);
  if(commuting.assignments)Object.defineProperty(city,"_commuteAssignments",{value:commuting.assignments,writable:true,configurable:true,enumerable:false});
- const residentServiceSatisfaction=computeCityResidentServiceSatisfaction(city);
+ const residentServiceSatisfaction=computeCityResidentServiceSatisfaction(activeCity);
  const occupiedResidents=homes.reduce((sum,home)=>sum+Math.max(0,Number(home.residents)||0),0);
  city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,commutingWorkers:commuting.assignedWorkers,commuteCoverage:commuting.commuteCoverage,averageCommuteDistance:commuting.averageCommuteDistance,averageCongestionDelay:commuting.averageCongestionDelay??0,commuteProductivityPercent:economy.commuteProductivityPercent,commuteEconomicLoss:economy.commuteEconomicLoss,unreachableWorkers:commuting.unreachableWorkers,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage,serviceDemandCoverage:infrastructure.demandCoverage,serviceCapacityUsage:infrastructure.capacityUsage,residentServiceSatisfaction};
  city.treasury+=economy.net;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
@@ -193,7 +194,7 @@ function mount(){
   const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"ساخت انجام شد · هزینه "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
  }
  cityToolsNav?.querySelectorAll("[data-city-category]").forEach(button=>button.addEventListener("click",()=>openCityToolPanel(button.dataset.cityCategory)));
- document.querySelectorAll("[data-city-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.cityTool)));
+ document.querySelectorAll("[data-city-tool]").forEach(b=>{const label=b.querySelector("small")?.textContent?.trim()||b.getAttribute("aria-label")||b.dataset.cityTool;b.dataset.hint=label;b.title=label;b.setAttribute("aria-label",label);b.addEventListener("click",()=>setTool(b.dataset.cityTool))});
  document.addEventListener("keydown",event=>{if(event.key==="Escape")closeCityToolPanels()});
  document.querySelectorAll("[data-city-speed]").forEach(b=>b.addEventListener("click",()=>{speed=Number(b.dataset.citySpeed);document.querySelectorAll("[data-city-speed]").forEach(v=>v.classList.toggle("active",v===b));$("citySpeedLabel").textContent=speed===0?"متوقف":speed+"×"}));
  $("cityZoomIn").addEventListener("click",()=>{cam.zoom=Math.min(1.5,cam.zoom*1.18);draw()});$("cityZoomOut").addEventListener("click",()=>{cam.zoom=Math.max(.42,cam.zoom/1.18);draw()});$("cityRecenter").addEventListener("click",()=>{cameraController.cancelMotion();cam.x=0;cam.y=0;cam.targetX=undefined;cam.targetY=undefined;cam.targetZ=undefined;cam.currentTargetX=undefined;cam.currentTargetY=undefined;cam.currentTargetZ=undefined;cam.orbit=0;cam.zoom=matchMedia("(max-width:760px), (max-height:520px)").matches?.72:Math.max(.42,Math.min(1.18,Math.min(view.w/1040,view.h/740)*1.08));draw()});
