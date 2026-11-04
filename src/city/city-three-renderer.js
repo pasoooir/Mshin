@@ -601,7 +601,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  // Raycast anchors use the rendered plot surface, not the lower decorative base plane.\n  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
   let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0;
 
   function resize() {
