@@ -4,6 +4,9 @@ const ORBIT_SENSITIVITY = 0.009;
 const TAP_SLOP = 5;
 const INERTIA_MAX_SPEED = 0.18;
 const INERTIA_MAX_DURATION_MS = 900;
+const MIN_PITCH = 0.24;
+const MAX_PITCH = 0.96;
+const PITCH_SENSITIVITY = 0.004;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const midpoint = ([a, b]) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 const distance = ([a, b]) => Math.max(1, Math.hypot(b.x - a.x, b.y - a.y));
@@ -195,6 +198,10 @@ export function createCityCameraController({
       // zoom jumps when both fingers translate together and the temporary span collapses.
       camera.zoom = clamp(gestureState.baseZoom * nextDistance / gestureState.baseDistance, MIN_ZOOM, MAX_ZOOM);
       camera.orbit = (camera.orbit || 0) + rotation;
+      // Vertical translation of the two-finger midpoint adjusts camera elevation.
+      // Rebase is continuous across pointer events and clamped to a usable city view.
+      const pitch = Number.isFinite(camera.pitch) ? camera.pitch : 0.51;
+      camera.pitch = clamp(pitch - (center.y - gestureState.lastMidpoint.y) * PITCH_SENSITIVITY, MIN_PITCH, MAX_PITCH);
       const measuredVelocity = rotation / (elapsed / 16.667);
       gestureState.velocity = Number.isFinite(measuredVelocity) ? measuredVelocity : 0;
       gestureState.lastMidpoint = center;
@@ -289,6 +296,7 @@ export function createCityCameraController({
       gesture: gesture?.mode ?? "idle",
       zoom: camera.zoom,
       orbit: camera.orbit || 0,
+      pitch: Number.isFinite(camera.pitch) ? camera.pitch : 0.51,
       inertiaActive,
       lastInertiaVelocity,
       pendingFling
