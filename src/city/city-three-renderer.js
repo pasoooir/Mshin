@@ -1,6 +1,7 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
+import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -551,27 +552,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       addBuildingMesh(group, signGeometry, accentMat, 0, 1.85, bodyDepth / 2 + 0.09, 0, false);
     }
 
-    const windows = new THREE.InstancedMesh(windowGeometry, glassMat, 32);
-    const windowDummy = new THREE.Object3D();
-    let windowCount = 0;
-    const floors = Math.min(4, Math.max(1, Math.floor(height / 0.68)));
-    for (let floor = 0; floor < floors; floor++) {
-      const y = 0.70 + floor * 0.55;
-      for (const wx of [-0.34, 0.34]) {
-        windowDummy.position.set(wx, y, bodyDepth / 2 + 0.03);
-        windowDummy.rotation.set(0, 0, 0);
-        windowDummy.scale.set(1, 1, 1);
-        windowDummy.updateMatrix();
-        windows.setMatrixAt(windowCount++, windowDummy.matrix);
-        windowDummy.position.set(bodyWidth / 2 + 0.03, y, wx);
-        windowDummy.rotation.set(0, Math.PI / 2, 0);
-        windowDummy.updateMatrix();
-        windows.setMatrixAt(windowCount++, windowDummy.matrix);
-      }
-    }
-    windows.count = windowCount;
-    windows.instanceMatrix.needsUpdate = true;
-    group.add(windows);
+    addOrbitReadyBuildingDetails(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, windowGeometry });
 
     // Bright facade fins make each family readable at the normal phone zoom.
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);

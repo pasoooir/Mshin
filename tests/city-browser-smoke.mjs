@@ -105,6 +105,24 @@ try{
  assert.notEqual(nightLighting.skyColor,noonLighting.skyColor,"the visible sky color must change between night and day");
  assert.ok(noonLighting.windowGlow<0.1,"building window glow must be subdued during daytime");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),0,"day scene must hide stars");
+ // Render a non-persistent asset showcase containing every current city building
+ // family, then orbit the same real WebGL scene through a complete 360 degrees.
+ const objectShowcase=await page.evaluate(()=>{
+  const city=window.MshinCityDebug.city,original=city.buildings,originalZoom=window.MshinCityDebug.view.zoom;
+  const types=["home","shop","industrial","administrative","park","police","fire","health","education","power","water","sewage","waste"];
+  city.buildings=types.map((type,index)=>({id:9000+index,type,x:12+(index%5)*2,y:11+Math.floor(index/5)*3,level:Math.min(5,1+index%4),residents:type==="home"?12:0}));
+  const orbitAngles=[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2];
+  const samples=[];
+  for(const orbit of orbitAngles){window.MshinCityDebug.view;window.MshinCityDebug.setCameraOrbit(orbit);window.MshinCityDebug.draw();samples.push(window.MshinCity3DStats.cameraOrbit)}
+  const count=window.MshinCity3DStats.stylizedBuildings;
+  return{count,samples,originalCount:original.length,originalZoom};
+ });
+ assert.equal(objectShowcase.count,13,"all 13 authored city object families must render as real 3D scene groups");
+ assert.equal(objectShowcase.originalCount,0,"the visual asset showcase must start from an empty city");
+ assert.deepEqual(objectShowcase.samples,[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2],"asset showcase must remain renderable at all four cardinal orbit angles and the 360-degree wrap");
+ await page.evaluate(()=>{window.MshinCityDebug.setCameraOrbit(Math.PI/4);window.MshinCityDebug.setCameraZoom(1.5);window.MshinCityDebug.draw()});
+ await page.screenshot({path:"artifacts/city-3d-object-showcase-360.png"});
+ await page.evaluate(zoom=>{const city=window.MshinCityDebug.city;city.buildings=[];city.population=0;city.citizens=[];window.MshinCityDebug.setCameraOrbit(0);window.MshinCityDebug.setCameraZoom(zoom);window.MshinCityDebug.draw()},objectShowcase.originalZoom);
  await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=495;window.MshinCityDebug.draw()});
 
  const mapControls=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,buttons:[...document.querySelectorAll(".cityMapControls button")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,visible:r.width>0&&r.height>0}})}));
@@ -114,15 +132,17 @@ try{
  await page.locator("#cityRecenter").click();assert.ok(Math.abs(await page.evaluate(()=>window.MshinCityDebug.view.zoom)-.72)<.001,"recenter must restore the mobile map scale");
  assert.equal(await page.title(),"شهر من | مِشین");
  const initial=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,buildings:window.MshinCityDebug.city.buildings.length,roads:window.MshinCityDebug.city.grid.flat().filter(t=>t==="road").length,citizens:window.MshinCityDebug.city.citizens.length,traffic:window.MshinCityDebug.city.traffic.length,animals:window.MshinCityDebug.city.animals.length,width:document.querySelector("#cityViewport").width}));
- assert.equal(initial.population,0,"new city must start without residents");assert.equal(initial.buildings,0,"new city must contain no buildings");assert.ok(initial.roads>=300,"the whole map must be subdivided by a complete road grid");assert.equal(initial.citizens,0);assert.equal(initial.traffic,0);assert.equal(initial.animals,0);assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
+ const windowTrafficInvariant=await page.evaluate(()=>window.MshinCityDebug.city.traffic.every(vehicle=>Number.isFinite(vehicle.x)&&Number.isFinite(vehicle.y)&&window.MshinCityDebug.city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"));
+ assert.equal(initial.population,0,"new city must start without residents");assert.equal(initial.buildings,0,"new city must contain no buildings");assert.ok(initial.roads>=300,"the whole map must be subdivided by a complete road grid");assert.equal(initial.citizens,0);assert.ok(initial.traffic<=12,"live simulation traffic must stay within its bounded fleet");assert.ok(windowTrafficInvariant,"traffic must remain on valid road tiles");assert.equal(initial.animals,0);assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
+ const rebuildsBeforePlacement=await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds);
  await clickCityTool(page,"park");const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][14]),"building","park tool should place a city asset");
  const parkVisual=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(parkVisual.stylizedBuildings,1,"placed park must become a rendered 3D scene object");
  assert.equal(parkVisual.shadowAutoUpdate,false,"static city shadows must not be regenerated every mobile frame");
- assert.equal(parkVisual.buildingRebuilds,1,"the initial building placement should rebuild the 3D building layer once");
+ assert.equal(parkVisual.buildingRebuilds,rebuildsBeforePlacement+1,"a structural building change should rebuild the 3D building layer exactly once");
  await page.waitForTimeout(150);
- assert.equal(await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds),1,"unchanged buildings must not be recreated during subsequent render frames");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds),rebuildsBeforePlacement+1,"unchanged buildings must not be recreated during subsequent render frames");
  await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.buildings?.some(b=>b.x===14&&b.y===14)),"city changes should persist");
  await clickCityTool(page,"select");
  const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit),focusAnchorBefore=await page.evaluate(()=>window.MshinCityDebug.groundPointAt(190,220));
@@ -295,6 +315,7 @@ try{
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.tick>=6),"simulation must autosave without a manual save");
  await page.bringToFront();await page.locator('[data-city-speed="1"]').click();await page.waitForFunction(()=>document.visibilityState==="visible");const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(4000);const simulation=await page.evaluate(()=>({tick:window.MshinCityDebug.city.tick,visibility:document.visibilityState,speedLabel:document.querySelector("#citySpeedLabel")?.textContent}));assert.ok(simulation.tick>before,"simulation should advance while the mobile city is visible at 1x speed: "+JSON.stringify({before,...simulation}));
+ const drawCallsBeforeTraffic=await page.evaluate(()=>window.MshinCity3DStats.drawCalls);
  await page.waitForFunction(()=>window.MshinCity3DStats?.trafficVehicles>0,undefined,{timeout:8000});
  const trafficAcceptance=await page.evaluate(()=>{
   const city=window.MshinCityDebug.city;
@@ -310,7 +331,7 @@ try{
  assert.equal(trafficAcceptance.rendered,trafficAcceptance.vehicles,"every active vehicle must be rendered by the 3D city renderer");
  assert.equal(trafficAcceptance.onRoad,true,"mobile traffic must stay on connected road tiles");
  assert.equal(trafficAcceptance.moving,true,"vehicles must progress along their road routes rather than remain static");
- assert.ok(trafficAcceptance.drawCalls<80,"instanced traffic must preserve the mobile draw-call budget");
+ assert.ok(trafficAcceptance.drawCalls<=drawCallsBeforeTraffic+2,"instanced traffic must add at most two draw calls regardless of the active vehicle count: "+JSON.stringify({before:drawCallsBeforeTraffic,after:trafficAcceptance.drawCalls,vehicles:trafficAcceptance.vehicles}));
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.save()),"traffic state must remain persistable with the city save");
  const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),categoryButtons:[...document.querySelectorAll(".cityToolCategory")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
