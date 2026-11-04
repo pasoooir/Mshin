@@ -4,6 +4,7 @@ import { createCityAtmosphere } from "./city-atmosphere.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
+import { createCityStreetLighting } from "./city-street-lighting.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityBackgroundSkyline } from "./city-background-skyline.js";
 import { addRealisticArchitecture } from "./city-architecture-realism.js";
@@ -284,9 +285,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
 
-  // Sidewalks are non-buildable; street lights are a later visual slice.
-  const decorativeStreetLightCount = 0;
+  // Street lights occupy only the dedicated sidewalk ROW and share two instanced draw calls.
   const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
+  const streetLighting = createCityStreetLighting(THREE, scene, isRoadCell, VISUAL_GRID);
+  const decorativeStreetLightCount = streetLighting.count;
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
 
   const buildings = new THREE.Group();
@@ -682,6 +684,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         visibleRoadTiles: activeRoads + lockedRoadCount,
         raisedCurbs: curbInstances.length,
         sidewalkStrips: sidewalkLayer.count,
+        streetLightingDrawCalls: streetLighting.drawCalls,
         crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio(),
