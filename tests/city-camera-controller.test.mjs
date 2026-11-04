@@ -214,13 +214,16 @@ test("two-finger vertical translation smoothly tilts the camera and clamps safe 
   h.camera.pitch = 0.51;
   h.send("pointerdown", 71, 100, 100);
   h.send("pointerdown", 72, 200, 100);
+  h.send("pointermove", 71, 100, 140);
   h.send("pointermove", 72, 200, 140);
   const lowered = h.camera.pitch;
   assert.equal(h.camera.zoom, 0.8, "vertical tilt must not change pinch zoom");
   assert.equal(h.camera.orbit, Math.PI * 2 - 0.2, "vertical tilt must not change azimuth orbit");
   assert.ok(lowered < 0.51, "moving the two-finger midpoint down must lower the viewing elevation");
+  h.send("pointermove", 71, 100, -1000);
   h.send("pointermove", 72, 200, -1000);
   assert.equal(h.camera.pitch, 0.96, "camera elevation must clamp at the upper safe limit");
+  h.send("pointermove", 71, 100, 2000);
   h.send("pointermove", 72, 200, 2000);
   assert.equal(h.camera.pitch, 0.24, "camera elevation must clamp above the ground-facing limit");
   assert.equal(h.controller.getState().gesture, "pinch-orbit");
