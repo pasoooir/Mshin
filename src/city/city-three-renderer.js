@@ -1,15 +1,13 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createHighGfxBuilding } from "./city-building-high-gfx.js";
-import { CITY_TILE_METERS, cityTileToWorld, worldToCityTile, getBuildingVisualScale } from "./city-world-scale.js";
+import { CITY_TILE_METERS, cityTileToWorld, worldToCityTile } from "./city-world-scale.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
 import { createCityCloudLayer } from "./city-cloud-layer.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
-import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityBackgroundSkyline } from "./city-background-skyline.js";
-import { addRealisticArchitecture } from "./city-architecture-realism.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -349,174 +347,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   let buildingSignature = "";
   let buildingRebuilds = 0;
-  const windowGeometry = new THREE.BoxGeometry(0.22, 0.28, 0.055);
-  const balconyGeometry = new THREE.BoxGeometry(0.62, 0.07, 0.10);
-  const columnGeometry = new THREE.BoxGeometry(0.11, 1, 0.11);
-  const signGeometry = new THREE.BoxGeometry(0.92, 0.28, 0.10);
-  const awningGeometry = new THREE.BoxGeometry(1.05, 0.14, 0.48);
-  function addBuildingMesh(group, geometry, material, x, y, z, rotationY = 0, castShadow = true) {
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y, z);
-    mesh.rotation.y = rotationY;
-    mesh.castShadow = castShadow;
-    mesh.receiveShadow = true;
-    group.add(mesh);
-    return mesh;
-  }
-  function createBuilding(item) {
-    const group = new THREE.Group();
-    const x = cityTileToWorld(item.x), z = cityTileToWorld(item.y);
-    group.position.set(x, 0, z);
-    const visualScale = getBuildingVisualScale(item.type);
-    group.scale.set(visualScale.x, visualScale.y, visualScale.z);
-    const type = item.type;
-    if (type === "park") {
-      const lawn = new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.20, 1.76), new THREE.MeshStandardMaterial({ color: "#66b95e", roughness: 1 }));
-      lawn.position.y = 0.22;
-      lawn.receiveShadow = true;
-      group.add(lawn);
-      const parkTree = new THREE.Group();
-      const parkTrunk = new THREE.MeshStandardMaterial({ color: "#8b5b38", roughness: 0.96 });
-      const parkCanopy = new THREE.MeshStandardMaterial({ color: "#58ad58", roughness: 1 });
-      const parkHighlight = new THREE.MeshStandardMaterial({ color: "#78bd5d", roughness: 1 });
-      const trunk = new THREE.Mesh(trunkGeometry, parkTrunk);
-      trunk.position.set(-0.32, 0.85, -0.16);
-      const crown = new THREE.Mesh(canopyGeometry, parkCanopy);
-      crown.position.set(-0.32, 1.55, -0.16);
-      const crown2 = new THREE.Mesh(canopySmallGeometry, parkHighlight);
-      crown2.position.set(-0.53, 1.78, -0.28);
-      parkTree.add(trunk, crown, crown2);
-      group.add(parkTree);
-      const path = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.035, 0.24), new THREE.MeshStandardMaterial({ color: "#e9d7a6", roughness: 1 }));
-      path.position.set(0.12, 0.34, 0.38);
-      path.rotation.y = -0.35;
-      group.add(path);
-      const bench = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.10, 0.16), new THREE.MeshStandardMaterial({ color: "#a96e42", roughness: 0.8 }));
-      bench.position.set(0.36, 0.48, -0.36);
-      group.add(bench);
-      return group;
-    }
-    const palettes = {
-      home: [
-        { wall: "#c9bba5", side: "#a99b87", roof: "#62534b", trim: "#e4dccd", accent: "#687f7c" },
-        { wall: "#b9b1a4", side: "#948c80", roof: "#4d5962", trim: "#e6e0d4", accent: "#8a6553" },
-        { wall: "#c2c7bd", side: "#9ca69c", roof: "#65594f", trim: "#e9e5da", accent: "#6f8580" },
-        { wall: "#d0c2a9", side: "#ad987b", roof: "#59636a", trim: "#eee5d4", accent: "#92765a" }
-      ],
-      shop: [
-        { wall: "#b9aa96", side: "#918170", roof: "#505b60", trim: "#e7dfd1", accent: "#915b48" },
-        { wall: "#aeb8b8", side: "#87999a", roof: "#4e5a60", trim: "#e5e9e5", accent: "#6e7f70" },
-        { wall: "#c2b5a8", side: "#9c877a", roof: "#5b6269", trim: "#ece4d9", accent: "#a16f54" }
-      ],
-      industrial: [
-        { wall: "#9da7a7", side: "#7f8b8c", roof: "#4e5a60", trim: "#c7cbc5", accent: "#b4864c" },
-        { wall: "#b1b1a5", side: "#898f89", roof: "#59636a", trim: "#d7d4c8", accent: "#a47a4e" }
-      ],
-      civic: [
-        { wall: "#b8b2a5", side: "#918b80", roof: "#4f5d67", trim: "#e9e1d2", accent: "#9b8060" },
-        { wall: "#c5bca9", side: "#9c927e", roof: "#56666b", trim: "#eee7d9", accent: "#8d6a58" }
-      ]
-    };
-    const family = type === "home" ? "home" : type === "shop" ? "shop" : type === "industrial" ? "industrial" : "civic";
-    const paletteList = palettes[family];
-    const palette = paletteList[(item.id * 7 + item.x * 3 + item.y) % paletteList.length];
-    const level = Math.max(1, item.level || 1);
-    const height = type === "home" ? 2.15 + level * 0.52 : type === "shop" ? 2.45 + level * 0.28 : type === "industrial" ? 2.7 : 2.5 + level * 0.36;
-    const bodyWidth = type === "industrial" ? 1.52 : 1.34;
-    const bodyDepth = type === "industrial" ? 1.48 : 1.34;
-    const facadeSurface = type === "industrial" || type === "administrative" ? concreteSurface : brickSurface;
-    const wall = new THREE.MeshStandardMaterial({ ...facadeSurface, color: palette.wall, roughness: 0.88, normalScale: new THREE.Vector2(0.34, 0.34) });
-    const sideWall = new THREE.MeshStandardMaterial({ ...facadeSurface, color: palette.side, roughness: 0.9, normalScale: new THREE.Vector2(0.3, 0.3) });
-    const roofMat = new THREE.MeshStandardMaterial({ ...roofSurface, color: palette.roof, roughness: 0.92, normalScale: new THREE.Vector2(0.48, 0.48) });
-    const trimMat = new THREE.MeshStandardMaterial({ color: palette.trim, roughness: 0.68 });
-    const accentMat = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.7 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: "#d8f5f6", emissive: "#3e9db0", emissiveIntensity: 0.16, roughness: 0.24, metalness: 0.08 });
-    windowMaterials.add(glassMat);
-    const darkMat = new THREE.MeshStandardMaterial({ color: "#52616b", roughness: 0.9 });
-    const baseMat = new THREE.MeshStandardMaterial({ color: "#e8dfc8", roughness: 0.96 });
-    addBuildingMesh(group, new THREE.BoxGeometry(1.72, 0.20, 1.72), baseMat, 0, 0.22, 0, 0, false);
-    const body = addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth, height, bodyDepth), wall, 0, 0.32 + height / 2, 0);
-    body.material = [wall, sideWall, wall, wall, sideWall, sideWall];
-    addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
-    if (type === "home") {
-      const roofWidth = bodyWidth + 0.28;
-      const roofDepth = bodyDepth + 0.28;
-      const ridgeHeight = 0.78;
-      const roofGeometry = new THREE.BufferGeometry();
-      roofGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-        -roofWidth / 2, 0, -roofDepth / 2, 0, ridgeHeight, -roofDepth / 2,
-        0, ridgeHeight, roofDepth / 2, -roofWidth / 2, 0, roofDepth / 2,
-        0, ridgeHeight, -roofDepth / 2, roofWidth / 2, 0, -roofDepth / 2,
-        roofWidth / 2, 0, roofDepth / 2, 0, ridgeHeight, roofDepth / 2
-      ], 3));
-      roofGeometry.setAttribute("uv", new THREE.Float32BufferAttribute([
-        0,0, .5,0, .5,1, 0,1, 0,0, .5,0, .5,1, 0,1
-      ], 2));
-      roofGeometry.setIndex([0,1,2,0,2,3,4,5,6,4,6,7]);
-      roofGeometry.computeVertexNormals();
-      const roof = new THREE.Mesh(roofGeometry, roofMat);
-      roof.position.set(0, 0.32 + height, 0);
-      roof.castShadow = true;
-      roof.receiveShadow = true;
-      group.add(roof);
-      const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.10, roofDepth + 0.04), trimMat);
-      ridge.position.set(0, 0.32 + height + ridgeHeight, 0);
-      group.add(ridge);
-      const balcony = new THREE.InstancedMesh(balconyGeometry, trimMat, Math.max(2, level * 2));
-      const balconyDummy = new THREE.Object3D();
-      let balconyCount = 0;
-      for (let floor = 0; floor < Math.min(level, 3); floor++) {
-        const y = 0.95 + floor * 0.52;
-        for (const side of [-1, 1]) {
-          balconyDummy.position.set(side * 0.02, y, bodyDepth / 2 + 0.10);
-          balconyDummy.rotation.set(0, 0, 0);
-          balconyDummy.scale.set(1, 1, 1);
-          balconyDummy.updateMatrix();
-          balcony.setMatrixAt(balconyCount++, balconyDummy.matrix);
-        }
-      }
-      balcony.count = balconyCount;
-      balcony.instanceMatrix.needsUpdate = true;
-      group.add(balcony);
-    } else if (type === "shop") {
-      addBuildingMesh(group, signGeometry, accentMat, 0, 1.45, bodyDepth / 2 + 0.075, 0, false);
-      addBuildingMesh(group, awningGeometry, roofMat, 0, 1.08, bodyDepth / 2 + 0.18, 0, false);
-      for (let stripe = -2; stripe <= 2; stripe++) {
-        addBuildingMesh(group, new THREE.BoxGeometry(0.10, 0.15, 0.49), trimMat, stripe * 0.20, 1.08, bodyDepth / 2 + 0.19, 0, false);
-      }
-    } else if (type === "industrial") {
-      const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 1.2, 8), darkMat);
-      chimney.position.set(0.48, 0.95 + height, -0.38);
-      chimney.castShadow = true;
-      group.add(chimney);
-      const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.62, 10), trimMat);
-      tank.position.set(-0.42, 0.65 + height, 0.28);
-      group.add(tank);
-      const tankCap = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), roofMat);
-      tankCap.position.set(-0.42, 0.96 + height, 0.28);
-      group.add(tankCap);
-    } else {
-      const columns = new THREE.InstancedMesh(columnGeometry, trimMat, 4);
-      const columnDummy = new THREE.Object3D();
-      let columnIndex = 0;
-      for (const px of [-0.48, -0.16, 0.16, 0.48]) {
-        columnDummy.position.set(px, 0.92, bodyDepth / 2 + 0.08);
-        columnDummy.scale.set(1, 1.65, 1);
-        columnDummy.updateMatrix();
-        columns.setMatrixAt(columnIndex++, columnDummy.matrix);
-      }
-      columns.count = columnIndex;
-      columns.instanceMatrix.needsUpdate = true;
-      group.add(columns);
-      addBuildingMesh(group, signGeometry, accentMat, 0, 1.85, bodyDepth / 2 + 0.09, 0, false);
-    }
-    addOrbitReadyBuildingDetails(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, windowGeometry });
-    addRealisticArchitecture(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, roofMat });
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
-    fin.position.set(-bodyWidth / 2 - 0.02, 0.34 + height * 0.52, bodyDepth / 2 + 0.045);
-    group.add(fin);
-    return group;
-  }
   function updateBuildings(city) {
     const next = city.buildings.map(v => [v.id, v.type, v.x, v.y, v.level].join(":")).join("|");
     if (next === buildingSignature) return;
@@ -526,7 +356,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     for (const child of [...buildings.children]) {
       buildings.remove(child);
       child.traverse(object => {
-        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry, windowGeometry, balconyGeometry, columnGeometry, signGeometry, awningGeometry].includes(object.geometry)) object.geometry.dispose();
+        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose();
         if (object.material) {
           if (Array.isArray(object.material)) object.material.forEach(material => { windowMaterials.delete(material); material.dispose(); });
           else { windowMaterials.delete(object.material); object.material.dispose(); }
