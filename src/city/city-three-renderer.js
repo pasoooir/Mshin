@@ -38,7 +38,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
-  renderer.shadowMap.enabled = true;
+  const touchOptimized = window.matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0;
+  // Mobile uses baked/contact-style shading; reserve the realtime shadow pass for fine-pointer devices.
+  renderer.shadowMap.enabled = !touchOptimized;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   // City buildings and the sun are static between construction changes; avoid
   // regenerating the full shadow map on every mobile frame.
@@ -671,6 +673,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio(),
         shadowAutoUpdate: renderer.shadowMap.autoUpdate,
+        shadowMapEnabled: renderer.shadowMap.enabled,
         buildingRebuilds,
         ...atmosphere.getStats()
       };
