@@ -27,7 +27,10 @@ export function placeCityZone(city, x, y, type) {
 }
 
 function demandAllows(city, type) {
-  const count = kind => city.buildings.filter(b => b.type === kind).length;
+  const activeCity = city.buildings.some(building => building.construction)
+    ? { ...city, buildings: city.buildings.filter(building => !building.construction) }
+    : city;
+  const count = kind => activeCity.buildings.filter(b => b.type === kind).length;
   const population = Math.max(0, city.population || 0);
   if (type === "residential") return population < count("home") * 25 + 60;
   if (type === "commercial" && count("shop") >= Math.max(3, Math.ceil(population / 18))) return false;
@@ -37,7 +40,7 @@ function demandAllows(city, type) {
   const buildingType = CITY_ZONES[type]?.buildingType;
   const addedJobs = JOBS_PER_BUILDING[buildingType];
   if (!addedJobs) return false;
-  const workforce = computeCityEmployment(city);
+  const workforce = computeCityEmployment(activeCity);
   // Do not let job capacity outrun the resident workforce by more than one
   // small workplace (or 75% of the available labor force).
   const projectedShortage = Math.max(0, workforce.jobs + addedJobs - workforce.laborForce);
@@ -46,7 +49,7 @@ function demandAllows(city, type) {
 }
 
 /** Grow at most one eligible zoned tile per call, keeping simulation work bounded. */
-export function developCityZones(city) {
+export function developCityZones(city, constructionDuration = 0) {
   if (!Array.isArray(city.zones) || city.zones.length === 0) return null;
   for (let index=0; index<city.zones.length; index++) {
     const zone = city.zones[index];
@@ -64,11 +67,14 @@ export function developCityZones(city) {
       level: 1,
       age: 0,
       residents,
-      zoneType: zone.type
+      zoneType: zone.type,
+      construction: constructionDuration > 0 && zone.type !== "recreational"
+        ? { duration: constructionDuration, remaining: constructionDuration }
+        : undefined
     };
     city.grid[zone.y][zone.x] = "building";
     city.buildings.push(building);
-    city.population += residents;
+    if (!building.construction) city.population += residents;
     city.zones.splice(index,1);
     return building;
   }
