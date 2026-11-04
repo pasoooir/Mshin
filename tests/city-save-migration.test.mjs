@@ -97,8 +97,17 @@ test("backup export refuses invalid in-memory state", () => {
 
 test("offline app shell precaches every city simulation and persistence module", () => {
   const serviceWorker=fs.readFileSync(new URL("../service-worker.js",import.meta.url),"utf8");
-  for(const modulePath of ["city-view.js","city-three-renderer.js","city-world-scale.js","city-camera-controller.js","city-camera-projection.js","city-zoning.js","city-services.js","city-traffic.js","city-population.js","city-economy.js","city-employment.js","city-save.js"]){
+  for(const modulePath of ["city-view.js","city-day-night-cycle.js","city-three-renderer.js","city-world-scale.js","city-camera-controller.js","city-camera-projection.js","city-zoning.js","city-services.js","city-traffic.js","city-population.js","city-economy.js","city-employment.js","city-save.js"]){
     assert.ok(serviceWorker.includes("./src/city/"+modulePath),"offline app shell is missing "+modulePath);
   }
-  assert.match(serviceWorker,/mshin-arcade-v70/,"city persistence release must advance the offline cache version");
+  assert.match(serviceWorker,/mshin-arcade-v71/,"city persistence release must advance the offline cache version");
+});
+
+test("fractional city clock minutes remain valid and survive save migration", () => {
+  const city = createInitialCity(1204);
+  city.minuteOfDay = 720.8;
+  assert.equal(isValidCitySave(city), true, "continuous lighting clock values must be persistable");
+  const restored = migrateCitySave(JSON.parse(JSON.stringify(city)));
+  assert.equal(restored.minuteOfDay, 720.8, "save migration must preserve sub-minute daylight progress");
+  assert.equal(isValidCitySave(restored), true);
 });
