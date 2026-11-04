@@ -1,3 +1,4 @@
+import { CITY_TILE_METERS, cityTileToWorld, getBuildingVisualScale } from "./city-world-scale.js";
 /**
  * High-graphics procedural buildings for Mshin city (SimCity BuildIt inspired style).
  * Vibrant palettes, multi-style roofs, rich facades, roof props, and readable silhouettes
@@ -15,9 +16,11 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   } = shared;
 
   const group = new THREE.Group();
-  const x = (item.x - 15.5) * 2;
-  const z = (item.y - 15.5) * 2;
+  const x = cityTileToWorld(item.x);
+  const z = cityTileToWorld(item.y);
   group.position.set(x, 0, z);
+  const visualScale = getBuildingVisualScale(item.type);
+  group.scale.set(visualScale.x, visualScale.y, visualScale.z);
   group.userData = { buildingId: item.id, type: item.type, level: item.level || 1 };
 
   const type = item.type;
@@ -175,8 +178,8 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   }
 
   function addWindows(bodyW, bodyD, height, glassMat, trimMat, floors, cols) {
-    const winW = type === "home" ? 0.34 : 0.30;
-    const winH = type === "home" ? 0.42 : 0.36;
+    const winW = type === "home" ? 0.20 : 0.20;
+    const winH = type === "home" ? 0.55 : 0.55;
     const winGeo = new THREE.BoxGeometry(winW, winH, 0.04);
     const frameGeo = new THREE.BoxGeometry(winW + 0.04, winH + 0.04, 0.03);
     const instances = floors * cols * 4;
@@ -188,7 +191,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
     for (let f = 0; f < floors; f++) {
       const y = 0.55 + f * floorH + floorH * 0.35;
       for (let c = 0; c < cols; c++) {
-        const u = cols === 1 ? 0 : -0.32 + c * (0.64 / (cols - 1));
+        const u = cols === 1 ? 0 : -bodyW * 0.36 + c * (bodyW * 0.72 / (cols - 1));
         for (const side of [1, -1]) {
           dummy.position.set(u, y, side * (bodyD / 2 + 0.025));
           dummy.rotation.set(0, side < 0 ? Math.PI : 0, 0);
@@ -219,9 +222,9 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   }
 
   function addDoor(bodyD, doorMat, trimMat) {
-    add(new THREE.BoxGeometry(0.32, 0.62, 0.05), doorMat, 0, 0.52, bodyD / 2 + 0.03, 0, false);
-    add(new THREE.BoxGeometry(0.38, 0.08, 0.04), trimMat, 0, 0.86, bodyD / 2 + 0.035, 0, false);
-    add(new THREE.BoxGeometry(0.04, 0.04, 0.06), mat("#c0a060", { metalness: 0.4, roughness: 0.45 }), 0.1, 0.5, bodyD / 2 + 0.06, 0, false);
+    add(new THREE.BoxGeometry(0.17, 0.96, 0.05), doorMat, 0, 0.50, bodyD / 2 + 0.03, 0, false);
+    add(new THREE.BoxGeometry(0.21, 0.06, 0.04), trimMat, 0, 0.99, bodyD / 2 + 0.035, 0, false);
+    add(new THREE.BoxGeometry(0.04, 0.04, 0.06), mat("#c0a060", { metalness: 0.4, roughness: 0.45 }), 0.07, 0.48, bodyD / 2 + 0.06, 0, false);
   }
 
   function addBalcony(bodyW, bodyD, y, trimMat, accentMat) {
