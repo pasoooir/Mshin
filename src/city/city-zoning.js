@@ -42,9 +42,10 @@ function demandAllows(city, type) {
   const addedJobs = JOBS_PER_BUILDING[buildingType];
   if (!addedJobs) return false;
   const workforce = computeCityEmployment(activeCity);
-  // Do not let job capacity outrun the resident workforce by more than one
-  // small workplace (or 75% of the available labor force).
-  const projectedShortage = Math.max(0, workforce.jobs + addedJobs - workforce.laborForce);
+  const plannedJobs = city.buildings.filter(building => building.construction)
+    .reduce((sum, building) => sum + (JOBS_PER_BUILDING[building.type] || 0), 0);
+  // Reserve capacity for worksites without activating them in the live workforce.
+  const projectedShortage = Math.max(0, workforce.jobs + plannedJobs + addedJobs - workforce.laborForce);
   const shortageAllowance = Math.max(18, Math.ceil(workforce.laborForce * 0.75));
   return projectedShortage <= shortageAllowance;
 }
