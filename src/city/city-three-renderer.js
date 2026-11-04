@@ -3,6 +3,7 @@ const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.j
 import { createCityAtmosphere } from "./city-atmosphere.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
+import { createCitySidewalkLayer } from "./city-street-renderer.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -308,10 +309,11 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
 
-  // Street furniture is deferred: the current spatial grid has no dedicated sidewalk/ROW.
-  // Placing lamps beyond the curb would still occupy adjacent buildable parcel footprints.
+  // A dedicated non-buildable pedestrian strip now exists inside each road ROW.
+  // Street lights are intentionally deferred to a later visual slice.
   const decorativeStreetLightCount = 0;
-  const streetFurniturePlacementReady = false;
+  const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID);
+  const streetFurniturePlacementReady = sidewalkLayer.count > 0;
 
   const buildings = new THREE.Group();
   scene.add(buildings);
@@ -680,6 +682,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         visiblePlots: activeGrassA + activeGrassB + lockedGrassCountA + lockedGrassCountB,
         visibleRoadTiles: activeRoads + lockedRoadCount,
         raisedCurbs: curbInstances.length,
+        sidewalkStrips: sidewalkLayer.count,
         crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio(),
