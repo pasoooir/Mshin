@@ -19,7 +19,7 @@ test("tile/world transforms preserve every cell centre including grid edges", ()
   assert.equal(cityTileToWorld(31), 124);
 });
 
-test("procedural buildings fill parcel scale while doors and windows retain human dimensions", () => {
+test("procedural buildings fill parcel scale while doors and windows retain human dimensions", async () => {
   const scale = getBuildingVisualScale("home");
   assert.deepEqual(scale, { x: 4.8, y: 2.2, z: 4.8 });
   const source = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
