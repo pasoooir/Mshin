@@ -196,6 +196,13 @@ try{
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),1,"camera gestures and focus must not mutate city construction data");
  fs.mkdirSync("artifacts",{recursive:true});
  fs.writeFileSync("artifacts/city-camera-focus-state.json",JSON.stringify({camera:focusedCamera,selectedBuilding:selectedBuildingTile,viewport:await page.evaluate(()=>({width:innerWidth,height:innerHeight}))},null,2));
+ await page.locator("#cityRecenter").dispatchEvent("click");
+ const recenteredCamera=await page.evaluate(()=>window.MshinCityDebug.view);
+ assert.equal(recenteredCamera.targetX,null,"recenter must clear the previous world-space X focus");
+ assert.equal(recenteredCamera.targetY,null,"recenter must clear the previous 3D height focus");
+ assert.equal(recenteredCamera.targetZ,null,"recenter must clear the previous world-space Z focus");
+ assert.equal(recenteredCamera.orbit,0,"recenter must restore the initial city-facing orbit");
+
 
  await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
