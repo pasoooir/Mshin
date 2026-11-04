@@ -630,7 +630,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     cameraOrbit = orbit;
     const orbitAngle = Math.PI / 4 + orbit;
     const orbitRadius = Math.hypot(48, 48);
-    camera.position.set(targetX + Math.sin(orbitAngle) * orbitRadius, targetY + 38, targetZ + Math.cos(orbitAngle) * orbitRadius);
+    const pitch = Math.max(0.24, Math.min(0.96, Number.isFinite(cam.pitch) ? cam.pitch : Math.atan2(38, orbitRadius)));
+    const horizontalRadius = orbitRadius * Math.cos(pitch);
+    const verticalOffset = orbitRadius * Math.sin(pitch);
+    camera.position.set(targetX + Math.sin(orbitAngle) * horizontalRadius, targetY + verticalOffset, targetZ + Math.cos(orbitAngle) * horizontalRadius);
     camera.lookAt(targetX, targetY, targetZ);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
