@@ -233,7 +233,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   );
   scene.add(boundary);
 
-  // Perimeter greenery stays strictly outside the 64x64 parcel grid.
   // It is decorative-only and cannot overlap locked or unlocked buildable cells.
   const environment = new THREE.Group();
   scene.add(environment);
