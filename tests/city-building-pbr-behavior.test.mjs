@@ -24,6 +24,9 @@ class Geometry {
   setIndex(value) { this.index = value; }
   computeVertexNormals() {}
 }
+class Color {
+  constructor(value) { this.value = value; }
+}
 class Material {
   constructor(options = {}) { Object.assign(this, options); }
 }
@@ -58,6 +61,7 @@ class Object3D {
   updateMatrix() { this.matrix = { position: this.position, rotation: this.rotation, scale: this.scale }; }
 }
 const THREE = {
+  Color,
   Group,
   Vector2,
   Object3D,
@@ -111,7 +115,7 @@ test("residential building applies brick albedo, normal and roughness maps to fr
     assert.equal(material.map, result.brickSurface.map);
     assert.equal(material.normalMap, result.brickSurface.normalMap);
     assert.equal(material.roughnessMap, result.brickSurface.roughnessMap);
-    assert.ok(material.color === "#f4eee6" || material.color === "#ded7cc");
+    assert.ok(material.color?.value === "#f4eee6" || material.color?.value === "#ded7cc");
   }
   assert.ok(findRoofMaterial(result.group, result.roofSurface), "residential roof must consume roof PBR maps");
 });
@@ -133,8 +137,8 @@ test("administrative building uses concrete PBR maps and keeps facade tint neutr
   const [front, side] = result.body.material;
   assert.equal(front.map, result.concreteSurface.map);
   assert.equal(side.map, result.concreteSurface.map);
-  assert.equal(front.color, "#eeeeea");
-  assert.equal(side.color, "#d9dcd8");
+  assert.equal(front.color?.value, "#eeeeea");
+  assert.equal(side.color?.value, "#d9dcd8");
 });
 
 test("PBR material maps retain independent channels and are registered without aliasing facade families", () => {
