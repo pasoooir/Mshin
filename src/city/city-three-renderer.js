@@ -100,7 +100,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
       return state / 4294967296;
     };
     const tileDot = (x, y, radius, color, elevation) => {
-      for (const ox of [-size, 0, size]) for (const oy of [-size, 0, size]) {
+      const offsetsX = x < radius ? [-size, 0] : x > size - radius ? [0, size] : [0];
+      const offsetsY = y < radius ? [-size, 0] : y > size - radius ? [0, size] : [0];
+      for (const ox of offsetsX) for (const oy of offsetsY) {
         albedo.fillStyle = color;
         albedo.beginPath();
         albedo.arc(x + ox, y + oy, radius, 0, Math.PI * 2);
@@ -436,7 +438,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   // A dedicated non-buildable pedestrian strip now exists inside each road ROW.
   // Street lights are intentionally deferred to a later visual slice.
   const decorativeStreetLightCount = 0;
-  const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID);
+  const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
 
   const buildings = new THREE.Group();
