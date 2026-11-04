@@ -111,6 +111,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const roadMaterial = new THREE.MeshStandardMaterial({ map: roadMap, roughness: 0.96, metalness: 0.015 });
   const lockedRoadMaterial = new THREE.MeshStandardMaterial({ map: roadMap, color: "#aab2b1", roughness: 0.98 });
   const curbMaterial = new THREE.MeshStandardMaterial({ color: "#f1e8d0", roughness: 0.82 });
+  const sidewalkMaterial = new THREE.MeshStandardMaterial({ color: "#c8c4b6", roughness: 0.94 });
   const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#f8efcf", transparent: true, opacity: 0.72 });
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
 
@@ -134,7 +135,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const dummy = new THREE.Object3D();
   let activeGrassA = 0, activeGrassB = 0, activeRoads = 0;
   let lockedGrassCountA = 0, lockedGrassCountB = 0, lockedRoadCount = 0;
-  const activePlotEdges = [], lockedPlotEdges = [], curbInstances = [];
+  const activePlotEdges = [], lockedPlotEdges = [], curbInstances = [], sidewalkInstances = [];
 
   for (let y = 0; y < VISUAL_GRID; y++) {
     for (let x = 0; x < VISUAL_GRID; x++) {
@@ -148,6 +149,15 @@ export async function createCityThreeRenderer(sourceCanvas) {
       dummy.updateMatrix();
 
       if (road) {
+        // Reserve a real pedestrian strip inside the road right-of-way. The
+        // strip is emitted only on the outer edge of a road cell, never inside
+        // a buildable parcel; instancing keeps it to one additional draw call.
+        for (const [dx, dz, sx, sz] of [[1,0,0.56,1.92],[-1,0,0.56,1.92],[0,1,1.92,0.56],[0,-1,1.92,0.56]]) {
+          const nx = x + dx, ny = y + dz;
+          if (nx < 0 || ny < 0 || nx >= VISUAL_GRID || ny >= VISUAL_GRID) continue;
+          if (isRoadCell(nx) || isRoadCell(ny)) continue;
+          sidewalkInstances.push({ x: px + dx * 0.68, z: pz + dz * 0.68, sx, sz });
+        }
         (active ? roads : lockedRoads).setMatrixAt(active ? activeRoads++ : lockedRoadCount++, dummy.matrix);
         continue;
       }
@@ -201,6 +211,20 @@ export async function createCityThreeRenderer(sourceCanvas) {
   curbs.instanceMatrix.needsUpdate = true;
   curbs.receiveShadow = true;
   scene.add(curbs);
+
+  const sidewalkGeometry = new THREE.BoxGeometry(1, 0.10, 1);
+  const sidewalks = new THREE.InstancedMesh(sidewalkGeometry, sidewalkMaterial, Math.max(1, sidewalkInstances.length));
+  sidewalkInstances.forEach((v, i) => {
+    dummy.position.set(v.x, 0.13, v.z);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.set(v.sx, 1, v.sz);
+    dummy.updateMatrix();
+    sidewalks.setMatrixAt(i, dummy.matrix);
+  });
+  sidewalks.count = sidewalkInstances.length;
+  sidewalks.instanceMatrix.needsUpdate = true;
+  sidewalks.receiveShadow = true;
+  scene.add(sidewalks);
 
   function addLineLayer(points, material) {
     const geometry = new THREE.BufferGeometry();
@@ -307,10 +331,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
 
-  // Street furniture is deferred: the current spatial grid has no dedicated sidewalk/ROW.
-  // Placing lamps beyond the curb would still occupy adjacent buildable parcel footprints.
+  // A dedicated non-buildable pedestrian strip now exists inside each road ROW.
+  // Street lights are intentionally deferred to a later visual slice.
   const decorativeStreetLightCount = 0;
-  const streetFurniturePlacementReady = false;
+  const streetFurniturePlacementReady = sidewalkInstances.length > 0;
 
   const buildings = new THREE.Group();
   scene.add(buildings);
@@ -687,6 +711,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         visiblePlots: activeGrassA + activeGrassB + lockedGrassCountA + lockedGrassCountB,
         visibleRoadTiles: activeRoads + lockedRoadCount,
         raisedCurbs: curbInstances.length,
+        sidewalkStrips: sidewalkInstances.length,
         crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
         pixelRatio: renderer.getPixelRatio(),
