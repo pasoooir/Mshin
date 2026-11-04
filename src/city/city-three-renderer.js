@@ -1,6 +1,7 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createHighGfxBuilding } from "./city-building-high-gfx.js";
+import { CITY_TILE_METERS, cityTileToWorld, worldToCityTile } from "./city-world-scale.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
@@ -54,8 +55,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#9bd4ee");
-  scene.fog = new THREE.Fog("#9bd4ee", 145, 260);
-  const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 320);
+  scene.fog = new THREE.Fog("#9bd4ee", 480, 1100);
+  const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 1400);
   camera.position.set(48, 38, 48);
   camera.lookAt(0, 0, 0);
 
@@ -96,7 +97,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(140, 140),
+    new THREE.PlaneGeometry(820, 820),
     new THREE.MeshStandardMaterial({ ...grassSurface, color: "#a6b68a", roughness: 1, normalScale: new THREE.Vector2(0.24, 0.24) })
   );
   ground.rotation.x = -Math.PI / 2;
@@ -104,8 +105,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  const grassGeometry = new THREE.BoxGeometry(1.94, 0.22, 1.94);
-  const roadGeometry = new THREE.BoxGeometry(1.99, 0.16, 1.99);
+  const grassGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.06, 0.22, CITY_TILE_METERS - 0.06);
+  const roadGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.01, 0.16, CITY_TILE_METERS - 0.01);
   const grassA = new THREE.InstancedMesh(grassGeometry, grassMaterial, 2304);
   const grassB = new THREE.InstancedMesh(grassGeometry, alternateGrassMaterial, 2304);
   const lockedGrassA = new THREE.InstancedMesh(grassGeometry, lockedGrassMaterial, 2304);
@@ -119,8 +120,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   for (let y = 0; y < VISUAL_GRID; y++) {
     for (let x = 0; x < VISUAL_GRID; x++) {
-      const px = (x - 31.5) * 2;
-      const pz = (y - 31.5) * 2;
+      const px = cityTileToWorld(x - 16);
+      const pz = cityTileToWorld(y - 16);
       const active = isActiveCell(x, y);
       const road = isRoadCell(x) || isRoadCell(y);
       dummy.position.set(px, road ? -0.01 : 0.025, pz);
@@ -141,18 +142,19 @@ export async function createCityThreeRenderer(sourceCanvas) {
       }
 
       const edgeY = 0.142;
+      const edgeHalf = CITY_TILE_METERS * 0.47;
       const edges = active ? activePlotEdges : lockedPlotEdges;
       edges.push(
-        px - 0.91, edgeY, pz - 0.91, px + 0.91, edgeY, pz - 0.91,
-        px + 0.91, edgeY, pz - 0.91, px + 0.91, edgeY, pz + 0.91,
-        px + 0.91, edgeY, pz + 0.91, px - 0.91, edgeY, pz + 0.91,
-        px - 0.91, edgeY, pz + 0.91, px - 0.91, edgeY, pz - 0.91
+        px - edgeHalf, edgeY, pz - edgeHalf, px + edgeHalf, edgeY, pz - edgeHalf,
+        px + edgeHalf, edgeY, pz - edgeHalf, px + edgeHalf, edgeY, pz + edgeHalf,
+        px + edgeHalf, edgeY, pz + edgeHalf, px - edgeHalf, edgeY, pz + edgeHalf,
+        px - edgeHalf, edgeY, pz + edgeHalf, px - edgeHalf, edgeY, pz - edgeHalf
       );
 
-      for (const [dx, dz, sx, sz] of [[1,0,0.08,1.72],[-1,0,0.08,1.72],[0,1,1.72,0.08],[0,-1,1.72,0.08]]) {
+      for (const [dx, dz, sx, sz] of [[1,0,0.12,CITY_TILE_METERS*0.94],[-1,0,0.12,CITY_TILE_METERS*0.94],[0,1,CITY_TILE_METERS*0.94,0.12],[0,-1,CITY_TILE_METERS*0.94,0.12]]) {
         const nx = x + dx, ny = y + dz;
         if (nx < 0 || ny < 0 || nx >= VISUAL_GRID || ny >= VISUAL_GRID || !(isRoadCell(nx) || isRoadCell(ny))) continue;
-        curbInstances.push({ x: px + dx * 0.94, z: pz + dz * 0.94, sx, sz });
+        curbInstances.push({ x: px + dx * CITY_TILE_METERS * 0.47, z: pz + dz * CITY_TILE_METERS * 0.47, sx, sz });
       }
     }
   }
@@ -197,13 +199,13 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const roadMarkings = [];
   const roadCenters = [7.5, 15, 23.5, 31.5, 39.5, 48, 55.5];
   for (const center of roadCenters) {
-    const z = (center - 31.5) * 2;
-    const x = (center - 31.5) * 2;
+    const z = cityTileToWorld(center - 16);
+    const x = cityTileToWorld(center - 16);
     for (let index = 0; index < VISUAL_GRID; index++) {
       if (!isRoadCell(index) && index % 2 === 0) {
-        const along = (index - 31.5) * 2;
-        roadMarkings.push(along - 0.36, 0.078, z, along + 0.36, 0.078, z);
-        roadMarkings.push(x, 0.078, along - 0.36, x, 0.078, along + 0.36);
+        const along = cityTileToWorld(index - 16);
+        roadMarkings.push(along - 1.4, 0.078, z, along + 1.4, 0.078, z);
+        roadMarkings.push(x, 0.078, along - 1.4, x, 0.078, along + 1.4);
       }
     }
   }
@@ -216,8 +218,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
   for (let y = 0; y < VISUAL_GRID; y += 2) {
     for (let x = 0; x < VISUAL_GRID; x++) {
       if (isRoadCell(y) || isRoadCell(x)) continue;
-      const left = (x - 31.5) * 2, right = left + 2;
-      const z = (y - 31.5) * 2;
+      const left = cityTileToWorld(x - 16) - CITY_TILE_METERS / 2, right = left + CITY_TILE_METERS;
+      const z = cityTileToWorld(y - 16);
       lotLines.push(left, 0.151, z, right, 0.151, z);
     }
   }
@@ -313,8 +315,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const vehicles = Array.isArray(city.traffic) ? city.traffic.slice(0, 12) : [];
     for (let index = 0; index < vehicles.length; index++) {
       const vehicle = vehicles[index];
-      const x = (vehicle.x - 15.5) * 2;
-      const z = (vehicle.y - 15.5) * 2;
+      const x = cityTileToWorld(vehicle.x);
+      const z = cityTileToWorld(vehicle.y);
       const rotation = Number.isFinite(vehicle.heading) ? Math.PI / 2 - vehicle.heading : 0;
       trafficDummy.position.set(x, 0.48, z);
       trafficDummy.rotation.set(0, rotation, 0);
@@ -359,8 +361,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const citizens = Array.isArray(city.citizens) ? city.citizens.slice(0, 64) : [];
     for (let index = 0; index < citizens.length; index++) {
       const citizen = citizens[index];
-      const x = (citizen.x - 15.5) * 2;
-      const z = (citizen.y - 15.5) * 2;
+      const x = cityTileToWorld(citizen.x);
+      const z = cityTileToWorld(citizen.y);
       const rotation = Number.isFinite(citizen.heading) ? Math.PI / 2 - citizen.heading : 0;
       pedestrianDummy.position.set(x, 0.48, z);
       pedestrianDummy.rotation.set(0, rotation, 0);
@@ -627,7 +629,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     raycaster.setFromCamera(pointer, camera);
     const point = new THREE.Vector3();
     if (!raycaster.ray.intersectPlane(groundPlane, point)) return { x: -1, y: -1 };
-    return { x: Math.floor(point.x / 2 + 16), y: Math.floor(point.z / 2 + 16) };
+    return { x: worldToCityTile(point.x), y: worldToCityTile(point.z) };
   }
 
   function groundPointAt(screenX, screenY) {
@@ -646,7 +648,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
 
   function screenForTile(x, y) {
-    const point = new THREE.Vector3((x - 15.5) * 2, 0.16, (y - 15.5) * 2).project(camera);
+    const point = new THREE.Vector3(cityTileToWorld(x), 0.16, cityTileToWorld(y)).project(camera);
     return { x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2 };
   }
 
@@ -683,6 +685,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
         realisticArchitecture: true,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
+        worldUnitMeters: 1,
+        cityTileMeters: CITY_TILE_METERS,
+        cityWorldExtentMeters: CITY_TILE_METERS * 32,
         plots: activeGrassA + activeGrassB,
         roadTiles: activeRoads,
         lockedPlots: lockedGrassCountA + lockedGrassCountB,
