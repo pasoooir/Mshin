@@ -129,7 +129,7 @@ try{
  assert.ok(mapControls.zoom>=.7,"mobile city should open with a useful exploration zoom");assert.equal(mapControls.buttons.length,3);assert.ok(mapControls.buttons.every(b=>b.visible&&b.width>=44&&b.height>=44),"map zoom controls must be visible 44px touch targets");
  await page.locator("#cityZoomIn").click();const zoomedIn=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomedIn>mapControls.zoom,"zoom-in control must enlarge the map");
  await page.locator("#cityZoomOut").click();const zoomedOut=await page.evaluate(()=>window.MshinCityDebug.view.zoom);assert.ok(zoomedOut<zoomedIn,"zoom-out control must reduce map scale");
- await page.locator("#cityRecenter").click();assert.ok(Math.abs(await page.evaluate(()=>window.MshinCityDebug.view.zoom)-.72)<.001,"recenter must restore the mobile map scale");
+ await page.locator("#cityRecenter").click();assert.ok(Math.abs(await page.evaluate(()=>window.MshinCityDebug.view.zoom)-.72)<.001,"recenter must restore the mobile map scale");assert.ok(Math.abs(await page.evaluate(()=>window.MshinCityDebug.view.pitch)-0.51)<0.001,"recenter must restore default 3D elevation");
  assert.equal(await page.title(),"شهر من | مِشین");
  const initial=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,buildings:window.MshinCityDebug.city.buildings.length,roads:window.MshinCityDebug.city.grid.flat().filter(t=>t==="road").length,citizens:window.MshinCityDebug.city.citizens.length,traffic:window.MshinCityDebug.city.traffic.length,animals:window.MshinCityDebug.city.animals.length,width:document.querySelector("#cityViewport").width}));
  const windowTrafficInvariant=await page.evaluate(()=>window.MshinCityDebug.city.traffic.every(vehicle=>Number.isFinite(vehicle.x)&&Number.isFinite(vehicle.y)&&window.MshinCityDebug.city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"));
@@ -162,6 +162,15 @@ try{
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",711,150,180);send("pointerdown",712,250,180);send("pointermove",711,200,130);send("pointermove",712,200,230);send("pointerup",711,200,130);send("pointerup",712,200,230)});
  assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.zoom))-pureRotationZoomBefore)<0.0001,"pure two-finger twist must not change zoom");
  assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.orbit))-pureRotationOrbitBefore)>0.1,"twisting the two-finger line must rotate the camera around the focus");
+ const pitchBefore=await page.evaluate(()=>window.MshinCityDebug.view.pitch);
+ const tiltZoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
+ const tiltOrbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",721,140,180);send("pointerdown",722,260,180);send("pointermove",721,140,260);send("pointermove",722,260,260);send("pointerup",722,260,260);send("pointerup",721,140,260)});
+ const pitchAfter=await page.evaluate(()=>window.MshinCityDebug.view.pitch);
+ assert.ok(pitchAfter<pitchBefore,"vertical two-finger movement must tilt the camera toward the city");
+ assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.zoom))-tiltZoomBefore)<0.0001,"vertical camera tilt must not alter pinch zoom");
+ assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.orbit))-tiltOrbitBefore)<0.0001,"vertical camera tilt must not alter horizontal orbit");
+
 
  const orbitStart=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));for(let i=0;i<9;i++){const a=100+i*3,b=200+i*3;send("pointerdown",200+i*2,a,220);send("pointerdown",201+i*2,b,220);send("pointermove",200+i*2,a+100,220);send("pointermove",201+i*2,b+100,220);send("pointerup",200+i*2,a+100,220);send("pointerup",201+i*2,b+100,220)}});
@@ -176,7 +185,7 @@ try{
  const orbitAfterRelease=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  const inertiaStateAfter=await page.evaluate(()=>window.MshinCityDebug.view.gesture);
  assert.ok(orbitAfterRelease>orbitAtRelease,"camera orbit must retain a short, damped inertial glide after fingers lift: "+JSON.stringify({inertiaStateAtRelease,inertiaStateAfter,orbitAtRelease,orbitAfterRelease}));
- await page.waitForTimeout(1200);
+ await page.waitForFunction(()=>window.MshinCityDebug.view.gesture.inertiaActive===false,undefined,{polling:50,timeout:2500});
  const settledState=await page.evaluate(()=>window.MshinCityDebug.view.gesture);
  assert.equal(settledState.inertiaActive,false,"damped orbit inertia must reach its terminal state");
  const settledOrbit=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
