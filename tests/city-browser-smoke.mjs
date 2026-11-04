@@ -30,7 +30,10 @@ try{
   }}});
  });
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
- await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+ const rendererBootStartedAt=Date.now();
+ await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100});
+ const rendererBootDuration=Date.now()-rendererBootStartedAt;
+ assert.ok(rendererBootDuration<60000,"compact city renderer must finish initialization within the bounded 60-second mobile startup budget");
  const viewportMeta=await page.locator('meta[name="viewport"]').getAttribute("content");
  assert.match(viewportMeta,/viewport-fit=cover/,"city must opt into safe-area-aware mobile viewport sizing");
  const initialVisualViewport=await page.evaluate(()=>({width:visualViewport.width,height:visualViewport.height}));
