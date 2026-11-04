@@ -222,9 +222,9 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   }
 
   function addDoor(bodyD, doorMat, trimMat) {
-    add(new THREE.BoxGeometry(0.17, 0.96, 0.05), doorMat, 0, 0.50, bodyD / 2 + 0.03, 0, false);
-    add(new THREE.BoxGeometry(0.21, 0.06, 0.04), trimMat, 0, 0.99, bodyD / 2 + 0.035, 0, false);
-    add(new THREE.BoxGeometry(0.04, 0.04, 0.06), mat("#c0a060", { metalness: 0.4, roughness: 0.45 }), 0.07, 0.48, bodyD / 2 + 0.06, 0, false);
+    add(new THREE.BoxGeometry(0.17, 0.96, 0.05), doorMat, 0, 0.76, bodyD / 2 + 0.03, 0, false);
+    add(new THREE.BoxGeometry(0.21, 0.06, 0.04), trimMat, 0, 1.27, bodyD / 2 + 0.035, 0, false);
+    add(new THREE.BoxGeometry(0.04, 0.04, 0.06), mat("#c0a060", { metalness: 0.4, roughness: 0.45 }), 0.07, 0.72, bodyD / 2 + 0.06, 0, false);
   }
 
   function addBalcony(bodyW, bodyD, y, trimMat, accentMat) {
