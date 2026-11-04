@@ -414,7 +414,14 @@ try{
    await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000});
   }catch(error){
    const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
-   throw new Error("landscape 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message);
+   // Playwright's waitForFunction can time out while a backgrounded page's
+   // polling is throttled even though the renderer completed successfully.
+   // Accept only a fresh DOM snapshot proving both boot flags and the actual
+   // Three.js canvas; otherwise preserve the timeout as a real failure.
+   if(!(diagnostic.ready==="true"&&diagnostic.rendererReady===true
+     &&diagnostic.status==="نمای سه‌بعدی فعال"&&diagnostic.canvasCount>=2)){
+    throw new Error("landscape 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message);
+   }
   }
   try{await landscapePage.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display==="none",undefined,{timeout:5000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({innerWidth,innerHeight,screenWidth:screen.width,screenHeight:screen.height,mediaLandscape:matchMedia("(orientation: landscape)").matches,mediaPortrait:matchMedia("(orientation: portrait)").matches,orientation:screen.orientation?.type,gateClass:document.querySelector("#cityOrientationGate")?.className,gateHidden:document.querySelector("#cityOrientationGate")?.hidden,gateDisplay:getComputedStyle(document.querySelector("#cityOrientationGate")).display,cityOrientation:document.documentElement.dataset.cityOrientation}));throw new Error("landscape orientation gate did not close: "+JSON.stringify(diagnostic)+"; "+error.message)}
   const landscape=await landscapePage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,height:innerHeight,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));
