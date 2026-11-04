@@ -575,7 +575,17 @@ export async function createCityThreeRenderer(sourceCanvas) {
         }
       });
     }
-    for (const item of city.buildings) buildings.add(createBuilding(item));
+    for (const item of city.buildings) {
+  buildings.add(createHighGfxBuilding(THREE, item, {
+    trunkGeometry,
+    canopyGeometry,
+    canopySmallGeometry,
+    brickSurface,
+    concreteSurface,
+    roofSurface,
+    windowMaterials
+  }));
+    }
   }
 
   const raycaster = new THREE.Raycaster();
