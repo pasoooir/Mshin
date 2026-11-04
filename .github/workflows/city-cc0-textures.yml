@@ -1,0 +1,51 @@
+name: Mirror real CC0 city PBR textures
+
+on:
+  pull_request:
+    paths:
+      - "tools/fetch-city-cc0-pbr-textures.py"
+      - ".github/workflows/city-cc0-textures.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    name: Download and validate ambientCG PBR maps
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch CC0 1K material sets
+        run: python3 tools/fetch-city-cc0-pbr-textures.py
+      - name: Validate real PBR image maps
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json
+          root = Path("assets/city/textures/cc0")
+          manifest = json.loads((root / "manifest.json").read_text())
+          expected = {"asphalt", "concrete", "grass", "sidewalk", "brick"}
+          if set(manifest["materials"]) != expected:
+              raise SystemExit("Unexpected material inventory")
+          for material in expected:
+              for name in ("albedo.jpg", "normal.jpg", "roughness.jpg"):
+                  path = root / material / name
+                  with Image.open(path) as image:
+                      image.verify()
+                  with Image.open(path) as image:
+                      if image.width < 512 or image.height < 512:
+                          raise SystemExit(f"Low resolution: {path} {image.size}")
+                  print(f"OK {path}")
+          PY
+      - name: Publish mirrored assets on manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/city/textures/cc0
+          git commit -m "assets(city): mirror CC0 photogrammetry PBR materials" || exit 0
+          git push origin "HEAD:${GITHUB_REF_NAME}"
