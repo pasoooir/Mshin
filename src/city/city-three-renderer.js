@@ -603,7 +603,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const pointer = new THREE.Vector2();
   // Raycast anchors use the rendered plot surface, not the lower decorative base plane.
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
-  let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0;
+  let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48));
 
   function resize() {
     width = window.innerWidth;
@@ -631,6 +631,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const orbitAngle = Math.PI / 4 + orbit;
     const orbitRadius = Math.hypot(48, 48);
     const pitch = Math.max(0.24, Math.min(0.96, Number.isFinite(cam.pitch) ? cam.pitch : Math.atan2(38, orbitRadius)));
+    cameraPitch = pitch;
     const horizontalRadius = orbitRadius * Math.cos(pitch);
     const verticalOffset = orbitRadius * Math.sin(pitch);
     camera.position.set(targetX + Math.sin(orbitAngle) * horizontalRadius, targetY + verticalOffset, targetZ + Math.cos(orbitAngle) * horizontalRadius);
@@ -691,6 +692,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       return {
         renderer: "three.js",
         cameraOrbit,
+        cameraPitch,
         version: THREE.REVISION,
         visualStyle: "vibrant-stylized-3d",
         proceduralTextures: 4,
