@@ -474,7 +474,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     addBuildingMesh(group, new THREE.BoxGeometry(1.72, 0.20, 1.72), baseMat, 0, 0.22, 0, 0, false);
     const body = addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth, height, bodyDepth), wall, 0, 0.32 + height / 2, 0);
     body.material = [wall, sideWall, wall, wall, sideWall, sideWall];
-    addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
+    addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), accentMat, 0, 0.34 + height, 0, 0, false);
 
     if (type === "home") {
       const roof = new THREE.Mesh(new THREE.ConeGeometry(1.08, 0.72, 4), roofMat);
@@ -553,10 +553,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     windows.instanceMatrix.needsUpdate = true;
     group.add(windows);
 
-    // Bright facade fins make each family readable at the normal phone zoom.
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
-    fin.position.set(-bodyWidth / 2 - 0.02, 0.34 + height * 0.52, bodyDepth / 2 + 0.045);
-    group.add(fin);
+    // The vivid accent band is integrated into the trim mesh to preserve mobile draw-call budget.
     group.scale.setScalar(1.12);
     return group;
   }
