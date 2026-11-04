@@ -23,7 +23,7 @@ export function stepCity(city,seconds=1){
  city.tick++;city.minuteOfDay=(city.minuteOfDay+10)%1440;
  // Buildings remain unavailable until their visible construction countdown completes.
  for(const building of city.buildings){if(!building.construction)continue;building.construction.remaining=Math.max(0,building.construction.remaining-seconds);if(building.construction.remaining===0){delete building.construction;if(building.type==="home")city.population+=Math.max(0,building.residents||0);}}
- if(city.tick%12===0)developCityZones(city);
+ if(city.tick%12===0)developCityZones(city,45);
  const activeCity=city.buildings.some(b=>b.construction)?{...city,buildings:city.buildings.filter(b=>!b.construction)}:city;
  const infrastructure=computeCityServices(activeCity);
  const homes=activeCity.buildings.filter(b=>b.type==="home"),shops=activeCity.buildings.filter(b=>b.type==="shop"),industrial=activeCity.buildings.filter(b=>b.type==="industrial"),administrative=activeCity.buildings.filter(b=>b.type==="administrative"),services=activeCity.buildings.filter(b=>b.type==="service"),parks=activeCity.buildings.filter(b=>b.type==="park");
