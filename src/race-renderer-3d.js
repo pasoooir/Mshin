@@ -100,18 +100,70 @@ export function createRaceRenderer(canvas){
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
+ // Deterministic, offline-first 32-bit RGBA surface maps. The 8-bit RGB channels
+ // provide 16.7M displayable colors; alpha is retained for a full RGBA8 texel.
+ // Multi-scale grain, mottling and directional marks prevent flat single-color terrain.
+ function createProceduralSurfacePixels(key,size=256){
+  const palettes={
+   asphalt:[[61,64,66],[35,38,40],[103,104,101]],
+   grass:[[91,119,55],[45,72,37],[143,153,77]],
+   sand:[[183,151,103],[126,101,69],[218,190,139]],
+   snow:[[210,222,226],[157,177,187],[246,249,247]],
+   rock:[[112,105,91],[61,61,57],[158,145,122]],
+   concrete:[[137,139,133],[91,96,94],[183,180,166]],
+   bark:[[91,62,40],[43,34,26],[137,94,58]],
+   foliage:[[67,105,49],[30,67,35],[119,145,66]]
+  };
+  const palette=palettes[key]||palettes.grass,pixels=new Uint8Array(size*size*4);
+  let seed=0;for(let i=0;i<key.length;i++)seed=(seed*33+key.charCodeAt(i))>>>0;
+  const hash=(x,y)=>{let n=(Math.imul(x+seed,374761393)+Math.imul(y+seed,668265263))|0;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295};
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+   const coarse=hash(x>>4,y>>4)-.5,mid=hash(x>>2,y>>2)-.5,fine=hash(x,y)-.5;
+   const wave=Math.sin(x*.071+Math.sin(y*.033+seed)*1.8)*Math.cos(y*.047+seed*.013);
+   let detail=coarse*24+mid*17+fine*22+wave*5;
+   if(key==="grass"){
+    const blade=Math.pow(Math.max(0,Math.sin(x*.31+Math.sin(y*.055)*2.4+seed)*.5+.5),15);
+    detail+=blade*24-8+Math.sin((x+y)*.025)*5;
+   }else if(key==="asphalt"){
+    const aggregate=hash(x>>1,y>>1)>.84?18:0;
+    const crack=(Math.sin(x*.035+Math.sin(y*.012)*3)*Math.sin(y*.027)>.985)?-28:0;
+    detail+=aggregate+crack-5;
+   }else if(key==="sand"){
+    detail+=Math.sin(y*.09+Math.sin(x*.025)*2)*8+(hash(x>>3,y>>3)>.91?13:0);
+   }else if(key==="snow"){
+    detail+=hash(x>>1,y>>1)>.965?24:-5;
+   }else if(key==="rock"){
+    detail+=Math.sin(x*.11+Math.sin(y*.04)*2)*13+(hash(x>>3,y>>2)>.9?18:0);
+   }else if(key==="concrete"){
+    detail+=Math.sin(x*.045+y*.031)*7+(hash(x>>3,y>>3)>.94?14:0);
+   }else if(key==="bark"){
+    detail+=Math.sin(x*.22+Math.sin(y*.018)*2)*18+Math.sin(x*.51)*5;
+   }else if(key==="foliage"){
+    detail+=Math.sin(x*.13+Math.sin(y*.09)*2)*11+(hash(x>>2,y>>2)>.7?10:-4);
+   }
+   const offset=(y*size+x)*4;
+   for(let c=0;c<3;c++)pixels[offset+c]=Math.max(0,Math.min(255,Math.round(palette[0][c]+detail+(palette[2][c]-palette[0][c])*.13)));
+   pixels[offset+3]=255;
+  }
+  return pixels;
+ }
  function loadSurfaceTexture(key,url){
   const generation=surfaceLoadGeneration,texture=gl.createTexture();
   if(!texture){state.surfaceTextures.failed++;return}
   gl.bindTexture(gl.TEXTURE_2D,texture);
-  // Neutral fallback is immediately usable; remote textures never gate racing.
+  // A neutral one-pixel safety texel protects against a failed procedural upload.
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  // Upload a detailed local RGBA8 texture immediately: the track never falls back
+  // to a flat green plane, even offline, on mobile data-saver, or on software GPUs.
+  const surfaceSize=256,proceduralPixels=createProceduralSurfacePixels(key,surfaceSize);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,surfaceSize,surfaceSize,0,gl.RGBA,gl.UNSIGNED_BYTE,proceduralPixels);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
-  surfaceTextures.set(key,texture);
-  // Avoid spending mobile bandwidth/CPU on software renderers or data-saver sessions.
+  gl.generateMipmap(gl.TEXTURE_2D);
+  surfaceTextures.set(key,texture);state.surfaceTextures.proceduralReady++;
+  // Optional photographic maps may replace the procedural base, but are never required.
   if(softwareRenderer||navigator.connection?.saveData){state.surfaceTextures.skipped++;return}
   const image=new Image();surfaceImages.add(image);image.crossOrigin="anonymous";image.decoding="async";
   let settled=false;
@@ -145,7 +197,7 @@ export function createRaceRenderer(canvas){
   bark:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg",
   foliage:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg"
  };
- state.surfaceTextures={provider:"Poly Haven CDN",license:"CC0",requested:Object.keys(surfaceSources).length,loaded:0,failed:0,skipped:0,errors:[]};
+ state.surfaceTextures={provider:"Local procedural RGBA8 + optional Poly Haven CC0",license:"procedural + CC0",requested:Object.keys(surfaceSources).length,loaded:0,proceduralReady:0,failed:0,skipped:0,errors:[]};
  for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
  function part(tris,color,emissive=0,materialName="environment",surfaceKey=null){const material=VEHICLE_MATERIALS[materialName]||{metallic:.06,roughness:.78,clearcoat:0,kind:0},started=performance.now(),mesh=makeGeometry(gl,tris),elapsed=performance.now()-started;state.maxMeshUploadMs=Math.max(state.maxMeshUploadMs||0,elapsed);state.meshUploadCount=(state.meshUploadCount||0)+1;return {mesh,color:hexColor(color),...material,emissive,texture:surfaceKey?surfaceTextures.get(surfaceKey)||null:null}}
  function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
