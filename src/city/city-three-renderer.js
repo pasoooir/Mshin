@@ -442,7 +442,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
       const roofWidth = bodyWidth + 0.28;
       const roofDepth = bodyDepth + 0.28;
       const ridgeHeight = 0.78;
-      // Rectangular two-slope gable roof: two real pitched planes, not a pyramid primitive.
       const roofGeometry = new THREE.BufferGeometry();
       roofGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
         -roofWidth / 2, 0, -roofDepth / 2, 0, ridgeHeight, -roofDepth / 2,
