@@ -64,6 +64,11 @@ try{
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.version,"180");
  assert.equal(renderStats.visualStyle,"realistic-pbr-city","the city renderer must use the realistic architectural PBR art direction");
+ assert.ok(renderStats.decorativeStreetLights>=100,"roadside pedestrian strips must receive deterministic street-light fixtures");
+ assert.equal(renderStats.streetLightInstances,renderStats.decorativeStreetLights,"all decorative street lights must be backed by real instanced geometry");
+ assert.equal(renderStats.streetLightBatches,1,"the complete street-light layer must stay within one instanced draw call");
+ assert.equal(renderStats.streetFurniturePlacementReady,true,"sidewalks and roadside furniture must both be present");
+
  assert.equal(renderStats.proceduralTextures,6,"terrain, asphalt, brick, concrete, roof and sidewalk must use dedicated texture families");
  assert.equal(renderStats.pbrMaterialSets,6,"all six city surface families must expose complete PBR map sets");
  assert.equal(renderStats.normalMappedSurfaces,6,"all six city surface families must use generated normal maps");
