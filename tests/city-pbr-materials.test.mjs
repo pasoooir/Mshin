@@ -9,7 +9,7 @@ const streets = await readFile(new URL("../src/city/city-street-renderer.js", im
 test("city surfaces use layered tileable albedo, normal and roughness maps", () => {
   assert.ok(textures.includes("function makePbrSurface(THREE, renderer, kind, base, seed)"));
   for (const family of ["grass", "asphalt", "brick", "concrete", "roof", "sidewalk"]) {
-    assert.ok(renderer.includes('makePbrSurface("' + family + '"'), family + " texture family must exist");
+    assert.ok(textures.includes('makePbrSurface(THREE, renderer, "' + family + '"'), family + " texture family must exist");
   }
   assert.ok(textures.includes("new THREE.CanvasTexture(normalCanvas)"));
   assert.ok(textures.includes("new THREE.CanvasTexture(roughCanvas)"));
@@ -23,7 +23,7 @@ test("roads, terrain, building facades and roofs consume physically based surfac
   assert.ok(renderer.includes("...asphaltSurface"));
   assert.ok(renderer.includes("...facadeSurface"));
   assert.ok(renderer.includes("...roofSurface"));
-  assert.ok(renderer.includes("...concreteSurface"));
+  assert.ok(renderer.includes("type === \"industrial\" || type === \"administrative\" ? concreteSurface : brickSurface"));
   assert.ok(renderer.includes("sidewalkSurface"));
   assert.ok(streets.includes("...(surface || {})"));
 });
