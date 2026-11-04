@@ -421,15 +421,18 @@ try{
     gridRows:window.MshinCityDebug.city.grid.length,
     gridColumns:window.MshinCityDebug.city.grid.every(row=>row.length===32),
     buildings:window.MshinCityDebug.city.buildings.length,
+    buildingsValid:window.MshinCityDebug.city.buildings.every(b=>Number.isSafeInteger(b.id)&&b.id>0&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&b.x>=0&&b.x<32&&b.y>=0&&b.y<32&&window.MshinCityDebug.city.grid[b.y][b.x]==="building"),
     zones:window.MshinCityDebug.city.zones.length,
+    zonesValid:window.MshinCityDebug.city.zones.every(z=>Number.isInteger(z.x)&&Number.isInteger(z.y)&&window.MshinCityDebug.city.grid[z.y]?.[z.x]==="zone-"+z.type),
     traffic:window.MshinCityDebug.city.traffic.length,
+    trafficValid:window.MshinCityDebug.city.traffic.every(v=>Number.isFinite(v.x)&&Number.isFinite(v.y)&&window.MshinCityDebug.city.grid[Math.round(v.y)]?.[Math.round(v.x)]==="road"),
     saved:window.MshinCityDebug.save()
   }));
   assert.equal(recovery.gridRows,32,"malformed local saves must recover to a complete city grid");
   assert.equal(recovery.gridColumns,true,"save recovery must restore all 32 columns");
-  assert.ok(recovery.buildings>=0,"save recovery must return a normalized building collection");
-  assert.ok(recovery.zones>=0,"save recovery must return a normalized zoning collection");
-  assert.ok(recovery.traffic<=12,"save recovery must keep traffic within the supported fleet limit");
+  assert.ok(recovery.buildingsValid,"save recovery must not retain invalid building records");
+  assert.ok(recovery.zonesValid,"save recovery must not retain invalid zoning records");
+  assert.ok(recovery.traffic<=12&&recovery.trafficValid,"save recovery must keep only valid traffic records on road cells");
  }finally{await landscapePage.close()}
  const legacyGrid=Array.from({length:32},()=>Array(32).fill("grass"));
  for(let y=0;y<32;y++)for(let x=0;x<32;x++)if([7,15,23].includes(x)||[7,15,23].includes(y))legacyGrid[y][x]="road";
