@@ -1,3 +1,20 @@
+# وضعیت اجرایی به‌روزشده — 2026-11-04
+
+## شواهد و کارهای جاری
+
+- **main:** `f2adf50d646ab70f6c6d8c1859e42437f5f91ac8`؛ PR #237 گذرگاه‌های دسترس‌پذیر ادغام شد. اجرای main mobile browser smoke با run `41794066161` در حال اجراست.
+- **PR #240 — ۱۳ خانواده معماری سه‌بعدی:** 🟡 باز؛ validate موفق است، browser-smoke و Android-sized viewport acceptance در حال اجرا هستند.
+- **PR #242 — ساخت‌وساز زمان‌دار و HUD موبایل:** 🟡 باز؛ validate و regressionهای اصلی موفق‌اند؛ browser smoke و viewport acceptance هنوز در حال اجرا هستند.
+- **Slice دوربین:** 🟡 شاخه `feat/city-day-night-seasonal-environment`؛ حرکت عمودی مرکز دو انگشت pitch را بدون تغییر زوم یا yaw تنظیم می‌کند. محدوده pitch برابر 0.24–0.96 رادیان.
+
+## مرزهای تأییدنشده
+
+- Playwright موبایل جایگزین تست گوشی Android واقعی نیست.
+- GPU/frame-time، مصرف حافظه طولانی‌مدت، WebGL context restoration و واردسازی در Cocos Creator هنوز تأیید نشده‌اند.
+- شهر اصلی خالی می‌ماند؛ هیچ showcase تستی نباید در save کاربر باقی بماند.
+
+---
+
 # وضعیت اجرایی به‌روزشده — 2026-11-03 20:27 UTC
 
 > این بخش جدیدترین وضعیت را ثبت می‌کند و بر snapshotهای قدیمی‌تر پایین فایل اولویت دارد.
