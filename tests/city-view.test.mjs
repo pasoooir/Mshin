@@ -111,3 +111,15 @@ test("road demolition retires stranded traffic before the next save",()=>{
  assert.equal(city.traffic.some(vehicle=>vehicle.id===stranded.id),false);
  assert.equal(isValidCitySave(city),true);
 });
+
+test("traffic previous-road coordinates stay integral and city saves remain valid during long simulation",()=>{
+ const city=createInitialCity(731);
+ for(let tick=0;tick<160;tick++){
+  stepCity(city);
+  for(const vehicle of city.traffic){
+   assert.ok((vehicle.previousX===null&&vehicle.previousY===null)||(Number.isInteger(vehicle.previousX)&&Number.isInteger(vehicle.previousY)),
+    "previous traffic location must remain a valid integer road tile");
+  }
+  assert.equal(isValidCitySave(city),true,"traffic state must remain persistable at every simulation tick");
+ }
+});
