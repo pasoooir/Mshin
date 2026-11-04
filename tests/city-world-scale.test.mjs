@@ -37,6 +37,9 @@ test("renderer and architecture consume the shared metre scale without legacy 2 
   assert.match(renderer, /worldToCityTile\(point\.x\)/);
   assert.match(renderer, /Math\.max\(0\.0625, Math\.min\(1\.875/);
   assert.match(renderer, /BoxGeometry\(CITY_TILE_METERS - 0\.06/);
+  assert.match(renderer, /trafficDummy\.scale\.set\(1\.76, 1\.5, 2\.53\)/);
+  assert.match(renderer, /pedestrianDummy\.scale\.set\(1\.8, 2\.8, 1\.8\)/);
+  assert.match(renderer, /pedestrianDummy\.scale\.set\(1\.3, 1\.3, 1\.3\)/);
   assert.match(buildings, /group\.scale\.set\(visualScale\.x, visualScale\.y, visualScale\.z\)/);
   assert.match(buildings, /BoxGeometry\(0\.17, 0\.96, 0\.05\)/);
   assert.match(buildings, /BoxGeometry\(0\.20, 0\.55, 0\.04\)/);
