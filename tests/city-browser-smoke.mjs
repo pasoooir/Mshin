@@ -248,7 +248,7 @@ try{
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
  await page.waitForFunction(()=>window.MshinCity3DStats?.stylizedBuildings>=2,undefined,{timeout:5000});
  assert.ok(await page.evaluate(()=>window.MshinCity3DStats.stylizedBuildings>=2),"new residential buildings must be rendered with the 3D building family system");
- await page.waitForFunction(()=>window.MshinCity3DStats?.pedestrians===window.MshinCityDebug.city.citizens.length&&window.MshinCity3DStats.pedestrians>0,undefined,{timeout:5000});
+ try{await page.waitForFunction(()=>window.MshinCity3DStats?.pedestrians===window.MshinCityDebug.city.citizens.length&&window.MshinCity3DStats.pedestrians>0,undefined,{timeout:5000})}catch(error){const diagnostic=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,citizens:window.MshinCityDebug.city.citizens,buildings:window.MshinCityDebug.city.buildings,renderer:window.MshinCity3DStats,cityReady:document.documentElement.dataset.cityReady}));throw new Error("pedestrian render did not synchronize with city simulation: "+JSON.stringify(diagnostic)+"; "+error.message)}
  const pedestrianAcceptance=await page.evaluate(()=>({
   population:window.MshinCityDebug.city.population,
   agents:window.MshinCityDebug.city.citizens.length,
