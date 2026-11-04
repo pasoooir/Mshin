@@ -116,3 +116,23 @@ test("city simulation applies the cached commute productivity metric to its budg
   invalid.stats.commuteProductivityPercent = 84;
   assert.equal(isValidCitySave(invalid), false);
 });
+
+test("rain and snow weather reduce business output while leaving resident and public income unchanged", () => {
+  const city = createInitialCity(20261104);
+  placeCityItem(city, 17, 14, "home");
+  placeCityItem(city, 18, 14, "shop");
+  placeCityItem(city, 19, 14, "industrial");
+  placeCityItem(city, 18, 17, "administrative");
+  city.population = 24;
+  city.tick = 4 * 144;
+  const rainy = computeCityEconomy(city, {}, { averageCongestionDelay: 0 });
+  assert.equal(rainy.weather, "rain");
+  assert.ok(rainy.weatherEconomicLoss > 0);
+  assert.ok(rainy.weatherProductivityPercent < 100);
+  city.tick = 23 * 144;
+  const snowy = computeCityEconomy(city, {}, { averageCongestionDelay: 0 });
+  assert.equal(snowy.weather, "snow");
+  assert.ok(snowy.weatherEconomicLoss > rainy.weatherEconomicLoss);
+  assert.equal(snowy.residentialTax, rainy.residentialTax);
+  assert.equal(snowy.publicFunding, rainy.publicFunding);
+});
