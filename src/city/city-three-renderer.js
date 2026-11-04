@@ -674,6 +674,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         decorativeTrees: decorativeTreeCount,
         decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
+        streetLightInstances: streetLights.count,
+        streetLightBatches: streetLights.count > 0 ? 1 : 0,
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
         realisticArchitecture: true,
