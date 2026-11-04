@@ -241,7 +241,6 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     dispose() {
       camera.remove(skyRig, weatherRig);
       scene.remove(skyDome);
-      scene.remove(skyDome);
       skyGeometry.dispose(); skyMaterial.dispose();
       starGeometry.dispose(); stars.material.dispose();
       sunDisc.geometry.dispose(); sunDisc.material.dispose();
