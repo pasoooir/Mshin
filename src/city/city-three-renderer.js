@@ -633,6 +633,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
     camera.position.set(targetX + Math.sin(orbitAngle) * orbitRadius, targetY + 38, targetZ + Math.cos(orbitAngle) * orbitRadius);
     camera.lookAt(targetX, targetY, targetZ);
     camera.updateProjectionMatrix();
+    // Pointer-driven anchor raycasts run before the next WebGL render; keep the
+    // camera world matrix current so those raycasts use the just-updated pose.
+    camera.updateMatrixWorld(true);
   }
 
   function render(city, view, cam) {
