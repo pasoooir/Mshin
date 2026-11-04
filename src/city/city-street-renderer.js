@@ -3,8 +3,7 @@ export function createCitySidewalkLayer(THREE, scene, isRoadCell, gridSize, surf
   const material = new THREE.MeshStandardMaterial({
     ...(surface || {}),
     color: "#c8c4b6",
-    roughness: 0.94,
-    normalScale: new THREE.Vector2(0.24, 0.24)
+    roughness: 0.94
   });
   const geometry = new THREE.BoxGeometry(1, 0.10, 1);
   const strips = [];
