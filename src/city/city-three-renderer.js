@@ -624,13 +624,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
     camera.zoom = zoom;
     const worldScale = height / 50;
     const targetX = Number.isFinite(cam.currentTargetX) ? cam.currentTargetX : Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
+    const targetY = Number.isFinite(cam.currentTargetY) ? cam.currentTargetY : Number.isFinite(cam.targetY) ? cam.targetY : 0;
     const targetZ = Number.isFinite(cam.currentTargetZ) ? cam.currentTargetZ : Number.isFinite(cam.targetZ) ? cam.targetZ : -(cam.y || 0) / worldScale;
     const orbit = Number.isFinite(cam.orbit) ? cam.orbit : 0;
     cameraOrbit = orbit;
     const orbitAngle = Math.PI / 4 + orbit;
     const orbitRadius = Math.hypot(48, 48);
-    camera.position.set(targetX + Math.sin(orbitAngle) * orbitRadius, 38, targetZ + Math.cos(orbitAngle) * orbitRadius);
-    camera.lookAt(targetX, 0, targetZ);
+    camera.position.set(targetX + Math.sin(orbitAngle) * orbitRadius, targetY + 38, targetZ + Math.cos(orbitAngle) * orbitRadius);
+    camera.lookAt(targetX, targetY, targetZ);
     camera.updateProjectionMatrix();
   }
 
@@ -662,7 +663,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObjects(buildings.children, true);
-    if (hits.length) return { x: hits[0].point.x, z: hits[0].point.z };
+    if (hits.length) return { x: hits[0].point.x, y: hits[0].point.y, z: hits[0].point.z };
     return groundPointAt(screenX, screenY);
   }
 
