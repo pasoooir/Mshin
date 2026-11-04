@@ -111,3 +111,5 @@ test("road demolition retires stranded traffic before the next save",()=>{
  assert.equal(city.traffic.some(vehicle=>vehicle.id===stranded.id),false);
  assert.equal(isValidCitySave(city),true);
 });
+
+test("unfinished home, shop and factory buildings stay inactive until their timer completes",()=>{for(const [type,x,y] of [["home",17,13],["shop",18,13],["industrial",19,13]]){const c=createInitialCity(2026);c.grid[12][x]="road";const result=placeCityItem(c,x,13,type,45);assert.equal(result.ok,true);assert.equal(result.item.construction.remaining,45);const before=type==="home"?c.population:c.stats.jobs;stepCity(c,44);assert.ok(c.buildings[0].construction,"building remains a construction site before the final second");assert.equal(type==="home"?c.population:c.stats.jobs,before);stepCity(c,1);assert.equal(c.buildings[0].construction,undefined,"finished building replaces the construction site");if(type==="home")assert.equal(c.population,12);}});
