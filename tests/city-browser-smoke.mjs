@@ -207,9 +207,12 @@ try{
  await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
- assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
- await page.waitForFunction(()=>window.MshinCity3DStats?.stylizedBuildings>=2,undefined,{timeout:5000});
- assert.ok(await page.evaluate(()=>window.MshinCity3DStats.stylizedBuildings>=2),"new residential buildings must be rendered with the 3D building family system");
+ assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home"&&b.construction)),"residential zoning must first create a timed construction site");
+ await page.waitForFunction(()=>window.MshinCity3DStats?.constructionSites>=1,undefined,{timeout:5000});
+ assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.population),0,"unfinished homes must not add residents before completion");
+ await page.evaluate(()=>{for(let i=0;i<45;i++)window.MshinCityDebug.step()});
+ await page.waitForFunction(()=>window.MshinCity3DStats?.constructionSites===0&&window.MshinCity3DStats?.completedBuildings>=2,undefined,{timeout:5000});
+ assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.population>=12),"residents must arrive only after the construction timer completes");
  await page.waitForFunction(()=>window.MshinCity3DStats?.pedestrians===window.MshinCityDebug.city.citizens.length&&window.MshinCity3DStats.pedestrians>0,undefined,{timeout:5000});
  const pedestrianAcceptance=await page.evaluate(()=>({
   population:window.MshinCityDebug.city.population,
@@ -223,7 +226,7 @@ try{
  assert.equal(pedestrianAcceptance.onRoad,true,"pedestrian route nodes must remain on connected road tiles");
  assert.ok(pedestrianAcceptance.drawCalls<80,"instanced pedestrians must preserve the mobile draw-call budget");
  for(const [type,x,y] of [["power",18,17],["water",14,17],["police",18,14]]){await clickCityTool(page,type);const point=await page.evaluate(({x,y})=>window.MshinCityDebug.screenForTile(x,y),{x,y});await page.mouse.click(point.x,point.y);assert.ok(await page.evaluate(({x,y,type})=>window.MshinCityDebug.city.buildings.some(b=>b.x===x&&b.y===y&&b.type===type),{x,y,type}),type+" infrastructure/service should be constructible on mobile")}
- await page.evaluate(()=>window.MshinCityDebug.step());
+ await page.evaluate(()=>{for(let i=0;i<45;i++)window.MshinCityDebug.step()});
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
  const secondHome=await page.evaluate(()=>window.MshinCityDebug.place(17,13,"home"));assert.equal(secondHome.ok,true,"a second road-accessible home should be constructible");
