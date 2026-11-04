@@ -1,20 +1,69 @@
 import { getCitySeasonalWeather } from "./city-seasonal-weather.js";
-
-const DAY_SKY = "#62cfff";
-const NIGHT_SKY = "#101b35";
-const SEASON_SKIES = ["#65e0ff", "#4fbaff", "#ffbd78", "#9ecbff"];
+import { getCityAtmosphericColors } from "./city-color-science.js";
 const SEASON_FOLIAGE = [
-  ["#20e85a", "#45f52e", "#a4ff32"],
-  ["#12d94f", "#39ed32", "#83f52b"],
-  ["#ff7a24", "#ffb52b", "#ffda42"],
-  ["#36bd75", "#5cdb91", "#a0ed82"]
+  ["#477c4e", "#6f9b57", "#9caf69"],
+  ["#356e42", "#4e8750", "#79a65d"],
+  ["#a45f3e", "#c18448", "#d2a15b"],
+  ["#627c70", "#84978a", "#a6b5a5"]
 ];
 
 export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fill, windowMaterials, getViewport, getFoliageMaterials = () => [] }) {
-  const daySky = new THREE.Color(DAY_SKY);
-  const nightSky = new THREE.Color(NIGHT_SKY);
-  scene.background = daySky.clone();
-  scene.fog.color.copy(daySky);
+  const initialAtmosphere = getCityAtmosphericColors(495, "spring", "clear");
+  scene.background = new THREE.Color(initialAtmosphere.zenith);
+  scene.fog.color.set(initialAtmosphere.horizon);
+
+  // A camera-following atmospheric dome provides a continuous zenith-to-horizon
+  // gradient and a soft solar halo; it is not a flat skybox or a single RGB fill.
+  const skyGeometry = new THREE.SphereGeometry(900, 32, 20);
+  const skyMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uZenith: { value: new THREE.Color(initialAtmosphere.zenith) },
+      uHorizon: { value: new THREE.Color(initialAtmosphere.horizon) },
+      uSunDirection: { value: new THREE.Vector3(-0.35, 0.75, -0.55).normalize() },
+      uSunColor: { value: new THREE.Color(initialAtmosphere.sunlight) },
+      uSunIntensity: { value: 1.0 }
+    },
+    vertexShader: `
+      varying vec3 vWorldDirection;
+      void main() {
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldDirection = normalize(worldPosition.xyz - cameraPosition);
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uZenith;
+      uniform vec3 uHorizon;
+      uniform vec3 uSunDirection;
+      uniform vec3 uSunColor;
+      uniform float uSunIntensity;
+      varying vec3 vWorldDirection;
+      void main() {
+        vec3 direction = normalize(vWorldDirection);
+        float vertical = clamp(direction.y, -0.12, 1.0);
+        float gradient = smoothstep(-0.10, 0.76, vertical);
+        vec3 sky = mix(uHorizon, uZenith, gradient);
+        float sunAngle = max(dot(direction, normalize(uSunDirection)), 0.0);
+        float solarDisc = pow(sunAngle, 220.0) * uSunIntensity;
+        float solarHalo = pow(sunAngle, 13.0) * uSunIntensity * 0.13;
+        float horizonGlow = pow(1.0 - abs(vertical), 5.0) * uSunIntensity * 0.035;
+        vec3 colour = sky + uSunColor * (solarDisc + solarHalo + horizonGlow);
+        gl_FragColor = vec4(colour, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
+    side: THREE.BackSide,
+    depthWrite: false,
+    depthTest: false,
+    toneMapped: true
+  });
+  const skyDome = new THREE.Mesh(skyGeometry, skyMaterial);
+  skyDome.name = "MshinPhotorealisticAtmosphericSky";
+  skyDome.frustumCulled = false;
+  skyDome.renderOrder = -1000;
+  skyDome.position.copy(camera.position);
+  scene.add(skyDome);
 
   const skyRig = new THREE.Group();
   const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(2.35, 18, 12),
@@ -132,16 +181,31 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     const daylight = Math.max(0, Math.min(1, Math.sin(minute / 1440 * Math.PI * 2 - Math.PI / 2)));
     const night = 1 - daylight;
     const bucket = Math.round(daylight * 40);
-    sun.intensity = (0.12 + daylight * 3.23) * (currentSeason === 3 ? 0.88 : 1);
-    hemisphere.intensity = 0.62 + daylight * 1.63;
-    fill.intensity = 0.28 + daylight * 0.77;
+    const atmosphereColours = getCityAtmosphericColors(minute, seasonal.season, seasonal.weather);
+    const zenithColour = new THREE.Color(atmosphereColours.zenith);
+    const horizonColour = new THREE.Color(atmosphereColours.horizon);
+    const sunColour = new THREE.Color(atmosphereColours.sunlight);
+    const solarAngle = (minute / 1440) * Math.PI * 2 - Math.PI / 2;
+    const sunDirection = new THREE.Vector3(Math.cos(solarAngle), Math.sin(solarAngle), -0.34).normalize();
+    const daylightFactor = currentSeason === 3 ? 0.88 : 1;
+    sun.intensity = (0.035 + daylight * 3.315) * daylightFactor;
+    sun.position.copy(sunDirection).multiplyScalar(150);
+    sun.color.copy(sunColour);
+    hemisphere.intensity = 0.48 + daylight * 1.72;
+    hemisphere.color.copy(zenithColour);
+    hemisphere.groundColor.set(seasonal.season === "winter" ? "#89969b" : "#596b4e");
+    fill.intensity = 0.22 + daylight * 0.82;
+    skyDome.position.copy(camera.position);
+    skyMaterial.uniforms.uZenith.value.copy(zenithColour);
+    skyMaterial.uniforms.uHorizon.value.copy(horizonColour);
+    skyMaterial.uniforms.uSunDirection.value.copy(sunDirection);
+    skyMaterial.uniforms.uSunColor.value.copy(sunColour);
+    skyMaterial.uniforms.uSunIntensity.value = daylight * (seasonal.weather === "rain" ? 0.38 : 1);
+    scene.background.copy(zenithColour);
+    scene.fog.color.copy(horizonColour);
+    const glow = 0.06 + night * 1.02;
     if (bucket !== lightingBucket) {
       lightingBucket = bucket;
-      const seasonSky = new THREE.Color(SEASON_SKIES[currentSeason]);
-      const sky = nightSky.clone().lerp(seasonSky, daylight);
-      scene.background.copy(sky);
-      scene.fog.color.copy(sky);
-      const glow = 0.06 + night * 1.02;
       for (const material of windowMaterials) {
         material.emissive.set(night > 0.45 ? "#ffbd70" : "#3e9db0");
         material.emissiveIntensity = glow;
@@ -149,13 +213,17 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
       sunDisc.visible = daylight > 0.08;
       moonDisc.visible = night > 0.28;
       stars.visible = night > 0.72;
-      lightingStats = {
-        minuteOfDay: minute, daylight: Number(daylight.toFixed(3)), windowGlow: Number(glow.toFixed(3)),
-        phase: daylight > 0.72 ? "day" : night > 0.72 ? "night" : "twilight",
-        season: seasonal.season, seasonLabel: seasonal.seasonLabel, weather: seasonal.weather,
-        skyColor: "#" + sky.getHexString()
-      };
     }
+    lightingStats = {
+      minuteOfDay: minute, daylight: Number(daylight.toFixed(3)), windowGlow: Number(glow.toFixed(3)),
+      phase: daylight > 0.72 ? "day" : night > 0.72 ? "night" : "twilight",
+      season: seasonal.season, seasonLabel: seasonal.seasonLabel, weather: seasonal.weather,
+      skyColor: atmosphereColours.zenith,
+      horizonColor: atmosphereColours.horizon,
+      sunlightColor: atmosphereColours.sunlight,
+      colorDepth: "24-bit RGB",
+      skyDome: true
+    };
   }
 
   resize();
@@ -170,6 +238,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     },
     dispose() {
       camera.remove(skyRig, weatherRig);
+      skyGeometry.dispose(); skyMaterial.dispose();
       starGeometry.dispose(); stars.material.dispose();
       sunDisc.geometry.dispose(); sunDisc.material.dispose();
       moonDisc.geometry.dispose(); moonDisc.material.dispose();
