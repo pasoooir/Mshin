@@ -38,66 +38,69 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
   const pick = (arr) => arr[Math.floor(rand() * arr.length) % arr.length];
 
   // ─── SimCity BuildIt inspired vibrant palettes ───────────────────────────
+  // Architecture-led mineral, timber, brick and glass palettes.
+  // Deterministic per-building selection keeps variety without random neon colors.
   const PALETTES = {
     home: [
-      { wall:"#ff3fa4", side:"#a90075", roof:"#35106f", trim:"#fff36b", accent:"#00f5d4", door:"#5a164f" },
-      { wall:"#ffb52e", side:"#e94a12", roof:"#174bd6", trim:"#fff8a6", accent:"#ff32c8", door:"#7b2512" },
-      { wall:"#35e7ff", side:"#0875d1", roof:"#ff3b9d", trim:"#f7ff73", accent:"#a7ff32", door:"#103b8c" },
-      { wall:"#b95cff", side:"#6420c8", roof:"#ffcf24", trim:"#fff4d0", accent:"#00f0c8", door:"#39106f" },
-      { wall:"#8dff38", side:"#20a84c", roof:"#ff4b32", trim:"#fff77a", accent:"#ff38b8", door:"#14552b" }
+      { wall:"#d8c8ad", side:"#a99478", roof:"#62594e", trim:"#eee4d1", accent:"#71806b", door:"#654b38" },
+      { wall:"#c7b9a4", side:"#938674", roof:"#514d48", trim:"#e5dac7", accent:"#7d8c91", door:"#594638" },
+      { wall:"#e2d5bd", side:"#b6a58b", roof:"#74665a", trim:"#f0e7d6", accent:"#8b795f", door:"#76543e" },
+      { wall:"#b9b5a7", side:"#898b82", roof:"#555b5b", trim:"#dedbd0", accent:"#718078", door:"#4d514c" },
+      { wall:"#c9a994", side:"#9d7867", roof:"#5c514d", trim:"#ead7c7", accent:"#7e8270", door:"#684b3c" },
+      { wall:"#d5d0c4", side:"#a9a79d", roof:"#6a6b68", trim:"#f0ede4", accent:"#7e918f", door:"#65584b" }
     ],
     shop: [
-      { wall:"#ffdb20", side:"#f05a00", roof:"#e90086", trim:"#fffca8", accent:"#00eaff", door:"#7b1457" },
-      { wall:"#00e6d0", side:"#007fbd", roof:"#ff3c9f", trim:"#f4ff8a", accent:"#ffb52e", door:"#064b82" },
-      { wall:"#ff5b35", side:"#bd164d", roof:"#6424db", trim:"#fff27a", accent:"#24f5ff", door:"#64102c" },
-      { wall:"#b9ff24", side:"#299b37", roof:"#ff3c24", trim:"#ffffb0", accent:"#f52dba", door:"#15562b" }
+      { wall:"#c8b9a1", side:"#95846e", roof:"#555b5d", trim:"#e8dfcf", accent:"#667f83", door:"#4e4c45" },
+      { wall:"#b9c1bd", side:"#899894", roof:"#4e5b60", trim:"#e2e7df", accent:"#8a735e", door:"#48575a" },
+      { wall:"#d1c4ae", side:"#a08c73", roof:"#68605a", trim:"#eee4d3", accent:"#8c765f", door:"#5d493b" },
+      { wall:"#b6b2a6", side:"#87877d", roof:"#555754", trim:"#e0ddd2", accent:"#687d72", door:"#4e514b" }
     ],
     industrial: [
-      { wall:"#ff9d16", side:"#c92d12", roof:"#3430c9", trim:"#fff15c", accent:"#00f2ff", door:"#7d1c14" },
-      { wall:"#22e5d0", side:"#0875a8", roof:"#f51c83", trim:"#faff70", accent:"#ffb51f", door:"#073d70" },
-      { wall:"#eaff22", side:"#79b900", roof:"#6424c9", trim:"#fff5a0", accent:"#ff4c24", door:"#315900" }
+      { wall:"#aeb5b2", side:"#7f8987", roof:"#4e5658", trim:"#d8ddda", accent:"#8c795f", door:"#4b5555" },
+      { wall:"#c0b8a7", side:"#918a7c", roof:"#5a5d5b", trim:"#e3ddd0", accent:"#73827e", door:"#55534b" },
+      { wall:"#a9ada8", side:"#7c8581", roof:"#4a5252", trim:"#d5d8d1", accent:"#9a805e", door:"#4b514d" }
     ],
     administrative: [
-      { wall:"#9d48ff", side:"#4a16b8", roof:"#ffcf20", trim:"#fff9a0", accent:"#00f4e4", door:"#321078" },
-      { wall:"#ff4ba8", side:"#b80b75", roof:"#1c50dc", trim:"#fff68a", accent:"#a5ff28", door:"#671052" },
-      { wall:"#22dfff", side:"#0876c9", roof:"#fa3296", trim:"#fff8a0", accent:"#ffb51f", door:"#10417b" }
+      { wall:"#c7c9c2", side:"#969d9b", roof:"#4d585d", trim:"#e9e8df", accent:"#71878a", door:"#48565a" },
+      { wall:"#b9c4c3", side:"#87999a", roof:"#46565d", trim:"#e2e9e5", accent:"#9b876c", door:"#46575a" },
+      { wall:"#d0c8b9", side:"#a19889", roof:"#5a5b58", trim:"#eee7d9", accent:"#7d8980", door:"#59534a" }
     ],
     service: [
-      { wall:"#20e5ff", side:"#0758b8", roof:"#ff3d9b", trim:"#fff77a", accent:"#a4ff25", door:"#103778" },
-      { wall:"#ffbd27", side:"#ed4b10", roof:"#5625d8", trim:"#fff8a4", accent:"#00f2db", door:"#77250c" },
-      { wall:"#a7ff2c", side:"#15984d", roof:"#f52e70", trim:"#ffff9c", accent:"#26dfff", door:"#15552b" }
+      { wall:"#c6c9c1", side:"#929a91", roof:"#555d5a", trim:"#e6e8df", accent:"#74877c", door:"#4d5a53" },
+      { wall:"#c8c0ad", side:"#9b8e79", roof:"#5d5a53", trim:"#e9e1d1", accent:"#8c8069", door:"#5d5143" },
+      { wall:"#b8c5c4", side:"#87999a", roof:"#4b5b60", trim:"#e0e9e5", accent:"#728d91", door:"#45595c" }
     ],
     power: [
-      { wall:"#ffe21d", side:"#e85b08", roof:"#bd168b", trim:"#fffba2", accent:"#00efff", door:"#77230a" },
-      { wall:"#ff6a22", side:"#c51d39", roof:"#4820c9", trim:"#fff56a", accent:"#a9ff28", door:"#68112b" }
+      { wall:"#aeb8b5", side:"#7e8c89", roof:"#4b5558", trim:"#d9e0dc", accent:"#9a835e", door:"#4a5654" },
+      { wall:"#c0b8a8", side:"#928879", roof:"#555957", trim:"#e4ddcf", accent:"#75867c", door:"#565147" }
     ],
     water: [
-      { wall:"#27eaff", side:"#0877d5", roof:"#4422cf", trim:"#f8ff8a", accent:"#00f4c8", door:"#103c8b" },
-      { wall:"#20f4ce", side:"#087d9e", roof:"#ff3d9a", trim:"#fffaa0", accent:"#ffbd25", door:"#07516a" }
+      { wall:"#b8c8c7", side:"#829a9b", roof:"#4b6065", trim:"#e2ece7", accent:"#6d9695", door:"#455e62" },
+      { wall:"#c7cfc5", side:"#929f93", roof:"#52605c", trim:"#e7ede2", accent:"#819a8c", door:"#4e6258" }
     ],
     sewage: [
-      { wall:"#a8f52a", side:"#278d36", roof:"#5a20bd", trim:"#fff46b", accent:"#ff4b9c", door:"#205c24" },
-      { wall:"#ffbd24", side:"#bd4b0c", roof:"#174ac8", trim:"#fffaa0", accent:"#00f0dc", door:"#6b2a0c" }
+      { wall:"#b7b8aa", side:"#858b7c", roof:"#51564f", trim:"#dedfd1", accent:"#8a866d", door:"#505548" },
+      { wall:"#c4bca9", side:"#938875", roof:"#5a5750", trim:"#e6dece", accent:"#8a8067", door:"#5c5143" }
     ],
     waste: [
-      { wall:"#d9ff20", side:"#72b900", roof:"#e92c78", trim:"#fff9a0", accent:"#00eaff", door:"#426600" },
-      { wall:"#ff8c20", side:"#d73516", roof:"#5120c9", trim:"#fff36c", accent:"#23f3c5", door:"#76210d" }
+      { wall:"#b8b9a8", side:"#858c72", roof:"#55594b", trim:"#e0dfce", accent:"#8c8a65", door:"#535743" },
+      { wall:"#c5b9a4", side:"#95846c", roof:"#5d574d", trim:"#e8dfce", accent:"#8c8064", door:"#5e5141" }
     ],
     police: [
-      { wall:"#28dfff", side:"#174fc5", roof:"#18266f", trim:"#fff77a", accent:"#ff3d91", door:"#102c78" },
-      { wall:"#568bff", side:"#2536bb", roof:"#ffca22", trim:"#faff9b", accent:"#00f0e2", door:"#17266c" }
+      { wall:"#b9c3c8", side:"#87949c", roof:"#46545f", trim:"#e3e9e9", accent:"#647d91", door:"#465563" },
+      { wall:"#c7c9c4", side:"#929b9b", roof:"#505b62", trim:"#e9e9e0", accent:"#74858a", door:"#4b5b60" }
     ],
     fire: [
-      { wall:"#ff4a24", side:"#bd1235", roof:"#5120bb", trim:"#fff36a", accent:"#ffcf1f", door:"#70101e" },
-      { wall:"#ff8b20", side:"#e52b16", roof:"#2927a8", trim:"#fff89a", accent:"#00eaff", door:"#7a210b" }
+      { wall:"#c5b5a6", side:"#94786b", roof:"#56514e", trim:"#e7d9ca", accent:"#a65f48", door:"#62483e" },
+      { wall:"#c9c0ae", side:"#9a8975", roof:"#5b5750", trim:"#e9e2d3", accent:"#a36e4d", door:"#5d4d40" }
     ],
     health: [
-      { wall:"#ff58b5", side:"#bd247d", roof:"#4423c4", trim:"#fffaa0", accent:"#20f3dc", door:"#70124e" },
-      { wall:"#fff02b", side:"#e85a20", roof:"#e82d91", trim:"#ffffff", accent:"#00dfff", door:"#76260e" }
+      { wall:"#d4d1c6", side:"#a5a69d", roof:"#626a69", trim:"#f0eee5", accent:"#8ca39b", door:"#5a6762" },
+      { wall:"#c4cbc6", side:"#929e99", roof:"#53605f", trim:"#e6ebe5", accent:"#7f9b91", door:"#4f625c" }
     ],
     education: [
-      { wall:"#a94dff", side:"#5120bf", roof:"#ffcf22", trim:"#fff99a", accent:"#00e8dd", door:"#321078" },
-      { wall:"#ffb82b", side:"#e94c16", roof:"#1760d8", trim:"#fffaa0", accent:"#f72b9c", door:"#7a270d" }
+      { wall:"#cdbfa9", side:"#9a8c76", roof:"#595a54", trim:"#e9dfce", accent:"#8d8067", door:"#5c4e3f" },
+      { wall:"#c0c3b9", side:"#8e968c", roof:"#535c56", trim:"#e3e6dc", accent:"#7a8c80", door:"#50594f" }
     ]
   };
 
