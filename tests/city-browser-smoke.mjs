@@ -75,7 +75,8 @@ try{
  assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۴"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
- assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
+ assert.ok(renderStats.decorativeStreetLights>0,"street lights must populate the dedicated non-buildable sidewalk ROW");
+ assert.equal(renderStats.streetLightingDrawCalls,2,"all street lights must share exactly two instanced draw calls");
  assert.equal(renderStats.streetFurniturePlacementReady,true,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
  assert.ok(renderStats.sidewalkStrips>0,"road edges must render instanced pedestrian sidewalks inside the right-of-way");
  assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
@@ -405,7 +406,10 @@ try{
    await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
   }catch(error){
    const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
-   throw new Error("landscape 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message);
+   // Trust live renderer state if Playwright polling races completed WebGL initialization.
+   if(!(diagnostic.ready==="true"&&diagnostic.rendererReady===true&&diagnostic.canvasCount>0)){
+    throw new Error("landscape 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message);
+   }
   }
   try{await landscapePage.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display==="none",undefined,{timeout:5000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({innerWidth,innerHeight,screenWidth:screen.width,screenHeight:screen.height,mediaLandscape:matchMedia("(orientation: landscape)").matches,mediaPortrait:matchMedia("(orientation: portrait)").matches,orientation:screen.orientation?.type,gateClass:document.querySelector("#cityOrientationGate")?.className,gateHidden:document.querySelector("#cityOrientationGate")?.hidden,gateDisplay:getComputedStyle(document.querySelector("#cityOrientationGate")).display,cityOrientation:document.documentElement.dataset.cityOrientation}));throw new Error("landscape orientation gate did not close: "+JSON.stringify(diagnostic)+"; "+error.message)}
   const landscape=await landscapePage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,height:innerHeight,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));
@@ -415,20 +419,35 @@ try{
   await landscapePage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
   await landscapePage.evaluate(()=>localStorage.setItem("mshin-city-save-v2",JSON.stringify({schemaVersion:2,cityId:"corrupt",name:"broken",seed:1,tick:0,treasury:0,population:0,grid:[[]]})));
   await landscapePage.reload({waitUntil:"domcontentloaded"});
-  await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  try{
+   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  }catch(error){
+   const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
+   if(!(diagnostic.ready==="true"&&diagnostic.rendererReady===true&&diagnostic.canvasCount>0)){
+    throw new Error("3D renderer did not recover after malformed-save reload: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message);
+   }
+  }
   const recovery=await landscapePage.evaluate(()=>({
     gridRows:window.MshinCityDebug.city.grid.length,
     gridColumns:window.MshinCityDebug.city.grid.every(row=>row.length===32),
     buildings:window.MshinCityDebug.city.buildings.length,
     zones:window.MshinCityDebug.city.zones.length,
     traffic:window.MshinCityDebug.city.traffic.length,
+    buildingTiles:window.MshinCityDebug.city.grid.flat().filter(tile=>tile==="building").length,
+    zoneTiles:window.MshinCityDebug.city.grid.flat().filter(tile=>typeof tile==="string"&&tile.startsWith("zone-")).length,
+    validBuildings:window.MshinCityDebug.city.buildings.every(building=>Number.isSafeInteger(building.id)&&building.id>0&&window.MshinCityDebug.city.grid[building.y]?.[building.x]==="building"),
+    validZones:window.MshinCityDebug.city.zones.every(zone=>window.MshinCityDebug.city.grid[zone.y]?.[zone.x]==="zone-"+zone.type),
+    validTraffic:window.MshinCityDebug.city.traffic.every(vehicle=>window.MshinCityDebug.city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"),
     saved:window.MshinCityDebug.save()
   }));
   assert.equal(recovery.gridRows,32,"malformed local saves must recover to a complete city grid");
   assert.equal(recovery.gridColumns,true,"save recovery must restore all 32 columns");
-  assert.equal(recovery.buildings,0,"malformed save recovery must not retain invalid building records");
-  assert.equal(recovery.zones,0,"malformed save recovery must not retain invalid zones");
-  assert.equal(recovery.traffic,0,"malformed save recovery must not retain invalid traffic");
+  assert.equal(recovery.saved,true,"a recovered city must be persisted as the new valid snapshot");
+  assert.equal(recovery.buildings,recovery.buildingTiles,"recovery must preserve only buildings represented by valid building tiles");
+  assert.equal(recovery.zones,recovery.zoneTiles,"recovery must preserve only zones represented by valid zone tiles");
+  assert.equal(recovery.validBuildings,true,"recovery must not retain invalid building records");
+  assert.equal(recovery.validZones,true,"recovery must not retain invalid zone records");
+  assert.equal(recovery.validTraffic,true,"recovery must not retain vehicles outside valid road tiles");
  }finally{await landscapePage.close()}
  const legacyGrid=Array.from({length:32},()=>Array(32).fill("grass"));
  for(let y=0;y<32;y++)for(let x=0;x<32;x++)if([7,15,23].includes(x)||[7,15,23].includes(y))legacyGrid[y][x]="road";

@@ -275,6 +275,8 @@ function mount(){
  function resumeCityLoop(){if(document.hidden||raf)return;last=0;lastRender=0;raf=requestAnimationFrame(frame)}
  function pauseCityLoop(){if(raf)cancelAnimationFrame(raf);raf=0;persist(city)}
  document.addEventListener("visibilitychange",()=>{if(document.hidden)pauseCityLoop();else resumeCityLoop()});
- raf=requestAnimationFrame(frame);addEventListener("pagehide",pauseCityLoop,{once:true});
+ addEventListener("focus",resumeCityLoop);addEventListener("pageshow",resumeCityLoop);
+ const loopWatchdog=setInterval(()=>{if(!document.hidden&&!raf)resumeCityLoop()},250);
+ raf=requestAnimationFrame(frame);addEventListener("pagehide",()=>{clearInterval(loopWatchdog);pauseCityLoop()},{once:true});
 }
 if(typeof document!=="undefined"){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});else mount()}

@@ -1,0 +1,53 @@
+/* BuildIt-inspired original city HUD: readable resource chips and tactile tool tiles. */
+.cityBrand,.cityMetric,.cityTools,.cityBottomInfo,.citySpeed{
+  background:linear-gradient(145deg,rgba(20,48,52,.91),rgba(12,30,39,.88));
+  border:1px solid rgba(231,244,219,.32);
+  box-shadow:0 5px 18px rgba(8,24,19,.34),inset 0 1px rgba(255,255,255,.08);
+  backdrop-filter:blur(10px);
+}
+.cityBrand{border-radius:15px 15px 15px 5px}
+.cityMetrics{gap:6px}
+.cityMetric{min-width:76px;border-radius:12px;padding:7px 10px}
+.cityMetric small{color:#c2d7bd}
+.cityMetric b{color:#fff4cf;text-shadow:0 1px 2px #14251a}
+.cityActions .cityAction{border-radius:11px;min-height:42px}
+.cityActions .cityAction.primary{background:linear-gradient(180deg,#dff6c7,#9dce72);color:#27421e;border:1px solid #f4ffdc;box-shadow:0 3px 0 #547b3d}
+.cityTools{border-radius:15px;padding:7px;background:rgba(232,241,222,.94);border:1px solid rgba(255,255,255,.9);box-shadow:0 8px 24px #10271955;max-height:52vh;overflow:auto}
+.cityToolCategories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.cityToolCategory{min-height:44px;border:1px solid #d3dfc8;border-radius:10px;background:linear-gradient(180deg,#fff,#e8f1df);color:#355b2e;font-weight:900;padding:7px 9px;box-shadow:0 2px 0 #c4d2b9}
+.cityToolCategory[aria-expanded="true"]{background:linear-gradient(180deg,#d9f3b7,#a6d47a);border-color:#8eb75d}
+.cityToolPanel{display:grid;grid-template-columns:repeat(2,minmax(48px,1fr));gap:6px;padding-top:6px}
+.cityToolPanel[hidden]{display:none}
+.cityTool{width:auto;min-width:48px;min-height:54px;height:auto;border-radius:11px;border:1px solid #d4dfcb;background:linear-gradient(180deg,#fff,#e9f0e2);color:#426b32;font-size:21px;box-shadow:0 2px 0 #c6d4bb;gap:2px}
+.cityTool small{color:#3c5632;font-size:9px}
+.cityTool.active,.cityTool[aria-pressed="true"]{background:linear-gradient(180deg,#dff7bb,#a8d978);color:#284b22;border:1px solid #82b75b;box-shadow:0 0 0 2px #8cbd5b55,0 2px 0 #6d9947}
+.cityBottomInfo{border-radius:13px}
+.citySpeed button.active{background:linear-gradient(180deg,#dff7bb,#a8d978);color:#284b22}
+.cityMapControls button{min-width:48px;min-height:48px;border-radius:12px;background:linear-gradient(180deg,#fff,#e8f1df);color:#416a31;border:1px solid #cbd9bf;box-shadow:0 3px 0 #b6c7a8}
+.cityToast{background:rgba(20,48,43,.94);border-color:#d4e7c166;box-shadow:0 6px 22px #0b201c66}
+@media(max-width:760px){
+ .cityTools{max-width:min(192px,46vw);max-height:52vh;overflow:auto}
+ .cityToolCategories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cityToolCategory{font-size:10px;padding:6px}
+ .cityToolPanel{grid-template-columns:repeat(2,minmax(44px,1fr))}
+ .cityMetric{min-width:66px}
+ .cityActions .cityAction{min-height:40px}
+}
+@media(prefers-reduced-motion:no-preference){
+ .cityTool,.cityToolCategory,.cityAction,.cityMapControls button{transition:transform .12s ease,filter .12s ease,box-shadow .12s ease}
+ .cityTool:active,.cityToolCategory:active,.cityAction:active,.cityMapControls button:active{transform:translateY(1px) scale(.97);filter:brightness(1.04)}
+}
+.cityTool:focus-visible,.cityToolCategory:focus-visible,.cityActions button:focus-visible,.cityActions a:focus-visible,.cityMapControls button:focus-visible{outline:3px solid #f6d56e;outline-offset:2px}
+
+/* Compact illustrated badges: symbols are paired with persistent text labels. */
+.cityMetric:nth-child(1) small::before{content:"♟ ";color:#9ed7ff}
+.cityMetric:nth-child(2) small::before{content:"◉ ";color:#f4d26f}
+.cityMetric:nth-child(3) small::before{content:"▥ ";color:#b5d7a0}
+.cityMetric:nth-child(4) small::before{content:"☺ ";color:#a9e37b}
+.cityMetric:nth-child(5) small::before{content:"⌂ ";color:#9bd6ed}
+.cityMetric:nth-child(6) small::before{content:"↘ ";color:#f0b18b}
+.cityMetric:nth-child(7) small::before{content:"⇄ ";color:#a9d9e9}
+.cityToolCategory[data-city-category="manage"]::before{content:"⚒ ";font-size:15px}
+.cityToolCategory[data-city-category="roads"]::before{content:"▰ ";font-size:15px}
+.cityToolCategory[data-city-category="buildings"]::before{content:"⌂ ";font-size:17px}
+.cityToolCategory[data-city-category="services"]::before{content:"✚ ";font-size:15px}
