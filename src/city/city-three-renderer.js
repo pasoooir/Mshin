@@ -294,8 +294,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const buildings = new THREE.Group();
   scene.add(buildings);
 
-  // Keep moving city traffic in two instanced batches so the mobile renderer
-  // adds only two draw calls regardless of the number of visible vehicles.
   const trafficGroup = new THREE.Group();
   scene.add(trafficGroup);
   const trafficBodyGeometry = new THREE.BoxGeometry(1.02, 0.42, 1.78);
