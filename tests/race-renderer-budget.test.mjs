@@ -148,8 +148,8 @@ test("race surfaces always have offline-first full-color RGBA8 procedural textur
     "offline/data-saver/software-GPU sessions must keep the local texture rather than a flat fallback");
   assert.match(source, /Local procedural RGBA8 \+ optional Poly Haven CC0/,
     "the renderer must identify local texture readiness separately from optional photo downloads");
-  assert.match(source, /base=mix\(base,scanned,\.78\)/,
-    "the uploaded texture must materially affect visible road and terrain color");
+  assert.match(source, /gl\.bindTexture\(gl\.TEXTURE_2D,p\.texture\|\|null\);gl\.uniform1i\(uniforms\.surface,1\);gl\.uniform1f\(uniforms\.surfaceEnabled,p\.texture\?1:0\)/,
+    "each textured road and terrain mesh must bind its RGBA8 surface map for the PBR shader");
 });
 
 test("race surface texture generator includes distinct biome-specific natural detail", () => {
