@@ -125,9 +125,24 @@ try{
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds),1,"unchanged buildings must not be recreated during subsequent render frames");
  await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.buildings?.some(b=>b.x===14&&b.y===14)),"city changes should persist");
  await clickCityTool(page,"select");
- const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
+ const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit),focusAnchorBefore=await page.evaluate(()=>window.MshinCityDebug.groundPointAt(190,420));
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",91,120,420);send("pointerdown",92,260,420);send("pointermove",92,320,420);send("pointerup",92,320,420);send("pointerup",91,120,420)});
  const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitAfter=await page.evaluate(()=>window.MshinCityDebug.view.orbit);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");assert.notEqual(orbitAfter,orbitBefore,"two-finger horizontal drag must orbit the 3D camera around the buildings");
+ const focusAnchorAfter=await page.evaluate(()=>window.MshinCityDebug.groundPointAt(220,420));
+ assert.ok(focusAnchorBefore&&focusAnchorAfter,"browser acceptance must obtain real Three.js ground-raycast anchors");
+ assert.ok(Math.hypot(focusAnchorBefore.x-focusAnchorAfter.x,focusAnchorBefore.z-focusAnchorAfter.z)<0.08,"pinch and orbit must preserve the selected world-space point under the moving gesture midpoint");
+
+ const translationZoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",701,100,400);send("pointerdown",702,200,400);send("pointermove",701,200,400);send("pointermove",702,300,400);send("pointerup",701,200,400);send("pointerup",702,300,400)});
+ const translationZoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
+ assert.ok(Math.abs(translationZoomAfter-translationZoomBefore)<0.0001,"equal two-finger translation must rotate the view without changing zoom");
+
+ const pureRotationZoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
+ const pureRotationOrbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",711,150,350);send("pointerdown",712,250,350);send("pointermove",711,200,300);send("pointermove",712,200,400);send("pointerup",711,200,300);send("pointerup",712,200,400)});
+ assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.zoom))-pureRotationZoomBefore)<0.0001,"pure two-finger twist must not change zoom");
+ assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.orbit))-pureRotationOrbitBefore)>0.1,"twisting the two-finger line must rotate the camera around the focus");
+
  const orbitStart=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));for(let i=0;i<9;i++){const a=100+i*3,b=200+i*3;send("pointerdown",200+i*2,a,420);send("pointerdown",201+i*2,b,420);send("pointermove",200+i*2,a+100,420);send("pointermove",201+i*2,b+100,420);send("pointerup",200+i*2,a+100,420);send("pointerup",201+i*2,b+100,420)}});
  const fullTurnOrbit=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
