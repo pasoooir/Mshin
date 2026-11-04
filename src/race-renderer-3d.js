@@ -151,6 +151,8 @@ export function createRaceRenderer(canvas){
   const generation=surfaceLoadGeneration,texture=gl.createTexture();
   if(!texture){state.surfaceTextures.failed++;return}
   gl.bindTexture(gl.TEXTURE_2D,texture);
+  // A neutral one-pixel safety texel protects against a failed procedural upload.
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
   // Upload a detailed local RGBA8 texture immediately: the track never falls back
   // to a flat green plane, even offline, on mobile data-saver, or on software GPUs.
   const surfaceSize=256,proceduralPixels=createProceduralSurfacePixels(key,surfaceSize);
