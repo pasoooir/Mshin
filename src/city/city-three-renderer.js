@@ -620,7 +620,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
 
   function updateCamera(cam) {
-    const zoom = Math.max(0.4, Math.min(1.7, (cam.zoom || 0.72) * 1.25));
+    const zoom = Math.max(0.525, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
     const worldScale = height / 50;
     const targetX = Number.isFinite(cam.currentTargetX) ? cam.currentTargetX : Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
