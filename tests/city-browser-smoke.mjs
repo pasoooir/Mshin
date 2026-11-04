@@ -145,7 +145,7 @@ try{
  const pitchBefore=await page.evaluate(()=>window.MshinCityDebug.view.pitch);
  const tiltZoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  const tiltOrbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
- await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",721,140,180);send("pointerdown",722,260,180);send("pointermove",722,260,260);send("pointerup",722,260,260);send("pointerup",721,140,180)});
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",721,140,180);send("pointerdown",722,260,180);send("pointermove",721,140,260);send("pointermove",722,260,260);send("pointerup",722,260,260);send("pointerup",721,140,260)});
  const pitchAfter=await page.evaluate(()=>window.MshinCityDebug.view.pitch);
  assert.ok(pitchAfter<pitchBefore,"vertical two-finger movement must tilt the camera toward the city");
  assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.zoom))-tiltZoomBefore)<0.0001,"vertical camera tilt must not alter pinch zoom");
