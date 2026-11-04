@@ -1,6 +1,8 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
+import { updateCityCameraTransform } from "./city-camera-projection.js";
+
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -622,22 +624,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
   function updateCamera(cam) {
     const zoom = Math.max(0.525, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
-    const worldScale = height / 50;
-    const targetX = Number.isFinite(cam.currentTargetX) ? cam.currentTargetX : Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
-    const targetY = Number.isFinite(cam.currentTargetY) ? cam.currentTargetY : Number.isFinite(cam.targetY) ? cam.targetY : 0;
-    const targetZ = Number.isFinite(cam.currentTargetZ) ? cam.currentTargetZ : Number.isFinite(cam.targetZ) ? cam.targetZ : -(cam.y || 0) / worldScale;
-    const orbit = Number.isFinite(cam.orbit) ? cam.orbit : 0;
-    cameraOrbit = orbit;
-    const orbitAngle = Math.PI / 4 + orbit;
-    const orbitRadius = Math.hypot(48, 48);
-    const pitch = Math.max(0.24, Math.min(0.96, Number.isFinite(cam.pitch) ? cam.pitch : Math.atan2(38, orbitRadius)));
-    cameraPitch = pitch;
-    const horizontalRadius = orbitRadius * Math.cos(pitch);
-    const verticalOffset = orbitRadius * Math.sin(pitch);
-    camera.position.set(targetX + Math.sin(orbitAngle) * horizontalRadius, targetY + verticalOffset, targetZ + Math.cos(orbitAngle) * horizontalRadius);
-    camera.lookAt(targetX, targetY, targetZ);
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld(true);
+    const transform = updateCityCameraTransform(camera, cam, height);
+    cameraOrbit = transform.orbit;
+    cameraPitch = transform.pitch;
   }
 
   function render(city, view, cam) {
