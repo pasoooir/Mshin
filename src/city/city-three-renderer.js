@@ -16,7 +16,6 @@ const ACTIVE_END = 48;
 const ACTIVE_SIZE = 32;
 const isRoadCell = value => (value % 8 === 7 || value % 8 === 0) && value !== 0 && value !== 16 && value !== 47 && value !== 63;
 const isActiveCell = (x, y) => x >= ACTIVE_START && x < ACTIVE_END && y >= ACTIVE_START && y < ACTIVE_END;
-
 export async function createCityThreeRenderer(sourceCanvas) {
   let THREE;
   try { THREE = await import(THREE_CDN); }
@@ -26,7 +25,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
       throw new Error("Three.js could not load from either configured CDN: " + primaryError.message + " | " + fallbackError.message);
     }
   }
-
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -43,21 +41,18 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
-
   const canvas = renderer.domElement;
   canvas.id = "cityThreeViewport";
   canvas.setAttribute("aria-label", "نمای سه‌بعدی شهر خالی با شبکه خیابان‌ها و قطعات زمین");
   canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block;touch-action:none";
   sourceCanvas.parentNode.insertBefore(canvas, sourceCanvas.nextSibling);
   sourceCanvas.style.opacity = "0";
-
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#9bd4ee");
   scene.fog = new THREE.Fog("#9bd4ee", 480, 1100);
   const camera = new THREE.OrthographicCamera(-40, 40, 25, -25, 0.1, 1400);
   camera.position.set(48, 38, 48);
   camera.lookAt(0, 0, 0);
-
   const hemisphere = new THREE.HemisphereLight("#fff7e8", "#537c48", 2.25);
   scene.add(hemisphere);
   const sun = new THREE.DirectionalLight("#fff1d2", 3.35);
@@ -79,7 +74,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getViewport: () => ({ width: window.innerWidth, height: window.innerHeight }),
     getFoliageMaterials: () => canopyMaterials
   });
-
   const {
     grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface
   } = createCityPbrSurfaces(THREE, renderer);
@@ -93,7 +87,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const curbMaterial = new THREE.MeshStandardMaterial({ color: "#f1e8d0", roughness: 0.82 });
   const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#f8efcf", transparent: true, opacity: 0.72 });
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
-
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(820, 820),
     new THREE.MeshStandardMaterial({ ...grassSurface, color: "#a6b68a", roughness: 1, normalScale: new THREE.Vector2(0.24, 0.24) })
@@ -102,7 +95,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   ground.position.y = -0.34;
   ground.receiveShadow = true;
   scene.add(ground);
-
   const grassGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.06, 0.22, CITY_TILE_METERS - 0.06);
   const roadGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.01, 0.16, CITY_TILE_METERS - 0.01);
   const grassA = new THREE.InstancedMesh(grassGeometry, grassMaterial, 2304);
@@ -115,7 +107,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   let activeGrassA = 0, activeGrassB = 0, activeRoads = 0;
   let lockedGrassCountA = 0, lockedGrassCountB = 0, lockedRoadCount = 0;
   const activePlotEdges = [], lockedPlotEdges = [], curbInstances = [];
-
   for (let y = 0; y < VISUAL_GRID; y++) {
     for (let x = 0; x < VISUAL_GRID; x++) {
       const px = cityTileToWorld(x - 16);
@@ -126,19 +117,16 @@ export async function createCityThreeRenderer(sourceCanvas) {
       dummy.rotation.set(0, 0, 0);
       dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
-
       if (road) {
         (active ? roads : lockedRoads).setMatrixAt(active ? activeRoads++ : lockedRoadCount++, dummy.matrix);
         continue;
       }
-
       const alternate = (x + y) % 2 === 1;
       if (active) {
         (alternate ? grassB : grassA).setMatrixAt(alternate ? activeGrassB++ : activeGrassA++, dummy.matrix);
       } else {
         (alternate ? lockedGrassB : lockedGrassA).setMatrixAt(alternate ? lockedGrassCountB++ : lockedGrassCountA++, dummy.matrix);
       }
-
       const edgeY = 0.142;
       const edgeHalf = CITY_TILE_METERS * 0.47;
       const edges = active ? activePlotEdges : lockedPlotEdges;
@@ -148,7 +136,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
         px + edgeHalf, edgeY, pz + edgeHalf, px - edgeHalf, edgeY, pz + edgeHalf,
         px - edgeHalf, edgeY, pz + edgeHalf, px - edgeHalf, edgeY, pz - edgeHalf
       );
-
       for (const [dx, dz, sx, sz] of [[1,0,0.12,CITY_TILE_METERS*0.94],[-1,0,0.12,CITY_TILE_METERS*0.94],[0,1,CITY_TILE_METERS*0.94,0.12],[0,-1,CITY_TILE_METERS*0.94,0.12]]) {
         const nx = x + dx, ny = y + dz;
         if (nx < 0 || ny < 0 || nx >= VISUAL_GRID || ny >= VISUAL_GRID || !(isRoadCell(nx) || isRoadCell(ny))) continue;
@@ -156,7 +143,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
       }
     }
   }
-
   for (const mesh of [grassA, grassB, lockedGrassA, lockedGrassB, roads, lockedRoads]) {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.receiveShadow = true;
@@ -168,7 +154,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   lockedGrassB.count = lockedGrassCountB;
   lockedRoads.count = lockedRoadCount;
   scene.add(grassA, grassB, lockedGrassA, lockedGrassB, roads, lockedRoads);
-
   const curbGeometry = new THREE.BoxGeometry(1, 0.15, 1);
   const curbs = new THREE.InstancedMesh(curbGeometry, curbMaterial, Math.max(1, curbInstances.length));
   curbInstances.forEach((v, i) => {
@@ -182,7 +167,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   curbs.instanceMatrix.needsUpdate = true;
   curbs.receiveShadow = true;
   scene.add(curbs);
-
   function addLineLayer(points, material) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
@@ -207,7 +191,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
   const crosswalkStripeCount = 0;
-
   const lotLines = [];
   for (let y = 0; y < VISUAL_GRID; y += 2) {
     for (let x = 0; x < VISUAL_GRID; x++) {
@@ -276,15 +259,12 @@ export async function createCityThreeRenderer(sourceCanvas) {
       if (mesh.count) environment.add(mesh);
     }
   }
-
   const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
   const streetLighting = createCityStreetLighting(THREE, scene, isRoadCell, VISUAL_GRID);
   const decorativeStreetLightCount = streetLighting.count;
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
-
   const buildings = new THREE.Group();
   scene.add(buildings);
-
   const trafficGroup = new THREE.Group();
   scene.add(trafficGroup);
   const trafficBodyGeometry = new THREE.BoxGeometry(1.02, 0.42, 1.78);
@@ -300,7 +280,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   trafficGroup.add(trafficBodies, trafficWindows);
   const trafficDummy = new THREE.Object3D();
   const trafficPalette = ["#f2bd4d", "#65c8dc", "#d77e8b", "#a8c98a", "#b69be8", "#e5e9ef"];
-
   function updateTraffic(city) {
     const vehicles = Array.isArray(city.traffic) ? city.traffic.slice(0, 12) : [];
     for (let index = 0; index < vehicles.length; index++) {
@@ -314,7 +293,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
       trafficDummy.updateMatrix();
       trafficBodies.setMatrixAt(index, trafficDummy.matrix);
       trafficBodies.setColorAt(index, new THREE.Color(vehicle.color || trafficPalette[index % trafficPalette.length]));
-
       trafficDummy.position.y = 0.78;
       trafficDummy.position.z = z - 0.08;
       trafficDummy.scale.set(1.76, 1.5, 2.53);
@@ -344,7 +322,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   pedestrianGroup.add(pedestrianBodies, pedestrianHeads);
   const pedestrianDummy = new THREE.Object3D();
   const pedestrianPalette = ["#e9c56b", "#e7edf2", "#d98b75", "#8bc7b5", "#b69be8"];
-
   function updatePedestrians(city) {
     const citizens = Array.isArray(city.citizens) ? city.citizens.slice(0, 64) : [];
     for (let index = 0; index < citizens.length; index++) {
@@ -370,7 +347,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     pedestrianHeads.instanceMatrix.needsUpdate = true;
     if (pedestrianBodies.instanceColor) pedestrianBodies.instanceColor.needsUpdate = true;
   }
-
   let buildingSignature = "";
   let buildingRebuilds = 0;
   const windowGeometry = new THREE.BoxGeometry(0.22, 0.28, 0.055);
@@ -378,7 +354,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const columnGeometry = new THREE.BoxGeometry(0.11, 1, 0.11);
   const signGeometry = new THREE.BoxGeometry(0.92, 0.28, 0.10);
   const awningGeometry = new THREE.BoxGeometry(1.05, 0.14, 0.48);
-
   function addBuildingMesh(group, geometry, material, x, y, z, rotationY = 0, castShadow = true) {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, z);
@@ -388,7 +363,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     group.add(mesh);
     return mesh;
   }
-
   function createBuilding(item) {
     const group = new THREE.Group();
     const x = cityTileToWorld(item.x), z = cityTileToWorld(item.y);
@@ -422,7 +396,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
       group.add(bench);
       return group;
     }
-
     const palettes = {
       home: [
         { wall: "#c9bba5", side: "#a99b87", roof: "#62534b", trim: "#e4dccd", accent: "#687f7c" },
@@ -461,12 +434,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     windowMaterials.add(glassMat);
     const darkMat = new THREE.MeshStandardMaterial({ color: "#52616b", roughness: 0.9 });
     const baseMat = new THREE.MeshStandardMaterial({ color: "#e8dfc8", roughness: 0.96 });
-
     addBuildingMesh(group, new THREE.BoxGeometry(1.72, 0.20, 1.72), baseMat, 0, 0.22, 0, 0, false);
     const body = addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth, height, bodyDepth), wall, 0, 0.32 + height / 2, 0);
     body.material = [wall, sideWall, wall, wall, sideWall, sideWall];
     addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
-
     if (type === "home") {
       const roofWidth = bodyWidth + 0.28;
       const roofDepth = bodyDepth + 0.28;
@@ -539,7 +510,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
       group.add(columns);
       addBuildingMesh(group, signGeometry, accentMat, 0, 1.85, bodyDepth / 2 + 0.09, 0, false);
     }
-
     addOrbitReadyBuildingDetails(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, windowGeometry });
     addRealisticArchitecture(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, roofMat });
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
@@ -547,7 +517,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     group.add(fin);
     return group;
   }
-
   function updateBuildings(city) {
     const next = city.buildings.map(v => [v.id, v.type, v.x, v.y, v.level].join(":")).join("|");
     if (next === buildingSignature) return;
@@ -576,12 +545,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }));
     }
   }
-
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
   let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48));
-
   function resize() {
     width = window.innerWidth;
     height = window.innerHeight;
@@ -595,7 +562,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     camera.updateProjectionMatrix();
     atmosphere.resize();
   }
-
   function updateCamera(cam) {
     const zoom = Math.max(0.0625, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
@@ -603,7 +569,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     cameraOrbit = transform.orbit;
     cameraPitch = transform.pitch;
   }
-
   function render(city, view, cam) {
     updateCamera(cam);
     atmosphere.update(city);
@@ -612,7 +577,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     updatePedestrians(city);
     renderer.render(scene, camera);
   }
-
   function tileAt(screenX, screenY) {
     pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
@@ -620,14 +584,12 @@ export async function createCityThreeRenderer(sourceCanvas) {
     if (!raycaster.ray.intersectPlane(groundPlane, point)) return { x: -1, y: -1 };
     return { x: worldToCityTile(point.x), y: worldToCityTile(point.z) };
   }
-
   function groundPointAt(screenX, screenY) {
     pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
     const point = new THREE.Vector3();
     return raycaster.ray.intersectPlane(groundPlane, point) ? { x: point.x, z: point.z } : null;
   }
-
   function focusPointAt(screenX, screenY) {
     pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
@@ -635,12 +597,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     if (hits.length) return { x: hits[0].point.x, y: hits[0].point.y, z: hits[0].point.z };
     return groundPointAt(screenX, screenY);
   }
-
   function screenForTile(x, y) {
     const point = new THREE.Vector3(cityTileToWorld(x), 0.16, cityTileToWorld(y)).project(camera);
     return { x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2 };
   }
-
   function onResize() { resize(); }
   resize();
   window.addEventListener("resize", onResize);
