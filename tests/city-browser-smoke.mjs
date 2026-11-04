@@ -252,6 +252,15 @@ try{
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
  const secondHome=await page.evaluate(()=>window.MshinCityDebug.place(17,13,"home"));assert.equal(secondHome.ok,true,"a second road-accessible home should be constructible");
+ await clickCityTool(page,"home");
+ const unfinishedTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,13));
+ await page.mouse.click(unfinishedTarget.x,unfinishedTarget.y);
+ const populationBeforeDemolition=await page.evaluate(()=>window.MshinCityDebug.city.population);
+ assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===14&&b.y===13&&b.construction)),"new homes must remain unfinished until the timer expires");
+ await clickCityTool(page,"bulldoze");
+ await page.mouse.click(unfinishedTarget.x,unfinishedTarget.y);
+ assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.population),populationBeforeDemolition,"bulldozing an unfinished home must not subtract residents from existing homes");
+
  await page.locator("#cityBudget").click();
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),true,"mobile players must be able to open the budget panel");
  const budgetLayout=await page.evaluate(()=>{
