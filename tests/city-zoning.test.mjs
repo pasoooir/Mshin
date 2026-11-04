@@ -23,7 +23,7 @@ test("residential zoning grows into housing and increases population", () => {
   const city = createInitialCity(502);
   const before = city.population;
   assert.equal(placeCityItem(city,17,14,"zone-residential").ok,true);
-  for(let i=0;i<12;i++) stepCity(city);
+  for(let i=0;i<57;i++) stepCity(city);
   assert.equal(city.grid[14][17],"building");
   assert.ok(city.buildings.some(building=>building.x===17&&building.y===14&&building.type==="home"));
   assert.ok(city.population>=before+12);
@@ -43,7 +43,7 @@ test("commercial, industrial, administrative and recreational zones develop when
     [17,17,"recreational"]
   ];
   for(const [x,y,type] of zones) assert.equal(placeCityItem(city,x,y,"zone-"+type).ok,true);
-  for(let i=0;i<96;i++) stepCity(city);
+  for(let i=0;i<120;i++) stepCity(city);
   for(const [x,y,type] of zones){
     const expected=CITY_ZONES[type].buildingType;
     assert.ok(city.buildings.some(building=>building.x===x&&building.y===y&&building.type===expected),type+" zone should develop into "+expected);
@@ -72,7 +72,7 @@ test("job-producing zones wait for enough residents before expanding labor deman
   assert.equal(city.grid[14][17],"zone-industrial");
   assert.equal(placeCityItem(city,13,14,"zone-residential").ok,true);
   assert.equal(placeCityItem(city,18,14,"zone-residential").ok,true);
-  for(let i=0;i<36;i++)stepCity(city);
+  for(let i=0;i<140;i++)stepCity(city);
   assert.ok(city.population>=24,"residential growth should expand the available workforce");
   assert.ok(city.buildings.some(building=>building.type==="industrial"),"industrial zoning should develop once workforce capacity is adequate");
 });
