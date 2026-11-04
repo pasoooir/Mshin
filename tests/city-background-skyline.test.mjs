@@ -7,7 +7,7 @@ const renderer = await readFile(new URL("../src/city/city-three-renderer.js", im
 
 test("large city scene contains an instanced 72-building distant urban skyline", () => {
   assert.ok(skyline.includes("index < 18"));
-  assert.ok(skyline.includes("positions.push([along, -88], [along, 88], [-88, along], [88, along])"));
+  assert.ok(skyline.includes("positions.push([along, -352], [along, 352], [-352, along], [352, along])"));
   assert.ok(skyline.includes("new THREE.InstancedMesh(unitGeometry, concreteMaterial, 48)"));
   assert.ok(skyline.includes("new THREE.InstancedMesh(unitGeometry, masonryMaterial, 48)"));
   assert.ok(renderer.includes("createCityBackgroundSkyline(THREE, scene, concreteSurface, brickSurface, windowMaterials)"));
