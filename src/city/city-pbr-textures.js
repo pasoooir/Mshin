@@ -61,12 +61,14 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
     for (let i = 0; i < 150; i++) {
       const x = random() * size, y = random() * size;
       const rx = 8 + random() * 34, ry = 5 + random() * 22;
+      const rotation = random() * Math.PI;
+      const patchColor = ["rgba(171,190,105,.12)","rgba(119,151,72,.16)","rgba(38,70,39,.13)","rgba(190,174,112,.08)"][Math.floor(random()*4)];
       for (const ox of [-size, 0, size]) for (const oy of [-size, 0, size]) {
         albedo.save();
         albedo.translate(x + ox, y + oy);
-        albedo.rotate(random() * Math.PI);
+        albedo.rotate(rotation);
         albedo.scale(1, ry / rx);
-        albedo.fillStyle = ["rgba(171,190,105,.12)","rgba(119,151,72,.16)","rgba(38,70,39,.13)","rgba(190,174,112,.08)"][Math.floor(random()*4)];
+        albedo.fillStyle = patchColor;
         albedo.beginPath();
         albedo.moveTo(-rx, 0);
         albedo.bezierCurveTo(-rx*.8,-rx*.9,rx*.25,-rx*1.1,rx,0);
