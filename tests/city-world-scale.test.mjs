@@ -24,6 +24,7 @@ test("procedural buildings fill parcel scale while doors and windows retain huma
   assert.deepEqual(scale, { x: 4.8, y: 2.2, z: 4.8 });
   const source = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
   assert.match(source, /BoxGeometry\(0\.17, 0\.96, 0\.05\)/);
+  assert.ok(source.includes("doorMat, 0, 0.76"));
   assert.ok(source.includes('const winW = type === "home" ? 0.20 : 0.20;'));
   assert.ok(source.includes('const winH = type === "home" ? 0.55 : 0.55;'));
 });
