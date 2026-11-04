@@ -135,3 +135,28 @@ test("software WebGL devices automatically use a bounded render target and scene
   assert.match(source, /softwareRenderer\?14:36/,
     "software rendering should reduce crowd geometry while retaining visible spectators");
 });
+
+
+test("race surfaces always have offline-first full-color RGBA8 procedural textures", () => {
+  assert.match(source, /function createProceduralSurfacePixels\(key,size=256\)/,
+    "terrain and road texture pixels must be generated locally at useful resolution");
+  assert.match(source, /new Uint8Array\(size\*size\*4\)/,
+    "surface maps must use four 8-bit RGBA channels");
+  assert.match(source, /surfaceTextures\.set\(key,texture\);state\.surfaceTextures\.proceduralReady\+\+/,
+    "procedural texture must be bound before optional network requests");
+  assert.match(source, /if\(softwareRenderer\|\|navigator\.connection\?\.saveData\)\{state\.surfaceTextures\.skipped\+\+;return\}/,
+    "offline/data-saver/software-GPU sessions must keep the local texture rather than a flat fallback");
+  assert.match(source, /Local procedural RGBA8 \+ optional Poly Haven CC0/,
+    "the renderer must identify local texture readiness separately from optional photo downloads");
+  assert.match(source, /base=mix\(base,scanned,\.78\)/,
+    "the uploaded texture must materially affect visible road and terrain color");
+});
+
+test("race surface texture generator includes distinct biome-specific natural detail", () => {
+  for (const key of ["asphalt","grass","sand","snow","rock","concrete","bark","foliage"]) {
+    assert.ok(source.includes(key+":"), "missing dedicated surface palette for "+key);
+  }
+  assert.match(source, /const blade=/, "grass must include fine directional blades and tonal variation");
+  assert.match(source, /const aggregate=/, "asphalt must include granular aggregate and subtle wear");
+  assert.match(source, /const crack=/, "asphalt must include fine irregular surface wear");
+});
