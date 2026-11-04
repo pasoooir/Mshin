@@ -35,8 +35,16 @@ export function createCityConstructionRenderer(THREE, buildings) {
       arm.position.y = -0.13; arm.rotation.z = -0.3; armPivot.add(arm);
       const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.62, 5), wood);
       handle.position.set(0.04, -0.34, 0.02); handle.rotation.z = -0.28; armPivot.add(handle);
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.12, 0.045), dark);
-      blade.position.set(0.12, -0.62, 0.02); armPivot.add(blade);
+      if (i === 1) {
+        const pickHead = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.075, 0.07), dark);
+        pickHead.position.set(0.12, -0.62, 0.02);
+        pickHead.rotation.z = -0.12;
+        armPivot.add(pickHead);
+      } else {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.12, 0.045), dark);
+        blade.position.set(0.12, -0.62, 0.02);
+        armPivot.add(blade);
+      }
       worker.add(armPivot);
       const legs = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.16), dark);
       legs.position.y = 0.1; worker.add(legs);
@@ -85,5 +93,9 @@ export function createCityConstructionRenderer(THREE, buildings) {
     }
   }
 
-  return { createSite: createConstructionSite, update: updateConstructionAnimations };
+  function disposeSite(site) {
+    site?.userData?.labelTexture?.dispose?.();
+  }
+
+  return { createSite: createConstructionSite, update: updateConstructionAnimations, disposeSite };
 }
