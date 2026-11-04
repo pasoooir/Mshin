@@ -52,9 +52,40 @@ export function addOrbitReadyBuildingDetails(THREE, {
   if (type === "home") {
     addMesh(new THREE.BoxGeometry(0.18, 0.52, 0.18), trimMat, 0.42, height + 0.72, -0.28);
     addMesh(new THREE.BoxGeometry(0.24, 0.08, 0.24), accentMat, 0.42, height + 1.0, -0.28, 0, false);
-    for (const side of [-1, 1]) {
-      addMesh(new THREE.BoxGeometry(0.62, 0.045, 0.055), trimMat, 0, 1.08, side * (bodyDepth / 2 + 0.13), 0, false);
+    // A compact instanced balcony on every facade keeps the house readable
+    // through a full camera orbit instead of decorating only the front face.
+    const balconyFloors = Math.min(3, Math.max(1, Math.floor(height / 0.8)));
+    const balconyPlatformGeometry = new THREE.BoxGeometry(0.58, 0.07, 0.42);
+    const balconyRailGeometry = new THREE.BoxGeometry(0.58, 0.06, 0.055);
+    const balconyPlatforms = new THREE.InstancedMesh(balconyPlatformGeometry, trimMat, balconyFloors * 4);
+    const balconyRails = new THREE.InstancedMesh(balconyRailGeometry, accentMat, balconyFloors * 4);
+    let balconyIndex = 0;
+    for (let floor = 0; floor < balconyFloors; floor++) {
+      const y = 1.02 + floor * 0.72;
+      for (const face of [
+        { x: 0, z: bodyDepth / 2 + 0.16, rotation: 0, railX: 0, railZ: bodyDepth / 2 + 0.38 },
+        { x: 0, z: -bodyDepth / 2 - 0.16, rotation: 0, railX: 0, railZ: -bodyDepth / 2 - 0.38 },
+        { x: bodyWidth / 2 + 0.16, z: 0, rotation: Math.PI / 2, railX: bodyWidth / 2 + 0.38, railZ: 0 },
+        { x: -bodyWidth / 2 - 0.16, z: 0, rotation: Math.PI / 2, railX: -bodyWidth / 2 - 0.38, railZ: 0 }
+      ]) {
+        dummy.position.set(face.x, y, face.z);
+        dummy.rotation.set(0, face.rotation, 0);
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+        balconyPlatforms.setMatrixAt(balconyIndex, dummy.matrix);
+        dummy.position.set(face.railX, y + 0.10, face.railZ);
+        dummy.updateMatrix();
+        balconyRails.setMatrixAt(balconyIndex, dummy.matrix);
+        balconyIndex++;
+      }
     }
+    balconyPlatforms.count = balconyIndex;
+    balconyRails.count = balconyIndex;
+    balconyPlatforms.instanceMatrix.needsUpdate = true;
+    balconyRails.instanceMatrix.needsUpdate = true;
+    balconyPlatforms.castShadow = false;
+    balconyRails.castShadow = false;
+    group.add(balconyPlatforms, balconyRails);
   } else if (type === "shop") {
     for (const side of [-1, 1]) {
       addMesh(new THREE.BoxGeometry(0.055, 0.82, bodyDepth * 0.56), glassMat, side * (bodyWidth / 2 + 0.036), 0.86, 0, 0, false);
