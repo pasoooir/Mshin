@@ -5,6 +5,7 @@ import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
+import { createCityBackgroundSkyline } from "./city-background-skyline.js";
 import { addRealisticArchitecture } from "./city-architecture-realism.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
@@ -553,8 +554,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
     addOrbitReadyBuildingDetails(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, windowGeometry });
     addRealisticArchitecture(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, roofMat });
-
-    // Bright facade fins make each family readable at the normal phone zoom.
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
     fin.position.set(-bodyWidth / 2 - 0.02, 0.34 + height * 0.52, bodyDepth / 2 + 0.045);
     group.add(fin);
@@ -582,7 +581,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  // Raycast anchors use the rendered plot surface, not the lower decorative base plane.
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
   let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48));
 
