@@ -206,9 +206,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
 
-  // Pedestrian crossings are intentionally not rendered until a pedestrian graph,
-  // legal crossing nodes and signal/priority state exist. Painted zebra stripes would
-  // falsely advertise a safe/operational crossing on the current road-only graph.
+  // Crosswalks wait for a pedestrian graph and legal crossing priorities.
   const crosswalkStripeCount = 0;
 
   const lotLines = [];
@@ -285,8 +283,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
   }
 
-  // A dedicated non-buildable pedestrian strip now exists inside each road ROW.
-  // Street lights are intentionally deferred to a later visual slice.
+  // Sidewalks are non-buildable; street lights are a later visual slice.
   const decorativeStreetLightCount = 0;
   const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
