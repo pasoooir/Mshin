@@ -4,7 +4,7 @@ import { createCityConstructionRenderer } from "../src/city/city-construction-re
 
 function makeThree() {
   class Group {
-    constructor(){this.children=[];this.userData={};this.position={set:(x,y,z)=>{this.x=x;this.y=y;this.z=z;}};}
+    constructor(){this.children=[];this.userData={};this.position={set:(x,y,z)=>{this.x=x;this.y=y;this.z=z;}};this.rotation={set(){}};}
     add(...items){this.children.push(...items);}
   }
   class Geometry { constructor(...args){this.args=args;} }
