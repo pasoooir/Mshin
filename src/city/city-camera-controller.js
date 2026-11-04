@@ -99,7 +99,7 @@ export function createCityCameraController({
   }
 
   function startInertia(velocity) {
-    if (Math.abs(velocity) < 0.0008) return;
+    if (!Number.isFinite(velocity) || Math.abs(velocity) < 0.0008) return;
     let speed = clamp(velocity * 0.72, -INERTIA_MAX_SPEED, INERTIA_MAX_SPEED);
     let previousTime = 0;
     const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -195,7 +195,8 @@ export function createCityCameraController({
       // zoom jumps when both fingers translate together and the temporary span collapses.
       camera.zoom = clamp(gestureState.baseZoom * nextDistance / gestureState.baseDistance, MIN_ZOOM, MAX_ZOOM);
       camera.orbit = (camera.orbit || 0) + rotation;
-      gestureState.velocity = rotation / (elapsed / 16.667);
+      const measuredVelocity = rotation / (elapsed / 16.667);
+      gestureState.velocity = Number.isFinite(measuredVelocity) ? measuredVelocity : 0;
       gestureState.lastMidpoint = center;
       gestureState.lastAngle = nextAngle;
       gestureState.lastDistance = nextDistance;
