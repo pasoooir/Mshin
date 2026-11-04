@@ -21,7 +21,7 @@ export function isValidCitySave(v) {
     || typeof v.name !== "string" || !v.name.trim() || v.name.length > 80
     || !Number.isSafeInteger(v.seed) || v.seed < 0 || v.seed > 0xffffffff
     || !Number.isSafeInteger(v.tick) || v.tick < 0
-    || (v.minuteOfDay !== undefined && (!Number.isInteger(v.minuteOfDay) || v.minuteOfDay < 0 || v.minuteOfDay >= 1440))
+    || (v.minuteOfDay !== undefined && (!Number.isFinite(v.minuteOfDay) || v.minuteOfDay < 0 || v.minuteOfDay >= 1440))
     || !Number.isFinite(v.treasury) || Math.abs(v.treasury) > 1e12
     || !Number.isInteger(v.population) || v.population < 0 || v.population > 1e7
     || (v.happiness !== undefined && (!Number.isFinite(v.happiness) || v.happiness < 0 || v.happiness > 100))
@@ -147,7 +147,7 @@ export function normalizeCitySaveData(value) {
     ...value,
     zones: Array.isArray(value.zones) ? value.zones : value.grid.flatMap((row,y)=>row.flatMap((tile,x)=>isCityZoneCell(tile)?[{x,y,type:tile.slice(5),createdAt:0}]:[])),
     animals: Array.isArray(value.animals) ? value.animals : [],
-    minuteOfDay: Number.isInteger(value.minuteOfDay) ? value.minuteOfDay : 495,
+    minuteOfDay: Number.isFinite(value.minuteOfDay) && value.minuteOfDay >= 0 && value.minuteOfDay < 1440 ? value.minuteOfDay : 495,
     happiness: Number.isFinite(value.happiness) ? value.happiness : 100,
     nextBuildingId: validId(value.nextBuildingId) ? value.nextBuildingId : Math.max(0,...value.buildings.map(item=>item.id))+1,
     nextTrafficId: validId(value.nextTrafficId) ? value.nextTrafficId : Math.max(0,...value.traffic.map(item=>item.id))+1,
@@ -210,7 +210,7 @@ export function migrateCitySave(value) {
     name: snapshot.name.slice(0,80),
     seed: snapshot.seed,
     tick: snapshot.tick,
-    minuteOfDay: Number.isInteger(snapshot.minuteOfDay) && snapshot.minuteOfDay >= 0 && snapshot.minuteOfDay < 1440 ? snapshot.minuteOfDay : 495,
+    minuteOfDay: Number.isFinite(snapshot.minuteOfDay) && snapshot.minuteOfDay >= 0 && snapshot.minuteOfDay < 1440 ? snapshot.minuteOfDay : 495,
     treasury: snapshot.treasury,
     population: snapshot.population,
     happiness: Number.isFinite(snapshot.happiness) && snapshot.happiness >= 0 && snapshot.happiness <= 100 ? snapshot.happiness : 76,

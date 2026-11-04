@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createInitialCity,stepCity,placeCityItem,isValidCitySave,normalizeCitySave,projectCityTile} from "../src/city/city-view.js";
 test("new city starts as an empty, deterministic, fully gridded world",()=>{const a=createInitialCity(42),b=createInitialCity(42);assert.equal(a.name,"دره سبز");assert.equal(a.grid.length,32);assert.equal(a.grid[15][15],"road");assert.equal(a.buildings.length,0);assert.equal(a.population,0);assert.equal(a.trees.length,0);assert.equal(a.citizens.length,0);assert.equal(a.traffic.length,0);assert.equal(a.animals.length,0);assert.ok(a.grid.flat().filter(t=>t==="road").length>=300);assert.equal(a.population,b.population);assert.deepEqual(a.grid,b.grid);assert.equal(isValidCitySave(a),true)});
-test("simulation ticks advance time, economy, citizens and traffic",()=>{const c=createInitialCity(7),money=c.treasury;stepCity(c,1);assert.equal(c.tick,1);assert.equal(c.minuteOfDay,505);assert.equal(c.traffic.length,0);assert.equal(c.animals.length,0);assert.equal(c.treasury,money);assert.equal(c.stats.income,0);assert.equal(c.stats.jobs,0)});
+test("simulation ticks advance time, economy, citizens and traffic",()=>{const c=createInitialCity(7),money=c.treasury;stepCity(c,1);assert.equal(c.tick,1);assert.equal(c.minuteOfDay,720,"new cities start at bright midday and simulation ticks do not accelerate the visual clock");assert.equal(c.traffic.length,0);assert.equal(c.animals.length,0);assert.equal(c.treasury,money);assert.equal(c.stats.income,0);assert.equal(c.stats.jobs,0)});
 test("roads and buildings enforce budget and street access",()=>{const c=createInitialCity(99);assert.equal(placeCityItem(c,17,14,"road").ok,true);assert.equal(c.grid[14][17],"road");assert.equal(placeCityItem(c,17,13,"home").ok,true);assert.equal(c.grid[13][17],"building");assert.ok(c.population>=12);const blocked=placeCityItem(c,2,2,"shop");assert.equal(blocked.ok,false);assert.match(blocked.reason,/دسترسی/);assert.equal(placeCityItem(c,17,13,"shop").ok,false)});
 test("save validation rejects malformed or incompatible snapshots",()=>{const c=createInitialCity(12);assert.equal(isValidCitySave(c),true);assert.equal(isValidCitySave({...c,schemaVersion:9}),false);assert.equal(isValidCitySave({...c,grid:[]}),false);assert.equal(isValidCitySave({...c,treasury:"unlimited"}),false)});
 test("isometric projection preserves diagonal tile geometry",()=>{assert.deepEqual(projectCityTile(1,0),{x:16,y:8});assert.deepEqual(projectCityTile(0,1),{x:-16,y:8})});
@@ -110,4 +110,16 @@ test("road demolition retires stranded traffic before the next save",()=>{
  stepCity(city);
  assert.equal(city.traffic.some(vehicle=>vehicle.id===stranded.id),false);
  assert.equal(isValidCitySave(city),true);
+});
+
+test("traffic previous-road coordinates stay integral and city saves remain valid during long simulation",()=>{
+ const city=createInitialCity(731);
+ for(let tick=0;tick<160;tick++){
+  stepCity(city);
+  for(const vehicle of city.traffic){
+   assert.ok((vehicle.previousX===null&&vehicle.previousY===null)||(Number.isInteger(vehicle.previousX)&&Number.isInteger(vehicle.previousY)),
+    "previous traffic location must remain a valid integer road tile");
+  }
+  assert.equal(isValidCitySave(city),true,"traffic state must remain persistable at every simulation tick");
+ }
 });

@@ -116,8 +116,8 @@ function advanceVehicle(city, vehicle, distance) {
     const dy = vehicle.targetY - vehicle.y;
     const length = Math.hypot(dx, dy);
     if (length <= 1e-8) {
-      vehicle.previousX = vehicle.x;
-      vehicle.previousY = vehicle.y;
+      vehicle.previousX = Math.round(vehicle.x);
+      vehicle.previousY = Math.round(vehicle.y);
       vehicle.x = vehicle.targetX;
       vehicle.y = vehicle.targetY;
       vehicle.routeStep = (vehicle.routeStep || 0) + 1;

@@ -6,6 +6,7 @@ import { syncCityCitizens, stepCityCitizens } from "./city-population.js";
 import { computeCityEmployment } from "./city-employment.js";
 import { computeCityCommuting } from "./city-commuting.js";
 import { CITY_DEFAULT_TAX_RATES, setCityTaxRate, computeCityEconomy, cityTaxPressure } from "./city-economy.js";
+import { advanceCityDayNightClock } from "./city-day-night-cycle.js";
 import { isValidCitySave, normalizeCitySaveData, migrateCitySave, createCitySaveBackup } from "./city-save.js";
 export { isValidCitySave, migrateCitySave, createCitySaveBackup };
 export function normalizeCitySave(value){return normalizeCitySaveData(value)||createInitialCity();}
@@ -16,11 +17,11 @@ const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b
 export function createInitialCity(seed=20261102){
  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill("grass"));
  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if([7,8,15,16,23,24].includes(x)||[7,8,15,16,23,24].includes(y))grid[y][x]="road";
- return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:495,treasury:124500,population:0,happiness:100,taxRates:{...CITY_DEFAULT_TAX_RATES},grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,net:0,taxRevenue:0,maintenance:0,serviceUpkeep:0,jobs:0,traffic:0}};
+ return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:720,treasury:124500,population:0,happiness:100,taxRates:{...CITY_DEFAULT_TAX_RATES},grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,net:0,taxRevenue:0,maintenance:0,serviceUpkeep:0,jobs:0,traffic:0}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
- city.tick++;city.minuteOfDay=(city.minuteOfDay+10)%1440;
+ city.tick++;
  if(city.tick%12===0)developCityZones(city);
  const infrastructure=computeCityServices(city);
  const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
@@ -96,7 +97,7 @@ function mount(){
  let canvas=document.getElementById("cityViewport");const ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;let threeRenderer=null;
  const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1,orbit:0};
  if(syncCityCitizens(city))persist(city);
- let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,simulationTimer=0,resizeFrame=0,lastPersistTick=city.tick;
+ let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,simulationTimer=0,resizeFrame=0,lastPersistTick=city.tick,lastClockUpdate=performance.now()/1000;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};
  function resize(){const viewport=window.visualViewport;view.w=Math.max(1,Math.round(viewport?.width||innerWidth));view.h=Math.max(1,Math.round(viewport?.height||innerHeight));view.dpr=Math.min(devicePixelRatio||1,1.6);canvas.width=Math.round(view.w*view.dpr);canvas.height=Math.round(view.h*view.dpr);canvas.style.width=view.w+"px";canvas.style.height=view.h+"px";if(!cam.initialized){cam.zoom=matchMedia("(max-width:760px), (max-height:520px)").matches?.72:Math.max(.42,Math.min(1.18,Math.min(view.w/1040,view.h/740)*1.08));cam.initialized=true}}
@@ -294,8 +295,8 @@ function mount(){
  document.documentElement.dataset.cityReady="true";
  let lastRender=0;
  function frame(now){if(document.hidden){raf=0;return}if(now-lastRender>=33){draw();lastRender=now}raf=requestAnimationFrame(frame)}
- function simulationStep(){if(document.hidden||speed<=0)return;acc+=.25*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}if(city.tick-lastPersistTick>=6&&persist(city))lastPersistTick=city.tick}
- function resumeCityLoop(){if(document.hidden)return;if(!raf){lastRender=0;raf=requestAnimationFrame(frame)}if(!simulationTimer)simulationTimer=setInterval(simulationStep,250)}
+ function simulationStep(){if(document.hidden||speed<=0)return;const now=performance.now()/1000,elapsed=Math.max(0,Math.min(1,now-lastClockUpdate));lastClockUpdate=now;advanceCityDayNightClock(city,elapsed);acc+=.25*speed;let count=0;while(acc>=1&&count<4){stepCity(city);acc-=1;count++}if(city.tick-lastPersistTick>=6&&persist(city))lastPersistTick=city.tick}
+ function resumeCityLoop(){if(document.hidden)return;lastClockUpdate=performance.now()/1000;if(!raf){lastRender=0;raf=requestAnimationFrame(frame)}if(!simulationTimer)simulationTimer=setInterval(simulationStep,250)}
  function pauseCityLoop(){if(raf)cancelAnimationFrame(raf);raf=0;if(simulationTimer)clearInterval(simulationTimer);simulationTimer=0;persist(city)}
  document.addEventListener("visibilitychange",()=>{if(document.hidden)pauseCityLoop();else resumeCityLoop()});
  resumeCityLoop();addEventListener("pagehide",pauseCityLoop,{once:true});

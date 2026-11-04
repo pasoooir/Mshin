@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { CITY_SEASONAL_CYCLE, getCitySeasonalWeather } from "../src/city/city-seasonal-weather.js";
+import { advanceRainSegments } from "../src/city/city-atmosphere.js";
 
 test("city advances through spring, summer, autumn and winter on a deterministic 28-day cycle", () => {
   const expected = ["spring", "summer", "autumn", "winter", "spring"];
@@ -26,4 +27,22 @@ test("all generated weather states have bounded intensity and wind", () => {
 test("missing or invalid clock data falls back safely to spring", () => {
   const state = getCitySeasonalWeather({ seed: NaN, tick: -1 });
   assert.equal(state.day, 0); assert.equal(state.season, "spring");
+});
+
+test("rain animation preserves short paired streaks instead of separating segment endpoints", () => {
+  const positions = new Float32Array([
+    1, 2, -15, 0.82, 1.1, -15,
+    -4, -17.8, -22, -4.18, -18.7, -22
+  ]);
+  advanceRainSegments(positions, 0.5, 32, 0.4, () => 0.5);
+  for (let i = 0; i < positions.length; i += 6) {
+    const dx = positions[i + 3] - positions[i];
+    const dy = positions[i + 4] - positions[i + 1];
+    const dz = positions[i + 5] - positions[i + 2];
+    assert.ok(Math.abs(Math.hypot(dx, dy, dz) - Math.hypot(0.18, 0.9)) < 1e-5,
+      "each rain streak must retain its original short length after movement or wraparound");
+  }
+});
+test("rain animation rejects incomplete line-segment data", () => {
+  assert.throws(() => advanceRainSegments(new Float32Array([0, 0, 0]), 0.016, 32, 0), /complete line-segment pairs/);
 });
