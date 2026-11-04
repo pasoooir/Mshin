@@ -1,6 +1,11 @@
 /** Instanced pedestrian sidewalks constrained to the non-buildable road right-of-way. */
-export function createCitySidewalkLayer(THREE, scene, isRoadCell, gridSize) {
-  const material = new THREE.MeshStandardMaterial({ color: "#c8c4b6", roughness: 0.94 });
+export function createCitySidewalkLayer(THREE, scene, isRoadCell, gridSize, surface = null) {
+  const material = new THREE.MeshStandardMaterial({
+    ...(surface || {}),
+    color: "#c8c4b6",
+    roughness: 0.94,
+    normalScale: new THREE.Vector2(0.24, 0.24)
+  });
   const geometry = new THREE.BoxGeometry(1, 0.10, 1);
   const strips = [];
   for (let y = 0; y < gridSize; y++) {
