@@ -122,7 +122,7 @@ try{
  assert.deepEqual(objectShowcase.samples,[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2],"asset showcase must remain renderable at all four cardinal orbit angles and the 360-degree wrap");
  await page.evaluate(()=>{window.MshinCityDebug.setCameraOrbit(Math.PI/4);window.MshinCityDebug.draw()});
  await page.screenshot({path:"artifacts/city-3d-object-showcase-360.png"});
- await page.evaluate(()=>{window.MshinCityDebug.city.buildings=[];window.MshinCityDebug.setCameraOrbit(0);window.MshinCityDebug.draw()});
+ await page.evaluate(()=>{const city=window.MshinCityDebug.city;city.buildings=[];city.population=0;city.citizens=[];window.MshinCityDebug.setCameraOrbit(0);window.MshinCityDebug.draw()});
  await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=495;window.MshinCityDebug.draw()});
 
  const mapControls=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,buttons:[...document.querySelectorAll(".cityMapControls button")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,visible:r.width>0&&r.height>0}})}));
