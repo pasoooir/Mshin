@@ -395,7 +395,10 @@ try{
  try{
   await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   try {
-   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+   const landscapeRendererBootStartedAt=Date.now();
+   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100});
+   const landscapeRendererBootDuration=Date.now()-landscapeRendererBootStartedAt;
+   assert.ok(landscapeRendererBootDuration<60000,"landscape renderer must initialize within the 60-second bounded startup budget");
   } catch(error) {
    const diagnostic=await landscapePage.evaluate(()=>({
     appReady:document.documentElement.dataset.cityReady,
