@@ -79,12 +79,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const {
     grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface
   } = createCityPbrSurfaces(THREE, renderer);
-  const grassMap = grassSurface.map;
-  const roadMap = asphaltSurface.map;
-  const facadeMap = brickSurface.map;
-  const concreteMap = concreteSurface.map;
-  const roofMap = roofSurface.map;
-  const sidewalkMap = sidewalkSurface.map;
   const grassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, roughness: 0.96, normalScale: new THREE.Vector2(0.32, 0.32) });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#dce8c7", roughness: 0.98, normalScale: new THREE.Vector2(0.28, 0.28) });
   const lockedGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#899783", roughness: 1, normalScale: new THREE.Vector2(0.22, 0.22) });
