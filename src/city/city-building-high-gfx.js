@@ -61,12 +61,12 @@ export const CITY_ARCHITECTURAL_PALETTES = {
       { wall:"#cdbfa9", side:"#9a8c76", roof:"#595a54", trim:"#e9dfce", accent:"#8d8067", door:"#5c4e3f" },
       { wall:"#c0c3b9", side:"#8e968c", roof:"#535c56", trim:"#e3e6dc", accent:"#7a8c80", door:"#50594f" }
     ]
-  };;
+  };
 
 import { cityTileToWorld, getBuildingVisualScale } from "./city-world-scale.js";
 /**
  * High-graphics procedural buildings for Mshin city (SimCity BuildIt inspired style).
- * Vibrant palettes, multi-style roofs, rich facades, roof props, and readable silhouettes
+ * Natural mineral palettes, multi-style roofs, rich facades, roof props, and readable silhouettes
  * from any orbit angle. Kept low-poly + instanced-friendly for mobile WebGL.
  */
 export function createHighGfxBuilding(THREE, item, shared = {}) {
@@ -102,7 +102,7 @@ export function createHighGfxBuilding(THREE, item, shared = {}) {
 
   const pick = (arr) => arr[Math.floor(rand() * arr.length) % arr.length];
 
-  // ─── SimCity BuildIt inspired vibrant palettes ───────────────────────────
+  // ─── Controlled natural architectural palettes ──────────────────────────
   const serviceTypes = new Set(["power", "water", "sewage", "waste", "police", "fire", "health", "education", "service"]);
   const paletteKey = serviceTypes.has(type) ? (CITY_ARCHITECTURAL_PALETTES[type] ? type : "service") : type;
   const paletteList = CITY_ARCHITECTURAL_PALETTES[paletteKey] || CITY_ARCHITECTURAL_PALETTES.home;
