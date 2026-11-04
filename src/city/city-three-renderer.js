@@ -38,9 +38,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
-  const touchOptimized = window.matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0;
-  // Mobile uses baked/contact-style shading; reserve the realtime shadow pass for fine-pointer devices.
-  renderer.shadowMap.enabled = !touchOptimized;
+  renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   // City buildings and the sun are static between construction changes; avoid
   // regenerating the full shadow map on every mobile frame.
@@ -629,6 +627,20 @@ export async function createCityThreeRenderer(sourceCanvas) {
   function onResize() { resize(); }
   resize();
   window.addEventListener("resize", onResize);
+  function sceneRenderables() {
+    return scene.children.map(root => {
+      const counts = { meshes: 0, instanced: 0, sprites: 0, lines: 0, shadowCasters: 0 };
+      root.traverse?.(object => {
+        if (object.isMesh || object.isInstancedMesh) {
+          counts.meshes++;
+          if (object.isInstancedMesh) counts.instanced++;
+          if (object.castShadow) counts.shadowCasters++;
+        } else if (object.isSprite) counts.sprites++;
+        else if (object.isLine || object.isLineSegments) counts.lines++;
+      });
+      return { name: root.name || root.type || "unnamed", ...counts };
+    });
+  }
   return {
     render,
     tileAt,
@@ -671,6 +683,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         sidewalkStrips: sidewalkLayer.count,
         crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
+        sceneRenderables: sceneRenderables(),
         pixelRatio: renderer.getPixelRatio(),
         shadowAutoUpdate: renderer.shadowMap.autoUpdate,
         shadowMapEnabled: renderer.shadowMap.enabled,
