@@ -11,7 +11,7 @@ test("city renders a real atmospheric sky dome with zenith-to-horizon gradient a
   assert.ok(atmosphere.includes('new THREE.ShaderMaterial'));
   assert.ok(atmosphere.includes('smoothstep(-0.10, 0.76, vertical)'));
   assert.ok(atmosphere.includes('pow(sunAngle, 13.0)'));
-  assert.ok(atmosphere.includes('skyDome.position.copy(camera.position)'));
+  assert.ok(atmosphere.includes('camera.getWorldPosition(skyDome.position)'));
   assert.ok(atmosphere.includes('skyMaterial.uniforms.uSunDirection.value.copy(sunDirection)'));
   assert.ok(atmosphere.includes('#include <colorspace_fragment>'));
 });
