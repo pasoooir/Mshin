@@ -7,6 +7,25 @@ const SEASON_FOLIAGE = [
   ["#627c70", "#84978a", "#a6b5a5"]
 ];
 
+export function advanceRainSegments(positions, delta, speed, drift, random = Math.random) {
+  if (!positions || positions.length % 6 !== 0) throw new TypeError("Rain positions must contain complete line-segment pairs");
+  for (let i = 0; i < positions.length; i += 6) {
+    let x = positions[i] + drift * delta;
+    let y = positions[i + 1] - speed * delta;
+    if (y < -18) {
+      y = 18 + random() * 12;
+      x = (random() - 0.5) * 54;
+    }
+    if (Math.abs(x) > 29) x *= -0.92;
+    const z = positions[i + 2];
+    positions[i] = x;
+    positions[i + 1] = y;
+    positions[i + 3] = x - 0.18;
+    positions[i + 4] = y - 0.9;
+    positions[i + 5] = z;
+  }
+}
+
 export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fill, windowMaterials, getViewport, getFoliageMaterials = () => [] }) {
   const initialAtmosphere = getCityAtmosphericColors(495, "spring", "clear");
   scene.background = new THREE.Color(initialAtmosphere.zenith);
@@ -151,6 +170,11 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     }
     attribute.needsUpdate = true;
   }
+  function animateRain(geometry, delta, speed, drift) {
+    const attribute = geometry.getAttribute("position");
+    advanceRainSegments(attribute.array, delta, speed, drift, particleRandom);
+    attribute.needsUpdate = true;
+  }
 
   function update(city) {
     const seasonal = getCitySeasonalWeather(city);
@@ -173,7 +197,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     rainMaterial.opacity = 0.28 + seasonal.intensity * 0.38;
     snowMaterial.opacity = 0.5 + seasonal.intensity * 0.45;
     leafMaterial.opacity = 0.45 + seasonal.intensity * 0.5;
-    if (rain.visible) animateField(rainGeometry, delta, 32 + seasonal.intensity * 20, seasonal.wind * 5);
+    if (rain.visible) animateRain(rainGeometry, delta, 32 + seasonal.intensity * 20, seasonal.wind * 5);
     if (snow.visible) animateField(snowGeometry, delta, 3 + seasonal.intensity * 4, seasonal.wind * 1.6);
     if (leaves.visible) animateField(leafGeometry, delta, 6 + seasonal.intensity * 8, seasonal.wind * 8);
 
