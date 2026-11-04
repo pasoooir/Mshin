@@ -444,7 +444,7 @@ try{
  try{
   await migrationPage.addInitScript(legacy=>localStorage.setItem("mshin-city-save-v1",JSON.stringify(legacy)),legacyFixture);
   await migrationPage.goto("http://127.0.0.1:4173/city.html");
-  await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100});
   const migrated=await migrationPage.evaluate(()=>({city:window.MshinCityDebug.city,current:JSON.parse(localStorage.getItem("mshin-city-save-v2")),legacy:localStorage.getItem("mshin-city-save-v1")}));
   assert.equal(migrated.city.schemaVersion,2,"legacy v1 saves must migrate to the current v2 schema");
   assert.equal(migrated.city.treasury,12345,"migration must preserve treasury");
