@@ -785,6 +785,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         decorativeStreetLights: decorativeStreetLightCount,
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
+        constructionSites: buildings.children.filter(child => child.userData.constructionSite).length,
+        completedBuildings: buildings.children.filter(child => !child.userData.constructionSite).length,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
         plots: activeGrassA + activeGrassB,
