@@ -553,7 +553,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
 
     addOrbitReadyBuildingDetails(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, windowGeometry });
-    const architectureStats = addRealisticArchitecture(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, roofMat });
+    addRealisticArchitecture(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, roofMat });
 
     // Bright facade fins make each family readable at the normal phone zoom.
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
