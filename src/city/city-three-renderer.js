@@ -601,7 +601,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  // Raycast anchors use the rendered plot surface, not the lower decorative base plane.
+  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
   let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0;
 
   function resize() {
@@ -619,18 +620,20 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
 
   function updateCamera(cam) {
-    const zoom = Math.max(0.4, Math.min(1.7, (cam.zoom || 0.72) * 1.25));
+    const zoom = Math.max(0.525, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
     const worldScale = height / 50;
     const targetX = Number.isFinite(cam.currentTargetX) ? cam.currentTargetX : Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
+    const targetY = Number.isFinite(cam.currentTargetY) ? cam.currentTargetY : Number.isFinite(cam.targetY) ? cam.targetY : 0;
     const targetZ = Number.isFinite(cam.currentTargetZ) ? cam.currentTargetZ : Number.isFinite(cam.targetZ) ? cam.targetZ : -(cam.y || 0) / worldScale;
     const orbit = Number.isFinite(cam.orbit) ? cam.orbit : 0;
     cameraOrbit = orbit;
     const orbitAngle = Math.PI / 4 + orbit;
     const orbitRadius = Math.hypot(48, 48);
-    camera.position.set(targetX + Math.sin(orbitAngle) * orbitRadius, 38, targetZ + Math.cos(orbitAngle) * orbitRadius);
-    camera.lookAt(targetX, 0, targetZ);
+    camera.position.set(targetX + Math.sin(orbitAngle) * orbitRadius, targetY + 38, targetZ + Math.cos(orbitAngle) * orbitRadius);
+    camera.lookAt(targetX, targetY, targetZ);
     camera.updateProjectionMatrix();
+    camera.updateMatrixWorld(true);
   }
 
   function render(city, view, cam) {
@@ -661,7 +664,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     pointer.set(screenX / Math.max(1, width) * 2 - 1, -screenY / Math.max(1, height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObjects(buildings.children, true);
-    if (hits.length) return { x: hits[0].point.x, z: hits[0].point.z };
+    if (hits.length) return { x: hits[0].point.x, y: hits[0].point.y, z: hits[0].point.z };
     return groundPointAt(screenX, screenY);
   }
 

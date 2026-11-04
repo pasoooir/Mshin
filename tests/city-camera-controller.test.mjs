@@ -10,7 +10,7 @@ function harness() {
     removeEventListener(type, fn) { listeners.get(type)?.delete(fn); },
     setPointerCapture() {}, hasPointerCapture() { return false; }, releasePointerCapture() {},
     dispatch(type, values) {
-      const event = { pointerType: "touch", button: 0, preventDefault() {}, ...values };
+      const event = { type, pointerType: "touch", button: 0, timeStamp: 16, preventDefault() {}, ...values };
       for (const fn of listeners.get(type) || []) fn(event);
     }
   };
@@ -102,4 +102,108 @@ test("the 2D renderer fallback retains tile selection when Three.js is unavailab
   canvas.dispatch("pointerup", { pointerId: 1, clientX: 120, clientY: 130 });
   assert.deepEqual(taps, [[8, 9]]);
   controller.destroy();
+});
+
+
+test("pinch-to-pan transition rebases the remaining finger without a camera jump or stale fling", () => {
+  const h = harness();
+  h.send("pointerdown", 1, 100, 100);
+  h.send("pointerdown", 2, 220, 100);
+  h.send("pointermove", 2, 260, 100);
+  const orbitAtTransition = h.camera.orbit;
+  const zoomAtTransition = h.camera.zoom;
+  h.send("pointerup", 2, 260, 100);
+  assert.equal(h.controller.getState().gesture, "pan");
+  assert.equal(h.controller.getState().pointers, 1);
+  assert.equal(h.camera.orbit, orbitAtTransition);
+  assert.equal(h.camera.zoom, zoomAtTransition);
+  h.send("pointermove", 1, 104, 100);
+  h.send("pointerup", 1, 104, 100);
+  assert.equal(h.controller.getState().inertiaActive, false, "one-finger continuation must cancel the old two-finger fling");
+  assert.deepEqual(h.taps, []);
+  h.controller.destroy();
+});
+
+test("pointercancel and lost capture never become taps or start inertial motion", () => {
+  const h = harness();
+  h.send("pointerdown", 1, 100, 100);
+  h.send("pointercancel", 1, 100, 100);
+  h.send("lostpointercapture", 1, 100, 100);
+  assert.deepEqual(h.taps, []);
+  assert.equal(h.controller.getState().pointers, 0);
+  assert.equal(h.controller.getState().inertiaActive, false);
+  h.controller.destroy();
+});
+
+test("pinch zoom is multiplicative, bounded, and reversible across changing spans", () => {
+  const h = harness();
+  h.send("pointerdown", 1, 100, 100);
+  h.send("pointerdown", 2, 200, 100);
+  h.send("pointermove", 2, 260, 100);
+  const zoomIn = h.camera.zoom;
+  h.send("pointermove", 2, 220, 100);
+  const zoomOut = h.camera.zoom;
+  assert.ok(zoomIn > 0.8);
+  assert.ok(zoomOut < zoomIn);
+  h.send("pointermove", 2, 500, 100);
+  assert.equal(h.camera.zoom, 1.5, "maximum zoom must be clamped");
+  h.send("pointermove", 2, 101, 100);
+  assert.equal(h.camera.zoom, 0.42, "minimum zoom must be clamped");
+  h.send("pointercancel", 2, 101, 100);
+  h.send("pointercancel", 1, 100, 100);
+  h.controller.destroy();
+});
+
+
+test("same-direction asynchronous finger updates do not create a false pinch zoom", () => {
+  const h = harness();
+  const initialZoom = h.camera.zoom;
+  h.send("pointerdown", 31, 100, 100);
+  h.send("pointerdown", 32, 200, 100);
+  // Pointer Events are delivered per contact. The first finger can report its
+  // full movement before the second contact's next event is dispatched.
+  h.send("pointermove", 31, 200, 100);
+  h.send("pointermove", 32, 300, 100);
+  assert.ok(Math.abs(h.camera.zoom - initialZoom) < 1e-9,
+    "equal translation of both fingers must not be mistaken for a pinch, even when pointer events arrive sequentially");
+  assert.equal(h.controller.getState().gesture, "pinch-orbit");
+  h.send("pointerup", 31, 200, 100);
+  h.send("pointerup", 32, 300, 100);
+  h.controller.destroy();
+});
+
+test("rotating the two-finger line changes orbit without changing pinch scale", () => {
+  const h = harness();
+  const initialZoom = h.camera.zoom;
+  const initialOrbit = h.camera.orbit;
+  h.send("pointerdown", 41, 150, 100);
+  h.send("pointerdown", 42, 250, 100);
+  // Rotate the pair around its midpoint while preserving the 100px span.
+  h.send("pointermove", 41, 200, 50);
+  h.send("pointermove", 42, 200, 150);
+  assert.ok(Math.abs(h.camera.orbit - initialOrbit) > 0.1,
+    "rotating the two-finger line must rotate the camera");
+  assert.ok(Math.abs(h.camera.zoom - initialZoom) < 1e-9,
+    "pure two-finger rotation must not zoom");
+  h.send("pointercancel", 41, 200, 50);
+  h.send("pointercancel", 42, 200, 150);
+  h.controller.destroy();
+});
+
+
+test("orbit inertia is speed-capped and always settles within its maximum lifetime", async () => {
+  const h = harness();
+  h.send("pointerdown", 51, 100, 100);
+  h.send("pointerdown", 52, 200, 100);
+  h.send("pointermove", 51, 1100, 100);
+  h.send("pointermove", 52, 1200, 100);
+  h.send("pointerup", 51, 1100, 100);
+  h.send("pointerup", 52, 1200, 100);
+  await new Promise(resolve => setTimeout(resolve, 30));
+  assert.ok(Math.abs(h.controller.getState().lastInertiaVelocity) <= 0.18,
+    "a fast flick must not create an unbounded angular velocity");
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  assert.equal(h.controller.getState().inertiaActive, false,
+    "inertia must terminate within its bounded lifetime");
+  h.controller.destroy();
 });

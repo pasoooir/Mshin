@@ -1,25 +1,319 @@
-export function createCityCameraController({canvas,camera,getRenderer,getTileAt,onTap,onChange,isCameraLocked=()=>false}){
- const pointers=new Map();let gesture=null,inertiaFrame=0,focusFrame=0,pendingFling=0,inertiaActive=false,lastInertiaVelocity=0;
- const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pair=()=>[...pointers.values()].slice(0,2);
- const mid=p=>({x:(p[0].x+p[1].x)/2,y:(p[0].y+p[1].y)/2}),span=p=>Math.max(1,Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y));
- const angle=p=>Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x),delta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
- const renderer=()=>getRenderer(),ground=p=>renderer()?.groundPointAt?.(p.x,p.y)??null,focus=p=>renderer()?.focusPointAt?.(p.x,p.y)??ground(p);
- const update=()=>{renderer()?.updateCamera?.(camera);onChange?.()};
- const anchor=(a,b)=>{if(!a||!b)return;camera.targetX=(Number.isFinite(camera.targetX)?camera.targetX:0)+a.x-b.x;camera.targetZ=(Number.isFinite(camera.targetZ)?camera.targetZ:0)+a.z-b.z};
- const stopFocus=()=>{if(focusFrame&&typeof cancelAnimationFrame==="function")cancelAnimationFrame(focusFrame);focusFrame=0;if(Number.isFinite(camera.currentTargetX))camera.targetX=camera.currentTargetX;if(Number.isFinite(camera.currentTargetZ))camera.targetZ=camera.currentTargetZ;camera.currentTargetX=undefined;camera.currentTargetZ=undefined};
- const animateFocus=point=>{const sx=Number.isFinite(camera.currentTargetX)?camera.currentTargetX:(Number.isFinite(camera.targetX)?camera.targetX:0),sz=Number.isFinite(camera.currentTargetZ)?camera.currentTargetZ:(Number.isFinite(camera.targetZ)?camera.targetZ:0);camera.targetX=point.x;camera.targetZ=point.z;if(typeof requestAnimationFrame!=="function"){camera.currentTargetX=point.x;camera.currentTargetZ=point.z;update();return}camera.currentTargetX=sx;camera.currentTargetZ=sz;const started=typeof performance!=="undefined"?performance.now():Date.now(),tick=now=>{const t=clamp((now-started)/360,0,1),ease=1-Math.pow(1-t,3);camera.currentTargetX=sx+(point.x-sx)*ease;camera.currentTargetZ=sz+(point.z-sz)*ease;update();if(t<1)focusFrame=requestAnimationFrame(tick);else{focusFrame=0;camera.currentTargetX=undefined;camera.currentTargetZ=undefined;update()}};update();focusFrame=requestAnimationFrame(tick)};
- const stopInertia=()=>{if(inertiaFrame)clearTimeout(inertiaFrame);inertiaFrame=0;inertiaActive=false;lastInertiaVelocity=0};
- const startInertia=velocity=>{if(typeof setTimeout!=="function"||Math.abs(velocity)<.001)return;let speed=velocity*.72;inertiaActive=true;lastInertiaVelocity=speed;const tick=()=>{camera.orbit=(camera.orbit||0)+speed;speed*=.82;lastInertiaVelocity=speed;update();if(Math.abs(speed)>.0005)inertiaFrame=setTimeout(tick,16);else{inertiaFrame=0;inertiaActive=false;lastInertiaVelocity=0}};inertiaFrame=setTimeout(tick,16)};
- const begin=()=>{if(pointers.size>=2){const p=pair(),m=mid(p);gesture={mode:"pinch-orbit",mid:m,lastMid:m,lastAngle:angle(p),distance:span(p),angle:angle(p),zoom:camera.zoom,orbit:camera.orbit||0,anchor:ground(m),velocity:0,moved:true}}
- else if(pointers.size===1){const p=pair()[0];gesture={mode:"pan",start:{x:p.x,y:p.y},anchor:ground(p),x:camera.x||0,y:camera.y||0,moved:false}}else gesture=null};
- const down=e=>{if(e.pointerType==="mouse"&&e.button!==0)return;stopInertia();stopFocus();pendingFling=0;e.preventDefault();pointers.set(e.pointerId,{id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});try{canvas.setPointerCapture(e.pointerId)}catch{}begin()};
- const move=e=>{const p=pointers.get(e.pointerId);if(!p)return;e.preventDefault();p.x=e.clientX;p.y=e.clientY;
- if(pointers.size>=2&&gesture?.mode==="pinch-orbit"&&!isCameraLocked()){const q=pair(),m=mid(q),g=gesture,twist=angle(q),orbitDelta=(m.x-g.lastMid.x)*.009+delta(twist,g.lastAngle);camera.zoom=clamp(g.zoom*span(q)/g.distance,.42,1.5);camera.orbit=(camera.orbit||0)+orbitDelta;g.velocity=orbitDelta;g.lastMid=m;g.lastAngle=twist;renderer()?.updateCamera?.(camera);anchor(g.anchor,ground(m));update()}
- else if(pointers.size===1&&gesture?.mode==="pan"){if(Math.hypot(p.x-gesture.start.x,p.y-gesture.start.y)>5)gesture.moved=true;if(gesture.moved&&!isCameraLocked()){const hit=ground(p);if(gesture.anchor&&hit)anchor(gesture.anchor,hit);else{camera.x=gesture.x+p.x-gesture.start.x;camera.y=gesture.y+p.y-gesture.start.y}update()}}};
- const finish=e=>{const p=pointers.get(e.pointerId);if(!p)return;if(gesture?.mode==="pinch-orbit")pendingFling=e.type==="pointercancel"?0:gesture.velocity;const tap=pointers.size===1&&gesture?.mode==="pan"&&!gesture.moved&&Math.hypot(e.clientX-p.startX,e.clientY-p.startY)<=5;
- if(tap){const hit=focus({x:e.clientX,y:e.clientY});if(hit&&!isCameraLocked()){camera.x=0;camera.y=0;animateFocus(hit)}const tile=renderer()?.tileAt(e.clientX,e.clientY)??getTileAt?.(e.clientX,e.clientY);onTap?.(tile?.x??-1,tile?.y??-1)}
- pointers.delete(e.pointerId);try{if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId)}catch{}begin();if(gesture?.mode==="pan")gesture.moved=true;if(pointers.size===0&&pendingFling){startInertia(pendingFling);pendingFling=0}};
- const wheel=e=>{stopFocus();e.preventDefault();const p={x:e.clientX,y:e.clientY},hit=ground(p);camera.zoom=clamp(camera.zoom*Math.exp(-e.deltaY*.0015),.42,1.5);renderer()?.updateCamera?.(camera);anchor(hit,ground(p));update()};
- canvas.style.touchAction="none";canvas.addEventListener("pointerdown",down,{passive:false});canvas.addEventListener("pointermove",move,{passive:false});canvas.addEventListener("pointerup",finish);canvas.addEventListener("pointercancel",finish);canvas.addEventListener("lostpointercapture",finish);canvas.addEventListener("wheel",wheel,{passive:false});
- return{getState:()=>({pointers:pointers.size,gesture:gesture?.mode??"idle",zoom:camera.zoom,orbit:camera.orbit||0,inertiaActive,lastInertiaVelocity,pendingFling}),cancelMotion(){stopInertia();stopFocus()},destroy(){canvas.removeEventListener("pointerdown",down);canvas.removeEventListener("pointermove",move);canvas.removeEventListener("pointerup",finish);canvas.removeEventListener("pointercancel",finish);canvas.removeEventListener("lostpointercapture",finish);canvas.removeEventListener("wheel",wheel);stopInertia();stopFocus();pointers.clear();gesture=null;pendingFling=0}};
+const MIN_ZOOM = 0.42;
+const MAX_ZOOM = 1.5;
+const ORBIT_SENSITIVITY = 0.009;
+const TAP_SLOP = 5;
+const INERTIA_MAX_SPEED = 0.18;
+const INERTIA_MAX_DURATION_MS = 900;
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const midpoint = ([a, b]) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+const distance = ([a, b]) => Math.max(1, Math.hypot(b.x - a.x, b.y - a.y));
+const angle = ([a, b]) => Math.atan2(b.y - a.y, b.x - a.x);
+const angleDelta = (next, previous) => Math.atan2(Math.sin(next - previous), Math.cos(next - previous));
+
+/**
+ * Owns the city viewport's pointer lifecycle and camera gestures.
+ * Camera coordinates and raycast anchors are world-space; pointer coordinates are CSS pixels.
+ */
+export function createCityCameraController({
+  canvas, camera, getRenderer, getTileAt, onTap, onChange,
+  isCameraLocked = () => false
+}) {
+  const pointers = new Map();
+  const originalTouchAction = canvas.style.touchAction;
+  let gesture = null;
+  let inertiaTimer = 0;
+  let focusFrame = 0;
+  let pendingFling = 0;
+  let inertiaActive = false;
+  let lastInertiaVelocity = 0;
+
+  const pair = () => [...pointers.values()].slice(0, 2);
+  const renderer = () => getRenderer();
+  const groundAt = point => renderer()?.groundPointAt?.(point.x, point.y) ?? null;
+  const focusAt = point => renderer()?.focusPointAt?.(point.x, point.y) ?? groundAt(point);
+  const update = () => {
+    renderer()?.updateCamera?.(camera);
+    onChange?.();
+  };
+  const shiftTarget = (before, after) => {
+    if (!before || !after) return;
+    camera.targetX = (Number.isFinite(camera.targetX) ? camera.targetX : 0) + before.x - after.x;
+    camera.targetZ = (Number.isFinite(camera.targetZ) ? camera.targetZ : 0) + before.z - after.z;
+  };
+
+  function stopFocus() {
+    if (focusFrame && typeof cancelAnimationFrame === "function") cancelAnimationFrame(focusFrame);
+    focusFrame = 0;
+    if (Number.isFinite(camera.currentTargetX)) camera.targetX = camera.currentTargetX;
+    if (Number.isFinite(camera.currentTargetY)) camera.targetY = camera.currentTargetY;
+    if (Number.isFinite(camera.currentTargetZ)) camera.targetZ = camera.currentTargetZ;
+    camera.currentTargetX = undefined;
+    camera.currentTargetY = undefined;
+    camera.currentTargetZ = undefined;
+  }
+
+  function animateFocus(point) {
+    const startX = Number.isFinite(camera.currentTargetX) ? camera.currentTargetX : (camera.targetX || 0);
+    const startY = Number.isFinite(camera.currentTargetY) ? camera.currentTargetY : (camera.targetY || 0);
+    const startZ = Number.isFinite(camera.currentTargetZ) ? camera.currentTargetZ : (camera.targetZ || 0);
+    const targetY = Number.isFinite(point.y) ? point.y : 0;
+    camera.targetX = point.x;
+    camera.targetY = targetY;
+    camera.targetZ = point.z;
+    if (typeof requestAnimationFrame !== "function") {
+      camera.currentTargetX = point.x;
+      camera.currentTargetY = targetY;
+      camera.currentTargetZ = point.z;
+      update();
+      return;
+    }
+    camera.currentTargetX = startX;
+    camera.currentTargetY = startY;
+    camera.currentTargetZ = startZ;
+    const started = performance.now();
+    const tick = now => {
+      const t = clamp((now - started) / 420, 0, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      camera.currentTargetX = startX + (point.x - startX) * eased;
+      camera.currentTargetY = startY + (targetY - startY) * eased;
+      camera.currentTargetZ = startZ + (point.z - startZ) * eased;
+      update();
+      if (t < 1) focusFrame = requestAnimationFrame(tick);
+      else {
+        focusFrame = 0;
+        camera.currentTargetX = undefined;
+        camera.currentTargetY = undefined;
+        camera.currentTargetZ = undefined;
+        update();
+      }
+    };
+    update();
+    focusFrame = requestAnimationFrame(tick);
+  }
+
+  function stopInertia() {
+    if (inertiaTimer) clearTimeout(inertiaTimer);
+    inertiaTimer = 0;
+    inertiaActive = false;
+    lastInertiaVelocity = 0;
+  }
+
+  function startInertia(velocity) {
+    if (!Number.isFinite(velocity) || Math.abs(velocity) < 0.0008) return;
+    let speed = clamp(velocity * 0.72, -INERTIA_MAX_SPEED, INERTIA_MAX_SPEED);
+    let previousTime = 0;
+    const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+    inertiaActive = true;
+    const tick = () => {
+      const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+      const elapsed = previousTime ? clamp(now - previousTime, 8, 40) : 16;
+      previousTime = now;
+      const frameScale = elapsed / 16.667;
+      camera.orbit = (camera.orbit || 0) + speed * frameScale;
+      speed *= Math.pow(0.84, frameScale);
+      lastInertiaVelocity = speed;
+      update();
+      if (Math.abs(speed) > 0.00035 && now - startedAt < INERTIA_MAX_DURATION_MS) {
+        inertiaTimer = setTimeout(tick, 16);
+      } else {
+        inertiaTimer = 0;
+        inertiaActive = false;
+        lastInertiaVelocity = 0;
+      }
+    };
+    inertiaTimer = setTimeout(tick, 16);
+  }
+
+  function beginGesture(suppressTap = false) {
+    if (pointers.size >= 2) {
+      const points = pair();
+      const center = midpoint(points);
+      gesture = {
+        mode: "pinch-orbit",
+        lastMidpoint: center,
+        lastAngle: angle(points),
+        lastDistance: distance(points),
+        baseDistance: distance(points),
+        baseZoom: Number.isFinite(camera.zoom) ? camera.zoom : 0.72,
+        anchor: groundAt(center),
+        velocity: 0,
+        lastMoveTime: 0
+      };
+    } else if (pointers.size === 1) {
+      const point = pair()[0];
+      gesture = {
+        mode: "pan",
+        start: { x: point.x, y: point.y },
+        anchor: groundAt(point),
+        cameraX: camera.x || 0,
+        cameraY: camera.y || 0,
+        moved: suppressTap
+      };
+    } else gesture = null;
+  }
+
+  function pointerDown(event) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (pointers.has(event.pointerId)) return;
+    stopInertia();
+    stopFocus();
+    pendingFling = 0;
+    event.preventDefault();
+    pointers.set(event.pointerId, {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      startX: event.clientX,
+      startY: event.clientY
+    });
+    try { canvas.setPointerCapture(event.pointerId); } catch {}
+    beginGesture(pointers.size > 1);
+  }
+
+  function pointerMove(event) {
+    const pointer = pointers.get(event.pointerId);
+    if (!pointer) return;
+    event.preventDefault();
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+
+    if (pointers.size >= 2 && gesture?.mode === "pinch-orbit" && !isCameraLocked()) {
+      const points = pair();
+      const center = midpoint(points);
+      const nextAngle = angle(points);
+      const nextDistance = distance(points);
+      const gestureState = gesture;
+      const now = Number.isFinite(event.timeStamp) ? event.timeStamp : 0;
+      const elapsed = gestureState.lastMoveTime && now > gestureState.lastMoveTime
+        ? clamp(now - gestureState.lastMoveTime, 8, 50) : 16.667;
+
+      const rotation = (center.x - gestureState.lastMidpoint.x) * ORBIT_SENSITIVITY
+        + angleDelta(nextAngle, gestureState.lastAngle);
+      // Multiplicative distance ratio makes zoom independent of the starting span.
+      // Derive zoom from the gesture baseline, not the previously clamped value.
+      // This prevents asynchronous per-pointer move events from causing irreversible
+      // zoom jumps when both fingers translate together and the temporary span collapses.
+      camera.zoom = clamp(gestureState.baseZoom * nextDistance / gestureState.baseDistance, MIN_ZOOM, MAX_ZOOM);
+      camera.orbit = (camera.orbit || 0) + rotation;
+      const measuredVelocity = rotation / (elapsed / 16.667);
+      gestureState.velocity = Number.isFinite(measuredVelocity) ? measuredVelocity : 0;
+      gestureState.lastMidpoint = center;
+      gestureState.lastAngle = nextAngle;
+      gestureState.lastDistance = nextDistance;
+      gestureState.lastMoveTime = now;
+
+      update();
+      shiftTarget(gestureState.anchor, groundAt(center));
+      update();
+      return;
+    }
+
+    if (pointers.size === 1 && gesture?.mode === "pan") {
+      pendingFling = 0;
+      if (Math.hypot(pointer.x - gesture.start.x, pointer.y - gesture.start.y) > TAP_SLOP) gesture.moved = true;
+      if (!gesture.moved || isCameraLocked()) return;
+      const hit = groundAt(pointer);
+      if (gesture.anchor && hit) {
+        shiftTarget(gesture.anchor, hit);
+        update();
+      } else {
+        camera.x = gesture.cameraX + pointer.x - gesture.start.x;
+        camera.y = gesture.cameraY + pointer.y - gesture.start.y;
+        update();
+      }
+    }
+  }
+
+  function finishPointer(event, cancelled = false) {
+    const pointer = pointers.get(event.pointerId);
+    if (!pointer) return;
+    const previousCount = pointers.size;
+    const previousMode = gesture?.mode;
+    if (previousMode === "pinch-orbit" && previousCount === 2) {
+      pendingFling = cancelled ? 0 : gesture.velocity;
+    }
+    const isTap = !cancelled && event.type === "pointerup" && previousCount === 1
+      && previousMode === "pan" && !gesture.moved
+      && Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) <= TAP_SLOP;
+
+    if (isTap) {
+      const screenPoint = { x: event.clientX, y: event.clientY };
+      const hit = focusAt(screenPoint);
+      if (hit && !isCameraLocked()) {
+        camera.x = 0;
+        camera.y = 0;
+        animateFocus(hit);
+      }
+      const tile = renderer()?.tileAt(event.clientX, event.clientY) ?? getTileAt?.(event.clientX, event.clientY);
+      onTap?.(tile?.x ?? -1, tile?.y ?? -1);
+    }
+
+    pointers.delete(event.pointerId);
+    try {
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    } catch {}
+
+    const transitionedFromPinch = previousMode === "pinch-orbit" && previousCount === 2 && pointers.size === 1;
+    beginGesture(transitionedFromPinch);
+    if (pointers.size === 0) {
+      if (!cancelled && pendingFling) startInertia(pendingFling);
+      pendingFling = 0;
+    }
+  }
+
+  function pointerUp(event) { finishPointer(event, false); }
+  function pointerCancel(event) { finishPointer(event, true); }
+
+  function wheel(event) {
+    stopFocus();
+    event.preventDefault();
+    const point = { x: event.clientX, y: event.clientY };
+    const anchor = groundAt(point);
+    camera.zoom = clamp((camera.zoom || 0.72) * Math.exp(-event.deltaY * 0.0015), MIN_ZOOM, MAX_ZOOM);
+    update();
+    shiftTarget(anchor, groundAt(point));
+    update();
+  }
+
+  canvas.style.touchAction = "none";
+  canvas.addEventListener("pointerdown", pointerDown, { passive: false });
+  canvas.addEventListener("pointermove", pointerMove, { passive: false });
+  canvas.addEventListener("pointerup", pointerUp);
+  canvas.addEventListener("pointercancel", pointerCancel);
+  canvas.addEventListener("lostpointercapture", pointerCancel);
+  canvas.addEventListener("wheel", wheel, { passive: false });
+
+  return {
+    getState: () => ({
+      pointers: pointers.size,
+      gesture: gesture?.mode ?? "idle",
+      zoom: camera.zoom,
+      orbit: camera.orbit || 0,
+      inertiaActive,
+      lastInertiaVelocity,
+      pendingFling
+    }),
+    cancelMotion() {
+      stopInertia();
+      stopFocus();
+      pendingFling = 0;
+    },
+    destroy() {
+      canvas.removeEventListener("pointerdown", pointerDown);
+      canvas.removeEventListener("pointermove", pointerMove);
+      canvas.removeEventListener("pointerup", pointerUp);
+      canvas.removeEventListener("pointercancel", pointerCancel);
+      canvas.removeEventListener("lostpointercapture", pointerCancel);
+      canvas.removeEventListener("wheel", wheel);
+      stopInertia();
+      stopFocus();
+      for (const id of pointers.keys()) {
+        try { if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id); } catch {}
+      }
+      pointers.clear();
+      gesture = null;
+      pendingFling = 0;
+      canvas.style.touchAction = originalTouchAction;
+    }
+  };
 }
