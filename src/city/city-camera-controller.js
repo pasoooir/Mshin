@@ -211,7 +211,10 @@ export function createCityCameraController({
       // Rebase is continuous across pointer events and clamped to a usable city view.
       const pitch = Number.isFinite(camera.pitch) ? camera.pitch : 0.51;
       camera.pitch = clamp(pitch - (center.y - gestureState.lastMidpoint.y) * PITCH_SENSITIVITY, MIN_PITCH, MAX_PITCH);
-      const measuredVelocity = rotation / (elapsed / 16.667);
+      // Velocity is measured from the net gesture displacement, not the transient
+      // one-finger intermediate vector. A pure vertical two-finger translation must
+      // not leave a horizontal fling when the second finger catches up.
+      const measuredVelocity = totalRotation / (elapsed / 16.667);
       gestureState.velocity = Number.isFinite(measuredVelocity) ? measuredVelocity : 0;
       gestureState.lastMidpoint = center;
       gestureState.lastAngle = nextAngle;
