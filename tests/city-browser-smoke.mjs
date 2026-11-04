@@ -395,7 +395,7 @@ try{
  try{
   await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
-  await landscapePage.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display==="none");
+  try{await landscapePage.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display==="none",undefined,{timeout:5000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({innerWidth,innerHeight,screenWidth:screen.width,screenHeight:screen.height,mediaLandscape:matchMedia("(orientation: landscape)").matches,mediaPortrait:matchMedia("(orientation: portrait)").matches,orientation:screen.orientation?.type,gateClass:document.querySelector("#cityOrientationGate")?.className,gateHidden:document.querySelector("#cityOrientationGate")?.hidden,gateDisplay:getComputedStyle(document.querySelector("#cityOrientationGate")).display,cityOrientation:document.documentElement.dataset.cityOrientation}));throw new Error("landscape orientation gate did not close: "+JSON.stringify(diagnostic)+"; "+error.message)}
   const landscape=await landscapePage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,height:innerHeight,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display}));
   assert.equal(landscape.gate,"none","landscape page must show the city rather than the portrait gate");
   assert.equal(landscape.width,landscape.viewport,"landscape city must not overflow horizontally");
