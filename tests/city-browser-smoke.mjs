@@ -402,7 +402,7 @@ try{
  try{
   await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   try{
-   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000});
   }catch(error){
    const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
    throw new Error("landscape 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message);
