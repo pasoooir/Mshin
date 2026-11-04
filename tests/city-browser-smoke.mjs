@@ -303,7 +303,7 @@ try{
  assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBudget","Escape dismissal must restore focus to the budget trigger");
  await page.locator("#cityBackup").click();
  assert.equal(await page.locator("#cityStoragePanel").isVisible(),true,"mobile players must be able to open save and backup management");
- const downloadPromise=page.waitForEvent("download");
+ const downloadPromise=page.waitForEvent("download",{timeout:10000});
  await page.locator("#cityExportBackup").click();
  const backupDownload=await downloadPromise;
  assert.match(backupDownload.suggestedFilename(),/^mshin-city-\d{4}-\d{2}-\d{2}\.json$/,"city backup must download as a dated JSON file");
@@ -322,9 +322,13 @@ try{
  assert.equal(migrationCheck.valid,true,"exported backup must validate before UI import: "+JSON.stringify(migrationCheck));
  let importDialogSeen=false;
  page.once("dialog",dialog=>{importDialogSeen=true;dialog.accept()});
- const chooserPromise=page.waitForEvent("filechooser");
- await page.locator("#cityImportBackup").click();
- const chooser=await chooserPromise;
+ const chooserPromise=page.waitForEvent("filechooser",{timeout:10000});
+ await page.locator("#cityImportBackup").click({timeout:5000});
+ let chooser;
+ try{chooser=await chooserPromise}catch(error){
+  const diagnostic=await page.evaluate(()=>({button:document.querySelector("#cityImportBackup")?.outerHTML,input:[...document.querySelectorAll("input[type=file]")].map(item=>({id:item.id,hidden:item.hidden,display:getComputedStyle(item).display,disabled:item.disabled})),panel:document.querySelector("#cityStoragePanel")?.outerHTML.slice(0,1200)}));
+  throw new Error("backup import file chooser did not open: "+JSON.stringify(diagnostic)+"; "+error.message);
+ }
  await chooser.setFiles({name:"mshin-city-restore.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(backupPayload))});
  await page.waitForFunction(expected=>window.MshinCityDebug.city.name===expected||document.querySelector("#cityToast").textContent.startsWith("بازیابی انجام نشد:"),backupName,{timeout:10000});
  const importResult=await page.evaluate(()=>({name:window.MshinCityDebug.city.name,treasury:window.MshinCityDebug.city.treasury,taxRates:window.MshinCityDebug.city.taxRates,panelHidden:document.querySelector("#cityStoragePanel").classList.contains("hidden"),toast:document.querySelector("#cityToast").textContent}));
