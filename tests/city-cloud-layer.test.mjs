@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { getCityCloudLighting } from "../src/city/city-cloud-layer.js";
 import { readFile } from "node:fs/promises";
 
 test("procedural cloud shell is animated, weather-aware, and releases GPU resources", async () => {
@@ -20,4 +21,15 @@ test("cloud layer is connected to the live renderer and offline app shell", asyn
   assert.match(renderer, /cloudLayer\.update\(city, atmosphere\.getStats\(\)\)/);
   assert.match(renderer, /cloudLayer\.dispose\(\)/);
   assert.match(worker, /\.\/src\/city\/city-cloud-layer\.js/);
+});
+
+test("cloud lighting preserves midnight and wraps the simulation clock", () => {
+  const midnight = getCityCloudLighting({ minuteOfDay: 0 }, { weather: { weather: "clear", intensity: 0 } });
+  const noon = getCityCloudLighting({ minuteOfDay: 720 }, { weather: { weather: "clear", intensity: 0 } });
+  const wrapped = getCityCloudLighting({ minuteOfDay: 1440 }, { weather: { weather: "clear", intensity: 0 } });
+  assert.equal(midnight.daylight, 0, "midnight must shade clouds as night, not default to noon");
+  assert.equal(noon.daylight, 1, "noon must retain full cloud daylight");
+  assert.equal(wrapped.daylight, 0, "24:00 must wrap to midnight");
+  assert.equal(midnight.minute, 0);
+  assert.equal(wrapped.minute, 0);
 });
