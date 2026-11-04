@@ -11,6 +11,12 @@ export function addRealisticArchitecture(THREE, options) {
   const windowHeight = isIndustrial ? 0.34 : 0.40;
   const facadeOffset = 0.018;
   const batches = new Map();
+  // One shared geometry per facade category; per-floor allocations leak because
+  // InstancedMesh only retains the first geometry registered for each batch.
+  const frontWindow = new THREE.BoxGeometry(windowWidth, windowHeight, facadeOffset);
+  const frameGeometry = new THREE.BoxGeometry(facadeOffset, windowHeight + 0.10, 0.035);
+  const sideGeometry = new THREE.BoxGeometry(facadeOffset, windowHeight, windowWidth);
+  const floorBandGeometry = new THREE.BoxGeometry(bodyWidth + 0.045, 0.055, bodyDepth + 0.045);
   const addInstance = (key, geometry, material, position, rotation = [0, 0, 0]) => {
     let batch = batches.get(key);
     if (!batch) { batch = { geometry, material, transforms: [] }; batches.set(key, batch); }
@@ -21,8 +27,6 @@ export function addRealisticArchitecture(THREE, options) {
     const floorHeight = (height - 0.48) / floors;
     const y = 0.40 + floor * floorHeight + floorHeight * 0.52;
     const columns = Math.max(2, Math.floor((bodyWidth - 0.24) / (isIndustrial ? 0.48 : 0.43)));
-    const frontWindow = new THREE.BoxGeometry(windowWidth, windowHeight, facadeOffset);
-    const frameGeometry = new THREE.BoxGeometry(facadeOffset, windowHeight + 0.10, 0.035);
     for (let column = 0; column < columns; column++) {
       const x = -bodyWidth / 2 + 0.18 + column * ((bodyWidth - 0.36) / Math.max(1, columns - 1));
       if (y > height + 0.18) continue;
@@ -32,14 +36,13 @@ export function addRealisticArchitecture(THREE, options) {
       addInstance("front-frames", frameGeometry, trimMat, [x+windowWidth/2,y,-bodyDepth/2-0.045]);
     }
     const sideCount = Math.max(2, Math.floor((bodyDepth - 0.24) / 0.43));
-    const sideGeometry = new THREE.BoxGeometry(facadeOffset, windowHeight, windowWidth);
     for (let side = 0; side < sideCount; side++) {
       const z = -bodyDepth/2+0.18+side*((bodyDepth-0.36)/Math.max(1,sideCount-1));
       addInstance("side-windows",sideGeometry,glassMat,[bodyWidth/2+facadeOffset,y,z]);
       addInstance("side-windows",sideGeometry,glassMat,[-bodyWidth/2-facadeOffset,y,z]);
     }
     if (!isLowRise && floor > 0) {
-      addInstance("floor-bands",new THREE.BoxGeometry(bodyWidth+0.045,0.055,bodyDepth+0.045),trimMat,[0,0.32+floor*height/floors,0]);
+      addInstance("floor-bands",floorBandGeometry,trimMat,[0,0.32+floor*height/floors,0]);
     }
   }
 
