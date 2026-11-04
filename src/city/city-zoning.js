@@ -27,6 +27,10 @@ export function placeCityZone(city, x, y, type) {
 }
 
 function demandAllows(city, type) {
+  const activeCity = city.buildings.some(building => building.construction)
+    ? { ...city, buildings: city.buildings.filter(building => !building.construction) }
+    : city;
+  // Reserve planned job capacity while a workplace is under construction, but do not activate it yet.
   const count = kind => city.buildings.filter(b => b.type === kind).length;
   const population = Math.max(0, city.population || 0);
   if (type === "residential") return population < count("home") * 25 + 60;
@@ -37,16 +41,17 @@ function demandAllows(city, type) {
   const buildingType = CITY_ZONES[type]?.buildingType;
   const addedJobs = JOBS_PER_BUILDING[buildingType];
   if (!addedJobs) return false;
-  const workforce = computeCityEmployment(city);
-  // Do not let job capacity outrun the resident workforce by more than one
-  // small workplace (or 75% of the available labor force).
-  const projectedShortage = Math.max(0, workforce.jobs + addedJobs - workforce.laborForce);
+  const workforce = computeCityEmployment(activeCity);
+  const plannedJobs = city.buildings.filter(building => building.construction)
+    .reduce((sum, building) => sum + (JOBS_PER_BUILDING[building.type] || 0), 0);
+  // Reserve capacity for worksites without activating them in the live workforce.
+  const projectedShortage = Math.max(0, workforce.jobs + plannedJobs + addedJobs - workforce.laborForce);
   const shortageAllowance = Math.max(18, Math.ceil(workforce.laborForce * 0.75));
   return projectedShortage <= shortageAllowance;
 }
 
 /** Grow at most one eligible zoned tile per call, keeping simulation work bounded. */
-export function developCityZones(city) {
+export function developCityZones(city, constructionDuration = 0) {
   if (!Array.isArray(city.zones) || city.zones.length === 0) return null;
   for (let index=0; index<city.zones.length; index++) {
     const zone = city.zones[index];
@@ -66,9 +71,12 @@ export function developCityZones(city) {
       residents,
       zoneType: zone.type
     };
+    if (constructionDuration > 0 && zone.type !== "recreational") {
+      building.construction = { duration: constructionDuration, remaining: constructionDuration };
+    }
     city.grid[zone.y][zone.x] = "building";
     city.buildings.push(building);
-    city.population += residents;
+    if (!building.construction) city.population += residents;
     city.zones.splice(index,1);
     return building;
   }
