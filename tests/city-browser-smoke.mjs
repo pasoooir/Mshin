@@ -108,21 +108,21 @@ try{
  // Render a non-persistent asset showcase containing every current city building
  // family, then orbit the same real WebGL scene through a complete 360 degrees.
  const objectShowcase=await page.evaluate(()=>{
-  const city=window.MshinCityDebug.city,original=city.buildings;
+  const city=window.MshinCityDebug.city,original=city.buildings,originalZoom=window.MshinCityDebug.view.zoom;
   const types=["home","shop","industrial","administrative","park","police","fire","health","education","power","water","sewage","waste"];
-  city.buildings=types.map((type,index)=>({id:9000+index,type,x:4+(index%5)*5,y:4+Math.floor(index/5)*7,level:Math.min(5,1+index%4),residents:type==="home"?12:0}));
+  city.buildings=types.map((type,index)=>({id:9000+index,type,x:12+(index%5)*2,y:11+Math.floor(index/5)*3,level:Math.min(5,1+index%4),residents:type==="home"?12:0}));
   const orbitAngles=[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2];
   const samples=[];
   for(const orbit of orbitAngles){window.MshinCityDebug.view;window.MshinCityDebug.setCameraOrbit(orbit);window.MshinCityDebug.draw();samples.push(window.MshinCity3DStats.cameraOrbit)}
   const count=window.MshinCity3DStats.stylizedBuildings;
-  return{count,samples,originalCount:original.length};
+  return{count,samples,originalCount:original.length,originalZoom};
  });
  assert.equal(objectShowcase.count,13,"all 13 authored city object families must render as real 3D scene groups");
  assert.equal(objectShowcase.originalCount,0,"the visual asset showcase must start from an empty city");
  assert.deepEqual(objectShowcase.samples,[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2],"asset showcase must remain renderable at all four cardinal orbit angles and the 360-degree wrap");
- await page.evaluate(()=>{window.MshinCityDebug.setCameraOrbit(Math.PI/4);window.MshinCityDebug.draw()});
+ await page.evaluate(()=>{window.MshinCityDebug.setCameraOrbit(Math.PI/4);window.MshinCityDebug.setCameraZoom(1.5);window.MshinCityDebug.draw()});
  await page.screenshot({path:"artifacts/city-3d-object-showcase-360.png"});
- await page.evaluate(()=>{const city=window.MshinCityDebug.city;city.buildings=[];city.population=0;city.citizens=[];window.MshinCityDebug.setCameraOrbit(0);window.MshinCityDebug.draw()});
+ await page.evaluate(()=>{const city=window.MshinCityDebug.city;city.buildings=[];city.population=0;city.citizens=[];window.MshinCityDebug.setCameraOrbit(0);window.MshinCityDebug.setCameraZoom(0.72);window.MshinCityDebug.draw()});
  await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=495;window.MshinCityDebug.draw()});
 
  const mapControls=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,buttons:[...document.querySelectorAll(".cityMapControls button")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height,visible:r.width>0&&r.height>0}})}));
