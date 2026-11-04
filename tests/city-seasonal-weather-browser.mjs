@@ -47,6 +47,22 @@ try {
   }, winterSnowDay);
   assert.equal(snow.weather, "snow"); assert.equal(snow.snowVisible, true);
   await page.screenshot({ path: "artifacts/city-weather-snow.png" });
+  const autumnWindDay = Array.from({ length: 7 }, (_, index) => index + 14).find(day => getCitySeasonalWeather({ seed, tick: day * 144 }).weather === "wind");
+  const summerHeatDay = Array.from({ length: 7 }, (_, index) => index + 7).find(day => getCitySeasonalWeather({ seed, tick: day * 144 }).weather === "heat");
+  assert.notEqual(autumnWindDay, undefined, "fixture seed must include autumn wind");
+  assert.notEqual(summerHeatDay, undefined, "fixture seed must include summer heat");
+  const wind = await page.evaluate(day => {
+    const city = window.MshinCityDebug.city; city.tick = day * 144; city.minuteOfDay = 720;
+    window.MshinCityDebug.draw(); return window.MshinCity3DStats.weather;
+  }, autumnWindDay);
+  assert.equal(wind.leavesVisible, true, "autumn wind must animate falling leaves");
+  await page.screenshot({ path: "artifacts/city-weather-autumn-leaves.png" });
+  const heat = await page.evaluate(day => {
+    const city = window.MshinCityDebug.city; city.tick = day * 144; city.minuteOfDay = 720;
+    window.MshinCityDebug.draw(); return window.MshinCity3DStats.weather;
+  }, summerHeatDay);
+  assert.equal(heat.heatHazeVisible, true, "summer heat must render a subtle heat haze");
+  await page.screenshot({ path: "artifacts/city-weather-summer-heat.png" });
   assert.deepEqual(errors, [], "seasonal city renderer must not emit browser runtime errors");
   console.log("Four seasons, spring rain and winter snow rendered successfully.");
 } finally {
