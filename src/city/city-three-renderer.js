@@ -4,6 +4,9 @@ import { createCityAtmosphere } from "./city-atmosphere.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
+import { createCityPbrSurfaces } from "./city-pbr-textures.js";
+import { createCityBackgroundSkyline } from "./city-background-skyline.js";
+import { addRealisticArchitecture } from "./city-architecture-realism.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -75,50 +78,23 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getViewport: () => ({ width: window.innerWidth, height: window.innerHeight })
   });
 
-  function makeSurfaceTexture(base, fleck, seed, count, scale = 1) {
-    const textureCanvas = document.createElement("canvas");
-    textureCanvas.width = textureCanvas.height = 512;
-    const g = textureCanvas.getContext("2d");
-    g.fillStyle = base;
-    g.fillRect(0, 0, 512, 512);
-    let state = seed >>> 0;
-    const random = () => {
-      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-      return state / 4294967296;
-    };
-    for (let i = 0; i < count; i++) {
-      const size = 0.5 + random() * 3.0 * scale;
-      g.globalAlpha = 0.07 + random() * 0.18;
-      g.fillStyle = fleck;
-      g.fillRect(random() * 512, random() * 512, size, size);
-    }
-    g.globalAlpha = 1;
-    const texture = new THREE.CanvasTexture(textureCanvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 4);
-    return texture;
-  }
-
-  const grassMap = makeSurfaceTexture("#91c875", "#e0f4b5", 741, 11500);
-  const roadMap = makeSurfaceTexture("#46545e", "#c6d1c8", 912, 6800, 0.8);
-  // Procedural facade and roof maps add visible surface detail without large
-  // external image downloads or extra network dependencies on mobile.
-  const facadeMap = makeSurfaceTexture("#f5efdf", "#8e8a7d", 1327, 2600, 0.42);
-  const roofMap = makeSurfaceTexture("#9b6752", "#f4d5a5", 1849, 3400, 0.55);
-  const grassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, roughness: 1 });
-  const alternateGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#dce8c7", roughness: 1 });
-  const lockedGrassMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#899783", roughness: 1 });
-  const lockedGrassAlternateMaterial = new THREE.MeshStandardMaterial({ map: grassMap, color: "#9aa48e", roughness: 1 });
-  const roadMaterial = new THREE.MeshStandardMaterial({ map: roadMap, roughness: 0.96, metalness: 0.015 });
-  const lockedRoadMaterial = new THREE.MeshStandardMaterial({ map: roadMap, color: "#aab2b1", roughness: 0.98 });
+  const {
+    grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface
+  } = createCityPbrSurfaces(THREE, renderer);
+  const backgroundSkyline = createCityBackgroundSkyline(THREE, scene, concreteSurface, brickSurface, windowMaterials);
+  const grassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, roughness: 0.96, normalScale: new THREE.Vector2(0.32, 0.32) });
+  const alternateGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#dce8c7", roughness: 0.98, normalScale: new THREE.Vector2(0.28, 0.28) });
+  const lockedGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#899783", roughness: 1, normalScale: new THREE.Vector2(0.22, 0.22) });
+  const lockedGrassAlternateMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#9aa48e", roughness: 1, normalScale: new THREE.Vector2(0.22, 0.22) });
+  const roadMaterial = new THREE.MeshStandardMaterial({ ...asphaltSurface, roughness: 0.94, metalness: 0.02, normalScale: new THREE.Vector2(0.42, 0.42) });
+  const lockedRoadMaterial = new THREE.MeshStandardMaterial({ ...asphaltSurface, color: "#aab2b1", roughness: 0.98, normalScale: new THREE.Vector2(0.3, 0.3) });
   const curbMaterial = new THREE.MeshStandardMaterial({ color: "#f1e8d0", roughness: 0.82 });
   const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#f8efcf", transparent: true, opacity: 0.72 });
   const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(140, 140),
-    new THREE.MeshStandardMaterial({ color: "#80b86d", roughness: 1 })
+    new THREE.MeshStandardMaterial({ ...grassSurface, color: "#a6b68a", roughness: 1, normalScale: new THREE.Vector2(0.24, 0.24) })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.34;
@@ -312,7 +288,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   // A dedicated non-buildable pedestrian strip now exists inside each road ROW.
   // Street lights are intentionally deferred to a later visual slice.
   const decorativeStreetLightCount = 0;
-  const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID);
+  const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
 
   const buildings = new THREE.Group();
@@ -459,23 +435,23 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
     const palettes = {
       home: [
-        { wall: "#f5c77f", side: "#e69a62", roof: "#d65b4e", trim: "#fff0c9", accent: "#36a7a0" },
-        { wall: "#f2a7a0", side: "#d97b79", roof: "#536f9f", trim: "#fff0dc", accent: "#f0c65d" },
-        { wall: "#b5d8a0", side: "#80b78a", roof: "#e37b56", trim: "#f4f0d6", accent: "#447fbb" },
-        { wall: "#f3d98d", side: "#d6ae69", roof: "#5d9c88", trim: "#fff4d8", accent: "#d86e80" }
+        { wall: "#c9bba5", side: "#a99b87", roof: "#62534b", trim: "#e4dccd", accent: "#687f7c" },
+        { wall: "#b9b1a4", side: "#948c80", roof: "#4d5962", trim: "#e6e0d4", accent: "#8a6553" },
+        { wall: "#c2c7bd", side: "#9ca69c", roof: "#65594f", trim: "#e9e5da", accent: "#6f8580" },
+        { wall: "#d0c2a9", side: "#ad987b", roof: "#59636a", trim: "#eee5d4", accent: "#92765a" }
       ],
       shop: [
-        { wall: "#f3ad62", side: "#d98054", roof: "#3d9d9a", trim: "#fff1cf", accent: "#e64f63" },
-        { wall: "#76c8d0", side: "#459da9", roof: "#efb74e", trim: "#effbfa", accent: "#e36c56" },
-        { wall: "#e89db2", side: "#c97698", roof: "#647bb4", trim: "#fff0e5", accent: "#f1c35d" }
+        { wall: "#b9aa96", side: "#918170", roof: "#505b60", trim: "#e7dfd1", accent: "#915b48" },
+        { wall: "#aeb8b8", side: "#87999a", roof: "#4e5a60", trim: "#e5e9e5", accent: "#6e7f70" },
+        { wall: "#c2b5a8", side: "#9c877a", roof: "#5b6269", trim: "#ece4d9", accent: "#a16f54" }
       ],
       industrial: [
-        { wall: "#c6d5db", side: "#8da5ae", roof: "#e47d55", trim: "#f4f1df", accent: "#f0bd4e" },
-        { wall: "#d7d4bf", side: "#a5b0a1", roof: "#5f7f91", trim: "#f5f0d9", accent: "#e59a4b" }
+        { wall: "#9da7a7", side: "#7f8b8c", roof: "#4e5a60", trim: "#c7cbc5", accent: "#b4864c" },
+        { wall: "#b1b1a5", side: "#898f89", roof: "#59636a", trim: "#d7d4c8", accent: "#a47a4e" }
       ],
       civic: [
-        { wall: "#d9c5f2", side: "#a995d1", roof: "#5e76a7", trim: "#fff4df", accent: "#e3b85c" },
-        { wall: "#f0d5a0", side: "#d2ad75", roof: "#4b9e9b", trim: "#fff7e7", accent: "#d66e6c" }
+        { wall: "#b8b2a5", side: "#918b80", roof: "#4f5d67", trim: "#e9e1d2", accent: "#9b8060" },
+        { wall: "#c5bca9", side: "#9c927e", roof: "#56666b", trim: "#eee7d9", accent: "#8d6a58" }
       ]
     };
     const family = type === "home" ? "home" : type === "shop" ? "shop" : type === "industrial" ? "industrial" : "civic";
@@ -485,9 +461,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const height = type === "home" ? 2.15 + level * 0.52 : type === "shop" ? 2.45 + level * 0.28 : type === "industrial" ? 2.7 : 2.5 + level * 0.36;
     const bodyWidth = type === "industrial" ? 1.52 : 1.34;
     const bodyDepth = type === "industrial" ? 1.48 : 1.34;
-    const wall = new THREE.MeshStandardMaterial({ color: palette.wall, map: facadeMap, roughness: 0.82 });
-    const sideWall = new THREE.MeshStandardMaterial({ color: palette.side, map: facadeMap, roughness: 0.86 });
-    const roofMat = new THREE.MeshStandardMaterial({ color: palette.roof, map: roofMap, roughness: 0.88 });
+    const facadeSurface = type === "industrial" || type === "administrative" ? concreteSurface : brickSurface;
+    const wall = new THREE.MeshStandardMaterial({ ...facadeSurface, color: palette.wall, roughness: 0.88, normalScale: new THREE.Vector2(0.34, 0.34) });
+    const sideWall = new THREE.MeshStandardMaterial({ ...facadeSurface, color: palette.side, roughness: 0.9, normalScale: new THREE.Vector2(0.3, 0.3) });
+    const roofMat = new THREE.MeshStandardMaterial({ ...roofSurface, color: palette.roof, roughness: 0.92, normalScale: new THREE.Vector2(0.48, 0.48) });
     const trimMat = new THREE.MeshStandardMaterial({ color: palette.trim, roughness: 0.68 });
     const accentMat = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.7 });
     const glassMat = new THREE.MeshStandardMaterial({ color: "#d8f5f6", emissive: "#3e9db0", emissiveIntensity: 0.16, roughness: 0.24, metalness: 0.08 });
@@ -501,11 +478,31 @@ export async function createCityThreeRenderer(sourceCanvas) {
     addBuildingMesh(group, new THREE.BoxGeometry(bodyWidth + 0.13, 0.12, bodyDepth + 0.13), trimMat, 0, 0.34 + height, 0, 0, false);
 
     if (type === "home") {
-      const roof = new THREE.Mesh(new THREE.ConeGeometry(1.08, 0.72, 4), roofMat);
-      roof.position.set(0, 0.48 + height, 0);
-      roof.rotation.y = Math.PI / 4;
+      // Rectangular two-slope gable roof with a continuous ridge; unlike the
+      // former pyramid primitive, this reads as a real residential roof from orbit.
+      const roofWidth = bodyWidth + 0.28;
+      const roofDepth = bodyDepth + 0.28;
+      const ridgeHeight = 0.78;
+      const roofGeometry = new THREE.BufferGeometry();
+      roofGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        -roofWidth / 2, 0, -roofDepth / 2, 0, ridgeHeight, -roofDepth / 2,
+        0, ridgeHeight, roofDepth / 2, -roofWidth / 2, 0, roofDepth / 2,
+        0, ridgeHeight, -roofDepth / 2, roofWidth / 2, 0, -roofDepth / 2,
+        roofWidth / 2, 0, roofDepth / 2, 0, ridgeHeight, roofDepth / 2
+      ], 3));
+      roofGeometry.setAttribute("uv", new THREE.Float32BufferAttribute([
+        0,0, .5,0, .5,1, 0,1, 0,0, .5,0, .5,1, 0,1
+      ], 2));
+      roofGeometry.setIndex([0,1,2,0,2,3,4,5,6,4,6,7]);
+      roofGeometry.computeVertexNormals();
+      const roof = new THREE.Mesh(roofGeometry, roofMat);
+      roof.position.set(0, 0.32 + height, 0);
       roof.castShadow = true;
+      roof.receiveShadow = true;
       group.add(roof);
+      const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.10, roofDepth + 0.04), trimMat);
+      ridge.position.set(0, 0.32 + height + ridgeHeight, 0);
+      group.add(ridge);
       const balcony = new THREE.InstancedMesh(balconyGeometry, trimMat, Math.max(2, level * 2));
       const balconyDummy = new THREE.Object3D();
       let balconyCount = 0;
@@ -556,8 +553,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     }
 
     addOrbitReadyBuildingDetails(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, windowGeometry });
-
-    // Bright facade fins make each family readable at the normal phone zoom.
+    addRealisticArchitecture(THREE, { group, type, height, bodyWidth, bodyDepth, trimMat, accentMat, glassMat, roofMat });
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
     fin.position.set(-bodyWidth / 2 - 0.02, 0.34 + height * 0.52, bodyDepth / 2 + 0.045);
     group.add(fin);
@@ -585,7 +581,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  // Raycast anchors use the rendered plot surface, not the lower decorative base plane.
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
   let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48));
 
@@ -665,14 +660,20 @@ export async function createCityThreeRenderer(sourceCanvas) {
         cameraOrbit,
         cameraPitch,
         version: THREE.REVISION,
-        visualStyle: "vibrant-stylized-3d",
-        proceduralTextures: 4,
-        texturedBuildingMaterials: 3,
+        visualStyle: "realistic-pbr-city",
+        proceduralTextures: 6,
+        pbrMaterialSets: 6,
+        normalMappedSurfaces: 6,
+        roughnessMappedSurfaces: 6,
+        texturedBuildingMaterials: 4,
+        backgroundCityBuildings: backgroundSkyline.buildingCount,
+        backgroundCityWindows: backgroundSkyline.windowCount,
         decorativeTrees: decorativeTreeCount,
         decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
+        realisticArchitecture: true,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
         plots: activeGrassA + activeGrassB,
@@ -695,10 +696,12 @@ export async function createCityThreeRenderer(sourceCanvas) {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
       atmosphere.dispose();
-      grassMap.dispose();
-      roadMap.dispose();
-      facadeMap.dispose();
-      roofMap.dispose();
+      backgroundSkyline.dispose();
+      for (const surface of [grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface]) {
+        surface.map.dispose();
+        surface.normalMap.dispose();
+        surface.roughnessMap.dispose();
+      }
       canvas.remove();
       sourceCanvas.style.opacity = "";
     }

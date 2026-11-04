@@ -30,7 +30,10 @@ try{
   }}});
  });
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
- await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+ const rendererBootStartedAt=Date.now();
+ await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100});
+ const rendererBootDuration=Date.now()-rendererBootStartedAt;
+ assert.ok(rendererBootDuration<60000,"compact city renderer must finish initialization within the bounded 60-second mobile startup budget");
  const viewportMeta=await page.locator('meta[name="viewport"]').getAttribute("content");
  assert.match(viewportMeta,/viewport-fit=cover/,"city must opt into safe-area-aware mobile viewport sizing");
  const initialVisualViewport=await page.evaluate(()=>({width:visualViewport.width,height:visualViewport.height}));
@@ -60,9 +63,14 @@ try{
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.version,"180");
- assert.equal(renderStats.visualStyle,"vibrant-stylized-3d","the city renderer must use the approved vivid 3D art direction");
- assert.equal(renderStats.proceduralTextures,4,"ground, road, building facade and roof must use generated texture maps");
- assert.equal(renderStats.texturedBuildingMaterials,3,"building wall and roof materials must use visible procedural texture maps");
+ assert.equal(renderStats.visualStyle,"realistic-pbr-city","the city renderer must use the realistic architectural PBR art direction");
+ assert.equal(renderStats.proceduralTextures,6,"terrain, asphalt, brick, concrete, roof and sidewalk must use dedicated texture families");
+ assert.equal(renderStats.pbrMaterialSets,6,"all six city surface families must expose complete PBR map sets");
+ assert.equal(renderStats.normalMappedSurfaces,6,"all six city surface families must use generated normal maps");
+ assert.equal(renderStats.roughnessMappedSurfaces,6,"all six city surface families must use generated roughness maps");
+ assert.equal(renderStats.texturedBuildingMaterials,4,"residential, commercial, industrial and civic materials must use PBR textures");
+ assert.ok(renderStats.backgroundCityBuildings>=70,"the playable district must sit inside a large 3D urban skyline");
+ assert.ok(renderStats.backgroundCityWindows>1000,"distant high-rise facades must carry instanced four-sided windows");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
  assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۴"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
@@ -352,8 +360,17 @@ try{
  await page.screenshot({path:"artifacts/city-mobile-landscape-844x390.png"});
  const compactPage=await browser.newPage({viewport:{width:360,height:640},screen:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  try{
+  const compactErrors=[];
+  compactPage.on("pageerror",error=>compactErrors.push(error.stack||String(error)));
+  compactPage.on("console",message=>{if(message.type()==="error")compactErrors.push("console: "+message.text())});
+  compactPage.on("requestfailed",request=>compactErrors.push("request failed: "+request.url()+" "+request.failure()?.errorText));
   await compactPage.goto("http://127.0.0.1:4173/city.html");
-  await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  try{
+   await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:30000});
+  }catch(error){
+   const diagnostic=await compactPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
+   throw new Error("compact portrait 3D renderer did not become ready: "+JSON.stringify({diagnostic,errors:compactErrors})+"; "+error.message);
+  }
   const compact=await compactPage.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth,gate:getComputedStyle(document.querySelector("#cityOrientationGate")).display,tools:document.querySelector(".cityTools").getBoundingClientRect().toJSON(),bottom:document.querySelector(".cityBottom").getBoundingClientRect().toJSON()}));
   assert.equal(compact.gate,"grid","portrait phones must be stopped at the landscape orientation gate");
   assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
