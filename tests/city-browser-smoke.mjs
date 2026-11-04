@@ -329,8 +329,16 @@ try{
  assert.ok(importResult.treasury>0&&importResult.taxRates.residential===14,"backup import must restore treasury and tax policy");
  assert.equal(importResult.panelHidden,true,"successful restore must close the storage dialog");
  assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBackup","closing storage must restore focus to its trigger");
- const demolition=await page.evaluate(()=>{const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));if(!b)throw new Error("test fixture needs a second residential building");return window.MshinCityDebug.actAt(b.x,b.y,"bulldoze")});
- assert.equal(demolition.cell,"grass","bulldoze action must remove the selected residential building");assert.equal(demolition.saved.grid.flat().filter(v=>v==="building").length,await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),"demolition must persist immediately");
+ const demolition=await page.evaluate(()=>{
+  const b=window.MshinCityDebug.city.buildings.find(v=>v.type==="home"&&!(v.x===17&&v.y===14));
+  if(!b)throw new Error("test fixture needs a second residential building");
+  const result=window.MshinCityDebug.actAt(b.x,b.y,"bulldoze");
+  return { ...result, x:b.x, y:b.y, persisted:JSON.parse(localStorage.getItem("mshin-city-save-v2")) };
+ });
+ assert.equal(demolition.cell,"grass","bulldoze action must remove the selected residential building");
+ assert.equal(demolition.saved.grid[demolition.y]?.[demolition.x],"grass","the demolished tile must be empty in the immediate save snapshot");
+ assert.deepEqual(demolition.persisted?.grid,demolition.saved.grid,"demolition must write the same updated grid to local storage immediately");
+ assert.deepEqual(demolition.persisted?.grid,await page.evaluate(()=>window.MshinCityDebug.city.grid),"persisted city grid must match the live grid after demolition");
  await page.evaluate(()=>{for(let i=0;i<6;i++)window.MshinCityDebug.step()});await page.waitForTimeout(100);
  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.tick>=6),"simulation must autosave without a manual save");
  await page.bringToFront();await page.locator('[data-city-speed="1"]').click();await page.waitForFunction(()=>document.visibilityState==="visible");const before=await page.evaluate(()=>window.MshinCityDebug.city.tick);await page.waitForTimeout(4000);const simulation=await page.evaluate(()=>({tick:window.MshinCityDebug.city.tick,visibility:document.visibilityState,speedLabel:document.querySelector("#citySpeedLabel")?.textContent}));assert.ok(simulation.tick>before,"simulation should advance while the mobile city is visible at 1x speed: "+JSON.stringify({before,...simulation}));
