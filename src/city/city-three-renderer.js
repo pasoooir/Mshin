@@ -557,7 +557,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, height * 0.82, 0.08), accentMat);
     fin.position.set(-bodyWidth / 2 - 0.02, 0.34 + height * 0.52, bodyDepth / 2 + 0.045);
     group.add(fin);
-    group.scale.setScalar(1.22);
+    group.scale.setScalar(1.12);
     return group;
   }
 
