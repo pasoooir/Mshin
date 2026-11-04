@@ -194,9 +194,9 @@ try{
  assert.ok(Number.isFinite(focusedCamera.targetX)&&Number.isFinite(focusedCamera.targetZ),"tapping the world must set a raycast-derived camera focus target");
  await page.waitForTimeout(450);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.buildings.length),1,"camera gestures and focus must not mutate city construction data");
- await page.locator("#cityRecenter").click();
  fs.mkdirSync("artifacts",{recursive:true});
- await page.screenshot({path:"artifacts/city-camera-orbit-focus.png"});
+ await page.screenshot({path:"artifacts/city-camera-orbit-focus.png",timeout:60000,animations:"disabled"});
+ await page.locator("#cityRecenter").click();
 
  await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
