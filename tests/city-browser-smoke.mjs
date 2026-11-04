@@ -139,7 +139,7 @@ try{
 
  const pureRotationZoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  const pureRotationOrbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
- await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",711,150,180);send("pointerdown",712,250,180);send("pointermove",711,200,300);send("pointermove",712,200,220);send("pointerup",711,200,300);send("pointerup",712,200,220)});
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",711,150,180);send("pointerdown",712,250,180);send("pointermove",711,200,130);send("pointermove",712,200,230);send("pointerup",711,200,130);send("pointerup",712,200,230)});
  assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.zoom))-pureRotationZoomBefore)<0.0001,"pure two-finger twist must not change zoom");
  assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.orbit))-pureRotationOrbitBefore)>0.1,"twisting the two-finger line must rotate the camera around the focus");
 
