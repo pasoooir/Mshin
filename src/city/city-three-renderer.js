@@ -1,6 +1,7 @@
 const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
+import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { createCityConstructionRenderer } from "./city-construction-renderer.js";
 import { createCitySurfaceTexture } from "./city-surface-texture.js";
 import { addOrbitReadyBuildingDetails } from "./city-building-details.js";
@@ -561,7 +562,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const pointer = new THREE.Vector2();
   // Raycast anchors use the rendered plot surface, not the lower decorative base plane.
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
-  let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0;
+  let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48));
 
   function resize() {
     width = window.innerWidth;
@@ -580,18 +581,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
   function updateCamera(cam) {
     const zoom = Math.max(0.525, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
     camera.zoom = zoom;
-    const worldScale = height / 50;
-    const targetX = Number.isFinite(cam.currentTargetX) ? cam.currentTargetX : Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
-    const targetY = Number.isFinite(cam.currentTargetY) ? cam.currentTargetY : Number.isFinite(cam.targetY) ? cam.targetY : 0;
-    const targetZ = Number.isFinite(cam.currentTargetZ) ? cam.currentTargetZ : Number.isFinite(cam.targetZ) ? cam.targetZ : -(cam.y || 0) / worldScale;
-    const orbit = Number.isFinite(cam.orbit) ? cam.orbit : 0;
-    cameraOrbit = orbit;
-    const orbitAngle = Math.PI / 4 + orbit;
-    const orbitRadius = Math.hypot(48, 48);
-    camera.position.set(targetX + Math.sin(orbitAngle) * orbitRadius, targetY + 38, targetZ + Math.cos(orbitAngle) * orbitRadius);
-    camera.lookAt(targetX, targetY, targetZ);
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld(true);
+    const transform = updateCityCameraTransform(camera, cam, height);
+    cameraOrbit = transform.orbit;
+    cameraPitch = transform.pitch;
   }
 
   function render(city, view, cam) {
@@ -647,6 +639,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       return {
         renderer: "three.js",
         cameraOrbit,
+        cameraPitch,
         version: THREE.REVISION,
         visualStyle: "vibrant-stylized-3d",
         proceduralTextures: 4,
