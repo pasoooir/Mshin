@@ -45,7 +45,7 @@ export function stepCity(city,seconds=1){
  for(const a of city.animals||[]){a.phase+=a.pace*seconds;a.x+=Math.cos(a.phase)*.009;a.y+=Math.sin(a.phase)*.007;a.x=Math.max(8,Math.min(25,a.x));a.y=Math.max(8,Math.min(25,a.y))}
  return city;
 }
-export function placeCityItem(city,x,y,type){
+export function placeCityItem(city,x,y,type,constructionDuration=0){
  if(typeof type==="string"&&type.startsWith("zone-"))return placeCityZone(city,x,y,type.slice(5));
  if(!inside(x,y))return{ok:false,reason:"خارج از محدوده شهر"};
  if(!Object.hasOwn(COST,type))return{ok:false,reason:"ابزار ناشناخته است"};
@@ -53,7 +53,7 @@ export function placeCityItem(city,x,y,type){
  if(city.treasury<COST[type])return{ok:false,reason:"بودجه کافی نیست"};
  if(type!=="road"&&!roadNear(city.grid,x,y))return{ok:false,reason:"ساختمان باید به خیابان دسترسی داشته باشد"};
  city.treasury-=COST[type];if(type==="road"){city.grid[y][x]="road";return{ok:true,item:"road",cost:COST.road}};
- const residents=type==="home"?12:0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents,construction:type==="park"?undefined:{duration:45,remaining:45}};
+ const residents=type==="home"?12:0,duration=Number.isFinite(constructionDuration)?Math.max(0,constructionDuration):0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents,construction:duration>0&&type!=="park"?{duration,remaining:duration}:undefined};
  city.grid[y][x]="building";city.buildings.push(b);if(!b.construction)city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
 }
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
@@ -191,7 +191,7 @@ function mount(){
   if(!inside(x,y))return;selected={x,y};
   if(tool==="select"){draw();return}
   if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home"){city.population=Math.max(0,city.population-b.residents);syncCityCitizens(city)}city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="ساختمان تخریب شد؛ ۳۵٪ هزینه بازیابی شد.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="این خیابان تنها مسیر دسترسی یک ساختمان است."}else{city.grid[y][x]="grass";$("cityToast").textContent="قطعه خیابان حذف شد.";changed=true}}if(changed)persist(city);draw();return}
-  const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"ساخت انجام شد · هزینه "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
+  const result=placeCityItem(city,x,y,tool,45);$("cityToast").textContent=result.ok?"ساخت انجام شد · هزینه "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
  }
  cityToolsNav?.querySelectorAll("[data-city-category]").forEach(button=>button.addEventListener("click",()=>openCityToolPanel(button.dataset.cityCategory)));
  document.querySelectorAll("[data-city-tool]").forEach(b=>{const label=b.querySelector("small")?.textContent?.trim()||b.getAttribute("aria-label")||b.dataset.cityTool;b.dataset.hint=label;b.title=label;b.setAttribute("aria-label",label);b.addEventListener("click",()=>setTool(b.dataset.cityTool))});
