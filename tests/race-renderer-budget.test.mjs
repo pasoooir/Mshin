@@ -17,7 +17,7 @@ test("procedural 3D scene stays within a bounded first-build geometry budget", (
 
 test("the scene keeps its full road width while reducing mesh density", () => {
   assert.ok(source.includes("const segments=mobile?280:softwareRenderer?360:760,half=180;"));
-  assert.ok(source.includes("quad(roadTris,l0,l1,r1,r0)"),
+  assert.ok(source.includes("quad(roadTris,l0,r0,r1,l1)"),
     "the asphalt remains a continuous closed road ribbon");
 });
 
