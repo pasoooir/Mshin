@@ -103,3 +103,12 @@ test("zoned buildings use the same visible construction lifecycle", () => {
   assert.equal(building.construction,undefined);
   assert.equal(city.population,12);
 });
+
+test("construction progress is accepted in saves and malformed progress is rejected", () => {
+  const city=createInitialCity(508);
+  assert.equal(placeCityItem(city,17,14,"home").ok,true);
+  assert.equal(isValidCitySave(city),true);
+  const malformed=structuredClone(city);
+  malformed.buildings[0].construction.remaining=46;
+  assert.equal(isValidCitySave(malformed),false);
+});
