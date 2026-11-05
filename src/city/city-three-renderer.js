@@ -350,17 +350,26 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   let buildingSignature = "";
   let buildingRebuilds = 0;
+  const buildingObjects = new Map();
   function updateBuildings(city) {
-    const next = city.buildings.map(v => [v.id, v.type, v.x, v.y, v.level].join(":")).join("|");
-    if (next === buildingSignature) return;
-    buildingSignature = next;
+    const desired = new Map(city.buildings.map((item, index) => {
+      const key = String(item.id ?? `index-${index}`);
+      return [key, { item, signature: [item.id, item.type, item.x, item.y, item.level].join(":") }];
+    }));
+    const nextSignature = [...desired].map(([key, value]) => `${key}=${value.signature}`).join("|");
+    if (nextSignature === buildingSignature) return;
+    buildingSignature = nextSignature;
     buildingRebuilds++;
     renderer.shadowMap.needsUpdate = true;
+
     const obsoleteGeometries = new Set();
     const obsoleteMaterials = new Set();
-    for (const child of [...buildings.children]) {
-      buildings.remove(child);
-      child.traverse(object => {
+    for (const [key, current] of buildingObjects) {
+      const wanted = desired.get(key);
+      if (wanted && wanted.signature === current.signature) continue;
+      buildings.remove(current.group);
+      buildingObjects.delete(key);
+      current.group.traverse(object => {
         if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) {
           obsoleteGeometries.add(object.geometry);
         }
@@ -368,23 +377,32 @@ export async function createCityThreeRenderer(sourceCanvas) {
         else if (object.material) obsoleteMaterials.add(object.material);
       });
     }
-    // A building intentionally reuses geometry and materials across several
-    // facade meshes. Dispose each GPU resource exactly once per rebuild.
+
+    // Keep any resources still referenced by unchanged buildings alive.
+    buildings.traverse(object => {
+      if (object.geometry) obsoleteGeometries.delete(object.geometry);
+      if (Array.isArray(object.material)) object.material.forEach(material => obsoleteMaterials.delete(material));
+      else if (object.material) obsoleteMaterials.delete(object.material);
+    });
     for (const geometry of obsoleteGeometries) geometry.dispose();
     for (const material of obsoleteMaterials) {
       windowMaterials.delete(material);
       material.dispose();
     }
-    for (const item of city.buildings) {
-  buildings.add(createHighGfxBuilding(THREE, item, {
-    trunkGeometry,
-    canopyGeometry,
-    canopySmallGeometry,
-    brickSurface,
-    concreteSurface,
-    roofSurface,
-    windowMaterials
-  }));
+
+    for (const [key, wanted] of desired) {
+      if (buildingObjects.has(key)) continue;
+      const group = createHighGfxBuilding(THREE, wanted.item, {
+        trunkGeometry,
+        canopyGeometry,
+        canopySmallGeometry,
+        brickSurface,
+        concreteSurface,
+        roofSurface,
+        windowMaterials
+      });
+      buildings.add(group);
+      buildingObjects.set(key, { signature: wanted.signature, group });
     }
   }
   const raycaster = new THREE.Raycaster();
