@@ -32,6 +32,11 @@ test("optional CDN textures have bounded mobile loading and preserve fallback re
  assert.match(renderer,/gl\.deleteTexture\(texture\)/);
 });
 
+test("race ground plane faces upward and remains inside the camera far plane",()=>{
+ assert.match(renderer,/quad\(groundTris,\[-30000,-40,-30000\],\[-30000,-40,30000\],\[30000,-40,30000\],\[30000,-40,-30000\]\)/);
+ assert.match(renderer,/perspective\(Math\.PI\/2\.95,canvas\.width\/Math\.max\(1,canvas\.height\),1,60000\)/);
+});
+
 test("world-space PBR shader samples scanned textures without requiring UV vertex buffers",()=>{
  assert.match(pbr,/uniform sampler2D uSurfaceTexture/);
  assert.match(pbr,/uniform float uSurfaceEnabled/);
