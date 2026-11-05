@@ -42,6 +42,14 @@ test("residential roof silhouette is a rectangular two-slope gable, not a pyrami
   assert.ok(!buildingGeometry.includes("new THREE.ConeGeometry(1.08, 0.72, 4)"), "residential gable must not regress to a pyramid primitive");
 });
 
+test("building updates preserve unchanged groups and rebuild only changed ids", () => {
+  assert.ok(renderer.includes("const buildingObjects = new Map()"));
+  assert.ok(renderer.includes("const desired = new Map(city.buildings.map"));
+  assert.ok(renderer.includes("if (wanted && wanted.signature === current.signature) continue"));
+  assert.ok(renderer.includes("if (buildingObjects.has(key)) continue"));
+  assert.ok(renderer.includes("buildings.remove(current.group)"));
+});
+
 test("building rebuild releases shared GPU resources once", () => {
   assert.ok(renderer.includes("const obsoleteGeometries = new Set()"));
   assert.ok(renderer.includes("const obsoleteMaterials = new Set()"));
