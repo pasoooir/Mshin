@@ -195,6 +195,7 @@ try {
       } : null,
       canvas: { width: document.querySelector("#game3d")?.width, height: document.querySelector("#game3d")?.height },
       bodyClass: document.body.className,
+      pageErrors: errors.slice(-12),
     }));
     throw new Error("mobile WebGL renderer did not reach a stable frame state: " + JSON.stringify(diagnostic) + " | " + error.message);
   });
