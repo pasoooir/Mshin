@@ -232,7 +232,7 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
   .cityActions { gap:3px; }
   .cityAction { width:36px; height:36px; min-height:36px; font-size:17px; }
   .cityBrand { width:36px; height:36px; }
-  .cityMetrics { top:50px; left:48px; right:48px; gap:3px; }
+  .cityMetrics { top:50px; left:68px; right:48px; gap:3px; }
   .cityMetric { padding:3px 5px; }
   .cityMetric b { font-size:10px; }
   .cityTools .cityTool, .cityToolCategory { width:40px; height:40px; min-width:40px; min-height:40px; font-size:18px; }
