@@ -205,12 +205,12 @@ try {
   await mobile.evaluate(() => { window.Mshin3DRenderer.captureNextFrameSample = true; });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.lastFramePixelSample?.context === true, undefined, { timeout: 5000 });
   const raceFrameSample = await mobile.evaluate(() => window.Mshin3DRenderer.lastFramePixelSample);
+  await captureScreenshot(mobile, "artifacts/racing-mobile-track.png");
   assert.ok(raceFrameSample.visiblePixels > 1000, "mobile race scene must contain substantial visible rendered terrain/track pixels: " + JSON.stringify(raceFrameSample));
   assert.ok(raceFrameSample.drawCalls >= 8, "mobile race scene must submit terrain, road and environment meshes: " + JSON.stringify(raceFrameSample));
   assert.ok(raceFrameSample.triangles > 1000, "mobile race scene must render substantial track and environment geometry: " + JSON.stringify(raceFrameSample));
   assert.ok(raceFrameSample.uniqueColors >= 12, "mobile race scene must show multiple visible surface/material colors rather than only the clear color and cars: " + JSON.stringify(raceFrameSample));
   assert.equal(raceFrameSample.glError, 0, "mobile race scene pixel capture must not report a WebGL error: " + JSON.stringify(raceFrameSample));
-  await captureScreenshot(mobile, "artifacts/racing-mobile-track.png");
   const trackScaleMetrics = await mobile.evaluate(() => window.MshinPerformance);
   assert.equal(trackScaleMetrics.trackLengthScale, 10, "mobile race runtime must use the tenfold circuit scale");
   assert.equal(trackScaleMetrics.trackRadiusX, 11800, "mobile race runtime must expose the extended horizontal circuit radius");
