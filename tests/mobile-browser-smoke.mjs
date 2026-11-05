@@ -207,6 +207,9 @@ try {
   const raceFrameSample = await mobile.evaluate(() => window.Mshin3DRenderer.lastFramePixelSample);
   await captureScreenshot(mobile, "artifacts/racing-mobile-track.png");
   assert.ok(raceFrameSample.visiblePixels > 1000, "mobile race scene must contain substantial visible rendered terrain/track pixels: " + JSON.stringify(raceFrameSample));
+  assert.ok(raceFrameSample.roadLikePixels > 500, "mobile race scene must visibly render a broad neutral-asphalt track surface, not only the green terrain and cars: " + JSON.stringify(raceFrameSample));
+  const trackMeshMetrics = await mobile.evaluate(() => ({ terrainBaseVertices: window.Mshin3DRenderer?.terrainBaseVertices, roadVertices: window.Mshin3DRenderer?.roadVertices }));
+  assert.ok(trackMeshMetrics.terrainBaseVertices >= 6 && trackMeshMetrics.roadVertices >= 1000, "mobile renderer must upload separate terrain and full-width asphalt circuit meshes: " + JSON.stringify(trackMeshMetrics));
   assert.ok(raceFrameSample.drawCalls >= 8, "mobile race scene must submit terrain, road and environment meshes: " + JSON.stringify(raceFrameSample));
   assert.ok(raceFrameSample.triangles > 1000, "mobile race scene must render substantial track and environment geometry: " + JSON.stringify(raceFrameSample));
   assert.ok(raceFrameSample.uniqueColors >= 12, "mobile race scene must show multiple visible surface/material colors rather than only the clear color and cars: " + JSON.stringify(raceFrameSample));
