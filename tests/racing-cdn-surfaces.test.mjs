@@ -6,13 +6,13 @@ const renderer=fs.readFileSync(new URL("../src/race-renderer-3d.js",import.meta.
 const pbr=fs.readFileSync(new URL("../src/vehicle-pbr.js",import.meta.url),"utf8");
 const credits=fs.readFileSync(new URL("../src/racing/ENVIRONMENT_ASSET_CREDITS.md",import.meta.url),"utf8");
 
-test("race renderer uses real Poly Haven CDN surfaces for asphalt and biome terrain",()=>{
- for(const key of ["asphalt","grass","sand","snow","rock","concrete","bark","foliage"]){
-  assert.match(renderer,new RegExp(key+':"https://dl\\.polyhaven\\.org/file/ph-assets/Textures/jpg/1k/'));
- }
- assert.match(renderer,/crossOrigin="anonymous"/);
- assert.match(renderer,/image\.onerror/);
- assert.match(renderer,/surfaceTextures\.loaded\+\+/);
+test("race renderer creates all eight RGBA8 surfaces locally without any network requests",()=>{
+ for(const key of ["asphalt","grass","sand","snow","rock","concrete","bark","foliage"]) assert.ok(renderer.includes('"'+key+'"'));
+ assert.match(renderer,/provider:"Repository-local procedural RGBA8"/);
+ assert.match(renderer,/createProceduralSurfacePixels\(key,surfaceSize\)/);
+ assert.match(renderer,/const surfaceSize=256/);
+ assert.match(renderer,/state\.surfaceTextures\.proceduralReady\+\+/);
+ assert.doesNotMatch(renderer,/https?:\/\/|new Image\(\)|surfaceSources|CDN texture|Poly Haven/);
  assert.match(renderer,/texture:surfaceKey\?surfaceTextures\.get\(surfaceKey\)/);
 });
 
@@ -21,18 +21,10 @@ test("non-urban roadside house roofs emit valid three-vertex faces",()=>{
  assert.match(renderer,/tri\(roof,\[x\+w\/2\+7,eave,z\+d\/2\+7\],\[x-w\/2-7,eave,z\+d\/2\+7\],\[x,peak,z\+d\/2\+7\]\)/);
 });
 
-test("optional CDN textures have bounded mobile loading and preserve fallback rendering",()=>{
- assert.match(renderer,/6500/);
- assert.match(renderer,/CDN texture timed out/);
- assert.match(renderer,/createProceduralSurfacePixels\(key,fallbackSize\)/);
- assert.match(renderer,/const fallbackSize=128/);
- assert.match(renderer,/palettes=\{asphalt:\[74,78,80\],grass:\[91,137,57\]/);
- assert.match(renderer,/gl\.generateMipmap\(gl\.TEXTURE_2D\)/);
- assert.match(renderer,/navigator\.connection\?\.saveData/);
- assert.match(renderer,/softwareRenderer\|\|navigator\.connection/);
- assert.match(renderer,/rendererDestroyed\|\|lost\|\|generation!==surfaceLoadGeneration/);
- assert.match(renderer,/surfaceImages\.clear\(\)/);
+test("context restoration rebuilds local textures and destroy releases GPU resources",()=>{
+ assert.match(renderer,/for\(const key of surfaceKeys\)loadSurfaceTexture\(key\)/);
  assert.match(renderer,/gl\.deleteTexture\(texture\)/);
+ assert.doesNotMatch(renderer,/surfaceImages|surfaceLoadGeneration|rendererDestroyed/);
 });
 
 test("race ground plane faces upward and remains inside the camera far plane",()=>{
@@ -62,6 +54,7 @@ test("terrain, road and building meshes receive distinct texture families",()=>{
  assert.match(renderer,/part\(groundTris,theme\[0\],0,"environment",terrainTexture\)/);
  assert.match(renderer,/\[landscape,"#778b78",0,terrainTexture\]/);
  assert.match(renderer,/\[buildings,urban\?"#5c4d85":"#747b82",0,"concrete"\]/);assert.match(renderer,/\[treeTrunks,"#70533b",0,"bark"\]/);assert.match(renderer,/\[treeFoliage,theme\[3\],0,"foliage"\]/);
- assert.match(credits,/CC0 1\.0/);
- assert.match(credits,/Poly Haven/);
+ assert.match(credits,/original procedural algorithms/);
+ assert.match(credits,/Project original work/);
+ assert.match(credits,/Three\\.js 0\\.180\\.0/);
 });
