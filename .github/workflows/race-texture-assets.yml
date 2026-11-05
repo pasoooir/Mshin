@@ -77,7 +77,19 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/textures/*.jpg
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from "node:fs/promises";
+          const path = "service-worker.js";
+          let source = await readFile(path, "utf8");
+          source = source.replace('const CACHE_NAME = "mshin-arcade-v74";', 'const CACHE_NAME = "mshin-arcade-v75";');
+          const files = ["asphalt_03_diff_1k.jpg","grass_ground_diff_1k.jpg","sand_01_diff_1k.jpg","snow_03_diff_1k.jpg","rocky_terrain_02_diff_1k.jpg","concrete_floor_02_diff_1k.jpg","bark_brown_02_diff_1k.jpg","leafy_grass_diff_1k.jpg"];
+          const entries = files.map(name => `"./assets/textures/${name}"`).join(", ");
+          const anchor = '"./src/race-renderer-3d.js",';
+          if (!source.includes(anchor)) throw new Error("service worker race renderer entry not found");
+          if (!source.includes(entries)) source = source.replace(anchor, anchor + " " + entries + ",");
+          await writeFile(path, source);
+          NODE
+          git add assets/textures/*.jpg service-worker.js
           if git diff --cached --quiet; then
             echo "Local race textures are already current."
             exit 0
