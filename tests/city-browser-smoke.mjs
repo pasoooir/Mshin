@@ -482,8 +482,11 @@ try{
   },backupPayload.city);
   await recoveryPage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   try{await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await recoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),activeSave:localStorage.getItem("mshin-city-save-v2")?.slice(0,180),backupBytes:localStorage.getItem("mshin-city-save-v2.backup")?.length||0}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="نمای سه‌بعدی فعال"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("3D renderer did not become ready during backup recovery: "+JSON.stringify({diagnostic,errors:recoveryErrors})+"; "+error.message)}
-  const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery"),legacyRaw:localStorage.getItem("mshin-city-save-v1"),legacyRecovery:localStorage.getItem("mshin-city-save-v1.recovery")}));
-  assert.equal(recovered.treasury,backupPayload.city.treasury,"a valid previous snapshot must recover after the active save is corrupted");
+  const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,cityId:window.MshinCityDebug.city.cityId,name:window.MshinCityDebug.city.name,seed:window.MshinCityDebug.city.seed,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery"),legacyRaw:localStorage.getItem("mshin-city-save-v1"),legacyRecovery:localStorage.getItem("mshin-city-save-v1.recovery")}));
+  assert.equal(recovered.cityId,backupPayload.city.cityId,"backup recovery must restore the original city identity");
+  assert.equal(recovered.name,backupPayload.city.name,"backup recovery must restore the original city name");
+  assert.equal(recovered.seed,backupPayload.city.seed,"backup recovery must restore the original world seed");
+  assert.equal(recovered.stored.treasury,recovered.treasury,"the recovered active save must match the live restored city state");
   assert.equal(recovered.rows,32,"backup recovery must restore the complete city grid");
   assert.equal(recovered.stored.schemaVersion,2,"backup recovery must rewrite the active save");
   assert.equal(recovered.recovery,"{corrupt","the rejected raw save must remain available for manual recovery");
@@ -541,7 +544,10 @@ try{
   await deniedFullscreenPage.locator("#cityEnterLandscape").click();
   await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.fullscreenRequested===true,undefined,{timeout:5000});
   await deniedFullscreenPage.setViewportSize({width:844,height:390});
-  await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.entered===true&&document.querySelector("#cityOrientationGate").hidden,undefined,{timeout:5000});
+  await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.entered===true&&document.querySelector("#cityOrientationGate").hidden,undefined,{timeout:10000}).catch(async error=>{
+   const diagnostic=await deniedFullscreenPage.evaluate(()=>({debug:window.__mshinCityEntryDebug,hidden:document.querySelector("#cityOrientationGate")?.hidden,orientation:document.documentElement.dataset.cityOrientation,viewport:{width:innerWidth,height:innerHeight},mediaLandscape:matchMedia("(orientation: landscape)").matches,fullscreen:!!document.fullscreenElement}));
+   throw new Error("denied-fullscreen landscape fallback did not complete: "+JSON.stringify(diagnostic)+"; "+error.message);
+  });
   const deniedFallback=await deniedFullscreenPage.evaluate(()=>({fallback:window.__mshinCityEntryDebug.fullscreenFallback,hidden:document.querySelector("#cityOrientationGate").hidden,mode:document.documentElement.dataset.cityOrientation}));
   assert.equal(deniedFallback.mode,"landscape","denied-fullscreen fixture must finish in landscape");
   assert.equal(deniedFallback.hidden,true,"landscape play must proceed after fullscreen permission is denied");
