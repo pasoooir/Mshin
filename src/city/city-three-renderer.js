@@ -416,15 +416,23 @@ export async function createCityThreeRenderer(sourceCanvas) {
     let instancedMeshCount = 0;
     const geometries = new Set();
     const materials = new Set();
-    buildings.traverse(object => {
-      if (!object.isMesh) return;
-      meshCount++;
-      if (object.isInstancedMesh) instancedMeshCount++;
-      if (object.geometry) geometries.add(object.geometry);
-      if (Array.isArray(object.material)) object.material.forEach(material => materials.add(material));
-      else if (object.material) materials.add(object.material);
-    });
+    const meshCountsByType = {};
+    for (const building of buildings.children) {
+      const type = building.userData?.type || "unknown";
+      let typeMeshCount = 0;
+      building.traverse(object => {
+        if (!object.isMesh) return;
+        meshCount++;
+        typeMeshCount++;
+        if (object.isInstancedMesh) instancedMeshCount++;
+        if (object.geometry) geometries.add(object.geometry);
+        if (Array.isArray(object.material)) object.material.forEach(material => materials.add(material));
+        else if (object.material) materials.add(object.material);
+      });
+      meshCountsByType[type] = (meshCountsByType[type] || 0) + typeMeshCount;
+    }
     return {
+      buildingMeshCountsByType: meshCountsByType,
       buildingMeshCount: meshCount,
       buildingInstancedMeshCount: instancedMeshCount,
       buildingUniqueGeometryCount: geometries.size,
