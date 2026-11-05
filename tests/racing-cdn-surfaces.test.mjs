@@ -46,8 +46,8 @@ test("race circuit uses professional centre lines, edge lines and alternating re
  assert.match(renderer,/if\(i%2===0\)for\(const offset of \[-5,5\]\)/);
  assert.match(renderer,/Math\.floor\(i\/4\)%2\?curbWhiteTris:curbRedTris/);
  assert.match(renderer,/part\(yellowTris,"#f5c928"/);
- assert.match(renderer,/part\(curbRedTris,"#d94337"\)/);
- assert.match(renderer,/part\(curbWhiteTris,"#f1eee4"\)/);
+ assert.match(renderer,/part\(curbRedTris,"#d94337",\.72\)/);
+ assert.match(renderer,/part\(curbWhiteTris,"#f1eee4",\.78\)/);
 });
 
 test("world-space PBR shader samples scanned textures without requiring UV vertex buffers",()=>{
@@ -58,10 +58,18 @@ test("world-space PBR shader samples scanned textures without requiring UV verte
 });
 
 test("terrain, road and building meshes receive distinct texture families",()=>{
- assert.match(renderer,/part\(roadTris,theme\[1\],0,"environment","asphalt"\)/);
- assert.match(renderer,/part\(groundTris,theme\[0\],0,"environment",terrainTexture\)/);
+ assert.match(renderer,/part\(roadTris,theme\[1\],\.92,"environment","asphalt"\)/);
+ assert.match(renderer,/part\(groundTris,theme\[0\],\.16,"environment",terrainTexture\)/);
  assert.match(renderer,/\[landscape,"#778b78",0,terrainTexture\]/);
  assert.match(renderer,/\[buildings,urban\?"#5c4d85":"#747b82",0,"concrete"\]/);assert.match(renderer,/\[treeTrunks,"#70533b",0,"bark"\]/);assert.match(renderer,/\[treeFoliage,theme\[3\],0,"foliage"\]/);
  assert.match(credits,/CC0 1\.0/);
  assert.match(credits,/Poly Haven/);
+});
+
+test("race surfaces wind upward and correct downward horizontal face normals defensively",()=>{
+ assert.match(renderer,/quad\(roadTris,l0,r0,r1,l1\)/);
+ assert.match(renderer,/quad\(shoulderTris,sl0,l0,l1,sl1\)/);
+ assert.match(renderer,/quad\(shoulderTris,r0,sr0,sr1,r1\)/);
+ assert.match(renderer,/quad\(groundTris,outerL,outerR,outerR1,outerL1\)/);
+ assert.match(renderer,/if\(Math\.abs\(ny\)>\.65&&ny<0\)\{nx=-nx;ny=-ny;nz=-nz;\}/);
 });
