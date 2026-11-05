@@ -10,6 +10,9 @@ const streets = await readFile(new URL("../src/city/city-street-renderer.js", im
 
 test("city surfaces use layered tileable albedo, normal and roughness maps", () => {
   assert.ok(textures.includes("function makePbrSurface(THREE, renderer, kind, base, seed)"));
+  assert.ok(textures.includes("const size = compactDevice ? 256 : 512"), "mobile PBR maps must use a lower-cost resolution");
+  assert.ok(textures.includes("compactDevice ? 4 : 8"), "mobile texture anisotropy must be capped");
+  assert.ok(textures.includes("const detailScale = compactDevice ? 0.65 : 1"), "mobile procedural texture detail must use a bounded generation budget");
   for (const family of ["grass", "asphalt", "brick", "concrete", "roof", "sidewalk"]) {
     assert.ok(textures.includes('makePbrSurface(THREE, renderer, "' + family + '"'), family + " texture family must exist");
   }
@@ -39,9 +42,35 @@ test("residential roof silhouette is a rectangular two-slope gable, not a pyrami
   assert.ok(!buildingGeometry.includes("new THREE.ConeGeometry(1.08, 0.72, 4)"), "residential gable must not regress to a pyramid primitive");
 });
 
+test("building updates preserve unchanged groups and rebuild only changed ids", () => {
+  assert.ok(renderer.includes("const buildingObjects = new Map()"));
+  assert.ok(renderer.includes("const desired = new Map(city.buildings.map"));
+  assert.ok(renderer.includes("JSON.stringify([...desired].sort(([a], [b]) => a.localeCompare(b))"), "building signatures must not rebuild on array ordering alone");
+  assert.ok(renderer.includes("if (wanted && wanted.signature === current.signature) continue"));
+  assert.ok(renderer.includes("if (buildingObjects.has(key)) continue"));
+  assert.ok(renderer.includes("buildings.remove(current.group)"));
+});
+
+test("building rebuild releases shared GPU resources once", () => {
+  assert.ok(renderer.includes("const obsoleteGeometries = new Set()"));
+  assert.ok(renderer.includes("const obsoleteMaterials = new Set()"));
+  assert.ok(renderer.includes("for (const geometry of obsoleteGeometries) geometry.dispose()"));
+  assert.ok(renderer.includes("for (const material of obsoleteMaterials)"));
+  assert.ok(renderer.includes("material.dispose()"));
+});
+
 test("city visual identity uses a muted architectural palette and reports PBR acceptance metrics", () => {
   assert.ok(renderer.includes('visualStyle: "realistic-pbr-city"'));
   assert.ok(renderer.includes("pbrMaterialSets: 6"));
   assert.ok(renderer.includes("normalMappedSurfaces: 6"));
+  assert.ok(renderer.includes("pbrGenerationMs"), "renderer must expose measured PBR generation time");
+  assert.ok(renderer.includes("pbrTextureResolution"), "renderer must expose selected texture resolution");
+  for (const metric of ["drawCalls", "renderedTriangles", "renderedPoints", "renderedLines", "geometryCount", "textureCount"]) {
+    assert.ok(renderer.includes(metric), "renderer must expose " + metric + " for performance diagnostics");
+  }
+  assert.ok(renderer.includes("buildingMeshCountsByType"), "renderer must break building mesh counts down by type");
+  for (const metric of ["buildingMeshCount", "buildingInstancedMeshCount", "buildingUniqueGeometryCount", "buildingUniqueMaterialCount"]) {
+    assert.ok(renderer.includes(metric), "renderer must expose building complexity metric " + metric);
+  }
   assert.ok(!renderer.includes('visualStyle: "vibrant-stylized-3d"'));
 });

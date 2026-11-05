@@ -114,3 +114,127 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
 @media(max-width:760px){.cityToolPanel[hidden]{display:none!important}}
 @media(max-height:520px) and (min-width:761px){.cityToolPanel[hidden]{display:none!important}}
 @media(min-width:761px) and (min-height:521px){.cityToolPanel[hidden]{display:flex!important}}
+
+
+/* Stable landscape HUD: keep the brand, actions and seven metrics in separate rows. */
+@media (max-height:520px) and (min-width:761px) {
+  .cityTop {
+    display:grid;
+    grid-template-columns:max-content minmax(0,1fr);
+    grid-template-areas:"brand actions" "metrics metrics";
+    align-items:start;
+    gap:5px 8px;
+    width:100%;
+  }
+  .cityBrand {
+    grid-area:brand;
+    min-width:0;
+    width:max-content;
+    max-width:min(230px,28vw);
+    padding:5px 9px;
+  }
+  .cityBrand strong {
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:13px;
+  }
+  .cityBrand small {
+    display:block;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:8px;
+  }
+  .cityActions {
+    grid-area:actions;
+    min-width:0;
+    flex-wrap:nowrap;
+    justify-content:flex-start;
+    gap:4px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-width:none;
+  }
+  .cityActions::-webkit-scrollbar {display:none}
+  .cityAction {
+    flex:0 0 auto;
+    min-height:36px;
+    padding:5px 7px;
+    font-size:9px;
+  }
+  .cityMetrics {
+    grid-area:metrics;
+    display:grid;
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    width:100%;
+    min-width:0;
+    gap:4px;
+  }
+  .cityMetric {
+    min-width:0;
+    padding:3px 4px;
+  }
+  .cityMetric small {
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:8px;
+  }
+  .cityMetric b {
+    display:block;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:11px;
+  }
+}
+
+
+/* SimCity BuildIt-inspired immersive mobile HUD: edge-mounted icon controls only. */
+@media (max-width: 1100px), (max-height: 620px) {
+  .cityShell { padding: max(6px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left)); }
+  .cityTop { position:static; display:block; }
+  .cityBrand { position:fixed; z-index:7; top:max(7px,env(safe-area-inset-top)); left:max(8px,env(safe-area-inset-left)); min-width:0; width:42px; height:42px; padding:0; display:grid; place-items:center; border-radius:50%; }
+  .cityBrand strong { font-size:23px; line-height:1; }
+  .cityBrand small { display:none; }
+  .cityActions { position:fixed; z-index:7; top:max(7px,env(safe-area-inset-top)); right:max(8px,env(safe-area-inset-right)); display:flex; gap:5px; }
+  .cityAction { width:42px; height:42px; min-height:42px; padding:0; display:grid; place-items:center; border-radius:50%; font-size:20px; }
+  .cityMetrics { position:fixed; z-index:6; top:max(56px,calc(env(safe-area-inset-top) + 54px)); left:max(82px,calc(env(safe-area-inset-left) + 74px)); right:max(58px,calc(env(safe-area-inset-right) + 50px)); display:flex; flex-direction:row; flex-wrap:nowrap; gap:4px; width:auto; max-width:none; overflow:hidden; }
+  .cityMetric { display:grid; grid-template-columns:18px minmax(0,1fr); align-items:center; gap:2px; flex:1 1 0; min-width:0; padding:4px 5px; border-radius:11px; text-align:right; }
+  .cityMetricIcon { display:block; font-size:15px; line-height:1; }
+  .cityMetric small { display:none; }
+  .cityMetric b { font-size:11px; text-align:left; }
+  .cityTools { position:fixed; z-index:8; top:50%; left:max(7px,env(safe-area-inset-left)); bottom:auto; transform:translateY(-50%); display:flex; flex-direction:column; align-items:stretch; gap:5px; width:auto; max-width:none; padding:5px; border-radius:18px; overflow:visible; }
+  .cityToolCategories { display:grid; grid-template-columns:1fr; gap:5px; }
+  .cityToolCategory { width:46px; height:46px; min-height:46px; padding:0; display:grid; place-items:center; position:relative; border-radius:50%; font-size:21px; }
+  .cityToolCategory span { display:none; }
+  .cityToolPanel { position:fixed; left:calc(100% + 8px); top:50%; transform:translateY(-50%); display:none; grid-template-columns:repeat(2,46px); gap:5px; width:max-content; max-width:min(150px,42vw); max-height:65dvh; overflow:auto; padding:7px; border:1px solid #ffffff35; border-radius:16px; background:#102338ed; box-shadow:0 12px 32px #06111d99; }
+  .cityToolPanel:not([hidden]) { display:grid; }
+  .cityTools .cityTool { width:46px; height:46px; min-width:46px; padding:0; display:grid; place-items:center; border-radius:50%; font-size:21px; }
+  .cityTools .cityTool small { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  .cityToolPanel[hidden] { display:none !important; }
+  .cityBottom { position:fixed; z-index:9; left:max(8px,env(safe-area-inset-left)); right:auto; bottom:max(8px,env(safe-area-inset-bottom)); display:block; }
+  .cityBottomInfo { display:none; }
+  .citySpeed { display:flex; gap:3px; padding:4px; border-radius:24px; }
+  .citySpeed button { width:36px; height:36px; min-height:36px; padding:0; border-radius:50%; font-size:16px; }
+  .cityMapControls { right:max(8px,env(safe-area-inset-right)); top:50%; transform:translateY(-50%); }
+  .cityMapControls button { width:44px; height:44px; border-radius:50%; }
+  .cityGestureHint { display:none; }
+  .cityToast { bottom:max(12px,calc(env(safe-area-inset-bottom) + 12px)); left:50%; max-width:55vw; font-size:10px; }
+}
+@media (max-width:760px) {
+  .cityMetrics { grid-template-columns:none; }
+  .cityTools { width:auto; }
+  .cityToolPanel { grid-template-columns:repeat(2,46px); }
+}
+@media (max-width:520px) {
+  .cityActions { gap:3px; }
+  .cityAction { width:36px; height:36px; min-height:36px; font-size:17px; }
+  .cityBrand { width:36px; height:36px; }
+  .cityMetrics { top:50px; left:68px; right:48px; gap:3px; }
+  .cityMetric { padding:3px 5px; }
+  .cityMetric b { font-size:10px; }
+  .cityTools .cityTool, .cityToolCategory { width:40px; height:40px; min-width:40px; min-height:40px; font-size:18px; }
+  .cityToolPanel { grid-template-columns:repeat(2,40px); }
+}

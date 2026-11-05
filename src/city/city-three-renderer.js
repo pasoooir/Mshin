@@ -73,9 +73,12 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getFoliageMaterials: () => canopyMaterials
   });
   const cloudLayer = createCityCloudLayer(THREE, { scene, camera });
+  const pbrGenerationStartedAt = performance.now();
   const {
     grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface
   } = createCityPbrSurfaces(THREE, renderer);
+  const pbrGenerationMs = performance.now() - pbrGenerationStartedAt;
+  const pbrTextureResolution = grassSurface.map.image?.width || 0;
   const backgroundSkyline = createCityBackgroundSkyline(THREE, scene, concreteSurface, brickSurface, windowMaterials);
   const grassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, roughness: 0.96, normalScale: new THREE.Vector2(0.32, 0.32) });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#dce8c7", roughness: 0.98, normalScale: new THREE.Vector2(0.28, 0.28) });
@@ -347,32 +350,59 @@ export async function createCityThreeRenderer(sourceCanvas) {
   }
   let buildingSignature = "";
   let buildingRebuilds = 0;
+  const buildingObjects = new Map();
   function updateBuildings(city) {
-    const next = city.buildings.map(v => [v.id, v.type, v.x, v.y, v.level].join(":")).join("|");
-    if (next === buildingSignature) return;
-    buildingSignature = next;
+    const desired = new Map(city.buildings.map((item, index) => {
+      const key = String(item.id ?? `index-${index}`);
+      return [key, { item, signature: [item.id, item.type, item.x, item.y, item.level].join(":") }];
+    }));
+    const nextSignature = JSON.stringify([...desired].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => [key, value.signature]));
+    if (nextSignature === buildingSignature) return;
+    buildingSignature = nextSignature;
     buildingRebuilds++;
     renderer.shadowMap.needsUpdate = true;
-    for (const child of [...buildings.children]) {
-      buildings.remove(child);
-      child.traverse(object => {
-        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose();
-        if (object.material) {
-          if (Array.isArray(object.material)) object.material.forEach(material => { windowMaterials.delete(material); material.dispose(); });
-          else { windowMaterials.delete(object.material); object.material.dispose(); }
+
+    const obsoleteGeometries = new Set();
+    const obsoleteMaterials = new Set();
+    for (const [key, current] of buildingObjects) {
+      const wanted = desired.get(key);
+      if (wanted && wanted.signature === current.signature) continue;
+      buildings.remove(current.group);
+      buildingObjects.delete(key);
+      current.group.traverse(object => {
+        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) {
+          obsoleteGeometries.add(object.geometry);
         }
+        if (Array.isArray(object.material)) object.material.forEach(material => obsoleteMaterials.add(material));
+        else if (object.material) obsoleteMaterials.add(object.material);
       });
     }
-    for (const item of city.buildings) {
-  buildings.add(createHighGfxBuilding(THREE, item, {
-    trunkGeometry,
-    canopyGeometry,
-    canopySmallGeometry,
-    brickSurface,
-    concreteSurface,
-    roofSurface,
-    windowMaterials
-  }));
+
+    // Keep any resources still referenced by unchanged buildings alive.
+    buildings.traverse(object => {
+      if (object.geometry) obsoleteGeometries.delete(object.geometry);
+      if (Array.isArray(object.material)) object.material.forEach(material => obsoleteMaterials.delete(material));
+      else if (object.material) obsoleteMaterials.delete(object.material);
+    });
+    for (const geometry of obsoleteGeometries) geometry.dispose();
+    for (const material of obsoleteMaterials) {
+      windowMaterials.delete(material);
+      material.dispose();
+    }
+
+    for (const [key, wanted] of desired) {
+      if (buildingObjects.has(key)) continue;
+      const group = createHighGfxBuilding(THREE, wanted.item, {
+        trunkGeometry,
+        canopyGeometry,
+        canopySmallGeometry,
+        brickSurface,
+        concreteSurface,
+        roofSurface,
+        windowMaterials
+      });
+      buildings.add(group);
+      buildingObjects.set(key, { signature: wanted.signature, group });
     }
   }
   const raycaster = new THREE.Raycaster();
@@ -398,6 +428,34 @@ export async function createCityThreeRenderer(sourceCanvas) {
     const transform = updateCityCameraTransform(camera, cam, height);
     cameraOrbit = transform.orbit;
     cameraPitch = transform.pitch;
+  }
+  function getBuildingRenderStats() {
+    let meshCount = 0;
+    let instancedMeshCount = 0;
+    const geometries = new Set();
+    const materials = new Set();
+    const meshCountsByType = {};
+    for (const building of buildings.children) {
+      const type = building.userData?.type || "unknown";
+      let typeMeshCount = 0;
+      building.traverse(object => {
+        if (!object.isMesh) return;
+        meshCount++;
+        typeMeshCount++;
+        if (object.isInstancedMesh) instancedMeshCount++;
+        if (object.geometry) geometries.add(object.geometry);
+        if (Array.isArray(object.material)) object.material.forEach(material => materials.add(material));
+        else if (object.material) materials.add(object.material);
+      });
+      meshCountsByType[type] = (meshCountsByType[type] || 0) + typeMeshCount;
+    }
+    return {
+      buildingMeshCountsByType: meshCountsByType,
+      buildingMeshCount: meshCount,
+      buildingInstancedMeshCount: instancedMeshCount,
+      buildingUniqueGeometryCount: geometries.size,
+      buildingUniqueMaterialCount: materials.size
+    };
   }
   function render(city, view, cam) {
     updateCamera(cam);
@@ -451,6 +509,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         version: THREE.REVISION,
         visualStyle: "realistic-pbr-city",
         proceduralTextures: 6,
+        pbrTextureResolution,
+        pbrGenerationMs: Math.round(pbrGenerationMs * 100) / 100,
         pbrMaterialSets: 6,
         normalMappedSurfaces: 6,
         roughnessMappedSurfaces: 6,
@@ -462,6 +522,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         decorativeStreetLights: decorativeStreetLightCount,
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
+        ...getBuildingRenderStats(),
         realisticArchitecture: true,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
@@ -478,6 +539,11 @@ export async function createCityThreeRenderer(sourceCanvas) {
         sidewalkStrips: sidewalkLayer.count,
         crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
+        renderedTriangles: renderer.info.render.triangles,
+        renderedPoints: renderer.info.render.points,
+        renderedLines: renderer.info.render.lines,
+        geometryCount: renderer.info.memory.geometries,
+        textureCount: renderer.info.memory.textures,
         pixelRatio: renderer.getPixelRatio(),
         shadowAutoUpdate: renderer.shadowMap.autoUpdate,
         buildingRebuilds,

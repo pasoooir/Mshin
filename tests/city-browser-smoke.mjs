@@ -38,6 +38,15 @@ try{
  assert.match(viewportMeta,/viewport-fit=cover/,"city must opt into safe-area-aware mobile viewport sizing");
  const initialVisualViewport=await page.evaluate(()=>({width:visualViewport.width,height:visualViewport.height}));
  assert.ok(Math.abs(initialVisualViewport.width-844)<=1&&Math.abs(initialVisualViewport.height-390)<=1,"city must start sized to the visible landscape viewport");
+ const landscapeHud=await page.evaluate(()=>{
+  const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+  return {viewport:{width:innerWidth,height:innerHeight},brand:box(".cityBrand"),actions:box(".cityActions"),metrics:box(".cityMetrics")};
+ });
+ assert.ok(landscapeHud.brand.width>0&&landscapeHud.actions.width>0&&landscapeHud.metrics.width>0,"landscape HUD sections must be laid out");
+ assert.ok(landscapeHud.brand.right<=landscapeHud.actions.left+1||landscapeHud.actions.right<=landscapeHud.brand.left+1,"brand and action buttons must not overlap in landscape");
+ assert.ok(landscapeHud.metrics.top>=Math.min(landscapeHud.brand.bottom,landscapeHud.actions.bottom)-1,"city metrics must occupy their own row below the brand/actions row");
+ assert.ok(landscapeHud.metrics.left>=0&&landscapeHud.metrics.right<=landscapeHud.viewport.width,"all seven city metrics must remain inside the landscape viewport");
+
  await page.setViewportSize({width:780,height:360});
  await page.waitForFunction(()=>Math.abs(parseFloat(document.querySelector("#cityViewport").style.width)-visualViewport.width)<=1
   &&Math.abs(parseFloat(document.querySelector("#cityViewport").style.height)-visualViewport.height)<=1,undefined,{timeout:5000});
@@ -72,7 +81,7 @@ try{
  assert.ok(renderStats.backgroundCityBuildings>=70,"the playable district must sit inside a large 3D urban skyline");
  assert.ok(renderStats.backgroundCityWindows>1000,"distant high-rise facades must carry instanced four-sided windows");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
- assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۴"),"the city UI must expose the deployed version");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۶"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
@@ -363,8 +372,8 @@ try{
  const saveDiagnostics=await page.evaluate(()=>({saved:window.MshinCityDebug.save(),state:window.MshinCityDebug.saveDiagnostics()}));assert.ok(saveDiagnostics.saved,"traffic state must remain persistable with the city save: "+JSON.stringify(saveDiagnostics.state));
  const mobile=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};return{viewport:{width:innerWidth,height:innerHeight},documentWidth:document.documentElement.scrollWidth,brand:rect(".cityBrand"),metrics:rect(".cityMetrics"),tools:rect(".cityTools"),bottom:rect(".cityBottom"),categoryButtons:[...document.querySelectorAll(".cityToolCategory")].map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}),viewportMeta:document.querySelector('meta[name="viewport"]').content}});
  assert.equal(mobile.documentWidth,mobile.viewport.width,"mobile city must not create horizontal page overflow");
- assert.ok(mobile.tools.y>mobile.metrics.bottom,"mobile construction dock must sit below the city metrics");
- assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile tool dock must not overlap the bottom status bar");
+ const toolMetricsOverlap=mobile.tools.x<mobile.metrics.right&&mobile.tools.right>mobile.metrics.x&&mobile.tools.y<mobile.metrics.bottom&&mobile.tools.bottom>mobile.metrics.y;assert.equal(toolMetricsOverlap,false,"mobile construction rail and top metric strip must not physically overlap: "+JSON.stringify({tools:mobile.tools,metrics:mobile.metrics,viewport:mobile.viewport}));
+ assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile edge controls must leave the lower simulation controls unobstructed");
  assert.ok(mobile.categoryButtons.length===4&&mobile.categoryButtons.every(b=>b.width>=40&&b.height>=44),"all four mobile category controls must remain at least 40×44 CSS pixels");await page.locator('[data-city-category="roads"]').click();const openToolTargets=await page.locator('[data-city-panel="roads"] .cityTool').evaluateAll(items=>items.map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}));assert.ok(openToolTargets.length===6&&openToolTargets.every(b=>b.width>=40&&b.height>=44),"every revealed construction tool must remain a usable mobile touch target");await page.locator('[data-city-category="roads"]').click();
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
  await page.screenshot({path:"artifacts/city-mobile-landscape-844x390.png"});
@@ -481,6 +490,9 @@ try{
    localStorage.setItem("mshin-city-save-v2.backup",JSON.stringify(snapshot));
   },backupPayload.city);
   await recoveryPage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
+  await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:15000});
+  await recoveryPage.locator('[data-city-speed="0"]').evaluate(button=>button.click());
+
   try{await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await recoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),activeSave:localStorage.getItem("mshin-city-save-v2")?.slice(0,180),backupBytes:localStorage.getItem("mshin-city-save-v2.backup")?.length||0}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="نمای سه‌بعدی فعال"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("3D renderer did not become ready during backup recovery: "+JSON.stringify({diagnostic,errors:recoveryErrors})+"; "+error.message)}
   const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,cityId:window.MshinCityDebug.city.cityId,name:window.MshinCityDebug.city.name,seed:window.MshinCityDebug.city.seed,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery"),legacyRaw:localStorage.getItem("mshin-city-save-v1"),legacyRecovery:localStorage.getItem("mshin-city-save-v1.recovery")}));
   assert.equal(recovered.cityId,backupPayload.city.cityId,"backup recovery must restore the original city identity");
@@ -503,6 +515,9 @@ try{
    localStorage.setItem("mshin-city-save-v2.backup","{corrupt-backup");
   });
   await invalidRecoveryPage.goto("http://127.0.0.1:4173/city.html");
+  await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:15000});
+  await invalidRecoveryPage.locator('[data-city-speed="0"]').evaluate(button=>button.click());
+
   try{await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await invalidRecoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),active:localStorage.getItem("mshin-city-save-v2.recovery"),legacy:localStorage.getItem("mshin-city-save-v1.recovery"),backup:localStorage.getItem("mshin-city-save-v2.backup.recovery")}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="نمای سه‌بعدی فعال"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("city boot did not complete during corrupt-save fallback: "+JSON.stringify({diagnostic,errors:invalidRecoveryErrors})+"; "+error.message)}
   const preserved=await invalidRecoveryPage.evaluate(()=>({
    active:localStorage.getItem("mshin-city-save-v2.recovery"),
