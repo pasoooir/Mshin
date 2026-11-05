@@ -131,15 +131,13 @@ try{
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
 
  // The same 3D scene must respond to the deterministic simulation clock.
- await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw()});
- const nightLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
+ const nightLighting=await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw();return window.MshinCity3DStats.lighting});
  assert.equal(nightLighting.phase,"night","midnight must activate the night lighting state");
  assert.equal(nightLighting.daylight,0,"midnight must have no direct daylight");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"night must display the moon and hide the sun");
  assert.ok(nightLighting.windowGlow>=1,"building windows must illuminate at night");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),72,"night scene must render the deterministic star field");
- await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=720;window.MshinCityDebug.draw()});
- const noonLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
+ const noonLighting=await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=720;window.MshinCityDebug.draw();return window.MshinCity3DStats.lighting});
  assert.equal(noonLighting.phase,"day","midday must activate the daylight state");
  assert.equal(noonLighting.daylight,1,"midday must have full daylight");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"day must display the sun and hide the moon");
