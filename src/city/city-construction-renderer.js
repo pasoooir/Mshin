@@ -67,23 +67,24 @@ export function createCityConstructionRenderer(THREE, parent) {
     return worker;
   }
 
-  function makeCrane(site) {
+  function makeCrane(site, buildingHeight) {
     const crane = new THREE.Group();
     crane.position.set(0.7, 0, -0.68);
-    const mast = box(crane, 0.13, 3.7, 0.13, shared.safety, 0, 1.85, 0);
+    const mastHeight = buildingHeight + 2.5;
+    const mast = box(crane, 0.18, mastHeight, 0.18, shared.safety, 0, mastHeight / 2, 0);
     mast.material = shared.steel;
-    box(crane, 0.22, 0.18, 0.22, shared.dark, 0, 3.72, 0);
+    box(crane, 0.3, 0.22, 0.3, shared.dark, 0, mastHeight + 0.12, 0);
     const boom = new THREE.Group();
-    boom.position.set(0, 3.7, 0);
-    box(boom, 2.55, 0.12, 0.12, shared.safety, 0.9, 0, 0);
-    box(boom, 0.72, 0.12, 0.12, shared.steel, -0.38, 0, 0);
-    box(boom, 0.1, 0.32, 0.1, shared.dark, -0.62, -0.18, 0);
+    boom.position.set(0, mastHeight + 0.12, 0);
+    box(boom, 7.2, 0.16, 0.16, shared.safety, 3.1, 0, 0);
+    box(boom, 1.8, 0.16, 0.16, shared.steel, -1.0, 0, 0);
+    box(boom, 0.14, 0.45, 0.14, shared.dark, -1.8, -0.24, 0);
     const cable = new THREE.Group();
-    cable.position.set(1.55, -0.08, 0);
-    const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.85, 5), shared.dark);
-    wire.position.y = -0.42;
+    cable.position.set(6.3, -0.08, 0);
+    const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 1.7, 5), shared.dark);
+    wire.position.y = -0.85;
     cable.add(wire);
-    const hook = box(cable, 0.18, 0.12, 0.16, shared.safety, 0, -0.88, 0);
+    const hook = box(cable, 0.24, 0.16, 0.2, shared.safety, 0, -1.75, 0);
     hook.castShadow = false;
     boom.add(cable);
     crane.add(boom);
@@ -96,8 +97,9 @@ export function createCityConstructionRenderer(THREE, parent) {
     group.position.set(cityTileToWorld(item.x), 0, cityTileToWorld(item.y));
     group.userData.constructionSite = true;
     group.userData.sourceItem = item;
-    const width = Math.max(1.8, Number(item.footprint?.width) || 2.15);
-    const depth = Math.max(1.8, Number(item.footprint?.depth) || 2.15);
+    const width = Math.max(5.5, Number(item.footprint?.width) || 7.2);
+    const depth = Math.max(5.5, Number(item.footprint?.depth) || 7.2);
+    const buildingHeight = Math.max(6, Number(item.heightMeters) || ({ home: 8, shop: 7, industrial: 15, administrative: 18, service: 12, power: 14, water: 10, sewage: 9, waste: 11, police: 12, fire: 13, health: 18, education: 12 }[item.type] || 10));
     box(group, width, 0.12, depth, shared.ground, 0, 0.08, 0, false);
 
     const fenceMaterial = shared.safety;
@@ -113,8 +115,8 @@ export function createCityConstructionRenderer(THREE, parent) {
     group.add(foundation);
 
     const frame = new THREE.Group();
-    const floorCount = Math.max(2, Math.min(8, Math.ceil((Number(item.heightMeters) || 12) / 4)));
-    const floorHeight = 0.62;
+    const floorCount = Math.max(2, Math.min(12, Math.ceil(buildingHeight / 2.7)));
+    const floorHeight = buildingHeight / floorCount;
     for (let floor = 0; floor < floorCount; floor++) {
       const y = 0.42 + floor * floorHeight;
       for (const x of [-width * 0.34, width * 0.34]) {
@@ -134,7 +136,8 @@ export function createCityConstructionRenderer(THREE, parent) {
     group.add(facade);
 
     const workers = [0, 1, 2].map(index => makeWorker(group, index));
-    const crane = makeCrane(group);
+    workers.forEach(worker => worker.scale.setScalar(1.45));
+    const crane = makeCrane(group, buildingHeight);
 
     const labelCanvas = document.createElement("canvas");
     labelCanvas.width = 512;
@@ -143,7 +146,7 @@ export function createCityConstructionRenderer(THREE, parent) {
     const labelTexture = new THREE.CanvasTexture(labelCanvas);
     labelTexture.colorSpace = THREE.SRGBColorSpace;
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture, transparent: true, depthTest: false }));
-    label.position.set(0, Math.max(3.1, floorCount * floorHeight + 2.1), 0);
+    label.position.set(0, Math.max(4.5, buildingHeight + 3.1), 0);
     label.scale.set(3.8, 0.84, 1);
     label.renderOrder = 30;
     group.add(label);
