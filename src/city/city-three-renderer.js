@@ -530,6 +530,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
         constructionSites: buildings.children.filter(group => group.userData?.constructionSite).length,
+        completedBuildings: buildings.children.filter(group => !group.userData?.constructionSite).length,
         constructionStageLabels: buildings.children.filter(group => group.userData?.constructionSite).map(group => group.userData.stageLabel || "آماده‌سازی زمین"),
         ...getBuildingRenderStats(),
         realisticArchitecture: true,
