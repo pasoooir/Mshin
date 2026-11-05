@@ -86,19 +86,22 @@ try{
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
  assert.equal(renderStats.streetFurniturePlacementReady,true,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
- const constructionAcceptance=await page.evaluate(()=>{
-  const placed=window.MshinCity.place(17,14,"home");
-  window.MshinCity.draw();
+ const constructionAcceptance=await page.evaluate(async()=>{
+  const debug=window.MshinCityDebug;
+  debug.actAt(17,14,"home");
+  const placed=debug.city.buildings.find(building=>building.x===17&&building.y===14);
+  debug.actAt(17,14,"select");
   const start=window.MshinCity3DStats;
-  for(let i=0;i<18;i++)window.MshinCity.step();
-  window.MshinCity.draw();
+  const {stepCity}=await import("/src/city/city-view.js");
+  for(let i=0;i<18;i++)stepCity(debug.city,1);
+  debug.actAt(17,14,"select");
   const frame=window.MshinCity3DStats;
-  for(let i=0;i<27;i++)window.MshinCity.step();
-  window.MshinCity.draw();
+  for(let i=0;i<27;i++)stepCity(debug.city,1);
+  debug.actAt(17,14,"select");
   const finish=window.MshinCity3DStats;
-  return {placed,startSites:start.constructionSites,startStages:start.constructionStageLabels,frameStages:frame.constructionStageLabels,finishSites:finish.constructionSites,completed:finish.completedBuildings};
+  return {placed:!!placed,startSites:start.constructionSites,startStages:start.constructionStageLabels,frameStages:frame.constructionStageLabels,finishSites:finish.constructionSites,completed:finish.completedBuildings};
  });
- assert.equal(constructionAcceptance.placed.ok,true,"mobile player placement must commit on a valid empty plot");
+ assert.equal(constructionAcceptance.placed,true,"mobile player placement must commit on a valid empty plot");
  assert.equal(constructionAcceptance.startSites,1,"a newly placed building must appear as a construction site, not a finished model");
  assert.ok(constructionAcceptance.startStages.includes("آماده‌سازی زمین"),"the first construction stage must be visible");
  assert.ok(constructionAcceptance.frameStages.includes("اسکلت و ستون‌ها"),"the steel-frame stage must replace ground preparation");
