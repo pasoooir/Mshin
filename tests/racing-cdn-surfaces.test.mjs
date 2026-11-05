@@ -6,9 +6,10 @@ const renderer=fs.readFileSync(new URL("../src/race-renderer-3d.js",import.meta.
 const pbr=fs.readFileSync(new URL("../src/vehicle-pbr.js",import.meta.url),"utf8");
 const credits=fs.readFileSync(new URL("../src/racing/ENVIRONMENT_ASSET_CREDITS.md",import.meta.url),"utf8");
 
-test("race renderer uses real Poly Haven CDN surfaces for asphalt and biome terrain",()=>{
+test("race renderer prefers local real Poly Haven CC0 surfaces with official CDN fallback",()=>{
  for(const key of ["asphalt","grass","sand","snow","rock","concrete","bark","foliage"]){
-  assert.match(renderer,new RegExp(key+':"https://dl\\.polyhaven\\.org/file/ph-assets/Textures/jpg/1k/'));
+  assert.match(renderer,new RegExp(key+':\\{local:"\\.\\/assets\\/textures\\/'));
+  assert.match(renderer,new RegExp(key+':\\{local:[^}]+fallback:"https://dl\\.polyhaven\\.org/file/ph-assets/Textures/jpg/1k/'));
  }
  assert.match(renderer,/crossOrigin="anonymous"/);
  assert.match(renderer,/image\.onerror/);
@@ -23,7 +24,7 @@ test("non-urban roadside house roofs emit valid three-vertex faces",()=>{
 
 test("optional CDN textures have bounded mobile loading and preserve fallback rendering",()=>{
  assert.match(renderer,/6500/);
- assert.match(renderer,/CDN texture timed out/);
+ assert.match(renderer,/Texture timed out/);
  assert.match(renderer,/createProceduralSurfacePixels\(key,fallbackSize\)/);
  assert.match(renderer,/const fallbackSize=128/);
  assert.match(renderer,/palettes=\{asphalt:\[74,78,80\],grass:\[91,137,57\]/);
@@ -76,4 +77,10 @@ test("race surfaces wind upward and correct downward horizontal face normals def
  assert.match(renderer,/quad\(shoulderTris,r0,sr0,sr1,r1\)/);
  assert.match(renderer,/quad\(groundTris,outerL,outerR,outerR1,outerL1\)/);
  assert.match(renderer,/if\(Math\.abs\(ny\)>\.65&&ny<0\)\{nx=-nx;ny=-ny;nz=-nz;\}/);
+});
+
+test("local CC0 race texture downloader and offline precache are declared",()=>{
+ const downloader=fs.readFileSync(new URL("../scripts/download-race-textures.mjs",import.meta.url),"utf8");
+ for(const name of ["asphalt_03","grass_ground","sand_01","snow_03","rocky_terrain_02","concrete_floor_02","bark_brown_02","leafy_grass"]) assert.ok(downloader.includes(name));
+ assert.match(credits,/npm run assets:race-textures/);
 });
