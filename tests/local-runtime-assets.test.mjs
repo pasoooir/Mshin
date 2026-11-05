@@ -25,7 +25,7 @@ test("every runtime asset is stored inside this repository", async () => {
 
 test("service worker precaches all runtime assets and rejects cross-origin requests", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v73/);
+  assert.match(sw, /mshin-arcade-v74/);
   assert.match(sw, /\.\/src\/multitouch-input\.js/);
   assert.match(sw, /\.\/src\/vehicle-pbr\.js/);
   assert.match(sw, /requestUrl\.origin !== self\.location\.origin\) return/);
@@ -42,4 +42,28 @@ test("runtime asset loader consumes manifest paths without external CDN fallback
   assert.doesNotMatch(loader, /cdn\.jsdelivr\.net|images\.unsplash\.com|sfxmint\.com|opengameart\.org/);
   assert.match(loader, /manifest\.scenes/);
   assert.match(loader, /manifest\.sounds/);
+});
+
+test("Three.js and all city addons are committed locally and included in offline cache", async () => {
+  const files = [
+    "vendor/three/build/three.module.min.js",
+    "vendor/three/build/three.core.min.js",
+    "vendor/three/examples/jsm/controls/OrbitControls.js",
+    "vendor/three/examples/jsm/loaders/GLTFLoader.js",
+    "vendor/three/examples/jsm/utils/BufferGeometryUtils.js",
+    "vendor/three/LICENSE"
+  ];
+  const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
+  const cityRenderer = await readFile(path.join(root, "src/city/city-three-renderer.js"), "utf8");
+  const preview = await readFile(path.join(root, "city-neighborhood-preview.html"), "utf8");
+  for (const relative of files) {
+    const info = await stat(path.join(root, relative));
+    assert.ok(info.isFile() && info.size > 0, relative + " must be non-empty");
+    assert.ok(sw.includes("./" + relative), relative + " must be precached");
+  }
+  assert.match(cityRenderer, /import\("\.\.\/\.\.\/vendor\/three\/build\/three\.module\.min\.js"\)/);
+  assert.doesNotMatch(cityRenderer, /cdn\.jsdelivr\.net|unpkg\.com/);
+  assert.match(preview, /"three":"\.\/vendor\/three\/build\/three\.module\.min\.js"/);
+  assert.match(preview, /"three\/addons\/":"\.\/vendor\/three\/examples\/jsm\//);
+  assert.doesNotMatch(preview, /cdn\.jsdelivr\.net|unpkg\.com/);
 });
