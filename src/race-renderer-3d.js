@@ -194,7 +194,18 @@ export function createRaceRenderer(canvas){
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
    quad(groundTris,outerL,outerL1,outerR1,outerR);
   }
-  const nextRoad=part(roadTris,theme[1],0,"environment","asphalt");nextDecor.push(part(shoulderTris,theme[2],0,"environment","concrete"),part(laneTris,"#f4f3e9"),part(yellowTris,"#f5c928",.015),part(curbRedTris,"#d94337"),part(curbWhiteTris,"#f1eee4"),part(groundTris,theme[0],0,"environment",terrainTexture));
+  // Keep road markings and asphalt readable when mobile/software GPUs produce
+  // weak or unstable PBR lighting. Emission is a visibility floor, not a
+  // replacement for the directional and environment lighting.
+  const nextRoad=part(roadTris,theme[1],.92,"environment","asphalt");
+  nextDecor.push(
+   part(shoulderTris,theme[2],.62,"environment","concrete"),
+   part(laneTris,"#f4f3e9",.78),
+   part(yellowTris,"#f5c928",.82),
+   part(curbRedTris,"#d94337",.72),
+   part(curbWhiteTris,"#f1eee4",.78),
+   part(groundTris,theme[0],.16,"environment",terrainTexture)
+  );
   yield {parts:[nextRoad,...nextDecor],progress:.34};
   state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?18:softwareRenderer?22:48,buildingCount=mobile?8:softwareRenderer?12:22;
