@@ -64,11 +64,11 @@ export function developCityZones(city) {
       level: 1,
       age: 0,
       residents,
-      zoneType: zone.type
+      zoneType: zone.type,
+      construction: { duration: 45, remaining: 45, startedAt: city.tick || 0 }
     };
     city.grid[zone.y][zone.x] = "building";
     city.buildings.push(building);
-    city.population += residents;
     city.zones.splice(index,1);
     return building;
   }

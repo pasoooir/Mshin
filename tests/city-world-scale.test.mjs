@@ -45,7 +45,8 @@ test("renderer scales the district, vehicles, pedestrians and zoom range from th
 
 test("renderer has one authoritative building construction path and no unused legacy geometry allocation", async () => {
   const source = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
-  assert.match(source, /const group = createHighGfxBuilding\(THREE, wanted\.item/);
+  assert.match(source, /wanted\.item\.construction \? constructionRenderer\.createSite\(wanted\.item\) : createHighGfxBuilding\(THREE, wanted\.item/);
+  assert.match(source, /constructionRenderer\.update\(\)/);
   assert.match(source, /buildings\.add\(group\)/);
   assert.match(source, /buildingObjects\.set\(key, \{ signature: wanted\.signature, group \}\)/);
   assert.doesNotMatch(source, /function createBuilding\(item\)/);

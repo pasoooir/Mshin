@@ -15,7 +15,7 @@ The deterministic state machine lives in `src/city/core/building-progression.ts`
 
 The Cocos adapter delegates state transitions to this module. It does not duplicate timer or level rules.
 
-## Integration boundary
+## Visible staged construction lifecycle\n\n- Every newly placed building and every building grown from a zone starts a 45-second construction lifecycle.\n- The 3D site progresses through ground preparation, foundation/concrete, structural frame, tower-crane lifts and facade/finishing. Three animated workers remain visible and perform changing work motions; a Persian stage label and countdown are shown above the plot.\n- The finished architecture is not rendered during construction. Population, employment, public-service capacity and economic output become active only after completion.\n- Construction progress is persisted and validated in city saves.\n\n## Integration boundary
 
 This is a tested lifecycle primitive only. Placement ghost/raycast, currency transactions, persistent save integration, construction scaffold visuals, progress UI and serialized Cocos scene integration are not included yet. Cocos Creator Editor import/build and Android device verification remain external acceptance gates.
 

@@ -23,7 +23,7 @@ test("residential zoning grows into housing and increases population", () => {
   const city = createInitialCity(502);
   const before = city.population;
   assert.equal(placeCityItem(city,17,14,"zone-residential").ok,true);
-  for(let i=0;i<12;i++) stepCity(city);
+  for(let i=0;i<57;i++) stepCity(city);
   assert.equal(city.grid[14][17],"building");
   assert.ok(city.buildings.some(building=>building.x===17&&building.y===14&&building.type==="home"));
   assert.ok(city.population>=before+12);
@@ -43,7 +43,7 @@ test("commercial, industrial, administrative and recreational zones develop when
     [17,17,"recreational"]
   ];
   for(const [x,y,type] of zones) assert.equal(placeCityItem(city,x,y,"zone-"+type).ok,true);
-  for(let i=0;i<96;i++) stepCity(city);
+  for(let i=0;i<360;i++) stepCity(city);
   for(const [x,y,type] of zones){
     const expected=CITY_ZONES[type].buildingType;
     assert.ok(city.buildings.some(building=>building.x===x&&building.y===y&&building.type===expected),type+" zone should develop into "+expected);
@@ -72,7 +72,43 @@ test("job-producing zones wait for enough residents before expanding labor deman
   assert.equal(city.grid[14][17],"zone-industrial");
   assert.equal(placeCityItem(city,13,14,"zone-residential").ok,true);
   assert.equal(placeCityItem(city,18,14,"zone-residential").ok,true);
-  for(let i=0;i<36;i++)stepCity(city);
+  for(let i=0;i<180;i++)stepCity(city);
   assert.ok(city.population>=24,"residential growth should expand the available workforce");
   assert.ok(city.buildings.some(building=>building.type==="industrial"),"industrial zoning should develop once workforce capacity is adequate");
+});
+
+test("directly placed buildings stay inactive until their visible 45-second construction completes", () => {
+  const city = createInitialCity(506);
+  const placed = placeCityItem(city,17,14,"home",45);
+  assert.equal(placed.ok,true);
+  const building = city.buildings[0];
+  assert.deepEqual(building.construction,{duration:45,remaining:45,startedAt:0});
+  assert.equal(city.population,0,"residents must not appear before the home is finished");
+  for(let i=0;i<44;i++) stepCity(city,1);
+  assert.equal(building.construction.remaining,1);
+  assert.equal(city.population,0);
+  stepCity(city,1);
+  assert.equal(building.construction,undefined);
+  assert.equal(city.population,12,"residents become available only when construction completes");
+});
+
+test("zoned buildings use the same visible construction lifecycle", () => {
+  const city = createInitialCity(507);
+  assert.equal(placeCityItem(city,17,14,"zone-residential").ok,true);
+  for(let i=0;i<12;i++) stepCity(city);
+  const building=city.buildings.find(item=>item.x===17&&item.y===14);
+  assert.ok(building?.construction,"zoning growth must create a construction site rather than an instantly finished building");
+  assert.equal(city.population,0);
+  for(let i=0;i<45;i++) stepCity(city);
+  assert.equal(building.construction,undefined);
+  assert.equal(city.population,12);
+});
+
+test("construction progress is accepted in saves and malformed progress is rejected", () => {
+  const city=createInitialCity(508);
+  assert.equal(placeCityItem(city,17,14,"home",45).ok,true);
+  assert.equal(isValidCitySave(city),true);
+  const malformed=structuredClone(city);
+  malformed.buildings[0].construction.remaining=46;
+  assert.equal(isValidCitySave(malformed),false);
 });

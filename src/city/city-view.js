@@ -22,16 +22,25 @@ export function createInitialCity(seed=20261102){
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
  city.tick++;
+ for(const building of city.buildings){
+  if(!building.construction)continue;
+  building.construction.remaining=Math.max(0,building.construction.remaining-seconds);
+  if(building.construction.remaining===0){
+   delete building.construction;
+   if(building.type==="home")city.population+=Math.max(0,building.residents||0);
+  }
+ }
  if(city.tick%12===0)developCityZones(city);
- const infrastructure=computeCityServices(city);
- const homes=city.buildings.filter(b=>b.type==="home"),shops=city.buildings.filter(b=>b.type==="shop"),industrial=city.buildings.filter(b=>b.type==="industrial"),administrative=city.buildings.filter(b=>b.type==="administrative"),services=city.buildings.filter(b=>b.type==="service"),parks=city.buildings.filter(b=>b.type==="park");
- const employment=computeCityEmployment(city);
+ const activeCity={...city,buildings:city.buildings.filter(building=>!building.construction)};
+ const infrastructure=computeCityServices(activeCity);
+ const homes=activeCity.buildings.filter(b=>b.type==="home"),shops=activeCity.buildings.filter(b=>b.type==="shop"),industrial=activeCity.buildings.filter(b=>b.type==="industrial"),administrative=activeCity.buildings.filter(b=>b.type==="administrative"),services=activeCity.buildings.filter(b=>b.type==="service"),parks=activeCity.buildings.filter(b=>b.type==="park");
+ const employment=computeCityEmployment(activeCity);
  const commuting=(city.tick%6===1||!Number.isFinite(city.stats?.commuteCoverage)||!Array.isArray(city._commuteAssignments))
-  ?computeCityCommuting(city,employment)
+  ?computeCityCommuting(activeCity,employment)
   :{assignedWorkers:city.stats.commutingWorkers??0,commuteCoverage:city.stats.commuteCoverage??0,averageCommuteDistance:city.stats.averageCommuteDistance??0,averageCongestionDelay:city.stats.averageCongestionDelay??0,unreachableWorkers:city.stats.unreachableWorkers??0,assignments:city._commuteAssignments};
- const economy=computeCityEconomy(city,infrastructure,commuting);
+ const economy=computeCityEconomy(activeCity,infrastructure,commuting);
  if(commuting.assignments)Object.defineProperty(city,"_commuteAssignments",{value:commuting.assignments,writable:true,configurable:true,enumerable:false});
- const residentServiceSatisfaction=computeCityResidentServiceSatisfaction(city);
+ const residentServiceSatisfaction=computeCityResidentServiceSatisfaction(activeCity);
  const occupiedResidents=homes.reduce((sum,home)=>sum+Math.max(0,Number(home.residents)||0),0);
  city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,commutingWorkers:commuting.assignedWorkers,commuteCoverage:commuting.commuteCoverage,averageCommuteDistance:commuting.averageCommuteDistance,averageCongestionDelay:commuting.averageCongestionDelay??0,commuteProductivityPercent:economy.commuteProductivityPercent,commuteEconomicLoss:economy.commuteEconomicLoss,unreachableWorkers:commuting.unreachableWorkers,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage,serviceDemandCoverage:infrastructure.demandCoverage,serviceCapacityUsage:infrastructure.capacityUsage,residentServiceSatisfaction};
  city.treasury+=economy.net;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
@@ -43,7 +52,7 @@ export function stepCity(city,seconds=1){
  for(const a of city.animals||[]){a.phase+=a.pace*seconds;a.x+=Math.cos(a.phase)*.009;a.y+=Math.sin(a.phase)*.007;a.x=Math.max(8,Math.min(25,a.x));a.y=Math.max(8,Math.min(25,a.y))}
  return city;
 }
-export function placeCityItem(city,x,y,type){
+export function placeCityItem(city,x,y,type,constructionDuration=0){
  if(typeof type==="string"&&type.startsWith("zone-"))return placeCityZone(city,x,y,type.slice(5));
  if(!inside(x,y))return{ok:false,reason:"خارج از محدوده شهر"};
  if(!Object.hasOwn(COST,type))return{ok:false,reason:"ابزار ناشناخته است"};
@@ -51,8 +60,8 @@ export function placeCityItem(city,x,y,type){
  if(city.treasury<COST[type])return{ok:false,reason:"بودجه کافی نیست"};
  if(type!=="road"&&!roadNear(city.grid,x,y))return{ok:false,reason:"ساختمان باید به خیابان دسترسی داشته باشد"};
  city.treasury-=COST[type];if(type==="road"){city.grid[y][x]="road";return{ok:true,item:"road",cost:COST.road}};
- const residents=type==="home"?12:0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents};
- city.grid[y][x]="building";city.buildings.push(b);city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
+ const residents=type==="home"?12:0,duration=Number.isFinite(constructionDuration)?Math.max(0,constructionDuration):0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents,...(duration>0?{construction:{duration,remaining:duration,startedAt:city.tick||0}}:{})};
+ city.grid[y][x]="building";city.buildings.push(b);if(!b.construction)city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
 }
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
 function load(){
@@ -109,7 +118,35 @@ function mount(){
  if(type==="road"){const h=city.grid[y][Math.max(0,x-1)]==="road"||city.grid[y][Math.min(SIZE-1,x+1)]==="road",v=city.grid[Math.max(0,y-1)][x]==="road"||city.grid[Math.min(SIZE-1,y+1)][x]==="road";ctx.save();ctx.strokeStyle="#f4d98c88";ctx.lineWidth=1;ctx.setLineDash([4,5]);ctx.beginPath();if(h&&v){ctx.moveTo(p.x-7,p.y-3.5);ctx.lineTo(p.x+7,p.y+3.5)}else if(h){ctx.moveTo(p.x-10,p.y);ctx.lineTo(p.x+10,p.y)}else if(v){ctx.moveTo(p.x,p.y-5);ctx.lineTo(p.x,p.y+5)}ctx.stroke();ctx.restore()}
  if(type==="water"){ctx.fillStyle="#c5f3f766";ctx.beginPath();ctx.ellipse(p.x-3,p.y-2,5,1.6,-.25,0,6.28);ctx.fill()}
  }
- function building(b){const p=tilePoint(b.x,b.y),t=b.type;if(t==="park"){ctx.fillStyle="#244b3155";ctx.beginPath();ctx.ellipse(p.x+1,p.y+2,14,5,0,0,6.28);ctx.fill();ctx.fillStyle="#3c7d48";ctx.beginPath();ctx.arc(p.x,p.y-8,7,0,6.28);ctx.fill();ctx.fillStyle="#82b76c";ctx.beginPath();ctx.arc(p.x-2,p.y-11,4,0,6.28);ctx.fill();ctx.fillStyle="#806a4b";ctx.fillRect(p.x-1,p.y-7,2,9);return}
+ function constructionSite(b,p){
+  const duration=Math.max(1,b.construction.duration||45),remaining=Math.max(0,b.construction.remaining||0),progress=Math.max(0,Math.min(1,1-remaining/duration));
+  const stage=progress<.15?0:progress<.35?1:progress<.62?2:progress<.84?3:4;
+  const labels=["آماده‌سازی زمین","فونداسیون","اسکلت و ستون‌ها","جرثقیل و نصب طبقات","نماکاری و تکمیل"];
+  ctx.save();
+  ctx.fillStyle="#4c382c88";ctx.beginPath();ctx.ellipse(p.x+2,p.y+4,19,8,0,0,6.28);ctx.fill();
+  poly([{x:p.x-17,y:p.y-2},{x:p.x,y:p.y-11},{x:p.x+17,y:p.y-2},{x:p.x,y:p.y+7}],"#b88c55","#f2c36b");
+  ctx.strokeStyle="#f4c34d";ctx.lineWidth=2;ctx.setLineDash([3,2]);ctx.strokeRect(p.x-15,p.y-13,30,17);ctx.setLineDash([]);
+  if(progress>=.15){ctx.fillStyle="#aeb8b7";ctx.fillRect(p.x-10,p.y-13,20,3)}
+  if(progress>=.35){
+   const floors=Math.max(1,Math.floor(progress*5));
+   ctx.strokeStyle="#657985";ctx.lineWidth=2;
+   for(let i=0;i<floors;i++){const y=p.y-15-i*7;ctx.beginPath();ctx.moveTo(p.x-9,y);ctx.lineTo(p.x+9,y);ctx.moveTo(p.x-9,y);ctx.lineTo(p.x-9,y-7);ctx.moveTo(p.x+9,y);ctx.lineTo(p.x+9,y-7);ctx.stroke()}
+   ctx.strokeStyle="#f0b83e";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x+13,p.y-13);ctx.lineTo(p.x+13,p.y-48);ctx.lineTo(p.x+33,p.y-48);ctx.stroke();
+   const lift=(Math.sin(performance.now()/650)+1)*4;ctx.beginPath();ctx.moveTo(p.x+29,p.y-48);ctx.lineTo(p.x+29,p.y-40-lift);ctx.stroke();ctx.fillStyle="#f0b83e";ctx.fillRect(p.x+26,p.y-40-lift,6,4);
+  }
+  if(progress>=.84){ctx.fillStyle="#91cbd0";ctx.globalAlpha=.75;ctx.fillRect(p.x-8,p.y-30,16,14);ctx.globalAlpha=1}
+  for(let i=0;i<3;i++){
+   const phase=performance.now()/220+i*2.1,x=p.x-10+i*10,y=p.y-2+Math.sin(phase*2)*1.2;
+   ctx.fillStyle=["#e87945","#328e91","#e0b447"][i];ctx.beginPath();ctx.arc(x,y-8,2.1,0,6.28);ctx.fill();ctx.fillRect(x-1.6,y-6,3.2,6);
+   ctx.strokeStyle="#344650";ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x,y-4);ctx.lineTo(x+Math.sin(phase)*3,y+1);ctx.stroke();
+   ctx.strokeStyle="#9a7047";ctx.beginPath();ctx.moveTo(x+1,y-4);ctx.lineTo(x+4,y+1);ctx.stroke();
+  }
+  ctx.fillStyle="#102638";ctx.beginPath();ctx.roundRect(p.x-43,p.y-63,86,20,5);ctx.fill();
+  ctx.strokeStyle="#f4c765";ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle="#fff0c4";ctx.font="bold 8px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(labels[stage]+" · "+Math.ceil(remaining)+"s",p.x,p.y-53);
+  ctx.restore();
+ }
+ function building(b){const p=tilePoint(b.x,b.y),t=b.type;if(b.construction){constructionSite(b,p);return;}if(t==="park"){ctx.fillStyle="#244b3155";ctx.beginPath();ctx.ellipse(p.x+1,p.y+2,14,5,0,0,6.28);ctx.fill();ctx.fillStyle="#3c7d48";ctx.beginPath();ctx.arc(p.x,p.y-8,7,0,6.28);ctx.fill();ctx.fillStyle="#82b76c";ctx.beginPath();ctx.arc(p.x-2,p.y-11,4,0,6.28);ctx.fill();ctx.fillStyle="#806a4b";ctx.fillRect(p.x-1,p.y-7,2,9);return}
  const service=CITY_SERVICE_TYPES[t],h=t==="home"?22+b.level*8:t==="shop"?27+b.level*5:t==="industrial"?42:t==="administrative"?40:service?38:35,w=t==="industrial"||t==="education"?22:18,d=10,top=p.y-h;
  ctx.fillStyle="#1a2c2b44";ctx.beginPath();ctx.ellipse(p.x+2,p.y+4,16,6,0,0,6.28);ctx.fill();
  poly([{x:p.x-w/2,y:top+d/2},{x:p.x,y:top+d},{x:p.x,y:p.y+d/2},{x:p.x-w/2,y:p.y}],t==="home"?"#d9a978":t==="shop"?"#5b9eaa":t==="industrial"?"#89949d":t==="administrative"?"#9b8ac2":service?service.color:"#b9c9d8","#253c4933");
@@ -185,7 +222,7 @@ function mount(){
   if(!inside(x,y))return;selected={x,y};
   if(tool==="select"){draw();return}
   if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home"){city.population=Math.max(0,city.population-b.residents);syncCityCitizens(city)}city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="ساختمان تخریب شد؛ ۳۵٪ هزینه بازیابی شد.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="این خیابان تنها مسیر دسترسی یک ساختمان است."}else{city.grid[y][x]="grass";$("cityToast").textContent="قطعه خیابان حذف شد.";changed=true}}if(changed)persist(city);draw();return}
-  const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"ساخت انجام شد · هزینه "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
+  const result=placeCityItem(city,x,y,tool,45);$("cityToast").textContent=result.ok?"ساخت انجام شد · هزینه "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
  }
  cityToolsNav?.querySelectorAll("[data-city-category]").forEach(button=>button.addEventListener("click",()=>openCityToolPanel(button.dataset.cityCategory)));
  document.querySelectorAll("[data-city-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.cityTool)));
@@ -269,7 +306,7 @@ function mount(){
   const scheduleViewportResize=()=>{if(resizeFrame)return;resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;resize();threeRenderer?.resize();draw()})};
  addEventListener("resize",scheduleViewportResize,{passive:true});
  window.visualViewport?.addEventListener("resize",scheduleViewportResize,{passive:true});addEventListener("keydown",e=>{if(e.key==="Escape")setTool("select");if(e.key==="+"||e.key==="=")cam.zoom=Math.min(1.5,cam.zoom*1.1);if(e.key==="-")cam.zoom=Math.max(.42,cam.zoom/1.1)});
- resize();import("./city-three-renderer.js").then(({createCityThreeRenderer})=>createCityThreeRenderer(canvas)).then(renderer=>{threeRenderer=renderer;window.MshinCity3DStats=renderer.getStats();window.MshinCity3DReady=true;const renderStatus=document.getElementById("cityRenderStatus");if(renderStatus)renderStatus.textContent="نمای سه‌بعدی فعال";draw()}).catch(error=>{window.MshinCity3DError=String(error);const renderStatus=document.getElementById("cityRenderStatus");if(renderStatus)renderStatus.textContent="حالت دوبعدی · خطای بارگذاری ۳بعدی";console.error("3D city renderer failed to load",error)});window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get selected(){return selected},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y,orbit:cam.orbit||0,pitch:cam.pitch??0.51,targetX:cam.targetX??null,targetY:cam.targetY??null,targetZ:cam.targetZ??null,gesture:cameraController.getState()}},tileAtScreen(x,y){return threeRenderer?threeRenderer.tileAt(x,y):tileAt(x,y)},screenForTile(x,y){if(threeRenderer)return threeRenderer.screenForTile(x,y);const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},groundPointAt(x,y){return threeRenderer?.groundPointAt(x,y)??null},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},save:()=>persist(city),saveDiagnostics:()=>{
+ resize();import("./city-three-renderer.js").then(({createCityThreeRenderer})=>createCityThreeRenderer(canvas)).then(renderer=>{threeRenderer=renderer;window.MshinCity3DStats=renderer.getStats();window.MshinCity3DReady=true;const renderStatus=document.getElementById("cityRenderStatus");if(renderStatus)renderStatus.textContent="نمای سه‌بعدی فعال";draw()}).catch(error=>{window.MshinCity3DError=String(error);const renderStatus=document.getElementById("cityRenderStatus");if(renderStatus)renderStatus.textContent="حالت دوبعدی · خطای بارگذاری ۳بعدی";console.error("3D city renderer failed to load",error)});window.MshinCityDebug={get city(){return city},get activeTool(){return tool},get selected(){return selected},get view(){return{zoom:cam.zoom,x:cam.x,y:cam.y,orbit:cam.orbit||0,pitch:cam.pitch??0.51,targetX:cam.targetX??null,targetY:cam.targetY??null,targetZ:cam.targetZ??null,gesture:cameraController.getState()}},tileAtScreen(x,y){return threeRenderer?threeRenderer.tileAt(x,y):tileAt(x,y)},screenForTile(x,y){if(threeRenderer)return threeRenderer.screenForTile(x,y);const p=tilePoint(x,y);return{x:view.w/2+cam.x+p.x*cam.zoom,y:view.h*.23+cam.y+p.y*cam.zoom}},groundPointAt(x,y){return threeRenderer?.groundPointAt(x,y)??null},actAt(x,y,nextTool){if(nextTool)tool=nextTool;apply(x,y);return{tool,cell:inside(x,y)?city.grid[y][x]:null,saved:JSON.parse(localStorage.getItem(KEY)||"null")}},pause:()=>pauseCityLoop(),resume:()=>resumeCityLoop(),save:()=>persist(city),saveDiagnostics:()=>{
   const homes=new Set(city.buildings.filter(building=>building.type==="home"&&building.residents>0).map(building=>building.id));
   const buildingsByCell=new Set(city.buildings.map(building=>building.x+":"+building.y));
   const traffic=city.traffic.map(vehicle=>({
@@ -291,7 +328,7 @@ function mount(){
    stats:{...city.stats},
    citizens:city.citizens.map(citizen=>({...citizen}))
   };
- },step:()=>stepCity(city),draw:()=>draw(),setCameraOrbit(value){if(Number.isFinite(value)){cam.orbit=value;draw()}},setCameraPitch(value){if(Number.isFinite(value)){cam.pitch=Math.max(.24,Math.min(.96,value));draw()}},setCameraZoom(value){if(Number.isFinite(value)){cam.zoom=Math.max(.05,Math.min(1.5,value));draw()}},place:(x,y,t)=>placeCityItem(city,x,y,t),setTaxRate:(sector,rate)=>{const result=setCityTaxRate(city,sector,rate);if(result.ok){persist(city);draw()}return result},get economy(){return computeCityEconomy(city,computeCityServices(city))}};
+ },step:()=>stepCity(city),draw:()=>draw(),setCameraOrbit(value){if(Number.isFinite(value)){cam.orbit=value;draw()}},setCameraPitch(value){if(Number.isFinite(value)){cam.pitch=Math.max(.24,Math.min(.96,value));draw()}},setCameraZoom(value){if(Number.isFinite(value)){cam.zoom=Math.max(.05,Math.min(1.5,value));draw()}},place:(x,y,t)=>placeCityItem(city,x,y,t,45),setTaxRate:(sector,rate)=>{const result=setCityTaxRate(city,sector,rate);if(result.ok){persist(city);draw()}return result},get economy(){return computeCityEconomy(city,computeCityServices(city))}};
  document.documentElement.dataset.cityReady="true";
  let lastRender=0;
  function frame(now){if(document.hidden){raf=0;return}if(now-lastRender>=33){draw();lastRender=now}raf=requestAnimationFrame(frame)}

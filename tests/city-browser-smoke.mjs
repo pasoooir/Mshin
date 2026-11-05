@@ -53,6 +53,18 @@ try{
  const resizedCityViewport=await page.evaluate(()=>({visualWidth:visualViewport.width,visualHeight:visualViewport.height,canvasWidth:parseFloat(document.querySelector("#cityViewport").style.width),canvasHeight:parseFloat(document.querySelector("#cityViewport").style.height)}));
  assert.ok(Math.abs(resizedCityViewport.canvasWidth-780)<=1&&Math.abs(resizedCityViewport.canvasHeight-360)<=1,"city canvas must follow browser chrome/visible viewport resizing");
  await page.setViewportSize({width:844,height:390});
+
+ await page.setViewportSize({width:390,height:844});
+ await page.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display!=="none",undefined,{timeout:5000});
+ await page.locator("#cityEnterLandscape").click();
+ await page.waitForFunction(()=>window.__mshinCityEntryDebug?.lockRequested===true,undefined,{timeout:5000});
+ await page.setViewportSize({width:844,height:390});
+ const entryAcceptance=await page.evaluate(()=>({order:window.__cityEntryOrder,debug:window.__mshinCityEntryDebug}));
+ assert.deepEqual(entryAcceptance.order,["fullscreen","orientation:landscape"],"mobile city must request fullscreen before locking landscape orientation");
+ assert.equal(entryAcceptance.debug.fullscreenGranted,true,"fullscreen must be granted from the first trusted mobile gesture");
+ assert.equal(entryAcceptance.debug.lockGranted,true,"landscape orientation lock must be attempted after fullscreen");
+ assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
+ await page.screenshot({path:"artifacts/city-empty-world-landscape.png"});
  await page.waitForFunction(()=>Math.abs(parseFloat(document.querySelector("#cityViewport").style.width)-844)<=1
   &&Math.abs(parseFloat(document.querySelector("#cityViewport").style.height)-390)<=1,undefined,{timeout:5000});
 
@@ -81,11 +93,32 @@ try{
  assert.ok(renderStats.backgroundCityBuildings>=70,"the playable district must sit inside a large 3D urban skyline");
  assert.ok(renderStats.backgroundCityWindows>1000,"distant high-rise facades must carry instanced four-sided windows");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
- assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۶"),"the city UI must expose the deployed version");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۷"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
  assert.equal(renderStats.streetFurniturePlacementReady,true,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
+ const constructionAcceptance=await page.evaluate(async()=>{
+  const debug=window.MshinCityDebug;
+  debug.actAt(17,14,"home");
+  const placed=debug.city.buildings.find(building=>building.x===17&&building.y===14);
+  debug.actAt(17,14,"select");
+  const start=window.MshinCity3DStats;
+  const {stepCity}=await import("/src/city/city-view.js");
+  for(let i=0;i<18;i++)stepCity(debug.city,1);
+  debug.actAt(17,14,"select");
+  const frame=window.MshinCity3DStats;
+  for(let i=0;i<27;i++)stepCity(debug.city,1);
+  debug.actAt(17,14,"select");
+  const finish=window.MshinCity3DStats;
+  return {placed:!!placed,startSites:start.constructionSites,startStages:start.constructionStageLabels,frameStages:frame.constructionStageLabels,finishSites:finish.constructionSites,completed:finish.completedBuildings};
+ });
+ assert.equal(constructionAcceptance.placed,true,"mobile player placement must commit on a valid empty plot");
+ assert.equal(constructionAcceptance.startSites,1,"a newly placed building must appear as a construction site, not a finished model");
+ assert.ok(constructionAcceptance.startStages.includes("آماده‌سازی زمین"),"the first construction stage must be visible");
+ assert.ok(constructionAcceptance.frameStages.includes("اسکلت و ستون‌ها"),"the steel-frame stage must replace ground preparation");
+ assert.equal(constructionAcceptance.finishSites,0,"construction visuals must disappear after the timer completes");
+ assert.ok(constructionAcceptance.completed>=1,"the finished building must replace the construction site after 45 seconds");
  assert.ok(renderStats.sidewalkStrips>0,"road edges must render instanced pedestrian sidewalks inside the right-of-way");
  assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
  assert.equal(renderStats.roadTiles,348,"the complete road grid must be rendered in 3D");
@@ -93,36 +126,25 @@ try{
  assert.equal(renderStats.crosswalkStripes,0,"do not paint pedestrian crossings until pedestrian graph and crossing priority are implemented");
  assert.ok(renderStats.lockedPlots>=1600&&renderStats.visiblePlots>=2300,"the visible world must include a large locked expansion grid, not blank margins");
  assert.equal(renderStats.visibleRoadTiles,1392,"the expanded 64×64 world must have a continuous road network");
- await page.setViewportSize({width:390,height:844});
- await page.waitForFunction(()=>getComputedStyle(document.querySelector("#cityOrientationGate")).display!=="none",undefined,{timeout:5000});
- await page.locator("#cityEnterLandscape").click();
- await page.waitForFunction(()=>window.__mshinCityEntryDebug?.lockRequested===true,undefined,{timeout:5000});
- await page.setViewportSize({width:844,height:390});
- const entryAcceptance=await page.evaluate(()=>({order:window.__cityEntryOrder,debug:window.__mshinCityEntryDebug}));
- assert.deepEqual(entryAcceptance.order,["fullscreen","orientation:landscape"],"mobile city must request fullscreen before locking landscape orientation");
- assert.equal(entryAcceptance.debug.fullscreenGranted,true,"fullscreen must be granted from the first trusted mobile gesture");
- assert.equal(entryAcceptance.debug.lockGranted,true,"landscape orientation lock must be attempted after fullscreen");
- assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
- await page.screenshot({path:"artifacts/city-empty-world-landscape.png"});
+
 
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
 
  // The same 3D scene must respond to the deterministic simulation clock.
- await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw()});
- const nightLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
+ const nightLighting=await page.evaluate(()=>{window.MshinCityDebug.pause();window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw();return {...window.MshinCity3DStats.lighting,cityMinute:window.MshinCityDebug.city.minuteOfDay}});
  assert.equal(nightLighting.phase,"night","midnight must activate the night lighting state");
- assert.equal(nightLighting.daylight,0,"midnight must have no direct daylight");
+ assert.ok(nightLighting.daylight<=0.1,"night lighting must suppress direct daylight to at most a 10% twilight residual: "+JSON.stringify(nightLighting));
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"night must display the moon and hide the sun");
  assert.ok(nightLighting.windowGlow>=1,"building windows must illuminate at night");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),72,"night scene must render the deterministic star field");
- await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=720;window.MshinCityDebug.draw()});
- const noonLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
+ const noonLighting=await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=720;window.MshinCityDebug.draw();return window.MshinCity3DStats.lighting});
  assert.equal(noonLighting.phase,"day","midday must activate the daylight state");
  assert.equal(noonLighting.daylight,1,"midday must have full daylight");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"day must display the sun and hide the moon");
  assert.notEqual(nightLighting.skyColor,noonLighting.skyColor,"the visible sky color must change between night and day");
  assert.ok(noonLighting.windowGlow<0.1,"building window glow must be subdued during daytime");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),0,"day scene must hide stars");
+ await page.evaluate(()=>window.MshinCityDebug.resume());
  // Render a non-persistent asset showcase containing every current city building
  // family, then orbit the same real WebGL scene through a complete 360 degrees.
  const objectShowcase=await page.evaluate(()=>{

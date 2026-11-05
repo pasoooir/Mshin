@@ -8,6 +8,7 @@ import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityBackgroundSkyline } from "./city-background-skyline.js";
+import { createCityConstructionRenderer } from "./city-construction-renderer.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -266,6 +267,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
   const buildings = new THREE.Group();
   scene.add(buildings);
+  const constructionRenderer = createCityConstructionRenderer(THREE, buildings);
   const trafficGroup = new THREE.Group();
   scene.add(trafficGroup);
   const trafficBodyGeometry = new THREE.BoxGeometry(1.02, 0.42, 1.78);
@@ -354,7 +356,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   function updateBuildings(city) {
     const desired = new Map(city.buildings.map((item, index) => {
       const key = String(item.id ?? `index-${index}`);
-      return [key, { item, signature: [item.id, item.type, item.x, item.y, item.level].join(":") }];
+      return [key, { item, signature: [item.id, item.type, item.x, item.y, item.level, Boolean(item.construction), item.construction?.duration ?? 0].join(":") }];
     }));
     const nextSignature = JSON.stringify([...desired].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => [key, value.signature]));
     if (nextSignature === buildingSignature) return;
@@ -369,6 +371,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
       if (wanted && wanted.signature === current.signature) continue;
       buildings.remove(current.group);
       buildingObjects.delete(key);
+      if (current.group.userData?.constructionSite) {
+        constructionRenderer.disposeSite(current.group);
+        continue;
+      }
       current.group.traverse(object => {
         if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) {
           obsoleteGeometries.add(object.geometry);
@@ -392,7 +398,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
 
     for (const [key, wanted] of desired) {
       if (buildingObjects.has(key)) continue;
-      const group = createHighGfxBuilding(THREE, wanted.item, {
+      const group = wanted.item.construction ? constructionRenderer.createSite(wanted.item) : createHighGfxBuilding(THREE, wanted.item, {
         trunkGeometry,
         canopyGeometry,
         canopySmallGeometry,
@@ -401,7 +407,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         roofSurface,
         windowMaterials
       });
-      buildings.add(group);
+      if (!group.parent) buildings.add(group);
       buildingObjects.set(key, { signature: wanted.signature, group });
     }
   }
@@ -462,6 +468,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     atmosphere.update(city);
     cloudLayer.update(city, atmosphere.getStats());
     updateBuildings(city);
+    constructionRenderer.update();
     updateTraffic(city);
     updatePedestrians(city);
     renderer.render(scene, camera);
@@ -522,6 +529,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
         decorativeStreetLights: decorativeStreetLightCount,
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
+        constructionSites: buildings.children.filter(group => group.userData?.constructionSite).length,
+        completedBuildings: buildings.children.filter(group => !group.userData?.constructionSite).length,
+        constructionStageLabels: buildings.children.filter(group => group.userData?.constructionSite).map(group => group.userData.stageLabel || "آماده‌سازی زمین"),
         ...getBuildingRenderStats(),
         realisticArchitecture: true,
         trafficVehicles: trafficBodies.count,
@@ -555,6 +565,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       renderer.dispose();
       atmosphere.dispose();
       cloudLayer.dispose();
+      constructionRenderer.dispose();
       backgroundSkyline.dispose();
       for (const surface of [grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface]) {
         surface.map.dispose();

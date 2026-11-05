@@ -7,6 +7,10 @@ const SIZE = 32;
 const BUILDING_TYPES = new Set(["home","shop","industrial","administrative","service","park",...Object.keys(CITY_SERVICE_TYPES)]);
 const isRecord = value => !!value && typeof value === "object" && !Array.isArray(value);
 const validId = value => Number.isSafeInteger(value) && value > 0;
+const validConstruction = (value, tick) => isRecord(value)
+  && Number.isFinite(value.duration) && value.duration > 0
+  && Number.isFinite(value.remaining) && value.remaining >= 0 && value.remaining <= value.duration
+  && (value.startedAt === undefined || (Number.isSafeInteger(value.startedAt) && value.startedAt >= 0 && value.startedAt <= tick));
 const validPoint = (x,y,integer=false) => Number.isFinite(x) && Number.isFinite(y)
   && x >= 0 && y >= 0 && x <= SIZE - 1 && y <= SIZE - 1
   && (!integer || (Number.isInteger(x) && Number.isInteger(y)));
@@ -51,7 +55,8 @@ export function isValidCitySave(v) {
       || (building.level !== undefined && (!Number.isInteger(building.level) || building.level < 1 || building.level > 100))
       || (building.age !== undefined && (!Number.isFinite(building.age) || building.age < 0))
       || (building.residents !== undefined && (!Number.isInteger(building.residents) || building.residents < 0 || building.residents > 10000))
-      || (building.zoneType !== undefined && !Object.hasOwn(CITY_ZONES,building.zoneType))) return false;
+      || (building.zoneType !== undefined && !Object.hasOwn(CITY_ZONES,building.zoneType))
+      || (building.construction !== undefined && !validConstruction(building.construction,v.tick))) return false;
     const key = building.x + ":" + building.y;
     if (buildings.has(key)) return false;
     buildings.add(key);

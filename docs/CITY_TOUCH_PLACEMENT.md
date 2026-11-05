@@ -10,7 +10,7 @@
 4. Assign the city world root to `placementRoot`.
 5. Call `beginPlacement()` from a build-menu button.
 6. Drag to position the preview on the ground plane; release to place the building.
-7. A placed building receives `CityBuildingProgression` and starts its configured construction timer.
+7. Every placed building in the browser city shows a staged construction site: ground preparation, foundation/concrete, structural frame, tower-crane lifts, facade/finishing, three animated workers and a live Persian countdown. The final model appears only after completion.
 8. Call `cancelPlacement()` to discard the preview.
 
 ## Placement behavior
