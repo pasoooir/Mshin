@@ -210,7 +210,13 @@ export function createCityConstructionRenderer(THREE, parent) {
   }
 
   function disposeSite(site) {
-    site.traverse(object => object.geometry?.dispose?.());
+    const materials = new Set();
+    site.traverse(object => {
+      object.geometry?.dispose?.();
+      if (Array.isArray(object.material)) object.material.forEach(material => materials.add(material));
+      else if (object.material) materials.add(object.material);
+    });
+    for (const material of materials) if (!Object.values(shared).includes(material)) material.dispose?.();
     site.userData?.labelTexture?.dispose?.();
   }
 
