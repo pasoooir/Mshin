@@ -47,3 +47,9 @@ test("terrain, road and building meshes receive distinct texture families",()=>{
  assert.match(credits,/CC0 1\.0/);
  assert.match(credits,/Poly Haven/);
 });
+
+test("race ground plane faces upward, stays inside the far plane, and restores the viewport after shader warmup",()=>{
+ assert.match(renderer,/quad\\(groundTris,\\[-30000,-40,-30000\\],\\[-30000,-40,30000\\],\\[30000,-40,30000\\],\\[30000,-40,-30000\\]\\)/);
+ assert.match(renderer,/perspective\\(Math\\.PI\\/2\\.95,canvas\\.width\\/Math\\.max\\(1,canvas\\.height\\),1,60000\\)/);
+ assert.match(renderer,/gl\\.viewport\\(0,0,gl\\.drawingBufferWidth,gl\\.drawingBufferHeight\\)/);
+});
