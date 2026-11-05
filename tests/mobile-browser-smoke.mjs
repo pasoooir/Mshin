@@ -198,6 +198,16 @@ try {
     }));
     throw new Error("mobile WebGL renderer did not reach a stable frame state: " + JSON.stringify(diagnostic) + " | " + error.message);
   });
+  await mobile.waitForFunction(() => window.Mshin3DRenderer?.trackBuildProgress === 1, undefined, { timeout: 20000 }).catch(async error => {
+    const progress = await mobile.evaluate(() => ({ progress: window.Mshin3DRenderer?.trackBuildProgress, environment: window.Mshin3DRenderer?.environmentCounts, frames: window.Mshin3DRenderer?.frames }));
+    throw new Error("mobile race terrain and environment did not finish building: " + JSON.stringify(progress) + " | " + error.message);
+  });
+  await mobile.evaluate(() => { window.Mshin3DRenderer.captureNextFrameSample = true; });
+  await mobile.waitForFunction(() => window.Mshin3DRenderer?.lastFramePixelSample?.context === true, undefined, { timeout: 5000 });
+  const raceFrameSample = await mobile.evaluate(() => window.Mshin3DRenderer.lastFramePixelSample);
+  assert.ok(raceFrameSample.visiblePixels > 1000, "mobile race scene must contain substantial visible rendered terrain/track pixels: " + JSON.stringify(raceFrameSample));
+  assert.ok(raceFrameSample.uniqueColors > 8, "mobile race scene must render a varied environment rather than a blank/flat frame: " + JSON.stringify(raceFrameSample));
+  assert.equal(raceFrameSample.glError, 0, "mobile race scene pixel capture must not report a WebGL error: " + JSON.stringify(raceFrameSample));
   const trackScaleMetrics = await mobile.evaluate(() => window.MshinPerformance);
   assert.equal(trackScaleMetrics.trackLengthScale, 10, "mobile race runtime must use the tenfold circuit scale");
   assert.equal(trackScaleMetrics.trackRadiusX, 11800, "mobile race runtime must expose the extended horizontal circuit radius");
