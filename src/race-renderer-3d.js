@@ -390,7 +390,9 @@ export function createRaceRenderer(canvas){
   if(!cameraEye){cameraEye=desiredEye.slice();cameraTarget=desiredTarget.slice()}else{for(let i=0;i<3;i++){cameraEye[i]+=(desiredEye[i]-cameraEye[i])*follow;cameraTarget[i]+=(desiredTarget[i]-cameraTarget[i])*follow}}
   const projection=perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,60000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.useProgram(program);gl.uniform3f(uniforms.camera,cameraEye[0],cameraEye[1],cameraEye[2]);gl.uniform3f(uniforms.light,-.38,.86,.42);gl.uniform3f(uniforms.lightColor,3.8,3.55,3.2);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(uniforms.env,0);const clearStarted=performance.now();gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const clearMs=performance.now()-clearStarted;state.lastClearMs=clearMs;state.maxClearMs=Math.max(state.maxClearMs||0,clearMs);state.triangles=0;
-  // Draw the latest bounded build snapshot while the replacement track is still being assembled.\n  // Without this, the first gameplay frames show only the clear color until every city/track mesh finishes uploading.\n  const drawParts=road?[terrainBase,road,...decor]:pendingTrackParts;
+  // Draw the latest bounded build snapshot while the replacement track is still being assembled.
+  // The background terrain is submitted first; then depth is reset before the circuit meshes.
+  const drawParts=road?[terrainBase,road,...decor]:pendingTrackParts;
   if(drawParts.length){
    // Render the enormous terrain base as a background pass. Clearing only depth
    // prevents low-precision mobile depth buffers from placing this 60 km plane
