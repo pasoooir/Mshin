@@ -125,8 +125,10 @@ export function createRaceRenderer(canvas){
   if(!texture){state.surfaceTextures.failed++;return}
   gl.bindTexture(gl.TEXTURE_2D,texture);
   // Neutral fallback is immediately usable; remote textures never gate racing.
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  const fallbackSize=128;
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,fallbackSize,fallbackSize,0,gl.RGBA,gl.UNSIGNED_BYTE,createProceduralSurfacePixels(key,fallbackSize));
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
