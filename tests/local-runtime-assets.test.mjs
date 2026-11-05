@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(await readFile(path.join(root, "src/asset-manifest.json"), "utf8"));
 const stageCatalog = JSON.parse(await readFile(path.join(root, "data/stages.json"), "utf8"));
+const stageCatalog = JSON.parse(await readFile(path.join(root, "data/stages.json"), "utf8"));
 
 test("every runtime asset is stored inside this repository", async () => {
   const assets = [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...manifest.sounds];
