@@ -42,6 +42,14 @@ test("residential roof silhouette is a rectangular two-slope gable, not a pyrami
   assert.ok(!buildingGeometry.includes("new THREE.ConeGeometry(1.08, 0.72, 4)"), "residential gable must not regress to a pyramid primitive");
 });
 
+test("building rebuild releases shared GPU resources once", () => {
+  assert.ok(renderer.includes("const obsoleteGeometries = new Set()"));
+  assert.ok(renderer.includes("const obsoleteMaterials = new Set()"));
+  assert.ok(renderer.includes("for (const geometry of obsoleteGeometries) geometry.dispose()"));
+  assert.ok(renderer.includes("for (const material of obsoleteMaterials)"));
+  assert.ok(renderer.includes("material.dispose()"));
+});
+
 test("city visual identity uses a muted architectural palette and reports PBR acceptance metrics", () => {
   assert.ok(renderer.includes('visualStyle: "realistic-pbr-city"'));
   assert.ok(renderer.includes("pbrMaterialSets: 6"));
