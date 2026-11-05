@@ -87,9 +87,10 @@ test("race surfaces wind upward and correct downward horizontal face normals def
  assert.match(renderer,/if\(Math\.abs\(ny\)>\.65&&ny<0\)\{nx=-nx;ny=-ny;nz=-nz;\}/);
 });
 
-test("local CC0 race texture downloader and offline precache are declared",()=>{
- const downloader=fs.readFileSync(new URL("../scripts/download-race-textures.mjs",import.meta.url),"utf8");
- for(const name of ["asphalt_03","grass_ground","sand_01","snow_03","rocky_terrain_02","concrete_floor_02","bark_brown_02","leafy_grass"]) assert.ok(downloader.includes(name));
+test("local CC0 race texture verifier never downloads external files",()=>{
+ const verifier=fs.readFileSync(new URL("../scripts/verify-race-textures.mjs",import.meta.url),"utf8");
+ for(const name of ["asphalt_03_diff_1k.jpg","grass_ground_diff_1k.jpg","sand_01_diff_1k.jpg","snow_03_diff_1k.jpg","rocky_terrain_02_diff_1k.jpg","concrete_floor_02_diff_1k.jpg","bark_brown_02_diff_1k.jpg","leafy_grass_diff_1k.jpg"]) assert.ok(verifier.includes(name));
+ assert.doesNotMatch(verifier,/https?:\\/\\/|fetch\\(|https?\.get/);
  assert.match(credits,/assets\/textures\//);
  assert.match(credits,/same-origin URLs/);
  assert.doesNotMatch(renderer,/https?:\/\/dl\.polyhaven\.org/);
