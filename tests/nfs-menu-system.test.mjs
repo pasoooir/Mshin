@@ -44,7 +44,7 @@ test("settings and pause actions preserve game state semantics", () => {
 
 test("PWA and offline cache markers advance together", () => {
   assert.equal(manifest.version, "0.15.4");
-  assert.match(sw, /mshin-arcade-v72/);
+  assert.match(sw, /mshin-arcade-v73/);
 });
 
 test("race countdown advances on a monotonic wall clock without depending on animation frames", () => {
