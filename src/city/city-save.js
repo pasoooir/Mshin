@@ -51,7 +51,12 @@ export function isValidCitySave(v) {
       || (building.level !== undefined && (!Number.isInteger(building.level) || building.level < 1 || building.level > 100))
       || (building.age !== undefined && (!Number.isFinite(building.age) || building.age < 0))
       || (building.residents !== undefined && (!Number.isInteger(building.residents) || building.residents < 0 || building.residents > 10000))
-      || (building.zoneType !== undefined && !Object.hasOwn(CITY_ZONES,building.zoneType))) return false;
+      || (building.zoneType !== undefined && !Object.hasOwn(CITY_ZONES,building.zoneType))
+      || (building.construction !== undefined && (!isRecord(building.construction)
+        || !Number.isFinite(building.construction.duration) || building.construction.duration <= 0
+        || !Number.isFinite(building.construction.remaining) || building.construction.remaining < 0
+        || building.construction.remaining > building.construction.duration
+        || (building.construction.startedAt !== undefined && (!Number.isSafeInteger(building.construction.startedAt) || building.construction.startedAt < 0 || building.construction.startedAt > v.tick)))) return false;
     const key = building.x + ":" + building.y;
     if (buildings.has(key)) return false;
     buildings.add(key);
