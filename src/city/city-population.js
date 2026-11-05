@@ -192,7 +192,7 @@ export function syncCityCitizens(city) {
     throw new TypeError("A valid city is required to synchronize citizens");
   }
   if (!Array.isArray(city.citizens)) city.citizens = [];
-  const homes = city.buildings.filter(building => building.type === "home" && building.residents > 0);
+  const homes = city.buildings.filter(building => building.type === "home" && building.residents > 0 && !building.construction);
   const homeIds = new Set(homes.map(home => home.id));
   let changed = false;
 
