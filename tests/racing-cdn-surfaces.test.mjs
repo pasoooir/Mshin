@@ -6,13 +6,14 @@ const renderer=fs.readFileSync(new URL("../src/race-renderer-3d.js",import.meta.
 const pbr=fs.readFileSync(new URL("../src/vehicle-pbr.js",import.meta.url),"utf8");
 const credits=fs.readFileSync(new URL("../src/racing/ENVIRONMENT_ASSET_CREDITS.md",import.meta.url),"utf8");
 
-test("race renderer uses real Poly Haven CDN surfaces for asphalt and biome terrain",()=>{
+test("race renderer builds every surface from repository-local procedural RGBA8 maps",()=>{
  for(const key of ["asphalt","grass","sand","snow","rock","concrete","bark","foliage"]){
-  assert.match(renderer,new RegExp(key+':"https://dl\\.polyhaven\\.org/file/ph-assets/Textures/jpg/1k/'));
+  assert.match(renderer,new RegExp('"'+key+'"'));
  }
- assert.match(renderer,/crossOrigin="anonymous"/);
- assert.match(renderer,/image\.onerror/);
- assert.match(renderer,/surfaceTextures\.loaded\+\+/);
+ assert.match(renderer,/provider:"Repository-local procedural RGBA8"/);
+ assert.match(renderer,/createProceduralSurfacePixels\(key,surfaceSize\)/);
+ assert.match(renderer,/state\.surfaceTextures\.proceduralReady\+\+/);
+ assert.doesNotMatch(renderer,/dl\.polyhaven\.org|surfaceSources|CDN texture/);
  assert.match(renderer,/texture:surfaceKey\?surfaceTextures\.get\(surfaceKey\)/);
 });
 
@@ -21,15 +22,11 @@ test("non-urban roadside house roofs emit valid three-vertex faces",()=>{
  assert.match(renderer,/tri\(roof,\[x\+w\/2\+7,eave,z\+d\/2\+7\],\[x-w\/2-7,eave,z\+d\/2\+7\],\[x,peak,z\+d\/2\+7\]\)/);
 });
 
-test("optional CDN textures have bounded mobile loading and preserve fallback rendering",()=>{
- assert.match(renderer,/6500/);
- assert.match(renderer,/CDN texture timed out/);
- assert.match(renderer,/new Uint8Array\(\[126,126,126,255\]\)/);
- assert.match(renderer,/navigator\.connection\?\.saveData/);
- assert.match(renderer,/softwareRenderer\|\|navigator\.connection/);
- assert.match(renderer,/rendererDestroyed\|\|lost\|\|generation!==surfaceLoadGeneration/);
- assert.match(renderer,/surfaceImages\.clear\(\)/);
- assert.match(renderer,/gl\.deleteTexture\(texture\)/);
+test("racing surfaces require no network, image loader, or CDN timeout",()=>{
+ assert.doesNotMatch(renderer,/new Image\(\)/);
+ assert.doesNotMatch(renderer,/https?:\/\//);
+ assert.doesNotMatch(renderer,/navigator\.connection\?\.saveData/);
+ assert.match(renderer,/new Uint8Array\(\[126,126,126,255\]\)|createProceduralSurfacePixels/);
 });
 
 test("world-space PBR shader samples scanned textures without requiring UV vertex buffers",()=>{
