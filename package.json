@@ -18,7 +18,7 @@
     "check:cocos-syntax": "node scripts/check-cocos-syntax.mjs",
     "analyze:architecture": "node scripts/analyze-module-boundaries.mjs",
     "check:architecture": "node scripts/analyze-module-boundaries.mjs --check",
-    "assets:race-textures": "node scripts/download-race-textures.mjs"
+    "assets:race-textures": "node scripts/verify-race-textures.mjs"
   },
   "engines": {
     "node": ">=20"
