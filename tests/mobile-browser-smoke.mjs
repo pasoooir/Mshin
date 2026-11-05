@@ -94,7 +94,6 @@ try {
   mobile.setDefaultNavigationTimeout(60000);
   await mobile.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 60000 });
   await waitForGameBoot(mobile, "mobile initial boot");
-  await captureScreenshot(mobile, "artifacts/racing-mobile-track.png");
   const mobileMenuLayout = await mobile.locator("#select .gtMenu").evaluate(el => ({ display: getComputedStyle(el).display, tabsDirection: getComputedStyle(el.querySelector(".menuTabs")).flexDirection }));
   assert.equal(mobileMenuLayout.display, "grid", "mobile menu should retain the navigation rail layout");
   assert.equal(mobileMenuLayout.tabsDirection, "column", "mobile menu navigation should remain vertical");
@@ -185,7 +184,7 @@ try {
     throw new Error("mobile race countdown did not complete: " + JSON.stringify(countdownState) + " | " + error.message);
   });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 }).catch(async error => {
-    const diagnostic = await mobile.evaluate(() => ({
+    const diagnostic = await mobile.evaluate(pageErrors => ({
       renderer: window.Mshin3DRenderer ? {
         status: window.Mshin3DRenderer.status,
         error: window.Mshin3DRenderer.error,
@@ -196,7 +195,8 @@ try {
       } : null,
       canvas: { width: document.querySelector("#game3d")?.width, height: document.querySelector("#game3d")?.height },
       bodyClass: document.body.className,
-    }));
+      pageErrors,
+    }), errors.slice(-12));
     throw new Error("mobile WebGL renderer did not reach a stable frame state: " + JSON.stringify(diagnostic) + " | " + error.message);
   });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.trackBuildProgress === 1, undefined, { timeout: 20000 }).catch(async error => {
@@ -206,9 +206,14 @@ try {
   await mobile.evaluate(() => { window.Mshin3DRenderer.captureNextFrameSample = true; });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.lastFramePixelSample?.context === true, undefined, { timeout: 5000 });
   const raceFrameSample = await mobile.evaluate(() => window.Mshin3DRenderer.lastFramePixelSample);
+  await captureScreenshot(mobile, "artifacts/racing-mobile-track.png");
   assert.ok(raceFrameSample.visiblePixels > 1000, "mobile race scene must contain substantial visible rendered terrain/track pixels: " + JSON.stringify(raceFrameSample));
+  assert.ok(raceFrameSample.roadLikePixels > 500, "mobile race scene must visibly render a broad neutral-asphalt track surface, not only the green terrain and cars: " + JSON.stringify(raceFrameSample));
+  const trackMeshMetrics = await mobile.evaluate(() => ({ terrainBaseVertices: window.Mshin3DRenderer?.terrainBaseVertices, roadVertices: window.Mshin3DRenderer?.roadVertices }));
+  assert.ok(trackMeshMetrics.terrainBaseVertices >= 6 && trackMeshMetrics.roadVertices >= 1000, "mobile renderer must upload separate terrain and full-width asphalt circuit meshes: " + JSON.stringify(trackMeshMetrics));
   assert.ok(raceFrameSample.drawCalls >= 8, "mobile race scene must submit terrain, road and environment meshes: " + JSON.stringify(raceFrameSample));
   assert.ok(raceFrameSample.triangles > 1000, "mobile race scene must render substantial track and environment geometry: " + JSON.stringify(raceFrameSample));
+  assert.ok(raceFrameSample.uniqueColors >= 12, "mobile race scene must show multiple visible surface/material colors rather than only the clear color and cars: " + JSON.stringify(raceFrameSample));
   assert.equal(raceFrameSample.glError, 0, "mobile race scene pixel capture must not report a WebGL error: " + JSON.stringify(raceFrameSample));
   const trackScaleMetrics = await mobile.evaluate(() => window.MshinPerformance);
   assert.equal(trackScaleMetrics.trackLengthScale, 10, "mobile race runtime must use the tenfold circuit scale");

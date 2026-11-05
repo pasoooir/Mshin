@@ -17,7 +17,7 @@ test("procedural 3D scene stays within a bounded first-build geometry budget", (
 
 test("the scene keeps its full road width while reducing mesh density", () => {
   assert.ok(source.includes("const segments=mobile?280:softwareRenderer?360:760,half=180;"));
-  assert.ok(source.includes("quad(roadTris,l0,l1,r1,r0)"),
+  assert.ok(source.includes("quad(roadTris,l0,r0,r1,l1)"),
     "the asphalt remains a continuous closed road ribbon");
 });
 
@@ -37,7 +37,7 @@ test("WebGL geometry upload avoids per-triangle temporary arrays", () => {
 test("track geometry is assembled in bounded frame-sized phases", () => {
   assert.match(source, /function\* buildTrack\(snapshot\)/,
     "track generation must be resumable instead of blocking one frame");
-  assert.match(source, /yield \{parts:\[nextRoad,\.\.\.nextDecor\],progress:\.34\}/,
+  assert.match(source, /yield \{parts:\[terrainBasePart,nextRoad,\.\.\.nextDecor\],progress:\.34\}/,
     "road geometry must be uploaded as the first bounded phase");
   assert.match(source, /progress:\.67/,
     "scenery geometry must be uploaded as a separate phase");
@@ -45,9 +45,9 @@ test("track geometry is assembled in bounded frame-sized phases", () => {
     "the render loop must advance no more than one construction phase per frame");
   assert.match(source, /state\.trackBuildProgress=step\.value\.progress/,
     "the renderer must expose incremental construction progress");
-  assert.match(source, /const drawParts=road\?\[road,\.\.\.decor\]:pendingTrackParts/,
+  assert.match(source, /const drawParts=road\?\[terrainBase,road,\.\.\.decor\]:pendingTrackParts/,
     "the renderer must draw progressive geometry before the replacement track is complete");
-  assert.match(source, /for\(const p of drawParts\)drawPart\(p,vp/,
+  assert.match(source, /for\(let i=1;i<drawParts\.length;i\+\+\)drawPart\(drawParts\[i\],vp/,
     "pending road and scenery meshes must be visible during incremental construction");
   assert.match(source, /disposeParts\(previous\)/,
     "old stage GPU buffers must be released only after the replacement is ready");
@@ -63,7 +63,7 @@ test("track geometry is assembled in bounded frame-sized phases", () => {
 test("all late trackside and crowd geometry enters the bounded upload queue", () => {
   const billboardBuild = source.indexOf("const billboardCount=mobile?8:20;");
   const uploadQueue = source.indexOf("const uploadQueue=[");
-  const finalReturn = source.indexOf("return {road:nextRoad,decor:nextDecor,stageId:snapshot.stageId};", uploadQueue);
+  const finalReturn = source.indexOf("return {terrainBase:terrainBasePart,road:nextRoad,decor:nextDecor,stageId:snapshot.stageId};", uploadQueue);
   assert.ok(billboardBuild >= 0 && uploadQueue > billboardBuild,
     "billboards, railings and late crowd geometry must be assembled before GPU uploads begin");
   assert.ok(finalReturn > uploadQueue, "bounded uploads must finish before the completed track is returned");
@@ -116,7 +116,7 @@ test("the WebGL drawing buffer is allocated after the GPU profile is known", () 
 test("WebGL pixel acceptance can sample the submitted frame before buffer presentation", () => {
   assert.match(source, /captureNextFrameSample:false,lastFramePixelSample:null/);
   assert.match(source, /if\(state\.captureNextFrameSample\)[\s\S]*?gl\.readPixels/);
-  assert.match(source, /state\.lastFramePixelSample=\{width:sampleWidth,height:sampleHeight,visiblePixels,uniqueColors/);
+  assert.match(source, /state\.lastFramePixelSample=\{width:sampleWidth,height:sampleHeight,visiblePixels,roadLikePixels,uniqueColors/);
 });
 
 
