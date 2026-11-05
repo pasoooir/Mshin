@@ -71,6 +71,14 @@ test("WebGL shader warmup restores the full canvas viewport before scene renderi
  assert.match(renderer,/gl\.viewport\(0,0,1,1\);gl\.drawArrays\(gl\.TRIANGLES,0,3\);gl\.finish\(\);[\s\S]*?gl\.viewport\(0,0,canvas\.width,canvas\.height\);/);
 });
 
+test("large terrain background cannot depth-occlude the mobile racing circuit",()=>{
+ assert.match(renderer,/terrainBaseTris=\[\]/);
+ assert.match(renderer,/const terrainBasePart=part\(terrainBaseTris,theme\[0\]/);
+ assert.match(renderer,/state\.terrainBaseVertices=terrainBasePart\.mesh\.count;state\.roadVertices=nextRoad\.mesh\.count/);
+ assert.match(renderer,/drawPart\(drawParts\[0\],vp,translate\(0,0,0\)\);[\s\S]*?gl\.clear\(gl\.DEPTH_BUFFER_BIT\);[\s\S]*?for\(let i=1;i<drawParts\.length;i\+\+\)drawPart/);
+ assert.match(renderer,/roadLikePixels/);
+});
+
 test("race surfaces wind upward and correct downward horizontal face normals defensively",()=>{
  assert.match(renderer,/quad\(roadTris,l0,r0,r1,l1\)/);
  assert.match(renderer,/quad\(shoulderTris,sl0,l0,l1,sl1\)/);
