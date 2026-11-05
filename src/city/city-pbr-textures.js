@@ -1,7 +1,10 @@
 /** Original tileable city PBR materials for Three.js. */
 export function createCityPbrSurfaces(THREE, renderer) {
 function makePbrSurface(THREE, renderer, kind, base, seed) {
-  const size = 512;
+  const compactDevice = window.matchMedia?.("(max-width: 900px)").matches || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+  // Mobile builds use quarter-resolution maps: the six normal/roughness passes
+  // otherwise process more than nine million texels synchronously at startup.
+  const size = compactDevice ? 256 : 512;
   const makeCanvas = () => {
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = size;
@@ -135,7 +138,7 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
   const roughnessTexture = new THREE.CanvasTexture(roughCanvas);
   for (const texture of [albedoTexture, normalTexture, roughnessTexture]) {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+    texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), compactDevice ? 4 : 8);
     texture.generateMipmaps = true;
     texture.minFilter = THREE.LinearMipmapLinearFilter;
     texture.magFilter = THREE.LinearFilter;
