@@ -58,6 +58,12 @@ jobs:
         run: |
           node --check tests/city-neighborhood-gltf-browser.mjs
           node tests/city-neighborhood-gltf-browser.mjs
+      - name: Run mobile-only browser smoke tests
+        env:
+          CI: "true"
+        run: |
+          node --check tests/mobile-browser-smoke.mjs
+          node tests/mobile-browser-smoke.mjs
       - name: Run city entry browser smoke test
         env:
           CI: "true"
@@ -70,12 +76,6 @@ jobs:
         run: |
           node --check tests/city-seasonal-weather-browser.mjs
           node tests/city-seasonal-weather-browser.mjs
-      - name: Run mobile-only browser smoke tests
-        env:
-          CI: "true"
-        run: |
-          node --check tests/mobile-browser-smoke.mjs
-          node tests/mobile-browser-smoke.mjs
       - name: Run mobile rewarded three-lap finish and offline acceptance
         env:
           CI: "true"
