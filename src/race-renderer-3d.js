@@ -100,13 +100,35 @@ export function createRaceRenderer(canvas){
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
+ function createProceduralSurfacePixels(key,size=128){
+  const pixels=new Uint8Array(size*size*4);
+  const palettes={asphalt:[74,78,80],grass:[91,137,57],sand:[177,151,104],snow:[205,216,222],rock:[105,105,99],concrete:[126,128,126],bark:[91,65,43],foliage:[83,126,55]};
+  const base=palettes[key]||[128,128,128];
+  const hash=(x,y)=>{let n=(x*374761393+y*668265263+key.length*1442695041)|0;n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967295};
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+   const broad=Math.sin(x*.105+Math.sin(y*.071)*2.1)*Math.cos(y*.087+x*.023);
+   const grain=(hash(x,y)-.5)*34+(hash(x>>2,y>>2)-.5)*19+broad*7;
+   const i=(y*size+x)*4;
+   for(let channel=0;channel<3;channel++){
+    let value=base[channel]+grain;
+    if(key==="asphalt"&&hash(x*3,y*3)>.94)value-=28;
+    if(key==="grass")value+=Math.sin((x+y)*.17)*5;
+    if(key==="snow")value+=Math.max(0,broad)*7;
+    pixels[i+channel]=Math.max(0,Math.min(255,Math.round(value)));
+   }
+   pixels[i+3]=255;
+  }
+  return pixels;
+}
  function loadSurfaceTexture(key,url){
   const generation=surfaceLoadGeneration,texture=gl.createTexture();
   if(!texture){state.surfaceTextures.failed++;return}
   gl.bindTexture(gl.TEXTURE_2D,texture);
   // Neutral fallback is immediately usable; remote textures never gate racing.
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  const fallbackSize=128;
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,fallbackSize,fallbackSize,0,gl.RGBA,gl.UNSIGNED_BYTE,createProceduralSurfacePixels(key,fallbackSize));
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
@@ -151,7 +173,7 @@ export function createRaceRenderer(canvas){
  function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
  function* buildTrack(snapshot){
   const nextDecor=[];
-  const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
+  const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],yellowTris=[],curbRedTris=[],curbWhiteTris=[],groundTris=[];
   const terrainTexture=["grass","sand","snow","grass","rock","rock","grass","sand","rock","grass"][snapshot.world||0]||"grass";
   const segments=mobile?280:softwareRenderer?360:760,half=180;
   // Keep the playable terrain inside the camera far plane and wind its triangles upward.
@@ -164,11 +186,15 @@ export function createRaceRenderer(canvas){
    const l0=point(fa,-half),r0=point(fa,half),l1=point(fb,-half),r1=point(fb,half);
    const sl0=point(fa,-half-26,-.04),sr0=point(fa,half+26,-.04),sl1=point(fb,-half-26,-.04),sr1=point(fb,half+26,-.04);
    quad(roadTris,l0,l1,r1,r0);quad(shoulderTris,sl0,sl1,l1,l0);quad(shoulderTris,r0,r1,sr1,sr0);
-   for(const offset of [-90,0,90]){const width=offset===0?2.5:1.5;const p0=point(fa,offset-width,.012),q0=point(fa,offset+width,.012),p1=point(fb,offset-width,.012),q1=point(fb,offset+width,.012);if(offset!==0&&i%3!==0)continue;quad(laneTris,p0,p1,q1,q0)}
+   // Continuous white edge lines, twin dashed yellow centre lines and alternating kerbs.
+   for(const offset of [-158,158]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,p1,q1,q0)}
+   if(i%2===0)for(const offset of [-5,5]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,p1,q1,q0)}
+   const curbSide=(side,out)=>{const p0=point(fa,side*168,.026),q0=point(fa,side*180,.026),p1=point(fb,side*168,.026),q1=point(fb,side*180,.026);quad(out,p0,p1,q1,q0)};
+   curbSide(-1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris);curbSide(1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris)
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
    quad(groundTris,outerL,outerL1,outerR1,outerR);
   }
-  const nextRoad=part(roadTris,theme[1],0,"environment","asphalt");nextDecor.push(part(shoulderTris,theme[2],0,"environment","concrete"),part(laneTris,"#e8e9e5"),part(groundTris,theme[0],0,"environment",terrainTexture));
+  const nextRoad=part(roadTris,theme[1],0,"environment","asphalt");nextDecor.push(part(shoulderTris,theme[2],0,"environment","concrete"),part(laneTris,"#f4f3e9"),part(yellowTris,"#f5c928",.015),part(curbRedTris,"#d94337"),part(curbWhiteTris,"#f1eee4"),part(groundTris,theme[0],0,"environment",terrainTexture));
   yield {parts:[nextRoad,...nextDecor],progress:.34};
   state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?18:softwareRenderer?22:48,buildingCount=mobile?8:softwareRenderer?12:22;
