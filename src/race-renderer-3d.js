@@ -58,6 +58,21 @@ function box(out,x,y,z,w,h,d){const x0=x-w/2,x1=x+w/2,y0=y-h/2,y1=y+h/2,z0=z-d/2
 function cylinder(out,x,y,z,r,depth,segments=12){for(let i=0;i<segments;i++){const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,p=[x,y+Math.cos(a)*r,z+Math.sin(a)*r],q=[x,y+Math.cos(b)*r,z+Math.sin(b)*r],p2=[x+depth,y+Math.cos(a)*r,z+Math.sin(a)*r],q2=[x+depth,y+Math.cos(b)*r,z+Math.sin(b)*r];quad(out,p,q,q2,p2)}}
 function hexColor(value){const h=String(value||"#e94f45").replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>Number.isFinite(v)?v:1)}
 const THEMES=[["#7cae48","#333c43","#777f83","#d9c99b"],["#c5a06a","#3e3730","#92785c","#ead2a5"],["#b7e3f1","#596d7b","#d4eff6","#f4fbff"],["#4caa8e","#393d38","#b5a080","#f4dc9d"],["#29284f","#202738","#7d4eaa","#ed45cb"],["#69727a","#333b43","#59636b","#d7a45e"],["#648f78","#3b4146","#79858b","#c9d7ce"],["#c4a66d","#4b4036","#a58b63","#e8d6a5"],["#181d42","#202039","#4c4b79","#54dff1"],["#bb645f","#30394b","#778391","#f3d36a"]];
+/**
+ * Keep the chase camera on the actual circuit curve instead of projecting a
+ * straight tangent from the car. Tight chicanes and hairpins otherwise pull
+ * the look target away from the asphalt and can make the road leave the view.
+ */
+export function calculateRaceCameraPose(frameAt,t,lateral=0,mobile=false){
+ const behindT=mobile?.028:.03,lookAheadT=mobile?.038:.035;
+ const behind=frameAt(t-behindT),ahead=frameAt(t+lookAheadT);
+ const offset=(frame)=>[frame.p.x+frame.nx*lateral,-(frame.p.y+frame.ny*lateral)];
+ return {
+  eye:[...offset(behind).slice(0,1), (Number.isFinite(behind.height)?behind.height:0)+(mobile?255:235), offset(behind)[1]],
+  target:[...offset(ahead).slice(0,1), (Number.isFinite(ahead.height)?ahead.height:0)+28, offset(ahead)[1]],
+  behindT,lookAheadT
+ };
+}
 export function createRaceRenderer(canvas){
  const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,maxTrackBuildStepMs:0,lastTrackBuildStepMs:0,maxDrawPartMs:0,maxDrawUniformsMs:0,lastDrawUniformsMs:0,maxDrawBufferSetupMs:0,lastDrawBufferSetupMs:0,maxDrawSubmitMs:0,lastDrawSubmitMs:0,maxDrawArraysMs:0,lastDrawArraysMs:0,maxDrawPartVertices:0,lastDrawPartVertices:0,lastDrawPartColor:null,drawPartCount:0,maxTrianglesPerFrame:0,lastFrameTriangles:0,maxVehicleBuildMs:0,lastVehicleBuildMs:0,vehicleBuildCount:0,maxResizeMs:0,lastResizeMs:0,maxClearMs:0,lastClearMs:0,maxRendererRenderMs:0,lastRendererRenderMs:0,softwareRenderer:false,gpuProfile:'detecting',captureNextFrameSample:false,lastFramePixelSample:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
  let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,terrainBase=null,road=null,decor=[],surfaceTextures=new Map(),surfaceImages=new Set(),surfaceLoadGeneration=0,rendererDestroyed=false,carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
@@ -377,9 +392,13 @@ export function createRaceRenderer(canvas){
   if(lastStage!==snapshot.stageId&&trackBuildStage!==snapshot.stageId){cancelTrackBuild();trackBuildStage=snapshot.stageId;trackBuildStarted=performance.now();trackBuildJob=buildTrack(snapshot);state.trackBuildProgress=0;}
   if(trackBuildJob){const stepStarted=performance.now(),step=trackBuildJob.next(),stepMs=performance.now()-stepStarted;state.lastTrackBuildStepMs=stepMs;state.maxTrackBuildStepMs=Math.max(state.maxTrackBuildStepMs||0,stepMs);state.lastTrackBuildProgress=step.value?.progress??1;if(step.done){const previous=[terrainBase,road,...decor];terrainBase=step.value.terrainBase;road=step.value.road;decor=step.value.decor;lastStage=step.value.stageId;pendingTrackParts=[];trackBuildJob=null;state.trackBuildProgress=1;state.trackBuildMs=performance.now()-trackBuildStarted;disposeParts(previous);}else{if(step.value.parts)pendingTrackParts=step.value.parts;state.trackBuildProgress=step.value.progress;}}
   const f=snapshot.frameAt(snapshot.player.t),x=f.p.x+f.nx*snapshot.player.lateral,z=-(f.p.y+f.ny*snapshot.player.lateral),angle=f.angle+snapshot.player.yaw;
-  const roadHeight=f.height||0;const desiredEye=[x-Math.cos(angle)*270,roadHeight+235,z+Math.sin(angle)*310],desiredTarget=[x+Math.cos(angle)*330,roadHeight+28,z-Math.sin(angle)*330];
+  // Sample the circuit itself behind and ahead of the car. A straight tangent
+  // look-ahead drifts off the road in hairpins/chicanes, especially on mobile.
+  const cameraPose=calculateRaceCameraPose(snapshot.frameAt,snapshot.player.t,snapshot.player.lateral,mobile);
+  const desiredEye=cameraPose.eye,desiredTarget=cameraPose.target;
   const now=performance.now(),cameraDt=lastRenderAt?Math.min((now-lastRenderAt)/1000,mobile?.05:.1):1/60;lastRenderAt=now;const follow=1-Math.exp(-cameraDt/(mobile?.16:.11));
   if(!cameraEye){cameraEye=desiredEye.slice();cameraTarget=desiredTarget.slice()}else{for(let i=0;i<3;i++){cameraEye[i]+=(desiredEye[i]-cameraEye[i])*follow;cameraTarget[i]+=(desiredTarget[i]-cameraTarget[i])*follow}}
+  state.cameraTrackFollowing=true;state.cameraLookAheadT=cameraPose.lookAheadT;state.cameraBehindT=cameraPose.behindT;
   const projection=perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,60000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.useProgram(program);gl.uniform3f(uniforms.camera,cameraEye[0],cameraEye[1],cameraEye[2]);gl.uniform3f(uniforms.light,-.38,.86,.42);gl.uniform3f(uniforms.lightColor,3.8,3.55,3.2);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(uniforms.env,0);const clearStarted=performance.now();gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const clearMs=performance.now()-clearStarted;state.lastClearMs=clearMs;state.maxClearMs=Math.max(state.maxClearMs||0,clearMs);state.triangles=0;
   // Draw the latest bounded build snapshot while the replacement track is still being assembled.
