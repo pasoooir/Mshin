@@ -90,5 +90,7 @@ test("race surfaces wind upward and correct downward horizontal face normals def
 test("local CC0 race texture downloader and offline precache are declared",()=>{
  const downloader=fs.readFileSync(new URL("../scripts/download-race-textures.mjs",import.meta.url),"utf8");
  for(const name of ["asphalt_03","grass_ground","sand_01","snow_03","rocky_terrain_02","concrete_floor_02","bark_brown_02","leafy_grass"]) assert.ok(downloader.includes(name));
- assert.match(credits,/npm run assets:race-textures/);
+ assert.match(credits,/assets\/textures\//);
+ assert.match(credits,/same-origin URLs/);
+ assert.doesNotMatch(renderer,/https?:\/\/dl\.polyhaven\.org/);
 });
