@@ -172,7 +172,9 @@ export function createCityConstructionRenderer(THREE, parent) {
       const remaining = Math.max(0, Math.min(duration, Number(construction.remaining) || 0));
       const progress = Math.max(0, Math.min(1, 1 - remaining / duration));
       const stage = progress < 0.15 ? 0 : progress < 0.35 ? 1 : progress < 0.62 ? 2 : progress < 0.84 ? 3 : 4;
+      site.userData.stageIndex = stage;
       const labels = ["آماده‌سازی زمین", "فونداسیون و بتن‌ریزی", "اسکلت و ستون‌ها", "جرثقیل و نصب طبقات", "نماکاری و تکمیل"];
+      site.userData.stageLabel = labels[stage];
       const { foundation, frame, facade, crane, workers, labelContext, labelTexture, lastLabel } = site.userData;
       foundation.visible = progress >= 0.15;
       frame.visible = progress >= 0.35;
