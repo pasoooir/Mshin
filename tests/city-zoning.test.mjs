@@ -79,7 +79,7 @@ test("job-producing zones wait for enough residents before expanding labor deman
 
 test("directly placed buildings stay inactive until their visible 45-second construction completes", () => {
   const city = createInitialCity(506);
-  const placed = placeCityItem(city,17,14,"home");
+  const placed = placeCityItem(city,17,14,"home",45);
   assert.equal(placed.ok,true);
   const building = city.buildings[0];
   assert.deepEqual(building.construction,{duration:45,remaining:45,startedAt:0});
