@@ -54,6 +54,8 @@ test("Three.js and all city addons are committed locally and included in offline
     "vendor/three/LICENSE"
   ];
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
+  const threeModule = await readFile(path.join(root, "vendor/three/build/three.module.min.js"), "utf8");
+  const threeCore = await readFile(path.join(root, "vendor/three/build/three.core.min.js"), "utf8");
   const cityRenderer = await readFile(path.join(root, "src/city/city-three-renderer.js"), "utf8");
   const preview = await readFile(path.join(root, "city-neighborhood-preview.html"), "utf8");
   for (const relative of files) {
