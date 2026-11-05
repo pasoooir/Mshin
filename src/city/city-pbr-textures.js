@@ -5,6 +5,7 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
   // Mobile builds use quarter-resolution maps: the six normal/roughness passes
   // otherwise process more than nine million texels synchronously at startup.
   const size = compactDevice ? 256 : 512;
+  const detailScale = compactDevice ? 0.65 : 1;
   const makeCanvas = () => {
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = size;
@@ -59,16 +60,16 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
   };
 
   if (kind === "grass") {
-    for (let i = 0; i < 1050; i++) {
+    for (let i = 0; i < Math.round(1050 * detailScale); i++) {
       const x = random() * size, y = random() * size, r = 3 + random() * 22;
       tileDot(x, y, r, random() > 0.5 ? "rgba(151,177,92,.16)" : "rgba(24,57,35,.20)", "#898989");
     }
-    for (let i = 0; i < 5200; i++) {
+    for (let i = 0; i < Math.round(5200 * detailScale); i++) {
       const x = random() * size, y = random() * size, len = 2 + random() * 8;
       tileLine(x, y, x + (random() - .5) * 3, y - len, random() > .5 ? "rgba(188,202,120,.42)" : "rgba(25,63,36,.38)", .7, "#929292");
     }
   } else if (kind === "asphalt") {
-    for (let i = 0; i < 12500; i++) {
+    for (let i = 0; i < Math.round(12500 * detailScale); i++) {
       const v = Math.floor(75 + random() * 85);
       tileDot(random() * size, random() * size, .35 + random() * 1.5, "rgba(" + v + "," + (v + 5) + "," + (v + 8) + ",.42)", "#858585");
     }
@@ -88,10 +89,10 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
           albedo.fillRect(x + 2, y + 3, 59, 35);
         }
       }
-      for (let i = 0; i < 2600; i++) tileDot(random() * size, random() * size, .4 + random() * 1.3, "rgba(65,42,31,.16)", "#858585");
+      for (let i = 0; i < Math.round(2600 * detailScale); i++) tileDot(random() * size, random() * size, .4 + random() * 1.3, "rgba(65,42,31,.16)", "#858585");
     } else {
       for (let y = 0; y <= size; y += 128) tileLine(0, y, size, y, "rgba(48,53,52,.10)", 1, "#858585");
-      for (let i = 0; i < 9000; i++) tileDot(random() * size, random() * size, .3 + random() * 1.4, "rgba(38,42,40,.16)", "#858585");
+      for (let i = 0; i < Math.round(9000 * detailScale); i++) tileDot(random() * size, random() * size, .3 + random() * 1.4, "rgba(38,42,40,.16)", "#858585");
     }
   } else if (kind === "roof") {
     for (let row = 0; row <= 16; row++) {
@@ -103,11 +104,11 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
         tileLine(x + 3, y + 4, x + 58, y + 4, "rgba(231,220,202,.18)", 1, "#999999");
       }
     }
-    for (let i = 0; i < 1600; i++) tileDot(random() * size, random() * size, .5 + random(), "rgba(28,31,34,.22)", "#7d7d7d");
+    for (let i = 0; i < Math.round(1600 * detailScale); i++) tileDot(random() * size, random() * size, .5 + random(), "rgba(28,31,34,.22)", "#7d7d7d");
   } else if (kind === "sidewalk") {
     for (let y = 0; y <= size; y += 128) tileLine(0, y, size, y, "rgba(45,48,47,.42)", 3, "#707070");
     for (let x = 0; x <= size; x += 128) tileLine(x, 0, x, size, "rgba(45,48,47,.42)", 3, "#707070");
-    for (let i = 0; i < 5000; i++) tileDot(random() * size, random() * size, .3 + random() * 1.1, "rgba(55,58,56,.16)", "#858585");
+    for (let i = 0; i < Math.round(5000 * detailScale); i++) tileDot(random() * size, random() * size, .3 + random() * 1.1, "rgba(55,58,56,.16)", "#858585");
   }
   const albedoTexture = new THREE.CanvasTexture(albedoCanvas);
   albedoTexture.colorSpace = THREE.SRGBColorSpace;
