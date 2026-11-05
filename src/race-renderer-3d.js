@@ -149,58 +149,25 @@ export function createRaceRenderer(canvas){
   }
   return pixels;
  }
- function loadSurfaceTexture(key,url){
-  const generation=surfaceLoadGeneration,texture=gl.createTexture();
+ function loadSurfaceTexture(key){
+  const texture=gl.createTexture();
   if(!texture){state.surfaceTextures.failed++;return}
   gl.bindTexture(gl.TEXTURE_2D,texture);
-  // A neutral one-pixel safety texel protects against a failed procedural upload.
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
-  // Upload a detailed local RGBA8 texture immediately: the track never falls back
-  // to a flat green plane, even offline, on mobile data-saver, or on software GPUs.
-  const surfaceSize=256,proceduralPixels=createProceduralSurfacePixels(key,surfaceSize);
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,surfaceSize,surfaceSize,0,gl.RGBA,gl.UNSIGNED_BYTE,proceduralPixels);
+  // The full-resolution procedural RGBA8 maps are generated locally. No remote
+  // image request is made, so the racing circuit renders identically offline.
+  const surfaceSize=256,pixels=createProceduralSurfacePixels(key,surfaceSize);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,surfaceSize,surfaceSize,0,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
   gl.generateMipmap(gl.TEXTURE_2D);
-  surfaceTextures.set(key,texture);state.surfaceTextures.proceduralReady++;
-  // Optional photographic maps may replace the procedural base, but are never required.
-  if(softwareRenderer||navigator.connection?.saveData){state.surfaceTextures.skipped++;return}
-  const image=new Image();surfaceImages.add(image);image.crossOrigin="anonymous";image.decoding="async";
-  let settled=false;
-  const finish=()=>{settled=true;clearTimeout(timer);surfaceImages.delete(image)};
-  const timer=setTimeout(()=>{
-   if(settled)return;finish();image.onload=null;image.onerror=null;image.src="";
-   if(generation===surfaceLoadGeneration&&!rendererDestroyed){state.surfaceTextures.failed++;state.surfaceTextures.errors.push("CDN texture timed out: "+key)}
-  },6500);
-  image.onload=()=>{
-   if(settled)return;finish();
-   if(rendererDestroyed||lost||generation!==surfaceLoadGeneration)return;
-   try{
-    gl.bindTexture(gl.TEXTURE_2D,texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);state.surfaceTextures.loaded++;
-   }catch(error){state.surfaceTextures.failed++;state.surfaceTextures.errors.push(String(error?.message||error))}
-  };
-  image.onerror=()=>{
-   if(settled)return;finish();
-   if(generation===surfaceLoadGeneration&&!rendererDestroyed){state.surfaceTextures.failed++;state.surfaceTextures.errors.push("CDN texture failed: "+key)}
-  };
-  image.src=url;
+  surfaceTextures.set(key,texture);
+  state.surfaceTextures.proceduralReady++;
  }
- const surfaceSources={
-  asphalt:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_03/asphalt_03_diff_1k.jpg",
-  grass:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_diff_1k.jpg",
-  sand:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sand_01/sand_01_diff_1k.jpg",
-  snow:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/snow_03/snow_03_diff_1k.jpg",
-  rock:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_diff_1k.jpg",
-  concrete:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_diff_1k.jpg",
-  bark:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg",
-  foliage:"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg"
- };
- state.surfaceTextures={provider:"Local procedural RGBA8 + optional Poly Haven CC0",license:"procedural + CC0",requested:Object.keys(surfaceSources).length,loaded:0,proceduralReady:0,failed:0,skipped:0,errors:[]};
- for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
+ const surfaceKeys=["asphalt","grass","sand","snow","rock","concrete","bark","foliage"];
+ state.surfaceTextures={provider:"Repository-local procedural RGBA8",license:"original procedural textures",requested:surfaceKeys.length,loaded:0,proceduralReady:0,failed:0,skipped:0,errors:[]};
+ for(const key of surfaceKeys)loadSurfaceTexture(key);
  function part(tris,color,emissive=0,materialName="environment",surfaceKey=null){const material=VEHICLE_MATERIALS[materialName]||{metallic:.06,roughness:.78,clearcoat:0,kind:0},started=performance.now(),mesh=makeGeometry(gl,tris),elapsed=performance.now()-started;state.maxMeshUploadMs=Math.max(state.maxMeshUploadMs||0,elapsed);state.meshUploadCount=(state.meshUploadCount||0)+1;return {mesh,color:hexColor(color),...material,emissive,texture:surfaceKey?surfaceTextures.get(surfaceKey)||null:null}}
  function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
  function* buildTrack(snapshot){
