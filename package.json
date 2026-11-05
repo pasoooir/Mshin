@@ -17,7 +17,8 @@
     "check": "npm run validate:data && npm run build:core && npm run check:js-syntax && npm run check:cocos-syntax && npm run check:worker && npm run check:architecture && npm test",
     "check:cocos-syntax": "node scripts/check-cocos-syntax.mjs",
     "analyze:architecture": "node scripts/analyze-module-boundaries.mjs",
-    "check:architecture": "node scripts/analyze-module-boundaries.mjs --check"
+    "check:architecture": "node scripts/analyze-module-boundaries.mjs --check",
+    "assets:race-textures": "node scripts/download-race-textures.mjs"
   },
   "engines": {
     "node": ">=20"
