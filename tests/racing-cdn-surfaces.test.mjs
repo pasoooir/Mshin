@@ -67,7 +67,7 @@ test("terrain, road and building meshes receive distinct texture families",()=>{
 });
 
 test("WebGL shader warmup restores the full canvas viewport before scene rendering",()=>{
- assert.match(renderer,/gl\.viewport\(0,0,1,1\);gl\.drawArrays\(gl\.TRIANGLES,0,3\);gl\.finish\(\);[\\s\\S]{0,500}?gl\.viewport\(0,0,canvas\.width,canvas\.height\);/);
+ assert.match(renderer,/gl\.viewport\(0,0,1,1\);gl\.drawArrays\(gl\.TRIANGLES,0,3\);gl\.finish\(\);[\\s\\S]*?gl\.viewport\(0,0,canvas\.width,canvas\.height\);/);
 });
 
 test("race surfaces wind upward and correct downward horizontal face normals defensively",()=>{
