@@ -100,13 +100,35 @@ export function createRaceRenderer(canvas){
   gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
   state.status="webgl-ready";
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
- function loadSurfaceTexture(key,url){
+ function createProceduralSurfacePixels(key,size=128){
+  const pixels=new Uint8Array(size*size*4);
+  const palettes={asphalt:[74,78,80],grass:[91,137,57],sand:[177,151,104],snow:[205,216,222],rock:[105,105,99],concrete:[126,128,126],bark:[91,65,43],foliage:[83,126,55]};
+  const base=palettes[key]||[128,128,128];
+  const hash=(x,y)=>{let n=(x*374761393+y*668265263+key.length*1442695041)|0;n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967295};
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+   const broad=Math.sin(x*.105+Math.sin(y*.071)*2.1)*Math.cos(y*.087+x*.023);
+   const grain=(hash(x,y)-.5)*34+(hash(x>>2,y>>2)-.5)*19+broad*7;
+   const i=(y*size+x)*4;
+   for(let channel=0;channel<3;channel++){
+    let value=base[channel]+grain;
+    if(key==="asphalt"&&hash(x*3,y*3)>.94)value-=28;
+    if(key==="grass")value+=Math.sin((x+y)*.17)*5;
+    if(key==="snow")value+=Math.max(0,broad)*7;
+    pixels[i+channel]=Math.max(0,Math.min(255,Math.round(value)));
+   }
+   pixels[i+3]=255;
+  }
+  return pixels;
+}
+function loadSurfaceTexture(key,url){
   const generation=surfaceLoadGeneration,texture=gl.createTexture();
   if(!texture){state.surfaceTextures.failed++;return}
   gl.bindTexture(gl.TEXTURE_2D,texture);
   // Neutral fallback is immediately usable; remote textures never gate racing.
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([126,126,126,255]));
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  const fallbackSize=128;
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,fallbackSize,fallbackSize,0,gl.RGBA,gl.UNSIGNED_BYTE,createProceduralSurfacePixels(key,fallbackSize));
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
