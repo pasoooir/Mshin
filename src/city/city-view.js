@@ -61,7 +61,7 @@ export function placeCityItem(city,x,y,type,constructionDuration=0){
  if(type!=="road"&&!roadNear(city.grid,x,y))return{ok:false,reason:"ساختمان باید به خیابان دسترسی داشته باشد"};
  city.treasury-=COST[type];if(type==="road"){city.grid[y][x]="road";return{ok:true,item:"road",cost:COST.road}};
  const residents=type==="home"?12:0,duration=Number.isFinite(constructionDuration)?Math.max(0,constructionDuration):0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents,...(duration>0?{construction:{duration,remaining:duration,startedAt:city.tick||0}}:{})};
- city.grid[y][x]="building";city.buildings.push(b);syncCityCitizens({...city,buildings:city.buildings.filter(building=>!building.construction)});return{ok:true,item:b,cost:COST[type]};
+ city.grid[y][x]="building";city.buildings.push(b);if(!b.construction)city.population+=residents;syncCityCitizens({...city,buildings:city.buildings.filter(building=>!building.construction)});return{ok:true,item:b,cost:COST[type]};
 }
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
 function load(){
