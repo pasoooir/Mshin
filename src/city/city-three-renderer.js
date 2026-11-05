@@ -356,15 +356,24 @@ export async function createCityThreeRenderer(sourceCanvas) {
     buildingSignature = next;
     buildingRebuilds++;
     renderer.shadowMap.needsUpdate = true;
+    const obsoleteGeometries = new Set();
+    const obsoleteMaterials = new Set();
     for (const child of [...buildings.children]) {
       buildings.remove(child);
       child.traverse(object => {
-        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose();
-        if (object.material) {
-          if (Array.isArray(object.material)) object.material.forEach(material => { windowMaterials.delete(material); material.dispose(); });
-          else { windowMaterials.delete(object.material); object.material.dispose(); }
+        if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) {
+          obsoleteGeometries.add(object.geometry);
         }
+        if (Array.isArray(object.material)) object.material.forEach(material => obsoleteMaterials.add(material));
+        else if (object.material) obsoleteMaterials.add(object.material);
       });
+    }
+    // A building intentionally reuses geometry and materials across several
+    // facade meshes. Dispose each GPU resource exactly once per rebuild.
+    for (const geometry of obsoleteGeometries) geometry.dispose();
+    for (const material of obsoleteMaterials) {
+      windowMaterials.delete(material);
+      material.dispose();
     }
     for (const item of city.buildings) {
   buildings.add(createHighGfxBuilding(THREE, item, {
