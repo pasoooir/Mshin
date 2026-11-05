@@ -1,18 +1,18 @@
-name: Acquire real Poly Haven CC0 race textures
+name: Verify repository-local CC0 race textures
 
 on:
   pull_request:
     paths:
-      - "scripts/download-race-textures.mjs"
-      - "src/race-renderer-3d.js"
-      - "src/racing/ENVIRONMENT_ASSET_CREDITS.md"
+      - "assets/textures/**"
+      - "scripts/verify-race-textures.mjs"
+      - "package.json"
       - ".github/workflows/race-texture-assets.yml"
   push:
     branches: [main]
     paths:
-      - "scripts/download-race-textures.mjs"
-      - "src/race-renderer-3d.js"
-      - "src/racing/ENVIRONMENT_ASSET_CREDITS.md"
+      - "assets/textures/**"
+      - "scripts/verify-race-textures.mjs"
+      - "package.json"
       - ".github/workflows/race-texture-assets.yml"
   workflow_dispatch:
 
@@ -20,79 +20,14 @@ permissions:
   contents: read
 
 jobs:
-  download-and-verify:
-    name: Download and verify real CC0 texture maps
+  verify-local-textures:
+    name: Verify committed CC0 texture files
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Download official Poly Haven maps
+      - name: Verify repository-local JPEG assets
         run: npm run assets:race-textures
-      - name: Verify all eight JPEG assets
-        run: |
-          node --input-type=module <<'NODE'
-          import { readdir, stat, readFile } from "node:fs/promises";
-          const dir = "assets/textures";
-          const expected = [
-            "asphalt_03_diff_1k.jpg", "grass_ground_diff_1k.jpg",
-            "sand_01_diff_1k.jpg", "snow_03_diff_1k.jpg",
-            "rocky_terrain_02_diff_1k.jpg", "concrete_floor_02_diff_1k.jpg",
-            "bark_brown_02_diff_1k.jpg", "leafy_grass_diff_1k.jpg"
-          ];
-          for (const name of expected) {
-            const path = `${dir}/${name}`;
-            const bytes = await readFile(path);
-            if (bytes.length < 1024 || bytes[0] !== 255 || bytes[1] !== 216 || bytes[2] !== 255)
-              throw new Error(`Invalid or missing JPEG: ${path}`);
-            console.log(`OK ${name} (${(bytes.length / 1024).toFixed(1)} KiB)`);
-          }
-          NODE
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mshin-race-cc0-textures
-          path: assets/textures/*.jpg
-          if-no-files-found: error
-          retention-days: 14
-
-  publish-local-assets:
-    name: Commit verified local texture files on main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: download-and-verify
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm run assets:race-textures
-      - name: Commit verified assets
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          node --input-type=module <<'NODE'
-          import { readFile, writeFile } from "node:fs/promises";
-          const path = "service-worker.js";
-          let source = await readFile(path, "utf8");
-          source = source.replace('const CACHE_NAME = "mshin-arcade-v74";', 'const CACHE_NAME = "mshin-arcade-v75";');
-          const files = ["asphalt_03_diff_1k.jpg","grass_ground_diff_1k.jpg","sand_01_diff_1k.jpg","snow_03_diff_1k.jpg","rocky_terrain_02_diff_1k.jpg","concrete_floor_02_diff_1k.jpg","bark_brown_02_diff_1k.jpg","leafy_grass_diff_1k.jpg"];
-          const entries = files.map(name => `"./assets/textures/${name}"`).join(", ");
-          const anchor = '"./src/race-renderer-3d.js",';
-          if (!source.includes(anchor)) throw new Error("service worker race renderer entry not found");
-          if (!source.includes(entries)) source = source.replace(anchor, anchor + " " + entries + ",");
-          await writeFile(path, source);
-          NODE
-          git add assets/textures/*.jpg service-worker.js
-          if git diff --cached --quiet; then
-            echo "Local race textures are already current."
-            exit 0
-          fi
-          git commit -m "assets(racing): vendor Poly Haven CC0 surface textures"
-          git push origin main

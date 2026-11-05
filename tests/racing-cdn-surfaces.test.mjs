@@ -6,14 +6,16 @@ const renderer=fs.readFileSync(new URL("../src/race-renderer-3d.js",import.meta.
 const pbr=fs.readFileSync(new URL("../src/vehicle-pbr.js",import.meta.url),"utf8");
 const credits=fs.readFileSync(new URL("../src/racing/ENVIRONMENT_ASSET_CREDITS.md",import.meta.url),"utf8");
 
-test("race renderer prefers local real Poly Haven CC0 surfaces with official CDN fallback",()=>{
- for(const key of ["asphalt","grass","sand","snow","rock","concrete","bark","foliage"]){
-  assert.match(renderer,new RegExp(key+':\\{local:"\\.\\/assets\\/textures\\/'));
-  assert.match(renderer,new RegExp(key+':\\{local:[^}]+fallback:"https://dl\\.polyhaven\\.org/file/ph-assets/Textures/jpg/1k/'));
- }
- assert.match(renderer,/crossOrigin="anonymous"/);
- assert.match(renderer,/image\.onerror/);
- assert.match(renderer,/surfaceTextures\.loaded\+\+/);
+test("race renderer uses only committed local CC0 textures with procedural fallback",()=>{
+ const expected={
+  asphalt:"asphalt_03_diff_1k.jpg",grass:"grass_ground_diff_1k.jpg",sand:"sand_01_diff_1k.jpg",snow:"snow_03_diff_1k.jpg",
+  rock:"rocky_terrain_02_diff_1k.jpg",concrete:"concrete_floor_02_diff_1k.jpg",bark:"bark_brown_02_diff_1k.jpg",foliage:"leafy_grass_diff_1k.jpg"
+ };
+ for(const [key,file] of Object.entries(expected)) assert.ok(renderer.includes(key+':"../assets/textures/'+file+'"'));
+ assert.match(renderer,/new URL\(source,import\.meta\.url\)\.href/);
+ assert.match(renderer,/sourceCounts:\{local:0\}/);
+ assert.match(renderer,/state\.surfaceTextures\.loaded\+\+/);
+ assert.doesNotMatch(renderer,/https?:\/\/dl\.polyhaven\.org|source\.fallback|sourceCounts\.cdn/);
  assert.match(renderer,/texture:surfaceKey\?surfaceTextures\.get\(surfaceKey\)/);
 });
 
@@ -22,18 +24,16 @@ test("non-urban roadside house roofs emit valid three-vertex faces",()=>{
  assert.match(renderer,/tri\(roof,\[x\+w\/2\+7,eave,z\+d\/2\+7\],\[x-w\/2-7,eave,z\+d\/2\+7\],\[x,peak,z\+d\/2\+7\]\)/);
 });
 
-test("optional CDN textures have bounded mobile loading and preserve fallback rendering",()=>{
+test("local texture loading is bounded and procedural fallback survives network-free startup",()=>{
  assert.match(renderer,/6500/);
- assert.match(renderer,/Texture timed out/);
+ assert.match(renderer,/Local texture timed out/);
  assert.match(renderer,/createProceduralSurfacePixels\(key,fallbackSize\)/);
  assert.match(renderer,/const fallbackSize=128/);
- assert.match(renderer,/palettes=\{asphalt:\[74,78,80\],grass:\[91,137,57\]/);
  assert.match(renderer,/gl\.generateMipmap\(gl\.TEXTURE_2D\)/);
- assert.match(renderer,/navigator\.connection\?\.saveData/);
- assert.match(renderer,/softwareRenderer\|\|navigator\.connection/);
  assert.match(renderer,/rendererDestroyed\|\|lost\|\|generation!==surfaceLoadGeneration/);
  assert.match(renderer,/surfaceImages\.clear\(\)/);
  assert.match(renderer,/gl\.deleteTexture\(texture\)/);
+ assert.doesNotMatch(renderer,/navigator\.connection\?\.saveData|softwareRenderer\|\|navigator\.connection/);
 });
 
 test("race ground plane faces upward and remains inside the camera far plane",()=>{
@@ -87,8 +87,11 @@ test("race surfaces wind upward and correct downward horizontal face normals def
  assert.match(renderer,/if\(Math\.abs\(ny\)>\.65&&ny<0\)\{nx=-nx;ny=-ny;nz=-nz;\}/);
 });
 
-test("local CC0 race texture downloader and offline precache are declared",()=>{
- const downloader=fs.readFileSync(new URL("../scripts/download-race-textures.mjs",import.meta.url),"utf8");
- for(const name of ["asphalt_03","grass_ground","sand_01","snow_03","rocky_terrain_02","concrete_floor_02","bark_brown_02","leafy_grass"]) assert.ok(downloader.includes(name));
- assert.match(credits,/npm run assets:race-textures/);
+test("local CC0 race texture verifier never downloads external files",()=>{
+ const verifier=fs.readFileSync(new URL("../scripts/verify-race-textures.mjs",import.meta.url),"utf8");
+ for(const name of ["asphalt_03_diff_1k.jpg","grass_ground_diff_1k.jpg","sand_01_diff_1k.jpg","snow_03_diff_1k.jpg","rocky_terrain_02_diff_1k.jpg","concrete_floor_02_diff_1k.jpg","bark_brown_02_diff_1k.jpg","leafy_grass_diff_1k.jpg"]) assert.ok(verifier.includes(name));
+ assert.ok(!verifier.includes("https://")&&!verifier.includes("fetch(")&&!verifier.includes("http.get"));
+ assert.match(credits,/assets\/textures\//);
+ assert.match(credits,/same-origin URLs/);
+ assert.doesNotMatch(renderer,/https?:\/\/dl\.polyhaven\.org/);
 });

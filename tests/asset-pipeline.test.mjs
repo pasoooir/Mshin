@@ -80,10 +80,11 @@ test("service worker precaches every browser runtime dependency for offline game
 });
 test("service worker precaches all vector art before offline races", async () => {
   const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
-  assert.match(sw, /mshin-arcade-v74/);
+  assert.match(sw, /mshin-arcade-v76/);
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
+  for (const asset of ["./vendor/three/build/three.module.min.js", "./vendor/three/build/three.core.min.js", "./vendor/three/examples/jsm/controls/OrbitControls.js", "./vendor/three/examples/jsm/loaders/GLTFLoader.js", "./vendor/three/examples/jsm/utils/BufferGeometryUtils.js", "./vendor/three/LICENSE", "./assets/textures/asphalt_03_diff_1k.jpg", "./assets/textures/grass_ground_diff_1k.jpg", "./assets/textures/sand_01_diff_1k.jpg", "./assets/textures/snow_03_diff_1k.jpg", "./assets/textures/rocky_terrain_02_diff_1k.jpg", "./assets/textures/concrete_floor_02_diff_1k.jpg", "./assets/textures/bark_brown_02_diff_1k.jpg", "./assets/textures/leafy_grass_diff_1k.jpg"]) assert.ok(sw.includes(asset), `${asset} must be precached`);
   for (const module of ["vehicle-pbr.js", "rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...manifest.sounds]) assert.ok(sw.includes(asset.src), asset.src + " must be precached");
 });
@@ -211,7 +212,7 @@ test("all app cache and asset version markers are advanced together", async () =
   const pwa = JSON.parse(await readFile(path.join(root, "manifest.webmanifest"), "utf8"));
   const cocos = JSON.parse(await readFile(path.join(root, "assets/resources/vector-art.json"), "utf8"));
   const readme = await readFile(path.join(root, "README.md"), "utf8");
-  assert.match(sw, /mshin-arcade-v74/);
+  assert.match(sw, /mshin-arcade-v76/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
   assert.equal(manifest.version, "2026.11.03.02");
   assert.equal(pkg.version, "0.15.4");

@@ -1,5 +1,3 @@
-const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-const THREE_FALLBACK_CDN = "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { createHighGfxBuilding } from "./city-building-high-gfx.js";
 import { CITY_TILE_METERS, cityTileToWorld, worldToCityTile } from "./city-world-scale.js";
 import { createCityAtmosphere } from "./city-atmosphere.js";
@@ -15,14 +13,8 @@ const ACTIVE_SIZE = 32;
 const isRoadCell = value => (value % 8 === 7 || value % 8 === 0) && value !== 0 && value !== 16 && value !== 47 && value !== 63;
 const isActiveCell = (x, y) => x >= ACTIVE_START && x < ACTIVE_END && y >= ACTIVE_START && y < ACTIVE_END;
 export async function createCityThreeRenderer(sourceCanvas) {
-  let THREE;
-  try { THREE = await import(THREE_CDN); }
-  catch (primaryError) {
-    try { THREE = await import(THREE_FALLBACK_CDN); }
-    catch (fallbackError) {
-      throw new Error("Three.js could not load from either configured CDN: " + primaryError.message + " | " + fallbackError.message);
-    }
-  }
+  // Load the committed Three.js build from this GitHub Pages repository.
+  const THREE = await import("../../vendor/three/build/three.module.min.js");
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: false,
