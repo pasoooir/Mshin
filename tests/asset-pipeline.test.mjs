@@ -84,6 +84,7 @@ test("service worker precaches all vector art before offline races", async () =>
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.doesNotMatch(sw, /https?:\/\/|mshin-audio-assets-v1|opengameart\.org|sfxmint\.com|cdn\.jsdelivr\.net/, "service worker must not use third-party runtime endpoints");
   assert.match(sw, /src\/tire-physics\.js/);
+  for (const asset of ["./vendor/three/build/three.module.min.js", "./vendor/three/build/three.core.min.js", "./vendor/three/examples/jsm/controls/OrbitControls.js", "./vendor/three/examples/jsm/loaders/GLTFLoader.js", "./vendor/three/examples/jsm/utils/BufferGeometryUtils.js", "./vendor/three/LICENSE"]) assert.ok(sw.includes(asset), `${asset} must be precached`);
   for (const module of ["vehicle-pbr.js", "rigid-body-physics.js", "traffic-ai.js", "vehicle-destruction.js"]) assert.ok(sw.includes(`./src/${module}`), `${module} must be available offline`);
   for (const asset of [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...manifest.sounds]) assert.ok(sw.includes(asset.src), asset.src + " must be precached");
 });
