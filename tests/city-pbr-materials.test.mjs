@@ -59,6 +59,7 @@ test("city visual identity uses a muted architectural palette and reports PBR ac
   for (const metric of ["drawCalls", "renderedTriangles", "renderedPoints", "renderedLines", "geometryCount", "textureCount"]) {
     assert.ok(renderer.includes(metric), "renderer must expose " + metric + " for performance diagnostics");
   }
+  assert.ok(renderer.includes("buildingMeshCountsByType"), "renderer must break building mesh counts down by type");
   for (const metric of ["buildingMeshCount", "buildingInstancedMeshCount", "buildingUniqueGeometryCount", "buildingUniqueMaterialCount"]) {
     assert.ok(renderer.includes(metric), "renderer must expose building complexity metric " + metric);
   }
