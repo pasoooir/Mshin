@@ -56,5 +56,5 @@ test("terrain, road and building meshes receive distinct texture families",()=>{
  assert.match(renderer,/\[buildings,urban\?"#5c4d85":"#747b82",0,"concrete"\]/);assert.match(renderer,/\[treeTrunks,"#70533b",0,"bark"\]/);assert.match(renderer,/\[treeFoliage,theme\[3\],0,"foliage"\]/);
  assert.match(credits,/original procedural algorithms/);
  assert.match(credits,/Project original work/);
- assert.match(credits,/Three\\.js 0\\.180\\.0/);
+ assert.ok(credits.includes("Three.js 0.180.0"));
 });
