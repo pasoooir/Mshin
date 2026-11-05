@@ -44,7 +44,7 @@ export function stepCity(city,seconds=1){
  const occupiedResidents=homes.reduce((sum,home)=>sum+Math.max(0,Number(home.residents)||0),0);
  city.stats={income:economy.income,expenses:economy.expenses,net:economy.net,taxRevenue:economy.taxRevenue,maintenance:economy.maintenance,serviceUpkeep:economy.serviceUpkeep,jobs:employment.jobs,laborForce:employment.laborForce,employed:employment.employed,unemployed:employment.unemployed,vacancies:employment.vacancies,unemploymentRate:employment.unemploymentRate,employmentDemand:employment.demandIndex,commutingWorkers:commuting.assignedWorkers,commuteCoverage:commuting.commuteCoverage,averageCommuteDistance:commuting.averageCommuteDistance,averageCongestionDelay:commuting.averageCongestionDelay??0,commuteProductivityPercent:economy.commuteProductivityPercent,commuteEconomicLoss:economy.commuteEconomicLoss,unreachableWorkers:commuting.unreachableWorkers,traffic:Math.min(100,Math.round(city.traffic.length*3+shops.length*1.4+industrial.length*2)),utilityCoverage:infrastructure.utilityCoverage,publicServiceCoverage:infrastructure.publicServiceCoverage,overallCoverage:infrastructure.overallCoverage,serviceCoverage:infrastructure.coverage,serviceDemandCoverage:infrastructure.demandCoverage,serviceCapacityUsage:infrastructure.capacityUsage,residentServiceSatisfaction};
  city.treasury+=economy.net;if(city.tick%12===0&&homes.length&&city.population<homes.length*25)city.population++;
- syncCityCitizens(activeCity);stepCityCitizens(activeCity,seconds,city._commuteAssignments||[]);
+ syncCityCitizens(city);stepCityCitizens(city,seconds,city._commuteAssignments||[]);
  const serviceScore=occupiedResidents>0?residentServiceSatisfaction/100:(infrastructure.utilityCoverage*.6+infrastructure.publicServiceCoverage*.4)/100;
  city.happiness=Math.max(25,Math.min(98,city.happiness+(serviceScore-.35)*.08+(parks.length>2?.05:0)-cityTaxPressure(city.taxRates)-employment.unemploymentRate*.0003-Math.min(.015,(city.stats.averageCongestionDelay||0)*.0001)));
  
@@ -61,7 +61,7 @@ export function placeCityItem(city,x,y,type,constructionDuration=0){
  if(type!=="road"&&!roadNear(city.grid,x,y))return{ok:false,reason:"ساختمان باید به خیابان دسترسی داشته باشد"};
  city.treasury-=COST[type];if(type==="road"){city.grid[y][x]="road";return{ok:true,item:"road",cost:COST.road}};
  const residents=type==="home"?12:0,duration=Number.isFinite(constructionDuration)?Math.max(0,constructionDuration):0,b={id:city.nextBuildingId++,type,x,y,level:1,age:0,residents,...(duration>0?{construction:{duration,remaining:duration,startedAt:city.tick||0}}:{})};
- city.grid[y][x]="building";city.buildings.push(b);if(!b.construction)city.population+=residents;syncCityCitizens({...city,buildings:city.buildings.filter(building=>!building.construction)});return{ok:true,item:b,cost:COST[type]};
+ city.grid[y][x]="building";city.buildings.push(b);if(!b.construction)city.population+=residents;syncCityCitizens(city);return{ok:true,item:b,cost:COST[type]};
 }
 export function projectCityTile(x,y,w=32,h=16){return{x:(x-y)*w/2,y:(x+y)*h/2}}
 function load(){
