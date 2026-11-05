@@ -199,6 +199,14 @@ try {
     }), errors.slice(-12));
     throw new Error("mobile WebGL renderer did not reach a stable frame state: " + JSON.stringify(diagnostic) + " | " + error.message);
   });
+  await mobile.waitForFunction(() => window.Mshin3DRenderer?.cameraTrackFollowing === true, undefined, { timeout: 5000 });
+  const cameraFollowMetrics = await mobile.evaluate(() => ({
+    following: window.Mshin3DRenderer?.cameraTrackFollowing,
+    lookAheadT: window.Mshin3DRenderer?.cameraLookAheadT,
+    behindT: window.Mshin3DRenderer?.cameraBehindT
+  }));
+  assert.equal(cameraFollowMetrics.following, true, "mobile race camera must follow the actual curved circuit");
+  assert.ok(cameraFollowMetrics.lookAheadT > cameraFollowMetrics.behindT, "mobile chase camera must look ahead along the circuit, not along a straight tangent");
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.trackBuildProgress === 1, undefined, { timeout: 20000 }).catch(async error => {
     const progress = await mobile.evaluate(() => ({ progress: window.Mshin3DRenderer?.trackBuildProgress, environment: window.Mshin3DRenderer?.environmentCounts, frames: window.Mshin3DRenderer?.frames }));
     throw new Error("mobile race terrain and environment did not finish building: " + JSON.stringify(progress) + " | " + error.message);
