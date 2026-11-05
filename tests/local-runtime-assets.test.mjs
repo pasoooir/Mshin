@@ -63,6 +63,8 @@ test("Three.js and all city addons are committed locally and included in offline
     assert.ok(info.isFile() && info.size > 0, relative + " must be non-empty");
     assert.ok(sw.includes("./" + relative), relative + " must be precached");
   }
+  assert.match(threeModule, /from"\.\/three\.core\.min\.js"/);
+  assert.match(threeCore, /const t="180"/);
   assert.match(cityRenderer, /import\("\.\.\/\.\.\/vendor\/three\/build\/three\.module\.min\.js"\)/);
   assert.doesNotMatch(cityRenderer, /cdn\.jsdelivr\.net|unpkg\.com/);
   assert.match(preview, /"three":"\.\/vendor\/three\/build\/three\.module\.min\.js"/);
