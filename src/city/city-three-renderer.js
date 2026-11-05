@@ -356,7 +356,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   function updateBuildings(city) {
     const desired = new Map(city.buildings.map((item, index) => {
       const key = String(item.id ?? `index-${index}`);
-      return [key, { item, signature: [item.id, item.type, item.x, item.y, item.level, item.construction?.duration ?? 0, item.construction?.remaining ?? 0].join(":") }];
+      return [key, { item, signature: [item.id, item.type, item.x, item.y, item.level, Boolean(item.construction), item.construction?.duration ?? 0].join(":") }];
     }));
     const nextSignature = JSON.stringify([...desired].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => [key, value.signature]));
     if (nextSignature === buildingSignature) return;
