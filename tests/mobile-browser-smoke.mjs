@@ -184,7 +184,7 @@ try {
     throw new Error("mobile race countdown did not complete: " + JSON.stringify(countdownState) + " | " + error.message);
   });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 }).catch(async error => {
-    const diagnostic = await mobile.evaluate(() => ({
+    const diagnostic = await mobile.evaluate(pageErrors => ({
       renderer: window.Mshin3DRenderer ? {
         status: window.Mshin3DRenderer.status,
         error: window.Mshin3DRenderer.error,
@@ -195,8 +195,8 @@ try {
       } : null,
       canvas: { width: document.querySelector("#game3d")?.width, height: document.querySelector("#game3d")?.height },
       bodyClass: document.body.className,
-      pageErrors: errors.slice(-12),
-    }));
+      pageErrors,
+    }), errors.slice(-12));
     throw new Error("mobile WebGL renderer did not reach a stable frame state: " + JSON.stringify(diagnostic) + " | " + error.message);
   });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.trackBuildProgress === 1, undefined, { timeout: 20000 }).catch(async error => {
