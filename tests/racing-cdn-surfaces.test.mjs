@@ -66,6 +66,10 @@ test("terrain, road and building meshes receive distinct texture families",()=>{
  assert.match(credits,/Poly Haven/);
 });
 
+test("WebGL shader warmup restores the full canvas viewport before scene rendering",()=>{
+ assert.match(renderer,/gl\.viewport\(0,0,1,1\);gl\.drawArrays\(gl\.TRIANGLES,0,3\);gl\.finish\(\);[\\s\\S]*?gl\.viewport\(0,0,canvas\.width,canvas\.height\);/);
+});
+
 test("race surfaces wind upward and correct downward horizontal face normals defensively",()=>{
  assert.match(renderer,/quad\(roadTris,l0,r0,r1,l1\)/);
  assert.match(renderer,/quad\(shoulderTris,sl0,l0,l1,sl1\)/);
