@@ -90,7 +90,7 @@ test("race surfaces wind upward and correct downward horizontal face normals def
 test("local CC0 race texture verifier never downloads external files",()=>{
  const verifier=fs.readFileSync(new URL("../scripts/verify-race-textures.mjs",import.meta.url),"utf8");
  for(const name of ["asphalt_03_diff_1k.jpg","grass_ground_diff_1k.jpg","sand_01_diff_1k.jpg","snow_03_diff_1k.jpg","rocky_terrain_02_diff_1k.jpg","concrete_floor_02_diff_1k.jpg","bark_brown_02_diff_1k.jpg","leafy_grass_diff_1k.jpg"]) assert.ok(verifier.includes(name));
- assert.doesNotMatch(verifier,/https?:\\/\\/|fetch\\(|https?\.get/);
+ assert.ok(!verifier.includes("https://")&&!verifier.includes("fetch(")&&!verifier.includes("http.get"));
  assert.match(credits,/assets\/textures\//);
  assert.match(credits,/same-origin URLs/);
  assert.doesNotMatch(renderer,/https?:\/\/dl\.polyhaven\.org/);
