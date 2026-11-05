@@ -173,7 +173,7 @@ function loadSurfaceTexture(key,url){
  function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
  function* buildTrack(snapshot){
   const nextDecor=[];
-  const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
+  const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],yellowTris=[],curbRedTris=[],curbWhiteTris=[],groundTris=[];
   const terrainTexture=["grass","sand","snow","grass","rock","rock","grass","sand","rock","grass"][snapshot.world||0]||"grass";
   const segments=mobile?280:softwareRenderer?360:760,half=180;
   // Keep the playable terrain inside the camera far plane and wind its triangles upward.
@@ -186,11 +186,15 @@ function loadSurfaceTexture(key,url){
    const l0=point(fa,-half),r0=point(fa,half),l1=point(fb,-half),r1=point(fb,half);
    const sl0=point(fa,-half-26,-.04),sr0=point(fa,half+26,-.04),sl1=point(fb,-half-26,-.04),sr1=point(fb,half+26,-.04);
    quad(roadTris,l0,l1,r1,r0);quad(shoulderTris,sl0,sl1,l1,l0);quad(shoulderTris,r0,r1,sr1,sr0);
-   for(const offset of [-90,0,90]){const width=offset===0?2.5:1.5;const p0=point(fa,offset-width,.012),q0=point(fa,offset+width,.012),p1=point(fb,offset-width,.012),q1=point(fb,offset+width,.012);if(offset!==0&&i%3!==0)continue;quad(laneTris,p0,p1,q1,q0)}
+   // Continuous white edge lines, twin dashed yellow centre lines and alternating kerbs.
+   for(const offset of [-158,158]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,p1,q1,q0)}
+   if(i%2===0)for(const offset of [-5,5]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,p1,q1,q0)}
+   const curbSide=(side,out)=>{const p0=point(fa,side*168,.026),q0=point(fa,side*180,.026),p1=point(fb,side*168,.026),q1=point(fb,side*180,.026);quad(out,p0,p1,q1,q0)};
+   curbSide(-1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris);curbSide(1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris);
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
    quad(groundTris,outerL,outerL1,outerR1,outerR);
   }
-  const nextRoad=part(roadTris,theme[1],0,"environment","asphalt");nextDecor.push(part(shoulderTris,theme[2],0,"environment","concrete"),part(laneTris,"#e8e9e5"),part(groundTris,theme[0],0,"environment",terrainTexture));
+  const nextRoad=part(roadTris,theme[1],0,"environment","asphalt");nextDecor.push(part(shoulderTris,theme[2],0,"environment","concrete"),part(laneTris,"#f4f3e9"),part(yellowTris,"#f5c928",.015),part(curbRedTris,"#d94337"),part(curbWhiteTris,"#f1eee4"),part(groundTris,theme[0],0,"environment",terrainTexture));
   yield {parts:[nextRoad,...nextDecor],progress:.34};
   state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?18:softwareRenderer?22:48,buildingCount=mobile?8:softwareRenderer?12:22;
