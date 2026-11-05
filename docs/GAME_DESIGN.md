@@ -28,7 +28,7 @@ Arcade handling with acceleration, braking, speed-sensitive steering, lateral gr
 10. Ultimate Championship — #f06f68, #f7d66d, #4b74b9.
 
 ## CDN strategy
-Original SVG previews live in this repository and are delivered by GitHub Pages and jsDelivr. Example: https://cdn.jsdelivr.net/gh/pasoooir/Mshin@main/cdn/previews/stage-01.svg . Pin production URLs to a release tag or commit SHA. Gameplay assets must be bundled locally; CDN is optional and never required to launch or play. Cloudflare R2 is not used. Third-party assets require a recorded source and license.
+All previews and gameplay assets are stored in this repository and served from GitHub Pages using same-origin relative paths. No third-party CDN is required at runtime. Gameplay assets must be bundled locally; offline support is provided by the service worker. Cloudflare R2 is not used. Third-party assets require a recorded source and license.
 
 ## Technology
 Cocos Creator 3.8.x and TypeScript. Planned systems: GameManager, StageManager, CarController, TouchInput, TrackCollision, RaceManager, SaveManager and ThemeLoader.
