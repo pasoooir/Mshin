@@ -86,6 +86,24 @@ try{
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
  assert.equal(renderStats.streetFurniturePlacementReady,true,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
+ const constructionAcceptance=await page.evaluate(()=>{
+  const placed=window.MshinCity.place(17,14,"home");
+  window.MshinCity.draw();
+  const start=window.MshinCity3DStats;
+  for(let i=0;i<18;i++)window.MshinCity.step();
+  window.MshinCity.draw();
+  const frame=window.MshinCity3DStats;
+  for(let i=0;i<27;i++)window.MshinCity.step();
+  window.MshinCity.draw();
+  const finish=window.MshinCity3DStats;
+  return {placed,startSites:start.constructionSites,startStages:start.constructionStageLabels,frameStages:frame.constructionStageLabels,finishSites:finish.constructionSites,completed:finish.completedBuildings};
+ });
+ assert.equal(constructionAcceptance.placed.ok,true,"mobile player placement must commit on a valid empty plot");
+ assert.equal(constructionAcceptance.startSites,1,"a newly placed building must appear as a construction site, not a finished model");
+ assert.ok(constructionAcceptance.startStages.includes("آماده‌سازی زمین"),"the first construction stage must be visible");
+ assert.ok(constructionAcceptance.frameStages.includes("اسکلت و ستون‌ها"),"the steel-frame stage must replace ground preparation");
+ assert.equal(constructionAcceptance.finishSites,0,"construction visuals must disappear after the timer completes");
+ assert.ok(constructionAcceptance.completed>=1,"the finished building must replace the construction site after 45 seconds");
  assert.ok(renderStats.sidewalkStrips>0,"road edges must render instanced pedestrian sidewalks inside the right-of-way");
  assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
  assert.equal(renderStats.roadTiles,348,"the complete road grid must be rendered in 3D");
