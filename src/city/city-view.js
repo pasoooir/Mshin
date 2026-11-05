@@ -17,7 +17,7 @@ const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b
 export function createInitialCity(seed=20261102){
  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill("grass"));
  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if([7,8,15,16,23,24].includes(x)||[7,8,15,16,23,24].includes(y))grid[y][x]="road";
- return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:720,treasury:124500,population:0,happiness:100,taxRates:{...CITY_DEFAULT_TAX_RATES},grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,net:0,taxRevenue:0,maintenance:0,serviceUpkeep:0,jobs:0,traffic:0}};
+ return {schemaVersion:2,cityId:"mshin-green-valley",name:"دره سبز",seed:seed>>>0,tick:0,minuteOfDay:360,treasury:124500,population:0,happiness:100,taxRates:{...CITY_DEFAULT_TAX_RATES},grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,net:0,taxRevenue:0,maintenance:0,serviceUpkeep:0,jobs:0,traffic:0}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
