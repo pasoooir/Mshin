@@ -541,7 +541,10 @@ try{
   await deniedFullscreenPage.locator("#cityEnterLandscape").click();
   await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.fullscreenRequested===true,undefined,{timeout:5000});
   await deniedFullscreenPage.setViewportSize({width:844,height:390});
-  await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.entered===true&&document.querySelector("#cityOrientationGate").hidden,undefined,{timeout:5000});
+  await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.entered===true&&document.querySelector("#cityOrientationGate").hidden,undefined,{timeout:10000}).catch(async error=>{
+   const diagnostic=await deniedFullscreenPage.evaluate(()=>({debug:window.__mshinCityEntryDebug,hidden:document.querySelector("#cityOrientationGate")?.hidden,orientation:document.documentElement.dataset.cityOrientation,viewport:{width:innerWidth,height:innerHeight},mediaLandscape:matchMedia("(orientation: landscape)").matches,fullscreen:!!document.fullscreenElement}));
+   throw new Error("denied-fullscreen landscape fallback did not complete: "+JSON.stringify(diagnostic)+"; "+error.message);
+  });
   const deniedFallback=await deniedFullscreenPage.evaluate(()=>({fallback:window.__mshinCityEntryDebug.fullscreenFallback,hidden:document.querySelector("#cityOrientationGate").hidden,mode:document.documentElement.dataset.cityOrientation}));
   assert.equal(deniedFallback.mode,"landscape","denied-fullscreen fixture must finish in landscape");
   assert.equal(deniedFallback.hidden,true,"landscape play must proceed after fullscreen permission is denied");
