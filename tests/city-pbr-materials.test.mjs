@@ -45,6 +45,7 @@ test("residential roof silhouette is a rectangular two-slope gable, not a pyrami
 test("building updates preserve unchanged groups and rebuild only changed ids", () => {
   assert.ok(renderer.includes("const buildingObjects = new Map()"));
   assert.ok(renderer.includes("const desired = new Map(city.buildings.map"));
+  assert.ok(renderer.includes("JSON.stringify([...desired].sort(([a], [b]) => a.localeCompare(b))"), "building signatures must not rebuild on array ordering alone");
   assert.ok(renderer.includes("if (wanted && wanted.signature === current.signature) continue"));
   assert.ok(renderer.includes("if (buildingObjects.has(key)) continue"));
   assert.ok(renderer.includes("buildings.remove(current.group)"));
