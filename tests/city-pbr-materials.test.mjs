@@ -10,6 +10,8 @@ const streets = await readFile(new URL("../src/city/city-street-renderer.js", im
 
 test("city surfaces use layered tileable albedo, normal and roughness maps", () => {
   assert.ok(textures.includes("function makePbrSurface(THREE, renderer, kind, base, seed)"));
+  assert.ok(textures.includes("const size = compactDevice ? 256 : 512"), "mobile PBR maps must use a lower-cost resolution");
+  assert.ok(textures.includes("compactDevice ? 4 : 8"), "mobile texture anisotropy must be capped");
   for (const family of ["grass", "asphalt", "brick", "concrete", "roof", "sidewalk"]) {
     assert.ok(textures.includes('makePbrSurface(THREE, renderer, "' + family + '"'), family + " texture family must exist");
   }
