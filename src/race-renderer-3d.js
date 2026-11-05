@@ -154,7 +154,10 @@ export function createRaceRenderer(canvas){
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],groundTris=[];
   const terrainTexture=["grass","sand","snow","grass","rock","rock","grass","sand","rock","grass"][snapshot.world||0]||"grass";
   const segments=mobile?280:softwareRenderer?360:760,half=180;
-  quad(groundTris,[-65000,-40,-65000],[65000,-40,-65000],[65000,-40,65000],[-65000,-40,65000]);
+  // Keep the playable terrain inside the camera far plane and wind its triangles upward.
+  // The previous 130 km quad had downward-facing normals and corners beyond the
+  // 60 km far plane, so mobile GPUs could clip/darken the entire ground surface.
+  quad(groundTris,[-30000,-40,-30000],[-30000,-40,30000],[30000,-40,30000],[30000,-40,-30000]);
   for(let i=0;i<segments;i++){
    const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,(f.height||0)+y,-(f.p.y+f.ny*offset)];
