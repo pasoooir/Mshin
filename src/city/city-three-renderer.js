@@ -73,9 +73,12 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getFoliageMaterials: () => canopyMaterials
   });
   const cloudLayer = createCityCloudLayer(THREE, { scene, camera });
+  const pbrGenerationStartedAt = performance.now();
   const {
     grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface
   } = createCityPbrSurfaces(THREE, renderer);
+  const pbrGenerationMs = performance.now() - pbrGenerationStartedAt;
+  const pbrTextureResolution = grassSurface.map.image?.width || 0;
   const backgroundSkyline = createCityBackgroundSkyline(THREE, scene, concreteSurface, brickSurface, windowMaterials);
   const grassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, roughness: 0.96, normalScale: new THREE.Vector2(0.32, 0.32) });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#dce8c7", roughness: 0.98, normalScale: new THREE.Vector2(0.28, 0.28) });
@@ -451,6 +454,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         version: THREE.REVISION,
         visualStyle: "realistic-pbr-city",
         proceduralTextures: 6,
+        pbrTextureResolution,
+        pbrGenerationMs: Math.round(pbrGenerationMs * 100) / 100,
         pbrMaterialSets: 6,
         normalMappedSurfaces: 6,
         roughnessMappedSurfaces: 6,
