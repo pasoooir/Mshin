@@ -38,6 +38,15 @@ try{
  assert.match(viewportMeta,/viewport-fit=cover/,"city must opt into safe-area-aware mobile viewport sizing");
  const initialVisualViewport=await page.evaluate(()=>({width:visualViewport.width,height:visualViewport.height}));
  assert.ok(Math.abs(initialVisualViewport.width-844)<=1&&Math.abs(initialVisualViewport.height-390)<=1,"city must start sized to the visible landscape viewport");
+ const landscapeHud=await page.evaluate(()=>{
+  const box=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+  return {viewport:{width:innerWidth,height:innerHeight},brand:box(".cityBrand"),actions:box(".cityActions"),metrics:box(".cityMetrics")};
+ });
+ assert.ok(landscapeHud.brand.width>0&&landscapeHud.actions.width>0&&landscapeHud.metrics.width>0,"landscape HUD sections must be laid out");
+ assert.ok(landscapeHud.brand.right<=landscapeHud.actions.left+1||landscapeHud.actions.right<=landscapeHud.brand.left+1,"brand and action buttons must not overlap in landscape");
+ assert.ok(landscapeHud.metrics.top>=Math.min(landscapeHud.brand.bottom,landscapeHud.actions.bottom)-1,"city metrics must occupy their own row below the brand/actions row");
+ assert.ok(landscapeHud.metrics.left>=0&&landscapeHud.metrics.right<=landscapeHud.viewport.width,"all seven city metrics must remain inside the landscape viewport");
+
  await page.setViewportSize({width:780,height:360});
  await page.waitForFunction(()=>Math.abs(parseFloat(document.querySelector("#cityViewport").style.width)-visualViewport.width)<=1
   &&Math.abs(parseFloat(document.querySelector("#cityViewport").style.height)-visualViewport.height)<=1,undefined,{timeout:5000});
@@ -72,7 +81,7 @@ try{
  assert.ok(renderStats.backgroundCityBuildings>=70,"the playable district must sit inside a large 3D urban skyline");
  assert.ok(renderStats.backgroundCityWindows>1000,"distant high-rise facades must carry instanced four-sided windows");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
- assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۴"),"the city UI must expose the deployed version");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۵"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
