@@ -131,7 +131,7 @@ try{
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
 
  // The same 3D scene must respond to the deterministic simulation clock.
- const nightLighting=await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw();return window.MshinCity3DStats.lighting});
+ const nightLighting=await page.evaluate(()=>{window.MshinCityDebug.pause();window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw();return window.MshinCity3DStats.lighting});
  assert.equal(nightLighting.phase,"night","midnight must activate the night lighting state");
  assert.ok(nightLighting.daylight<=0.1,"night lighting must suppress direct daylight to at most a 10% twilight residual");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"night must display the moon and hide the sun");
@@ -144,6 +144,7 @@ try{
  assert.notEqual(nightLighting.skyColor,noonLighting.skyColor,"the visible sky color must change between night and day");
  assert.ok(noonLighting.windowGlow<0.1,"building window glow must be subdued during daytime");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),0,"day scene must hide stars");
+ await page.evaluate(()=>window.MshinCityDebug.resume());
  // Render a non-persistent asset showcase containing every current city building
  // family, then orbit the same real WebGL scene through a complete 360 degrees.
  const objectShowcase=await page.evaluate(()=>{
