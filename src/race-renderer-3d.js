@@ -67,9 +67,10 @@ export function calculateRaceCameraPose(frameAt,t,lateral=0,mobile=false){
  const behindT=mobile?.028:.03,lookAheadT=mobile?.038:.035;
  const behind=frameAt(t-behindT),ahead=frameAt(t+lookAheadT);
  const offset=(frame)=>[frame.p.x+frame.nx*lateral,-(frame.p.y+frame.ny*lateral)];
+ const behindPoint=offset(behind),aheadPoint=offset(ahead);
  return {
-  eye:[...offset(behind).slice(0,1), (Number.isFinite(behind.height)?behind.height:0)+(mobile?255:235), offset(behind)[1]],
-  target:[...offset(ahead).slice(0,1), (Number.isFinite(ahead.height)?ahead.height:0)+28, offset(ahead)[1]],
+  eye:[behindPoint[0],(Number.isFinite(behind.height)?behind.height:0)+(mobile?255:235),behindPoint[1]],
+  target:[aheadPoint[0],(Number.isFinite(ahead.height)?ahead.height:0)+28,aheadPoint[1]],
   behindT,lookAheadT
  };
 }
