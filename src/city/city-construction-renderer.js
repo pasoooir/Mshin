@@ -209,21 +209,19 @@ export function createCityConstructionRenderer(THREE, parent) {
     }
   }
 
+  function disposeSite(site) {
+    site.traverse(object => object.geometry?.dispose?.());
+    site.userData?.labelTexture?.dispose?.();
+  }
+
   function dispose() {
     for (const site of [...parent.children]) {
       if (!site.userData?.constructionSite) continue;
       parent.remove(site);
-      site.traverse(object => {
-        object.geometry?.dispose?.();
-        if (object.material && !Object.values(shared).includes(object.material)) {
-          if (Array.isArray(object.material)) object.material.forEach(material => material.dispose?.());
-          else object.material.dispose?.();
-        }
-      });
-      site.userData.labelTexture?.dispose?.();
+      disposeSite(site);
     }
     Object.values(shared).forEach(material => material.dispose());
   }
 
-  return { createSite, update, dispose };
+  return { createSite, update, disposeSite, dispose };
 }
