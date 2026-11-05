@@ -40,6 +40,16 @@ test("race ground plane faces upward and remains inside the camera far plane",()
  assert.match(renderer,/perspective\(Math\.PI\/2\.95,canvas\.width\/Math\.max\(1,canvas\.height\),1,60000\)/);
 });
 
+test("race circuit uses professional centre lines, edge lines and alternating red-white kerbs",()=>{
+ assert.match(renderer,/yellowTris=\[\],curbRedTris=\[\],curbWhiteTris=\[\]/);
+ assert.match(renderer,/for\(const offset of \[-158,158\]\)/);
+ assert.match(renderer,/if\(i%2===0\)for\(const offset of \[-5,5\]\)/);
+ assert.match(renderer,/Math\.floor\(i\/4\)%2\?curbWhiteTris:curbRedTris/);
+ assert.match(renderer,/part\(yellowTris,"#f5c928"/);
+ assert.match(renderer,/part\(curbRedTris,"#d94337"\)/);
+ assert.match(renderer,/part\(curbWhiteTris,"#f1eee4"\)/);
+});
+
 test("world-space PBR shader samples scanned textures without requiring UV vertex buffers",()=>{
  assert.match(pbr,/uniform sampler2D uSurfaceTexture/);
  assert.match(pbr,/uniform float uSurfaceEnabled/);
