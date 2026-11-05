@@ -200,8 +200,8 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
   .cityBrand small { display:none; }
   .cityActions { position:fixed; z-index:7; top:max(7px,env(safe-area-inset-top)); right:max(8px,env(safe-area-inset-right)); display:flex; gap:5px; }
   .cityAction { width:42px; height:42px; min-height:42px; padding:0; display:grid; place-items:center; border-radius:50%; font-size:20px; }
-  .cityMetrics { position:fixed; z-index:6; top:max(56px,calc(env(safe-area-inset-top) + 54px)); left:max(8px,env(safe-area-inset-left)); display:flex; flex-direction:column; gap:4px; width:auto; max-width:104px; }
-  .cityMetric { display:grid; grid-template-columns:22px minmax(0,1fr); align-items:center; gap:3px; min-width:0; padding:4px 7px; border-radius:12px; text-align:right; }
+  .cityMetrics { position:fixed; z-index:6; top:max(56px,calc(env(safe-area-inset-top) + 54px)); left:max(58px,calc(env(safe-area-inset-left) + 50px)); right:max(58px,calc(env(safe-area-inset-right) + 50px)); display:flex; flex-direction:row; flex-wrap:nowrap; gap:4px; width:auto; max-width:none; overflow:hidden; }
+  .cityMetric { display:grid; grid-template-columns:18px minmax(0,1fr); align-items:center; gap:2px; flex:1 1 0; min-width:0; padding:4px 5px; border-radius:11px; text-align:right; }
   .cityMetricIcon { display:block; font-size:15px; line-height:1; }
   .cityMetric small { display:none; }
   .cityMetric b { font-size:11px; text-align:left; }
@@ -232,7 +232,7 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
   .cityActions { gap:3px; }
   .cityAction { width:36px; height:36px; min-height:36px; font-size:17px; }
   .cityBrand { width:36px; height:36px; }
-  .cityMetrics { top:50px; }
+  .cityMetrics { top:50px; left:48px; right:48px; gap:3px; }
   .cityMetric { padding:3px 5px; }
   .cityMetric b { font-size:10px; }
   .cityTools .cityTool, .cityToolCategory { width:40px; height:40px; min-width:40px; min-height:40px; font-size:18px; }
