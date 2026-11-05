@@ -402,6 +402,26 @@ export async function createCityThreeRenderer(sourceCanvas) {
     cameraOrbit = transform.orbit;
     cameraPitch = transform.pitch;
   }
+  function getBuildingRenderStats() {
+    let meshCount = 0;
+    let instancedMeshCount = 0;
+    const geometries = new Set();
+    const materials = new Set();
+    buildings.traverse(object => {
+      if (!object.isMesh) return;
+      meshCount++;
+      if (object.isInstancedMesh) instancedMeshCount++;
+      if (object.geometry) geometries.add(object.geometry);
+      if (Array.isArray(object.material)) object.material.forEach(material => materials.add(material));
+      else if (object.material) materials.add(object.material);
+    });
+    return {
+      buildingMeshCount: meshCount,
+      buildingInstancedMeshCount: instancedMeshCount,
+      buildingUniqueGeometryCount: geometries.size,
+      buildingUniqueMaterialCount: materials.size
+    };
+  }
   function render(city, view, cam) {
     updateCamera(cam);
     atmosphere.update(city);
@@ -467,6 +487,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         decorativeStreetLights: decorativeStreetLightCount,
         streetFurniturePlacementReady,
         stylizedBuildings: buildings.children.length,
+        ...getBuildingRenderStats(),
         realisticArchitecture: true,
         trafficVehicles: trafficBodies.count,
         pedestrians: pedestrianBodies.count,
