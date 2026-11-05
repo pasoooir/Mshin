@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(await readFile(path.join(root, "src/asset-manifest.json"), "utf8"));
+const stageCatalog = JSON.parse(await readFile(path.join(root, "data/stages.json"), "utf8"));
 
 test("every runtime asset is stored inside this repository", async () => {
   const assets = [...manifest.worlds, ...manifest.cars, ...manifest.scenes, ...manifest.icons, ...manifest.sounds];
@@ -70,4 +71,18 @@ test("Three.js and all city addons are committed locally and included in offline
   assert.match(preview, /"three":"\.\/vendor\/three\/build\/three\.module\.min\.js"/);
   assert.match(preview, /"three\/addons\/":"\.\/vendor\/three\/examples\/jsm\//);
   assert.doesNotMatch(preview, /cdn\.jsdelivr\.net|unpkg\.com/);
+});
+
+test("all stage previews use same-origin project-relative URLs and are cached offline", async () => {
+  const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
+  assert.equal(stageCatalog.stages.length, 50);
+  for (const stage of stageCatalog.stages) {
+    assert.ok(stage.preview.startsWith("./cdn/previews/"), stage.slug + " must use a project-relative GitHub Pages path");
+    assert.ok(!("cdnUrl" in stage), stage.slug + " must not keep an external CDN URL");
+    const info = await stat(path.join(root, stage.preview));
+    assert.ok(info.isFile() && info.size > 0, stage.preview + " must exist locally");
+    assert.ok(sw.includes('"' + stage.preview + '"'), stage.preview + " must be precached for offline use");
+  }
+  assert.ok(sw.includes('"./data/stages.json"'));
+  assert.ok(sw.includes('"./data/worlds.json"'));
 });
