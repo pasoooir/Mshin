@@ -345,7 +345,7 @@ export function createRaceRenderer(canvas){
    gl.readPixels(0,0,sampleWidth,sampleHeight,gl.RGBA,gl.UNSIGNED_BYTE,samplePixels);
    let visiblePixels=0;const sampledColors=new Set();
    for(let i=0;i<samplePixels.length;i+=4*16){if(samplePixels[i]+samplePixels[i+1]+samplePixels[i+2]>24)visiblePixels++;sampledColors.add((samplePixels[i]>>4)+":"+(samplePixels[i+1]>>4)+":"+(samplePixels[i+2]>>4))}
-   state.lastFramePixelSample={width:sampleWidth,height:sampleHeight,visiblePixels,uniqueColors:sampledColors.size,pixelBytes:samplePixels.byteLength,context:true,glError:gl.getError()};
+   state.lastFramePixelSample={width:sampleWidth,height:sampleHeight,visiblePixels,uniqueColors:sampledColors.size,drawCalls:state.lastFrameDrawCalls,triangles:state.lastFrameTriangles,pixelBytes:samplePixels.byteLength,context:true,glError:gl.getError()};
    state.captureNextFrameSample=false;
   }
   state.frames++;state.stageId=snapshot.stageId;state.playerPosition={x,z};state.camera="perspective-chase";state.lastFrameTriangles=state.triangles;state.maxTrianglesPerFrame=Math.max(state.maxTrianglesPerFrame||0,state.lastFrameTriangles);state.lastFrameDrawCalls=(state.drawPartCount||0)-drawCountAtStart;state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs=performance.now()-rendererStarted);state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs);
