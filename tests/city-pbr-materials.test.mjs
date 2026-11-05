@@ -45,5 +45,7 @@ test("city visual identity uses a muted architectural palette and reports PBR ac
   assert.ok(renderer.includes('visualStyle: "realistic-pbr-city"'));
   assert.ok(renderer.includes("pbrMaterialSets: 6"));
   assert.ok(renderer.includes("normalMappedSurfaces: 6"));
+  assert.ok(renderer.includes("pbrGenerationMs"), "renderer must expose measured PBR generation time");
+  assert.ok(renderer.includes("pbrTextureResolution"), "renderer must expose selected texture resolution");
   assert.ok(!renderer.includes('visualStyle: "vibrant-stylized-3d"'));
 });
