@@ -24,7 +24,10 @@ test("non-urban roadside house roofs emit valid three-vertex faces",()=>{
 test("optional CDN textures have bounded mobile loading and preserve fallback rendering",()=>{
  assert.match(renderer,/6500/);
  assert.match(renderer,/CDN texture timed out/);
- assert.match(renderer,/new Uint8Array\(\[126,126,126,255\]\)/);
+ assert.match(renderer,/createProceduralSurfacePixels\(key,fallbackSize\)/);
+ assert.match(renderer,/const fallbackSize=128/);
+ assert.match(renderer,/palettes=\{asphalt:\[74,78,80\],grass:\[91,137,57\]/);
+ assert.match(renderer,/gl\.generateMipmap\(gl\.TEXTURE_2D\)/);
  assert.match(renderer,/navigator\.connection\?\.saveData/);
  assert.match(renderer,/softwareRenderer\|\|navigator\.connection/);
  assert.match(renderer,/rendererDestroyed\|\|lost\|\|generation!==surfaceLoadGeneration/);
