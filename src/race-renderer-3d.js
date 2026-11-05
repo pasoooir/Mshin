@@ -39,7 +39,10 @@ function makeGeometry(gl,triangles){
    const abx=bx-ax,aby=by-ay,abz=bz-az,acx=cx-ax,acy=cy-ay,acz=cz-az;
    const nx0=aby*acz-abz*acy,ny0=abz*acx-abx*acz,nz0=abx*acy-aby*acx;
    const inverseLength=1/(Math.hypot(nx0,ny0,nz0)||1);
-   const nx=nx0*inverseLength,ny=ny0*inverseLength,nz=nz0*inverseLength;
+   let nx=nx0*inverseLength,ny=ny0*inverseLength,nz=nz0*inverseLength;
+   // Road, terrain, shoulders and markings are predominantly horizontal.
+   // Correct downward face normals defensively before the PBR shader consumes them.
+   if(Math.abs(ny)>.65&&ny<0){nx=-nx;ny=-ny;nz=-nz;}
    for(let vertex=0;vertex<3;vertex++){
     const offset=i+vertex*3;
     data[out++]=triangles[offset];data[out++]=triangles[offset+1];data[out++]=triangles[offset+2];
@@ -185,14 +188,14 @@ export function createRaceRenderer(canvas){
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,(f.height||0)+y,-(f.p.y+f.ny*offset)];
    const l0=point(fa,-half),r0=point(fa,half),l1=point(fb,-half),r1=point(fb,half);
    const sl0=point(fa,-half-26,-.04),sr0=point(fa,half+26,-.04),sl1=point(fb,-half-26,-.04),sr1=point(fb,half+26,-.04);
-   quad(roadTris,l0,l1,r1,r0);quad(shoulderTris,sl0,sl1,l1,l0);quad(shoulderTris,r0,r1,sr1,sr0);
+   quad(roadTris,l0,r0,r1,l1);quad(shoulderTris,sl0,l0,l1,sl1);quad(shoulderTris,r0,sr0,sr1,r1);
    // Continuous white edge lines, twin dashed yellow centre lines and alternating kerbs.
-   for(const offset of [-158,158]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,p1,q1,q0)}
-   if(i%2===0)for(const offset of [-5,5]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,p1,q1,q0)}
-   const curbSide=(side,out)=>{const p0=point(fa,side*168,.026),q0=point(fa,side*180,.026),p1=point(fb,side*168,.026),q1=point(fb,side*180,.026);quad(out,p0,p1,q1,q0)};
+   for(const offset of [-158,158]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
+   if(i%2===0)for(const offset of [-5,5]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,q0,q1,p1)}
+   const curbSide=(side,out)=>{const p0=point(fa,side*168,.026),q0=point(fa,side*180,.026),p1=point(fb,side*168,.026),q1=point(fb,side*180,.026);quad(out,p0,q0,q1,p1)};
    curbSide(-1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris);curbSide(1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris)
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
-   quad(groundTris,outerL,outerL1,outerR1,outerR);
+   quad(groundTris,outerL,outerR,outerR1,outerL1);
   }
   // Keep road markings and asphalt readable when mobile/software GPUs produce
   // weak or unstable PBR lighting. Emission is a visibility floor, not a
