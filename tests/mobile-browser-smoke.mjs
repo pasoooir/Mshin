@@ -192,6 +192,8 @@ try {
   const mobileRacePace = await mobile.evaluate(() => window.MshinRacePace);
   assert.equal(mobileRacePace?.vehicles?.length, 5, "mobile race must expose one shared performance profile for all cars");
   assert.ok(mobileRacePace.vehicles.every(vehicle => Math.abs(vehicle.speedLimit - mobileRacePace.speedLimit) < 1e-9), "mobile player and rivals must share the same speed limit: " + JSON.stringify(mobileRacePace));
+  const mobileRivalSpeeds = mobileRacePace.vehicles.slice(1).map(vehicle => vehicle.speed);
+  assert.ok(Math.max(...mobileRivalSpeeds) - Math.min(...mobileRivalSpeeds) < 1e-6, "all four mobile AI rivals must move at the same speed: " + JSON.stringify(mobileRacePace));
   await mobile.waitForFunction(() => window.MshinRaceMinimap?.markers?.length === 5, undefined, { timeout: 5000 });
   const mobileMapBefore = await mobile.evaluate(() => window.MshinRaceMinimap);
   assert.ok(mobileMapBefore.markers.every(marker => Number.isFinite(marker.x) && Number.isFinite(marker.y) && marker.actualX >= mobileMapBefore.bounds.x && marker.actualX <= mobileMapBefore.bounds.x + mobileMapBefore.bounds.width && marker.actualY >= mobileMapBefore.bounds.y && marker.actualY <= mobileMapBefore.bounds.y + mobileMapBefore.bounds.height), "mobile map must place every race car within the track bounds: " + JSON.stringify(mobileMapBefore));
