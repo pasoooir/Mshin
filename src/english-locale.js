@@ -22,4 +22,10 @@ document.documentElement.lang="en";document.documentElement.dir="ltr";document.b
 const scan=root=>{if(root.nodeType===Node.TEXT_NODE){translateNode(root);return;}translateNode(root);root.childNodes?.forEach(scan);};
 scan(document.documentElement);
 new MutationObserver(records=>{for(const record of records){if(record.type==="characterData")translateNode(record.target);else if(record.type==="attributes")translateNode(record.target);else record.addedNodes.forEach(scan);}}).observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:["aria-label","title","placeholder","alt"]});
+const canvasPrototype=globalThis.CanvasRenderingContext2D?.prototype;
+if(canvasPrototype){
+ const nativeFill=canvasPrototype.fillText,nativeStroke=canvasPrototype.strokeText;
+ if(nativeFill)canvasPrototype.fillText=function(value,...args){return nativeFill.call(this,english(value),...args)};
+ if(nativeStroke)canvasPrototype.strokeText=function(value,...args){return nativeStroke.call(this,english(value),...args)};
+}
 window.MshinLocale={language:"en",direction:"ltr",translate:english};
