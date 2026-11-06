@@ -10,7 +10,7 @@ export function crossedFinishLine(previousDistance, distanceTravelled, trackLeng
 
 export function finishLineFraction(previousDistance, distanceTravelled, trackLength) {
   if (!crossedFinishLine(previousDistance, distanceTravelled, trackLength)) return null;
-  return Math.max(0, Math.min(1, (trackLength - previousDistance) / Math.max(distanceTravelled, Number.EPSILON)));
+  return Math.round(Math.max(0, Math.min(1, (trackLength - previousDistance) / Math.max(distanceTravelled, Number.EPSILON))) * 1e12) / 1e12;
 }
 
 export function finishTimestamp(raceElapsed, deltaSeconds, previousDistance, distanceTravelled, trackLength) {
