@@ -141,7 +141,7 @@ export function createCityCameraController({
         baseOrbit: Number.isFinite(camera.orbit) ? camera.orbit : 0,
         baseMidpoint: center,
         baseAngle: angle(points),
-        lastAppliedRotation: 0,
+        totalRotation: 0,
         anchor: groundAt(center),
         velocity: 0,
         lastMoveTime: 0
@@ -189,40 +189,33 @@ export function createCityCameraController({
       const center = midpoint(points);
       const nextAngle = angle(points);
       const nextDistance = distance(points);
-      const gestureState = gesture;
+      const state = gesture;
       const now = Number.isFinite(event.timeStamp) ? event.timeStamp : 0;
-      const elapsed = gestureState.lastMoveTime && now > gestureState.lastMoveTime
-        ? clamp(now - gestureState.lastMoveTime, 8, 50) : 16.667;
+      const elapsed = state.lastMoveTime && now > state.lastMoveTime
+        ? clamp(now - state.lastMoveTime, 8, 50) : 16.667;
 
-      // Derive orbit from the gesture baseline. Pointer events arrive one finger at
-      // a time, so incremental angle accumulation can introduce transient azimuth
-      // drift during a pure vertical two-finger translation.
-      const totalRotation = (center.x - gestureState.baseMidpoint.x) * ORBIT_SENSITIVITY
-        + angleDelta(nextAngle, gestureState.baseAngle);
-      const rotation = totalRotation - gestureState.lastAppliedRotation;
-      camera.orbit = gestureState.baseOrbit + totalRotation;
-      gestureState.lastAppliedRotation = totalRotation;
-      // Multiplicative distance ratio makes zoom independent of the starting span.
-      // Derive zoom from the gesture baseline, not the previously clamped value.
-      // This prevents asynchronous per-pointer move events from causing irreversible
-      // zoom jumps when both fingers translate together and the temporary span collapses.
-      camera.zoom = clamp(gestureState.baseZoom * nextDistance / gestureState.baseDistance, MIN_ZOOM, MAX_ZOOM);
-      // Vertical translation of the two-finger midpoint adjusts camera elevation.
-      // Rebase is continuous across pointer events and clamped to a usable city view.
-      const pitch = Number.isFinite(camera.pitch) ? camera.pitch : 0.51;
-      camera.pitch = clamp(pitch - (center.y - gestureState.lastMidpoint.y) * PITCH_SENSITIVITY, MIN_PITCH, MAX_PITCH);
-      // Velocity is measured from the net gesture displacement, not the transient
-      // one-finger intermediate vector. A pure vertical two-finger translation must
-      // not leave a horizontal fling when the second finger catches up.
-      const measuredVelocity = totalRotation / (elapsed / 16.667);
-      gestureState.velocity = Number.isFinite(measuredVelocity) ? measuredVelocity : 0;
-      gestureState.lastMidpoint = center;
-      gestureState.lastAngle = nextAngle;
-      gestureState.lastDistance = nextDistance;
-      gestureState.lastMoveTime = now;
+      // A two-finger gesture has three independent channels:
+      // centroid translation = pan, span change = zoom, line rotation = orbit.
+      // Never interpret horizontal centroid movement as orbit: that made normal
+      // parallel two-finger panning feel like an unintended camera spin.
+      const anchorBefore = groundAt(state.lastMidpoint);
+      const rotation = angleDelta(nextAngle, state.lastAngle);
+      const totalRotation = state.totalRotation + rotation;
+      camera.orbit = state.baseOrbit + totalRotation;
+      state.totalRotation = totalRotation;
+      camera.zoom = clamp(state.baseZoom * nextDistance / state.baseDistance, MIN_ZOOM, MAX_ZOOM);
+
+      const measuredVelocity = rotation / (elapsed / 16.667);
+      state.velocity = Number.isFinite(measuredVelocity) ? measuredVelocity : 0;
+      state.lastMidpoint = center;
+      state.lastAngle = nextAngle;
+      state.lastDistance = nextDistance;
+      state.lastMoveTime = now;
 
       update();
-      shiftTarget(gestureState.anchor, groundAt(center));
+      // Keep the world point under the moving two-finger midpoint stable.
+      // Recalculate the anchor every event to avoid cumulative overshoot.
+      shiftTarget(anchorBefore, groundAt(center));
       update();
       return;
     }
