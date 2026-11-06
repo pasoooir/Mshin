@@ -166,12 +166,12 @@ test("each race car receives layered ground contact shadows",()=>{
 
  
 test("trackside environment builds curved rolling terrain and natural rock groups",()=>{
- assert.match(source,/const terrainRows=mobile\?120:softwareRenderer\?180:360/);
- assert.match(source,/terrainBands=mobile\?9:softwareRenderer\?12:18/);
- assert.match(source,/const terrainHeight=\(angle,offset,side\)=>/);
- assert.match(source,/quad\(landscape,point\(f0,t0,o0\),point\(f0,t0,o1\),point\(f1,t1,o1\),point\(f1,t1,o0\)\)/);
- assert.match(source,/const rockCount=mobile\?18:softwareRenderer\?26:54/);
- assert.match(source,/\[terrainRocks,"#77776f",0,"rock"\]/);
+ assert.match(terrainSource,/const terrainRows=mobile\?120:softwareRenderer\?180:360/);
+ assert.match(terrainSource,/terrainBands=mobile\?9:softwareRenderer\?12:18/);
+ assert.match(terrainSource,/const terrainHeight=\(angle,offset,side\)=>/);
+ assert.match(terrainSource,/quad\(landscape,point\(f0,t0,o0\),point\(f0,t0,o1\),point\(f1,t1,o1\),point\(f1,t1,o0\)\)/);
+ assert.match(terrainSource,/const rockCount=mobile\?18:softwareRenderer\?26:54/);
+ assert.match(terrainSource,/\[terrainRocks,"#77776f",0,"rock"\]/);
 });
  
 test("desktop render target supports a 4K pixel budget without overloading mobile",()=>{
