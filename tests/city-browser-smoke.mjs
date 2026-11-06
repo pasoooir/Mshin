@@ -276,7 +276,7 @@ try{
  await page.evaluate(()=>window.MshinCityDebug.step());
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
- const secondHome=await page.evaluate(()=>window.MshinCityDebug.place(17,13,"home"));assert.equal(secondHome.ok,true,"a second road-accessible home should be constructible");
+ const secondHome=await page.evaluate(()=>window.MshinCityDebug.place(18,13,"home"));assert.equal(secondHome.ok,true,"a second road-accessible home should be constructible");
  await page.locator("#cityBudget").click();
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),true,"mobile players must be able to open the budget panel");
  const budgetLayout=await page.evaluate(()=>{
