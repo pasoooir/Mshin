@@ -34,6 +34,8 @@ try{
  await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100});
  const rendererBootDuration=Date.now()-rendererBootStartedAt;
  assert.ok(rendererBootDuration<60000,"compact city renderer must finish initialization within the bounded 60-second mobile startup budget");
+ const cityLocale=await page.evaluate(()=>({lang:document.documentElement.lang,direction:document.documentElement.dir,text:document.body.innerText}));
+ assert.equal(cityLocale.lang,"en","city interface language must be English");assert.equal(cityLocale.direction,"ltr","city interface must use left-to-right layout");assert.doesNotMatch(cityLocale.text,/[۰-۹٠-٩]/,"city UI must display Latin digits only");
  const viewportMeta=await page.locator('meta[name="viewport"]').getAttribute("content");
  assert.match(viewportMeta,/viewport-fit=cover/,"city must opt into safe-area-aware mobile viewport sizing");
  const initialVisualViewport=await page.evaluate(()=>({width:visualViewport.width,height:visualViewport.height}));
@@ -153,7 +155,7 @@ try{
  const windowTrafficInvariant=await page.evaluate(()=>window.MshinCityDebug.city.traffic.every(vehicle=>Number.isFinite(vehicle.x)&&Number.isFinite(vehicle.y)&&window.MshinCityDebug.city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"));
  assert.equal(initial.population,0,"new city must start without residents");assert.equal(initial.buildings,0,"new city must contain no buildings");assert.equal(initial.roads,0,"the first-time city must contain no roads");assert.equal(initial.citizens,0);assert.ok(initial.traffic<=12,"live simulation traffic must stay within its bounded fleet");assert.ok(windowTrafficInvariant,"traffic must remain on valid road tiles");assert.equal(initial.animals,0);assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
  const rebuildsBeforePlacement=await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds);
- await clickCityTool(page,"road");const roadTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(roadTarget.x,roadTarget.y);await clickCityTool(page,"park");const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,15));await page.mouse.click(target.x,target.y);
+ await clickCityTool(page,"road");const roadTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(roadTarget.x,roadTarget.y);assert.equal(await page.evaluate(()=>window.MshinCity3DStats.roadTiles),1,"a road must become visible only after the player builds it");await clickCityTool(page,"park");const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,15));await page.mouse.click(target.x,target.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[15][14]),"building","park tool should place a city asset");
  const parkVisual=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(parkVisual.stylizedBuildings,1,"placed park must become a rendered 3D scene object");
