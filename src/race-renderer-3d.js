@@ -271,7 +271,7 @@ export function createRaceRenderer(canvas){
     const point=(frame,angle,offset)=>[frame.p.x+frame.nx*side*offset,(frame.height||0)+terrainHeight(angle,offset,side),-(frame.p.y+frame.ny*side*offset)];
     quad(landscape,point(f0,t0,o0),point(f0,t0,o1),point(f1,t1,o1),point(f1,t1,o0));
    }
-   if(row%6===5)yield {progress:.445+.025*(row/terrainRows)};
+   if(row%6===5)yield {progress:.451+.004*(row/terrainRows)};
   }
   // Scattered boulder clusters add natural scale and break up the grass horizon.
   const rockCount=mobile?18:softwareRenderer?26:54;
@@ -281,7 +281,7 @@ export function createRaceRenderer(canvas){
    sphere(cluster,x,base+13,z,34+(i%4)*12,18+(i%3)*7,28+(i%5)*8,8,5);
    if(i%3===0)sphere(cluster,x+28,base+9,z-22,21,13,18,7,4);
    terrainRocks.push(...cluster);
-   if(i%6===5)yield {progress:.47+.012*(i/rockCount)};
+   if(i%6===5)yield {progress:.456+.003*(i/rockCount)};
   }
   for(let i=0;i<treeCount;i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=270+(i%7)*66,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0;
    disk(treeShadows,x,base+.6,z,24+(i%3)*4,10);
