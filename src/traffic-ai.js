@@ -55,8 +55,8 @@ export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbo
  const laneTarget=laneSet[targetLane],laneGap=aheadInLane(targetLane);
  const safeSpeed=laneGap?Math.min(cruiseSpeed,Math.max(65,cruiseSpeed*(laneGap.gap/Math.max(90,vehicle.speed*.65)))):cruiseSpeed;
  const bendFactor=1-clamp(Math.abs(Number(curvature)||0)*1.8,0,.42),desiredSpeed=Math.max(70,safeSpeed*bendFactor);
- const accel=clamp((desiredSpeed-vehicle.speed)*1.35,-150,85);
- vehicle.speed=clamp(vehicle.speed+accel*step,45,Math.max(80,cruiseSpeed*1.08));
+ const accel=clamp((desiredSpeed-vehicle.speed)*1.35,-150,300);
+ vehicle.speed=clamp(vehicle.speed+accel*step,0,Math.max(80,cruiseSpeed*1.08));
  const lateralError=laneTarget-vehicle.lateral,lateralAccel=clamp(lateralError*2.6-vehicle.lateralVelocity*3.2,-95,95);
  vehicle.lateralVelocity=clamp(vehicle.lateralVelocity+lateralAccel*step,-38,38);
  vehicle.lateral=clamp(vehicle.lateral+vehicle.lateralVelocity*step,minLane-12,maxLane+12);
