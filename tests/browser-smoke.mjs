@@ -196,9 +196,9 @@ try {
   await page.locator("#tab-cars").click();
   assert.match(await page.locator(".carChoice.active").textContent(), /(?:Zola GT|Zola GT)/, "garage should restore the saved car");
   await page.locator("#tab-race").click();
-  await page.getByRole("button", { name: /شهر نئونی/ }).click();
+  await page.getByRole("button", { name: /Neon City/ }).click();
   assert.equal(await page.locator(".stage").count(), 5, "each world should expose five stages");
-  await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
+  await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
   const raceRequests = [];
   page.on("request", request => { if (request.isNavigationRequest() || request.resourceType() !== "other") raceRequests.push(request.url()); });
   const audioPreload = await page.evaluate(() => ({
@@ -338,7 +338,7 @@ try {
   assert.equal(frameMetrics.trackLengthScale, 10, "race should use the planned tenfold track scale");
   assert.equal(frameMetrics.trackRadiusX, 11800, "race should use a tenfold world-space circuit instead of a compact loop");
   assert.equal(frameMetrics.trackRadiusY, 7600, "race should use a tenfold deep world-space circuit");
-  assert.ok(frameMetrics.roadWidth >= 350, "four-lane asphalt should span the full wide road surface");
+  assert.ok(frameMetrics.roadWidth >= 700, "four-lane asphalt should span the expanded wide road surface");
   assert.equal(frameMetrics.laneCount, 4, "race should expose four driving lanes");
   assert.equal(frameMetrics.playerHeadingOffsetDeg, 90, "player sprite nose should be aligned with the road tangent");
   assert.equal(frameMetrics.cameraChase, true, "camera should keep the player facing forward on screen");
@@ -356,8 +356,8 @@ try {
   await page.addStyleTag({ content: "*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}" });
   await page.waitForTimeout(40);
   await page.locator("#play").click({ timeout: 10000 });
-  await page.getByRole("button", { name: /شهر نئونی/ }).click();
-  await page.getByRole("button", { name: /مرحله 05.*پایان نئونی/ }).click();
+  await page.getByRole("button", { name: /Neon City/ }).click();
+  await page.getByRole("button", { name: /STAGE 05.*Neon Finale/ }).click();
   await page.locator("#startRace").click();
   await page.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 6000 });
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "false", "saved mute preference should survive reload");
@@ -365,7 +365,7 @@ try {
   assert.equal(await page.locator("#soundToggle").getAttribute("aria-pressed"), "true", "sound toggle should restore audio");
   assert.equal(await page.locator("#hud").isVisible(), true, "race HUD should become visible");
   assert.match(await page.locator("#position").textContent(), /^[1-5] \/ 5$/, "live race position should show the player among four AI rivals");
-  assert.match(await page.locator("#stageName").textContent(), /دنیای ۰5.*مرحله ۰5/);
+  assert.match(await page.locator("#stageName").textContent(), /WORLD 05.*STAGE 05/);
   await page.waitForFunction(() => window.Mshin3DRenderer?.status === "webgl-ready" && window.Mshin3DRenderer.frames > 0 && window.Mshin3DRenderer.triangles > 1000 && document.body.classList.contains("is-3d-race"), undefined, { timeout: 12000 });
   const race3dState = await page.evaluate(() => ({ status: window.Mshin3DRenderer?.status, frames: window.Mshin3DRenderer?.frames, triangles: window.Mshin3DRenderer?.triangles, camera: window.Mshin3DRenderer?.camera }));
   assert.equal(race3dState.status, "webgl-ready", "race must use the native WebGL 3D renderer");
@@ -408,7 +408,7 @@ try {
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "small thumb movements around center should be ignored by the steering dead zone");
   await page.mouse.up();
   assert.equal(Number(await steeringPad.getAttribute("aria-valuenow")), 0, "releasing the steering pad should return the control to center");
-  assert.match(await steeringPad.getAttribute("aria-label"), /برای چرخیدن به چپ یا راست بکشید و رها کنید/, "steering instructions should be accessible in Persian");
+  assert.match(await steeringPad.getAttribute("aria-label"), /Steering: drag left or right/, "steering instructions should be accessible in Persian");
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
   await page.waitForFunction(() => {
@@ -551,9 +551,9 @@ try {
   const mobileStickBounds = await mobile.locator("#stick").boundingBox();
   assert.ok(Math.max(mobileStickBounds.width, mobileStickBounds.height) >= 120 && Math.min(mobileStickBounds.width, mobileStickBounds.height) >= 100, "rotated mobile steering pad should preserve a 120×100 touch surface");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
-  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "گاز", "gas pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "نیترو", "nitro control should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "THROTTLE", "gas pedal should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "BRAKE", "brake pedal should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "NITRO", "nitro control should use a CDN icon with accessible alternative text");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   const mobileStatsBounds = await mobile.locator(".stats").boundingBox(), mobileSoundBounds = await mobile.locator("#soundToggle").boundingBox();
   const mobileHudOverlap = !(mobileStatsBounds.x + mobileStatsBounds.width <= mobileSoundBounds.x || mobileSoundBounds.x + mobileSoundBounds.width <= mobileStatsBounds.x || mobileStatsBounds.y + mobileStatsBounds.height <= mobileSoundBounds.y || mobileSoundBounds.y + mobileSoundBounds.height <= mobileStatsBounds.y);
@@ -611,29 +611,29 @@ try {
   }
   assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
   assert.equal((await economy.locator("#credits").textContent()).trim(), "1000 🪙", "wallet should load saved coins");
-  assert.match(await economy.locator("#weatherInfo").textContent(), /صاف/, "Green Valley should use clear weather");
-  await economy.getByRole("button", { name: /توفان کویر/ }).click();
-  assert.match(await economy.locator("#weatherInfo").textContent(), /شن/, "Desert Storm should select sand weather");
+  assert.match(await economy.locator("#weatherInfo").textContent(), /CLEAR/i, "Green Valley should use clear weather");
+  await economy.getByRole("button", { name: /Desert Storm/ }).click();
+  assert.match(await economy.locator("#weatherInfo").textContent(), /SAND/i, "Desert Storm should select sand weather");
   await economy.locator("#tab-cars").click();
-  await economy.getByRole("button", { name: /تندر برقی/ }).click();
-  assert.equal(await economy.getByRole("button", { name: /تندر برقی/ }).getAttribute("class").then(v => v.includes("locked")), false, "purchased car should unlock");
-  assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "newly unlocked car should be selected immediately");
+  await economy.getByRole("button", { name: /Electric Thunder/ }).click();
+  assert.equal(await economy.getByRole("button", { name: /Electric Thunder/ }).getAttribute("class").then(v => v.includes("locked")), false, "purchased car should unlock");
+  assert.match(await economy.locator(".carChoice.active").textContent(), /Electric Thunder/, "newly unlocked car should be selected immediately");
   await economy.locator("#tab-workshop").click();
-  await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
-  assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "engine upgrade should advance its level");
-  await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
-  await economy.getByRole("button", { name: /ارتقا · 180/ }).nth(0).click();
+  await economy.getByRole("button", { name: /UPGRADE · 180/ }).nth(0).click();
+  assert.match(await economy.locator("#upgrades").textContent(), /ENGINE POWER · LEVEL 1\/3/, "engine upgrade should advance its level");
+  await economy.getByRole("button", { name: /UPGRADE · 180/ }).nth(0).click();
+  await economy.getByRole("button", { name: /UPGRADE · 180/ }).nth(0).click();
   assert.equal((await economy.locator("#credits").textContent()).trim(), "10 🪙", "unlocking and three upgrades should deduct exact coin costs");
   await economy.reload({ waitUntil: "domcontentloaded" });
   await waitForGameBoot(economy, "economy persistence reload");
   await economy.locator("#play").click();
   await economy.locator("#tab-cars").click();
-  assert.match(await economy.locator(".carChoice.active").textContent(), /تندر برقی/, "unlocked selected car should persist after reload");
+  assert.match(await economy.locator(".carChoice.active").textContent(), /Electric Thunder/, "unlocked selected car should persist after reload");
   await economy.locator("#tab-workshop").click();
-  assert.match(await economy.locator("#upgrades").textContent(), /قدرت موتور · سطح 1\/۳/, "car upgrades should persist after reload");
+  assert.match(await economy.locator("#upgrades").textContent(), /ENGINE POWER · LEVEL 1\/3/, "car upgrades should persist after reload");
   await economy.locator("#tab-race").click();
   // The desert-weather selection is asserted above; use the beginner circuit for the reward gate.
-  await economy.getByRole("button", { name: /دره سبز/ }).click();
+  await economy.getByRole("button", { name: /Green Valley/ }).click();
   await economy.locator("#startRace").click();
   await economy.waitForFunction(() => document.querySelector("#countdownOverlay").classList.contains("hidden"), undefined, { timeout: 20000 });
   const economySteeringPad = await economy.locator("#stick").boundingBox();
@@ -775,10 +775,10 @@ try {
   assert.ok(finalStandings.rows.every(row => /^\d{2}:\d{2}:\d{2}$/.test(row.time)), "each car must retain its own stopwatch result");
   assert.equal(finalStandings.standings.length, 5, "the race standings model must contain the player and four AI racers");
   assert.equal(finalStandings.overlay, true, "the overhead cloud overlay must be available during the race");
-  assert.match(finishEvidence.text, /سکه دریافت کردید/,
+  assert.match(finishEvidence.text, /credits earned/,
     "a terminal race state must be a rewarded finish, not vehicle destruction: " + JSON.stringify(finishEvidence));
   assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).credits > 10), "race rewards should persist in the wallet");
-  assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the اولین مسابقه achievement");
+  assert.ok(await economy.evaluate(() => JSON.parse(localStorage.getItem("mshin-progress-v1")).achievements.includes("first-finish")), "first race should unlock the First Race achievement");
   if (mobileOnly) {
     const finishViewport = await economy.evaluate(() => ({
       width: innerWidth, height: innerHeight,
@@ -796,8 +796,8 @@ try {
   }
   await economy.locator("#finishSelect").click();
   await economy.locator("#tab-career").click();
-  assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "اولین مسابقه" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
-  assert.match(await economy.locator("#finishText").textContent(), /اولین مسابقه/, "finish screen should announce milestone bonus");
+  assert.equal(await economy.locator(".achievement.earned").filter({ hasText: "First Race" }).count(), 1, "achievement board should show the earned badge after returning to the menu");
+  assert.match(await economy.locator("#finishText").textContent(), /First Race/, "finish screen should announce milestone bonus");
   assert.deepEqual(errors, [], "economy, achievements and weather flows should not throw runtime exceptions");
 
   activePhase = "service-worker, cache and offline PWA acceptance";
