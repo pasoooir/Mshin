@@ -171,7 +171,7 @@ test("trackside environment builds curved rolling terrain and natural rock group
  assert.match(terrainSource,/const terrainHeight=\(angle,offset,side\)=>/);
  assert.match(terrainSource,/quad\(landscape,point\(f0,t0,o0\),point\(f0,t0,o1\),point\(f1,t1,o1\),point\(f1,t1,o0\)\)/);
  assert.match(terrainSource,/const rockCount=mobile\?18:softwareRenderer\?26:54/);
- assert.match(terrainSource,/\[terrainRocks,"#77776f",0,"rock"\]/);
+ assert.match(source,/\[terrainRocks,"#77776f",0,"rock"\]/);
 });
  
 test("desktop render target supports a 4K pixel budget without overloading mobile",()=>{
