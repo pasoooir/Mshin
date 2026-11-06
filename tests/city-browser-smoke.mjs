@@ -74,7 +74,10 @@ try{
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.version,"180");
- assert.equal(renderStats.visualStyle,"realistic-pbr-city","the city renderer must use the realistic architectural PBR art direction");
+ assert.equal(renderStats.visualStyle,"continuous-realistic-grassland","the city renderer must use the realistic architectural PBR art direction");
+ assert.equal(renderStats.continuousGrassland,true,"the world must be one continuous grass surface");
+ assert.equal(renderStats.visiblePlotGridLines,0,"plot borders and checkerboard lines must never be rendered");
+ assert.equal(renderStats.groundExtentMeters,10000,"the grassland must remain visible at the widest zoom-out level");
  assert.equal(renderStats.proceduralTextures,6,"terrain, asphalt, brick, concrete, roof and sidewalk must use dedicated texture families");
  assert.equal(renderStats.pbrMaterialSets,6,"all six city surface families must expose complete PBR map sets");
  assert.equal(renderStats.normalMappedSurfaces,6,"all six city surface families must use generated normal maps");
@@ -83,9 +86,9 @@ try{
  assert.equal(renderStats.backgroundCityBuildings,0,"a new city must not contain decorative houses or apartment buildings");
  assert.equal(renderStats.backgroundCityWindows,0,"a new city must not render windows on nonexistent buildings");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"3D Renderer Ready","the UI must report when the actual 3D renderer is ready");
- assert.ok((await page.locator(".cityBrand small").textContent()).includes("0.15.5"),"the city UI must expose the deployed version");
- assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
- assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("0.15.6"),"the city UI must expose the deployed version");
+ assert.equal(renderStats.decorativeTrees,0,"a brand-new city must show an uninterrupted grassland without decorative trees");
+ assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,0,"the empty starting meadow must not contain any decorative tree props");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
  assert.equal(renderStats.streetFurniturePlacementReady,false,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
  assert.equal(renderStats.sidewalkStrips,0,"the empty starting world must not contain sidewalks before roads are built");
@@ -106,6 +109,13 @@ try{
  assert.equal(entryAcceptance.debug.lockGranted,true,"landscape orientation lock must be attempted after fullscreen");
  assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
  await page.screenshot({path:"artifacts/city-empty-world-landscape.png"});
+ await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.05));
+ const meadowZoomOut=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,stats:window.MshinCity3DStats}));
+ assert.equal(meadowZoomOut.zoom,0.05,"mobile players must be able to zoom out to the full grassland");
+ assert.equal(meadowZoomOut.stats.continuousGrassland,true,"zooming out must keep the same continuous grass terrain");
+ assert.equal(meadowZoomOut.stats.visiblePlotGridLines,0,"zooming out must never reveal square plot outlines");
+ await page.screenshot({path:"artifacts/city-meadow-maximum-zoom-out.png"});
+ await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.72));
 
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
 

@@ -100,11 +100,19 @@ function mount(){
  let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,simulationTimer=0,resizeFrame=0,lastPersistTick=city.tick,lastClockUpdate=performance.now()/1000;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};
+ // Lightweight fallback meadow for devices where WebGL is unavailable.
+ // It is a seamless grass pattern, not a per-parcel checkerboard.
+ const meadowCanvas=document.createElement("canvas");meadowCanvas.width=meadowCanvas.height=256;
+ const meadowCtx=meadowCanvas.getContext("2d");meadowCtx.fillStyle="#466f37";meadowCtx.fillRect(0,0,256,256);
+ let meadowSeed=741;const meadowRandom=()=>{meadowSeed=(Math.imul(meadowSeed,1664525)+1013904223)>>>0;return meadowSeed/4294967296};
+ const meadowTones=["#9bb86b","#82a95a","#6f984c","#315f35","#b3bd76","#547f3d"];
+ for(let i=0;i<5200;i++){const x=meadowRandom()*256,y=meadowRandom()*256,len=2+meadowRandom()*9;meadowCtx.strokeStyle=meadowTones[Math.floor(meadowRandom()*meadowTones.length)];meadowCtx.globalAlpha=.24+meadowRandom()*.34;meadowCtx.lineWidth=.45+meadowRandom()*.65;meadowCtx.beginPath();meadowCtx.moveTo(x,y);meadowCtx.lineTo(x+(meadowRandom()-.5)*5,y-len);meadowCtx.stroke()}
+ meadowCtx.globalAlpha=1;const meadowPattern=ctx.createPattern(meadowCanvas,"repeat");
  function resize(){const viewport=window.visualViewport;view.w=Math.max(1,Math.round(viewport?.width||innerWidth));view.h=Math.max(1,Math.round(viewport?.height||innerHeight));view.dpr=Math.min(devicePixelRatio||1,1.6);canvas.width=Math.round(view.w*view.dpr);canvas.height=Math.round(view.h*view.dpr);canvas.style.width=view.w+"px";canvas.style.height=view.h+"px";if(!cam.initialized){cam.zoom=matchMedia("(max-width:760px), (max-height:520px)").matches?.72:Math.max(.42,Math.min(1.18,Math.min(view.w/1040,view.h/740)*1.08));cam.initialized=true}}
  function tileAt(px,py){if(threeRenderer)return threeRenderer.tileAt(px,py);const sx=(px-view.w/2-cam.x)/cam.zoom,sy=(py-view.h*.23-cam.y)/cam.zoom+centerY,a=sx/16,b=sy/8;return{x:Math.floor((a+b)/2+.5),y:Math.floor((b-a)/2+.5)}}
  function poly(points,fill,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=.8;ctx.stroke()}}
  function ground(x,y,type){const p=tilePoint(x,y),park=city.buildings.some(b=>b.type==="park"&&b.x===x&&b.y===y),zoneType=type.startsWith("zone-")?type.slice(5):null,zoneColor=zoneType&&CITY_ZONES[zoneType]?.color,colors=type==="road"?["#414b56","#343e49"]:type==="water"?["#4b9fc0","#397fa4"]:zoneColor?[zoneColor,zoneColor]:park?["#5b9a60","#478452"]:["#7eaa68","#71995d"];
- poly([{x:p.x,y:p.y-8},{x:p.x+16,y:p.y},{x:p.x,y:p.y+8},{x:p.x-16,y:p.y}],colors[(x+y)%2],"#ffffff0c");
+ poly([{x:p.x,y:p.y-8},{x:p.x+16,y:p.y},{x:p.x,y:p.y+8},{x:p.x-16,y:p.y}],colors[0],"#ffffff08");
  if(zoneType){ctx.save();ctx.globalAlpha=.35;ctx.fillStyle="#102337";ctx.font="900 9px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(CITY_ZONES[zoneType].label.slice(0,1),p.x,p.y);ctx.restore()}
  if(type==="road"){const h=city.grid[y][Math.max(0,x-1)]==="road"||city.grid[y][Math.min(SIZE-1,x+1)]==="road",v=city.grid[Math.max(0,y-1)][x]==="road"||city.grid[Math.min(SIZE-1,y+1)][x]==="road";ctx.save();ctx.strokeStyle="#f4d98c88";ctx.lineWidth=1;ctx.setLineDash([4,5]);ctx.beginPath();if(h&&v){ctx.moveTo(p.x-7,p.y-3.5);ctx.lineTo(p.x+7,p.y+3.5)}else if(h){ctx.moveTo(p.x-10,p.y);ctx.lineTo(p.x+10,p.y)}else if(v){ctx.moveTo(p.x,p.y-5);ctx.lineTo(p.x,p.y+5)}ctx.stroke();ctx.restore()}
  if(type==="water"){ctx.fillStyle="#c5f3f766";ctx.beginPath();ctx.ellipse(p.x-3,p.y-2,5,1.6,-.25,0,6.28);ctx.fill()}
@@ -155,9 +163,9 @@ function mount(){
  function draw(){if(threeRenderer){threeRenderer.render(city,view,cam);window.MshinCity3DStats=threeRenderer.getStats();hud();return}
 
   ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
-  const sky=ctx.createLinearGradient(0,0,0,view.h);sky.addColorStop(0,"#a7cbd1");sky.addColorStop(.52,"#c9d8c0");sky.addColorStop(1,"#718c75");ctx.fillStyle=sky;ctx.fillRect(0,0,view.w,view.h);
+  ctx.fillStyle=meadowPattern;ctx.fillRect(0,0,view.w,view.h);
   ctx.save();ctx.translate(view.w/2+cam.x,view.h*.23+cam.y);ctx.scale(cam.zoom,cam.zoom);
-  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)ground(x,y,city.grid[y][x]);
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(city.grid[y][x]==="road")ground(x,y,"road");
   [...city.trees.map(t=>({d:t.x+t.y,draw:()=>tree(t)})),...city.buildings.map(b=>({d:b.x+b.y,draw:()=>building(b)}))].sort((a,b)=>a.d-b.d).forEach(v=>v.draw());
   cars();people();animals();if(selected){const p=tilePoint(selected.x,selected.y);ctx.strokeStyle="#fff1a6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y-8);ctx.lineTo(p.x+16,p.y);ctx.lineTo(p.x,p.y+8);ctx.lineTo(p.x-16,p.y);ctx.closePath();ctx.stroke()}ctx.restore();
   $("cityPopulation").textContent=city.population.toLocaleString("en-US");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("en-US")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("en-US");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("en-US")+"%";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("en-US")+"%";
