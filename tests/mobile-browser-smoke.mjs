@@ -230,7 +230,7 @@ try {
     const progress = await mobile.evaluate(() => ({ progress: window.Mshin3DRenderer?.trackBuildProgress, environment: window.Mshin3DRenderer?.environmentCounts, frames: window.Mshin3DRenderer?.frames }));
     throw new Error("mobile race terrain and environment did not finish building: " + JSON.stringify(progress) + " | " + error.message);
   });
-  assert.equal(await mobile.evaluate(() => window.Mshin3DRenderer?.trackHalfWidth), 220, "mobile race must load the widened 440-unit circuit");
+  assert.equal(await mobile.evaluate(() => window.Mshin3DRenderer?.trackHalfWidth), 360, "mobile race must load the widened 720-unit circuit");
   await mobile.evaluate(() => { window.Mshin3DRenderer.captureNextFrameSample = true; });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.lastFramePixelSample?.context === true, undefined, { timeout: 5000 });
   const raceFrameSample = await mobile.evaluate(() => window.Mshin3DRenderer.lastFramePixelSample);
@@ -247,7 +247,7 @@ try {
   assert.equal(trackScaleMetrics.trackLengthScale, 10, "mobile race runtime must use the tenfold circuit scale");
   assert.equal(trackScaleMetrics.trackRadiusX, 11800, "mobile race runtime must expose the extended horizontal circuit radius");
   assert.equal(trackScaleMetrics.trackRadiusY, 7600, "mobile race runtime must expose the extended vertical circuit radius");
-  assert.equal(trackScaleMetrics.roadWidth, 440, "the tenfold track must expose the widened 440-unit road");
+  assert.equal(trackScaleMetrics.roadWidth, 720, "the tenfold track must expose the widened 720-unit road");
   const drawStageMetrics = await mobile.evaluate(() => ({
     uniforms: window.Mshin3DRenderer?.maxDrawUniformsMs,
     buffers: window.Mshin3DRenderer?.maxDrawBufferSetupMs,
@@ -297,9 +297,9 @@ try {
   const gyroBounds = await mobile.locator("#gyroToggle").boundingBox();
   assert.ok(gyroBounds.width >= 52 && gyroBounds.height >= 52, "gyro toggle must remain a large mobile touch target");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
-  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "گاز", "gas pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "نیترو", "nitro control should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "THROTTLE", "gas pedal should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "BRAKE", "brake pedal should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "NITRO", "nitro control should use a CDN icon with accessible alternative text");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   const fourPointerState = await mobile.evaluate(() => {
     const element = id => document.querySelector("#" + id);
