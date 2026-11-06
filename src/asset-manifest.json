@@ -3,70 +3,70 @@
   "worlds": [
     {
       "id": 1,
-      "name": "دره سبز",
+      "name": "Green Valley",
       "src": "./assets/vector/world-01.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 2,
-      "name": "توفان کویر",
+      "name": "Desert Storm",
       "src": "./assets/vector/world-02.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 3,
-      "name": "سرزمین یخ",
+      "name": "Frozen Lands",
       "src": "./assets/vector/world-03.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 4,
-      "name": "جزیره استوایی",
+      "name": "Tropical Island",
       "src": "./assets/vector/world-04.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 5,
-      "name": "شهر نئونی",
+      "name": "Neon City",
       "src": "./assets/vector/world-05.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 6,
-      "name": "منطقه صنعتی",
+      "name": "Industrial Zone",
       "src": "./assets/vector/world-06.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 7,
-      "name": "یورش کوهستان",
+      "name": "Mountain Rush",
       "src": "./assets/vector/world-07.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 8,
-      "name": "دنیای باستان",
+      "name": "Ancient World",
       "src": "./assets/vector/world-08.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 9,
-      "name": "مسابقه فضایی",
+      "name": "Space Race",
       "src": "./assets/vector/world-09.svg",
       "type": "image/svg+xml",
       "group": "world"
     },
     {
       "id": 10,
-      "name": "قهرمانی نهایی",
+      "name": "Grand Championship",
       "src": "./assets/vector/world-10.svg",
       "type": "image/svg+xml",
       "group": "world"
@@ -75,35 +75,35 @@
   "cars": [
     {
       "id": "rally",
-      "name": "روباه رالی",
+      "name": "Rally Fox",
       "src": "./assets/vector/car-rally.svg",
       "type": "image/svg+xml",
       "group": "vehicle"
     },
     {
       "id": "comet",
-      "name": "دنباله‌دار GT",
+      "name": "Comet GT",
       "src": "./assets/vector/car-comet.svg",
       "type": "image/svg+xml",
       "group": "vehicle"
     },
     {
       "id": "lynx",
-      "name": "سیاهگوش ۴×۴",
+      "name": "Lynx 4x4",
       "src": "./assets/vector/car-lynx.svg",
       "type": "image/svg+xml",
       "group": "vehicle"
     },
     {
       "id": "thunder",
-      "name": "تندر برقی",
+      "name": "Electric Thunder",
       "src": "./assets/vector/car-thunder.svg",
       "type": "image/svg+xml",
       "group": "vehicle"
     },
     {
       "id": "raptor",
-      "name": "رپتور کویر",
+      "name": "Desert Raptor",
       "src": "./assets/vector/car-raptor.svg",
       "type": "image/svg+xml",
       "group": "vehicle"
