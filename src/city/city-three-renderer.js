@@ -5,6 +5,7 @@ import { createCityCloudLayer } from "./city-cloud-layer.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
+import { createCityHighwayGateway } from "./city-highway-gateway.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -95,6 +96,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
   ground.receiveShadow = true;
   ground.frustumCulled = false;
   scene.add(ground);
+
+  const highwayGateway = createCityHighwayGateway(THREE, { asphaltSurface, concreteSurface });
+  scene.add(highwayGateway.group);
 
   const roadGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.01, 0.16, CITY_TILE_METERS - 0.01);
   const roads = new THREE.InstancedMesh(roadGeometry, new THREE.MeshStandardMaterial({ ...asphaltSurface, roughness: 0.94, metalness: 0.02, normalScale: new THREE.Vector2(0.42, 0.42) }), 1024);
@@ -483,7 +487,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         roughnessMappedSurfaces: 6,
         texturedBuildingMaterials: 4,
         backgroundCityBuildings: skylineBuildingCount,
-      backgroundCityTrees: skylineTreeCount,
+        backgroundCityTrees: skylineTreeCount,
         backgroundCityWindows: backgroundSkyline.windowCount,
         decorativeTrees: decorativeTreeCount + skylineTreeCount,
         decorativeTreesOutsideBuildableGrid,
@@ -515,12 +519,16 @@ export async function createCityThreeRenderer(sourceCanvas) {
         pixelRatio: renderer.getPixelRatio(),
         shadowAutoUpdate: renderer.shadowMap.autoUpdate,
         buildingRebuilds,
-        ...atmosphere.getStats()
+        ...atmosphere.getStats(),
+        ...highwayGateway.getStats()
       };
     },
     destroy() {
       window.removeEventListener("resize", onResize);
-      skylineGroup.traverse(object => { if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose(); if (object.material && !Array.isArray(object.material)) object.material.dispose(); });\n      skylineGroup.removeFromParent();\n      renderer.dispose();
+      skylineGroup.traverse(object => { if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose(); if (object.material && !Array.isArray(object.material)) object.material.dispose(); });
+      skylineGroup.removeFromParent();
+      highwayGateway.dispose();
+      renderer.dispose();
       atmosphere.dispose();
       cloudLayer.dispose();
       backgroundSkyline.dispose();
