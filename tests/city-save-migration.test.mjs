@@ -105,11 +105,13 @@ test("offline app shell precaches every city simulation and persistence module",
   assert.match(serviceWorker,/mshin-arcade-v80/,"city persistence release must advance the offline cache version");
 });
 
-test("fractional city clock minutes remain valid and survive save migration", () => {
+test("all saved clock values normalize to permanent midday during migration", () => {
   const city = seedCityRoadAccess(createInitialCity(1204));
-  city.minuteOfDay = 720.8;
-  assert.equal(isValidCitySave(city), true, "continuous lighting clock values must be persistable");
-  const restored = migrateCitySave(JSON.parse(JSON.stringify(city)));
-  assert.equal(restored.minuteOfDay, 720.8, "save migration must preserve sub-minute daylight progress");
-  assert.equal(isValidCitySave(restored), true);
+  for (const minuteOfDay of [0, 360, 720.8, 1080, 1439]) {
+    city.minuteOfDay = minuteOfDay;
+    assert.equal(isValidCitySave(city), true, "valid legacy clock values must remain importable");
+    const restored = migrateCitySave(JSON.parse(JSON.stringify(city)));
+    assert.equal(restored.minuteOfDay, 720, "save migration must normalize night, twilight and fractional values to midday");
+    assert.equal(isValidCitySave(restored), true);
+  }
 });
