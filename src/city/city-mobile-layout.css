@@ -201,7 +201,7 @@ button,a{font:inherit}button{cursor:pointer;touch-action:manipulation}
   .cityActions { position:fixed; z-index:7; top:max(7px,env(safe-area-inset-top)); right:max(8px,env(safe-area-inset-right)); display:flex; gap:5px; }
   .cityAction { width:42px; height:42px; min-height:42px; padding:0; display:grid; place-items:center; border-radius:50%; font-size:20px; }
   .cityMetrics { position:fixed; z-index:6; top:max(56px,calc(env(safe-area-inset-top) + 54px)); left:max(82px,calc(env(safe-area-inset-left) + 74px)); right:max(58px,calc(env(safe-area-inset-right) + 50px)); display:flex; flex-direction:row; flex-wrap:nowrap; gap:4px; width:auto; max-width:none; overflow:hidden; }
-  .cityMetric { display:grid; grid-template-columns:18px minmax(0,1fr); align-items:center; gap:2px; flex:1 1 0; min-width:0; padding:4px 5px; border-radius:11px; text-align:right; }
+  .cityMetric { display:grid; grid-template-columns:18px minmax(0,1fr); align-items:center; gap:2px; flex:1 1 0; min-width:0; padding:4px 5px; border-radius:11px; text-align:left; }
   .cityMetricIcon { display:block; font-size:15px; line-height:1; }
   .cityMetric small { display:none; }
   .cityMetric b { font-size:11px; text-align:left; }
