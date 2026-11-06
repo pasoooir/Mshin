@@ -103,6 +103,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const dummy = new THREE.Object3D();
   let activeRoads = 0;
   const curbInstances = [];
+  const crosswalkStripeCount = 0;
   const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
   const trunkGeometry = new THREE.CylinderGeometry(0.10, 0.15, 1.05, 6);
   const canopyGeometry = new THREE.SphereGeometry(0.62, 9, 7);
