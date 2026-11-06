@@ -185,6 +185,9 @@ try {
   });
   const mobileStartGrid = await mobile.evaluate(() => window.MshinRaceStart);
   assert.ok(mobileStartGrid?.synchronized && mobileStartGrid.entrants.length === 4, "mobile race must release all five cars from the same start line and GO timestamp: " + JSON.stringify(mobileStartGrid));
+  const mobileClocksBefore = await mobile.evaluate(() => window.MshinRaceClocks);
+  assert.equal(mobileClocksBefore.racers.length, 5, "mobile race must expose one stopwatch per car");
+  assert.ok(mobileClocksBefore.racers.every(clock => clock.startTimestamp === mobileStartGrid.timestamp && clock.running), "all mobile stopwatches must share the GO timestamp");
   await mobile.waitForFunction(() => window.MshinRaceMinimap?.markers?.length === 5, undefined, { timeout: 5000 });
   const mobileMapBefore = await mobile.evaluate(() => window.MshinRaceMinimap);
   assert.ok(mobileMapBefore.markers.every(marker => Number.isFinite(marker.x) && Number.isFinite(marker.y) && marker.actualX >= mobileMapBefore.bounds.x && marker.actualX <= mobileMapBefore.bounds.x + mobileMapBefore.bounds.width && marker.actualY >= mobileMapBefore.bounds.y && marker.actualY <= mobileMapBefore.bounds.y + mobileMapBefore.bounds.height), "mobile map must place every race car within the track bounds: " + JSON.stringify(mobileMapBefore));
