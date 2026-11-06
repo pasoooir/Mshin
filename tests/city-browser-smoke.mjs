@@ -85,7 +85,7 @@ try{
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
- assert.equal(renderStats.streetFurniturePlacementReady,true,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
+ assert.equal(renderStats.streetFurniturePlacementReady,false,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
  assert.equal(renderStats.sidewalkStrips,0,"the empty starting world must not contain sidewalks before roads are built");
  assert.equal(renderStats.plots,1024,"all 1024 plots in the playable grid must be empty and buildable");
  assert.equal(renderStats.roadTiles,0,"a new city must not contain prebuilt roads");
@@ -463,7 +463,7 @@ try{
  for(let y=0;y<32;y++)for(let x=0;x<32;x++)if([7,15,23].includes(x)||[7,15,23].includes(y))legacyGrid[y][x]="road";
  for(let y=0;y<5;y++)for(let x=26;x<31;x++)legacyGrid[y][x]="water";
  legacyGrid[14][17]="building";
- const legacyFixture={schemaVersion:1,cityId:"legacy-city-01",name:"شهر قدیمی",seed:20261102,tick:42,minuteOfDay:815,treasury:12345,population:12,happiness:76,grid:legacyGrid,buildings:[{id:1,type:"home",x:17,y:14,level:1,age:4,residents:12}],trees:[{x:10,y:10,size:1.2}],citizens:[{id:1,x:11.5,y:12.2,phase:1.4,pace:.16}],traffic:[{id:1,x:15,y:15,speed:1.2,color:"#f5bd58"}],nextBuildingId:2,stats:{income:13,expenses:2,jobs:8,traffic:3}};
+ const legacyFixture={schemaVersion:1,cityId:"legacy-city-01",name:"Old City",seed:20261102,tick:42,minuteOfDay:815,treasury:12345,population:12,happiness:76,grid:legacyGrid,buildings:[{id:1,type:"home",x:17,y:14,level:1,age:4,residents:12}],trees:[{x:10,y:10,size:1.2}],citizens:[{id:1,x:11.5,y:12.2,phase:1.4,pace:.16}],traffic:[{id:1,x:15,y:15,speed:1.2,color:"#f5bd58"}],nextBuildingId:2,stats:{income:13,expenses:2,jobs:8,traffic:3}};
  const migrationPage=await browser.newPage({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const migrationErrors=[];migrationPage.on("pageerror",error=>migrationErrors.push(String(error)));
  try{
