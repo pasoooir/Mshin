@@ -37,7 +37,7 @@ test("renderer scales the district, vehicles, pedestrians and zoom range from th
   const source = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
   assert.match(source, /cityTileToWorld\(x\)/);
   assert.match(source, /worldToCityTile\(point\.x\)/);
-  assert.match(source, /Math\.max\(0\.0625, Math\.min\(1\.875/);
+  assert.match(source, /Math\.max\(0\.42, Math\.min\(1\.5/);
   assert.match(source, /trafficDummy\.scale\.set\(1\.76, 1\.5, 2\.53\)/);
   assert.match(source, /pedestrianDummy\.scale\.set\(1\.8, 2\.8, 1\.8\)/);
   assert.ok(source.length < 35_000, "renderer must stay under its 35 KB architecture budget");
