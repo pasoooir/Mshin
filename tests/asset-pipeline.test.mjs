@@ -265,7 +265,8 @@ test("opening nitro pickup is aligned with the player and protected from early t
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   assert.match(game, /t:i===0\?\.075:/, "first pickup should be just ahead of the start line");
   assert.match(game, /lateral:i===0\?0:/, "first pickup should align with the starting lane");
-  assert.match(game, /distance:\.32\+i\*\.22,totalProgress:\.32\+i\*\.22/, "opening rivals should leave a clear approach zone");
+  assert.match(game, /distance:0,totalProgress:0,lapsCompleted:0,timerElapsed:0,finishTime:null/, "all race entrants should share the same starting line and reset clocks");
+  assert.match(game, /const lanes=\[-135,-45,135,45,-135,45,-45,135\]/, "opponents should occupy separate grid lanes");
 });
 
 
