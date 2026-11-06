@@ -71,12 +71,7 @@ jobs:
         run: |
           node --check tests/browser-smoke.mjs
           node tests/browser-smoke.mjs
-      - name: Run city entry browser smoke test
-        env:
-          CI: "true"
-        run: |
-          node --check tests/city-browser-smoke.mjs
-          node tests/city-browser-smoke.mjs
+      # City entry and mobile city acceptance run in the dedicated city-mobile workflow.
       - name: Run four-season city weather and atmosphere acceptance
         env:
           CI: "true"
