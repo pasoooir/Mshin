@@ -8,7 +8,7 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
   root.name = "mshin-regional-highway-gateway";
   const asphaltMap = asphaltSurface.map.clone();
   asphaltMap.wrapS = asphaltMap.wrapT = THREE.RepeatWrapping;
-  asphaltMap.repeat.set(34, 2.5);
+  asphaltMap.repeat.set(2.5, 34);
   asphaltMap.needsUpdate = true;
   const asphaltNormal = asphaltSurface.normalMap.clone();
   asphaltNormal.wrapS = asphaltNormal.wrapT = THREE.RepeatWrapping;
@@ -251,8 +251,9 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
     highwayLanes: 6,
     highwayRamps: 2,
     cityGatewayRoads: 1,
-    highwayGuardrailSegments: 6,
+    highwayGuardrailSegments: 8,
     highwaySigns: 2,
+    highwayMeshCount: root.children.length,
     highwayWorldUnitMeters: 1
   };
   return {
