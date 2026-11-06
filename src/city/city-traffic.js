@@ -8,6 +8,8 @@ const COLORS = Object.freeze(["#f2bd4d", "#65c8dc", "#d77e8b", "#a8c98a", "#b69b
 const MAX_TRAFFIC = 12;
 const SPAWN_INTERVAL = 8;
 const MIN_SPAWN_GAP = 2.5;
+// Fixed highway gateway road port: the first buildable road tile connects here.
+const HIGHWAY_GATEWAY_TILE = Object.freeze({ x: 13, y: 0 });
 
 const inside = (grid, x, y) => Number.isInteger(x) && Number.isInteger(y)
   && y >= 0 && y < grid.length && x >= 0 && x < (grid[y]?.length || 0);
@@ -32,6 +34,10 @@ function chooseNextRoad(city, vehicle) {
   if (!options.length) return null;
 
   const forward = options.filter(point => point.x !== vehicle.previousX || point.y !== vehicle.previousY);
+  // A vehicle that reaches the gateway from the city exits onto the highway;
+  // do not reverse it back into the city when no alternate road remains.
+  if (vehicle.x === HIGHWAY_GATEWAY_TILE.x && vehicle.y === HIGHWAY_GATEWAY_TILE.y
+    && vehicle.previousX !== null && vehicle.previousY !== null && forward.length === 0) return null;
   const candidates = forward.length ? forward : options;
   if (candidates.length === 1) return candidates[0];
 
@@ -75,7 +81,9 @@ function spawnVehicle(city) {
   const roads = [];
   for (let y = 0; y < city.grid.length; y++) {
     for (let x = 0; x < city.grid[y].length; x++) {
-      if (isRoad(city.grid, x, y) && roadNeighbors(city.grid, x, y).length >= 2) roads.push({ x, y });
+      const connections = roadNeighbors(city.grid, x, y).length;
+      const gatewayAccess = x === HIGHWAY_GATEWAY_TILE.x && y === HIGHWAY_GATEWAY_TILE.y && connections >= 1;
+      if (isRoad(city.grid, x, y) && (connections >= 2 || gatewayAccess)) roads.push({ x, y });
     }
   }
   const available = roads.filter(point => city.traffic.every(vehicle =>
@@ -91,8 +99,8 @@ function spawnVehicle(city) {
     id,
     x: start.x,
     y: start.y,
-    previousX: null,
-    previousY: null,
+    previousX: start.x === HIGHWAY_GATEWAY_TILE.x && start.y === HIGHWAY_GATEWAY_TILE.y ? HIGHWAY_GATEWAY_TILE.x : null,
+    previousY: start.x === HIGHWAY_GATEWAY_TILE.x && start.y === HIGHWAY_GATEWAY_TILE.y ? -1 : null,
     targetX: null,
     targetY: null,
     headingX: 0,
@@ -149,7 +157,8 @@ export function stepCityTraffic(city, seconds = 1) {
     throw new TypeError("A valid city traffic state and positive step are required");
   }
   // Road demolition may strand a car mid-segment; retire it before it can be saved off-road.
-  city.traffic = city.traffic.filter(vehicle => isRoad(city.grid, Math.round(vehicle.x), Math.round(vehicle.y)));
+  city.traffic = city.traffic.filter(vehicle => isRoad(city.grid, Math.round(vehicle.x), Math.round(vehicle.y))
+    && !(vehicle.x === HIGHWAY_GATEWAY_TILE.x && vehicle.y === HIGHWAY_GATEWAY_TILE.y && vehicle.targetX === null));
   spawnVehicle(city);
   for (const vehicle of city.traffic) {
     if (!Number.isFinite(vehicle.speed) || vehicle.speed <= 0) vehicle.speed = 0.4;

@@ -246,6 +246,55 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
   makeSign(-108, -207, "CITY EXIT  |  1 km");
   makeSign(92, -207, "REGIONAL HIGHWAY");
 
+  // Lightweight live traffic: vehicles are instanced and follow the actual
+  // carriageway/ramp splines, including the city gateway approach.
+  const trafficBodyGeometry = new THREE.BoxGeometry(1.9, 0.62, 4.1);
+  const trafficCabinGeometry = new THREE.BoxGeometry(1.48, 0.54, 1.95);
+  const trafficBodyMaterial = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.48, metalness: 0.12 });
+  const trafficCabinMaterial = new THREE.MeshStandardMaterial({ color: "#a9d9e5", roughness: 0.24, metalness: 0.08 });
+  const trafficBodies = new THREE.InstancedMesh(trafficBodyGeometry, trafficBodyMaterial, 16);
+  const trafficCabins = new THREE.InstancedMesh(trafficCabinGeometry, trafficCabinMaterial, 16);
+  trafficBodies.castShadow = false;
+  trafficCabins.castShadow = false;
+  root.add(trafficBodies, trafficCabins);
+  meshes.push(trafficBodies, trafficCabins);
+  const trafficDummy = new THREE.Object3D();
+  const trafficColors = ["#f2bd4d", "#65c8dc", "#d77e8b", "#a8c98a", "#b69be8", "#e5e9ef"];
+  const northTrafficPath = curve([[-310, 0.34, -199], [-150, 0.34, -199], [0, 0.34, -199], [150, 0.34, -199], [310, 0.34, -199]]);
+  const southTrafficPath = curve([[310, 0.34, -181], [150, 0.34, -181], [0, 0.34, -181], [-150, 0.34, -181], [-310, 0.34, -181]]);
+  const trafficRoutes = [
+    ...Array.from({ length: 6 }, (_, index) => ({ path: northTrafficPath, offset: index / 6, speed: 0.018 + (index % 3) * 0.002 })),
+    ...Array.from({ length: 6 }, (_, index) => ({ path: southTrafficPath, offset: index / 6, speed: 0.017 + (index % 3) * 0.002 })),
+    { path: offRamp, offset: 0.18, speed: 0.035 },
+    { path: offRamp, offset: 0.66, speed: 0.032 },
+    { path: onRamp, offset: 0.28, speed: 0.034 },
+    { path: onRamp, offset: 0.76, speed: 0.031 }
+  ];
+  function updateTraffic(deltaSeconds = 1 / 60) {
+    const elapsed = Math.max(0, Math.min(0.1, Number(deltaSeconds) || 0));
+    trafficRoutes.forEach((route, index) => {
+      route.offset = (route.offset + route.speed * elapsed) % 1;
+      const point = route.path.getPointAt(route.offset);
+      const tangent = route.path.getTangentAt(route.offset);
+      const heading = Math.atan2(tangent.x, tangent.z);
+      trafficDummy.position.set(point.x, point.y + 0.38, point.z);
+      trafficDummy.rotation.set(0, heading, 0);
+      trafficDummy.scale.set(1, 1, 1);
+      trafficDummy.updateMatrix();
+      trafficBodies.setMatrixAt(index, trafficDummy.matrix);
+      trafficBodies.setColorAt(index, new THREE.Color(trafficColors[index % trafficColors.length]));
+      trafficDummy.position.y += 0.42;
+      trafficDummy.position.z -= Math.cos(heading) * 0.18;
+      trafficDummy.position.x -= Math.sin(heading) * 0.18;
+      trafficDummy.updateMatrix();
+      trafficCabins.setMatrixAt(index, trafficDummy.matrix);
+    });
+    trafficBodies.instanceMatrix.needsUpdate = true;
+    trafficCabins.instanceMatrix.needsUpdate = true;
+    if (trafficBodies.instanceColor) trafficBodies.instanceColor.needsUpdate = true;
+  }
+  updateTraffic(0);
+
   root.userData.highwayStats = {
     highwayCarriageways: 2,
     highwayLanes: 6,
@@ -253,12 +302,14 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
     cityGatewayRoads: 1,
     highwayGuardrailSegments: 8,
     highwaySigns: 2,
+    highwayAnimatedVehicles: trafficRoutes.length,
     highwayMeshCount: root.children.length,
     highwayWorldUnitMeters: 1
   };
   return {
     group: root,
     getStats: () => ({ ...root.userData.highwayStats }),
+    updateTraffic,
     dispose() {
       for (const mesh of meshes) {
         mesh.geometry?.dispose();

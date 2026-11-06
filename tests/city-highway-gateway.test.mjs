@@ -42,6 +42,9 @@ test("3D city world includes a divided regional highway and bidirectional gatewa
   assert.equal(stats.highwayLanes, 6);
   assert.equal(stats.highwayRamps, 2);
   assert.equal(stats.cityGatewayRoads, 1);
+  assert.equal(stats.highwayAnimatedVehicles, 16);
+  assert.equal(typeof gateway.updateTraffic, "function");
+  gateway.updateTraffic(1 / 30);
   assert.ok(gateway.group.children.some(item => item.name === "highway-north-carriageway"));
   assert.ok(gateway.group.children.some(item => item.name === "highway-south-carriageway"));
   assert.ok(gateway.group.children.some(item => item.name === "highway-city-exit-ramp"));
@@ -58,4 +61,5 @@ test("city renderer mounts the highway gateway and reports its diagnostics", asy
   assert.match(source, /scene\.add\(highwayGateway\.group\)/);
   assert.match(source, /\.\.\.highwayGateway\.getStats\(\)/);
   assert.match(source, /highwayGateway\.dispose\(\)/);
+  assert.match(source, /highwayGateway\.updateTraffic\(/);
 });
