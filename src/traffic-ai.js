@@ -6,7 +6,7 @@ const wrap=(v,period)=>((v%period)+period)%period;
  * Uses direct nearest-gap scans instead of allocating/map/filter/sort arrays
  * for every AI car on every fixed simulation step.
  */
-export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbors=[],player=null,curvature=0,dt=1/60,cruiseSpeed=220}={}) {
+export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbors=[],player=null,curvature=0,dt=1/60,cruiseSpeed=220,distanceScale=1/430}={}) {
  const length=Math.max(1,Number.isFinite(trackLength)?trackLength:1);
  const step=clamp(Number.isFinite(dt)?dt:0,0,.05);
  const laneSet=lanes;
@@ -61,7 +61,8 @@ export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbo
  vehicle.lateralVelocity=clamp(vehicle.lateralVelocity+lateralAccel*step,-38,38);
  vehicle.lateral=clamp(vehicle.lateral+vehicle.lateralVelocity*step,minLane-12,maxLane+12);
  if(Math.abs(lateralError)<2.2&&Math.abs(vehicle.lateralVelocity)<3){vehicle.lateral=laneTarget;vehicle.lateralVelocity=0;vehicle.laneIndex=targetLane}
- vehicle.distance=wrap(vehicle.distance+vehicle.speed/430*step,length);
+ const worldDistanceScale=Number.isFinite(distanceScale)&&distanceScale>0?distanceScale:1/430;
+ vehicle.distance=wrap(vehicle.distance+vehicle.speed*step*worldDistanceScale,length);
  vehicle.yaw=clamp((vehicle.yaw||0)+clamp(vehicle.lateralVelocity*.003,-.16,.16)*step,-.28,.28);
  return vehicle;
 }

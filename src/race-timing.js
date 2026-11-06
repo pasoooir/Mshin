@@ -18,3 +18,32 @@ export function finishTimestamp(raceElapsed, deltaSeconds, previousDistance, dis
   if (fraction === null || !Number.isFinite(raceElapsed) || !Number.isFinite(deltaSeconds)) return null;
   return raceElapsed + deltaSeconds * fraction;
 }
+
+/** Per-vehicle stopwatch; all entrants receive the same GO timestamp. */
+export function createRaceClock() {
+  return { startedAt: null, elapsed: 0, finishTime: null, running: false };
+}
+
+export function startRaceClock(clock, timestamp) {
+  return {
+    startedAt: Number.isFinite(timestamp) ? timestamp : 0,
+    elapsed: 0,
+    finishTime: null,
+    running: true
+  };
+}
+
+export function advanceRaceClock(clock, deltaSeconds) {
+  if (!clock || !clock.running || !Number.isFinite(deltaSeconds)) return clock?.elapsed ?? 0;
+  clock.elapsed = Math.max(0, clock.elapsed + Math.max(0, deltaSeconds));
+  return clock.elapsed;
+}
+
+export function finishRaceClock(clock, exactFinishTime = clock?.elapsed ?? 0) {
+  if (!clock) return 0;
+  const finishTime = Number.isFinite(exactFinishTime) ? Math.max(0, exactFinishTime) : clock.elapsed;
+  clock.elapsed = finishTime;
+  clock.finishTime = finishTime;
+  clock.running = false;
+  return finishTime;
+}
