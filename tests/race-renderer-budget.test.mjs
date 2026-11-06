@@ -6,7 +6,7 @@ const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.
 const terrainSource = await readFile(new URL("../src/race-natural-terrain.js", import.meta.url), "utf8");
 
 test("procedural 3D scene stays within a bounded first-build geometry budget", () => {
-  assert.ok(source.includes("const segments=mobile?320:softwareRenderer?400:820,half=220;"),
+  assert.ok(source.includes("const segments=mobile?320:softwareRenderer?400:820,half=360;"),
     "tenfold mobile circuit tessellation remains dense enough to avoid visible road facets");
   assert.ok(source.includes("treeCount=mobile?22:softwareRenderer?28:64"),
     "desktop tree instances are capped at 64");
@@ -17,7 +17,7 @@ test("procedural 3D scene stays within a bounded first-build geometry budget", (
 });
 
 test("the scene keeps its full road width while reducing mesh density", () => {
-  assert.ok(source.includes("const segments=mobile?320:softwareRenderer?400:820,half=220;"));
+  assert.ok(source.includes("const segments=mobile?320:softwareRenderer?400:820,half=360;"));
   assert.ok(source.includes("quad(roadTris,l0,r0,r1,l1)"),
     "the asphalt remains a continuous closed road ribbon");
 });
@@ -138,7 +138,7 @@ test("software WebGL devices automatically use a bounded render target and scene
 });
 
 test("wider circuit keeps edge lines, kerbs and shoulders aligned with asphalt",()=>{
- assert.match(source,/const segments=mobile\?320:softwareRenderer\?400:820,half=220/);
+ assert.match(source,/const segments=mobile\?320:softwareRenderer\?400:820,half=360/);
  assert.match(source,/\[-194,194\]/);
  assert.match(source,/fa,side\*208/);
  assert.match(source,/fa,-half-32/);
