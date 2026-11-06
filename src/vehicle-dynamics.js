@@ -37,7 +37,8 @@ export function stepVehicleDynamics(vehicle, controls, tuning, frameAt) {
     deltaSeconds: dt,
     mass,
     steeringResponseScale: tuning.steeringResponse || 1,
-    rearStability: tuning.rearStability || 1
+    rearStability: tuning.rearStability || 1,
+    drift: controls.drift === true
   });
 
   const maxSpeed = Math.max(0, tuning.maxSpeed || 0);
