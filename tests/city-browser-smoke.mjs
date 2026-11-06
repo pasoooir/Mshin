@@ -80,8 +80,8 @@ try{
  assert.equal(renderStats.texturedBuildingMaterials,4,"residential, commercial, industrial and civic materials must use PBR textures");
  assert.equal(renderStats.backgroundCityBuildings,0,"a new city must not contain decorative houses or apartment buildings");
  assert.equal(renderStats.backgroundCityWindows,0,"a new city must not render windows on nonexistent buildings");
- assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
- assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۶"),"the city UI must expose the deployed version");
+ assert.equal(await page.locator("#cityRenderStatus").textContent(),"3D Renderer Ready","the UI must report when the actual 3D renderer is ready");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("0.15.7"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,renderStats.decorativeTrees,"decorative trees must stay outside every locked and unlocked buildable parcel");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
