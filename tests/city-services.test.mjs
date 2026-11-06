@@ -12,7 +12,7 @@ test("the city defines all four utilities and four public service departments", 
 });
 
 test("utility and civic buildings require road access and charge their construction cost", () => {
-  const city=seedCityRoadAccess(createInitialCity(601))),money=city.treasury;
+  const city=seedCityRoadAccess(createInitialCity(601)),money=city.treasury;
   const result=placeCityItem(city,17,14,"power");
   assert.equal(result.ok,true);
   assert.equal(city.grid[14][17],"building");
