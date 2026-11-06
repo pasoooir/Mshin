@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave, normalizeCitySave } from "../src/city/city-view.js";
 import { CITY_DEFAULT_TAX_RATES, computeCityEconomy, setCityTaxRate, cityTaxPressure } from "../src/city/city-economy.js";
 
-function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,12,"road");placeCityItem(city,x,15,"road")}return city}
+function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,12,"road");placeCityItem(city,x,15,"road");placeCityItem(city,x,18,"road")}return city}
 
 test("default sector tax rates preserve the established residential income baseline", () => {
   const city = seedCityRoadAccess(createInitialCity(1101));
