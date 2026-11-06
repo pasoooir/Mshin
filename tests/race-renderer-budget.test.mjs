@@ -139,7 +139,7 @@ test("software WebGL devices automatically use a bounded render target and scene
 
 test("wider circuit keeps edge lines, kerbs and shoulders aligned with asphalt",()=>{
  assert.match(source,/const segments=mobile\?320:softwareRenderer\?400:820,half=360/);
- assert.match(source,/\[-194,194\]/);
+ assert.match(source,/\[-345,-180,180,345\]/);
  assert.match(source,/fa,side\*208/);
  assert.match(source,/fa,-half-32/);
  assert.match(source,/offset=side\*\(half\+15\)/);
