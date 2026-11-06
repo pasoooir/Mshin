@@ -129,7 +129,7 @@ function mount(){
  function toolName(){return({select:"SELECT",road:"ROAD",home:"Residential",shop:"Commercial",industrial:"Industrial",administrative:"Office",service:"SERVICES",park:"PARK",power:"POWER",water:"WATER",sewage:"SEWAGE",waste:"WASTE",police:"POLICE",fire:"FIRE",health:"HEALTHCARE",education:"EDUCATION","zone-residential":"RESIDENTIAL ZONE","zone-commercial":"COMMERCIAL ZONE","zone-industrial":"INDUSTRIAL ZONE","zone-administrative":"OFFICE ZONE","zone-recreational":"LEISURE ZONE",bulldoze:"DEMOLISH"})[tool]||tool}
  function updateBudgetPanel(){
   const panel=$("cityBudgetPanel");if(!panel||panel.classList.contains("hidden"))return;
-  const fmt=value=>Math.round(value||0).toLocaleString("fa-IR");
+  const fmt=value=>Math.round(value||0).toLocaleString("en-US");
   $("cityBudgetIncome").textContent=fmt(city.stats.income);
   $("cityBudgetExpenses").textContent=fmt(city.stats.expenses);
   $("cityBudgetNet").textContent=(city.stats.net>=0?"+":"")+fmt(city.stats.net);
@@ -138,18 +138,18 @@ function mount(){
    const slider=$("cityTax"+sector[0].toUpperCase()+sector.slice(1));
    const output=$("cityTax"+sector[0].toUpperCase()+sector.slice(1)+"Value");
    if(slider)slider.value=city.taxRates[sector];
-   if(output)output.textContent=city.taxRates[sector].toLocaleString("fa-IR")+"%";
+   if(output)output.textContent=city.taxRates[sector].toLocaleString("en-US")+"%";
   }
   $("cityBudgetTaxRevenue").textContent=fmt(city.stats.taxRevenue);
   $("cityBudgetMaintenance").textContent=fmt(city.stats.maintenance);
   $("cityBudgetServiceUpkeep").textContent=fmt(city.stats.serviceUpkeep);
-  if($("cityBudgetCommuteProductivity"))$("cityBudgetCommuteProductivity").textContent=(city.stats.commuteProductivityPercent??100).toLocaleString("fa-IR")+"%";
+  if($("cityBudgetCommuteProductivity"))$("cityBudgetCommuteProductivity").textContent=(city.stats.commuteProductivityPercent??100).toLocaleString("en-US")+"%";
   if($("cityBudgetCommuteLoss"))$("cityBudgetCommuteLoss").textContent=fmt(city.stats.commuteEconomicLoss);
  }
  function hud(){
-  $("cityPopulation").textContent=city.population.toLocaleString("fa-IR");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("fa-IR")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("fa-IR");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("fa-IR")+"%";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"%";if($("cityUnemployment"))$("cityUnemployment").textContent=(city.stats.unemploymentRate??0).toLocaleString("fa-IR")+"%";if($("cityCommuteCoverage"))$("cityCommuteCoverage").textContent=(city.stats.commuteCoverage??0).toLocaleString("fa-IR")+"%";
-  $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="Day "+(1+Math.floor(city.tick/144)).toLocaleString("fa-IR");
-  $("cityStatus").textContent=tool==="select"?"Your city is alive. Choose a tool below to build.":"Active tool: "+toolName();$("cityBudgetHint").textContent="Income +"+city.stats.income.toLocaleString("fa-IR")+" · Cost -"+city.stats.expenses.toLocaleString("fa-IR")+" · Balance "+(city.stats.net>=0?"+":"")+Math.round(city.stats.net||0).toLocaleString("fa-IR");$("citySaveState").textContent=toastFrames>0?"Saved ✓":"Local Save";if(toastFrames>0)toastFrames--;
+  $("cityPopulation").textContent=city.population.toLocaleString("en-US");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("en-US")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("en-US");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("en-US")+"%";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("en-US")+"%";if($("cityUnemployment"))$("cityUnemployment").textContent=(city.stats.unemploymentRate??0).toLocaleString("en-US")+"%";if($("cityCommuteCoverage"))$("cityCommuteCoverage").textContent=(city.stats.commuteCoverage??0).toLocaleString("en-US")+"%";
+  $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="Day "+(1+Math.floor(city.tick/144)).toLocaleString("en-US");
+  $("cityStatus").textContent=tool==="select"?"Your city is alive. Choose a tool below to build.":"Active tool: "+toolName();$("cityBudgetHint").textContent="Income +"+city.stats.income.toLocaleString("en-US")+" · Cost -"+city.stats.expenses.toLocaleString("en-US")+" · Balance "+(city.stats.net>=0?"+":"")+Math.round(city.stats.net||0).toLocaleString("en-US");$("citySaveState").textContent=toastFrames>0?"Saved ✓":"Local Save";if(toastFrames>0)toastFrames--;
   updateBudgetPanel();
  }
  function draw(){if(threeRenderer){threeRenderer.render(city,view,cam);window.MshinCity3DStats=threeRenderer.getStats();hud();return}
@@ -160,9 +160,9 @@ function mount(){
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)ground(x,y,city.grid[y][x]);
   [...city.trees.map(t=>({d:t.x+t.y,draw:()=>tree(t)})),...city.buildings.map(b=>({d:b.x+b.y,draw:()=>building(b)}))].sort((a,b)=>a.d-b.d).forEach(v=>v.draw());
   cars();people();animals();if(selected){const p=tilePoint(selected.x,selected.y);ctx.strokeStyle="#fff1a6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y-8);ctx.lineTo(p.x+16,p.y);ctx.lineTo(p.x,p.y+8);ctx.lineTo(p.x-16,p.y);ctx.closePath();ctx.stroke()}ctx.restore();
-  $("cityPopulation").textContent=city.population.toLocaleString("fa-IR");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("fa-IR")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("fa-IR");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("fa-IR")+"%";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"%";
-  $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="Day "+(1+Math.floor(city.tick/144)).toLocaleString("fa-IR");
-  $("cityStatus").textContent=tool==="select"?"Your city is alive. Choose a tool below to build.":"Active tool: "+toolName();$("cityBudgetHint").textContent="Income +"+city.stats.income.toLocaleString("fa-IR")+" · Cost -"+city.stats.expenses.toLocaleString("fa-IR")+" · Infrastructure "+(city.stats.overallCoverage??0).toLocaleString("fa-IR")+"%";$("citySaveState").textContent=toastFrames>0?"Saved ✓":"Local Save";if(toastFrames>0)toastFrames--;
+  $("cityPopulation").textContent=city.population.toLocaleString("en-US");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("en-US")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("en-US");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("en-US")+"%";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("en-US")+"%";
+  $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="Day "+(1+Math.floor(city.tick/144)).toLocaleString("en-US");
+  $("cityStatus").textContent=tool==="select"?"Your city is alive. Choose a tool below to build.":"Active tool: "+toolName();$("cityBudgetHint").textContent="Income +"+city.stats.income.toLocaleString("en-US")+" · Cost -"+city.stats.expenses.toLocaleString("en-US")+" · Infrastructure "+(city.stats.overallCoverage??0).toLocaleString("en-US")+"%";$("citySaveState").textContent=toastFrames>0?"Saved ✓":"Local Save";if(toastFrames>0)toastFrames--;
  }
  const cityToolsNav=document.querySelector(".cityTools");
  function closeCityToolPanels(){
@@ -185,7 +185,7 @@ function mount(){
   if(!inside(x,y))return;selected={x,y};
   if(tool==="select"){draw();return}
   if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home"){city.population=Math.max(0,city.population-b.residents);syncCityCitizens(city)}city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="Building demolished; 35% of its cost was refunded.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="This road is the only access route to a building."}else{city.grid[y][x]="grass";$("cityToast").textContent="Road segment removed.";changed=true}}if(changed)persist(city);draw();return}
-  const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"Construction complete · Cost "+result.cost.toLocaleString("fa-IR"):result.reason;if(result.ok)persist(city);draw()
+  const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"Construction complete · Cost "+result.cost.toLocaleString("en-US"):result.reason;if(result.ok)persist(city);draw()
  }
  cityToolsNav?.querySelectorAll("[data-city-category]").forEach(button=>button.addEventListener("click",()=>openCityToolPanel(button.dataset.cityCategory)));
  document.querySelectorAll("[data-city-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.cityTool)));
