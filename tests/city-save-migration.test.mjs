@@ -48,7 +48,7 @@ test("version-one local city saves migrate without losing the built city or trea
 });
 
 test("exported JSON backup envelopes round-trip through the same migration boundary", () => {
-  const city=seedCityRoadAccess(createInitialCity(1201)));
+  const city=seedCityRoadAccess(createInitialCity(1201));
   placeCityItem(city,17,14,"home");
   setCityTaxRate(city,"residential",14);
   for(let i=0;i<3;i++)stepCity(city);
