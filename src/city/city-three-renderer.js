@@ -125,18 +125,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const decorativeTreeCount = 0;
   const decorativeTreesOutsideBuildableGrid = 0;
   const treeSpeciesCounts = canopyMaterials.map(() => 0);
-  const treeTrunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, 1);
   treeTrunks.count = 0;
-  const treeCanopies = canopyMaterials.map(material => {
-    const mesh = new THREE.InstancedMesh(canopyGeometry, material, 1);
-    mesh.count = 0;
-    return mesh;
-  });
-  const treeHighlights = canopyMaterials.map(material => {
-    const mesh = new THREE.InstancedMesh(canopySmallGeometry, material, 1);
-    mesh.count = 0;
-    return mesh;
-  });
+  for (const mesh of [...treeCanopies, ...treeHighlights]) mesh.count = 0;
   const decorativeStreetLightCount = 0;
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
   const buildings = new THREE.Group();
