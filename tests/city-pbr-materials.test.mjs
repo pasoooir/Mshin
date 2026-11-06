@@ -60,7 +60,7 @@ test("building rebuild releases shared GPU resources once", () => {
 });
 
 test("city visual identity uses a muted architectural palette and reports PBR acceptance metrics", () => {
-  assert.ok(renderer.includes('visualStyle: "realistic-pbr-city"'));
+  assert.ok(renderer.includes('visualStyle: "continuous-realistic-grassland"'));
   assert.ok(renderer.includes("pbrMaterialSets: 6"));
   assert.ok(renderer.includes("normalMappedSurfaces: 6"));
   assert.ok(renderer.includes("pbrGenerationMs"), "renderer must expose measured PBR generation time");
@@ -73,4 +73,18 @@ test("city visual identity uses a muted architectural palette and reports PBR ac
     assert.ok(renderer.includes(metric), "renderer must expose building complexity metric " + metric);
   }
   assert.ok(!renderer.includes('visualStyle: "vibrant-stylized-3d"'));
+});
+
+test("new city opens on one continuous textured meadow with no visible checkerboard plot grid", () => {
+  assert.ok(renderer.includes("new THREE.PlaneGeometry(10000, 10000)"), "grass terrain must extend far beyond the playable city");
+  assert.ok(renderer.includes("texture.repeat.set(4096, 4096)"), "grass PBR maps must retain natural blade scale across the large meadow");
+  assert.ok(renderer.includes("continuousGrassland: true"));
+  assert.ok(renderer.includes("visiblePlotGridLines: 0"));
+  assert.ok(!renderer.includes("new THREE.BoxGeometry(CITY_TILE_METERS - 0.06"), "terrain must not be assembled from individual square grass tiles");
+  assert.ok(!renderer.includes("addLineLayer(activePlotEdges"), "active parcel borders must not be visible on the meadow");
+  assert.ok(!renderer.includes("addLineLayer(lockedPlotEdges"), "locked parcel borders must not be visible on the meadow");
+  assert.ok(!renderer.includes("const lotLines = []"), "no repeated lot lines may create a checkerboard appearance");
+  assert.ok(renderer.includes("const decorativeTreeCount = 0"), "the initial meadow must contain only grass before player construction");
+  assert.ok(textures.includes("const bladeTones = ["), "grass must contain layered natural blade variation");
+  assert.ok(textures.includes("9200 * detailScale"), "grass texture must include dense fine blade detail");
 });
