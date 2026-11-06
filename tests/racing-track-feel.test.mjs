@@ -9,8 +9,8 @@ const [game, dynamics, tires] = await Promise.all([
 ]);
 
 test("wider race surface is shared by renderer, edge response and AI lanes",()=>{
- assert.match(game,/ROAD_HALF_WIDTH=220/);
- assert.match(game,/lanes:\[-165,-82.5,82.5,165\]/);
+ assert.match(game,/ROAD_HALF_WIDTH=360/);
+ assert.match(game,/lanes:\[-270,-90,90,270\]/);
  assert.match(game,/Math\.abs\(car\.lateral\)/);
 });
 

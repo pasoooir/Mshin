@@ -40,7 +40,7 @@ test("asset boot waits for bounded preload before starting the game module", asy
   const audio = await readFile(path.join(root, "src/audio.js"), "utf8");
   const game = await readFile(path.join(root, "src/web-game.js"), "utf8");
   const html = await readFile(path.join(root, "index.html"), "utf8");
-  assert.ok(html.includes('src="./src/boot.js?v=2026.11.03.02"'));
+  assert.ok(html.includes('src="./src/boot.js?v=2026.11.06.01"'));
   assert.match(html, /role="tablist"/);
   assert.match(html, /data-panel="race"/);
   assert.doesNotMatch(html, /مشاهده تغییرات نسخه|releaseBadge/);
@@ -170,8 +170,8 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /lane\(-90,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /lane\(90,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /Four lanes/);
-  assert.match(game, /ROAD_HALF_WIDTH=220/);
-  assert.match(game, /lanes:\[-165,-82.5,82.5,165\]/);
+  assert.match(game, /ROAD_HALF_WIDTH=360/);
+  assert.match(game, /lanes:\[-270,-90,90,270\]/);
   assert.match(game, /countdownElapsed<3\.72/);
   assert.match(game, /"دره سبز"/);
   assert.match(game, /"توفان کویر"/);
@@ -214,10 +214,10 @@ test("all app cache and asset version markers are advanced together", async () =
   const readme = await readFile(path.join(root, "README.md"), "utf8");
   assert.match(sw, /mshin-arcade-v76/);
   assert.ok(html.includes("boot"), "HTML should load the boot module");
-  assert.equal(manifest.version, "2026.11.03.02");
+  assert.equal(manifest.version, "2026.11.06.01");
   assert.equal(pkg.version, "0.15.4");
   assert.equal(pwa.version, "0.15.4");
-  assert.equal(cocos.version, "2026.11.03.02");
+  assert.equal(cocos.version, "2026.11.06.01");
   assert.ok(readme.includes("Latest published release on main: 0.15.2") && readme.includes("Version 0.14.0 remains a separate draft and is not claimed as live"), "README must identify the verified live release without claiming the mobile fix is deployed");
   assert.ok(readme.includes("## Latest published release on main: 0.15.2") && readme.includes("Versions 0.11.0–0.11.6 were published on GitHub Pages; the in-race vehicle geometry was merged afterward in pull request #77"), "README must distinguish the published release from the mobile-fix PR branch");
 });
@@ -266,7 +266,7 @@ test("opening nitro pickup is aligned with the player and protected from early t
   assert.match(game, /t:i===0\?\.075:/, "first pickup should be just ahead of the start line");
   assert.match(game, /lateral:i===0\?0:/, "first pickup should align with the starting lane");
   assert.match(game, /distance:0,totalProgress:0,lapsCompleted:0,clock:createRaceClock\(\),timerElapsed:0,finishTime:null/, "all race entrants should share the same starting line and reset clocks");
-  assert.match(game, /const lanes=\[-165,-82.5,82.5,165,-165,82.5,-82.5,165\]/, "opponents should occupy separate grid lanes");
+  assert.match(game, /const lanes=\[-270,-90,90,270,-165,82.5,-82.5,165\]/, "opponents should occupy separate grid lanes");
 });
 
 
