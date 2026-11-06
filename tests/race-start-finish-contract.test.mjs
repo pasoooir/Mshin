@@ -2,27 +2,42 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const game = await readFile(new URL("../src/web-game.js", import.meta.url), "utf8");
+const [game, renderer] = await Promise.all([
+  readFile(new URL("../src/web-game.js", import.meta.url), "utf8"),
+  readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8")
+]);
 
 test("the five race entrants are reset together on GO, not during the countdown", () => {
-  assert.match(game, /race\.raceEntrants=rivals\.filter\(r=>r\.id<4\);rivals\.forEach\(r=>\{r\.timerElapsed=0;r\.finishTime=null;r\.lapsCompleted=0;r\.totalProgress=0;r\.distance=0;r\.speed=0;r\.startTimestamp=race\.startTimestamp\}\)/);
-  assert.match(game, /race\.startTimestamp=performance\.now\(\);race\.elapsed=0/);
+  assert.match(game, /race\.raceEntrants=rivals\.filter\(r=>r\.id<4\);rivals\.forEach\(r=>\{r\.clock=startRaceClock\(r\.clock,race\.startTimestamp\);r\.timerElapsed=0;r\.finishTime=null;r\.lapsCompleted=0;r\.totalProgress=0;r\.distance=0;r\.speed=0;r\.startTimestamp=race\.startTimestamp\}\)/);
+  assert.match(game, /race\.startTimestamp=performance\.now\(\);race\.playerClock=startRaceClock\(race\.playerClock,race\.startTimestamp\);race\.elapsed=0/);
   assert.match(game, /window\.MshinRaceStart=\{timestamp:race\.startTimestamp,synchronized:/);
-  assert.match(game, /distance:0,totalProgress:0,lapsCompleted:0,timerElapsed:0,finishTime:null/);
+  assert.match(game, /window\.MshinRaceClocks=\{startTimestamp:race\.startTimestamp\?\?null,racers:rows\.map/);
+  assert.match(game, /clock:createRaceClock\(\),timerElapsed:0,finishTime:null/);
+  assert.match(game, /race\.playerClock=createRaceClock\(\);race\.raceEntrants=null/);
 });
 
-test("all four opponents occupy distinct road lanes beside the player", () => {
-  assert.match(game, /const lanes=\[-165,-55,55,165,-165,55,-55,165\]/);
+test("all four opponents occupy distinct road lanes beside the player on a shared countdown row", () => {
+  assert.match(game, /const lanes=\[-165,-82\.5,82\.5,165,-165,82\.5,-82\.5,165\]/);
   assert.match(game, /car\.t=0;car\.lateral=0;/);
-  assert.match(game, /distanceScale:trackDistanceScaleAt\(r\.distance\)/);
-  assert.match(game, /function trackDistanceScaleAt\(t\)\{const before=center\(t-\.002\),after=center\(t\+\.002\),tangentScale=Math\.hypot\(after\.x-before\.x,after\.y-before\.y\)\/\.004;return TRACK_LENGTH_SCALE\/Math\.max\(1,tangentScale\)\}/);
+  assert.match(game, /const scale=Math\.min\(1\.18,width\/480\),playerX=width\*\.5,playerY=height\*\.62/);
+  assert.match(game, /gridX=\[\.16,\.33,\.67,\.84\],x=width\*gridX\[i\],y=height\*\.62/);
+  assert.match(game, /gridX=\[\.16,\.33,\.5,\.67,\.84\]/);
+  assert.match(game, /race3d\.render\(\{state,stageId:stage\.id,world:stage\.world,frameAt,raceElapsed:race\.elapsed/);
+  assert.match(renderer, /startingGrid=snapshot\.state===\"countdown\"\|\|\(Number\(snapshot\.raceElapsed\)\|\|0\)<2\.5,maxVisible=startingGrid\?4/);
 });
 
 test("AI and player finish times use interpolated finish-line crossing timestamps", () => {
-  assert.match(game, /import \{ crossedFinishLine, finishTimestamp \} from "\.\/race-timing\.js"/);
+  assert.match(game, /import \{ crossedFinishLine, finishTimestamp, createRaceClock, startRaceClock, advanceRaceClock, finishRaceClock \} from "\.\/race-timing\.js"/);
   assert.match(game, /wrapped=crossedFinishLine\(previousDistance,travel,Math\.PI\*2\)/);
   assert.match(game, /r\.finishTime=finishTimestamp\(race\.elapsed,dt,previousDistance,travel,Math\.PI\*2\)/);
   assert.match(game, /race\.playerFinishTime=finishTimestamp\(race\.elapsed,dt,race\.lastT,travel,Math\.PI\*2\)/);
+  assert.match(game, /finishRaceClock\(r\.clock,r\.finishTime\)/);
+  assert.match(game, /finishRaceClock\(race\.playerClock,race\.playerFinishTime\)/);
+});
+
+test("AI circuit speed uses the same world-distance conversion as the player", () => {
+  assert.match(game, /function trackDistanceScaleAt\(t\)/);
+  assert.match(game, /distanceScale:trackDistanceScaleAt\(r\.distance\)/);
 });
 
 test("the event waits for all original AI entrants, retaining destroyed cars as DNFs", () => {
