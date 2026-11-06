@@ -6,7 +6,7 @@ const wrap=(v,period)=>((v%period)+period)%period;
  * Uses direct nearest-gap scans instead of allocating/map/filter/sort arrays
  * for every AI car on every fixed simulation step.
  */
-export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbors=[],player=null,curvature=0,dt=1/60,cruiseSpeed=220,distanceScale=1/430}={}) {
+export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbors=[],player=null,curvature=0,dt=1/60,cruiseSpeed=220,maxSpeed=null,acceleration=85,braking=150,distanceScale=1/430}={}) {
  const length=Math.max(1,Number.isFinite(trackLength)?trackLength:1);
  const step=clamp(Number.isFinite(dt)?dt:0,0,.05);
  const laneSet=lanes;
@@ -53,10 +53,12 @@ export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbo
   }
  }
  const laneTarget=laneSet[targetLane],laneGap=aheadInLane(targetLane);
+ const topSpeed=Number.isFinite(maxSpeed)&&maxSpeed>0?maxSpeed:Math.max(80,cruiseSpeed*1.08);
  const safeSpeed=laneGap?Math.min(cruiseSpeed,Math.max(65,cruiseSpeed*(laneGap.gap/Math.max(90,vehicle.speed*.65)))):cruiseSpeed;
- const bendFactor=1-clamp(Math.abs(Number(curvature)||0)*1.8,0,.42),desiredSpeed=Math.max(70,safeSpeed*bendFactor);
- const accel=clamp((desiredSpeed-vehicle.speed)*1.35,-150,85);
- vehicle.speed=clamp(vehicle.speed+accel*step,45,Math.max(80,cruiseSpeed*1.08));
+ const bendFactor=1-clamp(Math.abs(Number(curvature)||0)*1.8,0,.42),desiredSpeed=clamp(Math.max(70,safeSpeed*bendFactor),0,topSpeed);
+ const accelerationLimit=Math.max(0,Number.isFinite(acceleration)?acceleration:85),brakingLimit=Math.max(0,Number.isFinite(braking)?braking:150);
+ const longitudinalAcceleration=step>0?clamp((desiredSpeed-vehicle.speed)/step,-brakingLimit,accelerationLimit):0;
+ vehicle.speed=clamp(vehicle.speed+longitudinalAcceleration*step,0,topSpeed);
  const lateralError=laneTarget-vehicle.lateral,lateralAccel=clamp(lateralError*2.6-vehicle.lateralVelocity*3.2,-95,95);
  vehicle.lateralVelocity=clamp(vehicle.lateralVelocity+lateralAccel*step,-38,38);
  vehicle.lateral=clamp(vehicle.lateral+vehicle.lateralVelocity*step,minLane-12,maxLane+12);
