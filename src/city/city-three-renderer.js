@@ -72,124 +72,40 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const pbrGenerationMs = performance.now() - pbrGenerationStartedAt;
   const pbrTextureResolution = grassSurface.map.image?.width || 0;
   const backgroundSkyline = { buildingCount: 0, windowCount: 0, dispose() {} };
-  const grassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, roughness: 0.96, normalScale: new THREE.Vector2(0.32, 0.32) });
-  const alternateGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#dce8c7", roughness: 0.98, normalScale: new THREE.Vector2(0.28, 0.28) });
-  const lockedGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#899783", roughness: 1, normalScale: new THREE.Vector2(0.22, 0.22) });
-  const lockedGrassAlternateMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#9aa48e", roughness: 1, normalScale: new THREE.Vector2(0.22, 0.22) });
-  const roadMaterial = new THREE.MeshStandardMaterial({ ...asphaltSurface, roughness: 0.94, metalness: 0.02, normalScale: new THREE.Vector2(0.42, 0.42) });
-  const lockedRoadMaterial = new THREE.MeshStandardMaterial({ ...asphaltSurface, color: "#aab2b1", roughness: 0.98, normalScale: new THREE.Vector2(0.3, 0.3) });
-  const curbMaterial = new THREE.MeshStandardMaterial({ color: "#f1e8d0", roughness: 0.82 });
-  const plotLineMaterial = new THREE.LineBasicMaterial({ color: "#f8efcf", transparent: true, opacity: 0.72 });
-  const lockedPlotLineMaterial = new THREE.LineBasicMaterial({ color: "#d1d8c4", transparent: true, opacity: 0.34 });
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(820, 820),
-    new THREE.MeshStandardMaterial({ ...grassSurface, color: "#a6b68a", roughness: 1, normalScale: new THREE.Vector2(0.24, 0.24) })
-  );
+  // A continuous meadow replaces the old per-cell grass slabs. The logical
+  // 32x32 build grid exists only in simulation; it is never painted on the terrain.
+  const grassGroundMap = grassSurface.map.clone();
+  const grassGroundNormal = grassSurface.normalMap.clone();
+  const grassGroundRoughness = grassSurface.roughnessMap.clone();
+  for (const texture of [grassGroundMap, grassGroundNormal, grassGroundRoughness]) {
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(4096, 4096);
+    texture.needsUpdate = true;
+  }
+  const groundMaterial = new THREE.MeshStandardMaterial({
+    map: grassGroundMap,
+    normalMap: grassGroundNormal,
+    roughnessMap: grassGroundRoughness,
+    color: "#ffffff",
+    roughness: 1,
+    normalScale: new THREE.Vector2(0.3, 0.3)
+  });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.34;
   ground.receiveShadow = true;
+  ground.frustumCulled = false;
   scene.add(ground);
-  const grassGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.06, 0.22, CITY_TILE_METERS - 0.06);
+
   const roadGeometry = new THREE.BoxGeometry(CITY_TILE_METERS - 0.01, 0.16, CITY_TILE_METERS - 0.01);
-  const grassA = new THREE.InstancedMesh(grassGeometry, grassMaterial, 2304);
-  const grassB = new THREE.InstancedMesh(grassGeometry, alternateGrassMaterial, 2304);
-  const lockedGrassA = new THREE.InstancedMesh(grassGeometry, lockedGrassMaterial, 2304);
-  const lockedGrassB = new THREE.InstancedMesh(grassGeometry, lockedGrassAlternateMaterial, 2304);
-  const roads = new THREE.InstancedMesh(roadGeometry, roadMaterial, 1792);
-  const lockedRoads = new THREE.InstancedMesh(roadGeometry, lockedRoadMaterial, 1792);
+  const roads = new THREE.InstancedMesh(roadGeometry, new THREE.MeshStandardMaterial({ ...asphaltSurface, roughness: 0.94, metalness: 0.02, normalScale: new THREE.Vector2(0.42, 0.42) }), 1024);
+  roads.count = 0;
+  roads.receiveShadow = true;
+  scene.add(roads);
   const dummy = new THREE.Object3D();
-  let activeGrassA = 0, activeGrassB = 0, activeRoads = 0;
-  let lockedGrassCountA = 0, lockedGrassCountB = 0, lockedRoadCount = 0;
-  const activePlotEdges = [], lockedPlotEdges = [], curbInstances = [];
-  for (let y = 0; y < VISUAL_GRID; y++) {
-    for (let x = 0; x < VISUAL_GRID; x++) {
-      const px = cityTileToWorld(x - 16);
-      const pz = cityTileToWorld(y - 16);
-      const active = isActiveCell(x, y);
-      const road = isRoadCell(x) || isRoadCell(y);
-      dummy.position.set(px, road ? -0.01 : 0.025, pz);
-      dummy.rotation.set(0, 0, 0);
-      dummy.scale.set(1, 1, 1);
-      dummy.updateMatrix();
-      if (road) {
-        (active ? roads : lockedRoads).setMatrixAt(active ? activeRoads++ : lockedRoadCount++, dummy.matrix);
-        continue;
-      }
-      const alternate = (x + y) % 2 === 1;
-      if (active) {
-        (alternate ? grassB : grassA).setMatrixAt(alternate ? activeGrassB++ : activeGrassA++, dummy.matrix);
-      } else {
-        (alternate ? lockedGrassB : lockedGrassA).setMatrixAt(alternate ? lockedGrassCountB++ : lockedGrassCountA++, dummy.matrix);
-      }
-      const edgeY = 0.142;
-      const edgeHalf = CITY_TILE_METERS * 0.47;
-      const edges = active ? activePlotEdges : lockedPlotEdges;
-      edges.push(
-        px - edgeHalf, edgeY, pz - edgeHalf, px + edgeHalf, edgeY, pz - edgeHalf,
-        px + edgeHalf, edgeY, pz - edgeHalf, px + edgeHalf, edgeY, pz + edgeHalf,
-        px + edgeHalf, edgeY, pz + edgeHalf, px - edgeHalf, edgeY, pz + edgeHalf,
-        px - edgeHalf, edgeY, pz + edgeHalf, px - edgeHalf, edgeY, pz - edgeHalf
-      );
-      for (const [dx, dz, sx, sz] of [[1,0,0.12,CITY_TILE_METERS*0.94],[-1,0,0.12,CITY_TILE_METERS*0.94],[0,1,CITY_TILE_METERS*0.94,0.12],[0,-1,CITY_TILE_METERS*0.94,0.12]]) {
-        const nx = x + dx, ny = y + dz;
-        if (nx < 0 || ny < 0 || nx >= VISUAL_GRID || ny >= VISUAL_GRID || !(isRoadCell(nx) || isRoadCell(ny))) continue;
-        curbInstances.push({ x: px + dx * CITY_TILE_METERS * 0.47, z: pz + dz * CITY_TILE_METERS * 0.47, sx, sz });
-      }
-    }
-  }
-  for (const mesh of [grassA, grassB, lockedGrassA, lockedGrassB, roads, lockedRoads]) {
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.receiveShadow = true;
-  }
-  grassA.count = activeGrassA;
-  grassB.count = activeGrassB;
-  roads.count = activeRoads;
-  lockedGrassA.count = lockedGrassCountA;
-  lockedGrassB.count = lockedGrassCountB;
-  lockedRoads.count = lockedRoadCount;
-  scene.add(grassA, grassB, lockedGrassA, lockedGrassB, roads, lockedRoads);
-  const curbGeometry = new THREE.BoxGeometry(1, 0.15, 1);
-  const curbs = new THREE.InstancedMesh(curbGeometry, curbMaterial, Math.max(1, curbInstances.length));
-  curbInstances.forEach((v, i) => {
-    dummy.position.set(v.x, 0.13, v.z);
-    dummy.rotation.set(0, 0, 0);
-    dummy.scale.set(v.sx, 1, v.sz);
-    dummy.updateMatrix();
-    curbs.setMatrixAt(i, dummy.matrix);
-  });
-  curbs.count = curbInstances.length;
-  curbs.instanceMatrix.needsUpdate = true;
-  curbs.receiveShadow = true;
-  scene.add(curbs);
-  function addLineLayer(points, material) {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
-    const lines = new THREE.LineSegments(geometry, material);
-    scene.add(lines);
-    return lines;
-  }
-  addLineLayer(activePlotEdges, plotLineMaterial);
-  addLineLayer(lockedPlotEdges, lockedPlotLineMaterial);
-  const roadMarkings = [];
-  const crosswalkStripeCount = 0;
-  const lotLines = [];
-  for (let y = 0; y < VISUAL_GRID; y += 2) {
-    for (let x = 0; x < VISUAL_GRID; x++) {
-      if (isRoadCell(y) || isRoadCell(x)) continue;
-      const left = cityTileToWorld(x - 16) - CITY_TILE_METERS / 2, right = left + CITY_TILE_METERS;
-      const z = cityTileToWorld(y - 16);
-      lotLines.push(left, 0.151, z, right, 0.151, z);
-    }
-  }
-  addLineLayer(lotLines, new THREE.LineBasicMaterial({ color: "#f1e8cb", transparent: true, opacity: 0.42 }));
-  const boundary = new THREE.LineLoop(
-    new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-32, 0.19, -32), new THREE.Vector3(32, 0.19, -32),
-      new THREE.Vector3(32, 0.19, 32), new THREE.Vector3(-32, 0.19, 32)
-    ]),
-    new THREE.LineBasicMaterial({ color: "#e7bd69", transparent: true, opacity: 0.92 })
-  );
-  scene.add(boundary);
+  let activeRoads = 0;
+  const curbInstances = [];
+  const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
   const environment = new THREE.Group();
   scene.add(environment);
   const trunkGeometry = new THREE.CylinderGeometry(0.10, 0.15, 1.05, 6);
@@ -204,44 +120,24 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const treeTrunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, 180);
   const treeCanopies = canopyMaterials.map(material => new THREE.InstancedMesh(canopyGeometry, material, 180));
   const treeHighlights = canopyMaterials.map(material => new THREE.InstancedMesh(canopySmallGeometry, material, 180));
-  let decorativeTreeCount = 0;
-  let decorativeTreesOutsideBuildableGrid = 0;
+  // The new-city meadow is intentionally unobstructed: no decorative trees,
+  // plot borders, roads, buildings or skyline are visible before player actions.
+  const decorativeTreeCount = 0;
+  const decorativeTreesOutsideBuildableGrid = 0;
   const treeSpeciesCounts = canopyMaterials.map(() => 0);
-  const perimeterTreePositions = [];
-  for (let offset = -60; offset <= 60; offset += 10) {
-    perimeterTreePositions.push([-68, offset], [68, offset], [offset, -68], [offset, 68]);
-  }
-  for (const [px, pz] of perimeterTreePositions) {
-    const species = (Math.round(px + 68) * 13 + Math.round(pz + 68) * 7) % canopyMaterials.length;
-    if (Math.abs(px) > 64 || Math.abs(pz) > 64) decorativeTreesOutsideBuildableGrid++;
-    dummy.position.set(px, 0.68, pz);
-    dummy.rotation.set(0, 0, 0);
-    dummy.scale.set(0.9 + species * 0.08, 0.9 + species * 0.1, 0.9 + species * 0.08);
-    dummy.updateMatrix();
-    treeTrunks.setMatrixAt(decorativeTreeCount, dummy.matrix);
-    dummy.position.set(px, 1.45, pz);
-    dummy.scale.set(1, 1, 1);
-    dummy.updateMatrix();
-    const speciesIndex = treeSpeciesCounts[species]++;
-    treeCanopies[species].setMatrixAt(speciesIndex, dummy.matrix);
-    dummy.position.set(px - 0.22, 1.68, pz - 0.16);
-    dummy.scale.set(1, 1, 1);
-    dummy.updateMatrix();
-    treeHighlights[species].setMatrixAt(speciesIndex, dummy.matrix);
-    decorativeTreeCount++;
-  }
-  treeTrunks.count = decorativeTreeCount;
-  treeTrunks.instanceMatrix.needsUpdate = true;
-  environment.add(treeTrunks);
-  for (let species = 0; species < canopyMaterials.length; species++) {
-    for (const mesh of [treeCanopies[species], treeHighlights[species]]) {
-      mesh.count = treeSpeciesCounts[species];
-      mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.count) environment.add(mesh);
-    }
-  }
+  const treeTrunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, 1);
+  treeTrunks.count = 0;
+  const treeCanopies = canopyMaterials.map(material => {
+    const mesh = new THREE.InstancedMesh(canopyGeometry, material, 1);
+    mesh.count = 0;
+    return mesh;
+  });
+  const treeHighlights = canopyMaterials.map(material => {
+    const mesh = new THREE.InstancedMesh(canopySmallGeometry, material, 1);
+    mesh.count = 0;
+    return mesh;
+  });
   const decorativeStreetLightCount = 0;
-  const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
   const buildings = new THREE.Group();
   scene.add(buildings);
@@ -509,7 +405,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
         cameraOrbit,
         cameraPitch,
         version: THREE.REVISION,
-        visualStyle: "realistic-pbr-city",
+        visualStyle: "continuous-realistic-grassland",
+        continuousGrassland: true,
+        visiblePlotGridLines: 0,
+        groundExtentMeters: 10000,
         proceduralTextures: 6,
         pbrTextureResolution,
         pbrGenerationMs: Math.round(pbrGenerationMs * 100) / 100,
@@ -531,13 +430,13 @@ export async function createCityThreeRenderer(sourceCanvas) {
         worldUnitMeters: 1,
         cityTileMeters: CITY_TILE_METERS,
         cityWorldExtentMeters: CITY_TILE_METERS * 32,
-        plots: activeGrassA + activeGrassB,
+        plots: ACTIVE_SIZE * ACTIVE_SIZE,
         roadTiles: activeRoads,
-        lockedPlots: lockedGrassCountA + lockedGrassCountB,
-        lockedRoadTiles: lockedRoadCount,
-        visiblePlots: activeGrassA + activeGrassB + lockedGrassCountA + lockedGrassCountB,
+        lockedPlots: VISUAL_GRID * VISUAL_GRID - ACTIVE_SIZE * ACTIVE_SIZE,
+        lockedRoadTiles: 0,
+        visiblePlots: VISUAL_GRID * VISUAL_GRID,
         visibleRoadTiles: activeRoads + lockedRoadCount,
-        raisedCurbs: curbInstances.length,
+        raisedCurbs: 0,
         sidewalkStrips: sidewalkLayer.count,
         crosswalkStripes: crosswalkStripeCount,
         drawCalls: renderer.info.render.calls,
