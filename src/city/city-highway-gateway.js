@@ -146,7 +146,8 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
   }
 
   // Metallic guardrails follow the outside edges of ramps and highway shoulders.
-  const addGuardrail = (path, offset, length = 0.0) => {
+  const guardrailPostData = [];
+  const addGuardrail = (path, offset) => {
     const points = [];
     const samples = 64;
     for (let i = 0; i <= samples; i++) {
@@ -156,7 +157,6 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
       const l = Math.hypot(tangent.x, tangent.z) || 1;
       points.push(new THREE.Vector3(p.x - tangent.z / l * offset, p.y + 0.92, p.z + tangent.x / l * offset));
     }
-  const guardrailPostData = [];
     const railCurve = new THREE.CatmullRomCurve3(points);
     const rail = new THREE.Mesh(new THREE.TubeGeometry(railCurve, samples, 0.11, 6, false), railMaterial);
     rail.castShadow = true;
