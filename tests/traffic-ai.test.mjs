@@ -33,3 +33,11 @@ test("traffic wraps circuit progress and remains finite under invalid inputs",()
  assert.ok(Number.isFinite(car.speed)&&Number.isFinite(car.lateral));
 });
 test("following gap is bounded",()=>{assert.ok(trafficFollowingGap(200)>=72);assert.ok(trafficFollowingGap(1000)<=190)});
+
+test("AI circuit progress uses the same world-distance scale as the player",()=>{
+ const car={id:8,distance:0,speed:200,lateral:0,lateralVelocity:0,laneIndex:1,targetLane:1};
+ const distanceScale=10/10000,dt=1/60;
+ stepTrafficVehicle(car,{trackLength:Math.PI*2,lanes,dt,cruiseSpeed:200,distanceScale});
+ assert.ok(Math.abs(car.distance-200*dt*distanceScale)<1e-12,
+  "AI distance per second must match player world speed projected onto the same track radius");
+});
