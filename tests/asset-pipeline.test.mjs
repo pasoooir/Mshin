@@ -170,13 +170,13 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /lane\(-90,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /lane\(90,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /Four lanes/);
-  assert.match(game, /ROAD_HALF_WIDTH=220/);
+  assert.match(game, /ROAD_HALF_WIDTH=360/);
   assert.match(game, /lanes:\[-165,-82.5,82.5,165\]/);
   assert.match(game, /countdownElapsed<3\.72/);
-  assert.match(game, /"دره سبز"/);
-  assert.match(game, /"توفان کویر"/);
-  assert.match(game, /وضعیت هوا/);
-  assert.match(game, /مرحله/);
+  assert.match(game, /"Green Valley"/);
+  assert.match(game, /"Desert Storm"/);
+  assert.match(game, /WEATHER/);
+  assert.match(game, /STAGE/);
   assert.doesNotMatch(game, /setTimeout\(\(\)=>o\.hit=false/);
   assert.match(game, /hudClock>=\.1/);
 });
