@@ -1,6 +1,5 @@
 export function getCityCloudLighting(city, atmosphere = {}) {
-  const rawMinute = Number(city?.minuteOfDay);
-  const minute = Number.isFinite(rawMinute) ? ((rawMinute % 1440) + 1440) % 1440 : 720;
+  const minute = 720; // Clouds remain day-lit until the city is stable.
   const weather = atmosphere?.weather?.weather || "clear";
   const intensity = Number(atmosphere?.weather?.intensity) || 0;
   const daylight = Math.max(0, Math.min(1, Math.sin(minute / 1440 * Math.PI * 2 - Math.PI / 2)));
