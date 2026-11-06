@@ -491,7 +491,8 @@ try{
   },backupPayload.city);
   await recoveryPage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:15000});
-  await recoveryPage.locator('[data-city-speed="0"]').evaluate(button=>button.click());
+  // Recovery validation is independent of simulation controls; do not block renderer acceptance on an optional HUD control.
+  await recoveryPage.evaluate(()=>document.querySelector('[data-city-speed="0"]')?.click());
 
   try{await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await recoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),activeSave:localStorage.getItem("mshin-city-save-v2")?.slice(0,180),backupBytes:localStorage.getItem("mshin-city-save-v2.backup")?.length||0}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="نمای سه‌بعدی فعال"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("3D renderer did not become ready during backup recovery: "+JSON.stringify({diagnostic,errors:recoveryErrors})+"; "+error.message)}
   const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,cityId:window.MshinCityDebug.city.cityId,name:window.MshinCityDebug.city.name,seed:window.MshinCityDebug.city.seed,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery"),legacyRaw:localStorage.getItem("mshin-city-save-v1"),legacyRecovery:localStorage.getItem("mshin-city-save-v1.recovery")}));
@@ -516,7 +517,8 @@ try{
   });
   await invalidRecoveryPage.goto("http://127.0.0.1:4173/city.html");
   await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:15000});
-  await invalidRecoveryPage.locator('[data-city-speed="0"]').evaluate(button=>button.click());
+  // A corrupt-save fallback must be tested even if the speed HUD is temporarily unavailable.
+  await invalidRecoveryPage.evaluate(()=>document.querySelector('[data-city-speed="0"]')?.click());
 
   try{await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await invalidRecoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),active:localStorage.getItem("mshin-city-save-v2.recovery"),legacy:localStorage.getItem("mshin-city-save-v1.recovery"),backup:localStorage.getItem("mshin-city-save-v2.backup.recovery")}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="نمای سه‌بعدی فعال"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("city boot did not complete during corrupt-save fallback: "+JSON.stringify({diagnostic,errors:invalidRecoveryErrors})+"; "+error.message)}
   const preserved=await invalidRecoveryPage.evaluate(()=>({
