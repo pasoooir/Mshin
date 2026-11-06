@@ -86,7 +86,7 @@ try{
  assert.equal(renderStats.backgroundCityBuildings,0,"a new city must not contain decorative houses or apartment buildings");
  assert.equal(renderStats.backgroundCityWindows,0,"a new city must not render windows on nonexistent buildings");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"3D Renderer Ready","the UI must report when the actual 3D renderer is ready");
- assert.ok((await page.locator(".cityBrand small").textContent()).includes("0.15.5"),"the city UI must expose the deployed version");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("0.15.6"),"the city UI must expose the deployed version");
  assert.equal(renderStats.decorativeTrees,0,"a brand-new city must show an uninterrupted grassland without decorative trees");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,0,"the empty starting meadow must not contain any decorative tree props");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
