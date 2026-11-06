@@ -34,7 +34,7 @@ test("employment metrics are integrated into every simulation tick", () => {
 });
 test("invalid population is rejected and empty cities have zero employment", () => {
   assert.throws(()=>computeCityEmployment({buildings:[],population:-1}),/valid city/);
-  const result=computeCityEmployment(seedCityRoadAccess(createInitialCity(2104));
+  const result=computeCityEmployment(seedCityRoadAccess(createInitialCity(2104)));
   assert.equal(result.jobs,0); assert.equal(result.employed,0); assert.equal(result.unemployed,0);
   assert.equal(result.vacancies,0); assert.ok(result.demandIndex>=0&&result.demandIndex<=100);
 });
