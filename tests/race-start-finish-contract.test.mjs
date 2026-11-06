@@ -6,8 +6,9 @@ const game = await readFile(new URL("../src/web-game.js", import.meta.url), "utf
 
 test("the five race entrants are reset together on GO, not during the countdown", () => {
   assert.match(game, /race\.raceEntrants=rivals\.filter\(r=>r\.id<4\);rivals\.forEach\(r=>\{r\.timerElapsed=0;r\.finishTime=null;r\.lapsCompleted=0;r\.totalProgress=0;r\.distance=0;r\.speed=0\}\)/);
-  assert.match(game, /race\.startTimestamp=performance\.now\(\);race\.elapsed=0;race\.playerStartTimestamp=race\.startTimestamp;race\.playerTimerElapsed=0/);\n  assert.match(game, /r\.startTimestamp=race\.startTimestamp;r\.timerElapsed=0/);
-  assert.match(game, /distance:0,totalProgress:0,lapsCompleted:0,timerElapsed:0,finishTime:null/);
+  assert.match(game, /race\.startTimestamp=performance\.now\(\);race\.elapsed=0;race\.playerStartTimestamp=race\.startTimestamp;race\.playerTimerElapsed=0/);
+  assert.match(game, /r\.startTimestamp=race\.startTimestamp;r\.timerElapsed=0/);
+  assert.match(game, /distance:0,totalProgress:0,lapsCompleted:0,timerElapsed:0,startTimestamp:null,finishTime:null/);
 });
 
 test("all four opponents occupy distinct road lanes beside the player", () => {
@@ -32,5 +33,7 @@ test("the event waits for all original AI entrants, retaining destroyed cars as 
 test("live map keeps all four original opponents visible with their current ranks", () => {
   assert.match(game, /\(race\.raceEntrants\|\|rivals\)\.forEach\(r=>\{if\(!r\.despawned\)/);
   assert.match(game, /dnf\?"#ff665f":r\.color/);
-  assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),px,py-7\)/);\n  assert.match(game, /elapsed:playerRow\?\.elapsed\?\?race\.elapsed/);\n  assert.match(game, /elapsed:r\.timerElapsed,finishTime:r\.finishTime/);
+  assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),px,py-7\)/);
+  assert.match(game, /elapsed:playerRow\?\.elapsed\?\?race\.elapsed/);
+  assert.match(game, /elapsed:r\.timerElapsed,finishTime:r\.finishTime/);
 });
