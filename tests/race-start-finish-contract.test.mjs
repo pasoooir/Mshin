@@ -44,6 +44,7 @@ test("AI and player finish times use interpolated finish-line crossing timestamp
   assert.match(game, /\$\("time"\)\.textContent=formatRaceClock\(race\.playerClock\?\.elapsed\?\?race\.elapsed\)/);
   assert.match(game, /رتبه · راننده/);
   assert.match(game, /formatRaceClock\(row\.finished\?row\.finishTime:row\.elapsed\)/, "the live table must show each vehicle's own running or final stopwatch");
+  assert.match(game, /row\.dnf\?"DNF "\+formatRaceClock\(row\.elapsed\)/, "DNF cars must retain their frozen individual stopwatch");
 });
 
 test("AI circuit speed uses the same world-distance conversion as the player", () => {
