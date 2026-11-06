@@ -1,4 +1,4 @@
-const MIN_ZOOM = 0.05;
+const MIN_ZOOM = 0.20;
 const MAX_ZOOM = 1.5;
 const ORBIT_SENSITIVITY = 0.009;
 const TAP_SLOP = 5;
