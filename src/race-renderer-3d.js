@@ -211,8 +211,7 @@ export function createRaceRenderer(canvas){
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],yellowTris=[],curbRedTris=[],curbWhiteTris=[],groundTris=[],terrainBaseTris=[];
   const terrainTexture=["grass","sand","snow","grass","rock","rock","grass","sand","rock","grass"][snapshot.world||0]||"grass";
   const segments=mobile?320:softwareRenderer?400:820,half=360;state.trackHalfWidth=half;
-  // Keep the playable terrain inside the camera far plane and wind its triangles upward.
-  // The previous 130 km quad had downward-facing normals and corners beyond the
+    // The previous 130 km quad had downward-facing normals and corners beyond the
   // 60 km far plane, so mobile GPUs could clip/darken the entire ground surface.
   quad(terrainBaseTris,[-30000,-40,-30000],[-30000,-40,30000],[30000,-40,30000],[30000,-40,-30000]);
   for(let i=0;i<segments;i++){
@@ -221,8 +220,7 @@ export function createRaceRenderer(canvas){
    const l0=point(fa,-half),r0=point(fa,half),l1=point(fb,-half),r1=point(fb,half);
    const sl0=point(fa,-half-32,-.04),sr0=point(fa,half+32,-.04),sl1=point(fb,-half-32,-.04),sr1=point(fb,half+32,-.04);
    quad(roadTris,l0,r0,r1,l1);quad(shoulderTris,sl0,l0,l1,sl1);quad(shoulderTris,r0,sr0,sr1,r1);
-   // Continuous white edge lines, twin dashed yellow centre lines and alternating kerbs.
-   for(const offset of [-345,-180,180,345]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
+      for(const offset of [-345,-180,180,345]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
    if(i%2===0)for(const offset of [-6,6]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,q0,q1,p1)}
    const curbSide=(side,out)=>{const p0=point(fa,side*348,.026),q0=point(fa,side*360,.026),p1=point(fb,side*348,.026),q1=point(fb,side*360,.026);quad(out,p0,q0,q1,p1)};
    curbSide(-1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris);curbSide(1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris)
@@ -247,8 +245,7 @@ export function createRaceRenderer(canvas){
   state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?22:softwareRenderer?28:64,buildingCount=mobile?8:softwareRenderer?12:22;
   const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
-  // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
-  const skyTris=[],cloudTris=[],sunTris=[],terrainRocks=[];
+    const skyTris=[],cloudTris=[],sunTris=[],terrainRocks=[];
   sphere(skyTris,0,0,0,56000,30000,56000,mobile?20:36,mobile?10:18);
   for(let i=0;i<(mobile?5:12);i++){const a=i/12*Math.PI*2,r=19000+(i%3)*2100,x=Math.cos(a)*r,y=7600+(i%4)*950,z=Math.sin(a)*r;sphere(cloudTris,x,y,z,2800+(i%3)*550,580+(i%2)*250,1250+(i%4)*280,mobile?8:14,mobile?4:7);sphere(cloudTris,x+1250,y+180,z-350,1850,460,900,mobile?8:12,mobile?4:6);}
   sphere(sunTris,-22000,19000,-24500,1750,1750,1750,16,10);
@@ -424,9 +421,7 @@ export function createRaceRenderer(canvas){
   state.cameraTrackFollowing=true;state.cameraLookAheadT=cameraPose.lookAheadT;state.cameraBehindT=cameraPose.behindT;
   const projection=perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,60000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.useProgram(program);gl.uniform3f(uniforms.camera,cameraEye[0],cameraEye[1],cameraEye[2]);gl.uniform3f(uniforms.light,-.38,.86,.42);gl.uniform3f(uniforms.lightColor,3.8,3.55,3.2);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(uniforms.env,0);const clearStarted=performance.now();gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const clearMs=performance.now()-clearStarted;state.lastClearMs=clearMs;state.maxClearMs=Math.max(state.maxClearMs||0,clearMs);state.triangles=0;
-  // Draw the latest bounded build snapshot while the replacement track is still being assembled.
-  // The background terrain is submitted first; then depth is reset before the circuit meshes.
-  const drawParts=road?[terrainBase,road,...decor]:pendingTrackParts;
+      const drawParts=road?[terrainBase,road,...decor]:pendingTrackParts;
   if(drawParts.length){
    // Render the enormous terrain base as a background pass. Clearing only depth
    // prevents low-precision mobile depth buffers from placing this 60 km plane
