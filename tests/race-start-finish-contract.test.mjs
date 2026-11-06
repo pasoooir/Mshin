@@ -13,6 +13,7 @@ test("the five race entrants are reset together on GO, not during the countdown"
   assert.match(game, /window\.MshinRaceStart=\{timestamp:race\.startTimestamp,synchronized:/);
   assert.match(game, /window\.MshinRaceClocks=\{startTimestamp:race\.startTimestamp\?\?null,racers:rows\.map/);
   assert.match(game, /clock:createRaceClock\(\),timerElapsed:0,finishTime:null/);
+  assert.match(game, /const spec=specs\[type\],mass=spec\.mass/);
   assert.match(game, /cruiseFactor=i<4\?1:spec\.cruise/);
   assert.match(game, /speed:i<4\?0:activeCar\(\)\.max\*cruiseFactor/, "race rivals start at zero while ambient traffic retains its own pace");
   assert.match(game, /speedLimit:aiMaxSpeed,acceleration:aiAcceleration/, "AI performance must use the selected player's shared engine limits");
