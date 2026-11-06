@@ -1,17 +1,17 @@
 /** Controlled, material-aware building color families; values are sRGB hex colors. */
 export const CITY_ARCHITECTURAL_PALETTES = {
     home: [
-      { wall:"#d8c8ad", side:"#a99478", roof:"#62594e", trim:"#eee4d1", accent:"#71806b", door:"#654b38" },
-      { wall:"#c7b9a4", side:"#938674", roof:"#514d48", trim:"#e5dac7", accent:"#7d8c91", door:"#594638" },
-      { wall:"#e2d5bd", side:"#b6a58b", roof:"#74665a", trim:"#f0e7d6", accent:"#8b795f", door:"#76543e" },
+      { wall:"#e2bd83", side:"#bd895b", roof:"#79503d", trim:"#fff0cb", accent:"#71806b", door:"#654b38" },
+      { wall:"#d5a66f", side:"#a77c58", roof:"#59443b", trim:"#f5dfb7", accent:"#7d8c91", door:"#594638" },
+      { wall:"#efce91", side:"#c49a69", roof:"#855c43", trim:"#fff1d5", accent:"#8b795f", door:"#76543e" },
       { wall:"#b9b5a7", side:"#898b82", roof:"#555b5b", trim:"#dedbd0", accent:"#718078", door:"#4d514c" },
       { wall:"#c9a994", side:"#9d7867", roof:"#5c514d", trim:"#ead7c7", accent:"#7e8270", door:"#684b3c" },
       { wall:"#d5d0c4", side:"#a9a79d", roof:"#6a6b68", trim:"#f0ede4", accent:"#7e918f", door:"#65584b" }
     ],
     shop: [
-      { wall:"#c8b9a1", side:"#95846e", roof:"#555b5d", trim:"#e8dfcf", accent:"#667f83", door:"#4e4c45" },
+      { wall:"#e6b879", side:"#b17d50", roof:"#52616a", trim:"#fff0d0", accent:"#667f83", door:"#4e4c45" },
       { wall:"#b9c1bd", side:"#899894", roof:"#4e5b60", trim:"#e2e7df", accent:"#8a735e", door:"#48575a" },
-      { wall:"#d1c4ae", side:"#a08c73", roof:"#68605a", trim:"#eee4d3", accent:"#8c765f", door:"#5d493b" },
+      { wall:"#edc48a", side:"#b7895c", roof:"#775541", trim:"#fff0d4", accent:"#8c765f", door:"#5d493b" },
       { wall:"#b6b2a6", side:"#87877d", roof:"#555754", trim:"#e0ddd2", accent:"#687d72", door:"#4e514b" }
     ],
     industrial: [
@@ -58,7 +58,7 @@ export const CITY_ARCHITECTURAL_PALETTES = {
       { wall:"#c4cbc6", side:"#929e99", roof:"#53605f", trim:"#e6ebe5", accent:"#7f9b91", door:"#4f625c" }
     ],
     education: [
-      { wall:"#cdbfa9", side:"#9a8c76", roof:"#595a54", trim:"#e9dfce", accent:"#8d8067", door:"#5c4e3f" },
+      { wall:"#e5bd83", side:"#b28a5c", roof:"#665143", trim:"#fff0d1", accent:"#8d8067", door:"#5c4e3f" },
       { wall:"#c0c3b9", side:"#8e968c", roof:"#535c56", trim:"#e3e6dc", accent:"#7a8c80", door:"#50594f" }
     ]
   };

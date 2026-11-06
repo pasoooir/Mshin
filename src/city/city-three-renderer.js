@@ -123,6 +123,69 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
   const buildings = new THREE.Group();
   scene.add(buildings);
+
+  // Dense perimeter neighbourhood: the central plots remain buildable, while
+  // the first view already reads as a complete, colourful city rather than an
+  // empty meadow. All architecture is procedural and local/offline.
+  const skylineGroup = new THREE.Group();
+  scene.add(skylineGroup);
+  const skylineTypes = ["home","shop","administrative","industrial","education","health"];
+  let skylineSeed = 20261107;
+  const skylineRandom = () => {
+    skylineSeed = (Math.imul(skylineSeed, 1664525) + 1013904223) >>> 0;
+    return skylineSeed / 4294967296;
+  };
+  let skylineBuildingCount = 0;
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+    const edge = Math.min(x, y, 31 - x, 31 - y);
+    if (edge > 5 || edge === 0) continue;
+    if ((x % 4 === 1 && y % 4 !== 1) || (y % 4 === 1 && x % 4 !== 1)) continue;
+    const type = edge <= 2
+      ? skylineTypes[Math.floor(skylineRandom() * skylineTypes.length)]
+      : (skylineRandom() > 0.45 ? "home" : "shop");
+    const level = edge <= 2 ? 3 + Math.floor(skylineRandom() * 3) : 1 + Math.floor(skylineRandom() * 2);
+    const building = createHighGfxBuilding(THREE, {
+      id: 900000 + skylineBuildingCount, type, x, y, level
+    }, { trunkGeometry, canopyGeometry, canopySmallGeometry, brickSurface, concreteSurface, roofSurface, windowMaterials });
+    skylineGroup.add(building);
+    skylineBuildingCount++;
+  }
+
+  // Planted avenues and small neighbourhood greens create the leafy,
+  // warm-coloured urban silhouette of the supplied visual reference.
+  const skylineTreeTrunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, 180);
+  const skylineTreeCrowns = new THREE.InstancedMesh(canopyGeometry, canopyMaterials[0], 180);
+  const skylineTreeHighlights = new THREE.InstancedMesh(canopySmallGeometry, canopyMaterials[1], 180);
+  const skylineDummy = new THREE.Object3D();
+  let skylineTreeCount = 0;
+  for (let y = 1; y < 31 && skylineTreeCount < 180; y += 2) {
+    for (let x = 1; x < 31 && skylineTreeCount < 180; x += 2) {
+      const edge = Math.min(x, y, 31 - x, 31 - y);
+      if (edge > 6 || skylineRandom() < 0.24) continue;
+      const wx = cityTileToWorld(x) + (skylineRandom() - 0.5) * 2.2;
+      const wz = cityTileToWorld(y) + (skylineRandom() - 0.5) * 2.2;
+      const scale = 0.85 + skylineRandom() * 0.55;
+      skylineDummy.position.set(wx, 0.55 * scale, wz);
+      skylineDummy.scale.set(scale, scale, scale);
+      skylineDummy.updateMatrix();
+      skylineTreeTrunks.setMatrixAt(skylineTreeCount, skylineDummy.matrix);
+      skylineDummy.position.set(wx, 1.55 * scale, wz);
+      skylineDummy.updateMatrix();
+      skylineTreeCrowns.setMatrixAt(skylineTreeCount, skylineDummy.matrix);
+      skylineDummy.position.set(wx - 0.18 * scale, 1.82 * scale, wz - 0.12 * scale);
+      skylineDummy.updateMatrix();
+      skylineTreeHighlights.setMatrixAt(skylineTreeCount, skylineDummy.matrix);
+      skylineTreeCount++;
+    }
+  }
+  for (const mesh of [skylineTreeTrunks, skylineTreeCrowns, skylineTreeHighlights]) {
+    mesh.count = skylineTreeCount;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.instanceMatrix.needsUpdate = true;
+    skylineGroup.add(mesh);
+  }
+
   const trafficGroup = new THREE.Group();
   scene.add(trafficGroup);
   const trafficBodyGeometry = new THREE.BoxGeometry(1.02, 0.42, 1.78);
@@ -406,7 +469,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         cameraOrbit,
         cameraPitch,
         version: THREE.REVISION,
-        visualStyle: "continuous-realistic-grassland",
+        visualStyle: "vibrant-dense-3d-city-district",
         continuousGrassland: true,
         visiblePlotGridLines: 0,
         groundExtentMeters: 1000000,
@@ -419,9 +482,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
         normalMappedSurfaces: 6,
         roughnessMappedSurfaces: 6,
         texturedBuildingMaterials: 4,
-        backgroundCityBuildings: backgroundSkyline.buildingCount,
+        backgroundCityBuildings: skylineBuildingCount,\n      backgroundCityTrees: skylineTreeCount,
         backgroundCityWindows: backgroundSkyline.windowCount,
-        decorativeTrees: decorativeTreeCount,
+        decorativeTrees: decorativeTreeCount + skylineTreeCount,
         decorativeTreesOutsideBuildableGrid,
         decorativeStreetLights: decorativeStreetLightCount,
         streetFurniturePlacementReady,
@@ -456,7 +519,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     },
     destroy() {
       window.removeEventListener("resize", onResize);
-      renderer.dispose();
+      skylineGroup.traverse(object => { if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose(); if (object.material && !Array.isArray(object.material)) object.material.dispose(); });\n      skylineGroup.removeFromParent();\n      renderer.dispose();
       atmosphere.dispose();
       cloudLayer.dispose();
       backgroundSkyline.dispose();
