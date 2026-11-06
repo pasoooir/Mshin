@@ -11,7 +11,7 @@ test("all five zoning classes are explicit and map to playable building types", 
 });
 
 test("zoning requires an empty tile connected to a street and sufficient funds", () => {
-  const city = seedCityRoadAccess(createInitialCity(501));
+  const city = seedCityRoadAccess(createInitialCity(501)));
   const result = placeCityItem(city,17,14,"zone-residential");
   assert.equal(result.ok,true);
   assert.equal(city.grid[14][17],"zone-residential");
@@ -22,7 +22,7 @@ test("zoning requires an empty tile connected to a street and sufficient funds",
 });
 
 test("residential zoning grows into housing and increases population", () => {
-  const city = createInitialCity(502);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(502));
   const before = city.population;
   assert.equal(placeCityItem(city,17,14,"zone-residential").ok,true);
   for(let i=0;i<12;i++) stepCity(city);
@@ -33,7 +33,7 @@ test("residential zoning grows into housing and increases population", () => {
 });
 
 test("commercial, industrial, administrative and recreational zones develop when demand exists", () => {
-  const city = createInitialCity(503);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(503));
   const zones = [
     [13,14,"residential"],
     [18,14,"residential"],
@@ -54,7 +54,7 @@ test("commercial, industrial, administrative and recreational zones develop when
 });
 
 test("version-two saves accept zoning tiles and legacy saves without a zones array", () => {
-  const city=createInitialCity(504);
+  const city=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(504));
   city.grid[14][17]="zone-residential";
   city.zones=[{x:17,y:14,type:"residential",createdAt:0}];
   assert.equal(isValidCitySave(city),true);
@@ -65,7 +65,7 @@ test("version-two saves accept zoning tiles and legacy saves without a zones arr
 
  
 test("job-producing zones wait for enough residents before expanding labor demand", () => {
-  const city=createInitialCity(505);
+  const city=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(505));
   assert.equal(placeCityItem(city,14,14,"zone-commercial").ok,true);
   assert.equal(placeCityItem(city,17,14,"zone-industrial").ok,true);
   for(let i=0;i<24;i++)stepCity(city);
