@@ -23,7 +23,7 @@ export function normalizeCityTaxRates(value) {
 export function setCityTaxRate(city, sector, value) {
   if (!city || typeof city !== "object" || !Object.hasOwn(CITY_DEFAULT_TAX_RATES, sector)
     || !Number.isFinite(value) || value < 0 || value > CITY_TAX_RATE_LIMIT) {
-    return { ok: false, reason: "نرخ مالیات معتبر نیست" };
+    return { ok: false, reason: "Invalid tax rate" };
   }
   city.taxRates = normalizeCityTaxRates(city.taxRates);
   city.taxRates[sector] = clampRate(value);
