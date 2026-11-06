@@ -10,7 +10,7 @@ const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
 const ACTIVE_SIZE = 32;
-const isRoadCell = value => (value % 8 === 7 || value % 8 === 0) && value !== 0 && value !== 16 && value !== 47 && value !== 63;
+const isRoadCell = () => false;
 const isActiveCell = (x, y) => x >= ACTIVE_START && x < ACTIVE_END && y >= ACTIVE_START && y < ACTIVE_END;
 export async function createCityThreeRenderer(sourceCanvas) {
   // Load the committed Three.js build from this GitHub Pages repository.
@@ -71,7 +71,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   } = createCityPbrSurfaces(THREE, renderer);
   const pbrGenerationMs = performance.now() - pbrGenerationStartedAt;
   const pbrTextureResolution = grassSurface.map.image?.width || 0;
-  const backgroundSkyline = createCityBackgroundSkyline(THREE, scene, concreteSurface, brickSurface, windowMaterials);
+  const backgroundSkyline = { buildingCount: 0, windowCount: 0, dispose() {} };
   const grassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, roughness: 0.96, normalScale: new THREE.Vector2(0.32, 0.32) });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#dce8c7", roughness: 0.98, normalScale: new THREE.Vector2(0.28, 0.28) });
   const lockedGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#899783", roughness: 1, normalScale: new THREE.Vector2(0.22, 0.22) });
