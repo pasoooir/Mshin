@@ -234,6 +234,9 @@ try {
   const clocksBefore = await page.evaluate(() => window.MshinRaceClocks);
   assert.equal(clocksBefore.racers.length, 5, "the player and each AI racer must own a stopwatch");
   assert.ok(clocksBefore.racers.every(clock => clock.startTimestamp === startGrid.timestamp && clock.running), "all five individual stopwatches must start from the same GO timestamp");
+  const racePace = await page.evaluate(() => window.MshinRacePace);
+  assert.equal(racePace?.vehicles?.length, 5, "the race must expose a shared performance profile for all five cars");
+  assert.ok(racePace.vehicles.every(vehicle => Math.abs(vehicle.speedLimit - racePace.speedLimit) < 1e-9), "player and all rivals must have the same engine speed limit: " + JSON.stringify(racePace));
   const mapBefore = await page.evaluate(() => window.MshinRaceMinimap);
   assert.equal(mapBefore?.markers?.length, 5, "the live map must display the player and all four opponents");
   assert.ok(mapBefore.markers.every(marker => Number.isFinite(marker.x) && Number.isFinite(marker.y) && marker.actualX >= mapBefore.bounds.x && marker.actualX <= mapBefore.bounds.x + mapBefore.bounds.width && marker.actualY >= mapBefore.bounds.y && marker.actualY <= mapBefore.bounds.y + mapBefore.bounds.height), "all five vehicle markers must be placed inside the visible track map: " + JSON.stringify(mapBefore));
