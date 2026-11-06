@@ -5,13 +5,13 @@ import { readFile } from "node:fs/promises";
 const skyline = await readFile(new URL("../src/city/city-background-skyline.js", import.meta.url), "utf8");
 const renderer = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
 
-test("large city scene contains an instanced 72-building distant urban skyline", () => {
+test("first-launch city does not render a distant skyline before the player builds", () => {
   assert.ok(skyline.includes("index < 18"));
   assert.ok(skyline.includes("positions.push([along, -352], [along, 352], [-352, along], [352, along])"));
   assert.ok(skyline.includes("new THREE.InstancedMesh(unitGeometry, concreteMaterial, 48)"));
   assert.ok(skyline.includes("new THREE.InstancedMesh(unitGeometry, masonryMaterial, 48)"));
-  assert.ok(renderer.includes("createCityBackgroundSkyline(THREE, scene, concreteSurface, brickSurface, windowMaterials)"));
-  assert.ok(renderer.includes("backgroundCityBuildings: backgroundSkyline.buildingCount"));
+  assert.match(renderer,/const backgroundSkyline = \{ buildingCount: 0, windowCount: 0, dispose\(\) \{\} \};/);\n  assert.doesNotMatch(renderer,/const backgroundSkyline = createCityBackgroundSkyline/);
+  assert.ok(renderer.includes("backgroundCityBuildings: backgroundSkyline.buildingCount"));\n  assert.ok(renderer.includes("backgroundCityWindows: backgroundSkyline.windowCount"));
 });
 
 test("background towers have variable heights, rooftop equipment and four-sided windows", () => {
