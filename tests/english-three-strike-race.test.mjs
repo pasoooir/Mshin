@@ -7,7 +7,7 @@ test("game interface is English and left-to-right with Latin digits",()=>{
  assert.match(html,/<html lang="en" dir="ltr">/);
  assert.match(html,/english-locale\.js/);
  assert.match(locale,/document\.documentElement\.lang="en"/);
- assert.match(locale,/digitMap/);
+ assert.match(locale,/digitMap/);\n assert.match(locale,/canvasPrototype\.fillText=function/);
  assert.match(locale,/"۰":"0"/);
 });
 test("the racing surface is substantially wider in both renderers and AI lanes fit it",()=>{
