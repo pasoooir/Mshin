@@ -258,6 +258,8 @@ try{
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
+ await clickCityTool(page,"road");for(const [x,y] of [[14,13],[15,13],[16,13]]){const point=await page.evaluate(([x,y])=>window.MshinCityDebug.screenForTile(x,y),[x,y]);await page.mouse.click(point.x,point.y)}await clickCityTool(page,"select");
+ assert.equal(await page.evaluate(()=>[[14,13],[15,13],[16,13]].every(([x,y])=>window.MshinCityDebug.city.grid[y][x]==="road")),true,"the traffic acceptance fixture must build a connected road segment");
  await page.waitForFunction(()=>window.MshinCity3DStats?.stylizedBuildings>=2,undefined,{timeout:5000});
  assert.ok(await page.evaluate(()=>window.MshinCity3DStats.stylizedBuildings>=2),"new residential buildings must be rendered with the 3D building family system");
  try{await page.waitForFunction(()=>window.MshinCity3DStats?.pedestrians===window.MshinCityDebug.city.citizens.length&&window.MshinCity3DStats.pedestrians>0,undefined,{timeout:5000})}catch(error){const diagnostic=await page.evaluate(()=>({population:window.MshinCityDebug.city.population,citizens:window.MshinCityDebug.city.citizens,buildings:window.MshinCityDebug.city.buildings,renderer:window.MshinCity3DStats,cityReady:document.documentElement.dataset.cityReady}));throw new Error("pedestrian render did not synchronize with city simulation: "+JSON.stringify(diagnostic)+"; "+error.message)}
@@ -277,7 +279,6 @@ try{
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
  const secondHome=await page.evaluate(()=>window.MshinCityDebug.place(18,13,"home"));assert.equal(secondHome.ok,true,"a second road-accessible home should be constructible");
- await clickCityTool(page,"road");for(const [x,y] of [[14,13],[15,13],[16,13]]){const point=await page.evaluate(([x,y])=>window.MshinCityDebug.screenForTile(x,y),[x,y]);await page.mouse.click(point.x,point.y)}await clickCityTool(page,"select");
  await page.locator("#cityBudget").click();
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),true,"mobile players must be able to open the budget panel");
  const budgetLayout=await page.evaluate(()=>{
