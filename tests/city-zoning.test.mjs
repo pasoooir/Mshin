@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave } from "../src/city/city-view.js";
 import { CITY_ZONES, isCityZoneCell } from "../src/city/city-zoning.js";
 
-function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,12,"road");placeCityItem(city,x,15,"road")}return city}
+function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,12,"road");placeCityItem(city,x,15,"road")}for(let y=10;y<=20;y++)placeCityItem(city,16,y,"road");placeCityItem(city,13,17,"road");return city}
 
 test("all five zoning classes are explicit and map to playable building types", () => {
   assert.deepEqual(Object.keys(CITY_ZONES), ["residential","commercial","industrial","administrative","recreational"]);
