@@ -78,7 +78,7 @@ test("city visual identity uses a muted architectural palette and reports PBR ac
 });
 
 test("new city opens on one continuous textured meadow with no visible checkerboard plot grid", () => {
-  assert.ok(renderer.includes("new THREE.PlaneGeometry(10000, 10000)"), "grass terrain must extend far beyond the playable city");
+  assert.ok(renderer.includes("new THREE.PlaneGeometry(1000000, 1000000)"), "grass terrain must cover the widest supported camera view without exposing the page backdrop");
   assert.ok(renderer.includes("texture.repeat.set(2048, 2048)"), "grass PBR maps must retain natural blade scale across the large meadow");
   assert.ok(renderer.includes("continuousGrassland: true"));
   assert.ok(renderer.includes("visiblePlotGridLines: 0"));
