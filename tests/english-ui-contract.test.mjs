@@ -13,5 +13,5 @@ test("racing and city entry documents declare English left-to-right layout",asyn
 test("visible game entry copy and dynamic game labels use Latin scripts and digits",async()=>{
  const files=["index.html","city.html","src/web-game.js","src/boot.js","src/city/city-view.js","src/stage-catalog.ts","src/asset-manifest.json","data/worlds.json","src/city/city-visual-asset-catalog.js","src/city/city-seasonal-weather.js"];
  for(const file of files){const source=await read(file);assert.doesNotMatch(source,/[۰-۹]/,file+" must not contain Persian digits");}
- for(const file of files){const source=await read(file);assert.doesNotMatch(source,/[\\u0600-\\u06ff]/,file+" must contain only English UI text and Latin digits");}
+ for(const file of files){const source=await read(file);assert.doesNotMatch(source,/[؀-ۿ]/,file+" must contain only English UI text and Latin digits");}
 });
