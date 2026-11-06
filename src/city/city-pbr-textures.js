@@ -60,13 +60,39 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
   };
 
   if (kind === "grass") {
-    for (let i = 0; i < Math.round(1050 * detailScale); i++) {
-      const x = random() * size, y = random() * size, r = 3 + random() * 22;
-      tileDot(x, y, r, random() > 0.5 ? "rgba(151,177,92,.16)" : "rgba(24,57,35,.20)", "#898989");
+    const meadow = albedo.createLinearGradient(0, 0, size, size);
+    meadow.addColorStop(0, "#557d3e");
+    meadow.addColorStop(0.48, "#466f37");
+    meadow.addColorStop(1, "#385f32");
+    albedo.fillStyle = meadow;
+    albedo.fillRect(0, 0, size, size);
+    for (let i = 0; i < Math.round(1450 * detailScale); i++) {
+      const x = random() * size, y = random() * size, radius = 1.2 + random() * 13;
+      const tone = random();
+      tileDot(x, y, radius,
+        tone > 0.72 ? "rgba(174,190,91,.20)" : tone > 0.35 ? "rgba(23,57,31,.18)" : "rgba(116,151,63,.16)",
+        tone > 0.55 ? "#858585" : "#8d8d8d");
     }
-    for (let i = 0; i < Math.round(5200 * detailScale); i++) {
-      const x = random() * size, y = random() * size, len = 2 + random() * 8;
-      tileLine(x, y, x + (random() - .5) * 3, y - len, random() > .5 ? "rgba(188,202,120,.42)" : "rgba(25,63,36,.38)", .7, "#929292");
+    // Fine individual blades plus short curved-looking paired strokes create
+    // a natural meadow grain instead of a flat green fill or tiled checkerboard.
+    const bladeTones = [
+      "rgba(190,205,119,.48)", "rgba(144,174,83,.52)",
+      "rgba(80,125,51,.62)", "rgba(27,72,37,.46)",
+      "rgba(213,207,124,.24)"
+    ];
+    for (let i = 0; i < Math.round(9200 * detailScale); i++) {
+      const x = random() * size, y = random() * size;
+      const length = 2 + random() * 10;
+      const lean = (random() - 0.5) * 5;
+      const tone = bladeTones[Math.floor(random() * bladeTones.length)];
+      tileLine(x, y, x + lean, y - length, tone, 0.45 + random() * 0.55,
+        random() > 0.5 ? "#929292" : "#858585");
+    }
+    for (let i = 0; i < Math.round(850 * detailScale); i++) {
+      const x = random() * size, y = random() * size;
+      const length = 3 + random() * 7;
+      const tone = random() > 0.5 ? "rgba(201,211,129,.36)" : "rgba(35,78,39,.42)";
+      tileLine(x, y, x + (random() - 0.5) * 7, y - length, tone, 0.9, "#969696");
     }
   } else if (kind === "asphalt") {
     for (let i = 0; i < Math.round(12500 * detailScale); i++) {
