@@ -10,8 +10,10 @@ test("first-launch city does not render a distant skyline before the player buil
   assert.ok(skyline.includes("positions.push([along, -352], [along, 352], [-352, along], [352, along])"));
   assert.ok(skyline.includes("new THREE.InstancedMesh(unitGeometry, concreteMaterial, 48)"));
   assert.ok(skyline.includes("new THREE.InstancedMesh(unitGeometry, masonryMaterial, 48)"));
-  assert.match(renderer,/const backgroundSkyline = \{ buildingCount: 0, windowCount: 0, dispose\(\) \{\} \};/);\n  assert.doesNotMatch(renderer,/const backgroundSkyline = createCityBackgroundSkyline/);
-  assert.ok(renderer.includes("backgroundCityBuildings: backgroundSkyline.buildingCount"));\n  assert.ok(renderer.includes("backgroundCityWindows: backgroundSkyline.windowCount"));
+  assert.match(renderer,/const backgroundSkyline = \{ buildingCount: 0, windowCount: 0, dispose\(\) \{\} \};/);
+  assert.doesNotMatch(renderer,/const backgroundSkyline = createCityBackgroundSkyline/);
+  assert.ok(renderer.includes("backgroundCityBuildings: backgroundSkyline.buildingCount"));
+  assert.ok(renderer.includes("backgroundCityWindows: backgroundSkyline.windowCount"));
 });
 
 test("background towers have variable heights, rooftop equipment and four-sided windows", () => {
