@@ -466,8 +466,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
     },
     destroy() {
       window.removeEventListener("resize", onResize);
-      skylineGroup.traverse(object => { if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose(); if (object.material && !Array.isArray(object.material)) object.material.dispose(); });
-      skylineGroup.removeFromParent();
       highwayGateway.dispose();
       renderer.dispose();
       atmosphere.dispose();
