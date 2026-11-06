@@ -363,7 +363,11 @@ export async function createCityThreeRenderer(sourceCanvas) {
     roads.count = activeRoads;
     roads.instanceMatrix.needsUpdate = true;
   }
+  let lastHighwayTrafficFrame = performance.now();
   function render(city, view, cam) {
+    const highwayNow = performance.now();
+    highwayGateway.updateTraffic(Math.min(0.1, Math.max(0, (highwayNow - lastHighwayTrafficFrame) / 1000)));
+    lastHighwayTrafficFrame = highwayNow;
     updateCamera(cam);
     updateRoads(city);
     atmosphere.update(city);
