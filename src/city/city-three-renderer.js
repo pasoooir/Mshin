@@ -171,20 +171,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   addLineLayer(activePlotEdges, plotLineMaterial);
   addLineLayer(lockedPlotEdges, lockedPlotLineMaterial);
   const roadMarkings = [];
-  const roadCenters = [7.5, 15, 23.5, 31.5, 39.5, 48, 55.5];
-  for (const center of roadCenters) {
-    const z = cityTileToWorld(center - 16);
-    const x = cityTileToWorld(center - 16);
-    for (let index = 0; index < VISUAL_GRID; index++) {
-      if (!isRoadCell(index) && index % 2 === 0) {
-        const along = cityTileToWorld(index - 16);
-        roadMarkings.push(along - 1.4, 0.078, z, along + 1.4, 0.078, z);
-        roadMarkings.push(x, 0.078, along - 1.4, x, 0.078, along + 1.4);
-      }
-    }
-  }
-  addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
-  const crosswalkStripeCount = 0;
   const lotLines = [];
   for (let y = 0; y < VISUAL_GRID; y += 2) {
     for (let x = 0; x < VISUAL_GRID; x++) {
