@@ -230,7 +230,7 @@ try {
     const progress = await mobile.evaluate(() => ({ progress: window.Mshin3DRenderer?.trackBuildProgress, environment: window.Mshin3DRenderer?.environmentCounts, frames: window.Mshin3DRenderer?.frames }));
     throw new Error("mobile race terrain and environment did not finish building: " + JSON.stringify(progress) + " | " + error.message);
   });
-  assert.equal(await mobile.evaluate(() => window.Mshin3DRenderer?.trackHalfWidth), 220, "mobile race must load the widened 440-unit circuit");
+  assert.equal(await mobile.evaluate(() => window.Mshin3DRenderer?.trackHalfWidth), 360, "mobile race must load the widened 720-unit circuit");
   await mobile.evaluate(() => { window.Mshin3DRenderer.captureNextFrameSample = true; });
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.lastFramePixelSample?.context === true, undefined, { timeout: 5000 });
   const raceFrameSample = await mobile.evaluate(() => window.Mshin3DRenderer.lastFramePixelSample);
