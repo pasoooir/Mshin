@@ -24,11 +24,13 @@ test("browser renderer exposes panel soot, fire, smoke and one-shot explosion fe
   assert.match(source, /"source-over"\)/);
 });
 
-test("burnt rivals leave traffic, collision, minimap and ranking participation", () => {
+test("burnt rivals leave active traffic but remain visible and ranked as DNFs", () => {
   assert.match(source, /rivals=rivals\.filter\(r=>!r\.destruction\?\.despawned\)/);
   assert.match(source, /if\(a\.destruction\?\.despawned\|\|b\.destruction\?\.despawned\|\|a\.finishTime!==null\|\|b\.finishTime!==null\|\|a\.collisionCooldown/);
-  assert.match(source, /if\(rival\.id>=4\|\|rival\.destruction\?\.despawned\)continue/);
-  assert.match(source, /if\(!r\.despawned&&!r\.destruction\?\.despawned\)\{marker\(r\.distance/);
+  assert.match(source, /if\(rival\.id>=4\)continue/);
+  assert.match(source, /const rivalDNF=!!rival\.destruction\?\.despawned/);
+  assert.match(source, /\(race\.raceEntrants\|\|rivals\)\.forEach\(r=>\{if\(!r\.despawned\)/);
+  assert.match(source, /dnf\?"#ff665f":r\.color/);
 });
 
 test("player destruction ends the race explicitly rather than silently removing the car", () => {
