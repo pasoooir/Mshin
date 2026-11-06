@@ -1,4 +1,4 @@
-const CACHE_NAME = "mshin-arcade-v79";
+const CACHE_NAME = "mshin-arcade-v80";
 const APP_SHELL = [
   "./", "./index.html", "./city.html", "./city-neighborhood-preview.html", "./assets/city/models/manifest.json", "./assets/city/models/house.gltf", "./assets/city/models/apartment.gltf", "./assets/city/models/shop.gltf", "./src/city/city-view.js", "./src/city/city-day-night-cycle.js", "./src/city/city-three-renderer.js", "./src/city/city-pbr-textures.js", "./src/city/city-building-high-gfx.js", "./src/city/city-street-renderer.js", "./src/city/city-world-scale.js", "./src/city/city-atmosphere.js", "./src/city/city-cloud-layer.js", "./src/city/city-seasonal-weather.js", "./src/city/city-camera-controller.js", "./src/city/city-camera-projection.js", "./src/city/city-view.css", "./src/city/city-mobile-layout.css", "./src/city/city-zoning.js", "./src/city/city-services.js", "./src/city/city-traffic.js", "./src/city/city-population.js", "./src/city/city-economy.js","./src/city/city-employment.js", "./src/city/city-save.js", "./data/stages.json",
   "./data/worlds.json",
