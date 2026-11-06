@@ -29,7 +29,7 @@ test("burnt rivals leave active traffic but remain visible and ranked as DNFs", 
   assert.match(source, /if\(a\.destruction\?\.despawned\|\|b\.destruction\?\.despawned\|\|a\.finishTime!==null\|\|b\.finishTime!==null\|\|a\.collisionCooldown/);
   assert.match(source, /if\(rival\.id>=4\)continue/);
   assert.match(source, /const rivalDNF=!!rival\.destruction\?\.despawned/);
-  assert.match(source, /\(race\.raceEntrants\|\|rivals\)\.forEach\(r=>\{if\(!r\.despawned\)/);
+  assert.match(source, /entrants\.forEach\(r=>\{const dnf=!!r\.destruction\?\.despawned/);
   assert.match(source, /dnf\?"#ff665f":r\.color/);
 });
 
