@@ -201,7 +201,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     if (snow.visible) animateField(snowGeometry, delta, 3 + seasonal.intensity * 4, seasonal.wind * 1.6);
     if (leaves.visible) animateField(leafGeometry, delta, 6 + seasonal.intensity * 8, seasonal.wind * 8);
 
-    const minute = Number.isFinite(city.minuteOfDay) ? ((city.minuteOfDay % 1440) + 1440) % 1440 : 495;
+    const minute = 720; // Permanent midday until the city reaches a stable release.
     const daylight = Math.max(0, Math.min(1, Math.sin(minute / 1440 * Math.PI * 2 - Math.PI / 2)));
     const night = 1 - daylight;
     const bucket = Math.round(daylight * 40);
