@@ -23,3 +23,21 @@ test("invalid timing input cannot produce a false finish timestamp", () => {
   assert.equal(finishTimestamp(4, 0.016, 0.2, 0.1, lap), null);
   assert.equal(finishTimestamp(Number.NaN, 0.016, lap - 0.1, 0.2, lap), null);
 });
+
+test("independent race stopwatches advance separately and freeze at exact finish times", async () => {
+  const { createRaceClock, startRaceClock, advanceRaceClock, finishRaceClock } = await import("../src/race-timing.js");
+  const goAt = 1234;
+  const player = startRaceClock(createRaceClock(), goAt);
+  const rival = startRaceClock(createRaceClock(), goAt);
+  advanceRaceClock(player, 0.25);
+  advanceRaceClock(rival, 0.5);
+  assert.equal(player.startedAt, goAt);
+  assert.equal(rival.startedAt, goAt);
+  assert.equal(player.elapsed, 0.25);
+  assert.equal(rival.elapsed, 0.5);
+  finishRaceClock(rival, 0.475);
+  advanceRaceClock(rival, 1);
+  assert.equal(rival.elapsed, 0.475);
+  assert.equal(rival.finishTime, 0.475);
+  assert.equal(rival.running, false);
+});
