@@ -1,11 +1,11 @@
 import { computeCityEmployment, JOBS_PER_BUILDING } from "./city-employment.js";
 
 export const CITY_ZONES = Object.freeze({
-  residential: Object.freeze({ label: "مسکونی", buildingType: "home", zoneCost: 160, constructionCost: 520, color: "#79b8e8" }),
-  commercial: Object.freeze({ label: "تجاری", buildingType: "shop", zoneCost: 220, constructionCost: 880, color: "#e8bd69" }),
-  industrial: Object.freeze({ label: "صنعتی", buildingType: "industrial", zoneCost: 280, constructionCost: 1350, color: "#a7aeb6" }),
-  administrative: Object.freeze({ label: "اداری", buildingType: "administrative", zoneCost: 320, constructionCost: 1550, color: "#a995d6" }),
-  recreational: Object.freeze({ label: "تفریحی", buildingType: "park", zoneCost: 180, constructionCost: 430, color: "#82c78a" })
+  residential: Object.freeze({ label: "Residential", buildingType: "home", zoneCost: 160, constructionCost: 520, color: "#79b8e8" }),
+  commercial: Object.freeze({ label: "Commercial", buildingType: "shop", zoneCost: 220, constructionCost: 880, color: "#e8bd69" }),
+  industrial: Object.freeze({ label: "Industrial", buildingType: "industrial", zoneCost: 280, constructionCost: 1350, color: "#a7aeb6" }),
+  administrative: Object.freeze({ label: "Administrative", buildingType: "administrative", zoneCost: 320, constructionCost: 1550, color: "#a995d6" }),
+  recreational: Object.freeze({ label: "Recreation", buildingType: "park", zoneCost: 180, constructionCost: 430, color: "#82c78a" })
 });
 
 const inside = (x, y, size) => Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < size && y < size;
@@ -14,11 +14,11 @@ const roadNear = (grid, x, y) => [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy]) =>
 
 export function placeCityZone(city, x, y, type) {
   const definition = CITY_ZONES[type];
-  if (!definition) return { ok:false, reason:"نوع منطقه‌بندی ناشناخته است" };
-  if (!inside(x,y,city.grid.length)) return { ok:false, reason:"خارج از محدوده شهر" };
-  if (city.grid[y][x] !== "grass") return { ok:false, reason:"این قطعه زمین اشغال شده است" };
-  if (!roadNear(city.grid,x,y)) return { ok:false, reason:"منطقه باید به خیابان دسترسی داشته باشد" };
-  if (city.treasury < definition.zoneCost) return { ok:false, reason:"بودجه کافی نیست" };
+  if (!definition) return { ok:false, reason:"Unknown zone type" };
+  if (!inside(x,y,city.grid.length)) return { ok:false, reason:"Outside the city limits" };
+  if (city.grid[y][x] !== "grass") return { ok:false, reason:"This plot is occupied" };
+  if (!roadNear(city.grid,x,y)) return { ok:false, reason:"منطقه Must have road access" };
+  if (city.treasury < definition.zoneCost) return { ok:false, reason:"Insufficient funds" };
   city.treasury -= definition.zoneCost;
   city.grid[y][x] = "zone-" + type;
   city.zones ||= [];
