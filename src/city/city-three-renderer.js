@@ -5,13 +5,11 @@ import { createCityCloudLayer } from "./city-cloud-layer.js";
 import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
-import { createCityBackgroundSkyline } from "./city-background-skyline.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
 const ACTIVE_SIZE = 32;
 const isRoadCell = () => false;
-const isActiveCell = (x, y) => x >= ACTIVE_START && x < ACTIVE_END && y >= ACTIVE_START && y < ACTIVE_END;
 export async function createCityThreeRenderer(sourceCanvas) {
   // Load the committed Three.js build from this GitHub Pages repository.
   const THREE = await import("../../vendor/three/build/three.module.min.js");
@@ -106,8 +104,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   let activeRoads = 0;
   const curbInstances = [];
   const sidewalkLayer = createCitySidewalkLayer(THREE, scene, isRoadCell, VISUAL_GRID, sidewalkSurface);
-  const environment = new THREE.Group();
-  scene.add(environment);
   const trunkGeometry = new THREE.CylinderGeometry(0.10, 0.15, 1.05, 6);
   const canopyGeometry = new THREE.SphereGeometry(0.62, 9, 7);
   const canopySmallGeometry = new THREE.SphereGeometry(0.42, 8, 6);
@@ -117,16 +113,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     new THREE.MeshStandardMaterial({ color: "#58ad58", roughness: 1 }),
     new THREE.MeshStandardMaterial({ color: "#78bd5d", roughness: 1 })
   ];
-  const treeTrunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, 180);
-  const treeCanopies = canopyMaterials.map(material => new THREE.InstancedMesh(canopyGeometry, material, 180));
-  const treeHighlights = canopyMaterials.map(material => new THREE.InstancedMesh(canopySmallGeometry, material, 180));
   // The new-city meadow is intentionally unobstructed: no decorative trees,
   // plot borders, roads, buildings or skyline are visible before player actions.
   const decorativeTreeCount = 0;
   const decorativeTreesOutsideBuildableGrid = 0;
-  const treeSpeciesCounts = canopyMaterials.map(() => 0);
-  treeTrunks.count = 0;
-  for (const mesh of [...treeCanopies, ...treeHighlights]) mesh.count = 0;
   const decorativeStreetLightCount = 0;
   const streetFurniturePlacementReady = sidewalkLayer.count > 0;
   const buildings = new THREE.Group();
