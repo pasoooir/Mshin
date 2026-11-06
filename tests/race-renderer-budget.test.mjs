@@ -155,3 +155,10 @@ test("asphalt texture contains aggregate, rubber and repair variation",()=>{
  assert.match(source,/rubberBand=Math\.max/);
  assert.match(source,/repairPatch=/);
 });
+
+test("each race car receives layered ground contact shadows",()=>{
+ assert.match(source,/const carShadowParts=\(\(\)=>\{/);
+ assert.match(source,/ring\(outer,54,82,39,64,1\.1\)/);
+ assert.match(source,/drawPart\(carShadowParts\[i\],vp,model\)/);
+ assert.match(source,/disposeParts\(carShadowParts\)/);
+});
