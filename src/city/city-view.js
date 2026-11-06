@@ -95,8 +95,8 @@ function persist(city){
 }
 function mount(){
  let canvas=document.getElementById("cityViewport");const ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;let threeRenderer=null;
- const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1,orbit:0};city.minuteOfDay=720;
- if(syncCityCitizens(city))persist(city);
+ const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1,orbit:0};const savedMinuteOfDay=city.minuteOfDay;city.minuteOfDay=720;
+ if(syncCityCitizens(city)||savedMinuteOfDay!==720)persist(city);
  let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,simulationTimer=0,resizeFrame=0,lastPersistTick=city.tick,lastClockUpdate=performance.now()/1000;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};
