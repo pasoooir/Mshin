@@ -77,7 +77,7 @@ try{
  assert.equal(renderStats.visualStyle,"continuous-realistic-grassland","the city renderer must use the realistic architectural PBR art direction");
  assert.equal(renderStats.continuousGrassland,true,"the world must be one continuous grass surface");
  assert.equal(renderStats.visiblePlotGridLines,0,"plot borders and checkerboard lines must never be rendered");
- assert.equal(renderStats.groundExtentMeters,10000,"the grassland must remain visible at the widest zoom-out level");
+ assert.equal(renderStats.groundExtentMeters,1000000,"the continuous terrain must extend beyond every supported zoom-out view without exposing the page backdrop");
  assert.equal(renderStats.proceduralTextures,6,"terrain, asphalt, brick, concrete, roof and sidewalk must use dedicated texture families");
  assert.equal(renderStats.pbrMaterialSets,6,"all six city surface families must expose complete PBR map sets");
  assert.equal(renderStats.normalMappedSurfaces,6,"all six city surface families must use generated normal maps");
@@ -118,6 +118,7 @@ try{
  assert.ok(Math.abs(boundedCamera.view.targetX)<=boundedCamera.limit+0.001&&Math.abs(boundedCamera.view.targetZ)<=boundedCamera.limit+0.001,"camera panning must stay inside the playable world even at the widest zoom-out and lowest pitch");
  await page.evaluate(()=>{window.MshinCityDebug.setCameraTarget(0,0);window.MshinCityDebug.setCameraPitch(0.51)});
  assert.equal(meadowZoomOut.stats.continuousGrassland,true,"zooming out must keep the same continuous grass terrain");
+  assert.equal(meadowZoomOut.stats.groundExtentMeters,1000000,"maximum zoom-out must retain million-meter terrain coverage so no blank canvas edge can enter the viewport");
  assert.equal(meadowZoomOut.stats.visiblePlotGridLines,0,"zooming out must never reveal square plot outlines");
  await page.screenshot({path:"artifacts/city-meadow-maximum-zoom-out.png"});
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.72));
