@@ -611,9 +611,9 @@ try {
   }
   assert.equal(await economy.locator(".carChoice").count(), 5, "garage should show three starter and two unlockable cars");
   assert.equal((await economy.locator("#credits").textContent()).trim(), "1000 🪙", "wallet should load saved coins");
-  assert.match(await economy.locator("#weatherInfo").textContent(), /CLEAR/, "Green Valley should use clear weather");
+  assert.match(await economy.locator("#weatherInfo").textContent(), /CLEAR/i, "Green Valley should use clear weather");
   await economy.getByRole("button", { name: /Desert Storm/ }).click();
-  assert.match(await economy.locator("#weatherInfo").textContent(), /SAND/, "Desert Storm should select sand weather");
+  assert.match(await economy.locator("#weatherInfo").textContent(), /SAND/i, "Desert Storm should select sand weather");
   await economy.locator("#tab-cars").click();
   await economy.getByRole("button", { name: /Electric Thunder/ }).click();
   assert.equal(await economy.getByRole("button", { name: /Electric Thunder/ }).getAttribute("class").then(v => v.includes("locked")), false, "purchased car should unlock");
