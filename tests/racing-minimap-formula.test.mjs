@@ -10,17 +10,17 @@ const [game, renderer, vehicle] = await Promise.all([
 
 test("3D race minimap is anchored at the upper-left and updates live", () => {
   assert.match(game, /function drawMinimap\(target=ctx\)/);
-  assert.match(game, /const mw=Math\.min\(164,width\*\.34\),mh=mw\*\.68,x=14,y=88/);
+  assert.match(game, /const mw=Math\.min\(220,width\*\.40\),mh=mw\*\.68,x=14,y=88/);
   assert.match(game, /drawMinimap\(racePositionCtx\)/);
   assert.match(game, /const mapPoint=\(t,lateral=0\)=>/);
   assert.match(game, /worldX\/\(TRACK_RADIUS_X\*2\.3\)\*mw/);
   assert.match(game, /worldY\/\(TRACK_RADIUS_Y\*2\.3\)\*mh/);
   assert.match(game, /entrants\.forEach\(r=>\{const dnf=!!r\.destruction\?\.despawned,point=mapPoint\(r\.distance,r\.lateral\)/);
   assert.match(game, /markers,bounds:\{x,y,width:mw,height:mh\},updatedAt:now/);
-  assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),display\.x,display\.y-7\)/, "each rival map marker should display its live rank");
+  assert.match(game, /rankBadge\(display,r\.rank,false\)/, "each rival map marker should display a visible rank badge");
   assert.match(game, /Math\.sin\(now\*\.009\)/, "player marker must blink");
   assert.match(game, /marker\(playerPoint,"#ffe34d",5,true,15\)/);
-  assert.match(game, /target\.fillText\(String\(playerRank\)/, "the player marker should display the live rank");
+  assert.match(game, /rankBadge\(playerDisplay,playerRank,true\)/, "the player marker should display a visible rank badge");
   assert.match(game, /window\.MshinRaceMinimap=\{visible:true,anchor:"top-left",playerBlink:true,rivalCount:entrants\.length,player:/);
 });
 
