@@ -16,7 +16,7 @@ try {
   await preloadGameAssets(({ loaded, total, percent, name }) => {
     window.MshinPreloadProgress = { loaded, total, percent, name };
     if (bar) bar.style.width = percent + "%";
-    if (label) label.textContent = `بارگذاری · ${loaded}/${total} · ${name}`;
+    if (label) label.textContent = `LOADING · ${loaded}/${total} · ${name}`;
     if (percentLabel) percentLabel.textContent = percent + "%";
   });
 
@@ -26,8 +26,8 @@ try {
 
   if (label) {
     label.textContent = window.MshinAssets.failures.length
-      ? `بارگذاری با ${window.MshinAssets.failures.length} منبع ناموفق؛ نسخه جایگزین فعال است`
-      : "همه منابع آماده‌اند · بازی در حال اجراست";
+      ? `Loaded with ${window.MshinAssets.failures.length} asset failures; fallback assets are active`
+      : "All assets ready · Game is starting";
   }
   if (percentLabel) percentLabel.textContent = "100%";
 
@@ -47,8 +47,8 @@ try {
   window.MshinBootError = String(error?.stack || error);
   window.MshinBootStage = "error";
   window.MshinBootReady = false;
-  if (label) label.textContent = "خطا در آماده‌سازی بازی؛ لطفاً صفحه را تازه‌سازی کنید";
-  if (percentLabel) percentLabel.textContent = "خطا";
+  if (label) label.textContent = "Game startup failed; please refresh the page";
+  if (percentLabel) percentLabel.textContent = "ERROR";
   console.error("Mshin boot failed:", error);
 } finally {
   if (panel) {
