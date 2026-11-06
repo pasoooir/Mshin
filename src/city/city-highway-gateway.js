@@ -242,7 +242,7 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
       for (const mesh of meshes) {
         mesh.geometry?.dispose();
         if (mesh.material && !Array.isArray(mesh.material)) {
-          if (mesh.material.map && mesh.material.map !== asphaltMap) mesh.material.map.dispose?.();
+          if (mesh.material.map && mesh.material.map !== asphaltMap && mesh.material.map !== concreteSurface.map) mesh.material.map.dispose?.();
           mesh.material.dispose();
         }
       }
