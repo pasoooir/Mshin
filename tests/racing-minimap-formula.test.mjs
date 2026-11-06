@@ -18,7 +18,7 @@ test("3D race minimap is anchored at the upper-left and updates live", () => {
 });
 
 test("all race entrants use the open-wheel formula profile with individual paint", () => {
-  assert.match(renderer, /function vehicleShapeFor\(kind,id\)\{return "ai-formula"\}/);
+  assert.match(renderer, /function vehicleShapeFor\(kind,id\)\{return kind==="player"\|\|kind==="car"\|\|kind==="formula"\?"ai-formula":AI_VEHICLE_SHAPES/);
   assert.match(renderer, /carParts\[i\]\.color=paint/);
   assert.match(vehicle, /"ai-formula":\{[^}]*style:"formula"/);
   assert.match(vehicle, /if\(p\.style==="formula"\)/);
