@@ -264,7 +264,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.14);
-  let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48));
+  let width = window.innerWidth, height = window.innerHeight, cameraOrbit = 0, cameraPitch = Math.atan2(38, Math.hypot(48, 48)), lastCameraTargetLimit = 0;
   function resize() {
     width = window.innerWidth;
     height = window.innerHeight;
@@ -279,9 +279,28 @@ export async function createCityThreeRenderer(sourceCanvas) {
     atmosphere.resize();
   }
   function updateCamera(cam) {
-    const zoom = Math.max(0.0625, Math.min(1.875, (cam.zoom || 0.72) * 1.25));
+    const zoom = Math.max(0.20, Math.min(1.5, cam.zoom || 0.72)) * 1.25;
+    cam.zoom = zoom / 1.25;
+    const pitch = Math.max(0.24, Math.min(0.96, Number.isFinite(cam.pitch) ? cam.pitch : 0.51));
+    const verticalGroundHalf = 25 / (zoom * Math.max(0.23, Math.sin(pitch)));
+    const horizontalHalf = 25 * (width / Math.max(1, height)) / zoom;
+    const safeRadius = Math.hypot(verticalGroundHalf, horizontalHalf);
+    const targetLimit = Math.max(0, CITY_TILE_METERS * VISUAL_GRID / 2 - safeRadius - 12);
+    const worldScale = Math.max(1, height) / 50;
+    const targetX = Number.isFinite(cam.currentTargetX) ? cam.currentTargetX : Number.isFinite(cam.targetX) ? cam.targetX : -(cam.x || 0) / worldScale;
+    const targetZ = Number.isFinite(cam.currentTargetZ) ? cam.currentTargetZ : Number.isFinite(cam.targetZ) ? cam.targetZ : -(cam.y || 0) / worldScale;
+    const boundedX = Math.max(-targetLimit, Math.min(targetLimit, targetX));
+    const boundedZ = Math.max(-targetLimit, Math.min(targetLimit, targetZ));
+    if (Number.isFinite(cam.currentTargetX)) cam.currentTargetX = boundedX;
+    else if (Number.isFinite(cam.targetX)) cam.targetX = boundedX;
+    else cam.x = -boundedX * worldScale;
+    if (Number.isFinite(cam.currentTargetZ)) cam.currentTargetZ = boundedZ;
+    else if (Number.isFinite(cam.targetZ)) cam.targetZ = boundedZ;
+    else cam.y = -boundedZ * worldScale;
+    cam.pitch = pitch;
     camera.zoom = zoom;
     const transform = updateCityCameraTransform(camera, cam, height);
+    lastCameraTargetLimit = targetLimit;
     cameraOrbit = transform.orbit;
     cameraPitch = transform.pitch;
   }
@@ -390,6 +409,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         continuousGrassland: true,
         visiblePlotGridLines: 0,
         groundExtentMeters: 10000,
+        cameraTargetLimitMeters: Number.isFinite(lastCameraTargetLimit) ? lastCameraTargetLimit : 0,
+        minimumZoom: 0.20,
         proceduralTextures: 6,
         pbrTextureResolution,
         pbrGenerationMs: Math.round(pbrGenerationMs * 100) / 100,
