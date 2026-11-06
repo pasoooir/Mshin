@@ -338,7 +338,7 @@ try {
   assert.equal(frameMetrics.trackLengthScale, 10, "race should use the planned tenfold track scale");
   assert.equal(frameMetrics.trackRadiusX, 11800, "race should use a tenfold world-space circuit instead of a compact loop");
   assert.equal(frameMetrics.trackRadiusY, 7600, "race should use a tenfold deep world-space circuit");
-  assert.ok(frameMetrics.roadWidth >= 350, "four-lane asphalt should span the full wide road surface");
+  assert.ok(frameMetrics.roadWidth >= 700, "four-lane asphalt should span the expanded wide road surface");
   assert.equal(frameMetrics.laneCount, 4, "race should expose four driving lanes");
   assert.equal(frameMetrics.playerHeadingOffsetDeg, 90, "player sprite nose should be aligned with the road tangent");
   assert.equal(frameMetrics.cameraChase, true, "camera should keep the player facing forward on screen");
