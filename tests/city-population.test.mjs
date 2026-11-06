@@ -5,8 +5,10 @@ import { CITY_MAX_CITIZEN_AGENTS, syncCityCitizens, stepCityCitizens } from "../
 import { computeCityEmployment } from "../src/city/city-employment.js";
 import { computeCityCommuting } from "../src/city/city-commuting.js";
 
+function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
+
 test("residential occupancy creates a bounded pedestrian population on connected roads", () => {
-  const city = createInitialCity(901);
+  const city = seedCityRoadAccess(createInitialCity(901));
   const placed = placeCityItem(city, 17, 14, "home");
   assert.equal(placed.ok, true);
   assert.equal(city.population, 12);
