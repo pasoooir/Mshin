@@ -279,7 +279,7 @@ function draw(){
  const threeDimensional=state==="race"||state==="paused"||state==="countdown";document.body.classList.toggle("is-3d-race",threeDimensional&&race3d.state.status==="webgl-ready");
  if(threeDimensional&&race3d.state.status==="webgl-ready"){
   const standings=getRaceStandings(),playerRow=standings.find(row=>row.player);
-  const labels=race3d.render({state,stageId:stage.id,world:stage.world,frameAt,raceElapsed:race.elapsed,player:{t:car.t,lateral:car.lateral,yaw:car.yaw,color:activeCar().color,modelId:activeCar().id,damage:car.damage.total,rank:playerRow?.rank||5,timerElapsed:race.elapsed,finished:race.playerFinishTime!==null},rivals})||[];
+  const labels=race3d.render({state,stageId:stage.id,world:stage.world,frameAt,raceElapsed:race.elapsed,player:{t:car.t,lateral:car.lateral,yaw:car.yaw,color:activeCar().color,modelId:activeCar().id,damage:car.damage.total,rank:playerRow?.rank||5,timerElapsed:race.playerClock?.elapsed??race.elapsed,finished:race.playerFinishTime!==null},rivals})||[];
   drawRacePositionOverlay(labels);drawMinimap(racePositionCtx);window.Mshin3DRenderer=race3d.state;return;
  }
  ctx.clearRect(0,0,width,height);if(state==="countdown"){drawCountdownIntro();const standings=getRaceStandings(),gridX=[.16,.33,.5,.67,.84],labels=standings.map(row=>{const index=row.player?2:[0,1,3,4][Number(row.id.slice(6))]??4;return {rank:row.rank,elapsed:0,x:width*gridX[index],y:height*.62-76,finished:false}});drawRacePositionOverlay(labels);return}if(state!=="race"&&state!=="paused"){drawRacePositionOverlay([]);return}
