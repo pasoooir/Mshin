@@ -20,7 +20,7 @@ test("mobile WebGL uses a bounded landscape drawing buffer and lower GPU cost",(
  assert.ok(renderer.includes("mobile?.68:2"));
  assert.ok(renderer.includes("portrait?innerHeight:innerWidth"));
  assert.ok(renderer.includes("mobile?320:softwareRenderer?400:820"));
- assert.ok(renderer.includes("mobile?18:softwareRenderer?22:48"));
+ assert.ok(renderer.includes("mobile?22:softwareRenderer?28:64"));
  assert.ok(renderer.includes("mobile?10:36"));
  assert.ok(renderer.includes("mobile?3:7"));
  assert.ok(renderer.includes("qualityScale=clamp(scale,.58,1)"));
