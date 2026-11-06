@@ -215,3 +215,14 @@ test("invalid rear stability calibration falls back to neutral yaw recovery",()=
  assert.equal(invalid.yawRecoveryScale,1);
  assert.equal(invalid.yawResponse,baseline.yawResponse);
 });
+
+test("brake-and-steer drift opens rear slip while preserving the tyre force envelope",()=>{
+ const base={speed:175,lateralVelocity:28,steer:.62,throttle:false,brake:true,grip:1,deltaSeconds:1/60,mass:1250};
+ const normal=resolveTireForces(base);
+ const drift=resolveTireForces({...base,drift:true});
+ assert.ok(drift.rearGripScale<normal.rearGripScale);
+ assert.ok(drift.yawResponse>normal.yawResponse);
+ assert.ok(drift.brakingDeceleration<normal.brakingDeceleration);
+ assert.ok(Math.abs(175*drift.yawRateTarget)<=drift.availableLateral+1e-7);
+ assert.ok(Number.isFinite(drift.lateralAcceleration));
+});
