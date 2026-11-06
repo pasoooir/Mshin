@@ -277,6 +277,7 @@ try{
  const serviceStats=await page.evaluate(()=>window.MshinCityDebug.city.stats);
  assert.ok(serviceStats.utilityCoverage>0&&serviceStats.publicServiceCoverage>0&&serviceStats.overallCoverage>0,"utility and public service coverage must update the city simulation");
  const secondHome=await page.evaluate(()=>window.MshinCityDebug.place(18,13,"home"));assert.equal(secondHome.ok,true,"a second road-accessible home should be constructible");
+ await clickCityTool(page,"road");for(const [x,y] of [[14,13],[15,13],[16,13]]){const point=await page.evaluate(([x,y])=>window.MshinCityDebug.screenForTile(x,y),[x,y]);await page.mouse.click(point.x,point.y)}await clickCityTool(page,"select");
  await page.locator("#cityBudget").click();
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),true,"mobile players must be able to open the budget panel");
  const budgetLayout=await page.evaluate(()=>{
