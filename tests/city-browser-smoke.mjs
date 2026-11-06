@@ -254,7 +254,7 @@ try{
  assert.equal(recenteredCamera.orbit,0,"recenter must restore the initial city-facing orbit");
 
 
- await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
+ await clickCityTool(page,"road");const zoneAccessTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,13));await page.mouse.click(zoneAccessTarget.x,zoneAccessTarget.y);await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
