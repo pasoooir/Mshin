@@ -36,5 +36,5 @@ test("burnt rivals leave active traffic but remain visible and ranked as DNFs", 
 test("player destruction ends the race explicitly rather than silently removing the car", () => {
   assert.match(source, /if\(car\.destruction\?\.despawned&&!race\.finished&&race\.playerFinishTime===null\)/);
   assert.match(source, /race\.playerDNF=true/);
-  assert.match(source, /سایر خودروها مسابقه را به پایان رساندند/);
+  assert.match(source, /YOU LOST! Your car was destroyed 3 times. Race over\./);
 });

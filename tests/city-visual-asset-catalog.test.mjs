@@ -22,5 +22,5 @@ test("world inventory includes sky, atmosphere, space objects and all major city
 
 test("catalogue returns null for unknown categories and stable definitions for known ones", () => {
   assert.equal(getCityAssetDefinition("unknown-category"), null);
-  assert.equal(getCityAssetDefinition("mosque").label, "مسجد");
+  assert.equal(getCityAssetDefinition("mosque").label, "Mosque");
 });

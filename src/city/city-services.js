@@ -1,12 +1,12 @@
 export const CITY_SERVICE_TYPES = Object.freeze({
-  power: Object.freeze({ label:"برق", category:"utility", radius:10, capacity:120, cost:4600, upkeep:42, color:"#e8c65f" }),
-  water: Object.freeze({ label:"آب", category:"utility", radius:9, capacity:100, cost:3900, upkeep:34, color:"#68b9dc" }),
-  sewage: Object.freeze({ label:"فاضلاب", category:"utility", radius:8, capacity:90, cost:4200, upkeep:38, color:"#9aab91" }),
-  waste: Object.freeze({ label:"پسماند", category:"utility", radius:11, capacity:140, cost:3400, upkeep:46, color:"#b9b56d" }),
-  police: Object.freeze({ label:"پلیس", category:"public", radius:8, capacity:100, cost:3700, upkeep:52, color:"#6d8ed1" }),
-  fire: Object.freeze({ label:"آتش‌نشانی", category:"public", radius:8, capacity:100, cost:3600, upkeep:48, color:"#d96e58" }),
-  health: Object.freeze({ label:"درمان", category:"public", radius:8, capacity:80, cost:4100, upkeep:54, color:"#e78c9c" }),
-  education: Object.freeze({ label:"آموزش", category:"public", radius:9, capacity:100, cost:4300, upkeep:45, color:"#9a85c9" })
+  power: Object.freeze({ label:"POWER", category:"utility", radius:10, capacity:120, cost:4600, upkeep:42, color:"#e8c65f" }),
+  water: Object.freeze({ label:"WATER", category:"utility", radius:9, capacity:100, cost:3900, upkeep:34, color:"#68b9dc" }),
+  sewage: Object.freeze({ label:"SEWAGE", category:"utility", radius:8, capacity:90, cost:4200, upkeep:38, color:"#9aab91" }),
+  waste: Object.freeze({ label:"WASTE", category:"utility", radius:11, capacity:140, cost:3400, upkeep:46, color:"#b9b56d" }),
+  police: Object.freeze({ label:"POLICE", category:"public", radius:8, capacity:100, cost:3700, upkeep:52, color:"#6d8ed1" }),
+  fire: Object.freeze({ label:"FIRE", category:"public", radius:8, capacity:100, cost:3600, upkeep:48, color:"#d96e58" }),
+  health: Object.freeze({ label:"HEALTHCARE", category:"public", radius:8, capacity:80, cost:4100, upkeep:54, color:"#e78c9c" }),
+  education: Object.freeze({ label:"EDUCATION", category:"public", radius:9, capacity:100, cost:4300, upkeep:45, color:"#9a85c9" })
 });
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));

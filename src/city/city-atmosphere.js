@@ -144,7 +144,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
   let currentSeason = -1;
   let lastWeatherFrame = 0;
   let lightingStats = { minuteOfDay: 495, daylight: 0, windowGlow: 0, phase: "day" };
-  let weatherStats = { season: "spring", seasonLabel: "بهار", weather: "clear", intensity: 0, wind: 0, day: 0 };
+  let weatherStats = { season: "spring", seasonLabel: "Spring", weather: "clear", intensity: 0, wind: 0, day: 0 };
 
   function resize() {
     const { width, height } = getViewport();

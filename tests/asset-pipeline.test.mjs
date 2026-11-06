@@ -150,7 +150,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   const damageRenderer = await readFile(path.join(root, "assets/scripts/VehicleDamageRenderer.ts"), "utf8");
   const cocosGame = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
   assert.match(cocosGame, /VehicleDamageRenderer/);
-  assert.match(cocosGame, /"damage","بدنه/);
+  assert.match(cocosGame, /"damage","DAMAGE/);
   assert.match(damageRenderer, /damage\.front/);
   assert.match(damageRenderer, /damage\.rear/);
   assert.match(damageRenderer, /damage\.left/);
@@ -167,16 +167,16 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /collisionCooldown/);
   assert.match(game, /stepVehicleDynamics/);
   assert.match(sw, /collision-physics\.js/);
-  assert.match(game, /lane\(-90,"#ffffff70",3,\[22,30\]\)/);
-  assert.match(game, /lane\(90,"#ffffff70",3,\[22,30\]\)/);
+  assert.match(game, /lane\(-180,"#ffffff70",3,\[22,30\]\)/);
+  assert.match(game, /lane\(180,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /Four lanes/);
-  assert.match(game, /ROAD_HALF_WIDTH=220/);
-  assert.match(game, /lanes:\[-165,-82.5,82.5,165\]/);
+  assert.match(game, /ROAD_HALF_WIDTH=360/);
+  assert.match(game, /lanes:\[-270,-90,90,270\]/);
   assert.match(game, /countdownElapsed<3\.72/);
-  assert.match(game, /"دره سبز"/);
-  assert.match(game, /"توفان کویر"/);
-  assert.match(game, /وضعیت هوا/);
-  assert.match(game, /مرحله/);
+  assert.match(game, /"Green Valley"/);
+  assert.match(game, /"Desert Storm"/);
+  assert.match(game, /WEATHER/);
+  assert.match(game, /STAGE/);
   assert.doesNotMatch(game, /setTimeout\(\(\)=>o\.hit=false/);
   assert.match(game, /hudClock>=\.1/);
 });
@@ -184,15 +184,15 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
 test("boot experience uses a cinematic game splash and compact one-page mobile menu", async () => {
   const html = await readFile(path.join(root, "index.html"), "utf8");
   assert.match(html, /class="splash"/);
-  assert.match(html, /lang="fa-IR" dir="rtl"/);
+  assert.match(html, /lang="en" dir="ltr"/);
   assert.match(html, /Hamed Babaei/);
   assert.match(html, /https:\/\/ir\.linkedin\.com\/in\/gilasart/);
-  assert.match(html, /انتخاب مسابقه/);
-  assert.match(html, / aria-label="روشن یا خاموش کردن صدا"/);
+  assert.match(html, /SELECT RACE/);
+  assert.match(html, /aria-label="Toggle sound"/);
   assert.match(html, /MSHIN STUDIOS/);
-  assert.match(html, /نسخه ۰.۱۱.۰/);
-  assert.match(html, /هوش ترافیک/);
-  assert.match(html, /تخریب پویا/);
+  assert.match(html, /VERSION 0.15.4/);
+  assert.match(html, /TRAFFIC AI/);
+  assert.match(html, /DYNAMIC DAMAGE/);
   assert.match(html, /splashCarFront/);
   assert.match(html, /id="assetPercent"/);
   assert.match(html, /id="assetProgress"/);
@@ -202,7 +202,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /#select \.actions\{position:sticky/);
   const boot = await readFile(path.join(root, "src/boot.js"), "utf8");
   assert.match(boot, /assetPercent/);
-  assert.match(boot, /همه منابع آماده‌اند/);
+  assert.match(boot, /All assets ready/);
 });
 
 test("all app cache and asset version markers are advanced together", async () => {
@@ -240,7 +240,7 @@ test("race intro, progressive traffic classes and impact coin rewards are wired 
   assert.ok(game.includes("function drawTrafficBody(r)"));
   assert.ok(game.includes("function awardImpactReward(hit,forwardDot,impactScale=1)"));
   assert.ok(game.includes("progress.credits+=reward;saveProgress()")); assert.ok(game.includes("race.impactPoints"));
-  assert.ok(game.includes("تخریب حریف"));
+  assert.ok(game.includes("RIVAL DAMAGE"));
 });
 
 
@@ -266,7 +266,7 @@ test("opening nitro pickup is aligned with the player and protected from early t
   assert.match(game, /t:i===0\?\.075:/, "first pickup should be just ahead of the start line");
   assert.match(game, /lateral:i===0\?0:/, "first pickup should align with the starting lane");
   assert.match(game, /distance:0,totalProgress:0,lapsCompleted:0,clock:createRaceClock\(\),timerElapsed:0,finishTime:null/, "all race entrants should share the same starting line and reset clocks");
-  assert.match(game, /const lanes=\[-165,-82.5,82.5,165,-165,82.5,-82.5,165\]/, "opponents should occupy separate grid lanes");
+  assert.match(game, /const lanes=\[-270,-90,90,270,-270,90,-90,270\]/, "opponents should occupy separate grid lanes");
 });
 
 
