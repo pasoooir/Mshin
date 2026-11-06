@@ -15,6 +15,7 @@ test("3D race minimap is anchored at the upper-left and updates live", () => {
   assert.match(game, /rivals\.forEach\(r=>\{if\(!r\.despawned&&!r\.destruction\?\.despawned\)marker\(r\.distance,r\.lateral,r\.color/);
   assert.match(game, /Math\.sin\(now\*\.009\)/, "player marker must blink");
   assert.match(game, /marker\(car\.t,car\.lateral,"#ffe34d",5,true\)/);
+  assert.match(game, /window\.MshinRaceMinimap=\{visible:true,anchor:"top-left",playerBlink:true,rivalCount:/);
 });
 
 test("all race entrants use the open-wheel formula profile with individual paint", () => {
