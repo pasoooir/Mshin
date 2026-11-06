@@ -135,3 +135,23 @@ test("software WebGL devices automatically use a bounded render target and scene
   assert.match(source, /softwareRenderer\?14:36/,
     "software rendering should reduce crowd geometry while retaining visible spectators");
 });
+
+test("wider circuit keeps edge lines, kerbs and shoulders aligned with asphalt",()=>{
+ assert.match(source,/const segments=mobile\?320:softwareRenderer\?400:820,half=220/);
+ assert.match(source,/fa,-194/);
+ assert.match(source,/fa,side\*208/);
+ assert.match(source,/fa,-half-32/);
+ assert.match(source,/offset=side\*\(half\+15\)/);
+});
+test("Android renderer can adapt pixel scale after sustained slow frames",()=>{
+ assert.match(source,/state\.slowFrameStreak\+\+/);
+ assert.match(source,/state\.fastFrameStreak\+\+/);
+ assert.match(source,/qualityScale=Math\.max\(\.5,qualityScale-\.1\)/);
+ assert.match(source,/qualityScale=Math\.min\(1,qualityScale\+\.08\)/);
+ assert.match(source,/state\.quality\.adaptiveScale=qualityScale/);
+});
+test("asphalt texture contains aggregate, rubber and repair variation",()=>{
+ assert.match(source,/const aggregate=hash\(x\*7,y\*11\)/);
+ assert.match(source,/rubberBand=Math\.max/);
+ assert.match(source,/repairPatch=/);
+});
