@@ -11,7 +11,7 @@ test("all five zoning classes are explicit and map to playable building types", 
 });
 
 test("zoning requires an empty tile connected to a street and sufficient funds", () => {
-  const city = seedCityRoadAccess(createInitialCity(501)));
+  const city = seedCityRoadAccess(createInitialCity(501));
   const result = placeCityItem(city,17,14,"zone-residential");
   assert.equal(result.ok,true);
   assert.equal(city.grid[14][17],"zone-residential");
