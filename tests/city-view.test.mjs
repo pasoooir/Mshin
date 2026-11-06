@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {createInitialCity,stepCity,placeCityItem,isValidCitySave,normalizeCitySave,projectCityTile} from "../src/city/city-view.js";
 function seedRoadNetwork(city){for(let y=0;y<32;y++)for(let x=0;x<32;x++)if([7,8,15,16,23,24].includes(x)||[7,8,15,16,23,24].includes(y))city.grid[y][x]="road";return city}
 test("new city starts as an empty, deterministic, fully gridded world",()=>{const a=createInitialCity(42),b=createInitialCity(42);assert.equal(a.name,"New City");assert.equal(a.grid.length,32);assert.equal(a.grid[15][15],"grass");assert.equal(a.buildings.length,0);assert.equal(a.population,0);assert.equal(a.trees.length,0);assert.equal(a.citizens.length,0);assert.equal(a.traffic.length,0);assert.equal(a.animals.length,0);assert.equal(a.grid.flat().filter(t=>t==="road").length,0);assert.equal(a.population,b.population);assert.deepEqual(a.grid,b.grid);assert.equal(isValidCitySave(a),true)});
-test("simulation ticks advance time, economy, citizens and traffic",()=>{const c=createInitialCity(7),money=c.treasury;stepCity(c,1);assert.equal(c.tick,1);assert.equal(c.minuteOfDay,360,"new cities start at the full five-minute daylight boundary and simulation ticks do not accelerate the visual clock");assert.equal(c.traffic.length,0);assert.equal(c.animals.length,0);assert.equal(c.treasury,money);assert.equal(c.stats.income,0);assert.equal(c.stats.jobs,0)});
+test("simulation ticks advance time, economy, citizens and traffic",()=>{const c=createInitialCity(7),money=c.treasury;stepCity(c,1);assert.equal(c.tick,1);assert.equal(c.minuteOfDay,720,"simulation ticks must never advance the permanent midday clock");assert.equal(c.traffic.length,0);assert.equal(c.animals.length,0);assert.equal(c.treasury,money);assert.equal(c.stats.income,0);assert.equal(c.stats.jobs,0)});
 test("roads and buildings enforce budget and street access",()=>{const c=createInitialCity(99);assert.equal(placeCityItem(c,17,14,"road").ok,true);assert.equal(c.grid[14][17],"road");assert.equal(placeCityItem(c,17,13,"home").ok,true);assert.equal(c.grid[13][17],"building");assert.ok(c.population>=12);const blocked=placeCityItem(c,2,2,"shop");assert.equal(blocked.ok,false);assert.match(blocked.reason,/road/);assert.equal(placeCityItem(c,17,13,"shop").ok,false)});
 test("save validation rejects malformed or incompatible snapshots",()=>{const c=createInitialCity(12);assert.equal(isValidCitySave(c),true);assert.equal(isValidCitySave({...c,schemaVersion:9}),false);assert.equal(isValidCitySave({...c,grid:[]}),false);assert.equal(isValidCitySave({...c,treasury:"unlimited"}),false)});
 test("isometric projection preserves diagonal tile geometry",()=>{assert.deepEqual(projectCityTile(1,0),{x:16,y:8});assert.deepEqual(projectCityTile(0,1),{x:-16,y:8})});
@@ -94,7 +94,7 @@ test("legacy version-two saves normalize optional fields without losing valid ci
  assert.equal(normalized.nextTrafficId,1);
  assert.deepEqual(normalized.zones,[]);
  assert.deepEqual(normalized.animals,[]);
- assert.equal(normalized.minuteOfDay,495);
+ assert.equal(normalized.minuteOfDay,720);
  assert.equal(normalized.happiness,100);
  assert.deepEqual(normalized.stats,{income:0,expenses:0,jobs:0,traffic:0});
  const legacyZone=createInitialCity(919);legacyZone.grid[13][17]="zone-residential";delete legacyZone.zones;

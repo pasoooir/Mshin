@@ -17,7 +17,7 @@ const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b
 export function createInitialCity(seed=20261102){
  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill("grass"));
 
- return {schemaVersion:2,cityId:"mshin-green-valley",name:"New City",seed:seed>>>0,tick:0,minuteOfDay:360,treasury:124500,population:0,happiness:100,taxRates:{...CITY_DEFAULT_TAX_RATES},grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,net:0,taxRevenue:0,maintenance:0,serviceUpkeep:0,jobs:0,traffic:0}};
+ return {schemaVersion:2,cityId:"mshin-green-valley",name:"New City",seed:seed>>>0,tick:0,minuteOfDay:720,treasury:124500,population:0,happiness:100,taxRates:{...CITY_DEFAULT_TAX_RATES},grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,net:0,taxRevenue:0,maintenance:0,serviceUpkeep:0,jobs:0,traffic:0}};
 }
 export function stepCity(city,seconds=1){
  if(!city||city.schemaVersion!==2||!Number.isFinite(seconds)||seconds<=0)throw new TypeError("A valid city and positive step are required");
@@ -95,8 +95,8 @@ function persist(city){
 }
 function mount(){
  let canvas=document.getElementById("cityViewport");const ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;let threeRenderer=null;
- const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1,orbit:0};
- if(syncCityCitizens(city))persist(city);
+ const $=id=>document.getElementById(id),city=load(),view={w:innerWidth,h:innerHeight,dpr:1},cam={x:0,y:0,zoom:1,orbit:0};const savedMinuteOfDay=city.minuteOfDay;city.minuteOfDay=720;
+ if(syncCityCitizens(city)||savedMinuteOfDay!==720)persist(city);
  let tool="select",speed=1,acc=0,last=0,selected=null,pointers=new Map(),gesture=null,toastFrames=0,raf=0,simulationTimer=0,resizeFrame=0,lastPersistTick=city.tick,lastClockUpdate=performance.now()/1000;
  const TW=32,TH=16,centerY=(SIZE-1)*TH/2;
  const tilePoint=(x,y)=>{const p=projectCityTile(x,y,TW,TH);return{x:p.x,y:p.y-centerY}};

@@ -125,22 +125,19 @@ try{
 
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
 
- // The same 3D scene must respond to the deterministic simulation clock.
+ // Daylight is intentionally locked until the city reaches a stable release.
  await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=0;window.MshinCityDebug.draw()});
- const nightLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
- assert.equal(nightLighting.phase,"night","midnight must activate the night lighting state");
- assert.equal(nightLighting.daylight,0,"midnight must have no direct daylight");
- assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"night must display the moon and hide the sun");
- assert.ok(nightLighting.windowGlow>=1,"building windows must illuminate at night");
- assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),72,"night scene must render the deterministic star field");
- await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=720;window.MshinCityDebug.draw()});
- const noonLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
- assert.equal(noonLighting.phase,"day","midday must activate the daylight state");
- assert.equal(noonLighting.daylight,1,"midday must have full daylight");
+ const lockedDayLighting=await page.evaluate(()=>window.MshinCity3DStats.lighting);
+ assert.equal(lockedDayLighting.phase,"day","even a saved midnight value must render as daytime");
+ assert.equal(lockedDayLighting.minuteOfDay,720,"the renderer must normalize all clock values to midday");
+ assert.equal(lockedDayLighting.daylight,1,"the city must retain full daylight");
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.celestialBodies),1,"day must display the sun and hide the moon");
- assert.notEqual(nightLighting.skyColor,noonLighting.skyColor,"the visible sky color must change between night and day");
- assert.ok(noonLighting.windowGlow<0.1,"building window glow must be subdued during daytime");
- assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),0,"day scene must hide stars");
+ assert.ok(lockedDayLighting.windowGlow<0.1,"building windows must remain subdued during daytime");
+ assert.equal(await page.evaluate(()=>window.MshinCity3DStats.visibleStars),0,"the permanent day scene must never render stars");
+ await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=1080;window.MshinCityDebug.draw()});
+ const eveningAttempt=await page.evaluate(()=>window.MshinCity3DStats.lighting);
+ assert.equal(eveningAttempt.phase,"day","attempting to render evening must still remain daytime");
+ assert.equal(eveningAttempt.minuteOfDay,720,"the city must never enter twilight or night before stability");
  // Render a non-persistent asset showcase containing every current city building
  // family, then orbit the same real WebGL scene through a complete 360 degrees.
  const objectShowcase=await page.evaluate(()=>{
@@ -491,6 +488,8 @@ try{
   try{await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await migrationPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2))throw new Error("renderer did not become ready during legacy migration: "+JSON.stringify({diagnostic,errors:migrationErrors})+"; "+error.message)}
   const migrated=await migrationPage.evaluate(()=>({city:window.MshinCityDebug.city,current:JSON.parse(localStorage.getItem("mshin-city-save-v2")),legacy:localStorage.getItem("mshin-city-save-v1")}));
   assert.equal(migrated.city.schemaVersion,2,"legacy v1 saves must migrate to the current v2 schema");
+  assert.equal(migrated.city.minuteOfDay,720,"legacy night timestamps must be normalized to permanent midday");
+  assert.equal(migrated.current.minuteOfDay,720,"the normalized midday timestamp must be persisted to the active save");
   assert.equal(migrated.city.treasury,12345,"migration must preserve treasury");
   assert.equal(migrated.city.buildings.length,1,"migration must preserve constructed buildings");
   assert.equal(migrated.city.population,12,"migration must preserve population");

@@ -147,7 +147,7 @@ export function normalizeCitySaveData(value) {
     ...value,
     zones: Array.isArray(value.zones) ? value.zones : value.grid.flatMap((row,y)=>row.flatMap((tile,x)=>isCityZoneCell(tile)?[{x,y,type:tile.slice(5),createdAt:0}]:[])),
     animals: Array.isArray(value.animals) ? value.animals : [],
-    minuteOfDay: Number.isFinite(value.minuteOfDay) && value.minuteOfDay >= 0 && value.minuteOfDay < 1440 ? value.minuteOfDay : 495,
+    minuteOfDay: 720, // Permanent midday until the city reaches a stable release.
     happiness: Number.isFinite(value.happiness) ? value.happiness : 100,
     nextBuildingId: validId(value.nextBuildingId) ? value.nextBuildingId : Math.max(0,...value.buildings.map(item=>item.id))+1,
     nextTrafficId: validId(value.nextTrafficId) ? value.nextTrafficId : Math.max(0,...value.traffic.map(item=>item.id))+1,
@@ -210,7 +210,7 @@ export function migrateCitySave(value) {
     name: snapshot.name.slice(0,80),
     seed: snapshot.seed,
     tick: snapshot.tick,
-    minuteOfDay: Number.isFinite(snapshot.minuteOfDay) && snapshot.minuteOfDay >= 0 && snapshot.minuteOfDay < 1440 ? snapshot.minuteOfDay : 495,
+    minuteOfDay: 720, // Permanent midday until the city reaches a stable release.
     treasury: snapshot.treasury,
     population: snapshot.population,
     happiness: Number.isFinite(snapshot.happiness) && snapshot.happiness >= 0 && snapshot.happiness <= 100 ? snapshot.happiness : 76,

@@ -23,13 +23,10 @@ test("cloud layer is connected to the live renderer and offline app shell", asyn
   assert.match(worker, /\.\/src\/city\/city-cloud-layer\.js/);
 });
 
-test("cloud lighting preserves midnight and wraps the simulation clock", () => {
-  const midnight = getCityCloudLighting({ minuteOfDay: 0 }, { weather: { weather: "clear", intensity: 0 } });
-  const noon = getCityCloudLighting({ minuteOfDay: 720 }, { weather: { weather: "clear", intensity: 0 } });
-  const wrapped = getCityCloudLighting({ minuteOfDay: 1440 }, { weather: { weather: "clear", intensity: 0 } });
-  assert.equal(midnight.daylight, 0, "midnight must shade clouds as night, not default to noon");
-  assert.equal(noon.daylight, 1, "noon must retain full cloud daylight");
-  assert.equal(wrapped.daylight, 0, "24:00 must wrap to midnight");
-  assert.equal(midnight.minute, 0);
-  assert.equal(wrapped.minute, 0);
+test("cloud lighting remains in permanent full daylight for all saved clock values", () => {
+  for (const minuteOfDay of [0, 360, 720, 1080, 1440]) {
+    const lighting = getCityCloudLighting({ minuteOfDay }, { weather: { weather: "clear", intensity: 0 } });
+    assert.equal(lighting.minute, 720, "cloud lighting must ignore saved night/twilight times");
+    assert.equal(lighting.daylight, 1, "clouds must remain fully day-lit");
+  }
 });

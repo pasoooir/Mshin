@@ -27,7 +27,7 @@ export function advanceRainSegments(positions, delta, speed, drift, random = Mat
 }
 
 export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fill, windowMaterials, getViewport, getFoliageMaterials = () => [] }) {
-  const initialAtmosphere = getCityAtmosphericColors(495, "spring", "clear");
+  const initialAtmosphere = getCityAtmosphericColors(720, "spring", "clear");
   scene.background = new THREE.Color(initialAtmosphere.zenith);
   scene.fog.color.set(initialAtmosphere.horizon);
 
@@ -143,7 +143,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
   let lightingBucket = -1;
   let currentSeason = -1;
   let lastWeatherFrame = 0;
-  let lightingStats = { minuteOfDay: 495, daylight: 0, windowGlow: 0, phase: "day" };
+  let lightingStats = { minuteOfDay: 720, daylight: 1, windowGlow: 0.06, phase: "day" };
   let weatherStats = { season: "spring", seasonLabel: "بهار", weather: "clear", intensity: 0, wind: 0, day: 0 };
 
   function resize() {
@@ -201,7 +201,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     if (snow.visible) animateField(snowGeometry, delta, 3 + seasonal.intensity * 4, seasonal.wind * 1.6);
     if (leaves.visible) animateField(leafGeometry, delta, 6 + seasonal.intensity * 8, seasonal.wind * 8);
 
-    const minute = Number.isFinite(city.minuteOfDay) ? ((city.minuteOfDay % 1440) + 1440) % 1440 : 495;
+    const minute = 720; // Permanent midday until the city reaches a stable release.
     const daylight = Math.max(0, Math.min(1, Math.sin(minute / 1440 * Math.PI * 2 - Math.PI / 2)));
     const night = 1 - daylight;
     const bucket = Math.round(daylight * 40);
