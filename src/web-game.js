@@ -256,7 +256,7 @@ function drawMinimap(target=ctx){
   target.restore();
  };
  rivals.forEach(r=>{if(!r.despawned&&!r.destruction?.despawned){marker(r.distance,r.lateral,r.color||"#56a8ed",3.7);const f=frameAt(r.distance%(Math.PI*2)),px=x+mw/2+(f.p.x+f.nx*(r.lateral||0))/2700*mw,py=y+mh/2+9+(f.p.y+f.ny*(r.lateral||0))/1750*mh;target.fillStyle="#fff";target.font="900 8px system-ui";target.textAlign="center";target.fillText(String(r.rank||"-"),px,py-7)}});
- marker(car.t,car.lateral,"#ffe34d",5,true);
+ marker(car.t,car.lateral,"#ffe34d",5,true);const playerRank=getRaceStandings().find(row=>row.player)?.rank||5;const playerFrame=frameAt(car.t);target.fillStyle="#ffe34d";target.font="900 8px system-ui";target.textAlign="center";target.fillText(String(playerRank),x+mw/2+(playerFrame.p.x+playerFrame.nx*car.lateral)/2700*mw,y+mh/2+9+(playerFrame.p.y+playerFrame.ny*car.lateral)/1750*mh-9);
  target.font="700 9px system-ui";target.textBaseline="middle";target.fillStyle="#fff";target.fillText("YOU",x+8,y+mh+25);
  target.fillStyle="#78c8ff";target.beginPath();target.arc(x+42,y+mh+25,3,0,Math.PI*2);target.fill();target.fillStyle="#fff";target.fillText("RIVALS",x+50,y+mh+25);
  window.MshinRaceMinimap={visible:true,anchor:"top-left",playerBlink:true,rivalCount:rivals.filter(r=>!r.despawned&&!r.destruction?.despawned).length,player:{t:car.t,lateral:car.lateral},updatedAt:now};
