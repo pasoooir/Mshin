@@ -13,6 +13,9 @@ test("the five race entrants are reset together on GO, not during the countdown"
   assert.match(game, /window\.MshinRaceStart=\{timestamp:race\.startTimestamp,synchronized:/);
   assert.match(game, /window\.MshinRaceClocks=\{startTimestamp:race\.startTimestamp\?\?null,racers:rows\.map/);
   assert.match(game, /clock:createRaceClock\(\),timerElapsed:0,finishTime:null/);
+  assert.match(game, /cruiseFactor:1,[^}]*speed:0/, "all AI rivals must leave the line together without staggered starting speeds");
+  assert.match(game, /speedLimit:aiMaxSpeed,acceleration:aiAcceleration/, "AI performance must use the selected player's shared engine limits");
+  assert.match(game, /window\.MshinRacePace=\{speedLimit:aiMaxSpeed,acceleration:aiAcceleration,vehicles:/, "the shared performance profile must be observable in runtime tests");
   assert.match(game, /race\.playerClock=createRaceClock\(\);race\.raceEntrants=null/);
 });
 
@@ -35,6 +38,8 @@ test("AI and player finish times use interpolated finish-line crossing timestamp
   assert.match(game, /finishRaceClock\(r\.clock,r\.finishTime\)/);
   assert.match(game, /finishRaceClock\(race\.playerClock,race\.playerFinishTime\)/);
   assert.match(game, /\$\("time"\)\.textContent=fmt\(race\.playerClock\?\.elapsed\?\?race\.elapsed\)/);
+  assert.match(game, /STOPWATCH/);
+  assert.match(game, /formatRaceClock\(row\.finished\?row\.finishTime:row\.elapsed\)/, "the live table must show each vehicle's own running or final stopwatch");
 });
 
 test("AI circuit speed uses the same world-distance conversion as the player", () => {
