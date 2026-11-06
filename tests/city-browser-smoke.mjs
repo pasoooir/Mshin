@@ -205,11 +205,11 @@ try{
 
 
  const orbitStart=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
- await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));for(let i=0;i<9;i++){send("pointerdown",200+i*2,150,220);send("pointerdown",201+i*2,250,220);send("pointermove",200+i*2,200,170);send("pointermove",201+i*2,200,270);send("pointerup",200+i*2,200,170);send("pointerup",201+i*2,200,270)}});
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));for(let i=0;i<9;i++){const a=200+i*2,b=201+i*2;send("pointerdown",a,200,220);send("pointerdown",b,250,220);for(let step=1;step<=8;step++){const angle=step*Math.PI/4;send("pointermove",b,200+50*Math.cos(angle),220+50*Math.sin(angle))}send("pointerup",a,200,220);send("pointerup",b,250,220)}});
  const fullTurnOrbit=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  assert.ok(fullTurnOrbit>orbitStart+Math.PI*2,"repeated two-finger horizontal gestures must cross 360 degrees without wrapping or jumping");
  const inertiaReleaseBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
- const releaseSnapshot=await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",450,100,220);send("pointerdown",451,200,220);send("pointermove",450,130,220);send("pointermove",451,230,220);send("pointerup",450,130,220);send("pointerup",451,230,220);const state=window.MshinCityDebug.view;return{gesture:state.gesture,orbit:state.orbit}});
+ const releaseSnapshot=await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",450,100,220);send("pointerdown",451,200,220);send("pointermove",451,200,260);send("pointerup",450,100,220);send("pointerup",451,200,260);const state=window.MshinCityDebug.view;return{gesture:state.gesture,orbit:state.orbit}});
  const inertiaStateAtRelease=releaseSnapshot.gesture;
  const orbitAtRelease=releaseSnapshot.orbit;
  assert.ok(inertiaStateAtRelease.inertiaActive,"lifting the last finger must start inertial motion");
