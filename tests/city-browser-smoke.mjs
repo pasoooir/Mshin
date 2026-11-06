@@ -86,7 +86,7 @@ try{
  assert.equal(renderStats.backgroundCityBuildings,0,"a new city must not contain decorative houses or apartment buildings");
  assert.equal(renderStats.backgroundCityWindows,0,"a new city must not render windows on nonexistent buildings");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"3D Renderer Ready","the UI must report when the actual 3D renderer is ready");
- assert.ok((await page.locator(".cityBrand small").textContent()).includes("0.15.6"),"the city UI must expose the deployed version");
+ assert.ok((await page.locator(".cityBrand small").textContent()).includes("0.15.7"),"the city UI must expose the deployed version");
  assert.equal(renderStats.decorativeTrees,0,"a brand-new city must show an uninterrupted grassland without decorative trees");
  assert.equal(renderStats.decorativeTreesOutsideBuildableGrid,0,"the empty starting meadow must not contain any decorative tree props");
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
@@ -111,7 +111,12 @@ try{
  await page.screenshot({path:"artifacts/city-empty-world-landscape.png"});
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.05));
  const meadowZoomOut=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,stats:window.MshinCity3DStats}));
- assert.equal(meadowZoomOut.zoom,0.05,"mobile players must be able to zoom out to the full grassland");
+ assert.equal(meadowZoomOut.zoom,0.20,"zoom-out must stop before the camera exposes areas outside the playable world");
+ assert.equal(meadowZoomOut.stats.minimumZoom,0.20,"the renderer and touch controls must share one minimum zoom");
+ await page.evaluate(()=>{window.MshinCityDebug.setCameraPitch(0.24);window.MshinCityDebug.setCameraTarget(5000,5000)});
+ const boundedCamera=await page.evaluate(()=>({view:window.MshinCityDebug.view,limit:window.MshinCity3DStats.cameraTargetLimitMeters}));
+ assert.ok(Math.abs(boundedCamera.view.targetX)<=boundedCamera.limit+0.001&&Math.abs(boundedCamera.view.targetZ)<=boundedCamera.limit+0.001,"camera panning must stay inside the playable world even at the widest zoom-out and lowest pitch");
+ await page.evaluate(()=>{window.MshinCityDebug.setCameraTarget(0,0);window.MshinCityDebug.setCameraPitch(0.51)});
  assert.equal(meadowZoomOut.stats.continuousGrassland,true,"zooming out must keep the same continuous grass terrain");
  assert.equal(meadowZoomOut.stats.visiblePlotGridLines,0,"zooming out must never reveal square plot outlines");
  await page.screenshot({path:"artifacts/city-meadow-maximum-zoom-out.png"});
@@ -243,7 +248,7 @@ try{
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",571,160,220);send("pointerdown",572,280,220);for(let i=0;i<120;i++){const offset=i%2?1:-1;send("pointermove",571,160+i*0.7,220+offset);send("pointermove",572,280+i*0.7,220-offset)}send("pointerup",572,364,419);send("pointerup",571,244,421)});
  const sustainedEnd=await page.evaluate(()=>({orbit:window.MshinCityDebug.view.orbit,zoom:window.MshinCityDebug.view.zoom,gesture:window.MshinCityDebug.view.gesture}));
  assert.ok(Number.isFinite(sustainedEnd.orbit)&&Math.abs(sustainedEnd.orbit-sustainedStart.orbit)>0.5,"long-running orbit must remain finite and responsive");
- assert.ok(sustainedEnd.zoom>=0.05&&sustainedEnd.zoom<=1.5,"long-running pinch must remain inside camera zoom limits");
+ assert.ok(sustainedEnd.zoom>=0.20&&sustainedEnd.zoom<=1.5,"long-running pinch must remain inside camera zoom limits");
  await page.waitForTimeout(1220);
  assert.equal((await page.evaluate(()=>window.MshinCityDebug.view.gesture.inertiaActive)),false,"long gesture inertia must settle instead of drifting indefinitely");
  const focusTile=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));
