@@ -8,7 +8,7 @@ import { computeCityCommuting } from "../src/city/city-commuting.js";
 function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
 
 test("residential occupancy creates a bounded pedestrian population on connected roads", () => {
-  const city = seedCityRoadAccess(createInitialCity(901));
+  const city = seedCityRoadAccess(createInitialCity(901)));
   const placed = placeCityItem(city, 17, 14, "home");
   assert.equal(placed.ok, true);
   assert.equal(city.population, 12);
@@ -22,7 +22,7 @@ test("residential occupancy creates a bounded pedestrian population on connected
 
 test("pedestrians move deterministically along connected road routes", () => {
   const simulate = () => {
-    const city = createInitialCity(902);
+    const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(902));
     placeCityItem(city, 17, 14, "home");
     for (let tick = 0; tick < 96; tick++) stepCity(city);
     return city;
@@ -37,7 +37,7 @@ test("pedestrians move deterministically along connected road routes", () => {
 });
 
 test("pedestrian agents remain capped and reconcile when residential population falls", () => {
-  const city = createInitialCity(903);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(903));
   const homes = [[6,6],[9,6],[14,6],[17,6],[22,6],[25,6],[6,9],[9,9]];
   for (const [x, y] of homes) assert.equal(placeCityItem(city, x, y, "home").ok, true);
   city.population = 10000;
@@ -57,7 +57,7 @@ test("pedestrian agents remain capped and reconcile when residential population 
 });
 
 test("demolishing a home reassigns surviving pedestrians to an occupied home", () => {
-  const city = createInitialCity(906);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(906));
   const first = placeCityItem(city, 17, 14, "home");
   const second = placeCityItem(city, 22, 14, "home");
   assert.equal(first.ok, true);
@@ -73,7 +73,7 @@ test("demolishing a home reassigns surviving pedestrians to an occupied home", (
 });
 
 test("legacy citizen saves are normalized into road-agent state without breaking compatibility", () => {
-  const city = createInitialCity(904);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(904));
   placeCityItem(city, 17, 14, "home");
   city.citizens = [{ id: 1, x: 17, y: 7, phase: 0, pace: 0.1 }];
   delete city.nextCitizenId;
@@ -88,7 +88,7 @@ test("legacy citizen saves are normalized into road-agent state without breaking
 });
 
 test("invalid citizen route coordinates are rejected by city save validation", () => {
-  const city = createInitialCity(905);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(905));
   placeCityItem(city, 17, 14, "home");
   city.citizens[0].targetX = 32;
   city.citizens[0].targetY = 7;
@@ -100,7 +100,7 @@ test("invalid citizen route coordinates are rejected by city save validation", (
 
 
 test("demolished homes remove their pedestrian agents and invalid home references are rejected", () => {
-  const city = createInitialCity(906);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(906));
   const firstHome = placeCityItem(city, 17, 14, "home").item;
   const secondHome = placeCityItem(city, 17, 13, "home").item;
   assert.equal(city.citizens.length, 8);
@@ -118,7 +118,7 @@ test("demolished homes remove their pedestrian agents and invalid home reference
 
 
 test("assigned pedestrian workers travel to workplaces and return home on the same connected route", () => {
-  const city = createInitialCity(907);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(907));
   const home = placeCityItem(city,17,14,"home").item;
   const shop = placeCityItem(city,18,14,"shop").item;
   city.population = 12;
@@ -135,7 +135,7 @@ test("assigned pedestrian workers travel to workplaces and return home on the sa
 
 test("commute agents remain deterministic and recover when their road route is removed", async () => {
   const create = () => {
-    const city = createInitialCity(908);
+    const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(908));
     placeCityItem(city,17,14,"home");
     placeCityItem(city,18,14,"shop");
     city.population = 12;
@@ -150,7 +150,7 @@ test("commute agents remain deterministic and recover when their road route is r
 });
 
 test("nearby road traffic slows pedestrians without stopping their movement", () => {
-  const baseline = createInitialCity(909);
+  const baseline = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(909));
   placeCityItem(baseline, 17, 14, "home");
   const congested = structuredClone(baseline);
   const pedestrian = congested.citizens[0];
@@ -171,7 +171,7 @@ test("nearby road traffic slows pedestrians without stopping their movement", ()
 
 
 test("traffic slowdown also advances assigned commuter animation phase at the reduced pace", () => {
-  const city = createInitialCity(910);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(910));
   const home = placeCityItem(city, 17, 14, "home").item;
   const shop = placeCityItem(city, 18, 14, "shop").item;
   city.population = 12;
