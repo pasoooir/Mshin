@@ -12,7 +12,11 @@ test("3D race minimap is anchored at the upper-left and updates live", () => {
   assert.match(game, /function drawMinimap\(target=ctx\)/);
   assert.match(game, /const mw=Math\.min\(164,width\*\.34\),mh=mw\*\.68,x=14,y=88/);
   assert.match(game, /drawMinimap\(racePositionCtx\)/);
-  assert.match(game, /\(race\.raceEntrants\|\|rivals\)\.forEach\(r=>\{if\(!r\.despawned\)\{const dnf=!!r\.destruction\?\.despawned;marker\(r\.distance,r\.lateral,dnf\?"#ff665f":r\.color/);
+  assert.match(game, /const mapPoint=\(t,lateral=0\)=>/);
+  assert.match(game, /worldX\/\(TRACK_RADIUS_X\*2\.3\)\*mw/);
+  assert.match(game, /worldY\/\(TRACK_RADIUS_Y\*2\.3\)\*mh/);
+  assert.match(game, /entrants\.forEach\(r=>\{const dnf=!!r\.destruction\?\.despawned,point=mapPoint\(r\.distance,r\.lateral\)/);
+  assert.match(game, /markers,bounds:\{x,y,width:mw,height:mh\},updatedAt:now/);
   assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),px,py-7\)/, "each rival map marker should display its live rank");
   assert.match(game, /Math\.sin\(now\*\.009\)/, "player marker must blink");
   assert.match(game, /marker\(car\.t,car\.lateral,"#ffe34d",5,true\)/);
