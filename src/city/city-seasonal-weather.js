@@ -1,10 +1,10 @@
 const DAYS_PER_SEASON = 7;
 const TICKS_PER_DAY = 144;
 const SEASONS = Object.freeze([
-  Object.freeze({ id: "spring", label: "بهار", sky: "#a9d9e9", foliage: ["#4ba65d", "#65b96a", "#8acb70"] }),
-  Object.freeze({ id: "summer", label: "تابستان", sky: "#82c6eb", foliage: ["#328c4d", "#4da653", "#70b85b"] }),
-  Object.freeze({ id: "autumn", label: "پاییز", sky: "#d7b28f", foliage: ["#b66b3e", "#d18a45", "#e0aa58"] }),
-  Object.freeze({ id: "winter", label: "زمستان", sky: "#b7c9dc", foliage: ["#718f83", "#8da99a", "#a9bcb0"] })
+  Object.freeze({ id: "spring", label: "Spring", sky: "#a9d9e9", foliage: ["#4ba65d", "#65b96a", "#8acb70"] }),
+  Object.freeze({ id: "summer", label: "Summer", sky: "#82c6eb", foliage: ["#328c4d", "#4da653", "#70b85b"] }),
+  Object.freeze({ id: "autumn", label: "Autumn", sky: "#d7b28f", foliage: ["#b66b3e", "#d18a45", "#e0aa58"] }),
+  Object.freeze({ id: "winter", label: "Winter", sky: "#b7c9dc", foliage: ["#718f83", "#8da99a", "#a9bcb0"] })
 ]);
 function hashDay(seed, day) {
   let value = (Math.imul((seed >>> 0) || 1, 0x45d9f3b) ^ Math.imul(day + 1, 0x119de1f3)) >>> 0;
