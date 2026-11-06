@@ -21,6 +21,7 @@ test("the five race entrants are reset together on GO, not during the countdown"
   assert.match(game, /neighbors:isRaceRival\?\(race\.raceEntrants\|\|rivals\.filter\(other=>other\.id<4\)\):rivals/, "ambient traffic must not change the pace of the four race entrants");
   assert.match(game, /window\.MshinRacePace=\{speedLimit:aiMaxSpeed,acceleration:aiAcceleration,vehicles:/, "the shared performance profile must be observable in runtime tests");
   assert.match(game, /race\.playerClock=createRaceClock\(\);race\.raceEntrants=null/);
+  assert.match(game, /audio\.ready\(\)\.then\(audioReady=>/, "mobile race startup must not be blocked when optional audio decoding is unavailable");
 });
 
 test("all four opponents occupy distinct road lanes beside the player on a shared countdown row", () => {
