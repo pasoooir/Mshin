@@ -171,6 +171,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   addLineLayer(activePlotEdges, plotLineMaterial);
   addLineLayer(lockedPlotEdges, lockedPlotLineMaterial);
   const roadMarkings = [];
+  const crosswalkStripeCount = 0;
   const lotLines = [];
   for (let y = 0; y < VISUAL_GRID; y += 2) {
     for (let x = 0; x < VISUAL_GRID; x++) {
