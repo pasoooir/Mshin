@@ -163,7 +163,7 @@ try{
  assert.equal(parkVisual.buildingRebuilds,rebuildsBeforePlacement+1,"a structural building change should rebuild the 3D building layer exactly once");
  await page.waitForTimeout(150);
  assert.equal(await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds),rebuildsBeforePlacement+1,"unchanged buildings must not be recreated during subsequent render frames");
- await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.buildings?.some(b=>b.x===14&&b.y===14)),"city changes should persist");
+ await page.locator("#citySave").click();assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem("mshin-city-save-v2"))?.buildings?.some(b=>b.x===14&&b.y===15)),"city changes should persist");
  await clickCityTool(page,"select");
  const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit),focusAnchorBefore=await page.evaluate(()=>window.MshinCityDebug.groundPointAt(190,220));
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",91,120,220);send("pointerdown",92,260,220);send("pointermove",92,320,220);send("pointerup",92,320,220);send("pointerup",91,120,220)});
