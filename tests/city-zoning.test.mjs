@@ -3,13 +3,15 @@ import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave } from "../src/city/city-view.js";
 import { CITY_ZONES, isCityZoneCell } from "../src/city/city-zoning.js";
 
+function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
+
 test("all five zoning classes are explicit and map to playable building types", () => {
   assert.deepEqual(Object.keys(CITY_ZONES), ["residential","commercial","industrial","administrative","recreational"]);
   assert.deepEqual(Object.values(CITY_ZONES).map(zone => zone.buildingType), ["home","shop","industrial","administrative","park"]);
 });
 
 test("zoning requires an empty tile connected to a street and sufficient funds", () => {
-  const city = createInitialCity(501);
+  const city = seedCityRoadAccess(createInitialCity(501));
   const result = placeCityItem(city,17,14,"zone-residential");
   assert.equal(result.ok,true);
   assert.equal(city.grid[14][17],"zone-residential");
