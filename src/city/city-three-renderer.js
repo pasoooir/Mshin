@@ -10,7 +10,7 @@ const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
 const ACTIVE_SIZE = 32;
-const isRoadCell = value => (value % 8 === 7 || value % 8 === 0) && value !== 0 && value !== 16 && value !== 47 && value !== 63;
+const isRoadCell = () => false;
 const isActiveCell = (x, y) => x >= ACTIVE_START && x < ACTIVE_END && y >= ACTIVE_START && y < ACTIVE_END;
 export async function createCityThreeRenderer(sourceCanvas) {
   // Load the committed Three.js build from this GitHub Pages repository.
@@ -33,7 +33,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.shadowMap.needsUpdate = true;
   const canvas = renderer.domElement;
   canvas.id = "cityThreeViewport";
-  canvas.setAttribute("aria-label", "نمای سه‌بعدی شهر خالی با شبکه خیابان‌ها و قطعات زمین");
+  canvas.setAttribute("aria-label", "Empty 3D city landscape with buildable plots");
   canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block;touch-action:none";
   sourceCanvas.parentNode.insertBefore(canvas, sourceCanvas.nextSibling);
   sourceCanvas.style.opacity = "0";
@@ -71,7 +71,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   } = createCityPbrSurfaces(THREE, renderer);
   const pbrGenerationMs = performance.now() - pbrGenerationStartedAt;
   const pbrTextureResolution = grassSurface.map.image?.width || 0;
-  const backgroundSkyline = createCityBackgroundSkyline(THREE, scene, concreteSurface, brickSurface, windowMaterials);
+  const backgroundSkyline = { buildingCount: 0, windowCount: 0, dispose() {} };
   const grassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, roughness: 0.96, normalScale: new THREE.Vector2(0.32, 0.32) });
   const alternateGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#dce8c7", roughness: 0.98, normalScale: new THREE.Vector2(0.28, 0.28) });
   const lockedGrassMaterial = new THREE.MeshStandardMaterial({ ...grassSurface, color: "#899783", roughness: 1, normalScale: new THREE.Vector2(0.22, 0.22) });
@@ -171,19 +171,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   addLineLayer(activePlotEdges, plotLineMaterial);
   addLineLayer(lockedPlotEdges, lockedPlotLineMaterial);
   const roadMarkings = [];
-  const roadCenters = [7.5, 15, 23.5, 31.5, 39.5, 48, 55.5];
-  for (const center of roadCenters) {
-    const z = cityTileToWorld(center - 16);
-    const x = cityTileToWorld(center - 16);
-    for (let index = 0; index < VISUAL_GRID; index++) {
-      if (!isRoadCell(index) && index % 2 === 0) {
-        const along = cityTileToWorld(index - 16);
-        roadMarkings.push(along - 1.4, 0.078, z, along + 1.4, 0.078, z);
-        roadMarkings.push(x, 0.078, along - 1.4, x, 0.078, along + 1.4);
-      }
-    }
-  }
-  addLineLayer(roadMarkings, new THREE.LineBasicMaterial({ color: "#f4e8c2", transparent: true, opacity: 0.86 }));
   const crosswalkStripeCount = 0;
   const lotLines = [];
   for (let y = 0; y < VISUAL_GRID; y += 2) {
@@ -449,8 +436,31 @@ export async function createCityThreeRenderer(sourceCanvas) {
       buildingUniqueMaterialCount: materials.size
     };
   }
+  let roadStateKey = "";
+  function updateRoads(city) {
+    const roadCells = [];
+    for (let y = 0; y < city.grid.length; y++) {
+      for (let x = 0; x < city.grid[y].length; x++) {
+        if (city.grid[y][x] === "road") roadCells.push([x, y]);
+      }
+    }
+    const nextKey = roadCells.map(([x, y]) => x + ":" + y).join("|");
+    if (nextKey === roadStateKey) return;
+    roadStateKey = nextKey;
+    roadCells.forEach(([x, y], index) => {
+      dummy.position.set(cityTileToWorld(x), 0.12, cityTileToWorld(y));
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      roads.setMatrixAt(index, dummy.matrix);
+    });
+    activeRoads = roadCells.length;
+    roads.count = activeRoads;
+    roads.instanceMatrix.needsUpdate = true;
+  }
   function render(city, view, cam) {
     updateCamera(cam);
+    updateRoads(city);
     atmosphere.update(city);
     cloudLayer.update(city, atmosphere.getStats());
     updateBuildings(city);

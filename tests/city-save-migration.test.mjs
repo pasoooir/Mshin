@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave, migrateCitySave, createCitySaveBackup } from "../src/city/city-view.js";
 import { CITY_DEFAULT_TAX_RATES, setCityTaxRate } from "../src/city/city-economy.js";
 
+function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,15,"road");placeCityItem(city,x,18,"road")}for(let y=10;y<=20;y++)placeCityItem(city,16,y,"road");return city}
+
 function createLegacyV1City() {
   const grid = Array.from({length:32},()=>Array(32).fill("grass"));
   for (let y=0;y<32;y++) for (let x=0;x<32;x++) {
@@ -46,7 +48,7 @@ test("version-one local city saves migrate without losing the built city or trea
 });
 
 test("exported JSON backup envelopes round-trip through the same migration boundary", () => {
-  const city=createInitialCity(1201);
+  const city=seedCityRoadAccess(createInitialCity(1201));
   placeCityItem(city,17,14,"home");
   setCityTaxRate(city,"residential",14);
   for(let i=0;i<3;i++)stepCity(city);
@@ -71,7 +73,7 @@ test("malformed version-one saves are rejected rather than partially imported", 
 });
 
 test("backup envelopes reject unsupported versions and invalid timestamps", () => {
-  const city=createInitialCity(1203);
+  const city=seedCityRoadAccess(createInitialCity(1203));
   const backup=createCitySaveBackup(city,"2026-11-03T09:00:00.000Z");
   assert.equal(migrateCitySave({...backup,version:3}),null);
   assert.equal(migrateCitySave({...backup,exportedAt:"not-a-date"}),null);
@@ -79,7 +81,7 @@ test("backup envelopes reject unsupported versions and invalid timestamps", () =
 });
 
 test("current version-two saves normalize optional fields without changing core progress", () => {
-  const city=createInitialCity(1202);
+  const city=seedCityRoadAccess(createInitialCity(1202));
   placeCityItem(city,17,14,"home");
   stepCity(city);
   const restored=migrateCitySave(JSON.parse(JSON.stringify(city)));
@@ -100,11 +102,11 @@ test("offline app shell precaches every city simulation and persistence module",
   for(const modulePath of ["city-view.js","city-day-night-cycle.js","city-three-renderer.js","city-world-scale.js","city-camera-controller.js","city-camera-projection.js","city-zoning.js","city-services.js","city-traffic.js","city-population.js","city-economy.js","city-employment.js","city-save.js"]){
     assert.ok(serviceWorker.includes("./src/city/"+modulePath),"offline app shell is missing "+modulePath);
   }
-  assert.match(serviceWorker,/mshin-arcade-v76/,"city persistence release must advance the offline cache version");
+  assert.match(serviceWorker,/mshin-arcade-v77/,"city persistence release must advance the offline cache version");
 });
 
 test("fractional city clock minutes remain valid and survive save migration", () => {
-  const city = createInitialCity(1204);
+  const city = seedCityRoadAccess(createInitialCity(1204));
   city.minuteOfDay = 720.8;
   assert.equal(isValidCitySave(city), true, "continuous lighting clock values must be persistable");
   const restored = migrateCitySave(JSON.parse(JSON.stringify(city)));
