@@ -7,6 +7,7 @@ const buildingGeometrySource = await readFile(new URL("../src/city/city-building
 const buildingGeometry = await readFile(new URL("../src/city/city-building-high-gfx.js", import.meta.url), "utf8");
 const textures = await readFile(new URL("../src/city/city-pbr-textures.js", import.meta.url), "utf8");
 const streets = await readFile(new URL("../src/city/city-street-renderer.js", import.meta.url), "utf8");
+const cityView = await readFile(new URL("../src/city/city-view.js", import.meta.url), "utf8");
 
 test("city surfaces use layered tileable albedo, normal and roughness maps", () => {
   assert.ok(textures.includes("function makePbrSurface(THREE, renderer, kind, base, seed)"));
@@ -88,4 +89,11 @@ test("new city opens on one continuous textured meadow with no visible checkerbo
   assert.ok(renderer.includes("const decorativeTreeCount = 0"), "the initial meadow must contain only grass before player construction");
   assert.ok(textures.includes("const bladeTones = ["), "grass must contain layered natural blade variation");
   assert.ok(textures.includes("9200 * detailScale"), "grass texture must include dense fine blade detail");
+});
+
+test("WebGL fallback also starts on a continuous grass meadow, not diamond cells", () => {
+  assert.ok(cityView.includes("const meadowPattern=ctx.createPattern(meadowCanvas,\"repeat\")"));
+  assert.ok(cityView.includes("ctx.fillStyle=meadowPattern;ctx.fillRect(0,0,view.w,view.h)"));
+  assert.ok(cityView.includes('if(city.grid[y][x]==="road")ground(x,y,"road")'));
+  assert.ok(!cityView.includes("for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)ground(x,y,city.grid[y][x])"));
 });
