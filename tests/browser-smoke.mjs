@@ -238,6 +238,8 @@ try {
   assert.ok(mapBefore.markers.every(marker => Number.isFinite(marker.x) && Number.isFinite(marker.y) && marker.actualX >= mapBefore.bounds.x && marker.actualX <= mapBefore.bounds.x + mapBefore.bounds.width && marker.actualY >= mapBefore.bounds.y && marker.actualY <= mapBefore.bounds.y + mapBefore.bounds.height), "all five vehicle markers must be placed inside the visible track map: " + JSON.stringify(mapBefore));
   await page.waitForTimeout(350);
   const mapAfter = await page.evaluate(() => window.MshinRaceMinimap);
+  const clocksAfter = await page.evaluate(() => window.MshinRaceClocks);
+  assert.ok(clocksAfter.racers.every((clock, index) => clock.elapsed > clocksBefore.racers[index].elapsed), "each running car stopwatch must advance independently");
   assert.ok(mapAfter.updatedAt > mapBefore.updatedAt, "the map must refresh while the race is moving");
   assert.ok(mapAfter.markers.find(marker => marker.id === "rival-0").distance > mapBefore.markers.find(marker => marker.id === "rival-0").distance, "AI map positions must advance with the actual vehicle: " + JSON.stringify({before:mapBefore.markers,after:mapAfter.markers}));
   assert.equal(await page.evaluate(() => window.MshinAudioReady), true, "all CDN engine and effect audio must decode before GO");
