@@ -26,8 +26,8 @@ test("the five race entrants are reset together on GO, not during the countdown"
 });
 
 test("all four opponents occupy distinct road lanes beside the player on a shared countdown row", () => {
-  assert.match(game, /const lanes=\[-165,-82\.5,82\.5,165,-165,82\.5,-82\.5,165\]/);
-  assert.match(game, /lanes:\[-165,-82\.5,82\.5,165\]/);
+  assert.match(game, /const lanes=\[-270,-90,90,270,-270,90,-90,270\]/);
+  assert.match(game, /lanes:\[-270,-90,90,270\]/);
   assert.match(game, /car\.t=0;car\.lateral=0;/);
   assert.match(game, /const scale=Math\.min\(1\.18,width\/480\),playerX=width\*\.5,playerY=height\*\.62/);
   assert.match(game, /gridX=\[\.16,\.33,\.67,.84\],x=width\*gridX\[i\],y=height\*\.62/);
