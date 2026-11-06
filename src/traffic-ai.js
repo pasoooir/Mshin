@@ -6,7 +6,7 @@ const wrap=(v,period)=>((v%period)+period)%period;
  * Uses direct nearest-gap scans instead of allocating/map/filter/sort arrays
  * for every AI car on every fixed simulation step.
  */
-export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbors=[],player=null,curvature=0,dt=1/60,cruiseSpeed=220,maxSpeed=null,acceleration=85,braking=150,distanceScale=1/430}={}) {
+export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbors=[],player=null,curvature=0,dt=1/60,cruiseSpeed=220,maxSpeed=null,acceleration=85,braking=150,laneChanges=true,distanceScale=1/430}={}) {
  const length=Math.max(1,Number.isFinite(trackLength)?trackLength:1);
  const step=clamp(Number.isFinite(dt)?dt:0,0,.05);
  const laneSet=lanes;
@@ -34,7 +34,8 @@ export function stepTrafficVehicle(vehicle,{trackLength,lanes=[-42,0,42],neighbo
   return nearest?{other:nearest,gap:nearestGap}:null;
  };
  let targetLane=Number.isInteger(vehicle.targetLane)?clamp(vehicle.targetLane,0,laneSet.length-1):currentLane;
- if(vehicle.changeCooldown<=0){
+ if(!laneChanges){targetLane=currentLane;vehicle.targetLane=currentLane;}
+ if(laneChanges&&vehicle.changeCooldown<=0){
   const currentAhead=aheadInLane(currentLane),blocked=currentAhead&&currentAhead.gap<Math.max(78,vehicle.speed*.48);
   if(blocked){
    let bestLane=-1,bestGap=-Infinity;
