@@ -28,7 +28,7 @@ test("burnt rivals leave traffic, collision, minimap and ranking participation",
   assert.match(source, /rivals=rivals\.filter\(r=>!r\.destruction\?\.despawned\)/);
   assert.match(source, /if\(a\.destruction\?\.despawned\|\|b\.destruction\?\.despawned\|\|\(a\.id<4&&a\.finishTime!==null\)\|\|\(b\.id<4&&b\.finishTime!==null\)\|\|a\.collisionCooldown/);
   assert.match(source, /if\(rival\.id>=4\|\|rival\.destruction\?\.despawned\)continue/);
-  assert.match(source, /if\(!r\.destruction\?\.despawned\)dot\(r\.distance/);
+  assert.match(source, /if\(!r\.despawned&&!r\.destruction\?\.despawned\)marker\(r\.distance/);
 });
 
 test("player destruction ends the race explicitly rather than silently removing the car", () => {

@@ -238,7 +238,30 @@ function drawRacePositionOverlay(labels){
  for(const label of labels){if(!Number.isFinite(label.x)||!Number.isFinite(label.y)||label.x<-80||label.x>width+80||label.y<-60||label.y>height+60)continue;const x=label.x,y=label.y;target.save();target.lineWidth=2;target.strokeStyle="#10243b";target.fillStyle="#f7fbff";target.shadowColor="#0009";target.shadowBlur=8;target.beginPath();target.arc(x-13,y+3,11,0,Math.PI*2);target.arc(x,y-5,15,0,Math.PI*2);target.arc(x+14,y+3,11,0,Math.PI*2);target.roundRect(x-23,y-1,46,20,10);target.fill();target.stroke();target.shadowBlur=0;target.fillStyle="#10243b";target.textAlign="center";target.textBaseline="middle";target.font="1000 15px system-ui";target.fillText(String(label.rank),x,y+5);target.fillStyle="#081626eF";target.beginPath();target.roundRect(x-35,y+23,70,19,9);target.fill();target.fillStyle="#fff";target.font="800 10px system-ui";target.fillText(formatRaceClock(label.elapsed),x,y+33);if(label.finished){target.fillStyle="#8cf0b2";target.font="900 9px system-ui";target.fillText("✓",x+27,y-12)}target.restore();}
 }
 function drawRivals(){rivals.forEach((r,index)=>{const f=frameAt(r.distance%(Math.PI*2)),x=f.p.x+f.nx*r.lateral,y=f.p.y+f.ny*r.lateral;ctx.save();ctx.translate(x,y);ctx.rotate(f.angle+Math.PI/2+(r.yaw||0));const wreckFade=r.destruction?.phase==="burnt"?clamp(r.destruction.smoke/.85,0,1):1;ctx.globalAlpha=wreckFade;if(wreckFade<1)ctx.scale(.72+.28*wreckFade,.72+.28*wreckFade);if(r.type==="car"){const rivalArt=window.MshinAssets?.cars?.[["comet","lynx","thunder"][index%3]];if(rivalArt)ctx.drawImage(rivalArt,-32,-48,64,96);else drawTrafficBody(r)}else drawTrafficBody(r);drawDamageOverlay(ctx,r.damage);drawDestructionOverlay(ctx,r.destruction);ctx.restore()})}
-function drawMinimap(){const mw=Math.min(116,width*.29),mh=mw*.72,x=width-mw-14,y=Math.max(88,Math.min(height*.19,112));ctx.save();ctx.fillStyle="#10223bd9";ctx.strokeStyle="#ffffffaa";ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x-8,y-8,mw+16,mh+16,12);ctx.fill();ctx.stroke();const pts=[];for(let i=0;i<=100;i++){const p=center(i/100*Math.PI*2);pts.push({x:x+mw/2+p.x/(TRACK_RADIUS_X*2.3)*mw,y:y+mh/2+p.y/(TRACK_RADIUS_Y*2.3)*mh})}ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.strokeStyle="#dce8f8";ctx.lineWidth=4;ctx.stroke();const dot=(t,color,r)=>{const p=center(t%(Math.PI*2));ctx.fillStyle=color;ctx.beginPath();ctx.arc(x+mw/2+p.x/2700*mw,y+mh/2+p.y/1750*mh,r,0,Math.PI*2);ctx.fill()};rivals.forEach(r=>{if(!r.destruction?.despawned)dot(r.distance,r.color,3)});dot(car.t,"#fff35a",4);ctx.restore()}
+function drawMinimap(target=ctx){
+ if(!target||!["race","paused","countdown"].includes(state))return;
+ const mw=Math.min(164,width*.34),mh=mw*.68,x=14,y=88,now=performance.now();
+ target.save();target.shadowColor="#0009";target.shadowBlur=12;target.fillStyle="#071525eF";target.strokeStyle="#ffffffb8";target.lineWidth=1.5;
+ target.beginPath();target.roundRect(x-8,y-8,mw+16,mh+37,12);target.fill();target.stroke();target.shadowBlur=0;
+ target.fillStyle="#ffffff";target.font="800 9px system-ui";target.textAlign="left";target.fillText("TRACK MAP",x,y-1);
+ const pts=[];for(let i=0;i<=120;i++){const p=center(i/120*Math.PI*2);pts.push({x:x+mw/2+p.x/(TRACK_RADIUS_X*2.3)*mw,y:y+mh/2+9+p.y/(TRACK_RADIUS_Y*2.3)*mh})}
+ target.beginPath();pts.forEach((p,i)=>i?target.lineTo(p.x,p.y):target.moveTo(p.x,p.y));target.closePath();target.strokeStyle="#dce8f8";target.lineWidth=5;target.lineJoin="round";target.stroke();
+ target.strokeStyle="#4b647d";target.lineWidth=2;target.stroke();
+ const marker=(t,lateral,color,r,player=false)=>{
+  const f=frameAt(t%(Math.PI*2)),px=x+mw/2+(f.p.x+f.nx*(lateral||0))/2700*mw,py=y+mh/2+9+(f.p.y+f.ny*(lateral||0))/1750*mh;
+  target.save();target.globalAlpha=player?(0.25+0.75*(.5+.5*Math.sin(now*.009))):1;
+  target.fillStyle=color||"#e8f0ff";target.strokeStyle=player?"#fff":"#071525";target.lineWidth=player?2.5:1.5;
+  target.beginPath();target.arc(px,py,r+(player?2:0),0,Math.PI*2);target.fill();target.stroke();
+  if(player){target.strokeStyle="#fff";target.lineWidth=1.5;target.beginPath();target.arc(px,py,r+5+Math.sin(now*.009)*2,0,Math.PI*2);target.stroke()}
+  target.restore();
+ };
+ rivals.forEach(r=>{if(!r.despawned&&!r.destruction?.despawned)marker(r.distance,r.lateral,r.color||"#56a8ed",3.7)});
+ marker(car.t,car.lateral,"#ffe34d",5,true);
+ target.font="700 9px system-ui";target.textBaseline="middle";target.fillStyle="#fff";target.fillText("YOU",x+8,y+mh+25);
+ target.fillStyle="#78c8ff";target.beginPath();target.arc(x+42,y+mh+25,3,0,Math.PI*2);target.fill();target.fillStyle="#fff";target.fillText("RIVALS",x+50,y+mh+25);
+ window.MshinRaceMinimap={visible:true,anchor:"top-left",playerBlink:true,rivalCount:rivals.filter(r=>!r.despawned&&!r.destruction?.despawned).length,player:{t:car.t,lateral:car.lateral},updatedAt:now};
+ target.restore();
+}
 function drawWeather(){if(state!=="race"&&state!=="paused")return;const weather=stage.weather,now=performance.now();ctx.save();if(weather==="rain"||weather==="storm"){ctx.strokeStyle=weather==="storm"?"#c8e7ff55":"#d8f2ff55";ctx.lineWidth=1.2;for(let i=0;i<85;i++){const x=(i*131+now*.24*(weather==="storm"?1.7:1))%width,y=(i*79+now*.62)%height;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-5,y+14);ctx.stroke()}}else if(weather==="snow"){ctx.fillStyle="#ffffffaa";for(let i=0;i<58;i++){const x=(i*97+Math.sin(now*.0007+i)*22)%width,y=(i*67+now*.035*(1+i%3))%height;ctx.beginPath();ctx.arc(x,y,1.3+i%3*.45,0,Math.PI*2);ctx.fill()}}else if(weather==="sand"||weather==="dust"){ctx.strokeStyle=weather==="sand"?"#f6d69a66":"#c8c7b866";for(let i=0;i<64;i++){const x=(i*113+now*.16)%width,y=(i*71+Math.sin(now*.001+i)*15)%height;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+10,y-1);ctx.stroke()}}else if(weather==="cosmic"){ctx.fillStyle="#a9b8ff99";for(let i=0;i<35;i++){const x=(i*149)%width,y=(i*83+Math.sin(now*.001+i)*9)%height;ctx.fillRect(x,y,2,2)}}ctx.restore()}
 function drawCountdownIntro(){
  countdownIntroFrames++;window.MshinPerformance.countdownIntroFrames=countdownIntroFrames;ctx.clearRect(0,0,width,height);ctx.save();
@@ -260,7 +283,7 @@ function draw(){
  if(threeDimensional&&race3d.state.status==="webgl-ready"){
   const standings=getRaceStandings(),playerRow=standings.find(row=>row.player);
   const labels=race3d.render({state,stageId:stage.id,world:stage.world,frameAt,player:{t:car.t,lateral:car.lateral,yaw:car.yaw,color:activeCar().color,modelId:activeCar().id,damage:car.damage.total,rank:playerRow?.rank||5,timerElapsed:race.elapsed,finished:race.playerFinishTime!==null},rivals})||[];
-  drawRacePositionOverlay(labels);window.Mshin3DRenderer=race3d.state;return;
+  drawRacePositionOverlay(labels);drawMinimap(racePositionCtx);window.Mshin3DRenderer=race3d.state;return;
  }
  ctx.clearRect(0,0,width,height);if(state==="countdown"){drawCountdownIntro();const standings=getRaceStandings(),labels=standings.map(row=>{if(row.player)return {rank:row.rank,elapsed:0,x:width*.20+(1-countdownElapsed/3.72)*width*.04,y:height*.62-76,finished:false};const index=Number(row.id.slice(6));return {rank:row.rank,elapsed:0,x:width*(.68+(index%2)*.16),y:height*(.27+Math.floor(index/2)*.25)-76,finished:false}});drawRacePositionOverlay(labels);return}if(state!=="race"&&state!=="paused"){drawRacePositionOverlay([]);return}
  const c=carPoint();const shake=Math.min(3.5,cameraShake*5);const shakePhase=performance.now()*.035;ctx.save();ctx.translate(width/2+Math.sin(shakePhase*1.13)*shake,height/2+Math.cos(shakePhase*.87)*shake*.62);ctx.rotate(-c.angle-Math.PI/2);ctx.scale(zoom,zoom);ctx.translate(-c.x,-c.y);drawTrack();drawRivals();drawParticles();drawCar();ctx.restore();
