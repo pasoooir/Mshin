@@ -54,7 +54,7 @@ void main(){
  float rough=clamp(uRoughness,.045,1.0);
  float metal=saturate(uMetallic);
  vec3 base=uBaseColor;
- if(uSurfaceEnabled>.5){vec2 uv=fract(vWorldPosition.xz*.018);vec3 scanned=texture2D(uSurfaceTexture,uv).rgb;base=mix(base,scanned,.68);}
+ if(uSurfaceEnabled>.5){vec2 uv=fract(vWorldPosition.xz*.045);vec3 scanned=texture2D(uSurfaceTexture,uv).rgb;base=mix(base,scanned,.68);}
  // Fine metallic flakes in clear-coated automotive paint; deterministic object-space grain.
  if(uMaterialKind<1.5){
    float flake=hash31(floor(vObjectPosition*vec3(5.0,11.0,5.0)));
