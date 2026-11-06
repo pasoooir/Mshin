@@ -252,7 +252,12 @@ try{
  assert.equal(recenteredCamera.orbit,0,"recenter must restore the initial city-facing orbit");
 
 
- await clickCityTool(page,"zone-residential");const zoneTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(17,14));await page.mouse.click(zoneTarget.x,zoneTarget.y);
+ await clickCityTool(page,"zone-residential");
+ await page.waitForFunction(()=>window.MshinCityDebug.activeTool==="zone-residential");
+ const zoneTarget=await page.evaluate(()=>{const point=window.MshinCityDebug.screenForTile(17,14);return {...point,tile:window.MshinCityDebug.tileAtScreen(point.x,point.y)}});
+ assert.deepEqual(zoneTarget.tile,{x:17,y:14},"the mobile map projection must resolve the intended zoning parcel");
+ await page.mouse.click(zoneTarget.x,zoneTarget.y);
+ await page.waitForFunction(()=>window.MshinCityDebug.city.grid[14][17]==="zone-residential",undefined,{timeout:1500}).catch(async()=>{const diagnostic=await page.evaluate(()=>({tool:window.MshinCityDebug.activeTool,cell:window.MshinCityDebug.city.grid[14][17],treasury:window.MshinCityDebug.city.treasury,adjacentRoad:[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>window.MshinCityDebug.city.grid[14+dy]?.[17+dx]==="road"),toast:document.querySelector("#cityToast")?.textContent}));throw new Error("residential zoning tap was not applied: "+JSON.stringify(diagnostic))});
  assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][17]),"zone-residential","mobile players must be able to zone a road-connected tile");
  await page.evaluate(()=>{for(let i=0;i<12;i++)window.MshinCityDebug.step()});
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.buildings.some(b=>b.x===17&&b.y===14&&b.type==="home")),"residential zoning must grow into a home when demand exists");
