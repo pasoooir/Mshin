@@ -21,7 +21,7 @@ test("all four opponents occupy distinct road lanes beside the player on a share
   assert.match(game, /lanes:\[-165,-82\.5,82\.5,165\]/);
   assert.match(game, /car\.t=0;car\.lateral=0;/);
   assert.match(game, /const scale=Math\.min\(1\.18,width\/480\),playerX=width\*\.5,playerY=height\*\.62/);
-  assert.match(game, /gridX=\[\.16,\.33,\.67,\.84\],x=width\*gridX\[i\],y=height\*\.62/);
+  assert.match(game, /gridX=\[\.16,\.33,\.67,.84\],x=width\*gridX\[i\],y=height\*\.62/);
   assert.match(game, /gridX=\[\.16,\.33,\.5,\.67,\.84\]/);
   assert.match(game, /race3d\.render\(\{state,stageId:stage\.id,world:stage\.world,frameAt,raceElapsed:race\.elapsed/);
   assert.match(renderer, /startingGrid=snapshot\.state==="countdown"\|\|\(Number\(snapshot\.raceElapsed\)\|\|0\)<2\.5,maxVisible=startingGrid\?4/);
@@ -34,6 +34,7 @@ test("AI and player finish times use interpolated finish-line crossing timestamp
   assert.match(game, /race\.playerFinishTime=finishTimestamp\(race\.elapsed,dt,race\.lastT,travel,Math\.PI\*2\)/);
   assert.match(game, /finishRaceClock\(r\.clock,r\.finishTime\)/);
   assert.match(game, /finishRaceClock\(race\.playerClock,race\.playerFinishTime\)/);
+  assert.match(game, /\$\("time"\)\.textContent=fmt\(race\.playerClock\?\.elapsed\?\?race\.elapsed\)/);
 });
 
 test("AI circuit speed uses the same world-distance conversion as the player", () => {
