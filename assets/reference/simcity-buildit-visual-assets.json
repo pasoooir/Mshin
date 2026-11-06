@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-07",
+  "reference": "https://simcity-buildit.fandom.com/wiki/Level_Up_Table",
+  "note": "The level table is text-only. These are visual references discovered for matching categories; external screenshot URLs are not redistributed as local assets. Check each file's individual licence before downloading/rehosting.",
+  "assets": [
+    {
+      "id": "residential-districts",
+      "title": "Residential districts and home upgrades",
+      "levelRange": [
+        1,
+        87
+      ],
+      "category": "residential",
+      "sourcePage": "https://simcity-buildit.fandom.com/wiki/Residential_Buildings",
+      "imageUrl": null,
+      "repositoryPath": null,
+      "rights": "Fandom community page; inspect each gallery file's licence and attribution."
+    },
+    {
+      "id": "fire-service",
+      "title": "Fire stations",
+      "unlockLevel": 5,
+      "category": "services",
+      "sourcePage": "https://simcity-buildit.fandom.com/wiki/Fire",
+      "imageUrl": null,
+      "repositoryPath": null,
+      "rights": "Fandom community page; inspect each gallery file's licence and attribution."
+    },
+    {
+      "id": "police-service",
+      "title": "Police stations",
+      "unlockLevel": 12,
+      "category": "services",
+      "sourcePage": "https://simcity-buildit.fandom.com/wiki/Police",
+      "imageUrl": null,
+      "repositoryPath": null,
+      "rights": "Fandom community page; inspect each gallery file's licence and attribution."
+    },
+    {
+      "id": "factory-buildings",
+      "title": "Factory tiers",
+      "unlockLevels": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "category": "industrial",
+      "sourcePage": "https://simcity.fandom.com/wiki/Category:Images_of_SimCity_BuildIt_buildings",
+      "imageUrl": null,
+      "repositoryPath": null,
+      "rights": "Fandom category lists Basic, Small and High-Tech Factory image files; inspect each file page for creator/licence."
+    },
+    {
+      "id": "city-services-overview",
+      "title": "Power, water, sewage, fire, police, health and specializations",
+      "unlockLevels": [
+        5,
+        8,
+        10,
+        12,
+        14,
+        16
+      ],
+      "category": "services",
+      "sourcePage": "https://www.thetypingape.com/simcity-build-it-review/",
+      "imageUrl": "https://www.thetypingape.com/wp-content/uploads/2015/02/Screenshot_2015-02-18-23-39-56-1024x576.png",
+      "repositoryPath": null,
+      "rights": "Third-party screenshot; reference-only, not cleared for redistribution."
+    },
+    {
+      "id": "factory-production-ui",
+      "title": "Factory production interface",
+      "unlockLevel": 1,
+      "category": "industrial",
+      "sourcePage": "https://www.igorkromin.net/index.php/2014/11/28/why-i-stopped-playing-simcity-buildit-soon-after-getting-it/",
+      "imageUrl": "https://www.igorkromin.net/fp-content/images/simcity/IMG_0593.jpg",
+      "repositoryPath": null,
+      "rights": "Third-party screenshot; reference-only, not cleared for redistribution."
+    },
+    {
+      "id": "police-coverage",
+      "title": "Police coverage and station sizes",
+      "unlockLevel": 12,
+      "category": "services",
+      "sourcePage": "https://www.gottabemobile.com/simcity-buildit-tips-tricks/",
+      "imageUrl": "https://i0.wp.com/www.gottabemobile.com/wp-content/uploads/2015/08/simcity-buildit-1.jpg?resize=720%2C540&ssl=1",
+      "repositoryPath": null,
+      "rights": "Third-party screenshot; reference-only, not cleared for redistribution."
+    },
+    {
+      "id": "high-rise-residential",
+      "title": "Dense residential high-rise district",
+      "unlockLevel": 25,
+      "category": "residential",
+      "sourcePage": "https://scbuildit.hubsinfo.net/how-to-build-skyscrapers/",
+      "imageUrl": "https://scbuildit.hubsinfo.net/images/default/skyscrapers-simcity-buildIt-02.jpg",
+      "repositoryPath": null,
+      "rights": "Third-party screenshot; reference-only, not cleared for redistribution."
+    },
+    {
+      "id": "district-layout",
+      "title": "Road and service district layout",
+      "unlockLevels": [
+        1,
+        5,
+        12,
+        16
+      ],
+      "category": "roads-and-services",
+      "sourcePage": "https://www.allclash.com/simcity-buildit-best-layouts/",
+      "imageUrl": "https://www.allclash.com/wp-content/uploads/2020/11/perfect-simcity-buildit-layout-beginner.jpg",
+      "repositoryPath": null,
+      "rights": "Third-party annotated screenshot; reference-only, not cleared for redistribution."
+    },
+    {
+      "id": "service-building-cards",
+      "title": "Fire, police and hospital building style",
+      "unlockLevels": [
+        5,
+        12,
+        16
+      ],
+      "category": "services",
+      "sourcePage": "https://x.com/SimCityBuildIt",
+      "imageUrl": "https://pbs.twimg.com/media/HNi4sAcWwAAYtKD.jpg",
+      "repositoryPath": null,
+      "rights": "Official account image; permission for repository redistribution not established."
+    }
+  ]
+}
