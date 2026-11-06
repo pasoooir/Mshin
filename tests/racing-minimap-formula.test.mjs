@@ -17,11 +17,11 @@ test("3D race minimap is anchored at the upper-left and updates live", () => {
   assert.match(game, /worldY\/\(TRACK_RADIUS_Y\*2\.3\)\*mh/);
   assert.match(game, /entrants\.forEach\(r=>\{const dnf=!!r\.destruction\?\.despawned,point=mapPoint\(r\.distance,r\.lateral\)/);
   assert.match(game, /markers,bounds:\{x,y,width:mw,height:mh\},updatedAt:now/);
-  assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),px,py-7\)/, "each rival map marker should display its live rank");
+  assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),display\.x,display\.y-7\)/, "each rival map marker should display its live rank");
   assert.match(game, /Math\.sin\(now\*\.009\)/, "player marker must blink");
-  assert.match(game, /marker\(car\.t,car\.lateral,"#ffe34d",5,true\)/);
+  assert.match(game, /marker\(playerPoint,"#ffe34d",5,true,15\)/);
   assert.match(game, /target\.fillText\(String\(playerRank\)/, "the player marker should display the live rank");
-  assert.match(game, /window\.MshinRaceMinimap=\{visible:true,anchor:"top-left",playerBlink:true,rivalCount:/);
+  assert.match(game, /window\.MshinRaceMinimap=\{visible:true,anchor:"top-left",playerBlink:true,rivalCount:entrants\.length,player:/);
 });
 
 test("all race entrants use the open-wheel formula profile with individual paint", () => {
