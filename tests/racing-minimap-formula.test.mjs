@@ -16,7 +16,10 @@ test("3D race minimap is anchored at the upper-left and updates live", () => {
   assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),px,py-7\)/, "each rival map marker should display its live rank");
   assert.match(game, /Math\.sin\(now\*\.009\)/, "player marker must blink");
   assert.match(game, /marker\(car\.t,car\.lateral,"#ffe34d",5,true\)/);
-  assert.match(game, /target\.fillText\(String\(playerRank\)/, "the player marker should display the live rank");\n  assert.match(game, /\(TRACK_RADIUS_X\*2\.3\)\*mw/);\n  assert.match(game, /\(TRACK_RADIUS_Y\*2\.3\)\*mh/);\n  assert.match(game, /rivals:\(race\.raceEntrants\|\|rivals\)\.map\(r=>\{const p=mapPosition/);
+  assert.match(game, /target\.fillText\(String\(playerRank\)/, "the player marker should display the live rank");
+  assert.match(game, /\(TRACK_RADIUS_X\*2\.3\)\*mw/);
+  assert.match(game, /\(TRACK_RADIUS_Y\*2\.3\)\*mh/);
+  assert.match(game, /rivals:\(race\.raceEntrants\|\|rivals\)\.map\(r=>\{const p=mapPosition/);
   assert.match(game, /window\.MshinRaceMinimap=\{visible:true,anchor:"top-left",playerBlink:true,rivalCount:/);
 });
 
