@@ -449,8 +449,31 @@ export async function createCityThreeRenderer(sourceCanvas) {
       buildingUniqueMaterialCount: materials.size
     };
   }
+  let roadStateKey = "";
+  function updateRoads(city) {
+    const roadCells = [];
+    for (let y = 0; y < city.grid.length; y++) {
+      for (let x = 0; x < city.grid[y].length; x++) {
+        if (city.grid[y][x] === "road") roadCells.push([x, y]);
+      }
+    }
+    const nextKey = roadCells.map(([x, y]) => x + ":" + y).join("|");
+    if (nextKey === roadStateKey) return;
+    roadStateKey = nextKey;
+    roadCells.forEach(([x, y], index) => {
+      dummy.position.set(cityTileToWorld(x), 0.12, cityTileToWorld(y));
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      roads.setMatrixAt(index, dummy.matrix);
+    });
+    activeRoads = roadCells.length;
+    roads.count = activeRoads;
+    roads.instanceMatrix.needsUpdate = true;
+  }
   function render(city, view, cam) {
     updateCamera(cam);
+    updateRoads(city);
     atmosphere.update(city);
     cloudLayer.update(city, atmosphere.getStats());
     updateBuildings(city);
