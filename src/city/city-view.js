@@ -16,6 +16,8 @@ const f=r=>r()/4294967296,inside=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)
 const roadNear=(g,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inside(x+a,y+b)&&g[y+b][x+a]==="road");
 export function createInitialCity(seed=20261102){
  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill("grass"));
+ // One permanent access tile links the empty buildable city to the regional highway.
+ grid[0][13]="road";
 
  return {schemaVersion:2,cityId:"mshin-green-valley",name:"New City",seed:seed>>>0,tick:0,minuteOfDay:720,treasury:124500,population:0,happiness:100,taxRates:{...CITY_DEFAULT_TAX_RATES},grid,buildings:[],zones:[],trees:[],citizens:[],traffic:[],nextTrafficId:1,nextCitizenId:1,animals:[],nextBuildingId:1,stats:{income:0,expenses:0,net:0,taxRevenue:0,maintenance:0,serviceUpkeep:0,jobs:0,traffic:0}};
 }
