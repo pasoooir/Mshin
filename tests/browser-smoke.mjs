@@ -230,6 +230,7 @@ try {
   assert.equal(startGrid.entrants.length, 4, "all four AI entrants must be present at GO");
   assert.ok(startGrid.entrants.every(row => row.distance === 0 && row.timerElapsed === 0 && row.startTimestamp === startGrid.timestamp), "every AI stopwatch must start at the shared GO instant");
   assert.equal(startGrid.player.distance, 0, "the player must share the AI start line");
+  await page.waitForFunction(() => window.MshinRaceClocks?.startTimestamp === window.MshinRaceStart?.timestamp && window.MshinRaceMinimap?.updatedAt >= window.MshinRaceStart.timestamp, undefined, { timeout: 5000 });
   const clocksBefore = await page.evaluate(() => window.MshinRaceClocks);
   assert.equal(clocksBefore.racers.length, 5, "the player and each AI racer must own a stopwatch");
   assert.ok(clocksBefore.racers.every(clock => clock.startTimestamp === startGrid.timestamp && clock.running), "all five individual stopwatches must start from the same GO timestamp");
