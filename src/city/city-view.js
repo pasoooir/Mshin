@@ -126,7 +126,7 @@ function mount(){
  function people(){for(const p of city.citizens){const q=tilePoint(p.x,p.y);ctx.fillStyle="#25364b55";ctx.beginPath();ctx.ellipse(q.x,q.y+2,2.8,1.4,0,0,6.28);ctx.fill();ctx.fillStyle=p.id%3===0?"#e9c56b":p.id%3===1?"#e7edf2":"#d98b75";ctx.beginPath();ctx.arc(q.x,q.y-4,2.1,0,6.28);ctx.fill();ctx.strokeStyle="#f5dfbd";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(q.x,q.y-2);ctx.lineTo(q.x,q.y+1);ctx.stroke()}}
  function cars(){for(const v of city.traffic){const p=tilePoint(v.x,v.y);ctx.save();ctx.translate(p.x,p.y-1);ctx.fillStyle="#1a2635aa";ctx.beginPath();ctx.ellipse(0,3,7,2.8,0,0,6.28);ctx.fill();ctx.fillStyle=v.color;ctx.beginPath();ctx.roundRect(-6,-4,12,7,2);ctx.fill();ctx.fillStyle="#d8efff";ctx.beginPath();ctx.roundRect(-3.5,-3,5,3,1);ctx.fill();ctx.restore()}}
  function animals(){for(const a of city.animals||[]){const p=tilePoint(a.x,a.y);ctx.save();ctx.translate(p.x,p.y);if(a.type==="bird"){ctx.strokeStyle="#eaf4dc";ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(-2,-2,3,Math.PI,Math.PI*1.85);ctx.arc(2,-2,3,Math.PI*1.15,Math.PI*2);ctx.stroke()}else{ctx.fillStyle=a.type==="cat"?"#d9b28a":"#b7c2ca";ctx.beginPath();ctx.ellipse(0,-2,4.2,2.8,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(-2,-5,1.8,0,6.28);ctx.arc(2,-5,1.8,0,6.28);ctx.fill();ctx.strokeStyle="#f4e7d6";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(3,0);ctx.lineTo(6,-2);ctx.stroke()}ctx.restore()}}
- function toolName(){return({select:"Select",road:"Road",home:"Residential",shop:"Commercial",industrial:"Industrial",administrative:"Administrative",service:"Services",park:"Park",power:"Power",water:"Water",sewage:"Sewage",waste:"Waste",police:"Police",fire:"Fire",health:"Healthcare",education:"Education","zone-residential":"زون Residential","zone-commercial":"زون Commercial","zone-industrial":"زون Industrial","zone-administrative":"زون Administrative","zone-recreational":"Recreation Zone",bulldoze:"Bulldoze"})[tool]||tool}
+ function toolName(){return({select:"Select",road:"Road",home:"Residential",shop:"Commercial",industrial:"Industrial",administrative:"Administrative",service:"Services",park:"Park",power:"Power",water:"Water",sewage:"Sewage",waste:"Waste",police:"Police",fire:"Fire",health:"Healthcare",education:"Education","zone-residential":"Residential Zone","zone-commercial":"Commercial Zone","zone-industrial":"Industrial Zone","zone-administrative":"زون Administrative","zone-recreational":"Recreation Zone",bulldoze:"Bulldoze"})[tool]||tool}
  function updateBudgetPanel(){
   const panel=$("cityBudgetPanel");if(!panel||panel.classList.contains("hidden"))return;
   const fmt=value=>Math.round(value||0).toLocaleString("en-US");
@@ -138,18 +138,18 @@ function mount(){
    const slider=$("cityTax"+sector[0].toUpperCase()+sector.slice(1));
    const output=$("cityTax"+sector[0].toUpperCase()+sector.slice(1)+"Value");
    if(slider)slider.value=city.taxRates[sector];
-   if(output)output.textContent=city.taxRates[sector].toLocaleString("en-US")+"٪";
+   if(output)output.textContent=city.taxRates[sector].toLocaleString("en-US")+"%";
   }
   $("cityBudgetTaxRevenue").textContent=fmt(city.stats.taxRevenue);
   $("cityBudgetMaintenance").textContent=fmt(city.stats.maintenance);
   $("cityBudgetServiceUpkeep").textContent=fmt(city.stats.serviceUpkeep);
-  if($("cityBudgetCommuteProductivity"))$("cityBudgetCommuteProductivity").textContent=(city.stats.commuteProductivityPercent??100).toLocaleString("en-US")+"٪";
+  if($("cityBudgetCommuteProductivity"))$("cityBudgetCommuteProductivity").textContent=(city.stats.commuteProductivityPercent??100).toLocaleString("en-US")+"%";
   if($("cityBudgetCommuteLoss"))$("cityBudgetCommuteLoss").textContent=fmt(city.stats.commuteEconomicLoss);
  }
  function hud(){
-  $("cityPopulation").textContent=city.population.toLocaleString("en-US");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("en-US")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("en-US");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("en-US")+"٪";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("en-US")+"٪";if($("cityUnemployment"))$("cityUnemployment").textContent=(city.stats.unemploymentRate??0).toLocaleString("en-US")+"٪";if($("cityCommuteCoverage"))$("cityCommuteCoverage").textContent=(city.stats.commuteCoverage??0).toLocaleString("en-US")+"٪";
+  $("cityPopulation").textContent=city.population.toLocaleString("en-US");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("en-US")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("en-US");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("en-US")+"%";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("en-US")+"%";if($("cityUnemployment"))$("cityUnemployment").textContent=(city.stats.unemploymentRate??0).toLocaleString("en-US")+"%";if($("cityCommuteCoverage"))$("cityCommuteCoverage").textContent=(city.stats.commuteCoverage??0).toLocaleString("en-US")+"%";
   $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="Day "+(1+Math.floor(city.tick/144)).toLocaleString("en-US");
-  $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را Select کن.":"Active tool: "+toolName();$("cityBudgetHint").textContent="Income +"+city.stats.income.toLocaleString("en-US")+" · Expenses -"+city.stats.expenses.toLocaleString("en-US")+" · Net "+(city.stats.net>=0?"+":"")+Math.round(city.stats.net||0).toLocaleString("en-US");$("citySaveState").textContent=toastFrames>0?"Saved ✓":"Local save";if(toastFrames>0)toastFrames--;
+  $("cityStatus").textContent=tool==="select"?"Your city is an empty landscape. Select a tool to start building.":"Active tool: "+toolName();$("cityBudgetHint").textContent="Income +"+city.stats.income.toLocaleString("en-US")+" · Expenses -"+city.stats.expenses.toLocaleString("en-US")+" · Net "+(city.stats.net>=0?"+":"")+Math.round(city.stats.net||0).toLocaleString("en-US");$("citySaveState").textContent=toastFrames>0?"Saved ✓":"Local save";if(toastFrames>0)toastFrames--;
   updateBudgetPanel();
  }
  function draw(){if(threeRenderer){threeRenderer.render(city,view,cam);window.MshinCity3DStats=threeRenderer.getStats();hud();return}
@@ -160,9 +160,9 @@ function mount(){
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)ground(x,y,city.grid[y][x]);
   [...city.trees.map(t=>({d:t.x+t.y,draw:()=>tree(t)})),...city.buildings.map(b=>({d:b.x+b.y,draw:()=>building(b)}))].sort((a,b)=>a.d-b.d).forEach(v=>v.draw());
   cars();people();animals();if(selected){const p=tilePoint(selected.x,selected.y);ctx.strokeStyle="#fff1a6";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y-8);ctx.lineTo(p.x+16,p.y);ctx.lineTo(p.x,p.y+8);ctx.lineTo(p.x-16,p.y);ctx.closePath();ctx.stroke()}ctx.restore();
-  $("cityPopulation").textContent=city.population.toLocaleString("en-US");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("en-US")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("en-US");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("en-US")+"٪";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("en-US")+"٪";
+  $("cityPopulation").textContent=city.population.toLocaleString("en-US");$("cityTreasury").textContent=Math.round(city.treasury).toLocaleString("en-US")+" ₮";$("cityJobs").textContent=city.stats.jobs.toLocaleString("en-US");$("cityHappiness").textContent=Math.round(city.happiness).toLocaleString("en-US")+"%";if($("cityInfrastructure"))$("cityInfrastructure").textContent=(city.stats.overallCoverage??0).toLocaleString("en-US")+"%";
   $("cityClock").textContent=String(Math.floor(city.minuteOfDay/60)).padStart(2,"0")+":"+String(city.minuteOfDay%60).padStart(2,"0");$("cityTick").textContent="Day "+(1+Math.floor(city.tick/144)).toLocaleString("en-US");
-  $("cityStatus").textContent=tool==="select"?"شهر زنده است؛ برای ساخت، ابزار پایین را Select کن.":"Active tool: "+toolName();$("cityBudgetHint").textContent="Income +"+city.stats.income.toLocaleString("en-US")+" · Expenses -"+city.stats.expenses.toLocaleString("en-US")+" · زیرساخت "+(city.stats.overallCoverage??0).toLocaleString("en-US")+"٪";$("citySaveState").textContent=toastFrames>0?"Saved ✓":"Local save";if(toastFrames>0)toastFrames--;
+  $("cityStatus").textContent=tool==="select"?"Your city is an empty landscape. Select a tool to start building.":"Active tool: "+toolName();$("cityBudgetHint").textContent="Income +"+city.stats.income.toLocaleString("en-US")+" · Expenses -"+city.stats.expenses.toLocaleString("en-US")+" · Infrastructure "+(city.stats.overallCoverage??0).toLocaleString("en-US")+"%";$("citySaveState").textContent=toastFrames>0?"Saved ✓":"Local save";if(toastFrames>0)toastFrames--;
  }
  const cityToolsNav=document.querySelector(".cityTools");
  function closeCityToolPanels(){
@@ -184,7 +184,7 @@ function mount(){
  function apply(x,y){
   if(!inside(x,y))return;selected={x,y};
   if(tool==="select"){draw();return}
-  if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home"){city.population=Math.max(0,city.population-b.residents);syncCityCitizens(city)}city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="ساختمان Bulldoze شد؛ 35% هزینه بازیابی شد.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="این Road تنها مسیر دسترسی یک ساختمان است."}else{city.grid[y][x]="grass";$("cityToast").textContent="قطعه Road حذف شد.";changed=true}}if(changed)persist(city);draw();return}
+  if(tool==="bulldoze"){let changed=false;if(city.grid[y][x]==="building"){const b=city.buildings.find(v=>v.x===x&&v.y===y);if(b){city.buildings=city.buildings.filter(v=>v.id!==b.id);if(b.type==="home"){city.population=Math.max(0,city.population-b.residents);syncCityCitizens(city)}city.grid[y][x]="grass";city.treasury+=Math.round((COST[b.type]||0)*.35);$("cityToast").textContent="Building demolished. 35% of its cost was refunded.";changed=true}}else if(city.grid[y][x]==="road"){const dependent=city.buildings.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inside(b.x+dx,b.y+dy)&&city.grid[b.y+dy][b.x+dx]==="road"&&!(b.x+dx===x&&b.y+dy===y)));if(dependent){$("cityToast").textContent="This road is the only access route for a building."}else{city.grid[y][x]="grass";$("cityToast").textContent="Road removed.";changed=true}}if(changed)persist(city);draw();return}
   const result=placeCityItem(city,x,y,tool);$("cityToast").textContent=result.ok?"Built · Cost "+result.cost.toLocaleString("en-US"):result.reason;if(result.ok)persist(city);draw()
  }
  cityToolsNav?.querySelectorAll("[data-city-category]").forEach(button=>button.addEventListener("click",()=>openCityToolPanel(button.dataset.cityCategory)));
@@ -250,7 +250,7 @@ function mount(){
    if(file.size>2_000_000)throw new Error("Backup file exceeds 2 MB");
    const payload=JSON.parse(await file.text()),restored=migrateCitySave(payload);
    if(!restored||!isValidCitySave(restored))throw new Error("Invalid backup file");
-   if(!confirm("شهر فعلی با نسخه پشتیبان Select‌شده جایگزین شود؟"))return;
+   if(!confirm("Replace the current city with the selected backup?"))return;
    if(!persist(restored))throw new Error("Could not save the restored city in this browser");
    Object.keys(city).forEach(key=>delete city[key]);Object.assign(city,restored);
    lastPersistTick=city.tick;closeCityStorage();$("cityToast").textContent="City restored from backup.";toastFrames=150;draw();
