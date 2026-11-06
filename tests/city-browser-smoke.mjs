@@ -111,8 +111,8 @@ try{
  await page.screenshot({path:"artifacts/city-empty-world-landscape.png"});
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.05));
  const meadowZoomOut=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,stats:window.MshinCity3DStats}));
- assert.equal(meadowZoomOut.zoom,0.20,"zoom-out must stop before the camera exposes areas outside the playable world");
- assert.equal(meadowZoomOut.stats.minimumZoom,0.20,"the renderer and touch controls must share one minimum zoom");
+ assert.equal(meadowZoomOut.zoom,0.42,"zoom-out must stop before the camera exposes areas outside the playable world");
+ assert.equal(meadowZoomOut.stats.minimumZoom,0.42,"the renderer and touch controls must share one minimum zoom");
  await page.evaluate(()=>{window.MshinCityDebug.setCameraPitch(0.24);window.MshinCityDebug.setCameraTarget(5000,5000)});
  const boundedCamera=await page.evaluate(()=>({view:window.MshinCityDebug.view,limit:window.MshinCity3DStats.cameraTargetLimitMeters}));
  assert.ok(Math.abs(boundedCamera.view.targetX)<=boundedCamera.limit+0.001&&Math.abs(boundedCamera.view.targetZ)<=boundedCamera.limit+0.001,"camera panning must stay inside the playable world even at the widest zoom-out and lowest pitch");
