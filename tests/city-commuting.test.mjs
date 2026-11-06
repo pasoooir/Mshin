@@ -4,7 +4,7 @@ import { createInitialCity, placeCityItem, stepCity, isValidCitySave } from "../
 import { computeCityEmployment } from "../src/city/city-employment.js";
 import { computeCityCommuting } from "../src/city/city-commuting.js";
 
-function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,12,"road");placeCityItem(city,x,15,"road");placeCityItem(city,x,18,"road")}return city}
+function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,15,"road");placeCityItem(city,x,18,"road")}for(let y=10;y<=20;y++)placeCityItem(city,16,y,"road");return city}
 
 function connectedWorkCity(seed = 3101) {
   const city = seedCityRoadAccess(createInitialCity(seed));
