@@ -6,7 +6,7 @@
  */
 export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
   house: {
-    label: "خانه",
+    label: "House",
     group: "residential",
     dimensions: { width: 12, depth: 15, height: 7.5 },
     footprintTiles: { width: 2, depth: 2 },
@@ -15,7 +15,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real residential house exterior architecture photo PBR materials"
   },
   shop: {
-    label: "مغازه",
+    label: "Shop",
     group: "commercial",
     dimensions: { width: 8, depth: 10, height: 5.5 },
     footprintTiles: { width: 1, depth: 2 },
@@ -24,7 +24,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real small street retail shop facade storefront"
   },
   tower: {
-    label: "برج",
+    label: "Tower",
     group: "residential-commercial",
     dimensions: { width: 28, depth: 28, height: 90 },
     footprintTiles: { width: 4, depth: 4 },
@@ -33,7 +33,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real high rise residential tower architecture facade"
   },
   hardware_store: {
-    label: "فروشگاه ابزارآلات",
+    label: "Hardware Store",
     group: "commercial",
     dimensions: { width: 22, depth: 18, height: 8 },
     footprintTiles: { width: 3, depth: 3 },
@@ -42,7 +42,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real hardware store exterior warehouse retail architecture"
   },
   school: {
-    label: "مدرسه",
+    label: "School",
     group: "education",
     dimensions: { width: 42, depth: 30, height: 12 },
     footprintTiles: { width: 6, depth: 4 },
@@ -51,7 +51,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real school campus exterior architecture courtyard"
   },
   cafe_restaurant: {
-    label: "کافه و رستوران",
+    label: "Cafe & Restaurant",
     group: "commercial-hospitality",
     dimensions: { width: 18, depth: 16, height: 7 },
     footprintTiles: { width: 3, depth: 2 },
@@ -60,7 +60,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real cafe restaurant exterior architecture outdoor terrace"
   },
   mosque: {
-    label: "مسجد",
+    label: "Mosque",
     group: "religious-cultural",
     dimensions: { width: 32, depth: 38, height: 22 },
     footprintTiles: { width: 5, depth: 5 },
@@ -69,7 +69,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real mosque architecture exterior dome minaret courtyard"
   },
   supermarket: {
-    label: "فروشگاه بزرگ",
+    label: "Shopping Center",
     group: "commercial",
     dimensions: { width: 38, depth: 28, height: 9 },
     footprintTiles: { width: 5, depth: 4 },
@@ -78,7 +78,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real supermarket big box retail exterior architecture"
   },
   factory: {
-    label: "کارخانه",
+    label: "Factory",
     group: "industrial",
     dimensions: { width: 60, depth: 42, height: 16 },
     footprintTiles: { width: 8, depth: 6 },
@@ -87,7 +87,7 @@ export const CITY_VISUAL_ASSET_CATALOG = Object.freeze({
     referenceSearch: "real industrial factory exterior building architecture"
   },
   office: {
-    label: "ساختمان اداری",
+    label: "Office Building",
     group: "commercial",
     dimensions: { width: 24, depth: 20, height: 32 },
     footprintTiles: { width: 4, depth: 3 },
