@@ -32,8 +32,11 @@ test("orbit remains continuous across the 2π boundary and supports repeated ful
   for (let i = 0; i < 9; i++) {
     h.send("pointerdown", 1, 100, 100);
     h.send("pointerdown", 2, 200, 100);
-    h.send("pointermove", 1, 200, 100);
-    h.send("pointermove", 2, 300, 100);
+    // Rotate the finger line around a fixed first contact in 45-degree steps.
+    for (let step = 1; step <= 8; step++) {
+      const radians = step * Math.PI / 4;
+      h.send("pointermove", 2, 100 + 100 * Math.cos(radians), 100 + 100 * Math.sin(radians));
+    }
     h.send("pointerup", 1, 200, 100);
     h.send("pointerup", 2, 300, 100);
   }
@@ -52,7 +55,7 @@ test("pinch zoom and horizontal orbit work together while retaining the ground a
   const anchorAfter = h.renderer.groundPointAt(200, 100);
   assert.ok(Math.abs(anchorBefore.x-anchorAfter.x)<1e-9&&Math.abs(anchorBefore.z-anchorAfter.z)<1e-9,"pinch must preserve the ground point under the gesture midpoint");
   assert.ok(h.camera.zoom > 0.8, "spreading fingers must zoom in");
-  assert.ok(h.camera.orbit > Math.PI * 2 - 0.2, "horizontal movement must orbit");
+  assert.equal(h.camera.orbit, Math.PI * 2 - 0.2, "parallel horizontal movement must pan, not orbit");
   const after = h.controller.getState();
   assert.equal(after.gesture, "pinch-orbit");
   assert.ok(after.zoom <= 1.5, "zoom must respect the upper bound");
@@ -209,28 +212,39 @@ test("orbit inertia is speed-capped and always settles within its maximum lifeti
 });
 
 
-test("two-finger vertical translation smoothly tilts the camera and clamps safe elevation", () => {
+test("parallel two-finger movement pans without changing zoom, pitch or orbit", () => {
   const h = harness();
   h.camera.pitch = 0.51;
+  const before = { x: h.camera.targetX, z: h.camera.targetZ };
   h.send("pointerdown", 71, 100, 100);
   h.send("pointerdown", 72, 200, 100);
-  h.send("pointermove", 71, 100, 140);
-  h.send("pointermove", 71, 100, 140);
-  h.send("pointermove", 72, 200, 140);
-  const lowered = h.camera.pitch;
-  assert.equal(h.camera.zoom, 0.8, "vertical tilt must not change pinch zoom");
-  assert.equal(h.camera.orbit, Math.PI * 2 - 0.2, "vertical tilt must not change azimuth orbit");
-  assert.ok(lowered < 0.51, "moving the two-finger midpoint down must lower the viewing elevation");
-  h.send("pointermove", 71, 100, -1000);
-  h.send("pointermove", 71, 100, -1000);
-  h.send("pointermove", 72, 200, -1000);
-  assert.equal(h.camera.pitch, 0.96, "camera elevation must clamp at the upper safe limit");
-  h.send("pointermove", 71, 100, 2000);
-  h.send("pointermove", 71, 100, 2000);
-  h.send("pointermove", 72, 200, 2000);
-  assert.equal(h.camera.pitch, 0.24, "camera elevation must clamp above the ground-facing limit");
+  h.send("pointermove", 71, 120, 140);
+  h.send("pointermove", 72, 220, 140);
+  assert.equal(h.camera.zoom, 0.8, "parallel movement must not zoom");
+  assert.equal(h.camera.orbit, Math.PI * 2 - 0.2, "parallel movement must not rotate the camera");
+  assert.equal(h.camera.pitch, 0.51, "parallel movement must not tilt the camera");
+  assert.ok(h.camera.targetX !== before.x || h.camera.targetZ !== before.z,
+    "two-finger midpoint translation must pan the camera target");
   assert.equal(h.controller.getState().gesture, "pinch-orbit");
-  h.send("pointercancel", 71, 100, 100);
-  h.send("pointercancel", 72, 200, 2000);
+  h.send("pointercancel", 71, 120, 140);
+  h.send("pointercancel", 72, 220, 140);
+  h.controller.destroy();
+});
+
+test("pure two-finger line rotation orbits without panning or changing zoom", () => {
+  const h = harness();
+  const zoom = h.camera.zoom;
+  const target = { x: h.camera.targetX, z: h.camera.targetZ };
+  const orbit = h.camera.orbit;
+  h.send("pointerdown", 81, 150, 100);
+  h.send("pointerdown", 82, 250, 100);
+  h.send("pointermove", 81, 200, 50);
+  h.send("pointermove", 82, 200, 150);
+  assert.ok(Math.abs(h.camera.orbit - orbit) > 0.1, "rotating the finger line must orbit");
+  assert.equal(h.camera.zoom, zoom, "pure rotation must not zoom");
+  assert.equal(h.camera.targetX, target.x, "pure rotation around a fixed midpoint must not pan X");
+  assert.equal(h.camera.targetZ, target.z, "pure rotation around a fixed midpoint must not pan Z");
+  h.send("pointercancel", 81, 200, 50);
+  h.send("pointercancel", 82, 200, 150);
   h.controller.destroy();
 });
