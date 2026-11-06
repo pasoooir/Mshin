@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity } from "../src/city/city-view.js";
 import { computeCityEmployment } from "../src/city/city-employment.js";
 
+function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
+
 test("workplace capacity is counted by sector with deterministic workforce matching", () => {
-  const city=createInitialCity(2101);
+  const city=seedCityRoadAccess(createInitialCity(2101));
   placeCityItem(city,17,14,"home"); placeCityItem(city,18,14,"shop");
   placeCityItem(city,19,14,"industrial"); placeCityItem(city,20,14,"administrative");
   const result=computeCityEmployment(city);
