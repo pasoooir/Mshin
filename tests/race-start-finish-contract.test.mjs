@@ -34,3 +34,12 @@ test("live map keeps all four original opponents visible with their current rank
   assert.match(game, /dnf\?"#ff665f":r\.color/);
   assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),px,py-7\)/);
 });
+
+
+test("GO launches the player and AI from one timestamp with a short launch assist", () => {
+  assert.match(game, /race\.playerStartTimestamp=race\.startTimestamp/);
+  assert.match(game, /race\.raceEntrants\.forEach\(r=>\{r\.startTimestamp=race\.startTimestamp/);
+  assert.match(game, /race\.launchAssistRemaining=\.9/);
+  assert.match(game, /throttle:input\.gas\|\|\(race\.launchAssistRemaining>0&&!input\.brake\)/);
+  assert.match(game, /race\.playerTimerElapsed=race\.elapsed/);
+});
