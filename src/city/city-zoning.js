@@ -17,7 +17,7 @@ export function placeCityZone(city, x, y, type) {
   if (!definition) return { ok:false, reason:"Unknown zone type" };
   if (!inside(x,y,city.grid.length)) return { ok:false, reason:"Outside the city limits" };
   if (city.grid[y][x] !== "grass") return { ok:false, reason:"This plot is occupied" };
-  if (!roadNear(city.grid,x,y)) return { ok:false, reason:"منطقه Must have road access" };
+  if (!roadNear(city.grid,x,y)) return { ok:false, reason:"Zone must have road access" };
   if (city.treasury < definition.zoneCost) return { ok:false, reason:"Insufficient funds" };
   city.treasury -= definition.zoneCost;
   city.grid[y][x] = "zone-" + type;
