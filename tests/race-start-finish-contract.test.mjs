@@ -13,9 +13,11 @@ test("the five race entrants are reset together on GO, not during the countdown"
   assert.match(game, /window\.MshinRaceStart=\{timestamp:race\.startTimestamp,synchronized:/);
   assert.match(game, /window\.MshinRaceClocks=\{startTimestamp:race\.startTimestamp\?\?null,racers:rows\.map/);
   assert.match(game, /clock:createRaceClock\(\),timerElapsed:0,finishTime:null/);
-  assert.match(game, /cruiseFactor:1,[^}]*speed:0/, "all AI rivals must leave the line together without staggered starting speeds");
+  assert.match(game, /cruiseFactor=i<4\?1:spec\.cruise/);
+  assert.match(game, /speed:i<4\?0:activeCar\(\)\.max\*cruiseFactor/, "race rivals start at zero while ambient traffic retains its own pace");
   assert.match(game, /speedLimit:aiMaxSpeed,acceleration:aiAcceleration/, "AI performance must use the selected player's shared engine limits");
-  assert.match(game, /laneChanges:false/, "race rivals must keep separate lanes so their pace stays synchronized");
+  assert.match(game, /isRaceRival=r\.id<4/);
+  assert.match(game, /laneChanges:!isRaceRival/, "only the four race rivals keep separate lanes for synchronized pacing");
   assert.match(game, /window\.MshinRacePace=\{speedLimit:aiMaxSpeed,acceleration:aiAcceleration,vehicles:/, "the shared performance profile must be observable in runtime tests");
   assert.match(game, /race\.playerClock=createRaceClock\(\);race\.raceEntrants=null/);
 });
