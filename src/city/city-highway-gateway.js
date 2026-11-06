@@ -99,14 +99,20 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
 
   // Lane dividers: dashed, high-contrast, and slightly raised from the asphalt.
   const dashGeometry = new THREE.BoxGeometry(4.6, 0.025, 0.13);
+  const laneDashes = new THREE.InstancedMesh(dashGeometry, whiteMarkingMaterial, 156);
+  const dashTransform = new THREE.Object3D();
+  let dashIndex = 0;
   for (const z of [-203.2, -199, -194.8, -185.2, -181, -176.8]) {
     for (let x = -300; x < 300; x += 12) {
-      const dash = new THREE.Mesh(dashGeometry, whiteMarkingMaterial);
-      dash.position.set(x + 2.3, 0.285, z);
-      root.add(dash);
-      meshes.push(dash);
+      dashTransform.position.set(x + 2.3, 0.285, z);
+      dashTransform.updateMatrix();
+      laneDashes.setMatrixAt(dashIndex++, dashTransform.matrix);
     }
   }
+  laneDashes.count = dashIndex;
+  laneDashes.instanceMatrix.needsUpdate = true;
+  root.add(laneDashes);
+  meshes.push(laneDashes);
   // Solid edge lines and shoulder rumble strips.
   for (const z of [-205.0, -193.0, -187.0, -175.0]) {
     const line = new THREE.Mesh(new THREE.BoxGeometry(620, 0.028, 0.2), markingMaterial);
@@ -150,6 +156,7 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
       const l = Math.hypot(tangent.x, tangent.z) || 1;
       points.push(new THREE.Vector3(p.x - tangent.z / l * offset, p.y + 0.92, p.z + tangent.x / l * offset));
     }
+  const guardrailPostData = [];
     const railCurve = new THREE.CatmullRomCurve3(points);
     const rail = new THREE.Mesh(new THREE.TubeGeometry(railCurve, samples, 0.11, 6, false), railMaterial);
     rail.castShadow = true;
@@ -158,10 +165,7 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
     meshes.push(rail);
     for (let i = 0; i <= samples; i += 4) {
       const p = railCurve.getPoint(i / samples);
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.78, 0.12), darkMetalMaterial);
-      post.position.set(p.x, p.y - 0.43, p.z);
-      root.add(post);
-      meshes.push(post);
+      guardrailPostData.push([p.x, p.y - 0.43, p.z]);
     }
   };
   for (const z of [-205.5, -192.5, -187.5, -174.5]) {
@@ -172,6 +176,18 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
   addGuardrail(offRamp, -4.05);
   addGuardrail(onRamp, 4.05);
   addGuardrail(onRamp, -4.05);
+  const postGeometry = new THREE.BoxGeometry(0.12, 0.78, 0.12);
+  const guardrailPosts = new THREE.InstancedMesh(postGeometry, darkMetalMaterial, guardrailPostData.length);
+  const postTransform = new THREE.Object3D();
+  guardrailPostData.forEach(([x, y, z], index) => {
+    postTransform.position.set(x, y, z);
+    postTransform.updateMatrix();
+    guardrailPosts.setMatrixAt(index, postTransform.matrix);
+  });
+  guardrailPosts.count = guardrailPostData.length;
+  guardrailPosts.instanceMatrix.needsUpdate = true;
+  root.add(guardrailPosts);
+  meshes.push(guardrailPosts);
 
   // Earth shoulders and landscaped embankment transitions anchor the ramps to terrain.
   for (const [x, z, sx, sz] of [[-48, -179, 42, 28], [-34, -145, 28, 34], [-18, -110, 34, 30]]) {
