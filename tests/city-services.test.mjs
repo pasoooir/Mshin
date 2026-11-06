@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity } from "../src/city/city-view.js";
 import { CITY_SERVICE_TYPES, computeCityServices, computeCityResidentServiceSatisfaction, cityServiceStatus } from "../src/city/city-services.js";
 
+function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
+
 test("the city defines all four utilities and four public service departments", () => {
   assert.deepEqual(Object.keys(CITY_SERVICE_TYPES), ["power","water","sewage","waste","police","fire","health","education"]);
   assert.equal(Object.values(CITY_SERVICE_TYPES).filter(v=>v.category==="utility").length,4);
@@ -10,7 +12,7 @@ test("the city defines all four utilities and four public service departments", 
 });
 
 test("utility and civic buildings require road access and charge their construction cost", () => {
-  const city=createInitialCity(601),money=city.treasury;
+  const city=seedCityRoadAccess(createInitialCity(601)),money=city.treasury;
   const result=placeCityItem(city,17,14,"power");
   assert.equal(result.ok,true);
   assert.equal(city.grid[14][17],"building");
