@@ -35,7 +35,7 @@ test("procedural buildings fill parcel scale while doors and windows retain huma
 
 test("renderer scales the district, vehicles, pedestrians and zoom range from the shared contract", async () => {
   const source = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
-  assert.match(source, /cityTileToWorld\(x - 16\)/);
+  assert.match(source, /cityTileToWorld\(x\)/);
   assert.match(source, /worldToCityTile\(point\.x\)/);
   assert.match(source, /Math\.max\(0\.0625, Math\.min\(1\.875/);
   assert.match(source, /trafficDummy\.scale\.set\(1\.76, 1\.5, 2\.53\)/);
