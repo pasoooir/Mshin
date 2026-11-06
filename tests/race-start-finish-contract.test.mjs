@@ -34,3 +34,17 @@ test("live map keeps all four original opponents visible with their current rank
   assert.match(game, /dnf\?"#ff665f":r\.color/);
   assert.match(game, /target\.fillText\(String\(r\.rank\|\|"-"\),px,py-7\)/);
 });
+
+test("every entrant owns a stopwatch started from the same GO timestamp", () => {
+  assert.match(game, /playerClock=startRaceClock\(race\.playerClock,goTimestamp\)/);
+  assert.match(game, /r\.clock=startRaceClock\(r\.clock,goTimestamp\)/);
+  assert.match(game, /clockAtStepStart=r\.clock\?\.elapsed/);
+  assert.match(game, /playerClockAtStepStart=race\.playerClock\?\.elapsed/);
+  assert.match(game, /advanceRaceClock\(r\.clock,dt\)/);
+  assert.match(game, /advanceRaceClock\(race\.playerClock,dt\)/);
+});
+test("map uses larger rank badges for every rival and the player", () => {
+  assert.match(game, /const mw=Math\.min\(220,width\*\.40\)/);
+  assert.match(game, /marker\(r\.distance,r\.lateral,dnf\?"#ff665f":r\.color\|\|"#56a8ed",4\.6,false,Number\.isFinite\(r\.rank\)\?r\.rank:null\)/);
+  assert.match(game, /marker\(car\.t,car\.lateral,"#ffe34d",5\.8,true,playerRank\)/);
+});
