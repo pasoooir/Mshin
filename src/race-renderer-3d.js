@@ -194,6 +194,17 @@ export function createRaceRenderer(canvas){
  for(const [key,source] of Object.entries(surfaceSources))loadSurfaceTexture(key,source);
  function part(tris,color,emissive=0,materialName="environment",surfaceKey=null){const material=VEHICLE_MATERIALS[materialName]||{metallic:.06,roughness:.78,clearcoat:0,kind:0},started=performance.now(),mesh=makeGeometry(gl,tris),elapsed=performance.now()-started;state.maxMeshUploadMs=Math.max(state.maxMeshUploadMs||0,elapsed);state.meshUploadCount=(state.meshUploadCount||0)+1;return {mesh,color:hexColor(color),...material,emissive,texture:surfaceKey?surfaceTextures.get(surfaceKey)||null:null}}
  function disposeParts(parts){for(const item of parts){const buffer=item?.mesh?.buffer;if(buffer){try{gl.deleteBuffer(buffer)}catch{}}}}
+ const carShadowParts=(()=>{
+  const outer=[],inner=[];
+  const ring=(out,rx,rz,innerX,innerZ,y)=>{
+   for(let i=0;i<32;i++){const a=i/32*Math.PI*2,b=(i+1)/32*Math.PI*2;
+    quad(out,[Math.cos(a)*rx,y,Math.sin(a)*rz],[Math.cos(b)*rx,y,Math.sin(b)*rz],[Math.cos(b)*innerX,y,Math.sin(b)*innerZ],[Math.cos(a)*innerX,y,Math.sin(a)*innerZ]);
+   }
+  };
+  ring(outer,54,82,39,64,1.1);
+  for(let i=0;i<32;i++){const a=i/32*Math.PI*2,b=(i+1)/32*Math.PI*2;tri(inner,[0,1.2,0],[Math.cos(a)*39,1.2,Math.sin(a)*64],[Math.cos(b)*39,1.2,Math.sin(b)*64]);}
+  return [part(outer,"#42484d",0),part(inner,"#252b30",0)];
+ })();
  function* buildTrack(snapshot){
   const nextDecor=[];
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],yellowTris=[],curbRedTris=[],curbWhiteTris=[],groundTris=[],terrainBaseTris=[];
@@ -374,7 +385,7 @@ export function createRaceRenderer(canvas){
  function drawVehicle(t,lateral,yaw,color,damage=0,kind="car",vehicleId=0,snapshot){
   const f=snapshot.frameAt(t),x=f.p.x+f.nx*lateral,z=-(f.p.y+f.ny*lateral),heading=vehicleModelHeading(f.angle,yaw);
   const carParts=getCarParts(vehicleShapeFor(kind,vehicleId));
-  const model=mul(translate(x,f.height||0,z),rotateY(heading));const paint=hexColor(color);for(let i=0;i<carParts.length;i++){if(i===0)carParts[i].color=paint;}
+  const model=mul(translate(x,f.height||0,z),rotateY(heading));for(let i=0;i<carShadowParts.length;i++)drawPart(carShadowParts[i],vp,model);const paint=hexColor(color);for(let i=0;i<carParts.length;i++){if(i===0)carParts[i].color=paint;}
   for(let i=0;i<carParts.length;i++)drawPart(carParts[i],vp,model);
   
  }
@@ -448,5 +459,5 @@ export function createRaceRenderer(canvas){
   }catch(e){state.status="unavailable";state.error=String(e?.message||e)}
  }
  canvas.addEventListener("webglcontextlost",onLost);canvas.addEventListener("webglcontextrestored",onRestored);
- return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){rendererDestroyed=true;surfaceLoadGeneration++;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([terrainBase,road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();for(const texture of surfaceTextures.values())try{gl.deleteTexture(texture)}catch{}surfaceTextures.clear();if(program)gl.deleteProgram(program);if(environment)gl.deleteTexture(environment)}};
+ return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){rendererDestroyed=true;disposeParts(carShadowParts);surfaceLoadGeneration++;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([terrainBase,road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();for(const texture of surfaceTextures.values())try{gl.deleteTexture(texture)}catch{}surfaceTextures.clear();if(program)gl.deleteProgram(program);if(environment)gl.deleteTexture(environment)}};
 }
