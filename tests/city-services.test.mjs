@@ -12,7 +12,7 @@ test("the city defines all four utilities and four public service departments", 
 });
 
 test("utility and civic buildings require road access and charge their construction cost", () => {
-  const city=seedCityRoadAccess(createInitialCity(601)),money=city.treasury;
+  const city=seedCityRoadAccess(createInitialCity(601))),money=city.treasury;
   const result=placeCityItem(city,17,14,"power");
   assert.equal(result.ok,true);
   assert.equal(city.grid[14][17],"building");
@@ -22,7 +22,7 @@ test("utility and civic buildings require road access and charge their construct
 });
 
 test("utility coverage reaches nearby buildings and remains bounded", () => {
-  const city=createInitialCity(602);
+  const city=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(602));
   assert.equal(placeCityItem(city,17,13,"home").ok,true);
   const before=computeCityServices(city);
   assert.equal(before.utilityCoverage,0);
@@ -36,7 +36,7 @@ test("utility coverage reaches nearby buildings and remains bounded", () => {
 });
 
 test("public safety, health and education coverage contributes to the city service score", () => {
-  const city=createInitialCity(603);
+  const city=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(603));
   assert.equal(placeCityItem(city,17,13,"home").ok,true);
   for(const [x,y,type] of [[17,14,"power"],[14,17,"water"],[18,14,"police"],[13,17,"health"],[18,17,"fire"],[13,14,"education"]]){
     assert.equal(placeCityItem(city,x,y,type).ok,true,type+" should be constructible");
@@ -50,7 +50,7 @@ test("public safety, health and education coverage contributes to the city servi
 });
 
 test("service coverage is deterministic and city simulation exposes infrastructure metrics", () => {
-  const a=createInitialCity(604),b=createInitialCity(604);
+  const a=seedCityRoadAccess(createInitialCity(604)),b=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(604));
   for(const city of [a,b]){
     placeCityItem(city,17,13,"home");
     placeCityItem(city,17,14,"power");
@@ -109,7 +109,7 @@ test("service status exposes demand coverage and capacity usage as bounded metri
 
 
 test("resident wellbeing reflects finite service demand and workforce unemployment", () => {
-  const underemployed=createInitialCity(605),employed=createInitialCity(605);
+  const underemployed=seedCityRoadAccess(createInitialCity(605)),employed=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(605));
   for(const city of [underemployed,employed]){
     assert.equal(placeCityItem(city,17,13,"home").ok,true);
     assert.equal(placeCityItem(city,17,12,"home").ok,true);
@@ -143,7 +143,7 @@ test("resident service satisfaction weights each occupied home by its residents"
 });
 
 test("city happiness uses resident-weighted service satisfaction from finite allocations", () => {
-  const city = createInitialCity(606);
+  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(606));
   assert.equal(placeCityItem(city, 17, 13, "home").ok, true);
   const initialHappiness = city.happiness;
   stepCity(city);
