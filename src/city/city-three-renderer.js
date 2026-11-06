@@ -70,8 +70,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const pbrGenerationMs = performance.now() - pbrGenerationStartedAt;
   const pbrTextureResolution = grassSurface.map.image?.width || 0;
   const backgroundSkyline = { buildingCount: 0, windowCount: 0, dispose() {} };
-  // A continuous meadow replaces the old per-cell grass slabs. The logical
-  // 32x32 build grid exists only in simulation; it is never painted on the terrain.
+  // A continuous meadow replaces the old per-cell grass slabs. Keep the terrain
+  // effectively horizon-free at the widest supported zoom so no canvas/backdrop
+  // can appear as a blank strip when the camera looks toward the world edge.
   const grassGroundMap = grassSurface.map.clone();
   const grassGroundNormal = grassSurface.normalMap.clone();
   const grassGroundRoughness = grassSurface.roughnessMap.clone();
@@ -88,7 +89,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     roughness: 1,
     normalScale: new THREE.Vector2(0.3, 0.3)
   });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), groundMaterial);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000000, 1000000), groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.34;
   ground.receiveShadow = true;
@@ -408,7 +409,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         visualStyle: "continuous-realistic-grassland",
         continuousGrassland: true,
         visiblePlotGridLines: 0,
-        groundExtentMeters: 10000,
+        groundExtentMeters: 1000000,
         cameraTargetLimitMeters: Number.isFinite(lastCameraTargetLimit) ? lastCameraTargetLimit : 0,
         minimumZoom: 0.42,
         proceduralTextures: 6,
