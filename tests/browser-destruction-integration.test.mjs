@@ -26,12 +26,13 @@ test("browser renderer exposes panel soot, fire, smoke and one-shot explosion fe
 
 test("burnt rivals leave traffic, collision, minimap and ranking participation", () => {
   assert.match(source, /rivals=rivals\.filter\(r=>!r\.destruction\?\.despawned\)/);
-  assert.match(source, /if\(a\.destruction\?\.despawned\|\|b\.destruction\?\.despawned\|\|\(a\.id<4&&a\.finishTime!==null\)\|\|\(b\.id<4&&b\.finishTime!==null\)\|\|a\.collisionCooldown/);
+  assert.match(source, /if\(a\.destruction\?\.despawned\|\|b\.destruction\?\.despawned\|\|a\.finishTime!==null\|\|b\.finishTime!==null\|\|a\.collisionCooldown/);
   assert.match(source, /if\(rival\.id>=4\|\|rival\.destruction\?\.despawned\)continue/);
   assert.match(source, /if\(!r\.despawned&&!r\.destruction\?\.despawned\)marker\(r\.distance/);
 });
 
 test("player destruction ends the race explicitly rather than silently removing the car", () => {
-  assert.match(source, /if\(car\.destruction\?\.despawned&&!race\.finished\)/);
-  assert.match(source, /خودروی شما پس از انفجار و سوختن از کار افتاد/);
+  assert.match(source, /if\(car\.destruction\?\.despawned&&!race\.finished&&race\.playerFinishTime===null\)/);
+  assert.match(source, /race\.playerDNF=true/);
+  assert.match(source, /سایر خودروها مسابقه را به پایان رساندند/);
 });
