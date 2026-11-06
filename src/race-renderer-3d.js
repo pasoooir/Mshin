@@ -1,4 +1,4 @@
-import { buildVehicleGeometry } from "./vehicle-showroom-3d.js";
+import { buildVehicleGeometry, buildVehicleDamageGeometry } from "./vehicle-showroom-3d.js";
 import { PBR_VERTEX, PBR_FRAGMENT, createVehicleEnvironment, VEHICLE_MATERIALS } from "./vehicle-pbr.js";
 import { vehicleModelHeading } from "./vehicle-controls.js";
 import { appendNaturalTracksideTerrain } from "./race-natural-terrain.js";
@@ -77,7 +77,7 @@ export function calculateRaceCameraPose(frameAt,t,lateral=0,mobile=false){
 }
 export function createRaceRenderer(canvas){
  const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,maxTrackBuildStepMs:0,lastTrackBuildStepMs:0,maxDrawPartMs:0,maxDrawUniformsMs:0,lastDrawUniformsMs:0,maxDrawBufferSetupMs:0,lastDrawBufferSetupMs:0,maxDrawSubmitMs:0,lastDrawSubmitMs:0,maxDrawArraysMs:0,lastDrawArraysMs:0,maxDrawPartVertices:0,lastDrawPartVertices:0,lastDrawPartColor:null,drawPartCount:0,maxTrianglesPerFrame:0,lastFrameTriangles:0,adaptiveQualityChanges:0,slowFrameStreak:0,fastFrameStreak:0,trackHalfWidth:0,maxVehicleBuildMs:0,lastVehicleBuildMs:0,vehicleBuildCount:0,maxResizeMs:0,lastResizeMs:0,maxClearMs:0,lastClearMs:0,maxRendererRenderMs:0,lastRendererRenderMs:0,softwareRenderer:false,gpuProfile:'detecting',captureNextFrameSample:false,lastFramePixelSample:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
- let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,terrainBase=null,road=null,decor=[],surfaceTextures=new Map(),surfaceImages=new Set(),surfaceLoadGeneration=0,rendererDestroyed=false,carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
+ let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,terrainBase=null,road=null,decor=[],surfaceTextures=new Map(),surfaceImages=new Set(),surfaceLoadGeneration=0,rendererDestroyed=false,carPartSets=new Map(),carDamagePartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
   // Create the WebGL context before sizing the canvas. The GPU profile must
@@ -210,9 +210,8 @@ export function createRaceRenderer(canvas){
   const nextDecor=[];
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],yellowTris=[],curbRedTris=[],curbWhiteTris=[],groundTris=[],terrainBaseTris=[];
   const terrainTexture=["grass","sand","snow","grass","rock","rock","grass","sand","rock","grass"][snapshot.world||0]||"grass";
-  const segments=mobile?320:softwareRenderer?400:820,half=220;state.trackHalfWidth=half;
-  // Keep the playable terrain inside the camera far plane and wind its triangles upward.
-  // The previous 130 km quad had downward-facing normals and corners beyond the
+  const segments=mobile?320:softwareRenderer?400:820,half=360;state.trackHalfWidth=half;
+    // The previous 130 km quad had downward-facing normals and corners beyond the
   // 60 km far plane, so mobile GPUs could clip/darken the entire ground surface.
   quad(terrainBaseTris,[-30000,-40,-30000],[-30000,-40,30000],[30000,-40,30000],[30000,-40,-30000]);
   for(let i=0;i<segments;i++){
@@ -221,10 +220,9 @@ export function createRaceRenderer(canvas){
    const l0=point(fa,-half),r0=point(fa,half),l1=point(fb,-half),r1=point(fb,half);
    const sl0=point(fa,-half-32,-.04),sr0=point(fa,half+32,-.04),sl1=point(fb,-half-32,-.04),sr1=point(fb,half+32,-.04);
    quad(roadTris,l0,r0,r1,l1);quad(shoulderTris,sl0,l0,l1,sl1);quad(shoulderTris,r0,sr0,sr1,r1);
-   // Continuous white edge lines, twin dashed yellow centre lines and alternating kerbs.
-   for(const offset of [-194,194]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
+      for(const offset of [-345,-180,180,345]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
    if(i%2===0)for(const offset of [-6,6]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,q0,q1,p1)}
-   const curbSide=(side,out)=>{const p0=point(fa,side*208,.026),q0=point(fa,side*220,.026),p1=point(fb,side*208,.026),q1=point(fb,side*220,.026);quad(out,p0,q0,q1,p1)};
+   const curbSide=(side,out)=>{const p0=point(fa,side*348,.026),q0=point(fa,side*360,.026),p1=point(fb,side*348,.026),q1=point(fb,side*360,.026);quad(out,p0,q0,q1,p1)};
    curbSide(-1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris);curbSide(1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris)
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
    quad(groundTris,outerL,outerR,outerR1,outerL1);
@@ -247,8 +245,7 @@ export function createRaceRenderer(canvas){
   state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?22:softwareRenderer?28:64,buildingCount=mobile?8:softwareRenderer?12:22;
   const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
-  // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
-  const skyTris=[],cloudTris=[],sunTris=[],terrainRocks=[];
+    const skyTris=[],cloudTris=[],sunTris=[],terrainRocks=[];
   sphere(skyTris,0,0,0,56000,30000,56000,mobile?20:36,mobile?10:18);
   for(let i=0;i<(mobile?5:12);i++){const a=i/12*Math.PI*2,r=19000+(i%3)*2100,x=Math.cos(a)*r,y=7600+(i%4)*950,z=Math.sin(a)*r;sphere(cloudTris,x,y,z,2800+(i%3)*550,580+(i%2)*250,1250+(i%4)*280,mobile?8:14,mobile?4:7);sphere(cloudTris,x+1250,y+180,z-350,1850,460,900,mobile?8:12,mobile?4:6);}
   sphere(sunTris,-22000,19000,-24500,1750,1750,1750,16,10);
@@ -376,6 +373,11 @@ export function createRaceRenderer(canvas){
   state.lastVehicleBuildMs=elapsed;state.maxVehicleBuildMs=Math.max(state.maxVehicleBuildMs||0,elapsed);state.vehicleBuildCount=(state.vehicleBuildCount||0)+1;
   return parts;
  }
+ function getCarDamageParts(id){
+  if(carDamagePartSets.has(id))return carDamagePartSets.get(id);
+  const parts=buildVehicleDamageGeometry(id).map(item=>part(item.vertices,item.paint,item.emissive,item.material));
+  carDamagePartSets.set(id,parts);return parts;
+ }
  function getCarParts(id){
   if(carPartSets.has(id))return carPartSets.get(id);
   if(carPartSets.size===0){const parts=buildCar(id);carPartSets.set(id,parts);return parts;}
@@ -384,12 +386,16 @@ export function createRaceRenderer(canvas){
  }
  function resize(){const started=performance.now(),portrait=matchMedia("(orientation: portrait)").matches,cssWidth=portrait?innerHeight:innerWidth,cssHeight=portrait?innerWidth:innerHeight,requestedDpr=Math.min(devicePixelRatio||1,mobile?.68:2)*qualityScale,pixelBudget=mobile?1600000:8294400,capScale=Math.sqrt(pixelBudget/Math.max(1,cssWidth*cssHeight)),dpr=Math.min(requestedDpr,capScale),w=Math.max(1,Math.round(cssWidth*dpr)),h=Math.max(1,Math.round(cssHeight*dpr)),key=w+"x"+h;if(key===lastSize){const elapsed=performance.now()-started;state.maxResizeMs=Math.max(state.maxResizeMs||0,elapsed);return}lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);state.quality={mobile,pixelRatio:dpr,detail:mobile?"mobile-balanced":softwareRenderer?"software-balanced":"high",renderScale:qualityScale,width:w,height:h};const elapsed=performance.now()-started;state.lastResizeMs=elapsed;state.maxResizeMs=Math.max(state.maxResizeMs||0,elapsed)}
  function drawPart(p,vp,model){const started=performance.now(),uniformStarted=started;gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,p.texture||null);gl.uniform1i(uniforms.surface,1);gl.uniform1f(uniforms.surfaceEnabled,p.texture?1:0);gl.uniformMatrix4fv(uniforms.model,false,model);gl.uniformMatrix4fv(uniforms.mvp,false,mul(vp,model));gl.uniform3fv(uniforms.color,p.color);gl.uniform1f(uniforms.metal,p.metallic);gl.uniform1f(uniforms.roughness,p.roughness);gl.uniform1f(uniforms.clearcoat,p.clearcoat);gl.uniform1f(uniforms.kind,p.kind);gl.uniform1f(uniforms.emissive,p.emissive);const uniformMs=performance.now()-uniformStarted,bufferStarted=performance.now();gl.bindBuffer(gl.ARRAY_BUFFER,p.mesh.buffer);gl.enableVertexAttribArray(attributes.position);gl.vertexAttribPointer(attributes.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);const bufferSetupMs=performance.now()-bufferStarted,drawStarted=performance.now();gl.drawArrays(gl.TRIANGLES,0,p.mesh.count);const drawArraysMs=performance.now()-drawStarted,elapsed=performance.now()-started;state.maxDrawUniformsMs=Math.max(state.maxDrawUniformsMs||0,uniformMs);state.lastDrawUniformsMs=uniformMs;state.maxDrawBufferSetupMs=Math.max(state.maxDrawBufferSetupMs||0,bufferSetupMs);state.lastDrawBufferSetupMs=bufferSetupMs;state.maxDrawSubmitMs=Math.max(state.maxDrawSubmitMs||0,drawArraysMs);state.lastDrawSubmitMs=drawArraysMs;state.maxDrawArraysMs=Math.max(state.maxDrawArraysMs||0,drawArraysMs);state.lastDrawArraysMs=drawArraysMs;state.maxDrawPartVertices=Math.max(state.maxDrawPartVertices||0,p.mesh.count);state.lastDrawPartVertices=p.mesh.count;state.lastDrawPartColor=p.color;state.maxDrawPartMs=Math.max(state.maxDrawPartMs||0,elapsed);state.drawPartCount=(state.drawPartCount||0)+1;state.triangles+=p.mesh.count/3}
- function drawVehicle(t,lateral,yaw,color,damage=0,kind="car",vehicleId=0,snapshot){
-  const f=snapshot.frameAt(t),x=f.p.x+f.nx*lateral,z=-(f.p.y+f.ny*lateral),heading=vehicleModelHeading(f.angle,yaw);
-  const carParts=getCarParts(vehicleShapeFor(kind,vehicleId));
-  const model=mul(translate(x,f.height||0,z),rotateY(heading));for(let i=0;i<carShadowParts.length;i++)drawPart(carShadowParts[i],vp,model);const paint=hexColor(color);for(let i=0;i<carParts.length;i++){if(i===0)carParts[i].color=paint;}
+ function drawVehicle(t,lateral,yaw,color,damage=0,kind="car",vehicleId=0,snapshot,destruction=null){
+  const f=snapshot.frameAt(t),x=f.p.x+f.nx*lateral,z=-(f.p.y+f.ny*lateral),heading=vehicleModelHeading(f.angle,yaw),profile=vehicleShapeFor(kind,vehicleId);
+  const carParts=getCarParts(profile),damageValue=clamp(typeof damage==="number"?damage:Number(damage?.total)||0,0,100);
+  const wreckFade=destruction?.phase==="burnt"?clamp((destruction.smoke||0)/.85,0,1):1,wreckScale=.72+.28*wreckFade;
+  const model=mul(mul(translate(x,f.height||0,z),rotateY(heading)),scale(wreckScale,wreckScale,wreckScale));
+  for(let i=0;i<carShadowParts.length;i++)drawPart(carShadowParts[i],vp,model);
+  const paint=hexColor(color).map(channel=>channel*(.58+.42*wreckFade));
+  for(let i=0;i<carParts.length;i++)if(i===0)carParts[i].color=paint;
   for(let i=0;i<carParts.length;i++)drawPart(carParts[i],vp,model);
-  
+  if(damageValue>=8){const streaks=getCarDamageParts(profile);drawPart(streaks[0],vp,model);if(damageValue>=32)drawPart(streaks[1],vp,model);}
  }
  let vp,partCacheSmoke;
  const visibleRivals=[],visibleDistances=[];
@@ -415,9 +421,7 @@ export function createRaceRenderer(canvas){
   state.cameraTrackFollowing=true;state.cameraLookAheadT=cameraPose.lookAheadT;state.cameraBehindT=cameraPose.behindT;
   const projection=perspective(Math.PI/2.95,canvas.width/Math.max(1,canvas.height),1,60000),view=lookAt(cameraEye,cameraTarget,[0,1,0]);vp=mul(projection,view);
   const theme=THEMES[snapshot.world||0];gl.useProgram(program);gl.uniform3f(uniforms.camera,cameraEye[0],cameraEye[1],cameraEye[2]);gl.uniform3f(uniforms.light,-.38,.86,.42);gl.uniform3f(uniforms.lightColor,3.8,3.55,3.2);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_CUBE_MAP,environment);gl.uniform1i(uniforms.env,0);const clearStarted=performance.now();gl.clearColor(...hexColor(theme[0]).map((v,i)=>v*(i === 0 ? 0.55 : 0.72)),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const clearMs=performance.now()-clearStarted;state.lastClearMs=clearMs;state.maxClearMs=Math.max(state.maxClearMs||0,clearMs);state.triangles=0;
-  // Draw the latest bounded build snapshot while the replacement track is still being assembled.
-  // The background terrain is submitted first; then depth is reset before the circuit meshes.
-  const drawParts=road?[terrainBase,road,...decor]:pendingTrackParts;
+      const drawParts=road?[terrainBase,road,...decor]:pendingTrackParts;
   if(drawParts.length){
    // Render the enormous terrain base as a background pass. Clearing only depth
    // prevents low-precision mobile depth buffers from placing this 60 km plane
@@ -426,8 +430,8 @@ export function createRaceRenderer(canvas){
    gl.clear(gl.DEPTH_BUFFER_BIT);
    for(let i=1;i<drawParts.length;i++)drawPart(drawParts[i],vp,translate(0,0,0));
   }
-  const playerT=snapshot.player.t,startingGrid=snapshot.state==="countdown"||(Number(snapshot.raceElapsed)||0)<2.5,maxVisible=startingGrid?4:mobile?3:softwareRenderer?2:7,visibleDistance=startingGrid?1.05:.72;visibleRivals.length=0;visibleDistances.length=0;for(const r of snapshot.rivals){if(r.despawned||r.destruction?.despawned)continue;const rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta);if(distance>=visibleDistance)continue;let slot=visibleDistances.length;while(slot>0&&distance<visibleDistances[slot-1])slot--;if(slot>=maxVisible)continue;visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance);if(visibleRivals.length>maxVisible){visibleRivals.pop();visibleDistances.pop()}}for(let i=0;i<visibleRivals.length;i++){const r=visibleRivals[i];drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage?.total||r.damage||0,r.type,r.id,snapshot)}
-  drawVehicle(snapshot.player.t,snapshot.player.lateral,snapshot.player.yaw,snapshot.player.color,snapshot.player.damage,"player",snapshot.player.modelId,snapshot);
+  const playerT=snapshot.player.t,startingGrid=snapshot.state==="countdown"||(Number(snapshot.raceElapsed)||0)<2.5,maxVisible=startingGrid?4:mobile?3:softwareRenderer?2:7,visibleDistance=startingGrid?1.05:.72;visibleRivals.length=0;visibleDistances.length=0;for(const r of snapshot.rivals){if(r.despawned||r.destruction?.despawned)continue;const rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta);if(distance>=visibleDistance)continue;let slot=visibleDistances.length;while(slot>0&&distance<visibleDistances[slot-1])slot--;if(slot>=maxVisible)continue;visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance);if(visibleRivals.length>maxVisible){visibleRivals.pop();visibleDistances.pop()}}for(let i=0;i<visibleRivals.length;i++){const r=visibleRivals[i];drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage?.total||r.damage||0,r.type,r.id,snapshot,r.destruction)}
+  drawVehicle(snapshot.player.t,snapshot.player.lateral,snapshot.player.yaw,snapshot.player.color,snapshot.player.damage,"player",snapshot.player.modelId,snapshot,snapshot.player.destruction);
   if(state.captureNextFrameSample){
    gl.finish();
    const sampleWidth=canvas.width,sampleHeight=canvas.height,samplePixels=new Uint8Array(sampleWidth*sampleHeight*4);
@@ -455,11 +459,11 @@ export function createRaceRenderer(canvas){
    uniforms={mvp:gl.getUniformLocation(program,"uMvp"),model:gl.getUniformLocation(program,"uModel"),color:gl.getUniformLocation(program,"uBaseColor"),camera:gl.getUniformLocation(program,"uCameraPosition"),light:gl.getUniformLocation(program,"uLightDirection"),lightColor:gl.getUniformLocation(program,"uLightColor"),env:gl.getUniformLocation(program,"uEnvironmentMap"),metal:gl.getUniformLocation(program,"uMetallic"),roughness:gl.getUniformLocation(program,"uRoughness"),clearcoat:gl.getUniformLocation(program,"uClearcoat"),kind:gl.getUniformLocation(program,"uMaterialKind"),emissive:gl.getUniformLocation(program,"uEmissive"),surface:gl.getUniformLocation(program,"uSurfaceTexture"),surfaceEnabled:gl.getUniformLocation(program,"uSurfaceEnabled")};
    surfaceLoadGeneration++;surfaceTextures.clear();state.surfaceTextures.loaded=0;state.surfaceTextures.failed=0;state.surfaceTextures.skipped=0;state.surfaceTextures.sourceCounts.local=0;state.surfaceTextures.errors.length=0;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();for(const [key,url] of Object.entries(surfaceSources))loadSurfaceTexture(key,url);
    gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);
-   terrainBase=null;road=null;decor=[];carPartSets.clear();carBuildQueue.length=0;carBuildQueued.clear();lastStage=-1;lastSize="";trackBuildJob=null;trackBuildStage=-1;pendingTrackParts=[];state.trackBuildProgress=0;
+   terrainBase=null;road=null;decor=[];carPartSets.clear();carDamagePartSets.clear();carBuildQueue.length=0;carBuildQueued.clear();lastStage=-1;lastSize="";trackBuildJob=null;trackBuildStage=-1;pendingTrackParts=[];state.trackBuildProgress=0;
    state.status="webgl-ready";state.error=null;
    resize();
   }catch(e){state.status="unavailable";state.error=String(e?.message||e)}
  }
  canvas.addEventListener("webglcontextlost",onLost);canvas.addEventListener("webglcontextrestored",onRestored);
- return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){rendererDestroyed=true;disposeParts(carShadowParts);surfaceLoadGeneration++;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([terrainBase,road,...decor,...[...carPartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();for(const texture of surfaceTextures.values())try{gl.deleteTexture(texture)}catch{}surfaceTextures.clear();if(program)gl.deleteProgram(program);if(environment)gl.deleteTexture(environment)}};
+ return {state,render,resize,setQuality(scale){qualityScale=clamp(scale,.58,1);lastSize="";resize()},destroy(){rendererDestroyed=true;disposeParts(carShadowParts);surfaceLoadGeneration++;for(const image of surfaceImages){image.onload=null;image.onerror=null;image.src=""}surfaceImages.clear();canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestored);disposeParts([terrainBase,road,...decor,...[...carPartSets.values()].flat(),...[...carDamagePartSets.values()].flat(),...pendingTrackParts]);carBuildQueue.length=0;carBuildQueued.clear();for(const texture of surfaceTextures.values())try{gl.deleteTexture(texture)}catch{}surfaceTextures.clear();if(program)gl.deleteProgram(program);if(environment)gl.deleteTexture(environment)}};
 }
