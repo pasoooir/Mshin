@@ -75,7 +75,7 @@ export function calculateRaceCameraPose(frameAt,t,lateral=0,mobile=false){
  };
 }
 export function createRaceRenderer(canvas){
- const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,maxTrackBuildStepMs:0,lastTrackBuildStepMs:0,maxDrawPartMs:0,maxDrawUniformsMs:0,lastDrawUniformsMs:0,maxDrawBufferSetupMs:0,lastDrawBufferSetupMs:0,maxDrawSubmitMs:0,lastDrawSubmitMs:0,maxDrawArraysMs:0,lastDrawArraysMs:0,maxDrawPartVertices:0,lastDrawPartVertices:0,lastDrawPartColor:null,drawPartCount:0,maxTrianglesPerFrame:0,lastFrameTriangles:0,maxVehicleBuildMs:0,lastVehicleBuildMs:0,vehicleBuildCount:0,maxResizeMs:0,lastResizeMs:0,maxClearMs:0,lastClearMs:0,maxRendererRenderMs:0,lastRendererRenderMs:0,softwareRenderer:false,gpuProfile:'detecting',captureNextFrameSample:false,lastFramePixelSample:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
+ const state={status:"initializing",frames:0,triangles:0,renderer:"WebGL 1",materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false,error:null,adSlots:[],maxMeshUploadMs:0,meshUploadCount:0,maxTrackBuildStepMs:0,lastTrackBuildStepMs:0,maxDrawPartMs:0,maxDrawUniformsMs:0,lastDrawUniformsMs:0,maxDrawBufferSetupMs:0,lastDrawBufferSetupMs:0,maxDrawSubmitMs:0,lastDrawSubmitMs:0,maxDrawArraysMs:0,lastDrawArraysMs:0,maxDrawPartVertices:0,lastDrawPartVertices:0,lastDrawPartColor:null,drawPartCount:0,maxTrianglesPerFrame:0,lastFrameTriangles:0,adaptiveQualityChanges:0,slowFrameStreak:0,fastFrameStreak:0,maxVehicleBuildMs:0,lastVehicleBuildMs:0,vehicleBuildCount:0,maxResizeMs:0,lastResizeMs:0,maxClearMs:0,lastClearMs:0,maxRendererRenderMs:0,lastRendererRenderMs:0,softwareRenderer:false,gpuProfile:'detecting',captureNextFrameSample:false,lastFramePixelSample:null,quality:{mobile:false,pixelRatio:1,detail:"high"}};
  let gl,program,uniforms,attributes,softwareRenderer=false,environment=null,terrainBase=null,road=null,decor=[],surfaceTextures=new Map(),surfaceImages=new Set(),surfaceLoadGeneration=0,rendererDestroyed=false,carPartSets=new Map(),carBuildQueue=[],carBuildQueued=new Set(),lastStage=-1,lastSize="",lost=false,trackBuildJob=null,trackBuildStage=-1,pendingTrackParts=[],trackBuildStarted=0;
   const mobile=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
   let cameraEye=null,cameraTarget=null,lastRenderAt=0,qualityScale=1;
@@ -125,16 +125,16 @@ export function createRaceRenderer(canvas){
  }catch(e){state.status="unavailable";state.error=String(e?.message||e);return {state,render(){},destroy(){}}}
  function createProceduralSurfacePixels(key,size=128){
   const pixels=new Uint8Array(size*size*4);
-  const palettes={asphalt:[74,78,80],grass:[91,137,57],sand:[177,151,104],snow:[205,216,222],rock:[105,105,99],concrete:[126,128,126],bark:[91,65,43],foliage:[83,126,55]};
+  const palettes={asphalt:[68,72,75],grass:[91,137,57],sand:[177,151,104],snow:[205,216,222],rock:[105,105,99],concrete:[126,128,126],bark:[91,65,43],foliage:[83,126,55]};
   const base=palettes[key]||[128,128,128];
   const hash=(x,y)=>{let n=(x*374761393+y*668265263+key.length*1442695041)|0;n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967295};
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
    const broad=Math.sin(x*.105+Math.sin(y*.071)*2.1)*Math.cos(y*.087+x*.023);
-   const grain=(hash(x,y)-.5)*34+(hash(x>>2,y>>2)-.5)*19+broad*7;
+   const grain=(hash(x,y)-.5)*42+(hash(x>>2,y>>2)-.5)*24+broad*8;
    const i=(y*size+x)*4;
    for(let channel=0;channel<3;channel++){
     let value=base[channel]+grain;
-    if(key==="asphalt"&&hash(x*3,y*3)>.94)value-=28;
+    if(key==="asphalt"){const aggregate=hash(x*7,y*11);if(aggregate>.965)value+=18;if(aggregate<.018)value-=25;const rubberBand=Math.max(0,1-Math.abs(y-size*.5)/13);value-=rubberBand*(8+hash(x>>1,y)*9);const repairPatch=(x>size*.18&&x<size*.31&&y>size*.58&&y<size*.76)||(x>size*.68&&x<size*.82&&y>size*.16&&y<size*.34);if(repairPatch)value+=hash(x,y)*12-5;}
     if(key==="grass")value+=Math.sin((x+y)*.17)*5;
     if(key==="snow")value+=Math.max(0,broad)*7;
     pixels[i+channel]=Math.max(0,Math.min(255,Math.round(value)));
@@ -198,7 +198,7 @@ export function createRaceRenderer(canvas){
   const nextDecor=[];
   const theme=THEMES[snapshot.world||0],roadTris=[],shoulderTris=[],laneTris=[],yellowTris=[],curbRedTris=[],curbWhiteTris=[],groundTris=[],terrainBaseTris=[];
   const terrainTexture=["grass","sand","snow","grass","rock","rock","grass","sand","rock","grass"][snapshot.world||0]||"grass";
-  const segments=mobile?280:softwareRenderer?360:760,half=180;
+  const segments=mobile?320:softwareRenderer?400:820,half=220;
   // Keep the playable terrain inside the camera far plane and wind its triangles upward.
   // The previous 130 km quad had downward-facing normals and corners beyond the
   // 60 km far plane, so mobile GPUs could clip/darken the entire ground surface.
@@ -207,12 +207,12 @@ export function createRaceRenderer(canvas){
    const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2,fa=snapshot.frameAt(a),fb=snapshot.frameAt(b);
    const point=(f,offset,y=0)=>[f.p.x+f.nx*offset,(f.height||0)+y,-(f.p.y+f.ny*offset)];
    const l0=point(fa,-half),r0=point(fa,half),l1=point(fb,-half),r1=point(fb,half);
-   const sl0=point(fa,-half-26,-.04),sr0=point(fa,half+26,-.04),sl1=point(fb,-half-26,-.04),sr1=point(fb,half+26,-.04);
+   const sl0=point(fa,-half-32,-.04),sr0=point(fa,half+32,-.04),sl1=point(fb,-half-32,-.04),sr1=point(fb,half+32,-.04);
    quad(roadTris,l0,r0,r1,l1);quad(shoulderTris,sl0,l0,l1,sl1);quad(shoulderTris,r0,sr0,sr1,r1);
    // Continuous white edge lines, twin dashed yellow centre lines and alternating kerbs.
-   for(const offset of [-158,158]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
-   if(i%2===0)for(const offset of [-5,5]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,q0,q1,p1)}
-   const curbSide=(side,out)=>{const p0=point(fa,side*168,.026),q0=point(fa,side*180,.026),p1=point(fb,side*168,.026),q1=point(fb,side*180,.026);quad(out,p0,q0,q1,p1)};
+   for(const offset of [-194,194]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
+   if(i%2===0)for(const offset of [-6,6]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,q0,q1,p1)}
+   const curbSide=(side,out)=>{const p0=point(fa,side*208,.026),q0=point(fa,side*220,.026),p1=point(fb,side*208,.026),q1=point(fb,side*220,.026);quad(out,p0,q0,q1,p1)};
    curbSide(-1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris);curbSide(1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris)
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
    quad(groundTris,outerL,outerR,outerR1,outerL1);
@@ -281,7 +281,7 @@ export function createRaceRenderer(canvas){
   }
   const extraCrowdCount=mobile?10:36;
   for(let i=0;i<extraCrowdCount;i++){
-   const t=(i+.5)/(mobile?16:54)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,offset=238+(i%4)*13,x=f.p.x+f.nx*side*offset,z=-(f.p.y+f.ny*side*offset),base=f.height||0;
+   const t=(i+.5)/(mobile?16:54)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,offset=290+(i%4)*15,x=f.p.x+f.nx*side*offset,z=-(f.p.y+f.ny*side*offset),base=f.height||0;
    box(crowdBodies,x,base+27,z,11,20,8);box(crowdBodies,x-7,base+27,z,5,17,5);box(crowdBodies,x+7,base+27,z,5,17,5);
    box(crowdHeads,x,base+43,z,9,9,9);box(crowdLegs,x-3,base+12,z,5,13,6);box(crowdLegs,x+3,base+12,z,5,13,6);
    if(i%4===3)yield {progress:.673+.002*(i/extraCrowdCount)};
@@ -429,7 +429,7 @@ export function createRaceRenderer(canvas){
    state.lastFramePixelSample={width:sampleWidth,height:sampleHeight,visiblePixels,roadLikePixels,uniqueColors:sampledColors.size,drawCalls:state.lastFrameDrawCalls,triangles:state.lastFrameTriangles,pixelBytes:samplePixels.byteLength,context:true,glError:gl.getError()};
    state.captureNextFrameSample=false;
   }
-  state.frames++;state.stageId=snapshot.stageId;state.playerPosition={x,z};state.camera="perspective-chase";state.lastFrameTriangles=state.triangles;state.maxTrianglesPerFrame=Math.max(state.maxTrianglesPerFrame||0,state.lastFrameTriangles);state.lastFrameDrawCalls=(state.drawPartCount||0)-drawCountAtStart;state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs=performance.now()-rendererStarted);state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs);
+  state.frames++;state.stageId=snapshot.stageId;state.playerPosition={x,z};state.camera="perspective-chase";state.lastFrameTriangles=state.triangles;state.maxTrianglesPerFrame=Math.max(state.maxTrianglesPerFrame||0,state.lastFrameTriangles);state.lastFrameDrawCalls=(state.drawPartCount||0)-drawCountAtStart;state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs=performance.now()-rendererStarted);state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs);if(mobile&&!softwareRenderer){const frameMs=state.lastRendererRenderMs;if(frameMs>26){state.slowFrameStreak++;state.fastFrameStreak=0;}else if(frameMs<17){state.fastFrameStreak++;state.slowFrameStreak=0;}else{state.slowFrameStreak=0;state.fastFrameStreak=0;}if(state.slowFrameStreak>=90&&qualityScale>.5){qualityScale=Math.max(.5,qualityScale-.1);state.slowFrameStreak=0;state.adaptiveQualityChanges++;resize();}else if(state.fastFrameStreak>=240&&qualityScale<1){qualityScale=Math.min(1,qualityScale+.08);state.fastFrameStreak=0;state.adaptiveQualityChanges++;resize();}state.quality.adaptiveScale=qualityScale;}
  }
  function onLost(e){e.preventDefault();lost=true;state.status="context-lost"}
  function onRestored(){
