@@ -46,7 +46,7 @@ body.webgl-ready #visualFallback{opacity:0;visibility:hidden}
 </g>
 <g fill="#fff0c0" stroke="#52666a" stroke-width="5"><path d="M350 260V205h12v55M650 520v-55h12v55"/></g>
 </svg>
-<div class="hud"><div class="title"><strong>🏡 محله نمونه مِشین</strong><small>3D VISUAL QUALITY · PROTOTYPE 01</small></div><div class="actions"><button id="day">☀ روز</button><button id="night">☾ شب</button><button id="reset">بازنشانی دوربین</button><button id="full">تمام‌صفحه</button></div></div>
+<div class="hud"><div class="title"><strong>🏡 محله نمونه مِشین</strong><small>3D VISUAL QUALITY · PROTOTYPE 01</small></div><div class="actions"><button id="reset">بازنشانی دوربین</button><button id="full">تمام‌صفحه</button></div></div>
 <div class="hint">👆 یک انگشت: جابه‌جایی دوربین · ✌️ دو انگشت: چرخش و زوم · 🖱 کشیدن: چرخش</div>
 <div class="badge">Three.js · WebGL</div>
 <script type="module">
@@ -266,13 +266,7 @@ for(const [x,z] of [[-11,-18],[9,-18],[-11,14],[9,14]]){box(scene,3.4,.18,2.1,gr
 for(const [x,z] of [[-5,-12],[5,-12],[-5,13],[5,13]])lamp(x,z);
 for(let x=-26;x<=26;x+=4){for(const z of [-5,6]){const shrub=new THREE.Mesh(new THREE.SphereGeometry(.34,8,6),mat("#4e914e"));shrub.position.set(x,.38,z);shrub.scale.set(1,.75,1);shrub.castShadow=true;scene.add(shrub)}}
 
-const skyDay=new THREE.Color("#a9d8e9"),skyNight=new THREE.Color("#101e35");
-function setTime(night){scene.background.copy(night?skyNight:skyDay);scene.fog.color.copy(night?skyNight:skyDay);hemi.intensity=night?.42:2;sun.intensity=night?.08:3.2;fill.intensity=night?.22:.8;renderer.toneMappingExposure=night?.82:1.12;
- scene.traverse(o=>{if(o.isMesh&&o.material?.emissive){if(o.material.emissiveIntensity!==undefined)o.material.emissiveIntensity=night?.65:.12}});
-}
-document.querySelector("#day").onclick=()=>setTime(false);
-document.querySelector("#night").onclick=()=>setTime(true);
-document.querySelector("#reset").onclick=()=>{camera.position.set(34,29,38);controls.target.set(0,0,0);controls.update()};
+// This preview remains permanently in daylight until the city reaches a stable release.\ndocument.querySelector("#reset").onclick=()=>{camera.position.set(34,29,38);controls.target.set(0,0,0);controls.update()};
 document.querySelector("#full").onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.()};
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.setSize(innerWidth,innerHeight)});
 function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);if(!document.body.classList.contains("webgl-ready"))document.body.classList.add("webgl-ready")}animate();
