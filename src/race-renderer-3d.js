@@ -222,9 +222,9 @@ export function createRaceRenderer(canvas){
    const sl0=point(fa,-half-32,-.04),sr0=point(fa,half+32,-.04),sl1=point(fb,-half-32,-.04),sr1=point(fb,half+32,-.04);
    quad(roadTris,l0,r0,r1,l1);quad(shoulderTris,sl0,l0,l1,sl1);quad(shoulderTris,r0,sr0,sr1,r1);
    // Continuous white edge lines, twin dashed yellow centre lines and alternating kerbs.
-   for(const offset of [-194,194]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
+   for(const offset of [-345,-180,180,345]){const p0=point(fa,offset-1.8,.018),q0=point(fa,offset+1.8,.018),p1=point(fb,offset-1.8,.018),q1=point(fb,offset+1.8,.018);quad(laneTris,p0,q0,q1,p1)}
    if(i%2===0)for(const offset of [-6,6]){const p0=point(fa,offset-1.25,.02),q0=point(fa,offset+1.25,.02),p1=point(fb,offset-1.25,.02),q1=point(fb,offset+1.25,.02);quad(yellowTris,p0,q0,q1,p1)}
-   const curbSide=(side,out)=>{const p0=point(fa,side*208,.026),q0=point(fa,side*220,.026),p1=point(fb,side*208,.026),q1=point(fb,side*220,.026);quad(out,p0,q0,q1,p1)};
+   const curbSide=(side,out)=>{const p0=point(fa,side*348,.026),q0=point(fa,side*360,.026),p1=point(fb,side*348,.026),q1=point(fb,side*360,.026);quad(out,p0,q0,q1,p1)};
    curbSide(-1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris);curbSide(1,Math.floor(i/4)%2?curbWhiteTris:curbRedTris)
    const outerL=point(fa,-half-26,-.12),outerR=point(fa,half+26,-.12),outerL1=point(fb,-half-26,-.12),outerR1=point(fb,half+26,-.12);
    quad(groundTris,outerL,outerR,outerR1,outerL1);
