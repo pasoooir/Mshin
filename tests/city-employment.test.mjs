@@ -16,7 +16,7 @@ test("workplace capacity is counted by sector with deterministic workforce match
   assert.equal(result.bySector.shop.employed,0);
 });
 test("labor surplus and shortage are separately reported", () => {
-  const city=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(2102)); placeCityItem(city,17,14,"home"); placeCityItem(city,18,14,"shop");
+  const city=seedCityRoadAccess(createInitialCity(2102)); placeCityItem(city,17,14,"home"); placeCityItem(city,18,14,"shop");
   city.population=60; const surplus=computeCityEmployment(city);
   assert.equal(surplus.laborForce,36); assert.equal(surplus.employed,9);
   assert.equal(surplus.unemployed,27); assert.equal(surplus.unemploymentRate,75);
@@ -26,7 +26,7 @@ test("labor surplus and shortage are separately reported", () => {
   assert.equal(shortage.unemployed,0); assert.equal(shortage.laborShortage,6);
 });
 test("employment metrics are integrated into every simulation tick", () => {
-  const city=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(2103)); placeCityItem(city,17,14,"home"); placeCityItem(city,18,14,"shop");
+  const city=seedCityRoadAccess(createInitialCity(2103)); placeCityItem(city,17,14,"home"); placeCityItem(city,18,14,"shop");
   city.population=30; stepCity(city);
   assert.equal(city.stats.jobs,9); assert.equal(city.stats.laborForce,18);
   assert.equal(city.stats.employed,9); assert.equal(city.stats.unemployed,9);
