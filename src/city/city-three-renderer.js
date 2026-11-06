@@ -33,7 +33,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.shadowMap.needsUpdate = true;
   const canvas = renderer.domElement;
   canvas.id = "cityThreeViewport";
-  canvas.setAttribute("aria-label", "نمای سه‌بعدی شهر خالی با شبکه خیابان‌ها و قطعات زمین");
+  canvas.setAttribute("aria-label", "Empty 3D city landscape with buildable plots");
   canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block;touch-action:none";
   sourceCanvas.parentNode.insertBefore(canvas, sourceCanvas.nextSibling);
   sourceCanvas.style.opacity = "0";
