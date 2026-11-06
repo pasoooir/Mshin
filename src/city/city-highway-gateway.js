@@ -134,10 +134,14 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
   addStrip(onRamp, 8.2, shoulderMaterial, 0.01, 72, "city-highway-entry-shoulder");
   addStrip(onRamp, 7.0, roadMaterial, 0.14, 72, "city-highway-entry-ramp");
 
-  // A two-way gateway collector continues to the edge of the buildable city.
-  const gateway = curve([[-29, 0.17, -126], [-24, 0.17, -112], [-20, 0.17, -96], [-18, 0.17, -80]]);
-  addStrip(gateway, 15.0, shoulderMaterial, 0.02, 48, "city-gateway-shoulder");
-  addStrip(gateway, 11.6, roadMaterial, 0.16, 48, "city-gateway-arterial");
+  // Ramp terminals join through a short collector, which reaches the city boundary
+  // without pre-populating any of the player's buildable road cells.
+  const rampCollector = curve([[-29, 0.17, -126], [-22, 0.17, -125], [-15, 0.17, -125], [-8, 0.17, -126]]);
+  addStrip(rampCollector, 10.2, shoulderMaterial, 0.02, 36, "city-gateway-collector-shoulder");
+  addStrip(rampCollector, 8.0, roadMaterial, 0.16, 36, "city-gateway-collector");
+  const gateway = curve([[-18, 0.17, -125], [-18, 0.17, -124]]);
+  addStrip(gateway, 14.0, shoulderMaterial, 0.02, 8, "city-gateway-shoulder");
+  addStrip(gateway, 11.6, roadMaterial, 0.16, 8, "city-gateway-arterial");
   for (const side of [-1, 1]) {
     const edge = curve([[-29 + side * 5.25, 0.2, -126], [-24 + side * 5.25, 0.2, -112], [-20 + side * 5.25, 0.2, -96], [-18 + side * 5.25, 0.2, -80]]);
     const line = new THREE.Mesh(new THREE.TubeGeometry(edge, 48, 0.09, 5, false), whiteMarkingMaterial);
