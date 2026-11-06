@@ -78,8 +78,8 @@ try{
  assert.equal(renderStats.normalMappedSurfaces,6,"all six city surface families must use generated normal maps");
  assert.equal(renderStats.roughnessMappedSurfaces,6,"all six city surface families must use generated roughness maps");
  assert.equal(renderStats.texturedBuildingMaterials,4,"residential, commercial, industrial and civic materials must use PBR textures");
- assert.ok(renderStats.backgroundCityBuildings>=70,"the playable district must sit inside a large 3D urban skyline");
- assert.ok(renderStats.backgroundCityWindows>1000,"distant high-rise facades must carry instanced four-sided windows");
+ assert.equal(renderStats.backgroundCityBuildings,0,"a new city must not contain decorative houses or apartment buildings");
+ assert.equal(renderStats.backgroundCityWindows,0,"a new city must not render windows on nonexistent buildings");
  assert.equal(await page.locator("#cityRenderStatus").textContent(),"نمای سه‌بعدی فعال","the UI must report when the actual 3D renderer is ready");
  assert.ok((await page.locator(".cityBrand small").textContent()).includes("۰.۱۵.۶"),"the city UI must expose the deployed version");
  assert.ok(renderStats.decorativeTrees>0,"the locked-world perimeter must include optimized 3D tree scenery");
@@ -87,7 +87,7 @@ try{
  assert.equal(renderStats.decorativeStreetLights,0,"do not place street furniture in parcels until a dedicated sidewalk/ROW exists");
  assert.equal(renderStats.streetFurniturePlacementReady,true,"the road grid must expose a dedicated non-buildable sidewalk/ROW before street furniture is enabled");
  assert.equal(renderStats.sidewalkStrips,0,"the empty starting world must not contain sidewalks before roads are built");
- assert.equal(renderStats.plots,676,"all 676 non-road cells must be rendered as 3D buildable parcels");
+ assert.equal(renderStats.plots,1024,"all 1024 plots in the playable grid must be empty and buildable");
  assert.equal(renderStats.roadTiles,0,"a new city must not contain prebuilt roads");
  assert.equal(renderStats.raisedCurbs,0,"the empty starting world must not contain road curbs");
  assert.equal(renderStats.crosswalkStripes,0,"do not paint pedestrian crossings until pedestrian graph and crossing priority are implemented");
@@ -153,8 +153,8 @@ try{
  const windowTrafficInvariant=await page.evaluate(()=>window.MshinCityDebug.city.traffic.every(vehicle=>Number.isFinite(vehicle.x)&&Number.isFinite(vehicle.y)&&window.MshinCityDebug.city.grid[Math.round(vehicle.y)]?.[Math.round(vehicle.x)]==="road"));
  assert.equal(initial.population,0,"new city must start without residents");assert.equal(initial.buildings,0,"new city must contain no buildings");assert.equal(initial.roads,0,"the first-time city must contain no roads");assert.equal(initial.citizens,0);assert.ok(initial.traffic<=12,"live simulation traffic must stay within its bounded fleet");assert.ok(windowTrafficInvariant,"traffic must remain on valid road tiles");assert.equal(initial.animals,0);assert.ok(initial.width>=320,"city canvas must use the available phone display width: "+JSON.stringify(initial));
  const rebuildsBeforePlacement=await page.evaluate(()=>window.MshinCity3DStats.buildingRebuilds);
- await clickCityTool(page,"park");const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(target.x,target.y);
- assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[14][14]),"building","park tool should place a city asset");
+ await clickCityTool(page,"road");const roadTarget=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,14));await page.mouse.click(roadTarget.x,roadTarget.y);await clickCityTool(page,"park");const target=await page.evaluate(()=>window.MshinCityDebug.screenForTile(14,15));await page.mouse.click(target.x,target.y);
+ assert.equal(await page.evaluate(()=>window.MshinCityDebug.city.grid[15][14]),"building","park tool should place a city asset");
  const parkVisual=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(parkVisual.stylizedBuildings,1,"placed park must become a rendered 3D scene object");
  assert.equal(parkVisual.shadowAutoUpdate,false,"static city shadows must not be regenerated every mobile frame");
