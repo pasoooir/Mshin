@@ -279,7 +279,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     atmosphere.resize();
   }
   function updateCamera(cam) {
-    const zoom = Math.max(0.20, Math.min(1.5, cam.zoom || 0.72)) * 1.25;
+    const zoom = Math.max(0.42, Math.min(1.5, cam.zoom || 0.72)) * 1.25;
     cam.zoom = zoom / 1.25;
     const pitch = Math.max(0.24, Math.min(0.96, Number.isFinite(cam.pitch) ? cam.pitch : 0.51));
     const verticalGroundHalf = 25 / (zoom * Math.max(0.23, Math.sin(pitch)));
@@ -410,7 +410,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         visiblePlotGridLines: 0,
         groundExtentMeters: 10000,
         cameraTargetLimitMeters: Number.isFinite(lastCameraTargetLimit) ? lastCameraTargetLimit : 0,
-        minimumZoom: 0.20,
+        minimumZoom: 0.42,
         proceduralTextures: 6,
         pbrTextureResolution,
         pbrGenerationMs: Math.round(pbrGenerationMs * 100) / 100,
