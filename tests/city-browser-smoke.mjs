@@ -31,7 +31,7 @@ try{
  });
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
  const rendererBootStartedAt=Date.now();
- await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100});
+ try{await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100})}catch(error){const diagnostic=await page.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length}));throw new Error("city renderer startup failed: "+JSON.stringify({diagnostic,errors})+"; "+error.message)}
  const rendererBootDuration=Date.now()-rendererBootStartedAt;
  assert.ok(rendererBootDuration<60000,"compact city renderer must finish initialization within the bounded 60-second mobile startup budget");
  const cityLocale=await page.evaluate(()=>({lang:document.documentElement.lang,direction:document.documentElement.dir,text:document.body.innerText}));
