@@ -7,7 +7,7 @@ import { computeCityCommuting } from "../src/city/city-commuting.js";
 function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
 
 function connectedWorkCity(seed = 3101) {
-  const city = seedCityRoadAccess(createInitialCity(seed));
+  const city = seedCityRoadAccess(createInitialCity(seed)));
   const home = placeCityItem(city,17,14,"home");
   const shop = placeCityItem(city,18,14,"shop");
   const industrial = placeCityItem(city,19,14,"industrial");
