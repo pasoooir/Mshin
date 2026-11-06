@@ -427,7 +427,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
         normalMappedSurfaces: 6,
         roughnessMappedSurfaces: 6,
         texturedBuildingMaterials: 4,
-        backgroundCityBuildings: backgroundSkyline.buildingCount,\n      backgroundCityTrees: skylineTreeCount,
+        backgroundCityBuildings: backgroundSkyline.buildingCount,
+      backgroundCityTrees: skylineTreeCount,
         backgroundCityWindows: backgroundSkyline.windowCount,
         decorativeTrees: decorativeTreeCount + skylineTreeCount,
         decorativeTreesOutsideBuildableGrid,
@@ -465,7 +466,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
     },
     destroy() {
       window.removeEventListener("resize", onResize);
-      skylineGroup.traverse(object => { if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose(); if (object.material && !Array.isArray(object.material)) object.material.dispose(); });\n      skylineGroup.removeFromParent();\n      highwayGateway.dispose();
+      skylineGroup.traverse(object => { if (object.geometry && ![trunkGeometry, canopyGeometry, canopySmallGeometry].includes(object.geometry)) object.geometry.dispose(); if (object.material && !Array.isArray(object.material)) object.material.dispose(); });
+      skylineGroup.removeFromParent();
+      highwayGateway.dispose();
       renderer.dispose();
       atmosphere.dispose();
       cloudLayer.dispose();
