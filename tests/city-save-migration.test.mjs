@@ -73,7 +73,7 @@ test("malformed version-one saves are rejected rather than partially imported", 
 });
 
 test("backup envelopes reject unsupported versions and invalid timestamps", () => {
-  const city=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(1203));
+  const city=seedCityRoadAccess(createInitialCity(1203));
   const backup=createCitySaveBackup(city,"2026-11-03T09:00:00.000Z");
   assert.equal(migrateCitySave({...backup,version:3}),null);
   assert.equal(migrateCitySave({...backup,exportedAt:"not-a-date"}),null);
@@ -81,7 +81,7 @@ test("backup envelopes reject unsupported versions and invalid timestamps", () =
 });
 
 test("current version-two saves normalize optional fields without changing core progress", () => {
-  const city=seedCityRoadAccess(seedCityRoadAccess(createInitialCity(1202));
+  const city=seedCityRoadAccess(createInitialCity(1202));
   placeCityItem(city,17,14,"home");
   stepCity(city);
   const restored=migrateCitySave(JSON.parse(JSON.stringify(city)));
@@ -106,7 +106,7 @@ test("offline app shell precaches every city simulation and persistence module",
 });
 
 test("fractional city clock minutes remain valid and survive save migration", () => {
-  const city = seedCityRoadAccess(seedCityRoadAccess(createInitialCity(1204));
+  const city = seedCityRoadAccess(createInitialCity(1204));
   city.minuteOfDay = 720.8;
   assert.equal(isValidCitySave(city), true, "continuous lighting clock values must be persistable");
   const restored = migrateCitySave(JSON.parse(JSON.stringify(city)));
