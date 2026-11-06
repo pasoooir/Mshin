@@ -20,3 +20,12 @@ test("the live 3D renderer draws damage streaks and fades burnt wrecks",async()=
  assert.match(source,/destruction\?\.phase===\"burnt\"/);
  assert.match(source,/wreckScale/);
 });
+
+test("vehicle-to-vehicle impacts damage both cars and keep collision resolution active",async()=>{
+ const {readFile}=await import("node:fs/promises");
+ const game=await readFile(new URL("../src/web-game.js",import.meta.url),"utf8");
+ assert.match(game,/applyDamageAndDestruction\(car,energyShare\.a,[^;]+;applyDamageAndDestruction\(r,energyShare\.b/);
+ assert.match(game,/applyDamageAndDestruction\(a,energyShare\.a,[^;]+;applyDamageAndDestruction\(b,energyShare\.b/);
+ assert.match(game,/resolveRigidVehicleImpact/);
+ assert.match(game,/lanes:\[-270,-90,90,270\]/);
+});
