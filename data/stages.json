@@ -5,7 +5,7 @@
     {
       "id": 1,
       "slug": "stage-01",
-      "name": "دشت‌نوردی",
+      "name": "Meadow Run",
       "worldId": "green-valley",
       "worldNumber": 1,
       "stageInWorld": 1,
@@ -19,7 +19,7 @@
     {
       "id": 2,
       "slug": "stage-02",
-      "name": "پیچ جنگل",
+      "name": "Forest Bend",
       "worldId": "green-valley",
       "worldNumber": 1,
       "stageInWorld": 2,
@@ -32,7 +32,7 @@
     {
       "id": 3,
       "slug": "stage-03",
-      "name": "شتاب روستا",
+      "name": "Village Sprint",
       "worldId": "green-valley",
       "worldNumber": 1,
       "stageInWorld": 3,
@@ -45,7 +45,7 @@
     {
       "id": 4,
       "slug": "stage-04",
-      "name": "پل جنگلی",
+      "name": "Forest Bridge",
       "worldId": "green-valley",
       "worldNumber": 1,
       "stageInWorld": 4,
@@ -58,7 +58,7 @@
     {
       "id": 5,
       "slug": "stage-05",
-      "name": "جام دره",
+      "name": "Valley Cup",
       "worldId": "green-valley",
       "worldNumber": 1,
       "stageInWorld": 5,
@@ -71,7 +71,7 @@
     {
       "id": 6,
       "slug": "stage-06",
-      "name": "تاخت روی تپه‌های شنی",
+      "name": "Dune Dash",
       "worldId": "desert-storm",
       "worldNumber": 2,
       "stageInWorld": 1,
@@ -84,7 +84,7 @@
     {
       "id": 7,
       "slug": "stage-07",
-      "name": "پیچ‌وخم شنی",
+      "name": "Sand Switchbacks",
       "worldId": "desert-storm",
       "worldNumber": 2,
       "stageInWorld": 2,
@@ -97,7 +97,7 @@
     {
       "id": 8,
       "slug": "stage-08",
-      "name": "یورش دره",
+      "name": "Canyon Rush",
       "worldId": "desert-storm",
       "worldNumber": 2,
       "stageInWorld": 3,
@@ -110,7 +110,7 @@
     {
       "id": 9,
       "slug": "stage-09",
-      "name": "مسیر معدن قدیمی",
+      "name": "Old Mine Trail",
       "worldId": "desert-storm",
       "worldNumber": 2,
       "stageInWorld": 4,
@@ -123,7 +123,7 @@
     {
       "id": 10,
       "slug": "stage-10",
-      "name": "رالی طوفان شن",
+      "name": "Sandstorm Rally",
       "worldId": "desert-storm",
       "worldNumber": 2,
       "stageInWorld": 5,
@@ -136,7 +136,7 @@
     {
       "id": 11,
       "slug": "stage-11",
-      "name": "شتاب برفی",
+      "name": "Snow Sprint",
       "worldId": "frozen-world",
       "worldNumber": 3,
       "stageInWorld": 1,
@@ -149,7 +149,7 @@
     {
       "id": 12,
       "slug": "stage-12",
-      "name": "گردنه کاجستان",
+      "name": "Pine Pass",
       "worldId": "frozen-world",
       "worldNumber": 3,
       "stageInWorld": 2,
@@ -162,7 +162,7 @@
     {
       "id": 13,
       "slug": "stage-13",
-      "name": "دریاچه بلورین",
+      "name": "Crystal Lake",
       "worldId": "frozen-world",
       "worldNumber": 3,
       "stageInWorld": 3,
@@ -175,7 +175,7 @@
     {
       "id": 14,
       "slug": "stage-14",
-      "name": "صعود یخبندان",
+      "name": "Glacier Climb",
       "worldId": "frozen-world",
       "worldNumber": 3,
       "stageInWorld": 4,
@@ -201,7 +201,7 @@
     {
       "id": 16,
       "slug": "stage-16",
-      "name": "ساحل نخل‌ها",
+      "name": "Palm Beach",
       "worldId": "tropical-island",
       "worldNumber": 4,
       "stageInWorld": 1,
@@ -253,7 +253,7 @@
     {
       "id": 20,
       "slug": "stage-20",
-      "name": "جایزه بزرگ جزیره",
+      "name": "Island Grand Prix",
       "worldId": "tropical-island",
       "worldNumber": 4,
       "stageInWorld": 5,
@@ -266,7 +266,7 @@
     {
       "id": 21,
       "slug": "stage-21",
-      "name": "مسیر نیمه‌شب",
+      "name": "Midnight Run",
       "worldId": "neon-city",
       "worldNumber": 5,
       "stageInWorld": 1,
@@ -331,7 +331,7 @@
     {
       "id": 26,
       "slug": "stage-26",
-      "name": "کوچه مونتاژ",
+      "name": "Assembly Lane",
       "worldId": "industrial-zone",
       "worldNumber": 6,
       "stageInWorld": 1,
@@ -383,7 +383,7 @@
     {
       "id": 30,
       "slug": "stage-30",
-      "name": "جام فولاد",
+      "name": "Steel Cup",
       "worldId": "industrial-zone",
       "worldNumber": 6,
       "stageInWorld": 5,
@@ -474,7 +474,7 @@
     {
       "id": 37,
       "slug": "stage-37",
-      "name": "راه معبد",
+      "name": "Temple Road",
       "worldId": "ancient-world",
       "worldNumber": 8,
       "stageInWorld": 2,
