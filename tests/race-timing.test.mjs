@@ -16,7 +16,7 @@ test("finish crossing is detected across the wrap boundary", () => {
 
 test("finish timestamp interpolates the exact crossing within a simulation step", () => {
   assert.equal(finishLineFraction(lap - 0.1, 0.2, lap), 0.5);
-  assert.equal(finishTimestamp(12, 1 / 60, lap - 0.1, 0.2, lap), 12 + 1 / 120);
+  assert.ok(Math.abs(finishTimestamp(12, 1 / 60, lap - 0.1, 0.2, lap) - (12 + 1 / 120)) < 1e-12);
 });
 
 test("invalid timing input cannot produce a false finish timestamp", () => {
