@@ -2,28 +2,28 @@ export interface WorldTheme { id:string; name:string; ground:string; road:string
 export interface StageDefinition { id:number; name:string; world:WorldTheme; stageInWorld:number; seed:number; trackWidth:number; trackScale:number; laps:number; hazardCount:number; routeStyle:string; }
 export interface Point { x:number; y:number; }
 export const WORLD_THEMES:readonly WorldTheme[]=Object.freeze([
-{id:"green-valley",name:"دره سبز",ground:"#83C95F",road:"#65727B",shoulder:"#F5E5B8",accent:"#F6D45C",hazard:"عدل کاه",grip:1,decoration:"tree"},
-{id:"desert-storm",name:"توفان کویر",ground:"#E9B96C",road:"#A77A50",shoulder:"#F8D99B",accent:"#D66E36",hazard:"کاکتوس",grip:.88,decoration:"dune"},
-{id:"frozen-world",name:"سرزمین یخ",ground:"#BCEAF4",road:"#7897B5",shoulder:"#EAFBFF",accent:"#62D6F0",hazard:"بلور یخ",grip:.68,decoration:"pine"},
-{id:"tropical-island",name:"جزیره استوایی",ground:"#55CDB2",road:"#A58B68",shoulder:"#F9E2A0",accent:"#F477A7",hazard:"تنه نخل",grip:.92,decoration:"palm"},
-{id:"neon-city",name:"شهر نئونی",ground:"#20234F",road:"#303653",shoulder:"#F04BC7",accent:"#4CEBFA",hazard:"مانع نئونی",grip:1.04,decoration:"tower"},
-{id:"industrial-zone",name:"منطقه صنعتی",ground:"#707D87",road:"#3D4852",shoulder:"#D5A45F",accent:"#FFB44D",hazard:"جعبه",grip:.96,decoration:"pipe"},
-{id:"mountain-rush",name:"یورش کوهستان",ground:"#78AE91",road:"#65717A",shoulder:"#D8E2CB",accent:"#E4A45D",hazard:"صخره",grip:.9,decoration:"pine"},
-{id:"ancient-world",name:"دنیای باستان",ground:"#D6B77D",road:"#9A805F",shoulder:"#F2DDAA",accent:"#C56D43",hazard:"ستون",grip:.94,decoration:"ruin"},
-{id:"space-racing",name:"مسابقه فضایی",ground:"#171B3D",road:"#44466B",shoulder:"#8B6BFF",accent:"#5BE8E7",hazard:"دروازه انرژی",grip:1.02,decoration:"planet"},
-{id:"ultimate-championship",name:"قهرمانی نهایی",ground:"#D86C68",road:"#3D4B67",shoulder:"#F5D46F",accent:"#F8F3E8",hazard:"مانع قهرمانی",grip:1,decoration:"grandstand"}
+{id:"green-valley",name:"Green Valley",ground:"#83C95F",road:"#65727B",shoulder:"#F5E5B8",accent:"#F6D45C",hazard:"Hay Bale",grip:1,decoration:"tree"},
+{id:"desert-storm",name:"Desert Storm",ground:"#E9B96C",road:"#A77A50",shoulder:"#F8D99B",accent:"#D66E36",hazard:"Cactus",grip:.88,decoration:"dune"},
+{id:"frozen-world",name:"Frozen Lands",ground:"#BCEAF4",road:"#7897B5",shoulder:"#EAFBFF",accent:"#62D6F0",hazard:"Ice Crystal",grip:.68,decoration:"pine"},
+{id:"tropical-island",name:"Tropical Island",ground:"#55CDB2",road:"#A58B68",shoulder:"#F9E2A0",accent:"#F477A7",hazard:"Palm Trunk",grip:.92,decoration:"palm"},
+{id:"neon-city",name:"Neon City",ground:"#20234F",road:"#303653",shoulder:"#F04BC7",accent:"#4CEBFA",hazard:"Neon Barrier",grip:1.04,decoration:"tower"},
+{id:"industrial-zone",name:"Industrial Zone",ground:"#707D87",road:"#3D4852",shoulder:"#D5A45F",accent:"#FFB44D",hazard:"Crate",grip:.96,decoration:"pipe"},
+{id:"mountain-rush",name:"Mountain Rush",ground:"#78AE91",road:"#65717A",shoulder:"#D8E2CB",accent:"#E4A45D",hazard:"Rock",grip:.9,decoration:"pine"},
+{id:"ancient-world",name:"Ancient World",ground:"#D6B77D",road:"#9A805F",shoulder:"#F2DDAA",accent:"#C56D43",hazard:"Pillar",grip:.94,decoration:"ruin"},
+{id:"space-racing",name:"Space Race",ground:"#171B3D",road:"#44466B",shoulder:"#8B6BFF",accent:"#5BE8E7",hazard:"Energy Gate",grip:1.02,decoration:"planet"},
+{id:"ultimate-championship",name:"Grand Championship",ground:"#D86C68",road:"#3D4B67",shoulder:"#F5D46F",accent:"#F8F3E8",hazard:"Championship Barrier",grip:1,decoration:"grandstand"}
 ]);
 const NAMES=[
-["دشت‌نوردی","پیچ جنگل","شتاب روستا","پل جنگلی","جام دره"],
-["تاخت روی تپه‌های شنی","پیچ‌وخم شنی","یورش دره","مسیر معدن قدیمی","رالی طوفان شن"],
-["شتاب برفی","گردنه کاجستان","دریاچه بلورین","صعود یخبندان","پیست شفق قطبی"],
-["ساحل نخل‌ها","پیچ تالاب","مسیر مرجان‌ها","ساحل آتشفشانی","جایزه بزرگ جزیره"],
-["مسیر نیمه‌شب","بلوار سایبری","پیچ لیزری","دریفت آسمان‌خراش‌ها","پایان نئونی"],
-["کوچه مونتاژ","پیست باربری","مسیر دودکش‌ها","شیفت Factory","جام فولاد"],
-["خط‌الرأس عقاب","پیچ کوهستانی","گردنه ابرها","مسیر ریزش سنگ","چالش قله"],
-["راه معبد","مسیر ابلیسک","کولوسئوم گمشده","هزارتوی طلایی","جام فرعون"],
-["شتاب پایگاه ماه","کمربند سیارک‌ها","مدار فضایی","مسیر سحابی","جایزه بزرگ کیهانی"],
-["میدان تازه‌کارها","ورزشگاه سرعت","پیست حرفه‌ای‌ها","مسیر قهرمان","تاج قهرمانی"]];
+["Meadow Run","Forest Bend","Village Sprint","Forest Bridge","Valley Cup"],
+["Dune Dash","Sand Switchbacks","Canyon Rush","Old Mine Trail","Sandstorm Rally"],
+["Snow Sprint","Pine Pass","Crystal Lake","Glacier Climb","Aurora Circuit"],
+["Palm Beach","Lagoon Turn","Coral Route","Volcanic Shore","Island Grand Prix"],
+["Midnight Run","Cyber Boulevard","Laser Turn","Skyscraper Drift","Neon Finale"],
+["Assembly Lane","Freight Circuit","Chimney Run","Factory Shift","Steel Cup"],
+["Eagle Ridge","Mountain Bend","Cloud Pass","Rockfall Route","Summit Challenge"],
+["Temple Road","Obelisk Trail","Lost Colosseum","Golden Maze","Pharaoh Cup"],
+["Moonbase Sprint","Asteroid Belt","Orbital Circuit","Nebula Route","Cosmic Grand Prix"],
+["Rookie Arena","Speed Stadium","Pro Circuit","Champion's Run","Championship Crown"]];
 const STYLES=["oval","sweeper","chicane","hairpin","technical"];
 export const STAGES:readonly StageDefinition[]=Object.freeze(WORLD_THEMES.flatMap((world,wi)=>NAMES[wi].map((name,si)=>({id:wi*5+si+1,name,world,stageInWorld:si+1,seed:(wi+1)*97+(si+1)*31,trackWidth:224-(si%3)*14,trackScale:1+(si-2)*.055,laps:3,hazardCount:5+si*2+wi,routeStyle:STYLES[si]}))));
 export function getStage(id:number):StageDefinition {const stage=STAGES.find(s=>s.id===id);if(!stage)throw new RangeError("Unknown stage id: "+id);return stage;}
