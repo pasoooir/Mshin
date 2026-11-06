@@ -488,6 +488,8 @@ try{
   try{await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await migrationPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2))throw new Error("renderer did not become ready during legacy migration: "+JSON.stringify({diagnostic,errors:migrationErrors})+"; "+error.message)}
   const migrated=await migrationPage.evaluate(()=>({city:window.MshinCityDebug.city,current:JSON.parse(localStorage.getItem("mshin-city-save-v2")),legacy:localStorage.getItem("mshin-city-save-v1")}));
   assert.equal(migrated.city.schemaVersion,2,"legacy v1 saves must migrate to the current v2 schema");
+  assert.equal(migrated.city.minuteOfDay,720,"legacy night timestamps must be normalized to permanent midday");
+  assert.equal(migrated.current.minuteOfDay,720,"the normalized midday timestamp must be persisted to the active save");
   assert.equal(migrated.city.treasury,12345,"migration must preserve treasury");
   assert.equal(migrated.city.buildings.length,1,"migration must preserve constructed buildings");
   assert.equal(migrated.city.population,12,"migration must preserve population");
