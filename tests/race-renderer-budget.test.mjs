@@ -128,7 +128,7 @@ test("software WebGL devices automatically use a bounded render target and scene
     "SwiftShader, llvmpipe and lavapipe should activate the software profile");
   assert.match(source, /if\(softwareRenderer\)qualityScale=\.58;[\s\S]*?resize\(\);/,
     "software render targets should reduce pixel workload before the single framebuffer allocation");
-  assert.match(source, /softwareRenderer\?360:760/,
+  assert.match(source, /softwareRenderer\?400:820/,
     "software rendering should reduce track tessellation without changing road dimensions");
   assert.match(source, /softwareRenderer\?2:7/,
     "software rendering should cap simultaneously rendered rival vehicles");
