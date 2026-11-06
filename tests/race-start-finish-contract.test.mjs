@@ -13,7 +13,16 @@ test("the five race entrants are reset together on GO, not during the countdown"
   assert.match(game, /window\.MshinRaceStart=\{timestamp:race\.startTimestamp,synchronized:/);
   assert.match(game, /window\.MshinRaceClocks=\{startTimestamp:race\.startTimestamp\?\?null,racers:rows\.map/);
   assert.match(game, /clock:createRaceClock\(\),timerElapsed:0,finishTime:null/);
+  assert.match(game, /const spec=specs\[type\],mass=spec\.mass/);
+  assert.match(game, /cruiseFactor=i<4\?1:spec\.cruise/);
+  assert.match(game, /speed:i<4\?0:activeCar\(\)\.max\*cruiseFactor/, "race rivals start at zero while ambient traffic retains its own pace");
+  assert.match(game, /speedLimit:aiMaxSpeed,acceleration:aiAcceleration/, "AI performance must use the selected player's shared engine limits");
+  assert.match(game, /isRaceRival=r\.id<4/);
+  assert.match(game, /laneChanges:!isRaceRival/, "only the four race rivals keep separate lanes for synchronized pacing");
+  assert.match(game, /neighbors:isRaceRival\?\(race\.raceEntrants\|\|rivals\.filter\(other=>other\.id<4\)\):rivals/, "ambient traffic must not change the pace of the four race entrants");
+  assert.match(game, /window\.MshinRacePace=\{speedLimit:aiMaxSpeed,acceleration:aiAcceleration,vehicles:/, "the shared performance profile must be observable in runtime tests");
   assert.match(game, /race\.playerClock=createRaceClock\(\);race\.raceEntrants=null/);
+  assert.match(game, /audio\.ready\(\)\.then\(audioReady=>/, "mobile race startup must not be blocked when optional audio decoding is unavailable");
 });
 
 test("all four opponents occupy distinct road lanes beside the player on a shared countdown row", () => {
@@ -34,7 +43,10 @@ test("AI and player finish times use interpolated finish-line crossing timestamp
   assert.match(game, /race\.playerFinishTime=finishTimestamp\(race\.elapsed,dt,race\.lastT,travel,Math\.PI\*2\)/);
   assert.match(game, /finishRaceClock\(r\.clock,r\.finishTime\)/);
   assert.match(game, /finishRaceClock\(race\.playerClock,race\.playerFinishTime\)/);
-  assert.match(game, /\$\("time"\)\.textContent=fmt\(race\.playerClock\?\.elapsed\?\?race\.elapsed\)/);
+  assert.match(game, /\$\("time"\)\.textContent=formatRaceClock\(race\.playerClock\?\.elapsed\?\?race\.elapsed\)/);
+  assert.match(game, /رتبه · راننده/);
+  assert.match(game, /formatRaceClock\(row\.finished\?row\.finishTime:row\.elapsed\)/, "the live table must show each vehicle's own running or final stopwatch");
+  assert.match(game, /row\.dnf\?"DNF "\+formatRaceClock\(row\.elapsed\)/, "DNF cars must retain their frozen individual stopwatch");
 });
 
 test("AI circuit speed uses the same world-distance conversion as the player", () => {

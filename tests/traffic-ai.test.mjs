@@ -41,3 +41,14 @@ test("AI circuit progress uses the same world-distance scale as the player",()=>
  assert.ok(Math.abs(car.distance-200*dt*distanceScale)<1e-12,
   "AI distance per second must match player world speed projected onto the same track radius");
 });
+
+
+test("all AI rivals use identical acceleration and top speed from a shared start",()=>{
+ const raceLanes=[-165,-82.5,82.5,165];
+ const cars=Array.from({length:4},(_,id)=>({id,distance:0,speed:0,lateral:raceLanes[id],lateralVelocity:0,laneIndex:id,targetLane:id}));
+ const options={trackLength:Math.PI*2,lanes:raceLanes,neighbors:cars,dt:1/60,cruiseSpeed:402.6,maxSpeed:402.6,acceleration:318.5,laneChanges:false,distanceScale:10/10000};
+ for(let frame=0;frame<60;frame++)for(const car of cars)stepTrafficVehicle(car,options);
+ assert.ok(cars.every(car=>Math.abs(car.speed-cars[0].speed)<1e-9),"identical AI cars must accelerate at the same rate");
+ assert.ok(cars.every(car=>Math.abs(car.distance-cars[0].distance)<1e-9),"identical AI cars must cover the same distance from the shared GO");
+ assert.ok(cars.every(car=>car.speed<=options.maxSpeed),"no rival may exceed the shared vehicle speed limit");
+});
