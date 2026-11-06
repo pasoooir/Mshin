@@ -6,7 +6,7 @@ import { computeCityEmployment } from "../src/city/city-employment.js";
 function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
 
 test("workplace capacity is counted by sector with deterministic workforce matching", () => {
-  const city=seedCityRoadAccess(createInitialCity(2101)));
+  const city=seedCityRoadAccess(createInitialCity(2101));
   placeCityItem(city,17,14,"home"); placeCityItem(city,18,14,"shop");
   placeCityItem(city,19,14,"industrial"); placeCityItem(city,20,14,"administrative");
   const result=computeCityEmployment(city);
@@ -34,7 +34,7 @@ test("employment metrics are integrated into every simulation tick", () => {
 });
 test("invalid population is rejected and empty cities have zero employment", () => {
   assert.throws(()=>computeCityEmployment({buildings:[],population:-1}),/valid city/);
-  const result=computeCityEmployment(seedCityRoadAccess(createInitialCity(2104)));
+  const result=computeCityEmployment(seedCityRoadAccess(createInitialCity(2104));
   assert.equal(result.jobs,0); assert.equal(result.employed,0); assert.equal(result.unemployed,0);
   assert.equal(result.vacancies,0); assert.ok(result.demandIndex>=0&&result.demandIndex<=100);
 });
