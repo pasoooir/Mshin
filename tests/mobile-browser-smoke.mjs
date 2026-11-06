@@ -183,6 +183,14 @@ try {
     }));
     throw new Error("mobile race countdown did not complete: " + JSON.stringify(countdownState) + " | " + error.message);
   });
+  const mobileStartGrid = await mobile.evaluate(() => window.MshinRaceStart);
+  assert.ok(mobileStartGrid?.synchronized && mobileStartGrid.entrants.length === 4, "mobile race must release all five cars from the same start line and GO timestamp: " + JSON.stringify(mobileStartGrid));
+  await mobile.waitForFunction(() => window.MshinRaceMinimap?.markers?.length === 5, undefined, { timeout: 5000 });
+  const mobileMapBefore = await mobile.evaluate(() => window.MshinRaceMinimap);
+  assert.ok(mobileMapBefore.markers.every(marker => Number.isFinite(marker.x) && Number.isFinite(marker.y) && marker.actualX >= mobileMapBefore.bounds.x && marker.actualX <= mobileMapBefore.bounds.x + mobileMapBefore.bounds.width && marker.actualY >= mobileMapBefore.bounds.y && marker.actualY <= mobileMapBefore.bounds.y + mobileMapBefore.bounds.height), "mobile map must place every race car within the track bounds: " + JSON.stringify(mobileMapBefore));
+  await mobile.waitForTimeout(350);
+  const mobileMapAfter = await mobile.evaluate(() => window.MshinRaceMinimap);
+  assert.ok(mobileMapAfter.markers.find(marker => marker.id === "rival-0").distance > mobileMapBefore.markers.find(marker => marker.id === "rival-0").distance, "mobile minimap must update an AI car marker as it moves");
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 }).catch(async error => {
     const diagnostic = await mobile.evaluate(pageErrors => ({
       renderer: window.Mshin3DRenderer ? {
