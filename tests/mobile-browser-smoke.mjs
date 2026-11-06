@@ -193,6 +193,8 @@ try {
   assert.ok(mobileMapBefore.markers.every(marker => Number.isFinite(marker.x) && Number.isFinite(marker.y) && marker.actualX >= mobileMapBefore.bounds.x && marker.actualX <= mobileMapBefore.bounds.x + mobileMapBefore.bounds.width && marker.actualY >= mobileMapBefore.bounds.y && marker.actualY <= mobileMapBefore.bounds.y + mobileMapBefore.bounds.height), "mobile map must place every race car within the track bounds: " + JSON.stringify(mobileMapBefore));
   await mobile.waitForTimeout(350);
   const mobileMapAfter = await mobile.evaluate(() => window.MshinRaceMinimap);
+  const mobileClocksAfter = await mobile.evaluate(() => window.MshinRaceClocks);
+  assert.ok(mobileClocksAfter.racers.every((clock, index) => clock.elapsed > mobileClocksBefore.racers[index].elapsed), "each mobile car stopwatch must advance during the race");
   assert.ok(mobileMapAfter.markers.find(marker => marker.id === "rival-0").distance > mobileMapBefore.markers.find(marker => marker.id === "rival-0").distance, "mobile minimap must update an AI car marker as it moves");
   await mobile.waitForFunction(() => window.Mshin3DRenderer?.frames > 10 && window.Mshin3DRenderer?.quality?.mobile === true, undefined, { timeout: 12000 }).catch(async error => {
     const diagnostic = await mobile.evaluate(pageErrors => ({
