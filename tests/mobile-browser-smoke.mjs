@@ -247,7 +247,7 @@ try {
   assert.equal(trackScaleMetrics.trackLengthScale, 10, "mobile race runtime must use the tenfold circuit scale");
   assert.equal(trackScaleMetrics.trackRadiusX, 11800, "mobile race runtime must expose the extended horizontal circuit radius");
   assert.equal(trackScaleMetrics.trackRadiusY, 7600, "mobile race runtime must expose the extended vertical circuit radius");
-  assert.equal(trackScaleMetrics.roadWidth, 440, "the tenfold track must expose the widened 440-unit road");
+  assert.equal(trackScaleMetrics.roadWidth, 720, "the tenfold track must expose the widened 720-unit road");
   const drawStageMetrics = await mobile.evaluate(() => ({
     uniforms: window.Mshin3DRenderer?.maxDrawUniformsMs,
     buffers: window.Mshin3DRenderer?.maxDrawBufferSetupMs,
