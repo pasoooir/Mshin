@@ -11,7 +11,8 @@ test("racing and city entry documents declare English left-to-right layout",asyn
 });
 
 test("visible game entry copy and dynamic game labels use Latin scripts and digits",async()=>{
- const files=["index.html","city.html","src/web-game.js","src/city/city-view.js","src/stage-catalog.ts","src/asset-manifest.json","data/worlds.json","src/city/city-visual-asset-catalog.js","src/city/city-seasonal-weather.js"];
+ const files=["index.html","city.html","src/web-game.js","src/boot.js","src/city/city-view.js","src/stage-catalog.ts","src/asset-manifest.json","data/worlds.json","src/city/city-visual-asset-catalog.js","src/city/city-seasonal-weather.js"];
  for(const file of files){const source=await read(file);assert.doesNotMatch(source,/[۰-۹]/,file+" must not contain Persian digits");}
- for(const file of ["index.html","city.html"]){const html=await read(file);const visible=[...html.matchAll(/>([^<>]*)</g)].map(match=>match[1]).join(" ");assert.doesNotMatch(visible,/\p{Script=Arabic}/u,file+" visible copy must be English");}
+ for(const file of ["index.html","city.html"]){const html=await read(file);const visible=[...html.matchAll(/>([^<>]*)</g)].map(match=>match[1]).join(" ");assert.doesNotMatch(visible,/\\p{Script=Arabic}/u,file+" visible copy must be English");}
+ for(const file of ["src/web-game.js","src/boot.js","src/city/city-view.js","src/stage-catalog.ts","src/city/city-visual-asset-catalog.js","src/city/city-seasonal-weather.js"]){const source=await read(file);const literals=[...source.matchAll(/["'`]([^"'`\\n]*[\\p{Script=Arabic}][^"'`\\n]*)["'`]/gu)].map(match=>match[1]).join(" ");assert.doesNotMatch(literals,/\\p{Script=Arabic}/u,file+" user-facing strings must be English");}
 });
