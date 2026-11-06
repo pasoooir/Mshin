@@ -6,7 +6,7 @@ const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.
 const terrainSource = await readFile(new URL("../src/race-natural-terrain.js", import.meta.url), "utf8");
 
 test("procedural 3D scene stays within a bounded first-build geometry budget", () => {
-  assert.ok(source.includes("const segments=mobile?320:softwareRenderer?400:820,half=220;"),
+  assert.ok(source.includes("const segments=mobile?320:softwareRenderer?400:820,half=360;"),
     "tenfold mobile circuit tessellation remains dense enough to avoid visible road facets");
   assert.ok(source.includes("treeCount=mobile?22:softwareRenderer?28:64"),
     "desktop tree instances are capped at 64");
