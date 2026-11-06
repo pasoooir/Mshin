@@ -179,7 +179,7 @@ try{
  await clickCityTool(page,"select");
  const zoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit),focusAnchorBefore=await page.evaluate(()=>window.MshinCityDebug.groundPointAt(190,220));
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",91,120,220);send("pointerdown",92,260,220);send("pointermove",92,320,220);send("pointerup",92,320,220);send("pointerup",91,120,220)});
- const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitAfter=await page.evaluate(()=>window.MshinCityDebug.view.orbit);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");assert.notEqual(orbitAfter,orbitBefore,"two-finger horizontal drag must orbit the 3D camera around the buildings");
+ const zoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom),orbitAfter=await page.evaluate(()=>window.MshinCityDebug.view.orbit);assert.ok(zoomAfter>zoomBefore,"two-finger pinch must zoom the city map");assert.equal(orbitAfter,orbitBefore,"parallel two-finger movement must pan, not orbit");
  const focusAnchorAfter=await page.evaluate(()=>window.MshinCityDebug.groundPointAt(220,220));
  assert.ok(focusAnchorBefore&&focusAnchorAfter,"browser acceptance must obtain real Three.js ground-raycast anchors");
  assert.ok(Math.hypot(focusAnchorBefore.x-focusAnchorAfter.x,focusAnchorBefore.z-focusAnchorAfter.z)<0.08,"pinch/orbit world anchor drifted: "+JSON.stringify({before:focusAnchorBefore,after:focusAnchorAfter,drift:Math.hypot(focusAnchorBefore.x-focusAnchorAfter.x,focusAnchorBefore.z-focusAnchorAfter.z)}));
@@ -187,7 +187,7 @@ try{
  const translationZoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",701,100,220);send("pointerdown",702,200,220);send("pointermove",701,200,220);send("pointermove",702,300,220);send("pointerup",701,200,220);send("pointerup",702,300,220)});
  const translationZoomAfter=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
- assert.ok(Math.abs(translationZoomAfter-translationZoomBefore)<0.0001,"equal two-finger translation must rotate the view without changing zoom");
+ assert.ok(Math.abs(translationZoomAfter-translationZoomBefore)<0.0001,"equal two-finger translation must not change zoom");
 
  const pureRotationZoomBefore=await page.evaluate(()=>window.MshinCityDebug.view.zoom);
  const pureRotationOrbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
@@ -199,13 +199,13 @@ try{
  const tiltOrbitBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));send("pointerdown",721,140,180);send("pointerdown",722,260,180);send("pointermove",721,140,260);send("pointermove",722,260,260);send("pointerup",722,260,260);send("pointerup",721,140,260)});
  const pitchAfter=await page.evaluate(()=>window.MshinCityDebug.view.pitch);
- assert.ok(pitchAfter<pitchBefore,"vertical two-finger movement must tilt the camera toward the city");
+ assert.equal(pitchAfter,pitchBefore,"vertical two-finger movement must pan, not tilt the camera");
  assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.zoom))-tiltZoomBefore)<0.0001,"vertical camera tilt must not alter pinch zoom");
  assert.ok(Math.abs((await page.evaluate(()=>window.MshinCityDebug.view.orbit))-tiltOrbitBefore)<0.0001,"vertical camera tilt must not alter horizontal orbit");
 
 
  const orbitStart=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
- await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));for(let i=0;i<9;i++){const a=100+i*3,b=200+i*3;send("pointerdown",200+i*2,a,220);send("pointerdown",201+i*2,b,220);send("pointermove",200+i*2,a+100,220);send("pointermove",201+i*2,b+100,220);send("pointerup",200+i*2,a+100,220);send("pointerup",201+i*2,b+100,220)}});
+ await page.evaluate(()=>{const c=document.querySelector("#cityViewport"),send=(type,id,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:"touch",clientX:x,clientY:y}));for(let i=0;i<9;i++){send("pointerdown",200+i*2,150,220);send("pointerdown",201+i*2,250,220);send("pointermove",200+i*2,200,170);send("pointermove",201+i*2,200,270);send("pointerup",200+i*2,200,170);send("pointerup",201+i*2,200,270)}});
  const fullTurnOrbit=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
  assert.ok(fullTurnOrbit>orbitStart+Math.PI*2,"repeated two-finger horizontal gestures must cross 360 degrees without wrapping or jumping");
  const inertiaReleaseBefore=await page.evaluate(()=>window.MshinCityDebug.view.orbit);
