@@ -171,7 +171,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   assert.match(game, /lane\(90,"#ffffff70",3,\[22,30\]\)/);
   assert.match(game, /Four lanes/);
   assert.match(game, /ROAD_HALF_WIDTH=360/);
-  assert.match(game, /lanes:\[-165,-82.5,82.5,165\]/);
+  assert.match(game, /lanes:\[-270,-90,90,270\]/);
   assert.match(game, /countdownElapsed<3\.72/);
   assert.match(game, /"دره سبز"/);
   assert.match(game, /"توفان کویر"/);
@@ -266,7 +266,7 @@ test("opening nitro pickup is aligned with the player and protected from early t
   assert.match(game, /t:i===0\?\.075:/, "first pickup should be just ahead of the start line");
   assert.match(game, /lateral:i===0\?0:/, "first pickup should align with the starting lane");
   assert.match(game, /distance:0,totalProgress:0,lapsCompleted:0,clock:createRaceClock\(\),timerElapsed:0,finishTime:null/, "all race entrants should share the same starting line and reset clocks");
-  assert.match(game, /const lanes=\[-165,-82.5,82.5,165,-165,82.5,-82.5,165\]/, "opponents should occupy separate grid lanes");
+  assert.match(game, /const lanes=\[-270,-90,90,270,-165,82.5,-82.5,165\]/, "opponents should occupy separate grid lanes");
 });
 
 
