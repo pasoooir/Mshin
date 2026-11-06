@@ -435,7 +435,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         lockedPlots: VISUAL_GRID * VISUAL_GRID - ACTIVE_SIZE * ACTIVE_SIZE,
         lockedRoadTiles: 0,
         visiblePlots: VISUAL_GRID * VISUAL_GRID,
-        visibleRoadTiles: activeRoads + lockedRoadCount,
+        visibleRoadTiles: activeRoads,
         raisedCurbs: 0,
         sidewalkStrips: sidewalkLayer.count,
         crosswalkStripes: crosswalkStripeCount,
