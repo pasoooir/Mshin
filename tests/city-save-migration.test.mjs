@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave, migrateCitySave, createCitySaveBackup } from "../src/city/city-view.js";
 import { CITY_DEFAULT_TAX_RATES, setCityTaxRate } from "../src/city/city-economy.js";
 
+function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
+
 function createLegacyV1City() {
   const grid = Array.from({length:32},()=>Array(32).fill("grass"));
   for (let y=0;y<32;y++) for (let x=0;x<32;x++) {
@@ -46,7 +48,7 @@ test("version-one local city saves migrate without losing the built city or trea
 });
 
 test("exported JSON backup envelopes round-trip through the same migration boundary", () => {
-  const city=createInitialCity(1201);
+  const city=seedCityRoadAccess(createInitialCity(1201));
   placeCityItem(city,17,14,"home");
   setCityTaxRate(city,"residential",14);
   for(let i=0;i<3;i++)stepCity(city);
