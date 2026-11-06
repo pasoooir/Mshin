@@ -44,7 +44,8 @@ test("mobile renderer adapts drawing resolution to measured render cost",()=>{
 test("driving acceleration, top speed and displayed speed are increased",()=>{
  assert.ok(game.includes("maxSpeed=model.max*1.22*performanceFactor"));
  assert.ok(game.includes("accel=model.accel*1.3*performanceFactor"));
- assert.ok(game.includes("cruiseSpeed:activeCar().max*1.2"));
+ assert.ok(game.includes("cruiseSpeed:aiMaxSpeed,maxSpeed:aiMaxSpeed,acceleration:aiAcceleration"));
+ assert.ok(game.includes("laneChanges:false"));
  assert.ok(game.includes('$("speed").textContent=Math.round(car.speed*.55)'));
 });
 test("AI-to-AI collision work uses a conservative angular broad phase",()=>{
