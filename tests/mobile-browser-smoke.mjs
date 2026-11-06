@@ -243,6 +243,7 @@ try {
   assert.ok(raceFrameSample.triangles > 1000, "mobile race scene must render substantial track and environment geometry: " + JSON.stringify(raceFrameSample));
   assert.ok(raceFrameSample.uniqueColors >= 12, "mobile race scene must show multiple visible surface/material colors rather than only the clear color and cars: " + JSON.stringify(raceFrameSample));
   assert.equal(raceFrameSample.glError, 0, "mobile race scene pixel capture must not report a WebGL error: " + JSON.stringify(raceFrameSample));
+  await captureScreenshot(mobile, "artifacts/racing-mobile-track.png");
   const trackScaleMetrics = await mobile.evaluate(() => window.MshinPerformance);
   assert.equal(trackScaleMetrics.trackLengthScale, 10, "mobile race runtime must use the tenfold circuit scale");
   assert.equal(trackScaleMetrics.trackRadiusX, 11800, "mobile race runtime must expose the extended horizontal circuit radius");
