@@ -356,7 +356,7 @@ export function createRaceRenderer(canvas){
  "ai-prototype":{width:1,length:1.22,bodyY:.78,cabinWidth:.78,cabinY:.78,cabinHeight:.62,wheelRadius:15,wheelX:38,wheelZ:48,wing:1.25,style:"prototype"}
  };
  const AI_VEHICLE_SHAPES=["ai-formula","ai-pickup","ai-rallycross","ai-touring","ai-prototype"];
- function vehicleShapeFor(kind,id){return "ai-formula"}
+ function vehicleShapeFor(kind,id){return kind==="player"||kind==="car"||kind==="formula"?"ai-formula":AI_VEHICLE_SHAPES[Math.abs(Number(id)||0)%5]}
  function buildCar(id="rally"){
   // Race scene and showroom consume the same detailed procedural mesh builder.
   const started=performance.now(),geometry=buildVehicleGeometry(id),parts=geometry.map(item=>part(item.vertices,item.paint,item.emissive,item.material)),elapsed=performance.now()-started;
