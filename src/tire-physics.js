@@ -6,7 +6,7 @@ const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
  * The friction circle is shared by steering, throttle and braking; steering
  * authority therefore falls naturally with speed and low-grip surfaces.
  */
-export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,grip,deltaSeconds,mass=1250,steeringResponseScale=1,rearStability=1}) {
+export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,grip,deltaSeconds,mass=1250,steeringResponseScale=1,rearStability=1,drift=false}) {
  const v=Number.isFinite(speed)?Math.max(0,speed):0;
  const lateral=Number.isFinite(lateralVelocity)?lateralVelocity:0;
  const steering=clamp(Number.isFinite(steer)?steer:0,-1,1);
@@ -26,7 +26,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
  // The fractions are normalized axle-load shifts, not vehicle mass units.
  const weightTransferFraction=brake?.14:throttle?-.06:0;
  const rearAxleLoadFraction=clamp(.5-weightTransferFraction,.32,.68);
- const rearGripScale=Math.sqrt(rearAxleLoadFraction/.5);
+ const rearGripScale=Math.sqrt(rearAxleLoadFraction/.5)*(drift?.76:1);
  const capacity=320*surfaceGrip*rearGripScale;
  // Only the rear share of braking force is charged to this rear-axle budget;
  // the front axle carries the larger share under normal brake bias.
@@ -44,7 +44,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
 
  // Steering rotates the chassis; lateral velocity represents actual slip.
  // Damping removes residual sideslip without commanding a permanent lane drift.
- const lateralDamping=5.5*steeringScale;
+ const lateralDamping=(drift?2.9:5.5)*steeringScale;
  const requestedLateralAcceleration=-lateral*lateralDamping;
  const lateralAccelerationRaw=clamp(requestedLateralAcceleration,-availableLateral,availableLateral);
  const lateralAcceleration=Math.abs(lateralAccelerationRaw)<1e-9?0:lateralAccelerationRaw;
@@ -52,7 +52,7 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
 
  // Slip contributes a damped yaw correction, but the final yaw remains inside
  // the lateral force envelope so it cannot bypass the tyre friction circle.
- const slipCorrection=slipAngle*1.1*clamp((v-70)/100,0,1)/(rearGripScale*yawInertiaScale*rearStabilityScale);
+ const slipCorrection=slipAngle*(drift?1.55:1.1)*clamp((v-70)/100,0,1)/(rearGripScale*yawInertiaScale*rearStabilityScale);
  const yawLimit=availableLateral/Math.max(v,1);
  const yawRateTarget=clamp(requestedYawRate*corneringScale+slipCorrection,-yawLimit,yawLimit);
  const lateralScale=Math.min(1,availableLateral/Math.max(.001,Math.abs(requestedLateralAcceleration)));
@@ -72,14 +72,14 @@ export function resolveTireForces({speed,lateralVelocity,steer,throttle,brake,gr
   steeringScale,
   rearStabilityScale,
   yawRecoveryScale:rearStabilityScale,
-  yawResponse:2.5*rearStabilityScale/yawInertiaScale,
+  yawResponse:(drift?3.15:2.5)*rearStabilityScale/yawInertiaScale,
   lateralScale,
   corneringScale,
   corneringUtilization:Math.min(.98,combinedLateralDemand/Math.max(capacity,.001)),
   longitudinalDemand,
   // Longitudinal braking remains calibrated in game speed-units; grip scales
   // the available deceleration while preserving the dry-road baseline.
-  brakingDeceleration:brake?470*surfaceGrip*Math.sqrt(Math.max(0,1-(combinedLateralDemand/Math.max(capacity,.001))**2)):0,
+  brakingDeceleration:brake?(drift?340:470)*surfaceGrip*Math.sqrt(Math.max(0,1-(combinedLateralDemand/Math.max(capacity,.001))**2)):0,
   frictionUtilization:Math.min(1,Math.hypot(longitudinalDemand,combinedLateralDemand)/Math.max(capacity,.001))
  };
 }

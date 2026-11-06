@@ -43,8 +43,8 @@ test("race ground plane faces upward and remains inside the camera far plane",()
 
 test("race circuit uses professional centre lines, edge lines and alternating red-white kerbs",()=>{
  assert.match(renderer,/yellowTris=\[\],curbRedTris=\[\],curbWhiteTris=\[\]/);
- assert.match(renderer,/for\(const offset of \[-158,158\]\)/);
- assert.match(renderer,/if\(i%2===0\)for\(const offset of \[-5,5\]\)/);
+ assert.match(renderer,/for\(const offset of \[-194,194\]\)/);
+ assert.match(renderer,/if\(i%2===0\)for\(const offset of \[-6,6\]\)/);
  assert.match(renderer,/Math\.floor\(i\/4\)%2\?curbWhiteTris:curbRedTris/);
  assert.match(renderer,/part\(yellowTris,"#f5c928"/);
  assert.match(renderer,/part\(curbRedTris,"#d94337",\.72\)/);
