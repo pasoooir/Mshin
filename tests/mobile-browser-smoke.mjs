@@ -297,9 +297,9 @@ try {
   const gyroBounds = await mobile.locator("#gyroToggle").boundingBox();
   assert.ok(gyroBounds.width >= 52 && gyroBounds.height >= 52, "gyro toggle must remain a large mobile touch target");
   assert.ok((await mobile.locator("#gas").boundingBox()).width >= 60, "mobile gas pedal should remain touch-sized");
-  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "گاز", "gas pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "ترمز", "brake pedal should use a CDN icon with accessible alternative text");
-  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "نیترو", "nitro control should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#gas img").getAttribute("alt"), "THROTTLE", "gas pedal should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#brake img").getAttribute("alt"), "BRAKE", "brake pedal should use a CDN icon with accessible alternative text");
+  assert.equal(await mobile.locator("#nitro img").getAttribute("alt"), "NITRO", "nitro control should use a CDN icon with accessible alternative text");
   assert.ok((await mobile.locator("#nitro").boundingBox()).width >= 60, "mobile nitro control should remain touch-sized");
   const fourPointerState = await mobile.evaluate(() => {
     const element = id => document.querySelector("#" + id);
