@@ -60,11 +60,9 @@ function makePbrSurface(THREE, renderer, kind, base, seed) {
   };
 
   if (kind === "grass") {
-    const meadow = albedo.createLinearGradient(0, 0, size, size);
-    meadow.addColorStop(0, "#557d3e");
-    meadow.addColorStop(0.48, "#466f37");
-    meadow.addColorStop(1, "#385f32");
-    albedo.fillStyle = meadow;
+    // Keep the tile edges seamless: natural variation is painted as wrapped
+    // blade and clump detail, never as a corner-to-corner color gradient.
+    albedo.fillStyle = "#466f37";
     albedo.fillRect(0, 0, size, size);
     for (let i = 0; i < Math.round(1450 * detailScale); i++) {
       const x = random() * size, y = random() * size, radius = 1.2 + random() * 13;
