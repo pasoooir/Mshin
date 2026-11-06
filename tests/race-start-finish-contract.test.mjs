@@ -39,7 +39,7 @@ test("AI and player finish times use interpolated finish-line crossing timestamp
   assert.match(game, /finishRaceClock\(r\.clock,r\.finishTime\)/);
   assert.match(game, /finishRaceClock\(race\.playerClock,race\.playerFinishTime\)/);
   assert.match(game, /\$\("time"\)\.textContent=formatRaceClock\(race\.playerClock\?\.elapsed\?\?race\.elapsed\)/);
-  assert.match(game, /STOPWATCH/);
+  assert.match(game, /رتبه · راننده/);
   assert.match(game, /formatRaceClock\(row\.finished\?row\.finishTime:row\.elapsed\)/, "the live table must show each vehicle's own running or final stopwatch");
 });
 
