@@ -129,6 +129,20 @@ export function buildVehicleGeometry(id){
   {vertices:aero,paint:"#202b35",material:"aero",emissive:0},{vertices:decals,paint:p.accent,material:"decals",emissive:.01}
  ];
 }
+
+export function buildVehicleDamageGeometry(id){
+ const p=PROFILES[id]||PROFILES.rally,w=p.width,L=p.length,h=p.height,light=geometry(),dark=geometry();
+ // Fine metallic scratches follow the sculpted hood surface instead of floating above it.
+ quad(light,[-17*w,29.8*h,55*L],[-14*w,29.8*h,55*L],[-25*w,34.8*h,28*L],[-28*w,34.8*h,28*L]);
+ quad(light,[4*w,30.8*h,54*L],[7*w,30.8*h,54*L],[-3*w,34.8*h,29*L],[-6*w,34.8*h,29*L]);
+ quad(dark,[17*w,30.2*h,52*L],[19*w,30.2*h,52*L],[11*w,34.2*h,30*L],[9*w,34.2*h,30*L]);
+ quad(dark,[-3*w,30.6*h,58*L],[-1*w,30.6*h,58*L],[-9*w,34.4*h,34*L],[-11*w,34.4*h,34*L]);
+ return [
+  {vertices:light,paint:"#dce5eb",material:"trim",emissive:.035},
+  {vertices:dark,paint:"#46515a",material:"trim",emissive:.01}
+ ];
+}
+
 function buildVehicle(gl,id){return buildVehicleGeometry(id).map(item=>mesh(gl,item.vertices,item.paint,item.material,item.emissive));}
 export function createVehicleShowroom(canvas){
  const state={status:"initializing",vehicle:"rally",yaw:-.55,pitch:.16,frames:0,triangles:0,materialPipeline:"automotive-pbr-ggx-clearcoat",environmentMapReady:false};
