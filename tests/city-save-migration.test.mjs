@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { createInitialCity, placeCityItem, stepCity, isValidCitySave, migrateCitySave, createCitySaveBackup } from "../src/city/city-view.js";
 import { CITY_DEFAULT_TAX_RATES, setCityTaxRate } from "../src/city/city-economy.js";
 
-function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,12,"road");placeCityItem(city,x,15,"road");placeCityItem(city,x,18,"road")}return city}
+function seedCityRoadAccess(city){for(let x=10;x<=28;x++){placeCityItem(city,x,15,"road");placeCityItem(city,x,18,"road")}for(let y=10;y<=20;y++)placeCityItem(city,16,y,"road");return city}
 
 function createLegacyV1City() {
   const grid = Array.from({length:32},()=>Array(32).fill("grass"));
