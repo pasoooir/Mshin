@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "مِشین — مسابقه در ۵۰ مرحله",
+  "name": "MSHIN — 50 Racing Stages",
   "short_name": "Mshin",
-  "description": "بازی مسابقه‌ای سه‌بعدی با دوربین تعقیبی پرسپکتیو، ۱۰ دنیای متفاوت و ۵۰ مرحله هیجان‌انگیز.",
+  "description": "3D arcade racing with a perspective chase camera, 10 unique worlds and 50 exciting stages.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
