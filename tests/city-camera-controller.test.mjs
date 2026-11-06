@@ -32,8 +32,11 @@ test("orbit remains continuous across the 2π boundary and supports repeated ful
   for (let i = 0; i < 9; i++) {
     h.send("pointerdown", 1, 100, 100);
     h.send("pointerdown", 2, 200, 100);
-    h.send("pointermove", 1, 200, 100);
-    h.send("pointermove", 2, 300, 100);
+    // Rotate the finger line around a fixed first contact in 45-degree steps.
+    for (let step = 1; step <= 8; step++) {
+      const radians = step * Math.PI / 4;
+      h.send("pointermove", 2, 100 + 100 * Math.cos(radians), 100 + 100 * Math.sin(radians));
+    }
     h.send("pointerup", 1, 200, 100);
     h.send("pointerup", 2, 300, 100);
   }
