@@ -6,7 +6,7 @@ import { CITY_DEFAULT_TAX_RATES, computeCityEconomy, setCityTaxRate, cityTaxPres
 function seedCityRoadAccess(city){for(let x=12;x<=24;x++)placeCityItem(city,x,13,"road");return city}
 
 test("default sector tax rates preserve the established residential income baseline", () => {
-  const city = seedCityRoadAccess(createInitialCity(1101)));
+  const city = seedCityRoadAccess(createInitialCity(1101));
   placeCityItem(city, 17, 14, "home");
   const economy = computeCityEconomy(city);
   assert.deepEqual(city.taxRates, CITY_DEFAULT_TAX_RATES);
@@ -18,7 +18,7 @@ test("default sector tax rates preserve the established residential income basel
 });
 
 test("sector tax changes deterministically scale the matching revenue stream", () => {
-  const city = seedCityRoadAccess(createInitialCity(1102)));
+  const city = seedCityRoadAccess(createInitialCity(1102));
   placeCityItem(city, 17, 14, "home");
   placeCityItem(city, 18, 14, "shop");
   placeCityItem(city, 19, 14, "industrial");
@@ -35,7 +35,7 @@ test("sector tax changes deterministically scale the matching revenue stream", (
 });
 
 test("invalid sector names and out-of-range rates are rejected without changing tax policy", () => {
-  const city = seedCityRoadAccess(createInitialCity(1103)));
+  const city = seedCityRoadAccess(createInitialCity(1103));
   const before = structuredClone(city.taxRates);
   for (const [sector, rate] of [["unknown", 10], ["residential", -1], ["commercial", 21], ["industrial", NaN]]) {
     assert.equal(setCityTaxRate(city, sector, rate).ok, false);
@@ -44,7 +44,7 @@ test("invalid sector names and out-of-range rates are rejected without changing 
 });
 
 test("tax policy persists and legacy saves receive safe defaults", () => {
-  const city = seedCityRoadAccess(createInitialCity(1104)));
+  const city = seedCityRoadAccess(createInitialCity(1104));
   placeCityItem(city, 17, 14, "home");
   setCityTaxRate(city, "residential", 14);
   stepCity(city);
@@ -60,7 +60,7 @@ test("tax policy persists and legacy saves receive safe defaults", () => {
 
 test("economy output and treasury changes remain deterministic", () => {
   const simulate = () => {
-    const city = seedCityRoadAccess(createInitialCity(1105)));
+    const city = seedCityRoadAccess(createInitialCity(1105));
     placeCityItem(city, 17, 14, "home");
     placeCityItem(city, 18, 14, "shop");
     for (let i = 0; i < 24; i++) stepCity(city);
@@ -71,7 +71,7 @@ test("economy output and treasury changes remain deterministic", () => {
 
 
 test("commute congestion reduces only business productivity with a strict 15% cap", () => {
-  const city = seedCityRoadAccess(createInitialCity(1106)));
+  const city = seedCityRoadAccess(createInitialCity(1106));
   city.population = 12;
   assert.equal(placeCityItem(city, 17, 14, "home").ok, true);
   assert.equal(placeCityItem(city, 18, 14, "shop").ok, true);
@@ -97,7 +97,7 @@ test("commute congestion reduces only business productivity with a strict 15% ca
 });
 
 test("city simulation applies the cached commute productivity metric to its budget and save", () => {
-  const city = seedCityRoadAccess(createInitialCity(1107)));
+  const city = seedCityRoadAccess(createInitialCity(1107));
   const home = placeCityItem(city, 17, 14, "home");
   const shop = placeCityItem(city, 18, 14, "shop");
   const factory = placeCityItem(city, 19, 14, "industrial");
@@ -120,7 +120,7 @@ test("city simulation applies the cached commute productivity metric to its budg
 });
 
 test("rain and snow weather reduce business output while leaving resident and public income unchanged", () => {
-  const city = seedCityRoadAccess(createInitialCity(20261104)));
+  const city = seedCityRoadAccess(createInitialCity(20261104));
   placeCityItem(city, 17, 14, "home");
   placeCityItem(city, 18, 14, "shop");
   placeCityItem(city, 19, 14, "industrial");
