@@ -1,6 +1,7 @@
 import { buildVehicleGeometry } from "./vehicle-showroom-3d.js";
 import { PBR_VERTEX, PBR_FRAGMENT, createVehicleEnvironment, VEHICLE_MATERIALS } from "./vehicle-pbr.js";
 import { vehicleModelHeading } from "./vehicle-controls.js";
+import { appendNaturalTracksideTerrain } from "./race-natural-terrain.js";
 // Native WebGL 3D race renderer. No CDN or external runtime dependency.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
@@ -244,10 +245,10 @@ export function createRaceRenderer(canvas){
   );
   yield {parts:[terrainBasePart,nextRoad,...nextDecor],progress:.34};
   state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
-  const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?18:softwareRenderer?22:48,buildingCount=mobile?8:softwareRenderer?12:22;
+  const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?22:softwareRenderer?28:64,buildingCount=mobile?8:softwareRenderer?12:22;
   const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
   // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
-  const skyTris=[],cloudTris=[],sunTris=[];
+  const skyTris=[],cloudTris=[],sunTris=[],terrainRocks=[];
   sphere(skyTris,0,0,0,56000,30000,56000,mobile?20:36,mobile?10:18);
   for(let i=0;i<(mobile?5:12);i++){const a=i/12*Math.PI*2,r=19000+(i%3)*2100,x=Math.cos(a)*r,y=7600+(i%4)*950,z=Math.sin(a)*r;sphere(cloudTris,x,y,z,2800+(i%3)*550,580+(i%2)*250,1250+(i%4)*280,mobile?8:14,mobile?4:7);sphere(cloudTris,x+1250,y+180,z-350,1850,460,900,mobile?8:12,mobile?4:6);}
   sphere(sunTris,-22000,19000,-24500,1750,1750,1750,16,10);
@@ -257,6 +258,7 @@ export function createRaceRenderer(canvas){
   const disk=(out,x,y,z,r,segments=12)=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2,b=(j+1)/segments*Math.PI*2;tri(out,[x,y,z],[x+Math.cos(a)*r,y,z+Math.sin(a)*r],[x+Math.cos(b)*r,y,z+Math.sin(b)*r]);}};
   // A layered distant terrain silhouette gives every biome a readable horizon.
   for(let i=0;i<(mobile?32:72);i++){const count=mobile?32:72,a=i/count*Math.PI*2,r=27800+(i%5)*1900,x=Math.cos(a)*r,z=Math.sin(a)*r,h=(68+(i%7)*24)*10;const hill=[];sphere(hill,x,h*.34,z,(250+(i%4)*48)*10,h,(220+(i%3)*38)*10,mobile?9:16,mobile?5:8);landscape.push(...hill);if(i%4===3)yield {progress:.4+(i/(mobile?32:72))*.05}}
+  for(const progress of appendNaturalTracksideTerrain({snapshot,half,mobile,softwareRenderer,landscape,terrainRocks,quad,sphere,clamp}))yield {progress};
   for(let i=0;i<treeCount;i++){const t=i/(mobile?24:70)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,dist=270+(i%7)*66,x=f.p.x+f.nx*side*dist,z=-(f.p.y+f.ny*side*dist),base=f.height||0;
    disk(treeShadows,x,base+.6,z,24+(i%3)*4,10);
    // Trunk, branching limbs and layered foliage; mobile uses fewer repeated instances.
@@ -332,7 +334,7 @@ export function createRaceRenderer(canvas){
   // the scene arrays is cheap compared with normal generation + bufferData for
   // one enormous mesh; keep each render() call below a small upload budget.
   const uploadQueue=[
-   [landscape,"#778b78",0,terrainTexture],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[treeTrunks,"#70533b",0,"bark"],[treeFoliage,theme[3],0,"foliage"],
+   [landscape,"#778b78",0,terrainTexture],[terrainRocks,"#77776f",0,"rock"],[treeShadows,"#26332b"],[buildingShadows,"#303a35"],[treeTrunks,"#70533b",0,"bark"],[treeFoliage,theme[3],0,"foliage"],
    [houses,"#d6c6a4",0,"concrete"],[buildings,urban?"#5c4d85":"#747b82",0,"concrete"],[roofTris,urban?"#343b4a":"#9b5942",0,"concrete"],
    [windows,"#8ec7d4",.05],[doors,"#493b34"],[shops,"#c8b08b",0,"concrete"],[crowdBodies,"#e85b47"],
    [crowdHeads,"#d4a47e"],[crowdArms,"#e2b18c"],[crowdLegs,"#263344"],[petBodies,"#b88c5c"],
@@ -380,7 +382,7 @@ export function createRaceRenderer(canvas){
   if(!carBuildQueued.has(id)){carBuildQueued.add(id);carBuildQueue.push(id);}
   return carPartSets.values().next().value;
  }
- function resize(){const started=performance.now(),portrait=matchMedia("(orientation: portrait)").matches,cssWidth=portrait?innerHeight:innerWidth,cssHeight=portrait?innerWidth:innerHeight,dpr=Math.min(devicePixelRatio||1,mobile?.68:1.5)*qualityScale,w=Math.max(1,Math.round(cssWidth*dpr)),h=Math.max(1,Math.round(cssHeight*dpr)),key=w+"x"+h;if(key===lastSize){const elapsed=performance.now()-started;state.maxResizeMs=Math.max(state.maxResizeMs||0,elapsed);return}lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);state.quality={mobile,pixelRatio:dpr,detail:mobile?"mobile-balanced":softwareRenderer?"software-balanced":"high",renderScale:qualityScale,width:w,height:h};const elapsed=performance.now()-started;state.lastResizeMs=elapsed;state.maxResizeMs=Math.max(state.maxResizeMs||0,elapsed)}
+ function resize(){const started=performance.now(),portrait=matchMedia("(orientation: portrait)").matches,cssWidth=portrait?innerHeight:innerWidth,cssHeight=portrait?innerWidth:innerHeight,requestedDpr=Math.min(devicePixelRatio||1,mobile?.68:2)*qualityScale,pixelBudget=mobile?1600000:8294400,capScale=Math.sqrt(pixelBudget/Math.max(1,cssWidth*cssHeight)),dpr=Math.min(requestedDpr,capScale),w=Math.max(1,Math.round(cssWidth*dpr)),h=Math.max(1,Math.round(cssHeight*dpr)),key=w+"x"+h;if(key===lastSize){const elapsed=performance.now()-started;state.maxResizeMs=Math.max(state.maxResizeMs||0,elapsed);return}lastSize=key;canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);state.quality={mobile,pixelRatio:dpr,detail:mobile?"mobile-balanced":softwareRenderer?"software-balanced":"high",renderScale:qualityScale,width:w,height:h};const elapsed=performance.now()-started;state.lastResizeMs=elapsed;state.maxResizeMs=Math.max(state.maxResizeMs||0,elapsed)}
  function drawPart(p,vp,model){const started=performance.now(),uniformStarted=started;gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,p.texture||null);gl.uniform1i(uniforms.surface,1);gl.uniform1f(uniforms.surfaceEnabled,p.texture?1:0);gl.uniformMatrix4fv(uniforms.model,false,model);gl.uniformMatrix4fv(uniforms.mvp,false,mul(vp,model));gl.uniform3fv(uniforms.color,p.color);gl.uniform1f(uniforms.metal,p.metallic);gl.uniform1f(uniforms.roughness,p.roughness);gl.uniform1f(uniforms.clearcoat,p.clearcoat);gl.uniform1f(uniforms.kind,p.kind);gl.uniform1f(uniforms.emissive,p.emissive);const uniformMs=performance.now()-uniformStarted,bufferStarted=performance.now();gl.bindBuffer(gl.ARRAY_BUFFER,p.mesh.buffer);gl.enableVertexAttribArray(attributes.position);gl.vertexAttribPointer(attributes.position,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(attributes.normal);gl.vertexAttribPointer(attributes.normal,3,gl.FLOAT,false,24,12);const bufferSetupMs=performance.now()-bufferStarted,drawStarted=performance.now();gl.drawArrays(gl.TRIANGLES,0,p.mesh.count);const drawArraysMs=performance.now()-drawStarted,elapsed=performance.now()-started;state.maxDrawUniformsMs=Math.max(state.maxDrawUniformsMs||0,uniformMs);state.lastDrawUniformsMs=uniformMs;state.maxDrawBufferSetupMs=Math.max(state.maxDrawBufferSetupMs||0,bufferSetupMs);state.lastDrawBufferSetupMs=bufferSetupMs;state.maxDrawSubmitMs=Math.max(state.maxDrawSubmitMs||0,drawArraysMs);state.lastDrawSubmitMs=drawArraysMs;state.maxDrawArraysMs=Math.max(state.maxDrawArraysMs||0,drawArraysMs);state.lastDrawArraysMs=drawArraysMs;state.maxDrawPartVertices=Math.max(state.maxDrawPartVertices||0,p.mesh.count);state.lastDrawPartVertices=p.mesh.count;state.lastDrawPartColor=p.color;state.maxDrawPartMs=Math.max(state.maxDrawPartMs||0,elapsed);state.drawPartCount=(state.drawPartCount||0)+1;state.triangles+=p.mesh.count/3}
  function drawVehicle(t,lateral,yaw,color,damage=0,kind="car",vehicleId=0,snapshot){
   const f=snapshot.frameAt(t),x=f.p.x+f.nx*lateral,z=-(f.p.y+f.ny*lateral),heading=vehicleModelHeading(f.angle,yaw);
