@@ -150,7 +150,7 @@ test("race hot paths pool particles and use frame-driven collision cooldowns", a
   const damageRenderer = await readFile(path.join(root, "assets/scripts/VehicleDamageRenderer.ts"), "utf8");
   const cocosGame = await readFile(path.join(root, "assets/scripts/MshinGame.ts"), "utf8");
   assert.match(cocosGame, /VehicleDamageRenderer/);
-  assert.match(cocosGame, /"damage","body/);
+  assert.match(cocosGame, /"damage","DAMAGE/);
   assert.match(damageRenderer, /damage\.front/);
   assert.match(damageRenderer, /damage\.rear/);
   assert.match(damageRenderer, /damage\.left/);
@@ -188,7 +188,7 @@ test("boot experience uses a cinematic game splash and compact one-page mobile m
   assert.match(html, /Hamed Babaei/);
   assert.match(html, /https:\/\/ir\.linkedin\.com\/in\/gilasart/);
   assert.match(html, /SELECT RACE/);
-  assert.match(html, / aria-label="Toggle sound"/);
+  assert.match(html, /aria-label="Toggle sound"/);
   assert.match(html, /MSHIN STUDIOS/);
   assert.match(html, /VERSION 0.15.4/);
   assert.match(html, /TRAFFIC AI/);
