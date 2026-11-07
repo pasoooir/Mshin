@@ -60,6 +60,17 @@ for sheet_index, sheet_path in enumerate(expected_sheets, start=1):
     if f'{sheet_index}: preload("res://assets/icons/{sheet_path.name}")' not in atlas:
         errors.append(f"Icon sheet {sheet_path.name} is not preloaded by IconAtlas.gd")
 
+if "CanvasItem.TEXTURE_FILTER_LINEAR" not in atlas:
+    errors.append("UI atlas icons must use high-quality linear filtering")
+if "TEXTURE_FILTER_LINEAR_WITH_MIPMAPS" in atlas or "mipmaps" in atlas.lower() and "no mipmaps" not in atlas.lower():
+    errors.append("UI atlas icons must not generate or sample mipmaps")
+if "ImageTexture.create_from_image" not in atlas:
+    errors.append("UI atlas icons must be rebuilt as lossless runtime ImageTextures")
+if "color.a = 0.0" not in atlas or "crop.set_pixel" not in atlas:
+    errors.append("UI atlas background removal must write transparent alpha pixels")
+if "Color(0.0, 0.0, 0.0, 0.0)" not in hud:
+    errors.append("Toolbar buttons must have transparent normal backgrounds")
+
 atlas_keys = set(re.findall(r'"([a-z0-9_]+)": \[\d+, Rect2i', atlas))
 required_icons = {
     "road", "residential", "commercial", "industrial", "services",
