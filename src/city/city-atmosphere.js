@@ -38,6 +38,9 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     uniforms: {
       uZenith: { value: new THREE.Color(initialAtmosphere.zenith) },
       uHorizon: { value: new THREE.Color(initialAtmosphere.horizon) },
+      uLower: { value: new THREE.Color(initialAtmosphere.horizon).lerp(new THREE.Color(initialAtmosphere.zenith), 0.22) },
+      uMid: { value: new THREE.Color(initialAtmosphere.horizon).lerp(new THREE.Color(initialAtmosphere.zenith), 0.58) },
+      uTime: { value: 0 },
       uSunDirection: { value: new THREE.Vector3(-0.35, 0.75, -0.55).normalize() },
       uSunColor: { value: new THREE.Color(initialAtmosphere.sunlight) },
       uSunIntensity: { value: 1.0 }
@@ -53,6 +56,14 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     fragmentShader: `
       uniform vec3 uZenith;
       uniform vec3 uHorizon;
+      uniform vec3 uLower;
+      uniform vec3 uMid;
+      uniform float uTime;
+      float skyHash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+      float skyNoise(vec3 p) {
+        vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+        return mix(mix(mix(skyHash(i),skyHash(i+vec3(1,0,0)),f.x),mix(skyHash(i+vec3(0,1,0)),skyHash(i+vec3(1,1,0)),f.x),f.y),mix(mix(skyHash(i+vec3(0,0,1)),skyHash(i+vec3(1,0,1)),f.x),mix(skyHash(i+vec3(0,1,1)),skyHash(i+vec3(1,1,1)),f.x),f.y),f.z);
+      }
       uniform vec3 uSunDirection;
       uniform vec3 uSunColor;
       uniform float uSunIntensity;
@@ -60,8 +71,15 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
       void main() {
         vec3 direction = normalize(vWorldDirection);
         float vertical = clamp(direction.y, -0.12, 1.0);
-        float gradient = smoothstep(-0.10, 0.76, vertical);
-        vec3 sky = mix(uHorizon, uZenith, gradient);
+        float lowerBand=smoothstep(-0.10,0.20,vertical);
+        float upperBand=smoothstep(0.20,0.78,vertical);
+        vec3 sky=mix(uHorizon,uLower,lowerBand);
+        sky=mix(sky,uMid,upperBand);
+        sky=mix(sky,uZenith,smoothstep(0.58,1.0,vertical));
+        float atmosphericGrain=skyNoise(direction*38.0+vec3(0.0,uTime*0.001,0.0))-0.5;
+        float highCloudVeil=pow(max(0.0,skyNoise(direction*17.0+vec3(uTime*0.0003,0.0,0.0))-0.53),2.0);
+        sky+=vec3(0.10,0.13,0.16)*atmosphericGrain*0.045;
+        sky=mix(sky,sky+vec3(0.12,0.16,0.19),highCloudVeil*0.12);
         float sunAngle = max(dot(direction, normalize(uSunDirection)), 0.0);
         float solarDisc = pow(sunAngle, 220.0) * uSunIntensity;
         float solarHalo = pow(sunAngle, 13.0) * uSunIntensity * 0.13;
@@ -222,6 +240,9 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
     camera.getWorldPosition(skyDome.position);
     skyMaterial.uniforms.uZenith.value.copy(zenithColour);
     skyMaterial.uniforms.uHorizon.value.copy(horizonColour);
+    skyMaterial.uniforms.uLower.value.copy(horizonColour).lerp(zenithColour,0.22);
+    skyMaterial.uniforms.uMid.value.copy(horizonColour).lerp(zenithColour,0.58);
+    skyMaterial.uniforms.uTime.value=now*1000;
     skyMaterial.uniforms.uSunDirection.value.copy(sunDirection);
     skyMaterial.uniforms.uSunColor.value.copy(sunColour);
     skyMaterial.uniforms.uSunIntensity.value = daylight * (seasonal.weather === "rain" ? 0.38 : 1);
@@ -247,7 +268,7 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
       skyColor: atmosphereColours.zenith,
       horizonColor: atmosphereColours.horizon,
       sunlightColor: atmosphereColours.sunlight,
-      colorDepth: "24-bit RGB",
+      colorDepth: "24-bit RGB",\n      continuousSkyGradient: true,\n      atmosphericColorVariation: true,
       skyDome: true
     };
   }
