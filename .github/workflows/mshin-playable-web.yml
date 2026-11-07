@@ -64,6 +64,13 @@ jobs:
           mkdir -p "$VERSIONED_GAME_DIR"
           godot --headless --path godot-city-buildit --export-release "Web" "$VERSIONED_GAME_DIR/index.html"
           test -s "$VERSIONED_GAME_DIR/index.html"
+          test -s "$VERSIONED_GAME_DIR/index.png"
+          grep -Fq 'Mshin loading screen' "$VERSIONED_GAME_DIR/index.html"
+          grep -Fq 'status-progress' "$VERSIONED_GAME_DIR/index.html"
+          if grep -Fq 'Godot Game engine' "$VERSIONED_GAME_DIR/index.html"; then
+            echo "Default Godot loading shell unexpectedly exported."
+            exit 1
+          fi
           cp godot-city-buildit/web/launcher.html "$GITHUB_WORKSPACE/site/index.html"
           sed -i "s|./game/|./game/$GITHUB_SHA/|g" "$GITHUB_WORKSPACE/site/index.html"
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
