@@ -19,10 +19,15 @@ func _ready() -> void:
 	rotation_degrees = Vector3(0.0, 45.0, 0.0)
 	_update_camera_transform()
 
+func _is_road_mode() -> bool:
+	var scene = get_tree().current_scene
+	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
+	return road_system != null and road_system.is_road_mode
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			is_mouse_panning = event.pressed
+			is_mouse_panning = event.pressed and not _is_road_mode()
 			last_mouse_position = event.position
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			_zoom(-2.0)
@@ -45,7 +50,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		touch_points[event.index] = event.position
 		if touch_points.size() == 1:
-			_pan(event.relative)
+			if not _is_road_mode():
+				_pan(event.relative)
 		elif touch_points.size() >= 2:
 			_update_pinch(event.relative)
 
