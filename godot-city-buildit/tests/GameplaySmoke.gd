@@ -85,7 +85,7 @@ func _run_gameplay_test() -> void:
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 30, "Starter highway connector should contain 30 connected free road tiles.")
 
-	for x in range(-8, 0):
+	for x in range(-8, 8):
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
 	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
@@ -143,7 +143,7 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_check(SaveManager.load_game(), "SaveManager could not restore the saved city.")
 	var restored_home = _find_building("residential_1")
-	_check(road_system.get_road_count() == starter_road_count + 8, "Road network was not restored from save.")
+	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
 	_check(GameManager.population >= 30, "Population was not restored from save.")
