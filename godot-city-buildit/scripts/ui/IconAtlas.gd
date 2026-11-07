@@ -193,14 +193,3 @@ static func make_icon(icon_name: String, display_size: Vector2 = Vector2(64, 64)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.modulate = Color.WHITE
 	return icon
-
-static func make_icon(icon_name: String, display_size: Vector2 = Vector2(64, 64)) -> TextureRect:
-	var icon := TextureRect.new()
-	icon.texture = texture_for(icon_name)
-	icon.custom_minimum_size = display_size
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon.modulate = Color.WHITE
-	return icon
