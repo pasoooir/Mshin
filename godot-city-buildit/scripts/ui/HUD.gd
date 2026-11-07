@@ -112,3 +112,9 @@ func _on_cancel_pressed() -> void:
 	if road_system:
 		road_system.set_road_mode(false)
 	status_label.text = "Cancelled."
+
+func _on_save_pressed() -> void:
+	if SaveManager.save_game():
+		status_label.text = "City saved successfully."
+	else:
+		status_label.text = "Could not save the city."
