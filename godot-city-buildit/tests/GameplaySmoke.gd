@@ -19,6 +19,21 @@ func _find_building(type_id: String):
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
+func _test_road_painting_drag(road_system) -> void:
+	var input_node = get_node("CityInput")
+	var active_camera: Camera3D = get_viewport().get_camera_3d()
+	road_system.set_road_mode(true)
+	var start_screen: Vector2 = active_camera.unproject_position(BuildManager.grid_to_world(Vector2i(1, 0)))
+	var end_screen: Vector2 = active_camera.unproject_position(BuildManager.grid_to_world(Vector2i(5, 0)))
+	input_node._start_road_stroke(77, start_screen)
+	input_node._continue_road_stroke(77, end_screen)
+	input_node._end_road_stroke(77)
+	road_system.set_road_mode(false)
+	_check(road_system.get_road_count() == 54, "Dragging the road tool should pave every connected tile between the start and end.")
+	for x in range(2, 6):
+		_check(road_system.has_road(Vector2i(x, 0)), "Road drag skipped connected grid tile %d." % x)
+	_check(road_system.get_road_placement_error(Vector2i(20, 20)) != "", "Disconnected road placement should explain why it is blocked.")
+
 func _test_drag_gestures_do_not_place() -> void:
 	var input_node = get_node("CityInput")
 	var initial_count: int = BuildManager.buildings.size()
@@ -85,7 +100,8 @@ func _run_gameplay_test() -> void:
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
-	for x in range(2, 18):
+	_test_road_painting_drag(road_system)
+	for x in range(6, 18):
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
 	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
