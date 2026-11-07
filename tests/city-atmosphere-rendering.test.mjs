@@ -9,7 +9,8 @@ const renderer = await readFile(new URL("../src/city/city-three-renderer.js", im
 test("city renders a real atmospheric sky dome with zenith-to-horizon gradient and solar scattering", () => {
   assert.ok(atmosphere.includes('new THREE.SphereGeometry(900, 32, 20)'));
   assert.ok(atmosphere.includes('new THREE.ShaderMaterial'));
-  assert.ok(atmosphere.includes('smoothstep(-0.10, 0.76, vertical)'));
+  assert.ok(atmosphere.includes('smoothstep(-0.10,0.20,vertical)'));
+  assert.ok(atmosphere.includes('smoothstep(0.20,0.78,vertical)'), "upper sky gradient must blend continuously into the zenith");
   assert.ok(atmosphere.includes('pow(sunAngle, 13.0)'));
   assert.ok(atmosphere.includes('camera.getWorldPosition(skyDome.position)'));
   assert.ok(atmosphere.includes('skyMaterial.uniforms.uSunDirection.value.copy(sunDirection)'));
