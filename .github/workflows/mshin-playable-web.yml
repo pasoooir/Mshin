@@ -7,6 +7,12 @@ on:
       - "godot-city-buildit/**"
       - "Intro.jpg"
       - ".github/workflows/mshin-playable-web.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "godot-city-buildit/**"
+      - "Intro.jpg"
+      - ".github/workflows/mshin-playable-web.yml"
   workflow_dispatch:
 
 permissions:
@@ -89,6 +95,7 @@ jobs:
           path: site
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
