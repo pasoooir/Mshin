@@ -70,7 +70,8 @@ export function createCityCoastalWorld(THREE) {
   const generationStartedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
   const root = new THREE.Group();
   root.name = "mshin-coastal-world";
-  const isMobileQuality = isConstrainedCityDevice();
+  const isConstrainedDevice = isConstrainedCityDevice();
+  const isMobileQuality = isConstrainedDevice;
   // Keep the coastline silhouette smooth while reducing vertex and fragment work on phones.
   const segments = isMobileQuality ? 128 : 192;
   const rows = isMobileQuality ? 48 : 72;
