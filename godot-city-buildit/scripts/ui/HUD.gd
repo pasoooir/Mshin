@@ -47,9 +47,9 @@ func _install_vector_icons() -> void:
 		var parent := old_node.get_parent()
 		var insert_index := old_node.get_index()
 		var holder := Control.new()
-		holder.custom_minimum_size = Vector2(44, 44)
+		holder.custom_minimum_size = Vector2(88, 88)
 		holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var icon := IconAtlas.make_icon(icon_map[path], Vector2(44, 44))
+		var icon := IconAtlas.make_icon(icon_map[path], Vector2(88, 88))
 		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var shadow := TextureRect.new()
 		shadow.texture = icon.texture
@@ -82,13 +82,20 @@ func _build_toolbars() -> void:
 	var old_toolbar := get_node_or_null("RightToolbar")
 	if old_toolbar:
 		old_toolbar.queue_free()
+	# Large touch targets stay inside a vertical scroller on short landscape screens.
+	var toolbar_scroll := ScrollContainer.new()
+	toolbar_scroll.name = "RightToolbar"
+	toolbar_scroll.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	var scroll_height := get_viewport().get_visible_rect().size.y * 0.82
+	toolbar_scroll.position = Vector2(-124, -scroll_height * 0.5)
+	toolbar_scroll.custom_minimum_size = Vector2(116, scroll_height)
+	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	add_child(toolbar_scroll)
 	var toolbar := VBoxContainer.new()
-	toolbar.name = "RightToolbar"
-	toolbar.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	toolbar.position = Vector2(-76, -236)
-	toolbar.custom_minimum_size = Vector2(64, 472)
-	toolbar.add_theme_constant_override("separation", 4)
-	add_child(toolbar)
+	toolbar.name = "RightToolbarItems"
+	toolbar.add_theme_constant_override("separation", 6)
+	toolbar_scroll.add_child(toolbar)
 
 	# Keep this order stable: primary construction tools first, destructive action last.
 	var tools := [
@@ -109,7 +116,7 @@ func _build_toolbars() -> void:
 	actions.name = "BottomActions"
 	actions.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	actions.offset_left = 12
-	actions.offset_top = -62
+	actions.offset_top = -126
 	actions.offset_right = -12
 	actions.offset_bottom = -8
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -128,9 +135,9 @@ func _build_toolbars() -> void:
 	submenu.name = "ToolSubmenu"
 	submenu.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	submenu.offset_left = 12
-	submenu.offset_top = -132
+	submenu.offset_top = -250
 	submenu.offset_right = -12
-	submenu.offset_bottom = -72
+	submenu.offset_bottom = -130
 	submenu.alignment = BoxContainer.ALIGNMENT_CENTER
 	submenu.add_theme_constant_override("separation", 8)
 	add_child(submenu)
@@ -138,7 +145,7 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(64, 64)
+	button.custom_minimum_size = Vector2(112, 112)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
@@ -146,7 +153,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, Vector2(58, 58))
+	var icon := IconAtlas.make_icon(kind, Vector2(104, 104))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
@@ -208,7 +215,7 @@ func _show_submenu(category: String) -> void:
 			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
 	for option in options:
 		var button := _make_icon_button(option[0], option[1])
-		button.custom_minimum_size = Vector2(64, 64)
+		button.custom_minimum_size = Vector2(112, 112)
 		submenu.add_child(button)
 		button.pressed.connect(_on_submenu_option.bind(category, option[1]))
 
