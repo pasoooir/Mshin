@@ -162,7 +162,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "0/0"
 
-[node name="LeftMenu" type="VBoxContainer" parent="HUD"]
+[node name="LeftMenu" type="HBoxContainer" parent="HUD"]
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
