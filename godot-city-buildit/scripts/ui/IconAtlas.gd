@@ -79,7 +79,7 @@ static func validate_sheets() -> bool:
 			valid = false
 			continue
 		var rect: Rect2i = entry[1]
-		var sheet_size := SHEETS[sheet_id].get_size()
+		var sheet_size: Vector2 = SHEETS[sheet_id].get_size()
 		if rect.position.x < 0 or rect.position.y < 0 or rect.end.x > sheet_size.x or rect.end.y > sheet_size.y:
 			push_error("Icon '%s' region %s exceeds sheet %d bounds %s" % [icon_name, str(rect), sheet_id, str(sheet_size)])
 			valid = false
