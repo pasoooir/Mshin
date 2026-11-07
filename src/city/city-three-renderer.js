@@ -6,7 +6,7 @@ import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityHighwayGateway } from "./city-highway-gateway.js";
-import { createCityCoastalWorld } from "./city-coastal-world.js";
+import { createCityCoastalWorld, createCityNaturalGrassTexture } from "./city-coastal-world.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -75,7 +75,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   // A continuous meadow replaces the old per-cell grass slabs. Keep the terrain
   // effectively horizon-free at the widest supported zoom so no canvas/backdrop
   // can appear as a blank strip when the camera looks toward the world edge.
-  const grassGroundMap = grassSurface.map.clone();
+  const naturalGrassTexture = createCityNaturalGrassTexture(THREE);\n  naturalGrassTexture.repeat.set(240, 240);\n  const grassGroundMap = naturalGrassTexture;
   const grassGroundNormal = grassSurface.normalMap.clone();
   const grassGroundRoughness = grassSurface.roughnessMap.clone();
   for (const texture of [grassGroundMap, grassGroundNormal, grassGroundRoughness]) {
@@ -420,7 +420,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         cameraPitch,
         version: THREE.REVISION,
         visualStyle: "continuous-realistic-grassland",
-        continuousGrassland: true,
+        continuousGrassland: true,\n        naturalGrassColorTexture: true,\n        naturalGrassTextureResolution: naturalGrassTexture.image?.width || 0,
         visiblePlotGridLines: 0,
         groundExtentMeters: 1000000,
         cameraTargetLimitMeters: Number.isFinite(lastCameraTargetLimit) ? lastCameraTargetLimit : 0,
@@ -473,7 +473,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     destroy() {
       window.removeEventListener("resize", onResize);
       highwayGateway.dispose();
-      coastalWorld.dispose();
+      coastalWorld.dispose();\n      naturalGrassTexture.dispose();
       renderer.dispose();
       atmosphere.dispose();
       cloudLayer.dispose();
