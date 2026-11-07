@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "godot-city-buildit/**"
+      - "Intro.jpg"
       - ".github/workflows/mshin-playable-web.yml"
   workflow_dispatch:
 
@@ -31,6 +32,11 @@ jobs:
           version: 4.3.0
           use-dotnet: false
           include-templates: true
+
+      - name: Install custom boot splash image
+        run: |
+          test -s Intro.jpg
+          cp Intro.jpg godot-city-buildit/Intro.jpg
 
       - name: Validate project structure
         run: python godot-city-buildit/tools/validate_project.py
