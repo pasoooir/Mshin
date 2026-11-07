@@ -33,6 +33,7 @@ light_energy = 0.4
 light_color = Color(0.65, 0.78, 1, 1)
 
 [node name="CameraRig" type="Node3D" parent="."]
+position = Vector3(8, 0, 0)
 script = ExtResource("1_camera")
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
