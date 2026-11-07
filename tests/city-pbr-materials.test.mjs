@@ -25,8 +25,8 @@ test("city surfaces use layered tileable albedo, normal and roughness maps", () 
 });
 
 test("roads, terrain, building facades and roofs consume physically based surface maps", () => {
-  assert.ok(renderer.includes("grassSurface.map.clone()"), "the continuous meadow must use the PBR grass albedo map");
-  assert.ok(renderer.includes("grassSurface.normalMap.clone()"), "the continuous meadow must use the PBR grass normal map");
+  assert.ok(renderer.includes("const grassGroundMap = naturalGrassTexture"), "the continuous meadow must use the PBR grass albedo map");
+  assert.ok(renderer.includes("const grassGroundNormal = grassSurface.normalMap.clone()"), "the continuous meadow must use the PBR grass normal map");
   assert.ok(renderer.includes("...asphaltSurface"));
   assert.ok(buildingGeometrySource.includes("const facadeSurf = (type === \"industrial\" || type === \"administrative\")"));
   assert.ok(buildingGeometrySource.includes("...facadeSurf"));
@@ -62,7 +62,7 @@ test("building rebuild releases shared GPU resources once", () => {
 });
 
 test("city visual identity uses a muted architectural palette and reports PBR acceptance metrics", () => {
-  assert.ok(renderer.includes('visualStyle: "continuous-realistic-grassland"'));
+  assert.ok(renderer.includes('visualStyle: "full-spectrum-natural-coastal-world"'));
   assert.ok(renderer.includes("pbrMaterialSets: 6"));
   assert.ok(renderer.includes("normalMappedSurfaces: 6"));
   assert.ok(renderer.includes("pbrGenerationMs"), "renderer must expose measured PBR generation time");
@@ -79,7 +79,7 @@ test("city visual identity uses a muted architectural palette and reports PBR ac
 
 test("new city opens on one continuous textured meadow with no visible checkerboard plot grid", () => {
   assert.ok(renderer.includes("new THREE.PlaneGeometry(1000000, 1000000)"), "grass terrain must cover the widest supported camera view without exposing the page backdrop");
-  assert.ok(renderer.includes("texture.repeat.set(2048, 2048)"), "grass PBR maps must retain natural blade scale across the large meadow");
+  assert.ok(renderer.includes("texture === grassGroundMap ? 16000 : 2048"), "grass PBR maps must retain natural blade scale across the large meadow");
   assert.ok(renderer.includes("continuousGrassland: true"));
   assert.ok(renderer.includes("visiblePlotGridLines: 0"));
   assert.ok(!renderer.includes("new THREE.BoxGeometry(CITY_TILE_METERS - 0.06"), "terrain must not be assembled from individual square grass tiles");
