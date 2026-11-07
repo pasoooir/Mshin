@@ -2,9 +2,15 @@
 
 **Version 1.0.0 — Playable Godot project**
 
-A self-contained, mobile-first 3D city-building game built with **Godot 4.3+**, GDScript and the Forward+ renderer. All gameplay code and generated visuals are local; the project does not need a network connection after import.
+A self-contained, mobile-first 3D city-building game built with **Godot 4.3+**, GDScript and the GL Compatibility renderer (required for browser export). All gameplay code and generated visuals are local; the project does not need a network connection after import.
 
-## Open and run
+## Play in a browser
+
+After the **Mshin Playable Web** GitHub Actions workflow succeeds, open [Play Mshin](https://pasoooir.github.io/Mshin/) on a phone or desktop browser. Tap **PLAY MSHIN**; the launcher opens the exported game and requests fullscreen and landscape orientation where the browser allows it. No Godot installation is required for players.
+
+The web build is generated automatically from this Godot project and deployed to GitHub Pages. The first deployment may take a few minutes.
+
+## Open and run in Godot
 
 1. Download and install the **standard (non-.NET) Godot 4.3 or newer editor** from the [official Godot download archive](https://godotengine.org/download/archive/).
 2. Open Godot Project Manager and choose **Import**.
