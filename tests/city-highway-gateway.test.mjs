@@ -42,11 +42,12 @@ test("3D city world includes a divided regional highway and bidirectional gatewa
   assert.equal(stats.highwayLanes, 6);
   assert.equal(stats.highwayRamps, 2);
   assert.equal(stats.cityGatewayRoads, 1);
-  assert.ok(gateway.group.children.some(item => item.name === "highway-north-carriageway"));
-  assert.ok(gateway.group.children.some(item => item.name === "highway-south-carriageway"));
-  assert.ok(gateway.group.children.some(item => item.name === "highway-city-exit-ramp"));
-  assert.ok(gateway.group.children.some(item => item.name === "city-highway-entry-ramp"));
+  assert.ok(gateway.group.children.some(item => item.name === "highway-north-carriageway" || item.userData.sourceMeshNames?.includes("highway-north-carriageway")));
+  assert.ok(gateway.group.children.some(item => item.name === "highway-south-carriageway" || item.userData.sourceMeshNames?.includes("highway-south-carriageway")));
+  assert.ok(gateway.group.children.some(item => item.name === "highway-city-exit-ramp" || item.userData.sourceMeshNames?.includes("highway-city-exit-ramp")));
+  assert.ok(gateway.group.children.some(item => item.name === "city-highway-entry-ramp" || item.userData.sourceMeshNames?.includes("city-highway-entry-ramp")));
   assert.ok(gateway.group.children.some(item => item.isInstancedMesh), "lane markings and guardrail posts should be instanced");
+  assert.ok(gateway.group.children.length < 25, "merged highway geometry must stay within a compact mobile draw-call budget");
   assert.ok(gateway.group.children.length < 100, "highway meshes must stay bounded for mobile rendering");
   gateway.dispose();
   globalThis.document = previousDocument;
