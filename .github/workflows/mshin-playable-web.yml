@@ -69,7 +69,9 @@ jobs:
           cmp Intro.jpg "$VERSIONED_GAME_DIR/Intro.jpg"
           grep -Fq 'src="Intro.jpg"' "$VERSIONED_GAME_DIR/index.html"
           grep -Fq 'Mshin loading screen' "$VERSIONED_GAME_DIR/index.html"
-          grep -Fq 'status-progress' "$VERSIONED_GAME_DIR/index.html"
+          grep -Fq 'progress-fill' "$VERSIONED_GAME_DIR/index.html"
+          grep -Fq 'object-fit: cover' "$VERSIONED_GAME_DIR/index.html"
+          grep -Fq 'onProgress(current, total)' "$VERSIONED_GAME_DIR/index.html"
           if grep -Fq 'Godot Game engine' "$VERSIONED_GAME_DIR/index.html"; then
             echo "Default Godot loading shell unexpectedly exported."
             exit 1
