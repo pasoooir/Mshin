@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://c8mainscene001"]
+[gd_scene load_steps=8 format=3 uid="uid://c8mainscene001"]
 
 [ext_resource type="Script" path="res://scripts/systems/CameraController.gd" id="1_camera"]
 [ext_resource type="Script" path="res://scripts/ui/HUD.gd" id="2_hud"]
@@ -6,22 +6,15 @@
 [ext_resource type="Script" path="res://scripts/systems/GhostPreview.gd" id="4_ghost"]
 [ext_resource type="Script" path="res://scripts/systems/RoadSystem.gd" id="5_road"]
 [ext_resource type="Script" path="res://scripts/GameBootstrap.gd" id="6_bootstrap"]
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
-size = Vector2(160, 160)
-
-[sub_resource type="StandardMaterial3D" id="Material_grass"]
-albedo_color = Color(0.3, 0.66, 0.26, 1)
-roughness = 0.93
+[ext_resource type="Script" path="res://scripts/world/WorldPresentation.gd" id="7_world"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("6_bootstrap")
 
 [node name="World" type="Node3D" parent="."]
 
-[node name="Ground" type="MeshInstance3D" parent="World"]
-mesh = SubResource("PlaneMesh_ground")
-surface_material_override/0 = SubResource("Material_grass")
+[node name="WorldPresentation" type="Node3D" parent="World"]
+script = ExtResource("7_world")
 
 [node name="Buildings" type="Node3D" parent="World"]
 
