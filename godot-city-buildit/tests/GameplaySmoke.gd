@@ -141,7 +141,7 @@ func _run_gameplay_test() -> void:
 	_check(GameManager.population >= 30, "Population was not restored from save.")
 
 	if failures.is_empty():
-		print("[GameplaySmoke] PASS: roads, footprint collision, road access, construction, production, collection, crafting, utilities, upgrade, population and save.")
+		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
 		_finish(0)
 	else:
 		push_error("[GameplaySmoke] FAILURES: %d" % failures.size())
