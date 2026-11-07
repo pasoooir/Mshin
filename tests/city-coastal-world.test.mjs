@@ -9,6 +9,9 @@ test("coastal world paints a multi-stop gradient ocean with layered waves and su
   for (const token of ["animated-24bit-gradient-ocean", "uShallow", "uLagoon", "uCoastal", "uBlue", "uDeep", "multiscaleWaveFields", "shoreline-foam-", "natural-sandy-beach", "colorDepth:\"24-bit RGB\""]) assert.ok(coastal.includes(token), token);
   assert.match(coastal, /noise\(vWorld\.xz/);
   assert.match(coastal, /glint/);
+  assert.match(coastal, /float n3=noise/);
+  assert.match(coastal, /float n4=noise/);
+  assert.match(coastal, /float pigment=/);
   assert.match(coastal, /createCityNaturalSoilTexture/);
   assert.match(coastal, /natural-earth-transition/);
   assert.ok(coastal.includes("beachUvs.push(i/segments*3.2, j*1.2)"));
@@ -27,6 +30,9 @@ test("natural grass uses a full-color procedural texture in the live renderer", 
 test("sky uses continuous full-spectrum gradients and procedural atmosphere", () => {
   for (const token of ["uLower", "uMid", "skyNoise", "highCloudVeil", "continuousSkyGradient", "colorDepth: \"24-bit RGB\""]) assert.ok(atmosphere.includes(token), token);
   assert.match(renderer, /trueColorAtmosphere/);
+  assert.match(atmosphere, /float cloudField=/);
+  assert.match(atmosphere, /float cloudDetail=/);
+  assert.match(atmosphere, /float cloudMask=/);
   assert.match(renderer, /renderer\.outputColorSpace = THREE\.SRGBColorSpace/);
   assert.match(renderer, /renderer\.toneMapping = THREE\.ACESFilmicToneMapping/);
   assert.match(renderer, /colorDepth: "24-bit RGB"/);
