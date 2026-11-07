@@ -171,6 +171,59 @@ static func _make_transparent_cell(sheet_id: int, region: Rect2i) -> Texture2D:
 		if py > 0: queue.append(index - width)
 		if py + 1 < height: queue.append(index + width)
 
+	# Remove a second, common source of colored square halos: a flat,
+	# enclosed rounded-square plate baked behind an icon. Only large,
+	# near-square, high-fill uniform components are considered; detailed
+	# building silhouettes and irregular artwork are left untouched.
+	var flat_visited := PackedByteArray()
+	flat_visited.resize(width * height)
+	for start_index in range(width * height):
+		if flat_visited[start_index] == 1:
+			continue
+		var start_color := crop.get_pixel(start_index % width, int(start_index / width))
+		if start_color.a <= 0.01:
+			flat_visited[start_index] = 1
+			continue
+		var component := PackedInt32Array([start_index])
+		flat_visited[start_index] = 1
+		var component_head := 0
+		var min_x := width
+		var min_y := height
+		var max_x := 0
+		var max_y := 0
+		while component_head < component.size():
+			var current := component[component_head]
+			component_head += 1
+			var cx := current % width
+			var cy := int(current / width)
+			min_x = mini(min_x, cx)
+			min_y = mini(min_y, cy)
+			max_x = maxi(max_x, cx)
+			max_y = maxi(max_y, cy)
+			for neighbor in [current - 1, current + 1, current - width, current + width]:
+				if neighbor < 0 or neighbor >= width * height or flat_visited[neighbor] == 1:
+					continue
+				var nx := neighbor % width
+				var ny := int(neighbor / width)
+				if abs(nx - cx) + abs(ny - cy) != 1:
+					continue
+				var neighbor_color := crop.get_pixel(nx, ny)
+				if neighbor_color.a > 0.01 and _color_distance(neighbor_color, start_color) <= 0.08:
+					flat_visited[neighbor] = 1
+					component.append(neighbor)
+		var box_width := max_x - min_x + 1
+		var box_height := max_y - min_y + 1
+		var box_area := box_width * box_height
+		var aspect := float(box_width) / maxf(1.0, float(box_height))
+		var fill_ratio := float(component.size()) / maxf(1.0, float(box_area))
+		var large_plate := component.size() > width * height * 0.08
+		var plate_size := box_width > width * 0.30 and box_height > height * 0.30 and box_width < width * 0.90 and box_height < height * 0.90
+		if large_plate and plate_size and aspect >= 0.65 and aspect <= 1.45 and fill_ratio >= 0.68:
+			for pixel_index in component:
+				var plate_pixel := crop.get_pixel(pixel_index % width, int(pixel_index / width))
+				plate_pixel.a = 0.0
+				crop.set_pixel(pixel_index % width, int(pixel_index / width), plate_pixel)
+
 	# Runtime ImageTexture is RGBA and uncompressed; no mipmaps are generated.
 	var result := ImageTexture.create_from_image(crop)
 	_texture_cache[cache_key] = result
