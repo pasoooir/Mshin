@@ -51,7 +51,7 @@ for sheet_index, sheet_path in enumerate(expected_sheets, start=1):
         errors.append(f"Missing local icon sheet {sheet_path.relative_to(ROOT)}")
         continue
     data = sheet_path.read_bytes()
-    if len(data) < 24 or data[:8] != b"\\x89PNG\\r\\n\\x1a\\n":
+    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
         errors.append(f"Icon sheet {sheet_path.name} is not a valid PNG")
         continue
     width, height = struct.unpack(">II", data[16:24])
