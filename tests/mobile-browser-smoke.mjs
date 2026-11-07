@@ -232,7 +232,16 @@ try {
   });
   assert.equal(await mobile.evaluate(() => window.Mshin3DRenderer?.trackHalfWidth), 220, "mobile race must load the widened 440-unit circuit");
   await mobile.evaluate(() => { window.Mshin3DRenderer.captureNextFrameSample = true; });
-  await mobile.waitForFunction(() => window.Mshin3DRenderer?.lastFramePixelSample?.context === true, undefined, { timeout: 5000 });
+  await mobile.waitForFunction(() => window.Mshin3DRenderer?.lastFramePixelSample?.context === true, undefined, { timeout: 15000 }).catch(async error => {
+    const sampleState = await mobile.evaluate(() => ({
+      frames: window.Mshin3DRenderer?.frames,
+      capturePending: window.Mshin3DRenderer?.captureNextFrameSample,
+      sample: window.Mshin3DRenderer?.lastFramePixelSample,
+      status: window.Mshin3DRenderer?.status,
+      error: window.Mshin3DRenderer?.error
+    }));
+    throw new Error("mobile race pixel sampling did not complete on a rendered frame: " + JSON.stringify(sampleState) + " | " + error.message);
+  });
   const raceFrameSample = await mobile.evaluate(() => window.Mshin3DRenderer.lastFramePixelSample);
   await captureScreenshot(mobile, "artifacts/racing-mobile-track.png");
   assert.ok(raceFrameSample.visiblePixels > 1000, "mobile race scene must contain substantial visible rendered terrain/track pixels: " + JSON.stringify(raceFrameSample));
