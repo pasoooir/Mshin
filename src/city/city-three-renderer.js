@@ -295,7 +295,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   function resize() {
     width = window.innerWidth;
     height = window.innerHeight;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatio));
     renderer.setSize(width, height, false);
     const aspect = width / Math.max(1, height);
     camera.left = -25 * aspect;
