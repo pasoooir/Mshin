@@ -15,7 +15,12 @@ const isRoadCell = () => false;
 export async function createCityThreeRenderer(sourceCanvas) {
   // Load the committed Three.js build from this GitHub Pages repository.
   const THREE = await import("../../vendor/three/build/three.module.min.js");
-  const isMobileDevice = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "");
+  // Mobile emulation and tablets do not always advertise a mobile user agent.
+  // Detect touch/coarse-pointer devices as well so CI and real phones receive
+  // the intended low-bandwidth WebGL profile instead of desktop shadows/AA.
+  const isMobileDevice = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "")
+    || navigator.maxTouchPoints > 0
+    || window.matchMedia?.("(pointer: coarse)").matches === true;
   const maxPixelRatio = isMobileDevice ? 1.25 : 1.5;
   const renderer = new THREE.WebGLRenderer({
     antialias: !isMobileDevice,
@@ -419,6 +424,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     getStats() {
       return {
         renderer: "three.js",
+        rendererTier: isMobileDevice ? "mobile" : "desktop",
+        pixelRatio: renderer.getPixelRatio(),
+        antialias: renderer.getContext().getContextAttributes()?.antialias === true,
+        shadowMapSize: sun.shadow.mapSize.x,
         cameraOrbit,
         cameraPitch,
         version: THREE.REVISION,
