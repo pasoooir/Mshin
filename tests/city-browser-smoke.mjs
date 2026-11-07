@@ -4,8 +4,8 @@ import fs from "node:fs";
 
 async function captureScreenshot(page,path){
  const startedAt=Date.now();
- let paused=false,timer;
- const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("City frame export exceeded the hard 10-second limit: "+path)),10000)});
+ let paused=false,timer,phase="pause-render-loop";
+ const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("City frame export exceeded the hard 10-second limit during "+phase+": "+path)),10000)});
  try{
   const operation=(async()=>{
    paused=await page.evaluate(()=>{
@@ -16,7 +16,9 @@ async function captureScreenshot(page,path){
     return true;
    });
    if(!paused)throw new Error("City render loop could not be paused before frame export: "+path);
+   phase="settle-final-frame";
    await page.waitForTimeout(80);
+   phase="read-webgl-frame";
    const dataUrl=await page.evaluate(()=>{
     const canvas=document.querySelector("#cityThreeViewport");
     if(!(canvas instanceof HTMLCanvasElement))throw new Error("Three.js city canvas is missing");
@@ -24,6 +26,7 @@ async function captureScreenshot(page,path){
     if(!attributes?.preserveDrawingBuffer)throw new Error("Smoke mode must preserve the WebGL frame buffer for deterministic export");
     return canvas.toDataURL("image/png");
    });
+   phase="write-png-artifact";
    const comma=dataUrl.indexOf(",");
    if(comma<0||!dataUrl.startsWith("data:image/png;base64,"))throw new Error("City frame export returned an invalid PNG data URL");
    fs.mkdirSync(path.slice(0,path.lastIndexOf("/"))||".",{recursive:true});
@@ -111,7 +114,7 @@ try{
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.rendererTier,"mobile","touch-enabled mobile browser smoke must activate the mobile GPU profile");
- assert.ok(renderStats.pixelRatio<=1.25,"mobile renderer pixel ratio must stay within the 1.25 GPU budget");
+ assert.ok(renderStats.pixelRatio<=0.65,"capture-mode renderer pixel ratio must stay within the bounded SwiftShader readback budget");
  assert.equal(renderStats.preserveDrawingBuffer,true,"smoke-only WebGL frame export must preserve the buffer without changing production rendering");
  assert.equal(renderStats.antialias,false,"mobile renderer must disable costly multisample antialiasing");
  assert.equal(renderStats.shadowMapSize,512,"mobile renderer must use the constrained 512px shadow map");
