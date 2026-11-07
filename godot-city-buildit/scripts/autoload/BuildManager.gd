@@ -11,6 +11,8 @@ const WORLD_HALF_CELLS: int = 40
 const BuildingScene = preload("res://scenes/buildings/Building.tscn")
 
 var buildings: Dictionary = {}
+# Every occupied grid cell points directly to its building for O(1) interaction and placement checks.
+var building_cells: Dictionary = {}
 var selected_building_type: String = ""
 var is_placing: bool = false
 var factory_count: int = 0
@@ -88,12 +90,11 @@ func is_cell_free(grid_pos: Vector2i, size: Vector2i = Vector2i.ONE) -> bool:
 	for cell in get_footprint_cells(grid_pos, size):
 		if road_system and road_system.has_road(cell):
 			return false
-		for building in buildings.values():
-			if not is_instance_valid(building):
-				continue
-			var building_size: Vector2i = building.definition.get("size", Vector2i(2,2))
-			if cell in get_footprint_cells(building.grid_pos, building_size):
+		if building_cells.has(cell):
+			var occupied = building_cells[cell]
+			if is_instance_valid(occupied):
 				return false
+			building_cells.erase(cell)
 	return true
 
 func has_road_access(anchor: Vector2i, size: Vector2i) -> bool:
@@ -159,6 +160,8 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 	building_node.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
 	building_node.setup(data)
 	buildings[building_id] = building_node
+	for occupied_cell in get_footprint_cells(grid_pos, size):
+		building_cells[occupied_cell] = building_node
 	if definition.get("category", "") == "industrial":
 		factory_count += 1
 	construction_started.emit(building_id)
@@ -179,3 +182,24 @@ func get_selected_size() -> Vector2i:
 
 func notify_construction_finished(building_id: String) -> void:
 	construction_finished.emit(building_id)
+
+func building_at_cell(grid_pos: Vector2i) -> Node:
+	var building = building_cells.get(grid_pos)
+	if building != null and is_instance_valid(building):
+		return building
+	if building != null:
+		building_cells.erase(grid_pos)
+	return null
+
+func unregister_building(building_id: String) -> void:
+	var building = buildings.get(building_id)
+	if building == null:
+		return
+	var size: Vector2i = building.definition.get("size", Vector2i(2, 2))
+	for cell in get_footprint_cells(building.grid_pos, size):
+		if building_cells.get(cell) == building:
+			building_cells.erase(cell)
+	buildings.erase(building_id)
+	if building.definition.get("category", "") == "industrial":
+		factory_count = maxi(0, factory_count - 1)
+	building_removed.emit(building_id)
