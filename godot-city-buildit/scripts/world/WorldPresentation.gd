@@ -41,7 +41,7 @@ func _build_environment() -> void:
 func _build_terrain() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var divisions := 64
+	var divisions := 40
 	for z_index in range(divisions):
 		var z0 := -TERRAIN_HALF_DEPTH + (float(z_index) / divisions) * TERRAIN_HALF_DEPTH * 2.0
 		var z1 := -TERRAIN_HALF_DEPTH + (float(z_index + 1) / divisions) * TERRAIN_HALF_DEPTH * 2.0
@@ -75,8 +75,8 @@ func _build_terrain() -> void:
 	water.name = "CoastalWater"
 	var water_mesh := PlaneMesh.new()
 	water_mesh.size = Vector2(110.0, 190.0)
-	water_mesh.subdivide_width = 96
-	water_mesh.subdivide_depth = 96
+	water_mesh.subdivide_width = 48
+	water_mesh.subdivide_depth = 48
 	water.mesh = water_mesh
 	water.position = Vector3(104.0, -0.18, 0.0)
 	water.material_override = _create_water_material()
@@ -86,8 +86,8 @@ func _build_terrain() -> void:
 	shallow_water.name = "ShallowWater"
 	var shallow_mesh := PlaneMesh.new()
 	shallow_mesh.size = Vector2(8.0, 190.0)
-	shallow_mesh.subdivide_width = 16
-	shallow_mesh.subdivide_depth = 96
+	shallow_mesh.subdivide_width = 8
+	shallow_mesh.subdivide_depth = 48
 	shallow_water.mesh = shallow_mesh
 	shallow_water.position = Vector3(54.0, -0.12, 0.0)
 	shallow_water.material_override = _create_shallow_water_material()
@@ -319,7 +319,7 @@ func _build_grass_detail() -> void:
 	blade_material.roughness = 0.92
 	blade_mesh.material = blade_material
 	var positions: Array[Vector3] = []
-	for index in range(2200):
+	for index in range(900):
 		var x := -42.0 + fposmod(float(index) * 17.31, 82.0)
 		var z := -84.0 + fposmod(float(index) * 29.17, 168.0)
 		if x > 30.0 or absf(z) < 43.0 and x > -40.0:
@@ -344,22 +344,32 @@ func _build_grass_detail() -> void:
 	add_child(grass)
 
 func _build_shoreline_details() -> void:
-	# A pale wet-sand band and scattered shoreline rocks soften the land-to-water transition.
+	# Batch all shoreline stones into one MultiMesh draw instead of 38
+	# individually allocated MeshInstance3D nodes and materials.
+	var pebble_mesh := SphereMesh.new()
+	pebble_mesh.radius = 0.34
+	pebble_mesh.height = 0.22
+	var pebble_material := StandardMaterial3D.new()
+	pebble_material.roughness = 0.95
+	pebble_material.vertex_color_use_as_albedo = true
+	pebble_mesh.material = pebble_material
+	var palette: Array[Color] = [Color(0.55, 0.53, 0.46), Color(0.69, 0.65, 0.55), Color(0.42, 0.46, 0.43)]
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_colors = true
+	multimesh.mesh = pebble_mesh
+	multimesh.instance_count = 38
 	for index in range(38):
 		var z := -88.0 + float(index) * 4.6
-		var x := _coastline(z) - 1.8
-		var pebble := MeshInstance3D.new()
-		var pebble_mesh := SphereMesh.new()
-		pebble_mesh.radius = 0.28 + float(index % 3) * 0.09
-		pebble_mesh.height = 0.22
-		pebble.mesh = pebble_mesh
-		pebble.position = Vector3(x + sin(float(index) * 4.1) * 1.8, 0.05, z)
-		var pebble_material := StandardMaterial3D.new()
-		var stone_palette: Array[Color] = [Color(0.55, 0.53, 0.46), Color(0.69, 0.65, 0.55), Color(0.42, 0.46, 0.43)]
-		pebble_material.albedo_color = stone_palette[index % stone_palette.size()]
-		pebble_material.roughness = 0.95
-		pebble.material_override = pebble_material
-		add_child(pebble)
+		var x := _coastline(z) - 1.8 + sin(float(index) * 4.1) * 1.8
+		var scale := 0.78 + float(index % 3) * 0.22
+		var basis := Basis.IDENTITY.scaled(Vector3(scale, scale * 0.7, scale))
+		multimesh.set_instance_transform(index, Transform3D(basis, Vector3(x, 0.05, z)))
+		multimesh.set_instance_color(index, palette[index % palette.size()])
+	var pebbles := MultiMeshInstance3D.new()
+	pebbles.name = "ShorelinePebbles"
+	pebbles.multimesh = multimesh
+	add_child(pebbles)
 
 func _build_sunlight() -> void:
 	var sun := DirectionalLight3D.new()
@@ -367,5 +377,5 @@ func _build_sunlight() -> void:
 	sun.rotation_degrees = Vector3(-48.0, -32.0, 0.0)
 	sun.light_color = Color(1.0, 0.88, 0.70)
 	sun.light_energy = 0.22
-	sun.shadow_enabled = true
+	sun.shadow_enabled = false
 	add_child(sun)
