@@ -112,6 +112,10 @@ try{
  assert.equal(await page.evaluate(()=>typeof window.MshinCityDebug.pauseLoop==="function"&&typeof window.MshinCityDebug.resumeLoop==="function"),true,"city smoke screenshots must be able to pause and resume the live renderer without changing game state");
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
+ assert.equal(renderStats.rendererTier,"mobile","touch-enabled mobile browser smoke must activate the mobile GPU profile");
+ assert.ok(renderStats.pixelRatio<=1.25,"mobile renderer pixel ratio must stay within the 1.25 GPU budget");
+ assert.equal(renderStats.antialias,false,"mobile renderer must disable costly multisample antialiasing");
+ assert.equal(renderStats.shadowMapSize,512,"mobile renderer must use the constrained 512px shadow map");
  assert.equal(renderStats.version,"180");
  assert.equal(renderStats.visualStyle,"full-spectrum-natural-coastal-world","the city renderer must use the full-spectrum natural coastal PBR art direction");
  assert.equal(renderStats.continuousGrassland,true,"the world must be one continuous grass surface");
