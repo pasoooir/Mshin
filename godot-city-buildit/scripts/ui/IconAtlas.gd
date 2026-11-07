@@ -177,7 +177,11 @@ static func _make_transparent_cell(icon_name: String, sheet_id: int, region: Rec
 		for py in range(height):
 			for px in range(width):
 				var power_pixel := crop.get_pixel(px, py)
-				if power_pixel.r > 0.72 and power_pixel.g > 0.48 and power_pixel.b < 0.30 and power_pixel.r - power_pixel.b > 0.42:
+				var power_max := maxf(power_pixel.r, maxf(power_pixel.g, power_pixel.b))
+				var power_min := minf(power_pixel.r, minf(power_pixel.g, power_pixel.b))
+				var yellow_plate := power_pixel.r > 0.72 and power_pixel.g > 0.48 and power_pixel.b < 0.30 and power_pixel.r - power_pixel.b > 0.42
+				var pale_tile_edge := power_min > 0.72 and power_max - power_min < 0.18
+				if yellow_plate or pale_tile_edge:
 					power_pixel.a = 0.0
 					crop.set_pixel(px, py, power_pixel)
 
