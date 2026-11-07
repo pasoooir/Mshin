@@ -21,7 +21,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const isMobileDevice = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "")
     || navigator.maxTouchPoints > 0
     || window.matchMedia?.("(pointer: coarse)").matches === true;
-  const maxPixelRatio = isMobileDevice ? 1.25 : 1.5;
+  const captureMode = new URLSearchParams(window.location.search).has("cityCapture");
+  // Browser-test artifacts need a compact deterministic frame; production
+  // devices retain the normal mobile/desktop quality caps below.
+  const maxPixelRatio = captureMode ? 0.65 : isMobileDevice ? 1.25 : 1.5;
   const renderer = new THREE.WebGLRenderer({
     antialias: !isMobileDevice,
     alpha: false,
