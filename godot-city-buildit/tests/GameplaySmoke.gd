@@ -71,6 +71,24 @@ func _run_gameplay_test() -> void:
 	_check(home != null and home.current_population == 30 and GameManager.population >= 30, "House upgrade did not increase population.")
 
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
+
+	for building in BuildManager.buildings.values():
+		if is_instance_valid(building):
+			building.queue_free()
+	BuildManager.buildings.clear()
+	BuildManager.factory_count = 0
+	for road_mesh in road_system.roads.values():
+		if is_instance_valid(road_mesh):
+			road_mesh.queue_free()
+	road_system.roads.clear()
+	await get_tree().process_frame
+	_check(SaveManager.load_game(), "SaveManager could not restore the saved city.")
+	var restored_home = _find_building("residential_1")
+	_check(road_system.get_road_count() == 8, "Road network was not restored from save.")
+	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
+	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
+	_check(GameManager.population >= 30, "Population was not restored from save.")
+
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: roads, footprint collision, road access, construction, production, collection, crafting, utilities, upgrade, population and save.")
 		_finish(0)
