@@ -66,9 +66,9 @@ func _build_toolbars() -> void:
 	var toolbar := VBoxContainer.new()
 	toolbar.name = "RightToolbar"
 	toolbar.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	toolbar.position = Vector2(-76, -190)
-	toolbar.custom_minimum_size = Vector2(64, 380)
-	toolbar.add_theme_constant_override("separation", 7)
+	toolbar.position = Vector2(-76, -236)
+	toolbar.custom_minimum_size = Vector2(64, 472)
+	toolbar.add_theme_constant_override("separation", 4)
 	add_child(toolbar)
 	var tools := [
 		["road","Road"],["residential","Residential"],["commercial","Commercial"],
@@ -110,7 +110,7 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(68, 68)
+	button.custom_minimum_size = Vector2(64, 64)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	var icon := IconAtlas.make_icon(kind, Vector2(64, 64))
@@ -152,7 +152,7 @@ func _show_submenu(category: String) -> void:
 			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
 	for option in options:
 		var button := _make_icon_button(option[0], option[1])
-		button.custom_minimum_size = Vector2(68, 68)
+		button.custom_minimum_size = Vector2(64, 64)
 		submenu.add_child(button)
 		button.pressed.connect(_on_submenu_option.bind(category, option[1]))
 
