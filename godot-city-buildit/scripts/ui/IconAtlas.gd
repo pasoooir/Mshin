@@ -16,6 +16,8 @@ const SHEETS := {
 
 # Each region is kept inside its source sheet. The cells include a small safety
 # margin so neighboring artwork cannot bleed into the icon when scaled.
+static var _cleaned_sheets: Dictionary = {}
+
 const REGIONS := {
 	"road": [1, Rect2i(20, 20, 270, 240)],
 	"residential": [1, Rect2i(300, 20, 270, 240)],
@@ -85,13 +87,67 @@ static func validate_sheets() -> bool:
 			valid = false
 	return valid
 
+static func _get_clean_sheet(sheet_id: int) -> Texture2D:
+	if _cleaned_sheets.has(sheet_id):
+		return _cleaned_sheets[sheet_id]
+	if not SHEETS.has(sheet_id) or SHEETS[sheet_id] == null:
+		return null
+
+	var source: Texture2D = SHEETS[sheet_id]
+	var image := source.get_image()
+	if image == null or image.is_empty():
+		push_error("Could not read icon sheet image %d" % sheet_id)
+		return source
+	image.convert(Image.FORMAT_RGBA8)
+
+	# The supplied sprite sheets contain a baked light-gray checkerboard.
+	# Remove only neutral, bright pixels connected to the sheet's outer edge,
+	# preserving colored artwork and enclosed white details.
+	var width := image.get_width()
+	var height := image.get_height()
+	var visited := PackedByteArray()
+	visited.resize(width * height)
+	var queue := PackedInt32Array()
+
+	for x in range(width):
+		queue.append(x)
+		queue.append((height - 1) * width + x)
+	for y in range(height):
+		queue.append(y * width)
+		queue.append(y * width + width - 1)
+
+	var head := 0
+	while head < queue.size():
+		var index := queue[head]
+		head += 1
+		if index < 0 or index >= visited.size() or visited[index] == 1:
+			continue
+		visited[index] = 1
+		var px := index % width
+		var py := index / width
+		var color := image.get_pixel(px, py)
+		var brightest := maxf(color.r, maxf(color.g, color.b))
+		var darkest := minf(color.r, minf(color.g, color.b))
+		if color.a <= 0.01 or brightest - darkest > 0.13 or darkest < 0.52:
+			continue
+		color.a = 0.0
+		image.set_pixel(px, py, color)
+		if px > 0: queue.append(index - 1)
+		if px + 1 < width: queue.append(index + 1)
+		if py > 0: queue.append(index - width)
+		if py + 1 < height: queue.append(index + width)
+
+	var cleaned := ImageTexture.create_from_image(image)
+	_cleaned_sheets[sheet_id] = cleaned
+	return cleaned
+
 static func texture_for(icon_name: String) -> AtlasTexture:
 	if not REGIONS.has(icon_name):
 		push_error("Unknown UI atlas icon: " + icon_name)
 		return null
 	var entry: Array = REGIONS[icon_name]
 	var atlas_texture := AtlasTexture.new()
-	atlas_texture.atlas = SHEETS[int(entry[0])]
+	atlas_texture.atlas = _get_clean_sheet(int(entry[0]))
 	atlas_texture.region = entry[1]
 	atlas_texture.filter_clip = true
 	return atlas_texture
