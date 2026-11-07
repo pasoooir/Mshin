@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const renderer=fs.readFileSync(new URL("../src/race-renderer-3d.js",import.meta.url),"utf8");
+const pixelSampler=fs.readFileSync(new URL("../src/race-pixel-sample.js",import.meta.url),"utf8");
 const pbr=fs.readFileSync(new URL("../src/vehicle-pbr.js",import.meta.url),"utf8");
 const credits=fs.readFileSync(new URL("../src/racing/ENVIRONMENT_ASSET_CREDITS.md",import.meta.url),"utf8");
 
@@ -76,7 +77,8 @@ test("large terrain background cannot depth-occlude the mobile racing circuit",(
  assert.match(renderer,/const terrainBasePart=part\(terrainBaseTris,theme\[0\]/);
  assert.match(renderer,/state\.terrainBaseVertices=terrainBasePart\.mesh\.count;state\.roadVertices=nextRoad\.mesh\.count/);
  assert.match(renderer,/drawPart\(drawParts\[0\],vp,translate\(0,0,0\)\);[\s\S]*?gl\.clear\(gl\.DEPTH_BUFFER_BIT\);[\s\S]*?for\(let i=1;i<drawParts\.length;i\+\+\)drawPart/);
- assert.match(renderer,/roadLikePixels/);
+ assert.match(pixelSampler,/roadLikePixels/);
+ assert.match(renderer,/sampleRaceFramePixels\(gl,canvas,state\)/);
 });
 
 test("race surfaces wind upward and correct downward horizontal face normals defensively",()=>{
