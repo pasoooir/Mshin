@@ -154,7 +154,7 @@ export function createCityCoastalWorld(THREE, { scene, renderer }) {
     },
     dispose() {
       scene.remove(group);
-      beachGeometry.dispose(); waterMaterial.dispose(); ocean.geometry.dispose(); soilTexture.dispose(); foamMaterial.dispose();
+      beachGeometry.dispose(); beachMaterial.dispose(); waterMaterial.dispose(); ocean.geometry.dispose(); soilTexture.dispose(); foamMaterial.dispose();
       foamGroup.traverse(object => { if (object.geometry) object.geometry.dispose(); });
     }
   };
