@@ -2,41 +2,39 @@ import {chromium} from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-async function captureScreenshot(page,path){
+async function captureScreenshot(page,path,{fullPage=false}={}){
  const startedAt=Date.now();
- let paused=false,timer,phase="pause-render-loop";
- const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("City frame export exceeded the hard 10-second limit during "+phase+": "+path)),10000)});
+ let session,timer,captureTimer,paused=false,phase="pause-render-loop";
+ const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("City screenshot exceeded the hard 10-second limit during "+phase+": "+path)),10000)});
+ const operation=(async()=>{
+  paused=await page.evaluate(()=>{
+   const debug=window.MshinCityDebug;
+   if(typeof debug?.pauseLoop!=="function"||typeof debug?.resumeLoop!=="function")return false;
+   debug.pauseLoop();
+   debug.draw();
+   return true;
+  });
+  if(!paused)throw new Error("City render loop could not be paused before screenshot: "+path);
+  phase="settle-final-frame";
+  await page.waitForTimeout(80);
+  phase="prepare-page-surface";
+  const metrics=fullPage?await page.evaluate(()=>({width:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth,innerWidth),height:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,innerHeight)})):null;
+  session=await page.context().newCDPSession(page);
+  phase="capture-composited-page";
+  const remaining=Math.max(1,9500-(Date.now()-startedAt));
+  const capture=session.send("Page.captureScreenshot",{format:"png",fromSurface:true,captureBeyondViewport:fullPage,optimizeForSpeed:true,...(metrics?{clip:{x:0,y:0,width:metrics.width,height:metrics.height,scale:1}}:{})});
+  const result=await Promise.race([capture,new Promise((_,reject)=>{captureTimer=setTimeout(()=>reject(new Error("Composited screenshot capture exceeded the remaining 10-second budget: "+path)),remaining)})]);
+  phase="write-screenshot";
+  fs.mkdirSync(path.slice(0,path.lastIndexOf("/"))||".",{recursive:true});
+  fs.writeFileSync(path,Buffer.from(result.data,"base64"));
+ })();
  try{
-  const operation=(async()=>{
-   paused=await page.evaluate(()=>{
-    const debug=window.MshinCityDebug;
-    if(typeof debug?.pauseLoop!=="function"||typeof debug?.resumeLoop!=="function")return false;
-    debug.pauseLoop();
-    debug.draw();
-    return true;
-   });
-   if(!paused)throw new Error("City render loop could not be paused before frame export: "+path);
-   phase="settle-final-frame";
-   await page.waitForTimeout(80);
-   phase="read-webgl-frame";
-   const dataUrl=await page.evaluate(()=>{
-    const canvas=document.querySelector("#cityThreeViewport");
-    if(!(canvas instanceof HTMLCanvasElement))throw new Error("Three.js city canvas is missing");
-    const attributes=canvas.getContext("webgl2")?.getContextAttributes()||canvas.getContext("webgl")?.getContextAttributes();
-    if(!attributes?.preserveDrawingBuffer)throw new Error("Smoke mode must preserve the WebGL frame buffer for deterministic export");
-    return canvas.toDataURL("image/png");
-   });
-   phase="write-png-artifact";
-   const comma=dataUrl.indexOf(",");
-   if(comma<0||!dataUrl.startsWith("data:image/png;base64,"))throw new Error("City frame export returned an invalid PNG data URL");
-   fs.mkdirSync(path.slice(0,path.lastIndexOf("/"))||".",{recursive:true});
-   fs.writeFileSync(path,Buffer.from(dataUrl.slice(comma+1),"base64"));
-   if(Date.now()-startedAt>10000)throw new Error("City frame export exceeded the hard 10-second limit: "+path);
-  })();
   await Promise.race([operation,deadline]);
  }finally{
   clearTimeout(timer);
-  if(paused)page.evaluate(()=>window.MshinCityDebug?.resumeLoop?.()).catch(()=>{});
+  clearTimeout(captureTimer);
+  if(session)await session.detach().catch(()=>{});
+  if(paused)await page.evaluate(()=>window.MshinCityDebug?.resumeLoop?.()).catch(()=>{});
  }
 }
 
@@ -444,7 +442,7 @@ try{
   compactPage.on("pageerror",error=>compactErrors.push(error.stack||String(error)));
   compactPage.on("console",message=>{if(message.type()==="error")compactErrors.push("console: "+message.text())});
   compactPage.on("requestfailed",request=>compactErrors.push("request failed: "+request.url()+" "+request.failure()?.errorText));
-  await compactPage.goto("http://127.0.0.1:4173/city.html");
+  await compactPage.goto("http://127.0.0.1:4173/city.html?cityCapture=1");
   try{
    await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000});
   }catch(error){
@@ -480,7 +478,7 @@ try{
  landscapePage.on("console",message=>{if(message.type()==="error")landscapeErrors.push("console: "+message.text())});
  landscapePage.on("requestfailed",request=>landscapeErrors.push("request failed: "+request.url()+" "+request.failure()?.errorText));
  try{
-  await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
+  await landscapePage.goto("http://127.0.0.1:4173/city.html?cityCapture=1",{waitUntil:"domcontentloaded"});
   try{
    await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000});
   }catch(error){
