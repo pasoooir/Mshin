@@ -11,7 +11,7 @@ test("coastal world paints a multi-stop gradient ocean with layered waves and su
   assert.match(coastal, /glint/);
   assert.match(coastal, /createCityNaturalSoilTexture/);
   assert.match(coastal, /natural-earth-transition/);
-  assert.match(coastal, /beachUvs\\.push\\(i\\/segments\\*3\\.2, j\\*1\\.2\\)/);
+  assert.ok(coastal.includes("beachUvs.push(i/segments*3.2, j*1.2)"));
   assert.match(coastal, /dispose\(\)/);
 });
 test("natural grass uses a full-color procedural texture in the live renderer", () => {
