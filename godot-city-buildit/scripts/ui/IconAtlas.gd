@@ -124,7 +124,7 @@ static func _get_clean_sheet(sheet_id: int) -> Texture2D:
 			continue
 		visited[index] = 1
 		var px := index % width
-		var py := index / width
+		var py := int(index / width)
 		var color := image.get_pixel(px, py)
 		var brightest := maxf(color.r, maxf(color.g, color.b))
 		var darkest := minf(color.r, minf(color.g, color.b))
