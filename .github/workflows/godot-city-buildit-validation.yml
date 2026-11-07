@@ -48,4 +48,7 @@ jobs:
         run: godot --headless --path godot-city-buildit --quit-after 10
 
       - name: End-to-end gameplay integration test
-        run: |\n          set -o pipefail\n          timeout 90s godot --headless --path godot-city-buildit res://tests/gameplay_smoke.tscn 2>&1 | tee /tmp/godot-gameplay.log\n          grep -F "[GameplaySmoke] PASS" /tmp/godot-gameplay.log
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path godot-city-buildit res://tests/gameplay_smoke.tscn 2>&1 | tee /tmp/godot-gameplay.log
+          grep -F "[GameplaySmoke] PASS" /tmp/godot-gameplay.log
