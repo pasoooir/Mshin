@@ -80,7 +80,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const grassGroundRoughness = grassSurface.roughnessMap.clone();
   for (const texture of [grassGroundMap, grassGroundNormal, grassGroundRoughness]) {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(texture === grassGroundMap ? 240 : 2048, texture === grassGroundMap ? 240 : 2048);
+    texture.repeat.set(texture === grassGroundMap ? 16000 : 2048, texture === grassGroundMap ? 16000 : 2048);
     texture.needsUpdate = true;
   }
   const groundMaterial = new THREE.MeshStandardMaterial({
