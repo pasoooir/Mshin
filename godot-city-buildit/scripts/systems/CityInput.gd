@@ -105,29 +105,26 @@ func _raycast_ground(screen_position: Vector2) -> Variant:
 
 func _try_interact(world_position: Vector3) -> void:
 	var grid: Vector2i = BuildManager.world_to_grid(world_position)
-	for building in BuildManager.buildings.values():
-		if not is_instance_valid(building):
-			continue
-		var size: Vector2i = building.definition.get("size", Vector2i(2,2))
-		if grid not in BuildManager.get_footprint_cells(building.grid_pos, size):
-			continue
-		if building.definition.get("category", "") == "residential":
-			if building.upgrade_ready:
-				if building.try_upgrade():
-					_set_status("House upgraded to level %d. Population increased." % building.upgrade_stage)
-			else:
-				_set_status(building.get_info())
-		elif building.definition.get("category", "") == "commercial":
-			if building.building_type == "building_supplies":
-				if ProductionManager.craft_item("nails"):
-					_set_status("Crafted Nails. Wait for another Metal and upgrade your house.")
-				else:
-					_set_status("Building Supplies: collect Metal from your factory, then tap here to craft Nails.")
-			else:
-				_set_status(building.get_info())
-		elif building.has_ready_product:
-			if building.collect_production():
-				_set_status("Collected %s. It is now in your city storage." % building.current_product.capitalize())
+	# Direct cell lookup avoids scanning every building and allocating footprint arrays on each tap.
+	var building = BuildManager.building_at_cell(grid)
+	if building == null or not is_instance_valid(building):
+		return
+	if building.definition.get("category", "") == "residential":
+		if building.upgrade_ready:
+			if building.try_upgrade():
+				_set_status("House upgraded to level %d. Population increased." % building.upgrade_stage)
 		else:
 			_set_status(building.get_info())
-		return
+	elif building.definition.get("category", "") == "commercial":
+		if building.building_type == "building_supplies":
+			if ProductionManager.craft_item("nails"):
+				_set_status("Crafted Nails. Wait for another Metal and upgrade your house.")
+			else:
+				_set_status("Building Supplies: collect Metal from your factory, then tap here to craft Nails.")
+		else:
+			_set_status(building.get_info())
+	elif building.has_ready_product:
+		if building.collect_production():
+			_set_status("Collected %s. It is now in your city storage." % building.current_product.capitalize())
+	else:
+		_set_status(building.get_info())
