@@ -3,16 +3,39 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 async function captureScreenshot(page,path,{fullPage=false}={}){
- const session=await page.context().newCDPSession(page);
- let timer;
- try{
+ const startedAt=Date.now();
+ let session,timer,paused=false;
+ const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("City screenshot exceeded the hard 10-second limit: "+path)),10000)});
+ const operation=(async()=>{
+  session=await page.context().newCDPSession(page);
+  paused=await page.evaluate(()=>{
+   const debug=window.MshinCityDebug;
+   if(typeof debug?.pauseLoop!=="function"||typeof debug?.resumeLoop!=="function")return false;
+   debug.pauseLoop();
+   debug.draw();
+   return true;
+  });
+  // Let the final explicitly requested frame reach the compositor before
+  // asking Chrome for a surface readback. Continuous SwiftShader animation
+  // was starving Page.captureScreenshot in headless CI.
+  if(paused)await page.waitForTimeout(120);
   const metrics=fullPage?await page.evaluate(()=>({width:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth,innerWidth),height:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,innerHeight)})):null;
-  const capture=session.send("Page.captureScreenshot",{format:"png",fromSurface:true,captureBeyondViewport:fullPage,...(metrics?{clip:{x:0,y:0,width:metrics.width,height:metrics.height,scale:1}}:{})});
-  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("CDP screenshot capture exceeded the 10-second limit: "+path)),10000)});
-  const result=await Promise.race([capture,timeout]);
+  const elapsed=Date.now()-startedAt;
+  const remaining=Math.max(1,9500-elapsed);
+  const result=await Promise.race([
+   session.send("Page.captureScreenshot",{format:"png",fromSurface:true,captureBeyondViewport:fullPage,optimizeForSpeed:true,...(metrics?{clip:{x:0,y:0,width:metrics.width,height:metrics.height,scale:1}}:{})}),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error("CDP screenshot capture exceeded the remaining 10-second budget: "+path)),remaining))
+  ]);
   fs.mkdirSync(path.slice(0,path.lastIndexOf("/"))||".",{recursive:true});
   fs.writeFileSync(path,Buffer.from(result.data,"base64"));
- }finally{clearTimeout(timer);await session.detach().catch(()=>{});}
+ })();
+ try{
+  await Promise.race([operation,deadline]);
+ }finally{
+  clearTimeout(timer);
+  if(session)session.detach().catch(()=>{});
+  if(paused)page.evaluate(()=>window.MshinCityDebug?.resumeLoop?.()).catch(()=>{});
+ }
 }
 
 
@@ -85,6 +108,7 @@ try{
  assert.equal(await page.locator('[data-city-tool="home"]').getAttribute("aria-pressed"),"true","the chosen city tool must remain selected after auto-hide");
 
  assert.ok(await page.locator("#cityThreeViewport").count()===1,"city must render through the Three.js WebGL scene");
+ assert.equal(await page.evaluate(()=>typeof window.MshinCityDebug.pauseLoop==="function"&&typeof window.MshinCityDebug.resumeLoop==="function"),true,"city smoke screenshots must be able to pause and resume the live renderer without changing game state");
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.version,"180");
