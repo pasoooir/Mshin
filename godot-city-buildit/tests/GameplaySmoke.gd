@@ -85,8 +85,8 @@ func _run_gameplay_test() -> void:
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 30, "Starter highway connector should contain 30 connected free road tiles.")
 
-	for x in range(8):
-		_check(road_system.place_road(Vector2i(x, 0)), "Could not place connected road tile %d." % x)
+	for x in range(-8, 0):
+		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
 	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
 	_test_drag_gestures_do_not_place()
