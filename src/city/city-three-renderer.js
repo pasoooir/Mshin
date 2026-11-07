@@ -85,6 +85,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
     texture.repeat.set(textureRepeat, textureRepeat);
     texture.needsUpdate = true;
   }
+  grassGroundNormal.repeat.set(16000, 16000);
+  grassGroundRoughness.repeat.set(16000, 16000);
   const groundMaterial = new THREE.MeshStandardMaterial({
     map: grassGroundMap,
     normalMap: grassGroundNormal,
