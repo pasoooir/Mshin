@@ -304,6 +304,7 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
       mergedGeometry.computeBoundingSphere();
       const mergedMesh = new THREE.Mesh(mergedGeometry, bucket[0].material);
       mergedMesh.name = "merged-highway-" + key.replaceAll(":", "-");
+      mergedMesh.userData.sourceMeshNames = bucket.map(mesh => mesh.name).filter(Boolean);
       mergedMesh.castShadow = bucket[0].castShadow;
       mergedMesh.receiveShadow = bucket[0].receiveShadow;
       mergedMesh.renderOrder = bucket[0].renderOrder;
