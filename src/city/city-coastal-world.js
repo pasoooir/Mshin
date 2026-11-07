@@ -24,7 +24,7 @@ export function createCityNaturalSoilTexture(THREE, renderer, base = "#bfa77d") 
 }
 
 export function createCityNaturalGrassTexture(THREE, renderer, sourceTexture) {
-  const texture = sourceTexture.clone();
+  const texture = sourceTexture;
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 4);
