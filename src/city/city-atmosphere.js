@@ -77,9 +77,11 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
         sky=mix(sky,uMid,upperBand);
         sky=mix(sky,uZenith,smoothstep(0.58,1.0,vertical));
         float atmosphericGrain=skyNoise(direction*38.0+vec3(0.0,uTime*0.001,0.0))-0.5;
-        float highCloudVeil=pow(max(0.0,skyNoise(direction*17.0+vec3(uTime*0.0003,0.0,0.0))-0.53),2.0);
-        sky+=vec3(0.10,0.13,0.16)*atmosphericGrain*0.045;
-        sky=mix(sky,sky+vec3(0.12,0.16,0.19),highCloudVeil*0.12);
+        float cloudField=skyNoise(direction*vec3(8.0,19.0,8.0)+vec3(uTime*0.00018,0.0,0.0));
+        float cloudDetail=skyNoise(direction*vec3(21.0,43.0,21.0)-vec3(uTime*0.00031,0.0,0.0));
+        float cloudMask=smoothstep(0.56,0.73,cloudField*0.72+cloudDetail*0.28)*smoothstep(-0.04,0.32,vertical);
+        sky+=vec3(0.10,0.13,0.16)*atmosphericGrain*0.035;
+        sky=mix(sky,sky+vec3(0.30,0.34,0.36),cloudMask*0.20);
         float sunAngle = max(dot(direction, normalize(uSunDirection)), 0.0);
         float solarDisc = pow(sunAngle, 220.0) * uSunIntensity;
         float solarHalo = pow(sunAngle, 13.0) * uSunIntensity * 0.13;
