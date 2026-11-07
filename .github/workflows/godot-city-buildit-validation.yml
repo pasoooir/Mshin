@@ -46,3 +46,6 @@ jobs:
 
       - name: Headless startup smoke test
         run: godot --headless --path godot-city-buildit --quit-after 10
+
+      - name: End-to-end gameplay integration test
+        run: timeout 90s godot --headless --path godot-city-buildit res://tests/gameplay_smoke.tscn --quit-after 2400
