@@ -1,15 +1,20 @@
 # Pasoo City BuildIt 🏙️
 
-**نسخه Godot بازی: 1.0.0 — حلقه اصلی قابل بازی**  
-پروژه مستقل Godot در مسیر [`godot-city-buildit/`](godot-city-buildit/README.md) قرار دارد و با Godot 4.3+ اجرا می‌شود.
+**نسخه Godot بازی: 1.0.0 — هسته قابل بازی + نسخه مرورگری در حال انتشار**
 
-### اجرای نسخه Godot
+[![PLAY MSHIN](https://img.shields.io/badge/▶%20PLAY-MSHIN-19b77a?style=for-the-badge)](https://pasoooir.github.io/Mshin/)
+
+### اجرای بازی با یک کلیک
+روی دکمه **PLAY MSHIN** بالا بزن؛ نسخه مرورگری بازی در GitHub Pages اجرا می‌شود و برای اجرای آن نیازی به نصب Godot نیست. برای بهترین تجربه، گوشی را افقی نگه دار و در صورت پشتیبانی مرورگر، حالت تمام‌صفحه را فعال کن.
+
+### اجرای نسخه Godot برای توسعه
 1. Godot 4.3 یا جدیدتر (Standard) را نصب کن.
 2. پوشه `godot-city-buildit` را از همین Repository با گزینه Import در Godot Project Manager باز کن.
 3. فایل `godot-city-buildit/project.godot` نقطه ورود پروژه است؛ برای اجرا F5 را بزن.
-4. تست خودکار اجرای موتور و حلقه کامل بازی (جاده، ساختمان، تولید، جمع‌آوری، ارتقا، ذخیره و بارگذاری) در GitHub Actions اجرا می‌شود.
 
-**توجه:** نسخه Godot در پوشه جداگانه نگهداری می‌شود تا فایل‌های پروژه وب موجود در ریشه Repository بدون تداخل باقی بمانند.
+GitHub Actions به‌صورت خودکار پروژه را بررسی، برای مرورگر خروجی Web تولید و در GitHub Pages منتشر می‌کند. همچنین می‌توان انتشار را از زبانه Actions با اجرای دستی workflow با نام **Mshin Playable Web** آغاز کرد.
+
+**توجه:** نسخه Godot در پوشه مستقل نگهداری می‌شود. نسخه Web از رندرر GL Compatibility استفاده می‌کند تا با مرورگرهای موبایل سازگار باشد.
 
 ---
 
@@ -35,7 +40,7 @@
 
 | مورد | مقدار |
 |------|--------|
-| موتور | Godot 4.3+ (Forward+) |
+| موتور | Godot 4.3+ (GL Compatibility برای Web) |
 | زبان | GDScript |
 | پلتفرم اصلی | موبایل (Android / iOS) + دسکتاپ |
 | صحنه اصلی | `godot-city-buildit/scenes/main.tscn` |
