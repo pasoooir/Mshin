@@ -117,7 +117,7 @@ export function createCityCoastalWorld(THREE) {
       soilUvs.push(i/segments*5,j*1.4);
       soilColors.push(c.r,c.g,c.b);
     }
-    if(i<segments){const a=i*2;soilIndices.push(a,a+1,a+2,a+1,a+3,a+2);}
+    if(i<segments){const a=i*2;soilIndices.push(a,a+2,a+1,a+1,a+2,a+3);}
   }
   const soilGeometry=new THREE.BufferGeometry();
   soilGeometry.setAttribute("position",new THREE.Float32BufferAttribute(soilPositions,3));
