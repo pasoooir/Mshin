@@ -464,7 +464,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
         raisedCurbs: 0,
         sidewalkStrips: sidewalkLayer.count,
         crosswalkStripes: crosswalkStripeCount,
-        drawCalls: renderer.info.render.calls,
         renderedTriangles: renderer.info.render.triangles,
         renderedPoints: renderer.info.render.points,
         renderedLines: renderer.info.render.lines,
@@ -475,7 +474,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
         buildingRebuilds,
         ...atmosphere.getStats(),
         ...highwayGateway.getStats(),
-        ...coastalWorld.getStats()
+        ...coastalWorld.getStats(),
+        // Keep this authoritative renderer metric last: subsystem diagnostics
+        // must never shadow it with a quality/profile label.
+        drawCalls: renderer.info.render.calls
       };
     },
     destroy() {
