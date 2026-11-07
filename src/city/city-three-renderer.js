@@ -27,7 +27,10 @@ export async function createCityThreeRenderer(sourceCanvas) {
     alpha: false,
     powerPreference: "high-performance",
     stencil: false,
-    depth: true
+    depth: true,
+    // Preserve the WebGL back buffer only for deterministic browser-test image
+    // export. Production keeps the faster default swap behavior.
+    preserveDrawingBuffer: new URLSearchParams(window.location.search).has("cityCapture")
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatio));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -427,6 +430,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         rendererTier: isMobileDevice ? "mobile" : "desktop",
         pixelRatio: renderer.getPixelRatio(),
         antialias: renderer.getContext().getContextAttributes()?.antialias === true,
+        preserveDrawingBuffer: renderer.getContext().getContextAttributes()?.preserveDrawingBuffer === true,
         shadowMapSize: sun.shadow.mapSize.x,
         cameraOrbit,
         cameraPitch,
