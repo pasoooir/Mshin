@@ -54,10 +54,12 @@ jobs:
 
       - name: Export Godot game for browsers
         run: |
-          mkdir -p "$GITHUB_WORKSPACE/site/game"
-          godot --headless --path godot-city-buildit --export-release "Web" "$GITHUB_WORKSPACE/site/game/index.html"
-          test -s "$GITHUB_WORKSPACE/site/game/index.html"
+          VERSIONED_GAME_DIR="$GITHUB_WORKSPACE/site/game/$GITHUB_SHA"
+          mkdir -p "$VERSIONED_GAME_DIR"
+          godot --headless --path godot-city-buildit --export-release "Web" "$VERSIONED_GAME_DIR/index.html"
+          test -s "$VERSIONED_GAME_DIR/index.html"
           cp godot-city-buildit/web/launcher.html "$GITHUB_WORKSPACE/site/index.html"
+          sed -i "s|./game/|./game/$GITHUB_SHA/|g" "$GITHUB_WORKSPACE/site/index.html"
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 
       - name: Configure GitHub Pages
