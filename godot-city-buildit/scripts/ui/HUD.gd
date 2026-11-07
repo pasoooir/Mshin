@@ -240,6 +240,9 @@ func _on_submenu_option(category: String, option: String) -> void:
 			BuildManager.cancel_placement()
 			var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
 			if road_system: road_system.set_road_mode(false)
+	if BuildManager.is_placing or category == "road":
+		submenu.hide()
+		active_category = ""
 
 func _update_all() -> void:
 	_on_level_changed(GameManager.level)

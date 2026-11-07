@@ -83,9 +83,9 @@ func _run_gameplay_test() -> void:
 		return
 	road_system.seed_starter_access()
 	var starter_road_count: int = road_system.get_road_count()
-	_check(starter_road_count == 30, "Starter highway connector should contain 30 connected free road tiles.")
+	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
-	for x in range(-8, 8):
+	for x in range(2, 18):
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
 	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
@@ -94,6 +94,9 @@ func _run_gameplay_test() -> void:
 	BuildManager.select_building("residential_1")
 	_check(BuildManager.can_place_at(Vector2i(0, 1)), "House plot beside road should be valid.")
 	_check(BuildManager.place_building(Vector2i(0, 1)), "Could not place starter house.")
+	var indexed_house = BuildManager.building_at_cell(Vector2i(0, 1))
+	_check(indexed_house != null and indexed_house.building_type == "residential_1", "Building cell index did not resolve the placed house.")
+	_check(BuildManager.building_at_cell(Vector2i(1, 2)) == indexed_house, "Building cell index did not cover the full house footprint.")
 	_check(not BuildManager.can_place_at(Vector2i(1, 1), "residential_1"), "Overlapping house footprint was incorrectly accepted.")
 
 	BuildManager.select_building("industrial_1")
@@ -135,6 +138,7 @@ func _run_gameplay_test() -> void:
 		if is_instance_valid(building):
 			building.queue_free()
 	BuildManager.buildings.clear()
+	BuildManager.building_cells.clear()
 	BuildManager.factory_count = 0
 	for road_mesh in road_system.roads.values():
 		if is_instance_valid(road_mesh):

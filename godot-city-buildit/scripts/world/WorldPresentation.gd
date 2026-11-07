@@ -41,7 +41,7 @@ func _build_environment() -> void:
 func _build_terrain() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var divisions := 64
+	var divisions := 40
 	for z_index in range(divisions):
 		var z0 := -TERRAIN_HALF_DEPTH + (float(z_index) / divisions) * TERRAIN_HALF_DEPTH * 2.0
 		var z1 := -TERRAIN_HALF_DEPTH + (float(z_index + 1) / divisions) * TERRAIN_HALF_DEPTH * 2.0
@@ -75,8 +75,8 @@ func _build_terrain() -> void:
 	water.name = "CoastalWater"
 	var water_mesh := PlaneMesh.new()
 	water_mesh.size = Vector2(110.0, 190.0)
-	water_mesh.subdivide_width = 96
-	water_mesh.subdivide_depth = 96
+	water_mesh.subdivide_width = 48
+	water_mesh.subdivide_depth = 48
 	water.mesh = water_mesh
 	water.position = Vector3(104.0, -0.18, 0.0)
 	water.material_override = _create_water_material()
@@ -86,8 +86,8 @@ func _build_terrain() -> void:
 	shallow_water.name = "ShallowWater"
 	var shallow_mesh := PlaneMesh.new()
 	shallow_mesh.size = Vector2(8.0, 190.0)
-	shallow_mesh.subdivide_width = 16
-	shallow_mesh.subdivide_depth = 96
+	shallow_mesh.subdivide_width = 8
+	shallow_mesh.subdivide_depth = 48
 	shallow_water.mesh = shallow_mesh
 	shallow_water.position = Vector3(54.0, -0.12, 0.0)
 	shallow_water.material_override = _create_shallow_water_material()
@@ -319,7 +319,7 @@ func _build_grass_detail() -> void:
 	blade_material.roughness = 0.92
 	blade_mesh.material = blade_material
 	var positions: Array[Vector3] = []
-	for index in range(2200):
+	for index in range(900):
 		var x := -42.0 + fposmod(float(index) * 17.31, 82.0)
 		var z := -84.0 + fposmod(float(index) * 29.17, 168.0)
 		if x > 30.0 or absf(z) < 43.0 and x > -40.0:
@@ -367,5 +367,5 @@ func _build_sunlight() -> void:
 	sun.rotation_degrees = Vector3(-48.0, -32.0, 0.0)
 	sun.light_color = Color(1.0, 0.88, 0.70)
 	sun.light_energy = 0.22
-	sun.shadow_enabled = true
+	sun.shadow_enabled = false
 	add_child(sun)

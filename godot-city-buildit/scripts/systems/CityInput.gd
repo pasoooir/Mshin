@@ -66,10 +66,16 @@ func _handle_tap(screen_position: Vector2) -> void:
 			_set_status("Road must connect to the existing network and cost 50 Simoleons.")
 		return
 	if BuildManager.is_placing:
+		var grid := BuildManager.world_to_grid(world_position)
+		var ghost = get_tree().current_scene.get_node_or_null("GhostPreview")
+		if ghost:
+			ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid))
 		if BuildManager.place_building_at_world(world_position):
-			_set_status("Construction started. You can place another building.")
+			_set_status("Construction started. Tap another green plot to build again.")
+			if ghost:
+				ghost.hide_ghost()
 		else:
-			_set_status("Invalid plot: keep the footprint clear and connect it to a road.")
+			_set_status("Cannot build here: use an empty plot beside a road. Red preview means blocked or not connected.")
 		return
 	_try_interact(world_position)
 
@@ -105,29 +111,26 @@ func _raycast_ground(screen_position: Vector2) -> Variant:
 
 func _try_interact(world_position: Vector3) -> void:
 	var grid: Vector2i = BuildManager.world_to_grid(world_position)
-	for building in BuildManager.buildings.values():
-		if not is_instance_valid(building):
-			continue
-		var size: Vector2i = building.definition.get("size", Vector2i(2,2))
-		if grid not in BuildManager.get_footprint_cells(building.grid_pos, size):
-			continue
-		if building.definition.get("category", "") == "residential":
-			if building.upgrade_ready:
-				if building.try_upgrade():
-					_set_status("House upgraded to level %d. Population increased." % building.upgrade_stage)
-			else:
-				_set_status(building.get_info())
-		elif building.definition.get("category", "") == "commercial":
-			if building.building_type == "building_supplies":
-				if ProductionManager.craft_item("nails"):
-					_set_status("Crafted Nails. Wait for another Metal and upgrade your house.")
-				else:
-					_set_status("Building Supplies: collect Metal from your factory, then tap here to craft Nails.")
-			else:
-				_set_status(building.get_info())
-		elif building.has_ready_product:
-			if building.collect_production():
-				_set_status("Collected %s. It is now in your city storage." % building.current_product.capitalize())
+	# Direct cell lookup avoids scanning every building and allocating footprint arrays on each tap.
+	var building = BuildManager.building_at_cell(grid)
+	if building == null or not is_instance_valid(building):
+		return
+	if building.definition.get("category", "") == "residential":
+		if building.upgrade_ready:
+			if building.try_upgrade():
+				_set_status("House upgraded to level %d. Population increased." % building.upgrade_stage)
 		else:
 			_set_status(building.get_info())
-		return
+	elif building.definition.get("category", "") == "commercial":
+		if building.building_type == "building_supplies":
+			if ProductionManager.craft_item("nails"):
+				_set_status("Crafted Nails. Wait for another Metal and upgrade your house.")
+			else:
+				_set_status("Building Supplies: collect Metal from your factory, then tap here to craft Nails.")
+		else:
+			_set_status(building.get_info())
+	elif building.has_ready_product:
+		if building.collect_production():
+			_set_status("Collected %s. It is now in your city storage." % building.current_product.capitalize())
+	else:
+		_set_status(building.get_info())

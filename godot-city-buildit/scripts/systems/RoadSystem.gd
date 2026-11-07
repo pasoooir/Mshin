@@ -20,7 +20,7 @@ func set_road_mode(active: bool) -> void:
 func seed_starter_access() -> void:
 	# A free two-lane connector joins the coastal highway to the first buildable plots.
 	# It is seeded only for a brand-new city; saved road networks remain untouched.
-	for x in range(-23, -8):
+	for x in range(-23, 2):
 		for z in [-1, 0]:
 			var cell := Vector2i(x, z)
 			if roads.has(cell):
