@@ -101,6 +101,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   scene.add(ground);
 
   const coastalWorld = createCityCoastalWorld(THREE, { scene, renderer });
+  scene.add(coastalWorld.group);
 
   const highwayGateway = createCityHighwayGateway(THREE, { asphaltSurface, concreteSurface });
   scene.add(highwayGateway.group);
