@@ -82,7 +82,7 @@ func _run_gameplay_test() -> void:
 		_finish()
 		return
 	road_system.seed_starter_access()
-	var starter_road_count := road_system.get_road_count()
+	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 30, "Starter highway connector should contain 30 connected free road tiles.")
 
 	for x in range(8):
