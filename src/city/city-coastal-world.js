@@ -61,7 +61,6 @@ export function createCityCoastalWorld(THREE, { scene, renderer }) {
   beachGeometry.computeVertexNormals();
   const beach = new THREE.Mesh(beachGeometry, beachMaterial);
   beach.name = "natural-earth-transition-natural-sandy-beach";
-  beach.rotation.x = -Math.PI / 2;
   beach.position.set(0, -.205, -355);
   beach.receiveShadow = true;
   group.add(beach);
