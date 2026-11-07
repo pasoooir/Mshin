@@ -4,7 +4,10 @@
  * No fixed palette-only fills and no remote runtime assets.
  */
 function makeOrganicTexture(THREE, kind = "grass") {
-  const size = 1536;
+  const isConstrainedDevice = typeof navigator !== "undefined" && (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4 || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || ""));
+  const size = isConstrainedDevice ? 1024 : 1536;
+  const bloomCount = isConstrainedDevice ? 220 : 430;
+  const grainCount = isConstrainedDevice ? 36000 : 118000;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d", { alpha: false, willReadFrequently: false });
@@ -25,7 +28,7 @@ function makeOrganicTexture(THREE, kind = "grass") {
     : kind === "soil"
       ? ["rgba(218,177,117,0.2)","rgba(72,48,30,0.17)","rgba(181,129,75,0.2)","rgba(226,196,145,0.16)"]
       : ["rgba(255,245,213,0.25)","rgba(151,116,72,0.12)","rgba(211,184,137,0.18)"];
-  for (let i = 0; i < 430; i++) {
+  for (let i = 0; i < bloomCount; i++) {
     const x = rand() * size, y = rand() * size, radius = 22 + rand() * 145;
     const bloom = ctx.createRadialGradient(x, y, 0, x, y, radius);
     bloom.addColorStop(0, bloomColors[Math.floor(rand() * bloomColors.length)]);
@@ -34,7 +37,7 @@ function makeOrganicTexture(THREE, kind = "grass") {
     ctx.fillRect(x-radius, y-radius, radius*2, radius*2);
   }
   // Fine continuous grain gives the RGB canvas millions of blended color values.
-  for (let i = 0; i < 118000; i++) {
+  for (let i = 0; i < grainCount; i++) {
     const x = rand() * size, y = rand() * size, alpha = 0.025 + rand() * 0.095;
     const dark = rand() > 0.5;
     if (kind === "grass") ctx.fillStyle = dark ? `rgba(22,68,29,${alpha})` : `rgba(238,224,145,${alpha})`;
@@ -46,7 +49,7 @@ function makeOrganicTexture(THREE, kind = "grass") {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.anisotropy = 8;
+  texture.anisotropy = isConstrainedDevice ? 4 : 8;
   texture.generateMipmaps = true;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
@@ -57,6 +60,7 @@ export function createCityNaturalGrassTexture(THREE) { return makeOrganicTexture
 export function createCityNaturalSoilTexture(THREE) { return makeOrganicTexture(THREE, "soil"); }
 
 export function createCityCoastalWorld(THREE) {
+  const generationStartedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
   const root = new THREE.Group();
   root.name = "mshin-coastal-world";
   const segments = 192, rows = 72, width = 2400;
@@ -96,7 +100,8 @@ export function createCityCoastalWorld(THREE) {
     const x=-width/2+width*i/segments, shore=shoreZ(x), variation=0.5+0.5*Math.sin(x*0.017)*Math.cos(x*0.006);
     for(let j=0;j<2;j++){
       const c=new THREE.Color().lerpColors(new THREE.Color("#876444"),new THREE.Color("#c19a6b"),variation);
-      soilPositions.push(x,-0.205,shore-88-j*28);
+      // The upper soil edge tucks 1.5 m under the beach to prevent hairline gaps.
+      soilPositions.push(x,-0.205,shore-(j ? 116 : 86.5));
       soilUvs.push(i/segments*5,j*1.4);
       soilColors.push(c.r,c.g,c.b);
     }
@@ -196,7 +201,7 @@ export function createCityCoastalWorld(THREE) {
   return {
     group:root,
     update(timeMs){waterUniforms.uTime.value=(Number(timeMs)||0)*.001;},
-    getStats(){return{coastalWorld:true,oceanSurface:true,animatedWater:true,oceanColorGradient:true,colorDepth:"24-bit RGB",multiscaleWaveFields:3,shorelineFoamBands:4,sandyBeach:true,soilTransition:true,shorelineSegments:segments};},
+    getStats(){return{coastalWorld:true,oceanSurface:true,animatedWater:true,oceanColorGradient:true,colorDepth:"24-bit RGB",multiscaleWaveFields:3,shorelineFoamBands:4,sandyBeach:true,soilTransition:true,soilBeachOverlapMeters:1.5,shorelineSegments:segments,textureResolution:sandTexture.image?.width||0,textureQuality:isConstrainedDevice?"mobile-adaptive":"high",textureGenerationMs:Math.round(((typeof performance!=="undefined"?performance.now():Date.now())-generationStartedAt)*100)/100};},
     dispose(){
       beachGeometry.dispose();soilGeometry.dispose();waterGeometry.dispose();
       sandTexture.dispose();soilTexture.dispose();sandMaterial.dispose();soilMaterial.dispose();waterMaterial.dispose();
