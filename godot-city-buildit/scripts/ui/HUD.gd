@@ -46,21 +46,27 @@ func _install_vector_icons() -> void:
 			continue
 		var parent := old_node.get_parent()
 		var insert_index := old_node.get_index()
+		var holder := Control.new()
+		holder.custom_minimum_size = Vector2(44, 44)
+		holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var icon := IconAtlas.make_icon(icon_map[path], Vector2(44, 44))
-		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var shadow := TextureRect.new()
 		shadow.texture = icon.texture
-		shadow.custom_minimum_size = Vector2(44, 44)
+		shadow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		shadow.offset_left = 1.5
+		shadow.offset_top = 2.0
+		shadow.offset_right = 1.5
+		shadow.offset_bottom = 2.0
 		shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		shadow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		shadow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		shadow.modulate = Color(0.015, 0.035, 0.055, 0.48)
-		shadow.position = Vector2(1.5, 2.0)
 		shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		parent.add_child(shadow)
-		parent.move_child(shadow, insert_index)
-		parent.add_child(icon)
-		parent.move_child(icon, insert_index + 1)
+		holder.add_child(shadow)
+		holder.add_child(icon)
+		parent.add_child(holder)
+		parent.move_child(holder, insert_index)
 		old_node.visible = false
 		old_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for path in ["TopLeft/LevelBox/LevelLabel","TopLeft/PopBox/PopLabel","TopLeft/StorageBox/StorageLabel","TopLeft/MoneyBox/MoneyLabel","TopRight/KeysBox/KeysLabel","TopRight/PowerBox/PowerLabel","TopRight/WaterBox/WaterLabel"]:
