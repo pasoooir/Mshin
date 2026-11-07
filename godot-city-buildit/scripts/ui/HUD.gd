@@ -45,12 +45,28 @@ func _install_vector_icons() -> void:
 		if old_node == null:
 			continue
 		var parent := old_node.get_parent()
-		var icon := IconAtlas.make_icon(icon_map[path], Vector2(38, 38))
-		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		parent.add_child(icon)
-		parent.move_child(icon, old_node.get_index())
-		# Keep the original Label alive: onready references and signal callbacks
-		# still target these nodes (notably HappinessBox/HappyIcon).
+		var insert_index := old_node.get_index()
+		var holder := Control.new()
+		holder.custom_minimum_size = Vector2(44, 44)
+		holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var icon := IconAtlas.make_icon(icon_map[path], Vector2(44, 44))
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var shadow := TextureRect.new()
+		shadow.texture = icon.texture
+		shadow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		shadow.offset_left = 1.5
+		shadow.offset_top = 2.0
+		shadow.offset_right = 1.5
+		shadow.offset_bottom = 2.0
+		shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		shadow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		shadow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		shadow.modulate = Color(0.015, 0.035, 0.055, 0.48)
+		shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.add_child(shadow)
+		holder.add_child(icon)
+		parent.add_child(holder)
+		parent.move_child(holder, insert_index)
 		old_node.visible = false
 		old_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for path in ["TopLeft/LevelBox/LevelLabel","TopLeft/PopBox/PopLabel","TopLeft/StorageBox/StorageLabel","TopLeft/MoneyBox/MoneyLabel","TopRight/KeysBox/KeysLabel","TopRight/PowerBox/PowerLabel","TopRight/WaterBox/WaterLabel"]:
@@ -63,6 +79,9 @@ func _build_toolbars() -> void:
 	var old_menu := get_node_or_null("LeftMenu")
 	if old_menu:
 		old_menu.queue_free()
+	var old_toolbar := get_node_or_null("RightToolbar")
+	if old_toolbar:
+		old_toolbar.queue_free()
 	var toolbar := VBoxContainer.new()
 	toolbar.name = "RightToolbar"
 	toolbar.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
@@ -70,14 +89,22 @@ func _build_toolbars() -> void:
 	toolbar.custom_minimum_size = Vector2(64, 472)
 	toolbar.add_theme_constant_override("separation", 4)
 	add_child(toolbar)
+
+	# Keep this order stable: primary construction tools first, destructive action last.
 	var tools := [
-		["road","Road"],["residential","Residential"],["commercial","Commercial"],
-		["industrial","Industrial"],["fire","Services"],["specializations","Specializations"],["bulldoze","Bulldoze"]
+		["road","Road"],
+		["residential","Residential"],
+		["commercial","Commercial"],
+		["industrial","Industrial"],
+		["services","Services"],
+		["specializations","Specializations / Park"],
+		["bulldoze","Bulldoze"]
 	]
 	for item in tools:
 		var button := _make_icon_button(item[0], item[1])
 		toolbar.add_child(button)
 		button.pressed.connect(_on_category_pressed.bind(item[0]))
+
 	var actions := HBoxContainer.new()
 	actions.name = "BottomActions"
 	actions.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
@@ -96,6 +123,7 @@ func _build_toolbars() -> void:
 			"trade": button.pressed.connect(_on_trade_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
 			"cancel": button.pressed.connect(_on_cancel_pressed)
+
 	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
 	submenu.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
@@ -113,14 +141,42 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.custom_minimum_size = Vector2(64, 64)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
-	var icon := IconAtlas.make_icon(kind, Vector2(64, 64))
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
+	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.16, 0.32, 0.43, 0.18), Color(0.55, 0.78, 0.9, 0.42)))
+	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+	var icon := IconAtlas.make_icon(kind, Vector2(58, 58))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	icon.offset_left = 1
-	icon.offset_top = 1
-	icon.offset_right = -1
-	icon.offset_bottom = -1
-	button.add_child(icon)
+	icon.offset_left = 3
+	icon.offset_top = 3
+	icon.offset_right = -3
+	icon.offset_bottom = -3
+	if icon.texture == null:
+		# Never leave a silent gray slot when an atlas key is missing.
+		var fallback := Label.new()
+		fallback.text = hint.left(1).to_upper()
+		fallback.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		fallback.add_theme_color_override("font_color", Color.WHITE)
+		fallback.add_theme_font_size_override("font_size", 28)
+		button.add_child(fallback)
+	else:
+		button.add_child(icon)
 	return button
+
+func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = border
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(11)
+	style.content_margin_left = 2
+	style.content_margin_right = 2
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	return style
 
 func _on_category_pressed(category: String) -> void:
 	if active_category == category and submenu.visible:
