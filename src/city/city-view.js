@@ -206,10 +206,14 @@ function mount(){
  const budgetPanel=$("cityBudgetPanel"),budgetTrigger=$("cityBudget");
  function closeCityBudget(){
   if(budgetPanel.classList.contains("hidden"))return;
+  // Keep both native hidden state and the visual class in sync so the dialog
+  // cannot remain hit-testable if a stylesheet is delayed or overridden.
+  budgetPanel.hidden=true;
   budgetPanel.classList.add("hidden");
   budgetTrigger?.focus();
  }
  budgetTrigger.addEventListener("click",()=>{
+  budgetPanel.hidden=false;
   budgetPanel.classList.remove("hidden");
   updateBudgetPanel();
   $("cityCloseBudget").focus();
