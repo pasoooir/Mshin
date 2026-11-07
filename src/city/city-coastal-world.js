@@ -164,7 +164,7 @@ export function createCityCoastalWorld(THREE) {
         vWorld=world.xyz;vView=-mv.xyz;gl_Position=projectionMatrix*mv;
       }`,
     fragmentShader:`
-      varying vec2 vUv;varying vec3 vWorld;varying vec3 vView;uniform float uTime;
+      varying vec2 vUv;varying vec3 vWorld;varying vec3 vView;uniform float uTime;uniform float uMobileQuality;
       uniform vec3 uShallow;uniform vec3 uLagoon;uniform vec3 uCoastal;uniform vec3 uBlue;uniform vec3 uDeep;uniform vec3 uHorizon;
       float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
       float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
@@ -177,8 +177,8 @@ export function createCityCoastalWorld(THREE) {
         col=mix(col,uHorizon,smoothstep(.91,1.,d)*.22);
         float n1=noise(vWorld.xz*.026+vec2(uTime*.10,-uTime*.07));
         float n2=noise(vWorld.xz*.071-vec2(uTime*.17,uTime*.12));
-        float n3=noise(vWorld.xz*.19+vec2(uTime*.24,-uTime*.21));
-        float n4=noise(vWorld.xz*.43-vec2(uTime*.31,uTime*.27));
+        float n3=uMobileQuality>.5 ? .5 : noise(vWorld.xz*.19+vec2(uTime*.24,-uTime*.21));
+        float n4=uMobileQuality>.5 ? .5 : noise(vWorld.xz*.43-vec2(uTime*.31,uTime*.27));
         float wave=sin(vWorld.x*.075+vWorld.z*.027+uTime*1.15)*sin(vWorld.z*.051-vWorld.x*.018-uTime*.82);
         float caustic=smoothstep(.70,.99,n1*.58+n2*.42)*(1.-smoothstep(.02,.30,d));
         float crest=pow(max(0.,wave*.5+.5),18.)*(.12+.2*n2);
