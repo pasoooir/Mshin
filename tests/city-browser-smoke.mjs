@@ -2,39 +2,37 @@ import {chromium} from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-async function captureScreenshot(page,path,{fullPage=false}={}){
+async function captureScreenshot(page,path){
  const startedAt=Date.now();
- let session,timer,captureTimer,paused=false;
- const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("City screenshot exceeded the hard 10-second limit: "+path)),10000)});
- const operation=(async()=>{
-  session=await page.context().newCDPSession(page);
-  paused=await page.evaluate(()=>{
-   const debug=window.MshinCityDebug;
-   if(typeof debug?.pauseLoop!=="function"||typeof debug?.resumeLoop!=="function")return false;
-   debug.pauseLoop();
-   debug.draw();
-   return true;
-  });
-  // Let the final explicitly requested frame reach the compositor before
-  // asking Chrome for a surface readback. Continuous SwiftShader animation
-  // was starving Page.captureScreenshot in headless CI.
-  if(paused)await page.waitForTimeout(120);
-  const metrics=fullPage?await page.evaluate(()=>({width:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth,innerWidth),height:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,innerHeight)})):null;
-  const elapsed=Date.now()-startedAt;
-  const remaining=Math.max(1,9500-elapsed);
-  const result=await Promise.race([
-   session.send("Page.captureScreenshot",{format:"png",fromSurface:true,captureBeyondViewport:fullPage,optimizeForSpeed:true,...(metrics?{clip:{x:0,y:0,width:metrics.width,height:metrics.height,scale:1}}:{})}),
-   new Promise((_,reject)=>{captureTimer=setTimeout(()=>reject(new Error("CDP screenshot capture exceeded the remaining 10-second budget: "+path)),remaining)})
-  ]);
-  fs.mkdirSync(path.slice(0,path.lastIndexOf("/"))||".",{recursive:true});
-  fs.writeFileSync(path,Buffer.from(result.data,"base64"));
- })();
+ let paused=false,timer;
+ const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("City frame export exceeded the hard 10-second limit: "+path)),10000)});
  try{
+  const operation=(async()=>{
+   paused=await page.evaluate(()=>{
+    const debug=window.MshinCityDebug;
+    if(typeof debug?.pauseLoop!=="function"||typeof debug?.resumeLoop!=="function")return false;
+    debug.pauseLoop();
+    debug.draw();
+    return true;
+   });
+   if(!paused)throw new Error("City render loop could not be paused before frame export: "+path);
+   await page.waitForTimeout(80);
+   const dataUrl=await page.evaluate(()=>{
+    const canvas=document.querySelector("#cityThreeViewport");
+    if(!(canvas instanceof HTMLCanvasElement))throw new Error("Three.js city canvas is missing");
+    const attributes=canvas.getContext("webgl2")?.getContextAttributes()||canvas.getContext("webgl")?.getContextAttributes();
+    if(!attributes?.preserveDrawingBuffer)throw new Error("Smoke mode must preserve the WebGL frame buffer for deterministic export");
+    return canvas.toDataURL("image/png");
+   });
+   const comma=dataUrl.indexOf(",");
+   if(comma<0||!dataUrl.startsWith("data:image/png;base64,"))throw new Error("City frame export returned an invalid PNG data URL");
+   fs.mkdirSync(path.slice(0,path.lastIndexOf("/"))||".",{recursive:true});
+   fs.writeFileSync(path,Buffer.from(dataUrl.slice(comma+1),"base64"));
+   if(Date.now()-startedAt>10000)throw new Error("City frame export exceeded the hard 10-second limit: "+path);
+  })();
   await Promise.race([operation,deadline]);
  }finally{
   clearTimeout(timer);
-  clearTimeout(captureTimer);
-  if(session)session.detach().catch(()=>{});
   if(paused)page.evaluate(()=>window.MshinCityDebug?.resumeLoop?.()).catch(()=>{});
  }
 }
@@ -67,7 +65,7 @@ try{
    window.__cityEntryOrder.push("orientation:"+value);
   }}});
  });
- await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
+ await page.goto("http://127.0.0.1:4173/city.html?cityCapture=1",{waitUntil:"domcontentloaded"});
  const rendererBootStartedAt=Date.now();
  try{await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100})}catch(error){const diagnostic=await page.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length}));throw new Error("city renderer startup failed: "+JSON.stringify({diagnostic,errors})+"; "+error.message)}
  const rendererBootDuration=Date.now()-rendererBootStartedAt;
@@ -114,6 +112,7 @@ try{
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.rendererTier,"mobile","touch-enabled mobile browser smoke must activate the mobile GPU profile");
  assert.ok(renderStats.pixelRatio<=1.25,"mobile renderer pixel ratio must stay within the 1.25 GPU budget");
+ assert.equal(renderStats.preserveDrawingBuffer,true,"smoke-only WebGL frame export must preserve the buffer without changing production rendering");
  assert.equal(renderStats.antialias,false,"mobile renderer must disable costly multisample antialiasing");
  assert.equal(renderStats.shadowMapSize,512,"mobile renderer must use the constrained 512px shadow map");
  assert.equal(renderStats.version,"180");
