@@ -72,7 +72,7 @@ func _build_toolbars() -> void:
 	add_child(toolbar)
 	var tools := [
 		["road","Road"],["residential","Residential"],["commercial","Commercial"],
-		["industrial","Industrial"],["services","Services"],["specializations","Specializations"],["bulldoze","Bulldoze"]
+		["industrial","Industrial"],["fire","Services"],["specializations","Specializations"],["bulldoze","Bulldoze"]
 	]
 	for item in tools:
 		var button := _make_icon_button(item[0], item[1])
@@ -147,7 +147,7 @@ func _show_submenu(category: String) -> void:
 		"services":
 			options = [["power","Power"],["water","Water"],["fire","Fire"],["police","Police"],["health","Health"],["sewage","Sewage"],["waste","Waste"],["government","Government"]]
 		"specializations":
-			options = [["education","Education"],["transportation","Transportation"],["entertainment","Entertainment"],["gambling","Gambling"],["beach","Beach"],["mountain","Mountain"],["landmark","Landmark"],["parks","Parks"],["regions","Regions"],["epic","Epic"]]
+			options = [["education","Education"],["transportation","Transportation"],["entertainment","Entertainment"],["gambling","Gambling"],["beach","Beach"],["mountain","Mountain"],["landmark","Landmark"],["parks","Parks"],["trade_depot","Trade Depot"],["global_trade","Global Trade"],["epic","Epic"],["regions","Regions"]]
 		"bulldoze":
 			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
 	for option in options:
