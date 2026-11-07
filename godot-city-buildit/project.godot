@@ -7,7 +7,7 @@ config/name="Pasoo City BuildIt"
 config/description="A beautiful 3D city builder inspired by SimCity BuildIt"
 config/version="1.0.0"
 run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.3", "Forward Plus")
+config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
@@ -34,6 +34,7 @@ window/energy_saving/keep_screen_on=true
 
 [rendering]
 
-renderer/rendering_method="forward_plus"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
 anti_aliasing/quality/msaa_3d=2
 environment/defaults/default_clear_color=Color(0.42, 0.7, 0.95, 1)
