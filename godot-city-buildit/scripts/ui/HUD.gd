@@ -45,10 +45,22 @@ func _install_vector_icons() -> void:
 		if old_node == null:
 			continue
 		var parent := old_node.get_parent()
-		var icon := IconAtlas.make_icon(icon_map[path], Vector2(38, 38))
+		var insert_index := old_node.get_index()
+		var icon := IconAtlas.make_icon(icon_map[path], Vector2(44, 44))
 		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var shadow := TextureRect.new()
+		shadow.texture = icon.texture
+		shadow.custom_minimum_size = Vector2(44, 44)
+		shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		shadow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		shadow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		shadow.modulate = Color(0.015, 0.035, 0.055, 0.48)
+		shadow.position = Vector2(1.5, 2.0)
+		shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(shadow)
+		parent.move_child(shadow, insert_index)
 		parent.add_child(icon)
-		parent.move_child(icon, old_node.get_index())
+		parent.move_child(icon, insert_index + 1)
 		old_node.visible = false
 		old_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for path in ["TopLeft/LevelBox/LevelLabel","TopLeft/PopBox/PopLabel","TopLeft/StorageBox/StorageLabel","TopLeft/MoneyBox/MoneyLabel","TopRight/KeysBox/KeysLabel","TopRight/PowerBox/PowerLabel","TopRight/WaterBox/WaterLabel"]:
@@ -123,9 +135,9 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.custom_minimum_size = Vector2(64, 64)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _toolbar_style(Color("#173047"), Color("#52738b")))
-	button.add_theme_stylebox_override("hover", _toolbar_style(Color("#244a64"), Color("#8dc8e8")))
-	button.add_theme_stylebox_override("pressed", _toolbar_style(Color("#0e2638"), Color("#f3c969")))
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
+	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.16, 0.32, 0.43, 0.18), Color(0.55, 0.78, 0.9, 0.42)))
+	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 	var icon := IconAtlas.make_icon(kind, Vector2(58, 58))
