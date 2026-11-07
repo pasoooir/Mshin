@@ -54,8 +54,8 @@ export function createCityNaturalGrassTexture(THREE) {
 export function createCityCoastalWorld(THREE) {
   const root = new THREE.Group();
   root.name = "mshin-coastal-world";
-  const segments = 160;
-  const rows = 28;
+  const segments = 192;
+  const rows = 72;
   const width = 2400;
   const shoreZ = x => 154 + Math.sin(x * 0.0052) * 10 + Math.sin(x * 0.014) * 3.2 + Math.sin(x * 0.031) * 0.9;
 
@@ -66,14 +66,14 @@ export function createCityCoastalWorld(THREE) {
     bumpMap: sandTexture, bumpScale: 0.16
   });
   const beachPositions = [], beachUvs = [], beachIndices = [], beachColors = [];
-  const sandStops = [new THREE.Color("#bca477"), new THREE.Color("#e5c995"), new THREE.Color("#f4dfb2"), new THREE.Color("#d8bd88")];
+  const sandStops = [new THREE.Color("#e5c995"), new THREE.Color("#f4dfb2"), new THREE.Color("#c8b17f"), new THREE.Color("#a98f65")];
   for (let i = 0; i <= segments; i++) {
     const x = -width / 2 + width * i / segments;
     const shore = shoreZ(x);
     const inland = shore - 88 - Math.sin(x * 0.009) * 7;
     for (let j = 0; j < 2; j++) {
-      const t = j;
-      const c = sandStops[j === 0 ? (i % 13 === 0 ? 0 : 1) : (i % 9 === 0 ? 3 : 2)];
+      const variation = 0.5 + 0.5 * Math.sin(x * 0.023) * Math.cos(x * 0.008);
+      const c = new THREE.Color().lerpColors(j === 0 ? sandStops[0] : sandStops[2], j === 0 ? sandStops[1] : sandStops[3], variation);
       beachPositions.push(x, -0.16 + Math.sin(x * 0.03) * 0.025, j ? shore : inland);
       beachUvs.push(i / segments * 3.2, t * 1.2);
       beachColors.push(c.r, c.g, c.b);
@@ -95,7 +95,7 @@ export function createCityCoastalWorld(THREE) {
   // A continuous color gradient, from transparent aqua shallows to deep cobalt,
   // is shaded with intersecting wave fields and animated sun glitter.
   const waterPositions = [], waterUvs = [], waterIndices = [];
-  const oceanDepth = 22000;
+  const oceanDepth = 1800;
   for (let row = 0; row <= rows; row++) {
     const depth = row / rows;
     for (let i = 0; i <= segments; i++) {
