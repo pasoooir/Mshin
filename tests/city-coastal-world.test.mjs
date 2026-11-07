@@ -19,7 +19,7 @@ test("coastal world paints a multi-stop gradient ocean with layered waves and su
   assert.match(coastal, /const size = isConstrainedDevice \? 1024 : 1536/);
   assert.match(coastal, /const grainCount = isConstrainedDevice \? 36000 : 118000/);
   assert.match(coastal, /soilBeachOverlapMeters:1\.5/);
-  assert.match(coastal, /shore-\(j \? 116 : 86\.5\)/);\n  assert.match(coastal, /const segments = isMobileQuality \? 128 : 192/);\n  assert.match(coastal, /const rows = isMobileQuality \? 48 : 72/);\n  assert.match(coastal, /uMobileQuality/);\n  assert.match(coastal, /highFrequencyPigmentLayers:isMobileQuality\?2:4/);
+  assert.match(coastal, /shore-\(j \? 116 : 86\.5\)/);\n  assert.match(coastal, /const segments = isMobileQuality \? 128 : 192/);\n  assert.match(coastal, /const rows = isMobileQuality \? 48 : 72/);\n  assert.match(coastal, /uniform float uMobileQuality/);\n  assert.match(coastal, /const isConstrainedDevice = isConstrainedCityDevice\(\)/);\n  assert.match(coastal, /highFrequencyPigmentLayers:isMobileQuality\?2:4/);
 });
 test("natural grass uses a full-color procedural texture in the live renderer", () => {
   assert.match(coastal, /createCityNaturalGrassTexture/);
