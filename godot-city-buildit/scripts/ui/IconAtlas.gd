@@ -37,6 +37,7 @@ const REGIONS := {
 	"simoleons": [2, Rect2i(860, 20, 270, 240)],
 	"hard_hat": [2, Rect2i(20, 280, 270, 240)],
 	"fire": [2, Rect2i(300, 280, 270, 240)],
+	"services": [2, Rect2i(300, 280, 270, 240)],
 	"police": [2, Rect2i(580, 280, 270, 240)],
 	"health": [2, Rect2i(860, 280, 270, 240)],
 	"sewage": [2, Rect2i(20, 540, 270, 220)],
