@@ -14,6 +14,8 @@ test("natural grass uses a full-color procedural texture in the live renderer", 
   assert.match(coastal, /createCityNaturalGrassTexture/);
   assert.match(renderer, /createCityNaturalGrassTexture/);
   assert.match(renderer, /naturalGrassTexture/);
+  assert.match(renderer, /texture === grassGroundMap \? 16000 : 2048/);
+  assert.doesNotMatch(renderer, /\\\\n/);
 });
 test("coastal world is mounted and cached offline", () => {
   assert.match(renderer, /createCityCoastalWorld/);
