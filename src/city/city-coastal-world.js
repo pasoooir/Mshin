@@ -146,7 +146,6 @@ export function createCityCoastalWorld(THREE, { scene, renderer }) {
     foamGroup.add(mesh);
   }
   group.add(foamGroup);
-  scene.add(group);
   let elapsed = 0;
   return {
     group,
