@@ -19,6 +19,56 @@ func _find_building(type_id: String):
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
+func _test_drag_gestures_do_not_place() -> void:
+	var input_node = get_node("CityInput")
+	var initial_count: int = BuildManager.buildings.size()
+	BuildManager.select_building("residential_1")
+
+	var down := InputEventScreenTouch.new()
+	down.index = 0
+	down.pressed = true
+	down.position = Vector2(480, 300)
+	input_node._unhandled_input(down)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 0
+	drag.position = Vector2(540, 300)
+	drag.relative = Vector2(60, 0)
+	input_node._unhandled_input(drag)
+	var up := InputEventScreenTouch.new()
+	up.index = 0
+	up.pressed = false
+	up.position = Vector2(540, 300)
+	input_node._unhandled_input(up)
+	_check(BuildManager.buildings.size() == initial_count, "Single-finger drag triggered an unintended placement.")
+
+	var first_down := InputEventScreenTouch.new()
+	first_down.index = 0
+	first_down.pressed = true
+	first_down.position = Vector2(420, 300)
+	input_node._unhandled_input(first_down)
+	var second_down := InputEventScreenTouch.new()
+	second_down.index = 1
+	second_down.pressed = true
+	second_down.position = Vector2(700, 300)
+	input_node._unhandled_input(second_down)
+	var pinch_drag := InputEventScreenDrag.new()
+	pinch_drag.index = 1
+	pinch_drag.position = Vector2(730, 320)
+	pinch_drag.relative = Vector2(30, 20)
+	input_node._unhandled_input(pinch_drag)
+	var second_up := InputEventScreenTouch.new()
+	second_up.index = 1
+	second_up.pressed = false
+	second_up.position = Vector2(730, 320)
+	input_node._unhandled_input(second_up)
+	var first_up := InputEventScreenTouch.new()
+	first_up.index = 0
+	first_up.pressed = false
+	first_up.position = Vector2(420, 300)
+	input_node._unhandled_input(first_up)
+	_check(BuildManager.buildings.size() == initial_count, "Two-finger gesture triggered an unintended placement.")
+	BuildManager.cancel_placement()
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	var road_system = get_node_or_null("World/RoadSystem")
@@ -31,6 +81,7 @@ func _run_gameplay_test() -> void:
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not place connected road tile %d." % x)
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
 	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
+	_test_drag_gestures_do_not_place()
 
 	BuildManager.select_building("residential_1")
 	_check(BuildManager.can_place_at(Vector2i(0, 1)), "House plot beside road should be valid.")
