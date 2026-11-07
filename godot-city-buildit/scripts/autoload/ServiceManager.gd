@@ -34,6 +34,8 @@ func _has_nearby_utility(building: Node3D, utility_key: String) -> bool:
 	return false
 
 func is_building_served(building: Node3D) -> bool:
+	if not is_instance_valid(building):
+		return false
 	return power_served_ids.has(building.building_id) and water_served_ids.has(building.building_id)
 
 func recalculate_from_buildings() -> void:
