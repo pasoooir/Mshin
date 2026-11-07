@@ -432,17 +432,25 @@ export function createRaceRenderer(canvas){
   const playerT=snapshot.player.t,startingGrid=snapshot.state==="countdown"||(Number(snapshot.raceElapsed)||0)<2.5,maxVisible=startingGrid?4:mobile?3:softwareRenderer?2:7,visibleDistance=startingGrid?1.05:.72;visibleRivals.length=0;visibleDistances.length=0;for(const r of snapshot.rivals){if(r.despawned||r.destruction?.despawned)continue;const rawDelta=Math.abs(r.distance-playerT),delta=rawDelta%(Math.PI*2),distance=Math.min(delta,Math.PI*2-delta);if(distance>=visibleDistance)continue;let slot=visibleDistances.length;while(slot>0&&distance<visibleDistances[slot-1])slot--;if(slot>=maxVisible)continue;visibleRivals.splice(slot,0,r);visibleDistances.splice(slot,0,distance);if(visibleRivals.length>maxVisible){visibleRivals.pop();visibleDistances.pop()}}for(let i=0;i<visibleRivals.length;i++){const r=visibleRivals[i];drawVehicle(r.distance,r.lateral,r.yaw||0,r.color||"#56a8ed",r.damage?.total||r.damage||0,r.type,r.id,snapshot)}
   drawVehicle(snapshot.player.t,snapshot.player.lateral,snapshot.player.yaw,snapshot.player.color,snapshot.player.damage,"player",snapshot.player.modelId,snapshot);
   if(state.captureNextFrameSample){
-   gl.finish();
-   const sampleWidth=canvas.width,sampleHeight=canvas.height,samplePixels=new Uint8Array(sampleWidth*sampleHeight*4);
-   gl.readPixels(0,0,sampleWidth,sampleHeight,gl.RGBA,gl.UNSIGNED_BYTE,samplePixels);
+   // Read a bounded center crop around the car instead of synchronously
+   // draining the entire mobile drawing buffer. This keeps software WebGL
+   // acceptance from blocking the main thread on large readbacks.
+   const fullWidth=canvas.width,fullHeight=canvas.height;
+   const sampleWidth=Math.max(1,Math.min(256,fullWidth,fullHeight));
+   const sampleHeight=sampleWidth;
+   const sampleX=Math.max(0,Math.floor((fullWidth-sampleWidth)/2));
+   const sampleY=Math.max(0,Math.floor((fullHeight-sampleHeight)/2));
+   const samplePixels=new Uint8Array(sampleWidth*sampleHeight*4);
+   const sampleStarted=performance.now();
+   gl.readPixels(sampleX,sampleY,sampleWidth,sampleHeight,gl.RGBA,gl.UNSIGNED_BYTE,samplePixels);
    let visiblePixels=0,roadLikePixels=0;const sampledColors=new Set();
-   for(let i=0;i<samplePixels.length;i+=4*16){
+   for(let i=0;i<samplePixels.length;i+=4*4){
     const red=samplePixels[i],green=samplePixels[i+1],blue=samplePixels[i+2];
     if(red+green+blue>24)visiblePixels++;
     if(Math.max(red,green,blue)-Math.min(red,green,blue)<42&&red>24&&red<205&&green>24&&green<205&&blue>24&&blue<205)roadLikePixels++;
-    sampledColors.add((red>>4)+":"+(green>>4)+":"+(blue>>4));
+    sampledColors.add((red>>4)+":"+ (green>>4)+":"+ (blue>>4));
    }
-   state.lastFramePixelSample={width:sampleWidth,height:sampleHeight,visiblePixels,roadLikePixels,uniqueColors:sampledColors.size,drawCalls:state.lastFrameDrawCalls,triangles:state.lastFrameTriangles,pixelBytes:samplePixels.byteLength,context:true,glError:gl.getError()};
+   state.lastFramePixelSample={width:sampleWidth,height:sampleHeight,sourceWidth:fullWidth,sourceHeight:fullHeight,sampleX,sampleY,visiblePixels,roadLikePixels,uniqueColors:sampledColors.size,drawCalls:state.lastFrameDrawCalls,triangles:state.lastFrameTriangles,pixelBytes:samplePixels.byteLength,readbackMs:performance.now()-sampleStarted,context:true,glError:gl.getError()};
    state.captureNextFrameSample=false;
   }
   state.frames++;state.stageId=snapshot.stageId;state.playerPosition={x,z};state.camera="perspective-chase";state.lastFrameTriangles=state.triangles;state.maxTrianglesPerFrame=Math.max(state.maxTrianglesPerFrame||0,state.lastFrameTriangles);state.lastFrameDrawCalls=(state.drawPartCount||0)-drawCountAtStart;state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs=performance.now()-rendererStarted);state.maxRendererRenderMs=Math.max(state.maxRendererRenderMs||0,state.lastRendererRenderMs);if(mobile&&!softwareRenderer){const frameMs=state.lastRendererRenderMs;if(frameMs>26){state.slowFrameStreak++;state.fastFrameStreak=0;}else if(frameMs<17){state.fastFrameStreak++;state.slowFrameStreak=0;}else{state.slowFrameStreak=0;state.fastFrameStreak=0;}if(state.slowFrameStreak>=90&&qualityScale>.5){qualityScale=Math.max(.5,qualityScale-.1);state.slowFrameStreak=0;state.adaptiveQualityChanges++;resize();}else if(state.fastFrameStreak>=240&&qualityScale<1){qualityScale=Math.min(1,qualityScale+.08);state.fastFrameStreak=0;state.adaptiveQualityChanges++;resize();}state.quality.adaptiveScale=qualityScale;}
