@@ -48,14 +48,21 @@ func _has_adjacent_road(grid_pos: Vector2i) -> bool:
 			return true
 	return false
 
-func place_road(grid_pos: Vector2i) -> bool:
-	if roads.has(grid_pos) or not BuildManager.is_inside_world(grid_pos):
-		return false
+func get_road_placement_error(grid_pos: Vector2i) -> String:
+	if roads.has(grid_pos):
+		return "A road already exists on this tile."
+	if not BuildManager.is_inside_world(grid_pos):
+		return "This tile is outside the buildable city area."
 	if not _has_adjacent_road(grid_pos):
-		return false
+		return "Start beside the existing highway or road; roads must connect."
 	if not EconomyManager.can_afford(ROAD_COST):
-		return false
+		return "Not enough Simoleons. Each road tile costs 50."
 	if not BuildManager.is_cell_free(grid_pos, Vector2i.ONE):
+		return "This tile is occupied by a building."
+	return ""
+
+func place_road(grid_pos: Vector2i) -> bool:
+	if get_road_placement_error(grid_pos) != "":
 		return false
 	if not EconomyManager.spend_simoleons(ROAD_COST):
 		return false

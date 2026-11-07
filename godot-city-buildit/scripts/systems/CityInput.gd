@@ -7,6 +7,8 @@ const TAP_SLOP: float = 14.0
 var pointer_start: Dictionary = {}
 var pointer_moved: Dictionary = {}
 var multi_touch_gesture: bool = false
+var road_stroke_active: Dictionary = {}
+var road_stroke_last_cell: Dictionary = {}
 
 func _ready() -> void:
 	camera = get_viewport().get_camera_3d()
@@ -16,27 +18,39 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.pressed:
 			pointer_start[-1] = event.position
 			pointer_moved[-1] = false
+			if _is_road_mode():
+				_start_road_stroke(-1, event.position)
 		else:
-			var start: Vector2 = pointer_start.get(-1, event.position)
-			if start.distance_to(event.position) <= TAP_SLOP and not bool(pointer_moved.get(-1, false)):
-				_handle_tap(event.position)
+			if road_stroke_active.has(-1):
+				_end_road_stroke(-1)
+			else:
+				var start: Vector2 = pointer_start.get(-1, event.position)
+				if start.distance_to(event.position) <= TAP_SLOP and not bool(pointer_moved.get(-1, false)):
+					_handle_tap(event.position)
 			pointer_start.erase(-1)
 			pointer_moved.erase(-1)
 	elif event is InputEventMouseMotion:
 		if pointer_start.has(-1) and Vector2(pointer_start[-1]).distance_to(event.position) > TAP_SLOP:
 			pointer_moved[-1] = true
-		if BuildManager.is_placing:
+		if road_stroke_active.has(-1):
+			_continue_road_stroke(-1, event.position)
+		elif BuildManager.is_placing:
 			_update_ghost(event.position)
 	elif event is InputEventScreenTouch:
 		if event.pressed:
 			if pointer_start.size() > 0:
 				multi_touch_gesture = true
+				_cancel_all_road_strokes()
 				for pointer_id in pointer_moved.keys():
 					pointer_moved[pointer_id] = true
 			pointer_start[event.index] = event.position
 			pointer_moved[event.index] = false
+			if pointer_start.size() == 1 and _is_road_mode():
+				_start_road_stroke(event.index, event.position)
 		else:
-			if pointer_start.has(event.index):
+			if road_stroke_active.has(event.index):
+				_end_road_stroke(event.index)
+			elif pointer_start.has(event.index):
 				var start: Vector2 = pointer_start[event.index]
 				if not multi_touch_gesture and start.distance_to(event.position) <= TAP_SLOP and not bool(pointer_moved.get(event.index, false)):
 					_handle_tap(event.position)
@@ -47,23 +61,105 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag:
 		if pointer_start.size() > 1:
 			multi_touch_gesture = true
+			_cancel_all_road_strokes()
 			for pointer_id in pointer_moved.keys():
 				pointer_moved[pointer_id] = true
 		if pointer_start.has(event.index) and Vector2(pointer_start[event.index]).distance_to(event.position) > TAP_SLOP:
 			pointer_moved[event.index] = true
-		if BuildManager.is_placing and event.index == 0:
+		if road_stroke_active.has(event.index) and pointer_start.size() == 1:
+			_continue_road_stroke(event.index, event.position)
+		elif BuildManager.is_placing and event.index == 0:
 			_update_ghost(event.position)
+
+func _is_road_mode() -> bool:
+	var scene = get_tree().current_scene
+	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
+	return road_system != null and road_system.is_road_mode
+
+func _road_system():
+	var scene = get_tree().current_scene
+	return scene.get_node_or_null("World/RoadSystem") if scene else null
+
+func _start_road_stroke(pointer_id: int, screen_position: Vector2) -> void:
+	road_stroke_active[pointer_id] = true
+	var world_position: Variant = _raycast_ground(screen_position)
+	if world_position == null:
+		_set_status("Tap or drag directly on the ground to lay asphalt.")
+		return
+	var cell: Vector2i = BuildManager.world_to_grid(world_position)
+	road_stroke_last_cell[pointer_id] = cell
+	var road_system = _road_system()
+	if road_system == null:
+		_set_status("Road system is unavailable.")
+		return
+	if road_system.has_road(cell):
+		_set_status("Drag from this road to extend the asphalt network.")
+	elif road_system.place_road(cell):
+		_set_status("Road placed. Keep dragging to pave a connected route (50 per tile).")
+	else:
+		_set_status(road_system.get_road_placement_error(cell))
+
+func _continue_road_stroke(pointer_id: int, screen_position: Vector2) -> void:
+	var world_position: Variant = _raycast_ground(screen_position)
+	if world_position == null or not road_stroke_last_cell.has(pointer_id):
+		return
+	var target_cell: Vector2i = BuildManager.world_to_grid(world_position)
+	var previous: Vector2i = road_stroke_last_cell[pointer_id]
+	if target_cell == previous:
+		return
+	var road_system = _road_system()
+	if road_system == null:
+		return
+	for cell in _grid_line(previous, target_cell):
+		if road_system.has_road(cell):
+			road_stroke_last_cell[pointer_id] = cell
+			continue
+		if road_system.place_road(cell):
+			road_stroke_last_cell[pointer_id] = cell
+			_set_status("Paving connected road… 50 Simoleons per tile.")
+		else:
+			_set_status(road_system.get_road_placement_error(cell))
+			break
+
+func _grid_line(start: Vector2i, finish: Vector2i) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	var x: int = start.x
+	var y: int = start.y
+	var dx: int = absi(finish.x - start.x)
+	var dy: int = absi(finish.y - start.y)
+	var sx: int = 1 if start.x < finish.x else -1
+	var sy: int = 1 if start.y < finish.y else -1
+	var error: int = dx - dy
+	while x != finish.x or y != finish.y:
+		var doubled_error: int = error * 2
+		if doubled_error > -dy:
+			error -= dy
+			x += sx
+		if doubled_error < dx:
+			error += dx
+			y += sy
+		cells.append(Vector2i(x, y))
+	return cells
+
+func _end_road_stroke(pointer_id: int) -> void:
+	road_stroke_active.erase(pointer_id)
+	road_stroke_last_cell.erase(pointer_id)
+
+func _cancel_all_road_strokes() -> void:
+	road_stroke_active.clear()
+	road_stroke_last_cell.clear()
 
 func _handle_tap(screen_position: Vector2) -> void:
 	var world_position: Variant = _raycast_ground(screen_position)
 	if world_position == null:
 		return
-	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
+	var road_system = _road_system()
 	if road_system and road_system.is_road_mode:
-		if road_system.place_road_at_world(world_position):
-			_set_status("Road tile connected. Place the next tile beside the road.")
+		var cell: Vector2i = BuildManager.world_to_grid(world_position)
+		if road_system.place_road(cell):
+			_set_status("Road placed. Tap an adjacent tile to continue (50 Simoleons).")
 		else:
-			_set_status("Road must connect to the existing network and cost 50 Simoleons.")
+			_set_status(road_system.get_road_placement_error(cell))
 		return
 	if BuildManager.is_placing:
 		var grid := BuildManager.world_to_grid(world_position)
