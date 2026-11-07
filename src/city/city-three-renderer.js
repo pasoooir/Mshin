@@ -6,6 +6,7 @@ import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityHighwayGateway } from "./city-highway-gateway.js";
+import { createCityCoastalWorld } from "./city-coastal-world.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -96,6 +97,9 @@ export async function createCityThreeRenderer(sourceCanvas) {
   ground.receiveShadow = true;
   ground.frustumCulled = false;
   scene.add(ground);
+
+  const coastalWorld = createCityCoastalWorld(THREE);
+  scene.add(coastalWorld.group);
 
   const highwayGateway = createCityHighwayGateway(THREE, { asphaltSurface, concreteSurface });
   scene.add(highwayGateway.group);
@@ -366,6 +370,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   function render(city, view, cam) {
     updateCamera(cam);
     updateRoads(city);
+    coastalWorld.update(performance.now());
     atmosphere.update(city);
     cloudLayer.update(city, atmosphere.getStats());
     updateBuildings(city);
@@ -461,12 +466,14 @@ export async function createCityThreeRenderer(sourceCanvas) {
         shadowAutoUpdate: renderer.shadowMap.autoUpdate,
         buildingRebuilds,
         ...atmosphere.getStats(),
-        ...highwayGateway.getStats()
+        ...highwayGateway.getStats(),
+        ...coastalWorld.getStats()
       };
     },
     destroy() {
       window.removeEventListener("resize", onResize);
       highwayGateway.dispose();
+      coastalWorld.dispose();
       renderer.dispose();
       atmosphere.dispose();
       cloudLayer.dispose();
