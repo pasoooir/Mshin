@@ -74,7 +74,7 @@ try{
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.version,"180");
- assert.equal(renderStats.visualStyle,"continuous-realistic-grassland","the city renderer must use the realistic architectural PBR art direction");
+ assert.equal(renderStats.visualStyle,"full-spectrum-natural-coastal-world","the city renderer must use the full-spectrum natural coastal PBR art direction");
  assert.equal(renderStats.continuousGrassland,true,"the world must be one continuous grass surface");
  assert.equal(renderStats.visiblePlotGridLines,0,"plot borders and checkerboard lines must never be rendered");
  assert.equal(renderStats.groundExtentMeters,1000000,"the continuous terrain must extend beyond every supported zoom-out view without exposing the page backdrop");
