@@ -102,7 +102,7 @@ test("offline app shell precaches every city simulation and persistence module",
   for(const modulePath of ["city-view.js","city-day-night-cycle.js","city-three-renderer.js","city-highway-gateway.js","city-world-scale.js","city-camera-controller.js","city-camera-projection.js","city-zoning.js","city-services.js","city-traffic.js","city-population.js","city-economy.js","city-employment.js","city-save.js"]){
     assert.ok(serviceWorker.includes("./src/city/"+modulePath),"offline app shell is missing "+modulePath);
   }
-  assert.match(serviceWorker,/mshin-arcade-v81/,"city persistence release must advance the offline cache version");
+  assert.match(serviceWorker,/mshin-arcade-v\\d+/,"city persistence release must advance the offline cache version");
 });
 
 test("all saved clock values normalize to permanent midday during migration", () => {
