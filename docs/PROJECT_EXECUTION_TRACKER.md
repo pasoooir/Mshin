@@ -416,3 +416,13 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - رندر موبایل: سقف pixel ratio برابر 1.25، خاموشی MSAA در موبایل و shadow map با وضوح 512؛ دسکتاپ تنظیمات باکیفیت‌تر را حفظ می‌کند.
 - تست‌های رگرسیون برای هم‌پوشانی ساحل، کیفیت تطبیقی texture و بودجه رندر موبایل افزوده شد.
 - محدودیت پذیرش: تست‌ها هنوز روی GitHub Actions برای HEAD جدید اجرا/قابل مشاهده نشده‌اند؛ screenshot، FPS و حافظه روی Android واقعی نیز هنوز اندازه‌گیری نشده‌اند. این مرحله را آماده انتشار تلقی نکنید.
+
+
+# Coastal world quality gate — 2026-11-07
+
+- **PR #324 head:** `2192dacafd1bf9770b26ad24e4cd20266d572169` (open, not merged).
+- **Coastline geometry:** the beach and soil belt remain separate meshes; the soil upper edge overlaps the beach by 1.5 m to prevent a visible hairline seam. Beach/soil use independent sRGB procedural textures and receive shadows.
+- **Mobile rendering tier:** constrained devices use 1024px organic textures, 128 shoreline segments × 48 water rows, 2 high-frequency pigment layers, 1.25 renderer pixel-ratio cap, no MSAA, and 512px shadow maps. Desktop retains 1536px textures, 192 × 72 water mesh, four pigment layers and 1024px shadow maps.
+- **Shader regression fix:** mobile quality uniform is declared in the fragment shader and bypasses the two finest noise fields on phones; this avoids the previous risk of an undeclared GLSL uniform.
+- **Automated evidence:** source-level regression assertions cover adaptive texture sizes, mobile geometry tier, shader uniform, shoreline overlap, and renderer settings. CI results for this exact head have not yet been returned by the GitHub workflow/status endpoints; no pass is claimed.
+- **Still open:** verify the actual shoreline from multiple camera zoom levels, inspect for z-fighting/gaps at the grass–soil–sand junction, record mobile frame time/GPU memory on a physical Android device, and validate the shader in a real WebGL browser. Browser automation is not a substitute for physical-device QA.
