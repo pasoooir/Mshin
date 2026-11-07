@@ -108,7 +108,7 @@ try{
  assert.equal(entryAcceptance.debug.fullscreenGranted,true,"fullscreen must be granted from the first trusted mobile gesture");
  assert.equal(entryAcceptance.debug.lockGranted,true,"landscape orientation lock must be attempted after fullscreen");
  assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
- await page.screenshot({timeout:60000,animations:"disabled",path:"artifacts/city-empty-world-landscape.png"});
+ await page.screenshot({timeout:10000,animations:"disabled",path:"artifacts/city-empty-world-landscape.png"});
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.05));
  const meadowZoomOut=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,stats:window.MshinCity3DStats}));
  assert.ok(Math.abs(meadowZoomOut.zoom-0.42)<0.001,"zoom-out must stop before the camera exposes areas outside the playable world");
@@ -120,7 +120,7 @@ try{
  assert.equal(meadowZoomOut.stats.continuousGrassland,true,"zooming out must keep the same continuous grass terrain");
   assert.equal(meadowZoomOut.stats.groundExtentMeters,1000000,"maximum zoom-out must retain million-meter terrain coverage so no blank canvas edge can enter the viewport");
  assert.equal(meadowZoomOut.stats.visiblePlotGridLines,0,"zooming out must never reveal square plot outlines");
- await page.screenshot({timeout:60000,animations:"disabled",path:"artifacts/city-meadow-maximum-zoom-out.png"});
+ await page.screenshot({timeout:10000,animations:"disabled",path:"artifacts/city-meadow-maximum-zoom-out.png"});
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.72));
 
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
@@ -154,7 +154,7 @@ try{
  assert.equal(objectShowcase.originalCount,0,"the visual asset showcase must start from an empty city");
  assert.deepEqual(objectShowcase.samples,[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2],"asset showcase must remain renderable at all four cardinal orbit angles and the 360-degree wrap");
  await page.evaluate(()=>{window.MshinCityDebug.setCameraOrbit(Math.PI/4);window.MshinCityDebug.setCameraZoom(1.5);window.MshinCityDebug.draw()});
- await page.screenshot({timeout:60000,animations:"disabled",path:"artifacts/city-3d-object-showcase-360.png"});
+ await page.screenshot({timeout:10000,animations:"disabled",path:"artifacts/city-3d-object-showcase-360.png"});
  await page.evaluate(zoom=>{const city=window.MshinCityDebug.city;city.buildings=[];city.population=0;city.citizens=[];window.MshinCityDebug.setCameraOrbit(0);window.MshinCityDebug.setCameraZoom(zoom);window.MshinCityDebug.draw()},objectShowcase.originalZoom);
  await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=495;window.MshinCityDebug.draw()});
 
@@ -392,7 +392,7 @@ try{
  assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile edge controls must leave the lower simulation controls unobstructed");
  assert.ok(mobile.categoryButtons.length===4&&mobile.categoryButtons.every(b=>b.width>=40&&b.height>=44),"all four mobile category controls must remain at least 40×44 CSS pixels");await page.locator('[data-city-category="roads"]').click();const openToolTargets=await page.locator('[data-city-panel="roads"] .cityTool').evaluateAll(items=>items.map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}));assert.ok(openToolTargets.length===6&&openToolTargets.every(b=>b.width>=40&&b.height>=44),"every revealed construction tool must remain a usable mobile touch target");await page.locator('[data-city-category="roads"]').click();
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
- await page.screenshot({timeout:60000,animations:"disabled",path:"artifacts/city-mobile-landscape-844x390.png"});
+ await page.screenshot({timeout:10000,animations:"disabled",path:"artifacts/city-mobile-landscape-844x390.png"});
  const compactPage=await browser.newPage({viewport:{width:360,height:640},screen:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  try{
   const compactErrors=[];
@@ -415,7 +415,7 @@ try{
   assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
   assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
   fs.mkdirSync("artifacts",{recursive:true});
-  await compactPage.screenshot({timeout:60000,animations:"disabled",path:"artifacts/city-portrait-orientation-gate.png",fullPage:true});
+  await compactPage.screenshot({timeout:10000,animations:"disabled",path:"artifacts/city-portrait-orientation-gate.png",fullPage:true});
   const orientationShim=await compactPage.evaluate(()=>({lockType:typeof screen.orientation?.lock,orientationType:screen.orientation?.type,handlerType:typeof window.__mshinEnterCityLandscape,onclickType:typeof document.querySelector("#cityEnterLandscape")?.onclick,pointerHandler:document.querySelector("#cityEnterLandscape")?.getAttribute("onpointerdown"),buttonVisible:(()=>{const r=document.querySelector("#cityEnterLandscape").getBoundingClientRect();return r.width>0&&r.height>0})()}));
   assert.equal(orientationShim.lockType,"function","orientation shim missing: "+JSON.stringify(orientationShim));assert.equal(orientationShim.handlerType,"function","landscape entry handler missing: "+JSON.stringify(orientationShim));assert.equal(orientationShim.onclickType,"function","landscape button onclick missing: "+JSON.stringify(orientationShim));
   await compactPage.locator("#cityEnterLandscape").click();
@@ -454,7 +454,7 @@ try{
   assert.equal(landscape.gate,"none","landscape page must show the city rather than the portrait gate");
   assert.equal(landscape.width,landscape.viewport,"landscape city must not overflow horizontally");
   fs.mkdirSync("artifacts",{recursive:true});
-  await landscapePage.screenshot({timeout:60000,animations:"disabled",path:"artifacts/city-vertical-slice.png",fullPage:true});
+  await landscapePage.screenshot({timeout:10000,animations:"disabled",path:"artifacts/city-vertical-slice.png",fullPage:true});
   await landscapePage.evaluate(()=>localStorage.setItem("mshin-city-save-v2",JSON.stringify({schemaVersion:2,cityId:"corrupt",name:"broken",seed:1,tick:0,treasury:0,population:0,grid:[[]]})));
   await landscapePage.reload({waitUntil:"domcontentloaded"});
   try{await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("renderer did not recover after malformed-save reload: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message)}
