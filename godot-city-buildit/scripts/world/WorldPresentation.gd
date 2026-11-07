@@ -226,6 +226,7 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	multimesh.mesh = mesh
+	multimesh.use_colors = node_name == "TreeCanopies"
 	multimesh.instance_count = positions.size()
 	for index in range(positions.size()):
 		var scale := 0.82 + float((index * 7) % 5) * 0.09
@@ -234,7 +235,6 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 		multimesh.set_instance_transform(index, Transform3D(basis, origin))
 		if node_name == "TreeCanopies":
 			var foliage: Array[Color] = [Color(0.10, 0.30, 0.13), Color(0.16, 0.40, 0.17), Color(0.28, 0.48, 0.20), Color(0.39, 0.46, 0.18)]
-			multimesh.use_colors = true
 			multimesh.set_instance_color(index, foliage[index % foliage.size()])
 	var instance := MultiMeshInstance3D.new()
 	instance.name = node_name
