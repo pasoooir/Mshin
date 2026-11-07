@@ -483,6 +483,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
       atmosphere.dispose();
       cloudLayer.dispose();
       backgroundSkyline.dispose();
+      for (const texture of [grassGroundMap, grassGroundNormal, grassGroundRoughness]) texture.dispose();
       for (const surface of [grassSurface, asphaltSurface, brickSurface, concreteSurface, roofSurface, sidewalkSurface]) {
         surface.map.dispose();
         surface.normalMap.dispose();
