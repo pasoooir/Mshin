@@ -28,7 +28,7 @@ test("natural grass uses a full-color procedural texture in the live renderer", 
   assert.doesNotMatch(renderer, /\\\\n/);
 });
 test("sky uses continuous full-spectrum gradients and procedural atmosphere", () => {
-  for (const token of ["uLower", "uMid", "skyNoise", "highCloudVeil", "continuousSkyGradient", "colorDepth: \"24-bit RGB\""]) assert.ok(atmosphere.includes(token), token);
+  for (const token of ["uLower", "uMid", "skyNoise", "highCloudVeil", "cloudFieldLayers: 2", "continuousSkyGradient", "colorDepth: \"24-bit RGB\""]) assert.ok(atmosphere.includes(token), token);
   assert.match(renderer, /trueColorAtmosphere/);
   assert.match(atmosphere, /float cloudField=/);
   assert.match(atmosphere, /float cloudDetail=/);
