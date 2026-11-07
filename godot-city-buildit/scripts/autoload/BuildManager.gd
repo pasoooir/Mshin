@@ -6,15 +6,16 @@ signal construction_started(building_id: String)
 signal construction_finished(building_id: String)
 signal placement_mode_changed(active: bool)
 
-const GRID_SIZE := 2.0
+const GRID_SIZE: float = 2.0
+const WORLD_HALF_CELLS: int = 40
 const BuildingScene = preload("res://scenes/buildings/Building.tscn")
 
 var buildings: Dictionary = {}
-var selected_building_type := ""
-var is_placing := false
-var factory_count := 0
+var selected_building_type: String = ""
+var is_placing: bool = false
+var factory_count: int = 0
 
-var building_types := {
+var building_types: Dictionary = {
 	"residential_1": {"name":"Small House", "category":"residential", "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
 	"residential_2": {"name":"Apartment", "category":"residential", "cost":0, "size":Vector2i(2,2), "population":28, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
 	"building_supplies": {"name":"Building Supplies", "category":"commercial", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1},
@@ -39,8 +40,8 @@ func get_available_buildings(category: String = "") -> Array:
 	var result: Array = []
 	for key in building_types:
 		var definition: Dictionary = building_types[key]
-		if int(definition.get("level", 1)) <= GameManager.level and (category == "" or definition.category == category):
-			if definition.category != "industrial" or factory_count < LevelProgression.max_factories:
+		if int(definition.get("level", 1)) <= GameManager.level and (category == "" or definition.get("category", "") == category):
+			if definition.get("category", "") != "industrial" or factory_count < LevelProgression.max_factories:
 				result.append(key)
 	return result
 
@@ -49,11 +50,13 @@ func select_building(type_id: String) -> void:
 		push_warning("Unknown building type: " + type_id)
 		return
 	var definition: Dictionary = building_types[type_id]
-	if int(definition.get("level", 1)) > GameManager.level or (definition.category == "industrial" and factory_count >= LevelProgression.max_factories):
+	if int(definition.get("level", 1)) > GameManager.level:
+		return
+	if definition.get("category", "") == "industrial" and factory_count >= LevelProgression.max_factories:
 		return
 	selected_building_type = type_id
 	is_placing = true
-	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
+	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem") if get_tree().current_scene else null
 	if road_system:
 		road_system.set_road_mode(false)
 	placement_mode_changed.emit(true)
@@ -62,7 +65,8 @@ func cancel_placement() -> void:
 	selected_building_type = ""
 	is_placing = false
 	placement_mode_changed.emit(false)
-	var ghost = get_tree().current_scene.get_node_or_null("GhostPreview")
+	var scene = get_tree().current_scene
+	var ghost = scene.get_node_or_null("GhostPreview") if scene else null
 	if ghost:
 		ghost.hide_ghost()
 
@@ -73,8 +77,14 @@ func get_footprint_cells(anchor: Vector2i, size: Vector2i) -> Array[Vector2i]:
 			cells.append(anchor + Vector2i(x, y))
 	return cells
 
+func is_inside_world(anchor: Vector2i, size: Vector2i = Vector2i.ONE) -> bool:
+	return anchor.x >= -WORLD_HALF_CELLS and anchor.y >= -WORLD_HALF_CELLS and anchor.x + size.x <= WORLD_HALF_CELLS and anchor.y + size.y <= WORLD_HALF_CELLS
+
 func is_cell_free(grid_pos: Vector2i, size: Vector2i = Vector2i.ONE) -> bool:
-	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem") if get_tree().current_scene else null
+	if not is_inside_world(grid_pos, size):
+		return false
+	var scene = get_tree().current_scene
+	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	for cell in get_footprint_cells(grid_pos, size):
 		if road_system and road_system.has_road(cell):
 			return false
@@ -87,7 +97,8 @@ func is_cell_free(grid_pos: Vector2i, size: Vector2i = Vector2i.ONE) -> bool:
 	return true
 
 func has_road_access(anchor: Vector2i, size: Vector2i) -> bool:
-	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem") if get_tree().current_scene else null
+	var scene = get_tree().current_scene
+	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	if road_system == null:
 		return false
 	for x in range(size.x):
@@ -99,16 +110,18 @@ func has_road_access(anchor: Vector2i, size: Vector2i) -> bool:
 	return false
 
 func can_place_at(grid_pos: Vector2i, type_id: String = "") -> bool:
-	var chosen := type_id if type_id != "" else selected_building_type
+	var chosen: String = type_id if type_id != "" else selected_building_type
 	if chosen == "" or not building_types.has(chosen):
 		return false
 	var definition: Dictionary = building_types[chosen]
 	var size: Vector2i = definition.get("size", Vector2i(2,2))
 	if not is_cell_free(grid_pos, size) or not has_road_access(grid_pos, size):
 		return false
-	if int(definition.get("level", 1)) > GameManager.level or not EconomyManager.can_afford(int(definition.cost)):
+	if int(definition.get("level", 1)) > GameManager.level:
 		return false
-	if definition.category == "industrial" and factory_count >= LevelProgression.max_factories:
+	if not EconomyManager.can_afford(int(definition.get("cost", 0))):
+		return false
+	if definition.get("category", "") == "industrial" and factory_count >= LevelProgression.max_factories:
 		return false
 	return true
 
@@ -117,25 +130,36 @@ func place_building_at_world(world_pos: Vector3) -> bool:
 		return false
 	return place_building(world_to_grid(world_pos))
 
-func place_building(grid_pos: Vector2i) -> bool:
-	if not can_place_at(grid_pos):
+func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int = 1, saved_status: String = "constructing") -> bool:
+	var chosen: String = type_id if type_id != "" else selected_building_type
+	if not can_place_at(grid_pos, chosen):
 		return false
-	var definition: Dictionary = building_types[selected_building_type]
-	var cost := int(definition.get("cost", 0))
+	var definition: Dictionary = building_types[chosen]
+	var cost: int = int(definition.get("cost", 0))
 	if cost > 0 and not EconomyManager.spend_simoleons(cost):
 		return false
-	var building_id := "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
-	var data := {"id":building_id, "type":selected_building_type, "grid_pos":grid_pos, "definition":definition.duplicate(true), "status":"constructing", "build_time":definition.build_time}
+	var building_id: String = "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
+	var data: Dictionary = {
+		"id": building_id,
+		"type": chosen,
+		"grid_pos": grid_pos,
+		"definition": definition.duplicate(true),
+		"status": saved_status,
+		"build_time": float(definition.get("build_time", 4.0)),
+		"upgrade_stage": clampi(saved_stage, 1, 6)
+	}
 	var building_node = BuildingScene.instantiate()
-	var world = get_tree().current_scene.get_node_or_null("World/Buildings")
+	var scene = get_tree().current_scene
+	var world = scene.get_node_or_null("World/Buildings") if scene else null
 	if world == null:
-		world = get_tree().current_scene
+		push_error("Cannot place building: World/Buildings node is missing.")
+		return false
 	world.add_child(building_node)
 	var size: Vector2i = definition.get("size", Vector2i(2,2))
 	building_node.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
 	building_node.setup(data)
 	buildings[building_id] = building_node
-	if definition.category == "industrial":
+	if definition.get("category", "") == "industrial":
 		factory_count += 1
 	construction_started.emit(building_id)
 	building_placed.emit(data)
