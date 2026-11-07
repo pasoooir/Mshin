@@ -24,7 +24,24 @@ async function clickCityTool(page,type){
  if(!box)throw new Error("City category is not in the visible viewport: "+category);
  await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
  await page.waitForFunction(({selector})=>document.querySelector(selector)?.getAttribute("aria-expanded")==="true",{selector},{timeout:10000});
- await page.locator('[data-city-tool="'+type+'"]').click({timeout:10000});
+ const toolSelector='[data-city-tool="'+type+'"]';
+ const toolButton=page.locator(toolSelector);
+ await toolButton.waitFor({state:"visible",timeout:10000});
+ await page.waitForFunction(selector=>{
+  const element=document.querySelector(selector);
+  if(!element)return false;
+  const rect=element.getBoundingClientRect();
+  const next=[rect.x,rect.y,rect.width,rect.height].map(value=>Math.round(value*10)/10).join(":");
+  const previous=element.dataset.smokeStableRect||"";
+  const count=previous===next?Number(element.dataset.smokeStableCount||0)+1:0;
+  element.dataset.smokeStableRect=next;
+  element.dataset.smokeStableCount=String(count);
+  return count>=3;
+ },toolSelector,{timeout:10000,polling:50});
+ const toolBox=await toolButton.boundingBox();
+ if(!toolBox)throw new Error("City tool is not in the visible viewport: "+type);
+ await page.mouse.click(toolBox.x+toolBox.width/2,toolBox.y+toolBox.height/2);
+ await page.waitForFunction(selector=>document.querySelector(selector)?.getAttribute("aria-pressed")==="true",toolSelector,{timeout:10000});
  await page.waitForFunction(()=>[...document.querySelectorAll("[data-city-category]")].every(button=>button.getAttribute("aria-expanded")==="false"),undefined,{timeout:10000});
 }
 
