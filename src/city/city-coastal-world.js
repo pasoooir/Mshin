@@ -1,10 +1,17 @@
+function isConstrainedCityDevice() {
+  return typeof navigator !== "undefined" && (
+    (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4) ||
+    /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "")
+  );
+}
+
 /**
  * Mshin natural color-field generator.
  * Full 24-bit RGB procedural textures and continuous shader gradients.
  * No fixed palette-only fills and no remote runtime assets.
  */
 function makeOrganicTexture(THREE, kind = "grass") {
-  const isConstrainedDevice = typeof navigator !== "undefined" && (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4 || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || ""));
+  const isConstrainedDevice = isConstrainedCityDevice();
   const size = isConstrainedDevice ? 1024 : 1536;
   const bloomCount = isConstrainedDevice ? 220 : 430;
   const grainCount = isConstrainedDevice ? 36000 : 118000;
@@ -63,7 +70,11 @@ export function createCityCoastalWorld(THREE) {
   const generationStartedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
   const root = new THREE.Group();
   root.name = "mshin-coastal-world";
-  const segments = 192, rows = 72, width = 2400;
+  const isMobileQuality = isConstrainedCityDevice();
+  // Keep the coastline silhouette smooth while reducing vertex and fragment work on phones.
+  const segments = isMobileQuality ? 128 : 192;
+  const rows = isMobileQuality ? 48 : 72;
+  const width = 2400;
   const shoreZ = x => 154 + Math.sin(x * 0.0052) * 10 + Math.sin(x * 0.014) * 3.2 + Math.sin(x * 0.031) * 0.9;
 
   const sandTexture = makeOrganicTexture(THREE, "sand");
@@ -130,6 +141,7 @@ export function createCityCoastalWorld(THREE) {
   waterGeometry.setIndex(waterIndices);waterGeometry.computeVertexNormals();
   const waterUniforms={
     uTime:{value:0},
+    uMobileQuality:{value:isMobileQuality ? 1 : 0},
     uShallow:{value:new THREE.Color("#b8f4df")},
     uLagoon:{value:new THREE.Color("#53d8cb")},
     uCoastal:{value:new THREE.Color("#22a8c4")},
@@ -140,7 +152,7 @@ export function createCityCoastalWorld(THREE) {
   const waterMaterial=new THREE.ShaderMaterial({
     uniforms:waterUniforms,
     vertexShader:`
-      varying vec2 vUv;varying vec3 vWorld;varying vec3 vView;uniform float uTime;
+      varying vec2 vUv;varying vec3 vWorld;varying vec3 vView;uniform float uTime;uniform float uMobileQuality;
       void main(){
         vUv=uv;vec3 p=position;
         float a=sin(p.x*.026+p.z*.013+uTime*.72);
@@ -195,13 +207,13 @@ export function createCityCoastalWorld(THREE) {
     }
     const material=new THREE.MeshBasicMaterial({color:["#f7fff2","#d8fff2","#aeece5","#e6fff5"][band],transparent:true,opacity:[.68,.34,.2,.1][band],depthWrite:false});
     foamMaterials.push(material);
-    const foam=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),segments*2,.28+band*.16,5,false),material);
+    const foam=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),isMobileQuality ? segments : segments*2,.28+band*.16,isMobileQuality ? 4 : 5,false),material);
     foam.name=`shoreline-foam-${band+1}`;root.add(foam);
   }
   return {
     group:root,
     update(timeMs){waterUniforms.uTime.value=(Number(timeMs)||0)*.001;},
-    getStats(){return{coastalWorld:true,oceanSurface:true,animatedWater:true,oceanColorGradient:true,colorDepth:"24-bit RGB",multiscaleWaveFields:3,shorelineFoamBands:4,sandyBeach:true,soilTransition:true,soilBeachOverlapMeters:1.5,shorelineSegments:segments,textureResolution:sandTexture.image?.width||0,textureQuality:isConstrainedDevice?"mobile-adaptive":"high",textureGenerationMs:Math.round(((typeof performance!=="undefined"?performance.now():Date.now())-generationStartedAt)*100)/100};},
+    getStats(){return{coastalWorld:true,oceanSurface:true,animatedWater:true,oceanColorGradient:true,colorDepth:"24-bit RGB",multiscaleWaveFields:3,shorelineFoamBands:4,sandyBeach:true,soilTransition:true,soilBeachOverlapMeters:1.5,shorelineSegments:segments,waterRows:rows,mobileShaderQuality:isMobileQuality,highFrequencyPigmentLayers:isMobileQuality?2:4,textureResolution:sandTexture.image?.width||0,textureQuality:isConstrainedDevice?"mobile-adaptive":"high",textureGenerationMs:Math.round(((typeof performance!=="undefined"?performance.now():Date.now())-generationStartedAt)*100)/100};},
     dispose(){
       beachGeometry.dispose();soilGeometry.dispose();waterGeometry.dispose();
       sandTexture.dispose();soilTexture.dispose();sandMaterial.dispose();soilMaterial.dispose();waterMaterial.dispose();
