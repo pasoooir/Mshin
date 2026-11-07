@@ -17,6 +17,20 @@ func set_road_mode(active: bool) -> void:
 	if active:
 		BuildManager.cancel_placement()
 
+func seed_starter_access() -> void:
+	# A free two-lane connector joins the coastal highway to the first buildable plots.
+	# It is seeded only for a brand-new city; saved road networks remain untouched.
+	for x in range(-23, -8):
+		for z in [-1, 0]:
+			var cell := Vector2i(x, z)
+			if roads.has(cell):
+				continue
+			var mesh := _create_road_mesh()
+			mesh.rotation_degrees.y = 90.0
+			add_child(mesh)
+			mesh.position = Vector3(float(x) * GRID_SIZE + GRID_SIZE * 0.5, 0.025, float(z) * GRID_SIZE + GRID_SIZE * 0.5)
+			roads[cell] = mesh
+
 func has_road(grid_pos: Vector2i) -> bool:
 	return roads.has(grid_pos)
 
