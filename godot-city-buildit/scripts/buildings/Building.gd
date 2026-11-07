@@ -86,28 +86,44 @@ func _create_visual() -> void:
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
 	_add_box(Vector3(w * 0.88, height, d * 0.88), Vector3(0, height * 0.5 + 0.25, 0), color)
-	_add_box(Vector3(w * 1.0, 0.22, d * 1.0), Vector3(0, height + 0.4, 0), color.darkened(0.22))
-	var window_col = Color(0.7, 0.85, 1.0)
-	_add_box(Vector3(0.35, 0.4, 0.08), Vector3(-w * 0.25, height * 0.5, d * 0.44), window_col)
-	_add_box(Vector3(0.35, 0.4, 0.08), Vector3(w * 0.25, height * 0.5, d * 0.44), window_col)
+	_add_box(Vector3(w * 1.02, 0.24, d * 1.02), Vector3(0, height + 0.38, 0), color.darkened(0.24))
+	var window_col := Color(0.32, 0.63, 0.78)
+	var rows := 1 + int(upgrade_stage >= 3) + int(upgrade_stage >= 5)
+	for row in range(rows):
+		var y := 0.72 + float(row) * maxf(0.58, height / float(rows + 1))
+		for column in range(2):
+			var x := -w * 0.25 if column == 0 else w * 0.25
+			_add_box(Vector3(0.43, 0.42, 0.075), Vector3(x, y, d * 0.445), Color(0.88, 0.82, 0.64))
+			_add_box(Vector3(0.32, 0.31, 0.035), Vector3(x, y, d * 0.49), window_col)
+			_add_box(Vector3(0.49, 0.07, 0.13), Vector3(x, y - 0.25, d * 0.47), Color(0.92, 0.91, 0.82))
+	_add_box(Vector3(0.48, 0.78, 0.10), Vector3(0, 0.64, d * 0.45), color.darkened(0.42))
+	_add_box(Vector3(0.7, 0.13, 0.25), Vector3(0, 1.13, d * 0.48), Color(0.82, 0.35, 0.19))
+	_add_box(Vector3(0.18, 0.75, 0.18), Vector3(w * 0.32, height + 0.72, -d * 0.25), Color(0.55, 0.27, 0.20))
 	if upgrade_stage >= 3:
-		_add_box(Vector3(0.3, 0.35, 0.08), Vector3(-w * 0.25, height * 0.75, d * 0.44), window_col)
-		_add_box(Vector3(0.3, 0.35, 0.08), Vector3(w * 0.25, height * 0.75, d * 0.44), window_col)
-	_add_box(Vector3(0.4, 0.65, 0.08), Vector3(0, 0.55, d * 0.44), color.darkened(0.4))
-	if upgrade_stage >= 4:
-		_add_box(Vector3(w * 0.5, 0.3, 0.4), Vector3(0, height * 0.6, -d * 0.35), color.lightened(0.1))
+		_add_box(Vector3(w * 0.52, 0.12, 0.42), Vector3(0, height * 0.63, -d * 0.35), color.lightened(0.12))
+		_add_box(Vector3(w * 0.52, 0.12, 0.08), Vector3(0, height * 0.63 + 0.2, -d * 0.16), Color(0.88, 0.86, 0.78))
+	if upgrade_stage >= 5:
+		_add_box(Vector3(w * 0.94, 0.16, d * 0.92), Vector3(0, height + 0.56, 0), color.lightened(0.18))
 
 func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 	_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
-	_add_box(Vector3(w * 0.95, 0.18, d * 0.95), Vector3(0, height + 0.35, 0), color.lightened(0.1))
-	_add_box(Vector3(w * 0.6, height * 0.55, 0.1), Vector3(0, height * 0.45, d * 0.45), Color(0.6, 0.8, 1.0))
-	_add_box(Vector3(w * 0.5, 0.25, 0.12), Vector3(0, height * 0.85, d * 0.46), Color(0.95, 0.4, 0.3))
+	_add_box(Vector3(w * 0.98, 0.2, d * 0.98), Vector3(0, height + 0.34, 0), color.darkened(0.16))
+	_add_box(Vector3(w * 0.68, height * 0.5, 0.09), Vector3(0, height * 0.43, d * 0.455), Color(0.30, 0.66, 0.79))
+	_add_box(Vector3(w * 0.74, 0.22, 0.22), Vector3(0, height * 0.82, d * 0.49), Color(0.94, 0.43, 0.22))
+	_add_box(Vector3(w * 0.8, 0.18, 0.35), Vector3(0, height * 0.82 + 0.2, d * 0.42), Color(0.96, 0.78, 0.35))
+	for column in range(3):
+		_add_box(Vector3(0.08, height * 0.55, 0.12), Vector3(-w * 0.3 + float(column) * w * 0.3, height * 0.43, d * 0.48), Color(0.9, 0.92, 0.88))
+	_add_box(Vector3(w * 0.22, 0.32, 0.16), Vector3(w * 0.34, height + 0.55, -d * 0.2), Color(0.68, 0.72, 0.74))
 
 func _build_industrial(w: float, d: float, height: float, color: Color) -> void:
 	_add_box(Vector3(w * 0.92, height, d * 0.92), Vector3(0, height * 0.5 + 0.25, 0), color)
 	_add_box(Vector3(w * 1.0, 0.2, d * 1.0), Vector3(0, height + 0.35, 0), color.darkened(0.2))
+	_add_box(Vector3(w * 0.45, 0.12, d * 0.34), Vector3(-w * 0.22, height + 0.52, -d * 0.2), Color(0.42, 0.45, 0.48))
 	_add_cylinder(0.22, 0.18, 1.8, Vector3(w * 0.28, height + 1.2, d * 0.28), Color(0.4, 0.4, 0.45))
 	_add_box(Vector3(0.15, 0.15, d * 0.6), Vector3(-w * 0.4, height * 0.7, 0), Color(0.5, 0.5, 0.55))
+	for bay in range(3):
+		_add_box(Vector3(0.38, 0.36, 0.08), Vector3(-w * 0.28 + float(bay) * w * 0.28, height * 0.55, d * 0.47), Color(0.72, 0.83, 0.87))
+	_add_box(Vector3(w * 0.32, 0.3, 0.1), Vector3(0, height * 0.82, d * 0.48), Color(0.94, 0.63, 0.22))
 
 func _build_service(w: float, d: float, height: float, color: Color) -> void:
 	var power = definition.get("power", 0)
@@ -147,7 +163,8 @@ func _add_box(size: Vector3, pos: Vector3, color: Color) -> void:
 	mesh_instance.mesh = box
 	var material = StandardMaterial3D.new()
 	material.albedo_color = color
-	material.roughness = 0.75
+	material.roughness = 0.78
+	material.metallic = 0.04
 	mesh_instance.material_override = material
 	mesh_instance.position = pos
 	mesh_root.add_child(mesh_instance)
@@ -176,6 +193,7 @@ func _start_construction() -> void:
 func _on_construction_finished() -> void:
 	status = "completed"
 	if hard_hat: hard_hat.visible = false
+	_play_completion_effect()
 	mesh_root.scale = Vector3.ONE
 	construction_finished_signal.emit()
 	BuildManager.notify_construction_finished(building_id)
@@ -196,6 +214,29 @@ func _on_construction_finished() -> void:
 	ServiceManager.recalculate_from_buildings()
 	if definition.get("happiness", 0) > 0:
 		GameManager.set_happiness(min(100.0, GameManager.happiness + definition.happiness))
+
+func _play_completion_effect() -> void:
+	# A short sparkle burst marks completed construction with minimal mobile GPU cost.
+	var sparkle_material := StandardMaterial3D.new()
+	sparkle_material.albedo_color = Color(1.0, 0.78, 0.30)
+	sparkle_material.emission_enabled = true
+	sparkle_material.emission = Color(1.0, 0.52, 0.12)
+	for index in range(8):
+		var sparkle := MeshInstance3D.new()
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.10
+		mesh.height = 0.20
+		sparkle.mesh = mesh
+		sparkle.material_override = sparkle_material
+		sparkle.position = Vector3(0, 0.7, 0)
+		add_child(sparkle)
+		var angle := TAU * float(index) / 8.0
+		var destination := Vector3(cos(angle) * 1.25, 2.2 + float(index % 3) * 0.35, sin(angle) * 1.25)
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(sparkle, "position", destination, 0.72).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(sparkle, "scale", Vector3.ZERO, 0.72)
+		tween.chain().tween_callback(sparkle.queue_free)
 
 func _start_production(item_id: String) -> void:
 	current_product = item_id

@@ -39,6 +39,12 @@ Main scene: `res://scenes/main.tscn`.
 
 The first upgrade consumes **1 Nail + 1 Metal**. House progression has six stages. The initial city starts with 5,000 Simoleons so the complete starter loop, including two utilities, can be tested immediately.
 
+## Visual foundation — Phase 0.1 first slice
+
+The coastal environment uses local procedural assets only (no runtime downloads): multi-palette terrain vertex colors, instanced grass blades and varied tree crowns, a layered beach/shallow-water transition, animated blue/turquoise water shader, locally generated asphalt grain, raised curbs and sidewalks. Building facades include framed windows, doors, awnings, roof details, signs and industrial vents; construction completion uses a lightweight sparkle burst. Warm directional fill and atmospheric fog are configured for the GL Compatibility renderer.
+
+This is the first visual-quality slice, not the final art target: production-quality GLB building families, richer road intersections/markings, stronger shoreline foam/reflections, mobile GPU profiling and a verified 60 FPS budget remain open.
+
 ## City services
 
 Wind power and water towers each provide 12 units of capacity within a 28 m coverage radius. Each completed home requires 2 power and 2 water. The HUD shows capacity used, and city happiness is calculated from homes receiving both services.

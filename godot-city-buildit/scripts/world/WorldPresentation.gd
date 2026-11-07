@@ -10,6 +10,9 @@ func _ready() -> void:
 	_build_city_grid()
 	_build_coastal_highway()
 	_build_tree_belts()
+	_build_grass_detail()
+	_build_shoreline_details()
+	_build_sunlight()
 
 func _build_environment() -> void:
 	var world_environment := WorldEnvironment.new()
@@ -25,11 +28,13 @@ func _build_environment() -> void:
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.72
+	environment.ambient_light_energy = 0.82
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	environment.tonemap_exposure = 1.08
 	environment.fog_enabled = true
-	environment.fog_light_color = Color(0.62, 0.75, 0.79)
-	environment.fog_density = 0.0018
+	environment.fog_light_color = Color(0.72, 0.82, 0.82)
+	environment.fog_density = 0.00125
+	environment.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	world_environment.environment = environment
 	add_child(world_environment)
 
@@ -70,37 +75,38 @@ func _build_terrain() -> void:
 	water.name = "CoastalWater"
 	var water_mesh := PlaneMesh.new()
 	water_mesh.size = Vector2(110.0, 190.0)
+	water_mesh.subdivide_width = 96
+	water_mesh.subdivide_depth = 96
 	water.mesh = water_mesh
 	water.position = Vector3(104.0, -0.18, 0.0)
-	var water_material := StandardMaterial3D.new()
-	water_material.albedo_color = Color(0.055, 0.34, 0.48)
-	water_material.roughness = 0.24
-	water_material.metallic = 0.12
-	water_material.clearcoat_enabled = true
-	water_material.clearcoat = 0.32
-	water.material_override = water_material
+	water.material_override = _create_water_material()
 	add_child(water)
 
 	var shallow_water := MeshInstance3D.new()
 	shallow_water.name = "ShallowWater"
 	var shallow_mesh := PlaneMesh.new()
 	shallow_mesh.size = Vector2(8.0, 190.0)
+	shallow_mesh.subdivide_width = 16
+	shallow_mesh.subdivide_depth = 96
 	shallow_water.mesh = shallow_mesh
 	shallow_water.position = Vector3(54.0, -0.12, 0.0)
-	var shallow_material := StandardMaterial3D.new()
-	shallow_material.albedo_color = Color(0.22, 0.62, 0.68)
-	shallow_material.roughness = 0.38
-	shallow_water.material_override = shallow_material
+	shallow_water.material_override = _create_shallow_water_material()
 	add_child(shallow_water)
 
 func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	var coast := _coastline(point.z)
-	var noise := sin(point.x * 0.31 + point.z * 0.17) * cos(point.z * 0.23 - point.x * 0.11)
+	var broad_noise := sin(point.x * 0.31 + point.z * 0.17) * cos(point.z * 0.23 - point.x * 0.11)
+	var fine_noise := sin(point.x * 1.7 + point.z * 2.3) * cos(point.z * 1.35 - point.x * 0.8)
+	var blend := clampf((broad_noise * 0.72 + fine_noise * 0.28 + 1.0) * 0.5, 0.0, 1.0)
 	var color: Color
 	if point.x > coast - 7.0:
-		color = Color(0.73, 0.64, 0.46).lerp(Color(0.88, 0.80, 0.62), (noise + 1.0) * 0.5)
+		color = Color(0.62, 0.48, 0.31).lerp(Color(0.91, 0.82, 0.62), blend)
+	elif point.x > coast - 13.0:
+		color = Color(0.34, 0.43, 0.24).lerp(Color(0.67, 0.61, 0.38), blend)
 	else:
-		color = Color(0.16, 0.34, 0.19).lerp(Color(0.31, 0.48, 0.25), (noise + 1.0) * 0.5)
+		var grass_palette: Array[Color] = [Color(0.12, 0.29, 0.15), Color(0.19, 0.39, 0.18), Color(0.31, 0.48, 0.22), Color(0.43, 0.50, 0.25)]
+		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % grass_palette.size()
+		color = grass_palette[palette_index].lerp(Color(0.52, 0.55, 0.29), blend * 0.35)
 	surface.set_color(color)
 	surface.add_vertex(point)
 
@@ -134,9 +140,7 @@ func _build_coastal_highway() -> void:
 	highway_mesh.size = Vector3(8.0, 0.16, 190.0)
 	highway.mesh = highway_mesh
 	highway.position = Vector3(-48.0, 0.06, 0.0)
-	var asphalt := StandardMaterial3D.new()
-	asphalt.albedo_color = Color(0.105, 0.12, 0.14)
-	asphalt.roughness = 0.96
+	var asphalt := _create_asphalt_material()
 	highway.material_override = asphalt
 	add_child(highway)
 	_add_road_marking(Vector3(-48.0, 0.15, 0.0), Vector3(0.13, 0.015, 188.0), Color(1.0, 0.76, 0.18))
@@ -152,7 +156,7 @@ func _build_coastal_highway() -> void:
 	shoulder.mesh = shoulder_mesh
 	shoulder.position = Vector3(-48.0, 0.015, 0.0)
 	var shoulder_material := StandardMaterial3D.new()
-	shoulder_material.albedo_color = Color(0.34, 0.36, 0.34)
+	shoulder_material.albedo_color = Color(0.40, 0.41, 0.36)
 	shoulder_material.roughness = 1.0
 	shoulder.material_override = shoulder_material
 	add_child(shoulder)
@@ -210,7 +214,7 @@ func _build_tree_belts() -> void:
 	canopy_mesh.radius = 1.35
 	canopy_mesh.height = 2.5
 	var canopy_material := StandardMaterial3D.new()
-	canopy_material.albedo_color = Color(0.13, 0.34, 0.17)
+	canopy_material.vertex_color_use_as_albedo = true
 	canopy_material.roughness = 0.92
 	canopy_mesh.material = canopy_material
 	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.0)
@@ -228,7 +232,140 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 		var basis := Basis.IDENTITY.scaled(Vector3(scale, scale, scale))
 		var origin := positions[index] + Vector3(0.0, height_offset * scale, 0.0)
 		multimesh.set_instance_transform(index, Transform3D(basis, origin))
+		if node_name == "TreeCanopies":
+			var foliage: Array[Color] = [Color(0.10, 0.30, 0.13), Color(0.16, 0.40, 0.17), Color(0.28, 0.48, 0.20), Color(0.39, 0.46, 0.18)]
+			multimesh.use_colors = true
+			multimesh.set_instance_color(index, foliage[index % foliage.size()])
 	var instance := MultiMeshInstance3D.new()
 	instance.name = node_name
 	instance.multimesh = multimesh
 	return instance
+
+
+# Procedural textures are generated locally at startup: no CDN, external asset or runtime download.
+func _create_asphalt_material() -> StandardMaterial3D:
+	var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	for y in range(128):
+		for x in range(128):
+			var n := sin(float(x) * 12.9898 + float(y) * 78.233) * 43758.5453
+			var grain := fposmod(n, 1.0)
+			var shade := 0.17 + grain * 0.12
+			image.set_pixel(x, y, Color(shade, shade * 1.02, shade * 1.04, 1.0))
+	var texture := ImageTexture.create_from_image(image)
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = texture
+	material.roughness = 0.98
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	return material
+
+func _create_water_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back;
+uniform vec4 deep_color : source_color = vec4(0.015, 0.20, 0.38, 1.0);
+uniform vec4 blue_color : source_color = vec4(0.035, 0.43, 0.62, 1.0);
+uniform vec4 turquoise_color : source_color = vec4(0.12, 0.67, 0.70, 1.0);
+uniform float wave_height = 0.11;
+varying vec3 world_position;
+void vertex() {
+	vec3 p = VERTEX;
+	float wave_a = sin((p.x * 0.22) + (p.z * 0.12) + TIME * 1.15);
+	float wave_b = cos((p.x * 0.11) - (p.z * 0.19) + TIME * 0.82);
+	p.y += (wave_a * 0.55 + wave_b * 0.45) * wave_height;
+	VERTEX = p;
+	world_position = (MODEL_MATRIX * vec4(p, 1.0)).xyz;
+}
+void fragment() {
+	float bands = sin(world_position.x * 0.075 + world_position.z * 0.045 + TIME * 0.45);
+	float depth_mix = smoothstep(-0.9, 0.9, bands);
+	vec3 water_color = mix(deep_color.rgb, blue_color.rgb, depth_mix);
+	float turquoise = smoothstep(0.25, 0.95, sin(world_position.x * 0.035 + world_position.z * 0.018));
+	water_color = mix(water_color, turquoise_color.rgb, turquoise * 0.42);
+	float ripple = pow(max(0.0, sin(world_position.x * 0.62 + world_position.z * 0.18 + TIME * 1.8)), 18.0);
+	ALBEDO = water_color + vec3(ripple * 0.16);
+	ROUGHNESS = 0.22;
+	METALLIC = 0.08;
+	SPECULAR = 0.72;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
+
+func _create_shallow_water_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque;
+void fragment() {
+	float ripple = sin(UV.x * 42.0 + TIME * 1.2) * cos(UV.y * 17.0 - TIME * 0.7);
+	vec3 lagoon = mix(vec3(0.10, 0.56, 0.62), vec3(0.25, 0.76, 0.73), ripple * 0.18 + 0.35);
+	ALBEDO = lagoon;
+	ROUGHNESS = 0.3;
+	SPECULAR = 0.65;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
+
+func _build_grass_detail() -> void:
+	# Sparse, instanced grass blades add real depth without creating thousands of scene nodes.
+	var blade_mesh := BoxMesh.new()
+	blade_mesh.size = Vector3(0.075, 0.34, 0.055)
+	var blade_material := StandardMaterial3D.new()
+	blade_material.vertex_color_use_as_albedo = true
+	blade_material.roughness = 0.92
+	blade_mesh.material = blade_material
+	var positions: Array[Vector3] = []
+	for index in range(2200):
+		var x := -42.0 + fposmod(float(index) * 17.31, 82.0)
+		var z := -84.0 + fposmod(float(index) * 29.17, 168.0)
+		if x > 30.0 or absf(z) < 43.0 and x > -40.0:
+			continue
+		if x > _coastline(z) - 14.0:
+			continue
+		positions.append(Vector3(x, 0.14, z))
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_colors = true
+	multimesh.mesh = blade_mesh
+	multimesh.instance_count = positions.size()
+	var grass_palette: Array[Color] = [Color(0.20, 0.42, 0.13), Color(0.34, 0.51, 0.17), Color(0.52, 0.55, 0.22), Color(0.65, 0.48, 0.22), Color(0.13, 0.33, 0.15)]
+	for index in range(positions.size()):
+		var scale := 0.55 + float((index * 13) % 9) * 0.12
+		var rotation := Basis(Vector3.UP, float(index % 12) * 0.5236).scaled(Vector3(scale, scale, scale))
+		multimesh.set_instance_transform(index, Transform3D(rotation, positions[index]))
+		multimesh.set_instance_color(index, grass_palette[index % grass_palette.size()])
+	var grass := MultiMeshInstance3D.new()
+	grass.name = "ColorfulGrassDetail"
+	grass.multimesh = multimesh
+	add_child(grass)
+
+func _build_shoreline_details() -> void:
+	# A pale wet-sand band and scattered shoreline rocks soften the land-to-water transition.
+	for index in range(38):
+		var z := -88.0 + float(index) * 4.6
+		var x := _coastline(z) - 1.8
+		var pebble := MeshInstance3D.new()
+		var pebble_mesh := SphereMesh.new()
+		pebble_mesh.radius = 0.28 + float(index % 3) * 0.09
+		pebble_mesh.height = 0.22
+		pebble.mesh = pebble_mesh
+		pebble.position = Vector3(x + sin(float(index) * 4.1) * 1.8, 0.05, z)
+		var pebble_material := StandardMaterial3D.new()
+		var stone_palette: Array[Color] = [Color(0.55, 0.53, 0.46), Color(0.69, 0.65, 0.55), Color(0.42, 0.46, 0.43)]
+		pebble_material.albedo_color = stone_palette[index % stone_palette.size()]
+		pebble_material.roughness = 0.95
+		pebble.material_override = pebble_material
+		add_child(pebble)
+
+func _build_sunlight() -> void:
+	var sun := DirectionalLight3D.new()
+	sun.name = "CoastalWarmSun"
+	sun.rotation_degrees = Vector3(-48.0, -32.0, 0.0)
+	sun.light_color = Color(1.0, 0.88, 0.70)
+	sun.light_energy = 0.22
+	sun.shadow_enabled = true
+	add_child(sun)
