@@ -5,6 +5,7 @@ const coastal = await readFile(new URL("../src/city/city-coastal-world.js", impo
 const renderer = await readFile(new URL("../src/city/city-three-renderer.js", import.meta.url), "utf8");
 const atmosphere = await readFile(new URL("../src/city/city-atmosphere.js", import.meta.url), "utf8");
 const worker = await readFile(new URL("../service-worker.js", import.meta.url), "utf8");
+const highway = await readFile(new URL("../src/city/city-highway-gateway.js", import.meta.url), "utf8");
 test("coastal world paints a multi-stop gradient ocean with layered waves and surf", () => {
   for (const token of ["animated-24bit-gradient-ocean", "uShallow", "uLagoon", "uCoastal", "uBlue", "uDeep", "multiscaleWaveFields", "shoreline-foam-", "natural-sandy-beach", "colorDepth:\"24-bit RGB\""]) assert.ok(coastal.includes(token), token);
   assert.match(coastal, /noise\(vWorld\.xz/);
@@ -63,4 +64,12 @@ test("coastal world is mounted and cached offline", () => {
   assert.match(renderer, /coastalWorld\.update\(/);
   assert.match(worker, /city-coastal-world\.js/);
   assert.match(worker, /mshin-arcade-v83/);
+});
+
+test("regional highway static geometry is merged to protect mobile draw-call budget", () => {
+  assert.match(highway, /mergeStaticHighwayMeshes\(\)/);
+  assert.match(highway, /geometry\.applyMatrix4\(mesh\.matrix\)/);
+  assert.match(highway, /new Uint32Array\(indices\)/);
+  assert.match(highway, /root\.add\(mergedMesh\)/);
+  assert.match(highway, /isInstancedMesh/);
 });
