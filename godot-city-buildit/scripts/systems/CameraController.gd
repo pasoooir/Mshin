@@ -1,67 +1,92 @@
 extends Node3D
 
-@export var move_speed := 15.0
-@export var zoom_speed := 0.15
-@export var min_zoom := 8.0
-@export var max_zoom := 45.0
-@export var rotation_x := -45.0
-@export var rotation_y := 45.0
-@export var world_limit := 55.0
+@export var zoom_speed: float = 0.15
+@export var min_zoom: float = 12.0
+@export var max_zoom: float = 55.0
+@export var world_limit: float = 55.0
+@export var camera_pitch_degrees: float = 48.0
+
 @onready var camera: Camera3D = $Camera3D
-var is_panning := false
-var last_pan_position := Vector2.ZERO
-var current_zoom := 25.0
+
+var current_zoom: float = 30.0
+var is_mouse_panning: bool = false
+var last_mouse_position: Vector2 = Vector2.ZERO
 var touch_points: Dictionary = {}
-var last_pinch_distance := 0.0
+var last_pinch_distance: float = 0.0
+var last_pinch_angle: float = 0.0
 
 func _ready() -> void:
-	rotation_degrees = Vector3(rotation_x, rotation_y, 0.0)
-	_update_camera_zoom()
+	rotation_degrees = Vector3(0.0, 45.0, 0.0)
+	_update_camera_transform()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			is_panning = event.pressed
-			last_pan_position = event.position
-		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_zoom(-zoom_speed * 3.0)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_zoom(zoom_speed * 3.0)
-	elif event is InputEventMouseMotion and is_panning:
-		_pan(event.position - last_pan_position)
-		last_pan_position = event.position
+			is_mouse_panning = event.pressed
+			last_mouse_position = event.position
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			_zoom(-2.0)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			_zoom(2.0)
+	elif event is InputEventMouseMotion and is_mouse_panning:
+		_pan(event.position - last_mouse_position)
+		last_mouse_position = event.position
 	elif event is InputEventScreenTouch:
 		if event.pressed:
 			touch_points[event.index] = event.position
+			if touch_points.size() >= 2:
+				_update_pinch_baseline()
 		else:
 			touch_points.erase(event.index)
 			last_pinch_distance = 0.0
+			last_pinch_angle = 0.0
 	elif event is InputEventScreenDrag:
+		if not touch_points.has(event.index):
+			return
 		touch_points[event.index] = event.position
 		if touch_points.size() == 1:
 			_pan(event.relative)
 		elif touch_points.size() >= 2:
-			var positions: Array = touch_points.values()
-			var distance: float = positions[0].distance_to(positions[1])
-			if last_pinch_distance > 0.0:
-				_zoom((last_pinch_distance - distance) * zoom_speed * 0.05)
-			last_pinch_distance = distance
+			_update_pinch(event.relative)
+
+func _update_pinch_baseline() -> void:
+	var points: Array = touch_points.values()
+	var vector: Vector2 = points[1] - points[0]
+	last_pinch_distance = vector.length()
+	last_pinch_angle = vector.angle()
+
+func _update_pinch(_relative: Vector2) -> void:
+	var points: Array = touch_points.values()
+	if points.size() < 2:
+		return
+	var vector: Vector2 = points[1] - points[0]
+	var distance: float = vector.length()
+	var angle: float = vector.angle()
+	if last_pinch_distance > 0.0:
+		_zoom((last_pinch_distance - distance) * zoom_speed * 0.06)
+		var angle_delta: float = wrapf(angle - last_pinch_angle, -PI, PI)
+		rotation_degrees.y += rad_to_deg(angle_delta)
+	last_pinch_distance = distance
+	last_pinch_angle = angle
 
 func _pan(screen_delta: Vector2) -> void:
-	var right := global_transform.basis.x
-	var forward := global_transform.basis.z
+	var right: Vector3 = global_transform.basis.x
+	var forward: Vector3 = global_transform.basis.z
 	right.y = 0.0
 	forward.y = 0.0
 	right = right.normalized()
 	forward = forward.normalized()
-	global_position += (-right * screen_delta.x - forward * screen_delta.y) * (current_zoom * 0.002)
+	global_position += (-right * screen_delta.x - forward * screen_delta.y) * (current_zoom * 0.0018)
 	global_position.x = clampf(global_position.x, -world_limit, world_limit)
 	global_position.z = clampf(global_position.z, -world_limit, world_limit)
 
 func _zoom(amount: float) -> void:
 	current_zoom = clampf(current_zoom + amount, min_zoom, max_zoom)
-	_update_camera_zoom()
+	_update_camera_transform()
 
-func _update_camera_zoom() -> void:
-	if camera:
-		camera.position.z = current_zoom
+func _update_camera_transform() -> void:
+	if camera == null:
+		return
+	var pitch: float = deg_to_rad(camera_pitch_degrees)
+	camera.position = Vector3(0.0, sin(pitch) * current_zoom, cos(pitch) * current_zoom)
+	camera.look_at(Vector3.ZERO, Vector3.UP)
