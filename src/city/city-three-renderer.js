@@ -71,12 +71,12 @@ export async function createCityThreeRenderer(sourceCanvas) {
   } = createCityPbrSurfaces(THREE, renderer);
   const pbrGenerationMs = performance.now() - pbrGenerationStartedAt;
   const pbrTextureResolution = grassSurface.map.image?.width || 0;
-  const naturalGrassTexture = createCityNaturalGrassTexture(THREE, renderer, grassSurface.map);
+  const grassGroundMap = grassSurface.map.clone();
+  const naturalGrassTexture = createCityNaturalGrassTexture(THREE, renderer, grassGroundMap);
   const backgroundSkyline = { buildingCount: 0, windowCount: 0, dispose() {} };
   // A continuous meadow replaces the old per-cell grass slabs. Keep the terrain
   // effectively horizon-free at the widest supported zoom so no canvas/backdrop
   // can appear as a blank strip when the camera looks toward the world edge.
-  const grassGroundMap = naturalGrassTexture;
   const grassGroundNormal = grassSurface.normalMap.clone();
   const grassGroundRoughness = grassSurface.roughnessMap.clone();
   for (const texture of [grassGroundMap, grassGroundNormal, grassGroundRoughness]) {
