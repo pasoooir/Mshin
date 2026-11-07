@@ -274,7 +274,7 @@ func _on_roads_pressed() -> void:
 	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.set_road_mode(true)
-		status_label.text = "Road mode — tap the ground (50 §)"
+		status_label.text = "Road mode — tap or drag from the highway (50 § per tile)"
 
 func _on_storage_pressed() -> void:
 	BuildManager.cancel_placement()
