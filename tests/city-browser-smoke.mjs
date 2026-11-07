@@ -3,6 +3,26 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const cityToolCategories={select:"manage",bulldoze:"manage",road:"roads","zone-residential":"roads","zone-commercial":"roads","zone-industrial":"roads","zone-administrative":"roads","zone-recreational":"roads",home:"buildings",shop:"buildings",power:"services",water:"services",sewage:"services",waste:"services",police:"services",fire:"services",health:"services",education:"services",service:"services",park:"services"};
+
+async function clickStablePointer(page,selector){
+ const locator=page.locator(selector);
+ await locator.waitFor({state:"visible",timeout:10000});
+ await page.waitForFunction(selector=>{
+  const element=document.querySelector(selector);
+  if(!element)return false;
+  const rect=element.getBoundingClientRect();
+  const current=[rect.x,rect.y,rect.width,rect.height].map(value=>Math.round(value*10)/10).join(":");
+  const previous=element.dataset.smokeClickRect||"";
+  const count=previous===current?Number(element.dataset.smokeClickStable||0)+1:0;
+  element.dataset.smokeClickRect=current;
+  element.dataset.smokeClickStable=String(count);
+  return count>=3;
+ },selector,{timeout:10000,polling:50});
+ const box=await locator.boundingBox();
+ if(!box)throw new Error("Mobile control is outside the visible viewport: "+selector);
+ await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+}
+
 async function clickCityTool(page,type){
  const category=cityToolCategories[type];
  if(!category)throw new Error("Missing city tool category: "+type);
@@ -351,7 +371,7 @@ try{
  const adjustedTax=await page.evaluate(()=>window.MshinCityDebug.city.stats.taxRevenue);
  assert.ok(adjustedTax>baselineTax,"raising residential tax must increase live tax revenue");
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.stats.net!==undefined),"city simulation must publish a net budget balance");
- await page.locator("#cityBudgetDone").click();
+ await clickStablePointer(page,"#cityBudgetDone");
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),false,"budget panel must close without blocking city controls");
  assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBudget","closing the budget dialog must restore focus to its trigger");
  await page.locator("#cityBudget").click();
