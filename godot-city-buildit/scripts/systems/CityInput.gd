@@ -66,10 +66,16 @@ func _handle_tap(screen_position: Vector2) -> void:
 			_set_status("Road must connect to the existing network and cost 50 Simoleons.")
 		return
 	if BuildManager.is_placing:
+		var grid := BuildManager.world_to_grid(world_position)
+		var ghost = get_tree().current_scene.get_node_or_null("GhostPreview")
+		if ghost:
+			ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid))
 		if BuildManager.place_building_at_world(world_position):
-			_set_status("Construction started. You can place another building.")
+			_set_status("Construction started. Tap another green plot to build again.")
+			if ghost:
+				ghost.hide_ghost()
 		else:
-			_set_status("Invalid plot: keep the footprint clear and connect it to a road.")
+			_set_status("Cannot build here: use an empty plot beside a road. Red preview means blocked or not connected.")
 		return
 	_try_interact(world_position)
 
