@@ -129,21 +129,10 @@ export function createCityCoastalWorld(THREE, { scene, renderer }) {
   ocean.position.set(0, -.265, -820);
   group.add(ocean);
 
-  const foamMaterial = new THREE.MeshBasicMaterial({ color: "#d8f0e8", transparent: true, opacity: .56, depthWrite: false });
+  // Shoreline foam is shaded directly by the ocean fragment shader to keep
+  // the coastal transition to two draw calls on mobile hardware.
   const foamGroup = new THREE.Group();
   foamGroup.name = "shoreline-foam-ribbons";
-  for (let band = 0; band < 3; band++) {
-    const points = [];
-    for (let i = 0; i <= 96; i++) {
-      const x = -1080 + i * 22.5;
-      const z = -440 + Math.sin(i * .19 + band) * (2.4 + band) + Math.sin(i * .047) * 4;
-      points.push(new THREE.Vector3(x, -.245 + band * .001, z));
-    }
-    const curve = new THREE.CatmullRomCurve3(points);
-    const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 192, .34 + band * .12, 4, false), foamMaterial);
-    mesh.name = "shoreline-foam-" + band;
-    foamGroup.add(mesh);
-  }
   group.add(foamGroup);
   let elapsed = 0;
   return {
@@ -154,7 +143,7 @@ export function createCityCoastalWorld(THREE, { scene, renderer }) {
     },
     dispose() {
       scene.remove(group);
-      beachGeometry.dispose(); beachMaterial.dispose(); waterMaterial.dispose(); ocean.geometry.dispose(); soilTexture.dispose(); foamMaterial.dispose();
+      beachGeometry.dispose(); beachMaterial.dispose(); waterMaterial.dispose(); ocean.geometry.dispose(); soilTexture.dispose();
       foamGroup.traverse(object => { if (object.geometry) object.geometry.dispose(); });
     }
   };
