@@ -114,7 +114,7 @@ func load_game() -> bool:
 			road_system.place_road(Vector2i(int(road[0]), int(road[1])))
 
 	for saved_building in parsed.get("buildings", []):
-		if not saved_building is Dictionary:
+		if not (saved_building is Dictionary):
 			continue
 		var grid: Array = saved_building.get("grid", [])
 		var type_id: String = str(saved_building.get("type", ""))
