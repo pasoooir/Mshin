@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("../src/race-renderer-3d.js", import.meta.url), "utf8");
+const pixelSampleSource = await readFile(new URL("../src/race-pixel-sample.js", import.meta.url), "utf8");
 const terrainSource = await readFile(new URL("../src/race-natural-terrain.js", import.meta.url), "utf8");
 
 test("procedural 3D scene stays within a bounded first-build geometry budget", () => {
@@ -114,10 +115,13 @@ test("the WebGL drawing buffer is allocated after the GPU profile is known", () 
 });
 
 
-test("WebGL pixel acceptance can sample the submitted frame before buffer presentation", () => {
+test("WebGL pixel acceptance uses a bounded center-crop sampler before buffer presentation", () => {
   assert.match(source, /captureNextFrameSample:false,lastFramePixelSample:null/);
-  assert.match(source, /if\(state\.captureNextFrameSample\)[\s\S]*?gl\.readPixels/);
-  assert.match(source, /state\.lastFramePixelSample=\{width:sampleWidth,height:sampleHeight,visiblePixels,roadLikePixels,uniqueColors/);
+  assert.match(source, /import \{ sampleRaceFramePixels \} from "\.\/race-pixel-sample\.js"/);
+  assert.match(source, /if\(state\.captureNextFrameSample\)[\s\S]*?sampleRaceFramePixels\(gl,canvas,state\)/);
+  assert.match(pixelSampleSource, /gl\.readPixels\(sampleX,sampleY,sampleWidth,sampleHeight/);
+  assert.match(pixelSampleSource, /Math\.min\(256,fullWidth,fullHeight\)/);
+  assert.match(pixelSampleSource, /return \{width:sampleWidth,height:sampleHeight,visiblePixels,roadLikePixels,uniqueColors:sampledColors\.size/);
 });
 
 
