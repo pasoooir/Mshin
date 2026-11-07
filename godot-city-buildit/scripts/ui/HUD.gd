@@ -47,7 +47,7 @@ func _install_vector_icons() -> void:
 		var parent := old_node.get_parent()
 		var icon := Control.new()
 		icon.set_script(IconGlyph)
-		icon.kind = icon_map[path]
+		icon.set("kind", icon_map[path])
 		icon.custom_minimum_size = Vector2(28, 28)
 		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		parent.add_child(icon)
@@ -115,7 +115,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.focus_mode = Control.FOCUS_NONE
 	var icon := Control.new()
 	icon.set_script(IconGlyph)
-	icon.kind = kind
+	icon.set("kind", kind)
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 9
 	icon.offset_top = 9
