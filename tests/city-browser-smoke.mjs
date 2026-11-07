@@ -4,7 +4,7 @@ import fs from "node:fs";
 
 async function captureScreenshot(page,path,{fullPage=false}={}){
  const startedAt=Date.now();
- let session,timer,paused=false;
+ let session,timer,captureTimer,paused=false;
  const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("City screenshot exceeded the hard 10-second limit: "+path)),10000)});
  const operation=(async()=>{
   session=await page.context().newCDPSession(page);
@@ -24,7 +24,7 @@ async function captureScreenshot(page,path,{fullPage=false}={}){
   const remaining=Math.max(1,9500-elapsed);
   const result=await Promise.race([
    session.send("Page.captureScreenshot",{format:"png",fromSurface:true,captureBeyondViewport:fullPage,optimizeForSpeed:true,...(metrics?{clip:{x:0,y:0,width:metrics.width,height:metrics.height,scale:1}}:{})}),
-   new Promise((_,reject)=>setTimeout(()=>reject(new Error("CDP screenshot capture exceeded the remaining 10-second budget: "+path)),remaining))
+   new Promise((_,reject)=>{captureTimer=setTimeout(()=>reject(new Error("CDP screenshot capture exceeded the remaining 10-second budget: "+path)),remaining)})
   ]);
   fs.mkdirSync(path.slice(0,path.lastIndexOf("/"))||".",{recursive:true});
   fs.writeFileSync(path,Buffer.from(result.data,"base64"));
@@ -33,6 +33,7 @@ async function captureScreenshot(page,path,{fullPage=false}={}){
   await Promise.race([operation,deadline]);
  }finally{
   clearTimeout(timer);
+  clearTimeout(captureTimer);
   if(session)session.detach().catch(()=>{});
   if(paused)page.evaluate(()=>window.MshinCityDebug?.resumeLoop?.()).catch(()=>{});
  }
