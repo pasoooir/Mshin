@@ -109,9 +109,28 @@ func load_game() -> bool:
 		StorageManager.current_used += int(item_amount)
 
 	var road_system = scene.get_node("World/RoadSystem")
-	for road in parsed.get("roads", []):
-		if road is Array and road.size() == 2:
-			road_system.place_road(Vector2i(int(road[0]), int(road[1])))
+	var pending_roads: Array = parsed.get("roads", []).duplicate(true)
+	while not pending_roads.is_empty():
+		var placed_road_this_pass: bool = false
+		for index in range(pending_roads.size() - 1, -1, -1):
+			var road: Variant = pending_roads[index]
+			if not (road is Array) or road.size() != 2:
+				pending_roads.remove_at(index)
+				continue
+			var road_position := Vector2i(int(road[0]), int(road[1]))
+			var connected: bool = road_system.roads.is_empty()
+			for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+				if road_system.has_road(road_position + direction):
+					connected = true
+					break
+			if connected and road_system.place_road(road_position):
+				pending_roads.remove_at(index)
+				placed_road_this_pass = true
+		if not placed_road_this_pass:
+			push_error("Saved road network contains disconnected or invalid tiles.")
+			is_loading = false
+			load_completed.emit(false)
+			return false
 
 	for saved_building in parsed.get("buildings", []):
 		if not (saved_building is Dictionary):
@@ -120,12 +139,17 @@ func load_game() -> bool:
 		var type_id: String = str(saved_building.get("type", ""))
 		if grid.size() != 2 or not BuildManager.building_types.has(type_id):
 			continue
-		BuildManager.place_building(
+		var restored: bool = BuildManager.place_building(
 			Vector2i(int(grid[0]), int(grid[1])),
 			type_id,
 			int(saved_building.get("stage", 1)),
 			str(saved_building.get("status", "constructing"))
 		)
+		if not restored:
+			push_error("Could not restore saved building: " + type_id)
+			is_loading = false
+			load_completed.emit(false)
+			return false
 
 	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
 	GameManager.level = maxi(1, int(game_data.get("level", 1)))

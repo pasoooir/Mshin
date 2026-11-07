@@ -45,4 +45,15 @@ jobs:
         run: godot --headless --path godot-city-buildit --editor --quit
 
       - name: Headless startup smoke test
-        run: godot --headless --path godot-city-buildit --quit-after 10
+        run: |
+          set -o pipefail
+          godot --headless --path godot-city-buildit --quit-after 10 2>&1 | tee /tmp/godot-startup.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-startup.log; then exit 1; fi
+
+      - name: End-to-end gameplay integration test
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path godot-city-buildit res://tests/gameplay_smoke.tscn 2>&1 | tee /tmp/godot-gameplay.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-gameplay.log; then exit 1; fi
+          if grep -q "ERROR: [GameplaySmoke]" /tmp/godot-gameplay.log; then exit 1; fi
+          grep -F "[GameplaySmoke] PASS" /tmp/godot-gameplay.log

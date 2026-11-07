@@ -59,13 +59,13 @@ func _create_visual() -> void:
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	var color: Color = definition.get("color", Color(0.8, 0.8, 0.8))
 	var category: String = definition.get("category", "residential")
-	var w = size.x * 1.7
-	var d = size.y * 1.7
+	var w: float = float(size.x) * 1.7
+	var d: float = float(size.y) * 1.7
 	_add_box(Vector3(w + 0.15, 0.25, d + 0.15), Vector3(0, 0.12, 0), color.darkened(0.35))
-	var height_mult = 1.0
+	var height_mult: float = 1.0
 	if category == "residential":
 		height_mult = 0.7 + upgrade_stage * 0.15
-	var height := 1.6 * height_mult
+	var height: float = 1.6 * height_mult
 	match category:
 		"residential":
 			height = 1.8 + upgrade_stage * 0.35
