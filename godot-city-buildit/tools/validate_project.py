@@ -46,3 +46,47 @@ if errors:
     sys.exit(1)
 
 print("Static project validation passed.")
+
+# Validate local UI sprite sheets and atlas references (no CDN/font fallback).
+import struct
+
+atlas_path = ROOT / "scripts/ui/IconAtlas.gd"
+atlas = atlas_path.read_text(encoding="utf-8")
+expected_sheets = [ROOT / "assets/icons/Sheet1.png", ROOT / "assets/icons/Sheet2.png", ROOT / "assets/icons/Sheet3.png"]
+for sheet_index, sheet_path in enumerate(expected_sheets, start=1):
+    if not sheet_path.is_file():
+        errors.append(f"Missing local icon sheet {sheet_path.relative_to(ROOT)}")
+        continue
+    data = sheet_path.read_bytes()
+    if len(data) < 24 or data[:8] != b"\\x89PNG\\r\\n\\x1a\\n":
+        errors.append(f"Icon sheet {sheet_path.name} is not a valid PNG")
+        continue
+    width, height = struct.unpack(">II", data[16:24])
+    if width < 1130 or height < 770:
+        errors.append(f"Icon sheet {sheet_path.name} has unexpected dimensions {width}x{height}")
+    if f'{sheet_index}: preload("res://assets/icons/{sheet_path.name}")' not in atlas:
+        errors.append(f"Icon sheet {sheet_path.name} is not preloaded by IconAtlas.gd")
+
+atlas_keys = set(re.findall(r'^\\s*"([a-z0-9_]+)"\\s*:\\s*\\[\\d+,\\s*Rect2i', atlas, re.M))
+required_icons = {
+    "road", "residential", "commercial", "industrial", "services",
+    "specializations", "bulldoze", "power", "water", "fire", "parks",
+    "storage", "trade", "save", "cancel", "education", "transportation",
+    "entertainment", "gambling", "beach", "mountain", "landmark",
+    "trade_depot", "global_trade", "epic", "regions"
+}
+for icon_key in sorted(required_icons - atlas_keys):
+    errors.append(f"Required HUD icon is missing from atlas: {icon_key}")
+
+toolbar_order = [
+    '["road","Road"]',
+    '["residential","Residential"]',
+    '["commercial","Commercial"]',
+    '["industrial","Industrial"]',
+    '["services","Services"]',
+    '["specializations","Specializations / Park"]',
+    '["bulldoze","Bulldoze"]'
+]
+positions = [hud.find(entry) for entry in toolbar_order]
+if any(position < 0 for position in positions) or positions != sorted(positions):
+    errors.append("Right toolbar categories are missing or not in the required order")
