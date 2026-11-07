@@ -1,0 +1,149 @@
+extends Node
+
+signal save_completed(path: String)
+signal load_completed(success: bool)
+
+const SAVE_PATH: String = "user://pasoo_city_buildit_save.json"
+const SAVE_VERSION: int = 1
+const AUTOSAVE_INTERVAL: float = 30.0
+
+var autosave_elapsed: float = 0.0
+var is_loading: bool = false
+
+func _process(delta: float) -> void:
+	if is_loading:
+		return
+	autosave_elapsed += delta
+	if autosave_elapsed >= AUTOSAVE_INTERVAL:
+		autosave_elapsed = 0.0
+		save_game()
+
+func save_game() -> bool:
+	var scene = get_tree().current_scene
+	if scene == null or scene.get_node_or_null("World/RoadSystem") == null:
+		return false
+
+	var road_system = scene.get_node("World/RoadSystem")
+	var road_data: Array = []
+	for cell in road_system.roads.keys():
+		road_data.append([int(cell.x), int(cell.y)])
+
+	var building_data: Array = []
+	for building in BuildManager.buildings.values():
+		if not is_instance_valid(building):
+			continue
+		building_data.append({
+			"type": building.building_type,
+			"grid": [int(building.grid_pos.x), int(building.grid_pos.y)],
+			"stage": int(building.upgrade_stage),
+			"status": str(building.status)
+		})
+
+	var payload: Dictionary = {
+		"version": SAVE_VERSION,
+		"game": {
+			"level": GameManager.level,
+			"experience": GameManager.experience,
+			"population": GameManager.population,
+			"happiness": GameManager.happiness
+		},
+		"economy": {
+			"simoleons": EconomyManager.simoleons,
+			"golden_keys": EconomyManager.golden_keys,
+			"sim_cash": EconomyManager.sim_cash
+		},
+		"storage": {
+			"max_capacity": StorageManager.max_capacity,
+			"inventory": StorageManager.inventory
+		},
+		"roads": road_data,
+		"buildings": building_data
+	}
+
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		push_error("Could not write city save file: %s" % FileAccess.get_open_error())
+		return false
+	file.store_string(JSON.stringify(payload))
+	file.close()
+	save_completed.emit(SAVE_PATH)
+	return true
+
+func load_game() -> bool:
+	if not FileAccess.file_exists(SAVE_PATH):
+		load_completed.emit(false)
+		return false
+
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		push_error("Could not read city save file: %s" % FileAccess.get_open_error())
+		load_completed.emit(false)
+		return false
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != SAVE_VERSION:
+		push_warning("City save is invalid or uses an unsupported version.")
+		load_completed.emit(false)
+		return false
+
+	var scene = get_tree().current_scene
+	if scene == null or scene.get_node_or_null("World/RoadSystem") == null:
+		load_completed.emit(false)
+		return false
+
+	is_loading = true
+	var game_data: Dictionary = parsed.get("game", {})
+	var economy_data: Dictionary = parsed.get("economy", {})
+	var storage_data: Dictionary = parsed.get("storage", {})
+
+	GameManager.level = maxi(1, int(game_data.get("level", 1)))
+	LevelProgression._apply_level(GameManager.level)
+	EconomyManager.simoleons = 100000000
+	EconomyManager.golden_keys = int(economy_data.get("golden_keys", 5))
+	EconomyManager.sim_cash = int(economy_data.get("sim_cash", 0))
+
+	StorageManager.max_capacity = maxi(1, int(storage_data.get("max_capacity", 30)))
+	StorageManager.inventory = storage_data.get("inventory", {}).duplicate(true)
+	StorageManager.current_used = 0
+	for item_amount in StorageManager.inventory.values():
+		StorageManager.current_used += int(item_amount)
+
+	var road_system = scene.get_node("World/RoadSystem")
+	for road in parsed.get("roads", []):
+		if road is Array and road.size() == 2:
+			road_system.place_road(Vector2i(int(road[0]), int(road[1])))
+
+	for saved_building in parsed.get("buildings", []):
+		if not (saved_building is Dictionary):
+			continue
+		var grid: Array = saved_building.get("grid", [])
+		var type_id: String = str(saved_building.get("type", ""))
+		if grid.size() != 2 or not BuildManager.building_types.has(type_id):
+			continue
+		BuildManager.place_building(
+			Vector2i(int(grid[0]), int(grid[1])),
+			type_id,
+			int(saved_building.get("stage", 1)),
+			str(saved_building.get("status", "constructing"))
+		)
+
+	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
+	GameManager.level = maxi(1, int(game_data.get("level", 1)))
+	GameManager.experience = int(game_data.get("experience", 0))
+	GameManager.population = int(game_data.get("population", 0))
+	GameManager.happiness = float(game_data.get("happiness", 100.0))
+	GameManager.level_changed.emit(GameManager.level)
+	GameManager.population_changed.emit(GameManager.population)
+	GameManager.happiness_changed.emit(GameManager.happiness)
+	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
+	EconomyManager.keys_changed.emit(EconomyManager.golden_keys)
+	StorageManager.storage_changed.emit()
+	StorageManager.capacity_changed.emit(StorageManager.max_capacity)
+	ServiceManager.recalculate_from_buildings()
+	is_loading = false
+	load_completed.emit(true)
+	return true
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		save_game()

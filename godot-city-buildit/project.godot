@@ -5,7 +5,7 @@ config_version=5
 
 config/name="Pasoo City BuildIt"
 config/description="A beautiful 3D city builder inspired by SimCity BuildIt"
-config/version="0.6.0"
+config/version="1.0.0"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"
@@ -20,15 +20,17 @@ ProductionManager="*res://scripts/autoload/ProductionManager.gd"
 TradeManager="*res://scripts/autoload/TradeManager.gd"
 ServiceManager="*res://scripts/autoload/ServiceManager.gd"
 LevelProgression="*res://scripts/autoload/LevelProgression.gd"
+SaveManager="*res://scripts/autoload/SaveManager.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
-window/size/mode=2
+window/size/mode=3
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/handheld/orientation=1
+window/handheld/orientation=0
+window/energy_saving/keep_screen_on=true
 
 [rendering]
 
