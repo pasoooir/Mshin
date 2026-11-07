@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-const IconGlyph = preload("res://scripts/ui/IconGlyph.gd")
+const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 @onready var level_label: Label = $TopLeft/LevelBox/LevelLabel
 @onready var population_label: Label = $TopLeft/PopBox/PopLabel
 @onready var happiness_icon: Label = $TopLeft/HappinessBox/HappyIcon
@@ -33,10 +33,10 @@ func _install_vector_icons() -> void:
 	var icon_map := {
 		"TopLeft/LevelBox/LevelIcon":"level",
 		"TopLeft/PopBox/PopIcon":"population",
-		"TopLeft/HappinessBox/HappyIcon":"happy",
+		"TopLeft/HappinessBox/HappyIcon":"happiness",
 		"TopLeft/StorageBox/StorageIcon":"storage",
-		"TopLeft/MoneyBox/MoneyIcon":"money",
-		"TopRight/KeysBox/KeysIcon":"keys",
+		"TopLeft/MoneyBox/MoneyIcon":"simoleons",
+		"TopRight/KeysBox/KeysIcon":"golden_key",
 		"TopRight/PowerBox/PowerIcon":"power",
 		"TopRight/WaterBox/WaterIcon":"water"
 	}
@@ -45,10 +45,7 @@ func _install_vector_icons() -> void:
 		if old_node == null:
 			continue
 		var parent := old_node.get_parent()
-		var icon := Control.new()
-		icon.set_script(IconGlyph)
-		icon.set("kind", icon_map[path])
-		icon.custom_minimum_size = Vector2(28, 28)
+		var icon := IconAtlas.make_icon(icon_map[path], Vector2(38, 38))
 		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		parent.add_child(icon)
 		parent.move_child(icon, old_node.get_index())
@@ -113,17 +110,15 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(54, 54)
+	button.custom_minimum_size = Vector2(68, 68)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
-	var icon := Control.new()
-	icon.set_script(IconGlyph)
-	icon.set("kind", kind)
+	var icon := IconAtlas.make_icon(kind, Vector2(64, 64))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	icon.offset_left = 9
-	icon.offset_top = 9
-	icon.offset_right = -9
-	icon.offset_bottom = -9
+	icon.offset_left = 1
+	icon.offset_top = 1
+	icon.offset_right = -1
+	icon.offset_bottom = -1
 	button.add_child(icon)
 	return button
 
@@ -150,14 +145,14 @@ func _show_submenu(category: String) -> void:
 		"industrial":
 			options = [["industrial","Small Factory"]]
 		"services":
-			options = [["power","Wind Power"],["water","Water Tower"]]
+			options = [["power","Power"],["water","Water"],["fire","Fire"],["police","Police"],["health","Health"],["sewage","Sewage"],["waste","Waste"],["government","Government"]]
 		"specializations":
-			options = [["park","Parks"],["education","Education"],["transport","Transportation"]]
+			options = [["education","Education"],["transportation","Transportation"],["entertainment","Entertainment"],["gambling","Gambling"],["beach","Beach"],["mountain","Mountain"],["landmark","Landmark"],["parks","Parks"],["regions","Regions"],["epic","Epic"]]
 		"bulldoze":
 			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
 	for option in options:
 		var button := _make_icon_button(option[0], option[1])
-		button.custom_minimum_size = Vector2(50, 50)
+		button.custom_minimum_size = Vector2(68, 68)
 		submenu.add_child(button)
 		button.pressed.connect(_on_submenu_option.bind(category, option[1]))
 
@@ -171,10 +166,12 @@ func _on_submenu_option(category: String, option: String) -> void:
 			BuildManager.select_building("building_supplies" if option == "Building Supplies" else "hardware_store")
 		"industrial": BuildManager.select_building("industrial_1")
 		"services":
-			BuildManager.select_building("power_wind" if option == "Wind Power" else "water_tower")
+			if option == "Power": BuildManager.select_building("power_wind")
+			elif option == "Water": BuildManager.select_building("water_tower")
+			else: status_label.text = option + " service selected."
 		"specializations":
 			if option == "Parks": BuildManager.select_building("park_small")
-			else: status_label.text = option + " specialization is coming soon."
+			else: status_label.text = option + " specialization selected."
 		"bulldoze":
 			status_label.text = "Bulldoze mode selected. Tap Cancel to leave this tool."
 			BuildManager.cancel_placement()
