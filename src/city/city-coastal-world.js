@@ -122,7 +122,7 @@ export function createCityCoastalWorld(THREE, { scene, renderer }) {
     depthWrite: true
   });
   waterMaterial.name = "animated-24bit-gradient-ocean";
-  waterMaterial.userData.colorDepth = "24-bit RGB";
+  waterMaterial.userData = { colorDepth:"24-bit RGB" };
   const ocean = new THREE.Mesh(new THREE.PlaneGeometry(2400, 760), waterMaterial);
   ocean.name = "multi-layer-coastal-ocean";
   ocean.rotation.x = -Math.PI / 2;
