@@ -76,7 +76,6 @@ export async function createCityThreeRenderer(sourceCanvas) {
   // effectively horizon-free at the widest supported zoom so no canvas/backdrop
   // can appear as a blank strip when the camera looks toward the world edge.
   const naturalGrassTexture = createCityNaturalGrassTexture(THREE);
-  naturalGrassTexture.repeat.set(240, 240);
   const grassGroundMap = naturalGrassTexture;
   const grassGroundNormal = grassSurface.normalMap.clone();
   const grassGroundRoughness = grassSurface.roughnessMap.clone();
