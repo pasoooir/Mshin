@@ -15,14 +15,16 @@ const isRoadCell = () => false;
 export async function createCityThreeRenderer(sourceCanvas) {
   // Load the committed Three.js build from this GitHub Pages repository.
   const THREE = await import("../../vendor/three/build/three.module.min.js");
+  const isMobileDevice = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "");
+  const maxPixelRatio = isMobileDevice ? 1.25 : 1.5;
   const renderer = new THREE.WebGLRenderer({
-    antialias: true,
+    antialias: !isMobileDevice,
     alpha: false,
     powerPreference: "high-performance",
     stencil: false,
     depth: true
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatio));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -48,7 +50,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const sun = new THREE.DirectionalLight("#fff1d2", 3.35);
   sun.position.set(-42, 68, -35);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.mapSize.set(isMobileDevice ? 512 : 1024, isMobileDevice ? 512 : 1024);
   sun.shadow.camera.left = -76;
   sun.shadow.camera.right = 76;
   sun.shadow.camera.top = 76;
