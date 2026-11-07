@@ -86,6 +86,33 @@ jobs:
           sed -i "s|./game/|./game/$GITHUB_SHA/|g" "$GITHUB_WORKSPACE/site/index.html"
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 
+      - name: Capture real Web build screenshot in Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --directory site >/tmp/mshin-web-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
+          const errors = [];
+          page.on('pageerror', error => errors.push(error.message));
+          await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
+          await page.waitForSelector('canvas', { state: 'visible', timeout: 10000 });
+          await page.waitForTimeout(12000);
+          await page.screenshot({ path: 'mshin-web-hud.png', fullPage: true });
+          if (errors.length) throw new Error('Browser page errors: ' + errors.join(' | '));
+          await browser.close();
+          NODE
+      - name: Upload Web screenshot evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: mshin-web-hud-screenshot
+          path: mshin-web-hud.png
+          if-no-files-found: error
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
