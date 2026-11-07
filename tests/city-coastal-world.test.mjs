@@ -18,7 +18,11 @@ test("coastal world paints a multi-stop gradient ocean with layered waves and su
   assert.match(coastal, /dispose\(\)/);
   assert.match(coastal, /const size = isConstrainedDevice \? 1024 : 1536/);
   assert.match(coastal, /const grainCount = isConstrainedDevice \? 36000 : 118000/);
-  assert.match(coastal, /soilBeachOverlapMeters:1\.5/);\n  assert.match(coastal, /waterlineLandOverlapMeters:waterlineLandOverlap/);\n  assert.match(coastal, /const waterlineLandOverlap = 0\.75/);\n  assert.match(coastal, /shoreZ\(x\)-waterlineLandOverlap\+depth\*oceanDepth/);\n  assert.match(coastal, /-0\.065 \+ Math\.sin\(x\*0\.03\)\*0\.018/);
+  assert.match(coastal, /soilBeachOverlapMeters:1\.5/);
+  assert.match(coastal, /waterlineLandOverlapMeters:waterlineLandOverlap/);
+  assert.match(coastal, /const waterlineLandOverlap = 0\.75/);
+  assert.match(coastal, /shoreZ\(x\)-waterlineLandOverlap\+depth\*oceanDepth/);
+  assert.match(coastal, /-0\.065 \+ Math\.sin\(x\*0\.03\)\*0\.018/);
   assert.match(coastal, /soilIndices\.push\(a,a\+2,a\+1,a\+1,a\+2,a\+3\)/);
   assert.match(coastal, /shore-\(j \? 116 : 86\.5\)/);
   assert.match(coastal, /const segments = isMobileQuality \? 128 : 192/);
