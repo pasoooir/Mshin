@@ -203,8 +203,8 @@ static func _make_transparent_cell(sheet_id: int, region: Rect2i) -> Texture2D:
 			for neighbor in [current - 1, current + 1, current - width, current + width]:
 				if neighbor < 0 or neighbor >= width * height or flat_visited[neighbor] == 1:
 					continue
-				var nx := neighbor % width
-				var ny := int(neighbor / width)
+				var nx: int = int(neighbor % width)
+				var ny: int = int(neighbor / width)
 				if abs(nx - cx) + abs(ny - cy) != 1:
 					continue
 				var neighbor_color := crop.get_pixel(nx, ny)
