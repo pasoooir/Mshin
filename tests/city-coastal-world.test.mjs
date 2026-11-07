@@ -18,7 +18,8 @@ test("coastal world paints a multi-stop gradient ocean with layered waves and su
   assert.match(coastal, /dispose\(\)/);
   assert.match(coastal, /const size = isConstrainedDevice \? 1024 : 1536/);
   assert.match(coastal, /const grainCount = isConstrainedDevice \? 36000 : 118000/);
-  assert.match(coastal, /soilBeachOverlapMeters:1\.5/);\n  assert.match(coastal, /soilIndices\.push\(a,a\+2,a\+1,a\+1,a\+2,a\+3\)/);
+  assert.match(coastal, /soilBeachOverlapMeters:1\.5/);
+  assert.match(coastal, /soilIndices\.push\(a,a\+2,a\+1,a\+1,a\+2,a\+3\)/);
   assert.match(coastal, /shore-\(j \? 116 : 86\.5\)/);
   assert.match(coastal, /const segments = isMobileQuality \? 128 : 192/);
   assert.match(coastal, /const rows = isMobileQuality \? 48 : 72/);
