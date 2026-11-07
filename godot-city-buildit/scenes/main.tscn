@@ -155,7 +155,7 @@ alignment = 2
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "💧"
-[node name="WaterLabel" type="Label" parent="HUD/TopRight"]
+[node name="WaterLabel" type="Label" parent="HUD/TopRight/WaterBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "0/0"
