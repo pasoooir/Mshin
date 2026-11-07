@@ -268,7 +268,9 @@ export function createCityAtmosphere(THREE, { scene, camera, sun, hemisphere, fi
       skyColor: atmosphereColours.zenith,
       horizonColor: atmosphereColours.horizon,
       sunlightColor: atmosphereColours.sunlight,
-      colorDepth: "24-bit RGB",\n      continuousSkyGradient: true,\n      atmosphericColorVariation: true,
+      colorDepth: "24-bit RGB",
+      continuousSkyGradient: true,
+      atmosphericColorVariation: true,
       skyDome: true
     };
   }
