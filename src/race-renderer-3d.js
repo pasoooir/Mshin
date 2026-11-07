@@ -1,3 +1,4 @@
+import { buildNascarStadium } from "./nascar-stadium.js";
 import { buildVehicleGeometry } from "./vehicle-showroom-3d.js";
 import { PBR_VERTEX, PBR_FRAGMENT, createVehicleEnvironment, VEHICLE_MATERIALS } from "./vehicle-pbr.js";
 import { vehicleModelHeading } from "./vehicle-controls.js";
@@ -244,7 +245,7 @@ export function createRaceRenderer(canvas){
    part(groundTris,theme[0],.16,"environment",terrainTexture)
   );
   yield {parts:[terrainBasePart,nextRoad,...nextDecor],progress:.34};
-  state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[];
+  state.petCoats=[];const treeTrunks=[],treeFoliage=[],buildings=[],houses=[],shops=[],windows=[],doors=[],roofTris=[],landscape=[],treeShadows=[],buildingShadows=[],railTris=[],crowdBodies=[],crowdHeads=[],crowdLegs=[],crowdArms=[],petBodies=[],petHeads=[],petLegs=[],petEars=[],petTails=[],billboardPosts=[],billboardFaces=[],billboardFrames=[],billboardAccents=[],billboardSlots=[],stadiumDecks=[],stadiumRisers=[],stadiumSupports=[],stadiumCanopies=[];
   const urban=[4,5,8].includes(snapshot.world||0),treeCount=mobile?22:softwareRenderer?28:64,buildingCount=mobile?8:softwareRenderer?12:22;
   const sphere=(out,cx,cy,cz,rx,ry,rz,segments=8,rings=5)=>{for(let r=0;r<rings;r++){const p0=-Math.PI/2+r*Math.PI/rings,p1=-Math.PI/2+(r+1)*Math.PI/rings;for(let s=0;s<segments;s++){const a=s*Math.PI*2/segments,b=(s+1)*Math.PI*2/segments,pt=(p,t)=>[cx+Math.cos(p)*Math.cos(t)*rx,cy+Math.sin(p)*ry,cz+Math.cos(p)*Math.sin(t)*rz];quad(out,pt(p0,a),pt(p0,b),pt(p1,b),pt(p1,a));}}};
   // Full 3D sky dome, layered cloud banks and a soft sun; drawn first so terrain occludes it naturally.
@@ -292,6 +293,8 @@ export function createRaceRenderer(canvas){
    }
    if(++railSegmentsBuilt%(mobile?2:12)===0)yield {progress:.67+.003*(railSegmentsBuilt/totalRailSegments)};
   }
+  const stadiumBuild=buildNascarStadium({snapshot,mobile,softwareRenderer,quad,box,sphere,crowdBodies,crowdHeads,crowdArms,crowdLegs,stadiumDecks,stadiumRisers,stadiumSupports,stadiumCanopies,state});
+  for(const section of stadiumBuild)yield {progress:.674+.002*(section/ (mobile?16:softwareRenderer?22:40))};
   const extraCrowdCount=mobile?10:36;
   for(let i=0;i<extraCrowdCount;i++){
    const t=(i+.5)/(mobile?16:54)*Math.PI*2,f=snapshot.frameAt(t),side=i%2?1:-1,offset=290+(i%4)*15,x=f.p.x+f.nx*side*offset,z=-(f.p.y+f.ny*side*offset),base=f.height||0;
@@ -340,7 +343,7 @@ export function createRaceRenderer(canvas){
    [crowdHeads,"#d4a47e"],[crowdArms,"#e2b18c"],[crowdLegs,"#263344"],[petBodies,"#b88c5c"],
    [petHeads,"#b88c5c"],[petLegs,"#75543c"],[petEars,"#8b5d4a"],[petTails,"#8b5d4a"],
    [billboardPosts,"#303d4b"],[billboardFaces,"#17324b"],[billboardFrames,"#d9e2e8"],
-   [billboardAccents,"#ed344e",.12],[railTris,"#d9dfe2"]
+   [billboardAccents,"#ed344e",.12],[stadiumDecks,"#87939c",0,"concrete"],[stadiumRisers,"#59636d",0,"concrete"],[stadiumSupports,"#aeb9c2",.04],[stadiumCanopies,"#d7e0e5",.08],[railTris,"#d9dfe2"]
   ];
   const uploadValues=uploadQueue.reduce((sum,item)=>sum+item[0].length,0);
   const maxUploadValues=4096*9;
