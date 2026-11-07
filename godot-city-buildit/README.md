@@ -45,7 +45,7 @@ The coastal environment uses local procedural assets only (no runtime downloads)
 
 This is the first visual-quality slice, not the final art target: production-quality GLB building families, richer road intersections/markings, stronger shoreline foam/reflections, mobile GPU profiling and a verified 60 FPS budget remain open.
 
-## City services
+## HUD and local icon assets\n\nHUD icons are drawn at runtime by `scripts/ui/IconGlyph.gd` using Godot CanvasItem vector primitives. This keeps every icon inside the project and avoids font fallback, missing emoji glyphs, texture atlas import issues and runtime network requests. The top HUD groups level, population, happiness, storage and currencies; the right toolbar opens compact category submenus.\n\n## City services
 
 Wind power and water towers each provide 12 units of capacity within a 28 m coverage radius. Each completed home requires 2 power and 2 water. The HUD shows capacity used, and city happiness is calculated from homes receiving both services.
 
@@ -54,7 +54,7 @@ Wind power and water towers each provide 12 units of capacity within a 28 m cove
 - **Mobile:** landscape orientation; one-finger drag pans; two-finger pinch zooms and twist rotates the camera; short taps place or interact.
 - **Desktop:** left-drag pans; mouse wheel zooms; left-click places or interacts.
 - The placement preview is green on a valid plot and red on an invalid plot.
-- The bottom toolbar contains roads, housing, shops, factories, utilities, storage, trade, save and cancel.
+- The right-side vertical toolbar uses locally drawn vector icons (no emoji glyphs, external textures or CDN): roads, residential, commercial, industrial, services, specializations and bulldoze. Selecting a category opens a compact icon-only submenu. Storage, trade, save and cancel remain in the bottom action row. Specialization options beyond parks and destructive bulldozing are currently UI entry points; their full gameplay behavior is not yet implemented.
 - The **save** icon writes the city immediately. The game also autosaves every 30 seconds and on window close.
 
 ## Validation and automated gameplay test
