@@ -20,6 +20,7 @@ ProductionManager="*res://scripts/autoload/ProductionManager.gd"
 TradeManager="*res://scripts/autoload/TradeManager.gd"
 ServiceManager="*res://scripts/autoload/ServiceManager.gd"
 LevelProgression="*res://scripts/autoload/LevelProgression.gd"
+SaveManager="*res://scripts/autoload/SaveManager.gd"
 
 [display]
 
