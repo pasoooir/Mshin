@@ -53,22 +53,22 @@ func _run_gameplay_test() -> void:
 	_check(factory != null and factory.status == "completed", "Factory construction did not finish.")
 	_check(GameManager.population >= 15, "Completed house did not add population.")
 	_check(ServiceManager.total_power >= 12 and ServiceManager.total_water >= 12, "Power/water capacity was not registered.")
-	_check(ServiceManager.is_building_served(home), "House was not served by nearby power and water.")
+	_check(home != null and ServiceManager.is_building_served(home), "House was not served by nearby power and water.")
 
 	await _wait_seconds(6.5)
-	_check(factory.has_ready_product, "Factory did not finish Metal production.")
-	_check(factory.collect_production(), "Could not collect Metal from factory.")
+	_check(factory != null and factory.has_ready_product, "Factory did not finish Metal production.")
+	_check(factory != null and factory.collect_production(), "Could not collect Metal from factory.")
 	_check(StorageManager.get_item_count("metal") == 1, "Collected Metal was not stored.")
 
 	_check(ProductionManager.craft_item("nails"), "Building Supplies could not craft Nails from Metal.")
 	_check(StorageManager.get_item_count("nails") == 1, "Crafted Nails were not stored.")
 
 	await _wait_seconds(6.5)
-	_check(factory.has_ready_product, "Factory did not produce the second Metal.")
-	_check(factory.collect_production(), "Could not collect the second Metal.")
-	_check(home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
-	_check(home.upgrade_stage == 2, "House did not advance to level 2.")
-	_check(home.current_population == 30 and GameManager.population >= 30, "House upgrade did not increase population.")
+	_check(factory != null and factory.has_ready_product, "Factory did not produce the second Metal.")
+	_check(factory != null and factory.collect_production(), "Could not collect the second Metal.")
+	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
+	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")
+	_check(home != null and home.current_population == 30 and GameManager.population >= 30, "House upgrade did not increase population.")
 
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 	if failures.is_empty():
