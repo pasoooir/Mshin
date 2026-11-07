@@ -38,7 +38,7 @@
 | موتور | Godot 4.3+ (Forward+) |
 | زبان | GDScript |
 | پلتفرم اصلی | موبایل (Android / iOS) + دسکتاپ |
-| صحنه اصلی | `scenes/main.tscn` |
+| صحنه اصلی | `godot-city-buildit/scenes/main.tscn` |
 | ریپازیتوری | https://github.com/pasoooir/Mshin |
 
 ---
