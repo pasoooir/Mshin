@@ -19,11 +19,17 @@ test("natural grass uses a full-color procedural texture in the live renderer", 
   assert.match(renderer, /createCityNaturalGrassTexture/);
   assert.match(renderer, /naturalGrassTexture/);
   assert.match(renderer, /texture === grassGroundMap \? 16000 : 2048/);
+  assert.match(coastal, /const size = 1536/);
+  assert.match(coastal, /texture\.colorSpace = THREE\.SRGBColorSpace/);
+  assert.match(coastal, /generateMipmaps = true/);
   assert.doesNotMatch(renderer, /\\\\n/);
 });
 test("sky uses continuous full-spectrum gradients and procedural atmosphere", () => {
   for (const token of ["uLower", "uMid", "skyNoise", "highCloudVeil", "continuousSkyGradient", "colorDepth: \"24-bit RGB\""]) assert.ok(atmosphere.includes(token), token);
   assert.match(renderer, /trueColorAtmosphere/);
+  assert.match(renderer, /renderer\.outputColorSpace = THREE\.SRGBColorSpace/);
+  assert.match(renderer, /renderer\.toneMapping = THREE\.ACESFilmicToneMapping/);
+  assert.match(renderer, /colorDepth: "24-bit RGB"/);
 });
 test("coastal world is mounted and cached offline", () => {
   assert.match(renderer, /createCityCoastalWorld/);
