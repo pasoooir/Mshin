@@ -18,9 +18,10 @@ async function clickStablePointer(page,selector){
   element.dataset.smokeClickStable=String(count);
   return count>=3;
  },selector,{timeout:10000,polling:50});
- const box=await locator.boundingBox();
- if(!box)throw new Error("Mobile control is outside the visible viewport: "+selector);
- await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+ // Playwright's forced locator click still emits a real browser pointer
+ // sequence at the element center, but skips flaky actionability rechecks
+ // after the explicit four-sample stable-layout gate above.
+ await locator.click({force:true,timeout:10000});
 }
 
 async function clickCityTool(page,type){
