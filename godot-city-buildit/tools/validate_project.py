@@ -39,15 +39,8 @@ for item in re.findall(r'"item"[ \t]*:[ \t]*"([a-z0-9_]+)"', production):
     if f'"{item}"' not in storage:
         errors.append(f"Upgrade material missing from storage definitions: {item}")
 
-if errors:
-    print("VALIDATION FAILED")
-    for error in errors:
-        print(error)
-    sys.exit(1)
 
-print("Static project validation passed.")
-
-# Validate local UI sprite sheets and atlas references (no CDN/font fallback).
+# Validate all three local UI sprite sheets and their atlas references.
 import struct
 
 atlas_path = ROOT / "scripts/ui/IconAtlas.gd"
@@ -90,3 +83,11 @@ toolbar_order = [
 positions = [hud.find(entry) for entry in toolbar_order]
 if any(position < 0 for position in positions) or positions != sorted(positions):
     errors.append("Right toolbar categories are missing or not in the required order")
+
+if errors:
+    print("VALIDATION FAILED")
+    for error in errors:
+        print(error)
+    sys.exit(1)
+
+print("Static project and icon-atlas validation passed.")
