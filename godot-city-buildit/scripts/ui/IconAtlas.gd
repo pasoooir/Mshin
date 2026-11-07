@@ -95,7 +95,7 @@ static func validate_sheets() -> bool:
 static func _color_distance(a: Color, b: Color) -> float:
 	return absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b)
 
-static func _make_transparent_cell(sheet_id: int, region: Rect2i) -> Texture2D:
+static func _make_transparent_cell(icon_name: String, sheet_id: int, region: Rect2i) -> Texture2D:
 	var cache_key := "%d:%d:%d:%d:%d" % [sheet_id, region.position.x, region.position.y, region.size.x, region.size.y]
 	if _texture_cache.has(cache_key):
 		return _texture_cache[cache_key]
@@ -171,6 +171,16 @@ static func _make_transparent_cell(sheet_id: int, region: Rect2i) -> Texture2D:
 		if py > 0: queue.append(index - width)
 		if py + 1 < height: queue.append(index + width)
 
+	# The supplied power glyph is painted over a bright yellow square tile.
+	# Key only the bright yellow plate; preserve the darker lightning glyph.
+	if icon_name == "power":
+		for py in range(height):
+			for px in range(width):
+				var power_pixel := crop.get_pixel(px, py)
+				if power_pixel.r > 0.72 and power_pixel.g > 0.48 and power_pixel.b < 0.30 and power_pixel.r - power_pixel.b > 0.42:
+					power_pixel.a = 0.0
+					crop.set_pixel(px, py, power_pixel)
+
 	# Remove a second, common source of colored square halos: a flat,
 	# enclosed rounded-square plate baked behind an icon. Only large,
 	# near-square, high-fill uniform components are considered; detailed
@@ -234,7 +244,7 @@ static func texture_for(icon_name: String) -> Texture2D:
 		push_error("Unknown UI atlas icon: " + icon_name)
 		return null
 	var entry: Array = REGIONS[icon_name]
-	return _make_transparent_cell(int(entry[0]), entry[1])
+	return _make_transparent_cell(icon_name, int(entry[0]), entry[1])
 
 static func make_icon(icon_name: String, display_size: Vector2 = Vector2(64, 64)) -> TextureRect:
 	var icon := TextureRect.new()
