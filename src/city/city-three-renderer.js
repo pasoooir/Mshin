@@ -24,7 +24,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   const captureMode = new URLSearchParams(window.location.search).has("cityCapture");
   // Browser-test artifacts need a compact deterministic frame; production
   // devices retain the normal mobile/desktop quality caps below.
-  const maxPixelRatio = captureMode ? 0.65 : isMobileDevice ? 1.25 : 1.5;
+  const maxPixelRatio = captureMode ? 0.25 : isMobileDevice ? 1.25 : 1.5;
   const renderer = new THREE.WebGLRenderer({
     antialias: !isMobileDevice,
     alpha: false,
@@ -40,7 +40,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !captureMode;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
@@ -60,7 +60,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
   scene.add(hemisphere);
   const sun = new THREE.DirectionalLight("#fff1d2", 3.35);
   sun.position.set(-42, 68, -35);
-  sun.castShadow = true;
+  sun.castShadow = !captureMode;
   sun.shadow.mapSize.set(isMobileDevice ? 512 : 1024, isMobileDevice ? 512 : 1024);
   sun.shadow.camera.left = -76;
   sun.shadow.camera.right = 76;
