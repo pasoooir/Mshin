@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const renderer=fs.readFileSync(new URL("../src/race-renderer-3d.js",import.meta.url),"utf8");
+const stadium=fs.readFileSync(new URL("../src/nascar-stadium.js",import.meta.url),"utf8");
 
 test("racing scene builds curved NASCAR-style grandstands on both sides of the oval",()=>{
  assert.match(renderer,/const standSections=mobile\?16:softwareRenderer\?22:40/);
