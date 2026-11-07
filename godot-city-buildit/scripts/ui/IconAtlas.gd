@@ -244,6 +244,8 @@ static func _make_transparent_cell(icon_name: String, sheet_id: int, region: Rec
 	return result
 
 static func texture_for(icon_name: String) -> Texture2D:
+	if icon_name == "power":
+		return load("res://assets/icons/power.svg") as Texture2D
 	if not REGIONS.has(icon_name):
 		push_error("Unknown UI atlas icon: " + icon_name)
 		return null
