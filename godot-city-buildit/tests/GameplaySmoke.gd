@@ -138,6 +138,7 @@ func _run_gameplay_test() -> void:
 		if is_instance_valid(building):
 			building.queue_free()
 	BuildManager.buildings.clear()
+	BuildManager.building_cells.clear()
 	BuildManager.factory_count = 0
 	for road_mesh in road_system.roads.values():
 		if is_instance_valid(road_mesh):
