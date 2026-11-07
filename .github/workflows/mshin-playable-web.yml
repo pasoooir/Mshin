@@ -1,0 +1,80 @@
+name: Mshin Playable Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "godot-city-buildit/**"
+      - ".github/workflows/mshin-playable-web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.3 and Web export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-dotnet: false
+          include-templates: true
+
+      - name: Validate project structure
+        run: python godot-city-buildit/tools/validate_project.py
+
+      - name: Import and parse project
+        run: godot --headless --editor --path godot-city-buildit --quit
+
+      - name: Headless startup smoke test
+        run: |
+          set -o pipefail
+          godot --headless --path godot-city-buildit --quit-after 10 2>&1 | tee /tmp/godot-startup.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-startup.log; then exit 1; fi
+
+      - name: Gameplay integration test
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path godot-city-buildit res://tests/gameplay_smoke.tscn 2>&1 | tee /tmp/godot-gameplay.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-gameplay.log; then exit 1; fi
+          if grep -Fq "ERROR: [GameplaySmoke]" /tmp/godot-gameplay.log; then exit 1; fi
+          grep -F "[GameplaySmoke] PASS" /tmp/godot-gameplay.log
+
+      - name: Export Godot game for browsers
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/site/game"
+          godot --headless --path godot-city-buildit --export-release "Web" "$GITHUB_WORKSPACE/site/game/index.html"
+          test -s "$GITHUB_WORKSPACE/site/game/index.html"
+          cp godot-city-buildit/web/launcher.html "$GITHUB_WORKSPACE/site/index.html"
+          touch "$GITHUB_WORKSPACE/site/.nojekyll"
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload website artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy game to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
