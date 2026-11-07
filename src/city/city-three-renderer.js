@@ -6,6 +6,7 @@ import { updateCityCameraTransform } from "./city-camera-projection.js";
 import { createCitySidewalkLayer } from "./city-street-renderer.js";
 import { createCityPbrSurfaces } from "./city-pbr-textures.js";
 import { createCityHighwayGateway } from "./city-highway-gateway.js";
+import { createCityCoastalWorld, createCityNaturalGrassTexture } from "./city-coastal-world.js";
 const VISUAL_GRID = 64;
 const ACTIVE_START = 16;
 const ACTIVE_END = 48;
@@ -70,16 +71,18 @@ export async function createCityThreeRenderer(sourceCanvas) {
   } = createCityPbrSurfaces(THREE, renderer);
   const pbrGenerationMs = performance.now() - pbrGenerationStartedAt;
   const pbrTextureResolution = grassSurface.map.image?.width || 0;
+  const naturalGrassTexture = createCityNaturalGrassTexture(THREE, renderer, grassSurface.map);
   const backgroundSkyline = { buildingCount: 0, windowCount: 0, dispose() {} };
   // A continuous meadow replaces the old per-cell grass slabs. Keep the terrain
   // effectively horizon-free at the widest supported zoom so no canvas/backdrop
   // can appear as a blank strip when the camera looks toward the world edge.
-  const grassGroundMap = grassSurface.map.clone();
+  const grassGroundMap = naturalGrassTexture;
   const grassGroundNormal = grassSurface.normalMap.clone();
   const grassGroundRoughness = grassSurface.roughnessMap.clone();
   for (const texture of [grassGroundMap, grassGroundNormal, grassGroundRoughness]) {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(2048, 2048);
+    const textureRepeat = texture === grassGroundMap ? 16000 : 2048;
+    texture.repeat.set(textureRepeat, textureRepeat);
     texture.needsUpdate = true;
   }
   const groundMaterial = new THREE.MeshStandardMaterial({
@@ -96,6 +99,8 @@ export async function createCityThreeRenderer(sourceCanvas) {
   ground.receiveShadow = true;
   ground.frustumCulled = false;
   scene.add(ground);
+
+  const coastalWorld = createCityCoastalWorld(THREE, { scene, renderer });
 
   const highwayGateway = createCityHighwayGateway(THREE, { asphaltSurface, concreteSurface });
   scene.add(highwayGateway.group);
@@ -368,6 +373,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     updateRoads(city);
     atmosphere.update(city);
     cloudLayer.update(city, atmosphere.getStats());
+    coastalWorld.update(city);
     updateBuildings(city);
     updateTraffic(city);
     updatePedestrians(city);
@@ -415,6 +421,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
         cameraPitch,
         version: THREE.REVISION,
         visualStyle: "continuous-realistic-grassland",
+        trueColorAtmosphere: true,
         continuousGrassland: true,
         visiblePlotGridLines: 0,
         groundExtentMeters: 1000000,
@@ -467,6 +474,7 @@ export async function createCityThreeRenderer(sourceCanvas) {
     destroy() {
       window.removeEventListener("resize", onResize);
       highwayGateway.dispose();
+      coastalWorld.dispose();
       renderer.dispose();
       atmosphere.dispose();
       cloudLayer.dispose();
