@@ -39,8 +39,28 @@ export function createCityCoastalWorld(THREE, { scene, renderer }) {
   const soilTexture = createCityNaturalSoilTexture(THREE, renderer);
   soilTexture.repeat.set(5, 1.2);
   const beachMaterial = new THREE.MeshStandardMaterial({ map: soilTexture, color: "#e8d5a6", roughness: .98 });
-  const beach = new THREE.Mesh(new THREE.PlaneGeometry(2200, 170, 96, 8), beachMaterial);
-  beach.name = "natural-sandy-beach";
+  const beachGeometry = new THREE.BufferGeometry();
+  const beachPositions = [], beachUvs = [], beachIndices = [];
+  const segments = 96, rows = 8;
+  for (let i = 0; i <= segments; i++) {
+    for (let j = 0; j <= rows; j++) {
+      const x = -1100 + i / segments * 2200;
+      const z = -270 - j / rows * 170;
+      const ripple = Math.sin(i * .19 + j * .7) * .025 + Math.sin(i * .047) * .035;
+      beachPositions.push(x, -.205 + ripple, z);
+      beachUvs.push(i/segments*3.2, j*1.2);
+      if (i < segments && j < rows) {
+        const a = i * (rows + 1) + j, b = a + rows + 1;
+        beachIndices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+  }
+  beachGeometry.setAttribute("position", new THREE.Float32BufferAttribute(beachPositions, 3));
+  beachGeometry.setAttribute("uv", new THREE.Float32BufferAttribute(beachUvs, 2));
+  beachGeometry.setIndex(beachIndices);
+  beachGeometry.computeVertexNormals();
+  const beach = new THREE.Mesh(beachGeometry, beachMaterial);
+  beach.name = "natural-earth-transition-natural-sandy-beach";
   beach.rotation.x = -Math.PI / 2;
   beach.position.set(0, -.205, -355);
   beach.receiveShadow = true;
@@ -136,7 +156,7 @@ export function createCityCoastalWorld(THREE, { scene, renderer }) {
     },
     dispose() {
       scene.remove(group);
-      beach.geometry.dispose(); waterMaterial.dispose(); ocean.geometry.dispose(); soilTexture.dispose(); foamMaterial.dispose();
+      beachGeometry.dispose(); waterMaterial.dispose(); ocean.geometry.dispose(); soilTexture.dispose(); foamMaterial.dispose();
       foamGroup.traverse(object => { if (object.geometry) object.geometry.dispose(); });
     }
   };
