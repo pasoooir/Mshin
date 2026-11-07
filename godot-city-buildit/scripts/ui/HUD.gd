@@ -52,7 +52,10 @@ func _install_vector_icons() -> void:
 		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		parent.add_child(icon)
 		parent.move_child(icon, old_node.get_index())
-		old_node.queue_free()
+		# Keep the original Label alive: onready references and signal callbacks
+		# still target these nodes (notably HappinessBox/HappyIcon).
+		old_node.visible = false
+		old_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for path in ["TopLeft/LevelBox/LevelLabel","TopLeft/PopBox/PopLabel","TopLeft/StorageBox/StorageLabel","TopLeft/MoneyBox/MoneyLabel","TopRight/KeysBox/KeysLabel","TopRight/PowerBox/PowerLabel","TopRight/WaterBox/WaterLabel"]:
 		var label := get_node_or_null(path) as Label
 		if label:
