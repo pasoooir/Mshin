@@ -16,6 +16,10 @@ test("coastal world paints a multi-stop gradient ocean with layered waves and su
   assert.match(coastal, /natural-earth-transition/);
   assert.ok(coastal.includes("beachUvs.push(i/segments*3.2, j*1.2)"));
   assert.match(coastal, /dispose\(\)/);
+  assert.match(coastal, /isConstrainedDevice \? 1024 : 1536/);
+  assert.match(coastal, /isConstrainedDevice \? 36000 : 118000/);
+  assert.match(coastal, /soilBeachOverlapMeters:1\.5/);
+  assert.match(coastal, /shore-\(j \? 116 : 86\.5\)/);
 });
 test("natural grass uses a full-color procedural texture in the live renderer", () => {
   assert.match(coastal, /createCityNaturalGrassTexture/);
@@ -35,6 +39,9 @@ test("sky uses continuous full-spectrum gradients and procedural atmosphere", ()
   assert.match(atmosphere, /float cloudMask=/);
   assert.match(renderer, /renderer\.outputColorSpace = THREE\.SRGBColorSpace/);
   assert.match(renderer, /renderer\.toneMapping = THREE\.ACESFilmicToneMapping/);
+  assert.match(renderer, /const maxPixelRatio = isMobileDevice \? 1\.25 : 1\.5/);
+  assert.match(renderer, /antialias: !isMobileDevice/);
+  assert.match(renderer, /isMobileDevice \? 512 : 1024/);
   assert.match(renderer, /colorDepth: "24-bit RGB"/);
 });
 test("coastal world is mounted and cached offline", () => {
