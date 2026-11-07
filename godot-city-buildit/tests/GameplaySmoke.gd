@@ -71,11 +71,19 @@ func _test_drag_gestures_do_not_place() -> void:
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	var world = get_node_or_null("World")
+	_check(world != null and world.get_node_or_null("WorldPresentation/NaturalTerrain") != null, "Natural terrain was not generated.")
+	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
+	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")
+	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalHighway") != null, "Coastal highway was not generated.")
 	var road_system = get_node_or_null("World/RoadSystem")
 	_check(road_system != null, "Main scene has no RoadSystem.")
 	if road_system == null:
 		_finish()
 		return
+	road_system.seed_starter_access()
+	var starter_road_count := road_system.get_road_count()
+	_check(starter_road_count == 30, "Starter highway connector should contain 30 connected free road tiles.")
 
 	for x in range(8):
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not place connected road tile %d." % x)
@@ -135,7 +143,7 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_check(SaveManager.load_game(), "SaveManager could not restore the saved city.")
 	var restored_home = _find_building("residential_1")
-	_check(road_system.get_road_count() == 8, "Road network was not restored from save.")
+	_check(road_system.get_road_count() == starter_road_count + 8, "Road network was not restored from save.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
 	_check(GameManager.population >= 30, "Population was not restored from save.")
