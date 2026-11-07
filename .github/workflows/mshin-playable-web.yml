@@ -2,7 +2,7 @@ name: Mshin Playable Web
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/simcity-iconic-hud]
     paths:
       - "godot-city-buildit/**"
       - "Intro.jpg"
