@@ -126,6 +126,14 @@ static func _make_transparent_cell(sheet_id: int, region: Rect2i) -> Texture2D:
 		var sample := crop.get_pixel(point.x, point.y)
 		if sample.a > 0.01:
 			background_colors.append(sample)
+	# Sample the full gutter perimeter too, so gradients and both checker tones
+	# are recognized while the artwork remains safely inset from the cell edge.
+	for x in range(0, width, 8):
+		background_colors.append(crop.get_pixel(x, 0))
+		background_colors.append(crop.get_pixel(x, height - 1))
+	for y in range(0, height, 8):
+		background_colors.append(crop.get_pixel(0, y))
+		background_colors.append(crop.get_pixel(width - 1, y))
 	for x in range(width):
 		queue.append(x)
 		queue.append((height - 1) * width + x)
