@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071b2b">
+  <meta name="description" content="Play Pasoo City BuildIt — a 3D mobile city-building game.">
+  <title>Play Mshin City BuildIt</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; min-height: 100%; background: #071b2b; color: #f4fbff; }
+    body { min-height: 100svh; overflow: hidden; }
+    .landing { min-height: 100svh; display: grid; place-items: center; padding: 24px; text-align: center;
+      background: radial-gradient(ellipse at 50% 15%, #236b80 0, #12394f 38%, #071b2b 78%); }
+    .card { width: min(680px, 100%); padding: clamp(26px, 6vw, 56px); border: 1px solid #ffffff2b;
+      border-radius: 28px; background: #071b2bcc; box-shadow: 0 24px 90px #0008; }
+    .city { font-size: clamp(64px, 15vw, 112px); line-height: 1.1; }
+    h1 { margin: 12px 0; font-size: clamp(30px, 6vw, 48px); letter-spacing: .04em; }
+    p { color: #c3dbe7; line-height: 1.6; margin: 12px auto 28px; max-width: 490px; }
+    button, .fallback { border: 0; border-radius: 999px; padding: 17px 34px; font-size: 17px; font-weight: 800;
+      letter-spacing: .08em; cursor: pointer; color: #062231; background: linear-gradient(135deg, #a8f06a, #38d4c0);
+      box-shadow: 0 10px 34px #28d6a744; }
+    .hint { display: block; margin-top: 18px; color: #8eafbf; font-size: 12px; }
+    #game-shell { display: none; position: fixed; inset: 0; width: 100vw; height: 100dvh; background: #000; }
+    #game-frame { border: 0; display: block; width: 100%; height: 100%; background: #000; }
+    #exit { position: absolute; z-index: 5; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+      padding: 9px 14px; font-size: 12px; opacity: .78; }
+    .fallback { display: inline-block; margin-top: 14px; padding: 10px 18px; font-size: 12px; text-decoration: none; }
+    @media (orientation: portrait) { .hint::after { content: " Rotate your phone to landscape for the best experience."; } }
+  </style>
+</head>
+<body>
+  <main class="landing" id="landing">
+    <section class="card">
+      <div class="city" aria-hidden="true">🏙️</div>
+      <h1>PASOO CITY BUILD IT</h1>
+      <p>Build roads, grow your neighborhood, produce materials and expand your own 3D city.</p>
+      <button id="play" type="button">▶ &nbsp; PLAY MSHIN</button>
+      <span class="hint">Designed for mobile landscape · Best experienced in fullscreen</span>
+      <a class="fallback" href="./game/" target="_self">OPEN GAME DIRECTLY</a>
+    </section>
+  </main>
+  <section id="game-shell" aria-label="Mshin game">
+    <button id="exit" type="button" aria-label="Return to start screen">EXIT</button>
+    <iframe id="game-frame" title="Pasoo City BuildIt" allow="fullscreen; autoplay; gamepad; screen-wake-lock" allowfullscreen></iframe>
+  </section>
+  <script>
+    const play = document.getElementById('play');
+    const landing = document.getElementById('landing');
+    const shell = document.getElementById('game-shell');
+    const frame = document.getElementById('game-frame');
+    play.addEventListener('click', async () => {
+      shell.style.display = 'block';
+      landing.style.display = 'none';
+      frame.src = './game/';
+      try { await shell.requestFullscreen(); } catch (_) {}
+      try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch (_) {}
+    });
+    document.getElementById('exit').addEventListener('click', async () => {
+      frame.src = 'about:blank';
+      if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch (_) {} }
+      shell.style.display = 'none';
+      landing.style.display = 'grid';
+    });
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement && shell.style.display === 'block') {
+        shell.style.display = 'none'; landing.style.display = 'grid'; frame.src = 'about:blank';
+      }
+    });
+  </script>
+</body>
+</html>
