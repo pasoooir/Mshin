@@ -100,7 +100,9 @@ jobs:
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
-          await page.waitForSelector('canvas', { state: 'visible', timeout: 10000 });
+          await page.getByRole('button', { name: /PLAY MSHIN/i }).click();
+          const game = page.frameLocator('#game-frame');
+          await game.locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
           await page.waitForTimeout(12000);
           await page.screenshot({ path: 'mshin-web-hud.png', fullPage: true });
           if (errors.length) throw new Error('Browser page errors: ' + errors.join(' | '));
