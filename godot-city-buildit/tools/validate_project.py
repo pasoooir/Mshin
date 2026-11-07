@@ -60,7 +60,7 @@ for sheet_index, sheet_path in enumerate(expected_sheets, start=1):
     if f'{sheet_index}: preload("res://assets/icons/{sheet_path.name}")' not in atlas:
         errors.append(f"Icon sheet {sheet_path.name} is not preloaded by IconAtlas.gd")
 
-atlas_keys = set(re.findall(r'^\\s*"([a-z0-9_]+)"\\s*:\\s*\\[\\d+,\\s*Rect2i', atlas, re.M))
+atlas_keys = set(re.findall(r'"([a-z0-9_]+)": \[\d+, Rect2i', atlas))
 required_icons = {
     "road", "residential", "commercial", "industrial", "services",
     "specializations", "bulldoze", "power", "water", "fire", "parks",
