@@ -81,10 +81,7 @@ func _create_road_mesh() -> MeshInstance3D:
 	var asphalt := BoxMesh.new()
 	asphalt.size = Vector3(GRID_SIZE * 0.98, 0.08, GRID_SIZE * 0.98)
 	root.mesh = asphalt
-	var asphalt_material := StandardMaterial3D.new()
-	asphalt_material.albedo_color = Color(0.16, 0.18, 0.20)
-	asphalt_material.roughness = 0.96
-	root.material_override = asphalt_material
+	root.material_override = _get_asphalt_material()
 
 	var center_line := MeshInstance3D.new()
 	var line_mesh := BoxMesh.new()
@@ -98,16 +95,48 @@ func _create_road_mesh() -> MeshInstance3D:
 	root.add_child(center_line)
 
 	var curb_material := StandardMaterial3D.new()
-	curb_material.albedo_color = Color(0.55, 0.57, 0.58)
+	curb_material.albedo_color = Color(0.64, 0.65, 0.61)
+	curb_material.roughness = 0.92
+	var sidewalk_material := StandardMaterial3D.new()
+	sidewalk_material.albedo_color = Color(0.48, 0.49, 0.45)
+	sidewalk_material.roughness = 1.0
 	for side in [-1.0, 1.0]:
 		var curb := MeshInstance3D.new()
 		var curb_mesh := BoxMesh.new()
-		curb_mesh.size = Vector3(GRID_SIZE * 0.96, 0.12, 0.07)
+		curb_mesh.size = Vector3(GRID_SIZE * 0.96, 0.12, 0.09)
 		curb.mesh = curb_mesh
 		curb.material_override = curb_material
-		curb.position = Vector3(0.0, 0.025, side * GRID_SIZE * 0.46)
+		curb.position = Vector3(0.0, 0.055, side * GRID_SIZE * 0.455)
 		root.add_child(curb)
+		var sidewalk := MeshInstance3D.new()
+		var sidewalk_mesh := BoxMesh.new()
+		sidewalk_mesh.size = Vector3(GRID_SIZE * 0.96, 0.055, 0.25)
+		sidewalk.mesh = sidewalk_mesh
+		sidewalk.material_override = sidewalk_material
+		sidewalk.position = Vector3(0.0, 0.018, side * GRID_SIZE * 0.54)
+		root.add_child(sidewalk)
 	return root
 
 func get_road_count() -> int:
 	return roads.size()
+
+
+# Shared generated asphalt texture keeps road tiles visually consistent and avoids per-tile texture allocations.
+static var _shared_asphalt_material: StandardMaterial3D
+
+func _get_asphalt_material() -> StandardMaterial3D:
+	if _shared_asphalt_material != null:
+		return _shared_asphalt_material
+	var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	for y in range(128):
+		for x in range(128):
+			var hash_value := sin(float(x) * 12.9898 + float(y) * 78.233) * 43758.5453
+			var grain := fposmod(hash_value, 1.0)
+			var shade := 0.15 + grain * 0.13
+			image.set_pixel(x, y, Color(shade, shade * 1.02, shade * 1.04, 1.0))
+	var texture := ImageTexture.create_from_image(image)
+	_shared_asphalt_material = StandardMaterial3D.new()
+	_shared_asphalt_material.albedo_texture = texture
+	_shared_asphalt_material.roughness = 0.98
+	_shared_asphalt_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	return _shared_asphalt_material
