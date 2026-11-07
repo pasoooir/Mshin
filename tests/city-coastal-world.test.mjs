@@ -49,8 +49,10 @@ test("sky uses continuous full-spectrum gradients and procedural atmosphere", ()
   assert.match(atmosphere, /float cloudMask=/);
   assert.match(renderer, /renderer\.outputColorSpace = THREE\.SRGBColorSpace/);
   assert.match(renderer, /renderer\.toneMapping = THREE\.ACESFilmicToneMapping/);
-  assert.match(renderer, /const maxPixelRatio = captureMode \? 0\.65 : isMobileDevice \? 1\.25 : 1\.5/);
+  assert.match(renderer, /const maxPixelRatio = captureMode \? 0\.25 : isMobileDevice \? 1\.25 : 1\.5/);
   assert.match(renderer, /renderer\.setPixelRatio\(Math\.min\(window\.devicePixelRatio \|\| 1, maxPixelRatio\)\)/, "viewport resizing must preserve the selected mobile or capture GPU pixel budget");
+  assert.match(renderer, /renderer\.shadowMap\.enabled = !captureMode/);
+  assert.match(renderer, /sun\.castShadow = !captureMode/);
   assert.match(renderer, /antialias: !isMobileDevice/);
   assert.match(renderer, /isMobileDevice \? 512 : 1024/);
   assert.match(renderer, /colorDepth: "24-bit RGB"/);
