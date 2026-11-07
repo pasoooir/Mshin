@@ -246,6 +246,80 @@ export function createCityHighwayGateway(THREE, { asphaltSurface, concreteSurfac
   makeSign(-108, -207, "CITY EXIT  |  1 km");
   makeSign(92, -207, "REGIONAL HIGHWAY");
 
+  // Merge static highway geometry by material and shadow behavior. The
+  // original road/ramp/sign assembly contains many small meshes; combining
+  // them keeps the detailed gateway while sharply reducing mobile draw calls.
+  const mergeStaticHighwayMeshes = () => {
+    const retained = meshes.filter(mesh => mesh.isInstancedMesh);
+    const staticMeshes = meshes.filter(mesh => mesh.isMesh && !mesh.isInstancedMesh);
+    const buckets = new Map();
+    for (const mesh of staticMeshes) {
+      mesh.updateMatrix();
+      const key = [mesh.material.uuid, mesh.castShadow ? 1 : 0, mesh.receiveShadow ? 1 : 0, mesh.renderOrder].join(":");
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(mesh);
+    }
+    const mergedMeshes = [];
+    for (const [key, bucket] of buckets) {
+      if (bucket.length === 1) {
+        mergedMeshes.push(bucket[0]);
+        continue;
+      }
+      const geometries = bucket.map(mesh => {
+        const geometry = mesh.geometry.clone();
+        geometry.applyMatrix4(mesh.matrix);
+        return geometry;
+      });
+      const attributeNames = Object.keys(geometries[0].attributes).filter(name => geometries.every(geometry => geometry.getAttribute(name)));
+      const mergedGeometry = new THREE.BufferGeometry();
+      const vertexOffsets = [];
+      let vertexCount = 0;
+      for (const geometry of geometries) {
+        vertexOffsets.push(vertexCount);
+        vertexCount += geometry.getAttribute("position").count;
+      }
+      for (const name of attributeNames) {
+        const first = geometries[0].getAttribute(name);
+        const array = new first.array.constructor(vertexCount * first.itemSize);
+        let offset = 0;
+        for (const geometry of geometries) {
+          const attribute = geometry.getAttribute(name);
+          array.set(attribute.array, offset);
+          offset += attribute.array.length;
+        }
+        mergedGeometry.setAttribute(name, new THREE.BufferAttribute(array, first.itemSize, first.normalized));
+      }
+      const indices = [];
+      geometries.forEach((geometry, index) => {
+        const position = geometry.getAttribute("position");
+        const source = geometry.index?.array;
+        if (source) {
+          for (let i = 0; i < source.length; i++) indices.push(source[i] + vertexOffsets[index]);
+        } else {
+          for (let i = 0; i < position.count; i++) indices.push(i + vertexOffsets[index]);
+        }
+      });
+      mergedGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+      mergedGeometry.computeBoundingBox();
+      mergedGeometry.computeBoundingSphere();
+      const mergedMesh = new THREE.Mesh(mergedGeometry, bucket[0].material);
+      mergedMesh.name = "merged-highway-" + key.replaceAll(":", "-");
+      mergedMesh.castShadow = bucket[0].castShadow;
+      mergedMesh.receiveShadow = bucket[0].receiveShadow;
+      mergedMesh.renderOrder = bucket[0].renderOrder;
+      for (const mesh of bucket) {
+        root.remove(mesh);
+        mesh.geometry.dispose();
+      }
+      root.add(mergedMesh);
+      mergedMeshes.push(mergedMesh);
+      for (const geometry of geometries) geometry.dispose();
+    }
+    meshes.length = 0;
+    meshes.push(...retained, ...mergedMeshes);
+  };
+  mergeStaticHighwayMeshes();
+
   root.userData.highwayStats = {
     highwayCarriageways: 2,
     highwayLanes: 6,
