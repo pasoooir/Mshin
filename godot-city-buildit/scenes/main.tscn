@@ -51,19 +51,19 @@ script = ExtResource("4_ghost")
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("2_hud")
 
-[node name="TopLeft" type="VBoxContainer" parent="HUD"]
+[node name="TopLeft" type="HBoxContainer" parent="HUD"]
 offset_left = 14.0
 offset_top = 14.0
-offset_right = 270.0
-offset_bottom = 240.0
-theme_override_constants/separation = 5
+offset_right = 850.0
+offset_bottom = 58.0
+theme_override_constants/separation = 18
 
 [node name="LevelBox" type="HBoxContainer" parent="HUD/TopLeft"]
 layout_mode = 2
 [node name="LevelIcon" type="Label" parent="HUD/TopLeft/LevelBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "⭐"
+text = ""
 [node name="LevelLabel" type="Label" parent="HUD/TopLeft/LevelBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
@@ -74,7 +74,7 @@ layout_mode = 2
 [node name="PopIcon" type="Label" parent="HUD/TopLeft/PopBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "👥"
+text = ""
 [node name="PopLabel" type="Label" parent="HUD/TopLeft/PopBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
@@ -85,14 +85,14 @@ layout_mode = 2
 [node name="HappyIcon" type="Label" parent="HUD/TopLeft/HappinessBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "😊"
+text = ""
 
 [node name="StorageBox" type="HBoxContainer" parent="HUD/TopLeft"]
 layout_mode = 2
 [node name="StorageIcon" type="Label" parent="HUD/TopLeft/StorageBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "📦"
+text = ""
 [node name="StorageLabel" type="Label" parent="HUD/TopLeft/StorageBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -103,7 +103,7 @@ layout_mode = 2
 [node name="MoneyIcon" type="Label" parent="HUD/TopLeft/MoneyBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "💰"
+text = ""
 [node name="MoneyLabel" type="Label" parent="HUD/TopLeft/MoneyBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
@@ -113,10 +113,10 @@ text = "5.0K"
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -170.0
+offset_left = -190.0
 offset_top = 14.0
 offset_right = -14.0
-offset_bottom = 140.0
+offset_bottom = 105.0
 grow_horizontal = 0
 theme_override_constants/separation = 4
 
@@ -126,7 +126,7 @@ alignment = 2
 [node name="KeysIcon" type="Label" parent="HUD/TopRight/KeysBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "🔑"
+text = ""
 [node name="KeysLabel" type="Label" parent="HUD/TopRight/KeysBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -138,7 +138,7 @@ alignment = 2
 [node name="PowerIcon" type="Label" parent="HUD/TopRight/PowerBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "⚡"
+text = ""
 [node name="PowerLabel" type="Label" parent="HUD/TopRight/PowerBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
@@ -150,71 +150,11 @@ alignment = 2
 [node name="WaterIcon" type="Label" parent="HUD/TopRight/WaterBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "💧"
+text = ""
 [node name="WaterLabel" type="Label" parent="HUD/TopRight/WaterBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "0/0"
-
-[node name="LeftMenu" type="HBoxContainer" parent="HUD"]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -310.0
-offset_top = -76.0
-offset_right = 310.0
-offset_bottom = -12.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_constants/separation = 8
-
-[node name="BtnRoads" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "🛣️"
-[node name="BtnResidential" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "🏠"
-[node name="BtnCommercial" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "🏪"
-[node name="BtnIndustrial" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "🏭"
-[node name="BtnServices" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "⚡"
-[node name="BtnStorage" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "📦"
-[node name="BtnTrade" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "💱"
-[node name="BtnSave" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(52, 52)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "💾"
-[node name="BtnCancel" type="Button" parent="HUD/LeftMenu"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "❌"
 
 [node name="StatusLabel" type="Label" parent="HUD"]
 anchors_preset = 7
