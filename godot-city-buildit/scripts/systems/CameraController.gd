@@ -89,4 +89,4 @@ func _update_camera_transform() -> void:
 		return
 	var pitch: float = deg_to_rad(camera_pitch_degrees)
 	camera.position = Vector3(0.0, sin(pitch) * current_zoom, cos(pitch) * current_zoom)
-	camera.look_at(Vector3.ZERO, Vector3.UP)
+	camera.look_at(global_position, Vector3.UP)
