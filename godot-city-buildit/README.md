@@ -1,41 +1,62 @@
 # Pasoo City BuildIt
 
-**Version 0.6.0**
+**Version 1.0.0 — Playable Godot project**
 
-A mobile-first 3D city-building prototype made with **Godot 4.3+**, GDScript and the Forward+ renderer.
+A self-contained, mobile-first 3D city-building game built with **Godot 4.3+**, GDScript and the Forward+ renderer. All gameplay code and generated visuals are local; the project does not need a network connection after import.
 
-## Run
+## Open and run
 
-1. Install Godot **4.3 or newer** (standard build, not .NET).
-2. Open Godot Project Manager → **Import** → select this folder's `project.godot`.
-3. Open the project and allow the initial import to finish.
-4. Press **F5** to run the project.
+1. Download and install the **standard (non-.NET) Godot 4.3 or newer editor** from the [official Godot download archive](https://godotengine.org/download/archive/).
+2. Open Godot Project Manager and choose **Import**.
+3. Select this folder: `godot-city-buildit/project.godot`.
+4. Wait for the first asset/script scan to finish.
+5. Select the imported project and press **F6** to run the main scene or **F5** to run the project.
 
-Main scene: `res://scenes/main.tscn`. Game logic and art placeholders are local; no network access is required.
+From a terminal at the repository root:
 
-## Core gameplay
+```bash
+godot --path godot-city-buildit
+```
 
-1. Tap the **road** icon and tap the ground to lay roads (50 Simoleons per tile).
-2. Select **house** and place a house footprint next to a road.
-3. Select **factory** and place a factory next to a road.
-4. Wait for the factory timer, then tap the factory to collect Metal.
-5. Place a **Building Supplies** shop next to a road. Collect Metal from the factory.
-6. Cancel placement with **X**, tap the Building Supplies shop to craft Nails.
-7. Tap the house when its yellow hard hat appears to upgrade it. Population and XP increase.
+Main scene: `res://scenes/main.tscn`.
 
-The first house upgrade consumes 1 Nail + 1 Metal. Later stages use the materials in `scripts/autoload/ProductionManager.gd`.
+## First city — complete gameplay loop
 
-## Utilities
+1. Tap the **road** icon and place a connected road chain. Each tile costs 50 Simoleons; after the first tile, each new tile must connect to the existing road network.
+2. Tap **house** and place a house beside the road.
+3. Tap **factory** and place a factory beside the road.
+4. Tap **shop** and place a Building Supplies shop beside the road.
+5. Wait for construction and factory production. Tap the factory when its green check appears to collect Metal.
+6. Tap the Building Supplies shop to craft Nails from Metal.
+7. Collect another Metal from the factory.
+8. Tap the house when its yellow hard hat appears. The house upgrades, its population increases, and the city gains XP.
 
-Power and water buildings provide capacity within a local coverage radius. Residential buildings consume 2 units of each utility when covered. The HUD displays used/capacity and city happiness reflects utility coverage.
+The first upgrade consumes **1 Nail + 1 Metal**. House progression has six stages. The initial city starts with 5,000 Simoleons so the complete starter loop, including two utilities, can be tested immediately.
+
+## City services
+
+Wind power and water towers each provide 12 units of capacity within a 28 m coverage radius. Each completed home requires 2 power and 2 water. The HUD shows capacity used, and city happiness is calculated from homes receiving both services.
 
 ## Controls
 
-- Mobile: one-finger drag pans; two-finger pinch zooms; a short tap places/interacts.
-- Desktop: left-drag pans; mouse wheel zooms; left-click places/interacts.
-- Ghost preview is green for a valid plot and red for an invalid plot.
-- Tap **X** to cancel active placement mode.
+- **Mobile:** landscape orientation; one-finger drag pans; two-finger pinch zooms and twist rotates the camera; short taps place or interact.
+- **Desktop:** left-drag pans; mouse wheel zooms; left-click places or interacts.
+- The placement preview is green on a valid plot and red on an invalid plot.
+- The bottom toolbar contains roads, housing, shops, factories, utilities, storage, trade, save and cancel.
+- The **save** icon writes the city immediately. The game also autosaves every 30 seconds and on window close.
 
-## Validation
+## Validation and automated gameplay test
 
-Run `python tools/validate_project.py` for static resource-path and consistency checks. GitHub Actions runs this validator and a Godot 4.3 headless project parse.
+Run the static validator:
+
+```bash
+python tools/validate_project.py
+```
+
+Run the automated gameplay integration test with Godot:
+
+```bash
+godot --headless --path godot-city-buildit res://tests/gameplay_smoke.tscn
+```
+
+The integration test builds a connected road, checks building footprints and road access, completes construction, collects two Metal, crafts Nails, verifies power/water coverage, upgrades the house, checks population growth and writes a save file. GitHub Actions runs this test using Godot 4.3 on every relevant push and pull request.
