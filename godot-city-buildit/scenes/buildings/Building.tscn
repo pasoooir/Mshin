@@ -1,0 +1,57 @@
+[gd_scene load_steps=5 format=3 uid="uid://building001"]
+
+[ext_resource type="Script" path="res://scripts/buildings/Building.gd" id="1_building"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_hat"]
+size = Vector3(0.7, 0.35, 0.7)
+
+[sub_resource type="StandardMaterial3D" id="Mat_hat"]
+albedo_color = Color(1, 0.82, 0.1, 1)
+
+[sub_resource type="CylinderMesh" id="Cyl_hat"]
+top_radius = 0.15
+bottom_radius = 0.35
+height = 0.25
+
+[node name="Building" type="Node3D"]
+script = ExtResource("1_building")
+
+[node name="MeshRoot" type="Node3D" parent="."]
+
+[node name="HardHat" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.8, 0)
+visible = false
+
+[node name="HatBody" type="MeshInstance3D" parent="HardHat"]
+mesh = SubResource("BoxMesh_hat")
+surface_material_override/0 = SubResource("Mat_hat")
+
+[node name="HatTop" type="MeshInstance3D" parent="HardHat"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+mesh = SubResource("Cyl_hat")
+surface_material_override/0 = SubResource("Mat_hat")
+
+[node name="ProductionIcon" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 0)
+visible = false
+pixel_size = 0.045
+text = "⚙️"
+font_size = 52
+outline_size = 10
+
+[node name="NameLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
+visible = false
+pixel_size = 0.03
+text = ""
+font_size = 28
+outline_size = 6
+
+[node name="StageLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2, 0)
+visible = false
+pixel_size = 0.035
+text = "Lv1"
+font_size = 36
+outline_size = 8
+modulate = Color(1, 0.95, 0.5, 1)
