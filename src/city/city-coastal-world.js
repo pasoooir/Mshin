@@ -76,6 +76,9 @@ export function createCityCoastalWorld(THREE) {
   const segments = isMobileQuality ? 128 : 192;
   const rows = isMobileQuality ? 48 : 72;
   const width = 2400;
+  // Let the shallow water lap slightly over the sand edge; the raised water plane
+  // hides sub-pixel cracks when the shoreline is viewed at distant mobile zooms.
+  const waterlineLandOverlap = 0.75;
   const shoreZ = x => 154 + Math.sin(x * 0.0052) * 10 + Math.sin(x * 0.014) * 3.2 + Math.sin(x * 0.031) * 0.9;
 
   const sandTexture = makeOrganicTexture(THREE, "sand");
@@ -88,7 +91,7 @@ export function createCityCoastalWorld(THREE) {
     const variation = 0.5 + 0.5*Math.sin(x*0.023)*Math.cos(x*0.008);
     for (let j = 0; j < 2; j++) {
       const color = new THREE.Color().lerpColors(j === 0 ? sandStops[0] : sandStops[2], j === 0 ? sandStops[1] : sandStops[3], variation);
-      beachPositions.push(x, -0.16 + Math.sin(x*0.03)*0.025, j ? shore : inland);
+      beachPositions.push(x, -0.065 + Math.sin(x*0.03)*0.018, j ? shore : inland);
       beachUvs.push(i/segments*3.2, j*1.2);
       beachColors.push(color.r,color.g,color.b);
     }
@@ -132,7 +135,7 @@ export function createCityCoastalWorld(THREE) {
     const depth=row/rows;
     for(let i=0;i<=segments;i++){
       const x=-width/2+width*i/segments;
-      waterPositions.push(x,-0.035,shoreZ(x)+depth*oceanDepth);waterUvs.push(i/segments,depth);
+      waterPositions.push(x,-0.035,shoreZ(x)-waterlineLandOverlap+depth*oceanDepth);waterUvs.push(i/segments,depth);
       if(row<rows&&i<segments){const a=row*(segments+1)+i;waterIndices.push(a,a+segments+1,a+1,a+1,a+segments+1,a+segments+2);}
     }
   }
@@ -214,7 +217,7 @@ export function createCityCoastalWorld(THREE) {
   return {
     group:root,
     update(timeMs){waterUniforms.uTime.value=(Number(timeMs)||0)*.001;},
-    getStats(){return{coastalWorld:true,oceanSurface:true,animatedWater:true,oceanColorGradient:true,colorDepth:"24-bit RGB",multiscaleWaveFields:3,shorelineFoamBands:4,sandyBeach:true,soilTransition:true,soilBeachOverlapMeters:1.5,shorelineSegments:segments,waterRows:rows,mobileShaderQuality:isMobileQuality,highFrequencyPigmentLayers:isMobileQuality?2:4,textureResolution:sandTexture.image?.width||0,textureQuality:isConstrainedDevice?"mobile-adaptive":"high",textureGenerationMs:Math.round(((typeof performance!=="undefined"?performance.now():Date.now())-generationStartedAt)*100)/100};},
+    getStats(){return{coastalWorld:true,oceanSurface:true,animatedWater:true,oceanColorGradient:true,colorDepth:"24-bit RGB",multiscaleWaveFields:3,shorelineFoamBands:4,sandyBeach:true,soilTransition:true,soilBeachOverlapMeters:1.5,waterlineLandOverlapMeters:waterlineLandOverlap,beachSurfaceY:-0.065,waterSurfaceY:-0.035,shorelineSegments:segments,waterRows:rows,mobileShaderQuality:isMobileQuality,highFrequencyPigmentLayers:isMobileQuality?2:4,textureResolution:sandTexture.image?.width||0,textureQuality:isConstrainedDevice?"mobile-adaptive":"high",textureGenerationMs:Math.round(((typeof performance!=="undefined"?performance.now():Date.now())-generationStartedAt)*100)/100};},
     dispose(){
       beachGeometry.dispose();soilGeometry.dispose();waterGeometry.dispose();
       sandTexture.dispose();soilTexture.dispose();sandMaterial.dispose();soilMaterial.dispose();waterMaterial.dispose();
