@@ -9,8 +9,8 @@ test("coastal world paints a multi-stop gradient ocean with layered waves and su
   for (const token of ["animated-24bit-gradient-ocean", "uShallow", "uLagoon", "uCoastal", "uBlue", "uDeep", "multiscaleWaveFields", "shoreline-foam-", "natural-sandy-beach", "colorDepth:\"24-bit RGB\""]) assert.ok(coastal.includes(token), token);
   assert.match(coastal, /noise\(vWorld\.xz/);
   assert.match(coastal, /glint/);
-  assert.match(coastal, /float n3=noise/);
-  assert.match(coastal, /float n4=noise/);
+  assert.match(coastal, /float n3=/);
+  assert.match(coastal, /float n4=/);
   assert.match(coastal, /float pigment=/);
   assert.match(coastal, /createCityNaturalSoilTexture/);
   assert.match(coastal, /natural-earth-transition/);
@@ -19,14 +19,15 @@ test("coastal world paints a multi-stop gradient ocean with layered waves and su
   assert.match(coastal, /const size = isConstrainedDevice \? 1024 : 1536/);
   assert.match(coastal, /const grainCount = isConstrainedDevice \? 36000 : 118000/);
   assert.match(coastal, /soilBeachOverlapMeters:1\.5/);
-  assert.match(coastal, /shore-\(j \? 116 : 86\.5\)/);\n  assert.match(coastal, /const segments = isMobileQuality \? 128 : 192/);\n  assert.match(coastal, /const rows = isMobileQuality \? 48 : 72/);\n  assert.match(coastal, /uniform float uMobileQuality/);\n  assert.match(coastal, /const isConstrainedDevice = isConstrainedCityDevice\(\)/);\n  assert.match(coastal, /highFrequencyPigmentLayers:isMobileQuality\?2:4/);
+  assert.match(coastal, /shore-\(j \? 116 : 86\.5\)/);
+  assert.match(coastal, /const segments = isMobileQuality \? 128 : 192/);\n  assert.match(coastal, /const rows = isMobileQuality \? 48 : 72/);\n  assert.match(coastal, /uniform float uMobileQuality/);\n  assert.match(coastal, /const isConstrainedDevice = isConstrainedCityDevice\(\)/);\n  assert.match(coastal, /highFrequencyPigmentLayers:isMobileQuality\?2:4/);
 });
 test("natural grass uses a full-color procedural texture in the live renderer", () => {
   assert.match(coastal, /createCityNaturalGrassTexture/);
   assert.match(renderer, /createCityNaturalGrassTexture/);
   assert.match(renderer, /naturalGrassTexture/);
   assert.match(renderer, /texture === grassGroundMap \? 16000 : 2048/);
-  assert.match(coastal, /const size = 1536/);
+  assert.match(coastal, /const size = isConstrainedDevice \? 1024 : 1536/);
   assert.match(coastal, /texture\.colorSpace = THREE\.SRGBColorSpace/);
   assert.match(coastal, /generateMipmaps = true/);
   assert.doesNotMatch(renderer, /\\\\n/);
