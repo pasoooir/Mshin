@@ -114,7 +114,7 @@ try{
  const renderStats=await page.evaluate(()=>window.MshinCity3DStats);
  assert.equal(renderStats.renderer,"three.js");
  assert.equal(renderStats.rendererTier,"mobile","touch-enabled mobile browser smoke must activate the mobile GPU profile");
- assert.ok(renderStats.pixelRatio<=0.65,"capture-mode renderer pixel ratio must stay within the bounded SwiftShader readback budget");
+ assert.ok(renderStats.pixelRatio<=0.25,"capture-mode renderer pixel ratio must stay within the bounded SwiftShader readback budget");
  assert.equal(renderStats.preserveDrawingBuffer,true,"smoke-only WebGL frame export must preserve the buffer without changing production rendering");
  assert.equal(renderStats.antialias,false,"mobile renderer must disable costly multisample antialiasing");
  assert.equal(renderStats.shadowMapSize,512,"mobile renderer must use the constrained 512px shadow map");
