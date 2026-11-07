@@ -344,32 +344,22 @@ func _build_grass_detail() -> void:
 	add_child(grass)
 
 func _build_shoreline_details() -> void:
-	# Batch all shoreline stones into one MultiMesh draw instead of 38
-	# individually allocated MeshInstance3D nodes and materials.
-	var pebble_mesh := SphereMesh.new()
-	pebble_mesh.radius = 0.34
-	pebble_mesh.height = 0.22
-	var pebble_material := StandardMaterial3D.new()
-	pebble_material.roughness = 0.95
-	pebble_material.vertex_color_use_as_albedo = true
-	pebble_mesh.material = pebble_material
-	var palette: Array[Color] = [Color(0.55, 0.53, 0.46), Color(0.69, 0.65, 0.55), Color(0.42, 0.46, 0.43)]
-	var multimesh := MultiMesh.new()
-	multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	multimesh.use_colors = true
-	multimesh.mesh = pebble_mesh
-	multimesh.instance_count = 38
+	# A pale wet-sand band and scattered shoreline rocks soften the land-to-water transition.
 	for index in range(38):
 		var z := -88.0 + float(index) * 4.6
-		var x := _coastline(z) - 1.8 + sin(float(index) * 4.1) * 1.8
-		var scale := 0.78 + float(index % 3) * 0.22
-		var basis := Basis.IDENTITY.scaled(Vector3(scale, scale * 0.7, scale))
-		multimesh.set_instance_transform(index, Transform3D(basis, Vector3(x, 0.05, z)))
-		multimesh.set_instance_color(index, palette[index % palette.size()])
-	var pebbles := MultiMeshInstance3D.new()
-	pebbles.name = "ShorelinePebbles"
-	pebbles.multimesh = multimesh
-	add_child(pebbles)
+		var x := _coastline(z) - 1.8
+		var pebble := MeshInstance3D.new()
+		var pebble_mesh := SphereMesh.new()
+		pebble_mesh.radius = 0.28 + float(index % 3) * 0.09
+		pebble_mesh.height = 0.22
+		pebble.mesh = pebble_mesh
+		pebble.position = Vector3(x + sin(float(index) * 4.1) * 1.8, 0.05, z)
+		var pebble_material := StandardMaterial3D.new()
+		var stone_palette: Array[Color] = [Color(0.55, 0.53, 0.46), Color(0.69, 0.65, 0.55), Color(0.42, 0.46, 0.43)]
+		pebble_material.albedo_color = stone_palette[index % stone_palette.size()]
+		pebble_material.roughness = 0.95
+		pebble.material_override = pebble_material
+		add_child(pebble)
 
 func _build_sunlight() -> void:
 	var sun := DirectionalLight3D.new()
