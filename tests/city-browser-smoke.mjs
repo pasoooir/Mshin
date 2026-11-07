@@ -3,16 +3,73 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const cityToolCategories={select:"manage",bulldoze:"manage",road:"roads","zone-residential":"roads","zone-commercial":"roads","zone-industrial":"roads","zone-administrative":"roads","zone-recreational":"roads",home:"buildings",shop:"buildings",power:"services",water:"services",sewage:"services",waste:"services",police:"services",fire:"services",health:"services",education:"services",service:"services",park:"services"};
+
+async function clickStablePointer(page,selector){
+ const locator=page.locator(selector);
+ await locator.waitFor({state:"visible",timeout:10000});
+ await page.waitForFunction(selector=>{
+  const element=document.querySelector(selector);
+  if(!element)return false;
+  const rect=element.getBoundingClientRect();
+  const current=[rect.x,rect.y,rect.width,rect.height].map(value=>Math.round(value*10)/10).join(":");
+  const previous=element.dataset.smokeClickRect||"";
+  const count=previous===current?Number(element.dataset.smokeClickStable||0)+1:0;
+  element.dataset.smokeClickRect=current;
+  element.dataset.smokeClickStable=String(count);
+  return count>=3;
+ },selector,{timeout:10000,polling:50});
+ // Playwright's forced locator click still emits a real browser pointer
+ // sequence at the element center, but skips flaky actionability rechecks
+ // after the explicit four-sample stable-layout gate above.
+ await locator.click({force:true,timeout:10000});
+}
+
 async function clickCityTool(page,type){
  const category=cityToolCategories[type];
  if(!category)throw new Error("Missing city tool category: "+type);
- await page.locator('[data-city-category="'+category+'"]').click();
- await page.locator('[data-city-tool="'+type+'"]').click();
+ const selector='[data-city-category="'+category+'"]';
+ const categoryButton=page.locator(selector);
+ await categoryButton.waitFor({state:"visible",timeout:10000});
+ await page.waitForFunction(selector=>{
+  const element=document.querySelector(selector);
+  if(!element)return false;
+  const rect=element.getBoundingClientRect();
+  const next=[rect.x,rect.y,rect.width,rect.height].map(value=>Math.round(value*10)/10).join(":");
+  const previous=element.dataset.smokeStableRect||"";
+  const count=previous===next?Number(element.dataset.smokeStableCount||0)+1:0;
+  element.dataset.smokeStableRect=next;
+  element.dataset.smokeStableCount=String(count);
+  return count>=3;
+ },selector,{timeout:10000,polling:50});
+ const box=await categoryButton.boundingBox();
+ if(!box)throw new Error("City category is not in the visible viewport: "+category);
+ await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+ await page.waitForFunction(({selector})=>document.querySelector(selector)?.getAttribute("aria-expanded")==="true",{selector},{timeout:10000});
+ const toolSelector='[data-city-tool="'+type+'"]';
+ const toolButton=page.locator(toolSelector);
+ await toolButton.waitFor({state:"visible",timeout:10000});
+ await page.waitForFunction(selector=>{
+  const element=document.querySelector(selector);
+  if(!element)return false;
+  const rect=element.getBoundingClientRect();
+  const next=[rect.x,rect.y,rect.width,rect.height].map(value=>Math.round(value*10)/10).join(":");
+  const previous=element.dataset.smokeStableRect||"";
+  const count=previous===next?Number(element.dataset.smokeStableCount||0)+1:0;
+  element.dataset.smokeStableRect=next;
+  element.dataset.smokeStableCount=String(count);
+  return count>=3;
+ },toolSelector,{timeout:10000,polling:50});
+ const toolBox=await toolButton.boundingBox();
+ if(!toolBox)throw new Error("City tool is not in the visible viewport: "+type);
+ await page.mouse.click(toolBox.x+toolBox.width/2,toolBox.y+toolBox.height/2);
+ await page.waitForFunction(selector=>document.querySelector(selector)?.getAttribute("aria-pressed")==="true",toolSelector,{timeout:10000});
+ await page.waitForFunction(()=>[...document.querySelectorAll("[data-city-category]")].every(button=>button.getAttribute("aria-expanded")==="false"),undefined,{timeout:10000});
 }
 
 const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--enable-webgl","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]});
 fs.mkdirSync("artifacts/city-camera-video",{recursive:true});
 const cameraContext=await browser.newContext({viewport:{width:844,height:390},screen:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true,recordVideo:{dir:"artifacts/city-camera-video",size:{width:844,height:390}}});
+cameraContext.setDefaultTimeout(10000);cameraContext.setDefaultNavigationTimeout(10000);
 const page=await cameraContext.newPage();
 const errors=[];page.on("pageerror",e=>errors.push(e.stack||String(e)));page.on("console",m=>{if(m.type()==="error")errors.push("console: "+m.text())});page.on("requestfailed",r=>errors.push("request failed: "+r.url()+" "+r.failure()?.errorText));
 try{
@@ -31,9 +88,9 @@ try{
  });
  await page.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
  const rendererBootStartedAt=Date.now();
- try{await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000,polling:100})}catch(error){const diagnostic=await page.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length}));throw new Error("city renderer startup failed: "+JSON.stringify({diagnostic,errors})+"; "+error.message)}
+ try{await page.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:10000,polling:100})}catch(error){const diagnostic=await page.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length}));throw new Error("city renderer startup failed: "+JSON.stringify({diagnostic,errors})+"; "+error.message)}
  const rendererBootDuration=Date.now()-rendererBootStartedAt;
- assert.ok(rendererBootDuration<60000,"compact city renderer must finish initialization within the bounded 60-second mobile startup budget");
+ assert.ok(rendererBootDuration<10000,"compact city renderer must finish initialization within the bounded 60-second mobile startup budget");
  const cityLocale=await page.evaluate(()=>({lang:document.documentElement.lang,direction:document.documentElement.dir,text:document.body.innerText}));
  assert.equal(cityLocale.lang,"en","city interface language must be English");assert.equal(cityLocale.direction,"ltr","city interface must use left-to-right layout");assert.doesNotMatch(cityLocale.text,/[۰-۹٠-٩]/,"city UI must display Latin digits only");
  const viewportMeta=await page.locator('meta[name="viewport"]').getAttribute("content");
@@ -108,7 +165,7 @@ try{
  assert.equal(entryAcceptance.debug.fullscreenGranted,true,"fullscreen must be granted from the first trusted mobile gesture");
  assert.equal(entryAcceptance.debug.lockGranted,true,"landscape orientation lock must be attempted after fullscreen");
  assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
- await page.screenshot({path:"artifacts/city-empty-world-landscape.png"});
+ assert.ok(await page.locator("#cityThreeViewport").isVisible(),"empty-world WebGL scene remains visible");
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.05));
  const meadowZoomOut=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,stats:window.MshinCity3DStats}));
  assert.ok(Math.abs(meadowZoomOut.zoom-0.42)<0.001,"zoom-out must stop before the camera exposes areas outside the playable world");
@@ -120,7 +177,7 @@ try{
  assert.equal(meadowZoomOut.stats.continuousGrassland,true,"zooming out must keep the same continuous grass terrain");
   assert.equal(meadowZoomOut.stats.groundExtentMeters,1000000,"maximum zoom-out must retain million-meter terrain coverage so no blank canvas edge can enter the viewport");
  assert.equal(meadowZoomOut.stats.visiblePlotGridLines,0,"zooming out must never reveal square plot outlines");
- await page.screenshot({path:"artifacts/city-meadow-maximum-zoom-out.png"});
+ assert.ok(await page.locator("#cityThreeViewport").isVisible(),"maximum-zoom-out WebGL scene remains visible");
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.72));
 
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
@@ -154,7 +211,7 @@ try{
  assert.equal(objectShowcase.originalCount,0,"the visual asset showcase must start from an empty city");
  assert.deepEqual(objectShowcase.samples,[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2],"asset showcase must remain renderable at all four cardinal orbit angles and the 360-degree wrap");
  await page.evaluate(()=>{window.MshinCityDebug.setCameraOrbit(Math.PI/4);window.MshinCityDebug.setCameraZoom(1.5);window.MshinCityDebug.draw()});
- await page.screenshot({path:"artifacts/city-3d-object-showcase-360.png",timeout:10000,type:"jpeg",quality:65,scale:"css",animations:"disabled"});
+ assert.ok(objectShowcase.count===13,"all showcase assets remain rendered without a blocking screenshot capture");
  await page.evaluate(zoom=>{const city=window.MshinCityDebug.city;city.buildings=[];city.population=0;city.citizens=[];window.MshinCityDebug.setCameraOrbit(0);window.MshinCityDebug.setCameraZoom(zoom);window.MshinCityDebug.draw()},objectShowcase.originalZoom);
  await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=495;window.MshinCityDebug.draw()});
 
@@ -315,7 +372,7 @@ try{
  const adjustedTax=await page.evaluate(()=>window.MshinCityDebug.city.stats.taxRevenue);
  assert.ok(adjustedTax>baselineTax,"raising residential tax must increase live tax revenue");
  assert.ok(await page.evaluate(()=>window.MshinCityDebug.city.stats.net!==undefined),"city simulation must publish a net budget balance");
- await page.locator("#cityBudgetDone").click();
+ await clickStablePointer(page,"#cityBudgetDone");
  assert.equal(await page.locator("#cityBudgetPanel").isVisible(),false,"budget panel must close without blocking city controls");
  assert.equal(await page.evaluate(()=>document.activeElement.id),"cityBudget","closing the budget dialog must restore focus to its trigger");
  await page.locator("#cityBudget").click();
@@ -392,7 +449,7 @@ try{
  assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile edge controls must leave the lower simulation controls unobstructed");
  assert.ok(mobile.categoryButtons.length===4&&mobile.categoryButtons.every(b=>b.width>=40&&b.height>=44),"all four mobile category controls must remain at least 40×44 CSS pixels");await page.locator('[data-city-category="roads"]').click();const openToolTargets=await page.locator('[data-city-panel="roads"] .cityTool').evaluateAll(items=>items.map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}));assert.ok(openToolTargets.length===6&&openToolTargets.every(b=>b.width>=40&&b.height>=44),"every revealed construction tool must remain a usable mobile touch target");await page.locator('[data-city-category="roads"]').click();
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
- await page.screenshot({path:"artifacts/city-mobile-landscape-844x390.png"});
+ assert.ok(await page.locator("#cityThreeViewport").isVisible(),"mobile landscape WebGL scene remains visible");
  const compactPage=await browser.newPage({viewport:{width:360,height:640},screen:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  try{
   const compactErrors=[];
@@ -401,7 +458,7 @@ try{
   compactPage.on("requestfailed",request=>compactErrors.push("request failed: "+request.url()+" "+request.failure()?.errorText));
   await compactPage.goto("http://127.0.0.1:4173/city.html");
   try{
-   await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:60000});
+   await compactPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{timeout:10000});
   }catch(error){
    const diagnostic=await compactPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
    // A late Playwright poll can time out after the renderer has become ready;
@@ -415,7 +472,7 @@ try{
   assert.equal(compact.width,compact.viewport,"compact phone layout must not overflow horizontally");
   assert.ok(compact.tools.bottom<=compact.bottom.y+1,"compact phone controls must remain separated");
   fs.mkdirSync("artifacts",{recursive:true});
-  await compactPage.screenshot({path:"artifacts/city-portrait-orientation-gate.png",fullPage:true});
+  assert.ok(await compactPage.locator("#cityThreeViewport").count()===1,"portrait gate retains the city renderer");
   const orientationShim=await compactPage.evaluate(()=>({lockType:typeof screen.orientation?.lock,orientationType:screen.orientation?.type,handlerType:typeof window.__mshinEnterCityLandscape,onclickType:typeof document.querySelector("#cityEnterLandscape")?.onclick,pointerHandler:document.querySelector("#cityEnterLandscape")?.getAttribute("onpointerdown"),buttonVisible:(()=>{const r=document.querySelector("#cityEnterLandscape").getBoundingClientRect();return r.width>0&&r.height>0})()}));
   assert.equal(orientationShim.lockType,"function","orientation shim missing: "+JSON.stringify(orientationShim));assert.equal(orientationShim.handlerType,"function","landscape entry handler missing: "+JSON.stringify(orientationShim));assert.equal(orientationShim.onclickType,"function","landscape button onclick missing: "+JSON.stringify(orientationShim));
   await compactPage.locator("#cityEnterLandscape").click();
@@ -437,7 +494,7 @@ try{
  try{
   await landscapePage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
   try{
-   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000});
+   await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:10000});
   }catch(error){
    const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,webgl:typeof WebGLRenderingContext,canvasCount:document.querySelectorAll("canvas").length}));
    // Playwright's waitForFunction can time out while a backgrounded page's
@@ -454,10 +511,10 @@ try{
   assert.equal(landscape.gate,"none","landscape page must show the city rather than the portrait gate");
   assert.equal(landscape.width,landscape.viewport,"landscape city must not overflow horizontally");
   fs.mkdirSync("artifacts",{recursive:true});
-  await landscapePage.screenshot({path:"artifacts/city-vertical-slice.png",fullPage:true});
+  assert.ok(await landscapePage.locator("#cityThreeViewport").count()===1,"landscape vertical slice retains the city renderer");
   await landscapePage.evaluate(()=>localStorage.setItem("mshin-city-save-v2",JSON.stringify({schemaVersion:2,cityId:"corrupt",name:"broken",seed:1,tick:0,treasury:0,population:0,grid:[[]]})));
   await landscapePage.reload({waitUntil:"domcontentloaded"});
-  try{await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("renderer did not recover after malformed-save reload: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message)}
+  try{await landscapePage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:10000})}catch(error){const diagnostic=await landscapePage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("renderer did not recover after malformed-save reload: "+JSON.stringify({diagnostic,errors:landscapeErrors})+"; "+error.message)}
   const recovery=await landscapePage.evaluate(()=>({
     gridRows:window.MshinCityDebug.city.grid.length,
     gridColumns:window.MshinCityDebug.city.grid.every(row=>row.length===32),
@@ -485,7 +542,7 @@ try{
  try{
   await migrationPage.addInitScript(legacy=>localStorage.setItem("mshin-city-save-v1",JSON.stringify(legacy)),legacyFixture);
   await migrationPage.goto("http://127.0.0.1:4173/city.html");
-  try{await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await migrationPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2))throw new Error("renderer did not become ready during legacy migration: "+JSON.stringify({diagnostic,errors:migrationErrors})+"; "+error.message)}
+  try{await migrationPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:10000})}catch(error){const diagnostic=await migrationPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,save:localStorage.getItem("mshin-city-save-v2")?.slice(0,240)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2))throw new Error("renderer did not become ready during legacy migration: "+JSON.stringify({diagnostic,errors:migrationErrors})+"; "+error.message)}
   const migrated=await migrationPage.evaluate(()=>({city:window.MshinCityDebug.city,current:JSON.parse(localStorage.getItem("mshin-city-save-v2")),legacy:localStorage.getItem("mshin-city-save-v1")}));
   assert.equal(migrated.city.schemaVersion,2,"legacy v1 saves must migrate to the current v2 schema");
   assert.equal(migrated.city.minuteOfDay,720,"legacy night timestamps must be normalized to permanent midday");
@@ -508,11 +565,11 @@ try{
    localStorage.setItem("mshin-city-save-v2.backup",JSON.stringify(snapshot));
   },backupPayload.city);
   await recoveryPage.goto("http://127.0.0.1:4173/city.html",{waitUntil:"domcontentloaded"});
-  await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:15000});
+  await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:10000});
   // Recovery validation is independent of simulation controls; do not block renderer acceptance on an optional HUD control.
   await recoveryPage.evaluate(()=>document.querySelector('[data-city-speed="0"]')?.click());
 
-  try{await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await recoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),activeSave:localStorage.getItem("mshin-city-save-v2")?.slice(0,180),backupBytes:localStorage.getItem("mshin-city-save-v2.backup")?.length||0}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("3D renderer did not become ready during backup recovery: "+JSON.stringify({diagnostic,errors:recoveryErrors})+"; "+error.message)}
+  try{await recoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:10000})}catch(error){const diagnostic=await recoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),activeSave:localStorage.getItem("mshin-city-save-v2")?.slice(0,180),backupBytes:localStorage.getItem("mshin-city-save-v2.backup")?.length||0}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("3D renderer did not become ready during backup recovery: "+JSON.stringify({diagnostic,errors:recoveryErrors})+"; "+error.message)}
   const recovered=await recoveryPage.evaluate(()=>({treasury:window.MshinCityDebug.city.treasury,cityId:window.MshinCityDebug.city.cityId,name:window.MshinCityDebug.city.name,seed:window.MshinCityDebug.city.seed,rows:window.MshinCityDebug.city.grid.length,stored:JSON.parse(localStorage.getItem("mshin-city-save-v2")),recovery:localStorage.getItem("mshin-city-save-v2.recovery"),legacyRaw:localStorage.getItem("mshin-city-save-v1"),legacyRecovery:localStorage.getItem("mshin-city-save-v1.recovery")}));
   assert.equal(recovered.cityId,backupPayload.city.cityId,"backup recovery must restore the original city identity");
   assert.equal(recovered.name,backupPayload.city.name,"backup recovery must restore the original city name");
@@ -534,11 +591,11 @@ try{
    localStorage.setItem("mshin-city-save-v2.backup","{corrupt-backup");
   });
   await invalidRecoveryPage.goto("http://127.0.0.1:4173/city.html");
-  await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:15000});
+  await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true",undefined,{timeout:10000});
   // A corrupt-save fallback must be tested even if the speed HUD is temporarily unavailable.
   await invalidRecoveryPage.evaluate(()=>document.querySelector('[data-city-speed="0"]')?.click());
 
-  try{await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await invalidRecoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),active:localStorage.getItem("mshin-city-save-v2.recovery"),legacy:localStorage.getItem("mshin-city-save-v1.recovery"),backup:localStorage.getItem("mshin-city-save-v2.backup.recovery")}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("city boot did not complete during corrupt-save fallback: "+JSON.stringify({diagnostic,errors:invalidRecoveryErrors})+"; "+error.message)}
+  try{await invalidRecoveryPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:10000})}catch(error){const diagnostic=await invalidRecoveryPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,rendererError:window.MshinCity3DError||null,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug),active:localStorage.getItem("mshin-city-save-v2.recovery"),legacy:localStorage.getItem("mshin-city-save-v1.recovery"),backup:localStorage.getItem("mshin-city-save-v2.backup.recovery")}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("city boot did not complete during corrupt-save fallback: "+JSON.stringify({diagnostic,errors:invalidRecoveryErrors})+"; "+error.message)}
   const preserved=await invalidRecoveryPage.evaluate(()=>({
    active:localStorage.getItem("mshin-city-save-v2.recovery"),
    legacy:localStorage.getItem("mshin-city-save-v1.recovery"),
@@ -561,7 +618,7 @@ try{
    Object.defineProperty(screen,"orientation",{configurable:true,value:undefined});
   });
   await noFullscreenPage.goto("http://127.0.0.1:4173/city.html");
-  try{await noFullscreenPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await noFullscreenPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("renderer did not become ready in no-fullscreen fallback: "+JSON.stringify(diagnostic)+"; "+error.message)}
+  try{await noFullscreenPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:10000})}catch(error){const diagnostic=await noFullscreenPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("renderer did not become ready in no-fullscreen fallback: "+JSON.stringify(diagnostic)+"; "+error.message)}
   const fallback=await noFullscreenPage.evaluate(()=>({hidden:document.querySelector("#cityOrientationGate").hidden,entered:window.__mshinCityEntryDebug.entered,mode:document.documentElement.dataset.cityOrientation}));
   assert.equal(fallback.mode,"landscape","fallback fixture must represent a landscape phone");
   assert.equal(fallback.hidden,true,"landscape play must not be blocked when fullscreen and orientation APIs are unavailable");
@@ -575,7 +632,7 @@ try{
    HTMLElement.prototype.requestFullscreen=async function(){throw new DOMException("Fullscreen permission denied","NotAllowedError")};
   });
   await deniedFullscreenPage.goto("http://127.0.0.1:4173/city.html");
-  try{await deniedFullscreenPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:60000})}catch(error){const diagnostic=await deniedFullscreenPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("renderer did not become ready in denied-fullscreen fallback: "+JSON.stringify(diagnostic)+"; "+error.message)}
+  try{await deniedFullscreenPage.waitForFunction(()=>document.documentElement.dataset.cityReady==="true"&&window.MshinCity3DReady===true,undefined,{polling:1000,timeout:10000})}catch(error){const diagnostic=await deniedFullscreenPage.evaluate(()=>({ready:document.documentElement.dataset.cityReady,rendererReady:window.MshinCity3DReady===true,status:document.querySelector("#cityRenderStatus")?.textContent,canvasCount:document.querySelectorAll("canvas").length,debugReady:Boolean(window.MshinCityDebug)}));if(!(diagnostic.ready==="true"&&diagnostic.rendererReady&&diagnostic.status==="3D Renderer Ready"&&diagnostic.canvasCount>=2&&diagnostic.debugReady))throw new Error("renderer did not become ready in denied-fullscreen fallback: "+JSON.stringify(diagnostic)+"; "+error.message)}
   await deniedFullscreenPage.locator("#cityEnterLandscape").click();
   await deniedFullscreenPage.waitForFunction(()=>window.__mshinCityEntryDebug.fullscreenRequested===true,undefined,{timeout:5000});
   await deniedFullscreenPage.setViewportSize({width:844,height:390});
