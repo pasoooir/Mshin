@@ -2,7 +2,7 @@ extends Node3D
 
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -90.0
-const CITY_HALF_EXTENT := 40.0
+const CITY_HALF_EXTENT := 40
 
 func _ready() -> void:
 	_build_environment()
