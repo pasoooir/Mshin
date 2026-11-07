@@ -86,7 +86,7 @@ static func validate_sheets() -> bool:
 			valid = false
 			continue
 		var rect: Rect2i = entry[1]
-		var sheet_size := SHEETS[sheet_id].get_size()
+		var sheet_size: Vector2 = SHEETS[sheet_id].get_size()
 		if rect.position.x < 0 or rect.position.y < 0 or rect.end.x > sheet_size.x or rect.end.y > sheet_size.y:
 			push_error("Icon '%s' region %s exceeds sheet %d bounds %s" % [icon_name, str(rect), sheet_id, str(sheet_size)])
 			valid = false
@@ -182,6 +182,17 @@ static func texture_for(icon_name: String) -> Texture2D:
 		return null
 	var entry: Array = REGIONS[icon_name]
 	return _make_transparent_cell(int(entry[0]), entry[1])
+
+static func make_icon(icon_name: String, display_size: Vector2 = Vector2(64, 64)) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.texture = texture_for(icon_name)
+	icon.custom_minimum_size = display_size
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.modulate = Color.WHITE
+	return icon
 
 static func make_icon(icon_name: String, display_size: Vector2 = Vector2(64, 64)) -> TextureRect:
 	var icon := TextureRect.new()
