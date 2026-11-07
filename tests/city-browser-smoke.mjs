@@ -2,6 +2,20 @@ import {chromium} from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
+async function captureScreenshot(page,path,{fullPage=false}={}){
+ const session=await page.context().newCDPSession(page);
+ let timer;
+ try{
+  const metrics=fullPage?await page.evaluate(()=>({width:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth,innerWidth),height:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,innerHeight)})):null;
+  const capture=session.send("Page.captureScreenshot",{format:"png",fromSurface:true,captureBeyondViewport:fullPage,...(metrics?{clip:{x:0,y:0,width:metrics.width,height:metrics.height,scale:1}}:{})});
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("CDP screenshot capture exceeded the 10-second limit: "+path)),10000)});
+  const result=await Promise.race([capture,timeout]);
+  fs.mkdirSync(path.slice(0,path.lastIndexOf("/"))||".",{recursive:true});
+  fs.writeFileSync(path,Buffer.from(result.data,"base64"));
+ }finally{clearTimeout(timer);await session.detach().catch(()=>{});}
+}
+
+
 const cityToolCategories={select:"manage",bulldoze:"manage",road:"roads","zone-residential":"roads","zone-commercial":"roads","zone-industrial":"roads","zone-administrative":"roads","zone-recreational":"roads",home:"buildings",shop:"buildings",power:"services",water:"services",sewage:"services",waste:"services",police:"services",fire:"services",health:"services",education:"services",service:"services",park:"services"};
 async function clickCityTool(page,type){
  const category=cityToolCategories[type];
@@ -108,7 +122,7 @@ try{
  assert.equal(entryAcceptance.debug.fullscreenGranted,true,"fullscreen must be granted from the first trusted mobile gesture");
  assert.equal(entryAcceptance.debug.lockGranted,true,"landscape orientation lock must be attempted after fullscreen");
  assert.equal(await page.locator("#cityOrientationGate").evaluate(el=>getComputedStyle(el).display),"none","landscape entry must reveal the game world immediately");
- await captureScreenshot(page,"artifacts/city-empty-world-landscape.png"});
+ await captureScreenshot(page,"artifacts/city-empty-world-landscape.png");
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.05));
  const meadowZoomOut=await page.evaluate(()=>({zoom:window.MshinCityDebug.view.zoom,stats:window.MshinCity3DStats}));
  assert.ok(Math.abs(meadowZoomOut.zoom-0.42)<0.001,"zoom-out must stop before the camera exposes areas outside the playable world");
@@ -120,7 +134,7 @@ try{
  assert.equal(meadowZoomOut.stats.continuousGrassland,true,"zooming out must keep the same continuous grass terrain");
   assert.equal(meadowZoomOut.stats.groundExtentMeters,1000000,"maximum zoom-out must retain million-meter terrain coverage so no blank canvas edge can enter the viewport");
  assert.equal(meadowZoomOut.stats.visiblePlotGridLines,0,"zooming out must never reveal square plot outlines");
- await captureScreenshot(page,"artifacts/city-meadow-maximum-zoom-out.png"});
+ await captureScreenshot(page,"artifacts/city-meadow-maximum-zoom-out.png");
  await page.evaluate(()=>window.MshinCityDebug.setCameraZoom(0.72));
 
  assert.ok(renderStats.drawCalls<80,"instanced city ground must stay within a mobile-friendly draw-call budget");
@@ -154,7 +168,7 @@ try{
  assert.equal(objectShowcase.originalCount,0,"the visual asset showcase must start from an empty city");
  assert.deepEqual(objectShowcase.samples,[0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2],"asset showcase must remain renderable at all four cardinal orbit angles and the 360-degree wrap");
  await page.evaluate(()=>{window.MshinCityDebug.setCameraOrbit(Math.PI/4);window.MshinCityDebug.setCameraZoom(1.5);window.MshinCityDebug.draw()});
- await captureScreenshot(page,"artifacts/city-3d-object-showcase-360.png"});
+ await captureScreenshot(page,"artifacts/city-3d-object-showcase-360.png");
  await page.evaluate(zoom=>{const city=window.MshinCityDebug.city;city.buildings=[];city.population=0;city.citizens=[];window.MshinCityDebug.setCameraOrbit(0);window.MshinCityDebug.setCameraZoom(zoom);window.MshinCityDebug.draw()},objectShowcase.originalZoom);
  await page.evaluate(()=>{window.MshinCityDebug.city.minuteOfDay=495;window.MshinCityDebug.draw()});
 
@@ -392,7 +406,7 @@ try{
  assert.ok(mobile.tools.bottom<=mobile.bottom.y+1,"mobile edge controls must leave the lower simulation controls unobstructed");
  assert.ok(mobile.categoryButtons.length===4&&mobile.categoryButtons.every(b=>b.width>=40&&b.height>=44),"all four mobile category controls must remain at least 40×44 CSS pixels");await page.locator('[data-city-category="roads"]').click();const openToolTargets=await page.locator('[data-city-panel="roads"] .cityTool').evaluateAll(items=>items.map(b=>{const r=b.getBoundingClientRect();return{width:r.width,height:r.height}}));assert.ok(openToolTargets.length===6&&openToolTargets.every(b=>b.width>=40&&b.height>=44),"every revealed construction tool must remain a usable mobile touch target");await page.locator('[data-city-category="roads"]').click();
  assert.ok(!/user-scalable=no|maximum-scale=1/.test(mobile.viewportMeta),"mobile browser zoom must remain enabled");
- await captureScreenshot(page,"artifacts/city-mobile-landscape-844x390.png"});
+ await captureScreenshot(page,"artifacts/city-mobile-landscape-844x390.png");
  const compactPage=await browser.newPage({viewport:{width:360,height:640},screen:{width:360,height:640},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  try{
   const compactErrors=[];
