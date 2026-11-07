@@ -398,3 +398,12 @@ These items are planned work, not yet implemented or accepted. They are ordered 
 - دوربین از نمای ثابت ایزومتریک به orbit واقعی حول مرکز دید تغییر می‌کند؛ حرکت تک‌انگشتی همچنان برای pan و انتخاب/ساخت تک‌لمسی حفظ می‌شود.
 - تست مرورگر موبایل باید هم‌زمان افزایش zoom و تغییر orbit را روی canvas شهر تأیید کند. تأیید دستگاه Android واقعی و بررسی عملکرد GPU همچنان باز است.
 - نسخه وب هدف: `0.15.4`؛ service-worker cache: `mshin-arcade-v66`؛ asset marker: `2026.11.03.02`.
+
+## PR #324 — Full-spectrum coastal city environment (2026-11-07)
+
+- 🟡 فعال، در شاخه `feat/city-coastal-world-foundation`؛ هنوز merge یا deploy نشده است.
+- ساحل با سه ناحیه مستقل meadow/soil/sand، اقیانوس چندگرادیانی با چهار مقیاس pigment/noise، موج و foam چندلایه؛ آسمان dome با دو میدان ابری procedural.
+- مسیر رنگ renderer روی sRGB و ACES قرار دارد؛ دارایی‌های محیطی procedural و local/offline هستند.
+- اصلاح این مرحله: آمار runtime آسمان اکنون وجود veil ابری و دو لایه میدان ابر را صریح گزارش می‌کند؛ تست رگرسیون همین telemetry را بررسی می‌کند.
+- تست جدید `tests/city-coastal-world.test.mjs` به‌روزرسانی شده؛ اجرای محلی در این محیط ممکن نبود (دسترسی شبکه به GitHub و clone مخزن در دسترس نیست) و GitHub Actions برای HEAD جدید هنوز run/status قابل مشاهده‌ای برنگردانده است.
+- پذیرش نهایی همچنان به اجرای CI روی HEAD نهایی، بررسی screenshot در مرورگر Android landscape و ارزیابی FPS/زمان ساخت texture روی موبایل واقعی وابسته است. تا آن زمان ادعای کیفیت نهایی یا انتشار نمی‌شود.
