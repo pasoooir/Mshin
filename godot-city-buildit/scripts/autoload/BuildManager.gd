@@ -1,0 +1,157 @@
+extends Node
+
+signal building_placed(building_data: Dictionary)
+signal building_removed(building_id: String)
+signal construction_started(building_id: String)
+signal construction_finished(building_id: String)
+signal placement_mode_changed(active: bool)
+
+const GRID_SIZE := 2.0
+const BuildingScene = preload("res://scenes/buildings/Building.tscn")
+
+var buildings: Dictionary = {}
+var selected_building_type := ""
+var is_placing := false
+var factory_count := 0
+
+var building_types := {
+	"residential_1": {"name":"Small House", "category":"residential", "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
+	"residential_2": {"name":"Apartment", "category":"residential", "cost":0, "size":Vector2i(2,2), "population":28, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
+	"building_supplies": {"name":"Building Supplies", "category":"commercial", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1},
+	"hardware_store": {"name":"Hardware Store", "category":"commercial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.3,0.55,0.85), "level":4},
+	"farmers_market": {"name":"Farmer's Market", "category":"commercial", "cost":800, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.4,0.75,0.4), "level":8},
+	"furniture_store": {"name":"Furniture Store", "category":"commercial", "cost":1200, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.6,0.45,0.3), "level":10},
+	"industrial_1": {"name":"Small Factory", "category":"industrial", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1},
+	"industrial_2": {"name":"Factory", "category":"industrial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.45,0.45,0.5), "produces":"wood", "level":2},
+	"industrial_3": {"name":"Factory+", "category":"industrial", "cost":1500, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.4,0.42,0.48), "produces":"plastic", "level":5},
+	"power_wind": {"name":"Wind Power", "category":"service", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.7,0.9,0.85), "power":12, "level":1},
+	"water_tower": {"name":"Water Tower", "category":"service", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.45,0.72,0.95), "water":12, "level":1},
+	"fire_station": {"name":"Fire Station", "category":"service", "cost":2500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.92,0.32,0.28), "level":5},
+	"police_station": {"name":"Police Station", "category":"service", "cost":3000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.28,0.42,0.78), "level":12},
+	"sewage_pipe": {"name":"Sewage Pipe", "category":"service", "cost":2000, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.5,0.55,0.4), "level":8},
+	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5}
+}
+
+func _ready() -> void:
+	print("[BuildManager] Ready: %d building types" % building_types.size())
+
+func get_available_buildings(category: String = "") -> Array:
+	var result: Array = []
+	for key in building_types:
+		var definition: Dictionary = building_types[key]
+		if int(definition.get("level", 1)) <= GameManager.level and (category == "" or definition.category == category):
+			if definition.category != "industrial" or factory_count < LevelProgression.max_factories:
+				result.append(key)
+	return result
+
+func select_building(type_id: String) -> void:
+	if not building_types.has(type_id):
+		push_warning("Unknown building type: " + type_id)
+		return
+	var definition: Dictionary = building_types[type_id]
+	if int(definition.get("level", 1)) > GameManager.level or (definition.category == "industrial" and factory_count >= LevelProgression.max_factories):
+		return
+	selected_building_type = type_id
+	is_placing = true
+	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.set_road_mode(false)
+	placement_mode_changed.emit(true)
+
+func cancel_placement() -> void:
+	selected_building_type = ""
+	is_placing = false
+	placement_mode_changed.emit(false)
+	var ghost = get_tree().current_scene.get_node_or_null("GhostPreview")
+	if ghost:
+		ghost.hide_ghost()
+
+func get_footprint_cells(anchor: Vector2i, size: Vector2i) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	for x in range(size.x):
+		for y in range(size.y):
+			cells.append(anchor + Vector2i(x, y))
+	return cells
+
+func is_cell_free(grid_pos: Vector2i, size: Vector2i = Vector2i.ONE) -> bool:
+	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem") if get_tree().current_scene else null
+	for cell in get_footprint_cells(grid_pos, size):
+		if road_system and road_system.has_road(cell):
+			return false
+		for building in buildings.values():
+			if not is_instance_valid(building):
+				continue
+			var building_size: Vector2i = building.definition.get("size", Vector2i(2,2))
+			if cell in get_footprint_cells(building.grid_pos, building_size):
+				return false
+	return true
+
+func has_road_access(anchor: Vector2i, size: Vector2i) -> bool:
+	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem") if get_tree().current_scene else null
+	if road_system == null:
+		return false
+	for x in range(size.x):
+		if road_system.has_road(anchor + Vector2i(x, -1)) or road_system.has_road(anchor + Vector2i(x, size.y)):
+			return true
+	for y in range(size.y):
+		if road_system.has_road(anchor + Vector2i(-1, y)) or road_system.has_road(anchor + Vector2i(size.x, y)):
+			return true
+	return false
+
+func can_place_at(grid_pos: Vector2i, type_id: String = "") -> bool:
+	var chosen := type_id if type_id != "" else selected_building_type
+	if chosen == "" or not building_types.has(chosen):
+		return false
+	var definition: Dictionary = building_types[chosen]
+	var size: Vector2i = definition.get("size", Vector2i(2,2))
+	if not is_cell_free(grid_pos, size) or not has_road_access(grid_pos, size):
+		return false
+	if int(definition.get("level", 1)) > GameManager.level or not EconomyManager.can_afford(int(definition.cost)):
+		return false
+	if definition.category == "industrial" and factory_count >= LevelProgression.max_factories:
+		return false
+	return true
+
+func place_building_at_world(world_pos: Vector3) -> bool:
+	if not is_placing or selected_building_type == "":
+		return false
+	return place_building(world_to_grid(world_pos))
+
+func place_building(grid_pos: Vector2i) -> bool:
+	if not can_place_at(grid_pos):
+		return false
+	var definition: Dictionary = building_types[selected_building_type]
+	var cost := int(definition.get("cost", 0))
+	if cost > 0 and not EconomyManager.spend_simoleons(cost):
+		return false
+	var building_id := "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
+	var data := {"id":building_id, "type":selected_building_type, "grid_pos":grid_pos, "definition":definition.duplicate(true), "status":"constructing", "build_time":definition.build_time}
+	var building_node = BuildingScene.instantiate()
+	var world = get_tree().current_scene.get_node_or_null("World/Buildings")
+	if world == null:
+		world = get_tree().current_scene
+	world.add_child(building_node)
+	var size: Vector2i = definition.get("size", Vector2i(2,2))
+	building_node.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
+	building_node.setup(data)
+	buildings[building_id] = building_node
+	if definition.category == "industrial":
+		factory_count += 1
+	construction_started.emit(building_id)
+	building_placed.emit(data)
+	GameManager.add_experience(3)
+	return true
+
+func world_to_grid(world_pos: Vector3) -> Vector2i:
+	return Vector2i(floori(world_pos.x / GRID_SIZE), floori(world_pos.z / GRID_SIZE))
+
+func grid_to_world(grid_pos: Vector2i) -> Vector3:
+	return Vector3(grid_pos.x * GRID_SIZE + GRID_SIZE * 0.5, 0.0, grid_pos.y * GRID_SIZE + GRID_SIZE * 0.5)
+
+func get_selected_size() -> Vector2i:
+	if selected_building_type != "" and building_types.has(selected_building_type):
+		return building_types[selected_building_type].get("size", Vector2i(2,2))
+	return Vector2i(2,2)
+
+func notify_construction_finished(building_id: String) -> void:
+	construction_finished.emit(building_id)

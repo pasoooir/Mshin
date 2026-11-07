@@ -1,0 +1,235 @@
+[gd_scene load_steps=8 format=3 uid="uid://c8mainscene001"]
+
+[ext_resource type="Script" path="res://scripts/systems/CameraController.gd" id="1_camera"]
+[ext_resource type="Script" path="res://scripts/ui/HUD.gd" id="2_hud"]
+[ext_resource type="Script" path="res://scripts/systems/CityInput.gd" id="3_input"]
+[ext_resource type="Script" path="res://scripts/systems/GhostPreview.gd" id="4_ghost"]
+[ext_resource type="Script" path="res://scripts/systems/RoadSystem.gd" id="5_road"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(160, 160)
+
+[sub_resource type="StandardMaterial3D" id="Material_grass"]
+albedo_color = Color(0.3, 0.66, 0.26, 1)
+roughness = 0.93
+
+[node name="Main" type="Node3D"]
+
+[node name="World" type="Node3D" parent="."]
+
+[node name="Ground" type="MeshInstance3D" parent="World"]
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("Material_grass")
+
+[node name="Buildings" type="Node3D" parent="World"]
+
+[node name="RoadSystem" type="Node3D" parent="World"]
+script = ExtResource("5_road")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="World"]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 12, 28, 12)
+shadow_enabled = true
+light_energy = 1.3
+light_color = Color(1, 0.97, 0.9, 1)
+
+[node name="FillLight" type="DirectionalLight3D" parent="World"]
+transform = Transform3D(-0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, 0.5, -0.5, -12, 18, -8)
+light_energy = 0.4
+light_color = Color(0.65, 0.78, 1, 1)
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("1_camera")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 30)
+current = true
+fov = 46.0
+far = 280.0
+
+[node name="CityInput" type="Node3D" parent="."]
+script = ExtResource("3_input")
+
+[node name="GhostPreview" type="Node3D" parent="."]
+script = ExtResource("4_ghost")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("2_hud")
+
+[node name="TopLeft" type="VBoxContainer" parent="HUD"]
+offset_left = 14.0
+offset_top = 14.0
+offset_right = 270.0
+offset_bottom = 240.0
+theme_override_constants/separation = 5
+
+[node name="LevelBox" type="HBoxContainer" parent="HUD/TopLeft"]
+layout_mode = 2
+[node name="LevelIcon" type="Label" parent="HUD/TopLeft/LevelBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "⭐"
+[node name="LevelLabel" type="Label" parent="HUD/TopLeft/LevelBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "1"
+
+[node name="PopBox" type="HBoxContainer" parent="HUD/TopLeft"]
+layout_mode = 2
+[node name="PopIcon" type="Label" parent="HUD/TopLeft/PopBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "👥"
+[node name="PopLabel" type="Label" parent="HUD/TopLeft/PopBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "0"
+
+[node name="HappinessBox" type="HBoxContainer" parent="HUD/TopLeft"]
+layout_mode = 2
+[node name="HappyIcon" type="Label" parent="HUD/TopLeft/HappinessBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "😊"
+
+[node name="StorageBox" type="HBoxContainer" parent="HUD/TopLeft"]
+layout_mode = 2
+[node name="StorageIcon" type="Label" parent="HUD/TopLeft/StorageBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "📦"
+[node name="StorageLabel" type="Label" parent="HUD/TopLeft/StorageBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0/30"
+
+[node name="MoneyBox" type="HBoxContainer" parent="HUD/TopLeft"]
+layout_mode = 2
+[node name="MoneyIcon" type="Label" parent="HUD/TopLeft/MoneyBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "💰"
+[node name="MoneyLabel" type="Label" parent="HUD/TopLeft/MoneyBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "5.0K"
+
+[node name="TopRight" type="VBoxContainer" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -170.0
+offset_top = 14.0
+offset_right = -14.0
+offset_bottom = 140.0
+grow_horizontal = 0
+theme_override_constants/separation = 4
+
+[node name="KeysBox" type="HBoxContainer" parent="HUD/TopRight"]
+layout_mode = 2
+alignment = 2
+[node name="KeysIcon" type="Label" parent="HUD/TopRight/KeysBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "🔑"
+[node name="KeysLabel" type="Label" parent="HUD/TopRight/KeysBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "5"
+
+[node name="PowerBox" type="HBoxContainer" parent="HUD/TopRight"]
+layout_mode = 2
+alignment = 2
+[node name="PowerIcon" type="Label" parent="HUD/TopRight/PowerBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "⚡"
+[node name="PowerLabel" type="Label" parent="HUD/TopRight/PowerBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "0/0"
+
+[node name="WaterBox" type="HBoxContainer" parent="HUD/TopRight"]
+layout_mode = 2
+alignment = 2
+[node name="WaterIcon" type="Label" parent="HUD/TopRight/WaterBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "💧"
+[node name="WaterLabel" type="Label" parent="HUD/TopRight/WaterBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "0/0"
+
+[node name="LeftMenu" type="VBoxContainer" parent="HUD"]
+offset_left = 10.0
+offset_top = 250.0
+offset_right = 78.0
+offset_bottom = 640.0
+theme_override_constants/separation = 8
+
+[node name="BtnRoads" type="Button" parent="HUD/LeftMenu"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "🛣️"
+[node name="BtnResidential" type="Button" parent="HUD/LeftMenu"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "🏠"
+[node name="BtnCommercial" type="Button" parent="HUD/LeftMenu"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "🏪"
+[node name="BtnIndustrial" type="Button" parent="HUD/LeftMenu"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "🏭"
+[node name="BtnServices" type="Button" parent="HUD/LeftMenu"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⚡"
+[node name="BtnStorage" type="Button" parent="HUD/LeftMenu"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "📦"
+[node name="BtnTrade" type="Button" parent="HUD/LeftMenu"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "💱"
+[node name="BtnCancel" type="Button" parent="HUD/LeftMenu"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "❌"
+
+[node name="StatusLabel" type="Label" parent="HUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_top = -48.0
+offset_right = 280.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 0.88, 1)
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[connection signal="pressed" from="HUD/LeftMenu/BtnRoads" to="HUD" method="_on_roads_pressed"]
+[connection signal="pressed" from="HUD/LeftMenu/BtnResidential" to="HUD" method="_on_residential_pressed"]
+[connection signal="pressed" from="HUD/LeftMenu/BtnCommercial" to="HUD" method="_on_commercial_pressed"]
+[connection signal="pressed" from="HUD/LeftMenu/BtnIndustrial" to="HUD" method="_on_industrial_pressed"]
+[connection signal="pressed" from="HUD/LeftMenu/BtnServices" to="HUD" method="_on_services_pressed"]
+[connection signal="pressed" from="HUD/LeftMenu/BtnStorage" to="HUD" method="_on_storage_pressed"]
+[connection signal="pressed" from="HUD/LeftMenu/BtnTrade" to="HUD" method="_on_trade_pressed"]
+[connection signal="pressed" from="HUD/LeftMenu/BtnCancel" to="HUD" method="_on_cancel_pressed"]

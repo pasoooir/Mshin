@@ -1,0 +1,37 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Pasoo City BuildIt"
+config/description="A beautiful 3D city builder inspired by SimCity BuildIt"
+config/version="0.6.0"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+GameManager="*res://scripts/autoload/GameManager.gd"
+EconomyManager="*res://scripts/autoload/EconomyManager.gd"
+StorageManager="*res://scripts/autoload/StorageManager.gd"
+BuildManager="*res://scripts/autoload/BuildManager.gd"
+ProductionManager="*res://scripts/autoload/ProductionManager.gd"
+TradeManager="*res://scripts/autoload/TradeManager.gd"
+ServiceManager="*res://scripts/autoload/ServiceManager.gd"
+LevelProgression="*res://scripts/autoload/LevelProgression.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/mode=2
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+anti_aliasing/quality/msaa_3d=2
+environment/defaults/default_clear_color=Color(0.42, 0.7, 0.95, 1)

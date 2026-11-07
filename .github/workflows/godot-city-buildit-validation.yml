@@ -1,0 +1,48 @@
+name: Godot City BuildIt Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "godot-city-buildit/**"
+      - ".github/workflows/godot-city-buildit-validation.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "godot-city-buildit/**"
+      - ".github/workflows/godot-city-buildit-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Static project validation
+        run: python godot-city-buildit/tools/validate_project.py
+
+      - name: Install Godot 4.3
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-dotnet: false
+
+      - name: Verify Godot version
+        run: godot --version
+
+      - name: Import and parse project
+        run: godot --headless --path godot-city-buildit --editor --quit
+
+      - name: Headless startup smoke test
+        run: godot --headless --path godot-city-buildit --quit-after 10

@@ -1,6 +1,19 @@
 # Pasoo City BuildIt 🏙️
 
-**نسخه فعلی کد: 0.5.0**  
+**نسخه Godot بازی: 0.6.0**  
+پروژه قابل Import در Godot در مسیر [`godot-city-buildit/`](godot-city-buildit/README.md) قرار دارد.
+
+### اجرای نسخه Godot
+1. Godot 4.3 یا جدیدتر (Standard) را نصب کن.
+2. پوشه `godot-city-buildit` را از همین Repository با گزینه Import در Godot Project Manager باز کن.
+3. فایل `godot-city-buildit/project.godot` نقطه ورود پروژه است؛ برای اجرا F5 را بزن.
+4. اعتبارسنجی استاتیک و بررسی Headless موتور در GitHub Actions با workflow مربوط به Godot اجرا می‌شود.
+
+**توجه:** نسخه Godot در پوشه جداگانه نگهداری می‌شود تا فایل‌های پروژه وب موجود در ریشه Repository بدون تداخل باقی بمانند.
+
+---
+
+**نقشه راه و مستندات پروژه**  
 بازی شهرسازی سه‌بعدی موبایل — بازسازی وفادارانه از **SimCity BuildIt**
 
 ---

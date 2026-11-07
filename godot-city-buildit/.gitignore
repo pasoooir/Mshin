@@ -1,0 +1,6 @@
+# Godot generated files
+.godot/
+.export/
+build/
+*.tmp
+*.bak
