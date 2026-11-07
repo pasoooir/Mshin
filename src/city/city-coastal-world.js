@@ -159,11 +159,15 @@ export function createCityCoastalWorld(THREE) {
         col=mix(col,uHorizon,smoothstep(.91,1.,d)*.22);
         float n1=noise(vWorld.xz*.026+vec2(uTime*.10,-uTime*.07));
         float n2=noise(vWorld.xz*.071-vec2(uTime*.17,uTime*.12));
+        float n3=noise(vWorld.xz*.19+vec2(uTime*.24,-uTime*.21));
+        float n4=noise(vWorld.xz*.43-vec2(uTime*.31,uTime*.27));
         float wave=sin(vWorld.x*.075+vWorld.z*.027+uTime*1.15)*sin(vWorld.z*.051-vWorld.x*.018-uTime*.82);
         float caustic=smoothstep(.70,.99,n1*.58+n2*.42)*(1.-smoothstep(.02,.30,d));
         float crest=pow(max(0.,wave*.5+.5),18.)*(.12+.2*n2);
         float glint=pow(max(0.,sin(vWorld.x*.13+vWorld.z*.032+uTime*1.7)*sin(vWorld.x*.021-vWorld.z*.12-uTime*.8)),13.);
         float fresnel=pow(1.-max(0.,dot(normalize(vView),vec3(0.,1.,0.))),3.);
+        float pigment=(n1-.5)*.10+(n2-.5)*.055+(n3-.5)*.028+(n4-.5)*.012;
+        col+=vec3(pigment*.62,pigment*.88,pigment);
         col+=vec3(.22,.38,.30)*caustic*.22;
         col+=vec3(.55,.77,.73)*(crest*.34+glint*.12);
         col+=vec3(.12,.28,.36)*fresnel*.13;
