@@ -71,6 +71,12 @@ if "color.a = 0.0" not in atlas or "crop.set_pixel" not in atlas:
 if "Color(0.0, 0.0, 0.0, 0.0)" not in hud:
     errors.append("Toolbar buttons must have transparent normal backgrounds")
 
+power_svg = ROOT / "assets/icons/power.svg"
+if not power_svg.is_file():
+    errors.append("Transparent local vector power icon is missing")
+elif "res://assets/icons/power.svg" not in atlas:
+    errors.append("HUD power icon is not mapped to the transparent local vector asset")
+
 atlas_keys = set(re.findall(r'"([a-z0-9_]+)": \[\d+, Rect2i', atlas))
 required_icons = {
     "road", "residential", "commercial", "industrial", "services",
