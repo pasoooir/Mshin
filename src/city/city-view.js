@@ -299,7 +299,7 @@ function mount(){
    stats:{...city.stats},
    citizens:city.citizens.map(citizen=>({...citizen}))
   };
- },step:()=>stepCity(city),draw:()=>draw(),setCameraOrbit(value){if(Number.isFinite(value)){cam.orbit=value;draw()}},setCameraPitch(value){if(Number.isFinite(value)){cam.pitch=Math.max(.24,Math.min(.96,value));draw()}},setCameraZoom(value){if(Number.isFinite(value)){cam.zoom=Math.max(.42,Math.min(1.5,value));draw()}},setCameraTarget(x,z){if(Number.isFinite(x)&&Number.isFinite(z)){cam.targetX=x;cam.targetZ=z;draw()}},place:(x,y,t)=>placeCityItem(city,x,y,t),setTaxRate:(sector,rate)=>{const result=setCityTaxRate(city,sector,rate);if(result.ok){persist(city);draw()}return result},get economy(){return computeCityEconomy(city,computeCityServices(city))}};
+ },step:()=>stepCity(city),draw:()=>draw(),pauseLoop:()=>pauseCityLoop(),resumeLoop:()=>resumeCityLoop(),setCameraOrbit(value){if(Number.isFinite(value)){cam.orbit=value;draw()}},setCameraPitch(value){if(Number.isFinite(value)){cam.pitch=Math.max(.24,Math.min(.96,value));draw()}},setCameraZoom(value){if(Number.isFinite(value)){cam.zoom=Math.max(.42,Math.min(1.5,value));draw()}},setCameraTarget(x,z){if(Number.isFinite(x)&&Number.isFinite(z)){cam.targetX=x;cam.targetZ=z;draw()}},place:(x,y,t)=>placeCityItem(city,x,y,t),setTaxRate:(sector,rate)=>{const result=setCityTaxRate(city,sector,rate);if(result.ok){persist(city);draw()}return result},get economy(){return computeCityEconomy(city,computeCityServices(city))}};
  document.documentElement.dataset.cityReady="true";
  let lastRender=0;
  function frame(now){if(document.hidden){raf=0;return}if(now-lastRender>=33){draw();lastRender=now}raf=requestAnimationFrame(frame)}
