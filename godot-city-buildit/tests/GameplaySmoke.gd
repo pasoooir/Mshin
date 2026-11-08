@@ -1,6 +1,7 @@
 extends Node3D
 
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
+const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 
 var failures: Array[String] = []
 
@@ -139,34 +140,34 @@ func _run_gameplay_test() -> void:
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 
 	# Neighbor-driven road topology and local mesh refresh regression coverage.
-	_check(road_system.get_road_tile_kind(Vector2i(10, 0)) == RoadSystem.TILE_T, "A three-neighbor starter-road tile was not classified as a T-junction.")
-	_check(road_system.get_road_tile_kind(Vector2i(10, -1)) == RoadSystem.TILE_T, "The opposite starter-road row did not resolve its T-junction topology.")
+	_check(road_system.get_road_tile_kind(Vector2i(10, 0)) == RoadSystemScript.TILE_T, "A three-neighbor starter-road tile was not classified as a T-junction.")
+	_check(road_system.get_road_tile_kind(Vector2i(10, -1)) == RoadSystemScript.TILE_T, "The opposite starter-road row did not resolve its T-junction topology.")
 	var topology_center := Vector2i(18, 0)
 	var money_before_topology := EconomyManager.simoleons
 	_check(road_system.place_road(topology_center), "Could not create topology test end/stub road.")
-	_check(EconomyManager.simoleons == money_before_topology - RoadSystem.ROAD_COST, "Road placement must retain the existing 50-Simoleon cost.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystem.TILE_END, "A road with one neighbor must be an End/stub.")
+	_check(EconomyManager.simoleons == money_before_topology - RoadSystemScript.ROAD_COST, "Road placement must retain the existing 50-Simoleon cost.")
+	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_END, "A road with one neighbor must be an End/stub.")
 	var first_revision := int(road_system.roads[topology_center].get_meta("road_revision", 0))
 	_check(road_system.place_road(Vector2i(19, 0)), "Could not extend topology test into a straight road.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystem.TILE_STRAIGHT, "Opposite neighbors must produce a Straight tile.")
-	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystem.TILE_STRAIGHT, "Placed road mesh was not refreshed to Straight after its neighbor was added.")
+	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_STRAIGHT, "Opposite neighbors must produce a Straight tile.")
+	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystemScript.TILE_STRAIGHT, "Placed road mesh was not refreshed to Straight after its neighbor was added.")
 	_check(int(road_system.roads[topology_center].get_meta("road_revision", 0)) > first_revision, "Road mesh revision did not advance after neighbor placement.")
-	_check(road_system.roads[Vector2i(17, 0)].get_meta("road_tile_kind") == RoadSystem.TILE_STRAIGHT, "The adjacent road mesh was not refreshed after placement.")
+	_check(road_system.roads[Vector2i(17, 0)].get_meta("road_tile_kind") == RoadSystemScript.TILE_STRAIGHT, "The adjacent road mesh was not refreshed after placement.")
 	_check(road_system.place_road(Vector2i(18, -1)), "Could not create topology test corner/T connection.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystem.TILE_T, "Three connected neighbors must produce a T-junction.")
-	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystem.TILE_T, "T-junction visual mesh was not refreshed.")
+	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_T, "Three connected neighbors must produce a T-junction.")
+	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystemScript.TILE_T, "T-junction visual mesh was not refreshed.")
 	_check(road_system.place_road(Vector2i(18, 1)), "Could not complete topology test four-way intersection.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystem.TILE_CROSS, "Four connected neighbors must produce a Cross intersection.")
-	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystem.TILE_CROSS, "Cross visual mesh was not refreshed.")
+	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_CROSS, "Four connected neighbors must produce a Cross intersection.")
+	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystemScript.TILE_CROSS, "Cross visual mesh was not refreshed.")
 	_check(road_system.remove_road(Vector2i(18, 1)), "Could not remove topology test cross arm.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystem.TILE_T, "Removing a cross arm must refresh the center back to T.")
+	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_T, "Removing a cross arm must refresh the center back to T.")
 	_check(road_system.remove_road(Vector2i(19, 0)), "Could not remove topology test straight arm.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystem.TILE_CORNER, "Removing one T arm must refresh the center to Corner.")
-	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystem.TILE_CORNER, "Corner visual mesh was not refreshed after road removal.")
+	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_CORNER, "Removing one T arm must refresh the center to Corner.")
+	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystemScript.TILE_CORNER, "Corner visual mesh was not refreshed after road removal.")
 	_check(road_system.remove_road(Vector2i(18, -1)), "Could not remove topology test corner arm.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystem.TILE_END, "Removing the corner arm must refresh the center to End.")
+	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_END, "Removing the corner arm must refresh the center to End.")
 	_check(road_system.remove_road(topology_center), "Could not remove topology test center road.")
-	_check(road_system.roads[Vector2i(17, 0)].get_meta("road_tile_kind") == RoadSystem.TILE_END, "Neighbor mesh was not refreshed after deleting the connecting road.")
+	_check(road_system.roads[Vector2i(17, 0)].get_meta("road_tile_kind") == RoadSystemScript.TILE_END, "Neighbor mesh was not refreshed after deleting the connecting road.")
 
 	var hud = get_node_or_null("HUD")
 	var saved_level := GameManager.level
