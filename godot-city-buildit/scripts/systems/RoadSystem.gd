@@ -163,15 +163,18 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 	var tile_kind := get_road_tile_kind(grid_pos)
 	var asphalt_tool := SurfaceTool.new()
 	var marking_tool := SurfaceTool.new()
+	var white_marking_tool := SurfaceTool.new()
 	var curb_tool := SurfaceTool.new()
 	var sidewalk_tool := SurfaceTool.new()
 	asphalt_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	marking_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	white_marking_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	curb_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	sidewalk_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	var asphalt_boxes := 0
 	var marking_boxes := 0
+	var white_marking_boxes := 0
 	var curb_boxes := 0
 	var sidewalk_boxes := 0
 
@@ -187,8 +190,8 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 		var right_extent: float = GRID_HALF if right_connected else ROAD_HALF_WIDTH
 		var width: float = left_extent + right_extent
 		var side_offset: float = (right_extent - left_extent) * 0.5
-		var arm_center := _direction_to_world(direction) * 0.5
-		arm_center += _direction_to_world(right_direction) * side_offset
+		var arm_center_along := _direction_to_world(direction) * 0.5
+		var arm_center := arm_center_along + _direction_to_world(right_direction) * side_offset
 		var along_x: bool = direction.x != 0
 		var road_size := Vector3(1.01, ROAD_SURFACE_HEIGHT, width) if along_x else Vector3(width, ROAD_SURFACE_HEIGHT, 1.01)
 		_append_box(asphalt_tool, grid_pos, arm_center + Vector3(0.0, ROAD_SURFACE_Y, 0.0), road_size)
@@ -197,13 +200,14 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 		for side_direction in [left_direction, right_direction]:
 			if arms.has(side_direction):
 				continue
-			var curb_center := arm_center + _direction_to_world(side_direction) * (ROAD_HALF_WIDTH + CURB_WIDTH * 0.5)
+			var side_extent: float = left_extent if side_direction == left_direction else right_extent
+			var curb_center := arm_center_along + _direction_to_world(side_direction) * (side_extent + CURB_WIDTH * 0.5)
 			curb_center.y = 0.09
 			var curb_size := Vector3(1.02, 0.14, CURB_WIDTH) if along_x else Vector3(CURB_WIDTH, 0.14, 1.02)
 			_append_box(curb_tool, grid_pos, curb_center, curb_size)
 			curb_boxes += 1
 
-			var sidewalk_center := arm_center + _direction_to_world(side_direction) * (ROAD_HALF_WIDTH + CURB_WIDTH + SIDEWALK_WIDTH * 0.5)
+			var sidewalk_center := arm_center_along + _direction_to_world(side_direction) * (side_extent + CURB_WIDTH + SIDEWALK_WIDTH * 0.5)
 			sidewalk_center.y = 0.03
 			var sidewalk_size := Vector3(1.02, 0.06, SIDEWALK_WIDTH) if along_x else Vector3(SIDEWALK_WIDTH, 0.06, 1.02)
 			_append_box(sidewalk_tool, grid_pos, sidewalk_center, sidewalk_size)
@@ -220,12 +224,14 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 		_append_box(curb_tool, grid_pos, cap_center, cap_size)
 		curb_boxes += 1
 
-	_add_road_markings(marking_tool, grid_pos, tile_kind, arms)
+	_add_road_markings(marking_tool, white_marking_tool, grid_pos, tile_kind, arms)
 	marking_boxes = _count_marking_boxes(tile_kind, arms, grid_pos)
+	white_marking_boxes = arms.size() * 5 if tile_kind == TILE_CROSS else 0
 
 	var road_mesh := ArrayMesh.new()
 	_add_surface(road_mesh, asphalt_tool, _get_asphalt_material(), asphalt_boxes)
 	_add_surface(road_mesh, marking_tool, _get_yellow_marking_material(), marking_boxes)
+	_add_surface(road_mesh, white_marking_tool, _get_white_marking_material(), white_marking_boxes)
 	_add_surface(road_mesh, curb_tool, _get_curb_material(), curb_boxes)
 	_add_surface(road_mesh, sidewalk_tool, _get_sidewalk_material(), sidewalk_boxes)
 
@@ -261,10 +267,10 @@ func _append_box(surface_tool: SurfaceTool, grid_pos: Vector2i, center: Vector3,
 			))
 			surface_tool.add_vertex(point)
 
-func _add_road_markings(surface_tool: SurfaceTool, grid_pos: Vector2i, tile_kind: String, arms: Array[Vector2i]) -> void:
+func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTool, grid_pos: Vector2i, tile_kind: String, arms: Array[Vector2i]) -> void:
 	if tile_kind == TILE_CROSS:
 		for direction in arms:
-			_add_crosswalk(surface_tool, grid_pos, direction)
+			_add_crosswalk(white_surface_tool, grid_pos, direction)
 		return
 
 	if tile_kind == TILE_CORNER:
