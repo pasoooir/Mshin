@@ -327,7 +327,7 @@ func _build_toolbars() -> void:
 
 	# A persistent build button opens the category grid on demand. This avoids
 	# covering the currency HUD or shrinking the play area on short landscape screens.
-	var build_toggle := _make_icon_button("build", "Build", Vector2(68, 68))
+	var build_toggle := _make_icon_button("hard_hat", "Build", Vector2(68, 68))
 	build_toggle.name = "BuildMenuButton"
 	build_toggle.anchor_left = 1.0
 	build_toggle.anchor_right = 1.0
