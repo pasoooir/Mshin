@@ -277,18 +277,26 @@ func _build_toolbars() -> void:
 	var old_toolbar := get_node_or_null("LeftToolbar")
 	if old_toolbar:
 		old_toolbar.queue_free()
-	# Large touch targets stay inside a vertical scroller on short landscape screens.
+	# The category rail must start BELOW the tallest top-HUD currency stack.
+	# Give it an explicit full-height right anchor so it cannot collapse to a
+	# zero/negative height on landscape viewports.
 	var toolbar_scroll := ScrollContainer.new()
-	toolbar_scroll.name = "LeftToolbar"
-	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	var scroll_height := maxf(150.0, get_viewport().get_visible_rect().size.y - 220.0)
-	toolbar_scroll.offset_left = -92
+	toolbar_scroll.name = "RightToolbar"
+	toolbar_scroll.anchor_left = 1.0
+	toolbar_scroll.anchor_right = 1.0
+	toolbar_scroll.anchor_top = 0.0
+	toolbar_scroll.anchor_bottom = 1.0
+	toolbar_scroll.offset_left = -104
 	toolbar_scroll.offset_right = -8
-	toolbar_scroll.offset_top = 112
-	toolbar_scroll.offset_bottom = -112
-	toolbar_scroll.custom_minimum_size = Vector2(84, scroll_height)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var header_clearance := maxf(164.0, 238.0 * _ui_scale)
+	toolbar_scroll.offset_top = header_clearance
+	toolbar_scroll.offset_bottom = -116.0
+	toolbar_scroll.custom_minimum_size = Vector2(96, maxf(72.0, viewport_size.y - header_clearance - 116.0))
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	toolbar_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	toolbar_scroll.z_index = 30
 	add_child(toolbar_scroll)
 	var toolbar := VBoxContainer.new()
 	toolbar.name = "RightToolbarItems"
