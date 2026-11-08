@@ -25,6 +25,7 @@ var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
 var _last_simcash_value := -1
+var _ui_scale := 1.0
 
 func _ready() -> void:
 	# Keep the existing gameplay signal wiring intact.
@@ -38,6 +39,8 @@ func _ready() -> void:
 	ServiceManager.power_changed.connect(_on_power_changed)
 	ServiceManager.water_changed.connect(_on_water_changed)
 
+	var viewport_size := get_viewport().get_visible_rect().size
+	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.62, 1.0)
 	_build_top_hud()
 	_build_toolbars()
 	_update_all()
@@ -62,7 +65,7 @@ func _build_top_hud() -> void:
 	left_stack.name = "TopLeftStats"
 	left_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left_stack.position = Vector2(14, 10)
-	left_stack.custom_minimum_size = Vector2(1000, 284)
+	left_stack.custom_minimum_size = Vector2(620, 180) * _ui_scale
 	left_stack.add_theme_constant_override("separation", 5)
 	left_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(left_stack)
@@ -75,15 +78,15 @@ func _build_top_hud() -> void:
 
 	var level_badge := PanelContainer.new()
 	level_badge.name = "LevelBadge"
-	level_badge.custom_minimum_size = Vector2(184, 184)
+	level_badge.custom_minimum_size = Vector2(112, 112) * _ui_scale
 	level_badge.add_theme_stylebox_override("panel", _level_badge_style())
 	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_stats.add_child(level_badge)
 	var level_overlay := Control.new()
-	level_overlay.custom_minimum_size = Vector2(176, 176)
+	level_overlay.custom_minimum_size = Vector2(108, 108) * _ui_scale
 	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_badge.add_child(level_overlay)
-	var level_icon := IconAtlas.make_icon("level", Vector2(156, 156))
+	var level_icon := IconAtlas.make_icon("level", Vector2(96, 96) * _ui_scale)
 	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_icon)
@@ -92,7 +95,7 @@ func _build_top_hud() -> void:
 	level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	level_label.add_theme_font_size_override("font_size", 60)
+	level_label.add_theme_font_size_override("font_size", int(38 * _ui_scale))
 	level_label.add_theme_color_override("font_color", Color.WHITE)
 	level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 	level_label.add_theme_constant_override("shadow_offset_x", 2)
@@ -115,10 +118,10 @@ func _build_top_hud() -> void:
 	right_stack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	right_stack.anchor_left = 1.0
 	right_stack.anchor_right = 1.0
-	right_stack.offset_left = -508
+	right_stack.offset_left = -340
 	right_stack.offset_right = -12
 	right_stack.offset_top = 10
-	right_stack.offset_bottom = 372
+	right_stack.offset_bottom = 238
 	right_stack.add_theme_constant_override("separation", 7)
 	right_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(right_stack)
@@ -135,7 +138,7 @@ func _build_top_hud() -> void:
 func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "StatBar"
-	bar.custom_minimum_size = Vector2(width * 2.0, 116)
+	bar.custom_minimum_size = Vector2(width * _ui_scale, 64 * _ui_scale)
 	bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
@@ -146,17 +149,17 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(92, 92))
+	var icon := IconAtlas.make_icon(icon_name, Vector2(44, 44) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, 46)
+	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
 	content.add_child(value)
 	return value
 
 func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 214.0) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "CurrencyBar"
-	bar.custom_minimum_size = Vector2(width * 2.0, 116)
+	bar.custom_minimum_size = Vector2(width * _ui_scale, 64 * _ui_scale)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -165,10 +168,10 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(92, 92))
+	var icon := IconAtlas.make_icon(icon_name, Vector2(44, 44) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, 48)
+	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(value)
@@ -208,10 +211,10 @@ func _make_currency_plus_button(hint: String) -> Button:
 	var button := Button.new()
 	button.name = "CurrencyAddButton"
 	button.text = "+"
-	button.custom_minimum_size = Vector2(92, 92)
+	button.custom_minimum_size = Vector2(44, 44) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = hint + " shop"
-	button.add_theme_font_size_override("font_size", 56)
+	button.add_theme_font_size_override("font_size", int(30 * _ui_scale))
 	_add_theme_color(button, Color("#4CD964"))
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(_on_currency_plus_pressed.bind(hint))
@@ -221,7 +224,7 @@ func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: S
 func _build_simcash_capsule(parent: Container) -> void:
 	var bar := PanelContainer.new()
 	bar.name = "SimCashCurrencyBar"
-	bar.custom_minimum_size = Vector2(496, 116)
+	bar.custom_minimum_size = Vector2(248, 64) * _ui_scale
 	bar.tooltip_text = "SimCash"
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -231,10 +234,10 @@ func _build_simcash_capsule(parent: Container) -> void:
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
 	var glyph := BanknoteGlyph.new()
-	glyph.custom_minimum_size = Vector2(92, 92)
+	glyph.custom_minimum_size = Vector2(44, 44) * _ui_scale
 	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(glyph)
-	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), 48)
+	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), int(25 * _ui_scale))
 	simcash_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	simcash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(simcash_label)
@@ -278,12 +281,12 @@ func _build_toolbars() -> void:
 	var toolbar_scroll := ScrollContainer.new()
 	toolbar_scroll.name = "LeftToolbar"
 	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	var scroll_height := maxf(184.0, get_viewport().get_visible_rect().size.y - 420.0)
-	toolbar_scroll.offset_left = -208
+	var scroll_height := maxf(150.0, get_viewport().get_visible_rect().size.y - 220.0)
+	toolbar_scroll.offset_left = -92
 	toolbar_scroll.offset_right = -8
-	toolbar_scroll.offset_top = 184
-	toolbar_scroll.offset_bottom = -148
-	toolbar_scroll.custom_minimum_size = Vector2(200, scroll_height)
+	toolbar_scroll.offset_top = 112
+	toolbar_scroll.offset_bottom = -112
+	toolbar_scroll.custom_minimum_size = Vector2(84, scroll_height)
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	add_child(toolbar_scroll)
@@ -311,7 +314,7 @@ func _build_toolbars() -> void:
 	actions.name = "BottomActions"
 	actions.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	actions.offset_left = 12
-	actions.offset_top = -200
+	actions.offset_top = -104
 	actions.offset_right = -12
 	actions.offset_bottom = -8
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -330,9 +333,9 @@ func _build_toolbars() -> void:
 	submenu.name = "ToolSubmenu"
 	submenu.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	submenu.offset_left = 12
-	submenu.offset_top = -390
+	submenu.offset_top = -208
 	submenu.offset_right = -12
-	submenu.offset_bottom = -200
+	submenu.offset_bottom = -104
 	submenu.alignment = BoxContainer.ALIGNMENT_CENTER
 	submenu.add_theme_constant_override("separation", 8)
 	add_child(submenu)
@@ -340,7 +343,7 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(184, 184)
+	button.custom_minimum_size = Vector2(112, 112) * _ui_scale
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
@@ -348,7 +351,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, Vector2(172, 172))
+	var icon := IconAtlas.make_icon(kind, Vector2(100, 100) * _ui_scale)
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
@@ -362,7 +365,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 		fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		fallback.add_theme_color_override("font_color", Color.WHITE)
-		fallback.add_theme_font_size_override("font_size", 56)
+		fallback.add_theme_font_size_override("font_size", int(30 * _ui_scale))
 		button.add_child(fallback)
 	else:
 		button.add_child(icon)
@@ -410,7 +413,7 @@ func _show_submenu(category: String) -> void:
 			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
 	for option in options:
 		var button := _make_icon_button(option[0], option[1])
-		button.custom_minimum_size = Vector2(248, 248)
+		button.custom_minimum_size = Vector2(112, 112) * _ui_scale
 		submenu.add_child(button)
 		button.pressed.connect(_on_submenu_option.bind(category, option[1]))
 
