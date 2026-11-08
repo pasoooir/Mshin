@@ -434,8 +434,6 @@ func _on_construction_finished() -> void:
 	elif definition.get("population", 0) > 0:
 		GameManager.add_population(definition.population)
 		GameManager.add_experience(definition.population * 2)
-	if definition.has("produces"):
-		_start_production(definition.produces)
 	if definition.has("power"):
 		ServiceManager.register_power(definition.power)
 	if definition.has("water"):
@@ -467,7 +465,7 @@ func _play_completion_effect() -> void:
 		tween.tween_property(sparkle, "scale", Vector3.ZERO, 0.72)
 		tween.chain().tween_callback(sparkle.queue_free)
 
-func _start_production(item_id: String) -> void:
+func _begin_production(item_id: String) -> void:
 	current_product = item_id
 	is_producing = true
 	production_time = ProductionManager.get_production_time(item_id)
@@ -476,6 +474,32 @@ func _start_production(item_id: String) -> void:
 	if production_icon:
 		production_icon.visible = true
 		production_icon.text = "⚙️"
+
+func start_factory_production(item_id: String = "metal") -> bool:
+	if status != "completed" or definition.get("category", "") != "industrial":
+		return false
+	if is_producing or has_ready_product:
+		return false
+	var allowed: Array = definition.get("can_produce", [definition.get("produces", "metal")])
+	if not allowed.has(item_id) or not ProductionManager.raw_materials.has(item_id):
+		return false
+	if int(ProductionManager.raw_materials[item_id].get("level", 1)) > GameManager.level:
+		return false
+	_begin_production(item_id)
+	return true
+
+func start_commercial_production(item_id: String) -> bool:
+	if status != "completed" or definition.get("category", "") != "commercial":
+		return false
+	if is_producing or has_ready_product:
+		return false
+	var allowed_recipes: Array = definition.get("recipes", [])
+	if not allowed_recipes.has(item_id) or not ProductionManager.can_craft(item_id):
+		return false
+	if not ProductionManager.consume_inputs(item_id):
+		return false
+	_begin_production(item_id)
+	return true
 
 func _process(delta: float) -> void:
 	if is_producing and status == "completed" and not has_ready_product:
@@ -524,15 +548,19 @@ func collect_production() -> bool:
 	if not has_ready_product:
 		return false
 	if StorageManager.add_item(current_product, 1):
+		var collected_item := current_product
 		has_ready_product = false
-		production_timer = production_time
+		is_producing = false
+		production_timer = 0.0
 		if production_icon:
-			production_icon.text = "⚙️"
-		collected.emit(current_product, 1)
+			production_icon.visible = false
+		collected.emit(collected_item, 1)
+		ProductionManager.item_produced.emit(collected_item, 1)
 		EconomyManager.add_simoleons(3)
 		GameManager.add_experience(2)
 		return true
 	if production_icon:
+		production_icon.visible = true
 		production_icon.text = "📦!"
 	return false
 
@@ -560,7 +588,7 @@ func get_info() -> String:
 			info += " — READY TO UPGRADE"
 	if is_producing:
 		if has_ready_product:
-			info += " - Ready: " + current_product
+			info += " - Ready: " + str(ProductionManager.raw_materials.get(current_product, ProductionManager.crafted_items.get(current_product, {})).get("name", current_product))
 		else:
 			info += " - %.0fs" % production_timer
 	return info
