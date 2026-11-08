@@ -480,15 +480,15 @@ func _show_submenu(category: String) -> void:
 	var options: Array = []
 	match category:
 		"road":
-			options = [["road_build", "ساخت جاده", 1], ["bulldoze_road", "بولدوزر جاده", 1]]
+			options = [["road_build", "Build Road", 1], ["bulldoze_road", "Bulldoze Road", 1]]
 		"residential":
-			options = [["residential_villa", "خانه ویلایی", 1], ["residential_apartment", "خانه آپارتمانی", 3], ["residential_farm", "مزرعه", 2]]
+			options = [["residential_villa", "Villa House", 1], ["residential_apartment", "Apartment", 3], ["residential_farm", "Farm", 2]]
 		"commercial":
-			options = [["shop_chain", "فروشگاه زنجیره‌ای", 1], ["restaurant_traditional", "رستوران سنتی", 4], ["fast_food", "فست‌فود فروشی", 3], ["art_supplies", "فروشگاه لوازم هنری", 5]]
+			options = [["shop_chain", "Chain Store", 1], ["restaurant_traditional", "Traditional Restaurant", 4], ["fast_food", "Fast Food", 3], ["art_supplies", "Art Supplies Store", 5]]
 		"industrial":
-			options = [["industrial_1", "کارخانه کوچک · Metal", 1], ["industrial_2", "کارخانه چوب · Wood", 2]]
+			options = [["industrial_1", "Small Factory · Metal", 1], ["industrial_2", "Wood Factory · Wood", 2]]
 		"services":
-			options = [["power_wind", "برق بادی", 1], ["water_tower", "مخزن آب", 1], ["fire_station", "آتش‌نشانی", 5]]
+			options = [["power_wind", "Wind Power", 1], ["water_tower", "Water Tower", 1], ["fire_station", "Fire Station", 5]]
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	var columns := 2 if viewport_size.x < 900.0 else mini(options.size() + 1, 5)
@@ -511,7 +511,7 @@ func _show_submenu(category: String) -> void:
 		choice.text = title
 		choice.custom_minimum_size = Vector2(item_width, item_height)
 		choice.focus_mode = Control.FOCUS_NONE
-		choice.tooltip_text = title + (" — Unlocked at level %d" % required_level if GameManager.level < required_level else "")
+		choice.tooltip_text = ("Unlocked at Level %d" % required_level) if GameManager.level < required_level else title
 		choice.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 		choice.add_theme_color_override("font_color", Color.WHITE)
 		choice.add_theme_stylebox_override("normal", _toolbar_style(Color(0.10, 0.18, 0.23, 0.94), Color(0.55, 0.78, 0.9, 0.7)))
@@ -519,12 +519,12 @@ func _show_submenu(category: String) -> void:
 		choice.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.30, 0.42, 0.28, 0.98), Color(0.95, 0.82, 0.48, 1.0)))
 		# Locked entries remain clickable so the player receives an explicit unlock message.
 		if GameManager.level < required_level:
-			choice.text += "\n🔒 Unlocked at level %d" % required_level
+			choice.text += "\nUnlocked at Level %d" % required_level
 		submenu.add_child(choice)
 		choice.pressed.connect(_on_submenu_option.bind(category, type_id))
 	var close_button := Button.new()
 	close_button.name = "CloseSubmenu"
-	close_button.text = "✕"
+	close_button.text = "X"
 	close_button.custom_minimum_size = Vector2(item_width, item_height)
 	close_button.focus_mode = Control.FOCUS_NONE
 	close_button.tooltip_text = "Close menu"
@@ -566,6 +566,34 @@ func _set_tool_modes_off() -> void:
 	if road_system:
 		road_system.set_road_mode(false)
 
+func _set_bulldozer_indicator(active: bool) -> void:
+	var indicator := get_node_or_null("BulldozerModeIndicator")
+	if active:
+		if indicator == null:
+			var badge := PanelContainer.new()
+			badge.name = "BulldozerModeIndicator"
+			badge.anchor_left = 0.5
+			badge.anchor_right = 0.5
+			badge.offset_left = -112
+			badge.offset_right = 112
+			badge.offset_top = 12
+			badge.offset_bottom = 52
+			badge.z_index = 40
+			badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			badge.add_theme_stylebox_override("panel", _toolbar_style(Color(0.30, 0.12, 0.06, 0.94), Color("#FFC247")))
+			var label := Label.new()
+			label.text = "BULLDOZER ACTIVE"
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			label.add_theme_color_override("font_color", Color("#FFD76A"))
+			label.add_theme_font_size_override("font_size", 18)
+			badge.add_child(label)
+			add_child(badge)
+			indicator = badge
+		indicator.show()
+	elif indicator:
+		indicator.hide()
+
 func _start_bulldoze_mode() -> void:
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
@@ -578,7 +606,8 @@ func _start_bulldoze_mode() -> void:
 	var category_toolbar := get_node_or_null("RightToolbar")
 	if category_toolbar: category_toolbar.hide()
 	active_category = ""
-	status_label.text = "Bulldozer active — tap a road to remove it, or tap a building twice to confirm demolition. Press X to exit."
+	_set_bulldozer_indicator(true)
+	status_label.text = "Bulldozer active — tap a building twice to demolish. Tap a road to remove it. Press X to cancel."
 
 func _start_bulldoze_road_mode() -> void:
 	_set_tool_modes_off()
@@ -590,7 +619,8 @@ func _start_bulldoze_road_mode() -> void:
 	if submenu:
 		submenu.hide()
 	active_category = ""
-	status_label.text = "Road bulldozer active — tap an asphalt tile to remove only that road. Press X to exit."
+	_set_bulldozer_indicator(true)
+	status_label.text = "Bulldozer active — tap a road to remove it. Press X to cancel."
 
 func _on_submenu_option(category: String, option_id: String) -> void:
 	if category == "road":
@@ -622,6 +652,10 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 		if category_toolbar: category_toolbar.show()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
+		_on_cancel_pressed()
+		get_viewport().set_input_as_handled()
+		return
 	if not submenu or not submenu.visible:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -660,7 +694,7 @@ func _on_population_changed(population: int) -> void:
 
 func _on_immigrants_arrived(amount: int, city_population: int) -> void:
 	if status_label:
-		status_label.text = "🏡 +%d new residents moved in! City population: %s" % [amount, _format_count(city_population)]
+		status_label.text = "+%d new residents moved in! City population: %s" % [amount, _format_count(city_population)]
 
 func _on_immigration_advice(message: String) -> void:
 	if status_label:
@@ -668,8 +702,7 @@ func _on_immigration_advice(message: String) -> void:
 
 func _on_happiness_changed(value: float) -> void:
 	if happiness_label:
-		var mood := "😊" if value >= 80.0 else ("😐" if value >= 50.0 else "😟")
-		happiness_label.text = "%s %d%%" % [mood, roundi(value)]
+		happiness_label.text = "%d%%" % roundi(value)
 
 func _on_xp_changed(xp: int, needed: int) -> void:
 	if xp_text:
@@ -787,6 +820,10 @@ func _on_trade_pressed() -> void:
 	status_label.text = "Trade — %d active orders." % TradeManager.get_orders().size()
 
 func _on_cancel_pressed() -> void:
+	var scene := get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if scene else null
+	var was_bulldozing := city_input != null and (city_input.bulldoze_mode or city_input.bulldoze_road_mode)
+	_set_bulldozer_indicator(false)
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
 	if submenu:
@@ -794,7 +831,7 @@ func _on_cancel_pressed() -> void:
 	var category_toolbar := get_node_or_null("RightToolbar")
 	if category_toolbar: category_toolbar.show()
 	active_category = ""
-	status_label.text = "Cancelled."
+	status_label.text = "Bulldozer cancelled." if was_bulldozing else "Cancelled."
 
 func _on_save_pressed() -> void:
 	status_label.text = "City saved successfully." if SaveManager.save_game() else "Could not save the city."
