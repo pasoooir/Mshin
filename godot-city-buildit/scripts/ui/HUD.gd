@@ -62,7 +62,7 @@ func _build_top_hud() -> void:
 	left_stack.name = "TopLeftStats"
 	left_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left_stack.position = Vector2(14, 10)
-	left_stack.custom_minimum_size = Vector2(360, 112)
+	left_stack.custom_minimum_size = Vector2(500, 142)
 	left_stack.add_theme_constant_override("separation", 5)
 	left_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(left_stack)
@@ -75,15 +75,15 @@ func _build_top_hud() -> void:
 
 	var level_badge := PanelContainer.new()
 	level_badge.name = "LevelBadge"
-	level_badge.custom_minimum_size = Vector2(76, 76)
+	level_badge.custom_minimum_size = Vector2(92, 92)
 	level_badge.add_theme_stylebox_override("panel", _level_badge_style())
 	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_stats.add_child(level_badge)
 	var level_overlay := Control.new()
-	level_overlay.custom_minimum_size = Vector2(72, 72)
+	level_overlay.custom_minimum_size = Vector2(88, 88)
 	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_badge.add_child(level_overlay)
-	var level_icon := IconAtlas.make_icon("level", Vector2(62, 62))
+	var level_icon := IconAtlas.make_icon("level", Vector2(78, 78))
 	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_icon)
@@ -92,7 +92,7 @@ func _build_top_hud() -> void:
 	level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	level_label.add_theme_font_size_override("font_size", 25)
+	level_label.add_theme_font_size_override("font_size", 30)
 	level_label.add_theme_color_override("font_color", Color.WHITE)
 	level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 	level_label.add_theme_constant_override("shadow_offset_x", 2)
@@ -100,15 +100,15 @@ func _build_top_hud() -> void:
 	level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_label)
 
-	population_label = _add_stat_bar(top_stats, "population", "0", Color("#4BA3FF"), "City population", 158)
-	storage_label = _add_stat_bar(top_stats, "storage", "0/30", Color("#5BB8F5"), "City storage", 150)
+	population_label = _add_stat_bar(top_stats, "population", "0", Color("#4BA3FF"), "City population", 180)
+	storage_label = _add_stat_bar(top_stats, "storage", "0/30", Color("#5BB8F5"), "City storage", 170)
 
 	var happiness_row := HBoxContainer.new()
 	happiness_row.name = "HappinessStatRow"
 	happiness_row.add_theme_constant_override("separation", 8)
 	happiness_row.mouse_filter = Control.MOUSE_FILTER_PASS
 	left_stack.add_child(happiness_row)
-	happiness_label = _add_stat_bar(happiness_row, "happiness", "100%", Color("#A8E62E"), "Citizen happiness", 190)
+	happiness_label = _add_stat_bar(happiness_row, "happiness", "100%", Color("#A8E62E"), "Citizen happiness", 220)
 
 	var right_stack := VBoxContainer.new()
 	right_stack.name = "TopRightCurrencies"
@@ -135,7 +135,7 @@ func _build_top_hud() -> void:
 func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "StatBar"
-	bar.custom_minimum_size = Vector2(width, 48)
+	bar.custom_minimum_size = Vector2(width, 58)
 	bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
@@ -146,10 +146,10 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(38, 38))
+	var icon := IconAtlas.make_icon(icon_name, Vector2(46, 46))
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, 18)
+	var value := _make_hud_value(initial_text, 23)
 	content.add_child(value)
 	return value
 
@@ -168,7 +168,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	var icon := IconAtlas.make_icon(icon_name, Vector2(38, 38))
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, 19)
+	var value := _make_hud_value(initial_text, 24)
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(value)
@@ -208,10 +208,10 @@ func _make_currency_plus_button(hint: String) -> Button:
 	var button := Button.new()
 	button.name = "CurrencyAddButton"
 	button.text = "+"
-	button.custom_minimum_size = Vector2(34, 34)
+	button.custom_minimum_size = Vector2(42, 42)
 	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = hint + " shop"
-	button.add_theme_font_size_override("font_size", 23)
+	button.add_theme_font_size_override("font_size", 28)
 	_add_theme_color(button, Color("#4CD964"))
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(_on_currency_plus_pressed.bind(hint))
@@ -221,7 +221,7 @@ func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: S
 func _build_simcash_capsule(parent: Container) -> void:
 	var bar := PanelContainer.new()
 	bar.name = "SimCashCurrencyBar"
-	bar.custom_minimum_size = Vector2(214, 48)
+	bar.custom_minimum_size = Vector2(248, 58)
 	bar.tooltip_text = "SimCash"
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -279,8 +279,8 @@ func _build_toolbars() -> void:
 	toolbar_scroll.name = "LeftToolbar"
 	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	var scroll_height := maxf(120.0, get_viewport().get_visible_rect().size.y - 164.0)
-	toolbar_scroll.position = Vector2(8, 146)
-	toolbar_scroll.custom_minimum_size = Vector2(82, scroll_height)
+	toolbar_scroll.position = Vector2(8, 164)
+	toolbar_scroll.custom_minimum_size = Vector2(100, scroll_height)
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	add_child(toolbar_scroll)
@@ -337,7 +337,7 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(76, 76)
+	button.custom_minimum_size = Vector2(92, 92)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
@@ -345,7 +345,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, Vector2(70, 70))
+	var icon := IconAtlas.make_icon(kind, Vector2(86, 86))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
@@ -407,7 +407,7 @@ func _show_submenu(category: String) -> void:
 			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
 	for option in options:
 		var button := _make_icon_button(option[0], option[1])
-		button.custom_minimum_size = Vector2(112, 112)
+		button.custom_minimum_size = Vector2(124, 124)
 		submenu.add_child(button)
 		button.pressed.connect(_on_submenu_option.bind(category, option[1]))
 
