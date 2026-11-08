@@ -66,7 +66,7 @@ func place_road(grid_pos: Vector2i) -> bool:
 		return false
 	if not EconomyManager.spend_simoleons(ROAD_COST):
 		return false
-	var mesh: MeshInstance3D = _create_road_mesh()
+	var mesh: Node3D = _create_road_mesh()
 	add_child(mesh)
 	mesh.position = Vector3(grid_pos.x * GRID_SIZE + GRID_SIZE * 0.5, 0.025, grid_pos.y * GRID_SIZE + GRID_SIZE * 0.5)
 	roads[grid_pos] = mesh
