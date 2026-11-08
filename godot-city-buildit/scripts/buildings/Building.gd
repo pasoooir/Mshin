@@ -87,116 +87,76 @@ func _create_visual() -> void:
 			_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
-	# Warm, detailed suburban home. All dimensions stay within the assigned plot.
-	var stage := clampi(upgrade_stage, 1, 6)
-	var wall := color
-	var wall_dark := color.darkened(0.18)
-	var wall_light := color.lightened(0.12)
-	var roof_col := Color(0.42, 0.22, 0.18)
-	var roof_ridge := Color(0.30, 0.15, 0.12)
-	var trim := Color(0.92, 0.88, 0.78)
-	var glass := Color(0.38, 0.67, 0.82)
-	var door_col := Color(0.34, 0.19, 0.12)
-	var awning := Color(0.76, 0.24, 0.19)
-	var stone := Color(0.48, 0.45, 0.39)
+	# رنگ‌های طبیعی؛ رنگ تعریف ساختمان فقط برای تنوع ملایم وارد می‌شود.
+	var plaster := Color(0.86, 0.78, 0.68)
+	var plaster_shadow := Color(0.72, 0.64, 0.54)
+	var plaster_light := Color(0.92, 0.86, 0.76)
+	var roof_tile := Color(0.55, 0.28, 0.22)
+	var roof_dark := Color(0.40, 0.20, 0.16)
+	var wood := Color(0.42, 0.28, 0.18)
+	var stone := Color(0.62, 0.58, 0.52)
+	var window_glass := Color(0.55, 0.72, 0.82)
+	var frame := Color(0.95, 0.92, 0.85)
+	var awning := Color(0.70, 0.25, 0.18)
 
-	var wall_w := w * (0.82 + float(stage - 1) * 0.012)
-	var wall_d := d * (0.80 + float(stage - 1) * 0.012)
-	var wall_h := height * 0.79
-	var wall_bottom := 0.25
-	var wall_top := wall_bottom + wall_h
-	var front_z := wall_d * 0.5
-	var window_w := clampf(wall_w * 0.22, 0.38, 0.68)
-	var window_h := clampf(wall_h * 0.28, 0.42, 0.62)
+	plaster = plaster.lerp(color, 0.25)
+	plaster_shadow = plaster.darkened(0.16)
+	plaster_light = plaster.lightened(0.10)
 
-	# Raised stone foundation and continuous lower facade trim.
-	_add_box(Vector3(w * 0.96, 0.22, d * 0.94), Vector3(0, 0.18, 0), stone)
-	_add_box(Vector3(wall_w, wall_h, wall_d), Vector3(0, wall_bottom + wall_h * 0.5, 0), wall)
-	_add_box(Vector3(wall_w + 0.12, 0.11, wall_d + 0.12), Vector3(0, 0.31, 0), trim)
-	_add_box(Vector3(wall_w + 0.08, 0.075, wall_d + 0.08), Vector3(0, wall_top - 0.08, 0), wall_light)
+	var body_h := height
+	_add_box(Vector3(w * 0.96, 0.22, d * 0.96), Vector3(0, 0.11, 0), stone)
+	_add_box(Vector3(w * 0.90, 0.06, d * 0.90), Vector3(0, 0.24, 0), stone.darkened(0.12))
 
-	# Front entrance: timber door, handle, two shallow steps and red canopy.
-	var door_w := clampf(wall_w * 0.20, 0.42, 0.58)
-	var door_h := minf(wall_h * 0.56, 1.12)
-	var door_y := wall_bottom + door_h * 0.5 + 0.02
-	_add_box(Vector3(door_w + 0.12, door_h + 0.12, 0.075), Vector3(0, door_y, front_z + 0.025), trim)
-	_add_box(Vector3(door_w, door_h, 0.055), Vector3(0, door_y, front_z + 0.075), door_col)
-	_add_box(Vector3(0.035, door_h * 0.72, 0.018), Vector3(-door_w * 0.28, door_y, front_z + 0.108), Color(0.58, 0.36, 0.21))
-	_add_cylinder(0.035, 0.035, 0.025, Vector3(door_w * 0.30, door_y, front_z + 0.12), Color(0.86, 0.68, 0.30))
-	_add_box(Vector3(door_w + 0.42, 0.12, 0.42), Vector3(0, 0.30, front_z + 0.28), Color(0.72, 0.69, 0.62))
-	_add_box(Vector3(door_w + 0.30, 0.10, 0.30), Vector3(0, 0.41, front_z + 0.23), Color(0.82, 0.79, 0.72))
-	_add_box(Vector3(door_w + 0.42, 0.10, 0.38), Vector3(0, door_y + door_h * 0.5 + 0.16, front_z + 0.19), awning)
-	_add_box(Vector3(0.07, 0.18, 0.07), Vector3(-door_w * 0.48, door_y + door_h * 0.5 + 0.04, front_z + 0.17), wall_dark)
-	_add_box(Vector3(0.07, 0.18, 0.07), Vector3(door_w * 0.48, door_y + door_h * 0.5 + 0.04, front_z + 0.17), wall_dark)
+	_add_box(Vector3(w * 0.86, body_h, d * 0.86), Vector3(0, body_h * 0.5 + 0.22, 0), plaster)
+	_add_box(Vector3(w * 0.87, 0.12, d * 0.87), Vector3(0, 0.34, 0), plaster_shadow)
+	_add_box(Vector3(w * 0.88, 0.07, d * 0.88), Vector3(0, body_h + 0.18, 0), plaster_light)
 
-	# Balanced framed front windows; upper rows appear as the home grows.
-	var rows := 1
-	if stage >= 3:
-		rows = 2
-	if stage >= 5:
-		rows = 3
-	var columns := 2 if stage < 4 else 3
+	# امضای تابع سقف موجود در پروژه rise را به‌صورت صریح دریافت می‌کند.
+	_add_gabled_roof(w * 0.96, d * 0.96, body_h + 0.22, 0.52, roof_tile, roof_dark)
+
+	var rows := 1 + int(upgrade_stage >= 3) + int(upgrade_stage >= 5)
+	var cols := 2 if upgrade_stage < 4 else 3
 	for row in range(rows):
-		var y := wall_bottom + wall_h * (0.42 + float(row) * 0.27)
-		for column in range(columns):
-			var x := 0.0
-			if columns == 2:
-				x = -wall_w * 0.29 if column == 0 else wall_w * 0.29
-			else:
-				x = -wall_w * 0.32 + float(column) * wall_w * 0.32
-			if row == 0 and absf(x) < door_w * 0.75:
-				continue
-			_add_window(Vector3(x, y, front_z + 0.045), trim, glass, stage >= 2, false, window_w, window_h)
+		var y := 0.90 + float(row) * (body_h / float(rows + 0.7))
+		for c in range(cols):
+			var x_off := (-w * 0.22) if (cols == 2 and c == 0) else (w * 0.22 if cols == 2 else -w * 0.28 + float(c) * w * 0.28)
+			_add_natural_window(Vector3(x_off, y, d * 0.435), frame, window_glass)
 
-	# Side windows make the home read correctly during a full camera orbit.
-	for side_sign in [-1.0, 1.0]:
-		_add_window(Vector3(side_sign * (wall_w * 0.5 + 0.045), wall_bottom + wall_h * 0.48, -wall_d * 0.12),
-			trim, glass, false, true, window_w * 0.82, window_h * 0.88)
+	_add_natural_window(Vector3(w * 0.435, 0.95, 0.0), frame, window_glass, true)
 
-	# Real two-plane gabled roof, fascia and ridge cap.
-	var roof_base := wall_top - 0.02
-	var roof_rise := clampf(wall_h * 0.30, 0.48, 0.78)
-	_add_gabled_roof(wall_w * 1.10, wall_d * 1.12, roof_base, roof_rise, roof_col, roof_ridge)
+	_add_box(Vector3(0.48, 0.98, 0.07), Vector3(0, 0.72, d * 0.435), wood)
+	_add_box(Vector3(0.05, 0.05, 0.04), Vector3(0.14, 0.70, d * 0.48), Color(0.75, 0.62, 0.25))
+	_add_box(Vector3(0.80, 0.10, 0.32), Vector3(0, 0.26, d * 0.52), stone)
+	_add_box(Vector3(0.65, 0.07, 0.20), Vector3(0, 0.34, d * 0.55), stone.lightened(0.08))
+	_add_box(Vector3(0.90, 0.05, 0.36), Vector3(0, 1.30, d * 0.48), awning)
+	_add_box(Vector3(0.06, 0.20, 0.05), Vector3(-0.38, 1.16, d * 0.42), wood)
+	_add_box(Vector3(0.06, 0.20, 0.05), Vector3(0.38, 1.16, d * 0.42), wood)
 
-	# Brick chimney with a visible cap, positioned toward the rear roof slope.
-	var chimney_x := wall_w * 0.30
-	var chimney_z := -wall_d * 0.22
-	_add_box(Vector3(0.28, 0.78, 0.28), Vector3(chimney_x, roof_base + roof_rise + 0.22, chimney_z), Color(0.55, 0.31, 0.24))
-	_add_box(Vector3(0.36, 0.10, 0.36), Vector3(chimney_x, roof_base + roof_rise + 0.63, chimney_z), Color(0.34, 0.20, 0.17))
+	var cx := w * 0.28
+	var cz := -d * 0.18
+	_add_box(Vector3(0.26, 0.90, 0.26), Vector3(cx, body_h + 0.80, cz), Color(0.58, 0.32, 0.24))
+	_add_box(Vector3(0.34, 0.08, 0.34), Vector3(cx, body_h + 1.28, cz), Color(0.40, 0.22, 0.17))
 
-	# A compact balcony and railings unlock from level 3.
-	if stage >= 3:
-		var balcony_y := wall_bottom + wall_h * 0.62
-		var balcony_w := wall_w * (0.48 + float(stage - 3) * 0.035)
-		var balcony_z := front_z + 0.30
-		_add_box(Vector3(balcony_w, 0.10, 0.62), Vector3(0, balcony_y - 0.18, balcony_z), wall_light)
-		_add_box(Vector3(balcony_w, 0.07, 0.07), Vector3(0, balcony_y + 0.18, balcony_z + 0.28), trim)
-		for rail_x in [-balcony_w * 0.5, -balcony_w * 0.25, 0.0, balcony_w * 0.25, balcony_w * 0.5]:
-			_add_box(Vector3(0.055, 0.34, 0.055), Vector3(rail_x, balcony_y, balcony_z + 0.28), trim)
-		_add_box(Vector3(0.07, 0.38, 0.07), Vector3(-balcony_w * 0.5, balcony_y, balcony_z), trim)
-		_add_box(Vector3(0.07, 0.38, 0.07), Vector3(balcony_w * 0.5, balcony_y, balcony_z), trim)
+	if upgrade_stage >= 3:
+		var by := body_h * 0.55
+		_add_box(Vector3(w * 0.52, 0.07, 0.50), Vector3(0, by, -d * 0.42), plaster_light)
+		_add_box(Vector3(w * 0.52, 0.05, 0.05), Vector3(0, by + 0.32, -d * 0.66), frame)
+		_add_box(Vector3(0.05, 0.32, 0.05), Vector3(-w * 0.24, by + 0.16, -d * 0.66), frame)
+		_add_box(Vector3(0.05, 0.32, 0.05), Vector3(w * 0.24, by + 0.16, -d * 0.66), frame)
 
-	# Higher levels gain dormers, richer roof detailing and a larger porch.
-	if stage >= 4:
-		var dormer_w := wall_w * 0.27
-		var dormer_y := roof_base + roof_rise * 0.57
-		_add_box(Vector3(dormer_w, 0.58, 0.42), Vector3(-wall_w * 0.23, dormer_y, 0), wall_light)
-		_add_box(Vector3(dormer_w * 1.22, 0.10, 0.54), Vector3(-wall_w * 0.23, dormer_y + 0.34, 0), roof_col)
-		_add_window(Vector3(-wall_w * 0.23, dormer_y, 0.225), trim, glass, false, false, dormer_w * 0.62, 0.34)
-	if stage >= 5:
-		_add_box(Vector3(wall_w * 0.78, 0.10, 0.16), Vector3(0, wall_top + 0.02, front_z * 0.92), trim)
-		_add_box(Vector3(wall_w * 0.52, 0.08, 0.12), Vector3(0, wall_bottom + wall_h * 0.84, front_z + 0.07), awning)
-	if stage >= 6:
-		for x_sign in [-1.0, 1.0]:
-			_add_box(Vector3(0.10, 0.62, 0.10), Vector3(x_sign * wall_w * 0.43, wall_top - 0.26, front_z + 0.06), trim)
-		_add_box(Vector3(wall_w * 0.72, 0.12, wall_d * 0.72),
-			Vector3(0, wall_top + roof_rise * 0.08, -wall_d * 0.02), roof_ridge)
+	if upgrade_stage >= 5:
+		_add_box(Vector3(w * 0.76, 0.50, d * 0.68), Vector3(0, body_h + 0.52, 0), plaster_light)
+		_add_box(Vector3(w * 0.80, 0.09, d * 0.72), Vector3(0, body_h + 0.80, 0), roof_tile)
 
-	# Garden path and low shrubs complete the small residential plot.
-	_add_box(Vector3(0.48, 0.045, d * 0.25), Vector3(0, 0.16, d * 0.62), Color(0.67, 0.61, 0.48))
-	for shrub_x in [-w * 0.36, w * 0.36]:
-		_add_cylinder(0.20, 0.25, 0.34, Vector3(shrub_x, 0.36, d * 0.34), Color(0.20, 0.43, 0.22))
 
+func _add_natural_window(pos: Vector3, frame_col: Color, glass_col: Color, side: bool = false) -> void:
+	var fw := 0.36 if side else 0.44
+	var fh := 0.40 if side else 0.48
+	_add_box(Vector3(fw, fh, 0.05), pos, frame_col)
+	_add_box(Vector3(fw * 0.70, fh * 0.70, 0.03), pos + Vector3(0, 0, 0.025), glass_col)
+	_add_box(Vector3(0.03, fh * 0.70, 0.04), pos + Vector3(0, 0, 0.03), frame_col.darkened(0.2))
+	_add_box(Vector3(fw * 0.70, 0.03, 0.04), pos + Vector3(0, 0, 0.03), frame_col.darkened(0.2))
+	_add_box(Vector3(fw * 1.1, 0.05, 0.10), pos + Vector3(0, -fh * 0.52, 0.03), frame_col.lightened(0.05))
 
 func _add_gabled_roof(w: float, d: float, base_y: float, rise: float, roof_col: Color, ridge_col: Color) -> void:
 	# Each roof plane runs from the ridge to one eave; opposite X rotations form a true gable.
