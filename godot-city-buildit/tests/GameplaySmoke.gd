@@ -228,6 +228,18 @@ func _run_gameplay_test() -> void:
 		_check(BuildManager.building_at_cell(demo_cell) == null, "Second bulldozer tap did not remove the building footprint.")
 		_check(GameManager.population < population_before_demo, "Demolishing a residential building did not remove its population.")
 		input_node.set_bulldoze_mode(false)
+		# Factory removal must release its factory slot as well as its occupied cells.
+		var factories_before_demo := BuildManager.factory_count
+		var factory_demo_cell := Vector2i(14, 1)
+		_check(BuildManager.place_building(factory_demo_cell, "industrial_1", 1, "completed"), "Could not create test factory for demolition.")
+		var factory_demo = BuildManager.building_at_cell(factory_demo_cell)
+		_check(BuildManager.factory_count == factories_before_demo + 1, "Test factory did not reserve a factory slot.")
+		input_node.set_bulldoze_mode(true)
+		input_node._handle_bulldoze_cell(factory_demo_cell, road_system)
+		input_node._handle_bulldoze_cell(factory_demo_cell, road_system)
+		_check(BuildManager.building_at_cell(factory_demo_cell) == null, "Bulldozer did not remove the factory footprint.")
+		_check(BuildManager.factory_count == factories_before_demo, "Demolishing a factory did not release its factory slot.")
+		input_node.set_bulldoze_mode(false)
 		hud._close_building_submenu(false)
 	else:
 		_check(false, "HUD node is missing for building submenu tests.")
