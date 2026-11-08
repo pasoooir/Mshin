@@ -278,7 +278,7 @@ func _build_toolbars() -> void:
 	var toolbar_scroll := ScrollContainer.new()
 	toolbar_scroll.name = "LeftToolbar"
 	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	var scroll_height := maxf(120.0, get_viewport().get_visible_rect().size.y - 164.0)
+	var scroll_height := maxf(120.0, get_viewport().get_visible_rect().size.y - 332.0)
 	toolbar_scroll.offset_left = -108
 	toolbar_scroll.offset_right = -8
 	toolbar_scroll.offset_top = 184
