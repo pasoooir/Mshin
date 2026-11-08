@@ -6,6 +6,9 @@ const TAP_SLOP: float = 14.0
 
 var pointer_start: Dictionary = {}
 var pointer_moved: Dictionary = {}
+var pointer_hold_elapsed: Dictionary = {}
+var move_pointer_id: int = -999
+const LONG_PRESS_SECONDS: float = 0.55
 var multi_touch_gesture: bool = false
 var road_stroke_active: Dictionary = {}
 var road_stroke_last_cell: Dictionary = {}
@@ -16,8 +19,52 @@ var pending_bulldoze_building_id: String = ""
 func _ready() -> void:
 	camera = get_viewport().get_camera_3d()
 
+func _process(delta: float) -> void:
+	if BuildManager.is_moving or BuildManager.is_placing or bulldoze_mode or bulldoze_road_mode or _is_road_mode():
+		return
+	if pointer_start.size() != 1:
+		return
+	var pointer_id = pointer_start.keys()[0]
+	if bool(pointer_moved.get(pointer_id, false)):
+		return
+	pointer_hold_elapsed[pointer_id] = float(pointer_hold_elapsed.get(pointer_id, 0.0)) + delta
+	if float(pointer_hold_elapsed[pointer_id]) >= LONG_PRESS_SECONDS:
+		_begin_move_from_screen(pointer_id, pointer_start[pointer_id])
+
+func _begin_move_from_screen(pointer_id: int, screen_position: Vector2) -> void:
+	var world_position: Variant = _raycast_ground(screen_position)
+	if world_position == null:
+		return
+	var building = BuildManager.building_at_cell(BuildManager.world_to_grid(world_position))
+	if building == null or not is_instance_valid(building):
+		return
+	if BuildManager.begin_move(building):
+		move_pointer_id = int(pointer_id)
+		pointer_moved[pointer_id] = true
+		_set_status("Move mode: drag the building to a green valid plot. Release to place or press X to cancel.")
+
+func _update_move_from_screen(screen_position: Vector2) -> void:
+	if not BuildManager.is_moving:
+		return
+	var world_position: Variant = _raycast_ground(screen_position)
+	if world_position == null:
+		BuildManager.invalidate_move_preview()
+		_set_status("Invalid location — move back onto the map or press X to cancel.")
+		return
+	var valid := BuildManager.preview_move_at(BuildManager.world_to_grid(world_position))
+	_set_status("Valid location — release to move." if valid else "Invalid location — move to a green plot or press X to cancel.")
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
+		if BuildManager.is_moving:
+			BuildManager.cancel_move()
+			move_pointer_id = -999
+			pointer_start.clear()
+			pointer_moved.clear()
+			pointer_hold_elapsed.clear()
+			_set_status("Move cancelled. Building returned to its original location.")
+			get_viewport().set_input_as_handled()
+			return
 		if bulldoze_mode or bulldoze_road_mode or BuildManager.is_placing or _is_road_mode():
 			var hud = get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
 			if hud and hud.has_method("_on_cancel_pressed"):
@@ -35,10 +82,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.pressed:
 			pointer_start[-1] = event.position
 			pointer_moved[-1] = false
+			pointer_hold_elapsed[-1] = 0.0
 			if _is_road_mode():
 				_start_road_stroke(-1, event.position)
 		else:
-			if road_stroke_active.has(-1):
+			if BuildManager.is_moving and move_pointer_id == -1:
+				var moved_ok := BuildManager.finish_move()
+				_set_status("Building moved successfully." if moved_ok else "Invalid location. Building returned to its original location.")
+				move_pointer_id = -999
+			elif road_stroke_active.has(-1):
 				_end_road_stroke(-1)
 			else:
 				var start: Vector2 = pointer_start.get(-1, event.position)
@@ -51,11 +103,14 @@ func _unhandled_input(event: InputEvent) -> void:
 					_handle_tap(event.position)
 			pointer_start.erase(-1)
 			pointer_moved.erase(-1)
+			pointer_hold_elapsed.erase(-1)
 	elif event is InputEventMouseMotion:
 		if pointer_start.has(-1) and Vector2(pointer_start[-1]).distance_to(event.position) > TAP_SLOP:
 			pointer_moved[-1] = true
 		if road_stroke_active.has(-1):
 			_continue_road_stroke(-1, event.position)
+		elif BuildManager.is_moving and move_pointer_id == -1:
+			_update_move_from_screen(event.position)
 		elif BuildManager.is_placing:
 			_update_ghost(event.position)
 	elif event is InputEventScreenTouch:
@@ -67,21 +122,28 @@ func _unhandled_input(event: InputEvent) -> void:
 					pointer_moved[pointer_id] = true
 			pointer_start[event.index] = event.position
 			pointer_moved[event.index] = false
+			pointer_hold_elapsed[event.index] = 0.0
 			if pointer_start.size() == 1 and _is_road_mode():
 				_start_road_stroke(event.index, event.position)
 		else:
 			if road_stroke_active.has(event.index):
 				_end_road_stroke(event.index)
 			elif pointer_start.has(event.index):
-				var start: Vector2 = pointer_start[event.index]
-				var moved := bool(pointer_moved.get(event.index, false))
-				if not multi_touch_gesture:
-					if BuildManager.is_placing and moved:
-						_handle_tap(event.position)
-					elif start.distance_to(event.position) <= TAP_SLOP and not moved:
-						_handle_tap(event.position)
+				if BuildManager.is_moving and move_pointer_id == event.index:
+					var moved_ok := BuildManager.finish_move()
+					_set_status("Building moved successfully." if moved_ok else "Invalid location. Building returned to its original location.")
+					move_pointer_id = -999
+				else:
+					var start: Vector2 = pointer_start[event.index]
+					var moved := bool(pointer_moved.get(event.index, false))
+					if not multi_touch_gesture and not BuildManager.is_moving:
+						if BuildManager.is_placing and moved:
+							_handle_tap(event.position)
+						elif start.distance_to(event.position) <= TAP_SLOP and not moved:
+							_handle_tap(event.position)
 			pointer_start.erase(event.index)
 			pointer_moved.erase(event.index)
+			pointer_hold_elapsed.erase(event.index)
 			if pointer_start.is_empty():
 				multi_touch_gesture = false
 	elif event is InputEventScreenDrag:
@@ -94,6 +156,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_moved[event.index] = true
 		if road_stroke_active.has(event.index) and pointer_start.size() == 1:
 			_continue_road_stroke(event.index, event.position)
+		elif BuildManager.is_moving and move_pointer_id == event.index:
+			_update_move_from_screen(event.position)
 		elif BuildManager.is_placing and event.index == 0:
 			_update_ghost(event.position)
 
