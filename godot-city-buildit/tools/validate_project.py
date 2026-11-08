@@ -80,7 +80,7 @@ elif "res://assets/icons/power.svg" not in atlas:
 atlas_keys = set(re.findall(r'"([a-z0-9_]+)": \[\d+, Rect2i', atlas))
 required_icons = {
     "road", "residential", "commercial", "industrial", "services",
-    "specializations", "bulldoze", "power", "water", "fire", "parks",
+    "bulldoze", "power", "water", "fire", "parks",
     "storage", "trade", "save", "cancel", "education", "transportation",
     "entertainment", "gambling", "beach", "mountain", "landmark",
     "trade_depot", "global_trade", "epic", "regions"
@@ -89,13 +89,13 @@ for icon_key in sorted(required_icons - atlas_keys):
     errors.append(f"Required HUD icon is missing from atlas: {icon_key}")
 
 toolbar_order = [
-    '["road","Road"]',
-    '["residential","Residential"]',
-    '["commercial","Commercial"]',
-    '["industrial","Industrial"]',
-    '["services","Services"]',
-    '["specializations","Specializations / Park"]',
-    '["bulldoze","Bulldoze"]'
+    '["road", "Road", "road"]',
+    '["residential", "Residential", "residential"]',
+    '["commercial", "Commercial", "commercial"]',
+    '["industrial", "Industrial", "industrial"]',
+    '["services", "Services", "services"]',
+    '["park", "Park", "parks"]',
+    '["bulldoze", "Bulldozer", "bulldoze"]'
 ]
 positions = [hud.find(entry) for entry in toolbar_order]
 if any(position < 0 for position in positions) or positions != sorted(positions):
