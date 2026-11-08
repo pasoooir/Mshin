@@ -151,7 +151,6 @@ for road_contract in [
     "func _refresh_road_neighborhood(", "func _refresh_road_mesh(",
     "func _create_road_mesh(", "SurfaceTool.new()", "ArrayMesh.new()",
     "func _create_asphalt_textures(", "normal_enabled = true",
-    "texture_repeat = BaseMaterial3D.TEXTURE_REPEAT_ENABLED",
     "ROAD_TEXTURE_WORLD_SCALE", "func _add_road_markings(",
     "func _add_crosswalk(", "func _get_sidewalk_material(",
     "func _get_curb_material(", "road_placed.emit(grid_pos)",
