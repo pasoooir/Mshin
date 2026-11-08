@@ -302,8 +302,12 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 		return
 
 	if tile_kind == TILE_T:
-		# Keep the main road's centerline, but leave the junction itself open.
-		_add_axis_dashes(surface_tool, grid_pos, main_axis, true)
+		# Preserve the through-road centerline but leave a balanced open gap at the junction.
+		for side in [-1.0, 1.0]:
+			var center := _direction_to_world(main_axis) * (0.72 * side)
+			center.y = 0.088
+			var dash_size := Vector3(0.42, 0.006, 0.045) if main_axis.x != 0 else Vector3(0.045, 0.006, 0.42)
+			_append_box(surface_tool, grid_pos, center, dash_size)
 	else:
 		_add_axis_dashes(surface_tool, grid_pos, main_axis, false)
 
@@ -342,7 +346,7 @@ func _count_marking_boxes(tile_kind: String, arms: Array[Vector2i], grid_pos: Ve
 	if tile_kind == TILE_CORNER:
 		return arms.size() * 2
 	if tile_kind == TILE_T:
-		return 1
+		return 2
 	return 2
 
 func _add_surface(array_mesh: ArrayMesh, surface_tool: SurfaceTool, material: Material, expected_boxes: int) -> void:
