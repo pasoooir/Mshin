@@ -22,6 +22,8 @@ var upgrade_stage: int = 1
 var max_stage: int = 6
 var current_population: int = 0
 var upgrade_ready: bool = false
+var demolition_highlight_active: bool = false
+var _demolition_highlight_root: Node3D
 
 @onready var mesh_root: Node3D = $MeshRoot
 @onready var scaffold_root: Node3D = $ScaffoldRoot
@@ -67,6 +69,41 @@ func setup(data: Dictionary) -> void:
 		_start_construction()
 	else:
 		_on_construction_finished()
+
+func set_demolition_highlight(active: bool) -> void:
+	# A thin emissive footprint frame makes the first bulldozer tap unmistakable.
+	demolition_highlight_active = active
+	if DisplayServer.get_name() == "headless":
+		return
+	if active and _demolition_highlight_root == null:
+		_demolition_highlight_root = Node3D.new()
+		_demolition_highlight_root.name = "DemolitionHighlight"
+		add_child(_demolition_highlight_root)
+		var footprint: Vector2i = definition.get("size", Vector2i(2, 2))
+		var width := float(footprint.x) * 1.7 + 0.42
+		var depth := float(footprint.y) * 1.7 + 0.42
+		var beam_width := 0.12
+		var beam_height := 0.10
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.albedo_color = Color(1.0, 0.72, 0.12, 0.98)
+		material.emission_enabled = true
+		material.emission = Color(1.0, 0.55, 0.04)
+		material.emission_energy_multiplier = 1.8
+		for edge in 4:
+			var beam := MeshInstance3D.new()
+			var box := BoxMesh.new()
+			if edge < 2:
+				box.size = Vector3(width, beam_height, beam_width)
+				beam.position = Vector3(0.0, 0.34, (-depth * 0.5) if edge == 0 else (depth * 0.5))
+			else:
+				box.size = Vector3(beam_width, beam_height, depth)
+				beam.position = Vector3((-width * 0.5) if edge == 2 else (width * 0.5), 0.34, 0.0)
+			beam.mesh = box
+			beam.material_override = material
+			_demolition_highlight_root.add_child(beam)
+	if _demolition_highlight_root:
+		_demolition_highlight_root.visible = active
 
 func _create_visual() -> void:
 	if DisplayServer.get_name() == "headless":
