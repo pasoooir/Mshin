@@ -205,7 +205,7 @@ func _continue_road_stroke(pointer_id: int, screen_position: Vector2) -> void:
 			continue
 		if road_system.place_road(cell):
 			road_stroke_last_cell[pointer_id] = cell
-			_set_status("Paving connected road… 50 Simoleons per tile.")
+			_set_status("Paving connected road... 50 Simoleons per tile.")
 		else:
 			_set_status(road_system.get_road_placement_error(cell))
 			break
