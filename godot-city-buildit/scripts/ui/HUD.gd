@@ -118,7 +118,7 @@ func _build_top_hud() -> void:
 	right_stack.offset_left = -238
 	right_stack.offset_right = -12
 	right_stack.offset_top = 10
-	right_stack.offset_bottom = 150
+	right_stack.offset_bottom = 174
 	right_stack.add_theme_constant_override("separation", 7)
 	right_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(right_stack)
@@ -277,9 +277,9 @@ func _build_toolbars() -> void:
 	# Large touch targets stay inside a vertical scroller on short landscape screens.
 	var toolbar_scroll := ScrollContainer.new()
 	toolbar_scroll.name = "RightToolbar"
-	toolbar_scroll.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	var scroll_height := get_viewport().get_visible_rect().size.y * 0.78
-	toolbar_scroll.position = Vector2(8, -scroll_height * 0.5)
+	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	var scroll_height := get_viewport().get_visible_rect().size.y - 150.0
+	toolbar_scroll.position = Vector2(8, 132)
 	toolbar_scroll.custom_minimum_size = Vector2(82, scroll_height)
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
