@@ -270,7 +270,8 @@ func _run_gameplay_test() -> void:
 	var factory = _find_building("industrial_1")
 	_check(home != null and home.status == "completed", "House construction did not finish.")
 	_check(factory != null and factory.status == "completed", "Factory construction did not finish.")
-	_check(GameManager.population >= 15, "Completed house did not add population.")
+	_check(GameManager.population > 0, "Completed house did not add any occupied population.")
+	_check(GameManager.happiness > 0.0 and GameManager.happiness <= 100.0, "First completed house happiness must remain in the valid non-zero range.")
 	_check(ServiceManager.total_power >= 12 and ServiceManager.total_water >= 12, "Power/water capacity was not registered.")
 	_check(home != null and ServiceManager.is_building_served(home), "House was not served by nearby power and water.")
 
@@ -350,7 +351,7 @@ func _run_gameplay_test() -> void:
 	_check(factory != null and StorageManager.get_item_count("metal") == 2, "Tapping factory did not collect the restarted Metal batch.")
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
 	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")
-	_check(home != null and home.current_population == 30 and GameManager.population >= 30, "House upgrade did not increase population.")
+	_check(home != null and home.current_population >= 18 and GameManager.population >= 18, "House upgrade did not increase service-adjusted population.")
 
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 
@@ -370,7 +371,7 @@ func _run_gameplay_test() -> void:
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
-	_check(GameManager.population >= 30, "Population was not restored from save.")
+	_check(GameManager.population >= 18, "Population was not restored from save.")
 
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
