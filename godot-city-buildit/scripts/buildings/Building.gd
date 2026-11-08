@@ -44,8 +44,11 @@ func setup(data: Dictionary) -> void:
 	status = data.get("status", "constructing")
 	build_time = definition.get("build_time", 10.0)
 	upgrade_stage = data.get("upgrade_stage", 1)
-	_create_visual()
-	_create_scaffold()
+	# Procedural building meshes are visual-only. Headless integration tests exercise
+	# the building state machine without instantiating renderer resources.
+	if DisplayServer.get_name() != "headless":
+		_create_visual()
+		_create_scaffold()
 	_update_stage_label()
 	if name_label:
 		name_label.text = definition.get("name", "")
