@@ -88,7 +88,7 @@ jobs:
           if grep -Fq "__GAME_BUILD__" "$GITHUB_WORKSPACE/site/index.html"; then exit 1; fi
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 
-      - name: Capture real Web build screenshot in Chromium
+      - name: Verify desktop and mobile Web launches in Chromium
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
@@ -106,18 +106,33 @@ jobs:
           const gameFrame = page.locator('#game-frame');
           await gameFrame.waitFor({ state: 'attached', timeout: 10000 });
           await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
-          await page.waitForTimeout(8000);
-          await page.screenshot({ path: 'mshin-web-hud.png', fullPage: true });
-          if (errors.length) throw new Error('Browser page errors: ' + errors.join(' | '));
+          await page.waitForTimeout(2000);
+          // Release the desktop WebGL context before starting the mobile viewport.
+          await page.close();
+
+          // Repeat the real launch path in a touch-enabled mobile landscape viewport.
+          const mobilePage = await browser.newPage({
+            viewport: { width: 844, height: 390 },
+            deviceScaleFactor: 1,
+            hasTouch: true
+          });
+          const mobileErrors = [];
+          mobilePage.on('pageerror', error => mobileErrors.push(error.message));
+          await mobilePage.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
+          await mobilePage.getByRole('button', { name: /PLAY MSHIN/i }).click();
+          const mobileFrame = mobilePage.locator('#game-frame');
+          await mobileFrame.waitFor({ state: 'attached', timeout: 10000 });
+          await mobilePage.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
+          // The mobile acceptance gate is functional (launcher + live canvas);
+          // avoid a second WebGL screenshot because software-rendered mobile
+          // emulation can stall Chromium's compositor.
+          await mobilePage.waitForTimeout(2000);
+
+          if (errors.length || mobileErrors.length) {
+            throw new Error('Browser page errors: ' + [...errors, ...mobileErrors].join(' | '));
+          }
           await browser.close();
           NODE
-      - name: Upload Web screenshot evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: mshin-web-hud-screenshot
-          path: mshin-web-hud.png
-          if-no-files-found: error
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

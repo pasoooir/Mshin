@@ -1,5 +1,7 @@
 extends Node3D
 
+const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
+
 var failures: Array[String] = []
 
 func _ready() -> void:
@@ -112,6 +114,8 @@ func _test_drag_gestures_do_not_place() -> void:
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_immigration_coefficients()
+	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
+	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
 	var input_node = get_node("CityInput")
 	var world = get_node_or_null("World")
 	_check(world != null and world.get_node_or_null("WorldPresentation/NaturalTerrain") != null, "Natural terrain was not generated.")
@@ -171,6 +175,7 @@ func _run_gameplay_test() -> void:
 			hud._toggle_category_menu()
 			_check(not right_toolbar.visible, "Build button action did not close the category dock.")
 		hud._show_submenu("residential")
+		_check(hud.submenu.get_node("residential_villa").text == "Villa House", "Residential submenu label must be English.")
 		_check(hud.submenu.get_child_count() == 4, "Residential submenu should show three choices and a close button.")
 		_check(hud.submenu.get_node_or_null("residential_villa") != null, "Residential villa option is missing.")
 		_check(hud.submenu.get_node_or_null("residential_apartment") != null, "Residential apartment option is missing.")
@@ -181,6 +186,7 @@ func _run_gameplay_test() -> void:
 		hud._show_submenu("commercial")
 		_check(hud.submenu.get_child_count() == 5, "Commercial submenu should show four choices and a close button.")
 		_check(hud.submenu.get_node_or_null("shop_chain") != null, "Chain store option is missing.")
+		_check(hud.submenu.get_node("shop_chain").text == "Chain Store", "Commercial submenu labels must be English.")
 		_check(hud.submenu.get_node_or_null("restaurant_traditional") != null, "Traditional restaurant option is missing.")
 		_check(hud.submenu.get_node_or_null("fast_food") != null, "Fast food option is missing.")
 		_check(hud.submenu.get_node_or_null("art_supplies") != null, "Art supplies option is missing.")
@@ -217,11 +223,13 @@ func _run_gameplay_test() -> void:
 		hud._on_cancel_pressed()
 		hud._show_submenu("industrial")
 		_check(hud.submenu.get_node_or_null("industrial_1") != null and hud.submenu.get_node_or_null("industrial_2") != null, "Both level-based factory choices must be listed.")
+		_check(hud.submenu.get_node("industrial_1").text == "Small Factory - Metal", "Industrial submenu labels must be English.")
 		hud._on_submenu_option("industrial", "industrial_1")
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "industrial_1", "Small factory menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._show_submenu("services")
 		_check(hud.submenu.get_node_or_null("power_wind") != null and hud.submenu.get_node_or_null("water_tower") != null and hud.submenu.get_node_or_null("fire_station") != null, "Power, water and fire service choices must be listed.")
+		_check(hud.submenu.get_node("power_wind").text == "Wind Power", "Services submenu labels must be English.")
 		hud._on_submenu_option("services", "power_wind")
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "power_wind", "Wind power menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
@@ -230,15 +238,23 @@ func _run_gameplay_test() -> void:
 		hud._show_submenu("services")
 		var locked_fire = hud.submenu.get_node_or_null("fire_station")
 		_check(locked_fire != null and not locked_fire.disabled, "Locked fire station must remain clickable.")
+		_check(locked_fire.text.find("Unlocked at Level 5") >= 0, "Locked entries must use the plain English unlock label.")
 		hud._on_submenu_option("services", "fire_station")
-		_check(not BuildManager.is_placing and hud.status_label.text.find("level 5") >= 0, "Locked fire station did not explain its unlock level.")
+		_check(not BuildManager.is_placing and hud.status_label.text.find("Level 5") >= 0, "Locked fire station did not explain its unlock level.")
 		GameManager.level = menu_test_level
 		hud._on_category_pressed("park")
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "park_small", "Park button did not directly enter park placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("bulldoze")
 		_check(input_node.bulldoze_mode and not input_node.bulldoze_road_mode, "Main bulldozer button did not activate general demolition mode.")
-		hud._on_cancel_pressed()
+		_check(hud.status_label.text == "Bulldozer active — tap a building twice to demolish. Tap a road to remove it. Press X to cancel.", "Bulldozer activation message is missing or unclear.")
+		var bulldozer_badge = hud.get_node_or_null("BulldozerModeIndicator")
+		_check(bulldozer_badge != null and bulldozer_badge.visible, "Bulldozer active indicator was not shown.")
+		var cancel_key := InputEventKey.new()
+		cancel_key.pressed = true
+		cancel_key.keycode = KEY_X
+		hud._unhandled_input(cancel_key)
+		_check(hud.get_node_or_null("BulldozerModeIndicator") == null or not hud.get_node("BulldozerModeIndicator").visible, "X did not hide the bulldozer indicator.")
 		_check(not input_node.bulldoze_mode and not input_node.bulldoze_road_mode, "X/Cancel did not exit bulldozer mode.")
 		# Exercise road-only demolition: one asphalt tile disappears, nothing else changes.
 		var test_road_cell := Vector2i(18, 0)
@@ -263,8 +279,10 @@ func _run_gameplay_test() -> void:
 		input_node.set_bulldoze_mode(true)
 		input_node._handle_bulldoze_cell(demo_cell, road_system)
 		_check(BuildManager.building_at_cell(demo_cell) == demo_building, "First bulldozer tap should only request confirmation.")
+		_check(demo_building.demolition_highlight_active, "First bulldozer tap did not highlight the selected building.")
 		input_node._handle_bulldoze_cell(demo_cell, road_system)
 		_check(BuildManager.building_at_cell(demo_cell) == null, "Second bulldozer tap did not remove the building footprint.")
+		_check(not demo_building.demolition_highlight_active, "Demolition highlight was not cleared after removal.")
 		print("[GameplaySmoke] demolition after=%d" % GameManager.population)
 		_check(GameManager.population < population_before_demo, "Demolishing a residential building did not remove its population.")
 		input_node.set_bulldoze_mode(false)
