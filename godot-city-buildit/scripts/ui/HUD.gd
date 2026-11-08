@@ -286,13 +286,13 @@ func _build_toolbars() -> void:
 	toolbar_scroll.anchor_right = 1.0
 	toolbar_scroll.anchor_top = 0.0
 	toolbar_scroll.anchor_bottom = 1.0
-	toolbar_scroll.offset_left = -104
+	toolbar_scroll.offset_left = -128
 	toolbar_scroll.offset_right = -8
 	var viewport_size := get_viewport().get_visible_rect().size
 	var header_clearance := maxf(164.0, 238.0 * _ui_scale)
 	toolbar_scroll.offset_top = header_clearance
 	toolbar_scroll.offset_bottom = -116.0
-	toolbar_scroll.custom_minimum_size = Vector2(96, maxf(72.0, viewport_size.y - header_clearance - 116.0))
+	toolbar_scroll.custom_minimum_size = Vector2(120, maxf(72.0, viewport_size.y - header_clearance - 116.0))
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	toolbar_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
