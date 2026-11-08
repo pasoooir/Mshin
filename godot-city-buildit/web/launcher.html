@@ -43,12 +43,26 @@
       const gameUrl = './game/__GAME_BUILD__/';
       const play = document.getElementById('play');
       const hint = document.getElementById('hint');
-      play.addEventListener('click', () => {
+      async function requestLandscapeFullscreen() {
+        // Both APIs must be called from the Play button's trusted user gesture.
+        try {
+          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+          }
+        } catch (_) { /* Continue to the game when browser policy blocks fullscreen. */ }
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+          }
+        } catch (_) { /* iOS Safari and some browsers do not expose orientation lock. */ }
+      }
+
+      play.addEventListener('click', async () => {
         play.disabled = true;
         play.textContent = 'LOADING CITY…';
-        hint.textContent = 'Opening the 3D city…';
-        // Navigate directly to the exported Godot game. Avoid an iframe wrapper:
-        // mobile browsers can block or mis-size nested WebGL/fullscreen canvases.
+        hint.textContent = 'Preparing fullscreen landscape…';
+        await requestLandscapeFullscreen();
+        // Navigate directly to the exported Godot game. Avoid an iframe wrapper.
         window.location.assign(gameUrl);
       });
     })();
