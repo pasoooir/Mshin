@@ -31,15 +31,6 @@ var upgrade_ready: bool = false
 @onready var stage_label: Label3D = $StageLabel
 
 func _ready() -> void:
-	if DisplayServer.get_name() == "headless":
-		# Label3D builds font meshes through the renderer. Remove visual-only labels
-		# from dummy-renderer test instances; gameplay state does not depend on them.
-		for visual_label in [production_icon, name_label, stage_label]:
-			if is_instance_valid(visual_label):
-				visual_label.free()
-			if is_instance_valid(hard_hat):
-				hard_hat.free()
-		return
 	if hard_hat: hard_hat.visible = false
 	if production_icon: production_icon.visible = false
 	if name_label: name_label.visible = false
