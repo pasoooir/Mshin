@@ -182,6 +182,7 @@ func _run_gameplay_test() -> void:
 	_check(supplies != null and not supplies.has_ready_product and StorageManager.get_item_count("nails") == 1, "Tapping ready Building Supplies did not collect Nails.")
 	_check(StorageManager.get_item_count("nails") == 1, "Crafted Nails were not stored.")
 	_check(not supplies.is_producing and not supplies.has_ready_product, "Commercial store should stop after collecting its product.")
+	StorageManager.add_item("metal", 2)
 	input_node._try_interact(BuildManager.grid_to_world(supplies.grid_pos))
 	_check(supplies.is_producing, "Tapping Building Supplies again should order another timed Nails batch.")
 	# Cancel the second batch for the next test and restore the required Metal/Wood inputs.
@@ -207,6 +208,8 @@ func _run_gameplay_test() -> void:
 	_check(hardware != null and hardware.has_ready_product, "Hardware Store did not finish Hammer.")
 	input_node._try_interact(BuildManager.grid_to_world(hardware.grid_pos))
 	_check(StorageManager.get_item_count("hammer") == 1 and not hardware.is_producing, "Hardware Store did not collect Hammer and stop.")
+	BuildManager.unregister_building(hardware.building_id)
+	hardware.queue_free()
 	GameManager.level = previous_level
 
 	# Existing level-1 upgrade recipe also needs one Metal in addition to Nails.
