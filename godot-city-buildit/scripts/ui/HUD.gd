@@ -315,14 +315,31 @@ func _build_toolbars() -> void:
 	toolbar.anchor_right = 1.0
 	toolbar.anchor_top = 0.5
 	toolbar.anchor_bottom = 0.5
-	toolbar.offset_left = -(category_size * 2.0 + 8.0 + 24.0) - 10.0
-	toolbar.offset_right = -10.0
+	toolbar.offset_left = -(category_size * 2.0 + 8.0 + 24.0) - 86.0
+	toolbar.offset_right = -86.0
 	toolbar.offset_top = -panel_height * 0.5
 	toolbar.offset_bottom = panel_height * 0.5
 	toolbar.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.90), Color(0.65, 0.82, 0.92, 0.34)))
 	toolbar.mouse_filter = Control.MOUSE_FILTER_STOP
 	toolbar.z_index = 30
 	add_child(toolbar)
+	toolbar.hide()
+
+	# A persistent build button opens the category grid on demand. This avoids
+	# covering the currency HUD or shrinking the play area on short landscape screens.
+	var build_toggle := _make_icon_button("build", "Build", Vector2(68, 68))
+	build_toggle.name = "BuildMenuButton"
+	build_toggle.anchor_left = 1.0
+	build_toggle.anchor_right = 1.0
+	build_toggle.anchor_top = 0.5
+	build_toggle.anchor_bottom = 0.5
+	build_toggle.offset_left = -76.0
+	build_toggle.offset_right = -8.0
+	build_toggle.offset_top = -34.0
+	build_toggle.offset_bottom = 34.0
+	build_toggle.z_index = 31
+	add_child(build_toggle)
+	build_toggle.pressed.connect(_toggle_category_menu)
 
 	var toolbar_items := GridContainer.new()
 	toolbar_items.name = "RightToolbarItems"
@@ -423,9 +440,19 @@ func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
 	style.content_margin_bottom = 2
 	return style
 
+func _toggle_category_menu() -> void:
+	var toolbar := get_node_or_null("RightToolbar")
+	if toolbar:
+		toolbar.visible = not toolbar.visible
+	if submenu and submenu.visible:
+		submenu.hide()
+		active_category = ""
+
 func _on_category_pressed(category: String) -> void:
 	if category == "park":
 		_select_building_type("park_small")
+		var park_toolbar := get_node_or_null("RightToolbar")
+		if park_toolbar: park_toolbar.hide()
 		return
 	if category == "bulldoze":
 		_start_bulldoze_mode()
@@ -435,6 +462,8 @@ func _on_category_pressed(category: String) -> void:
 		return
 	active_category = category
 	_show_submenu(category)
+	var category_toolbar := get_node_or_null("RightToolbar")
+	if category_toolbar: category_toolbar.hide()
 
 func _show_submenu(category: String) -> void:
 	for child in submenu.get_children():
@@ -526,6 +555,8 @@ func _start_bulldoze_mode() -> void:
 		city_input.set_bulldoze_mode(true)
 	if submenu:
 		submenu.hide()
+	var category_toolbar := get_node_or_null("RightToolbar")
+	if category_toolbar: category_toolbar.hide()
 	active_category = ""
 	status_label.text = "Bulldozer active — tap a road to remove it, or tap a building twice to confirm demolition. Press X to exit."
 
@@ -566,6 +597,9 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 	active_category = ""
 	if cancel_placement:
 		BuildManager.cancel_placement()
+	if not BuildManager.is_placing:
+		var category_toolbar := get_node_or_null("RightToolbar")
+		if category_toolbar: category_toolbar.show()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not submenu or not submenu.visible:
@@ -686,6 +720,8 @@ func _on_cancel_pressed() -> void:
 	BuildManager.cancel_placement()
 	if submenu:
 		submenu.hide()
+	var category_toolbar := get_node_or_null("RightToolbar")
+	if category_toolbar: category_toolbar.show()
 	active_category = ""
 	status_label.text = "Cancelled."
 
