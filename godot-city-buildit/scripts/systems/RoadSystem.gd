@@ -403,6 +403,8 @@ func _create_asphalt_textures() -> Array[Texture2D]:
 			var dx := (right - left) * 4.0
 			var dy := (down - up) * 4.0
 			normal_image.set_pixel(x, y, Color(0.5 - dx, 0.5 - dy, 1.0, 1.0))
+	image.generate_mipmaps()
+	normal_image.generate_mipmaps()
 	return [ImageTexture.create_from_image(image), ImageTexture.create_from_image(normal_image)]
 
 func _get_sidewalk_material() -> StandardMaterial3D:
