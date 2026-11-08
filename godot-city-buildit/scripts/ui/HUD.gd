@@ -477,6 +477,11 @@ func _select_building_type(type_id: String) -> void:
 	else:
 		status_label.text = "Could not enter placement mode for %s." % str(definition.get("name", type_id))
 
+func _on_building_choice_pressed(type_id: String) -> void:
+	# Keep the existing test and scene callback contract while routing through
+	# the same level, factory-capacity and placement checks as every menu item.
+	_select_building_type(type_id)
+
 func _set_tool_modes_off() -> void:
 	var scene := get_tree().current_scene
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
