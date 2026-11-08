@@ -167,7 +167,7 @@ if "func _refresh_road_neighborhood" in road_source:
         errors.append("Placing/removing a road must refresh all four neighboring road meshes")
 if "func _create_asphalt_textures" in road_source:
     asphalt_body = re.search(r"func _create_asphalt_textures\(.*?(?=\nfunc |\Z)", road_source, re.S)
-    if asphalt_body is None or "normal_image" not in asphalt_body.group(0) or "fine_grain" not in asphalt_body.group(0):
+    if asphalt_body is None or "normal_image" not in asphalt_body.group(0) or "fine_grain" not in asphalt_body.group(0) or "image.generate_mipmaps()" not in asphalt_body.group(0) or "normal_image.generate_mipmaps()" not in asphalt_body.group(0):
         errors.append("Asphalt must include natural grain variation and a generated normal map")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
 for road_test in [
