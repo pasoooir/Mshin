@@ -123,11 +123,17 @@ func _create_visual() -> void:
 	var height: float = 1.6 * height_mult
 	match category:
 		"residential":
-			height = 1.8 + upgrade_stage * 0.35
+			# Visible architectural milestones: starter villa, expanded two-storey home,
+			# then a taller upgraded residence. Each tier changes the silhouette.
+			height = 2.05 + float(upgrade_stage - 1) * 0.32
+			if upgrade_stage >= 3:
+				height += 0.48
+			if upgrade_stage >= 5:
+				height += 0.62
 			if subtype == "apartment":
 				height += 1.25
 			elif subtype == "farm":
-				height = maxf(1.65, height - 0.35)
+				height = maxf(1.65, height - 0.45)
 			_build_residential(w, d, height, color)
 		"commercial":
 			height = 2.0
@@ -156,7 +162,7 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 	var frame := Color(0.95, 0.92, 0.85)
 	var awning := Color(0.70, 0.25, 0.18)
 
-	plaster = plaster.lerp(color, 0.25)
+	plaster = plaster.lerp(color, 0.38)
 	plaster_shadow = plaster.darkened(0.16)
 	plaster_light = plaster.lightened(0.10)
 
@@ -658,11 +664,11 @@ func collect_production() -> bool:
 	return true
 
 func _update_stage_label() -> void:
-	if stage_label and definition.get("category") == "residential":
-		stage_label.visible = true
-		stage_label.text = "Lv%d" % upgrade_stage
-	elif stage_label:
+	# Floating level text clashes with the city view. Keep the level in the
+	# building information panel, not as a permanent label above every roof.
+	if stage_label:
 		stage_label.visible = false
+		stage_label.text = ""
 
 func get_info() -> String:
 	var info = definition.get("name", "Building")
