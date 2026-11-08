@@ -366,8 +366,8 @@ func _run_gameplay_test() -> void:
 	_check(ServiceManager.total_power >= 12 and ServiceManager.total_water >= 12, "Power/water capacity was not registered.")
 	_check(home != null and ServiceManager.is_building_served(home), "House was not served by nearby power and water.")
 
-	# Exercise the actual touch long-press, drag and release event path.
-	BuildManager.cancel_placement()
+	# Exercise the actual touch long-press, drag and release event path while the build palette is still active.
+	BuildManager.select_building("residential_1")
 	var active_move_camera: Camera3D = get_viewport().get_camera_3d()
 	var move_input_screen: Vector2 = active_move_camera.unproject_position(BuildManager.grid_to_world(home.grid_pos))
 	var touch_down := InputEventScreenTouch.new()
@@ -376,7 +376,9 @@ func _run_gameplay_test() -> void:
 	touch_down.position = move_input_screen
 	input_node._unhandled_input(touch_down)
 	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
-	_check(BuildManager.is_moving and BuildManager.moving_building == home, "Long press on a completed residential building did not enter Move mode.")
+	_check(BuildManager.is_moving and BuildManager.moving_building == home, "Long press on a completed residential building did not enter Move mode while placement was active.")
+	_check(not BuildManager.is_placing, "Starting a building move did not exit the active placement palette.")
+	_check(input_node._move_anchor_from_world(BuildManager.grid_to_world(Vector2i(8, 1))) == Vector2i(8, 1), "Move drag did not map the finger position to the building footprint anchor.")
 	var moved_to := Vector2i(8, 1)
 	var moved_screen: Vector2 = active_move_camera.unproject_position(BuildManager.grid_to_world(moved_to))
 	var touch_drag := InputEventScreenDrag.new()
