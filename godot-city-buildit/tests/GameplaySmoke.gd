@@ -214,10 +214,17 @@ func _run_gameplay_test() -> void:
 
 	# Existing level-1 upgrade recipe also needs one Metal in addition to Nails.
 	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and factory.is_producing, "Tapping factory did not start upgrade Metal.")
+	_check(factory != null and factory.is_producing, "Collecting the factory's ready Metal did not restart production.")
+	# Simulate a stopped/idle factory and verify that tapping it resumes production.
+	factory.is_producing = false
+	factory.production_timer = 0.0
+	if factory.production_icon:
+		factory.production_icon.visible = false
+	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
+	_check(factory != null and factory.is_producing, "Tapping an idle factory did not restart Metal production.")
 	await _wait_seconds(0.35)
 	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and StorageManager.get_item_count("metal") == 1, "Tapping factory did not collect upgrade Metal.")
+	_check(factory != null and StorageManager.get_item_count("metal") == 2, "Tapping factory did not collect the restarted Metal batch.")
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
 	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")
 	_check(home != null and home.current_population == 30 and GameManager.population >= 30, "House upgrade did not increase population.")
