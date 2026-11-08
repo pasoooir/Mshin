@@ -216,26 +216,57 @@ func _raycast_ground(screen_position: Vector2) -> Variant:
 
 func _try_interact(world_position: Vector3) -> void:
 	var grid: Vector2i = BuildManager.world_to_grid(world_position)
-	# Direct cell lookup avoids scanning every building and allocating footprint arrays on each tap.
 	var building = BuildManager.building_at_cell(grid)
 	if building == null or not is_instance_valid(building):
 		return
-	if building.definition.get("category", "") == "residential":
+
+	var category: String = str(building.definition.get("category", ""))
+	if category == "residential":
 		if building.upgrade_ready:
 			if building.try_upgrade():
 				_set_status("House upgraded to level %d. Population increased." % building.upgrade_stage)
-		else:
-			_set_status(building.get_info())
-	elif building.definition.get("category", "") == "commercial":
-		if building.building_type == "building_supplies":
-			if ProductionManager.craft_item("nails"):
-				_set_status("Crafted Nails. Wait for another Metal and upgrade your house.")
 			else:
-				_set_status("Building Supplies: collect Metal from your factory, then tap here to craft Nails.")
+				_set_status(building.get_info())
 		else:
 			_set_status(building.get_info())
-	elif building.has_ready_product:
-		if building.collect_production():
-			_set_status("Collected %s. It is now in your city storage." % building.current_product.capitalize())
-	else:
-		_set_status(building.get_info())
+		return
+
+	if category == "industrial" or category == "commercial":
+		if building.has_ready_product:
+			var product_name := str(ProductionManager.raw_materials.get(
+				building.current_product,
+				ProductionManager.crafted_items.get(building.current_product, {})
+			).get("name", building.current_product.capitalize()))
+			if building.collect_production():
+				_set_status("Collected %s. Stored in city warehouse." % product_name)
+			else:
+				_set_status("Storage full. Make room in the warehouse and collect again.")
+			return
+
+		if building.is_producing:
+			_set_status(building.get_info())
+			return
+
+		if category == "industrial":
+			var product_id := ProductionManager.get_default_factory_product()
+			if building.start_factory_production(product_id):
+				_set_status("Factory started producing %s." % product_id.capitalize())
+			else:
+				_set_status("Factory cannot produce %s at your current level." % product_id.capitalize())
+			return
+
+		var recipe_id := ProductionManager.get_default_recipe_for_building(building.building_type)
+		if recipe_id == "":
+			_set_status("No unlocked recipe for this store.")
+			return
+		if building.start_commercial_production(recipe_id):
+			_set_status("Crafting %s. Required materials were taken from storage." % recipe_id.capitalize())
+		else:
+			var missing := ProductionManager.get_missing_inputs_text(recipe_id)
+			if missing != "":
+				_set_status("Need %s to craft %s." % [missing, recipe_id.capitalize()])
+			else:
+				_set_status("Cannot start %s. Check store level and production slot." % recipe_id.capitalize())
+		return
+
+	_set_status(building.get_info())
