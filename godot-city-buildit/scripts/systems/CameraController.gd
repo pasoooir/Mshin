@@ -50,7 +50,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		touch_points[event.index] = event.position
 		if touch_points.size() == 1:
-			if not _is_road_mode():
+			# CityInput owns the active pointer while a building is being relocated.
+			# Do not move the camera underneath the drag preview.
+			if not _is_road_mode() and not BuildManager.is_moving:
 				_pan(event.relative)
 		elif touch_points.size() >= 2:
 			_update_pinch(event.relative)

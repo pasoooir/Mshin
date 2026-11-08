@@ -20,7 +20,7 @@ func _ready() -> void:
 	camera = get_viewport().get_camera_3d()
 
 func _process(delta: float) -> void:
-	if BuildManager.is_moving or BuildManager.is_placing or bulldoze_mode or bulldoze_road_mode or _is_road_mode():
+	if BuildManager.is_moving or bulldoze_mode or bulldoze_road_mode or _is_road_mode():
 		return
 	if pointer_start.size() != 1:
 		return
@@ -39,6 +39,10 @@ func _begin_move_from_screen(pointer_id: int, screen_position: Vector2) -> void:
 	if building == null or not is_instance_valid(building):
 		return
 	if BuildManager.begin_move(building):
+		# Moving a placed building must work even when the build palette is still active.
+		# Exit placement mode only after a real building has been picked up.
+		if BuildManager.is_placing:
+			BuildManager.cancel_placement()
 		move_pointer_id = int(pointer_id)
 		pointer_moved[pointer_id] = true
 		_set_status("Move mode: drag the building to a green valid plot. Release to place or press X to cancel.")
@@ -51,8 +55,17 @@ func _update_move_from_screen(screen_position: Vector2) -> void:
 		BuildManager.invalidate_move_preview()
 		_set_status("Invalid location — move back onto the map or press X to cancel.")
 		return
-	var valid := BuildManager.preview_move_at(BuildManager.world_to_grid(world_position))
+	# The finger tracks the building centre; convert it to the footprint anchor.
+	var target_anchor := _move_anchor_from_world(world_position)
+	var valid := BuildManager.preview_move_at(target_anchor)
 	_set_status("Valid location — release to move." if valid else "Invalid location — move to a green plot or press X to cancel.")
+
+func _move_anchor_from_world(world_position: Vector3) -> Vector2i:
+	if not BuildManager.is_moving or not is_instance_valid(BuildManager.moving_building):
+		return BuildManager.world_to_grid(world_position)
+	var footprint: Vector2i = BuildManager.moving_building.definition.get("size", Vector2i(2, 2))
+	var anchor_offset := Vector3((footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
+	return BuildManager.world_to_grid(world_position - anchor_offset)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
