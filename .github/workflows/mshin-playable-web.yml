@@ -83,7 +83,9 @@ jobs:
             exit 1
           fi
           cp godot-city-buildit/web/launcher.html "$GITHUB_WORKSPACE/site/index.html"
-          sed -i "s|./game/|./game/$GITHUB_SHA/|g" "$GITHUB_WORKSPACE/site/index.html"
+          sed -i "s|__GAME_BUILD__|$GITHUB_SHA|g" "$GITHUB_WORKSPACE/site/index.html"
+          grep -Fq "./game/$GITHUB_SHA/" "$GITHUB_WORKSPACE/site/index.html"
+          if grep -Fq "__GAME_BUILD__" "$GITHUB_WORKSPACE/site/index.html"; then exit 1; fi
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 
       - name: Capture real Web build screenshot in Chromium
@@ -101,9 +103,9 @@ jobs:
           page.on('pageerror', error => errors.push(error.message));
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
           await page.getByRole('button', { name: /PLAY MSHIN/i }).click();
-          const game = page.frameLocator('#game-frame');
-          await game.locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
-          await page.waitForTimeout(12000);
+          await page.waitForURL('**/game/**/', { timeout: 10000 });
+          await page.locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
+          await page.waitForTimeout(8000);
           await page.screenshot({ path: 'mshin-web-hud.png', fullPage: true });
           if (errors.length) throw new Error('Browser page errors: ' + errors.join(' | '));
           await browser.close();
