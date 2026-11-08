@@ -168,7 +168,7 @@ func _build_simcash_capsule(parent: HBoxContainer) -> void:
 	add_button.focus_mode = Control.FOCUS_NONE
 	add_button.tooltip_text = "SimCash shop (not available yet)"
 	add_button.add_theme_font_size_override("font_size", 18)
-	add_theme_color(add_button, Color("#4CD964"))
+	_add_theme_color(add_button, Color("#4CD964"))
 	content.add_child(add_button)
 	add_button.pressed.connect(_on_simcash_plus_pressed)
 
