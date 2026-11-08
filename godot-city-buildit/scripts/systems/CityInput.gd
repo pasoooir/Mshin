@@ -55,9 +55,7 @@ func _update_move_from_screen(screen_position: Vector2) -> void:
 		BuildManager.invalidate_move_preview()
 		_set_status("Invalid location — move back onto the map or press X to cancel.")
 		return
-	var footprint: Vector2i = BuildManager.moving_building.definition.get("size", Vector2i(2, 2))
-	# The finger tracks the building centre, while BuildManager expects its top-left grid anchor.
-	var anchor_offset := Vector3((footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
+	# The finger tracks the building centre; convert it to the footprint anchor.
 	var target_anchor := _move_anchor_from_world(world_position)
 	var valid := BuildManager.preview_move_at(target_anchor)
 	_set_status("Valid location — release to move." if valid else "Invalid location — move to a green plot or press X to cancel.")
