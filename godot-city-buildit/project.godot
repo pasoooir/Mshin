@@ -24,6 +24,7 @@ BuildManager="*res://scripts/autoload/BuildManager.gd"
 ProductionManager="*res://scripts/autoload/ProductionManager.gd"
 TradeManager="*res://scripts/autoload/TradeManager.gd"
 ServiceManager="*res://scripts/autoload/ServiceManager.gd"
+HappinessManager="*res://scripts/autoload/HappinessManager.gd"
 LevelProgression="*res://scripts/autoload/LevelProgression.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
 
