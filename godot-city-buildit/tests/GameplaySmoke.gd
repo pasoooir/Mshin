@@ -101,6 +101,7 @@ func _test_drag_gestures_do_not_place() -> void:
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	var input_node = get_node("CityInput")
 	var world = get_node_or_null("World")
 	_check(world != null and world.get_node_or_null("WorldPresentation/NaturalTerrain") != null, "Natural terrain was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
