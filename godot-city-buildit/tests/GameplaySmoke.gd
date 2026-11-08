@@ -34,14 +34,8 @@ func _test_road_painting_drag(road_system) -> void:
 		_check(road_system.has_road(Vector2i(x, 0)), "Road drag skipped connected grid tile %d." % x)
 	_check(road_system.get_road_placement_error(Vector2i(20, 20)) != "", "Disconnected road placement should explain why it is blocked.")
 
-func _test_drag_gestures_do_not_place() -> void:
-	var input_node = get_node("CityInput")
-	var active_camera: Camera3D = get_viewport().get_camera_3d()
-	BuildManager.select_building("residential_1")
-
-	# A one-finger drag is the building drag-and-drop gesture. Releasing over a
-	# valid green plot must commit exactly one building at that final grid cell.
-	var target_grid := Vector2i(-2, 1)
+func _simulate_building_drag(input_node: Node, active_camera: Camera3D, type_id: String, target_grid: Vector2i) -> void:
+	BuildManager.select_building(type_id)
 	var target_screen: Vector2 = active_camera.unproject_position(BuildManager.grid_to_world(target_grid))
 	var down := InputEventScreenTouch.new()
 	down.index = 0
@@ -59,11 +53,21 @@ func _test_drag_gestures_do_not_place() -> void:
 	up.position = target_screen
 	input_node._unhandled_input(up)
 	var placed = BuildManager.building_at_cell(target_grid)
-	_check(placed != null and placed.building_type == "residential_1",
-		"Dragging a building ghost to a valid plot and releasing did not place it.")
+	_check(placed != null and placed.building_type == type_id,
+		"Drag-and-drop failed for %s at %s." % [type_id, target_grid])
 	if placed != null:
 		BuildManager.unregister_building(placed.building_id)
 		placed.queue_free()
+
+func _test_drag_gestures_do_not_place() -> void:
+	var input_node = get_node("CityInput")
+	var active_camera: Camera3D = get_viewport().get_camera_3d()
+
+	# Exercise all three main placement categories through the actual touch
+	# event path, not by calling BuildManager.place_building directly.
+	_simulate_building_drag(input_node, active_camera, "residential_1", Vector2i(-2, 1))
+	_simulate_building_drag(input_node, active_camera, "building_supplies", Vector2i(0, 1))
+	_simulate_building_drag(input_node, active_camera, "industrial_1", Vector2i(2, 1))
 
 	# A two-finger gesture must remain camera navigation and never place.
 	var initial_count: int = BuildManager.buildings.size()
