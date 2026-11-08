@@ -31,10 +31,17 @@ var upgrade_ready: bool = false
 @onready var stage_label: Label3D = $StageLabel
 
 func _ready() -> void:
-	if hard_hat: hard_hat.visible = false
-	if production_icon: production_icon.visible = false
-	if name_label: name_label.visible = false
-	if stage_label: stage_label.visible = false
+	if DisplayServer.get_name() == "headless":
+		# Label3D creates renderer-owned font meshes. Remove those visual-only nodes
+		# in dummy-renderer tests and clear their references before setup runs.
+		for visual_label in [production_icon, name_label, stage_label]:
+			if is_instance_valid(visual_label):
+				visual_label.free()
+		production_icon = null
+		name_label = null
+		stage_label = null
+	if hard_hat:
+		hard_hat.visible = false
 
 func setup(data: Dictionary) -> void:
 	building_id = data.get("id", "")
