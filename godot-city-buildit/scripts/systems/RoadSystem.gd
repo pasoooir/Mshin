@@ -304,7 +304,7 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 	if tile_kind == TILE_T:
 		# Preserve the through-road centerline but leave a balanced open gap at the junction.
 		for side in [-1.0, 1.0]:
-			var center := _direction_to_world(main_axis) * (0.72 * side)
+			var center: Vector3 = _direction_to_world(main_axis) * (0.72 * float(side))
 			center.y = 0.088
 			var dash_size := Vector3(0.42, 0.006, 0.045) if main_axis.x != 0 else Vector3(0.045, 0.006, 0.42)
 			_append_box(surface_tool, grid_pos, center, dash_size)
