@@ -107,6 +107,8 @@ jobs:
           await gameFrame.waitFor({ state: 'attached', timeout: 10000 });
           await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
           await page.waitForTimeout(2000);
+          // Release the desktop WebGL context before starting the mobile viewport.
+          await page.close();
 
           // Repeat the real launch path in a touch-enabled mobile landscape viewport.
           const mobilePage = await browser.newPage({
