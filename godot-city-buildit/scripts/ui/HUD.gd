@@ -311,16 +311,17 @@ func _build_toolbars() -> void:
 
 	# Keep this order stable: primary construction tools first, destructive action last.
 	var tools := [
-		["road","Road"],
-		["residential","Residential"],
-		["commercial","Commercial"],
-		["industrial","Industrial"],
-		["services","Services"],
-		["specializations","Specializations / Park"],
-		["bulldoze","Bulldoze"]
+		["road", "Road", "road"],
+		["residential", "Residential", "residential"],
+		["commercial", "Commercial", "commercial"],
+		["industrial", "Industrial", "industrial"],
+		["services", "Services", "services"],
+		["park", "Park", "parks"],
+		["bulldoze", "Bulldozer", "bulldoze"]
 	]
 	for item in tools:
-		var button := _make_icon_button(item[0], item[1])
+		var button := _make_icon_button(item[2], item[1])
+		button.name = "Tool_" + str(item[0]).capitalize()
 		toolbar.add_child(button)
 		button.pressed.connect(_on_category_pressed.bind(item[0]))
 
@@ -398,8 +399,14 @@ func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
 	return style
 
 func _on_category_pressed(category: String) -> void:
+	if category == "park":
+		_select_building_type("park_small")
+		return
+	if category == "bulldoze":
+		_start_bulldoze_mode()
+		return
 	if active_category == category and submenu.visible:
-		_close_building_submenu(true)
+		_close_building_submenu(false)
 		return
 	active_category = category
 	_show_submenu(category)
@@ -412,66 +419,116 @@ func _show_submenu(category: String) -> void:
 	var options: Array = []
 	match category:
 		"road":
-			options = [["road","Road"],["cancel","Cancel"]]
+			options = [["road_build", "ساخت جاده", 1], ["bulldoze_road", "بولدوزر جاده", 1]]
 		"residential":
-			options = [["residential_villa","خانه ویلایی"],["residential_apartment","خانه آپارتمانی"],["residential_farm","مزرعه"]]
+			options = [["residential_villa", "خانه ویلایی", 1], ["residential_apartment", "خانه آپارتمانی", 3], ["residential_farm", "مزرعه", 2]]
 		"commercial":
-			options = [["shop_chain","فروشگاه زنجیره‌ای"],["restaurant_traditional","رستوران سنتی"],["fast_food","فست‌فود فروشی"],["art_supplies","فروشگاه لوازم هنری"]]
+			options = [["shop_chain", "فروشگاه زنجیره‌ای", 1], ["restaurant_traditional", "رستوران سنتی", 4], ["fast_food", "فست‌فود فروشی", 3], ["art_supplies", "فروشگاه لوازم هنری", 5]]
 		"industrial":
-			options = [["industrial","Small Factory"]]
+			options = [["industrial_1", "کارخانه کوچک · Metal", 1], ["industrial_2", "کارخانه چوب · Wood", 2]]
 		"services":
-			options = [["power","Power"],["water","Water"],["fire","Fire"],["police","Police"],["health","Health"],["sewage","Sewage"],["waste","Waste"],["government","Government"]]
-		"specializations":
-			options = [["education","Education"],["transportation","Transportation"],["entertainment","Entertainment"],["gambling","Gambling"],["beach","Beach"],["mountain","Mountain"],["landmark","Landmark"],["parks","Parks"],["trade_depot","Trade Depot"],["global_trade","Global Trade"],["epic","Epic"],["regions","Regions"]]
-		"bulldoze":
-			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
-	if category == "residential" or category == "commercial":
-		for option in options:
-			var type_id: String = option[0]
-			var title: String = option[1]
-			var choice := Button.new()
-			choice.name = type_id
-			choice.text = title
-			choice.custom_minimum_size = Vector2(142, 86) * _ui_scale
-			choice.focus_mode = Control.FOCUS_NONE
-			choice.tooltip_text = title
-			choice.add_theme_font_size_override("font_size", int(19 * _ui_scale))
-			choice.add_theme_color_override("font_color", Color.WHITE)
-			choice.add_theme_stylebox_override("normal", _toolbar_style(Color(0.10, 0.18, 0.23, 0.94), Color(0.55, 0.78, 0.9, 0.7)))
-			choice.add_theme_stylebox_override("hover", _toolbar_style(Color(0.18, 0.34, 0.42, 0.98), Color(0.95, 0.82, 0.48, 0.95)))
-			choice.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.30, 0.42, 0.28, 0.98), Color(0.95, 0.82, 0.48, 1.0)))
-			var definition: Dictionary = BuildManager.building_types[type_id]
-			var required_level := int(definition.get("level", 1))
-			if GameManager.level < required_level:
-				choice.disabled = true
-				choice.text += "\n🔒 سطح %d" % required_level
-			submenu.add_child(choice)
-			choice.pressed.connect(_on_building_choice_pressed.bind(type_id))
-		var close_button := Button.new()
-		close_button.name = "CloseSubmenu"
-		close_button.text = "✕"
-		close_button.custom_minimum_size = Vector2(54, 86) * _ui_scale
-		close_button.focus_mode = Control.FOCUS_NONE
-		close_button.add_theme_font_size_override("font_size", int(26 * _ui_scale))
-		close_button.pressed.connect(_close_building_submenu.bind(true))
-		submenu.add_child(close_button)
-		return
+			options = [["power_wind", "برق بادی", 1], ["water_tower", "مخزن آب", 1], ["fire_station", "آتش‌نشانی", 5]]
 	for option in options:
-		var button := _make_icon_button(option[0], option[1])
-		button.custom_minimum_size = Vector2(112, 112) * _ui_scale
-		submenu.add_child(button)
-		button.pressed.connect(_on_submenu_option.bind(category, option[1]))
+		var type_id: String = option[0]
+		var title: String = option[1]
+		var required_level: int = int(option[2])
+		var choice := Button.new()
+		choice.name = type_id
+		choice.text = title
+		choice.custom_minimum_size = Vector2(172, 78) * _ui_scale
+		choice.focus_mode = Control.FOCUS_NONE
+		choice.tooltip_text = title + (" — Unlocked at level %d" % required_level if GameManager.level < required_level else "")
+		choice.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+		choice.add_theme_color_override("font_color", Color.WHITE)
+		choice.add_theme_stylebox_override("normal", _toolbar_style(Color(0.10, 0.18, 0.23, 0.94), Color(0.55, 0.78, 0.9, 0.7)))
+		choice.add_theme_stylebox_override("hover", _toolbar_style(Color(0.18, 0.34, 0.42, 0.98), Color(0.95, 0.82, 0.48, 0.95)))
+		choice.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.30, 0.42, 0.28, 0.98), Color(0.95, 0.82, 0.48, 1.0)))
+		# Locked entries remain clickable so the player receives an explicit unlock message.
+		if GameManager.level < required_level:
+			choice.text += "\n🔒 Unlocked at level %d" % required_level
+		submenu.add_child(choice)
+		choice.pressed.connect(_on_submenu_option.bind(category, type_id))
+	var close_button := Button.new()
+	close_button.name = "CloseSubmenu"
+	close_button.text = "✕"
+	close_button.custom_minimum_size = Vector2(54, 78) * _ui_scale
+	close_button.focus_mode = Control.FOCUS_NONE
+	close_button.tooltip_text = "Close menu"
+	close_button.add_theme_font_size_override("font_size", int(26 * _ui_scale))
+	close_button.pressed.connect(_close_building_submenu.bind(false))
+	submenu.add_child(close_button)
 
-func _on_building_choice_pressed(type_id: String) -> void:
+func _select_building_type(type_id: String) -> void:
 	if not BuildManager.building_types.has(type_id):
+		status_label.text = "This building is not available yet."
 		return
-	var required_level := int(BuildManager.building_types[type_id].get("level", 1))
+	var definition: Dictionary = BuildManager.building_types[type_id]
+	var required_level := int(definition.get("level", 1))
 	if GameManager.level < required_level:
-		status_label.text = "برای این ساختمان به سطح %d نیاز دارید." % required_level
+		status_label.text = "Unlocked at level %d." % required_level
 		return
+	if definition.get("category", "") == "industrial" and BuildManager.factory_count >= LevelProgression.max_factories:
+		status_label.text = "Factory limit reached (%d). Upgrade your city to unlock more factory slots." % LevelProgression.max_factories
+		return
+	_set_tool_modes_off()
 	BuildManager.select_building(type_id)
 	if BuildManager.is_placing:
 		_close_building_submenu(false)
+	else:
+		status_label.text = "Could not enter placement mode for %s." % str(definition.get("name", type_id))
+
+func _set_tool_modes_off() -> void:
+	var scene := get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if scene else null
+	if city_input:
+		city_input.set_bulldoze_mode(false)
+		city_input.set_bulldoze_road_mode(false)
+	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
+	if road_system:
+		road_system.set_road_mode(false)
+
+func _start_bulldoze_mode() -> void:
+	_set_tool_modes_off()
+	BuildManager.cancel_placement()
+	var scene := get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if scene else null
+	if city_input:
+		city_input.set_bulldoze_mode(true)
+	if submenu:
+		submenu.hide()
+	active_category = ""
+	status_label.text = "Bulldozer active — tap a road to remove it, or tap a building twice to confirm demolition. Press X to exit."
+
+func _start_bulldoze_road_mode() -> void:
+	_set_tool_modes_off()
+	BuildManager.cancel_placement()
+	var scene := get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if scene else null
+	if city_input:
+		city_input.set_bulldoze_road_mode(true)
+	if submenu:
+		submenu.hide()
+	active_category = ""
+	status_label.text = "Road bulldozer active — tap an asphalt tile to remove only that road. Press X to exit."
+
+func _on_submenu_option(category: String, option_id: String) -> void:
+	if category == "road":
+		if option_id == "road_build":
+			_set_tool_modes_off()
+			BuildManager.cancel_placement()
+			var scene := get_tree().current_scene
+			var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
+			if road_system:
+				road_system.set_road_mode(true)
+				status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile). Press X to exit."
+			else:
+				status_label.text = "Road system is unavailable."
+			submenu.hide()
+			active_category = ""
+		elif option_id == "bulldoze_road":
+			_start_bulldoze_road_mode()
+	else:
+		_select_building_type(option_id)
 
 func _close_building_submenu(cancel_placement: bool = true) -> void:
 	if submenu:
@@ -485,35 +542,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if not submenu.get_global_rect().has_point(event.position):
-			_close_building_submenu(true)
+			_close_building_submenu(false)
 	elif event is InputEventScreenTouch and event.pressed:
 		if not submenu.get_global_rect().has_point(event.position):
-			_close_building_submenu(true)
-
-func _on_submenu_option(category: String, option: String) -> void:
-	match category:
-		"road":
-			if option == "Road": _on_roads_pressed()
-			else: _on_cancel_pressed()
-		"residential": BuildManager.select_building("residential_villa")
-		"commercial":
-			BuildManager.select_building("shop_chain")
-		"industrial": BuildManager.select_building("industrial_1")
-		"services":
-			if option == "Power": BuildManager.select_building("power_wind")
-			elif option == "Water": BuildManager.select_building("water_tower")
-			else: status_label.text = option + " service selected."
-		"specializations":
-			if option == "Parks": BuildManager.select_building("park_small")
-			else: status_label.text = option + " specialization selected."
-		"bulldoze":
-			status_label.text = "Bulldoze mode selected. Tap Cancel to leave this tool."
-			BuildManager.cancel_placement()
-			var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
-			if road_system: road_system.set_road_mode(false)
-	if BuildManager.is_placing or category == "road":
-		submenu.hide()
-		active_category = ""
+			_close_building_submenu(false)
 
 func _update_all() -> void:
 	_on_level_changed(GameManager.level)
@@ -597,9 +629,11 @@ func _on_trade_pressed() -> void:
 	status_label.text = "Trade — %d active orders." % TradeManager.get_orders().size()
 
 func _on_cancel_pressed() -> void:
+	_set_tool_modes_off()
 	BuildManager.cancel_placement()
-	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
-	if road_system: road_system.set_road_mode(false)
+	if submenu:
+		submenu.hide()
+	active_category = ""
 	status_label.text = "Cancelled."
 
 func _on_save_pressed() -> void:
