@@ -14,5 +14,10 @@ func _restore_city() -> void:
 		if status:
 			status.text = "Saved city restored. Your city will autosave every 30 seconds."
 	else:
+		# A free example house demonstrates the required road-side placement rule.
+		# Its 2x2 footprint touches the starter asphalt road along its north edge.
+		var example_house_placed := BuildManager.place_building(Vector2i(0, 1), "residential_1")
+		if example_house_placed:
+			SaveManager.save_game()
 		if status:
-			status.text = "Welcome to your coastal city. Start with a house beside the highway connector."
+			status.text = "Example house placed beside the road. Select Residential to build another; every house needs road access."
