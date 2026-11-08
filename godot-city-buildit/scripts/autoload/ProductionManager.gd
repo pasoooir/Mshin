@@ -3,9 +3,9 @@ extends Node
 signal item_produced(item_id: String, amount: int)
 
 var raw_materials := {
-	"metal": {"name": "Metal", "time": 6.0, "value": 10, "level": 1},
-	"wood": {"name": "Wood", "time": 10.0, "value": 20, "level": 2},
-	"plastic": {"name": "Plastic", "time": 55.0, "value": 25, "level": 5},
+	"metal": {"name": "Metal", "time": 60.0, "value": 10, "level": 1},
+	"wood": {"name": "Wood", "time": 180.0, "value": 20, "level": 2},
+	"plastic": {"name": "Plastic", "time": 540.0, "value": 25, "level": 5},
 	"seeds": {"name": "Seeds", "time": 80.0, "value": 30, "level": 7},
 	"minerals": {"name": "Minerals", "time": 110.0, "value": 40, "level": 11},
 	"chemicals": {"name": "Chemicals", "time": 160.0, "value": 60, "level": 13},
