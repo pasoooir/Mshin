@@ -66,8 +66,12 @@ func calculate_home_happiness(home: Node3D) -> float:
 	# infrastructure. Once a utility network exists, uncovered homes incur penalties.
 	if ServiceManager.total_power > 0 and not ServiceManager.power_served_ids.has(home.building_id):
 		score -= 25.0
+	elif ServiceManager.power_served_ids.has(home.building_id):
+		score += 15.0
 	if ServiceManager.total_water > 0 and not ServiceManager.water_served_ids.has(home.building_id):
 		score -= 20.0
+	elif ServiceManager.water_served_ids.has(home.building_id):
+		score += 15.0
 
 	var park_bonus := _nearby_bonus(home, "park", PARK_RADIUS, 15.0)
 	score += park_bonus
