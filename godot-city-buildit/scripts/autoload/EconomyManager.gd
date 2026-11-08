@@ -4,9 +4,9 @@ signal simoleons_changed(new_amount: int)
 signal keys_changed(new_amount: int)
 signal transaction_completed(type: String, amount: int)
 
-var simoleons: int = 5000
-var golden_keys: int = 5
-var sim_cash: int = 0
+var simoleons: int = 25000
+var golden_keys: int = 10
+var sim_cash: int = 25
 var tax_income_per_minute: int = 0
 var last_tax_time: float = 0.0
 
