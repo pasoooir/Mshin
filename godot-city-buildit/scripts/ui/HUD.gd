@@ -34,6 +34,8 @@ func _ready() -> void:
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.population_changed.connect(_on_population_changed)
 	GameManager.happiness_changed.connect(_on_happiness_changed)
+	HappinessManager.immigrants_arrived.connect(_on_immigrants_arrived)
+	HappinessManager.immigration_advice.connect(_on_immigration_advice)
 	GameManager.xp_changed.connect(_on_xp_changed)
 	GameManager.level_up_rewarded.connect(_on_level_up_rewarded)
 	EconomyManager.simoleons_changed.connect(_on_simoleons_changed)
@@ -601,6 +603,14 @@ func _on_level_changed(level: int) -> void:
 
 func _on_population_changed(population: int) -> void:
 	if population_label: population_label.text = _format_count(population)
+
+func _on_immigrants_arrived(amount: int, city_population: int) -> void:
+	if status_label:
+		status_label.text = "🏡 +%d new residents moved in! City population: %s" % [amount, _format_count(city_population)]
+
+func _on_immigration_advice(message: String) -> void:
+	if status_label:
+		status_label.text = message
 
 func _on_happiness_changed(value: float) -> void:
 	if happiness_label:
