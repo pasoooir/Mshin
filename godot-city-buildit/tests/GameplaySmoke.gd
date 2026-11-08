@@ -119,6 +119,8 @@ func _run_gameplay_test() -> void:
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
 	_test_road_painting_drag(road_system)
+	for x in range(6, 18):
+		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 	var hud = get_node_or_null("HUD")
 	var saved_level := GameManager.level
 	GameManager.level = 5
@@ -137,6 +139,7 @@ func _run_gameplay_test() -> void:
 		_check(hud.submenu.get_node_or_null("restaurant_traditional") != null, "Traditional restaurant option is missing.")
 		_check(hud.submenu.get_node_or_null("fast_food") != null, "Fast food option is missing.")
 		_check(hud.submenu.get_node_or_null("art_supplies") != null, "Art supplies option is missing.")
+		_check(ProductionManager.get_default_recipe_for_building("shop_chain") == "nails", "Chain store should reuse the existing Nails recipe.")
 		hud._on_building_choice_pressed("fast_food")
 		_check(BuildManager.selected_building_type == "fast_food" and BuildManager.is_placing, "Fast food choice did not enter placement mode.")
 		BuildManager.cancel_placement()
@@ -161,8 +164,6 @@ func _run_gameplay_test() -> void:
 	else:
 		_check(false, "HUD node is missing for building submenu tests.")
 	GameManager.level = saved_level
-	for x in range(6, 18):
-		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
 	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
 	_test_drag_gestures_do_not_place()
