@@ -13,6 +13,7 @@ const INDUSTRIAL_POLLUTION_RADIUS := 42.0
 var home_scores: Dictionary = {}
 var low_happiness_time: Dictionary = {}
 var _elapsed := 0.0
+var _high_happiness_elapsed := 0.0
 
 func _process(delta: float) -> void:
 	_elapsed += delta
@@ -51,6 +52,13 @@ func recalculate_city() -> void:
 		population_total += target_population
 
 	var average := 100.0 if homes.is_empty() else happiness_total / float(homes.size())
+	if not homes.is_empty() and average >= 80.0:
+		_high_happiness_elapsed += RECALC_INTERVAL
+		if _high_happiness_elapsed >= 60.0:
+			_high_happiness_elapsed = 0.0
+			GameManager.add_experience(5)
+	else:
+		_high_happiness_elapsed = 0.0
 	home_scores = scores
 	GameManager.set_happiness(average)
 	GameManager.set_population(population_total)
