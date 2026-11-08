@@ -367,7 +367,6 @@ func _get_asphalt_material() -> StandardMaterial3D:
 	_shared_asphalt_material.roughness = 0.97
 	_shared_asphalt_material.metallic = 0.0
 	_shared_asphalt_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	_shared_asphalt_material.texture_repeat = BaseMaterial3D.TEXTURE_REPEAT_ENABLED
 	return _shared_asphalt_material
 
 func _create_asphalt_textures() -> Array[Texture2D]:
