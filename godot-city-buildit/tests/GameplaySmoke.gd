@@ -221,11 +221,13 @@ func _run_gameplay_test() -> void:
 		_check(BuildManager.place_building(demo_cell, "residential_villa", 1, "completed"), "Could not create test building for demolition.")
 		var demo_building = BuildManager.building_at_cell(demo_cell)
 		var population_before_demo := GameManager.population
+		print("[GameplaySmoke] demolition before=%d house_pop=%d city=%d" % [population_before_demo, demo_building.current_population if demo_building else -1, GameManager.population])
 		input_node.set_bulldoze_mode(true)
 		input_node._handle_bulldoze_cell(demo_cell, road_system)
 		_check(BuildManager.building_at_cell(demo_cell) == demo_building, "First bulldozer tap should only request confirmation.")
 		input_node._handle_bulldoze_cell(demo_cell, road_system)
 		_check(BuildManager.building_at_cell(demo_cell) == null, "Second bulldozer tap did not remove the building footprint.")
+		print("[GameplaySmoke] demolition after=%d" % GameManager.population)
 		_check(GameManager.population < population_before_demo, "Demolishing a residential building did not remove its population.")
 		input_node.set_bulldoze_mode(false)
 		# Factory removal must release its factory slot as well as its occupied cells.
@@ -349,10 +351,11 @@ func _run_gameplay_test() -> void:
 	await _wait_seconds(0.35)
 	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
 	_check(factory != null and StorageManager.get_item_count("metal") == 2, "Tapping factory did not collect the restarted Metal batch.")
+	var population_before_upgrade := home.current_population if home else 0
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
 	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
-	_check(home != null and home.current_population >= 18 and GameManager.population >= 18, "House upgrade did not increase service-adjusted population.")
+	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > population_before_upgrade, "House upgrade did not increase service-adjusted population.")
 
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 
