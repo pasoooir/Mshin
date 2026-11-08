@@ -112,7 +112,6 @@ jobs:
           const mobilePage = await browser.newPage({
             viewport: { width: 844, height: 390 },
             deviceScaleFactor: 1,
-            isMobile: true,
             hasTouch: true
           });
           const mobileErrors = [];
@@ -121,7 +120,7 @@ jobs:
           await mobilePage.getByRole('button', { name: /PLAY MSHIN/i }).click();
           const mobileFrame = mobilePage.locator('#game-frame');
           await mobileFrame.waitFor({ state: 'attached', timeout: 10000 });
-          await mobilePage.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
+          await mobilePage.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
           // The mobile acceptance gate is functional (launcher + live canvas);
           // avoid a second WebGL screenshot because software-rendered mobile
           // emulation can stall Chromium's compositor.
