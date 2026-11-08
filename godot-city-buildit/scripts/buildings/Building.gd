@@ -65,12 +65,17 @@ func _create_visual() -> void:
 	var d: float = float(size.y) * 1.7
 	_add_box(Vector3(w + 0.15, 0.25, d + 0.15), Vector3(0, 0.12, 0), color.darkened(0.35))
 	var height_mult: float = 1.0
+	var subtype := str(definition.get("subtype", ""))
 	if category == "residential":
 		height_mult = 0.7 + upgrade_stage * 0.15
 	var height: float = 1.6 * height_mult
 	match category:
 		"residential":
 			height = 1.8 + upgrade_stage * 0.35
+			if subtype == "apartment":
+				height += 1.25
+			elif subtype == "farm":
+				height = maxf(1.65, height - 0.35)
 			_build_residential(w, d, height, color)
 		"commercial":
 			height = 2.0
@@ -111,10 +116,19 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 	_add_box(Vector3(w * 0.87, 0.12, d * 0.87), Vector3(0, 0.34, 0), plaster_shadow)
 	_add_box(Vector3(w * 0.88, 0.07, d * 0.88), Vector3(0, body_h + 0.18, 0), plaster_light)
 
-	# امضای تابع سقف موجود در پروژه rise را به‌صورت صریح دریافت می‌کند.
-	_add_gabled_roof(w * 0.96, d * 0.96, body_h + 0.22, 0.52, roof_tile, roof_dark)
+	var subtype := str(definition.get("subtype", "villa"))
+	# Apartments use a taller flat-roof silhouette; villas and farms keep the pitched roof.
+	if subtype == "apartment":
+		_add_box(Vector3(w * 0.94, 0.22, d * 0.94), Vector3(0, body_h + 0.34, 0), roof_dark)
+		_add_box(Vector3(w * 0.88, 0.12, d * 0.88), Vector3(0, body_h + 0.50, 0), plaster_light)
+	else:
+		_add_gabled_roof(w * 0.96, d * 0.96, body_h + 0.22, 0.52, roof_tile, roof_dark)
 
 	var rows := 1 + int(upgrade_stage >= 3) + int(upgrade_stage >= 5)
+	if subtype == "apartment":
+		rows = 3 + int(upgrade_stage >= 5)
+	elif subtype == "farm":
+		rows = 1
 	var cols := 2 if upgrade_stage < 4 else 3
 	for row in range(rows):
 		var y := 0.90 + float(row) * (body_h / float(rows + 0.7))
@@ -131,6 +145,16 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 	_add_box(Vector3(0.90, 0.05, 0.36), Vector3(0, 1.30, d * 0.48), awning)
 	_add_box(Vector3(0.06, 0.20, 0.05), Vector3(-0.38, 1.16, d * 0.42), wood)
 	_add_box(Vector3(0.06, 0.20, 0.05), Vector3(0.38, 1.16, d * 0.42), wood)
+
+	if subtype == "farm":
+		# Small cultivated beds and low fence make the rural subtype readable at a glance.
+		for row in range(2):
+			for column in range(2):
+				var crop_pos := Vector3(-w * 0.28 + float(column) * 0.62, 0.34, -d * 0.34 + float(row) * 0.58)
+				_add_box(Vector3(0.48, 0.10, 0.42), crop_pos, Color(0.38, 0.30, 0.18))
+				_add_box(Vector3(0.36, 0.18, 0.08), crop_pos + Vector3(0, 0.12, 0), Color(0.34, 0.55, 0.25))
+		for x_pos in [-w * 0.42, w * 0.42]:
+			_add_box(Vector3(0.07, 0.42, 0.07), Vector3(x_pos, 0.40, -d * 0.48), wood)
 
 	var cx := w * 0.28
 	var cz := -d * 0.18
