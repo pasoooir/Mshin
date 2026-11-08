@@ -357,7 +357,7 @@ func _build_toolbars() -> void:
 		["commercial", "Commercial", "commercial"],
 		["industrial", "Industrial", "industrial"],
 		["services", "Services", "services"],
-		["park", "Parks", "parks"],
+		["park", "Park", "parks"],
 		["bulldoze", "Bulldozer", "bulldoze"]
 	]
 	for item in tools:
