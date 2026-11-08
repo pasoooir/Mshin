@@ -18,6 +18,9 @@ script = ExtResource("1_building")
 
 [node name="MeshRoot" type="Node3D" parent="."]
 
+[node name="ScaffoldRoot" type="Node3D" parent="."]
+visible = false
+
 [node name="HardHat" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.8, 0)
 visible = false
