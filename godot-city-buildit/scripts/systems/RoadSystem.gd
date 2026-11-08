@@ -26,6 +26,7 @@ const TILE_T: String = "t_junction"
 const TILE_CROSS: String = "cross"
 
 var roads: Dictionary = {}
+var road_refresh_counts: Dictionary = {}
 var is_road_mode: bool = false
 
 static var _shared_asphalt_material: StandardMaterial3D
@@ -143,6 +144,10 @@ func _refresh_road_mesh(grid_pos: Vector2i) -> void:
 		return
 	var old_mesh = roads.get(grid_pos)
 	var new_mesh := _create_road_mesh(grid_pos)
+	var revision := int(road_refresh_counts.get(grid_pos, 0)) + 1
+	road_refresh_counts[grid_pos] = revision
+	new_mesh.set_meta("road_tile_kind", get_road_tile_kind(grid_pos))
+	new_mesh.set_meta("road_revision", revision)
 	add_child(new_mesh)
 	new_mesh.position = Vector3(
 		float(grid_pos.x) * GRID_SIZE + GRID_HALF,
@@ -227,6 +232,8 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 	_add_road_markings(marking_tool, white_marking_tool, grid_pos, tile_kind, arms)
 	marking_boxes = _count_marking_boxes(tile_kind, arms, grid_pos)
 	white_marking_boxes = arms.size() * 5 if tile_kind == TILE_CROSS else 0
+	if tile_kind == TILE_CROSS:
+		sidewalk_boxes += 4
 
 	var road_mesh := ArrayMesh.new()
 	_add_surface(road_mesh, asphalt_tool, _get_asphalt_material(), asphalt_boxes)
@@ -271,6 +278,12 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 	if tile_kind == TILE_CROSS:
 		for direction in arms:
 			_add_crosswalk(white_surface_tool, grid_pos, direction)
+		# Small raised corner pads keep pedestrian space visually connected
+		# through a four-way intersection instead of ending sidewalks abruptly.
+		for x_side in [-1.0, 1.0]:
+			for z_side in [-1.0, 1.0]:
+				var corner_center := Vector3(x_side * 0.82, 0.03, z_side * 0.82)
+				_append_box(sidewalk_tool, grid_pos, corner_center, Vector3(0.34, 0.06, 0.34))
 		return
 
 	if tile_kind == TILE_CORNER:
@@ -325,7 +338,7 @@ func _add_crosswalk(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Ve
 
 func _count_marking_boxes(tile_kind: String, arms: Array[Vector2i], grid_pos: Vector2i) -> int:
 	if tile_kind == TILE_CROSS:
-		return arms.size() * 5
+		return 0
 	if tile_kind == TILE_CORNER:
 		return arms.size() * 2
 	if tile_kind == TILE_T:
@@ -359,30 +372,25 @@ func _get_asphalt_material() -> StandardMaterial3D:
 
 func _create_asphalt_textures() -> Array[Texture2D]:
 	const TEXTURE_SIZE: int = 256
-	var broad_noise := FastNoiseLite.new()
-	broad_noise.seed = 7321
-	broad_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	broad_noise.frequency = 0.035
-	broad_noise.fractal_octaves = 4
-	var fine_noise := FastNoiseLite.new()
-	fine_noise.seed = 1937
-	fine_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	fine_noise.frequency = 0.19
-	fine_noise.fractal_octaves = 2
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 917263
 	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
 	var heights := PackedFloat32Array()
 	heights.resize(TEXTURE_SIZE * TEXTURE_SIZE)
 	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
 		for x in range(TEXTURE_SIZE):
-			var broad := broad_noise.get_noise_2d(float(x), float(y))
-			var fine := fine_noise.get_noise_2d(float(x), float(y))
-			var grain := rng.randf_range(-0.035, 0.035)
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			# Integer-frequency trigonometric layers tile seamlessly in both
+			# directions, so neighboring road cells never show texture seams.
+			var broad := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * 0.55 + cos(angle_y * 2.0 - sin(angle_x * 3.0)) * 0.45
+			var medium := sin(angle_x * 7.0 + angle_y * 5.0) * 0.5 + cos(angle_x * 11.0 - angle_y * 9.0) * 0.5
+			var grain := sin(angle_x * 37.0 + angle_y * 29.0) * 0.5 + cos(angle_x * 53.0 - angle_y * 47.0) * 0.5
+			var fine_grain := sin(angle_x * 83.0 + angle_y * 71.0) * 0.5 + cos(angle_x * 97.0 - angle_y * 89.0) * 0.5
 			var aggregate := 0.0
-			if rng.randf() > 0.994:
-				aggregate = rng.randf_range(-0.055, 0.055)
-			var height_value := clampf(0.235 + broad * 0.045 + fine * 0.025 + grain + aggregate, 0.12, 0.36)
+			if rng.randf() > 0.996:
+				aggregate = rng.randf_range(-0.035, 0.035)
+			var height_value := clampf(0.235 + broad * 0.032 + medium * 0.018 + grain * 0.009 + fine_grain * 0.004 + aggregate, 0.12, 0.34)
 			heights[y * TEXTURE_SIZE + x] = height_value
 			image.set_pixel(x, y, Color(height_value * 0.92, height_value * 0.96, height_value * 1.02, 1.0))
 	var normal_image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
@@ -392,8 +400,8 @@ func _create_asphalt_textures() -> Array[Texture2D]:
 			var right := heights[y * TEXTURE_SIZE + posmod(x + 1, TEXTURE_SIZE)]
 			var up := heights[posmod(y - 1, TEXTURE_SIZE) * TEXTURE_SIZE + x]
 			var down := heights[posmod(y + 1, TEXTURE_SIZE) * TEXTURE_SIZE + x]
-			var dx := (right - left) * 3.2
-			var dy := (down - up) * 3.2
+			var dx := (right - left) * 4.0
+			var dy := (down - up) * 4.0
 			normal_image.set_pixel(x, y, Color(0.5 - dx, 0.5 - dy, 1.0, 1.0))
 	return [ImageTexture.create_from_image(image), ImageTexture.create_from_image(normal_image)]
 
