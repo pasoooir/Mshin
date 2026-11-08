@@ -441,6 +441,9 @@ func _on_construction_finished() -> void:
 	ServiceManager.recalculate_from_buildings()
 	if definition.get("happiness", 0) > 0:
 		GameManager.set_happiness(min(100.0, GameManager.happiness + definition.happiness))
+	# Factories begin their configured raw-material cycle as soon as construction ends.
+	if definition.get("category", "") == "industrial":
+		start_factory_production()
 
 func _play_completion_effect() -> void:
 	# A short sparkle burst marks completed construction with minimal mobile GPU cost.
@@ -465,7 +468,7 @@ func _play_completion_effect() -> void:
 		tween.tween_property(sparkle, "scale", Vector3.ZERO, 0.72)
 		tween.chain().tween_callback(sparkle.queue_free)
 
-func _begin_production(item_id: String) -> void:
+func _start_production(item_id: String) -> void:
 	current_product = item_id
 	is_producing = true
 	production_time = ProductionManager.get_production_time(item_id)
@@ -475,30 +478,35 @@ func _begin_production(item_id: String) -> void:
 		production_icon.visible = true
 		production_icon.text = "⚙️"
 
-func start_factory_production(item_id: String = "metal") -> bool:
-	if status != "completed" or definition.get("category", "") != "industrial":
+func start_factory_production(item_id: String = "") -> bool:
+	if status != "completed":
 		return false
 	if is_producing or has_ready_product:
 		return false
-	var allowed: Array = definition.get("can_produce", [definition.get("produces", "metal")])
-	if not allowed.has(item_id) or not ProductionManager.raw_materials.has(item_id):
+	var product := item_id
+	if product == "":
+		product = str(definition.get("produces", ProductionManager.get_default_factory_product()))
+	if product == "" or definition.get("category", "") != "industrial":
 		return false
-	if int(ProductionManager.raw_materials[item_id].get("level", 1)) > GameManager.level:
+	var allowed: Array = definition.get("can_produce", [definition.get("produces", ProductionManager.get_default_factory_product())])
+	if not allowed.has(product) or not ProductionManager.raw_materials.has(product):
 		return false
-	_begin_production(item_id)
+	if int(ProductionManager.raw_materials[product].get("level", 1)) > GameManager.level:
+		return false
+	_start_production(product)
 	return true
 
 func start_commercial_production(item_id: String) -> bool:
 	if status != "completed" or definition.get("category", "") != "commercial":
 		return false
-	if is_producing or has_ready_product:
+	if is_producing or has_ready_product or item_id == "":
 		return false
 	var allowed_recipes: Array = definition.get("recipes", [])
 	if not allowed_recipes.has(item_id) or not ProductionManager.can_craft(item_id):
 		return false
 	if not ProductionManager.consume_inputs(item_id):
 		return false
-	_begin_production(item_id)
+	_start_production(item_id)
 	return true
 
 func _process(delta: float) -> void:
@@ -547,22 +555,28 @@ func try_upgrade() -> bool:
 func collect_production() -> bool:
 	if not has_ready_product:
 		return false
-	if StorageManager.add_item(current_product, 1):
-		var collected_item := current_product
-		has_ready_product = false
+	if not StorageManager.add_item(current_product, 1):
+		if production_icon:
+			production_icon.text = "📦!"
+		return false
+
+	var collected_item := current_product
+	has_ready_product = false
+	production_timer = 0.0
+	collected.emit(collected_item, 1)
+	ProductionManager.item_produced.emit(collected_item, 1)
+	EconomyManager.add_simoleons(3)
+	GameManager.add_experience(2)
+
+	if str(definition.get("category", "")) == "industrial":
+		# Industrial factories continuously repeat the same raw-material batch.
+		_start_production(collected_item)
+	else:
+		# Commercial stores wait for the player to order the next batch.
 		is_producing = false
-		production_timer = 0.0
 		if production_icon:
 			production_icon.visible = false
-		collected.emit(collected_item, 1)
-		ProductionManager.item_produced.emit(collected_item, 1)
-		EconomyManager.add_simoleons(3)
-		GameManager.add_experience(2)
-		return true
-	if production_icon:
-		production_icon.visible = true
-		production_icon.text = "📦!"
-	return false
+	return true
 
 func _update_stage_label() -> void:
 	if stage_label and definition.get("category") == "residential":
