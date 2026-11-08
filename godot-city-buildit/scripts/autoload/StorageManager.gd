@@ -7,6 +7,20 @@ var max_capacity: int = 30
 var current_used: int = 0
 var inventory: Dictionary = {}
 
+# Public aliases keep the storage API aligned with the production design document
+# while preserving the existing SaveManager inventory/max_capacity fields.
+var items: Dictionary:
+	get:
+		return inventory
+	set(value):
+		inventory = value
+
+var capacity: int:
+	get:
+		return max_capacity
+	set(value):
+		max_capacity = maxi(1, value)
+
 var item_definitions := {
 	"metal": {"name": "Metal", "type": "raw"},
 	"wood": {"name": "Wood", "type": "raw"},
