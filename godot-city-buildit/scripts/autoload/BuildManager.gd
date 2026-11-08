@@ -167,10 +167,13 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 	world.add_child(building_node)
 	var size: Vector2i = definition.get("size", Vector2i(2,2))
 	building_node.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
-	building_node.setup(data)
+	# Register the node and its complete footprint before setup() can emit
+	# construction-complete/service events. This keeps population and happiness
+	# recalculation from seeing a temporarily empty city during instant restores.
 	buildings[building_id] = building_node
 	for occupied_cell in get_footprint_cells(grid_pos, size):
 		building_cells[occupied_cell] = building_node
+	building_node.setup(data)
 	if definition.get("category", "") == "industrial":
 		factory_count += 1
 	construction_started.emit(building_id)
