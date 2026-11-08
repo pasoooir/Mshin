@@ -5,6 +5,13 @@ const TERRAIN_LEFT := -90.0
 const CITY_HALF_EXTENT := 40
 
 func _ready() -> void:
+	# Headless CI validates simulation and placement logic, not GPU geometry.
+	# The dummy renderer cannot provide a meaningful visual test and emits native
+	# null-mesh errors for the procedural MultiMesh scene. Keep the full scene in
+	# every graphical runtime (desktop, mobile and web).
+	if DisplayServer.get_name() == "headless":
+		print("[WorldPresentation] Procedural visuals skipped in headless test mode")
+		return
 	_build_environment()
 	_build_terrain()
 	_build_city_grid()
