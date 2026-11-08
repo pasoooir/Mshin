@@ -366,6 +366,69 @@ func _run_gameplay_test() -> void:
 	_check(ServiceManager.total_power >= 12 and ServiceManager.total_water >= 12, "Power/water capacity was not registered.")
 	_check(home != null and ServiceManager.is_building_served(home), "House was not served by nearby power and water.")
 
+	# Exercise the actual touch long-press, drag and release event path.
+	BuildManager.cancel_placement()
+	var active_move_camera: Camera3D = get_viewport().get_camera_3d()
+	var move_input_screen: Vector2 = active_move_camera.unproject_position(BuildManager.grid_to_world(home.grid_pos))
+	var touch_down := InputEventScreenTouch.new()
+	touch_down.index = 0
+	touch_down.pressed = true
+	touch_down.position = move_input_screen
+	input_node._unhandled_input(touch_down)
+	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
+	_check(BuildManager.is_moving and BuildManager.moving_building == home, "Long press on a completed residential building did not enter Move mode.")
+	var moved_to := Vector2i(8, 1)
+	var moved_screen: Vector2 = active_move_camera.unproject_position(BuildManager.grid_to_world(moved_to))
+	var touch_drag := InputEventScreenDrag.new()
+	touch_drag.index = 0
+	touch_drag.position = moved_screen
+	touch_drag.relative = moved_screen - move_input_screen
+	input_node._unhandled_input(touch_drag)
+	var touch_up := InputEventScreenTouch.new()
+	touch_up.index = 0
+	touch_up.pressed = false
+	touch_up.position = moved_screen
+	input_node._unhandled_input(touch_up)
+	_check(home.grid_pos == moved_to and BuildManager.building_at_cell(moved_to) == home, "Touch release did not commit the valid building move.")
+	_check(BuildManager.building_at_cell(Vector2i(0, 1)) == null, "Old building footprint remained occupied after moving.")
+	_check(ServiceManager.is_building_served(home), "Moving a house failed to recalculate nearby power/water coverage.")
+	# Occupied destination is red/invalid and release must restore the original footprint.
+	_check(BuildManager.begin_move(home), "Could not re-enter Move mode for invalid-placement test.")
+	_check(not BuildManager.preview_move_at(Vector2i(2, 1)), "Move preview accepted a destination occupied by the factory.")
+	_check(not BuildManager.finish_move(), "Invalid move should not commit.")
+	_check(home.grid_pos == moved_to and BuildManager.building_at_cell(moved_to) == home, "Invalid move did not restore the previous position.")
+	# A pointer leaving the map must invalidate the last otherwise-green preview.
+	_check(BuildManager.begin_move(home), "Could not begin move for out-of-map rejection test.")
+	_check(BuildManager.preview_move_at(Vector2i(0, 1)), "Out-of-map test needs an initial valid preview.")
+	BuildManager.invalidate_move_preview()
+	_check(not BuildManager.finish_move(), "Move release outside the map must not commit a stale valid preview.")
+	_check(home.grid_pos == moved_to and BuildManager.building_at_cell(moved_to) == home, "Out-of-map release did not restore the previous position.")
+	# Cancel must restore the building even after a valid preview has been shown.
+	_check(BuildManager.begin_move(home), "Could not begin move for Cancel test.")
+	_check(BuildManager.preview_move_at(Vector2i(0, 1)), "Cancel test destination should be valid.")
+	BuildManager.cancel_move()
+	_check(not BuildManager.is_moving and home.grid_pos == moved_to and BuildManager.building_at_cell(moved_to) == home, "Cancel did not restore the building to its original location.")
+	# Exercise desktop mouse long-press, drag and release to return the fixture.
+	var mouse_down := InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.pressed = true
+	mouse_down.position = moved_screen
+	input_node._unhandled_input(mouse_down)
+	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
+	var mouse_motion := InputEventMouseMotion.new()
+	mouse_motion.position = move_input_screen
+	mouse_motion.relative = move_input_screen - moved_screen
+	input_node._unhandled_input(mouse_motion)
+	var mouse_up := InputEventMouseButton.new()
+	mouse_up.button_index = MOUSE_BUTTON_LEFT
+	mouse_up.pressed = false
+	mouse_up.position = move_input_screen
+	input_node._unhandled_input(mouse_up)
+	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 21, "Move whitelist must include all 21 requested building types.")
+	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
+		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
+
 	# Production durations are shortened only in this deterministic smoke test.
 	ProductionManager.raw_materials["metal"]["time"] = 0.2
 	ProductionManager.crafted_items["nails"]["time"] = 0.2

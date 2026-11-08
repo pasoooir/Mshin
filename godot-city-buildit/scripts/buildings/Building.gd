@@ -24,6 +24,9 @@ var current_population: int = 0
 var upgrade_ready: bool = false
 var demolition_highlight_active: bool = false
 var _demolition_highlight_root: Node3D
+var _move_highlight_root: Node3D
+var _move_ghost_material: StandardMaterial3D
+var _move_original_overlays: Dictionary = {}
 static var _shared_surface_texture: Texture2D
 
 @onready var mesh_root: Node3D = $MeshRoot
@@ -73,6 +76,73 @@ func setup(data: Dictionary) -> void:
 		_start_construction()
 	else:
 		_on_construction_finished()
+
+func _apply_move_transparency(node: Node, active: bool) -> void:
+	if node is GeometryInstance3D:
+		if active:
+			if not _move_original_overlays.has(node):
+				_move_original_overlays[node] = node.material_overlay
+			node.material_overlay = _move_ghost_material
+		elif _move_original_overlays.has(node):
+			node.material_overlay = _move_original_overlays[node]
+			_move_original_overlays.erase(node)
+	for child in node.get_children():
+		_apply_move_transparency(child, active)
+
+func set_move_preview(active: bool, valid: bool) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	if active:
+		if _move_ghost_material == null:
+			_move_ghost_material = StandardMaterial3D.new()
+			_move_ghost_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			_move_ghost_material.albedo_color = Color(0.58, 0.88, 1.0, 0.42)
+			_move_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+		for visual_root in [mesh_root, scaffold_root]:
+			if is_instance_valid(visual_root):
+				_apply_move_transparency(visual_root, true)
+		if _move_highlight_root == null:
+			_move_highlight_root = Node3D.new()
+			_move_highlight_root.name = "MoveHighlight"
+			add_child(_move_highlight_root)
+			var footprint: Vector2i = definition.get("size", Vector2i(2, 2))
+			var width := float(footprint.x) * 1.7 + 0.28
+			var depth := float(footprint.y) * 1.7 + 0.28
+			var material := StandardMaterial3D.new()
+			material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			var tint := Color(0.20, 1.0, 0.36, 0.95) if valid else Color(1.0, 0.16, 0.12, 0.95)
+			material.albedo_color = tint
+			material.emission_enabled = true
+			material.emission = tint
+			material.emission_energy_multiplier = 1.4
+			for edge in 4:
+				var beam := MeshInstance3D.new()
+				var box := BoxMesh.new()
+				if edge < 2:
+					box.size = Vector3(width, 0.08, 0.10)
+					beam.position = Vector3(0.0, 0.12, (-depth * 0.5) if edge == 0 else (depth * 0.5))
+				else:
+					box.size = Vector3(0.10, 0.08, depth)
+					beam.position = Vector3((-width * 0.5) if edge == 2 else (width * 0.5), 0.12, 0.0)
+				beam.mesh = box
+				beam.material_override = material
+				_move_highlight_root.add_child(beam)
+		else:
+			var tint := Color(0.20, 1.0, 0.36, 0.95) if valid else Color(1.0, 0.16, 0.12, 0.95)
+			for beam in _move_highlight_root.get_children():
+				if beam is MeshInstance3D and beam.material_override is StandardMaterial3D:
+					beam.material_override.albedo_color = tint
+					beam.material_override.emission = tint
+		_move_highlight_root.visible = true
+		position.y = 0.55
+	else:
+		for visual_root in [mesh_root, scaffold_root]:
+			if is_instance_valid(visual_root):
+				_apply_move_transparency(visual_root, false)
+		if _move_highlight_root:
+			_move_highlight_root.visible = false
+		position.y = 0.0
 
 func set_demolition_highlight(active: bool) -> void:
 	# A thin emissive footprint frame makes the first bulldozer tap unmistakable.

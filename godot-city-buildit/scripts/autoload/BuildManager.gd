@@ -44,6 +44,19 @@ var building_types: Dictionary = {
 	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5}
 }
 
+var is_moving: bool = false
+var moving_building: Building = null
+var moving_original_grid: Vector2i = Vector2i.ZERO
+var moving_preview_valid: bool = false
+const MOVABLE_BUILDING_TYPES := [
+	"residential_1", "residential_villa", "residential_apartment", "residential_farm",
+	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
+	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
+	"industrial_1", "industrial_2", "industrial_3",
+	"power_wind", "water_tower", "fire_station", "police_station", "sewage_pipe",
+	"park_small"
+]
+
 func _ready() -> void:
 	print("[BuildManager] Ready: %d building types" % building_types.size())
 
@@ -134,6 +147,91 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "") -> bool:
 	if definition.get("category", "") == "industrial" and factory_count >= LevelProgression.max_factories:
 		return false
 	return true
+
+func can_move_to(grid_pos: Vector2i) -> bool:
+	if not is_moving or not is_instance_valid(moving_building):
+		return false
+	var size: Vector2i = moving_building.definition.get("size", Vector2i(2, 2))
+	return is_cell_free(grid_pos, size) and has_road_access(grid_pos, size)
+
+func begin_move(building: Variant) -> bool:
+	if is_moving or not is_instance_valid(building) or not (building is Building):
+		return false
+	var target_building: Building = building as Building
+	if not MOVABLE_BUILDING_TYPES.has(target_building.building_type):
+		return false
+	if buildings.get(target_building.building_id) != target_building:
+		return false
+	moving_building = target_building
+	moving_original_grid = target_building.grid_pos
+	for cell in get_footprint_cells(target_building.grid_pos, target_building.definition.get("size", Vector2i(2, 2))):
+		if building_cells.get(cell) == target_building:
+			building_cells.erase(cell)
+	is_moving = true
+	moving_preview_valid = false
+	target_building.set_move_preview(true, false)
+	return true
+
+func preview_move_at(grid_pos: Vector2i) -> bool:
+	if not is_moving or not is_instance_valid(moving_building):
+		return false
+	moving_preview_valid = can_move_to(grid_pos)
+	var size: Vector2i = moving_building.definition.get("size", Vector2i(2, 2))
+	moving_building.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.55, (size.y - 1) * GRID_SIZE * 0.5)
+	if moving_building.has_method("set_move_preview"):
+		moving_building.set_move_preview(true, moving_preview_valid)
+	return moving_preview_valid
+
+func invalidate_move_preview() -> void:
+	if not is_moving:
+		return
+	moving_preview_valid = false
+	if is_instance_valid(moving_building) and moving_building.has_method("set_move_preview"):
+		moving_building.set_move_preview(true, false)
+
+func finish_move() -> bool:
+	if not is_moving or not is_instance_valid(moving_building):
+		cancel_move()
+		return false
+	var building := moving_building
+	var target := world_to_grid(Vector3(building.global_position.x - (building.definition.get("size", Vector2i(2, 2)).x - 1) * GRID_SIZE * 0.5, 0.0, building.global_position.z - (building.definition.get("size", Vector2i(2, 2)).y - 1) * GRID_SIZE * 0.5))
+	if not moving_preview_valid or not can_move_to(target):
+		cancel_move()
+		return false
+	building.grid_pos = target
+	var size: Vector2i = building.definition.get("size", Vector2i(2, 2))
+	for cell in get_footprint_cells(target, size):
+		building_cells[cell] = building
+	building.global_position = grid_to_world(target) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
+	if building.has_method("set_move_preview"):
+		building.set_move_preview(false, true)
+	moving_building = null
+	is_moving = false
+	moving_preview_valid = false
+	ServiceManager.recalculate_from_buildings()
+	return true
+
+func cancel_move() -> void:
+	if not is_moving:
+		return
+	var building := moving_building
+	if is_instance_valid(building):
+		building.grid_pos = moving_original_grid
+		var size: Vector2i = building.definition.get("size", Vector2i(2, 2))
+		for cell in get_footprint_cells(moving_original_grid, size):
+			building_cells[cell] = building
+		building.global_position = grid_to_world(moving_original_grid) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
+		if building.has_method("set_move_preview"):
+			building.set_move_preview(false, true)
+	moving_building = null
+	is_moving = false
+	moving_preview_valid = false
+
+func move_building_to(building: Node, target: Vector2i) -> bool:
+	if not begin_move(building):
+		return false
+	preview_move_at(target)
+	return finish_move()
 
 func place_building_at_world(world_pos: Vector3) -> bool:
 	if not is_placing or selected_building_type == "":

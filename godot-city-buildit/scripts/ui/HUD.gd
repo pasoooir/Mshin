@@ -816,6 +816,14 @@ func _on_cancel_pressed() -> void:
 	var scene := get_tree().current_scene
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
 	var was_bulldozing: bool = city_input != null and (city_input.bulldoze_mode or city_input.bulldoze_road_mode)
+	var was_moving: bool = BuildManager.is_moving
+	if was_moving:
+		BuildManager.cancel_move()
+		if city_input:
+			city_input.move_pointer_id = -999
+			city_input.pointer_start.clear()
+			city_input.pointer_moved.clear()
+			city_input.pointer_hold_elapsed.clear()
 	_set_bulldozer_indicator(false)
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
@@ -824,7 +832,10 @@ func _on_cancel_pressed() -> void:
 	var category_toolbar := get_node_or_null("RightToolbar")
 	if category_toolbar: category_toolbar.show()
 	active_category = ""
-	status_label.text = "Bulldozer cancelled." if was_bulldozing else "Cancelled."
+	if was_moving:
+		status_label.text = "Move cancelled. Building returned to its original location."
+	else:
+		status_label.text = "Bulldozer cancelled." if was_bulldozing else "Cancelled."
 
 func _on_save_pressed() -> void:
 	status_label.text = "City saved successfully." if SaveManager.save_game() else "Could not save the city."
