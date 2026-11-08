@@ -17,6 +17,20 @@ func _ready() -> void:
 	camera = get_viewport().get_camera_3d()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
+		if bulldoze_mode or bulldoze_road_mode or BuildManager.is_placing or _is_road_mode():
+			var hud = get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
+			if hud and hud.has_method("_on_cancel_pressed"):
+				hud._on_cancel_pressed()
+			else:
+				set_bulldoze_mode(false)
+				set_bulldoze_road_mode(false)
+				BuildManager.cancel_placement()
+				var roads = _road_system()
+				if roads: roads.set_road_mode(false)
+				_set_status("Tool cancelled.")
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			pointer_start[-1] = event.position
@@ -89,50 +103,63 @@ func _is_road_mode() -> bool:
 	return road_system != null and road_system.is_road_mode
 
 func set_bulldoze_mode(active: bool) -> void:
+	_clear_bulldoze_highlight()
 	bulldoze_mode = active
 	if active:
 		bulldoze_road_mode = false
-		pending_bulldoze_building_id = ""
 		BuildManager.cancel_placement()
 		var road_system = _road_system()
 		if road_system:
 			road_system.set_road_mode(false)
 
 func set_bulldoze_road_mode(active: bool) -> void:
+	_clear_bulldoze_highlight()
 	bulldoze_road_mode = active
 	if active:
 		bulldoze_mode = false
-		pending_bulldoze_building_id = ""
 		BuildManager.cancel_placement()
 		var road_system = _road_system()
 		if road_system:
 			road_system.set_road_mode(false)
 
+func _clear_bulldoze_highlight() -> void:
+	if pending_bulldoze_building_id == "":
+		return
+	var previous = BuildManager.buildings.get(pending_bulldoze_building_id)
+	if is_instance_valid(previous) and previous.has_method("set_demolition_highlight"):
+		previous.set_demolition_highlight(false)
+	pending_bulldoze_building_id = ""
+
 func _handle_bulldoze_cell(grid: Vector2i, road_system = null) -> void:
 	var roads = road_system if road_system != null else _road_system()
 	if roads != null and roads.has_road(grid):
+		_clear_bulldoze_highlight()
 		if roads.remove_road(grid):
-			pending_bulldoze_building_id = ""
 			_set_status("Road tile removed. Buildings and the rest of the road network were left untouched.")
 		else:
 			_set_status("Could not remove this road tile.")
 		return
 	if bulldoze_road_mode:
-		pending_bulldoze_building_id = ""
+		_clear_bulldoze_highlight()
 		_set_status("No road on this tile. Road bulldozer only removes asphalt.")
 		return
 	if not bulldoze_mode:
 		return
 	var building = BuildManager.building_at_cell(grid)
 	if building == null or not is_instance_valid(building):
-		pending_bulldoze_building_id = ""
+		_clear_bulldoze_highlight()
 		_set_status("Nothing to demolish on this tile.")
 		return
 	if pending_bulldoze_building_id != building.building_id:
+		_clear_bulldoze_highlight()
 		pending_bulldoze_building_id = building.building_id
-		_set_status("Confirm demolition: tap this building once more. No refund is issued.")
+		if building.has_method("set_demolition_highlight"):
+			building.set_demolition_highlight(true)
+		_set_status("Building highlighted. Tap the highlighted building again to confirm demolition.")
 		return
 	var removed_name := str(building.definition.get("name", building.building_type))
+	if building.has_method("set_demolition_highlight"):
+		building.set_demolition_highlight(false)
 	BuildManager.unregister_building(building.building_id)
 	building.queue_free()
 	pending_bulldoze_building_id = ""
