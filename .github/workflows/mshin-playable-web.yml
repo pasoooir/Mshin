@@ -103,8 +103,9 @@ jobs:
           page.on('pageerror', error => errors.push(error.message));
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
           await page.getByRole('button', { name: /PLAY MSHIN/i }).click();
-          await page.waitForURL('**/game/**/', { timeout: 10000 });
-          await page.locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
+          const gameFrame = page.locator('#game-frame');
+          await gameFrame.waitFor({ state: 'attached', timeout: 10000 });
+          await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
           await page.waitForTimeout(8000);
           await page.screenshot({ path: 'mshin-web-hud.png', fullPage: true });
           if (errors.length) throw new Error('Browser page errors: ' + errors.join(' | '));
