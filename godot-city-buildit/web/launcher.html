@@ -46,17 +46,25 @@
       const play = document.getElementById('play');
       const hint = document.getElementById('hint');
       async function requestLandscapeFullscreen() {
-        // Both APIs must be called from the Play button's trusted user gesture.
+        // Browser security requires a trusted gesture. Start fullscreen first,
+        // then lock orientation; both are attempted before launching the game.
+        let fullscreenStarted = false;
         try {
           if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
             await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+            fullscreenStarted = true;
+          } else {
+            fullscreenStarted = !!document.fullscreenElement;
           }
-        } catch (_) { /* Continue to the game when browser policy blocks fullscreen. */ }
+        } catch (_) { /* Continue when browser policy blocks fullscreen. */ }
         try {
           if (screen.orientation && screen.orientation.lock) {
             await screen.orientation.lock('landscape');
           }
-        } catch (_) { /* iOS Safari and some browsers do not expose orientation lock. */ }
+        } catch (_) { /* iOS Safari and restricted browsers do not expose orientation lock. */ }
+        hint.textContent = fullscreenStarted
+          ? 'Fullscreen requested · Landscape mode requested'
+          : 'Landscape game starting · Browser fullscreen permission unavailable';
       }
 
       play.addEventListener('click', async () => {
