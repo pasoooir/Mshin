@@ -243,31 +243,36 @@ func _build_tree_belts() -> void:
 		positions.append(Vector3(-76.0 + sin(z) * 3.0, 0.0, z))
 	for z in [-58.0, -36.0, 22.0, 46.0]:
 		positions.append(Vector3(44.0 + sin(z * 0.08) * 2.0, 0.0, z))
-	# A shallow root flare sits directly on the terrain and visually anchors each tree.
+
+	# All tree geometry is measured from y=0: root flare touches the terrain,
+	# trunk bottom is exactly at ground height, and the crown overlaps the trunk.
 	var root_mesh := CylinderMesh.new()
 	root_mesh.top_radius = 0.24
 	root_mesh.bottom_radius = 0.34
 	root_mesh.height = 0.16
-	var root_material := StandardMaterial3D.new()
-	root_material.albedo_color = Color(0.28, 0.20, 0.13)
-	root_material.roughness = 1.0
-	root_mesh.material = root_material
+	var bark_material := StandardMaterial3D.new()
+	bark_material.vertex_color_use_as_albedo = true
+	bark_material.albedo_texture = _create_bark_texture()
+	bark_material.roughness = 1.0
+	root_mesh.material = bark_material
 
 	var trunk_mesh := CylinderMesh.new()
 	trunk_mesh.top_radius = 0.16
 	trunk_mesh.bottom_radius = 0.25
 	trunk_mesh.height = 2.5
-	var trunk_material := StandardMaterial3D.new()
-	trunk_material.albedo_color = Color(0.30, 0.19, 0.12)
-	trunk_material.roughness = 1.0
-	trunk_mesh.material = trunk_material
+	trunk_mesh.material = bark_material
+
 	var canopy_mesh := SphereMesh.new()
 	canopy_mesh.radius = 1.35
 	canopy_mesh.height = 2.5
 	var canopy_material := StandardMaterial3D.new()
 	canopy_material.vertex_color_use_as_albedo = true
-	canopy_material.roughness = 0.92
+	canopy_material.albedo_texture = _create_foliage_texture()
+	canopy_material.roughness = 0.96
 	canopy_mesh.material = canopy_material
+
+	var tree_shadows := _create_tree_shadow_multimesh(positions)
+	add_child(tree_shadows)
 	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
 	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.25)
 	var crowns := _create_tree_multimesh("TreeCanopies", canopy_mesh, positions, 2.55)
@@ -275,24 +280,104 @@ func _build_tree_belts() -> void:
 	add_child(trunks)
 	add_child(crowns)
 
+
 func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vector3], height_offset: float) -> MultiMeshInstance3D:
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	multimesh.mesh = mesh
-	multimesh.use_colors = node_name == "TreeCanopies"
+	multimesh.use_colors = true
 	multimesh.instance_count = positions.size()
+	var trunk_palette: Array[Color] = [
+		Color(0.43, 0.27, 0.16), Color(0.52, 0.34, 0.21),
+		Color(0.36, 0.23, 0.15), Color(0.58, 0.39, 0.25)
+	]
+	var root_palette: Array[Color] = [
+		Color(0.42, 0.29, 0.19), Color(0.50, 0.35, 0.23),
+		Color(0.36, 0.25, 0.17), Color(0.55, 0.39, 0.26)
+	]
+	var foliage_palette: Array[Color] = [
+		Color(0.52, 0.78, 0.38), Color(0.39, 0.68, 0.31),
+		Color(0.62, 0.75, 0.32), Color(0.31, 0.59, 0.29),
+		Color(0.72, 0.79, 0.40), Color(0.42, 0.62, 0.25)
+	]
 	for index in range(positions.size()):
 		var scale := 0.82 + float((index * 7) % 5) * 0.09
 		var basis := Basis.IDENTITY.scaled(Vector3(scale, scale, scale))
 		var origin := positions[index] + Vector3(0.0, height_offset * scale, 0.0)
 		multimesh.set_instance_transform(index, Transform3D(basis, origin))
 		if node_name == "TreeCanopies":
-			var foliage: Array[Color] = [Color(0.10, 0.30, 0.13), Color(0.16, 0.40, 0.17), Color(0.28, 0.48, 0.20), Color(0.39, 0.46, 0.18)]
-			multimesh.set_instance_color(index, foliage[index % foliage.size()])
+			multimesh.set_instance_color(index, foliage_palette[index % foliage_palette.size()])
+		elif node_name == "TreeTrunks":
+			multimesh.set_instance_color(index, trunk_palette[index % trunk_palette.size()])
+		else:
+			multimesh.set_instance_color(index, root_palette[index % root_palette.size()])
 	var instance := MultiMeshInstance3D.new()
 	instance.name = node_name
 	instance.multimesh = multimesh
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	return instance
+
+
+func _create_tree_shadow_multimesh(positions: Array[Vector3]) -> MultiMeshInstance3D:
+	# One batched radial alpha mesh gives each tree a soft, stable contact shadow.
+	# It is deliberately unlit and does not cast shadows, so the mobile cost is one draw.
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y in range(64):
+		for x in range(64):
+			var p := Vector2((float(x) + 0.5) / 63.0 * 2.0 - 1.0, (float(y) + 0.5) / 63.0 * 2.0 - 1.0)
+			var radius := p.length()
+			var alpha := 0.0
+			if radius < 1.0:
+				alpha = pow(1.0 - radius * radius, 2.2) * 0.62
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+	var shadow_texture := ImageTexture.create_from_image(image)
+	var shadow_material := StandardMaterial3D.new()
+	shadow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	shadow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shadow_material.albedo_color = Color(0.13, 0.105, 0.075, 0.34)
+	shadow_material.albedo_texture = shadow_texture
+	shadow_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	shadow_material.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	shadow_material.no_depth_test = false
+	shadow_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	var shadow_mesh := PlaneMesh.new()
+	shadow_mesh.size = Vector2(3.8, 2.8)
+	shadow_mesh.material = shadow_material
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = shadow_mesh
+	multimesh.instance_count = positions.size()
+	for index in range(positions.size()):
+		var scale := 0.82 + float((index * 7) % 5) * 0.09
+		var basis := Basis(Vector3.RIGHT, deg_to_rad(-90.0)).scaled(Vector3(scale, scale, scale))
+		multimesh.set_instance_transform(index, Transform3D(basis, positions[index] + Vector3(0.0, 0.018, 0.0)))
+	var shadows := MultiMeshInstance3D.new()
+	shadows.name = "TreeContactShadows"
+	shadows.multimesh = multimesh
+	shadows.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return shadows
+
+
+func _create_bark_texture() -> Texture2D:
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y in range(64):
+		for x in range(64):
+			var grain := fposmod(sin(float(x) * 12.9898 + float(y) * 78.233) * 43758.5453, 1.0)
+			var ridge := 0.5 + 0.5 * sin(float(x) * 0.82 + sin(float(y) * 0.19) * 1.4)
+			var shade := clampf(0.70 + ridge * 0.20 + grain * 0.10, 0.0, 1.0)
+			image.set_pixel(x, y, Color(shade, shade, shade, 1.0))
+	return ImageTexture.create_from_image(image)
+
+
+func _create_foliage_texture() -> Texture2D:
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y in range(64):
+		for x in range(64):
+			var broad := sin(float(x) * 0.31 + float(y) * 0.17) * cos(float(y) * 0.27 - float(x) * 0.13)
+			var fine := fposmod(sin(float(x) * 91.7 + float(y) * 37.3) * 19341.7, 1.0)
+			var shade := clampf(0.76 + broad * 0.12 + fine * 0.12, 0.0, 1.0)
+			image.set_pixel(x, y, Color(shade, shade, shade, 1.0))
+	return ImageTexture.create_from_image(image)
 
 
 # Procedural textures are generated locally at startup: no CDN, external asset or runtime download.
@@ -435,10 +520,11 @@ func _build_sunlight() -> void:
 	sun.light_energy = 0.34
 	# One directional shadow source keeps building and tree shadows coherent.
 	sun.shadow_enabled = true
-	sun.shadow_opacity = 0.48
-	sun.shadow_bias = 0.06
-	sun.shadow_normal_bias = 1.0
-	sun.directional_shadow_max_distance = 100.0
+	sun.shadow_opacity = 0.40
+	sun.shadow_blur = 1.0
+	sun.shadow_bias = 0.045
+	sun.shadow_normal_bias = 0.85
+	sun.directional_shadow_max_distance = 88.0
 	add_child(sun)
 
 
