@@ -54,7 +54,7 @@ func _build_top_hud() -> void:
 	var top_hud := Control.new()
 	top_hud.name = "TopHUD"
 	top_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	top_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_hud.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.z_index = 20
 	add_child(top_hud)
 
@@ -65,20 +65,20 @@ func _build_top_hud() -> void:
 	margins.add_theme_constant_override("margin_top", 12)
 	margins.add_theme_constant_override("margin_right", 14)
 	margins.add_theme_constant_override("margin_bottom", 0)
-	margins.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margins.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(margins)
 
 	var row := HBoxContainer.new()
 	row.name = "TopHUDRow"
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.add_theme_constant_override("separation", 8)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.mouse_filter = Control.MOUSE_FILTER_PASS
 	margins.add_child(row)
 
 	var left_group := HBoxContainer.new()
 	left_group.name = "CityStats"
 	left_group.add_theme_constant_override("separation", 8)
-	left_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_group.mouse_filter = Control.MOUSE_FILTER_PASS
 	row.add_child(left_group)
 
 	var spacer := Control.new()
@@ -91,7 +91,7 @@ func _build_top_hud() -> void:
 	right_group.name = "Currencies"
 	right_group.add_theme_constant_override("separation", 8)
 	right_group.alignment = BoxContainer.ALIGNMENT_END
-	right_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_group.mouse_filter = Control.MOUSE_FILTER_PASS
 	row.add_child(right_group)
 
 	level_label = _add_icon_capsule(left_group, "level", "1", Color("#E85D9A"), "City level")
@@ -115,7 +115,7 @@ func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: S
 	var content := HBoxContainer.new()
 	content.add_theme_constant_override("separation", 6)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.mouse_filter = Control.MOUSE_FILTER_PASS
 	capsule.add_child(content)
 
 	var icon := IconAtlas.make_icon(icon_name, Vector2(30, 30))
@@ -412,8 +412,9 @@ func _on_power_changed(total: int, used: int) -> void:
 
 func _on_water_changed(total: int, used: int) -> void:
 	if status_label:
-		var existing := status_label.tooltip_text
-		status_label.tooltip_text = existing + "  |  Water usage: %d / %d" % [used, total]
+		status_label.tooltip_text = "Power usage: %d / %d  |  Water usage: %d / %d" % [
+			ServiceManager.used_power, ServiceManager.total_power, used, total
+		]
 
 func _format_count(value: int) -> String:
 	if value >= 1000000:
