@@ -422,17 +422,9 @@ func _make_icon_button(kind: String, hint: String, requested_size: Vector2 = Vec
 	icon.offset_right = -3
 	icon.offset_bottom = -3
 	if icon.texture == null:
-		# Never leave a silent gray slot when an atlas key is missing.
-		var fallback := Label.new()
-		fallback.text = hint.left(1).to_upper()
-		fallback.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		fallback.add_theme_color_override("font_color", Color.WHITE)
-		fallback.add_theme_font_size_override("font_size", int(30 * _ui_scale))
-		button.add_child(fallback)
-	else:
-		button.add_child(icon)
+		# Never substitute a font glyph: web fonts may not contain the symbol.
+		icon.texture = IconAtlas.texture_for("fallback")
+	button.add_child(icon)
 	return button
 
 func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
