@@ -5,7 +5,7 @@ signal household_population_changed(building_id: String, population: int)
 signal immigrants_arrived(amount: int, city_population: int)
 signal immigration_advice(message: String)
 
-const BASE_HAPPINESS := 70.0
+const BASE_HAPPINESS := 100.0
 const LOW_HAPPINESS_ABANDONMENT_THRESHOLD := 25.0
 const ABANDONMENT_GRACE_SECONDS := 90.0
 const RECALC_INTERVAL := 5.0
