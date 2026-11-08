@@ -115,10 +115,10 @@ func _build_top_hud() -> void:
 	right_stack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	right_stack.anchor_left = 1.0
 	right_stack.anchor_right = 1.0
-	right_stack.offset_left = -238
+	right_stack.offset_left = -508
 	right_stack.offset_right = -12
 	right_stack.offset_top = 10
-	right_stack.offset_bottom = 174
+	right_stack.offset_bottom = 372
 	right_stack.add_theme_constant_override("separation", 7)
 	right_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(right_stack)
@@ -146,10 +146,10 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(184, 184))
+	var icon := IconAtlas.make_icon(icon_name, Vector2(92, 92))
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, 23)
+	var value := _make_hud_value(initial_text, 46)
 	content.add_child(value)
 	return value
 
@@ -168,7 +168,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	var icon := IconAtlas.make_icon(icon_name, Vector2(184, 184))
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, 24)
+	var value := _make_hud_value(initial_text, 48)
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(value)
@@ -208,7 +208,7 @@ func _make_currency_plus_button(hint: String) -> Button:
 	var button := Button.new()
 	button.name = "CurrencyAddButton"
 	button.text = "+"
-	button.custom_minimum_size = Vector2(184, 184)
+	button.custom_minimum_size = Vector2(92, 92)
 	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = hint + " shop"
 	button.add_theme_font_size_override("font_size", 56)
@@ -231,10 +231,10 @@ func _build_simcash_capsule(parent: Container) -> void:
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
 	var glyph := BanknoteGlyph.new()
-	glyph.custom_minimum_size = Vector2(184, 184)
+	glyph.custom_minimum_size = Vector2(92, 92)
 	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(glyph)
-	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), 24)
+	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), 48)
 	simcash_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	simcash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(simcash_label)
@@ -348,7 +348,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, Vector2(172, 172))
+	var icon := IconAtlas.make_icon(kind, Vector2(86, 86))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
@@ -362,7 +362,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 		fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		fallback.add_theme_color_override("font_color", Color.WHITE)
-		fallback.add_theme_font_size_override("font_size", 28)
+		fallback.add_theme_font_size_override("font_size", 56)
 		button.add_child(fallback)
 	else:
 		button.add_child(icon)
