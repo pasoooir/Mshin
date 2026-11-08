@@ -22,7 +22,7 @@ func _restore_city() -> void:
 
 	var example_house_placed := false
 	if not has_residential and road_system and not road_system.roads.is_empty():
-		var candidate_anchors: Array[Vector2i] = []
+		var candidate_anchors: Array[Vector2i] = [Vector2i(0, 1)]
 		for road_cell_variant in road_system.roads.keys():
 			var road_cell: Vector2i = road_cell_variant
 			candidate_anchors.append(road_cell + Vector2i(0, 1))
