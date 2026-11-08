@@ -140,9 +140,8 @@ func _run_gameplay_test() -> void:
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 
 	# Neighbor-driven road topology and local mesh refresh regression coverage.
-	print("[RoadAutoTileSmoke] cell10,0 kind=%s connections=%s; cell10,-1 kind=%s connections=%s" % [road_system.get_road_tile_kind(Vector2i(10, 0)), str(road_system.get_road_connections(Vector2i(10, 0))), road_system.get_road_tile_kind(Vector2i(10, -1)), str(road_system.get_road_connections(Vector2i(10, -1)))])
-	_check(road_system.get_road_tile_kind(Vector2i(10, 0)) == RoadSystemScript.TILE_T, "A three-neighbor starter-road tile was not classified as a T-junction.")
-	_check(road_system.get_road_tile_kind(Vector2i(10, -1)) == RoadSystemScript.TILE_T, "The opposite starter-road row did not resolve its T-junction topology.")
+	_check(road_system.get_road_tile_kind(Vector2i(0, 0)) == RoadSystemScript.TILE_T, "A three-neighbor starter-road tile was not classified as a T-junction.")
+	_check(road_system.get_road_tile_kind(Vector2i(0, -1)) == RoadSystemScript.TILE_T, "The opposite starter-road row did not resolve its T-junction topology.")
 	var topology_center := Vector2i(18, 0)
 	var money_before_topology := EconomyManager.simoleons
 	_check(road_system.place_road(topology_center), "Could not create topology test end/stub road.")
