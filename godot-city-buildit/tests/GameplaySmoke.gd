@@ -148,7 +148,7 @@ func _run_gameplay_test() -> void:
 			var simoleon_reward = celebration.find_child("SimoleonReward", true, false)
 			var key_reward = celebration.find_child("GoldenKeyReward", true, false)
 			_check(simoleon_reward is Label and simoleon_reward.text == "+200 Simoleons", "Simoleon reward counter did not animate to the awarded amount.")
-			_check(key_reward is Label and key_reward.text == "+1 Golden Keys", "Golden Key reward counter did not animate to the awarded amount.")
+			_check(key_reward is Label and key_reward.text == "+1 Golden Key", "Golden Key reward counter did not animate to the awarded amount.")
 			await _wait_seconds(1.6)
 		_check(hud.get_node_or_null("LevelUpCelebration") == null, "Level Up celebration did not clean itself up after 2–3 seconds.")
 	GameManager.level = 5
