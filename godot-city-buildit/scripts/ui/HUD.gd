@@ -44,7 +44,7 @@ func _ready() -> void:
 	status_label.text = "Build a road, then place a house and factory beside it."
 
 func _build_top_hud() -> void:
-	# Hide the old scene-authored counters; the new responsive bar replaces them.
+	# Hide scene-authored legacy counters; build the reference's two-corner layout.
 	for old_path in ["TopLeft", "TopRight"]:
 		var old_node := get_node_or_null(old_path)
 		if old_node:
@@ -58,120 +58,187 @@ func _build_top_hud() -> void:
 	top_hud.z_index = 20
 	add_child(top_hud)
 
-	var margins := MarginContainer.new()
-	margins.name = "TopHUDMargins"
-	margins.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margins.add_theme_constant_override("margin_left", 14)
-	margins.add_theme_constant_override("margin_top", 12)
-	margins.add_theme_constant_override("margin_right", 14)
-	margins.add_theme_constant_override("margin_bottom", 0)
-	margins.mouse_filter = Control.MOUSE_FILTER_PASS
-	top_hud.add_child(margins)
+	var left_stack := VBoxContainer.new()
+	left_stack.name = "TopLeftStats"
+	left_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	left_stack.position = Vector2(14, 10)
+	left_stack.custom_minimum_size = Vector2(360, 112)
+	left_stack.add_theme_constant_override("separation", 5)
+	left_stack.mouse_filter = Control.MOUSE_FILTER_PASS
+	top_hud.add_child(left_stack)
 
-	var row := HBoxContainer.new()
-	row.name = "TopHUDRow"
-	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	row.add_theme_constant_override("separation", 8)
-	row.mouse_filter = Control.MOUSE_FILTER_PASS
-	margins.add_child(row)
+	var top_stats := HBoxContainer.new()
+	top_stats.name = "PrimaryCityStats"
+	top_stats.add_theme_constant_override("separation", 8)
+	top_stats.mouse_filter = Control.MOUSE_FILTER_PASS
+	left_stack.add_child(top_stats)
 
-	var left_group := HBoxContainer.new()
-	left_group.name = "CityStats"
-	left_group.add_theme_constant_override("separation", 8)
-	left_group.mouse_filter = Control.MOUSE_FILTER_PASS
-	row.add_child(left_group)
+	var level_badge := PanelContainer.new()
+	level_badge.name = "LevelBadge"
+	level_badge.custom_minimum_size = Vector2(76, 76)
+	level_badge.add_theme_stylebox_override("panel", _level_badge_style())
+	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_stats.add_child(level_badge)
+	var level_overlay := Control.new()
+	level_overlay.custom_minimum_size = Vector2(72, 72)
+	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	level_badge.add_child(level_overlay)
+	var level_icon := IconAtlas.make_icon("level", Vector2(62, 62))
+	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	level_overlay.add_child(level_icon)
+	level_label = Label.new()
+	level_label.name = "LevelValue"
+	level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	level_label.add_theme_font_size_override("font_size", 25)
+	level_label.add_theme_color_override("font_color", Color.WHITE)
+	level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	level_label.add_theme_constant_override("shadow_offset_x", 2)
+	level_label.add_theme_constant_override("shadow_offset_y", 2)
+	level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	level_overlay.add_child(level_label)
 
-	var spacer := Control.new()
-	spacer.name = "FlexibleSpacer"
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(spacer)
+	population_label = _add_stat_bar(top_stats, "population", "0", Color("#4BA3FF"), "City population", 158)
+	storage_label = _add_stat_bar(top_stats, "storage", "0/30", Color("#5BB8F5"), "City storage", 150)
 
-	var right_group := HBoxContainer.new()
-	right_group.name = "Currencies"
-	right_group.add_theme_constant_override("separation", 8)
-	right_group.alignment = BoxContainer.ALIGNMENT_END
-	right_group.mouse_filter = Control.MOUSE_FILTER_PASS
-	row.add_child(right_group)
+	var happiness_row := HBoxContainer.new()
+	happiness_row.name = "HappinessStatRow"
+	happiness_row.add_theme_constant_override("separation", 8)
+	happiness_row.mouse_filter = Control.MOUSE_FILTER_PASS
+	left_stack.add_child(happiness_row)
+	happiness_label = _add_stat_bar(happiness_row, "happiness", "100%", Color("#A8E62E"), "Citizen happiness", 190)
 
-	level_label = _add_icon_capsule(left_group, "level", "1", Color("#E85D9A"), "City level")
-	population_label = _add_icon_capsule(left_group, "population", "0", Color("#4BA3FF"), "City population")
-	happiness_label = _add_icon_capsule(left_group, "happiness", "100%", Color("#3DDB6A"), "Citizen happiness")
-	storage_label = _add_icon_capsule(left_group, "storage", "0/30", Color("#5BB8F5"), "City storage")
+	var right_stack := VBoxContainer.new()
+	right_stack.name = "TopRightCurrencies"
+	right_stack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	right_stack.anchor_left = 1.0
+	right_stack.anchor_right = 1.0
+	right_stack.offset_left = -238
+	right_stack.offset_right = -12
+	right_stack.offset_top = 10
+	right_stack.offset_bottom = 150
+	right_stack.add_theme_constant_override("separation", 7)
+	right_stack.mouse_filter = Control.MOUSE_FILTER_PASS
+	top_hud.add_child(right_stack)
 
-	simoleons_label = _add_icon_capsule(right_group, "simoleons", "5000", Color("#FFD24A"), "Simoleons")
-	_build_simcash_capsule(right_group)
-	keys_label = _add_icon_capsule(right_group, "golden_key", "5", Color("#FFC107"), "Golden Keys")
+	simoleons_label = _add_currency_bar(right_stack, "simoleons", "5000", Color("#FFD24A"), "Simoleons", true)
+	_build_simcash_capsule(right_stack)
+	var keys_row := HBoxContainer.new()
+	keys_row.name = "PremiumCurrencyRow"
+	keys_row.add_theme_constant_override("separation", 8)
+	keys_row.mouse_filter = Control.MOUSE_FILTER_PASS
+	right_stack.add_child(keys_row)
+	keys_label = _add_currency_bar(keys_row, "golden_key", "5", Color("#FFC107"), "Golden Keys", false, 100)
 
-func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: String, tint: Color, hint: String) -> Label:
-	var capsule := PanelContainer.new()
-	capsule.name = icon_name.capitalize() + "Capsule"
-	capsule.custom_minimum_size = Vector2(0, 52)
-	capsule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	capsule.tooltip_text = hint
-	capsule.add_theme_stylebox_override("panel", _capsule_style())
-	parent.add_child(capsule)
-
+func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
+	var bar := PanelContainer.new()
+	bar.name = icon_name.capitalize() + "StatBar"
+	bar.custom_minimum_size = Vector2(width, 48)
+	bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.tooltip_text = hint
+	bar.add_theme_stylebox_override("panel", _capsule_style())
+	parent.add_child(bar)
 	var content := HBoxContainer.new()
-	content.add_theme_constant_override("separation", 6)
+	content.add_theme_constant_override("separation", 7)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.mouse_filter = Control.MOUSE_FILTER_PASS
-	capsule.add_child(content)
-
-	var icon := IconAtlas.make_icon(icon_name, Vector2(30, 30))
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(content)
+	var icon := IconAtlas.make_icon(icon_name, Vector2(38, 38))
 	icon.modulate = tint
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(icon)
+	var value := _make_hud_value(initial_text, 18)
+	content.add_child(value)
+	return value
 
+func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 214.0) -> Label:
+	var bar := PanelContainer.new()
+	bar.name = icon_name.capitalize() + "CurrencyBar"
+	bar.custom_minimum_size = Vector2(width, 48)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.tooltip_text = hint
+	bar.add_theme_stylebox_override("panel", _capsule_style())
+	parent.add_child(bar)
+	var content := HBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(content)
+	var icon := IconAtlas.make_icon(icon_name, Vector2(38, 38))
+	icon.modulate = tint
+	content.add_child(icon)
+	var value := _make_hud_value(initial_text, 19)
+	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(value)
+	if show_plus:
+		var add_button := _make_currency_plus_button(hint)
+		content.add_child(add_button)
+	return value
+
+func _make_hud_value(initial_text: String, font_size: int) -> Label:
 	var value := Label.new()
 	value.text = initial_text
 	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	value.add_theme_color_override("font_color", Color.WHITE)
-	value.add_theme_font_size_override("font_size", 16)
-	value.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
-	value.add_theme_constant_override("shadow_offset_x", 1)
-	value.add_theme_constant_override("shadow_offset_y", 1)
+	value.add_theme_font_size_override("font_size", font_size)
+	value.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	value.add_theme_constant_override("shadow_offset_x", 2)
+	value.add_theme_constant_override("shadow_offset_y", 2)
 	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_child(value)
 	return value
 
-func _build_simcash_capsule(parent: HBoxContainer) -> void:
-	var capsule := PanelContainer.new()
-	capsule.name = "SimCashCapsule"
-	capsule.custom_minimum_size = Vector2(0, 52)
-	capsule.tooltip_text = "SimCash"
-	capsule.add_theme_stylebox_override("panel", _capsule_style())
-	parent.add_child(capsule)
+func _level_badge_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.10, 0.13, 0.17, 0.88)
+	style.border_color = Color(1, 1, 1, 0.35)
+	style.set_border_width_all(4)
+	style.set_corner_radius_all(40)
+	style.shadow_color = Color(0, 0, 0, 0.35)
+	style.shadow_size = 7
+	style.shadow_offset = Vector2(0, 3)
+	style.content_margin_left = 3
+	style.content_margin_right = 3
+	style.content_margin_top = 3
+	style.content_margin_bottom = 3
+	return style
 
+func _make_currency_plus_button(hint: String) -> Button:
+	var button := Button.new()
+	button.name = "CurrencyAddButton"
+	button.text = "+"
+	button.custom_minimum_size = Vector2(34, 34)
+	button.focus_mode = Control.FOCUS_NONE
+	button.tooltip_text = hint + " shop"
+	button.add_theme_font_size_override("font_size", 23)
+	_add_theme_color(button, Color("#4CD964"))
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.pressed.connect(_on_simcash_plus_pressed)
+	return button
+func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: String, tint: Color, hint: String) -> Label:
+	return _add_stat_bar(parent, icon_name, initial_text, tint, hint, 150)
+func _build_simcash_capsule(parent: Container) -> void:
+	var bar := PanelContainer.new()
+	bar.name = "SimCashCurrencyBar"
+	bar.custom_minimum_size = Vector2(214, 48)
+	bar.tooltip_text = "SimCash"
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_theme_stylebox_override("panel", _capsule_style())
+	parent.add_child(bar)
 	var content := HBoxContainer.new()
-	content.add_theme_constant_override("separation", 6)
-	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	capsule.add_child(content)
-
+	content.add_theme_constant_override("separation", 8)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(content)
 	var glyph := BanknoteGlyph.new()
-	glyph.custom_minimum_size = Vector2(30, 30)
+	glyph.custom_minimum_size = Vector2(38, 38)
 	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(glyph)
-
-	simcash_label = Label.new()
-	simcash_label.text = str(EconomyManager.sim_cash)
-	simcash_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	simcash_label.add_theme_color_override("font_color", Color.WHITE)
-	simcash_label.add_theme_font_size_override("font_size", 16)
-	simcash_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), 19)
+	simcash_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	simcash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(simcash_label)
-
-	var add_button := Button.new()
-	add_button.name = "SimCashAddButton"
-	add_button.text = "+"
-	add_button.custom_minimum_size = Vector2(25, 25)
-	add_button.focus_mode = Control.FOCUS_NONE
-	add_button.tooltip_text = "SimCash shop (not available yet)"
-	add_button.add_theme_font_size_override("font_size", 18)
-	_add_theme_color(add_button, Color("#4CD964"))
-	content.add_child(add_button)
-	add_button.pressed.connect(_on_simcash_plus_pressed)
-
+	content.add_child(_make_currency_plus_button("SimCash"))
 func _add_theme_color(button: Button, tint: Color) -> void:
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = Color(tint.r, tint.g, tint.b, 0.22)
@@ -210,10 +277,10 @@ func _build_toolbars() -> void:
 	# Large touch targets stay inside a vertical scroller on short landscape screens.
 	var toolbar_scroll := ScrollContainer.new()
 	toolbar_scroll.name = "RightToolbar"
-	toolbar_scroll.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	var scroll_height := get_viewport().get_visible_rect().size.y * 0.82
-	toolbar_scroll.position = Vector2(-124, -scroll_height * 0.5)
-	toolbar_scroll.custom_minimum_size = Vector2(116, scroll_height)
+	toolbar_scroll.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	var scroll_height := get_viewport().get_visible_rect().size.y * 0.78
+	toolbar_scroll.position = Vector2(8, -scroll_height * 0.5)
+	toolbar_scroll.custom_minimum_size = Vector2(82, scroll_height)
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	add_child(toolbar_scroll)
@@ -270,7 +337,7 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(112, 112)
+	button.custom_minimum_size = Vector2(76, 76)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
@@ -278,7 +345,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, Vector2(104, 104))
+	var icon := IconAtlas.make_icon(kind, Vector2(70, 70))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
