@@ -193,6 +193,8 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 		_add_box(Vector3(w * 0.94, 0.075, d * 0.90), Vector3(0, belt_y, 0), plaster_light)
 		_add_box(Vector3(w * 0.92, 0.035, d * 0.91), Vector3(0, belt_y - 0.07, 0), plaster_shadow)
 
+	# Keep balcony dimensions aligned with _add_natural_window()'s 0.44 m front window.
+	var window_w := 0.44
 	var columns := 2 if w < 4.0 else 3
 	if is_apartment:
 		columns = 3 if w < 5.0 else 4
