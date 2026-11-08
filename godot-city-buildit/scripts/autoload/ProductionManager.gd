@@ -104,8 +104,10 @@ func get_default_factory_product() -> String:
 	return "metal"
 
 func get_default_recipe_for_building(building_type: String) -> String:
+	# The player-facing chain store reuses the existing Building Supplies recipe set.
+	var recipe_store := "building_supplies" if building_type == "shop_chain" else building_type
 	for item_id in crafted_items:
-		if str(crafted_items[item_id].get("store", "")) == building_type:
+		if str(crafted_items[item_id].get("store", "")) == recipe_store:
 			if int(crafted_items[item_id].get("level", 1)) <= GameManager.level:
 				return item_id
 	return ""
