@@ -165,7 +165,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(184, 184))
+	var icon := IconAtlas.make_icon(icon_name, Vector2(92, 92))
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, 48)
@@ -340,7 +340,7 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(184, 184)
+	button.custom_minimum_size = Vector2(92, 92)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
