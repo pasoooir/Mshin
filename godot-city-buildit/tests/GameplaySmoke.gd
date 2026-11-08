@@ -351,6 +351,7 @@ func _run_gameplay_test() -> void:
 	_check(factory != null and StorageManager.get_item_count("metal") == 2, "Tapping factory did not collect the restarted Metal batch.")
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
 	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")
+	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
 	_check(home != null and home.current_population >= 18 and GameManager.population >= 18, "House upgrade did not increase service-adjusted population.")
 
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
