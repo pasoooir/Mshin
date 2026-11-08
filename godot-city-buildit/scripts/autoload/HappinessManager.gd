@@ -41,7 +41,7 @@ func recalculate_city() -> void:
 			var elapsed := float(low_happiness_time.get(building.building_id, 0.0)) + RECALC_INTERVAL
 			low_happiness_time[building.building_id] = elapsed
 			if elapsed >= ABANDONMENT_GRACE_SECONDS:
-				target_population = maxi(0, target_population - maxi(1, int(ceil(float(capacity) * 0.05))))
+				target_population = maxi(0, int(building.current_population) - 1)
 		else:
 			low_happiness_time.erase(building.building_id)
 		target_population = clampi(target_population, 0, capacity)
@@ -54,6 +54,7 @@ func recalculate_city() -> void:
 	home_scores = scores
 	GameManager.set_happiness(average)
 	GameManager.set_population(population_total)
+	EconomyManager.set_tax_income(roundi(float(population_total) * (average / 100.0) * 0.15))
 	happiness_recalculated.emit(average, home_scores)
 
 func calculate_home_happiness(home: Node3D) -> float:
