@@ -73,7 +73,9 @@ func _build_terrain() -> void:
 	terrain.mesh = surface.commit()
 	var terrain_material := StandardMaterial3D.new()
 	terrain_material.vertex_color_use_as_albedo = true
+	terrain_material.albedo_texture = _create_grass_texture()
 	terrain_material.roughness = 1.0
+	terrain_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	terrain_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	terrain.material_override = terrain_material
 	add_child(terrain)
@@ -101,6 +103,8 @@ func _build_terrain() -> void:
 	add_child(shallow_water)
 
 func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
+	# World-space UVs keep the subtle ground grain consistent across the terrain mesh.
+	surface.set_uv(Vector2(point.x * 0.16, point.z * 0.16))
 	var coast := _coastline(point.z)
 	var broad_noise := sin(point.x * 0.31 + point.z * 0.17) * cos(point.z * 0.23 - point.x * 0.11)
 	var fine_noise := sin(point.x * 1.7 + point.z * 2.3) * cos(point.z * 1.35 - point.x * 0.8)
@@ -179,6 +183,11 @@ func _build_coastal_highway() -> void:
 		rail.position = Vector3(-48.0 + side * 4.75, 0.46, 0.0)
 		rail.material_override = guardrail_material
 		add_child(rail)
+	# Narrow sidewalk and raised curb on the city-facing side. Leave a gap for
+	# the highway connector so the pedestrian strip never floats over asphalt.
+	_add_sidewalk_segment(-49.5, 91.0)
+	_add_sidewalk_segment(49.5, 91.0)
+
 	var access_road := MeshInstance3D.new()
 	access_road.name = "HighwayCityConnector"
 	var access_mesh := BoxMesh.new()
@@ -187,6 +196,31 @@ func _build_coastal_highway() -> void:
 	access_road.position = Vector3(-32.0, 0.13, 0.0)
 	access_road.material_override = asphalt
 	add_child(access_road)
+
+func _add_sidewalk_segment(center_z: float, length_z: float) -> void:
+	var sidewalk := MeshInstance3D.new()
+	sidewalk.name = "RoadsideSidewalk"
+	var sidewalk_mesh := BoxMesh.new()
+	sidewalk_mesh.size = Vector3(1.05, 0.12, length_z)
+	sidewalk.mesh = sidewalk_mesh
+	sidewalk.position = Vector3(-42.92, 0.075, center_z)
+	var concrete := StandardMaterial3D.new()
+	concrete.albedo_color = Color(0.57, 0.59, 0.56)
+	concrete.roughness = 1.0
+	sidewalk.material_override = concrete
+	add_child(sidewalk)
+
+	var curb := MeshInstance3D.new()
+	curb.name = "RoadsideCurb"
+	var curb_mesh := BoxMesh.new()
+	curb_mesh.size = Vector3(0.18, 0.20, length_z)
+	curb.mesh = curb_mesh
+	curb.position = Vector3(-43.53, 0.12, center_z)
+	var curb_material := StandardMaterial3D.new()
+	curb_material.albedo_color = Color(0.73, 0.75, 0.70)
+	curb_material.roughness = 0.95
+	curb.material_override = curb_material
+	add_child(curb)
 
 func _add_road_marking(position: Vector3, size: Vector3, color: Color) -> void:
 	var marking := MeshInstance3D.new()
@@ -209,6 +243,16 @@ func _build_tree_belts() -> void:
 		positions.append(Vector3(-76.0 + sin(z) * 3.0, 0.0, z))
 	for z in [-58.0, -36.0, 22.0, 46.0]:
 		positions.append(Vector3(44.0 + sin(z * 0.08) * 2.0, 0.0, z))
+	# A shallow root flare sits directly on the terrain and visually anchors each tree.
+	var root_mesh := CylinderMesh.new()
+	root_mesh.top_radius = 0.24
+	root_mesh.bottom_radius = 0.34
+	root_mesh.height = 0.16
+	var root_material := StandardMaterial3D.new()
+	root_material.albedo_color = Color(0.28, 0.20, 0.13)
+	root_material.roughness = 1.0
+	root_mesh.material = root_material
+
 	var trunk_mesh := CylinderMesh.new()
 	trunk_mesh.top_radius = 0.16
 	trunk_mesh.bottom_radius = 0.25
@@ -224,8 +268,10 @@ func _build_tree_belts() -> void:
 	canopy_material.vertex_color_use_as_albedo = true
 	canopy_material.roughness = 0.92
 	canopy_mesh.material = canopy_material
-	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.0)
-	var crowns := _create_tree_multimesh("TreeCanopies", canopy_mesh, positions, 2.35)
+	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
+	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.25)
+	var crowns := _create_tree_multimesh("TreeCanopies", canopy_mesh, positions, 2.55)
+	add_child(roots)
 	add_child(trunks)
 	add_child(crowns)
 
@@ -250,6 +296,19 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 
 
 # Procedural textures are generated locally at startup: no CDN, external asset or runtime download.
+func _create_grass_texture() -> Texture2D:
+	# A tiny neutral tile modulates terrain vertex colors; it adds grain without
+	# another mesh, shader pass, or large texture allocation.
+	var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	for y in range(128):
+		for x in range(128):
+			var noise_value := sin(float(x) * 127.1 + float(y) * 311.7) * 43758.5453
+			var grain := fposmod(noise_value, 1.0)
+			var value := 0.94 + grain * 0.06
+			image.set_pixel(x, y, Color(value, value, value, 1.0))
+	var texture := ImageTexture.create_from_image(image)
+	return texture
+
 func _create_asphalt_material() -> StandardMaterial3D:
 	var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
 	for y in range(128):
@@ -373,8 +432,13 @@ func _build_sunlight() -> void:
 	sun.name = "CoastalWarmSun"
 	sun.rotation_degrees = Vector3(-48.0, -32.0, 0.0)
 	sun.light_color = Color(1.0, 0.88, 0.70)
-	sun.light_energy = 0.22
-	sun.shadow_enabled = false
+	sun.light_energy = 0.34
+	# One directional shadow source keeps building and tree shadows coherent.
+	sun.shadow_enabled = true
+	sun.shadow_opacity = 0.48
+	sun.shadow_bias = 0.06
+	sun.shadow_normal_bias = 1.0
+	sun.directional_shadow_max_distance = 100.0
 	add_child(sun)
 
 

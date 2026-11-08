@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><g stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round"><path d="M12 108V48l30-18 30 18v60z" fill="#4D9FD8"/><path d="M76 108V60l22-14 22 14v48z" fill="#E8F1F7"/><path d="M33 62h18v20H33z" fill="#BDEBFF"/><path d="M90 73h16v16H90z" fill="#BDEBFF"/><path d="M88 22h20M98 12v20" stroke="#E85B54" stroke-width="10" stroke-linecap="round"/><path d="M8 108h112" fill="none" stroke-width="7"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs><linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8DD8F2"/><stop offset="1" stop-color="#2876B9"/></linearGradient><linearGradient id="cream" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#FFF2CF"/><stop offset="1" stop-color="#D5A96B"/></linearGradient><linearGradient id="roof" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F46D58"/><stop offset="1" stop-color="#B83C3A"/></linearGradient></defs>
+<ellipse cx="65" cy="111" rx="47" ry="8" fill="#18384A" opacity=".16"/>
+<path d="M12 59 39 38l29 18v49H12z" fill="url(#blue)" stroke="#31566B" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="m12 59 27-21 29 18-28 20z" fill="#B8E8F5" stroke="#31566B" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M39 76 68 56v49L39 123z" fill="#24669D" opacity=".9"/>
+<path d="M27 72h10v14H27zM49 72h10v14H49z" fill="#C7F0FF" stroke="#31566B" stroke-width="2"/>
+<path d="M39 93h12v24H39z" fill="#8B573C" stroke="#60412F" stroke-width="2"/>
+<path d="m68 70 21-16 26 15v36H68z" fill="url(#cream)" stroke="#765C43" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="m68 70 21-16 26 15-22 16z" fill="#FFF9E8" stroke="#765C43" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M80 82h12v12H80zM99 82h10v12H99z" fill="#8DDCF2" stroke="#765C43" stroke-width="2"/>
+<path d="M90 24v25" stroke="#D9E6EA" stroke-width="6" stroke-linecap="round"/><path d="M90 24v25" stroke="#7896A2" stroke-width="2"/>
+<path d="M78 25h24" stroke="#D9E6EA" stroke-width="5" stroke-linecap="round"/>
+<path d="M90 14v20" stroke="#D9E6EA" stroke-width="5" stroke-linecap="round"/>
+<circle cx="90" cy="24" r="13" fill="url(#roof)" stroke="#873C3B" stroke-width="3"/><path d="M90 16v16M82 24h16" stroke="#FFF4E8" stroke-width="4" stroke-linecap="round"/>
+</svg>
