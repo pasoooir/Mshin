@@ -101,6 +101,48 @@ positions = [hud.find(entry) for entry in toolbar_order]
 if any(position < 0 for position in positions) or positions != sorted(positions):
     errors.append("Right toolbar categories are missing or not in the required order")
 
+
+# Visual-quality contracts: local Build SVGs, hidden roof labels, grounded trees and shared shadows.
+building_source = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")
+if "stage_label.visible = false" not in building_source or 'stage_label.text = ""' not in building_source:
+    errors.append("Floating building stage labels must remain hidden and empty")
+label_update = re.search(r"func _update_stage_label\(\).*?(?=\nfunc |\Z)", building_source, re.S)
+if label_update is None or "visible = false" not in label_update.group(0):
+    errors.append("Building stage-label updater can expose a floating Lv label")
+
+world_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
+for visual_contract in [
+    "TreeContactShadows", "_create_tree_shadow_multimesh",
+    "_create_bark_texture", "_create_foliage_texture",
+    "SHADOW_CASTING_SETTING_ON", "sun.shadow_enabled = true",
+    "sun.shadow_blur = 1.0"
+]:
+    if visual_contract not in world_source:
+        errors.append(f"World visual contract is missing: {visual_contract}")
+if "Vector3(0.0, 0.018, 0.0)" not in world_source:
+    errors.append("Tree contact shadows are not anchored immediately above the terrain")
+if "multimesh.use_colors = true" not in world_source:
+    errors.append("Tree instances must use per-instance natural color variation")
+
+build_icon_paths = {
+    "services": "assets/icons/services.svg",
+    "parks": "assets/icons/parks.svg",
+    "park": "assets/icons/park.svg",
+    "bulldoze": "assets/icons/bulldozer.svg",
+}
+for icon_name, relative_path in build_icon_paths.items():
+    icon_path = ROOT / relative_path
+    if not icon_path.is_file():
+        errors.append(f"Required Build icon is missing: {relative_path}")
+        continue
+    icon_source = icon_path.read_text(encoding="utf-8")
+    if not all(token in icon_source for token in ['viewBox="0 0 128 128"', "<linearGradient", "<ellipse", "stroke-width="]):
+        errors.append(f"Build icon does not follow the shared dimensional gradient illustration style: {icon_name}")
+    if "<rect" in icon_source and re.search(r'<rect[^>]+fill="#[0-9A-Fa-f]{6}"', icon_source):
+        errors.append(f"Build icon contains an opaque rectangular background: {icon_name}")
+    if "res://assets/icons/" + Path(relative_path).name not in atlas:
+        errors.append(f"Build icon is not directly mapped to its local SVG: {icon_name}")
+
 if errors:
     print("VALIDATION FAILED")
     for error in errors:
