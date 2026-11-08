@@ -150,62 +150,120 @@ func _create_visual() -> void:
 			_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
-	# Natural facade colors use the building definition only for subtle variation.
-	var plaster := Color(0.86, 0.78, 0.68)
-	var plaster_shadow := Color(0.72, 0.64, 0.54)
-	var plaster_light := Color(0.92, 0.86, 0.76)
-	var roof_tile := Color(0.55, 0.28, 0.22)
-	var roof_dark := Color(0.40, 0.20, 0.16)
-	var wood := Color(0.42, 0.28, 0.18)
-	var stone := Color(0.62, 0.58, 0.52)
-	var window_glass := Color(0.55, 0.72, 0.82)
-	var frame := Color(0.95, 0.92, 0.85)
-	var awning := Color(0.70, 0.25, 0.18)
-
-	plaster = plaster.lerp(color, 0.38)
-	plaster_shadow = plaster.darkened(0.16)
-	plaster_light = plaster.lightened(0.10)
+	# Warm masonry palette: a stone plinth, sun-baked plaster, timber trim and clay tiles.
+	var plaster := Color(0.78, 0.65, 0.49).lerp(color, 0.24)
+	var plaster_light := plaster.lightened(0.14)
+	var plaster_shadow := plaster.darkened(0.22)
+	var stone := Color(0.43, 0.40, 0.35)
+	var stone_cap := Color(0.66, 0.59, 0.48)
+	var roof_tile := Color(0.48, 0.22, 0.16)
+	var roof_edge := Color(0.30, 0.15, 0.12)
+	var wood := Color(0.30, 0.18, 0.12)
+	var frame := Color(0.88, 0.82, 0.69)
+	var glass := Color(0.24, 0.43, 0.54)
+	var subtype := str(definition.get("subtype", "villa"))
+	var is_apartment := subtype == "apartment"
+	var is_farm := subtype == "farm"
+	var floors := 1
+	if is_apartment:
+		floors = 3 if upgrade_stage < 5 else 4
+	elif upgrade_stage >= 5:
+		floors = 3
+	elif upgrade_stage >= 3:
+		floors = 2
 
 	var body_h := height
-	_add_box(Vector3(w * 0.96, 0.22, d * 0.96), Vector3(0, 0.11, 0), stone)
-	_add_box(Vector3(w * 0.90, 0.06, d * 0.90), Vector3(0, 0.24, 0), stone.darkened(0.12))
+	if is_apartment:
+		body_h = maxf(height, float(floors) * 1.35)
+	elif is_farm:
+		body_h = minf(height, 1.85)
 
-	_add_box(Vector3(w * 0.86, body_h, d * 0.86), Vector3(0, body_h * 0.5 + 0.22, 0), plaster)
-	_add_box(Vector3(w * 0.87, 0.12, d * 0.87), Vector3(0, 0.34, 0), plaster_shadow)
-	_add_box(Vector3(w * 0.88, 0.07, d * 0.88), Vector3(0, body_h + 0.18, 0), plaster_light)
+	# Raised stone foundation and a projecting water-table course.
+	_add_box(Vector3(w * 0.98, 0.30, d * 0.98), Vector3(0, 0.15, 0), stone)
+	_add_box(Vector3(w * 1.01, 0.075, d * 1.01), Vector3(0, 0.31, 0), stone_cap)
+	_add_box(Vector3(w * 0.90, body_h, d * 0.86), Vector3(0, body_h * 0.5 + 0.34, 0), plaster)
 
-	var subtype := str(definition.get("subtype", "villa"))
-	# Apartments use a taller flat-roof silhouette; villas and farms keep the pitched roof.
-	if subtype == "apartment":
-		_add_box(Vector3(w * 0.94, 0.22, d * 0.94), Vector3(0, body_h + 0.34, 0), roof_dark)
-		_add_box(Vector3(w * 0.88, 0.12, d * 0.88), Vector3(0, body_h + 0.50, 0), plaster_light)
+	# Corner pilasters, floor string-courses and a deep cornice break up large blank walls.
+	for x_sign in [-1.0, 1.0]:
+		_add_box(Vector3(0.10, body_h * 0.94, 0.10),
+			Vector3(x_sign * w * 0.405, body_h * 0.5 + 0.35, d * 0.435), plaster_light)
+	_add_box(Vector3(w * 0.94, 0.10, d * 0.90), Vector3(0, 0.48, 0), plaster_shadow)
+	for floor_index in range(1, floors):
+		var belt_y := 0.34 + body_h * float(floor_index) / float(floors)
+		_add_box(Vector3(w * 0.94, 0.075, d * 0.90), Vector3(0, belt_y, 0), plaster_light)
+		_add_box(Vector3(w * 0.92, 0.035, d * 0.91), Vector3(0, belt_y - 0.07, 0), plaster_shadow)
+
+	var columns := 2 if w < 4.0 else 3
+	if is_apartment:
+		columns = 3 if w < 5.0 else 4
+	if is_farm:
+		columns = 2
+	for floor_index in range(floors):
+		var window_y := 0.34 + (float(floor_index) + 0.55) * body_h / float(floors)
+		for column in range(columns):
+			var x_pos := -w * 0.29 + float(column) * (w * 0.58 / float(maxi(columns - 1, 1)))
+			var window_w := 0.38 if is_apartment else 0.44
+			var window_h := 0.43 if is_apartment else 0.48
+			_add_natural_window(Vector3(x_pos, window_y, d * 0.435), frame, glass)
+			if is_apartment and floor_index > 0:
+				# Small projecting sill/balcony rails make apartment floors read as occupied.
+				_add_box(Vector3(window_w * 1.45, 0.055, 0.18),
+					Vector3(x_pos, window_y - 0.29, d * 0.49), stone_cap)
+				_add_box(Vector3(window_w * 1.35, 0.045, 0.045),
+					Vector3(x_pos, window_y - 0.08, d * 0.545), frame)
+				for rail_x in [-0.5, 0.5]:
+					_add_box(Vector3(0.035, 0.17, 0.035),
+						Vector3(x_pos + rail_x * window_w, window_y - 0.18, d * 0.545), frame)
+
+	# A real entrance composition: recessed dark door, surround, lintel, handle and two steps.
+	var door_w := 0.48
+	var door_h := minf(1.08, body_h * 0.58)
+	var door_y := 0.34 + door_h * 0.5
+	_add_box(Vector3(door_w + 0.16, door_h + 0.13, 0.075),
+		Vector3(0, door_y, d * 0.438), frame)
+	_add_box(Vector3(door_w, door_h, 0.045),
+		Vector3(0, door_y, d * 0.485), wood)
+	_add_box(Vector3(0.045, door_h * 0.78, 0.025),
+		Vector3(door_w * 0.25, door_y + 0.02, d * 0.512), Color(0.56, 0.35, 0.22))
+	_add_box(Vector3(0.045, 0.045, 0.035),
+		Vector3(door_w * 0.30, door_y - 0.03, d * 0.535), Color(0.82, 0.66, 0.30))
+	_add_box(Vector3(0.86, 0.12, 0.46), Vector3(0, 0.39, d * 0.56), stone_cap)
+	_add_box(Vector3(0.70, 0.10, 0.30), Vector3(0, 0.28, d * 0.68), stone)
+	_add_box(Vector3(1.02, 0.10, 0.48), Vector3(0, 0.88, d * 0.50), roof_edge)
+	_add_box(Vector3(0.07, 0.54, 0.07), Vector3(-0.43, 0.61, d * 0.48), wood)
+	_add_box(Vector3(0.07, 0.54, 0.07), Vector3(0.43, 0.61, d * 0.48), wood)
+
+	# Roof form differs by building type: pitched villa roof versus dense flat-roof apartment.
+	if is_apartment:
+		_add_box(Vector3(w * 0.98, 0.18, d * 0.94), Vector3(0, body_h + 0.43, 0), roof_edge)
+		_add_box(Vector3(w * 0.91, 0.12, d * 0.87), Vector3(0, body_h + 0.56, 0), plaster_light)
+		_add_box(Vector3(w * 0.88, 0.18, 0.12), Vector3(0, body_h + 0.70, d * 0.40), stone_cap)
+		_add_box(Vector3(w * 0.88, 0.18, 0.12), Vector3(0, body_h + 0.70, -d * 0.40), stone_cap)
 	else:
-		_add_gabled_roof(w * 0.96, d * 0.96, body_h + 0.22, 0.52, roof_tile, roof_dark)
+		# Eaves project beyond the walls; layered fascia gives the roof a finished edge.
+		_add_gabled_roof(w * 1.04, d * 1.02, body_h + 0.34, 0.62, roof_tile, roof_edge)
+		_add_box(Vector3(w * 1.08, 0.10, 0.12),
+			Vector3(0, body_h + 0.37, d * 0.33), stone_cap)
+		_add_box(Vector3(w * 1.08, 0.10, 0.12),
+			Vector3(0, body_h + 0.37, -d * 0.33), stone_cap)
 
-	var rows := 1 + int(upgrade_stage >= 3) + int(upgrade_stage >= 5)
-	if subtype == "apartment":
-		rows = 3 + int(upgrade_stage >= 5)
-	elif subtype == "farm":
-		rows = 1
-	var cols := 2 if upgrade_stage < 4 else 3
-	for row in range(rows):
-		var y := 0.90 + float(row) * (body_h / float(rows + 0.7))
-		for c in range(cols):
-			var x_off := (-w * 0.22) if (cols == 2 and c == 0) else (w * 0.22 if cols == 2 else -w * 0.28 + float(c) * w * 0.28)
-			_add_natural_window(Vector3(x_off, y, d * 0.435), frame, window_glass)
+	# Chimney and roof details become visible on more developed homes.
+	if upgrade_stage >= 3 and not is_apartment and not is_farm:
+		var chimney_x := w * 0.27
+		_add_box(Vector3(0.30, 0.78, 0.30),
+			Vector3(chimney_x, body_h + 0.78, -d * 0.20), Color(0.55, 0.25, 0.18))
+		_add_box(Vector3(0.38, 0.09, 0.38),
+			Vector3(chimney_x, body_h + 1.19, -d * 0.20), roof_edge)
+	if upgrade_stage >= 5 and not is_apartment:
+		# Dormer-like front projection and a small roof vent distinguish the mature home.
+		_add_box(Vector3(0.88, 0.62, 0.18),
+			Vector3(0, body_h + 0.66, d * 0.34), plaster)
+		_add_natural_window(Vector3(0, body_h + 0.69, d * 0.445), frame, glass)
+		_add_box(Vector3(1.02, 0.10, 0.22),
+			Vector3(0, body_h + 1.00, d * 0.34), roof_tile)
 
-	_add_natural_window(Vector3(w * 0.435, 0.95, 0.0), frame, window_glass, true)
-
-	_add_box(Vector3(0.48, 0.98, 0.07), Vector3(0, 0.72, d * 0.435), wood)
-	_add_box(Vector3(0.05, 0.05, 0.04), Vector3(0.14, 0.70, d * 0.48), Color(0.75, 0.62, 0.25))
-	_add_box(Vector3(0.80, 0.10, 0.32), Vector3(0, 0.26, d * 0.52), stone)
-	_add_box(Vector3(0.65, 0.07, 0.20), Vector3(0, 0.34, d * 0.55), stone.lightened(0.08))
-	_add_box(Vector3(0.90, 0.05, 0.36), Vector3(0, 1.30, d * 0.48), awning)
-	_add_box(Vector3(0.06, 0.20, 0.05), Vector3(-0.38, 1.16, d * 0.42), wood)
-	_add_box(Vector3(0.06, 0.20, 0.05), Vector3(0.38, 1.16, d * 0.42), wood)
-
-	if subtype == "farm":
-		# Small cultivated beds and low fence make the rural subtype readable at a glance.
+	if is_farm:
+		# Cultivated beds and fence remain part of the farm identity.
 		for row in range(2):
 			for column in range(2):
 				var crop_pos := Vector3(-w * 0.28 + float(column) * 0.62, 0.34, -d * 0.34 + float(row) * 0.58)
@@ -213,24 +271,6 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 				_add_box(Vector3(0.36, 0.18, 0.08), crop_pos + Vector3(0, 0.12, 0), Color(0.34, 0.55, 0.25))
 		for x_pos in [-w * 0.42, w * 0.42]:
 			_add_box(Vector3(0.07, 0.42, 0.07), Vector3(x_pos, 0.40, -d * 0.48), wood)
-
-	var cx := w * 0.28
-	var cz := -d * 0.18
-	_add_box(Vector3(0.26, 0.90, 0.26), Vector3(cx, body_h + 0.80, cz), Color(0.58, 0.32, 0.24))
-	_add_box(Vector3(0.34, 0.08, 0.34), Vector3(cx, body_h + 1.28, cz), Color(0.40, 0.22, 0.17))
-
-	if upgrade_stage >= 3:
-		var by := body_h * 0.55
-		_add_box(Vector3(w * 0.52, 0.07, 0.50), Vector3(0, by, -d * 0.42), plaster_light)
-		_add_box(Vector3(w * 0.52, 0.05, 0.05), Vector3(0, by + 0.32, -d * 0.66), frame)
-		_add_box(Vector3(0.05, 0.32, 0.05), Vector3(-w * 0.24, by + 0.16, -d * 0.66), frame)
-		_add_box(Vector3(0.05, 0.32, 0.05), Vector3(w * 0.24, by + 0.16, -d * 0.66), frame)
-
-	if upgrade_stage >= 5:
-		_add_box(Vector3(w * 0.76, 0.50, d * 0.68), Vector3(0, body_h + 0.52, 0), plaster_light)
-		_add_box(Vector3(w * 0.80, 0.09, d * 0.72), Vector3(0, body_h + 0.80, 0), roof_tile)
-
-
 func _add_natural_window(pos: Vector3, frame_col: Color, glass_col: Color, side: bool = false) -> void:
 	var fw := 0.36 if side else 0.44
 	var fh := 0.40 if side else 0.48
@@ -299,24 +339,71 @@ func _add_window(pos: Vector3, frame_col: Color, glass_col: Color, has_shutters:
 					pos + Vector3(x_sign * window_w * 0.48, 0, 0.055), shutter_col)
 
 func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
-	_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
-	_add_box(Vector3(w * 0.98, 0.2, d * 0.98), Vector3(0, height + 0.34, 0), color.darkened(0.16))
-	_add_box(Vector3(w * 0.68, height * 0.5, 0.09), Vector3(0, height * 0.43, d * 0.455), Color(0.30, 0.66, 0.79))
-	_add_box(Vector3(w * 0.74, 0.22, 0.22), Vector3(0, height * 0.82, d * 0.49), Color(0.94, 0.43, 0.22))
-	_add_box(Vector3(w * 0.8, 0.18, 0.35), Vector3(0, height * 0.82 + 0.2, d * 0.42), Color(0.96, 0.78, 0.35))
-	for column in range(3):
-		_add_box(Vector3(0.08, height * 0.55, 0.12), Vector3(-w * 0.3 + float(column) * w * 0.3, height * 0.43, d * 0.48), Color(0.9, 0.92, 0.88))
-	_add_box(Vector3(w * 0.22, 0.32, 0.16), Vector3(w * 0.34, height + 0.55, -d * 0.2), Color(0.68, 0.72, 0.74))
+	# Retail buildings use a warm masonry base, glazed shopfront and a clear sign band.
+	var wall := Color(0.78, 0.68, 0.53).lerp(color, 0.28)
+	var trim := Color(0.90, 0.82, 0.66)
+	var glass := Color(0.20, 0.39, 0.49)
+	var sign := Color(0.78, 0.30, 0.16)
+	var stone := Color(0.42, 0.39, 0.34)
+	_add_box(Vector3(w * 0.96, 0.26, d * 0.96), Vector3(0, 0.14, 0), stone)
+	_add_box(Vector3(w * 0.90, height, d * 0.88), Vector3(0, height * 0.5 + 0.28, 0), wall)
+	_add_box(Vector3(w * 0.94, 0.12, d * 0.92), Vector3(0, height + 0.34, 0), trim)
+	# Broad shop windows with mullions, a recessed entrance and a projecting canopy.
+	var shop_w := w * 0.68
+	_add_box(Vector3(shop_w, height * 0.48, 0.065), Vector3(-w * 0.06, height * 0.43, d * 0.455), glass)
+	for mullion in range(4):
+		var x := -w * 0.06 - shop_w * 0.5 + float(mullion) * shop_w / 3.0
+		_add_box(Vector3(0.055, height * 0.50, 0.10), Vector3(x, height * 0.43, d * 0.49), trim)
+	_add_box(Vector3(0.42, 0.96, 0.08), Vector3(w * 0.34, 0.73, d * 0.46), stone)
+	_add_box(Vector3(0.34, 0.82, 0.045), Vector3(w * 0.34, 0.73, d * 0.50), glass)
+	_add_box(Vector3(w * 0.84, 0.20, 0.38), Vector3(0, height * 0.82, d * 0.48), sign)
+	_add_box(Vector3(w * 0.90, 0.10, 0.46), Vector3(0, height * 0.82 + 0.15, d * 0.46), trim)
+	_add_box(Vector3(w * 0.92, 0.12, 0.18), Vector3(0, 0.36, d * 0.50), stone)
+	# Upper facade gets smaller windows and pilasters instead of a blank cube.
+	if height > 2.2:
+		for column in range(3):
+			var x := -w * 0.28 + float(column) * w * 0.28
+			_add_natural_window(Vector3(x, height * 0.82, d * 0.445), trim, glass)
+			_add_box(Vector3(0.07, height * 0.88, 0.08), Vector3(x - 0.32, height * 0.5 + 0.28, d * 0.44), trim.darkened(0.12))
+	_add_box(Vector3(w * 0.98, 0.10, d * 0.96), Vector3(0, height + 0.48, 0), stone)
+
 
 func _build_industrial(w: float, d: float, height: float, color: Color) -> void:
-	_add_box(Vector3(w * 0.92, height, d * 0.92), Vector3(0, height * 0.5 + 0.25, 0), color)
-	_add_box(Vector3(w * 1.0, 0.2, d * 1.0), Vector3(0, height + 0.35, 0), color.darkened(0.2))
-	_add_box(Vector3(w * 0.45, 0.12, d * 0.34), Vector3(-w * 0.22, height + 0.52, -d * 0.2), Color(0.42, 0.45, 0.48))
-	_add_cylinder(0.22, 0.18, 1.8, Vector3(w * 0.28, height + 1.2, d * 0.28), Color(0.4, 0.4, 0.45))
-	_add_box(Vector3(0.15, 0.15, d * 0.6), Vector3(-w * 0.4, height * 0.7, 0), Color(0.5, 0.5, 0.55))
-	for bay in range(3):
-		_add_box(Vector3(0.38, 0.36, 0.08), Vector3(-w * 0.28 + float(bay) * w * 0.28, height * 0.55, d * 0.47), Color(0.72, 0.83, 0.87))
-	_add_box(Vector3(w * 0.32, 0.3, 0.1), Vector3(0, height * 0.82, d * 0.48), Color(0.94, 0.63, 0.22))
+	# Industrial massing is a ribbed metal shed with a loading bay, clerestory and exhaust.
+	var wall := Color(0.57, 0.59, 0.57).lerp(color, 0.24)
+	var metal := Color(0.34, 0.39, 0.42)
+	var light_metal := Color(0.72, 0.74, 0.70)
+	var glass := Color(0.22, 0.39, 0.46)
+	var safety := Color(0.88, 0.52, 0.16)
+	_add_box(Vector3(w * 0.98, 0.28, d * 0.98), Vector3(0, 0.14, 0), metal)
+	_add_box(Vector3(w * 0.92, height, d * 0.90), Vector3(0, height * 0.5 + 0.28, 0), wall)
+	# Vertical cladding ribs create industrial scale and surface rhythm.
+	var rib_count := maxi(4, int(w / 0.55))
+	for rib in range(rib_count):
+		var x := -w * 0.42 + float(rib) * (w * 0.84 / float(maxi(rib_count - 1, 1)))
+		_add_box(Vector3(0.045, height * 0.94, 0.055), Vector3(x, height * 0.5 + 0.30, d * 0.456), light_metal.darkened(0.12))
+	# Loading shutter, safety frame and raised dock.
+	_add_box(Vector3(w * 0.34, height * 0.55, 0.09), Vector3(-w * 0.22, height * 0.38, d * 0.47), metal)
+	_add_box(Vector3(w * 0.29, height * 0.48, 0.045), Vector3(-w * 0.22, height * 0.38, d * 0.52), light_metal.darkened(0.25))
+	for stripe in range(5):
+		_add_box(Vector3(w * 0.28, 0.035, 0.025),
+			Vector3(-w * 0.22, height * 0.17 + float(stripe) * height * 0.10, d * 0.55), light_metal)
+	_add_box(Vector3(w * 0.40, 0.18, 0.44), Vector3(-w * 0.22, 0.38, d * 0.60), safety)
+	# Staff entrance and high clerestory windows.
+	_add_box(Vector3(0.48, 1.02, 0.08), Vector3(w * 0.31, 0.78, d * 0.46), metal)
+	_add_box(Vector3(0.36, 0.88, 0.045), Vector3(w * 0.31, 0.78, d * 0.505), glass)
+	for bay in range(4):
+		_add_box(Vector3(w * 0.15, 0.30, 0.07),
+			Vector3(-w * 0.30 + float(bay) * w * 0.20, height * 0.83, d * 0.46), glass)
+	# Low pitched industrial roof, overhanging eaves and separate exhaust stack.
+	_add_box_rotated(Vector3(w * 0.52, 0.16, d * 0.98),
+		Vector3(-w * 0.23, height + 0.34, 0), light_metal, Vector3(0, 0, deg_to_rad(-8.0)))
+	_add_box_rotated(Vector3(w * 0.52, 0.16, d * 0.98),
+		Vector3(w * 0.23, height + 0.34, 0), light_metal, Vector3(0, 0, deg_to_rad(8.0)))
+	_add_box(Vector3(w * 1.02, 0.10, 0.14), Vector3(0, height + 0.38, d * 0.48), metal)
+	_add_cylinder(0.16, 0.22, 1.7, Vector3(w * 0.30, height + 1.05, -d * 0.28), metal)
+	_add_box(Vector3(0.48, 0.12, 0.48), Vector3(w * 0.30, height + 1.94, -d * 0.28), safety)
+
 
 func _build_service(w: float, d: float, height: float, color: Color) -> void:
 	var power = definition.get("power", 0)
