@@ -17,13 +17,13 @@ var raw_materials := {
 }
 
 var crafted_items := {
-	"nails": {"name": "Nails", "time": 5.0, "value": 40, "requires": {"metal": 1}, "level": 1, "store": "building_supplies"},
-	"planks": {"name": "Planks", "time": 30.0, "value": 50, "requires": {"wood": 1}, "level": 3, "store": "building_supplies"},
+	"nails": {"name": "Nails", "time": 30.0, "value": 80, "requires": {"metal": 2}, "level": 1, "store": "building_supplies"},
+	"planks": {"name": "Planks", "time": 60.0, "value": 120, "requires": {"wood": 2}, "level": 3, "store": "building_supplies"},
 	"bricks": {"name": "Bricks", "time": 45.0, "value": 60, "requires": {"minerals": 1}, "level": 13, "store": "building_supplies"},
 	"cement": {"name": "Cement", "time": 60.0, "value": 80, "requires": {"minerals": 2}, "level": 14, "store": "building_supplies"},
 	"glue": {"name": "Glue", "time": 40.0, "value": 55, "requires": {"plastic": 1}, "level": 15, "store": "building_supplies"},
 	"paint": {"name": "Paint", "time": 50.0, "value": 70, "requires": {"plastic": 1, "chemicals": 1}, "level": 16, "store": "hardware_store"},
-	"hammer": {"name": "Hammer", "time": 35.0, "value": 55, "requires": {"metal": 1, "wood": 1}, "level": 4, "store": "hardware_store"},
+	"hammer": {"name": "Hammer", "time": 40.0, "value": 90, "requires": {"metal": 1, "wood": 1}, "level": 4, "store": "hardware_store"},
 	"measuring_tape": {"name": "Measuring Tape", "time": 40.0, "value": 60, "requires": {"metal": 1, "plastic": 1}, "level": 6, "store": "hardware_store"},
 	"shovel": {"name": "Shovel", "time": 45.0, "value": 65, "requires": {"metal": 1, "wood": 1, "plastic": 1}, "level": 9, "store": "hardware_store"},
 	"chair": {"name": "Chair", "time": 40.0, "value": 65, "requires": {"wood": 1, "planks": 1}, "level": 10, "store": "furniture_store"},
@@ -59,25 +59,69 @@ func get_available_crafted() -> Array:
 	return result
 
 func can_craft(item_id: String) -> bool:
-	if not crafted_items.has(item_id) or crafted_items[item_id].level > GameManager.level:
+	var recipe := get_recipe(item_id)
+	if recipe.is_empty() or int(recipe.get("level", 1)) > GameManager.level:
 		return false
-	for material in crafted_items[item_id].requires:
-		if StorageManager.get_item_count(material) < crafted_items[item_id].requires[material]:
+	for material in recipe.get("inputs", {}):
+		if not StorageManager.has_item(str(material), int(recipe.inputs[material])):
+			return false
+	return true
+
+func consume_inputs(item_id: String) -> bool:
+	if not can_craft(item_id):
+		return false
+	var inputs: Dictionary = get_recipe(item_id).get("inputs", {})
+	# Validate all inputs before mutating inventory, so consumption is atomic.
+	for material in inputs:
+		if not StorageManager.has_item(str(material), int(inputs[material])):
+			return false
+	for material in inputs:
+		if not StorageManager.remove_item(str(material), int(inputs[material])):
+			push_error("Production input changed during atomic consumption: " + str(material))
 			return false
 	return true
 
 func craft_item(item_id: String) -> bool:
 	if not can_craft(item_id) or not StorageManager.has_space(1):
 		return false
-	var requirements: Dictionary = crafted_items[item_id].requires
-	for material in requirements:
-		if not StorageManager.remove_item(material, int(requirements[material])):
-			return false
+	if not consume_inputs(item_id):
+		return false
 	if StorageManager.add_item(item_id, 1):
 		item_produced.emit(item_id, 1)
 		GameManager.add_experience(5)
 		return true
 	return false
+
+
+func get_recipe(item_id: String) -> Dictionary:
+	if not crafted_items.has(item_id):
+		return {}
+	var recipe: Dictionary = crafted_items[item_id].duplicate(true)
+	recipe["inputs"] = recipe.get("requires", {}).duplicate(true)
+	return recipe
+
+func get_default_factory_product() -> String:
+	return "metal"
+
+func get_default_recipe_for_building(building_type: String) -> String:
+	for item_id in crafted_items:
+		if str(crafted_items[item_id].get("store", "")) == building_type:
+			if int(crafted_items[item_id].get("level", 1)) <= GameManager.level:
+				return item_id
+	return ""
+
+func get_missing_inputs_text(item_id: String) -> String:
+	var recipe := get_recipe(item_id)
+	if recipe.is_empty():
+		return "Unknown recipe"
+	var missing: Array[String] = []
+	for material in recipe.get("inputs", {}):
+		var needed := int(recipe.inputs[material])
+		var available := StorageManager.get_item_count(str(material))
+		if available < needed:
+			var material_name := str(raw_materials.get(material, {}).get("name", material.capitalize()))
+			missing.append("%d %s" % [needed - available, material_name])
+	return ", ".join(missing)
 
 func get_item_value(item_id: String) -> int:
 	if raw_materials.has(item_id):
