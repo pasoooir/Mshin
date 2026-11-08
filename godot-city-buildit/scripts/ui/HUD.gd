@@ -214,7 +214,7 @@ func _make_currency_plus_button(hint: String) -> Button:
 	button.add_theme_font_size_override("font_size", 23)
 	_add_theme_color(button, Color("#4CD964"))
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.pressed.connect(_on_simcash_plus_pressed)
+	button.pressed.connect(_on_currency_plus_pressed.bind(hint))
 	return button
 func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: String, tint: Color, hint: String) -> Label:
 	return _add_stat_bar(parent, icon_name, initial_text, tint, hint, 150)
@@ -271,12 +271,12 @@ func _build_toolbars() -> void:
 	var old_menu := get_node_or_null("LeftMenu")
 	if old_menu:
 		old_menu.queue_free()
-	var old_toolbar := get_node_or_null("RightToolbar")
+	var old_toolbar := get_node_or_null("LeftToolbar")
 	if old_toolbar:
 		old_toolbar.queue_free()
 	# Large touch targets stay inside a vertical scroller on short landscape screens.
 	var toolbar_scroll := ScrollContainer.new()
-	toolbar_scroll.name = "RightToolbar"
+	toolbar_scroll.name = "LeftToolbar"
 	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	var scroll_height := get_viewport().get_visible_rect().size.y - 150.0
 	toolbar_scroll.position = Vector2(8, 132)
@@ -490,8 +490,8 @@ func _format_count(value: int) -> String:
 		return "%.1fK" % (float(value) / 1000.0)
 	return str(value)
 
-func _on_simcash_plus_pressed() -> void:
-	status_label.text = "SimCash purchases are not available yet."
+func _on_currency_plus_pressed(currency: String) -> void:
+	status_label.text = currency + " purchases are not available yet."
 
 func _on_placement_mode(active: bool) -> void:
 	if active: status_label.text = "Placement mode — tap a clear plot beside a road. Cancel with X."
