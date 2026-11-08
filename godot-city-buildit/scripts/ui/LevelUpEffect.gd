@@ -41,9 +41,9 @@ func play(new_level: int, simoleons: int, keys: int) -> void:
 	card.modulate.a = 0.0
 	tween.tween_property(card, "scale", Vector2.ONE, 0.34).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(card, "modulate:a", 1.0, 0.24)
-	tween.set_parallel(false)
-	tween.tween_method(_set_simoleon_reward, 0.0, float(simoleons), 1.15)
-	tween.tween_method(_set_key_reward, 0.0, float(keys), 0.65)
+	# Reward counters animate concurrently with the card entrance.
+	tween.tween_method(_set_simoleon_reward, 0.0, float(simoleons), 1.0)
+	tween.tween_method(_set_key_reward, 0.0, float(keys), 0.82)
 	queue_redraw()
 
 func _create_particles() -> void:
