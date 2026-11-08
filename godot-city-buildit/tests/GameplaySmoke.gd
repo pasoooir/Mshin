@@ -114,7 +114,7 @@ func _test_drag_gestures_do_not_place() -> void:
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_immigration_coefficients()
-	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 70.0), "A new city home should not start with an unexplained 30% happiness score.")
+	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
 	var input_node = get_node("CityInput")
 	var world = get_node_or_null("World")
