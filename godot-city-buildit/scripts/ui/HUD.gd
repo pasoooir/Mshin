@@ -278,12 +278,12 @@ func _build_toolbars() -> void:
 	var toolbar_scroll := ScrollContainer.new()
 	toolbar_scroll.name = "LeftToolbar"
 	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	var scroll_height := maxf(120.0, get_viewport().get_visible_rect().size.y - 332.0)
-	toolbar_scroll.offset_left = -108
+	var scroll_height := maxf(184.0, get_viewport().get_visible_rect().size.y - 420.0)
+	toolbar_scroll.offset_left = -208
 	toolbar_scroll.offset_right = -8
 	toolbar_scroll.offset_top = 184
 	toolbar_scroll.offset_bottom = -148
-	toolbar_scroll.custom_minimum_size = Vector2(100, scroll_height)
+	toolbar_scroll.custom_minimum_size = Vector2(200, scroll_height)
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	add_child(toolbar_scroll)
@@ -311,7 +311,7 @@ func _build_toolbars() -> void:
 	actions.name = "BottomActions"
 	actions.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	actions.offset_left = 12
-	actions.offset_top = -126
+	actions.offset_top = -200
 	actions.offset_right = -12
 	actions.offset_bottom = -8
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -330,9 +330,9 @@ func _build_toolbars() -> void:
 	submenu.name = "ToolSubmenu"
 	submenu.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	submenu.offset_left = 12
-	submenu.offset_top = -250
+	submenu.offset_top = -390
 	submenu.offset_right = -12
-	submenu.offset_bottom = -130
+	submenu.offset_bottom = -200
 	submenu.alignment = BoxContainer.ALIGNMENT_CENTER
 	submenu.add_theme_constant_override("separation", 8)
 	add_child(submenu)
@@ -340,7 +340,7 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(92, 92)
+	button.custom_minimum_size = Vector2(184, 184)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
@@ -348,7 +348,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, Vector2(86, 86))
+	var icon := IconAtlas.make_icon(kind, Vector2(172, 172))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
