@@ -50,7 +50,7 @@ func _ready() -> void:
 	_build_top_hud()
 	_build_toolbars()
 	_update_all()
-	status_label.text = "Build a road, then place a house and factory beside it."
+	status_label.text = "Tap Build, choose Residential, then place your first house beside a road."
 
 func _build_top_hud() -> void:
 	# Hide scene-authored legacy counters; build the reference's two-corner layout.
@@ -495,7 +495,7 @@ func _show_submenu(category: String) -> void:
 	submenu.offset_top = -panel_height - 112.0
 	submenu.offset_bottom = -112.0
 
-	var item_width := maxf(120.0, (viewport_size.x - 40.0) / float(columns))
+	var item_width := maxf(120.0, (viewport_size.x - 24.0 - 8.0 * float(columns - 1)) / float(columns))
 	for option in options:
 		var type_id: String = option[0]
 		var title: String = option[1]
