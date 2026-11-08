@@ -574,6 +574,7 @@ func try_upgrade() -> bool:
 	upgrade_ready = false
 	if hard_hat: hard_hat.visible = false
 	upgraded.emit(upgrade_stage)
+	ServiceManager.recalculate_from_buildings()
 	return true
 
 func collect_production() -> bool:
