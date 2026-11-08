@@ -1,5 +1,7 @@
 extends Node3D
 
+const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
+
 var failures: Array[String] = []
 
 func _ready() -> void:
@@ -112,6 +114,7 @@ func _test_drag_gestures_do_not_place() -> void:
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_immigration_coefficients()
+	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
 	var input_node = get_node("CityInput")
 	var world = get_node_or_null("World")
 	_check(world != null and world.get_node_or_null("WorldPresentation/NaturalTerrain") != null, "Natural terrain was not generated.")
@@ -171,6 +174,7 @@ func _run_gameplay_test() -> void:
 			hud._toggle_category_menu()
 			_check(not right_toolbar.visible, "Build button action did not close the category dock.")
 		hud._show_submenu("residential")
+		_check(hud.submenu.get_node("residential_villa").text == "Villa House", "Residential submenu label must be English.")
 		_check(hud.submenu.get_child_count() == 4, "Residential submenu should show three choices and a close button.")
 		_check(hud.submenu.get_node_or_null("residential_villa") != null, "Residential villa option is missing.")
 		_check(hud.submenu.get_node_or_null("residential_apartment") != null, "Residential apartment option is missing.")
@@ -231,7 +235,7 @@ func _run_gameplay_test() -> void:
 		var locked_fire = hud.submenu.get_node_or_null("fire_station")
 		_check(locked_fire != null and not locked_fire.disabled, "Locked fire station must remain clickable.")
 		hud._on_submenu_option("services", "fire_station")
-		_check(not BuildManager.is_placing and hud.status_label.text.find("level 5") >= 0, "Locked fire station did not explain its unlock level.")
+		_check(not BuildManager.is_placing and hud.status_label.text.find("Level 5") >= 0, "Locked fire station did not explain its unlock level.")
 		GameManager.level = menu_test_level
 		hud._on_category_pressed("park")
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "park_small", "Park button did not directly enter park placement mode.")
