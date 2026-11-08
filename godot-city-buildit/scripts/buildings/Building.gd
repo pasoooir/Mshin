@@ -383,7 +383,7 @@ func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 	_add_box(Vector3(door_w, 0.92, 0.055), Vector3(w * 0.35, 0.90, d * 0.50), glass)
 	_add_box(Vector3(w * 0.88, 0.19 if is_food else 0.15, 0.40), Vector3(0, body_h * 0.76, d * 0.51), sign)
 	_add_box(Vector3(w * 0.92, 0.065, 0.44), Vector3(0, body_h * 0.76 + 0.13, d * 0.49), sign_edge)
-	_add_box(Vector3(w * (0.98 if is_food else 0.90), 0.10, 0.68 if is_food else 0.48), Vector3(0, 1.72, d * 0.57), is_food ? sign : trim_shadow)
+	_add_box(Vector3(w * (0.98 if is_food else 0.90), 0.10, 0.68 if is_food else 0.48), Vector3(0, 1.72, d * 0.57), sign if is_food else trim_shadow)
 	_add_box(Vector3(w * 0.96, 0.07, 0.10), Vector3(0, 1.65, d * 0.83), trim)
 	if floors >= 2:
 		for floor in range(1, floors):
