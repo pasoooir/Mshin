@@ -9,8 +9,10 @@
   <style>
     :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; }
     * { box-sizing: border-box; }
-    html, body { margin: 0; width: 100%; min-height: 100%; background: #071b2b; color: #f4fbff; }
+    html, body { margin: 0; width: 100%; height: 100%; min-height: 100%; background: #071b2b; color: #f4fbff; }
     body { min-height: 100svh; overflow: hidden; }
+    #game-frame { display: block; position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; border: 0; background: #071b2b; }
+    :fullscreen { width: 100vw; height: 100vh; }
     .landing { min-height: 100svh; display: grid; place-items: center; padding: 24px; text-align: center;
       background: radial-gradient(ellipse at 50% 15%, #236b80 0, #12394f 38%, #071b2b 78%); }
     .card { width: min(680px, 100%); padding: clamp(26px, 6vw, 56px); border: 1px solid #ffffff2b;
@@ -62,8 +64,17 @@
         play.textContent = 'LOADING CITY…';
         hint.textContent = 'Preparing fullscreen landscape…';
         await requestLandscapeFullscreen();
-        // Navigate directly to the exported Godot game. Avoid an iframe wrapper.
-        window.location.assign(gameUrl);
+        // Keep this document alive: navigating would immediately exit browser fullscreen.
+        // A same-origin game iframe preserves the fullscreen session started by the Play gesture.
+        const frame = document.createElement("iframe");
+        frame.id = "game-frame";
+        frame.title = "Pasoo City BuildIt";
+        frame.allow = "fullscreen; autoplay; gamepad";
+        frame.allowFullscreen = true;
+        frame.src = gameUrl;
+        document.body.replaceChildren(frame);
+        document.documentElement.style.background = "#071b2b";
+        document.body.style.background = "#071b2b";
       });
     })();
   </script>
