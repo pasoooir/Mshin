@@ -15,7 +15,7 @@ class BanknoteGlyph extends Control:
 
 @onready var status_label: Label = $StatusLabel
 
-var submenu: HBoxContainer
+var submenu: GridContainer
 var active_category := ""
 var level_label: Label
 var population_label: Label
@@ -385,15 +385,16 @@ func _build_toolbars() -> void:
 			"save": button.pressed.connect(_on_save_pressed)
 			"cancel": button.pressed.connect(_on_cancel_pressed)
 
-	submenu = HBoxContainer.new()
+	submenu = GridContainer.new()
 	submenu.name = "ToolSubmenu"
 	submenu.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	submenu.offset_left = 12
-	submenu.offset_top = -208
+	submenu.offset_top = -252
 	submenu.offset_right = -12
-	submenu.offset_bottom = -104
-	submenu.alignment = BoxContainer.ALIGNMENT_CENTER
-	submenu.add_theme_constant_override("separation", 8)
+	submenu.offset_bottom = -112
+	submenu.columns = 2 if viewport_size.x < 900.0 else 5
+	submenu.add_theme_constant_override("h_separation", 8)
+	submenu.add_theme_constant_override("v_separation", 8)
 	add_child(submenu)
 	submenu.hide()
 
@@ -482,6 +483,19 @@ func _show_submenu(category: String) -> void:
 			options = [["industrial_1", "کارخانه کوچک · Metal", 1], ["industrial_2", "کارخانه چوب · Wood", 2]]
 		"services":
 			options = [["power_wind", "برق بادی", 1], ["water_tower", "مخزن آب", 1], ["fire_station", "آتش‌نشانی", 5]]
+
+	var viewport_size := get_viewport().get_visible_rect().size
+	var columns := 2 if viewport_size.x < 900.0 else mini(options.size() + 1, 5)
+	var item_height := clampf(viewport_size.y * 0.16, 54.0, 78.0)
+	var rows := ceili(float(options.size() + 1) / float(columns))
+	var panel_height := float(rows) * item_height + float(rows - 1) * 8.0 + 16.0
+	submenu.columns = columns
+	submenu.offset_left = 12
+	submenu.offset_right = -12
+	submenu.offset_top = -panel_height - 112.0
+	submenu.offset_bottom = -112.0
+
+	var item_width := maxf(120.0, (viewport_size.x - 40.0) / float(columns))
 	for option in options:
 		var type_id: String = option[0]
 		var title: String = option[1]
@@ -489,7 +503,7 @@ func _show_submenu(category: String) -> void:
 		var choice := Button.new()
 		choice.name = type_id
 		choice.text = title
-		choice.custom_minimum_size = Vector2(172, 78) * _ui_scale
+		choice.custom_minimum_size = Vector2(item_width, item_height)
 		choice.focus_mode = Control.FOCUS_NONE
 		choice.tooltip_text = title + (" — Unlocked at level %d" % required_level if GameManager.level < required_level else "")
 		choice.add_theme_font_size_override("font_size", int(17 * _ui_scale))
@@ -505,7 +519,7 @@ func _show_submenu(category: String) -> void:
 	var close_button := Button.new()
 	close_button.name = "CloseSubmenu"
 	close_button.text = "✕"
-	close_button.custom_minimum_size = Vector2(54, 78) * _ui_scale
+	close_button.custom_minimum_size = Vector2(item_width, item_height)
 	close_button.focus_mode = Control.FOCUS_NONE
 	close_button.tooltip_text = "Close menu"
 	close_button.add_theme_font_size_override("font_size", int(26 * _ui_scale))
