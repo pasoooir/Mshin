@@ -25,7 +25,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				_end_road_stroke(-1)
 			else:
 				var start: Vector2 = pointer_start.get(-1, event.position)
-				if start.distance_to(event.position) <= TAP_SLOP and not bool(pointer_moved.get(-1, false)):
+				var moved := bool(pointer_moved.get(-1, false))
+				# In building mode, dragging the placement ghost commits the final
+				# green preview on release. Other interactions remain tap-only.
+				if BuildManager.is_placing and moved:
+					_handle_tap(event.position)
+				elif start.distance_to(event.position) <= TAP_SLOP and not moved:
 					_handle_tap(event.position)
 			pointer_start.erase(-1)
 			pointer_moved.erase(-1)
@@ -52,8 +57,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				_end_road_stroke(event.index)
 			elif pointer_start.has(event.index):
 				var start: Vector2 = pointer_start[event.index]
-				if not multi_touch_gesture and start.distance_to(event.position) <= TAP_SLOP and not bool(pointer_moved.get(event.index, false)):
-					_handle_tap(event.position)
+				var moved := bool(pointer_moved.get(event.index, false))
+				if not multi_touch_gesture:
+					if BuildManager.is_placing and moved:
+						_handle_tap(event.position)
+					elif start.distance_to(event.position) <= TAP_SLOP and not moved:
+						_handle_tap(event.position)
 			pointer_start.erase(event.index)
 			pointer_moved.erase(event.index)
 			if pointer_start.is_empty():
