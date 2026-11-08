@@ -278,8 +278,8 @@ func _build_toolbars() -> void:
 	var toolbar_scroll := ScrollContainer.new()
 	toolbar_scroll.name = "LeftToolbar"
 	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	var scroll_height := get_viewport().get_visible_rect().size.y - 150.0
-	toolbar_scroll.position = Vector2(8, 132)
+	var scroll_height := maxf(120.0, get_viewport().get_visible_rect().size.y - 164.0)
+	toolbar_scroll.position = Vector2(8, 146)
 	toolbar_scroll.custom_minimum_size = Vector2(82, scroll_height)
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
