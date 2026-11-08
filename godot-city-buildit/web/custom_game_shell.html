@@ -7,7 +7,7 @@
   <title>$GODOT_PROJECT_NAME</title>
   <style>
     html, body, #canvas { margin: 0; padding: 0; border: 0; width: 100%; height: 100%; }
-    body { overflow: hidden; background: #071b2b; touch-action: none; }
+    body { overflow: hidden; background: #071b2b; touch-action: none; overscroll-behavior: none; }
     #canvas { display: block; outline: none; }
     #status, #status-splash, #status-progress, #status-notice {
       position: absolute; left: 0; right: 0;
@@ -51,6 +51,20 @@
       const progressFill = document.getElementById('progress-fill');
       const notice = document.getElementById('status-notice');
       let initializing = true;
+
+      // Fullscreen and orientation locking require a browser-approved user gesture.
+      async function enterImmersiveLandscape() {
+        try {
+          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+          }
+        } catch (_) { /* Retry is intentionally non-blocking on restricted browsers. */ }
+        try {
+          if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+        } catch (_) { /* iOS and some browsers do not support the Orientation API. */ }
+      }
+      document.addEventListener('pointerdown', enterImmersiveLandscape, { once: true, passive: true });
+      document.addEventListener('touchend', enterImmersiveLandscape, { once: true, passive: true });
 
       function hideSplash() {
         if (!initializing) return;
