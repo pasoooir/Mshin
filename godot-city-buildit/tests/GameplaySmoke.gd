@@ -150,17 +150,32 @@ func _run_gameplay_test() -> void:
 	_check(ServiceManager.total_power >= 12 and ServiceManager.total_water >= 12, "Power/water capacity was not registered.")
 	_check(home != null and ServiceManager.is_building_served(home), "House was not served by nearby power and water.")
 
-	await _wait_seconds(6.5)
-	_check(factory != null and factory.has_ready_product, "Factory did not finish Metal production.")
-	_check(factory != null and factory.collect_production(), "Could not collect Metal from factory.")
-	_check(StorageManager.get_item_count("metal") == 1, "Collected Metal was not stored.")
+	# Production durations are shortened only in this deterministic smoke test.
+	ProductionManager.raw_materials["metal"]["time"] = 0.2
+	ProductionManager.crafted_items["nails"]["time"] = 0.2
+	_check(factory != null and not factory.is_producing, "Factory should wait for the player to start production.")
+	_check(factory != null and factory.start_factory_production("metal"), "Factory could not start Metal production on interaction.")
+	await _wait_seconds(0.35)
+	_check(factory != null and factory.has_ready_product, "Factory did not finish its first Metal.")
+	_check(factory != null and factory.collect_production(), "Could not collect first Metal from factory.")
+	_check(factory != null and factory.start_factory_production("metal"), "Factory could not start its second Metal batch.")
+	await _wait_seconds(0.35)
+	_check(factory != null and factory.has_ready_product, "Factory did not finish its second Metal.")
+	_check(factory != null and factory.collect_production(), "Could not collect second Metal from factory.")
+	_check(StorageManager.get_item_count("metal") == 2, "Two collected Metal units were not stored.")
 
-	_check(ProductionManager.craft_item("nails"), "Building Supplies could not craft Nails from Metal.")
+	var supplies = _find_building("building_supplies")
+	_check(supplies != null and supplies.start_commercial_production("nails"), "Building Supplies could not start Nails production.")
+	_check(StorageManager.get_item_count("metal") == 0, "Nails production did not consume exactly two Metal.")
+	await _wait_seconds(0.35)
+	_check(supplies != null and supplies.has_ready_product, "Building Supplies did not finish Nails.")
+	_check(supplies != null and supplies.collect_production(), "Could not collect crafted Nails.")
 	_check(StorageManager.get_item_count("nails") == 1, "Crafted Nails were not stored.")
 
-	await _wait_seconds(6.5)
-	_check(factory != null and factory.has_ready_product, "Factory did not produce the second Metal.")
-	_check(factory != null and factory.collect_production(), "Could not collect the second Metal.")
+	# Existing level-1 upgrade recipe also needs one Metal in addition to Nails.
+	_check(factory != null and factory.start_factory_production("metal"), "Factory could not produce upgrade Metal.")
+	await _wait_seconds(0.35)
+	_check(factory != null and factory.collect_production(), "Could not collect upgrade Metal.")
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
 	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")
 	_check(home != null and home.current_population == 30 and GameManager.population >= 30, "House upgrade did not increase population.")
