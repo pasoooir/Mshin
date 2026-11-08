@@ -86,7 +86,11 @@ func remove_road(grid_pos: Vector2i) -> bool:
 	road_removed.emit(grid_pos)
 	return true
 
-func _create_road_mesh() -> MeshInstance3D:
+func _create_road_mesh() -> Node3D:
+	# Keep road connectivity and placement fully testable without allocating
+	# renderer resources under the headless dummy renderer.
+	if DisplayServer.get_name() == "headless":
+		return Node3D.new()
 	var root := MeshInstance3D.new()
 	var asphalt := BoxMesh.new()
 	asphalt.size = Vector3(GRID_SIZE * 0.98, 0.08, GRID_SIZE * 0.98)
