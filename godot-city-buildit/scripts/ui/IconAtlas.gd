@@ -18,6 +18,8 @@ const SHEETS := {
 
 static var _texture_cache: Dictionary = {}
 
+const REQUIRED_BUILD_ICONS := ["services", "parks", "park", "bulldoze", "fire", "hard_hat"]
+
 # Clean, transparent local SVGs replace the damaged park/service sheet crops.
 # Every path is part of the offline project; no runtime network requests.
 const SPECIAL_ICONS := {
@@ -27,6 +29,7 @@ const SPECIAL_ICONS := {
 	"services": "res://assets/icons/services.svg",
 	"fire": "res://assets/icons/fire.svg",
 	"bulldoze": "res://assets/icons/bulldozer.svg",
+	"hard_hat": "res://assets/icons/hard_hat.svg",
 	"fallback": "res://assets/icons/fallback.svg"
 }
 
@@ -281,8 +284,31 @@ static func get_icon_keys() -> Array[String]:
 			keys.append(str(key))
 	return keys
 
-static func validate_all_icons() -> bool:
+static func validate_required_build_icons() -> bool:
 	var valid := true
+	for icon_name in REQUIRED_BUILD_ICONS:
+		if not SPECIAL_ICONS.has(icon_name):
+			push_error("Required Build icon is not mapped to a local artwork file: " + icon_name)
+			valid = false
+			continue
+		var texture := load(str(SPECIAL_ICONS[icon_name])) as Texture2D
+		if texture == null:
+			push_error("Required Build icon failed to load: " + icon_name)
+			valid = false
+			continue
+		var image := texture.get_image()
+		if image == null or image.is_empty():
+			push_error("Required Build icon has no image data: " + icon_name)
+			valid = false
+			continue
+		# All refreshed SVGs must keep a genuinely transparent canvas.
+		if image.get_pixel(0, 0).a > 0.01 or image.get_pixel(image.get_width() - 1, image.get_height() - 1).a > 0.01:
+			push_error("Required Build icon is not transparent at its canvas corners: " + icon_name)
+			valid = false
+	return valid
+
+static func validate_all_icons() -> bool:
+	var valid := validate_required_build_icons()
 	for icon_name in get_icon_keys():
 		var texture := texture_for(icon_name)
 		if texture == null:
