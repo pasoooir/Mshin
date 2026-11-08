@@ -9,6 +9,9 @@ var pointer_moved: Dictionary = {}
 var multi_touch_gesture: bool = false
 var road_stroke_active: Dictionary = {}
 var road_stroke_last_cell: Dictionary = {}
+var bulldoze_mode: bool = false
+var bulldoze_road_mode: bool = false
+var pending_bulldoze_building_id: String = ""
 
 func _ready() -> void:
 	camera = get_viewport().get_camera_3d()
@@ -84,6 +87,56 @@ func _is_road_mode() -> bool:
 	var scene = get_tree().current_scene
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	return road_system != null and road_system.is_road_mode
+
+func set_bulldoze_mode(active: bool) -> void:
+	bulldoze_mode = active
+	if active:
+		bulldoze_road_mode = false
+		pending_bulldoze_building_id = ""
+		BuildManager.cancel_placement()
+		var road_system = _road_system()
+		if road_system:
+			road_system.set_road_mode(false)
+
+func set_bulldoze_road_mode(active: bool) -> void:
+	bulldoze_road_mode = active
+	if active:
+		bulldoze_mode = false
+		pending_bulldoze_building_id = ""
+		BuildManager.cancel_placement()
+		var road_system = _road_system()
+		if road_system:
+			road_system.set_road_mode(false)
+
+func _handle_bulldoze_cell(grid: Vector2i, road_system = null) -> void:
+	var roads = road_system if road_system != null else _road_system()
+	if roads != null and roads.has_road(grid):
+		if roads.remove_road(grid):
+			pending_bulldoze_building_id = ""
+			_set_status("Road tile removed. Buildings and the rest of the road network were left untouched.")
+		else:
+			_set_status("Could not remove this road tile.")
+		return
+	if bulldoze_road_mode:
+		pending_bulldoze_building_id = ""
+		_set_status("No road on this tile. Road bulldozer only removes asphalt.")
+		return
+	if not bulldoze_mode:
+		return
+	var building = BuildManager.building_at_cell(grid)
+	if building == null or not is_instance_valid(building):
+		pending_bulldoze_building_id = ""
+		_set_status("Nothing to demolish on this tile.")
+		return
+	if pending_bulldoze_building_id != building.building_id:
+		pending_bulldoze_building_id = building.building_id
+		_set_status("Confirm demolition: tap this building once more. No refund is issued.")
+		return
+	var removed_name := str(building.definition.get("name", building.building_type))
+	BuildManager.unregister_building(building.building_id)
+	building.queue_free()
+	pending_bulldoze_building_id = ""
+	_set_status("%s demolished. City cells, population, factory slots and services were updated." % removed_name)
 
 func _road_system():
 	var scene = get_tree().current_scene
@@ -163,8 +216,11 @@ func _handle_tap(screen_position: Vector2) -> void:
 	if world_position == null:
 		return
 	var road_system = _road_system()
+	var cell: Vector2i = BuildManager.world_to_grid(world_position)
+	if bulldoze_mode or bulldoze_road_mode:
+		_handle_bulldoze_cell(cell, road_system)
+		return
 	if road_system and road_system.is_road_mode:
-		var cell: Vector2i = BuildManager.world_to_grid(world_position)
 		if road_system.place_road(cell):
 			_set_status("Road placed. Tap an adjacent tile to continue (50 Simoleons).")
 		else:
