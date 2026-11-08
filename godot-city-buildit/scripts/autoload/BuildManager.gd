@@ -20,7 +20,16 @@ var factory_count: int = 0
 var building_types: Dictionary = {
 	"residential_1": {"name":"Small House", "category":"residential", "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
 	"residential_2": {"name":"Apartment", "category":"residential", "cost":0, "size":Vector2i(2,2), "population":28, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
+	# New player-facing residential choices. Legacy residential_1/_2 remain load-compatible.
+	"residential_villa": {"name":"خانه ویلایی", "category":"residential", "subtype":"villa", "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
+	"residential_apartment": {"name":"خانه آپارتمانی", "category":"residential", "subtype":"apartment", "cost":200, "size":Vector2i(2,2), "population":35, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
+	"residential_farm": {"name":"مزرعه", "category":"residential", "subtype":"farm", "cost":150, "size":Vector2i(2,2), "population":12, "build_time":4.0, "color":Color(0.72,0.78,0.45), "level":2},
 	"building_supplies": {"name":"Building Supplies", "category":"commercial", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":1, "recipes":["nails","planks","bricks","cement","glue"]},
+	# New commercial menu choices. shop_chain keeps the existing Nails recipe path.
+	"shop_chain": {"name":"فروشگاه زنجیره‌ای", "category":"commercial", "subtype":"chain", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":1, "recipes":["nails"]},
+	"restaurant_traditional": {"name":"رستوران سنتی", "category":"commercial", "subtype":"restaurant", "cost":400, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.75,0.45,0.30), "level":4, "recipes":[]},
+	"fast_food": {"name":"فست‌فود فروشی", "category":"commercial", "subtype":"fast_food", "cost":350, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.95,0.55,0.20), "level":3, "recipes":[]},
+	"art_supplies": {"name":"فروشگاه لوازم هنری", "category":"commercial", "subtype":"art", "cost":300, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.40,0.75), "level":5, "recipes":[]},
 	"hardware_store": {"name":"Hardware Store", "category":"commercial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.3,0.55,0.85), "level":4, "production_slots":1, "recipes":["hammer","measuring_tape","shovel","paint"]},
 	"farmers_market": {"name":"Farmer's Market", "category":"commercial", "cost":800, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.4,0.75,0.4), "level":8, "production_slots":1, "recipes":["vegetables"]},
 	"furniture_store": {"name":"Furniture Store", "category":"commercial", "cost":1200, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.6,0.45,0.3), "level":10, "production_slots":1, "recipes":["chair","table"]},
