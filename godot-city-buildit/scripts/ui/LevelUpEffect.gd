@@ -150,6 +150,10 @@ func _format_reward(value: int) -> String:
 		formatted += raw.substr(index, 1)
 	return formatted
 
+func _gui_input(_event: InputEvent) -> void:
+	# Consume taps during the short celebration so city tools cannot activate underneath it.
+	accept_event()
+
 func _process(delta: float) -> void:
 	_elapsed += delta
 	queue_redraw()
