@@ -65,10 +65,5 @@ func recalculate_from_buildings() -> void:
 
 	power_changed.emit(total_power, used_power)
 	water_changed.emit(total_water, used_water)
-
-	var fully_served: int = 0
-	for home in homes:
-		if is_building_served(home):
-			fully_served += 1
-	if not homes.is_empty():
-		GameManager.set_happiness(100.0 * float(fully_served) / float(homes.size()))
+	if has_node("/root/HappinessManager"):
+		HappinessManager.recalculate_city()
