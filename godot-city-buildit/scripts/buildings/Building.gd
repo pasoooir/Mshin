@@ -24,6 +24,7 @@ var current_population: int = 0
 var upgrade_ready: bool = false
 
 @onready var mesh_root: Node3D = $MeshRoot
+@onready var scaffold_root: Node3D = $ScaffoldRoot
 @onready var hard_hat: Node3D = $HardHat
 @onready var production_icon: Label3D = $ProductionIcon
 @onready var name_label: Label3D = $NameLabel
@@ -44,6 +45,7 @@ func setup(data: Dictionary) -> void:
 	build_time = definition.get("build_time", 10.0)
 	upgrade_stage = data.get("upgrade_stage", 1)
 	_create_visual()
+	_create_scaffold()
 	_update_stage_label()
 	if name_label:
 		name_label.text = definition.get("name", "")
@@ -183,16 +185,121 @@ func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: 
 	mesh_instance.position = pos
 	mesh_root.add_child(mesh_instance)
 
+# Build a lightweight scaffold from reusable BoxMesh primitives.
+# Dimensions follow the same plot width/depth used by _create_visual().
+func _create_scaffold() -> void:
+	if not scaffold_root:
+		return
+	for child in scaffold_root.get_children():
+		child.queue_free()
+
+	var plot_size: Vector2i = definition.get("size", Vector2i(2, 2))
+	var width := float(plot_size.x) * 1.7
+	var depth := float(plot_size.y) * 1.7
+	var category: String = definition.get("category", "residential")
+	var structure_height := 2.4
+	match category:
+		"residential":
+			structure_height = 1.8 + upgrade_stage * 0.35
+		"commercial":
+			structure_height = 2.0
+		"industrial":
+			structure_height = 2.6
+		"service":
+			structure_height = 2.2
+		"park":
+			structure_height = 1.4
+	structure_height = maxf(structure_height, 1.4)
+
+	var metal := Color(0.55, 0.58, 0.62)
+	var wood := Color(0.72, 0.55, 0.32)
+	var half_w := width * 0.48
+	var half_d := depth * 0.48
+	var post_height := structure_height + 0.55
+	var post_size := Vector3(0.09, post_height, 0.09)
+
+	# Four vertical steel standards at the plot corners.
+	for x_sign in [-1.0, 1.0]:
+		for z_sign in [-1.0, 1.0]:
+			_add_scaffold_box(post_size, Vector3(x_sign * half_w, post_height * 0.5, z_sign * half_d), metal)
+
+	# Horizontal ledgers and transoms at several construction levels.
+	var levels := maxi(2, int(ceil(structure_height / 0.8)))
+	for level in range(levels + 1):
+		var y := 0.25 + structure_height * float(level) / float(levels)
+		_add_scaffold_box(Vector3(width, 0.075, 0.075), Vector3(0, y, half_d), metal)
+		_add_scaffold_box(Vector3(width, 0.075, 0.075), Vector3(0, y, -half_d), metal)
+		_add_scaffold_box(Vector3(0.075, 0.075, depth), Vector3(half_w, y, 0), metal)
+		_add_scaffold_box(Vector3(0.075, 0.075, depth), Vector3(-half_w, y, 0), metal)
+
+	# A few diagonal braces on the visible front and side faces.
+	for side in [-1.0, 1.0]:
+		var brace_front := _add_scaffold_box(Vector3(0.075, structure_height * 0.72, 0.075),
+			Vector3(side * half_w * 0.52, structure_height * 0.48, half_d + 0.015), metal)
+		brace_front.rotation.z = deg_to_rad(34.0 * side)
+		var brace_side := _add_scaffold_box(Vector3(0.075, structure_height * 0.72, 0.075),
+			Vector3(side * (half_w + 0.015), structure_height * 0.48, 0), metal)
+		brace_side.rotation.z = deg_to_rad(-34.0 * side)
+
+	# Timber working platforms near the upper scaffold level.
+	var platform_y := minf(structure_height + 0.12, post_height - 0.12)
+	_add_scaffold_box(Vector3(width * 0.92, 0.11, 0.42), Vector3(0, platform_y, half_d * 0.72), wood)
+	_add_scaffold_box(Vector3(0.42, 0.11, depth * 0.92), Vector3(-half_w * 0.72, platform_y, 0), wood)
+
+	# One or two material crates sit just outside the building footprint.
+	_add_scaffold_box(Vector3(0.52, 0.42, 0.48),
+		Vector3(half_w + 0.38, 0.21, half_d * 0.55), Color(0.95, 0.78, 0.15))
+	if width + depth > 6.0:
+		_add_scaffold_box(Vector3(0.58, 0.46, 0.52),
+			Vector3(-half_w - 0.4, 0.23, -half_d * 0.5), Color(0.48, 0.31, 0.17))
+	else:
+		_add_scaffold_box(Vector3(0.48, 0.38, 0.46),
+			Vector3(-half_w - 0.34, 0.19, -half_d * 0.45), Color(0.95, 0.78, 0.15))
+
+func _add_scaffold_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mesh_instance.mesh = box
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.82
+	material.metallic = 0.18 if color == Color(0.55, 0.58, 0.62) else 0.0
+	mesh_instance.material_override = material
+	mesh_instance.position = pos
+	scaffold_root.add_child(mesh_instance)
+	return mesh_instance
+
 func _start_construction() -> void:
-	if hard_hat: hard_hat.visible = true
-	mesh_root.scale = Vector3(1, 0.05, 1)
-	var tween = create_tween()
-	tween.tween_property(mesh_root, "scale:y", 1.0, build_time).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	if hard_hat:
+		hard_hat.visible = true
+	if mesh_root:
+		mesh_root.visible = true
+		mesh_root.scale = Vector3(1.0, 0.03, 1.0)
+	if scaffold_root:
+		scaffold_root.visible = true
+		scaffold_root.scale = Vector3(1.0, 0.05, 1.0)
+
+	# Divide the configured construction duration into three visible phases.
+	var total_time := maxf(build_time, 0.3)
+	var scaffold_time := total_time * 0.30
+	var building_time := total_time * 0.55
+	var dismantle_time := total_time * 0.15
+	var tween := create_tween()
+	tween.tween_property(scaffold_root, "scale:y", 1.0, scaffold_time) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(mesh_root, "scale:y", 1.0, building_time) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(scaffold_root, "scale:y", 0.01, dismantle_time) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	tween.tween_callback(_on_construction_finished)
 
 func _on_construction_finished() -> void:
 	status = "completed"
 	if hard_hat: hard_hat.visible = false
+	if scaffold_root:
+		scaffold_root.visible = false
+		scaffold_root.scale = Vector3.ONE
 	_play_completion_effect()
 	mesh_root.scale = Vector3.ONE
 	construction_finished_signal.emit()
