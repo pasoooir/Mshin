@@ -195,7 +195,7 @@ func _immigration_priority(home: Node3D) -> float:
 		if not is_instance_valid(candidate) or candidate.status != "completed":
 			continue
 		var category := str(candidate.definition.get("category", ""))
-		if category == "services" or category == "park":
+		if category == "service" or category == "park":
 			nearest_service = minf(nearest_service, candidate.global_position.distance_to(home.global_position))
 	if nearest_service < INF:
 		score += maxf(0.0, 20.0 - nearest_service * 0.25)
