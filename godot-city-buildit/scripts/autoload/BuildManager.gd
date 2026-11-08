@@ -204,11 +204,23 @@ func unregister_building(building_id: String) -> void:
 	var building = buildings.get(building_id)
 	if building == null:
 		return
-	var size: Vector2i = building.definition.get("size", Vector2i(2, 2))
+	var definition: Dictionary = building.definition
+	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	for cell in get_footprint_cells(building.grid_pos, size):
 		if building_cells.get(cell) == building:
 			building_cells.erase(cell)
 	buildings.erase(building_id)
-	if building.definition.get("category", "") == "industrial":
+	if definition.get("category", "") == "industrial":
 		factory_count = maxi(0, factory_count - 1)
+	# Remove population contributed by completed residential or populated buildings.
+	var removed_population := int(building.current_population)
+	if removed_population <= 0:
+		removed_population = int(definition.get("population", 0))
+	if removed_population > 0:
+		GameManager.set_population(maxi(0, GameManager.population - removed_population))
+	var happiness_bonus := float(definition.get("happiness", 0))
+	if happiness_bonus > 0.0:
+		GameManager.set_happiness(maxf(0.0, GameManager.happiness - happiness_bonus))
+	if has_node("/root/ServiceManager"):
+		ServiceManager.recalculate_from_buildings()
 	building_removed.emit(building_id)
