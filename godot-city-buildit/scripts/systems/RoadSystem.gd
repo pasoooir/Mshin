@@ -229,7 +229,7 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 		_append_box(curb_tool, grid_pos, cap_center, cap_size)
 		curb_boxes += 1
 
-	_add_road_markings(marking_tool, white_marking_tool, grid_pos, tile_kind, arms)
+	_add_road_markings(marking_tool, white_marking_tool, sidewalk_tool, grid_pos, tile_kind, arms)
 	marking_boxes = _count_marking_boxes(tile_kind, arms, grid_pos)
 	white_marking_boxes = arms.size() * 5 if tile_kind == TILE_CROSS else 0
 	if tile_kind == TILE_CROSS:
@@ -274,7 +274,7 @@ func _append_box(surface_tool: SurfaceTool, grid_pos: Vector2i, center: Vector3,
 			))
 			surface_tool.add_vertex(point)
 
-func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTool, grid_pos: Vector2i, tile_kind: String, arms: Array[Vector2i]) -> void:
+func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTool, sidewalk_surface_tool: SurfaceTool, grid_pos: Vector2i, tile_kind: String, arms: Array[Vector2i]) -> void:
 	if tile_kind == TILE_CROSS:
 		for direction in arms:
 			_add_crosswalk(white_surface_tool, grid_pos, direction)
@@ -283,7 +283,7 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 		for x_side in [-1.0, 1.0]:
 			for z_side in [-1.0, 1.0]:
 				var corner_center := Vector3(x_side * 0.82, 0.03, z_side * 0.82)
-				_append_box(sidewalk_tool, grid_pos, corner_center, Vector3(0.34, 0.06, 0.34))
+				_append_box(sidewalk_surface_tool, grid_pos, corner_center, Vector3(0.34, 0.06, 0.34))
 		return
 
 	if tile_kind == TILE_CORNER:
