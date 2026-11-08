@@ -393,8 +393,7 @@ func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
 
 func _on_category_pressed(category: String) -> void:
 	if active_category == category and submenu.visible:
-		submenu.hide()
-		active_category = ""
+		_close_building_submenu(true)
 		return
 	active_category = category
 	_show_submenu(category)
@@ -408,9 +407,9 @@ func _show_submenu(category: String) -> void:
 		"road":
 			options = [["road","Road"],["cancel","Cancel"]]
 		"residential":
-			options = [["residential","Small House"]]
+			options = [["residential_villa","خانه ویلایی"],["residential_apartment","خانه آپارتمانی"],["residential_farm","مزرعه"]]
 		"commercial":
-			options = [["commercial","Building Supplies"],["commercial","Hardware Store"]]
+			options = [["shop_chain","فروشگاه زنجیره‌ای"],["restaurant_traditional","رستوران سنتی"],["fast_food","فست‌فود فروشی"],["art_supplies","فروشگاه لوازم هنری"]]
 		"industrial":
 			options = [["industrial","Small Factory"]]
 		"services":
@@ -419,20 +418,79 @@ func _show_submenu(category: String) -> void:
 			options = [["education","Education"],["transportation","Transportation"],["entertainment","Entertainment"],["gambling","Gambling"],["beach","Beach"],["mountain","Mountain"],["landmark","Landmark"],["parks","Parks"],["trade_depot","Trade Depot"],["global_trade","Global Trade"],["epic","Epic"],["regions","Regions"]]
 		"bulldoze":
 			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
+	if category == "residential" or category == "commercial":
+		for option in options:
+			var type_id: String = option[0]
+			var title: String = option[1]
+			var choice := Button.new()
+			choice.name = type_id
+			choice.text = title
+			choice.custom_minimum_size = Vector2(142, 86) * _ui_scale
+			choice.focus_mode = Control.FOCUS_NONE
+			choice.tooltip_text = title
+			choice.add_theme_font_size_override("font_size", int(19 * _ui_scale))
+			choice.add_theme_color_override("font_color", Color.WHITE)
+			choice.add_theme_stylebox_override("normal", _toolbar_style(Color(0.10, 0.18, 0.23, 0.94), Color(0.55, 0.78, 0.9, 0.7)))
+			choice.add_theme_stylebox_override("hover", _toolbar_style(Color(0.18, 0.34, 0.42, 0.98), Color(0.95, 0.82, 0.48, 0.95)))
+			choice.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.30, 0.42, 0.28, 0.98), Color(0.95, 0.82, 0.48, 1.0)))
+			var definition: Dictionary = BuildManager.building_types[type_id]
+			var required_level := int(definition.get("level", 1))
+			if GameManager.level < required_level:
+				choice.disabled = true
+				choice.text += "\n🔒 سطح %d" % required_level
+			submenu.add_child(choice)
+			choice.pressed.connect(_on_building_choice_pressed.bind(type_id))
+		var close_button := Button.new()
+		close_button.name = "CloseSubmenu"
+		close_button.text = "✕"
+		close_button.custom_minimum_size = Vector2(54, 86) * _ui_scale
+		close_button.focus_mode = Control.FOCUS_NONE
+		close_button.add_theme_font_size_override("font_size", int(26 * _ui_scale))
+		close_button.pressed.connect(_close_building_submenu.bind(true))
+		submenu.add_child(close_button)
+		return
 	for option in options:
 		var button := _make_icon_button(option[0], option[1])
 		button.custom_minimum_size = Vector2(112, 112) * _ui_scale
 		submenu.add_child(button)
 		button.pressed.connect(_on_submenu_option.bind(category, option[1]))
 
+func _on_building_choice_pressed(type_id: String) -> void:
+	if not BuildManager.building_types.has(type_id):
+		return
+	var required_level := int(BuildManager.building_types[type_id].get("level", 1))
+	if GameManager.level < required_level:
+		status_label.text = "برای این ساختمان به سطح %d نیاز دارید." % required_level
+		return
+	BuildManager.select_building(type_id)
+	if BuildManager.is_placing:
+		_close_building_submenu(false)
+
+func _close_building_submenu(cancel_placement: bool = true) -> void:
+	if submenu:
+		submenu.hide()
+	active_category = ""
+	if cancel_placement:
+		BuildManager.cancel_placement()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not submenu or not submenu.visible:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if not submenu.get_global_rect().has_point(event.position):
+			_close_building_submenu(true)
+	elif event is InputEventScreenTouch and event.pressed:
+		if not submenu.get_global_rect().has_point(event.position):
+			_close_building_submenu(true)
+
 func _on_submenu_option(category: String, option: String) -> void:
 	match category:
 		"road":
 			if option == "Road": _on_roads_pressed()
 			else: _on_cancel_pressed()
-		"residential": BuildManager.select_building("residential_1")
+		"residential": BuildManager.select_building("residential_villa")
 		"commercial":
-			BuildManager.select_building("building_supplies" if option == "Building Supplies" else "hardware_store")
+			BuildManager.select_building("shop_chain")
 		"industrial": BuildManager.select_building("industrial_1")
 		"services":
 			if option == "Power": BuildManager.select_building("power_wind")
