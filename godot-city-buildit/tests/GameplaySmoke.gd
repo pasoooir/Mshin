@@ -357,6 +357,7 @@ func _run_gameplay_test() -> void:
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
 	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > population_before_upgrade, "House upgrade did not increase service-adjusted population.")
 
+	var saved_population_expected := GameManager.population
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 
 	for building in BuildManager.buildings.values():
@@ -375,7 +376,7 @@ func _run_gameplay_test() -> void:
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
-	_check(GameManager.population >= 18, "Population was not restored from save.")
+	_check(GameManager.population == saved_population_expected, "Population was not restored from save.")
 
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
