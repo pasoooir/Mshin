@@ -4,6 +4,7 @@ signal level_changed(new_level: int)
 signal population_changed(new_pop: int)
 signal happiness_changed(new_value: float)
 signal xp_changed(xp: int, needed: int)
+signal level_up_rewarded(new_level: int, simoleons: int, keys: int)
 
 var level: int = 1
 var experience: int = 0
@@ -16,9 +17,10 @@ func _ready() -> void:
 	print("[GameManager] ", city_name, " - Level ", level)
 
 func add_experience(amount: int) -> void:
+	if amount <= 0:
+		return
 	experience += amount
-	xp_changed.emit(experience, get_xp_needed())
-	var needed = get_xp_needed()
+	var needed := get_xp_needed()
 	while experience >= needed and level < 60:
 		experience -= needed
 		level += 1
@@ -26,9 +28,12 @@ func add_experience(amount: int) -> void:
 		print("[GameManager] ★ LEVEL UP → ", level)
 		if has_node("/root/LevelProgression"):
 			LevelProgression.on_level_up(level)
-		needed = get_xp_needed()
-		EconomyManager.add_simoleons(level * 100)
+		var reward := level * 100
+		EconomyManager.add_simoleons(reward)
 		EconomyManager.add_keys(1)
+		level_up_rewarded.emit(level, reward, 1)
+		needed = get_xp_needed()
+	xp_changed.emit(experience, get_xp_needed())
 
 func get_xp_needed() -> int:
 	if has_node("/root/LevelProgression"):
