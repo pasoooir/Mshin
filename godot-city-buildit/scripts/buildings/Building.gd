@@ -87,25 +87,54 @@ func _create_visual() -> void:
 			_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
-	_add_box(Vector3(w * 0.88, height, d * 0.88), Vector3(0, height * 0.5 + 0.25, 0), color)
-	_add_box(Vector3(w * 1.02, 0.24, d * 1.02), Vector3(0, height + 0.38, 0), color.darkened(0.24))
-	var window_col := Color(0.32, 0.63, 0.78)
-	var rows := 1 + int(upgrade_stage >= 3) + int(upgrade_stage >= 5)
-	for row in range(rows):
-		var y := 0.72 + float(row) * maxf(0.58, height / float(rows + 1))
-		for column in range(2):
-			var x := -w * 0.25 if column == 0 else w * 0.25
-			_add_box(Vector3(0.43, 0.42, 0.075), Vector3(x, y, d * 0.445), Color(0.88, 0.82, 0.64))
-			_add_box(Vector3(0.32, 0.31, 0.035), Vector3(x, y, d * 0.49), window_col)
-			_add_box(Vector3(0.49, 0.07, 0.13), Vector3(x, y - 0.25, d * 0.47), Color(0.92, 0.91, 0.82))
-	_add_box(Vector3(0.48, 0.78, 0.10), Vector3(0, 0.64, d * 0.45), color.darkened(0.42))
-	_add_box(Vector3(0.7, 0.13, 0.25), Vector3(0, 1.13, d * 0.48), Color(0.82, 0.35, 0.19))
-	_add_box(Vector3(0.18, 0.75, 0.18), Vector3(w * 0.32, height + 0.72, -d * 0.25), Color(0.55, 0.27, 0.20))
-	if upgrade_stage >= 3:
-		_add_box(Vector3(w * 0.52, 0.12, 0.42), Vector3(0, height * 0.63, -d * 0.35), color.lightened(0.12))
-		_add_box(Vector3(w * 0.52, 0.12, 0.08), Vector3(0, height * 0.63 + 0.2, -d * 0.16), Color(0.88, 0.86, 0.78))
-	if upgrade_stage >= 5:
-		_add_box(Vector3(w * 0.94, 0.16, d * 0.92), Vector3(0, height + 0.56, 0), color.lightened(0.18))
+	# A small suburban home: raised foundation, warm plaster walls, pitched roof,
+	# framed windows, front door, porch and chimney. Keep proportions tied to plot size.
+	var wall_w := w * 0.84
+	var wall_d := d * 0.82
+	var wall_h := height * 0.78
+	var wall_y := 0.25 + wall_h * 0.5
+	var plaster := color
+	var trim := Color(0.94, 0.88, 0.72)
+	var roof := Color(0.38, 0.20, 0.15)
+	var glass := Color(0.22, 0.48, 0.60)
+
+	# Stone plinth and main facade.
+	_add_box(Vector3(w * 0.94, 0.22, d * 0.92), Vector3(0, 0.18, 0), Color(0.48, 0.45, 0.39))
+	_add_box(Vector3(wall_w, wall_h, wall_d), Vector3(0, wall_y, 0), plaster)
+	_add_box(Vector3(wall_w + 0.10, 0.10, wall_d + 0.10), Vector3(0, 0.31, 0), trim)
+
+	# Two sloping roof planes meet at a ridge; dark fascia gives a finished silhouette.
+	var roof_panel_size := Vector3(wall_w * 0.62, 0.16, wall_d * 0.72)
+	var roof_y := 0.25 + wall_h + 0.32
+	var roof_z := wall_d * 0.205
+	_add_box_rotated(roof_panel_size, Vector3(0, roof_y, roof_z), roof, Vector3(deg_to_rad(31.0), 0, 0))
+	_add_box_rotated(roof_panel_size, Vector3(0, roof_y, -roof_z), roof, Vector3(deg_to_rad(-31.0), 0, 0))
+	_add_box(Vector3(wall_w * 0.10, 0.82, wall_d * 0.11),
+		Vector3(wall_w * 0.31, roof_y + 0.28, -wall_d * 0.22), Color(0.48, 0.25, 0.19))
+
+	# Front door with frame, small canopy and doorstep.
+	_add_box(Vector3(0.48, 0.92, 0.10), Vector3(0, 0.78, wall_d * 0.505), Color(0.30, 0.18, 0.12))
+	_add_box(Vector3(0.37, 0.78, 0.035), Vector3(0, 0.77, wall_d * 0.56), Color(0.48, 0.29, 0.17))
+	_add_box(Vector3(0.62, 0.10, 0.34), Vector3(0, 1.30, wall_d * 0.55), roof)
+	_add_box(Vector3(0.72, 0.12, 0.48), Vector3(0, 0.30, wall_d * 0.66), trim)
+
+	# Symmetrical front windows with pale frames, blue glass and projecting sills.
+	for x in [-wall_w * 0.29, wall_w * 0.29]:
+		_add_box(Vector3(0.62, 0.64, 0.10), Vector3(x, 1.02, wall_d * 0.505), trim)
+		_add_box(Vector3(0.48, 0.49, 0.035), Vector3(x, 1.03, wall_d * 0.56), glass)
+		_add_box(Vector3(0.06, 0.51, 0.045), Vector3(x, 1.03, wall_d * 0.585), trim)
+		_add_box(Vector3(0.57, 0.08, 0.16), Vector3(x, 0.69, wall_d * 0.55), trim)
+		_add_box(Vector3(0.66, 0.08, 0.16), Vector3(x, 1.37, wall_d * 0.55), trim)
+
+	# Side windows add depth when the player orbits the house.
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.10, 0.48, 0.58), Vector3(side * wall_w * 0.505, 1.02, -wall_d * 0.12), trim)
+		_add_box(Vector3(0.035, 0.36, 0.44), Vector3(side * wall_w * 0.56, 1.02, -wall_d * 0.12), glass)
+
+	# A modest garden path and two low shrubs make the plot feel inhabited.
+	_add_box(Vector3(0.42, 0.045, d * 0.28), Vector3(0, 0.16, d * 0.62), Color(0.67, 0.61, 0.48))
+	for x in [-w * 0.36, w * 0.36]:
+		_add_cylinder(0.22, 0.28, 0.38, Vector3(x, 0.36, d * 0.34), Color(0.20, 0.43, 0.22))
 
 func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 	_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
@@ -169,6 +198,19 @@ func _add_box(size: Vector3, pos: Vector3, color: Color) -> void:
 	material.metallic = 0.04
 	mesh_instance.material_override = material
 	mesh_instance.position = pos
+	mesh_root.add_child(mesh_instance)
+
+func _add_box_rotated(size: Vector3, pos: Vector3, color: Color, rotation: Vector3) -> void:
+	var mesh_instance := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mesh_instance.mesh = box
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.82
+	mesh_instance.material_override = material
+	mesh_instance.position = pos
+	mesh_instance.rotation = rotation
 	mesh_root.add_child(mesh_instance)
 
 func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: Vector3, color: Color) -> void:
