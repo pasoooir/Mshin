@@ -154,9 +154,12 @@ func _run_gameplay_test() -> void:
 	# Production durations are shortened only in this deterministic smoke test.
 	ProductionManager.raw_materials["metal"]["time"] = 0.2
 	ProductionManager.crafted_items["nails"]["time"] = 0.2
-	_check(factory != null and not factory.is_producing, "Factory should wait for the player to start production.")
+	# The factory starts its first Metal batch automatically when construction completes.
+	_check(factory != null and factory.is_producing, "Factory did not automatically start Metal after construction.")
+	factory.production_time = 0.2
+	factory.production_timer = 0.2
 	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and factory.is_producing, "Tapping the factory did not start Metal production.")
+	_check(factory != null and factory.is_producing, "Tapping an active factory should report its running Metal batch.")
 	await _wait_seconds(0.35)
 	_check(factory != null and factory.has_ready_product, "Factory did not finish its first Metal.")
 	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
@@ -178,6 +181,33 @@ func _run_gameplay_test() -> void:
 	input_node._try_interact(BuildManager.grid_to_world(supplies.grid_pos))
 	_check(supplies != null and not supplies.has_ready_product and StorageManager.get_item_count("nails") == 1, "Tapping ready Building Supplies did not collect Nails.")
 	_check(StorageManager.get_item_count("nails") == 1, "Crafted Nails were not stored.")
+	_check(not supplies.is_producing and not supplies.has_ready_product, "Commercial store should stop after collecting its product.")
+	input_node._try_interact(BuildManager.grid_to_world(supplies.grid_pos))
+	_check(supplies.is_producing, "Tapping Building Supplies again should order another timed Nails batch.")
+	# Cancel the second batch for the next test and restore the required Metal/Wood inputs.
+	supplies.is_producing = false
+	supplies.production_timer = 0.0
+	if supplies.production_icon:
+		supplies.production_icon.visible = false
+
+	# Hardware Store unlocks at level 4 and must craft Hammer from Metal + Wood.
+	var previous_level := GameManager.level
+	GameManager.level = 4
+	_check(BuildManager.place_building(Vector2i(9, 1), "hardware_store"), "Could not place Hardware Store for production acceptance.")
+	await _wait_seconds(5.5)
+	var hardware = _find_building("hardware_store")
+	_check(hardware != null and hardware.status == "completed", "Hardware Store construction did not finish.")
+	StorageManager.add_item("metal", 1)
+	StorageManager.add_item("wood", 1)
+	ProductionManager.crafted_items["hammer"]["time"] = 0.2
+	input_node._try_interact(BuildManager.grid_to_world(hardware.grid_pos))
+	_check(hardware != null and hardware.is_producing and hardware.current_product == "hammer", "Hardware Store did not start timed Hammer production.")
+	_check(StorageManager.get_item_count("metal") == 0 and StorageManager.get_item_count("wood") == 0, "Hammer recipe did not consume Metal and Wood.")
+	await _wait_seconds(0.35)
+	_check(hardware != null and hardware.has_ready_product, "Hardware Store did not finish Hammer.")
+	input_node._try_interact(BuildManager.grid_to_world(hardware.grid_pos))
+	_check(StorageManager.get_item_count("hammer") == 1 and not hardware.is_producing, "Hardware Store did not collect Hammer and stop.")
+	GameManager.level = previous_level
 
 	# Existing level-1 upgrade recipe also needs one Metal in addition to Nails.
 	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
