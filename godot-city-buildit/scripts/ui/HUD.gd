@@ -815,7 +815,7 @@ func _on_trade_pressed() -> void:
 func _on_cancel_pressed() -> void:
 	var scene := get_tree().current_scene
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
-	var was_bulldozing := city_input != null and (city_input.bulldoze_mode or city_input.bulldoze_road_mode)
+	var was_bulldozing: bool = city_input != null and (city_input.bulldoze_mode or city_input.bulldoze_road_mode)
 	_set_bulldozer_indicator(false)
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
