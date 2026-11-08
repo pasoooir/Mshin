@@ -139,7 +139,9 @@ func _set_simoleon_reward(value: float) -> void:
 
 func _set_key_reward(value: float) -> void:
 	if is_instance_valid(_reward_keys):
-		_reward_keys.text = "+%s Golden Keys" % _format_reward(roundi(value))
+		var count := roundi(value)
+		var key_name := "Golden Key" if count == 1 else "Golden Keys"
+		_reward_keys.text = "+%s %s" % [_format_reward(count), key_name]
 
 func _format_reward(value: int) -> String:
 	var raw := str(value)
