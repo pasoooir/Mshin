@@ -400,6 +400,7 @@ func _on_category_pressed(category: String) -> void:
 
 func _show_submenu(category: String) -> void:
 	for child in submenu.get_children():
+		submenu.remove_child(child)
 		child.queue_free()
 	submenu.show()
 	var options: Array = []
