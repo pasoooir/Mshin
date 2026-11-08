@@ -50,12 +50,12 @@ func recalculate_city() -> void:
 		var capacity := _capacity_for_home(building)
 		# Establish the initial occupied population once. Immigration fills
 		# vacant capacity gradually and is not overwritten by periodic refreshes.
-		if int(building.current_population) <= 0:
+		if not building.has_meta("immigration_population_initialized"):
 			var initial_service_factor := _service_capacity_factor(building)
 			building.current_population = roundi(float(capacity) * (score / 100.0) * initial_service_factor)
 			building.current_population = clampi(building.current_population, 0, capacity)
-			if building.current_population > 0:
-				household_population_changed.emit(building.building_id, building.current_population)
+			building.set_meta("immigration_population_initialized", true)
+			household_population_changed.emit(building.building_id, building.current_population)
 		if score < LOW_HAPPINESS_ABANDONMENT_THRESHOLD:
 			var elapsed := float(low_happiness_time.get(building.building_id, 0.0)) + RECALC_INTERVAL
 			low_happiness_time[building.building_id] = elapsed
