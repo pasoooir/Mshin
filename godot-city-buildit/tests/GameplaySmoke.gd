@@ -137,12 +137,15 @@ func _run_gameplay_test() -> void:
 	GameManager.level = 5
 	if hud:
 		var right_toolbar = hud.get_node_or_null("RightToolbar")
-		_check(right_toolbar is ScrollContainer, "Right-side construction tools must live in a ScrollContainer.")
-		if right_toolbar is ScrollContainer:
-			_check(right_toolbar.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_ALWAYS, "Right toolbar must keep its vertical scrollbar visible.")
-			_check(right_toolbar.scroll_deadzone <= 16, "Right toolbar touch scrolling deadzone is too large.")
+		_check(right_toolbar is PanelContainer, "Right-side construction tools must use the compact category dock.")
+		if right_toolbar is PanelContainer:
 			var toolbar_items = right_toolbar.get_node_or_null("RightToolbarItems")
-			_check(toolbar_items != null and toolbar_items.get_child_count() >= 7, "Right toolbar is missing construction categories.")
+			_check(toolbar_items is GridContainer, "Right toolbar must use a two-column grid instead of a long scroll list.")
+			_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right toolbar must show all seven construction categories.")
+			if toolbar_items is GridContainer:
+				_check(toolbar_items.columns == 2, "Right toolbar category grid must have two columns.")
+				for category_button in toolbar_items.get_children():
+					_check(category_button.custom_minimum_size.x >= 58.0 and category_button.custom_minimum_size.y >= 58.0, "Category buttons must remain large enough for mobile touch targets.")
 		hud._show_submenu("residential")
 		_check(hud.submenu.get_child_count() == 4, "Residential submenu should show three choices and a close button.")
 		_check(hud.submenu.get_node_or_null("residential_villa") != null, "Residential villa option is missing.")
