@@ -91,6 +91,8 @@ func _run_gameplay_test() -> void:
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalHighway") != null, "Coastal highway was not generated.")
+	_check(EconomyManager.simoleons >= 25000, "Starter Simoleons grant is too small.")
+	_check(EconomyManager.golden_keys >= 10 and EconomyManager.sim_cash >= 25, "Starter premium currency grant is missing.")
 	var road_system = get_node_or_null("World/RoadSystem")
 	_check(road_system != null, "Main scene has no RoadSystem.")
 	if road_system == null:
