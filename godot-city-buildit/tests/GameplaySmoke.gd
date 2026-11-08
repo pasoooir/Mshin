@@ -140,6 +140,23 @@ func _run_gameplay_test() -> void:
 		hud._on_building_choice_pressed("fast_food")
 		_check(BuildManager.selected_building_type == "fast_food" and BuildManager.is_placing, "Fast food choice did not enter placement mode.")
 		BuildManager.cancel_placement()
+		# Verify representative new types pass the real road-access/footprint placement path.
+		for placement_case in [
+			{"type":"residential_villa","grid":Vector2i(12, 1)},
+			{"type":"residential_farm","grid":Vector2i(14, 1)},
+			{"type":"fast_food","grid":Vector2i(16, 1)}
+		]:
+			var type_id: String = placement_case["type"]
+			var grid_pos: Vector2i = placement_case["grid"]
+			BuildManager.select_building(type_id)
+			_check(BuildManager.can_place_at(grid_pos, type_id), "%s should be placeable beside the starter road." % type_id)
+			_check(BuildManager.place_building(grid_pos, type_id), "%s could not be placed beside the starter road." % type_id)
+			var placed_choice = BuildManager.building_at_cell(grid_pos)
+			_check(placed_choice != null and placed_choice.building_type == type_id, "%s placement did not create the selected building." % type_id)
+			if placed_choice:
+				BuildManager.unregister_building(placed_choice.building_id)
+				placed_choice.queue_free()
+			BuildManager.cancel_placement()
 		hud._close_building_submenu(false)
 	else:
 		_check(false, "HUD node is missing for building submenu tests.")
