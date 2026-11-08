@@ -20,6 +20,8 @@ var active_category := ""
 var level_label: Label
 var population_label: Label
 var happiness_label: Label
+var xp_progress: ProgressBar
+var xp_text: Label
 var storage_label: Label
 var simoleons_label: Label
 var simcash_label: Label
@@ -32,6 +34,8 @@ func _ready() -> void:
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.population_changed.connect(_on_population_changed)
 	GameManager.happiness_changed.connect(_on_happiness_changed)
+	GameManager.xp_changed.connect(_on_xp_changed)
+	GameManager.level_up_rewarded.connect(_on_level_up_rewarded)
 	EconomyManager.simoleons_changed.connect(_on_simoleons_changed)
 	EconomyManager.keys_changed.connect(_on_keys_changed)
 	StorageManager.storage_changed.connect(_on_storage_changed)
@@ -65,7 +69,7 @@ func _build_top_hud() -> void:
 	left_stack.name = "TopLeftStats"
 	left_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left_stack.position = Vector2(14, 10)
-	left_stack.custom_minimum_size = Vector2(620, 180) * _ui_scale
+	left_stack.custom_minimum_size = Vector2(620, 210) * _ui_scale
 	left_stack.add_theme_constant_override("separation", 5)
 	left_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(left_stack)
@@ -112,6 +116,25 @@ func _build_top_hud() -> void:
 	happiness_row.mouse_filter = Control.MOUSE_FILTER_PASS
 	left_stack.add_child(happiness_row)
 	happiness_label = _add_stat_bar(happiness_row, "happiness", "100%", Color("#A8E62E"), "Citizen happiness", 220)
+
+	var xp_row := HBoxContainer.new()
+	xp_row.name = "ExperienceRow"
+	xp_row.add_theme_constant_override("separation", 8)
+	xp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_stack.add_child(xp_row)
+	xp_text = _make_hud_value("0 / %d XP" % GameManager.get_xp_needed(), int(16 * _ui_scale))
+	xp_text.custom_minimum_size = Vector2(105, 24) * _ui_scale
+	xp_row.add_child(xp_text)
+	xp_progress = ProgressBar.new()
+	xp_progress.name = "ExperienceProgress"
+	xp_progress.custom_minimum_size = Vector2(210, 18) * _ui_scale
+	xp_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	xp_progress.min_value = 0
+	xp_progress.max_value = GameManager.get_xp_needed()
+	xp_progress.value = GameManager.experience
+	xp_progress.show_percentage = false
+	xp_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	xp_row.add_child(xp_progress)
 
 	var right_stack := VBoxContainer.new()
 	right_stack.name = "TopRightCurrencies"
@@ -556,6 +579,7 @@ func _update_all() -> void:
 	_on_level_changed(GameManager.level)
 	_on_population_changed(GameManager.population)
 	_on_happiness_changed(GameManager.happiness)
+	_on_xp_changed(GameManager.experience, GameManager.get_xp_needed())
 	_on_simoleons_changed(EconomyManager.simoleons)
 	_on_keys_changed(EconomyManager.golden_keys)
 	_on_storage_changed()
@@ -573,12 +597,26 @@ func _update_simcash() -> void:
 
 func _on_level_changed(level: int) -> void:
 	if level_label: level_label.text = str(level)
+	_on_xp_changed(GameManager.experience, GameManager.get_xp_needed())
 
 func _on_population_changed(population: int) -> void:
 	if population_label: population_label.text = _format_count(population)
 
 func _on_happiness_changed(value: float) -> void:
-	if happiness_label: happiness_label.text = "%d%%" % roundi(value)
+	if happiness_label:
+		var mood := "😊" if value >= 80.0 else ("😐" if value >= 50.0 else "😟")
+		happiness_label.text = "%s %d%%" % [mood, roundi(value)]
+
+func _on_xp_changed(xp: int, needed: int) -> void:
+	if xp_text:
+		xp_text.text = "%d / %d XP" % [xp, needed]
+	if xp_progress:
+		xp_progress.max_value = maxi(1, needed)
+		xp_progress.value = clampi(xp, 0, needed)
+
+func _on_level_up_rewarded(new_level: int, reward: int, keys: int) -> void:
+	if status_label:
+		status_label.text = "⭐ Level %d unlocked! +%d Simoleons, +%d Golden Key." % [new_level, reward, keys]
 
 func _on_simoleons_changed(_amount: int) -> void:
 	if simoleons_label: simoleons_label.text = EconomyManager.get_formatted_simoleons()
