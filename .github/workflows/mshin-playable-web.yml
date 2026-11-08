@@ -123,8 +123,10 @@ jobs:
           const mobileFrame = mobilePage.locator('#game-frame');
           await mobileFrame.waitFor({ state: 'attached', timeout: 10000 });
           await mobilePage.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
-          await mobilePage.waitForTimeout(8000);
-          await mobilePage.screenshot({ path: 'mshin-web-mobile-landscape.png', fullPage: true });
+          // The mobile acceptance gate is functional (launcher + live canvas);
+          // avoid a second WebGL screenshot because software-rendered mobile
+          // emulation can stall Chromium's compositor.
+          await mobilePage.waitForTimeout(2000);
 
           if (errors.length || mobileErrors.length) {
             throw new Error('Browser page errors: ' + [...errors, ...mobileErrors].join(' | '));
@@ -135,9 +137,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mshin-web-hud-screenshot
-          path: |
-            mshin-web-hud.png
-            mshin-web-mobile-landscape.png
+          path: mshin-web-hud.png
           if-no-files-found: error
 
       - name: Configure GitHub Pages
