@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
 <defs><linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#A5E76D"/><stop offset="1" stop-color="#278C4B"/></linearGradient><linearGradient id="leaf2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#76D65C"/><stop offset="1" stop-color="#16734A"/></linearGradient><linearGradient id="path" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F6D89A"/><stop offset="1" stop-color="#C99556"/></linearGradient></defs>
-<ellipse cx="64" cy="111" rx="48" ry="8" fill="#18384A" opacity=".16"/>
-<path d="m12 89 51-30 53 29-52 30z" fill="#8CCB68" stroke="#477B48" stroke-width="3" stroke-linejoin="round"/>
+<ellipse cx="64" cy="111" rx="45" ry="7" fill="#18384A" opacity=".16"/>
+<path d="m12 89 51-30 53 29-52 30z" fill="#8CCB68" stroke="#477B48" stroke-width="3.5" stroke-linejoin="round"/>
 <path d="m42 98 20-12 24 13-20 12z" fill="url(#path)" stroke="#B7834D" stroke-width="2"/>
 <path d="M31 86V57h8v29M80 92V62h8v30" fill="#8A5B37" stroke="#67452F" stroke-width="2"/>
 <path d="M16 58 29 31l13 27z" fill="url(#leaf)" stroke="#286B43" stroke-width="3" stroke-linejoin="round"/><path d="M29 31v45" stroke="#8A5B37" stroke-width="5"/>
