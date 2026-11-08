@@ -40,6 +40,9 @@ func _ready() -> void:
 		production_icon = null
 		name_label = null
 		stage_label = null
+		if is_instance_valid(hard_hat):
+			hard_hat.free()
+		hard_hat = null
 	if hard_hat:
 		hard_hat.visible = false
 
