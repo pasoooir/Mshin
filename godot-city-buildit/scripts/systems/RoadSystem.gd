@@ -282,7 +282,7 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 		# through a four-way intersection instead of ending sidewalks abruptly.
 		for x_side in [-1.0, 1.0]:
 			for z_side in [-1.0, 1.0]:
-				var corner_center := Vector3(x_side * 0.82, 0.03, z_side * 0.82)
+				var corner_center := Vector3(x_side * 0.82, 0.095, z_side * 0.82)
 				_append_box(sidewalk_surface_tool, grid_pos, corner_center, Vector3(0.34, 0.06, 0.34))
 		return
 
