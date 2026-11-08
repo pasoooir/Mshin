@@ -6,12 +6,12 @@ const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 # small locally drawn vector icon. All other status icons come from IconAtlas.
 class BanknoteGlyph extends Control:
 	func _draw() -> void:
-		var note := Rect2(Vector2(2.5, 6.0), Vector2(size.x - 5.0, size.y - 12.0))
+		var note := Rect2(Vector2(5.0, 12.0), Vector2(size.x - 10.0, size.y - 24.0))
 		draw_rect(note, Color("#4CD964"), true)
 		draw_rect(note, Color("#D9FFE1"), false, 1.4)
-		draw_circle(size * 0.5, 5.0, Color("#D9FFE1"))
-		draw_line(Vector2(6, 9), Vector2(10, 9), Color("#D9FFE1"), 1.2)
-		draw_line(Vector2(size.x - 10, size.y - 9), Vector2(size.x - 6, size.y - 9), Color("#D9FFE1"), 1.2)
+		draw_circle(size * 0.5, 10.0, Color("#D9FFE1"))
+		draw_line(Vector2(12, 18), Vector2(20, 18), Color("#D9FFE1"), 2.4)
+		draw_line(Vector2(size.x - 20, size.y - 18), Vector2(size.x - 12, size.y - 18), Color("#D9FFE1"), 2.4)
 
 @onready var status_label: Label = $StatusLabel
 
@@ -62,7 +62,7 @@ func _build_top_hud() -> void:
 	left_stack.name = "TopLeftStats"
 	left_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left_stack.position = Vector2(14, 10)
-	left_stack.custom_minimum_size = Vector2(500, 142)
+	left_stack.custom_minimum_size = Vector2(1000, 284)
 	left_stack.add_theme_constant_override("separation", 5)
 	left_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(left_stack)
@@ -75,15 +75,15 @@ func _build_top_hud() -> void:
 
 	var level_badge := PanelContainer.new()
 	level_badge.name = "LevelBadge"
-	level_badge.custom_minimum_size = Vector2(92, 92)
+	level_badge.custom_minimum_size = Vector2(184, 184)
 	level_badge.add_theme_stylebox_override("panel", _level_badge_style())
 	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_stats.add_child(level_badge)
 	var level_overlay := Control.new()
-	level_overlay.custom_minimum_size = Vector2(88, 88)
+	level_overlay.custom_minimum_size = Vector2(176, 176)
 	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_badge.add_child(level_overlay)
-	var level_icon := IconAtlas.make_icon("level", Vector2(78, 78))
+	var level_icon := IconAtlas.make_icon("level", Vector2(156, 156))
 	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_icon)
@@ -92,7 +92,7 @@ func _build_top_hud() -> void:
 	level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	level_label.add_theme_font_size_override("font_size", 30)
+	level_label.add_theme_font_size_override("font_size", 60)
 	level_label.add_theme_color_override("font_color", Color.WHITE)
 	level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 	level_label.add_theme_constant_override("shadow_offset_x", 2)
@@ -135,7 +135,7 @@ func _build_top_hud() -> void:
 func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "StatBar"
-	bar.custom_minimum_size = Vector2(width, 58)
+	bar.custom_minimum_size = Vector2(width * 2.0, 116)
 	bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
@@ -146,7 +146,7 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(46, 46))
+	var icon := IconAtlas.make_icon(icon_name, Vector2(184, 184))
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, 23)
@@ -156,7 +156,7 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 214.0) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "CurrencyBar"
-	bar.custom_minimum_size = Vector2(width, 58)
+	bar.custom_minimum_size = Vector2(width * 2.0, 116)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -165,7 +165,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(46, 46))
+	var icon := IconAtlas.make_icon(icon_name, Vector2(184, 184))
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, 24)
@@ -208,10 +208,10 @@ func _make_currency_plus_button(hint: String) -> Button:
 	var button := Button.new()
 	button.name = "CurrencyAddButton"
 	button.text = "+"
-	button.custom_minimum_size = Vector2(46, 46)
+	button.custom_minimum_size = Vector2(184, 184)
 	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = hint + " shop"
-	button.add_theme_font_size_override("font_size", 28)
+	button.add_theme_font_size_override("font_size", 56)
 	_add_theme_color(button, Color("#4CD964"))
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(_on_currency_plus_pressed.bind(hint))
@@ -221,7 +221,7 @@ func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: S
 func _build_simcash_capsule(parent: Container) -> void:
 	var bar := PanelContainer.new()
 	bar.name = "SimCashCurrencyBar"
-	bar.custom_minimum_size = Vector2(248, 58)
+	bar.custom_minimum_size = Vector2(496, 116)
 	bar.tooltip_text = "SimCash"
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -231,7 +231,7 @@ func _build_simcash_capsule(parent: Container) -> void:
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
 	var glyph := BanknoteGlyph.new()
-	glyph.custom_minimum_size = Vector2(46, 46)
+	glyph.custom_minimum_size = Vector2(184, 184)
 	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(glyph)
 	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), 24)
@@ -340,7 +340,7 @@ func _build_toolbars() -> void:
 
 func _make_icon_button(kind: String, hint: String) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(92, 92)
+	button.custom_minimum_size = Vector2(184, 184)
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
@@ -348,7 +348,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, Vector2(86, 86))
+	var icon := IconAtlas.make_icon(kind, Vector2(172, 172))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
@@ -410,7 +410,7 @@ func _show_submenu(category: String) -> void:
 			options = [["bulldoze","Bulldoze mode"],["cancel","Cancel"]]
 	for option in options:
 		var button := _make_icon_button(option[0], option[1])
-		button.custom_minimum_size = Vector2(124, 124)
+		button.custom_minimum_size = Vector2(248, 248)
 		submenu.add_child(button)
 		button.pressed.connect(_on_submenu_option.bind(category, option[1]))
 
