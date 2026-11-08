@@ -58,9 +58,16 @@ func _update_move_from_screen(screen_position: Vector2) -> void:
 	var footprint: Vector2i = BuildManager.moving_building.definition.get("size", Vector2i(2, 2))
 	# The finger tracks the building centre, while BuildManager expects its top-left grid anchor.
 	var anchor_offset := Vector3((footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
-	var target_anchor := BuildManager.world_to_grid(world_position - anchor_offset)
+	var target_anchor := _move_anchor_from_world(world_position)
 	var valid := BuildManager.preview_move_at(target_anchor)
 	_set_status("Valid location — release to move." if valid else "Invalid location — move to a green plot or press X to cancel.")
+
+func _move_anchor_from_world(world_position: Vector3) -> Vector2i:
+	if not BuildManager.is_moving or not is_instance_valid(BuildManager.moving_building):
+		return BuildManager.world_to_grid(world_position)
+	var footprint: Vector2i = BuildManager.moving_building.definition.get("size", Vector2i(2, 2))
+	var anchor_offset := Vector3((footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
+	return BuildManager.world_to_grid(world_position - anchor_offset)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
