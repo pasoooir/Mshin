@@ -114,6 +114,7 @@ func _test_drag_gestures_do_not_place() -> void:
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_immigration_coefficients()
+	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 70.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
 	var input_node = get_node("CityInput")
 	var world = get_node_or_null("World")
@@ -242,7 +243,11 @@ func _run_gameplay_test() -> void:
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("bulldoze")
 		_check(input_node.bulldoze_mode and not input_node.bulldoze_road_mode, "Main bulldozer button did not activate general demolition mode.")
+		_check(hud.status_label.text == "Bulldozer active — tap a building twice to demolish. Tap a road to remove it. Press X to cancel.", "Bulldozer activation message is missing or unclear.")
+		var bulldozer_badge = hud.get_node_or_null("BulldozerModeIndicator")
+		_check(bulldozer_badge != null and bulldozer_badge.visible, "Bulldozer active indicator was not shown.")
 		hud._on_cancel_pressed()
+		_check(hud.get_node_or_null("BulldozerModeIndicator") == null or not hud.get_node("BulldozerModeIndicator").visible, "Cancel did not hide the bulldozer indicator.")
 		_check(not input_node.bulldoze_mode and not input_node.bulldoze_road_mode, "X/Cancel did not exit bulldozer mode.")
 		# Exercise road-only demolition: one asphalt tile disappears, nothing else changes.
 		var test_road_cell := Vector2i(18, 0)
@@ -267,8 +272,10 @@ func _run_gameplay_test() -> void:
 		input_node.set_bulldoze_mode(true)
 		input_node._handle_bulldoze_cell(demo_cell, road_system)
 		_check(BuildManager.building_at_cell(demo_cell) == demo_building, "First bulldozer tap should only request confirmation.")
+		_check(demo_building.demolition_highlight_active, "First bulldozer tap did not highlight the selected building.")
 		input_node._handle_bulldoze_cell(demo_cell, road_system)
 		_check(BuildManager.building_at_cell(demo_cell) == null, "Second bulldozer tap did not remove the building footprint.")
+		_check(not demo_building.demolition_highlight_active, "Demolition highlight was not cleared after removal.")
 		print("[GameplaySmoke] demolition after=%d" % GameManager.population)
 		_check(GameManager.population < population_before_demo, "Demolishing a residential building did not remove its population.")
 		input_node.set_bulldoze_mode(false)
