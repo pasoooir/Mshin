@@ -369,7 +369,10 @@ func _run_gameplay_test() -> void:
 	# Exercise the actual touch long-press, drag and release event path while the build palette is still active.
 	BuildManager.select_building("residential_1")
 	var active_move_camera: Camera3D = get_viewport().get_camera_3d()
-	var move_input_screen: Vector2 = active_move_camera.unproject_position(BuildManager.grid_to_world(home.grid_pos))
+	var home_footprint: Vector2i = home.definition.get("size", Vector2i(2, 2))
+	var home_center_offset := Vector3((home_footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (home_footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
+	var home_center_world: Vector3 = BuildManager.grid_to_world(home.grid_pos) + home_center_offset
+	var move_input_screen: Vector2 = active_move_camera.unproject_position(home_center_world)
 	var touch_down := InputEventScreenTouch.new()
 	touch_down.index = 0
 	touch_down.pressed = true
@@ -378,9 +381,12 @@ func _run_gameplay_test() -> void:
 	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
 	_check(BuildManager.is_moving and BuildManager.moving_building == home, "Long press on a completed residential building did not enter Move mode while placement was active.")
 	_check(not BuildManager.is_placing, "Starting a building move did not exit the active placement palette.")
-	_check(input_node._move_anchor_from_world(BuildManager.grid_to_world(Vector2i(8, 1))) == Vector2i(8, 1), "Move drag did not map the finger position to the building footprint anchor.")
 	var moved_to := Vector2i(8, 1)
-	var moved_screen: Vector2 = active_move_camera.unproject_position(BuildManager.grid_to_world(moved_to))
+	var moved_footprint: Vector2i = home.definition.get("size", Vector2i(2, 2))
+	var moved_center_offset := Vector3((moved_footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (moved_footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
+	var moved_center_world: Vector3 = BuildManager.grid_to_world(moved_to) + moved_center_offset
+	_check(input_node._move_anchor_from_world(moved_center_world) == moved_to, "Move drag did not map the building centre to the footprint anchor.")
+	var moved_screen: Vector2 = active_move_camera.unproject_position(moved_center_world)
 	var touch_drag := InputEventScreenDrag.new()
 	touch_drag.index = 0
 	touch_drag.position = moved_screen
@@ -418,13 +424,14 @@ func _run_gameplay_test() -> void:
 	input_node._unhandled_input(mouse_down)
 	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
 	var mouse_motion := InputEventMouseMotion.new()
-	mouse_motion.position = move_input_screen
-	mouse_motion.relative = move_input_screen - moved_screen
+	var home_center_screen: Vector2 = active_move_camera.unproject_position(home_center_world)
+	mouse_motion.position = home_center_screen
+	mouse_motion.relative = home_center_screen - moved_screen
 	input_node._unhandled_input(mouse_motion)
 	var mouse_up := InputEventMouseButton.new()
 	mouse_up.button_index = MOUSE_BUTTON_LEFT
 	mouse_up.pressed = false
-	mouse_up.position = move_input_screen
+	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
 	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 21, "Move whitelist must include all 21 requested building types.")
