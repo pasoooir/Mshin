@@ -102,11 +102,6 @@ func load_game() -> bool:
 	EconomyManager.simoleons = 100000000
 	EconomyManager.golden_keys = int(economy_data.get("golden_keys", 5))
 	EconomyManager.sim_cash = int(economy_data.get("sim_cash", 0))
-	# One-time welcome grant for cities created before the starter-economy update.
-	if not bool(parsed.get("starter_grant_claimed", false)):
-		EconomyManager.simoleons += 20000
-		EconomyManager.golden_keys += 5
-		EconomyManager.sim_cash += 25
 
 	StorageManager.max_capacity = maxi(1, int(storage_data.get("max_capacity", 30)))
 	StorageManager.inventory = storage_data.get("inventory", {}).duplicate(true)
@@ -158,6 +153,11 @@ func load_game() -> bool:
 			return false
 
 	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
+	# One-time welcome grant for cities created before the starter-economy update.
+	if not bool(parsed.get("starter_grant_claimed", false)):
+		EconomyManager.simoleons += 20000
+		EconomyManager.golden_keys += 5
+		EconomyManager.sim_cash += 25
 	GameManager.level = maxi(1, int(game_data.get("level", 1)))
 	GameManager.experience = int(game_data.get("experience", 0))
 	GameManager.population = int(game_data.get("population", 0))
