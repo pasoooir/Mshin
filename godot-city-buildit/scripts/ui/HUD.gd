@@ -531,7 +531,7 @@ func _select_building_type(type_id: String) -> void:
 	var definition: Dictionary = BuildManager.building_types[type_id]
 	var required_level := int(definition.get("level", 1))
 	if GameManager.level < required_level:
-		status_label.text = "Unlocked at level %d." % required_level
+		status_label.text = "Unlocked at Level %d." % required_level
 		return
 	if definition.get("category", "") == "industrial" and BuildManager.factory_count >= LevelProgression.max_factories:
 		status_label.text = "Factory limit reached (%d). Upgrade your city to unlock more factory slots." % LevelProgression.max_factories
