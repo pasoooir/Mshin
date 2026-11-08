@@ -36,7 +36,8 @@ func save_game() -> bool:
 			"type": building.building_type,
 			"grid": [int(building.grid_pos.x), int(building.grid_pos.y)],
 			"stage": int(building.upgrade_stage),
-			"status": str(building.status)
+			"status": str(building.status),
+			"population": int(building.current_population)
 		})
 
 	var payload: Dictionary = {
@@ -151,6 +152,10 @@ func load_game() -> bool:
 			is_loading = false
 			load_completed.emit(false)
 			return false
+		var restored_building = BuildManager.building_at_cell(Vector2i(int(grid[0]), int(grid[1])))
+		if restored_building != null and str(restored_building.definition.get("category", "")) == "residential":
+			restored_building.current_population = clampi(int(saved_building.get("population", restored_building.current_population)), 0, HappinessManager._capacity_for_home(restored_building))
+			restored_building.set_meta("immigration_population_initialized", true)
 
 	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
 	# One-time welcome grant for cities created before the starter-economy update.
@@ -158,6 +163,12 @@ func load_game() -> bool:
 		EconomyManager.simoleons += 20000
 		EconomyManager.golden_keys += 5
 		EconomyManager.sim_cash += 25
+	StorageManager.storage_changed.emit()
+	StorageManager.capacity_changed.emit(StorageManager.max_capacity)
+	ServiceManager.recalculate_from_buildings()
+	# Reapply the saved city totals after services recalculate household coverage.
+	# Per-home residents are restored above, so future happiness refreshes preserve
+	# the same population instead of reinitializing households from scratch.
 	GameManager.level = maxi(1, int(game_data.get("level", 1)))
 	GameManager.experience = int(game_data.get("experience", 0))
 	GameManager.population = int(game_data.get("population", 0))
@@ -167,9 +178,6 @@ func load_game() -> bool:
 	GameManager.happiness_changed.emit(GameManager.happiness)
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
 	EconomyManager.keys_changed.emit(EconomyManager.golden_keys)
-	StorageManager.storage_changed.emit()
-	StorageManager.capacity_changed.emit(StorageManager.max_capacity)
-	ServiceManager.recalculate_from_buildings()
 	is_loading = false
 	load_completed.emit(true)
 	return true
