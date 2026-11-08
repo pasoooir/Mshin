@@ -143,6 +143,45 @@ for icon_name, relative_path in build_icon_paths.items():
     if "res://assets/icons/" + Path(relative_path).name not in atlas:
         errors.append(f"Build icon is not directly mapped to its local SVG: {icon_name}")
 
+# Road rendering must be neighbor-driven, connected, seamless and independent from gameplay rules.
+road_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")
+for road_contract in [
+    "func get_road_connections(", "func get_road_tile_kind(",
+    "TILE_END", "TILE_STRAIGHT", "TILE_CORNER", "TILE_T", "TILE_CROSS",
+    "func _refresh_road_neighborhood(", "func _refresh_road_mesh(",
+    "func _create_road_mesh(", "SurfaceTool.new()", "ArrayMesh.new()",
+    "func _create_asphalt_textures(", "normal_enabled = true",
+    "texture_repeat = BaseMaterial3D.TEXTURE_REPEAT_ENABLED",
+    "ROAD_TEXTURE_WORLD_SCALE", "func _add_road_markings(",
+    "func _add_crosswalk(", "func _get_sidewalk_material(",
+    "func _get_curb_material(", "road_placed.emit(grid_pos)",
+    "road_removed.emit(grid_pos)", "EconomyManager.spend_simoleons(ROAD_COST)",
+    "func get_road_placement_error("
+]:
+    if road_contract not in road_source:
+        errors.append(f"Road visual/gameplay contract is missing: {road_contract}")
+if "BoxMesh.new()" in road_source or "line_mesh" in road_source:
+    errors.append("Road tiles must use the combined neighbor-driven mesh, not isolated BoxMesh strips")
+if "func _refresh_road_neighborhood" in road_source:
+    refresh_body = re.search(r"func _refresh_road_neighborhood\(.*?(?=\nfunc |\Z)", road_source, re.S)
+    if refresh_body is None or "CARDINAL_DIRECTIONS" not in refresh_body.group(0):
+        errors.append("Placing/removing a road must refresh all four neighboring road meshes")
+if "func _create_asphalt_textures" in road_source:
+    asphalt_body = re.search(r"func _create_asphalt_textures\(.*?(?=\nfunc |\Z)", road_source, re.S)
+    if asphalt_body is None or "normal_image" not in asphalt_body.group(0) or "fine_grain" not in asphalt_body.group(0):
+        errors.append("Asphalt must include natural grain variation and a generated normal map")
+gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
+for road_test in [
+    "three-neighbor starter-road tile", "must be an End/stub",
+    "must produce a Straight tile", "must produce a T-junction",
+    "must produce a Cross intersection", "refresh the center to Corner",
+    "mesh was not refreshed after deleting the connecting road",
+    "Road placement must retain the existing 50-Simoleon cost"
+]:
+    if road_test not in gameplay_smoke:
+        errors.append(f"Road auto-tiling regression test is missing: {road_test}")
+
+
 if errors:
     print("VALIDATION FAILED")
     for error in errors:
