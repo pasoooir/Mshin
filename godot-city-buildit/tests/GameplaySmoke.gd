@@ -36,26 +36,37 @@ func _test_road_painting_drag(road_system) -> void:
 
 func _test_drag_gestures_do_not_place() -> void:
 	var input_node = get_node("CityInput")
-	var initial_count: int = BuildManager.buildings.size()
+	var active_camera: Camera3D = get_viewport().get_camera_3d()
 	BuildManager.select_building("residential_1")
 
+	# A one-finger drag is the building drag-and-drop gesture. Releasing over a
+	# valid green plot must commit exactly one building at that final grid cell.
+	var target_grid := Vector2i(-2, 1)
+	var target_screen: Vector2 = active_camera.unproject_position(BuildManager.grid_to_world(target_grid))
 	var down := InputEventScreenTouch.new()
 	down.index = 0
 	down.pressed = true
-	down.position = Vector2(480, 300)
+	down.position = target_screen + Vector2(-48, 0)
 	input_node._unhandled_input(down)
 	var drag := InputEventScreenDrag.new()
 	drag.index = 0
-	drag.position = Vector2(540, 300)
-	drag.relative = Vector2(60, 0)
+	drag.position = target_screen
+	drag.relative = Vector2(48, 0)
 	input_node._unhandled_input(drag)
 	var up := InputEventScreenTouch.new()
 	up.index = 0
 	up.pressed = false
-	up.position = Vector2(540, 300)
+	up.position = target_screen
 	input_node._unhandled_input(up)
-	_check(BuildManager.buildings.size() == initial_count, "Single-finger drag triggered an unintended placement.")
+	var placed = BuildManager.building_at_cell(target_grid)
+	_check(placed != null and placed.building_type == "residential_1",
+		"Dragging a building ghost to a valid plot and releasing did not place it.")
+	if placed != null:
+		BuildManager.unregister_building(placed.building_id)
+		placed.queue_free()
 
+	# A two-finger gesture must remain camera navigation and never place.
+	var initial_count: int = BuildManager.buildings.size()
 	var first_down := InputEventScreenTouch.new()
 	first_down.index = 0
 	first_down.pressed = true
