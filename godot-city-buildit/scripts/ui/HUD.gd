@@ -286,20 +286,26 @@ func _build_toolbars() -> void:
 	toolbar_scroll.anchor_right = 1.0
 	toolbar_scroll.anchor_top = 0.0
 	toolbar_scroll.anchor_bottom = 1.0
-	toolbar_scroll.offset_left = -128
+	# Reserve room for the top currency HUD and bottom action bar, while making
+	# the entire construction rail vertically scrollable on short landscape screens.
+	toolbar_scroll.offset_left = -152
 	toolbar_scroll.offset_right = -8
 	var viewport_size := get_viewport().get_visible_rect().size
 	var header_clearance := maxf(164.0, 238.0 * _ui_scale)
+	var bottom_clearance := 116.0
 	toolbar_scroll.offset_top = header_clearance
-	toolbar_scroll.offset_bottom = -116.0
-	toolbar_scroll.custom_minimum_size = Vector2(120, maxf(72.0, viewport_size.y - header_clearance - 116.0))
+	toolbar_scroll.offset_bottom = -bottom_clearance
+	toolbar_scroll.custom_minimum_size = Vector2(144, maxf(72.0, viewport_size.y - header_clearance - bottom_clearance))
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+	toolbar_scroll.scroll_deadzone = 12
+	toolbar_scroll.follow_focus = true
 	toolbar_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	toolbar_scroll.z_index = 30
 	add_child(toolbar_scroll)
 	var toolbar := VBoxContainer.new()
 	toolbar.name = "RightToolbarItems"
+	toolbar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	toolbar.add_theme_constant_override("separation", 6)
 	toolbar_scroll.add_child(toolbar)
 
