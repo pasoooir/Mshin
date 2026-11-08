@@ -15,7 +15,7 @@ class BanknoteGlyph extends Control:
 
 @onready var status_label: Label = $StatusLabel
 
-var submenu: HBoxContainer
+var submenu: GridContainer
 var active_category := ""
 var level_label: Label
 var population_label: Label
@@ -50,7 +50,7 @@ func _ready() -> void:
 	_build_top_hud()
 	_build_toolbars()
 	_update_all()
-	status_label.text = "Build a road, then place a house and factory beside it."
+	status_label.text = "Tap Build, choose Residential, then place your first house beside a road."
 
 func _build_top_hud() -> void:
 	# Hide scene-authored legacy counters; build the reference's two-corner layout.
@@ -302,39 +302,55 @@ func _build_toolbars() -> void:
 	var old_toolbar := get_node_or_null("LeftToolbar")
 	if old_toolbar:
 		old_toolbar.queue_free()
-	# The category rail must start BELOW the tallest top-HUD currency stack.
-	# Give it an explicit full-height right anchor so it cannot collapse to a
-	# zero/negative height on landscape viewports.
-	var toolbar_scroll := ScrollContainer.new()
-	toolbar_scroll.name = "RightToolbar"
-	toolbar_scroll.anchor_left = 1.0
-	toolbar_scroll.anchor_right = 1.0
-	toolbar_scroll.anchor_top = 0.0
-	toolbar_scroll.anchor_bottom = 1.0
-	# Reserve room for the top currency HUD and bottom action bar, while making
-	# the entire construction rail vertically scrollable on short landscape screens.
-	toolbar_scroll.offset_left = -152
-	toolbar_scroll.offset_right = -8
-	var viewport_size := get_viewport().get_visible_rect().size
-	var header_clearance := maxf(164.0, 238.0 * _ui_scale)
-	var bottom_clearance := 116.0
-	toolbar_scroll.offset_top = header_clearance
-	toolbar_scroll.offset_bottom = -bottom_clearance
-	toolbar_scroll.custom_minimum_size = Vector2(144, maxf(72.0, viewport_size.y - header_clearance - bottom_clearance))
-	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
-	toolbar_scroll.scroll_deadzone = 12
-	toolbar_scroll.follow_focus = true
-	toolbar_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
-	toolbar_scroll.z_index = 30
-	add_child(toolbar_scroll)
-	var toolbar := VBoxContainer.new()
-	toolbar.name = "RightToolbarItems"
-	toolbar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	toolbar.add_theme_constant_override("separation", 6)
-	toolbar_scroll.add_child(toolbar)
 
-	# Keep this order stable: primary construction tools first, destructive action last.
+	# Compact two-column category dock replaces the narrow, permanently visible
+	# vertical ScrollContainer. Every category is reachable without long scrolling.
+	var viewport_size := get_viewport().get_visible_rect().size
+	var category_size := clampf(viewport_size.y * 0.17, 58.0, 76.0)
+	var panel_height := category_size * 4.0 + 8.0 * 3.0 + 24.0
+
+	var toolbar := PanelContainer.new()
+	toolbar.name = "RightToolbar"
+	toolbar.anchor_left = 1.0
+	toolbar.anchor_right = 1.0
+	toolbar.anchor_top = 0.5
+	toolbar.anchor_bottom = 0.5
+	toolbar.offset_left = -(category_size * 2.0 + 8.0 + 24.0) - 86.0
+	toolbar.offset_right = -86.0
+	toolbar.offset_top = -panel_height * 0.5
+	toolbar.offset_bottom = panel_height * 0.5
+	toolbar.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.90), Color(0.65, 0.82, 0.92, 0.34)))
+	toolbar.mouse_filter = Control.MOUSE_FILTER_STOP
+	toolbar.z_index = 30
+	add_child(toolbar)
+	toolbar.hide()
+
+	# A persistent build button opens the category grid on demand. This avoids
+	# covering the currency HUD or shrinking the play area on short landscape screens.
+	var build_toggle := _make_icon_button("hard_hat", "Build", Vector2(68, 68))
+	build_toggle.name = "BuildMenuButton"
+	build_toggle.anchor_left = 1.0
+	build_toggle.anchor_right = 1.0
+	build_toggle.anchor_top = 0.5
+	build_toggle.anchor_bottom = 0.5
+	build_toggle.offset_left = -76.0
+	build_toggle.offset_right = -8.0
+	build_toggle.offset_top = -34.0
+	build_toggle.offset_bottom = 34.0
+	build_toggle.z_index = 31
+	add_child(build_toggle)
+	build_toggle.pressed.connect(_toggle_category_menu)
+
+	var toolbar_items := GridContainer.new()
+	toolbar_items.name = "RightToolbarItems"
+	toolbar_items.columns = 2
+	toolbar_items.add_theme_constant_override("h_separation", 8)
+	toolbar_items.add_theme_constant_override("v_separation", 8)
+	toolbar_items.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	toolbar_items.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	toolbar.add_child(toolbar_items)
+
+	# Main city navigation stays icon-first; labels are available as tooltips.
 	var tools := [
 		["road", "Road", "road"],
 		["residential", "Residential", "residential"],
@@ -345,9 +361,9 @@ func _build_toolbars() -> void:
 		["bulldoze", "Bulldozer", "bulldoze"]
 	]
 	for item in tools:
-		var button := _make_icon_button(item[2], item[1])
+		var button := _make_icon_button(item[2], item[1], Vector2(category_size, category_size))
 		button.name = "Tool_" + str(item[0]).capitalize()
-		toolbar.add_child(button)
+		toolbar_items.add_child(button)
 		button.pressed.connect(_on_category_pressed.bind(item[0]))
 
 	var actions := HBoxContainer.new()
@@ -369,21 +385,23 @@ func _build_toolbars() -> void:
 			"save": button.pressed.connect(_on_save_pressed)
 			"cancel": button.pressed.connect(_on_cancel_pressed)
 
-	submenu = HBoxContainer.new()
+	submenu = GridContainer.new()
 	submenu.name = "ToolSubmenu"
 	submenu.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	submenu.offset_left = 12
-	submenu.offset_top = -208
+	submenu.offset_top = -252
 	submenu.offset_right = -12
-	submenu.offset_bottom = -104
-	submenu.alignment = BoxContainer.ALIGNMENT_CENTER
-	submenu.add_theme_constant_override("separation", 8)
+	submenu.offset_bottom = -112
+	submenu.columns = 2 if viewport_size.x < 900.0 else 5
+	submenu.add_theme_constant_override("h_separation", 8)
+	submenu.add_theme_constant_override("v_separation", 8)
 	add_child(submenu)
 	submenu.hide()
 
-func _make_icon_button(kind: String, hint: String) -> Button:
+func _make_icon_button(kind: String, hint: String, requested_size: Vector2 = Vector2.ZERO) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(112, 112) * _ui_scale
+	var button_size := requested_size if requested_size != Vector2.ZERO else Vector2(112, 112) * _ui_scale
+	button.custom_minimum_size = button_size
 	button.tooltip_text = hint
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
@@ -391,7 +409,7 @@ func _make_icon_button(kind: String, hint: String) -> Button:
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, Vector2(100, 100) * _ui_scale)
+	var icon := IconAtlas.make_icon(kind, button_size - Vector2(12, 12))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
@@ -423,9 +441,19 @@ func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
 	style.content_margin_bottom = 2
 	return style
 
+func _toggle_category_menu() -> void:
+	var toolbar := get_node_or_null("RightToolbar")
+	if toolbar:
+		toolbar.visible = not toolbar.visible
+	if submenu and submenu.visible:
+		submenu.hide()
+		active_category = ""
+
 func _on_category_pressed(category: String) -> void:
 	if category == "park":
 		_select_building_type("park_small")
+		var park_toolbar := get_node_or_null("RightToolbar")
+		if park_toolbar: park_toolbar.hide()
 		return
 	if category == "bulldoze":
 		_start_bulldoze_mode()
@@ -435,6 +463,8 @@ func _on_category_pressed(category: String) -> void:
 		return
 	active_category = category
 	_show_submenu(category)
+	var category_toolbar := get_node_or_null("RightToolbar")
+	if category_toolbar: category_toolbar.hide()
 
 func _show_submenu(category: String) -> void:
 	for child in submenu.get_children():
@@ -453,6 +483,19 @@ func _show_submenu(category: String) -> void:
 			options = [["industrial_1", "کارخانه کوچک · Metal", 1], ["industrial_2", "کارخانه چوب · Wood", 2]]
 		"services":
 			options = [["power_wind", "برق بادی", 1], ["water_tower", "مخزن آب", 1], ["fire_station", "آتش‌نشانی", 5]]
+
+	var viewport_size := get_viewport().get_visible_rect().size
+	var columns := 2 if viewport_size.x < 900.0 else mini(options.size() + 1, 5)
+	var item_height := clampf(viewport_size.y * 0.16, 54.0, 78.0)
+	var rows := ceili(float(options.size() + 1) / float(columns))
+	var panel_height := float(rows) * item_height + float(rows - 1) * 8.0 + 16.0
+	submenu.columns = columns
+	submenu.offset_left = 12
+	submenu.offset_right = -12
+	submenu.offset_top = -panel_height - 112.0
+	submenu.offset_bottom = -112.0
+
+	var item_width := maxf(120.0, (viewport_size.x - 24.0 - 8.0 * float(columns - 1)) / float(columns))
 	for option in options:
 		var type_id: String = option[0]
 		var title: String = option[1]
@@ -460,7 +503,7 @@ func _show_submenu(category: String) -> void:
 		var choice := Button.new()
 		choice.name = type_id
 		choice.text = title
-		choice.custom_minimum_size = Vector2(172, 78) * _ui_scale
+		choice.custom_minimum_size = Vector2(item_width, item_height)
 		choice.focus_mode = Control.FOCUS_NONE
 		choice.tooltip_text = title + (" — Unlocked at level %d" % required_level if GameManager.level < required_level else "")
 		choice.add_theme_font_size_override("font_size", int(17 * _ui_scale))
@@ -476,7 +519,7 @@ func _show_submenu(category: String) -> void:
 	var close_button := Button.new()
 	close_button.name = "CloseSubmenu"
 	close_button.text = "✕"
-	close_button.custom_minimum_size = Vector2(54, 78) * _ui_scale
+	close_button.custom_minimum_size = Vector2(item_width, item_height)
 	close_button.focus_mode = Control.FOCUS_NONE
 	close_button.tooltip_text = "Close menu"
 	close_button.add_theme_font_size_override("font_size", int(26 * _ui_scale))
@@ -526,6 +569,8 @@ func _start_bulldoze_mode() -> void:
 		city_input.set_bulldoze_mode(true)
 	if submenu:
 		submenu.hide()
+	var category_toolbar := get_node_or_null("RightToolbar")
+	if category_toolbar: category_toolbar.hide()
 	active_category = ""
 	status_label.text = "Bulldozer active — tap a road to remove it, or tap a building twice to confirm demolition. Press X to exit."
 
@@ -566,6 +611,9 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 	active_category = ""
 	if cancel_placement:
 		BuildManager.cancel_placement()
+	if not BuildManager.is_placing:
+		var category_toolbar := get_node_or_null("RightToolbar")
+		if category_toolbar: category_toolbar.show()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not submenu or not submenu.visible:
@@ -686,6 +734,8 @@ func _on_cancel_pressed() -> void:
 	BuildManager.cancel_placement()
 	if submenu:
 		submenu.hide()
+	var category_toolbar := get_node_or_null("RightToolbar")
+	if category_toolbar: category_toolbar.show()
 	active_category = ""
 	status_label.text = "Cancelled."
 
