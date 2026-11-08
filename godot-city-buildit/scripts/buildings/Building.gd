@@ -144,7 +144,7 @@ func _create_visual() -> void:
 			_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
-	# رنگ‌های طبیعی؛ رنگ تعریف ساختمان فقط برای تنوع ملایم وارد می‌شود.
+	# Natural facade colors use the building definition only for subtle variation.
 	var plaster := Color(0.86, 0.78, 0.68)
 	var plaster_shadow := Color(0.72, 0.64, 0.54)
 	var plaster_light := Color(0.92, 0.86, 0.76)
