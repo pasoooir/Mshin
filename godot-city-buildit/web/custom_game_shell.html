@@ -52,16 +52,22 @@
       const notice = document.getElementById('status-notice');
       let initializing = true;
 
-      // Fullscreen and orientation locking require a browser-approved user gesture.
+      // Direct game URLs have no Play launcher, so the first real touch/click
+      // is used to request fullscreen and landscape. Browser restrictions are non-fatal.
+      let immersiveRequested = false;
       async function enterImmersiveLandscape() {
+        if (immersiveRequested) return;
+        immersiveRequested = true;
         try {
           if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
             await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
           }
-        } catch (_) { /* Retry is intentionally non-blocking on restricted browsers. */ }
+        } catch (_) { /* Continue in the browser's normal display mode. */ }
         try {
-          if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
-        } catch (_) { /* iOS and some browsers do not support the Orientation API. */ }
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+          }
+        } catch (_) { /* iOS Safari and restricted browsers may reject orientation lock. */ }
       }
       document.addEventListener('pointerdown', enterImmersiveLandscape, { once: true, passive: true });
       document.addEventListener('touchend', enterImmersiveLandscape, { once: true, passive: true });
