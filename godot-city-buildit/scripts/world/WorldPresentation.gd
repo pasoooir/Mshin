@@ -349,7 +349,7 @@ func _create_tree_shadow_multimesh(positions: Array[Vector3]) -> MultiMeshInstan
 	multimesh.instance_count = positions.size()
 	for index in range(positions.size()):
 		var scale := 0.82 + float((index * 7) % 5) * 0.09
-		var basis := Basis(Vector3.RIGHT, deg_to_rad(-90.0)).scaled(Vector3(scale, scale, scale))
+		var basis := Basis.IDENTITY.scaled(Vector3(scale, scale, scale))
 		multimesh.set_instance_transform(index, Transform3D(basis, positions[index] + Vector3(0.0, 0.018, 0.0)))
 	var shadows := MultiMeshInstance3D.new()
 	shadows.name = "TreeContactShadows"
