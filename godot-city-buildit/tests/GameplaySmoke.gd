@@ -34,7 +34,7 @@ func _test_road_painting_drag(road_system) -> void:
 		_check(road_system.has_road(Vector2i(x, 0)), "Road drag skipped connected grid tile %d." % x)
 	_check(road_system.get_road_placement_error(Vector2i(20, 20)) != "", "Disconnected road placement should explain why it is blocked.")
 
-func _simulate_building_drag(input_node: Node, active_camera: Camera3D, type_id: String, target_grid: Vector2i) -> void:
+func _simulate_building_drag(input_node, active_camera: Camera3D, type_id: String, target_grid: Vector2i) -> void:
 	BuildManager.select_building(type_id)
 	var target_screen: Vector2 = active_camera.unproject_position(BuildManager.grid_to_world(target_grid))
 	var down := InputEventScreenTouch.new()
