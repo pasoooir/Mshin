@@ -24,6 +24,7 @@ var current_population: int = 0
 var upgrade_ready: bool = false
 var demolition_highlight_active: bool = false
 var _demolition_highlight_root: Node3D
+static var _shared_surface_texture: Texture2D
 
 @onready var mesh_root: Node3D = $MeshRoot
 @onready var scaffold_root: Node3D = $ScaffoldRoot
@@ -62,6 +63,9 @@ func setup(data: Dictionary) -> void:
 		_create_visual()
 		_create_scaffold()
 	_update_stage_label()
+	if stage_label:
+		stage_label.visible = false
+		stage_label.text = ""
 	if name_label:
 		name_label.text = definition.get("name", "")
 	if status == "constructing":
@@ -136,10 +140,10 @@ func _create_visual() -> void:
 				height = maxf(1.65, height - 0.45)
 			_build_residential(w, d, height, color)
 		"commercial":
-			height = 2.0
+			height = 2.25 + float(clampi(upgrade_stage - 1, 0, 4)) * 0.34
 			_build_commercial(w, d, height, color)
 		"industrial":
-			height = 2.6
+			height = 2.35 + float(clampi(upgrade_stage - 1, 0, 4)) * 0.42
 			_build_industrial(w, d, height, color)
 		"service":
 			height = 2.2
@@ -239,6 +243,10 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 		_add_box(Vector3(w * 0.91, 0.12, d * 0.87), Vector3(0, body_h + 0.56, 0), plaster_light)
 		_add_box(Vector3(w * 0.88, 0.18, 0.12), Vector3(0, body_h + 0.70, d * 0.40), stone_cap)
 		_add_box(Vector3(w * 0.88, 0.18, 0.12), Vector3(0, body_h + 0.70, -d * 0.40), stone_cap)
+	elif is_farm:
+		# Low rural lean-to roof and timber fascia; intentionally unlike a villa roof.
+		_add_box(Vector3(w * 1.04, 0.16, d * 1.00), Vector3(0, body_h + 0.43, 0), roof_edge)
+		_add_box(Vector3(w * 0.96, 0.12, d * 0.88), Vector3(0, body_h + 0.56, 0), Color(0.49, 0.40, 0.27))
 	else:
 		# Eaves project beyond the walls; layered fascia gives the roof a finished edge.
 		_add_gabled_roof(w * 1.04, d * 1.02, body_h + 0.34, 0.62, roof_tile, roof_edge)
@@ -339,71 +347,111 @@ func _add_window(pos: Vector3, frame_col: Color, glass_col: Color, has_shutters:
 					pos + Vector3(x_sign * window_w * 0.48, 0, 0.055), shutter_col)
 
 func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
-	# Retail buildings use a warm masonry base, glazed shopfront and a clear sign band.
-	var wall := Color(0.78, 0.68, 0.53).lerp(color, 0.28)
-	var trim := Color(0.90, 0.82, 0.66)
-	var glass := Color(0.20, 0.39, 0.49)
-	var sign := Color(0.78, 0.30, 0.16)
-	var stone := Color(0.42, 0.39, 0.34)
-	_add_box(Vector3(w * 0.96, 0.26, d * 0.96), Vector3(0, 0.14, 0), stone)
-	_add_box(Vector3(w * 0.90, height, d * 0.88), Vector3(0, height * 0.5 + 0.28, 0), wall)
-	_add_box(Vector3(w * 0.94, 0.12, d * 0.92), Vector3(0, height + 0.34, 0), trim)
-	# Broad shop windows with mullions, a recessed entrance and a projecting canopy.
-	var shop_w := w * 0.68
-	_add_box(Vector3(shop_w, height * 0.48, 0.065), Vector3(-w * 0.06, height * 0.43, d * 0.455), glass)
-	for mullion in range(4):
-		var x := -w * 0.06 - shop_w * 0.5 + float(mullion) * shop_w / 3.0
-		_add_box(Vector3(0.055, height * 0.50, 0.10), Vector3(x, height * 0.43, d * 0.49), trim)
-	_add_box(Vector3(0.42, 0.96, 0.08), Vector3(w * 0.34, 0.73, d * 0.46), stone)
-	_add_box(Vector3(0.34, 0.82, 0.045), Vector3(w * 0.34, 0.73, d * 0.50), glass)
-	_add_box(Vector3(w * 0.84, 0.20, 0.38), Vector3(0, height * 0.82, d * 0.48), sign)
-	_add_box(Vector3(w * 0.90, 0.10, 0.46), Vector3(0, height * 0.82 + 0.15, d * 0.46), trim)
-	_add_box(Vector3(w * 0.92, 0.12, 0.18), Vector3(0, 0.36, d * 0.50), stone)
-	# Upper facade gets smaller windows and pilasters instead of a blank cube.
-	if height > 2.2:
-		for column in range(3):
-			var upper_x := -w * 0.28 + float(column) * w * 0.28
-			_add_natural_window(Vector3(upper_x, height * 0.82, d * 0.445), trim, glass)
-			_add_box(Vector3(0.07, height * 0.88, 0.08), Vector3(upper_x - 0.32, height * 0.5 + 0.28, d * 0.44), trim.darkened(0.12))
-	_add_box(Vector3(w * 0.98, 0.10, d * 0.96), Vector3(0, height + 0.48, 0), stone)
-
+	# Retail architecture: glazed shopfront at street level, sign fascia, canopy,
+	# and progressively richer upper facade. Restaurant subtypes get a deeper canopy.
+	var stage := clampi(upgrade_stage, 1, 6)
+	var subtype := str(definition.get("subtype", building_type))
+	var is_food := subtype.contains("restaurant") or subtype.contains("fast_food") or building_type.contains("fast_food")
+	var wall := Color(0.73, 0.59, 0.43).lerp(color, 0.20)
+	var wall_shadow := wall.darkened(0.19)
+	var wall_light := wall.lightened(0.16)
+	var trim := Color(0.88, 0.78, 0.61)
+	var trim_shadow := Color(0.57, 0.43, 0.30)
+	var glass := Color(0.18, 0.37, 0.46)
+	var glass_glint := Color(0.43, 0.62, 0.67)
+	var sign := Color(0.67, 0.25, 0.15) if is_food else Color(0.29, 0.39, 0.43)
+	var sign_edge := sign.lightened(0.22)
+	var stone := Color(0.40, 0.37, 0.32)
+	var roof := Color(0.31, 0.29, 0.26)
+	var floors := 1 if stage < 3 else (2 if stage < 5 else 3)
+	var body_h := height if floors == 1 else maxf(height, 2.0 + float(floors - 1) * 1.25)
+	_add_box(Vector3(w * 1.02, 0.30, d * 1.02), Vector3(0, 0.15, 0), stone)
+	_add_box(Vector3(w * 0.94, 0.10, d * 0.94), Vector3(0, 0.34, 0), trim_shadow)
+	_add_box(Vector3(w * 0.90, body_h, d * 0.88), Vector3(0, body_h * 0.5 + 0.38, 0), wall)
+	_add_box(Vector3(w * 0.91, body_h * 0.42, 0.045), Vector3(0, body_h * 0.22 + 0.39, d * 0.447), wall_shadow)
+	_add_box(Vector3(w * 0.94, 0.10, d * 0.92), Vector3(0, body_h + 0.42, 0), trim)
+	var shop_w := w * (0.70 if stage < 5 else 0.76)
+	var shop_h := minf(1.18, body_h * 0.54)
+	_add_box(Vector3(shop_w + 0.16, shop_h + 0.16, 0.09), Vector3(-w * 0.055, shop_h * 0.5 + 0.40, d * 0.455), trim_shadow)
+	_add_box(Vector3(shop_w, shop_h, 0.055), Vector3(-w * 0.055, shop_h * 0.5 + 0.40, d * 0.49), glass)
+	for mullion in range(5 if stage >= 3 else 4):
+		var x := -w * 0.055 - shop_w * 0.5 + float(mullion) * shop_w / float((5 if stage >= 3 else 4) - 1)
+		_add_box(Vector3(0.055, shop_h + 0.04, 0.10), Vector3(x, shop_h * 0.5 + 0.40, d * 0.515), trim)
+	_add_box(Vector3(shop_w * 0.32, shop_h * 0.74, 0.06), Vector3(-w * 0.055, shop_h * 0.58 + 0.40, d * 0.53), glass_glint)
+	var door_w := 0.40
+	_add_box(Vector3(door_w + 0.12, 1.02, 0.09), Vector3(w * 0.35, 0.90, d * 0.455), trim_shadow)
+	_add_box(Vector3(door_w, 0.92, 0.055), Vector3(w * 0.35, 0.90, d * 0.50), glass)
+	_add_box(Vector3(w * 0.88, 0.19 if is_food else 0.15, 0.40), Vector3(0, body_h * 0.76, d * 0.51), sign)
+	_add_box(Vector3(w * 0.92, 0.065, 0.44), Vector3(0, body_h * 0.76 + 0.13, d * 0.49), sign_edge)
+	_add_box(Vector3(w * (0.98 if is_food else 0.90), 0.10, 0.68 if is_food else 0.48), Vector3(0, 1.72, d * 0.57), sign if is_food else trim_shadow)
+	_add_box(Vector3(w * 0.96, 0.07, 0.10), Vector3(0, 1.65, d * 0.83), trim)
+	if floors >= 2:
+		for floor in range(1, floors):
+			var fy := 0.38 + float(floor) * body_h / float(floors)
+			_add_box(Vector3(w * 0.94, 0.10, d * 0.91), Vector3(0, fy, 0), trim_shadow)
+			for column in range(3 if stage < 5 else 4):
+				var x := -w * 0.30 + float(column) * w * 0.60 / float((3 if stage < 5 else 4) - 1)
+				_add_natural_window(Vector3(x, fy + 0.52, d * 0.447), trim, glass)
+				_add_box(Vector3(0.06, body_h / float(floors) * 0.82, 0.07), Vector3(x - 0.30, fy + 0.50, d * 0.44), wall_light)
+	if stage >= 5:
+		for side in [-1.0, 1.0]:
+			_add_box(Vector3(0.14, body_h + 0.18, 0.14), Vector3(side * w * 0.43, body_h * 0.5 + 0.39, d * 0.44), trim)
+		_add_box(Vector3(w * 0.98, 0.16, d * 0.94), Vector3(0, body_h + 0.52, 0), roof)
+	else:
+		_add_box(Vector3(w * 0.98, 0.12, d * 0.94), Vector3(0, body_h + 0.49, 0), roof)
 
 func _build_industrial(w: float, d: float, height: float, color: Color) -> void:
-	# Industrial massing is a ribbed metal shed with a loading bay, clerestory and exhaust.
-	var wall := Color(0.57, 0.59, 0.57).lerp(color, 0.24)
-	var metal := Color(0.34, 0.39, 0.42)
-	var light_metal := Color(0.72, 0.74, 0.70)
-	var glass := Color(0.22, 0.39, 0.46)
-	var safety := Color(0.88, 0.52, 0.16)
-	_add_box(Vector3(w * 0.98, 0.28, d * 0.98), Vector3(0, 0.14, 0), metal)
-	_add_box(Vector3(w * 0.92, height, d * 0.90), Vector3(0, height * 0.5 + 0.28, 0), wall)
-	# Vertical cladding ribs create industrial scale and surface rhythm.
-	var rib_count := maxi(4, int(w / 0.55))
+	# Industrial silhouette deliberately avoids retail glazing: ribbed cladding,
+	# a large shutter, raised loading dock, clerestory, exhaust and roof machinery.
+	var stage := clampi(upgrade_stage, 1, 6)
+	var wall := Color(0.48, 0.53, 0.53).lerp(color, 0.18)
+	var wall_shadow := wall.darkened(0.24)
+	var wall_light := wall.lightened(0.16)
+	var metal := Color(0.27, 0.33, 0.36)
+	var metal_mid := Color(0.43, 0.49, 0.50)
+	var metal_light := Color(0.69, 0.72, 0.69)
+	var glass := Color(0.16, 0.31, 0.38)
+	var safety := Color(0.83, 0.47, 0.16)
+	var concrete := Color(0.43, 0.43, 0.40)
+	var body_h := height
+	var mass_scale := 0.90 + float(stage - 1) * 0.025
+	_add_box(Vector3(w * 1.02, 0.34, d * 1.02), Vector3(0, 0.17, 0), concrete)
+	_add_box(Vector3(w * 0.94, 0.09, d * 0.94), Vector3(0, 0.37, 0), metal_light.darkened(0.20))
+	_add_box(Vector3(w * mass_scale, body_h, d * 0.90), Vector3(0, body_h * 0.5 + 0.40, 0), wall)
+	_add_box(Vector3(w * mass_scale, body_h * 0.20, 0.055), Vector3(0, body_h * 0.12 + 0.41, d * 0.455), wall_shadow)
+	var rib_count := maxi(5, int(w / (0.58 if stage < 3 else 0.42)))
 	for rib in range(rib_count):
-		var x := -w * 0.42 + float(rib) * (w * 0.84 / float(maxi(rib_count - 1, 1)))
-		_add_box(Vector3(0.045, height * 0.94, 0.055), Vector3(x, height * 0.5 + 0.30, d * 0.456), light_metal.darkened(0.12))
-	# Loading shutter, safety frame and raised dock.
-	_add_box(Vector3(w * 0.34, height * 0.55, 0.09), Vector3(-w * 0.22, height * 0.38, d * 0.47), metal)
-	_add_box(Vector3(w * 0.29, height * 0.48, 0.045), Vector3(-w * 0.22, height * 0.38, d * 0.52), light_metal.darkened(0.25))
-	for stripe in range(5):
-		_add_box(Vector3(w * 0.28, 0.035, 0.025),
-			Vector3(-w * 0.22, height * 0.17 + float(stripe) * height * 0.10, d * 0.55), light_metal)
-	_add_box(Vector3(w * 0.40, 0.18, 0.44), Vector3(-w * 0.22, 0.38, d * 0.60), safety)
-	# Staff entrance and high clerestory windows.
-	_add_box(Vector3(0.48, 1.02, 0.08), Vector3(w * 0.31, 0.78, d * 0.46), metal)
-	_add_box(Vector3(0.36, 0.88, 0.045), Vector3(w * 0.31, 0.78, d * 0.505), glass)
-	for bay in range(4):
-		_add_box(Vector3(w * 0.15, 0.30, 0.07),
-			Vector3(-w * 0.30 + float(bay) * w * 0.20, height * 0.83, d * 0.46), glass)
-	# Low pitched industrial roof, overhanging eaves and separate exhaust stack.
-	_add_box_rotated(Vector3(w * 0.52, 0.16, d * 0.98),
-		Vector3(-w * 0.23, height + 0.34, 0), light_metal, Vector3(0, 0, deg_to_rad(-8.0)))
-	_add_box_rotated(Vector3(w * 0.52, 0.16, d * 0.98),
-		Vector3(w * 0.23, height + 0.34, 0), light_metal, Vector3(0, 0, deg_to_rad(8.0)))
-	_add_box(Vector3(w * 1.02, 0.10, 0.14), Vector3(0, height + 0.38, d * 0.48), metal)
-	_add_cylinder(0.16, 0.22, 1.7, Vector3(w * 0.30, height + 1.05, -d * 0.28), metal)
-	_add_box(Vector3(0.48, 0.12, 0.48), Vector3(w * 0.30, height + 1.94, -d * 0.28), safety)
-
+		var x := -w * 0.43 + float(rib) * (w * 0.86 / float(maxi(rib_count - 1, 1)))
+		_add_box(Vector3(0.055, body_h * 0.94, 0.075), Vector3(x, body_h * 0.5 + 0.41, d * 0.465), metal_light.darkened(0.14))
+		_add_box(Vector3(0.018, body_h * 0.90, 0.025), Vector3(x + 0.035, body_h * 0.5 + 0.41, d * 0.508), wall_light)
+	var shutter_w := w * (0.38 if stage < 5 else 0.44)
+	var shutter_h := body_h * 0.62
+	_add_box(Vector3(shutter_w + 0.18, shutter_h + 0.18, 0.11), Vector3(-w * 0.20, shutter_h * 0.5 + 0.40, d * 0.46), safety.darkened(0.24))
+	_add_box(Vector3(shutter_w, shutter_h, 0.07), Vector3(-w * 0.20, shutter_h * 0.5 + 0.40, d * 0.51), metal)
+	for stripe in range(7):
+		_add_box(Vector3(shutter_w * 0.92, 0.035, 0.035), Vector3(-w * 0.20, 0.40 + float(stripe) * shutter_h / 7.0, d * 0.555), metal_light.darkened(0.12))
+	_add_box(Vector3(shutter_w * 1.16, 0.22, 0.62), Vector3(-w * 0.20, 0.40, d * 0.65), concrete)
+	_add_box(Vector3(shutter_w * 1.12, 0.10, 0.16), Vector3(-w * 0.20, 0.54, d * 0.68), safety)
+	_add_box(Vector3(0.52, 1.08, 0.10), Vector3(w * 0.32, 0.92, d * 0.46), metal)
+	_add_box(Vector3(0.38, 0.90, 0.06), Vector3(w * 0.32, 0.92, d * 0.51), glass)
+	var clerestory_count := 4 if stage < 3 else 6
+	for bay in range(clerestory_count):
+		var x := -w * 0.34 + float(bay) * w * 0.68 / float(clerestory_count - 1)
+		_add_box(Vector3(w * 0.095, 0.34, 0.08), Vector3(x, body_h * 0.82, d * 0.465), metal_mid)
+		_add_box(Vector3(w * 0.075, 0.24, 0.04), Vector3(x, body_h * 0.82, d * 0.49), glass)
+	_add_box_rotated(Vector3(w * 0.54, 0.18, d * 0.98), Vector3(-w * 0.23, body_h + 0.42, 0), metal_mid, Vector3(0, 0, deg_to_rad(-8.0)))
+	_add_box_rotated(Vector3(w * 0.54, 0.18, d * 0.98), Vector3(w * 0.23, body_h + 0.42, 0), metal_light, Vector3(0, 0, deg_to_rad(8.0)))
+	_add_box(Vector3(w * 1.04, 0.12, 0.16), Vector3(0, body_h + 0.48, d * 0.48), metal)
+	var stack_height := 1.35 + float(stage - 1) * 0.38
+	_add_cylinder(0.16 + float(stage - 1) * 0.018, 0.23 + float(stage - 1) * 0.02, stack_height, Vector3(w * 0.31, body_h + stack_height * 0.5 + 0.48, -d * 0.28), metal)
+	_add_cylinder(0.25 + float(stage - 1) * 0.02, 0.27 + float(stage - 1) * 0.02, 0.14, Vector3(w * 0.31, body_h + stack_height + 0.55, -d * 0.28), safety)
+	if stage >= 3:
+		_add_box(Vector3(w * 0.22, 0.42, d * 0.22), Vector3(-w * 0.28, body_h + 0.70, -d * 0.20), metal_mid)
+		_add_cylinder(0.09, 0.12, 1.0, Vector3(-w * 0.28, body_h + 1.35, -d * 0.20), metal)
+	if stage >= 5:
+		for pipe_index in range(3):
+			_add_cylinder(0.045, 0.055, d * 0.70, Vector3(w * (0.08 + float(pipe_index) * 0.12), body_h + 0.62, 0), safety if pipe_index == 0 else metal_light)
+		_add_box(Vector3(w * 0.96, 0.18, d * 0.94), Vector3(0, body_h + 0.62, 0), wall_shadow)
 
 func _build_service(w: float, d: float, height: float, color: Color) -> void:
 	var power = definition.get("power", 0)
@@ -436,6 +484,20 @@ func _build_park(w: float, d: float, color: Color) -> void:
 	_add_cylinder(0.3, 0.35, 1.2, Vector3(0, 0.8, 0), Color(0.25, 0.55, 0.25))
 	_add_box(Vector3(0.8, 0.5, 0.8), Vector3(0, 1.5, 0), Color(0.3, 0.7, 0.3))
 
+func _get_surface_variation_texture() -> Texture2D:
+	# Shared subtle grayscale grain modulates every architectural surface, avoiding
+	# perfectly flat plastic colors without allocating a texture per mesh.
+	if _shared_surface_texture == null:
+		var image := Image.create(64, 64, false, Image.FORMAT_RGB8)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 731942
+		for y in range(64):
+			for x in range(64):
+				var shade := rng.randf_range(0.88, 1.0)
+				image.set_pixel(x, y, Color(shade, shade, shade))
+		_shared_surface_texture = ImageTexture.create_from_image(image)
+	return _shared_surface_texture
+
 func _add_box(size: Vector3, pos: Vector3, color: Color) -> void:
 	var mesh_instance = MeshInstance3D.new()
 	var box = BoxMesh.new()
@@ -443,7 +505,10 @@ func _add_box(size: Vector3, pos: Vector3, color: Color) -> void:
 	mesh_instance.mesh = box
 	var material = StandardMaterial3D.new()
 	material.albedo_color = color
-	material.roughness = 0.78
+	material.albedo_texture = _get_surface_variation_texture()
+	material.uv1_triplanar = true
+	material.uv1_scale = Vector3(1.6, 1.6, 1.6)
+	material.roughness = 0.82
 	material.metallic = 0.04
 	mesh_instance.material_override = material
 	mesh_instance.position = pos
@@ -456,7 +521,10 @@ func _add_box_rotated(size: Vector3, pos: Vector3, color: Color, rotation: Vecto
 	mesh_instance.mesh = box
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
-	material.roughness = 0.82
+	material.albedo_texture = _get_surface_variation_texture()
+	material.uv1_triplanar = true
+	material.uv1_scale = Vector3(1.6, 1.6, 1.6)
+	material.roughness = 0.84
 	mesh_instance.material_override = material
 	mesh_instance.position = pos
 	mesh_instance.rotation = rotation
