@@ -119,6 +119,31 @@ func _run_gameplay_test() -> void:
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
 	_test_road_painting_drag(road_system)
+	var hud = get_node_or_null("HUD")
+	var saved_level := GameManager.level
+	GameManager.level = 5
+	if hud:
+		hud._show_submenu("residential")
+		_check(hud.submenu.get_child_count() == 4, "Residential submenu should show three choices and a close button.")
+		_check(hud.submenu.get_node_or_null("residential_villa") != null, "Residential villa option is missing.")
+		_check(hud.submenu.get_node_or_null("residential_apartment") != null, "Residential apartment option is missing.")
+		_check(hud.submenu.get_node_or_null("residential_farm") != null, "Residential farm option is missing.")
+		hud._on_building_choice_pressed("residential_villa")
+		_check(BuildManager.selected_building_type == "residential_villa" and BuildManager.is_placing, "Villa choice did not enter placement mode.")
+		BuildManager.cancel_placement()
+		hud._show_submenu("commercial")
+		_check(hud.submenu.get_child_count() == 5, "Commercial submenu should show four choices and a close button.")
+		_check(hud.submenu.get_node_or_null("shop_chain") != null, "Chain store option is missing.")
+		_check(hud.submenu.get_node_or_null("restaurant_traditional") != null, "Traditional restaurant option is missing.")
+		_check(hud.submenu.get_node_or_null("fast_food") != null, "Fast food option is missing.")
+		_check(hud.submenu.get_node_or_null("art_supplies") != null, "Art supplies option is missing.")
+		hud._on_building_choice_pressed("fast_food")
+		_check(BuildManager.selected_building_type == "fast_food" and BuildManager.is_placing, "Fast food choice did not enter placement mode.")
+		BuildManager.cancel_placement()
+		hud._close_building_submenu(false)
+	else:
+		_check(false, "HUD node is missing for building submenu tests.")
+	GameManager.level = saved_level
 	for x in range(6, 18):
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
