@@ -59,6 +59,8 @@ func setup(data: Dictionary) -> void:
 		_on_construction_finished()
 
 func _create_visual() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
 	for child in mesh_root.get_children():
 		child.queue_free()
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
@@ -337,7 +339,7 @@ func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: 
 # Build a lightweight scaffold from reusable BoxMesh primitives.
 # Dimensions follow the same plot width/depth used by _create_visual().
 func _create_scaffold() -> void:
-	if not scaffold_root:
+	if DisplayServer.get_name() == "headless" or not scaffold_root:
 		return
 	for child in scaffold_root.get_children():
 		child.queue_free()
@@ -473,6 +475,8 @@ func _on_construction_finished() -> void:
 		start_factory_production()
 
 func _play_completion_effect() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
 	# A short sparkle burst marks completed construction with minimal mobile GPU cost.
 	var sparkle_material := StandardMaterial3D.new()
 	sparkle_material.albedo_color = Color(1.0, 0.78, 0.30)
