@@ -88,7 +88,7 @@ jobs:
           if grep -Fq "__GAME_BUILD__" "$GITHUB_WORKSPACE/site/index.html"; then exit 1; fi
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 
-      - name: Capture real Web build screenshot in Chromium
+      - name: Verify desktop and mobile Web launches in Chromium
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
@@ -106,8 +106,7 @@ jobs:
           const gameFrame = page.locator('#game-frame');
           await gameFrame.waitFor({ state: 'attached', timeout: 10000 });
           await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
-          await page.waitForTimeout(8000);
-          await page.screenshot({ path: 'mshin-web-hud.png', fullPage: true });
+          await page.waitForTimeout(2000);
 
           // Repeat the real launch path in a touch-enabled mobile landscape viewport.
           const mobilePage = await browser.newPage({
@@ -133,13 +132,6 @@ jobs:
           }
           await browser.close();
           NODE
-      - name: Upload Web screenshot evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: mshin-web-hud-screenshot
-          path: mshin-web-hud.png
-          if-no-files-found: error
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
