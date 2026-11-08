@@ -156,7 +156,7 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 214.0) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "CurrencyBar"
-	bar.custom_minimum_size = Vector2(width, 48)
+	bar.custom_minimum_size = Vector2(width, 58)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -165,7 +165,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(38, 38))
+	var icon := IconAtlas.make_icon(icon_name, Vector2(46, 46))
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, 24)
@@ -208,7 +208,7 @@ func _make_currency_plus_button(hint: String) -> Button:
 	var button := Button.new()
 	button.name = "CurrencyAddButton"
 	button.text = "+"
-	button.custom_minimum_size = Vector2(42, 42)
+	button.custom_minimum_size = Vector2(46, 46)
 	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = hint + " shop"
 	button.add_theme_font_size_override("font_size", 28)
@@ -231,10 +231,10 @@ func _build_simcash_capsule(parent: Container) -> void:
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
 	var glyph := BanknoteGlyph.new()
-	glyph.custom_minimum_size = Vector2(38, 38)
+	glyph.custom_minimum_size = Vector2(46, 46)
 	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(glyph)
-	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), 19)
+	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), 24)
 	simcash_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	simcash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(simcash_label)
@@ -277,9 +277,12 @@ func _build_toolbars() -> void:
 	# Large touch targets stay inside a vertical scroller on short landscape screens.
 	var toolbar_scroll := ScrollContainer.new()
 	toolbar_scroll.name = "LeftToolbar"
-	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	toolbar_scroll.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	var scroll_height := maxf(120.0, get_viewport().get_visible_rect().size.y - 164.0)
-	toolbar_scroll.position = Vector2(8, 164)
+	toolbar_scroll.offset_left = -108
+	toolbar_scroll.offset_right = -8
+	toolbar_scroll.offset_top = 184
+	toolbar_scroll.offset_bottom = -148
 	toolbar_scroll.custom_minimum_size = Vector2(100, scroll_height)
 	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
