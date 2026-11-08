@@ -1,20 +1,33 @@
 extends CanvasLayer
 
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
-@onready var level_label: Label = $TopLeft/LevelBox/LevelLabel
-@onready var population_label: Label = $TopLeft/PopBox/PopLabel
-@onready var happiness_icon: Label = $TopLeft/HappinessBox/HappyIcon
-@onready var storage_label: Label = $TopLeft/StorageBox/StorageLabel
-@onready var simoleons_label: Label = $TopLeft/MoneyBox/MoneyLabel
-@onready var keys_label: Label = $TopRight/KeysBox/KeysLabel
+
+# The atlas does not currently contain a banknote glyph, so SimCash uses this
+# small locally drawn vector icon. All other status icons come from IconAtlas.
+class BanknoteGlyph extends Control:
+	func _draw() -> void:
+		var note := Rect2(Vector2(2.5, 6.0), Vector2(size.x - 5.0, size.y - 12.0))
+		draw_rect(note, Color("#4CD964"), true)
+		draw_rect(note, Color("#D9FFE1"), false, 1.4)
+		draw_circle(size * 0.5, 5.0, Color("#D9FFE1"))
+		draw_line(Vector2(6, 9), Vector2(10, 9), Color("#D9FFE1"), 1.2)
+		draw_line(Vector2(size.x - 10, size.y - 9), Vector2(size.x - 6, size.y - 9), Color("#D9FFE1"), 1.2)
+
 @onready var status_label: Label = $StatusLabel
-@onready var power_label: Label = $TopRight/PowerBox/PowerLabel
-@onready var water_label: Label = $TopRight/WaterBox/WaterLabel
 
 var submenu: HBoxContainer
 var active_category := ""
+var level_label: Label
+var population_label: Label
+var happiness_label: Label
+var storage_label: Label
+var simoleons_label: Label
+var simcash_label: Label
+var keys_label: Label
+var _last_simcash_value := -1
 
 func _ready() -> void:
+	# Keep the existing gameplay signal wiring intact.
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.population_changed.connect(_on_population_changed)
 	GameManager.happiness_changed.connect(_on_happiness_changed)
@@ -24,56 +37,168 @@ func _ready() -> void:
 	BuildManager.placement_mode_changed.connect(_on_placement_mode)
 	ServiceManager.power_changed.connect(_on_power_changed)
 	ServiceManager.water_changed.connect(_on_water_changed)
-	_install_vector_icons()
+
+	_build_top_hud()
 	_build_toolbars()
 	_update_all()
 	status_label.text = "Build a road, then place a house and factory beside it."
 
-func _install_vector_icons() -> void:
-	var icon_map := {
-		"TopLeft/LevelBox/LevelIcon":"level",
-		"TopLeft/PopBox/PopIcon":"population",
-		"TopLeft/HappinessBox/HappyIcon":"happiness",
-		"TopLeft/StorageBox/StorageIcon":"storage",
-		"TopLeft/MoneyBox/MoneyIcon":"simoleons",
-		"TopRight/KeysBox/KeysIcon":"golden_key",
-		"TopRight/PowerBox/PowerIcon":"power",
-		"TopRight/WaterBox/WaterIcon":"water"
-	}
-	for path in icon_map:
-		var old_node := get_node_or_null(path)
-		if old_node == null:
-			continue
-		var parent := old_node.get_parent()
-		var insert_index := old_node.get_index()
-		var holder := Control.new()
-		holder.custom_minimum_size = Vector2(88, 88)
-		holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var icon := IconAtlas.make_icon(icon_map[path], Vector2(88, 88))
-		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		var shadow := TextureRect.new()
-		shadow.texture = icon.texture
-		shadow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		shadow.offset_left = 1.5
-		shadow.offset_top = 2.0
-		shadow.offset_right = 1.5
-		shadow.offset_bottom = 2.0
-		shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		shadow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		shadow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		shadow.modulate = Color(0.015, 0.035, 0.055, 0.48)
-		shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.add_child(shadow)
-		holder.add_child(icon)
-		parent.add_child(holder)
-		parent.move_child(holder, insert_index)
-		old_node.visible = false
-		old_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for path in ["TopLeft/LevelBox/LevelLabel","TopLeft/PopBox/PopLabel","TopLeft/StorageBox/StorageLabel","TopLeft/MoneyBox/MoneyLabel","TopRight/KeysBox/KeysLabel","TopRight/PowerBox/PowerLabel","TopRight/WaterBox/WaterLabel"]:
-		var label := get_node_or_null(path) as Label
-		if label:
-			label.add_theme_color_override("font_color", Color("#ffffff"))
-			label.add_theme_font_size_override("font_size", 17)
+func _build_top_hud() -> void:
+	# Hide the old scene-authored counters; the new responsive bar replaces them.
+	for old_path in ["TopLeft", "TopRight"]:
+		var old_node := get_node_or_null(old_path)
+		if old_node:
+			old_node.hide()
+			old_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var top_hud := Control.new()
+	top_hud.name = "TopHUD"
+	top_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_hud.z_index = 20
+	add_child(top_hud)
+
+	var margins := MarginContainer.new()
+	margins.name = "TopHUDMargins"
+	margins.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margins.add_theme_constant_override("margin_left", 14)
+	margins.add_theme_constant_override("margin_top", 12)
+	margins.add_theme_constant_override("margin_right", 14)
+	margins.add_theme_constant_override("margin_bottom", 0)
+	margins.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_hud.add_child(margins)
+
+	var row := HBoxContainer.new()
+	row.name = "TopHUDRow"
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margins.add_child(row)
+
+	var left_group := HBoxContainer.new()
+	left_group.name = "CityStats"
+	left_group.add_theme_constant_override("separation", 8)
+	left_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(left_group)
+
+	var spacer := Control.new()
+	spacer.name = "FlexibleSpacer"
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(spacer)
+
+	var right_group := HBoxContainer.new()
+	right_group.name = "Currencies"
+	right_group.add_theme_constant_override("separation", 8)
+	right_group.alignment = BoxContainer.ALIGNMENT_END
+	right_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(right_group)
+
+	level_label = _add_icon_capsule(left_group, "level", "1", Color("#E85D9A"), "City level")
+	population_label = _add_icon_capsule(left_group, "population", "0", Color("#4BA3FF"), "City population")
+	happiness_label = _add_icon_capsule(left_group, "happiness", "100%", Color("#3DDB6A"), "Citizen happiness")
+	storage_label = _add_icon_capsule(left_group, "storage", "0/30", Color("#5BB8F5"), "City storage")
+
+	simoleons_label = _add_icon_capsule(right_group, "simoleons", "5000", Color("#FFD24A"), "Simoleons")
+	_build_simcash_capsule(right_group)
+	keys_label = _add_icon_capsule(right_group, "golden_key", "5", Color("#FFC107"), "Golden Keys")
+
+func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: String, tint: Color, hint: String) -> Label:
+	var capsule := PanelContainer.new()
+	capsule.name = icon_name.capitalize() + "Capsule"
+	capsule.custom_minimum_size = Vector2(0, 52)
+	capsule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	capsule.tooltip_text = hint
+	capsule.add_theme_stylebox_override("panel", _capsule_style())
+	parent.add_child(capsule)
+
+	var content := HBoxContainer.new()
+	content.add_theme_constant_override("separation", 6)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	capsule.add_child(content)
+
+	var icon := IconAtlas.make_icon(icon_name, Vector2(30, 30))
+	icon.modulate = tint
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(icon)
+
+	var value := Label.new()
+	value.text = initial_text
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value.add_theme_color_override("font_color", Color.WHITE)
+	value.add_theme_font_size_override("font_size", 16)
+	value.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
+	value.add_theme_constant_override("shadow_offset_x", 1)
+	value.add_theme_constant_override("shadow_offset_y", 1)
+	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(value)
+	return value
+
+func _build_simcash_capsule(parent: HBoxContainer) -> void:
+	var capsule := PanelContainer.new()
+	capsule.name = "SimCashCapsule"
+	capsule.custom_minimum_size = Vector2(0, 52)
+	capsule.tooltip_text = "SimCash"
+	capsule.add_theme_stylebox_override("panel", _capsule_style())
+	parent.add_child(capsule)
+
+	var content := HBoxContainer.new()
+	content.add_theme_constant_override("separation", 6)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	capsule.add_child(content)
+
+	var glyph := BanknoteGlyph.new()
+	glyph.custom_minimum_size = Vector2(30, 30)
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(glyph)
+
+	simcash_label = Label.new()
+	simcash_label.text = str(EconomyManager.sim_cash)
+	simcash_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	simcash_label.add_theme_color_override("font_color", Color.WHITE)
+	simcash_label.add_theme_font_size_override("font_size", 16)
+	simcash_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(simcash_label)
+
+	var add_button := Button.new()
+	add_button.name = "SimCashAddButton"
+	add_button.text = "+"
+	add_button.custom_minimum_size = Vector2(25, 25)
+	add_button.focus_mode = Control.FOCUS_NONE
+	add_button.tooltip_text = "SimCash shop (not available yet)"
+	add_button.add_theme_font_size_override("font_size", 18)
+	add_theme_color(add_button, Color("#4CD964"))
+	content.add_child(add_button)
+	add_button.pressed.connect(_on_simcash_plus_pressed)
+
+func _add_theme_color(button: Button, tint: Color) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(tint.r, tint.g, tint.b, 0.22)
+	normal.border_color = Color(tint.r, tint.g, tint.b, 0.72)
+	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(8)
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(tint.r, tint.g, tint.b, 0.38)
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", hover)
+	button.add_theme_color_override("font_color", Color.WHITE)
+
+func _capsule_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.12, 0.18, 0.78)
+	style.border_color = Color(1.0, 1.0, 1.0, 0.12)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(20)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.24)
+	style.shadow_size = 5
+	style.shadow_offset = Vector2(0, 2)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	return style
 
 func _build_toolbars() -> void:
 	var old_menu := get_node_or_null("LeftMenu")
@@ -251,19 +376,54 @@ func _update_all() -> void:
 	_on_simoleons_changed(EconomyManager.simoleons)
 	_on_keys_changed(EconomyManager.golden_keys)
 	_on_storage_changed()
+	_update_simcash()
 	_on_power_changed(ServiceManager.total_power, ServiceManager.used_power)
 	_on_water_changed(ServiceManager.total_water, ServiceManager.used_water)
 
-func _on_level_changed(level: int) -> void: level_label.text = str(level)
-func _on_population_changed(population: int) -> void: population_label.text = str(population)
-func _on_happiness_changed(_value: float) -> void: happiness_icon.text = ""
-func _on_simoleons_changed(_amount: int) -> void: simoleons_label.text = EconomyManager.get_formatted_simoleons()
-func _on_keys_changed(amount: int) -> void: keys_label.text = str(amount)
-func _on_storage_changed() -> void: storage_label.text = StorageManager.get_storage_ratio()
+func _update_simcash() -> void:
+	if simcash_label == null:
+		return
+	var amount := int(EconomyManager.sim_cash)
+	if amount != _last_simcash_value:
+		simcash_label.text = str(amount)
+		_last_simcash_value = amount
+
+func _on_level_changed(level: int) -> void:
+	if level_label: level_label.text = str(level)
+
+func _on_population_changed(population: int) -> void:
+	if population_label: population_label.text = _format_count(population)
+
+func _on_happiness_changed(value: float) -> void:
+	if happiness_label: happiness_label.text = "%d%%" % roundi(value)
+
+func _on_simoleons_changed(_amount: int) -> void:
+	if simoleons_label: simoleons_label.text = EconomyManager.get_formatted_simoleons()
+
+func _on_keys_changed(amount: int) -> void:
+	if keys_label: keys_label.text = _format_count(amount)
+
+func _on_storage_changed() -> void:
+	if storage_label: storage_label.text = StorageManager.get_storage_ratio()
+
 func _on_power_changed(total: int, used: int) -> void:
-	if power_label: power_label.text = "%d/%d" % [used, total]
+	if status_label:
+		status_label.tooltip_text = "Power usage: %d / %d" % [used, total]
+
 func _on_water_changed(total: int, used: int) -> void:
-	if water_label: water_label.text = "%d/%d" % [used, total]
+	if status_label:
+		var existing := status_label.tooltip_text
+		status_label.tooltip_text = existing + "  |  Water usage: %d / %d" % [used, total]
+
+func _format_count(value: int) -> String:
+	if value >= 1000000:
+		return "%.1fM" % (float(value) / 1000000.0)
+	if value >= 10000:
+		return "%.1fK" % (float(value) / 1000.0)
+	return str(value)
+
+func _on_simcash_plus_pressed() -> void:
+	status_label.text = "SimCash purchases are not available yet."
 
 func _on_placement_mode(active: bool) -> void:
 	if active: status_label.text = "Placement mode — tap a clear plot beside a road. Cancel with X."
