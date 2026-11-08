@@ -202,8 +202,6 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 		var window_y := 0.34 + (float(floor_index) + 0.55) * body_h / float(floors)
 		for column in range(columns):
 			var x_pos := -w * 0.29 + float(column) * (w * 0.58 / float(maxi(columns - 1, 1)))
-			var window_w := 0.38 if is_apartment else 0.44
-			var window_h := 0.43 if is_apartment else 0.48
 			_add_natural_window(Vector3(x_pos, window_y, d * 0.435), frame, glass)
 			if is_apartment and floor_index > 0:
 				# Small projecting sill/balcony rails make apartment floors read as occupied.
@@ -362,9 +360,9 @@ func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 	# Upper facade gets smaller windows and pilasters instead of a blank cube.
 	if height > 2.2:
 		for column in range(3):
-			var x := -w * 0.28 + float(column) * w * 0.28
-			_add_natural_window(Vector3(x, height * 0.82, d * 0.445), trim, glass)
-			_add_box(Vector3(0.07, height * 0.88, 0.08), Vector3(x - 0.32, height * 0.5 + 0.28, d * 0.44), trim.darkened(0.12))
+			var upper_x := -w * 0.28 + float(column) * w * 0.28
+			_add_natural_window(Vector3(upper_x, height * 0.82, d * 0.445), trim, glass)
+			_add_box(Vector3(0.07, height * 0.88, 0.08), Vector3(upper_x - 0.32, height * 0.5 + 0.28, d * 0.44), trim.darkened(0.12))
 	_add_box(Vector3(w * 0.98, 0.10, d * 0.96), Vector3(0, height + 0.48, 0), stone)
 
 
