@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
+const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 
 # The atlas does not currently contain a banknote glyph, so SimCash uses this
 # small locally drawn vector icon. All other status icons come from IconAtlas.
@@ -28,6 +29,11 @@ var simcash_label: Label
 var keys_label: Label
 var _last_simcash_value := -1
 var _ui_scale := 1.0
+var _level_up_queue: Array[Dictionary] = []
+var _level_up_effect = null
+var _level_up_camera: Camera3D
+var _level_up_camera_origin: Vector3 = Vector3.ZERO
+var _level_up_shake_elapsed := 0.0
 
 func _ready() -> void:
 	# Keep the existing gameplay signal wiring intact.
@@ -673,8 +679,59 @@ func _on_xp_changed(xp: int, needed: int) -> void:
 		xp_progress.value = clampi(xp, 0, needed)
 
 func _on_level_up_rewarded(new_level: int, reward: int, keys: int) -> void:
-	if status_label:
-		status_label.text = "⭐ Level %d unlocked! +%d Simoleons, +%d Golden Key." % [new_level, reward, keys]
+	# level_changed updates the badge; reward signal is the single celebration trigger.
+	# Queue multiple level-ups from one XP grant so every reward is celebrated exactly once.
+	_level_up_queue.append({
+		"level": new_level,
+		"simoleons": reward,
+		"keys": keys
+	})
+	_start_next_level_up_effect()
+
+func _start_next_level_up_effect() -> void:
+	if is_instance_valid(_level_up_effect) or _level_up_queue.is_empty():
+		return
+
+	var reward: Dictionary = _level_up_queue.pop_front()
+	_level_up_effect = LevelUpEffectScript.new()
+	_level_up_effect.name = "LevelUpCelebration"
+	add_child(_level_up_effect)
+	_level_up_effect.finished.connect(_on_level_up_effect_finished)
+	_level_up_effect.play(
+		int(reward["level"]),
+		int(reward["simoleons"]),
+		int(reward["keys"])
+	)
+
+	_level_up_camera = get_viewport().get_camera_3d()
+	if is_instance_valid(_level_up_camera):
+		_level_up_camera_origin = _level_up_camera.position
+		_level_up_shake_elapsed = 0.0
+
+func _process(delta: float) -> void:
+	if not is_instance_valid(_level_up_effect):
+		return
+	if not is_instance_valid(_level_up_camera):
+		return
+
+	# Tiny damped local offset; restore the exact camera position when the overlay ends.
+	_level_up_shake_elapsed += delta
+	var envelope := exp(-_level_up_shake_elapsed * 2.0)
+	var shake := Vector3(
+		sin(_level_up_shake_elapsed * 61.0) * 0.12,
+		cos(_level_up_shake_elapsed * 47.0) * 0.08,
+		0.0
+	) * envelope
+	_level_up_camera.position = _level_up_camera_origin + shake
+
+func _on_level_up_effect_finished() -> void:
+	if is_instance_valid(_level_up_camera):
+		_level_up_camera.position = _level_up_camera_origin
+	_level_up_camera = null
+	if is_instance_valid(_level_up_effect):
+		_level_up_effect.queue_free()
+	_level_up_effect = null
+	_start_next_level_up_effect()
 
 func _on_simoleons_changed(_amount: int) -> void:
 	if simoleons_label: simoleons_label.text = EconomyManager.get_formatted_simoleons()

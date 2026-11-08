@@ -134,6 +134,23 @@ func _run_gameplay_test() -> void:
 		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
 	var hud = get_node_or_null("HUD")
 	var saved_level := GameManager.level
+	if hud:
+		# Exercise the actual HUD reward handler and the full timed celebration.
+		hud._on_level_up_rewarded(2, 200, 1)
+		var celebration = hud.get_node_or_null("LevelUpCelebration")
+		_check(celebration != null, "Level Up reward did not create its celebration overlay.")
+		if celebration:
+			var title = celebration.find_child("LevelUpTitle", true, false)
+			var subtitle = celebration.find_child("MayorCongratulations", true, false)
+			_check(title is Label and title.text == "LEVEL UP!", "Level Up title is missing.")
+			_check(subtitle is Label and subtitle.text == "Congratulations Mayor!", "Mayor congratulations message is missing.")
+			await _wait_seconds(1.3)
+			var simoleon_reward = celebration.find_child("SimoleonReward", true, false)
+			var key_reward = celebration.find_child("GoldenKeyReward", true, false)
+			_check(simoleon_reward is Label and simoleon_reward.text == "+200 Simoleons", "Simoleon reward counter did not animate to the awarded amount.")
+			_check(key_reward is Label and key_reward.text == "+1 Golden Key", "Golden Key reward counter did not animate to the awarded amount.")
+			await _wait_seconds(1.6)
+		_check(hud.get_node_or_null("LevelUpCelebration") == null, "Level Up celebration did not clean itself up after 2–3 seconds.")
 	GameManager.level = 5
 	if hud:
 		var right_toolbar = hud.get_node_or_null("RightToolbar")
