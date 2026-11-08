@@ -193,7 +193,7 @@ func _run_gameplay_test() -> void:
 		var locked_fire = hud.submenu.get_node_or_null("fire_station")
 		_check(locked_fire != null and not locked_fire.disabled, "Locked fire station must remain clickable.")
 		hud._on_submenu_option("services", "fire_station")
-		_check(not BuildManager.is_placing and status_label.text.find("level 5") >= 0, "Locked fire station did not explain its unlock level.")
+		_check(not BuildManager.is_placing and hud.status_label.text.find("level 5") >= 0, "Locked fire station did not explain its unlock level.")
 		GameManager.level = menu_test_level
 		hud._on_category_pressed("park")
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "park_small", "Park button did not directly enter park placement mode.")
