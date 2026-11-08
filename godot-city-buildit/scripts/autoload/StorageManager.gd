@@ -64,6 +64,15 @@ func remove_item(item_id: String, amount: int = 1) -> bool:
 func get_item_count(item_id: String) -> int:
 	return inventory.get(item_id, 0)
 
+func has_item(item_id: String, amount: int = 1) -> bool:
+	return amount >= 0 and get_item_count(item_id) >= amount
+
+func get_count(item_id: String) -> int:
+	return get_item_count(item_id)
+
+func get_used_slots() -> int:
+	return current_used
+
 func upgrade_capacity(extra: int = 10) -> void:
 	max_capacity += extra
 	capacity_changed.emit(max_capacity)
