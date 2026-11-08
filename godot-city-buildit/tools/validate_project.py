@@ -179,6 +179,38 @@ for road_test in [
 ]:
     if road_test not in gameplay_smoke:
         errors.append(f"Road auto-tiling regression test is missing: {road_test}")
+# Long-press building relocation must cover every requested buildable type and keep its core contracts.
+build_manager_source = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
+city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
+hud_source = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
+move_building_source = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")
+required_movable_types = {
+    "residential_1", "residential_villa", "residential_apartment", "residential_farm",
+    "building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
+    "art_supplies", "hardware_store", "farmers_market", "furniture_store",
+    "industrial_1", "industrial_2", "industrial_3",
+    "power_wind", "water_tower", "fire_station", "police_station", "sewage_pipe",
+    "park_small"
+}
+move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
+move_types = set(re.findall(r'"([a-z0-9_]+)"', move_list_match.group(1))) if move_list_match else set()
+for type_id in sorted(required_movable_types - move_types):
+    errors.append(f"Building type is missing from long-press Move whitelist: {type_id}")
+for contract in ["func begin_move(", "func can_move_to(", "func preview_move_at(", "func finish_move(", "func cancel_move(", "func invalidate_move_preview(", "ServiceManager.recalculate_from_buildings()"]:
+    if contract not in build_manager_source:
+        errors.append(f"Building move contract is missing: {contract}")
+for contract in ["LONG_PRESS_SECONDS", "_begin_move_from_screen(", "_update_move_from_screen(", "BuildManager.finish_move()", "BuildManager.cancel_move()"]:
+    if contract not in city_input_source:
+        errors.append(f"Mouse/touch Move input contract is missing: {contract}")
+for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TRANSPARENCY_ALPHA", "position.y = 0.55", "Color(0.20, 1.0, 0.36, 0.95)", "Color(1.0, 0.16, 0.12, 0.95)"]:
+    if contract not in move_building_source:
+        errors.append(f"Building move highlight contract is missing: {contract}")
+if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
+    errors.append("HUD Cancel button does not restore a building during Move mode")
+gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 21"]:
+    if contract not in gameplay_smoke:
+        errors.append(f"Building move gameplay regression test is missing: {contract}")
 
 
 if errors:
