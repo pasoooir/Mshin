@@ -18,6 +18,18 @@ const SHEETS := {
 
 static var _texture_cache: Dictionary = {}
 
+# Clean, transparent local SVGs replace the damaged park/service sheet crops.
+# Every path is part of the offline project; no runtime network requests.
+const SPECIAL_ICONS := {
+	"power": "res://assets/icons/power.svg",
+	"park": "res://assets/icons/park.svg",
+	"parks": "res://assets/icons/parks.svg",
+	"services": "res://assets/icons/services.svg",
+	"fire": "res://assets/icons/fire.svg",
+	"bulldoze": "res://assets/icons/bulldozer.svg",
+	"fallback": "res://assets/icons/fallback.svg"
+}
+
 const REGIONS := {
 	"road": [1, Rect2i(20, 20, 270, 240)],
 	"residential": [1, Rect2i(300, 20, 270, 240)],
@@ -244,13 +256,44 @@ static func _make_transparent_cell(icon_name: String, sheet_id: int, region: Rec
 	return result
 
 static func texture_for(icon_name: String) -> Texture2D:
-	if icon_name == "power":
-		return load("res://assets/icons/power.svg") as Texture2D
+	if SPECIAL_ICONS.has(icon_name):
+		var special := load(str(SPECIAL_ICONS[icon_name])) as Texture2D
+		if special != null:
+			return special
+		push_error("Could not load local SVG icon: " + icon_name)
+		return load(str(SPECIAL_ICONS["fallback"])) as Texture2D
 	if not REGIONS.has(icon_name):
 		push_error("Unknown UI atlas icon: " + icon_name)
-		return null
+		return load(str(SPECIAL_ICONS["fallback"])) as Texture2D
 	var entry: Array = REGIONS[icon_name]
-	return _make_transparent_cell(icon_name, int(entry[0]), entry[1])
+	var texture := _make_transparent_cell(icon_name, int(entry[0]), entry[1])
+	if texture == null or texture.get_image() == null or texture.get_image().is_empty():
+		push_error("Atlas crop is empty; using the local fallback icon: " + icon_name)
+		return load(str(SPECIAL_ICONS["fallback"])) as Texture2D
+	return texture
+
+static func get_icon_keys() -> Array[String]:
+	var keys: Array[String] = []
+	for key in REGIONS.keys():
+		keys.append(str(key))
+	for key in SPECIAL_ICONS.keys():
+		if not keys.has(str(key)):
+			keys.append(str(key))
+	return keys
+
+static func validate_all_icons() -> bool:
+	var valid := true
+	for icon_name in get_icon_keys():
+		var texture := texture_for(icon_name)
+		if texture == null:
+			push_error("Missing UI icon texture: " + icon_name)
+			valid = false
+			continue
+		var image := texture.get_image()
+		if image == null or image.is_empty():
+			push_error("Empty UI icon texture: " + icon_name)
+			valid = false
+	return valid
 
 static func make_icon(icon_name: String, display_size: Vector2 = Vector2(64, 64)) -> TextureRect:
 	var icon := TextureRect.new()
