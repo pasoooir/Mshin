@@ -5,7 +5,7 @@ signal household_population_changed(building_id: String, population: int)
 signal immigrants_arrived(amount: int, city_population: int)
 signal immigration_advice(message: String)
 
-const BASE_HAPPINESS := 30.0
+const BASE_HAPPINESS := 70.0
 const LOW_HAPPINESS_ABANDONMENT_THRESHOLD := 25.0
 const ABANDONMENT_GRACE_SECONDS := 90.0
 const RECALC_INTERVAL := 5.0
@@ -114,7 +114,7 @@ func _process_immigration() -> void:
 		return
 	if average_happiness < IMMIGRATION_MIN_HAPPINESS or has_abandoning_house:
 		if _immigration_advice_elapsed >= 30.0:
-			immigration_advice.emit("مردم به شهر شما علاقه دارند، اما رضایت پایین است. خدمات و پارک‌ها را بهبود دهید.")
+			immigration_advice.emit("Citizens need better services and parks. Improve city coverage to attract more residents.")
 			_immigration_advice_elapsed = 0.0
 		return
 
