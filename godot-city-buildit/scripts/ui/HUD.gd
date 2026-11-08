@@ -30,7 +30,7 @@ var keys_label: Label
 var _last_simcash_value := -1
 var _ui_scale := 1.0
 var _level_up_queue: Array[Dictionary] = []
-var _level_up_effect: Control
+var _level_up_effect = null
 var _level_up_camera: Camera3D
 var _level_up_camera_origin: Vector3 = Vector3.ZERO
 var _level_up_shake_elapsed := 0.0
