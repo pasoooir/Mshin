@@ -478,7 +478,7 @@ func _show_submenu(category: String) -> void:
 		"commercial":
 			options = [["shop_chain", "Chain Store", 1], ["restaurant_traditional", "Traditional Restaurant", 4], ["fast_food", "Fast Food", 3], ["art_supplies", "Art Supplies Store", 5]]
 		"industrial":
-			options = [["industrial_1", "Small Factory · Metal", 1], ["industrial_2", "Wood Factory · Wood", 2]]
+			options = [["industrial_1", "Small Factory - Metal", 1], ["industrial_2", "Wood Factory - Wood", 2]]
 		"services":
 			options = [["power_wind", "Wind Power", 1], ["water_tower", "Water Tower", 1], ["fire_station", "Fire Station", 5]]
 
@@ -549,6 +549,7 @@ func _on_building_choice_pressed(type_id: String) -> void:
 	_select_building_type(type_id)
 
 func _set_tool_modes_off() -> void:
+	_set_bulldozer_indicator(false)
 	var scene := get_tree().current_scene
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
 	if city_input:
@@ -796,7 +797,7 @@ func _on_roads_pressed() -> void:
 	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.set_road_mode(true)
-		status_label.text = "Road mode — tap or drag from the highway (50 § per tile)"
+		status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile)"
 
 func _on_storage_pressed() -> void:
 	BuildManager.cancel_placement()
@@ -804,7 +805,7 @@ func _on_storage_pressed() -> void:
 	if items.is_empty(): status_label.text = "Storage is empty."
 	else:
 		var inventory_text := ""
-		for item_id in items: inventory_text += str(item_id) + "×" + str(items[item_id]) + "  "
+		for item_id in items: inventory_text += str(item_id) + " x " + str(items[item_id]) + "  "
 		status_label.text = inventory_text
 
 func _on_trade_pressed() -> void:
