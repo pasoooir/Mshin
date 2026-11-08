@@ -11,7 +11,7 @@ const CURB_WIDTH: float = 0.08
 const SIDEWALK_WIDTH: float = 0.24
 const ROAD_SURFACE_Y: float = 0.04
 const ROAD_SURFACE_HEIGHT: float = 0.08
-const ROAD_TEXTURE_WORLD_SCALE: float = 2.8
+const ROAD_TEXTURE_WORLD_SCALE: float = 8.0
 
 const DIR_UP := Vector2i(0, -1)
 const DIR_DOWN := Vector2i(0, 1)
@@ -372,8 +372,6 @@ func _get_asphalt_material() -> StandardMaterial3D:
 
 func _create_asphalt_textures() -> Array[Texture2D]:
 	const TEXTURE_SIZE: int = 256
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 917263
 	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
 	var heights := PackedFloat32Array()
 	heights.resize(TEXTURE_SIZE * TEXTURE_SIZE)
@@ -387,9 +385,8 @@ func _create_asphalt_textures() -> Array[Texture2D]:
 			var medium := sin(angle_x * 7.0 + angle_y * 5.0) * 0.5 + cos(angle_x * 11.0 - angle_y * 9.0) * 0.5
 			var grain := sin(angle_x * 37.0 + angle_y * 29.0) * 0.5 + cos(angle_x * 53.0 - angle_y * 47.0) * 0.5
 			var fine_grain := sin(angle_x * 83.0 + angle_y * 71.0) * 0.5 + cos(angle_x * 97.0 - angle_y * 89.0) * 0.5
-			var aggregate := 0.0
-			if rng.randf() > 0.996:
-				aggregate = rng.randf_range(-0.035, 0.035)
+			var aggregate_signal := sin(angle_x * 61.0 + cos(angle_y * 73.0)) * cos(angle_y * 67.0 - sin(angle_x * 59.0))
+			var aggregate := 0.025 if aggregate_signal > 0.985 else (-0.025 if aggregate_signal < -0.985 else 0.0)
 			var height_value := clampf(0.235 + broad * 0.032 + medium * 0.018 + grain * 0.009 + fine_grain * 0.004 + aggregate, 0.12, 0.34)
 			heights[y * TEXTURE_SIZE + x] = height_value
 			image.set_pixel(x, y, Color(height_value * 0.92, height_value * 0.96, height_value * 1.02, 1.0))
