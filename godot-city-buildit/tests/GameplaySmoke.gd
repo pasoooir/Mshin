@@ -210,7 +210,7 @@ func _run_gameplay_test() -> void:
 		_check(not road_system.has_road(test_road_cell), "Road-only bulldozer did not remove the selected asphalt tile.")
 		input_node.set_bulldoze_road_mode(false)
 		# The general bulldozer must also remove road tiles without touching buildings.
-		var general_road_cell := Vector2i(19, 0)
+		var general_road_cell := Vector2i(18, 0)
 		_check(road_system.place_road(general_road_cell), "Could not create test road tile for general bulldozer.")
 		input_node.set_bulldoze_mode(true)
 		input_node._handle_bulldoze_cell(general_road_cell, road_system)
