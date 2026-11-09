@@ -22,7 +22,7 @@ func _ready() -> void:
 
 func _build_coverage_preview() -> void:
 	coverage_preview_root = Node3D.new()
-	coverage_preview_root.name = "FireCoveragePreview"
+	coverage_preview_root.name = "EmergencyCoveragePreview"
 	coverage_preview_root.visible = false
 	add_child(coverage_preview_root)
 
@@ -77,11 +77,20 @@ func _update_coverage_preview(definition: Dictionary) -> void:
 	if not is_instance_valid(coverage_preview_root):
 		return
 	var is_fire_station := int(definition.get("fire", 0)) > 0
-	coverage_preview_root.visible = is_fire_station
-	if not is_fire_station:
+	var is_police_station := int(definition.get("police", 0)) > 0
+	coverage_preview_root.visible = is_fire_station or is_police_station
+	if not coverage_preview_root.visible:
 		current_coverage_radius = -1.0
 		return
-	var radius := FireHazardManager.get_coverage_radius_world(definition)
+	var radius := FireHazardManager.get_coverage_radius_world(definition) if is_fire_station else float(definition.get("coverage_tiles", 15)) * float(BuildManager.GRID_SIZE)
+	var disc_material := coverage_disc.material_override as StandardMaterial3D
+	var ring_material := coverage_ring.material_override as StandardMaterial3D
+	if is_police_station:
+		disc_material.albedo_color = Color(0.10, 0.22, 0.72, 0.15)
+		ring_material.albedo_color = Color(0.18, 0.38, 0.98, 0.95)
+	else:
+		disc_material.albedo_color = Color(0.08, 0.82, 0.91, 0.13)
+		ring_material.albedo_color = Color(0.12, 0.94, 1.0, 0.92)
 	if is_equal_approx(radius, current_coverage_radius):
 		return
 	current_coverage_radius = radius

@@ -292,6 +292,35 @@ func _test_build_menu_visibility() -> void:
 
 	hud._on_submenu_option("services", "back")
 	await get_tree().process_frame
+	hud._on_submenu_option("services", "group_police")
+	await get_tree().process_frame
+	for police_id in ["police_small", "police_basic", "police_precinct"]:
+		_check(hud.submenu.get_node_or_null(police_id) != null, "Police submenu is missing: " + police_id)
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Police submenu must expose Back and Cancel.")
+	var locked_small_police := hud.submenu.get_node_or_null("police_small") as Button
+	_check(locked_small_police != null and not locked_small_police.disabled, "Locked Small Police must remain tappable for unlock feedback.")
+	if locked_small_police:
+		locked_small_police.emit_signal("pressed")
+		_check(hud.status_label.text.contains("Level 12"), "Tapping locked Small Police must explain its Level 12 unlock.")
+	var police_expected := {
+		"police_small": {"coverage": 10, "size": Vector2i(1, 1), "cost": 5100},
+		"police_basic": {"coverage": 15, "size": Vector2i(2, 2), "cost": 9400},
+		"police_precinct": {"coverage": 24, "size": Vector2i(4, 2), "cost": 36000}
+	}
+	for police_id in police_expected:
+		var police_definition: Dictionary = BuildManager.building_types[police_id]
+		var expected: Dictionary = police_expected[police_id]
+		_check(int(police_definition.get("police", 0)) == 1, "Police station must expose the separate police key: " + police_id)
+		_check(police_definition.get("service_group", "") == "police", "Police station must belong to Police group: " + police_id)
+		_check(int(police_definition.get("coverage_tiles", 0)) == int(expected["coverage"]), "Police coverage tiles are incorrect: " + police_id)
+		_check(police_definition.get("size", Vector2i.ZERO) == expected["size"], "Police footprint is incorrect: " + police_id)
+		_check(int(police_definition.get("cost", 0)) == int(expected["cost"]), "Police cost is incorrect: " + police_id)
+		_check(int(police_definition.get("level", 0)) == 12, "Police stations must unlock at Level 12: " + police_id)
+		_check(int(police_definition.get("pollution", 0)) == 0, "Police stations must be pollution-free: " + police_id)
+		_check(int(police_definition.get("fire", 0)) == 0 and int(police_definition.get("health", 0)) == 0, "Police metadata must remain separate from Fire and Health: " + police_id)
+
+	hud._on_submenu_option("services", "back")
+	await get_tree().process_frame
 	hud._on_submenu_option("services", "back")
 	hud._on_submenu_option("services", "group_power")
 	await get_tree().process_frame
@@ -730,7 +759,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 36, "Move whitelist must include all 36 requested building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 39, "Move whitelist must include all 39 requested building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 
