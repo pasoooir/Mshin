@@ -189,7 +189,8 @@ required_movable_types = {
     "building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
     "art_supplies", "hardware_store", "farmers_market", "furniture_store",
     "industrial_1", "industrial_2", "industrial_3",
-    "power_wind", "water_tower", "fire_station", "police_station", "sewage_pipe",
+    "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
+    "water_tower", "fire_station_small", "fire_station", "police_station", "sewage_pipe", "town_hall",
     "park_small"
 }
 move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
