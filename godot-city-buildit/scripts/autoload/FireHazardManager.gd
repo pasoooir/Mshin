@@ -79,16 +79,15 @@ func _evaluate_hazards(delta: float) -> void:
 					home.set_fire_smoke(true)
 				home_smoking_changed.emit(building_id, true)
 
-	var changed := false
+	var previous_smoking_count := smoking_ids.size()
 	for building_id in unprotected_time.keys():
 		if not active_home_ids.has(building_id):
 			unprotected_time.erase(building_id)
 			if smoking_ids.has(building_id):
 				smoking_ids.erase(building_id)
-				changed = true
-			changed = true
-	if changed:
-		smoking_count_changed.emit(smoking_ids.size())
-	elif smoking_ids.size() >= 0:
-		# Keep the count signal useful to HUD listeners after the first evaluation.
+				var inactive_home = BuildManager.buildings.get(building_id)
+				if is_instance_valid(inactive_home) and inactive_home.has_method("set_fire_smoke"):
+					inactive_home.set_fire_smoke(false)
+				home_smoking_changed.emit(str(building_id), false)
+	if smoking_ids.size() != previous_smoking_count:
 		smoking_count_changed.emit(smoking_ids.size())
