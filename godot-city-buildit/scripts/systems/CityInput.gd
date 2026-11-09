@@ -414,7 +414,7 @@ func _handle_tap(screen_position: Vector2) -> void:
 		var grid := BuildManager.world_to_grid(world_position)
 		var ghost = get_tree().current_scene.get_node_or_null("GhostPreview")
 		if ghost:
-			ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid))
+			ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid), BuildManager.building_types.get(BuildManager.selected_building_type, {}))
 		if BuildManager.place_building_at_world(world_position):
 			_set_status("Construction started. Tap another green plot to build again.")
 			if ghost:
@@ -435,7 +435,7 @@ func _update_ghost(screen_position: Vector2) -> void:
 	if ghost == null or world_position == null or not BuildManager.is_placing:
 		return
 	var grid: Vector2i = BuildManager.world_to_grid(world_position)
-	ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid))
+	ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid), BuildManager.building_types.get(BuildManager.selected_building_type, {}))
 
 func _raycast_ground(screen_position: Vector2) -> Variant:
 	if camera == null or not is_instance_valid(camera):
