@@ -10,7 +10,7 @@ const SERVICE_GROUPS := [
 	{"id":"waste", "label":"Waste", "buildings":["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]},
 	{"id":"fire", "label":"Fire", "buildings":["fire_station_small", "fire_station", "fire_station_deluxe"]},
 	{"id":"police", "label":"Police", "buildings":["police_small", "police_basic", "police_precinct"]},
-	{"id":"health", "label":"Health", "buildings":[]},
+	{"id":"health", "label":"Health", "buildings":["clinic_small", "clinic", "hospital"]},
 	{"id":"government", "label":"Government", "buildings":["town_hall"]}
 ]
 const SPECIALIZATION_GROUPS := [
@@ -666,7 +666,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 				var definition: Dictionary = BuildManager.building_types[type_id]
 				var footprint: Vector2i = definition.get("size", Vector2i.ONE)
 				var detail := "%d coins · Lv %d · %dx%d" % [int(definition.get("cost", 0)), int(definition.get("level", 1)), footprint.x, footprint.y]
-				if int(definition.get("fire", 0)) > 0 or int(definition.get("police", 0)) > 0:
+				if int(definition.get("fire", 0)) > 0 or int(definition.get("police", 0)) > 0 or int(definition.get("health", 0)) > 0:
 					detail += " · Coverage: %d tiles" % int(definition.get("coverage_tiles", 15))
 				if int(definition.get("pollution", 0)) > 0:
 					detail += " · " + str(definition.get("pollution_label", "Pollutes"))
@@ -722,7 +722,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	var detail_label := Label.new()
 	var locked_detail := "Unlocks at Level %d" % required_level
 	var option_definition: Dictionary = BuildManager.building_types.get(option_id, {})
-	if int(option_definition.get("fire", 0)) > 0 or int(option_definition.get("police", 0)) > 0:
+	if int(option_definition.get("fire", 0)) > 0 or int(option_definition.get("police", 0)) > 0 or int(option_definition.get("health", 0)) > 0:
 		locked_detail += " · Coverage: %d tiles" % int(option_definition.get("coverage_tiles", 15))
 	detail_label.text = locked_detail if GameManager.level < required_level else ("LOCKED" if locked else detail)
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
