@@ -947,17 +947,13 @@ func _create_fire_smoke_particles() -> CPUParticles3D:
 	color_gradient.add_point(0.22, Color(0.075, 0.075, 0.085, 0.76))
 	color_gradient.add_point(0.72, Color(0.105, 0.105, 0.115, 0.58))
 	color_gradient.add_point(1.0, Color(0.12, 0.12, 0.13, 0.0))
-	var color_texture := GradientTexture1D.new()
-	color_texture.gradient = color_gradient
-	particles.color_ramp = color_texture
+	particles.color_ramp = color_gradient
 
 	var scale_curve := Curve.new()
 	scale_curve.add_point(Vector2(0.0, 0.42))
 	scale_curve.add_point(Vector2(0.35, 0.82))
 	scale_curve.add_point(Vector2(1.0, 1.55))
-	var scale_texture := CurveTexture.new()
-	scale_texture.curve = scale_curve
-	particles.scale_curve = scale_texture
+	particles.scale_amount_curve = scale_curve
 	return particles
 
 func _process(delta: float) -> void:
