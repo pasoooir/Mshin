@@ -21,6 +21,7 @@ var unlocks := {
 	8: {"materials": ["vegetables"], "commercial": ["farmers_market"], "services": ["sewage"]},
 	9: {"materials": ["shovel"], "other": ["4lane_road"]},
 	10: {"materials": ["chair"], "commercial": ["furniture_store"], "other": ["education", "transportation"]},
+	11: {"materials": ["minerals"]},
 	12: {"factories": 6, "services": ["police"]},
 	13: {"materials": ["chemicals", "bricks"]},
 	14: {"materials": ["grass", "cement"], "commercial": ["gardening_supplies"], "services": ["waste"]},
@@ -45,8 +46,8 @@ var population_unlocks := {
 	12000: "monster_trouble",
 	20000: "cargo_ship",
 	27000: "mass_production_factory",
-		80000: "high_tech_factory",
-		150000: "nano_tech_factory"
+	80000: "high_tech_factory",
+	150000: "nano_tech_factory"
 }
 
 var unlocked_materials: Array = ["metal", "nails"]
@@ -92,7 +93,9 @@ func on_level_up(new_level: int) -> void:
 
 func get_factory_limit_for_level(level: int) -> int:
 	var limit := 2
-	for threshold in FACTORY_LIMITS:
+	var thresholds: Array = FACTORY_LIMITS.keys()
+	thresholds.sort()
+	for threshold in thresholds:
 		if level >= int(threshold):
 			limit = int(FACTORY_LIMITS[threshold])
 	return limit
