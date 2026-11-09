@@ -21,6 +21,22 @@ var pending_bulldoze_building_id: String = ""
 func _ready() -> void:
 	camera = get_viewport().get_camera_3d()
 
+# Godot can synthesize mouse events from a physical touch. Treat the real
+# ScreenTouch stream as authoritative so one finger is never counted twice.
+func _has_active_screen_touch() -> bool:
+	for pointer_id in pointer_start.keys():
+		if int(pointer_id) >= 0:
+			return true
+	return false
+
+func _clear_emulated_mouse_pointer() -> void:
+	pointer_start.erase(-1)
+	pointer_moved.erase(-1)
+	pointer_hold_elapsed.erase(-1)
+	pointer_last_position.erase(-1)
+	road_stroke_active.erase(-1)
+	road_stroke_last_cell.erase(-1)
+
 func _process(delta: float) -> void:
 	if BuildManager.is_moving or bulldoze_mode or bulldoze_road_mode or _is_road_mode():
 		return
@@ -140,6 +156,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		# Ignore synthetic mouse input while a real touch owns the gesture.
+		if _has_active_screen_touch():
+			return
 		if event.pressed:
 			pointer_start[-1] = event.position
 			pointer_moved[-1] = false
@@ -168,6 +187,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_hold_elapsed.erase(-1)
 			pointer_last_position.erase(-1)
 	elif event is InputEventMouseMotion:
+		if _has_active_screen_touch():
+			return
 		if pointer_start.has(-1):
 			pointer_last_position[-1] = event.position
 		if pointer_start.has(-1) and Vector2(pointer_start[-1]).distance_to(event.position) > TAP_SLOP:
@@ -180,6 +201,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_update_ghost(event.position)
 	elif event is InputEventScreenTouch:
 		if event.pressed:
+			# If emulation produced a mouse-down first, discard that duplicate
+			# pointer before starting the authoritative touch pointer.
+			_clear_emulated_mouse_pointer()
 			if pointer_start.size() > 0:
 				multi_touch_gesture = true
 				_cancel_all_road_strokes()
