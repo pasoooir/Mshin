@@ -7,6 +7,23 @@ const DEFAULT_CAPACITY: int = 50
 var capacity: int = DEFAULT_CAPACITY
 var items: Dictionary = {}
 
+const ITEM_DEFINITIONS := {
+	"metal":{"name":"Metal","type":"raw"},"wood":{"name":"Wood","type":"raw"},
+	"plastic":{"name":"Plastic","type":"raw"},"seeds":{"name":"Seeds","type":"raw"},
+	"minerals":{"name":"Minerals","type":"raw"},"chemicals":{"name":"Chemicals","type":"raw"},
+	"textiles":{"name":"Textiles","type":"raw"},"sugar_spices":{"name":"Sugar and Spices","type":"raw"},
+	"glass":{"name":"Glass","type":"raw"},"animal_feed":{"name":"Animal Feed","type":"raw"},
+	"electrical":{"name":"Electrical Components","type":"raw"},
+	"nails":{"name":"Nails","type":"crafted"},"planks":{"name":"Planks","type":"crafted"},
+	"bricks":{"name":"Bricks","type":"crafted"},"cement":{"name":"Cement","type":"crafted"},
+	"glue":{"name":"Glue","type":"crafted"},"paint":{"name":"Paint","type":"crafted"},
+	"hammer":{"name":"Hammer","type":"crafted"},"measuring_tape":{"name":"Measuring Tape","type":"crafted"},
+	"shovel":{"name":"Shovel","type":"crafted"},"chair":{"name":"Chair","type":"crafted"},
+	"table":{"name":"Table","type":"crafted"},"vegetables":{"name":"Vegetables","type":"crafted"}
+}
+var item_definitions: Dictionary = ITEM_DEFINITIONS
+
+
 # Backwards-compatible aliases used by existing HUD, trade and save code.
 var max_capacity: int:
 	get: return capacity
