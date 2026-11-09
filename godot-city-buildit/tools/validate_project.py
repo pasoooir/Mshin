@@ -106,7 +106,7 @@ for icon_name, (category, icon_id) in build_icon_paths.items():
         errors.append(f"Required Build PNG icon is missing: {category}/{icon_id}.png")
         continue
     icon_data = icon_path.read_bytes()
-    if len(icon_data) < 26 or icon_data[:8] != b"\\x89PNG\\r\\n\\x1a\\n":
+    if len(icon_data) < 26 or icon_data[:8] != b"\x89PNG\r\n\x1a\n":
         errors.append(f"Required Build icon is not a valid PNG: {category}/{icon_id}.png")
         continue
     bit_depth, color_type = struct.unpack(">BB", icon_data[24:26])
