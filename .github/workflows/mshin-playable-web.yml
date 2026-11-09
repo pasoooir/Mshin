@@ -21,7 +21,9 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: false
+  # Keep only the newest Pages publisher alive. A newer push supersedes
+  # an older queued/running publisher and prevents overlapping deployments.
+  cancel-in-progress: true
 
 jobs:
   build:
