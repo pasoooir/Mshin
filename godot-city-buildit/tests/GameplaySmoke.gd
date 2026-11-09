@@ -112,6 +112,14 @@ func _test_drag_gestures_do_not_place() -> void:
 	_check(BuildManager.buildings.size() == initial_count, "Two-finger gesture triggered an unintended placement.")
 	BuildManager.cancel_placement()
 
+func _node_has_label_text(node: Node, expected: String) -> bool:
+	if node is Label and (node as Label).text == expected:
+		return true
+	for child in node.get_children():
+		if _node_has_label_text(child, expected):
+			return true
+	return false
+
 func _test_build_menu_visibility() -> void:
 	var hud = get_node_or_null("HUD")
 	_check(hud != null, "Main scene HUD is missing.")
@@ -124,14 +132,51 @@ func _test_build_menu_visibility() -> void:
 	if build_button == null or toolbar == null:
 		return
 	_check(not toolbar.visible, "Right-side category toolbar should start closed.")
+	_check(_node_has_label_text(build_button, "BUILD"), "Build entry button must display a visible BUILD label.")
 	build_button.emit_signal("pressed")
 	await get_tree().process_frame
-	_check(toolbar.visible, "Tapping the hard-hat button must reveal the right-side category toolbar.")
+	_check(toolbar.visible, "Tapping Build must reveal the right-side category toolbar.")
 	var viewport_rect := get_viewport().get_visible_rect()
 	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category toolbar is outside the visible screen.")
-	build_button.emit_signal("pressed")
+	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.35, "Build category dock covers too much of the mobile play area.")
+	var category_labels := {
+		"Tool_Road": "Road",
+		"Tool_Residential": "Residential",
+		"Tool_Commercial": "Commercial",
+		"Tool_Industrial": "Industrial",
+		"Tool_Services": "Services",
+		"Tool_Parks": "Parks",
+		"Tool_Bulldoze": "Bulldoze"
+	}
+	for node_name in category_labels:
+		var category_button := toolbar.find_child(node_name, true, false)
+		_check(category_button != null, "Missing Build category button: " + node_name)
+		if category_button:
+			_check(_node_has_label_text(category_button, str(category_labels[node_name])), "Category label is not visible for " + node_name)
+
+	var close_button := toolbar.find_child("CloseBuildMenu", true, false) as Button
+	_check(close_button != null, "Build dock has no explicit Close button.")
+	if close_button:
+		close_button.emit_signal("pressed")
+		await get_tree().process_frame
+		_check(not toolbar.visible, "The explicit Close button did not close the Build dock.")
+
+	hud._show_submenu("commercial")
 	await get_tree().process_frame
-	_check(not toolbar.visible, "Tapping the hard-hat button a second time must close the category toolbar.")
+	for type_id in ["hardware_store", "farmers_market", "furniture_store"]:
+		_check(hud.submenu.find_child(type_id, true, false) != null, "Commercial Build menu is missing " + type_id)
+	var hardware_choice := hud.submenu.find_child("hardware_store", true, false) as Button
+	_check(hardware_choice != null and hardware_choice.text.contains("Unlocked at Level 4"), "Hardware Store must show its English unlock level.")
+	hud._show_submenu("services")
+	await get_tree().process_frame
+	for type_id in ["police_station", "sewage_pipe"]:
+		_check(hud.submenu.find_child(type_id, true, false) != null, "Services Build menu is missing " + type_id)
+	var police_choice := hud.submenu.find_child("police_station", true, false) as Button
+	_check(police_choice != null and police_choice.text.contains("Unlocked at Level 12"), "Police Station must show its English unlock level.")
+	_check(hud.submenu.get_global_rect().size.x < viewport_rect.size.x * 0.4, "Category item palette is not compactly docked.")
+	hud._close_build_menu()
+	await get_tree().process_frame
+	_check(not toolbar.visible and not hud.submenu.visible, "Closing the Build menu must hide both category and item panels.")
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
