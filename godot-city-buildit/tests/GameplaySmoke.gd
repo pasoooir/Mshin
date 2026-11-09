@@ -344,9 +344,37 @@ func _test_build_menu_visibility() -> void:
 	hud._on_submenu_option("services", "back")
 	_check(hud.submenu.get_node_or_null("group_power") != null, "Back must return to the Services group list.")
 	hud._on_submenu_option("services", "group_health")
-	var locked_health_group_entry = hud.submenu.get_node_or_null("group_locked")
-	_check(locked_health_group_entry != null and not locked_health_group_entry.disabled, "Locked Health entry must remain tappable.")
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Locked group must still provide Back.")
+	await get_tree().process_frame
+	for health_id in ["clinic_small", "clinic", "hospital"]:
+		_check(hud.submenu.get_node_or_null(health_id) != null, "Health submenu is missing: " + health_id)
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Health submenu must expose Back and Cancel.")
+	var locked_small_clinic := hud.submenu.get_node_or_null("clinic_small") as Button
+	_check(locked_small_clinic != null and not locked_small_clinic.disabled, "Locked Small Clinic must remain tappable for unlock feedback.")
+	if locked_small_clinic:
+		locked_small_clinic.emit_signal("pressed")
+		_check(hud.status_label.text.contains("Level 16"), "Tapping a locked clinic must explain its Level 16 unlock.")
+	var health_expected := {
+		"clinic_small": {"coverage": 10, "size": Vector2i(2, 2), "cost": 14000},
+		"clinic": {"coverage": 15, "size": Vector2i(2, 2), "cost": 21000},
+		"hospital": {"coverage": 24, "size": Vector2i(4, 2), "cost": 58000}
+	}
+	for health_id in health_expected:
+		var health_definition: Dictionary = BuildManager.building_types[health_id]
+		var expected: Dictionary = health_expected[health_id]
+		_check(int(health_definition.get("health", 0)) == 1, "Health facility must expose the separate health key: " + health_id)
+		_check(health_definition.get("service_group", "") == "health", "Health facility must belong to Health group: " + health_id)
+		_check(int(health_definition.get("coverage_tiles", 0)) == int(expected["coverage"]), "Health coverage tiles are incorrect: " + health_id)
+		_check(health_definition.get("size", Vector2i.ZERO) == expected["size"], "Health footprint is incorrect: " + health_id)
+		_check(int(health_definition.get("cost", 0)) == int(expected["cost"]), "Health cost is incorrect: " + health_id)
+		_check(int(health_definition.get("level", 0)) == 16, "Health facilities must unlock at Level 16: " + health_id)
+		_check(int(health_definition.get("pollution", 0)) == 0, "Health facilities must be pollution-free: " + health_id)
+		_check(int(health_definition.get("fire", 0)) == 0 and int(health_definition.get("police", 0)) == 0, "Health metadata must remain separate from Fire and Police: " + health_id)
+	var previous_level := GameManager.level
+	GameManager.level = 16
+	hud._on_submenu_option("services", "clinic_small")
+	_check(BuildManager.is_placing and BuildManager.selected_building_type == "clinic_small", "Unlocked Small Clinic must enter building placement mode.")
+	BuildManager.cancel_placement()
+	GameManager.level = previous_level
 	hud._on_submenu_option("services", "back")
 	hud._on_cancel_pressed()
 	await get_tree().process_frame
@@ -759,7 +787,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 39, "Move whitelist must include all 39 requested building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 42, "Move whitelist must include all 42 requested building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 
