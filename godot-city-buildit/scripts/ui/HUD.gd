@@ -638,7 +638,6 @@ func _show_group_options(groups: Array, parent_category: String) -> void:
 		var group_label := str(group.get("label", group_id))
 		var buildings: Array = group.get("buildings", [])
 		_add_submenu_button("group_" + group_id, group_label, group_id, "Choose category" if not buildings.is_empty() else "Coming later", false, parent_category, 1, buildings.is_empty())
-	_finish_submenu_row()
 
 func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	active_service_group = group_id if parent_category == "services" else ""
