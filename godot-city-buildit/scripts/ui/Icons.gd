@@ -12,18 +12,27 @@ const SERVICE_IDS := ["power_wind", "power_coal", "power_wind_deluxe", "power_so
 const SPECIALIZATION_IDS := ["park_small"]
 const SERVICE_GROUP_IDS := ["power", "water", "sewage", "waste", "fire", "police", "health", "government"]
 const SPECIALIZATION_GROUP_IDS := ["parks", "education", "transportation", "entertainment", "gambling", "landmarks", "worship"]
+const UI_IDS := ["placeholder", "storage", "trade", "save", "cancel", "close", "collect", "lock", "back", "confirm", "bulldoze", "build_menu", "settings", "info", "plus", "money", "population", "happiness", "level", "warning", "check", "arrow_left", "arrow_right", "services", "commercial", "industrial", "road", "residential", "parks", "hard_hat", "simoleons", "golden_key", "fire", "power", "water", "park", "police", "health", "sewage", "waste", "government", "education", "transportation", "entertainment", "gambling", "beach", "mountain", "landmark", "trade_depot", "global_trade", "epic", "regions", "fallback"]
+const ROAD_IDS := ["road", "road_build", "road_upgrade", "road_bulldoze"]
+const STATUS_IDS := ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_full", "ready_collect", "upgrading", "abandoned"]
+static var _texture_cache: Dictionary = {}
 
 static func path(category: String, id: String) -> String:
 	return "%s%s/%s.png" % [ROOT, category, id]
 
 static func get_tex(category: String, id: String) -> Texture2D:
 	var icon_path := path(category, id)
+	if _texture_cache.has(icon_path):
+		return _texture_cache[icon_path] as Texture2D
 	if ResourceLoader.exists(icon_path):
 		var texture := load(icon_path) as Texture2D
 		if texture != null:
+			_texture_cache[icon_path] = texture
 			return texture
 	if ResourceLoader.exists(FALLBACK):
-		return load(FALLBACK) as Texture2D
+		var fallback := load(FALLBACK) as Texture2D
+		_texture_cache[icon_path] = fallback
+		return fallback
 	push_error("Missing icon and fallback: %s" % icon_path)
 	return null
 
@@ -76,3 +85,43 @@ static func make_item_icon(category: String, id: String, display_size: Vector2 =
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return icon
+
+static func get_icon_keys() -> Array[String]:
+	var keys: Array[String] = []
+	for icon_id in UI_IDS:
+		keys.append(str(icon_id))
+	for icon_id in RAW_IDS + CRAFTED_IDS + RESIDENTIAL_IDS + COMMERCIAL_IDS + INDUSTRIAL_IDS + SERVICE_IDS + SPECIALIZATION_IDS:
+		if not keys.has(str(icon_id)):
+			keys.append(str(icon_id))
+	return keys
+
+static func validate_required_build_icons() -> bool:
+	var valid := true
+	for icon_id in ["road", "residential", "commercial", "industrial", "services", "parks", "bulldoze", "hard_hat"]:
+		var texture := get_icon_tex(icon_id)
+		if texture == null or texture.get_image() == null or texture.get_image().is_empty():
+			push_error("Required PNG build icon failed to load: " + icon_id)
+			valid = false
+	return valid
+
+static func validate_all_icons() -> bool:
+	var valid := validate_required_build_icons()
+	var catalog := {
+		"ui": UI_IDS,
+		"raw": RAW_IDS,
+		"crafted": CRAFTED_IDS,
+		"residential": RESIDENTIAL_IDS,
+		"commercial": COMMERCIAL_IDS,
+		"industrial": INDUSTRIAL_IDS,
+		"services": SERVICE_IDS,
+		"specializations": SPECIALIZATION_IDS,
+		"roads": ROAD_IDS,
+		"status": STATUS_IDS
+	}
+	for category in catalog:
+		for icon_id in catalog[category]:
+			var icon_path := path(str(category), str(icon_id))
+			if not ResourceLoader.exists(icon_path):
+				push_error("Missing PNG icon resource: " + icon_path)
+				valid = false
+	return valid
