@@ -658,7 +658,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	else:
 		var buildings: Array = selected_group.get("buildings", [])
 		if buildings.is_empty():
-			_add_submenu_button("group_locked", str(selected_group.get("label", group_id)), group_id, "Unlocks in a future update", true, parent_category)
+			_add_submenu_button("group_locked", str(selected_group.get("label", group_id)), group_id, "Unlocks in a future update", false, parent_category, 1, true)
 		else:
 			for type_id_value in buildings:
 				var type_id := str(type_id_value)
