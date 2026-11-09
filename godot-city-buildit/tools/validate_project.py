@@ -191,7 +191,7 @@ required_movable_types = {
     "art_supplies", "hardware_store", "farmers_market", "furniture_store",
     "industrial_1", "industrial_2", "industrial_3",
     "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
-    "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
+    "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
     "park_small"
 }
 move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
@@ -210,7 +210,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 39"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 42"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
@@ -223,14 +223,34 @@ for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health"
     if f'"id":"{group_id}"' not in services_hud:
         errors.append(f"Services group is missing or out of order: {group_id}")
 for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
-                    "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "town_hall"]:
+                    "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "town_hall"]:
     if f'"{building_id}": {{"name"' not in build_manager:
         errors.append(f"Services menu building definition is missing: {building_id}")
 for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
-                   "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "town_hall"]:
+                   "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "clinic_small", "clinic", "hospital", "town_hall"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
     if '"service_group"' not in definition_line:
         errors.append(f"Service building lacks service_group metadata: {service_id}")
+health_contracts = {
+    "clinic_small": (10, "Vector2i(2,2)", 14000),
+    "clinic": (15, "Vector2i(2,2)", 21000),
+    "hospital": (24, "Vector2i(4,2)", 58000),
+}
+for health_id, (expected_coverage, expected_size, expected_cost) in health_contracts.items():
+    match = re.search(r'"' + health_id + r'": \{([^\n]+)\}', build_manager)
+    if match is None:
+        errors.append(f"Health facility definition is missing: {health_id}")
+        continue
+    definition = match.group(1)
+    if f'"coverage_tiles":{expected_coverage}' not in definition or '"level":16' not in definition:
+        errors.append(f"Health facility coverage/unlock contract is incorrect: {health_id}")
+    if f'"size":{expected_size}' not in definition or f'"cost":{expected_cost}' not in definition:
+        errors.append(f"Health facility footprint/cost is incorrect: {health_id}")
+    if '"health":1' not in definition or '"service_group":"health"' not in definition or '"category":"service"' not in definition:
+        errors.append(f"Health facility must use separate health service metadata: {health_id}")
+    if '"fire":' in definition or '"police":' in definition or '"pollution":0' not in definition or '"pollution_radius":0.0' not in definition:
+        errors.append(f"Health facility must be distinct from Fire/Police and pollution-free: {health_id}")
+
 police_contracts = {
     "police_small": (10, "Vector2i(1,1)", 5100),
     "police_basic": (15, "Vector2i(2,2)", 9400),
@@ -280,7 +300,7 @@ ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(enco
 for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_tiles", COVERAGE_TILES)', 'int(definition.get("fire", 0)) > 0', "home_flat.distance_to(station_flat) <= station_radius"]:
     if contract not in fire_manager_source:
         errors.append(f"FireHazardManager dynamic coverage contract is missing: {contract}")
-for contract in ["EmergencyCoveragePreview", "CoverageArea", "CoverageBoundary", "FireHazardManager.get_coverage_radius_world(definition)", 'int(definition.get("police", 0)) > 0', "Color(0.18, 0.38, 0.98, 0.95)"]:
+for contract in ["EmergencyCoveragePreview", "CoverageArea", "CoverageBoundary", "FireHazardManager.get_coverage_radius_world(definition)", 'int(definition.get("police", 0)) > 0', 'int(definition.get("health", 0)) > 0', "Color(0.18, 0.38, 0.98, 0.95)", "Color(0.20, 0.96, 0.62, 0.96)"]:
     if contract not in ghost_preview_source:
         errors.append(f"Fire placement coverage preview contract is missing: {contract}")
 if city_input_source.count("BuildManager.building_types.get(BuildManager.selected_building_type, {})") < 2:
