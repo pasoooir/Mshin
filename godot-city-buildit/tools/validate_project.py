@@ -226,12 +226,12 @@ for building_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
         errors.append(f"Services menu building definition is missing: {building_id}")
 for service_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
                    "fire_station_small", "fire_station", "police_station", "town_hall"]:
-    match = re.search(rf'^[ \\t]*"{service_id}"[ \\t]*:[ \\t]*\\{{([^\\n]+)', build_manager, re.M)
-    if match is None or '"service_group"' not in match.group(1):
+    definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
+    if '"service_group"' not in definition_line:
         errors.append(f"Service building lacks service_group metadata: {service_id}")
 for fire_id in ["fire_station_small", "fire_station"]:
-    match = re.search(rf'^[ \\t]*"{fire_id}"[ \\t]*:[ \\t]*\\{{([^\\n]+)', build_manager, re.M)
-    if match is None or '"fire":1' not in match.group(1):
+    definition_line = next((line for line in build_manager.splitlines() if f'"{fire_id}"' in line), "")
+    if '"fire":1' not in definition_line:
         errors.append(f"Fire station must provide fire coverage: {fire_id}")
 
 if errors:
