@@ -78,7 +78,8 @@ func _update_coverage_preview(definition: Dictionary) -> void:
 		return
 	var is_fire_station := int(definition.get("fire", 0)) > 0
 	var is_police_station := int(definition.get("police", 0)) > 0
-	coverage_preview_root.visible = is_fire_station or is_police_station
+	var is_health_station := int(definition.get("health", 0)) > 0
+	coverage_preview_root.visible = is_fire_station or is_police_station or is_health_station
 	if not coverage_preview_root.visible:
 		current_coverage_radius = -1.0
 		return
@@ -88,6 +89,9 @@ func _update_coverage_preview(definition: Dictionary) -> void:
 	if is_police_station:
 		disc_material.albedo_color = Color(0.10, 0.22, 0.72, 0.15)
 		ring_material.albedo_color = Color(0.18, 0.38, 0.98, 0.95)
+	elif is_health_station:
+		disc_material.albedo_color = Color(0.12, 0.72, 0.48, 0.16)
+		ring_material.albedo_color = Color(0.20, 0.96, 0.62, 0.96)
 	else:
 		disc_material.albedo_color = Color(0.08, 0.82, 0.91, 0.13)
 		ring_material.albedo_color = Color(0.12, 0.94, 1.0, 0.92)
