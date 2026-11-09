@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 import sys
+import struct
 
 ROOT = Path(__file__).resolve().parents[1]
 errors = []
