@@ -302,18 +302,15 @@ func _capsule_style() -> StyleBoxFlat:
 	return style
 
 func _build_toolbars() -> void:
-	var old_menu := get_node_or_null("LeftMenu")
-	if old_menu:
-		old_menu.queue_free()
-	var old_toolbar := get_node_or_null("LeftToolbar")
-	if old_toolbar:
-		old_toolbar.queue_free()
+	for old_path in ["LeftMenu", "LeftToolbar"]:
+		var old_node := get_node_or_null(old_path)
+		if old_node:
+			old_node.queue_free()
 
-	# Compact two-column category dock replaces the narrow, permanently visible
-	# vertical ScrollContainer. Every category is reachable without long scrolling.
 	var viewport_size := get_viewport().get_visible_rect().size
-	var category_size := clampf(viewport_size.y * 0.17, 58.0, 76.0)
-	var panel_height := category_size * 4.0 + 8.0 * 3.0 + 24.0
+	var category_width := 86.0
+	var category_height := clampf((viewport_size.y - 66.0) / 4.0 - 5.0, 44.0, 70.0)
+	var panel_height := 4.0 * category_height + 3.0 * 5.0 + 48.0
 
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
@@ -321,56 +318,106 @@ func _build_toolbars() -> void:
 	toolbar.anchor_right = 1.0
 	toolbar.anchor_top = 0.5
 	toolbar.anchor_bottom = 0.5
-	toolbar.offset_left = -(category_size * 2.0 + 8.0 + 24.0) - 86.0
-	toolbar.offset_right = -86.0
+	toolbar.offset_left = -290.0
+	toolbar.offset_right = -92.0
 	toolbar.offset_top = -panel_height * 0.5
 	toolbar.offset_bottom = panel_height * 0.5
-	toolbar.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.90), Color(0.65, 0.82, 0.92, 0.34)))
+	toolbar.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.96), Color(0.65, 0.82, 0.92, 0.48)))
 	toolbar.mouse_filter = Control.MOUSE_FILTER_STOP
-	toolbar.z_index = 30
+	toolbar.z_index = 60
 	add_child(toolbar)
 	toolbar.hide()
 
-	# A persistent build button opens the category grid on demand. This avoids
-	# covering the currency HUD or shrinking the play area on short landscape screens.
-	var build_toggle := _make_icon_button("hard_hat", "Build", Vector2(68, 68))
+	var dock_content := VBoxContainer.new()
+	dock_content.add_theme_constant_override("separation", 7)
+	dock_content.mouse_filter = Control.MOUSE_FILTER_PASS
+	toolbar.add_child(dock_content)
+
+	var dock_header := HBoxContainer.new()
+	dock_header.name = "BuildMenuHeader"
+	dock_header.alignment = BoxContainer.ALIGNMENT_CENTER
+	dock_header.add_theme_constant_override("separation", 6)
+	dock_content.add_child(dock_header)
+
+	var dock_title := Label.new()
+	dock_title.text = "BUILD"
+	dock_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dock_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dock_title.add_theme_color_override("font_color", Color("#F4F8FC"))
+	dock_title.add_theme_font_size_override("font_size", 16)
+	dock_header.add_child(dock_title)
+
+	var close_dock := Button.new()
+	close_dock.name = "CloseBuildMenu"
+	close_dock.text = "X"
+	close_dock.custom_minimum_size = Vector2(34, 32)
+	close_dock.tooltip_text = "Close Build Menu"
+	close_dock.focus_mode = Control.FOCUS_NONE
+	close_dock.add_theme_font_size_override("font_size", 18)
+	close_dock.add_theme_color_override("font_color", Color.WHITE)
+	close_dock.add_theme_stylebox_override("normal", _toolbar_style(Color(0.55, 0.16, 0.16, 0.9), Color(1.0, 0.55, 0.45, 0.9)))
+	close_dock.add_theme_stylebox_override("hover", _toolbar_style(Color(0.78, 0.20, 0.18, 1.0), Color.WHITE))
+	close_dock.pressed.connect(_close_build_menu)
+	dock_header.add_child(close_dock)
+
+	var toolbar_items := GridContainer.new()
+	toolbar_items.name = "RightToolbarItems"
+	toolbar_items.columns = 2
+	toolbar_items.add_theme_constant_override("h_separation", 5)
+	toolbar_items.add_theme_constant_override("v_separation", 5)
+	toolbar_items.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	dock_content.add_child(toolbar_items)
+
+	var tools := [
+		["road", "Road"],
+		["residential", "Residential"],
+		["commercial", "Commercial"],
+		["industrial", "Industrial"],
+		["services", "Services"],
+		["parks", "Parks"],
+		["bulldoze", "Bulldoze"]
+	]
+	for item in tools:
+		var button := _make_category_button(str(item[0]), str(item[1]), Vector2(category_width, category_height))
+		button.name = "Tool_" + str(item[0]).capitalize()
+		toolbar_items.add_child(button)
+		var category_id := "park" if item[0] == "parks" else str(item[0])
+		button.pressed.connect(_on_category_pressed.bind(category_id))
+
+	var build_toggle := Button.new()
 	build_toggle.name = "BuildMenuButton"
 	build_toggle.anchor_left = 1.0
 	build_toggle.anchor_right = 1.0
 	build_toggle.anchor_top = 0.5
 	build_toggle.anchor_bottom = 0.5
-	build_toggle.offset_left = -76.0
+	build_toggle.offset_left = -88.0
 	build_toggle.offset_right = -8.0
-	build_toggle.offset_top = -34.0
-	build_toggle.offset_bottom = 34.0
-	build_toggle.z_index = 31
+	build_toggle.offset_top = -42.0
+	build_toggle.offset_bottom = 42.0
+	build_toggle.custom_minimum_size = Vector2(80, 84)
+	build_toggle.tooltip_text = "Open Build Menu"
+	build_toggle.focus_mode = Control.FOCUS_NONE
+	build_toggle.z_index = 61
+	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.19, 0.26, 0.98), Color("#FFC857")))
+	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color(0.13, 0.30, 0.40, 1.0), Color("#FFE19A")))
+	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.20, 0.34, 0.38, 1.0), Color("#FFE19A")))
+	var build_content := VBoxContainer.new()
+	build_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	build_content.alignment = BoxContainer.ALIGNMENT_CENTER
+	build_content.add_theme_constant_override("separation", 1)
+	build_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	build_toggle.add_child(build_content)
+	var build_icon := IconAtlas.make_icon("hard_hat", Vector2(42, 42))
+	build_content.add_child(build_icon)
+	var build_label := Label.new()
+	build_label.name = "BuildButtonLabel"
+	build_label.text = "BUILD"
+	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	build_label.add_theme_color_override("font_color", Color.WHITE)
+	build_label.add_theme_font_size_override("font_size", 13)
+	build_content.add_child(build_label)
 	add_child(build_toggle)
 	build_toggle.pressed.connect(_toggle_category_menu)
-
-	var toolbar_items := GridContainer.new()
-	toolbar_items.name = "RightToolbarItems"
-	toolbar_items.columns = 2
-	toolbar_items.add_theme_constant_override("h_separation", 8)
-	toolbar_items.add_theme_constant_override("v_separation", 8)
-	toolbar_items.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	toolbar_items.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	toolbar.add_child(toolbar_items)
-
-	# Main city navigation stays icon-first; labels are available as tooltips.
-	var tools := [
-		["road", "Road", "road"],
-		["residential", "Residential", "residential"],
-		["commercial", "Commercial", "commercial"],
-		["industrial", "Industrial", "industrial"],
-		["services", "Services", "services"],
-		["park", "Park", "parks"],
-		["bulldoze", "Bulldozer", "bulldoze"]
-	]
-	for item in tools:
-		var button := _make_icon_button(item[2], item[1], Vector2(category_size, category_size))
-		button.name = "Tool_" + str(item[0]).capitalize()
-		toolbar_items.add_child(button)
-		button.pressed.connect(_on_category_pressed.bind(item[0]))
 
 	var actions := HBoxContainer.new()
 	actions.name = "BottomActions"
@@ -393,16 +440,45 @@ func _build_toolbars() -> void:
 
 	submenu = GridContainer.new()
 	submenu.name = "ToolSubmenu"
-	submenu.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	submenu.offset_left = 12
-	submenu.offset_top = -252
-	submenu.offset_right = -12
-	submenu.offset_bottom = -112
-	submenu.columns = 2 if viewport_size.x < 900.0 else 5
-	submenu.add_theme_constant_override("h_separation", 8)
-	submenu.add_theme_constant_override("v_separation", 8)
+	submenu.anchor_left = 1.0
+	submenu.anchor_right = 1.0
+	submenu.anchor_top = 0.5
+	submenu.anchor_bottom = 0.5
+	submenu.columns = 2
+	submenu.add_theme_constant_override("h_separation", 6)
+	submenu.add_theme_constant_override("v_separation", 6)
+	submenu.z_index = 62
 	add_child(submenu)
 	submenu.hide()
+
+func _make_category_button(icon_name: String, label_text: String, button_size: Vector2) -> Button:
+	var button := Button.new()
+	button.custom_minimum_size = button_size
+	button.tooltip_text = label_text
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.07, 0.14, 0.19, 0.72), Color(0.30, 0.48, 0.58, 0.50)))
+	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.15, 0.30, 0.39, 0.96), Color("#FFC857")))
+	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.22, 0.34, 0.37, 1.0), Color("#FFE19A")))
+	var content := VBoxContainer.new()
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 1)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(content)
+	var icon_size := minf(38.0, button_size.y * 0.54)
+	var icon := IconAtlas.make_icon(icon_name, Vector2(icon_size, icon_size))
+	content.add_child(icon)
+	var label := Label.new()
+	label.text = label_text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", Color("#F4F8FC"))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.95))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.add_theme_font_size_override("font_size", 11 if button_size.y < 56.0 else 12)
+	content.add_child(label)
+	return button
 
 func _make_icon_button(kind: String, hint: String, requested_size: Vector2 = Vector2.ZERO) -> Button:
 	var button := Button.new()
@@ -444,33 +520,40 @@ func _toggle_category_menu() -> void:
 	if toolbar == null:
 		push_error("[HUD] RightToolbar is missing; Build menu cannot open.")
 		return
-
-	# The hard-hat button is the single entry point to the right-side category
-	# dock. Always close a floating category submenu before changing dock state.
-	if submenu and submenu.visible:
-		submenu.hide()
-		active_category = ""
-
-	if toolbar.visible:
-		toolbar.hide()
-	else:
-		toolbar.show()
-		toolbar.z_index = 60
-		toolbar.queue_sort()
-		toolbar.move_to_front()
-
-	# Keep the hard-hat control above the dock so it remains reachable to close
-	# the menu again on touch screens.
+	if toolbar.visible or (submenu and submenu.visible):
+		_close_build_menu()
+		return
+	toolbar.show()
+	toolbar.z_index = 60
+	toolbar.move_to_front()
+	var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
+	if build_label:
+		build_label.text = "CLOSE"
 	var build_button := get_node_or_null("BuildMenuButton") as Control
 	if build_button:
 		build_button.z_index = 61
 		build_button.move_to_front()
 
+func _close_build_menu() -> void:
+	if submenu:
+		submenu.hide()
+	active_category = ""
+	var toolbar := get_node_or_null("RightToolbar") as Control
+	if toolbar:
+		toolbar.hide()
+	var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
+	if build_label:
+		build_label.text = "BUILD"
+	var build_button := get_node_or_null("BuildMenuButton") as Control
+	if build_button:
+		build_button.tooltip_text = "Open Build Menu"
+
+
 func _on_category_pressed(category: String) -> void:
 	if category == "park":
 		_select_building_type("park_small")
-		var park_toolbar := get_node_or_null("RightToolbar")
-		if park_toolbar: park_toolbar.hide()
 		return
 	if category == "bulldoze":
 		_start_bulldoze_mode()
@@ -481,67 +564,110 @@ func _on_category_pressed(category: String) -> void:
 	active_category = category
 	_show_submenu(category)
 	var category_toolbar := get_node_or_null("RightToolbar")
-	if category_toolbar: category_toolbar.hide()
+	if category_toolbar:
+		category_toolbar.hide()
 
 func _show_submenu(category: String) -> void:
 	for child in submenu.get_children():
 		submenu.remove_child(child)
 		child.queue_free()
-	submenu.show()
+
 	var options: Array = []
-	match category:
-		"road":
-			options = [["road_build", "Build Road", 1], ["bulldoze_road", "Bulldoze Road", 1]]
-		"residential":
-			options = [["residential_villa", "Villa House", 1], ["residential_apartment", "Apartment", 3], ["residential_farm", "Farm", 2]]
-		"commercial":
-			options = [["shop_chain", "Chain Store", 1], ["restaurant_traditional", "Traditional Restaurant", 4], ["fast_food", "Fast Food", 3], ["art_supplies", "Art Supplies Store", 5]]
-		"industrial":
-			options = [["industrial_1", "Small Factory - Metal", 1], ["industrial_2", "Wood Factory - Wood", 2]]
-		"services":
-			options = [["power_wind", "Wind Power", 1], ["water_tower", "Water Tower", 1], ["fire_station", "Fire Station", 5]]
+	if category == "road":
+		options = [["road_build", "Build Road", 1], ["bulldoze_road", "Bulldoze Road", 1]]
+	else:
+		var definition_category := "service" if category == "services" else category
+		for type_id in BuildManager.building_types:
+			var definition: Dictionary = BuildManager.building_types[type_id]
+			if str(definition.get("category", "")) == definition_category:
+				var item_title := str(definition.get("name", type_id))
+				match str(type_id):
+					"industrial_1": item_title = "Small Factory - Metal"
+					"industrial_2": item_title = "Wood Factory - Wood"
+					"industrial_3": item_title = "Factory+ - Plastic"
+				options.append([str(type_id), item_title, int(definition.get("level", 1))])
 
+	if options.is_empty():
+		status_label.text = "No build items are available in this category."
+		_close_building_submenu(false)
+		return
+
+	submenu.show()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var columns := 2 if viewport_size.x < 900.0 else mini(options.size() + 1, 5)
-	var item_height := clampf(viewport_size.y * 0.16, 54.0, 78.0)
-	var rows := ceili(float(options.size() + 1) / float(columns))
-	var panel_height := float(rows) * item_height + float(rows - 1) * 8.0 + 16.0
+	var columns := 2 if viewport_size.x < 1200.0 else 3
+	var panel_width := 220.0 if columns == 2 else 390.0
+	var rows := ceili(float(options.size() + 2) / float(columns))
+	var item_height := clampf((viewport_size.y - 28.0) / float(rows) - 6.0, 44.0, 58.0)
+	var panel_height := float(rows) * item_height + float(rows - 1) * 6.0
 	submenu.columns = columns
-	submenu.offset_left = 12
-	submenu.offset_right = -12
-	submenu.offset_top = -panel_height - 112.0
-	submenu.offset_bottom = -112.0
+	submenu.offset_left = -(panel_width + 12.0)
+	submenu.offset_right = -12.0
+	submenu.offset_top = -panel_height * 0.5
+	submenu.offset_bottom = panel_height * 0.5
+	var item_width := (panel_width - 12.0 - 6.0 * float(columns - 1)) / float(columns)
 
-	var item_width := maxf(120.0, (viewport_size.x - 24.0 - 8.0 * float(columns - 1)) / float(columns))
 	for option in options:
-		var type_id: String = option[0]
-		var title: String = option[1]
+		var type_id: String = str(option[0])
+		var title: String = str(option[1])
 		var required_level: int = int(option[2])
+		var locked := GameManager.level < required_level
 		var choice := Button.new()
 		choice.name = type_id
-		choice.text = title
 		choice.custom_minimum_size = Vector2(item_width, item_height)
 		choice.focus_mode = Control.FOCUS_NONE
-		choice.tooltip_text = ("Unlocked at Level %d" % required_level) if GameManager.level < required_level else title
-		choice.add_theme_font_size_override("font_size", int(17 * _ui_scale))
-		choice.add_theme_color_override("font_color", Color.WHITE)
-		choice.add_theme_stylebox_override("normal", _toolbar_style(Color(0.10, 0.18, 0.23, 0.94), Color(0.55, 0.78, 0.9, 0.7)))
-		choice.add_theme_stylebox_override("hover", _toolbar_style(Color(0.18, 0.34, 0.42, 0.98), Color(0.95, 0.82, 0.48, 0.95)))
-		choice.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.30, 0.42, 0.28, 0.98), Color(0.95, 0.82, 0.48, 1.0)))
-		# Locked entries remain clickable so the player receives an explicit unlock message.
-		if GameManager.level < required_level:
-			choice.text += "\nUnlocked at Level %d" % required_level
+		choice.tooltip_text = ("Unlocked at Level %d" % required_level) if locked else title
+		choice.add_theme_color_override("font_color", Color("#F4F8FC"))
+		choice.add_theme_color_override("font_disabled_color", Color("#F4F8FC"))
+		choice.add_theme_stylebox_override("normal", _toolbar_style(Color(0.10, 0.18, 0.23, 0.97), Color(0.55, 0.78, 0.9, 0.7)))
+		choice.add_theme_stylebox_override("hover", _toolbar_style(Color(0.18, 0.34, 0.42, 0.99), Color(0.95, 0.82, 0.48, 0.95)))
+		choice.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.30, 0.42, 0.28, 0.99), Color(0.95, 0.82, 0.48, 1.0)))
+		var choice_content := VBoxContainer.new()
+		choice_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		choice_content.alignment = BoxContainer.ALIGNMENT_CENTER
+		choice_content.add_theme_constant_override("separation", 0)
+		choice_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		choice.add_child(choice_content)
+		var title_label := Label.new()
+		title_label.text = title
+		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title_label.add_theme_color_override("font_color", Color("#F4F8FC"))
+		title_label.add_theme_font_size_override("font_size", 12)
+		choice_content.add_child(title_label)
+		if locked:
+			var unlock_label := Label.new()
+			unlock_label.text = "Unlocked at Level %d" % required_level
+			unlock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			unlock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			unlock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			unlock_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			unlock_label.add_theme_color_override("font_color", Color("#FFD98A"))
+			unlock_label.add_theme_font_size_override("font_size", 10)
+			choice_content.add_child(unlock_label)
 		submenu.add_child(choice)
 		choice.pressed.connect(_on_submenu_option.bind(category, type_id))
+
+	var back_button := Button.new()
+	back_button.name = "BackToCategories"
+	back_button.text = "BACK"
+	back_button.custom_minimum_size = Vector2(item_width, item_height)
+	back_button.focus_mode = Control.FOCUS_NONE
+	back_button.add_theme_font_size_override("font_size", 14)
+	back_button.pressed.connect(_close_building_submenu.bind(false))
+	submenu.add_child(back_button)
+
 	var close_button := Button.new()
 	close_button.name = "CloseSubmenu"
-	close_button.text = "X"
+	close_button.text = "CLOSE  X"
 	close_button.custom_minimum_size = Vector2(item_width, item_height)
 	close_button.focus_mode = Control.FOCUS_NONE
-	close_button.tooltip_text = "Close menu"
-	close_button.add_theme_font_size_override("font_size", int(26 * _ui_scale))
-	close_button.pressed.connect(_close_building_submenu.bind(false))
+	close_button.tooltip_text = "Close Build Menu"
+	close_button.add_theme_font_size_override("font_size", 14)
+	close_button.pressed.connect(_close_build_menu)
 	submenu.add_child(close_button)
+
 
 func _select_building_type(type_id: String) -> void:
 	if not BuildManager.building_types.has(type_id):
@@ -613,11 +739,7 @@ func _start_bulldoze_mode() -> void:
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
 	if city_input:
 		city_input.set_bulldoze_mode(true)
-	if submenu:
-		submenu.hide()
-	var category_toolbar := get_node_or_null("RightToolbar")
-	if category_toolbar: category_toolbar.hide()
-	active_category = ""
+	_close_build_menu()
 	_set_bulldozer_indicator(true)
 	status_label.text = "Bulldozer active — tap a building twice to demolish. Tap a road to remove it. Press X to cancel."
 
@@ -628,9 +750,7 @@ func _start_bulldoze_road_mode() -> void:
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
 	if city_input:
 		city_input.set_bulldoze_road_mode(true)
-	if submenu:
-		submenu.hide()
-	active_category = ""
+	_close_build_menu()
 	_set_bulldozer_indicator(true)
 	status_label.text = "Bulldozer active — tap a road to remove it. Press X to cancel."
 
@@ -646,8 +766,7 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 				status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile). Press X to exit."
 			else:
 				status_label.text = "Road system is unavailable."
-			submenu.hide()
-			active_category = ""
+			_close_build_menu()
 		elif option_id == "bulldoze_road":
 			_start_bulldoze_road_mode()
 	else:
@@ -659,9 +778,23 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 	active_category = ""
 	if cancel_placement:
 		BuildManager.cancel_placement()
+	var category_toolbar := get_node_or_null("RightToolbar") as Control
+	var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if not BuildManager.is_placing:
-		var category_toolbar := get_node_or_null("RightToolbar")
-		if category_toolbar: category_toolbar.show()
+		if category_toolbar:
+			category_toolbar.show()
+		if build_label:
+			build_label.text = "CLOSE"
+		if build_button_node:
+			build_button_node.tooltip_text = "Close Build Menu"
+	else:
+		if category_toolbar:
+			category_toolbar.hide()
+		if build_label:
+			build_label.text = "BUILD"
+		if build_button_node:
+			build_button_node.tooltip_text = "Open Build Menu"
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
@@ -848,9 +981,16 @@ func _on_cancel_pressed() -> void:
 	BuildManager.cancel_placement()
 	if submenu:
 		submenu.hide()
-	var category_toolbar := get_node_or_null("RightToolbar")
-	if category_toolbar: category_toolbar.show()
 	active_category = ""
+	var category_toolbar := get_node_or_null("RightToolbar") as Control
+	if category_toolbar:
+		category_toolbar.show()
+	var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
+	if build_label:
+		build_label.text = "CLOSE"
+	if build_button_node:
+		build_button_node.tooltip_text = "Close Build Menu"
 	if was_moving:
 		status_label.text = "Move cancelled. Building returned to its original location."
 	else:

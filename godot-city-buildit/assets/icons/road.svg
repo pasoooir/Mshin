@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs><linearGradient id="asphalt" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#687984"/><stop offset="1" stop-color="#263944"/></linearGradient><linearGradient id="curb" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F4F4E9"/><stop offset="1" stop-color="#A8B5B9"/></linearGradient></defs>
+<ellipse cx="64" cy="110" rx="48" ry="7" fill="#18384A" opacity=".16"/>
+<path d="m18 28 82 0 22 70H6z" fill="url(#asphalt)" stroke="#263B47" stroke-width="4" stroke-linejoin="round"/>
+<path d="m18 28 82 0 5 10H15z" fill="url(#curb)" stroke="#788B91" stroke-width="2"/>
+<path d="M11 88h106l5 10H6z" fill="#D5DFDD" stroke="#788B91" stroke-width="2"/>
+<path d="M64 39v11m0 9v11m0 9v11" stroke="#FFD45C" stroke-width="6" stroke-linecap="round"/>
+<path d="M26 45h12m52 0h12" stroke="#F8F7E9" stroke-width="3" stroke-linecap="round"/>
+</svg>

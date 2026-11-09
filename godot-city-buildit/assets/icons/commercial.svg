@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs><linearGradient id="store" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8EDCF3"/><stop offset="1" stop-color="#347EB8"/></linearGradient><linearGradient id="awning" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFE58A"/><stop offset="1" stop-color="#E39B35"/></linearGradient><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#E4FAFF"/><stop offset="1" stop-color="#69B8D5"/></linearGradient></defs>
+<ellipse cx="64" cy="111" rx="45" ry="7" fill="#18384A" opacity=".16"/>
+<path d="M22 47h83v60H22z" fill="url(#store)" stroke="#31566B" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="m16 48 10-25h76l10 25z" fill="url(#awning)" stroke="#8C5D2C" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M26 48v11h18V48m0 0v11h18V48m0 0v11h18V48m0 0v11h18V48" fill="#F4F0DF" stroke="#8C5D2C" stroke-width="2"/>
+<path d="M32 68h27v25H32zM70 68h25v25H70z" fill="url(#glass)" stroke="#31566B" stroke-width="3"/>
+<path d="M58 83h13v24H58z" fill="#A96A3D" stroke="#70482E" stroke-width="2"/>
+<path d="M35 74h20m-20 7h20m19-7h17" stroke="#FFFFFF" stroke-width="2" opacity=".65"/>
+</svg>

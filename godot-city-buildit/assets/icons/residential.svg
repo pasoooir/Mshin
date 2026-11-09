@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs><linearGradient id="wall" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFF2D5"/><stop offset="1" stop-color="#D3A977"/></linearGradient><linearGradient id="roof" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F47B65"/><stop offset="1" stop-color="#A93638"/></linearGradient><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#C8F2FF"/><stop offset="1" stop-color="#4B9EC5"/></linearGradient></defs>
+<ellipse cx="64" cy="111" rx="45" ry="7" fill="#18384A" opacity=".16"/>
+<path d="m24 58 39-29 41 27v48H24z" fill="url(#wall)" stroke="#77583D" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="m18 57 45-36 47 32-44 34z" fill="url(#roof)" stroke="#853B39" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M63 87 108 53v51L63 119z" fill="#C78E5C" stroke="#77583D" stroke-width="3"/>
+<path d="M35 66h17v18H35zM75 66h17v18H75z" fill="url(#glass)" stroke="#77583D" stroke-width="2.5"/>
+<path d="M53 86h17v33H53z" fill="#8D5B3C" stroke="#65432F" stroke-width="2.5"/>
+<path d="m18 57 45 30 45-34" fill="none" stroke="#FFD5B1" stroke-width="3" opacity=".8"/>
+</svg>

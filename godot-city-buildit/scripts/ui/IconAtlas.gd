@@ -18,11 +18,15 @@ const SHEETS := {
 
 static var _texture_cache: Dictionary = {}
 
-const REQUIRED_BUILD_ICONS := ["services", "parks", "park", "bulldoze", "fire", "hard_hat"]
+const REQUIRED_BUILD_ICONS := ["road", "residential", "commercial", "industrial", "services", "parks", "bulldoze", "fire", "hard_hat"]
 
 # Clean, transparent local SVGs replace the damaged park/service sheet crops.
 # Every path is part of the offline project; no runtime network requests.
 const SPECIAL_ICONS := {
+	"road": "res://assets/icons/road.svg",
+	"residential": "res://assets/icons/residential.svg",
+	"commercial": "res://assets/icons/commercial.svg",
+	"industrial": "res://assets/icons/industrial.svg",
 	"power": "res://assets/icons/power.svg",
 	"park": "res://assets/icons/park.svg",
 	"parks": "res://assets/icons/parks.svg",
