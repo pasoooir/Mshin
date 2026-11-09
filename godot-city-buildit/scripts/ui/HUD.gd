@@ -4,14 +4,14 @@ const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 
 const SERVICE_GROUPS := [
-	{"id":"power", "label":"Power", "buildings":["power_wind"]},
+	{"id":"power", "label":"Power", "buildings":["power_wind", "power_coal"]},
 	{"id":"water", "label":"Water", "buildings":["water_tower"]},
 	{"id":"sewage", "label":"Sewage", "buildings":["sewage_pipe"]},
 	{"id":"waste", "label":"Waste", "buildings":[]},
-	{"id":"fire", "label":"Fire", "buildings":["fire_station"]},
+	{"id":"fire", "label":"Fire", "buildings":["fire_station_small", "fire_station"]},
 	{"id":"police", "label":"Police", "buildings":["police_station"]},
 	{"id":"health", "label":"Health", "buildings":[]},
-	{"id":"government", "label":"Government", "buildings":[]}
+	{"id":"government", "label":"Government", "buildings":["town_hall"]}
 ]
 const SPECIALIZATION_GROUPS := [
 	{"id":"parks", "label":"Parks", "buildings":["park_small"]},
@@ -870,10 +870,8 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 		var groups: Array = SERVICE_GROUPS if category == "services" else SPECIALIZATION_GROUPS
 		for group in groups:
 			if str(group.get("id", "")) == group_id:
-				var buildings: Array = group.get("buildings", [])
-				if buildings.is_empty():
-					status_label.text = "%s buildings are not available yet." % str(group.get("label", group_id))
-					return
+				# Every group opens level two, including groups whose content is
+				# intentionally locked for a later gameplay milestone.
 				_show_group_buildings(group_id, category)
 				return
 	if category == "road":
