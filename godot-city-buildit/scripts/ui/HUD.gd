@@ -112,7 +112,7 @@ func _apply_responsive_layout() -> void:
 	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
-		var width := (118.0 if compact else (132.0 if tablet else 148.0)) * scale_factor
+		var width := (156.0 if compact else (168.0 if tablet else 184.0)) * scale_factor
 		var height := minf(viewport_size.y - 176.0 * scale_factor, 640.0 * scale_factor)
 		if not compact and not tablet:
 			# Desktop gets a persistent left navigation rail; mobile/tablet keep it on the right.
@@ -123,8 +123,8 @@ func _apply_responsive_layout() -> void:
 		else:
 			toolbar.anchor_left = 1.0
 			toolbar.anchor_right = 1.0
-			toolbar.offset_left = -width - 112.0 * scale_factor
-			toolbar.offset_right = -112.0 * scale_factor
+			toolbar.offset_left = -width - 156.0 * scale_factor
+			toolbar.offset_right = -156.0 * scale_factor
 		toolbar.offset_top = -height * 0.5
 		toolbar.offset_bottom = height * 0.5
 	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
@@ -185,7 +185,7 @@ func _build_top_hud() -> void:
 	level_overlay.custom_minimum_size = Vector2(108, 108) * _ui_scale
 	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_badge.add_child(level_overlay)
-	var level_icon := Icons.make_icon("level", Vector2(96, 96) * _ui_scale)
+	var level_icon := Icons.make_icon("level", Vector2(144, 144) * _ui_scale)
 	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_icon)
@@ -391,7 +391,7 @@ func _build_toolbars() -> void:
 		if old_node:
 			old_node.queue_free()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var toolbar_width := 136.0 * _ui_scale
+	var toolbar_width := 168.0 * _ui_scale
 	var toolbar_height := minf(viewport_size.y - 176.0 * _ui_scale, 640.0 * _ui_scale)
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
@@ -403,7 +403,7 @@ func _build_toolbars() -> void:
 	toolbar.offset_right = -112.0 * _ui_scale
 	toolbar.offset_top = -toolbar_height * 0.5
 	toolbar.offset_bottom = toolbar_height * 0.5
-	toolbar.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.96), Color(0.65, 0.82, 0.92, 0.48)))
+	toolbar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	toolbar.mouse_filter = Control.MOUSE_FILTER_STOP
 	toolbar.z_index = 60
 	add_child(toolbar)
@@ -429,7 +429,7 @@ func _build_toolbars() -> void:
 		["specializations", "Specializations", "parks"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
-	var category_height := clampf((toolbar_height - 36.0) / 7.0, 64.0 * _ui_scale, 82.0 * _ui_scale)
+	var category_height := clampf((toolbar_height - 24.0) / 7.0, 112.0 * _ui_scale, 132.0 * _ui_scale)
 	for item in tools:
 		var button := _make_category_button(str(item[2]), str(item[1]), Vector2(toolbar_width - 12.0, category_height))
 		button.name = "Tool_" + str(item[0]).capitalize()
@@ -459,7 +459,7 @@ func _build_toolbars() -> void:
 	build_content.add_theme_constant_override("separation", 1)
 	build_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_toggle.add_child(build_content)
-	var build_icon := Icons.make_icon("hard_hat", Vector2(54, 54) * _ui_scale)
+	var build_icon := Icons.make_icon("hard_hat", Vector2(108, 108) * _ui_scale)
 	build_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_content.add_child(build_icon)
 	var build_label := Label.new()
@@ -521,7 +521,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	button.custom_minimum_size = button_size
 	button.tooltip_text = label_text
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.07, 0.14, 0.19, 0.72), Color(0.30, 0.48, 0.58, 0.50)))
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
 	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.15, 0.30, 0.39, 0.96), Color("#FFC857")))
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.22, 0.34, 0.37, 1.0), Color("#FFE19A")))
 	var content := VBoxContainer.new()
@@ -530,7 +530,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	content.add_theme_constant_override("separation", 1)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon_size := maxf(48.0 * _ui_scale, minf(56.0 * _ui_scale, button_size.y * 0.72))
+	var icon_size := maxf(96.0 * _ui_scale, minf(112.0 * _ui_scale, button_size.y * 0.82))
 	var icon := Icons.make_icon(icon_name, Vector2(icon_size, icon_size))
 	content.add_child(icon)
 	var label := Label.new()
