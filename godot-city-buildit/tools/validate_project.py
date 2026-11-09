@@ -190,7 +190,7 @@ required_movable_types = {
     "art_supplies", "hardware_store", "farmers_market", "furniture_store",
     "industrial_1", "industrial_2", "industrial_3",
     "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
-    "water_tower", "fire_station_small", "fire_station", "police_station", "sewage_pipe", "town_hall",
+    "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_pipe", "town_hall",
     "park_small"
 }
 move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
@@ -209,7 +209,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 28"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 29"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
@@ -234,6 +234,23 @@ for fire_id in ["fire_station_small", "fire_station"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{fire_id}"' in line), "")
     if '"fire":1' not in definition_line:
         errors.append(f"Fire station must provide fire coverage: {fire_id}")
+
+for water_id, expected_water, expected_level, expected_size in [("water_tower", 12, 1, "Vector2i(1,1)"), ("water_pump", 55, 12, "Vector2i(2,3)")]:
+    match = re.search(r'"' + water_id + r'": \{([^\n]+)\}', build_manager)
+    if match is None:
+        errors.append(f"Water facility definition is missing: {water_id}")
+        continue
+    definition = match.group(1)
+    if f'"water":{expected_water}' not in definition or f'"level":{expected_level}' not in definition:
+        errors.append(f"Water facility production/unlock contract is incorrect: {water_id}")
+    if '"service_group":"water"' not in definition or '"category":"service"' not in definition:
+        errors.append(f"Water facility lacks service catalog metadata: {water_id}")
+    if f'"size":{expected_size}' not in definition:
+        errors.append(f"Water facility footprint is incorrect: {water_id}")
+    if '"pollution":0' not in definition:
+        errors.append(f"Water facility must not add air pollution: {water_id}")
+if 'definition.get("water", 0)' not in service_manager:
+    errors.append("ServiceManager must identify water providers by positive definition.water, not by building name")
 
 for power_id, expected_power, expected_level in [("power_wind", 12, 1), ("power_coal", 12, 1), ("power_wind_deluxe", 22, 10), ("power_solar", 35, 15), ("power_oil", 40, 18), ("power_nuclear", 60, 22)]:
     match = re.search(r'"' + power_id + r'": \{([^\n]+)\}', build_manager)
