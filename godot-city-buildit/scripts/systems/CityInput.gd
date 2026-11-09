@@ -1,12 +1,14 @@
 extends Node3D
 
 const TAP_SLOP: float = 14.0
+const LONG_PRESS_MOVE_SLOP: float = 36.0
 
 @onready var camera: Camera3D = null
 
 var pointer_start: Dictionary = {}
 var pointer_moved: Dictionary = {}
 var pointer_hold_elapsed: Dictionary = {}
+var pointer_last_position: Dictionary = {}
 var move_pointer_id: int = -999
 const LONG_PRESS_SECONDS: float = 0.55
 var multi_touch_gesture: bool = false
@@ -25,18 +27,28 @@ func _process(delta: float) -> void:
 	if pointer_start.size() != 1:
 		return
 	var pointer_id = pointer_start.keys()[0]
-	if bool(pointer_moved.get(pointer_id, false)):
+	var last_position: Vector2 = pointer_last_position.get(pointer_id, pointer_start[pointer_id])
+	# Small touch jitter is normal on phones. Only cancel long-press after a
+	# deliberate movement beyond the larger long-press tolerance.
+	if Vector2(pointer_start[pointer_id]).distance_to(last_position) > LONG_PRESS_MOVE_SLOP:
+		pointer_hold_elapsed.erase(pointer_id)
 		return
 	pointer_hold_elapsed[pointer_id] = float(pointer_hold_elapsed.get(pointer_id, 0.0)) + delta
 	if float(pointer_hold_elapsed[pointer_id]) >= LONG_PRESS_SECONDS:
+		pointer_hold_elapsed[pointer_id] = -1.0
 		_begin_move_from_screen(pointer_id, pointer_start[pointer_id])
 
 func _begin_move_from_screen(pointer_id: int, screen_position: Vector2) -> void:
 	var world_position: Variant = _raycast_ground(screen_position)
 	if world_position == null:
+		_set_status("Tap and hold directly on a building to move it.")
 		return
 	var building = BuildManager.building_at_cell(BuildManager.world_to_grid(world_position))
 	if building == null or not is_instance_valid(building):
+		_set_status("No building here. Hold your finger on a building to move it.")
+		return
+	if building.status != "completed":
+		_set_status("Still under construction")
 		return
 	if BuildManager.begin_move(building):
 		# Moving a placed building must work even when the build palette is still active.
@@ -46,6 +58,19 @@ func _begin_move_from_screen(pointer_id: int, screen_position: Vector2) -> void:
 		move_pointer_id = int(pointer_id)
 		pointer_moved[pointer_id] = true
 		_set_status("Move mode: drag the building to a green valid plot. Release to place or press X to cancel.")
+	else:
+		_set_status("This building cannot be moved right now.")
+
+# CameraController calls this while a pointer is down so it does not pan the
+# camera away from a building while the long-press timer is running.
+func is_building_press_pending(pointer_id: int) -> bool:
+	if not pointer_start.has(pointer_id):
+		return false
+	var world_position: Variant = _raycast_ground(pointer_start[pointer_id])
+	if world_position == null:
+		return false
+	var building = BuildManager.building_at_cell(BuildManager.world_to_grid(world_position))
+	return building != null and is_instance_valid(building)
 
 func _update_move_from_screen(screen_position: Vector2) -> void:
 	if not BuildManager.is_moving:
@@ -75,6 +100,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_start.clear()
 			pointer_moved.clear()
 			pointer_hold_elapsed.clear()
+			pointer_last_position.clear()
 			_set_status("Move cancelled. Building returned to its original location.")
 			get_viewport().set_input_as_handled()
 			return
@@ -96,6 +122,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_start[-1] = event.position
 			pointer_moved[-1] = false
 			pointer_hold_elapsed[-1] = 0.0
+			pointer_last_position[-1] = event.position
 			if _is_road_mode():
 				_start_road_stroke(-1, event.position)
 		else:
@@ -117,7 +144,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_start.erase(-1)
 			pointer_moved.erase(-1)
 			pointer_hold_elapsed.erase(-1)
+			pointer_last_position.erase(-1)
 	elif event is InputEventMouseMotion:
+		if pointer_start.has(-1):
+			pointer_last_position[-1] = event.position
 		if pointer_start.has(-1) and Vector2(pointer_start[-1]).distance_to(event.position) > TAP_SLOP:
 			pointer_moved[-1] = true
 		if road_stroke_active.has(-1):
@@ -136,6 +166,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_start[event.index] = event.position
 			pointer_moved[event.index] = false
 			pointer_hold_elapsed[event.index] = 0.0
+			pointer_last_position[event.index] = event.position
 			if pointer_start.size() == 1 and _is_road_mode():
 				_start_road_stroke(event.index, event.position)
 		else:
@@ -157,9 +188,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_start.erase(event.index)
 			pointer_moved.erase(event.index)
 			pointer_hold_elapsed.erase(event.index)
+			pointer_last_position.erase(event.index)
 			if pointer_start.is_empty():
 				multi_touch_gesture = false
 	elif event is InputEventScreenDrag:
+		if pointer_start.has(event.index):
+			pointer_last_position[event.index] = event.position
 		if pointer_start.size() > 1:
 			multi_touch_gesture = true
 			_cancel_all_road_strokes()
