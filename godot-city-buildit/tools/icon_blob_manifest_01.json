@@ -1,0 +1,42 @@
+[
+  {
+    "source": "commercial/hardware_store",
+    "sha": "75b9eacb1202cfd5669950290755c68a78e9f6d8"
+  },
+  {
+    "source": "commercial/farmers_market",
+    "sha": "db1090dd20e5f3cff38ad2629e0000710f918ea9"
+  },
+  {
+    "source": "commercial/furniture_store",
+    "sha": "42ab901a4bfcf99e4374e38dcb71f4f3096de7b6"
+  },
+  {
+    "source": "industrial/factory_small",
+    "sha": "963d79dd4fbe3c8ea826037add2f9b8ba6093285"
+  },
+  {
+    "source": "industrial/factory_basic",
+    "sha": "8ea3d7a2d4d2a3faa20ea1bbb15cbd867bcfb5e7"
+  },
+  {
+    "source": "industrial/factory_mass",
+    "sha": "b8e2df469040c24092c1eb243643cd2db2c3adaa"
+  },
+  {
+    "source": "industrial/factory_hightech",
+    "sha": "5b04972c34dce0f82e16d2230e89c8bf7ab69da5"
+  },
+  {
+    "source": "industrial/factory_nano",
+    "sha": "00e310c1db3eebfece010026a53363fdd9d93f2d"
+  },
+  {
+    "source": "industrial/industrial_1",
+    "sha": "7ccd7ca8a0bff18568700d3668384768877dbe23"
+  },
+  {
+    "source": "industrial/industrial_2",
+    "sha": "944664cb88d6ec7fbb9d9849ce1031abc2db2cc4"
+  }
+]
