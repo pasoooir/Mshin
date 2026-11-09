@@ -282,7 +282,7 @@ for waste_id, expected_capacity, expected_level, expected_size, expected_polluti
     ("waste_incinerator", 40, 14, "Vector2i(2,2)", 1, "16.0"),
     ("waste_recycling", 70, 20, "Vector2i(3,2)", 0, "0.0"),
 ]:
-    match = re.search(r'"' + waste_id + r'": \\{([^\\n]+)\\}', build_manager)
+    match = re.search(r'"' + waste_id + r'": \{([^\n]+)\}', build_manager)
     if match is None:
         errors.append(f"Waste facility definition is missing: {waste_id}")
         continue
@@ -295,6 +295,8 @@ for waste_id, expected_capacity, expected_level, expected_size, expected_polluti
         errors.append(f"Waste facility footprint is incorrect: {waste_id}")
     if f'"pollution":{expected_pollution}' not in definition or f'"pollution_radius":{expected_radius}' not in definition:
         errors.append(f"Waste facility pollution metadata is incorrect: {waste_id}")
+if '"pollution_severity":"heavy"' not in build_manager or '"pollution_label":"Heavy pollution"' not in build_manager:
+    errors.append("Incinerator must carry an explicit heavy-pollution UI label")
 if '"waste_omega":' in build_manager:
     errors.append("OMEGA waste facility is outside the current scope and must not be exposed")
 
