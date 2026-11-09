@@ -191,8 +191,8 @@ required_movable_types = {
     "art_supplies", "hardware_store", "farmers_market", "furniture_store",
     "industrial_1", "industrial_2", "industrial_3",
     "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
-    "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
-    "park_small", "fire_station_deluxe"
+    "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
+    "park_small"
 }
 move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
 move_types = set(re.findall(r'"([a-z0-9_]+)"', move_list_match.group(1))) if move_list_match else set()
@@ -242,7 +242,7 @@ fire_contracts = {
     "fire_station_deluxe": (22, "Vector2i(4,2)", 21000),
 }
 for fire_id, (expected_coverage, expected_size, expected_cost) in fire_contracts.items():
-    match = re.search(r'"' + fire_id + r'": \\{([^\\n]+)\\}', build_manager)
+    match = re.search(r'"' + fire_id + r'": \{([^\n]+)\}', build_manager)
     if match is None:
         errors.append(f"Fire station definition is missing: {fire_id}")
         continue
