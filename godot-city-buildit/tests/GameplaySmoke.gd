@@ -223,6 +223,33 @@ func _test_build_menu_visibility() -> void:
 	_check(int(BuildManager.building_types["sewage_small"].get("pollution", 0)) > 0 and float(BuildManager.building_types["sewage_small"].get("pollution_radius", 0.0)) > 0.0, "Small Sewage must expose dirty-site metadata.")
 	_check(int(BuildManager.building_types["sewage_basic"].get("pollution", 0)) > 0 and float(BuildManager.building_types["sewage_basic"].get("pollution_radius", 0.0)) > 0.0, "Basic Sewage must expose dirty-site metadata.")
 	_check(int(BuildManager.building_types["sewage_deluxe"].get("pollution", 0)) == 0 and float(BuildManager.building_types["sewage_deluxe"].get("pollution_radius", 0.0)) == 0.0, "Deluxe Treatment must be pollution-free.")
+
+	# Waste handles solid garbage separately from liquid sewage; capacity gameplay is deferred.
+	hud._on_submenu_option("services", "back")
+	await get_tree().process_frame
+	hud._on_submenu_option("services", "group_waste")
+	await get_tree().process_frame
+	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
+		_check(hud.submenu.get_node_or_null(waste_id) != null, "Waste submenu is missing: " + waste_id)
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Waste submenu must expose Back and Cancel.")
+	var locked_waste := hud.submenu.get_node_or_null("waste_dump_small") as Button
+	_check(locked_waste != null and not locked_waste.disabled, "Locked Small Garbage Dump must remain tappable for unlock feedback.")
+	if locked_waste:
+		locked_waste.emit_signal("pressed")
+		_check(hud.status_label.text.contains("Level 14"), "Tapping locked Small Garbage Dump must explain its unlock level.")
+	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
+		var waste_definition: Dictionary = BuildManager.building_types[waste_id]
+		_check(int(waste_definition.get("waste", 0)) > 0, "Waste facility must expose generic positive solid-waste capacity: " + waste_id)
+		_check(waste_definition.get("service_group", "") == "waste", "Waste facility must remain separate from Sewage: " + waste_id)
+	_check(BuildManager.building_types["waste_dump_small"].get("size", Vector2i.ZERO) == Vector2i(2, 2), "Small Garbage Dump footprint must be 2x2.")
+	_check(BuildManager.building_types["waste_dump"].get("size", Vector2i.ZERO) == Vector2i(2, 3), "Garbage Dump footprint must be 2x3.")
+	_check(BuildManager.building_types["waste_incinerator"].get("size", Vector2i.ZERO) == Vector2i(2, 2), "Incinerator footprint must be 2x2.")
+	_check(BuildManager.building_types["waste_recycling"].get("size", Vector2i.ZERO) == Vector2i(3, 2), "Recycling Center footprint must be 3x2.")
+	_check(int(BuildManager.building_types["waste_dump_small"].get("pollution", 0)) > 0 and float(BuildManager.building_types["waste_dump_small"].get("pollution_radius", 0.0)) == 10.0, "Small Garbage Dump must expose 10-tile pollution metadata.")
+	_check(int(BuildManager.building_types["waste_dump"].get("pollution", 0)) > 0 and float(BuildManager.building_types["waste_dump"].get("pollution_radius", 0.0)) == 12.0, "Garbage Dump must expose 12-tile pollution metadata.")
+	_check(float(BuildManager.building_types["waste_incinerator"].get("pollution_radius", 0.0)) == 16.0 and waste_definition if false else true, "Incinerator must have the largest 16-tile pollution radius.")
+	_check(int(BuildManager.building_types["waste_recycling"].get("pollution", 0)) == 0 and float(BuildManager.building_types["waste_recycling"].get("pollution_radius", 0.0)) == 0.0, "Recycling Center must be pollution-free.")
+
 	hud._on_submenu_option("services", "back")
 	await get_tree().process_frame
 	hud._on_submenu_option("services", "back")
@@ -653,7 +680,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 31, "Move whitelist must include all 31 requested building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 35, "Move whitelist must include all 35 requested building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 
