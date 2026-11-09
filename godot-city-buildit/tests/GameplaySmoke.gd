@@ -186,8 +186,6 @@ func _test_build_menu_visibility() -> void:
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
 	_check(hud.submenu.get_child_count() == 9, "Services level one must contain exactly eight fixed groups and Cancel.")
-	hud._on_submenu_option("services", "group_fire")
-	await get_tree().process_frame
 	hud._on_submenu_option("services", "back")
 	hud._on_submenu_option("services", "group_power")
 	await get_tree().process_frame
@@ -201,6 +199,8 @@ func _test_build_menu_visibility() -> void:
 		_check(hud.status_label.text.contains("Level 10"), "Tapping a locked Deluxe Wind must explain its unlock level.")
 	_check(int(BuildManager.building_types["power_wind"].get("power", 0)) > 0 and int(BuildManager.building_types["power_coal"].get("power", 0)) > 0, "Wind and Coal must expose numeric power production.")
 	hud._on_submenu_option("services", "back")
+	await get_tree().process_frame
+	hud._on_submenu_option("services", "group_fire")
 	await get_tree().process_frame
 	_check(hud.submenu.get_node_or_null("fire_station_small") != null, "Fire group must contain the Small Fire Station.")
 	_check(hud.submenu.get_node_or_null("fire_station") != null, "Fire group must contain the Basic Fire Station.")
