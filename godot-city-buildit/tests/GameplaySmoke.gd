@@ -394,7 +394,7 @@ func _run_gameplay_test() -> void:
 	_check(input_node.is_building_press_pending(0), "Touching a non-anchor cell of a building footprint was not detected as a building press.")
 	_check(not BuildManager.is_moving, "Small finger jitter activated Move before the long-press duration elapsed.")
 	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
-	_check(BuildManager.is_moving and BuildManager.moving_building == home, "Long press with small mobile touch jitter did not enter Move mode while placement was active.")
+	_check(BuildManager.is_moving and BuildManager.moving_building == home, "Long press on a completed residential building with small mobile touch jitter did not enter Move mode while placement was active.")
 	_check(not BuildManager.is_placing, "Starting a building move did not exit the active placement palette.")
 	var moved_to := Vector2i(8, 1)
 	var moved_footprint: Vector2i = home.definition.get("size", Vector2i(2, 2))
