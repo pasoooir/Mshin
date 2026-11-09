@@ -38,12 +38,16 @@ func on_city_changed() -> void:
 	_evaluate_hazards(0.0)
 
 func reset_for_city_load() -> void:
+	var previous_smoking_count := smoking_ids.size()
 	for building_id in smoking_ids.keys():
 		var home = BuildManager.buildings.get(building_id)
 		if is_instance_valid(home) and home.has_method("set_fire_smoke"):
 			home.set_fire_smoke(false)
+		home_smoking_changed.emit(str(building_id), false)
 	unprotected_time.clear()
 	smoking_ids.clear()
+	if previous_smoking_count > 0:
+		smoking_count_changed.emit(0)
 	_check_elapsed = 0.0
 	_evaluate_hazards(0.0)
 
