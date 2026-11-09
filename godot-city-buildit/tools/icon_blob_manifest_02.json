@@ -1,0 +1,42 @@
+[
+  {
+    "source": "industrial/industrial_3",
+    "sha": "d142361868f05e7fd0d973debbe6d8d0d32e6346"
+  },
+  {
+    "source": "services/power_wind",
+    "sha": "1ce3875352da3b1fec5acf727c46ce41a3dd8981"
+  },
+  {
+    "source": "services/power_coal",
+    "sha": "b898f4887bba2a99872e70b8d0e01ba6c92ac482"
+  },
+  {
+    "source": "services/power_wind_deluxe",
+    "sha": "f520a72ebdd36604fe17326284d621dd00dab28e"
+  },
+  {
+    "source": "services/power_solar",
+    "sha": "014faf60ea594321e4d95f4d8b718f903a89c022"
+  },
+  {
+    "source": "services/power_oil",
+    "sha": "294b09436f3e506499b56d23f8269976ce207615"
+  },
+  {
+    "source": "services/power_nuclear",
+    "sha": "889655b9cf7d2ad8c0fe6108ce77478a17d019e2"
+  },
+  {
+    "source": "services/water_tower",
+    "sha": "126b7c5b1b50b0c72bb9017fa19023197569d46b"
+  },
+  {
+    "source": "services/water_pump",
+    "sha": "0dd69a528d3817390c1745b15a8c4be632bd6907"
+  },
+  {
+    "source": "services/sewage_small",
+    "sha": "144ee969bf4f8618723f28004e4a25543a15906a"
+  }
+]
