@@ -3,6 +3,16 @@ extends Node3D
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 
+class FireHazardTestBuilding extends Node3D:
+	var building_id: String = ""
+	var building_type: String = ""
+	var definition: Dictionary = {}
+	var status: String = "constructing"
+	var smoke_active: bool = false
+
+	func set_fire_smoke(active: bool) -> void:
+		smoke_active = active
+
 var failures: Array[String] = []
 
 func _ready() -> void:
@@ -198,10 +208,72 @@ func _test_build_menu_visibility() -> void:
 	await get_tree().process_frame
 	_check(not toolbar.visible and not hud.submenu.visible, "Closing the Build menu must hide both category and item panels.")
 
+func _test_fire_hazard_state_machine() -> void:
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_timers: Dictionary = FireHazardManager.unprotected_time.duplicate()
+	var saved_smoking: Dictionary = FireHazardManager.smoking_ids.duplicate()
+	BuildManager.buildings.clear()
+	FireHazardManager.unprotected_time.clear()
+	FireHazardManager.smoking_ids.clear()
+
+	var home = FireHazardTestBuilding.new()
+	add_child(home)
+	home.building_id = "fire_test_home"
+	home.building_type = "residential_1"
+	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
+	home.status = "completed"
+	home.global_position = Vector3.ZERO
+	BuildManager.buildings[home.building_id] = home
+
+	var station = FireHazardTestBuilding.new()
+	add_child(station)
+	station.building_id = "fire_test_station"
+	station.building_type = "fire_station"
+	station.definition = {"category": "service", "fire": 1}
+	station.status = "completed"
+	station.global_position = Vector3(30.1, 0.0, 0.0)
+	BuildManager.buildings[station.building_id] = station
+
+	FireHazardManager._evaluate_hazards(10.0)
+	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A residential home must not smoke before 20 seconds without fire coverage.")
+	FireHazardManager._evaluate_hazards(10.1)
+	_check(FireHazardManager.smoking_ids.has(home.building_id), "An uncovered completed home must start smoking after 20 seconds.")
+	station.global_position = Vector3(30.0, 0.0, 0.0)
+	FireHazardManager._evaluate_hazards(0.0)
+	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A fire station exactly 15 tiles away must immediately stop smoke.")
+	station.global_position = Vector3(30.1, 0.0, 0.0)
+	FireHazardManager._evaluate_hazards(19.9)
+	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Losing fire coverage must restart the full 20-second warning timer.")
+	FireHazardManager.reset_for_city_load()
+	_check(is_zero_approx(float(FireHazardManager.unprotected_time.get(home.building_id, -1.0))), "Loading a city must reset uncovered time to zero.")
+	FireHazardManager._evaluate_hazards(19.9)
+	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A restored uncovered home must wait another full 20 seconds.")
+	FireHazardManager._evaluate_hazards(0.2)
+	_check(FireHazardManager.smoking_ids.has(home.building_id), "Smoke must resume after a fresh continuous 20-second uncovered interval.")
+
+	home.status = "constructing"
+	FireHazardManager._evaluate_hazards(0.0)
+	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Homes still under construction must not remain in the fire hazard system.")
+	home.status = "completed"
+	FireHazardManager._evaluate_hazards(0.0)
+	BuildManager.buildings.erase(home.building_id)
+	FireHazardManager._evaluate_hazards(0.0)
+	_check(not FireHazardManager.unprotected_time.has(home.building_id) and not FireHazardManager.smoking_ids.has(home.building_id), "Demolished homes must have all fire hazard state cleared.")
+
+	remove_child(home)
+	home.free()
+	remove_child(station)
+	station.free()
+	BuildManager.buildings = saved_buildings
+	FireHazardManager.unprotected_time = saved_timers
+	FireHazardManager.smoking_ids = saved_smoking
+	FireHazardManager.on_city_changed()
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	await _test_build_menu_visibility()
 	_test_wind_turbine_rotor_animation()
+	_test_fire_hazard_state_machine()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
@@ -656,7 +728,7 @@ func _run_gameplay_test() -> void:
 	_check(GameManager.population == saved_population_expected, "Population was not restored from save.")
 
 	if failures.is_empty():
-		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
+		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
 		_finish(0)
 	else:
 		push_error("[GameplaySmoke] FAILURES: %d" % failures.size())

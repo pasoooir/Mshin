@@ -220,3 +220,34 @@ if errors:
     sys.exit(1)
 
 print("Static project and icon-atlas validation passed.")
+
+# Fire hazard coverage and web-safe black-smoke particle contracts.
+fire_manager_path = ROOT / "scripts/autoload/FireHazardManager.gd"
+if not fire_manager_path.is_file():
+    errors.append("FireHazardManager autoload script is missing")
+else:
+    fire_manager = fire_manager_path.read_text(encoding="utf-8")
+    for contract in [
+        "WARNING_DELAY: float = 20.0", "COVERAGE_TILES: int = 15",
+        "BuildManager.GRID_SIZE", "global_position.distance_to",
+        'definition.get("fire", 0)', "func on_city_changed(",
+        "func _evaluate_hazards(", "func reset_for_city_load(", "smoking_ids"
+    ]:
+        if contract not in fire_manager:
+            errors.append(f"Fire hazard manager contract is missing: {contract}")
+if 'FireHazardManager="*res://scripts/autoload/FireHazardManager.gd"' not in project:
+    errors.append("FireHazardManager is not registered as an autoload")
+if '"fire":1' not in build_manager:
+    errors.append("Fire Station definition must expose the numeric fire coverage key")
+save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
+if "FireHazardManager.reset_for_city_load()" not in save_manager_source:
+    errors.append("City load must restart fire warning timers from zero")
+if "func set_fire_smoke(active: bool)" not in building_source or "CPUParticles3D.new()" not in building_source:
+    errors.append("Building must expose the web-compatible black smoke particle API")
+for fire_test in [
+    "must not smoke before 20 seconds", "must start smoking after 20 seconds",
+    "exactly 15 tiles away", "full 20-second warning timer",
+    "Homes still under construction", "all fire hazard state cleared"
+]:
+    if fire_test not in gameplay_smoke:
+        errors.append(f"Fire hazard gameplay regression test is missing: {fire_test}")
