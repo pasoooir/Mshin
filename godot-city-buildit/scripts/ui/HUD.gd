@@ -331,84 +331,52 @@ func _build_toolbars() -> void:
 		var old_node := get_node_or_null(old_path)
 		if old_node:
 			old_node.queue_free()
-
 	var viewport_size := get_viewport().get_visible_rect().size
-	var category_width := 86.0
-	var category_height := clampf((viewport_size.y - 66.0) / 4.0 - 5.0, 44.0, 70.0)
-	var panel_height := 4.0 * category_height + 3.0 * 5.0 + 48.0
-
+	var toolbar_width := 94.0 * _ui_scale
+	var toolbar_height := minf(viewport_size.y - 150.0 * _ui_scale, 560.0 * _ui_scale)
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
 	toolbar.anchor_left = 1.0
 	toolbar.anchor_right = 1.0
 	toolbar.anchor_top = 0.5
 	toolbar.anchor_bottom = 0.5
-	toolbar.offset_left = -290.0
-	toolbar.offset_right = -92.0
-	toolbar.offset_top = -panel_height * 0.5
-	toolbar.offset_bottom = panel_height * 0.5
+	toolbar.offset_left = -toolbar_width - 8.0
+	toolbar.offset_right = -8.0
+	toolbar.offset_top = -toolbar_height * 0.5
+	toolbar.offset_bottom = toolbar_height * 0.5
 	toolbar.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.96), Color(0.65, 0.82, 0.92, 0.48)))
 	toolbar.mouse_filter = Control.MOUSE_FILTER_STOP
 	toolbar.z_index = 60
 	add_child(toolbar)
 	toolbar.hide()
-
-	var dock_content := VBoxContainer.new()
-	dock_content.add_theme_constant_override("separation", 7)
-	dock_content.mouse_filter = Control.MOUSE_FILTER_PASS
-	toolbar.add_child(dock_content)
-
-	var dock_header := HBoxContainer.new()
-	dock_header.name = "BuildMenuHeader"
-	dock_header.alignment = BoxContainer.ALIGNMENT_CENTER
-	dock_header.add_theme_constant_override("separation", 6)
-	dock_content.add_child(dock_header)
-
-	var dock_title := Label.new()
-	dock_title.text = "BUILD"
-	dock_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	dock_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	dock_title.add_theme_color_override("font_color", Color("#F4F8FC"))
-	dock_title.add_theme_font_size_override("font_size", 16)
-	dock_header.add_child(dock_title)
-
-	var close_dock := Button.new()
-	close_dock.name = "CloseBuildMenu"
-	close_dock.text = "X"
-	close_dock.custom_minimum_size = Vector2(34, 32)
-	close_dock.tooltip_text = "Close Build Menu"
-	close_dock.focus_mode = Control.FOCUS_NONE
-	close_dock.add_theme_font_size_override("font_size", 18)
-	close_dock.add_theme_color_override("font_color", Color.WHITE)
-	close_dock.add_theme_stylebox_override("normal", _toolbar_style(Color(0.55, 0.16, 0.16, 0.9), Color(1.0, 0.55, 0.45, 0.9)))
-	close_dock.add_theme_stylebox_override("hover", _toolbar_style(Color(0.78, 0.20, 0.18, 1.0), Color.WHITE))
-	close_dock.pressed.connect(_close_build_menu)
-	dock_header.add_child(close_dock)
-
-	var toolbar_items := GridContainer.new()
+	var category_scroll := ScrollContainer.new()
+	category_scroll.name = "CategoryScroll"
+	category_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	category_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	category_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	toolbar.add_child(category_scroll)
+	var toolbar_items := VBoxContainer.new()
 	toolbar_items.name = "RightToolbarItems"
-	toolbar_items.columns = 2
-	toolbar_items.add_theme_constant_override("h_separation", 5)
-	toolbar_items.add_theme_constant_override("v_separation", 5)
-	toolbar_items.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	dock_content.add_child(toolbar_items)
-
+	toolbar_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toolbar_items.add_theme_constant_override("separation", 5)
+	category_scroll.add_child(toolbar_items)
 	var tools := [
-		["road", "Road"],
-		["residential", "Residential"],
-		["commercial", "Commercial"],
-		["industrial", "Industrial"],
-		["services", "Services"],
-		["parks", "Parks"],
-		["bulldoze", "Bulldoze"]
+		["road", "Roads", "road"],
+		["residential", "Homes", "residential"],
+		["commercial", "Shops", "commercial"],
+		["industrial", "Factories", "industrial"],
+		["services", "Services", "services"],
+		["specializations", "Special", "parks"],
+		["bulldoze", "Bulldoze", "bulldoze"]
 	]
+	var category_height := clampf((toolbar_height - 30.0) / 7.0, 48.0, 68.0)
 	for item in tools:
-		var button := _make_category_button(str(item[0]), str(item[1]), Vector2(category_width, category_height))
+		var button := _make_category_button(str(item[2]), str(item[1]), Vector2(toolbar_width - 12.0, category_height))
 		button.name = "Tool_" + str(item[0]).capitalize()
+		button.toggle_mode = true
 		toolbar_items.add_child(button)
-		var category_id := "park" if item[0] == "parks" else str(item[0])
-		button.pressed.connect(_on_category_pressed.bind(category_id))
-
+		button.pressed.connect(_on_category_pressed.bind(str(item[0])))
 	var build_toggle := Button.new()
 	build_toggle.name = "BuildMenuButton"
 	build_toggle.anchor_left = 1.0
@@ -419,7 +387,7 @@ func _build_toolbars() -> void:
 	build_toggle.offset_right = -8.0
 	build_toggle.offset_top = -42.0
 	build_toggle.offset_bottom = 42.0
-	build_toggle.custom_minimum_size = Vector2(80, 84)
+	build_toggle.custom_minimum_size = Vector2(80, 84) * _ui_scale
 	build_toggle.tooltip_text = "Open Build Menu"
 	build_toggle.focus_mode = Control.FOCUS_NONE
 	build_toggle.z_index = 61
@@ -432,49 +400,61 @@ func _build_toolbars() -> void:
 	build_content.add_theme_constant_override("separation", 1)
 	build_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_toggle.add_child(build_content)
-	var build_icon := IconAtlas.make_icon("hard_hat", Vector2(42, 42))
+	var build_icon := IconAtlas.make_icon("hard_hat", Vector2(42, 42) * _ui_scale)
+	build_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_content.add_child(build_icon)
 	var build_label := Label.new()
 	build_label.name = "BuildButtonLabel"
 	build_label.text = "BUILD"
 	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	build_label.add_theme_color_override("font_color", Color.WHITE)
-	build_label.add_theme_font_size_override("font_size", 13)
+	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	build_content.add_child(build_label)
 	add_child(build_toggle)
 	build_toggle.pressed.connect(_toggle_category_menu)
-
-	var actions := HBoxContainer.new()
-	actions.name = "BottomActions"
-	actions.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	actions.offset_left = 12
-	actions.offset_top = -104
-	actions.offset_right = -12
-	actions.offset_bottom = -8
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	actions.add_theme_constant_override("separation", 10)
-	add_child(actions)
-	for item in [["storage","Storage"],["trade","Trade"],["save","Save"],["cancel","Cancel"]]:
-		var button := _make_icon_button(item[0], item[1])
-		actions.add_child(button)
+	bottom_actions = HBoxContainer.new()
+	bottom_actions.name = "BottomActions"
+	bottom_actions.anchor_left = 0.5
+	bottom_actions.anchor_right = 0.5
+	bottom_actions.anchor_top = 1.0
+	bottom_actions.anchor_bottom = 1.0
+	bottom_actions.offset_left = -260.0 * _ui_scale
+	bottom_actions.offset_right = 260.0 * _ui_scale
+	bottom_actions.offset_top = -104.0 * _ui_scale
+	bottom_actions.offset_bottom = -14.0 * _ui_scale
+	bottom_actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	bottom_actions.add_theme_constant_override("separation", 10)
+	bottom_actions.z_index = 62
+	add_child(bottom_actions)
+	for item in [["storage","Storage"],["trade","Trade"],["save","Save"]]:
+		var button := _make_icon_button(item[0], item[1], Vector2(92, 82) * _ui_scale)
+		bottom_actions.add_child(button)
 		match item[0]:
 			"storage": button.pressed.connect(_on_storage_pressed)
 			"trade": button.pressed.connect(_on_trade_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
-			"cancel": button.pressed.connect(_on_cancel_pressed)
-
-	submenu = GridContainer.new()
+	submenu_scroll = ScrollContainer.new()
+	submenu_scroll.name = "ToolSubmenuScroll"
+	submenu_scroll.anchor_left = 0.5
+	submenu_scroll.anchor_right = 0.5
+	submenu_scroll.anchor_top = 1.0
+	submenu_scroll.anchor_bottom = 1.0
+	submenu_scroll.offset_left = -430.0 * _ui_scale
+	submenu_scroll.offset_right = 430.0 * _ui_scale
+	submenu_scroll.offset_top = -112.0 * _ui_scale
+	submenu_scroll.offset_bottom = -12.0 * _ui_scale
+	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	submenu_scroll.z_index = 63
+	add_child(submenu_scroll)
+	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
-	submenu.anchor_left = 1.0
-	submenu.anchor_right = 1.0
-	submenu.anchor_top = 0.5
-	submenu.anchor_bottom = 0.5
-	submenu.columns = 2
-	submenu.add_theme_constant_override("h_separation", 6)
-	submenu.add_theme_constant_override("v_separation", 6)
-	submenu.z_index = 62
-	add_child(submenu)
-	submenu.hide()
+	submenu.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	submenu.add_theme_constant_override("separation", 8)
+	submenu.alignment = BoxContainer.ALIGNMENT_CENTER
+	submenu_scroll.add_child(submenu)
+	submenu_scroll.hide()
 
 func _make_category_button(icon_name: String, label_text: String, button_size: Vector2) -> Button:
 	var button := Button.new()
