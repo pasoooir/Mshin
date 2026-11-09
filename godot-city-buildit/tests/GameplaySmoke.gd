@@ -260,7 +260,7 @@ func _run_gameplay_test() -> void:
 		var right_toolbar = hud.get_node_or_null("RightToolbar")
 		_check(right_toolbar is PanelContainer, "Right-side construction tools must use the compact category dock.")
 		if right_toolbar is PanelContainer:
-			var toolbar_items = right_toolbar.get_node_or_null("RightToolbarItems")
+			var toolbar_items = right_toolbar.find_child("RightToolbarItems", true, false)
 			_check(toolbar_items is GridContainer, "Right toolbar must use a two-column grid instead of a long scroll list.")
 			_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right toolbar must show all seven construction categories.")
 			if toolbar_items is GridContainer:
@@ -276,7 +276,7 @@ func _run_gameplay_test() -> void:
 			_check(not right_toolbar.visible, "Build button action did not close the category dock.")
 		hud._show_submenu("residential")
 		_check(hud.submenu.get_node("residential_villa").text == "Villa House", "Residential submenu label must be English.")
-		_check(hud.submenu.get_child_count() == 4, "Residential submenu should show three choices and a close button.")
+		_check(hud.submenu.get_child_count() == 7, "Residential submenu should show all five defined choices plus Back and Close.")
 		_check(hud.submenu.get_node_or_null("residential_villa") != null, "Residential villa option is missing.")
 		_check(hud.submenu.get_node_or_null("residential_apartment") != null, "Residential apartment option is missing.")
 		_check(hud.submenu.get_node_or_null("residential_farm") != null, "Residential farm option is missing.")
@@ -284,7 +284,7 @@ func _run_gameplay_test() -> void:
 		_check(BuildManager.selected_building_type == "residential_villa" and BuildManager.is_placing, "Villa choice did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._show_submenu("commercial")
-		_check(hud.submenu.get_child_count() == 5, "Commercial submenu should show four choices and a close button.")
+		_check(hud.submenu.get_child_count() == 10, "Commercial submenu should show every defined store plus Back and Close.")
 		_check(hud.submenu.get_node_or_null("shop_chain") != null, "Chain store option is missing.")
 		_check(hud.submenu.get_node("shop_chain").text == "Chain Store", "Commercial submenu labels must be English.")
 		_check(hud.submenu.get_node_or_null("restaurant_traditional") != null, "Traditional restaurant option is missing.")
