@@ -1067,16 +1067,16 @@ func open_production_panel(building: Building) -> void:
 	production_panel.anchor_right = 0.5
 	production_panel.anchor_top = 0.5
 	production_panel.anchor_bottom = 0.5
-	production_panel.offset_left = -220.0 * _ui_scale
-	production_panel.offset_right = 220.0 * _ui_scale
-	production_panel.offset_top = -190.0 * _ui_scale
-	production_panel.offset_bottom = 190.0 * _ui_scale
+	production_panel.offset_left = -235.0 * _ui_scale
+	production_panel.offset_right = 235.0 * _ui_scale
+	production_panel.offset_top = -235.0 * _ui_scale
+	production_panel.offset_bottom = 235.0 * _ui_scale
 	production_panel.z_index = 100
 	production_panel.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035,0.075,0.105,0.98), Color(0.55,0.78,0.92,0.85)))
 	production_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(production_panel)
 	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 9)
+	layout.add_theme_constant_override("separation", 8)
 	production_panel.add_child(layout)
 	var header := HBoxContainer.new()
 	layout.add_child(header)
@@ -1091,59 +1091,77 @@ func open_production_panel(building: Building) -> void:
 	close.custom_minimum_size = Vector2(44,44) * _ui_scale
 	close.pressed.connect(_close_production_panel)
 	header.add_child(close)
-	if building.has_ready_product:
-		var ready_label := Label.new()
-		ready_label.text = "Ready to collect: %s" % str(ProductionManager.raw_materials.get(building.current_product, ProductionManager.crafted_items.get(building.current_product, {})).get("name", building.current_product))
-		layout.add_child(ready_label)
-		var collect_button := Button.new()
-		collect_button.name = "ProductionCollect"
-		collect_button.text = "COLLECT"
-		collect_button.custom_minimum_size.y = 54 * _ui_scale
-		collect_button.pressed.connect(func():
-			var collected_id := building.current_product
-			if building.collect_production():
-				status_label.text = "Collected %s into City Storage." % collected_id.capitalize()
+	var component = building.production_component
+	if not is_instance_valid(component):
+		var unavailable := Label.new()
+		unavailable.text = "Production is unavailable for this building."
+		layout.add_child(unavailable)
+		return
+	for slot_index in range(component.get_slot_count()):
+		var slot_box := PanelContainer.new()
+		slot_box.add_theme_stylebox_override("panel", _toolbar_style(Color(0.07,0.13,0.18,0.96), Color(0.35,0.58,0.70,0.48)))
+		layout.add_child(slot_box)
+		var slot_layout := VBoxContainer.new()
+		slot_layout.add_theme_constant_override("separation", 5)
+		slot_box.add_child(slot_layout)
+		var slot_title := Label.new()
+		slot_title.text = "Production Slot %d" % (slot_index + 1)
+		slot_title.add_theme_color_override("font_color", Color("#8ED8FF"))
+		slot_layout.add_child(slot_title)
+		var slot: Dictionary = component.get_slot(slot_index)
+		if slot.is_empty():
+			var item_ids: Array = []
+			if component.is_factory:
+				for item_id in building.definition.get("can_produce", ["metal","wood"]):
+					if ProductionManager.raw_materials.has(item_id) and int(ProductionManager.raw_materials[item_id].level) <= GameManager.level:
+						item_ids.append(str(item_id))
 			else:
-				status_label.text = "Storage full"
-			_close_production_panel()
-		)
-		layout.add_child(collect_button)
-	elif building.is_producing:
-		var timer_label := Label.new()
-		timer_label.text = "In production: %s — %d sec" % [building.current_product.capitalize(), int(ceil(building.production_timer))]
-		layout.add_child(timer_label)
-	else:
-		var item_ids: Array = []
-		if str(building.definition.get("category","")) == "industrial":
-			for item_id in building.definition.get("can_produce", ["metal","wood"]):
-				if ProductionManager.raw_materials.has(item_id) and int(ProductionManager.raw_materials[item_id].level) <= GameManager.level:
-					item_ids.append(str(item_id))
+				for item_id in building.definition.get("recipes", []):
+					var recipe := ProductionManager.get_recipe(str(item_id))
+					if not recipe.is_empty() and int(recipe.level) <= GameManager.level:
+						item_ids.append(str(item_id))
+			for item_id in item_ids:
+				var item_button := Button.new()
+				item_button.name = "Slot%d_%s" % [slot_index, item_id]
+				var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
+				item_button.text = "%s  ·  %s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0)))]
+				item_button.custom_minimum_size.y = 42 * _ui_scale
+				item_button.pressed.connect(func():
+					var started := component.start_factory(item_id, slot_index) if component.is_factory else component.start_craft(item_id, slot_index)
+					if started:
+						status_label.text = "Production started: %s." % item_id.capitalize()
+					else:
+						var missing := ProductionManager.get_missing_inputs_text(item_id)
+						status_label.text = "Not enough materials: %s" % missing if missing != "" else "Cannot start this production."
+					_close_production_panel()
+				)
+				slot_layout.add_child(item_button)
 		else:
-			for item_id in building.definition.get("recipes", []):
-				if ProductionManager.crafted_items.has(item_id) and int(ProductionManager.crafted_items[item_id].level) <= GameManager.level:
-					item_ids.append(str(item_id))
-		for item_id in item_ids:
-			var item_button := Button.new()
-			item_button.name = "Produce_" + item_id
-			var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
-			item_button.text = "%s  ·  %s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0)))]
-			item_button.custom_minimum_size.y = 48 * _ui_scale
-			item_button.pressed.connect(func():
-				var started := building.start_factory_production(item_id) if str(building.definition.get("category","")) == "industrial" else building.start_commercial_production(item_id)
-				if started:
-					status_label.text = "Production started: %s." % item_id.capitalize()
-				else:
-					var missing := ProductionManager.get_missing_inputs_text(item_id)
-					status_label.text = "Not enough materials: %s" % missing if missing != "" else "Cannot start this production."
-				_close_production_panel()
-			)
-			layout.add_child(item_button)
-	if building.definition.get("category","") == "commercial" and not building.is_producing and not building.has_ready_product:
-		var inventory_note := Label.new()
-		inventory_note.text = "Inputs are deducted from City Storage when crafting starts."
-		inventory_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		inventory_note.add_theme_font_size_override("font_size", int(13 * _ui_scale))
-		layout.add_child(inventory_note)
+			var item_id := str(slot.get("item_id",""))
+			if bool(slot.get("ready", false)):
+				var collect_button := Button.new()
+				collect_button.name = "CollectSlot%d" % slot_index
+				collect_button.text = "COLLECT  %s" % item_id.capitalize()
+				collect_button.custom_minimum_size.y = 46 * _ui_scale
+				collect_button.pressed.connect(func():
+					if component.collect(slot_index):
+						status_label.text = "Collected %s into City Storage." % item_id.capitalize()
+					else:
+						status_label.text = "Storage full"
+					_close_production_panel()
+				)
+				slot_layout.add_child(collect_button)
+			else:
+				var remaining := maxi(0, int(slot.get("finish_unix",0)) - int(Time.get_unix_time_from_system()))
+				var timer_label := Label.new()
+				timer_label.text = "%s  ·  %s remaining" % [item_id.capitalize(), _format_duration(remaining)]
+				slot_layout.add_child(timer_label)
+	if not component.is_factory:
+		var note := Label.new()
+		note.text = "Recipe materials are deducted from City Storage when a slot starts."
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+		layout.add_child(note)
 
 func _format_duration(seconds: int) -> String:
 	if seconds < 60:
