@@ -227,7 +227,7 @@ for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_sola
     if f'"{building_id}": {{"name"' not in build_manager:
         errors.append(f"Services menu building definition is missing: {building_id}")
 for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
-                   "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "town_hall"]:
+                   "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "clinic_small", "clinic", "hospital", "town_hall"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
     if '"service_group"' not in definition_line:
         errors.append(f"Service building lacks service_group metadata: {service_id}")
@@ -246,9 +246,9 @@ for health_id, (expected_coverage, expected_size, expected_cost) in health_contr
         errors.append(f"Health facility coverage/unlock contract is incorrect: {health_id}")
     if f'"size":{expected_size}' not in definition or f'"cost":{expected_cost}' not in definition:
         errors.append(f"Health facility footprint/cost is incorrect: {health_id}")
-    if '"health":1' not in definition or '"service_group":"health"' not in definition:
+    if '"health":1' not in definition or '"service_group":"health"' not in definition or '"category":"service"' not in definition:
         errors.append(f"Health facility must use separate health service metadata: {health_id}")
-    if '"fire":' in definition or '"police":' in definition or '"pollution":0' not in definition:
+    if '"fire":' in definition or '"police":' in definition or '"pollution":0' not in definition or '"pollution_radius":0.0' not in definition:
         errors.append(f"Health facility must be distinct from Fire/Police and pollution-free: {health_id}")
 
 police_contracts = {
