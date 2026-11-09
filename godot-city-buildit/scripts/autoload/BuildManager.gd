@@ -24,7 +24,7 @@ var building_types: Dictionary = {
 	"residential_villa": {"name":"Villa House", "category":"residential", "subtype":"villa", "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
 	"residential_apartment": {"name":"Apartment", "category":"residential", "subtype":"apartment", "cost":200, "size":Vector2i(2,2), "population":35, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
 	"residential_farm": {"name":"Farm", "category":"residential", "subtype":"farm", "cost":150, "size":Vector2i(2,2), "population":12, "build_time":4.0, "color":Color(0.72,0.78,0.45), "level":2},
-	"building_supplies": {"name":"Building Supplies", "category":"commercial", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":1, "recipes":["nails","planks","bricks","cement","glue"]},
+	"building_supplies": {"name":"Building Supplies", "category":"commercial", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":2, "recipes":["nails","planks","bricks","cement","glue","paint"]},
 	# New commercial menu choices. shop_chain keeps the existing Nails recipe path.
 	"shop_chain": {"name":"Chain Store", "category":"commercial", "subtype":"chain", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":1, "recipes":["nails"]},
 	"restaurant_traditional": {"name":"Traditional Restaurant", "category":"commercial", "subtype":"restaurant", "cost":400, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.75,0.45,0.30), "level":4, "recipes":[]},
@@ -33,7 +33,8 @@ var building_types: Dictionary = {
 	"hardware_store": {"name":"Hardware Store", "category":"commercial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.3,0.55,0.85), "level":4, "production_slots":1, "recipes":["hammer","measuring_tape","shovel","paint"]},
 	"farmers_market": {"name":"Farmer's Market", "category":"commercial", "cost":800, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.4,0.75,0.4), "level":8, "production_slots":1, "recipes":["vegetables"]},
 	"furniture_store": {"name":"Furniture Store", "category":"commercial", "cost":1200, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.6,0.45,0.3), "level":10, "production_slots":1, "recipes":["chair","table"]},
-	"industrial_1": {"name":"Small Factory", "category":"industrial", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood"]},
+	"factory_small": {"name":"Small Factory", "category":"industrial", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood"], "pollution":1, "pollution_radius":12.0},
+	"industrial_1": {"name":"Small Factory (Legacy)", "category":"industrial", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood"], "pollution":1, "pollution_radius":12.0},
 	"industrial_2": {"name":"Factory", "category":"industrial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.45,0.45,0.5), "produces":"wood", "level":2, "production_slots":2, "can_produce":["metal","wood"]},
 	"industrial_3": {"name":"Factory+", "category":"industrial", "cost":1500, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.4,0.42,0.48), "produces":"plastic", "level":5, "production_slots":2, "can_produce":["metal","wood","plastic"]},
 	"power_wind": {"name":"Wind Power Plant", "category":"service", "service_group":"power", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.7,0.9,0.85), "power":12, "pollution":0, "pollution_radius":0.0, "level":1},
@@ -73,7 +74,7 @@ const MOVABLE_BUILDING_TYPES := [
 	"residential_1", "residential_villa", "residential_apartment", "residential_farm",
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
 	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
-	"industrial_1", "industrial_2", "industrial_3",
+	"factory_small", "industrial_1", "industrial_2", "industrial_3",
 	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
 	"park_small"
 ]

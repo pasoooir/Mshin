@@ -2,6 +2,7 @@ extends Node3D
 
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
+const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -31,6 +32,69 @@ func _find_building(type_id: String):
 
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
+
+func _test_storage_and_production_chain() -> void:
+	var saved_storage: Dictionary = StorageManager.to_save_dict()
+	StorageManager.capacity = 50
+	StorageManager.items = {}
+	_check(StorageManager.capacity == 50 and StorageManager.get_used() == 0, "New City Storage must start with 50 empty slots.")
+	_check(StorageManager.add_item("metal", 2), "Storage must accept items within its capacity.")
+	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_free() == 48, "Storage item count/free-space accounting is incorrect.")
+	_check(StorageManager.remove_items({"metal":2}), "Storage must remove a validated recipe input set.")
+	_check(StorageManager.get_used() == 0, "Removing recipe inputs must update used storage.")
+	_check(int(ProductionManager.raw_materials.metal.time_sec) == 60, "Metal production must take 60 seconds.")
+	_check(int(ProductionManager.raw_materials.wood.time_sec) == 180, "Wood production must take 180 seconds.")
+	_check(int(ProductionManager.raw_materials.chemicals.time_sec) == 7200, "Chemicals production must take 2 hours.")
+	_check(int(ProductionManager.raw_materials.electrical.time_sec) == 25200, "Electrical Components production must take 7 hours.")
+	_check(ProductionManager.raw_materials.size() == 11, "The complete 11-item SCBI raw-material catalog is required.")
+	var nails: Dictionary = ProductionManager.get_recipe("nails")
+	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
+	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 2, "Small Factory must expose two parallel production slots.")
+	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
+
+	var factory = ProductionComponentScript.new()
+	factory.slot_count = 2
+	factory.is_factory = true
+	add_child(factory)
+	_check(factory.get_slot_count() == 2, "Factory production component must create two parallel slots.")
+	_check(factory.start_factory("metal", 0), "Factory must start Metal in an empty slot.")
+	_check(factory.start_factory("metal", 1), "Factory must run a second Metal batch in parallel.")
+	var saved_slots: Array = factory.to_save_array()
+	var finish_time := int(saved_slots[0].get("finish_unix",0))
+	var restored_factory = ProductionComponentScript.new()
+	restored_factory.slot_count = 2
+	restored_factory.is_factory = true
+	add_child(restored_factory)
+	restored_factory.from_save_array(saved_slots)
+	_check(int(restored_factory.get_slot(0).get("finish_unix",0)) == finish_time, "Production save/load must preserve absolute finish timestamps.")
+	for index in range(2):
+		var slot: Dictionary = restored_factory.slots[index]
+		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		restored_factory.slots[index] = slot
+	restored_factory.refresh_slots()
+	_check(bool(restored_factory.get_slot(0).get("ready",false)), "An elapsed offline factory timer must restore as ready.")
+	_check(restored_factory.collect(0), "Ready factory output must collect into City Storage.")
+	_check(StorageManager.get_count("metal") == 1, "Factory collection must add exactly one raw item to Storage.")
+
+	var shop = ProductionComponentScript.new()
+	shop.slot_count = 2
+	shop.is_factory = false
+	shop.shop_id = "building_supplies"
+	add_child(shop)
+	_check(StorageManager.add_item("metal",1), "Test setup must provide two Metal for Nails.")
+	_check(shop.start_craft("nails",0), "Building Supplies must start Nails when 2 Metal are available.")
+	_check(StorageManager.get_count("metal") == 0, "Crafting must deduct inputs from Storage at start.")
+	var craft_slot: Dictionary = shop.slots[0]
+	craft_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	shop.slots[0] = craft_slot
+	shop.refresh_slots()
+	_check(shop.collect(0), "Finished Nails must collect back into City Storage.")
+	_check(StorageManager.get_count("nails") == 1, "Collected Nails must be returned to City Storage.")
+	_check(not StorageManager.can_add("overflow_test", 51), "Storage must reject a collection larger than remaining capacity.")
+	factory.queue_free()
+	restored_factory.queue_free()
+	shop.queue_free()
+	StorageManager.from_save_dict(saved_storage)
 
 func _test_wind_turbine_rotor_animation() -> void:
 	var building_script = load("res://scripts/buildings/Building.gd")
@@ -480,6 +544,7 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	await _test_build_menu_visibility()
 	_test_wind_turbine_rotor_animation()
+	_test_storage_and_production_chain()
 	_test_fire_hazard_state_machine()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
@@ -810,84 +875,116 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 42, "Move whitelist must include all 42 requested building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 43, "Move whitelist must include all 43 supported building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 
-	# Production durations are shortened only in this deterministic smoke test.
-	ProductionManager.raw_materials["metal"]["time"] = 0.2
-	ProductionManager.crafted_items["nails"]["time"] = 0.2
-	# The factory starts its first Metal batch automatically when construction completes.
-	_check(factory != null and factory.is_producing, "Factory did not automatically start Metal after construction.")
-	factory.production_time = 0.2
-	factory.production_timer = 0.2
-	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and factory.is_producing, "Tapping an active factory should report its running Metal batch.")
-	await _wait_seconds(0.35)
-	_check(factory != null and factory.has_ready_product, "Factory did not finish its first Metal.")
-	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and not factory.has_ready_product and StorageManager.get_item_count("metal") == 1, "Tapping the ready factory did not collect first Metal.")
-	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and factory.is_producing, "Tapping the factory did not start its second Metal batch.")
-	await _wait_seconds(0.35)
-	_check(factory != null and factory.has_ready_product, "Factory did not finish its second Metal.")
-	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and not factory.has_ready_product and StorageManager.get_item_count("metal") == 2, "Tapping the ready factory did not collect second Metal.")
-	_check(StorageManager.get_item_count("metal") == 2, "Two collected Metal units were not stored.")
+	# Production acceptance uses real SCBI durations and advances timestamps in
+	# the test fixture rather than sleeping for minutes.
+	var production_hud = get_node("HUD")
+	var factory_component = factory.production_component
+	_check(factory_component != null and factory_component.get_slot_count() == 2, "Small Factory must expose two independent production slots.")
+	production_hud.open_production_panel(factory)
+	var metal_button := production_hud.production_panel.find_child("Slot0_metal", true, false) as Button
+	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
+	if metal_button:
+		metal_button.emit_signal("pressed")
+	_check(not factory_component.get_slot(0).is_empty(), "Selecting Metal must start the first factory slot.")
+	production_hud.open_production_panel(factory)
+	var second_metal_button := production_hud.production_panel.find_child("Slot1_metal", true, false) as Button
+	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
+	if second_metal_button:
+		second_metal_button.emit_signal("pressed")
+	_check(not factory_component.get_slot(1).is_empty(), "Factory must run two parallel batches.")
+	for slot_index in range(2):
+		var slot: Dictionary = factory_component.slots[slot_index]
+		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		factory_component.slots[slot_index] = slot
+	factory_component.refresh_slots()
+	_check(bool(factory_component.get_slot(0).get("ready",false)), "Metal batch must become ready at its Unix finish timestamp.")
+	production_hud.open_production_panel(factory)
+	var collect_metal_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	if collect_metal_0:
+		collect_metal_0.emit_signal("pressed")
+	else:
+		_check(false, "Ready Metal slot must expose a Collect button.")
+	production_hud.open_production_panel(factory)
+	var collect_metal_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
+	if collect_metal_1:
+		collect_metal_1.emit_signal("pressed")
+	else:
+		_check(false, "Second ready Metal slot must expose a Collect button.")
+	_check(StorageManager.get_count("metal") == 2, "Two parallel factory collections must add two Metal to City Storage.")
 
 	var supplies = _find_building("building_supplies")
-	input_node._try_interact(BuildManager.grid_to_world(supplies.grid_pos))
-	_check(supplies != null and supplies.is_producing, "Tapping Building Supplies did not start Nails production.")
-	_check(StorageManager.get_item_count("metal") == 0, "Nails production did not consume exactly two Metal.")
-	await _wait_seconds(0.35)
-	_check(supplies != null and supplies.has_ready_product, "Building Supplies did not finish Nails.")
-	input_node._try_interact(BuildManager.grid_to_world(supplies.grid_pos))
-	_check(supplies != null and not supplies.has_ready_product and StorageManager.get_item_count("nails") == 1, "Tapping ready Building Supplies did not collect Nails.")
-	_check(StorageManager.get_item_count("nails") == 1, "Crafted Nails were not stored.")
-	_check(not supplies.is_producing and not supplies.has_ready_product, "Commercial store should stop after collecting its product.")
-	StorageManager.add_item("metal", 2)
-	input_node._try_interact(BuildManager.grid_to_world(supplies.grid_pos))
-	_check(supplies.is_producing, "Tapping Building Supplies again should order another timed Nails batch.")
-	# Cancel the second batch for the next test and restore the required Metal/Wood inputs.
-	supplies.is_producing = false
-	supplies.production_timer = 0.0
-	if supplies.production_icon:
-		supplies.production_icon.visible = false
+	var shop_component = supplies.production_component
+	_check(shop_component != null and shop_component.get_slot_count() == 2, "Building Supplies must expose two craft queue slots.")
+	StorageManager.items = {}
+	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
+	production_hud.open_production_panel(supplies)
+	var nails_button_0 := production_hud.production_panel.find_child("Slot0_nails", true, false) as Button
+	if nails_button_0:
+		nails_button_0.emit_signal("pressed")
+	else:
+		_check(false, "Building Supplies must offer Nails at level 1.")
+	production_hud.open_production_panel(supplies)
+	var nails_button_1 := production_hud.production_panel.find_child("Slot1_nails", true, false) as Button
+	if nails_button_1:
+		nails_button_1.emit_signal("pressed")
+	else:
+		_check(false, "Building Supplies second slot must accept a Nails order.")
+	_check(StorageManager.get_count("metal") == 0, "Starting two Nails orders must deduct four Metal immediately.")
+	for slot_index in range(2):
+		var slot: Dictionary = shop_component.slots[slot_index]
+		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		shop_component.slots[slot_index] = slot
+	shop_component.refresh_slots()
+	production_hud.open_production_panel(supplies)
+	var collect_nails_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	if collect_nails_0:
+		collect_nails_0.emit_signal("pressed")
+	production_hud.open_production_panel(supplies)
+	var collect_nails_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
+	if collect_nails_1:
+		collect_nails_1.emit_signal("pressed")
+	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
 
-	# Hardware Store unlocks at level 4 and must craft Hammer from Metal + Wood.
+	# Verify a full warehouse blocks collection without losing the ready batch.
+	_check(factory_component.start_factory("metal",0), "Factory must accept a new order after a collection.")
+	var full_slot: Dictionary = factory_component.slots[0]
+	full_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	factory_component.slots[0] = full_slot
+	factory_component.refresh_slots()
+	StorageManager.capacity = 1
+	StorageManager.items = {"occupied":1}
+	_check(not factory_component.collect(0) and bool(factory_component.get_slot(0).get("ready",false)), "Storage full must block Collect while preserving the ready output.")
+	StorageManager.capacity = 50
+	StorageManager.items = {}
+
+	# Hardware Store remains compatible with the same component and consumes inputs at order time.
 	var previous_level := GameManager.level
 	GameManager.level = 4
 	_check(BuildManager.place_building(Vector2i(9, 1), "hardware_store"), "Could not place Hardware Store for production acceptance.")
 	await _wait_seconds(5.5)
 	var hardware = _find_building("hardware_store")
 	_check(hardware != null and hardware.status == "completed", "Hardware Store construction did not finish.")
-	StorageManager.add_item("metal", 1)
-	StorageManager.add_item("wood", 1)
-	ProductionManager.crafted_items["hammer"]["time"] = 0.2
-	input_node._try_interact(BuildManager.grid_to_world(hardware.grid_pos))
-	_check(hardware != null and hardware.is_producing and hardware.current_product == "hammer", "Hardware Store did not start timed Hammer production.")
-	_check(StorageManager.get_item_count("metal") == 0 and StorageManager.get_item_count("wood") == 0, "Hammer recipe did not consume Metal and Wood.")
-	await _wait_seconds(0.35)
-	_check(hardware != null and hardware.has_ready_product, "Hardware Store did not finish Hammer.")
-	input_node._try_interact(BuildManager.grid_to_world(hardware.grid_pos))
-	_check(StorageManager.get_item_count("hammer") == 1 and not hardware.is_producing, "Hardware Store did not collect Hammer and stop.")
+	StorageManager.add_item("metal",1)
+	StorageManager.add_item("wood",1)
+	var hardware_component = hardware.production_component
+	_check(hardware_component.start_craft("hammer",0), "Hardware Store must craft Hammer from Metal and Wood.")
+	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Hammer recipe must consume Metal and Wood at start.")
+	var hammer_slot: Dictionary = hardware_component.slots[0]
+	hammer_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	hardware_component.slots[0] = hammer_slot
+	hardware_component.refresh_slots()
+	_check(hardware_component.collect(0) and StorageManager.get_count("hammer") == 1, "Completed Hammer must collect into City Storage.")
 	BuildManager.unregister_building(hardware.building_id)
 	hardware.queue_free()
 	GameManager.level = previous_level
 
-	# Existing level-1 upgrade recipe also needs one Metal in addition to Nails.
-	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and factory.is_producing, "Collecting the factory's ready Metal did not restart production.")
-	# Simulate a stopped/idle factory and verify that tapping it resumes production.
-	factory.is_producing = false
-	factory.production_timer = 0.0
-	if factory.production_icon:
-		factory.production_icon.visible = false
-	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and factory.is_producing, "Tapping an idle factory did not restart Metal production.")
-	await _wait_seconds(0.35)
-	input_node._try_interact(BuildManager.grid_to_world(factory.grid_pos))
-	_check(factory != null and StorageManager.get_item_count("metal") == 2, "Tapping factory did not collect the restarted Metal batch.")
+	# Existing level-1 upgrade recipe needs Nails and Metal from the shared warehouse.
+	StorageManager.add_item("metal",1)
+	StorageManager.add_item("nails",1)
 	var population_before_upgrade: int = int(home.current_population) if home != null else 0
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
 	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")

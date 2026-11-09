@@ -59,6 +59,8 @@ var happiness_label: Label
 var xp_progress: ProgressBar
 var xp_text: Label
 var storage_label: Label
+var storage_panel: PanelContainer
+var production_panel: PanelContainer
 var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
@@ -1020,6 +1022,8 @@ func _on_keys_changed(amount: int) -> void:
 
 func _on_storage_changed() -> void:
 	if storage_label: storage_label.text = StorageManager.get_storage_ratio()
+	if is_instance_valid(storage_panel):
+		_refresh_storage_panel()
 
 func _on_power_changed(total: int, used: int) -> void:
 	if status_label:
@@ -1052,14 +1056,231 @@ func _on_roads_pressed() -> void:
 		road_system.set_road_mode(true)
 		status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile)"
 
+func open_production_panel(building: Building) -> void:
+	if not is_instance_valid(building) or building.status != "completed":
+		return
+	if is_instance_valid(production_panel):
+		production_panel.queue_free()
+	production_panel = PanelContainer.new()
+	production_panel.name = "BuildingProductionPanel"
+	production_panel.anchor_left = 0.5
+	production_panel.anchor_right = 0.5
+	production_panel.anchor_top = 0.5
+	production_panel.anchor_bottom = 0.5
+	production_panel.offset_left = -235.0 * _ui_scale
+	production_panel.offset_right = 235.0 * _ui_scale
+	production_panel.offset_top = -235.0 * _ui_scale
+	production_panel.offset_bottom = 235.0 * _ui_scale
+	production_panel.z_index = 100
+	production_panel.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035,0.075,0.105,0.98), Color(0.55,0.78,0.92,0.85)))
+	production_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(production_panel)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 8)
+	production_panel.add_child(layout)
+	var header := HBoxContainer.new()
+	layout.add_child(header)
+	var title := Label.new()
+	title.text = str(building.definition.get("name","Production"))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", int(21 * _ui_scale))
+	title.add_theme_color_override("font_color", Color.WHITE)
+	header.add_child(title)
+	var close := Button.new()
+	close.text = "✕"
+	close.custom_minimum_size = Vector2(44,44) * _ui_scale
+	close.pressed.connect(_close_production_panel)
+	header.add_child(close)
+	var component = building.production_component
+	if not is_instance_valid(component):
+		var unavailable := Label.new()
+		unavailable.text = "Production is unavailable for this building."
+		layout.add_child(unavailable)
+		return
+	for slot_index in range(component.get_slot_count()):
+		var slot_box := PanelContainer.new()
+		slot_box.add_theme_stylebox_override("panel", _toolbar_style(Color(0.07,0.13,0.18,0.96), Color(0.35,0.58,0.70,0.48)))
+		layout.add_child(slot_box)
+		var slot_layout := VBoxContainer.new()
+		slot_layout.add_theme_constant_override("separation", 5)
+		slot_box.add_child(slot_layout)
+		var slot_title := Label.new()
+		slot_title.text = "Production Slot %d" % (slot_index + 1)
+		slot_title.add_theme_color_override("font_color", Color("#8ED8FF"))
+		slot_layout.add_child(slot_title)
+		var slot: Dictionary = component.get_slot(slot_index)
+		if slot.is_empty():
+			var item_ids: Array = []
+			if component.is_factory:
+				for item_id in building.definition.get("can_produce", ["metal","wood"]):
+					if ProductionManager.raw_materials.has(item_id) and int(ProductionManager.raw_materials[item_id].level) <= GameManager.level:
+						item_ids.append(str(item_id))
+			else:
+				for item_id in building.definition.get("recipes", []):
+					var recipe := ProductionManager.get_recipe(str(item_id))
+					if not recipe.is_empty() and int(recipe.level) <= GameManager.level:
+						item_ids.append(str(item_id))
+			for item_id in item_ids:
+				var item_button := Button.new()
+				item_button.name = "Slot%d_%s" % [slot_index, item_id]
+				var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
+				item_button.text = "%s  ·  %s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0)))]
+				item_button.custom_minimum_size.y = 42 * _ui_scale
+				item_button.pressed.connect(func():
+					var started: bool = component.start_factory(item_id, slot_index) if component.is_factory else component.start_craft(item_id, slot_index)
+					if started:
+						status_label.text = "Production started: %s." % item_id.capitalize()
+					else:
+						var missing := ProductionManager.get_missing_inputs_text(item_id)
+						status_label.text = "Not enough materials: %s" % missing if missing != "" else "Cannot start this production."
+					_close_production_panel()
+				)
+				slot_layout.add_child(item_button)
+		else:
+			var item_id := str(slot.get("item_id",""))
+			if bool(slot.get("ready", false)):
+				var collect_button := Button.new()
+				collect_button.name = "CollectSlot%d" % slot_index
+				collect_button.text = "COLLECT  %s" % item_id.capitalize()
+				collect_button.custom_minimum_size.y = 46 * _ui_scale
+				collect_button.pressed.connect(func():
+					if component.collect(slot_index):
+						status_label.text = "Collected %s into City Storage." % item_id.capitalize()
+					else:
+						status_label.text = "Storage full"
+					_close_production_panel()
+				)
+				slot_layout.add_child(collect_button)
+			else:
+				var remaining := maxi(0, int(slot.get("finish_unix",0)) - int(Time.get_unix_time_from_system()))
+				var timer_label := Label.new()
+				timer_label.text = "%s  ·  %s remaining" % [item_id.capitalize(), _format_duration(remaining)]
+				slot_layout.add_child(timer_label)
+	if not component.is_factory:
+		var note := Label.new()
+		note.text = "Recipe materials are deducted from City Storage when a slot starts."
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+		layout.add_child(note)
+
+func _format_duration(seconds: int) -> String:
+	if seconds < 60:
+		return "%ds" % seconds
+	if seconds < 3600:
+		return "%dm" % int(seconds / 60)
+	return "%dh %dm" % [int(seconds / 3600), int((seconds % 3600) / 60)]
+
+func _close_production_panel() -> void:
+	if is_instance_valid(production_panel):
+		production_panel.queue_free()
+	production_panel = null
+
 func _on_storage_pressed() -> void:
 	BuildManager.cancel_placement()
-	var items = StorageManager.get_all_items()
-	if items.is_empty(): status_label.text = "Storage is empty."
-	else:
-		var inventory_text := ""
-		for item_id in items: inventory_text += str(item_id) + " x " + str(items[item_id]) + "  "
-		status_label.text = inventory_text
+	_show_storage_panel()
+
+func _show_storage_panel() -> void:
+	if is_instance_valid(storage_panel):
+		storage_panel.queue_free()
+	storage_panel = PanelContainer.new()
+	storage_panel.name = "CityStoragePanel"
+	storage_panel.anchor_left = 0.5
+	storage_panel.anchor_right = 0.5
+	storage_panel.anchor_top = 0.5
+	storage_panel.anchor_bottom = 0.5
+	storage_panel.offset_left = -230.0 * _ui_scale
+	storage_panel.offset_right = 230.0 * _ui_scale
+	storage_panel.offset_top = -230.0 * _ui_scale
+	storage_panel.offset_bottom = 230.0 * _ui_scale
+	storage_panel.z_index = 100
+	storage_panel.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035,0.075,0.105,0.98), Color(0.55,0.78,0.92,0.85)))
+	storage_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(storage_panel)
+	var layout := VBoxContainer.new()
+	layout.name = "StorageLayout"
+	layout.add_theme_constant_override("separation", 12)
+	storage_panel.add_child(layout)
+	var heading := HBoxContainer.new()
+	layout.add_child(heading)
+	var title := Label.new()
+	title.text = "CITY STORAGE"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", int(23 * _ui_scale))
+	title.add_theme_color_override("font_color", Color.WHITE)
+	heading.add_child(title)
+	var close := Button.new()
+	close.name = "StorageClose"
+	close.text = "✕"
+	close.custom_minimum_size = Vector2(48,48) * _ui_scale
+	close.pressed.connect(_close_storage_panel)
+	heading.add_child(close)
+	var capacity_label := Label.new()
+	capacity_label.name = "StorageCapacity"
+	capacity_label.text = "Storage  %d / %d" % [StorageManager.get_used(), StorageManager.capacity]
+	capacity_label.add_theme_font_size_override("font_size", int(18 * _ui_scale))
+	capacity_label.add_theme_color_override("font_color", Color("#8ED8FF"))
+	layout.add_child(capacity_label)
+	var divider := HSeparator.new()
+	layout.add_child(divider)
+	var scroll := ScrollContainer.new()
+	scroll.name = "StorageItemsScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(scroll)
+	var grid := GridContainer.new()
+	grid.name = "StorageItemsGrid"
+	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 8)
+	scroll.add_child(grid)
+	_refresh_storage_panel()
+
+func _refresh_storage_panel() -> void:
+	if not is_instance_valid(storage_panel):
+		return
+	var capacity_label := storage_panel.find_child("StorageCapacity", true, false) as Label
+	if capacity_label:
+		capacity_label.text = "Storage  %d / %d" % [StorageManager.get_used(), StorageManager.capacity]
+	var grid := storage_panel.find_child("StorageItemsGrid", true, false) as GridContainer
+	if grid == null:
+		return
+	for child in grid.get_children():
+		child.queue_free()
+	var items := StorageManager.get_all_items()
+	if items.is_empty():
+		var empty_label := Label.new()
+		empty_label.text = "Your city storage is empty."
+		empty_label.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+		empty_label.add_theme_color_override("font_color", Color("#D4E4EE"))
+		grid.add_child(empty_label)
+		return
+	var ids: Array = items.keys()
+	ids.sort()
+	for item_id in ids:
+		var row := PanelContainer.new()
+		row.custom_minimum_size = Vector2(185, 54) * _ui_scale
+		row.add_theme_stylebox_override("panel", _toolbar_style(Color(0.08,0.15,0.20,0.95), Color(0.35,0.58,0.70,0.45)))
+		grid.add_child(row)
+		var item_row := HBoxContainer.new()
+		item_row.add_theme_constant_override("separation", 8)
+		row.add_child(item_row)
+		var item_name := str(ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {})).get("name", str(item_id).capitalize()))
+		var name_label := Label.new()
+		name_label.text = item_name
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.add_theme_color_override("font_color", Color.WHITE)
+		item_row.add_child(name_label)
+		var count_label := Label.new()
+		count_label.text = "× %d" % int(items[item_id])
+		count_label.add_theme_font_size_override("font_size", int(19 * _ui_scale))
+		count_label.add_theme_color_override("font_color", Color("#8ED8FF"))
+		item_row.add_child(count_label)
+
+func _close_storage_panel() -> void:
+	if is_instance_valid(storage_panel):
+		storage_panel.queue_free()
+	storage_panel = null
 
 func _on_trade_pressed() -> void:
 	BuildManager.cancel_placement()

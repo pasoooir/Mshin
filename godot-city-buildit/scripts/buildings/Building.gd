@@ -15,6 +15,8 @@ var status: String = "constructing"
 var build_time: float = 10.0
 var production_timer: float = 0.0
 var production_time: float = 20.0
+var production_finish_unix: int = 0
+var production_component: Node = null
 var current_product: String = ""
 var is_producing: bool = false
 var has_ready_product: bool = false
@@ -29,6 +31,7 @@ var _move_ghost_material: StandardMaterial3D
 var _move_original_overlays: Dictionary = {}
 static var _shared_surface_texture: Texture2D
 const WIND_TURBINE_SPIN_RADIANS_PER_SECOND: float = 0.92
+const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 var _wind_turbine_rotor: Node3D
 var _fire_smoke: CPUParticles3D = null
 
@@ -792,6 +795,7 @@ func _start_construction() -> void:
 
 func _on_construction_finished() -> void:
 	status = "completed"
+	setup_production_from_definition()
 	if hard_hat: hard_hat.visible = false
 	if scaffold_root:
 		scaffold_root.visible = false
@@ -817,9 +821,16 @@ func _on_construction_finished() -> void:
 		FireHazardManager.on_city_changed()
 	if definition.get("happiness", 0) > 0:
 		GameManager.set_happiness(min(100.0, GameManager.happiness + definition.happiness))
-	# Factories begin their configured raw-material cycle as soon as construction ends.
-	if definition.get("category", "") == "industrial":
-		start_factory_production()
+
+func setup_production_from_definition() -> void:
+	if is_instance_valid(production_component) or not definition.has("production_slots"):
+		return
+	var component = ProductionComponentScript.new()
+	component.slot_count = int(definition.get("production_slots", 1))
+	component.is_factory = str(definition.get("category", "")) == "industrial"
+	component.shop_id = str(definition.get("shop_id", "building_supplies" if building_type == "shop_chain" else building_type))
+	production_component = component
+	add_child(production_component)
 
 func _play_completion_effect() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -851,6 +862,7 @@ func _start_production(item_id: String) -> void:
 	is_producing = true
 	production_time = ProductionManager.get_production_time(item_id)
 	production_timer = production_time
+	production_finish_unix = int(Time.get_unix_time_from_system()) + int(ceil(production_time))
 	has_ready_product = false
 	if production_icon:
 		production_icon.visible = true
@@ -963,9 +975,10 @@ func _process(delta: float) -> void:
 			0.0, TAU
 		)
 	if is_producing and status == "completed" and not has_ready_product:
-		production_timer -= delta
-		if production_timer <= 0:
-			production_timer = 0
+		# Unix time makes production progress survive app/browser closure and reload.
+		production_timer = maxf(0.0, float(production_finish_unix - int(Time.get_unix_time_from_system())))
+		if int(Time.get_unix_time_from_system()) >= production_finish_unix:
+			production_timer = 0.0
 			has_ready_product = true
 			if production_icon:
 				production_icon.text = "✅"
@@ -1016,19 +1029,17 @@ func collect_production() -> bool:
 	var collected_item := current_product
 	has_ready_product = false
 	production_timer = 0.0
+	production_finish_unix = 0
 	collected.emit(collected_item, 1)
 	ProductionManager.item_produced.emit(collected_item, 1)
 	EconomyManager.add_simoleons(3)
 	GameManager.add_experience(2)
 
-	if str(definition.get("category", "")) == "industrial":
-		# Industrial factories continuously repeat the same raw-material batch.
-		_start_production(collected_item)
-	else:
-		# Commercial stores wait for the player to order the next batch.
-		is_producing = false
-		if production_icon:
-			production_icon.visible = false
+	# Both factories and commercial shops become idle after collection.
+	# The player explicitly chooses the next raw material or craft order.
+	is_producing = false
+	if production_icon:
+		production_icon.visible = false
 	return true
 
 func _update_stage_label() -> void:
@@ -1057,5 +1068,23 @@ func get_info() -> String:
 		if has_ready_product:
 			info += " - Ready: " + str(ProductionManager.raw_materials.get(current_product, ProductionManager.crafted_items.get(current_product, {})).get("name", current_product))
 		else:
+			production_timer = maxf(0.0, float(production_finish_unix - int(Time.get_unix_time_from_system())))
 			info += " - %.0fs" % production_timer
 	return info
+
+func restore_production_state(saved: Dictionary) -> void:
+	if is_instance_valid(production_component) and saved.get("slots", []) is Array:
+		production_component.from_save_array(saved.get("slots", []))
+	current_product = str(saved.get("current_product", ""))
+	is_producing = bool(saved.get("is_producing", false)) and not current_product.is_empty()
+	has_ready_product = bool(saved.get("has_ready_product", false))
+	production_finish_unix = int(saved.get("production_finish_unix", 0))
+	production_time = ProductionManager.get_production_time(current_product) if not current_product.is_empty() else 0.0
+	if is_producing and not has_ready_product:
+		production_timer = maxf(0.0, float(production_finish_unix - int(Time.get_unix_time_from_system())))
+		if production_finish_unix <= int(Time.get_unix_time_from_system()):
+			has_ready_product = true
+			production_timer = 0.0
+	if production_icon:
+		production_icon.visible = is_producing
+		production_icon.text = "✅" if has_ready_product else "⚙️"

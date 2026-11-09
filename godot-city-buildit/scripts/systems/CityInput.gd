@@ -476,49 +476,14 @@ func _try_interact(world_position: Vector3) -> void:
 			_set_status(building.get_info())
 		return
 
-	# Industrial factories
-	if category == "industrial":
-		if building.has_ready_product:
-			if building.collect_production():
-				_set_status("Collected %s. Factory restarted." % building.current_product.capitalize())
-			else:
-				_set_status("Storage full. Free space to collect.")
-		elif building.is_producing:
-			var left := int(ceil(building.production_timer))
-			_set_status("Producing %s… %ds left" % [building.current_product.capitalize(), left])
-		elif building.start_factory_production():
-			_set_status("Factory started producing %s." % building.current_product.capitalize())
+	# Production buildings open an explicit item/collect panel rather than
+	# silently auto-ordering a product on every tap.
+	if category in ["industrial", "commercial"]:
+		var hud := get_tree().current_scene.get_node_or_null("HUD")
+		if hud and hud.has_method("open_production_panel"):
+			hud.open_production_panel(building)
 		else:
 			_set_status(building.get_info())
-		return
-
-	# Commercial stores
-	if category == "commercial":
-		if building.has_ready_product:
-			if building.collect_production():
-				_set_status("Collected %s." % building.current_product.capitalize())
-			else:
-				_set_status("Storage full. Free space to collect.")
-			return
-
-		if building.is_producing:
-			var left2 := int(ceil(building.production_timer))
-			_set_status("Crafting %s… %ds left" % [building.current_product.capitalize(), left2])
-			return
-
-		var recipe_id := ProductionManager.get_default_recipe_for_building(building.building_type)
-		if recipe_id == "":
-			_set_status("No unlocked recipe for this store yet.")
-			return
-
-		if building.start_commercial_production(recipe_id):
-			_set_status("Crafting %s…" % recipe_id.capitalize())
-		else:
-			var missing := ProductionManager.get_missing_inputs_text(recipe_id)
-			if missing != "":
-				_set_status("Need materials for %s: %s" % [recipe_id.capitalize(), missing])
-			else:
-				_set_status("Cannot start %s. Check store level and materials." % recipe_id.capitalize())
 		return
 
 	_set_status(building.get_info())
