@@ -309,8 +309,8 @@ func _build_toolbars() -> void:
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	var category_width := 86.0
-	var category_height := 70.0
-	var panel_height := 4.0 * category_height + 3.0 * 5.0 + 62.0
+	var category_height := clampf((viewport_size.y - 66.0) / 4.0 - 5.0, 44.0, 70.0)
+	var panel_height := 4.0 * category_height + 3.0 * 5.0 + 48.0
 
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
@@ -465,7 +465,8 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	content.add_theme_constant_override("separation", 1)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(38, 38))
+	var icon_size := minf(38.0, button_size.y * 0.54)
+	var icon := IconAtlas.make_icon(icon_name, Vector2(icon_size, icon_size))
 	content.add_child(icon)
 	var label := Label.new()
 	label.text = label_text
@@ -475,7 +476,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.95))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
-	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_font_size_override("font_size", 11 if button_size.y < 56.0 else 12)
 	content.add_child(label)
 	return button
 
