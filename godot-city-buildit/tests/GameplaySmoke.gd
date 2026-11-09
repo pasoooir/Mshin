@@ -186,6 +186,21 @@ func _test_build_menu_visibility() -> void:
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
 	_check(hud.submenu.get_child_count() == 9, "Services level one must contain exactly eight fixed groups and Cancel.")
+	hud._on_submenu_option("services", "group_water")
+	await get_tree().process_frame
+	_check(hud.submenu.get_node_or_null("water_tower") != null, "Water submenu must contain the Water Tower.")
+	_check(hud.submenu.get_node_or_null("water_pump") != null, "Water submenu must contain the Water Pump.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Water submenu must expose Back and Cancel.")
+	var locked_pump := hud.submenu.get_node_or_null("water_pump") as Button
+	_check(locked_pump != null and not locked_pump.disabled, "Locked Water Pump must remain tappable for unlock feedback.")
+	if locked_pump:
+		locked_pump.emit_signal("pressed")
+		_check(hud.status_label.text.contains("Level 12"), "Tapping locked Water Pump must explain its unlock level.")
+	_check(int(BuildManager.building_types["water_tower"].get("water", 0)) > 0 and int(BuildManager.building_types["water_pump"].get("water", 0)) > 0, "Water facilities must expose positive numeric water production.")
+	_check(BuildManager.building_types["water_tower"].get("size", Vector2i.ZERO) == Vector2i(1, 1), "Water Tower footprint must be 1x1.")
+	_check(BuildManager.building_types["water_pump"].get("size", Vector2i.ZERO) == Vector2i(2, 3), "Water Pump footprint must be 2x3.")
+	hud._on_submenu_option("services", "back")
+	await get_tree().process_frame
 	hud._on_submenu_option("services", "back")
 	hud._on_submenu_option("services", "group_power")
 	await get_tree().process_frame
@@ -614,7 +629,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 28, "Move whitelist must include all 28 requested building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 29, "Move whitelist must include all 29 requested building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 
