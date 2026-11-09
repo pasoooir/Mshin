@@ -1127,7 +1127,7 @@ func open_production_panel(building: Building) -> void:
 				item_button.text = "%s  ·  %s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0)))]
 				item_button.custom_minimum_size.y = 42 * _ui_scale
 				item_button.pressed.connect(func():
-					var started := component.start_factory(item_id, slot_index) if component.is_factory else component.start_craft(item_id, slot_index)
+					var started: bool = component.start_factory(item_id, slot_index) if component.is_factory else component.start_craft(item_id, slot_index)
 					if started:
 						status_label.text = "Production started: %s." % item_id.capitalize()
 					else:
