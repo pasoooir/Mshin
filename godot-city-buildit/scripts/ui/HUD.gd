@@ -580,11 +580,11 @@ func _show_submenu(category: String) -> void:
 			var definition: Dictionary = BuildManager.building_types[type_id]
 			if str(definition.get("category", "")) == definition_category:
 				var item_title := str(definition.get("name", type_id))
-			match str(type_id):
-				"industrial_1": item_title = "Small Factory - Metal"
-				"industrial_2": item_title = "Wood Factory - Wood"
-				"industrial_3": item_title = "Factory+ - Plastic"
-			options.append([str(type_id), item_title, int(definition.get("level", 1))])
+				match str(type_id):
+					"industrial_1": item_title = "Small Factory - Metal"
+					"industrial_2": item_title = "Wood Factory - Wood"
+					"industrial_3": item_title = "Factory+ - Plastic"
+				options.append([str(type_id), item_title, int(definition.get("level", 1))])
 
 	if options.is_empty():
 		status_label.text = "No build items are available in this category."
