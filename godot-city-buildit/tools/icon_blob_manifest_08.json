@@ -1,0 +1,42 @@
+[
+  {
+    "source": "ui/confirm",
+    "sha": "ae0e78745ec46a5dcaf72af08278b04ff18039f0"
+  },
+  {
+    "source": "ui/bulldoze",
+    "sha": "cca364c67f78bcad8afd8d5868190d5133491dde"
+  },
+  {
+    "source": "ui/build_menu",
+    "sha": "cca364c67f78bcad8afd8d5868190d5133491dde"
+  },
+  {
+    "source": "ui/settings",
+    "sha": "bc76f85e5b7d427ee62932d2b457b697a8f2bdd3"
+  },
+  {
+    "source": "ui/info",
+    "sha": "1061af78fd4a36fad77ef87b4397c4c42b7bd192"
+  },
+  {
+    "source": "ui/plus",
+    "sha": "1dd2591512274b25a2bfa5cd9cd3e80d4c70880c"
+  },
+  {
+    "source": "ui/money",
+    "sha": "e45617d99cd84822dbdb66df5ac94c106cc7b754"
+  },
+  {
+    "source": "ui/population",
+    "sha": "e3f834c0c055c9c8330df7d1b9b4df27bb08c7c8"
+  },
+  {
+    "source": "ui/happiness",
+    "sha": "01b9b1bd3e246a7b23efd33f0c74bd62e2bc6266"
+  },
+  {
+    "source": "ui/level",
+    "sha": "3c77aeaa9bcd9fb57623562f415fdace3b9af202"
+  }
+]
