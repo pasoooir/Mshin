@@ -194,6 +194,11 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Active submenu must always provide Cancel.")
 	hud._on_submenu_option("services", "back")
 	_check(hud.submenu.get_node_or_null("group_power") != null, "Back must return to the Services group list.")
+	hud._on_submenu_option("services", "group_waste")
+	var locked_waste = hud.submenu.get_node_or_null("group_locked")
+	_check(locked_waste != null and not locked_waste.disabled, "Locked Waste entry must remain tappable.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Locked group must still provide Back.")
+	hud._on_submenu_option("services", "back")
 	hud._on_cancel_pressed()
 	await get_tree().process_frame
 	_check(not hud.submenu_scroll.visible and hud.get_node("BottomActions").visible, "Cancel must return to permanent city actions.")
