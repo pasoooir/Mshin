@@ -735,7 +735,10 @@ func _select_building_type(type_id: String) -> void:
 	_set_tool_modes_off()
 	BuildManager.select_building(type_id)
 	if BuildManager.is_placing:
-		_close_building_submenu(false)
+		if submenu_scroll:
+			submenu_scroll.show()
+		if bottom_actions:
+			bottom_actions.hide()
 	else:
 		status_label.text = "Could not enter placement mode for %s." % str(definition.get("name", type_id))
 
@@ -1032,12 +1035,18 @@ func _on_cancel_pressed() -> void:
 	_set_bulldozer_indicator(false)
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
-	if submenu:
-		submenu.hide()
+	if submenu_scroll:
+		submenu_scroll.hide()
 	active_category = ""
+	active_service_group = ""
+	active_specialization_group = ""
+	submenu_level = 0
+	_set_active_category_visuals("")
 	var category_toolbar := get_node_or_null("RightToolbar") as Control
 	if category_toolbar:
 		category_toolbar.show()
+	if bottom_actions:
+		bottom_actions.show()
 	var build_button_node := get_node_or_null("BuildMenuButton")
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
@@ -1046,8 +1055,10 @@ func _on_cancel_pressed() -> void:
 		build_button_node.tooltip_text = "Close Build Menu"
 	if was_moving:
 		status_label.text = "Move cancelled. Building returned to its original location."
+	elif was_bulldozing:
+		status_label.text = "Bulldozer cancelled."
 	else:
-		status_label.text = "Bulldozer cancelled." if was_bulldozing else "Cancelled."
+		status_label.text = "Cancelled."
 
 func _on_save_pressed() -> void:
 	status_label.text = "City saved successfully." if SaveManager.save_game() else "Could not save the city."
