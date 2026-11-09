@@ -428,6 +428,9 @@ func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 	var stage := clampi(upgrade_stage, 1, 6)
 	var subtype := str(definition.get("subtype", building_type))
 	var is_food := subtype.contains("restaurant") or subtype.contains("fast_food") or building_type.contains("fast_food")
+	if building_type == "building_supplies" or subtype == "building_supplies":
+		_build_building_supplies_showcase(w, d, height, color)
+		return
 	var wall := Color(0.73, 0.59, 0.43).lerp(color, 0.20)
 	var wall_shadow := wall.darkened(0.19)
 	var wall_light := wall.lightened(0.16)
@@ -475,6 +478,114 @@ func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 		_add_box(Vector3(w * 0.98, 0.16, d * 0.94), Vector3(0, body_h + 0.52, 0), roof)
 	else:
 		_add_box(Vector3(w * 0.98, 0.12, d * 0.94), Vector3(0, body_h + 0.49, 0), roof)
+
+
+# Signature commercial hero asset: a vivid, readable construction-supplies shop.
+# Geometry is deliberately built from the same local primitives as the rest of
+# the city so it remains offline, editable and compatible with the GL renderer.
+func _build_building_supplies_showcase(w: float, d: float, height: float, color: Color) -> void:
+	var brick := Color(0.82, 0.22, 0.10)
+	var brick_light := Color(1.0, 0.36, 0.16)
+	var brick_dark := Color(0.48, 0.12, 0.08)
+	var navy := Color(0.055, 0.16, 0.29)
+	var navy_light := Color(0.12, 0.31, 0.49)
+	var cream := Color(0.96, 0.84, 0.64)
+	var glass := Color(0.10, 0.29, 0.40)
+	var glass_glow := Color(0.38, 0.66, 0.75)
+	var timber := Color(0.66, 0.34, 0.12)
+	var timber_light := Color(0.91, 0.56, 0.22)
+	var concrete := Color(0.57, 0.57, 0.53)
+	var safety_yellow := Color(1.0, 0.57, 0.04)
+	var body_h := maxf(height, 2.15)
+	var front := d * 0.5
+
+	# Deep stone base, warm brick piers and a strongly coloured roof fascia.
+	_add_box(Vector3(w * 1.06, 0.32, d * 1.06), Vector3(0, 0.16, 0), concrete.darkened(0.28))
+	_add_box(Vector3(w * 1.02, 0.10, d * 1.02), Vector3(0, 0.34, 0), cream.darkened(0.18))
+	_add_box(Vector3(w * 0.94, body_h, d * 0.88), Vector3(0, body_h * 0.5 + 0.40, 0), brick)
+	_add_box(Vector3(w * 0.96, 0.22, d * 0.94), Vector3(0, body_h + 0.48, 0), navy)
+	_add_box(Vector3(w * 0.92, 0.08, d * 0.90), Vector3(0, body_h + 0.63, 0), navy_light)
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.16, body_h * 0.98, 0.12), Vector3(side * w * 0.43, body_h * 0.5 + 0.40, front * 0.88), brick_light)
+		_add_box(Vector3(0.12, body_h * 0.98, 0.12), Vector3(side * w * 0.43, body_h * 0.5 + 0.40, -front * 0.88), brick_dark)
+
+	# Wide shop glazing, divided into legible display bays with warm interior light.
+	var glass_w := w * 0.78
+	var glass_h := 1.12
+	_add_box(Vector3(glass_w + 0.14, glass_h + 0.16, 0.10), Vector3(0, glass_h * 0.5 + 0.43, front * 0.91), navy)
+	_add_box(Vector3(glass_w, glass_h, 0.055), Vector3(0, glass_h * 0.5 + 0.43, front * 0.95), glass)
+	for i in range(5):
+		var x := -glass_w * 0.5 + float(i) * glass_w / 4.0
+		_add_box(Vector3(0.045, glass_h + 0.06, 0.08), Vector3(x, glass_h * 0.5 + 0.43, front * 0.985), cream)
+	# Shelves and colourful product stacks are visible through the storefront.
+	for shelf in range(2):
+		var y := 0.72 + float(shelf) * 0.43
+		_add_box(Vector3(glass_w * 0.88, 0.055, 0.22), Vector3(0, y, front * 0.80), timber)
+		for product in range(7):
+			var px := -glass_w * 0.39 + float(product) * glass_w * 0.13
+			var product_col: Color = [brick_light, safety_yellow, Color(0.10, 0.48, 0.72), Color(0.88, 0.88, 0.78)][product % 4]
+			_add_box(Vector3(0.12, 0.25 if shelf == 0 else 0.20, 0.12), Vector3(px, y + 0.15, front * 0.82), product_col)
+	# Central glazed entrance with bright metal handles.
+	_add_box(Vector3(0.48, 1.04, 0.10), Vector3(w * 0.37, 0.91, front * 0.91), cream)
+	_add_box(Vector3(0.38, 0.94, 0.06), Vector3(w * 0.37, 0.91, front * 0.96), glass_glow.darkened(0.22))
+	_add_box(Vector3(0.025, 0.28, 0.035), Vector3(w * 0.29, 0.90, front * 1.00), safety_yellow)
+	_add_box(Vector3(w * 0.92, 0.18, 0.20), Vector3(0, 1.72, front * 0.97), navy)
+	_add_box(Vector3(w * 0.88, 0.055, 0.22), Vector3(0, 1.83, front * 0.99), safety_yellow)
+	# Red/cream striped awning, each panel has a visible angled canopy edge.
+	_add_box(Vector3(w * 0.98, 0.10, 0.52), Vector3(0, 1.48, front * 1.08), navy)
+	for stripe in range(9):
+		var sx := -w * 0.47 + float(stripe) * w * 0.1175
+		var stripe_col := Color(0.91,0.12,0.10) if stripe % 2 == 0 else Color(1.0,0.91,0.80)
+		_add_box_rotated(Vector3(w * 0.115, 0.09, 0.48), Vector3(sx, 1.43, front * 1.12), stripe_col, Vector3(deg_to_rad(-8.0), 0, 0))
+	# Warm wall lamps on both sides of the storefront.
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.10, 0.20, 0.10), Vector3(side * w * 0.43, 1.52, front * 1.02), navy)
+		_add_emissive_box(Vector3(0.13, 0.18, 0.10), Vector3(side * w * 0.43, 1.39, front * 1.04), Color(1.0,0.63,0.18), 1.6)
+
+	# Side windows and a readable brick-and-metal architectural rhythm.
+	for floor in range(2):
+		for side in [-1.0, 1.0]:
+			_add_box(Vector3(0.055, 0.62, d * 0.30), Vector3(side * w * 0.475, 1.25 + float(floor) * 0.78, 0), navy)
+			_add_box(Vector3(0.07, 0.48, d * 0.26), Vector3(side * w * 0.49, 1.25 + float(floor) * 0.78, 0), glass_glow.darkened(0.18))
+	_add_box(Vector3(w * 0.96, 0.13, d * 0.92), Vector3(0, 2.05, 0), navy_light)
+
+	# Rooftop stock: stacked bricks, cement sacks, strapped lumber and ventilation.
+	_add_box(Vector3(w * 0.34, 0.12, d * 0.25), Vector3(-w * 0.28, body_h + 0.78, -d * 0.22), timber)
+	for row in range(3):
+		for col in range(4):
+			_add_box(Vector3(w * 0.075, 0.13, d * 0.09), Vector3(-w * 0.39 + float(col) * w * 0.075, body_h + 0.90 + float(row) * 0.13, -d * 0.25 + float(row % 2) * 0.035), brick_light if row % 2 == 0 else brick)
+	_add_box(Vector3(w * 0.27, 0.12, d * 0.20), Vector3(w * 0.27, body_h + 0.78, -d * 0.20), cream)
+	for sack in range(3):
+		_add_box(Vector3(w * 0.24, 0.16, d * 0.13), Vector3(w * 0.27, body_h + 0.92 + float(sack) * 0.14, -d * 0.20), cream.lightened(0.04))
+	for plank in range(4):
+		_add_box(Vector3(w * 0.12, 0.10, d * 0.48), Vector3(w * 0.36, body_h + 0.78 + float(plank) * 0.11, d * 0.24), timber_light if plank % 2 == 0 else timber)
+	# Compact rooftop jib crane: mast, angled boom, counterweight and hook.
+	_add_box(Vector3(0.12, 0.78, 0.12), Vector3(-w * 0.08, body_h + 1.18, 0), safety_yellow)
+	_add_box_rotated(Vector3(w * 0.70, 0.13, 0.16), Vector3(w * 0.06, body_h + 1.60, 0), safety_yellow, Vector3(0, 0, deg_to_rad(-13.0)))
+	for mark in range(5):
+		_add_box_rotated(Vector3(0.08, 0.14, 0.18), Vector3(-w * 0.18 + float(mark) * w * 0.12, body_h + 1.60, 0.09), navy, Vector3(0, 0, deg_to_rad(-13.0)))
+	_add_box(Vector3(0.10, 0.34, 0.10), Vector3(w * 0.36, body_h + 1.40, 0), navy)
+	_add_box(Vector3(0.035, 0.28, 0.035), Vector3(w * 0.37, body_h + 1.18, 0), navy)
+	_add_box(Vector3(0.16, 0.12, 0.12), Vector3(w * 0.37, body_h + 1.02, 0), navy)
+	# A small louvered rooftop extractor anchors the industrial-material silhouette.
+	_add_box(Vector3(0.42, 0.30, 0.36), Vector3(w * 0.34, body_h + 0.82, -d * 0.38), concrete)
+	for vent in range(4):
+		_add_box(Vector3(0.32, 0.025, 0.035), Vector3(w * 0.34, body_h + 0.72 + float(vent) * 0.065, -d * 0.17), navy)
+
+func _add_emissive_box(size: Vector3, pos: Vector3, color: Color, energy: float = 1.0) -> void:
+	var instance := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	instance.mesh = box
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = energy
+	instance.material_override = material
+	instance.position = pos
+	mesh_root.add_child(instance)
 
 func _build_industrial(w: float, d: float, height: float, color: Color) -> void:
 	# Industrial silhouette deliberately avoids retail glazing: ribbed cladding,
