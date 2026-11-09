@@ -214,7 +214,7 @@ for contract in ["Long press on a completed residential building", "Touch releas
 
 
 
-# Services menu must expose all eight fixed groups and every selectable service
+# Services menu must expose all eight fixed groups in their prescribed order and every selectable service
 # must resolve to a real BuildManager definition with explicit group metadata.
 services_hud = hud[hud.find("const SERVICE_GROUPS"):hud.find("const SPECIALIZATION_GROUPS")]
 for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health", "government"]:
