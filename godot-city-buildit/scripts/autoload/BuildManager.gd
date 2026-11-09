@@ -51,6 +51,9 @@ var building_types: Dictionary = {
 	"police_small": {"name":"Small Police Station", "category":"service", "service_group":"police", "cost":5100, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.20,0.34,0.68), "police":1, "coverage_tiles":10, "pollution":0, "pollution_radius":0.0, "level":12},
 	"police_basic": {"name":"Basic Police Station", "category":"service", "service_group":"police", "cost":9400, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.16,0.29,0.62), "police":1, "coverage_tiles":15, "pollution":0, "pollution_radius":0.0, "level":12},
 	"police_precinct": {"name":"Police Precinct", "category":"service", "service_group":"police", "cost":36000, "size":Vector2i(4,2), "population":0, "build_time":8.0, "color":Color(0.12,0.23,0.52), "police":1, "coverage_tiles":24, "pollution":0, "pollution_radius":0.0, "level":12},
+	"clinic_small": {"name":"Small Clinic", "category":"service", "service_group":"health", "cost":14000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.34,0.72,0.66), "health":1, "coverage_tiles":10, "pollution":0, "pollution_radius":0.0, "level":16},
+	"clinic": {"name":"Clinic", "category":"service", "service_group":"health", "cost":21000, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.24,0.64,0.60), "health":1, "coverage_tiles":15, "pollution":0, "pollution_radius":0.0, "level":16},
+	"hospital": {"name":"Hospital", "category":"service", "service_group":"health", "cost":58000, "size":Vector2i(4,2), "population":0, "build_time":9.0, "color":Color(0.18,0.54,0.54), "health":1, "coverage_tiles":24, "pollution":0, "pollution_radius":0.0, "level":16},
 	"sewage_small": {"name":"Small Sewage Outflow", "category":"service", "service_group":"sewage", "cost":4000, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.48,0.56,0.39), "sewage":7, "pollution":1, "pollution_radius":10.0, "level":8},
 	"sewage_basic": {"name":"Basic Sewage Outflow", "category":"service", "service_group":"sewage", "cost":12000, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.43,0.51,0.38), "sewage":28, "pollution":1, "pollution_radius":12.0, "level":8},
 	"sewage_deluxe": {"name":"Deluxe Sewage Treatment Plant", "category":"service", "service_group":"sewage", "cost":35000, "size":Vector2i(2,3), "population":0, "build_time":8.0, "color":Color(0.48,0.68,0.62), "sewage":55, "pollution":0, "pollution_radius":0.0, "level":14},
@@ -71,7 +74,7 @@ const MOVABLE_BUILDING_TYPES := [
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
 	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
 	"industrial_1", "industrial_2", "industrial_3",
-	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
+	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
 	"park_small"
 ]
 
