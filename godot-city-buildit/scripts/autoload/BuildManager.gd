@@ -44,8 +44,9 @@ var building_types: Dictionary = {
 	"power_nuclear": {"name":"Nuclear Power Plant", "category":"service", "service_group":"power", "cost":35000, "size":Vector2i(3,3), "population":0, "build_time":9.0, "color":Color(0.58,0.72,0.62), "power":60, "pollution":1, "pollution_radius":12.0, "level":22},
 	"water_tower": {"name":"Water Tower", "category":"service", "service_group":"water", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.45,0.72,0.95), "water":12, "pollution":0, "pollution_radius":0.0, "level":1},
 	"water_pump": {"name":"Water Pumping Station", "category":"service", "service_group":"water", "cost":45000, "size":Vector2i(2,3), "population":0, "build_time":8.0, "color":Color(0.34,0.62,0.86), "water":55, "pollution":0, "pollution_radius":0.0, "level":12},
-	"fire_station_small": {"name":"Small Fire Station", "category":"service", "service_group":"fire", "cost":1800, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.96,0.42,0.32), "fire":1, "level":1},
-	"fire_station": {"name":"Fire Station", "category":"service", "service_group":"fire", "cost":2500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.92,0.32,0.28), "fire":1, "level":5},
+	"fire_station_small": {"name":"Small Fire Station", "category":"service", "service_group":"fire", "cost":3100, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.96,0.42,0.32), "fire":1, "coverage_tiles":10, "pollution":0, "pollution_radius":0.0, "level":5},
+	"fire_station": {"name":"Fire Station", "category":"service", "service_group":"fire", "cost":5500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.92,0.32,0.28), "fire":1, "coverage_tiles":15, "pollution":0, "pollution_radius":0.0, "level":5},
+	"fire_station_deluxe": {"name":"Deluxe Fire Station", "category":"service", "service_group":"fire", "cost":21000, "size":Vector2i(4,2), "population":0, "build_time":8.0, "color":Color(0.88,0.24,0.20), "fire":1, "coverage_tiles":22, "pollution":0, "pollution_radius":0.0, "level":5},
 	"police_station": {"name":"Police Station", "category":"service", "service_group":"police", "cost":3000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.28,0.42,0.78), "police":1, "level":12},
 	"sewage_small": {"name":"Small Sewage Outflow", "category":"service", "service_group":"sewage", "cost":4000, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.48,0.56,0.39), "sewage":7, "pollution":1, "pollution_radius":10.0, "level":8},
 	"sewage_basic": {"name":"Basic Sewage Outflow", "category":"service", "service_group":"sewage", "cost":12000, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.43,0.51,0.38), "sewage":28, "pollution":1, "pollution_radius":12.0, "level":8},
@@ -67,7 +68,7 @@ const MOVABLE_BUILDING_TYPES := [
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
 	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
 	"industrial_1", "industrial_2", "industrial_3",
-	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
+	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
 	"park_small"
 ]
 
