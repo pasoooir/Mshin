@@ -42,7 +42,8 @@ func save_game() -> bool:
 				"current_product": building.current_product,
 				"is_producing": building.is_producing,
 				"has_ready_product": building.has_ready_product,
-				"production_finish_unix": building.production_finish_unix
+				"production_finish_unix": building.production_finish_unix,
+				"slots": building.production_component.to_save_array() if is_instance_valid(building.production_component) else []
 			}
 		})
 
