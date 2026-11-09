@@ -1,0 +1,42 @@
+[
+  {
+    "source": "raw/plastic",
+    "sha": "c6b56a6fed2af0ab4a7208b0742a903eec96ce41"
+  },
+  {
+    "source": "raw/seeds",
+    "sha": "24b0b594f8b0a7c619c51dcc061d5a0d07faa3d0"
+  },
+  {
+    "source": "raw/minerals",
+    "sha": "467f04fe5f19b753ade8ee776939523ea140f44a"
+  },
+  {
+    "source": "raw/chemicals",
+    "sha": "4fded81a848b7419525d91101080494ff130dcb5"
+  },
+  {
+    "source": "raw/textiles",
+    "sha": "2034b67f075c1b17147fea12718e1744c3cc93a5"
+  },
+  {
+    "source": "raw/sugar_spices",
+    "sha": "34839f02740e5c916c7ee1050e781a54d735f860"
+  },
+  {
+    "source": "raw/glass",
+    "sha": "7e271fce64086e9be450fb37a4723e99e5880063"
+  },
+  {
+    "source": "raw/animal_feed",
+    "sha": "17dd41486482a81c9b6861252e34421501c169b2"
+  },
+  {
+    "source": "raw/electrical",
+    "sha": "cdab2fa069d8839c803d91628dbba91cac1458eb"
+  },
+  {
+    "source": "crafted/nails",
+    "sha": "b3332a5515b7d41bde6864dddbc45910eff789c9"
+  }
+]
