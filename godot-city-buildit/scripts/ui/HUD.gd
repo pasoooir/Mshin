@@ -363,11 +363,11 @@ func _build_toolbars() -> void:
 	category_scroll.add_child(toolbar_items)
 	var tools := [
 		["road", "Roads", "road"],
-		["residential", "Homes", "residential"],
-		["commercial", "Shops", "commercial"],
-		["industrial", "Factories", "industrial"],
+		["residential", "Residential", "residential"],
+		["commercial", "Commercial", "commercial"],
+		["industrial", "Industrial", "industrial"],
 		["services", "Services", "services"],
-		["specializations", "Special", "parks"],
+		["specializations", "Specializations", "parks"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
 	var category_height := clampf((toolbar_height - 30.0) / 7.0, 48.0, 68.0)
@@ -691,7 +691,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	title_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 	labels.add_child(title_label)
 	var detail_label := Label.new()
-	detail_label.text = "LOCKED" if locked else detail
+	detail_label.text = "LOCKED" if locked else ("Unlocks at Level %d" % required_level if GameManager.level < required_level else detail)
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_label.add_theme_color_override("font_color", Color("#FFD98A") if locked else Color("#B8C9D4"))
