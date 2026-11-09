@@ -258,6 +258,8 @@ func _test_build_menu_visibility() -> void:
 	for fire_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
 		_check(hud.submenu.get_node_or_null(fire_id) != null, "Fire submenu is missing: " + fire_id)
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Fire submenu must expose Back and Cancel.")
+	var basic_fire_button := hud.submenu.get_node_or_null("fire_station") as Button
+	_check(basic_fire_button != null and _node_has_label_text(basic_fire_button, "Coverage: 15 tiles"), "Basic Fire Station must display its coverage range in the submenu.")
 	var locked_small_fire := hud.submenu.get_node_or_null("fire_station_small") as Button
 	_check(locked_small_fire != null and not locked_small_fire.disabled, "Locked Small Fire Station must remain tappable for unlock feedback.")
 	if locked_small_fire:
