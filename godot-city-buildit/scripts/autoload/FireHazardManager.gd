@@ -53,6 +53,7 @@ func _evaluate_hazards(delta: float) -> void:
 		elif int(definition.get("fire", 0)) > 0:
 			stations.append(candidate)
 
+	var previous_smoking_count := smoking_ids.size()
 	var active_home_ids: Dictionary = {}
 	for home in homes:
 		var building_id := str(home.building_id)
@@ -79,7 +80,6 @@ func _evaluate_hazards(delta: float) -> void:
 					home.set_fire_smoke(true)
 				home_smoking_changed.emit(building_id, true)
 
-	var previous_smoking_count := smoking_ids.size()
 	for building_id in unprotected_time.keys():
 		if not active_home_ids.has(building_id):
 			unprotected_time.erase(building_id)
