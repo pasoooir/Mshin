@@ -232,10 +232,10 @@ func _test_build_menu_visibility() -> void:
 	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
 		_check(hud.submenu.get_node_or_null(waste_id) != null, "Waste submenu is missing: " + waste_id)
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Waste submenu must expose Back and Cancel.")
-	var locked_waste := hud.submenu.get_node_or_null("waste_dump_small") as Button
-	_check(locked_waste != null and not locked_waste.disabled, "Locked Small Garbage Dump must remain tappable for unlock feedback.")
-	if locked_waste:
-		locked_waste.emit_signal("pressed")
+	var locked_waste_facility := hud.submenu.get_node_or_null("waste_dump_small") as Button
+	_check(locked_waste_facility != null and not locked_waste_facility.disabled, "Locked Small Garbage Dump must remain tappable for unlock feedback.")
+	if locked_waste_facility:
+		locked_waste_facility.emit_signal("pressed")
 		_check(hud.status_label.text.contains("Level 14"), "Tapping locked Small Garbage Dump must explain its unlock level.")
 	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
 		var waste_definition: Dictionary = BuildManager.building_types[waste_id]
@@ -276,8 +276,8 @@ func _test_build_menu_visibility() -> void:
 	hud._on_submenu_option("services", "back")
 	_check(hud.submenu.get_node_or_null("group_power") != null, "Back must return to the Services group list.")
 	hud._on_submenu_option("services", "group_waste")
-	var locked_waste = hud.submenu.get_node_or_null("group_locked")
-	_check(locked_waste != null and not locked_waste.disabled, "Locked Waste entry must remain tappable.")
+	var locked_waste_facility = hud.submenu.get_node_or_null("group_locked")
+	_check(locked_waste_facility != null and not locked_waste_facility.disabled, "Locked Waste entry must remain tappable.")
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Locked group must still provide Back.")
 	hud._on_submenu_option("services", "back")
 	hud._on_cancel_pressed()
