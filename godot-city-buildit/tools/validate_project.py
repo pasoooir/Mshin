@@ -191,7 +191,7 @@ required_movable_types = {
     "art_supplies", "hardware_store", "farmers_market", "furniture_store",
     "industrial_1", "industrial_2", "industrial_3",
     "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
-    "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
+    "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
     "park_small"
 }
 move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
@@ -210,7 +210,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 36"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 39"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
@@ -223,7 +223,7 @@ for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health"
     if f'"id":"{group_id}"' not in services_hud:
         errors.append(f"Services group is missing or out of order: {group_id}")
 for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
-                    "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "town_hall"]:
+                    "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "town_hall"]:
     if f'"{building_id}": {{"name"' not in build_manager:
         errors.append(f"Services menu building definition is missing: {building_id}")
 for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
@@ -231,6 +231,26 @@ for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar
     definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
     if '"service_group"' not in definition_line:
         errors.append(f"Service building lacks service_group metadata: {service_id}")
+police_contracts = {
+    "police_small": (10, "Vector2i(1,1)", 5100),
+    "police_basic": (15, "Vector2i(2,2)", 9400),
+    "police_precinct": (24, "Vector2i(4,2)", 36000),
+}
+for police_id, (expected_coverage, expected_size, expected_cost) in police_contracts.items():
+    match = re.search(r'"' + police_id + r'": \{([^\n]+)\}', build_manager)
+    if match is None:
+        errors.append(f"Police station definition is missing: {police_id}")
+        continue
+    definition = match.group(1)
+    if f'"coverage_tiles":{expected_coverage}' not in definition or '"level":12' not in definition:
+        errors.append(f"Police station coverage/unlock contract is incorrect: {police_id}")
+    if f'"size":{expected_size}' not in definition or f'"cost":{expected_cost}' not in definition:
+        errors.append(f"Police station footprint/cost is incorrect: {police_id}")
+    if '"police":1' not in definition or '"service_group":"police"' not in definition:
+        errors.append(f"Police station must use separate police service metadata: {police_id}")
+    if '"fire":' in definition or '"health":' in definition or '"pollution":0' not in definition:
+        errors.append(f"Police station must be distinct from Fire/Health and pollution-free: {police_id}")
+
 for fire_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{fire_id}"' in line), "")
     if '"fire":1' not in definition_line:
