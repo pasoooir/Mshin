@@ -3,6 +3,26 @@ extends CanvasLayer
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 
+const SERVICE_GROUPS := [
+	{"id":"power", "label":"Power", "buildings":["power_wind"]},
+	{"id":"water", "label":"Water", "buildings":["water_tower"]},
+	{"id":"sewage", "label":"Sewage", "buildings":["sewage_pipe"]},
+	{"id":"waste", "label":"Waste", "buildings":[]},
+	{"id":"fire", "label":"Fire", "buildings":["fire_station"]},
+	{"id":"police", "label":"Police", "buildings":["police_station"]},
+	{"id":"health", "label":"Health", "buildings":[]},
+	{"id":"government", "label":"Government", "buildings":[]}
+]
+const SPECIALIZATION_GROUPS := [
+	{"id":"parks", "label":"Parks", "buildings":["park_small"]},
+	{"id":"education", "label":"Education", "buildings":[]},
+	{"id":"transportation", "label":"Transportation", "buildings":[]},
+	{"id":"entertainment", "label":"Entertainment", "buildings":[]},
+	{"id":"gambling", "label":"Gambling", "buildings":[]},
+	{"id":"landmarks", "label":"Landmarks", "buildings":[]},
+	{"id":"worship", "label":"Worship", "buildings":[]}
+]
+
 # The atlas does not currently contain a banknote glyph, so SimCash uses this
 # small locally drawn vector icon. All other status icons come from IconAtlas.
 class BanknoteGlyph extends Control:
@@ -16,7 +36,12 @@ class BanknoteGlyph extends Control:
 
 @onready var status_label: Label = $StatusLabel
 
-var submenu: GridContainer
+var submenu: HBoxContainer
+var submenu_scroll: ScrollContainer
+var bottom_actions: HBoxContainer
+var active_service_group := ""
+var active_specialization_group := ""
+var submenu_level := 0
 var active_category := ""
 var level_label: Label
 var population_label: Label
