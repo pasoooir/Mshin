@@ -53,7 +53,7 @@ else:
 placeholder_icon = ROOT / "assets/icons/ui/placeholder.png"
 if not placeholder_icon.is_file():
     errors.append("Transparent PNG fallback icon is missing")
-if "const Icons = preload(\"res://scripts/ui/Icons.gd\")" not in atlas_path.read_text(encoding="utf-8"):
+if "const Icons = preload(\"res://scripts/ui/Icons.gd\")" not in (ROOT / "scripts/ui/IconAtlas.gd").read_text(encoding="utf-8"):
     errors.append("Legacy IconAtlas facade must delegate to the centralized PNG helper")
 if "Color(0.0, 0.0, 0.0, 0.0)" not in hud:
     errors.append("Toolbar buttons must have transparent normal backgrounds")
