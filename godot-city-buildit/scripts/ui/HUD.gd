@@ -586,6 +586,7 @@ func _show_submenu(category: String) -> void:
 		_close_building_submenu(false)
 		return
 
+	submenu.show()
 	var viewport_size := get_viewport().get_visible_rect().size
 	var columns := 2 if viewport_size.x < 1200.0 else 3
 	var panel_width := 292.0 if columns == 2 else 390.0
