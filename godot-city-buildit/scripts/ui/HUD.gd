@@ -1139,11 +1139,11 @@ func open_production_panel(building: Building) -> void:
 			)
 			layout.add_child(item_button)
 	if building.definition.get("category","") == "commercial" and not building.is_producing and not building.has_ready_product:
-	var inventory_note := Label.new()
-	inventory_note.text = "Inputs are deducted from City Storage when crafting starts."
-	inventory_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	inventory_note.add_theme_font_size_override("font_size", int(13 * _ui_scale))
-	layout.add_child(inventory_note)
+		var inventory_note := Label.new()
+		inventory_note.text = "Inputs are deducted from City Storage when crafting starts."
+		inventory_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		inventory_note.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+		layout.add_child(inventory_note)
 
 func _format_duration(seconds: int) -> String:
 	if seconds < 60:
