@@ -92,11 +92,58 @@ func _ready() -> void:
 	ServiceManager.water_changed.connect(_on_water_changed)
 
 	var viewport_size := get_viewport().get_visible_rect().size
-	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.62, 1.0)
+	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	_build_top_hud()
 	_build_toolbars()
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_apply_responsive_layout()
 	_update_all()
 	status_label.text = "Tap Build, choose Residential, then place your first house beside a road."
+
+func _on_viewport_size_changed() -> void:
+	_apply_responsive_layout()
+
+func _apply_responsive_layout() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	var compact := viewport_size.x < 900.0
+	var tablet := viewport_size.x >= 900.0 and viewport_size.x < 1440.0
+	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
+	var toolbar := get_node_or_null("RightToolbar") as Control
+	if toolbar:
+		var width := (118.0 if compact else (132.0 if tablet else 148.0)) * scale_factor
+		var height := minf(viewport_size.y - 176.0 * scale_factor, 640.0 * scale_factor)
+		if not compact and not tablet:
+			# Desktop gets a persistent left navigation rail; mobile/tablet keep it on the right.
+			toolbar.anchor_left = 0.0
+			toolbar.anchor_right = 0.0
+			toolbar.offset_left = 12.0 * scale_factor
+			toolbar.offset_right = 12.0 * scale_factor + width
+		else:
+			toolbar.anchor_left = 1.0
+			toolbar.anchor_right = 1.0
+			toolbar.offset_left = -width - 112.0 * scale_factor
+			toolbar.offset_right = -112.0 * scale_factor
+		toolbar.offset_top = -height * 0.5
+		toolbar.offset_bottom = height * 0.5
+	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
+	if left_stats:
+		left_stats.position.x = (174.0 if not compact and not tablet else 14.0) * scale_factor
+	var submenu_control := get_node_or_null("ToolSubmenuScroll") as Control
+	if submenu_control:
+		var half_width := minf(viewport_size.x * 0.5 - 24.0, (390.0 if compact else (500.0 if tablet else 560.0)) * scale_factor)
+		submenu_control.offset_left = -half_width
+		submenu_control.offset_right = half_width
+		submenu_control.offset_top = -184.0 * scale_factor
+		submenu_control.offset_bottom = -16.0 * scale_factor
+	var actions := get_node_or_null("BottomActions") as Control
+	if actions:
+		var half_actions := minf(viewport_size.x * 0.34, 300.0 * scale_factor)
+		actions.offset_left = -half_actions
+		actions.offset_right = half_actions
+		actions.offset_top = -112.0 * scale_factor
+		actions.offset_bottom = -12.0 * scale_factor
 
 func _build_top_hud() -> void:
 	# Hide scene-authored legacy counters; build the reference's two-corner layout.
@@ -344,23 +391,23 @@ func _build_toolbars() -> void:
 		if old_node:
 			old_node.queue_free()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var toolbar_width := 94.0 * _ui_scale
-	var toolbar_height := minf(viewport_size.y - 150.0 * _ui_scale, 560.0 * _ui_scale)
+	var toolbar_width := 136.0 * _ui_scale
+	var toolbar_height := minf(viewport_size.y - 176.0 * _ui_scale, 640.0 * _ui_scale)
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
 	toolbar.anchor_left = 1.0
 	toolbar.anchor_right = 1.0
 	toolbar.anchor_top = 0.5
 	toolbar.anchor_bottom = 0.5
-	toolbar.offset_left = -toolbar_width - 96.0
-	toolbar.offset_right = -96.0
+	toolbar.offset_left = -toolbar_width - 112.0 * _ui_scale
+	toolbar.offset_right = -112.0 * _ui_scale
 	toolbar.offset_top = -toolbar_height * 0.5
 	toolbar.offset_bottom = toolbar_height * 0.5
 	toolbar.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.96), Color(0.65, 0.82, 0.92, 0.48)))
 	toolbar.mouse_filter = Control.MOUSE_FILTER_STOP
 	toolbar.z_index = 60
 	add_child(toolbar)
-	toolbar.hide()
+	toolbar.show()
 	var category_scroll := ScrollContainer.new()
 	category_scroll.name = "CategoryScroll"
 	category_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -382,7 +429,7 @@ func _build_toolbars() -> void:
 		["specializations", "Specializations", "parks"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
-	var category_height := clampf((toolbar_height - 30.0) / 7.0, 48.0, 68.0)
+	var category_height := clampf((toolbar_height - 36.0) / 7.0, 64.0 * _ui_scale, 82.0 * _ui_scale)
 	for item in tools:
 		var button := _make_category_button(str(item[2]), str(item[1]), Vector2(toolbar_width - 12.0, category_height))
 		button.name = "Tool_" + str(item[0]).capitalize()
@@ -395,12 +442,12 @@ func _build_toolbars() -> void:
 	build_toggle.anchor_right = 1.0
 	build_toggle.anchor_top = 0.5
 	build_toggle.anchor_bottom = 0.5
-	build_toggle.offset_left = -88.0
-	build_toggle.offset_right = -8.0
-	build_toggle.offset_top = -42.0
-	build_toggle.offset_bottom = 42.0
-	build_toggle.custom_minimum_size = Vector2(80, 84) * _ui_scale
-	build_toggle.tooltip_text = "Open Build Menu"
+	build_toggle.offset_left = -104.0 * _ui_scale
+	build_toggle.offset_right = -8.0 * _ui_scale
+	build_toggle.offset_top = -48.0 * _ui_scale
+	build_toggle.offset_bottom = 48.0 * _ui_scale
+	build_toggle.custom_minimum_size = Vector2(96, 96) * _ui_scale
+	build_toggle.tooltip_text = "Close Build Menu"
 	build_toggle.focus_mode = Control.FOCUS_NONE
 	build_toggle.z_index = 61
 	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.19, 0.26, 0.98), Color("#FFC857")))
@@ -412,12 +459,12 @@ func _build_toolbars() -> void:
 	build_content.add_theme_constant_override("separation", 1)
 	build_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_toggle.add_child(build_content)
-	var build_icon := Icons.make_icon("hard_hat", Vector2(42, 42) * _ui_scale)
+	var build_icon := Icons.make_icon("hard_hat", Vector2(54, 54) * _ui_scale)
 	build_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_content.add_child(build_icon)
 	var build_label := Label.new()
 	build_label.name = "BuildButtonLabel"
-	build_label.text = "BUILD"
+	build_label.text = "CLOSE"
 	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	build_label.add_theme_color_override("font_color", Color.WHITE)
 	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
@@ -451,10 +498,10 @@ func _build_toolbars() -> void:
 	submenu_scroll.anchor_right = 0.5
 	submenu_scroll.anchor_top = 1.0
 	submenu_scroll.anchor_bottom = 1.0
-	submenu_scroll.offset_left = -430.0 * _ui_scale
-	submenu_scroll.offset_right = 430.0 * _ui_scale
-	submenu_scroll.offset_top = -126.0 * _ui_scale
-	submenu_scroll.offset_bottom = -26.0 * _ui_scale
+	submenu_scroll.offset_left = -560.0 * _ui_scale
+	submenu_scroll.offset_right = 560.0 * _ui_scale
+	submenu_scroll.offset_top = -184.0 * _ui_scale
+	submenu_scroll.offset_bottom = -16.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -483,7 +530,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	content.add_theme_constant_override("separation", 1)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon_size := minf(38.0, button_size.y * 0.54)
+	var icon_size := maxf(48.0 * _ui_scale, minf(56.0 * _ui_scale, button_size.y * 0.72))
 	var icon := Icons.make_icon(icon_name, Vector2(icon_size, icon_size))
 	content.add_child(icon)
 	var label := Label.new()
@@ -495,7 +542,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.95))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
-	label.add_theme_font_size_override("font_size", 11 if button_size.y < 56.0 else 12)
+	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 	content.add_child(label)
 	return button
 
@@ -686,7 +733,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	var is_locked := locked or GameManager.level < required_level
 	var button := Button.new()
 	button.name = option_id
-	button.custom_minimum_size = Vector2(142, 78) * _ui_scale
+	button.custom_minimum_size = Vector2(196, 148) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.disabled = disabled
 	button.tooltip_text = ("Unlocks at Level %d" % required_level) if GameManager.level < required_level else detail
@@ -696,19 +743,19 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.16, 0.31, 0.39, 0.99), Color("#FFE19A")))
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.25, 0.39, 0.30, 1.0), Color("#FFE19A")))
 	button.add_theme_stylebox_override("disabled", _toolbar_style(Color(0.12, 0.13, 0.15, 0.92), Color(0.35, 0.38, 0.40, 0.5)))
-	var content := HBoxContainer.new()
+	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 5)
+	content.add_theme_constant_override("separation", 4)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(34, 34) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(68, 68) * _ui_scale)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if is_locked:
 		icon.modulate = Color(0.52, 0.56, 0.60, 0.72)
 	content.add_child(icon)
 	if is_locked:
-		var lock_icon := Icons.make_icon("lock", Vector2(18, 18) * _ui_scale)
+		var lock_icon := Icons.make_icon("lock", Vector2(24, 24) * _ui_scale)
 		lock_icon.name = "LockIcon"
 		content.add_child(lock_icon)
 	var labels := VBoxContainer.new()
@@ -721,7 +768,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title_label.add_theme_color_override("font_color", Color("#AAB2B9") if is_locked else Color("#F4F8FC"))
-	title_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	title_label.add_theme_font_size_override("font_size", int(16 * _ui_scale))
 	labels.add_child(title_label)
 	var detail_label := Label.new()
 	var locked_detail := "Unlocks at Level %d" % required_level
@@ -732,7 +779,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_label.add_theme_color_override("font_color", Color("#FFD98A") if is_locked else Color("#B8C9D4"))
-	detail_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	detail_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 	labels.add_child(detail_label)
 	submenu.add_child(button)
 	button.pressed.connect(_on_submenu_option.bind(category, option_id))
@@ -743,7 +790,7 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		back.name = "Submenu_Back"
 		back.text = "BACK"
 		back.icon = Icons.get_tex("ui", "back")
-		back.custom_minimum_size = Vector2(108, 78) * _ui_scale
+		back.custom_minimum_size = Vector2(128, 96) * _ui_scale
 		back.focus_mode = Control.FOCUS_NONE
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
@@ -751,7 +798,7 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 	cancel.name = "Submenu_Cancel"
 	cancel.text = "CANCEL"
 	cancel.icon = Icons.get_tex("ui", "cancel")
-	cancel.custom_minimum_size = Vector2(112, 78) * _ui_scale
+	cancel.custom_minimum_size = Vector2(128, 96) * _ui_scale
 	cancel.focus_mode = Control.FOCUS_NONE
 	cancel.add_theme_color_override("font_color", Color("#FFE2D9"))
 	cancel.add_theme_stylebox_override("normal", _toolbar_style(Color(0.42, 0.12, 0.12, 0.96), Color("#E98978")))

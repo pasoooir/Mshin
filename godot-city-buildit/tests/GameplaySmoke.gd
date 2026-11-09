@@ -282,11 +282,14 @@ func _test_build_menu_visibility() -> void:
 	_check(toolbar != null, "Right-side category toolbar was not created.")
 	if build_button == null or toolbar == null:
 		return
-	_check(not toolbar.visible, "Right-side category toolbar should start closed.")
-	_check(_node_has_label_text(build_button, "BUILD"), "Build entry button must display BUILD.")
+	_check(toolbar.visible, "Build categories must be visible and discoverable on first entry.")
+	_check(_node_has_label_text(build_button, "CLOSE"), "Visible build menu must expose a CLOSE control.")
 	build_button.emit_signal("pressed")
 	await get_tree().process_frame
-	_check(toolbar.visible, "Tapping Build must reveal the right-side category toolbar.")
+	_check(not toolbar.visible, "Tapping CLOSE must hide the build category toolbar.")
+	build_button.emit_signal("pressed")
+	await get_tree().process_frame
+	_check(toolbar.visible, "Tapping BUILD must reveal the right-side category toolbar.")
 	var viewport_rect := get_viewport().get_visible_rect()
 	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category toolbar is outside the visible screen.")
 	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.2, "Build category dock covers too much of the mobile play area.")
@@ -298,7 +301,10 @@ func _test_build_menu_visibility() -> void:
 		_check(button != null, "Missing ordered category button: " + expected_names[i])
 		if button and toolbar_items:
 			_check(toolbar_items.get_child(i) == button, "Build categories are not in the required top-to-bottom order.")
-			_check(button.custom_minimum_size.y >= 48.0, "Category touch target is too small.")
+			_check(button.custom_minimum_size.y >= 64.0, "Category touch target is too small.")
+			var category_content := button.get_child(0) as VBoxContainer
+			var category_icon := category_content.get_child(0) as TextureRect if category_content and category_content.get_child_count() > 0 else null
+			_check(category_icon != null and category_icon.custom_minimum_size.x >= 48.0, "Category icon must render at a readable 48px minimum.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
 	hud._on_category_pressed("services")
