@@ -89,13 +89,13 @@ for icon_key in sorted(required_icons - atlas_keys):
     errors.append(f"Required HUD icon is missing from atlas: {icon_key}")
 
 toolbar_order = [
-    '["road", "Road"]',
-    '["residential", "Residential"]',
-    '["commercial", "Commercial"]',
-    '["industrial", "Industrial"]',
-    '["services", "Services"]',
-    '["parks", "Parks"]',
-    '["bulldoze", "Bulldoze"]'
+    '["road", "Roads", "road"]',
+    '["residential", "Residential", "residential"]',
+    '["commercial", "Commercial", "commercial"]',
+    '["industrial", "Industrial", "industrial"]',
+    '["services", "Services", "services"]',
+    '["specializations", "Specializations", "parks"]',
+    '["bulldoze", "Bulldoze", "bulldoze"]'
 ]
 positions = [hud.find(entry) for entry in toolbar_order]
 if any(position < 0 for position in positions) or positions != sorted(positions):
