@@ -17,6 +17,8 @@ var last_pinch_angle: float = 0.0
 
 func _ready() -> void:
 	rotation_degrees = Vector3(0.0, 45.0, 0.0)
+	# Frame the starter highway and first adjacent build plots on entry.
+	global_position = Vector3(-9.0, 0.0, 2.5)
 	_update_camera_transform()
 
 func _is_road_mode() -> bool:
@@ -90,7 +92,7 @@ func _pan(screen_delta: Vector2) -> void:
 	forward.y = 0.0
 	right = right.normalized()
 	forward = forward.normalized()
-	global_position += (-right * screen_delta.x - forward * screen_delta.y) * (current_zoom * 0.0018)
+	global_position += (-right * screen_delta.x - forward * screen_delta.y) * (current_zoom * 0.00125)
 	global_position.x = clampf(global_position.x, -world_limit, world_limit)
 	global_position.z = clampf(global_position.z, -world_limit, world_limit)
 
