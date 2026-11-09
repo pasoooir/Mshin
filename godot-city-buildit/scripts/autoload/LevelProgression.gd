@@ -27,7 +27,15 @@ var unlocks := {
 	15: {"materials": ["glue", "textiles"], "other": ["6lane_road", "beach"]},
 	16: {"materials": ["paint", "table"], "services": ["health"]},
 	18: {"materials": ["donut", "fruit"], "commercial": ["donut_shop"], "factories": 7},
-	20: {"other": ["entertainment", "avenue"]}
+	19: {"materials": ["glass"]},
+	20: {"other": ["entertainment", "avenue"]},
+	23: {"materials": ["animal_feed"]},
+	24: {"factories": 8},
+	29: {"materials": ["electrical"]},
+	30: {"factories": 9},
+	37: {"factories": 10},
+	46: {"factories": 11},
+	58: {"factories": 12}
 }
 
 var population_unlocks := {
@@ -36,13 +44,17 @@ var population_unlocks := {
 	10000: "global_trade_hq",
 	12000: "monster_trouble",
 	20000: "cargo_ship",
-	27000: "mass_production_factory"
+	27000: "mass_production_factory",
+		80000: "high_tech_factory",
+		150000: "nano_tech_factory"
 }
 
 var unlocked_materials: Array = ["metal", "nails"]
 var unlocked_commercial: Array = ["building_supplies"]
 var unlocked_services: Array = ["power", "water"]
 var max_factories: int = 2
+
+const FACTORY_LIMITS := {1:2, 2:3, 3:4, 6:5, 12:6, 18:7, 24:8, 30:9, 37:10, 46:11, 58:12}
 var unlocked_features: Array = ["roads", "residential"]
 
 func _ready() -> void:
@@ -78,8 +90,15 @@ func on_level_up(new_level: int) -> void:
 	_apply_level(new_level)
 	print("[LevelProgression] Level ", new_level, " applied. Factories: ", max_factories)
 
+func get_factory_limit_for_level(level: int) -> int:
+	var limit := 2
+	for threshold in FACTORY_LIMITS:
+		if level >= int(threshold):
+			limit = int(FACTORY_LIMITS[threshold])
+	return limit
+
 func is_material_unlocked(id: String) -> bool:
-	return id in unlocked_materials
+	return id in unlocked_materials or (ProductionManager.raw_materials.has(id) and int(ProductionManager.raw_materials[id].get("level", 1)) <= GameManager.level)
 
 func is_service_unlocked(id: String) -> bool:
 	return id in unlocked_services
