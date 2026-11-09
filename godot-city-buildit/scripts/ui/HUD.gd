@@ -622,15 +622,22 @@ func _show_submenu(category: String) -> void:
 		var definition_category := "park" if category == "parks" else category
 		for type_id in BuildManager.building_types:
 			var definition: Dictionary = BuildManager.building_types[type_id]
-			if str(definition.get("category", "")) != definition_category:
+			if str(definition.get("category", "")) != definition_category or bool(definition.get("legacy_only", false)):
 				continue
 			var title := str(definition.get("name", type_id))
-			match str(type_id):
-				"industrial_1": title = "Small Factory"
-				"industrial_2": title = "Wood Factory"
-				"industrial_3": title = "Factory+"
 			var detail := "%d coins · Lv %d" % [int(definition.get("cost", 0)), int(definition.get("level", 1))]
-			_add_submenu_button(str(type_id), title, category, detail, false, category, int(definition.get("level", 1)))
+			var locked := false
+			if definition_category == "industrial":
+				var slots := int(definition.get("production_slots", 2))
+				var required_population := int(definition.get("population_required", 0))
+				detail += " · %d slots" % slots
+				if required_population > GameManager.population:
+					detail += " · Requires %s population" % _format_count(required_population)
+					locked = true
+				elif not BuildManager.can_build_another_factory():
+					detail += " · Factory limit reached"
+					locked = true
+			_add_submenu_button(str(type_id), title, category, detail, locked, category, int(definition.get("level", 1)), locked)
 	_finish_submenu_row()
 
 func _show_group_options(groups: Array, parent_category: String) -> void:
