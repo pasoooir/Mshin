@@ -340,8 +340,8 @@ func _build_toolbars() -> void:
 	toolbar.anchor_right = 1.0
 	toolbar.anchor_top = 0.5
 	toolbar.anchor_bottom = 0.5
-	toolbar.offset_left = -toolbar_width - 8.0
-	toolbar.offset_right = -8.0
+	toolbar.offset_left = -toolbar_width - 96.0
+	toolbar.offset_right = -96.0
 	toolbar.offset_top = -toolbar_height * 0.5
 	toolbar.offset_bottom = toolbar_height * 0.5
 	toolbar.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.96), Color(0.65, 0.82, 0.92, 0.48)))
@@ -441,8 +441,8 @@ func _build_toolbars() -> void:
 	submenu_scroll.anchor_bottom = 1.0
 	submenu_scroll.offset_left = -430.0 * _ui_scale
 	submenu_scroll.offset_right = 430.0 * _ui_scale
-	submenu_scroll.offset_top = -112.0 * _ui_scale
-	submenu_scroll.offset_bottom = -12.0 * _ui_scale
+	submenu_scroll.offset_top = -126.0 * _ui_scale
+	submenu_scroll.offset_bottom = -26.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -478,6 +478,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.text = label_text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Color("#F4F8FC"))
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.95))
 	label.add_theme_constant_override("shadow_offset_x", 1)
@@ -739,12 +740,22 @@ func _select_building_type(type_id: String) -> void:
 	_set_tool_modes_off()
 	BuildManager.select_building(type_id)
 	if BuildManager.is_placing:
+		_highlight_submenu_choice(type_id)
 		if submenu_scroll:
 			submenu_scroll.show()
 		if bottom_actions:
 			bottom_actions.hide()
 	else:
 		status_label.text = "Could not enter placement mode for %s." % str(definition.get("name", type_id))
+
+func _highlight_submenu_choice(type_id: String) -> void:
+	for child in submenu.get_children():
+		if child is Button:
+			var button := child as Button
+			if button.name == type_id:
+				button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.13, 0.32, 0.20, 1.0), Color("#A8E62E")))
+			elif not button.name.begins_with("Submenu_"):
+				button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.16, 0.21, 0.97), Color(0.52, 0.72, 0.82, 0.62)))
 
 func _on_building_choice_pressed(type_id: String) -> void:
 	# Keep the existing test and scene callback contract while routing through
