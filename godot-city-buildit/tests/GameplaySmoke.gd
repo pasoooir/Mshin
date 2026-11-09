@@ -183,15 +183,22 @@ func _test_build_menu_visibility() -> void:
 	hud._on_category_pressed("services")
 	await get_tree().process_frame
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
-	for group_id in ["group_power", "group_water", "group_fire", "group_police", "group_health"]:
+	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
+	_check(hud.submenu.get_child_count() == 9, "Services level one must contain exactly eight fixed groups and Cancel.")
 	hud._on_submenu_option("services", "group_fire")
 	await get_tree().process_frame
-	_check(hud.submenu.get_node_or_null("fire_station") != null, "Fire group must contain the Fire Station.")
+	_check(hud.submenu.get_node_or_null("fire_station_small") != null, "Fire group must contain the Small Fire Station.")
+	_check(hud.submenu.get_node_or_null("fire_station") != null, "Fire group must contain the Basic Fire Station.")
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Second-level Services submenu must provide Back.")
 	_check(hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Active submenu must always provide Cancel.")
 	hud._on_submenu_option("services", "back")
 	_check(hud.submenu.get_node_or_null("group_power") != null, "Back must return to the Services group list.")
+	hud._on_submenu_option("services", "group_waste")
+	var locked_waste = hud.submenu.get_node_or_null("group_locked")
+	_check(locked_waste != null and not locked_waste.disabled, "Locked Waste entry must remain tappable.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Locked group must still provide Back.")
+	hud._on_submenu_option("services", "back")
 	hud._on_cancel_pressed()
 	await get_tree().process_frame
 	_check(not hud.submenu_scroll.visible and hud.get_node("BottomActions").visible, "Cancel must return to permanent city actions.")
@@ -384,7 +391,7 @@ func _run_gameplay_test() -> void:
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "industrial_1", "Small factory menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("services")
-		for group_id in ["group_power", "group_water", "group_fire", "group_police", "group_health"]:
+		for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 			_check(hud.submenu.get_node_or_null(group_id) != null, "Services submenu is missing group " + group_id)
 		hud._on_submenu_option("services", "group_power")
 		_check(hud.submenu.get_node_or_null("power_wind") != null, "Power group must contain Wind Power.")
@@ -593,7 +600,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 21, "Move whitelist must include all 21 requested building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 24, "Move whitelist must include all 24 requested building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 

@@ -208,10 +208,31 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 21"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 24"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
+
+
+# Services menu must expose all eight fixed groups in their prescribed order and every selectable service
+# must resolve to a real BuildManager definition with explicit group metadata.
+services_hud = hud[hud.find("const SERVICE_GROUPS"):hud.find("const SPECIALIZATION_GROUPS")]
+for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health", "government"]:
+    if f'"id":"{group_id}"' not in services_hud:
+        errors.append(f"Services group is missing or out of order: {group_id}")
+for building_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
+                    "fire_station_small", "fire_station", "police_station", "town_hall"]:
+    if f'"{building_id}": {{"name"' not in build_manager:
+        errors.append(f"Services menu building definition is missing: {building_id}")
+for service_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
+                   "fire_station_small", "fire_station", "police_station", "town_hall"]:
+    definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
+    if '"service_group"' not in definition_line:
+        errors.append(f"Service building lacks service_group metadata: {service_id}")
+for fire_id in ["fire_station_small", "fire_station"]:
+    definition_line = next((line for line in build_manager.splitlines() if f'"{fire_id}"' in line), "")
+    if '"fire":1' not in definition_line:
+        errors.append(f"Fire station must provide fire coverage: {fire_id}")
 
 if errors:
     print("VALIDATION FAILED")
