@@ -51,6 +51,45 @@ func _test_storage_and_production_chain() -> void:
 	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
 	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 2, "Small Factory must expose two parallel production slots.")
 	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
+	# Mayor level unlocks materials; factory count and factory tier use separate gates.
+	var original_level := GameManager.level
+	var original_population := GameManager.population
+	var original_factory_count := BuildManager.factory_count
+	GameManager.level = 4
+	_check(ProductionManager.get_available_raw().has("metal") and ProductionManager.get_available_raw().has("wood"), "Level 4 must offer Metal and Wood.")
+	_check(not ProductionManager.get_available_raw().has("plastic") and not ProductionManager.get_available_raw().has("seeds"), "Level 4 must hide Plastic and Seeds until their own unlock levels.")
+	GameManager.level = 5
+	_check(ProductionManager.get_available_raw().has("plastic"), "Plastic must unlock at Mayor Level 5.")
+	GameManager.level = 11
+	_check(ProductionManager.get_available_raw().has("minerals"), "Minerals must unlock at Mayor Level 11.")
+	GameManager.level = 13
+	_check(ProductionManager.get_available_raw().has("chemicals"), "Chemicals must unlock at Mayor Level 13.")
+	_check(LevelProgression.get_factory_limit_for_level(1) == 2 and LevelProgression.get_factory_limit_for_level(2) == 3 and LevelProgression.get_factory_limit_for_level(3) == 4, "Early-game factory count caps must be 2/3/4 at levels 1/2/3.")
+	_check(LevelProgression.get_factory_limit_for_level(58) == 12, "Mayor Level 58 must unlock the 12th factory slot.")
+	GameManager.level = 1
+	GameManager.population = 3999
+	_check(not BuildManager.can_build_factory_type("factory_basic"), "Basic Factory must remain population-locked below 4,000 residents.")
+	GameManager.population = 4000
+	_check(BuildManager.can_build_factory_type("factory_basic"), "Basic Factory must unlock at 4,000 residents.")
+	GameManager.population = 26999
+	_check(not BuildManager.can_build_factory_type("factory_mass"), "Mass Production must remain locked below 27,000 residents.")
+	GameManager.population = 27000
+	_check(BuildManager.can_build_factory_type("factory_mass"), "Mass Production must unlock at 27,000 residents.")
+	GameManager.population = 79999
+	_check(not BuildManager.can_build_factory_type("factory_hightech"), "High-tech Factory must remain locked below 80,000 residents.")
+	GameManager.population = 80000
+	_check(BuildManager.can_build_factory_type("factory_hightech"), "High-tech Factory must unlock at 80,000 residents.")
+	GameManager.population = 150000
+	_check(BuildManager.can_build_factory_type("factory_nano"), "Nano-tech Factory must unlock at 150,000 residents.")
+	GameManager.population = original_population
+	GameManager.level = 1
+	BuildManager.factory_count = 2
+	_check(not BuildManager.can_build_another_factory(), "A level 1 city must not build a third factory.")
+	GameManager.level = 2
+	_check(BuildManager.can_build_another_factory(), "A level 2 city must be allowed to build a third factory.")
+	BuildManager.factory_count = original_factory_count
+	GameManager.level = original_level
+	GameManager.population = original_population
 
 	var factory = ProductionComponentScript.new()
 	factory.slot_count = 2
