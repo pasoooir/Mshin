@@ -720,7 +720,11 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	title_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 	labels.add_child(title_label)
 	var detail_label := Label.new()
-	detail_label.text = "Unlocks at Level %d" % required_level if GameManager.level < required_level else ("LOCKED" if locked else detail)
+	var locked_detail := "Unlocks at Level %d" % required_level
+	var option_definition: Dictionary = BuildManager.building_types.get(option_id, {})
+	if int(option_definition.get("fire", 0)) > 0:
+		locked_detail += " · Coverage: %d tiles" % int(option_definition.get("coverage_tiles", 15))
+	detail_label.text = locked_detail if GameManager.level < required_level else ("LOCKED" if locked else detail)
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_label.add_theme_color_override("font_color", Color("#FFD98A") if is_locked else Color("#B8C9D4"))
