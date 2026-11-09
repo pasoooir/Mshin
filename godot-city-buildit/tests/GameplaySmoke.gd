@@ -282,11 +282,14 @@ func _test_build_menu_visibility() -> void:
 	_check(toolbar != null, "Right-side category toolbar was not created.")
 	if build_button == null or toolbar == null:
 		return
-	_check(not toolbar.visible, "Right-side category toolbar should start closed.")
-	_check(_node_has_label_text(build_button, "BUILD"), "Build entry button must display BUILD.")
+	_check(toolbar.visible, "Build categories must be visible and discoverable on first entry.")
+	_check(_node_has_label_text(build_button, "CLOSE"), "Visible build menu must expose a CLOSE control.")
 	build_button.emit_signal("pressed")
 	await get_tree().process_frame
-	_check(toolbar.visible, "Tapping Build must reveal the right-side category toolbar.")
+	_check(not toolbar.visible, "Tapping CLOSE must hide the build category toolbar.")
+	build_button.emit_signal("pressed")
+	await get_tree().process_frame
+	_check(toolbar.visible, "Tapping BUILD must reveal the right-side category toolbar.")
 	var viewport_rect := get_viewport().get_visible_rect()
 	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category toolbar is outside the visible screen.")
 	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.2, "Build category dock covers too much of the mobile play area.")
