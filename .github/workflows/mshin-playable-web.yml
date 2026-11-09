@@ -1,12 +1,11 @@
 name: Mshin Playable Web
 
+# Always rebuild Pages on main pushes. Path filters previously allowed the
+# documentation/README fallback to remain published after the playable site
+# workflow was skipped; deployment is the source of truth for the public game.
 on:
   push:
-    branches: [main, feat/simcity-iconic-hud]
-    paths:
-      - "godot-city-buildit/**"
-      - "Intro.jpg"
-      - ".github/workflows/mshin-playable-web.yml"
+    branches: [main]
   pull_request:
     branches: [main]
     paths:
