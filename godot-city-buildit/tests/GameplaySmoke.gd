@@ -247,8 +247,9 @@ func _test_build_menu_visibility() -> void:
 	_check(BuildManager.building_types["waste_recycling"].get("size", Vector2i.ZERO) == Vector2i(3, 2), "Recycling Center footprint must be 3x2.")
 	_check(int(BuildManager.building_types["waste_dump_small"].get("pollution", 0)) > 0 and float(BuildManager.building_types["waste_dump_small"].get("pollution_radius", 0.0)) == 10.0, "Small Garbage Dump must expose 10-tile pollution metadata.")
 	_check(int(BuildManager.building_types["waste_dump"].get("pollution", 0)) > 0 and float(BuildManager.building_types["waste_dump"].get("pollution_radius", 0.0)) == 12.0, "Garbage Dump must expose 12-tile pollution metadata.")
-	_check(float(BuildManager.building_types["waste_incinerator"].get("pollution_radius", 0.0)) == 16.0 and waste_definition if false else true, "Incinerator must have the largest 16-tile pollution radius.")
+	_check(float(BuildManager.building_types["waste_incinerator"].get("pollution_radius", 0.0)) == 16.0, "Incinerator must have the largest 16-tile pollution radius.")
 	_check(int(BuildManager.building_types["waste_recycling"].get("pollution", 0)) == 0 and float(BuildManager.building_types["waste_recycling"].get("pollution_radius", 0.0)) == 0.0, "Recycling Center must be pollution-free.")
+	_check(BuildManager.building_types["waste_incinerator"].get("pollution_severity", "") == "heavy", "Incinerator must be marked as heavy pollution in the catalog.")
 
 	hud._on_submenu_option("services", "back")
 	await get_tree().process_frame
