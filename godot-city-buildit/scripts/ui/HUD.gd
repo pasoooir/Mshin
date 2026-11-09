@@ -95,8 +95,43 @@ func _ready() -> void:
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	_build_top_hud()
 	_build_toolbars()
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_apply_responsive_layout()
 	_update_all()
 	status_label.text = "Tap Build, choose Residential, then place your first house beside a road."
+
+func _on_viewport_size_changed() -> void:
+	_apply_responsive_layout()
+
+func _apply_responsive_layout() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	var compact := viewport_size.x < 900.0
+	var tablet := viewport_size.x >= 900.0 and viewport_size.x < 1440.0
+	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
+	var toolbar := get_node_or_null("RightToolbar") as Control
+	if toolbar:
+		var width := (118.0 if compact else (132.0 if tablet else 148.0)) * scale_factor
+		var height := minf(viewport_size.y - 176.0 * scale_factor, 640.0 * scale_factor)
+		toolbar.offset_left = -width - 112.0 * scale_factor
+		toolbar.offset_right = -112.0 * scale_factor
+		toolbar.offset_top = -height * 0.5
+		toolbar.offset_bottom = height * 0.5
+	var submenu_control := get_node_or_null("ToolSubmenuScroll") as Control
+	if submenu_control:
+		var half_width := minf(viewport_size.x * 0.5 - 24.0, (390.0 if compact else (500.0 if tablet else 560.0)) * scale_factor)
+		submenu_control.offset_left = -half_width
+		submenu_control.offset_right = half_width
+		submenu_control.offset_top = -184.0 * scale_factor
+		submenu_control.offset_bottom = -16.0 * scale_factor
+	var actions := get_node_or_null("BottomActions") as Control
+	if actions:
+		var half_actions := minf(viewport_size.x * 0.34, 300.0 * scale_factor)
+		actions.offset_left = -half_actions
+		actions.offset_right = half_actions
+		actions.offset_top = -112.0 * scale_factor
+		actions.offset_bottom = -12.0 * scale_factor
 
 func _build_top_hud() -> void:
 	# Hide scene-authored legacy counters; build the reference's two-corner layout.
@@ -360,7 +395,7 @@ func _build_toolbars() -> void:
 	toolbar.mouse_filter = Control.MOUSE_FILTER_STOP
 	toolbar.z_index = 60
 	add_child(toolbar)
-	toolbar.hide()
+	toolbar.show()
 	var category_scroll := ScrollContainer.new()
 	category_scroll.name = "CategoryScroll"
 	category_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -400,7 +435,7 @@ func _build_toolbars() -> void:
 	build_toggle.offset_top = -48.0 * _ui_scale
 	build_toggle.offset_bottom = 48.0 * _ui_scale
 	build_toggle.custom_minimum_size = Vector2(96, 96) * _ui_scale
-	build_toggle.tooltip_text = "Open Build Menu"
+	build_toggle.tooltip_text = "Close Build Menu"
 	build_toggle.focus_mode = Control.FOCUS_NONE
 	build_toggle.z_index = 61
 	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.19, 0.26, 0.98), Color("#FFC857")))
@@ -417,7 +452,7 @@ func _build_toolbars() -> void:
 	build_content.add_child(build_icon)
 	var build_label := Label.new()
 	build_label.name = "BuildButtonLabel"
-	build_label.text = "BUILD"
+	build_label.text = "CLOSE"
 	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	build_label.add_theme_color_override("font_color", Color.WHITE)
 	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
@@ -451,10 +486,10 @@ func _build_toolbars() -> void:
 	submenu_scroll.anchor_right = 0.5
 	submenu_scroll.anchor_top = 1.0
 	submenu_scroll.anchor_bottom = 1.0
-	submenu_scroll.offset_left = -430.0 * _ui_scale
-	submenu_scroll.offset_right = 430.0 * _ui_scale
-	submenu_scroll.offset_top = -126.0 * _ui_scale
-	submenu_scroll.offset_bottom = -26.0 * _ui_scale
+	submenu_scroll.offset_left = -560.0 * _ui_scale
+	submenu_scroll.offset_right = 560.0 * _ui_scale
+	submenu_scroll.offset_top = -184.0 * _ui_scale
+	submenu_scroll.offset_bottom = -16.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
