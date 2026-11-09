@@ -27,14 +27,15 @@ func _is_road_mode() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			is_mouse_panning = event.pressed and not _is_road_mode()
+			is_mouse_panning = event.pressed and not _is_road_mode() and not _is_building_press_pending(-1)
 			last_mouse_position = event.position
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			_zoom(-2.0)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			_zoom(2.0)
 	elif event is InputEventMouseMotion and is_mouse_panning:
-		_pan(event.position - last_mouse_position)
+		if not _is_building_press_pending(-1):
+			_pan(event.position - last_mouse_position)
 		last_mouse_position = event.position
 	elif event is InputEventScreenTouch:
 		if event.pressed:
@@ -52,10 +53,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		if touch_points.size() == 1:
 			# CityInput owns the active pointer while a building is being relocated.
 			# Do not move the camera underneath the drag preview.
-			if not _is_road_mode() and not BuildManager.is_moving:
+			if not _is_road_mode() and not BuildManager.is_moving and not _is_building_press_pending(event.index):
 				_pan(event.relative)
 		elif touch_points.size() >= 2:
 			_update_pinch(event.relative)
+
+func _is_building_press_pending(pointer_id: int) -> bool:
+	var scene = get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if scene else null
+	return city_input != null and city_input.has_method("is_building_press_pending") and city_input.is_building_press_pending(pointer_id)
 
 func _update_pinch_baseline() -> void:
 	var points: Array = touch_points.values()
