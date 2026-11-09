@@ -2,6 +2,7 @@ extends Node3D
 
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
+const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -31,6 +32,69 @@ func _find_building(type_id: String):
 
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
+
+func _test_storage_and_production_chain() -> void:
+	var saved_storage: Dictionary = StorageManager.to_save_dict()
+	StorageManager.capacity = 50
+	StorageManager.items = {}
+	_check(StorageManager.capacity == 50 and StorageManager.get_used() == 0, "New City Storage must start with 50 empty slots.")
+	_check(StorageManager.add_item("metal", 2), "Storage must accept items within its capacity.")
+	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_free() == 48, "Storage item count/free-space accounting is incorrect.")
+	_check(StorageManager.remove_items({"metal":2}), "Storage must remove a validated recipe input set.")
+	_check(StorageManager.get_used() == 0, "Removing recipe inputs must update used storage.")
+	_check(int(ProductionManager.raw_materials.metal.time_sec) == 60, "Metal production must take 60 seconds.")
+	_check(int(ProductionManager.raw_materials.wood.time_sec) == 180, "Wood production must take 180 seconds.")
+	_check(int(ProductionManager.raw_materials.chemicals.time_sec) == 7200, "Chemicals production must take 2 hours.")
+	_check(int(ProductionManager.raw_materials.electrical.time_sec) == 25200, "Electrical Components production must take 7 hours.")
+	_check(ProductionManager.raw_materials.size() == 11, "The complete 11-item SCBI raw-material catalog is required.")
+	var nails: Dictionary = ProductionManager.get_recipe("nails")
+	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
+	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 2, "Small Factory must expose two parallel production slots.")
+	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
+
+	var factory = ProductionComponentScript.new()
+	factory.slot_count = 2
+	factory.is_factory = true
+	add_child(factory)
+	_check(factory.get_slot_count() == 2, "Factory production component must create two parallel slots.")
+	_check(factory.start_factory("metal", 0), "Factory must start Metal in an empty slot.")
+	_check(factory.start_factory("metal", 1), "Factory must run a second Metal batch in parallel.")
+	var saved_slots: Array = factory.to_save_array()
+	var finish_time := int(saved_slots[0].get("finish_unix",0))
+	var restored_factory = ProductionComponentScript.new()
+	restored_factory.slot_count = 2
+	restored_factory.is_factory = true
+	add_child(restored_factory)
+	restored_factory.from_save_array(saved_slots)
+	_check(int(restored_factory.get_slot(0).get("finish_unix",0)) == finish_time, "Production save/load must preserve absolute finish timestamps.")
+	for index in range(2):
+		var slot: Dictionary = restored_factory.slots[index]
+		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		restored_factory.slots[index] = slot
+	restored_factory.refresh_slots()
+	_check(bool(restored_factory.get_slot(0).get("ready",false)), "An elapsed offline factory timer must restore as ready.")
+	_check(restored_factory.collect(0), "Ready factory output must collect into City Storage.")
+	_check(StorageManager.get_count("metal") == 1, "Factory collection must add exactly one raw item to Storage.")
+
+	var shop = ProductionComponentScript.new()
+	shop.slot_count = 2
+	shop.is_factory = false
+	shop.shop_id = "building_supplies"
+	add_child(shop)
+	_check(StorageManager.add_item("metal",1), "Test setup must provide two Metal for Nails.")
+	_check(shop.start_craft("nails",0), "Building Supplies must start Nails when 2 Metal are available.")
+	_check(StorageManager.get_count("metal") == 0, "Crafting must deduct inputs from Storage at start.")
+	var craft_slot: Dictionary = shop.slots[0]
+	craft_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	shop.slots[0] = craft_slot
+	shop.refresh_slots()
+	_check(shop.collect(0), "Finished Nails must collect back into City Storage.")
+	_check(StorageManager.get_count("nails") == 1, "Collected Nails must be returned to City Storage.")
+	_check(not StorageManager.can_add("overflow_test", 51), "Storage must reject a collection larger than remaining capacity.")
+	factory.queue_free()
+	restored_factory.queue_free()
+	shop.queue_free()
+	StorageManager.from_save_dict(saved_storage)
 
 func _test_wind_turbine_rotor_animation() -> void:
 	var building_script = load("res://scripts/buildings/Building.gd")
@@ -480,6 +544,7 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	await _test_build_menu_visibility()
 	_test_wind_turbine_rotor_animation()
+	_test_storage_and_production_chain()
 	_test_fire_hazard_state_machine()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
