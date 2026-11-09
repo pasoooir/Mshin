@@ -17,6 +17,7 @@ var road_stroke_last_cell: Dictionary = {}
 var bulldoze_mode: bool = false
 var bulldoze_road_mode: bool = false
 var pending_bulldoze_building_id: String = ""
+var ui_touch_pointers: Dictionary = {}
 
 func _ready() -> void:
 	camera = get_viewport().get_camera_3d()
@@ -26,6 +27,21 @@ func _ready() -> void:
 func _has_active_screen_touch() -> bool:
 	for pointer_id in pointer_start.keys():
 		if int(pointer_id) >= 0:
+			return true
+	return false
+
+func _is_touch_over_ui(screen_position: Vector2) -> bool:
+	var scene := get_tree().current_scene
+	var hud := scene.get_node_or_null("HUD") if scene else null
+	return hud != null and _control_tree_has_touch_target(hud, screen_position)
+
+func _control_tree_has_touch_target(node: Node, screen_position: Vector2) -> bool:
+	if node is Control:
+		var control := node as Control
+		if control.is_visible_in_tree() and control.mouse_filter == Control.MOUSE_FILTER_STOP and control.get_global_rect().has_point(screen_position):
+			return true
+	for child in node.get_children():
+		if _control_tree_has_touch_target(child, screen_position):
 			return true
 	return false
 
@@ -200,6 +216,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif BuildManager.is_placing:
 			_update_ghost(event.position)
 	elif event is InputEventScreenTouch:
+		if event.pressed and _is_touch_over_ui(event.position):
+			# GUI Buttons receive the emulated mouse event; do not let the
+			# accompanying raw touch fall through and activate the city map.
+			_clear_emulated_mouse_pointer()
+			ui_touch_pointers[event.index] = true
+			return
+		if not event.pressed and ui_touch_pointers.has(event.index):
+			ui_touch_pointers.erase(event.index)
+			return
 		if event.pressed:
 			# If emulation produced a mouse-down first, discard that duplicate
 			# pointer before starting the authoritative touch pointer.
@@ -238,6 +263,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			if pointer_start.is_empty():
 				multi_touch_gesture = false
 	elif event is InputEventScreenDrag:
+		if ui_touch_pointers.has(event.index):
+			return
 		if pointer_start.has(event.index):
 			pointer_last_position[event.index] = event.position
 		if pointer_start.size() > 1:
