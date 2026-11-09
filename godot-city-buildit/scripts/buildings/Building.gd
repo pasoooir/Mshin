@@ -565,7 +565,7 @@ func _build_building_supplies_showcase(w: float, d: float, height: float, color:
 	for mark in range(5):
 		_add_box_rotated(Vector3(0.08, 0.14, 0.18), Vector3(-w * 0.18 + float(mark) * w * 0.12, body_h + 1.60, 0.09), navy, Vector3(0, 0, deg_to_rad(-13.0)))
 	_add_box(Vector3(0.10, 0.34, 0.10), Vector3(w * 0.36, body_h + 1.40, 0), navy)
-	_add_box(Vector3(0.035, 0.28, 0.035), Vector3(w * 0.37, body_h + 1.18, 0), metal)
+	_add_box(Vector3(0.035, 0.28, 0.035), Vector3(w * 0.37, body_h + 1.18, 0), navy)
 	_add_box(Vector3(0.16, 0.12, 0.12), Vector3(w * 0.37, body_h + 1.02, 0), navy)
 	# A small louvered rooftop extractor anchors the industrial-material silhouette.
 	_add_box(Vector3(0.42, 0.30, 0.36), Vector3(w * 0.34, body_h + 0.82, -d * 0.38), concrete)
