@@ -45,7 +45,10 @@ The coastal environment uses local procedural assets only (no runtime downloads)
 
 This is the first visual-quality slice, not the final art target: production-quality GLB building families, richer road intersections/markings, stronger shoreline foam/reflections, mobile GPU profiling and a verified 60 FPS budget remain open.
 
-## HUD and local icon assets\n\nHUD icons are drawn at runtime by `scripts/ui/IconGlyph.gd` using Godot CanvasItem vector primitives. This keeps every icon inside the project and avoids font fallback, missing emoji glyphs, texture atlas import issues and runtime network requests. The top HUD groups level, population, happiness, storage and currencies; the right toolbar opens compact category submenus.\n\n## City services
+## HUD and local icon assets
+
+All visible catalog and HUD items use local transparent PNG-32 artwork from `assets/icons/<category>/<id>.png`. `scripts/ui/Icons.gd` is the single path/loading helper and falls back safely to `assets/icons/ui/placeholder.png`. Icons are 128×128 RGBA, alpha-transparent, locally generated, and filtered linearly for mobile UI. The icon validator scans building definitions, service/specialization groups, raw materials, crafted recipes, toolbar controls and status badges; missing files, non-RGBA PNGs, undersized art or opaque canvas corners fail CI. The artwork is original procedural artwork and uses no third-party icon pack or external runtime assets.
+\n## City services
 
 Wind power and water towers each provide 12 units of capacity within a 28 m coverage radius. Each completed home requires 2 power and 2 water. The HUD shows capacity used, and city happiness is calculated from homes receiving both services.
 
