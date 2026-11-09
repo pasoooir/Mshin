@@ -523,30 +523,37 @@ func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
 func _toggle_category_menu() -> void:
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar == null:
-		push_error("[HUD] RightToolbar is missing; Build menu cannot open.")
+		push_error("[HUD] RightToolbar is missing.")
 		return
-	if toolbar.visible or (submenu and submenu.visible):
+	if toolbar.visible:
 		_close_build_menu()
 		return
 	toolbar.show()
-	toolbar.z_index = 60
-	toolbar.move_to_front()
+	if bottom_actions:
+		bottom_actions.show()
 	var build_button_node := get_node_or_null("BuildMenuButton")
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
 		build_label.text = "CLOSE"
-	var build_button := get_node_or_null("BuildMenuButton") as Control
-	if build_button:
-		build_button.z_index = 61
-		build_button.move_to_front()
+	if build_button_node:
+		build_button_node.tooltip_text = "Close Build Menu"
 
 func _close_build_menu() -> void:
-	if submenu:
-		submenu.hide()
+	_set_tool_modes_off()
+	BuildManager.cancel_placement()
+	_set_bulldozer_indicator(false)
+	if submenu_scroll:
+		submenu_scroll.hide()
 	active_category = ""
+	active_service_group = ""
+	active_specialization_group = ""
+	submenu_level = 0
+	_set_active_category_visuals("")
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
 		toolbar.hide()
+	if bottom_actions:
+		bottom_actions.show()
 	var build_button_node := get_node_or_null("BuildMenuButton")
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
@@ -555,124 +562,163 @@ func _close_build_menu() -> void:
 	if build_button:
 		build_button.tooltip_text = "Open Build Menu"
 
+func _set_active_category_visuals(category: String) -> void:
+	var items := get_node_or_null("RightToolbar/CategoryScroll/RightToolbarItems")
+	if items == null:
+		return
+	for child in items.get_children():
+		if child is Button:
+			var button := child as Button
+			button.button_pressed = button.name.to_lower() == ("tool_" + category).to_lower()
 
 func _on_category_pressed(category: String) -> void:
-	if category == "park":
-		_select_building_type("park_small")
+	if active_category == category and submenu_scroll and submenu_scroll.visible:
+		_on_cancel_pressed()
 		return
+	_set_tool_modes_off()
+	BuildManager.cancel_placement()
+	_set_bulldozer_indicator(false)
+	active_category = category
+	active_service_group = ""
+	active_specialization_group = ""
+	submenu_level = 1
+	_set_active_category_visuals(category)
 	if category == "bulldoze":
 		_start_bulldoze_mode()
 		return
-	if active_category == category and submenu.visible:
-		_close_building_submenu(false)
-		return
-	active_category = category
 	_show_submenu(category)
-	var category_toolbar := get_node_or_null("RightToolbar")
-	if category_toolbar:
-		category_toolbar.hide()
 
 func _show_submenu(category: String) -> void:
+	if submenu == null or submenu_scroll == null:
+		return
 	for child in submenu.get_children():
 		submenu.remove_child(child)
 		child.queue_free()
-
-	var options: Array = []
 	if category == "road":
-		options = [["road_build", "Build Road", 1], ["bulldoze_road", "Bulldoze Road", 1]]
+		_add_submenu_button("road_build", "Build Road", "road", "50 / tile", false, "road")
+		_add_submenu_button("road_upgrade", "Upgrade Road", "road", "Coming later", true, "road")
+		_add_submenu_button("bulldoze_road", "Bulldoze Road", "bulldoze", "Remove road", false, "road")
+	elif category == "services":
+		_show_group_options(SERVICE_GROUPS, "services")
+	elif category == "specializations":
+		_show_group_options(SPECIALIZATION_GROUPS, "specializations")
 	else:
-		var definition_category := "service" if category == "services" else category
+		var definition_category := "park" if category == "parks" else category
 		for type_id in BuildManager.building_types:
 			var definition: Dictionary = BuildManager.building_types[type_id]
-			if str(definition.get("category", "")) == definition_category:
-				var item_title := str(definition.get("name", type_id))
-				match str(type_id):
-					"industrial_1": item_title = "Small Factory - Metal"
-					"industrial_2": item_title = "Wood Factory - Wood"
-					"industrial_3": item_title = "Factory+ - Plastic"
-				options.append([str(type_id), item_title, int(definition.get("level", 1))])
+			if str(definition.get("category", "")) != definition_category:
+				continue
+			var title := str(definition.get("name", type_id))
+			match str(type_id):
+				"industrial_1": title = "Small Factory"
+				"industrial_2": title = "Wood Factory"
+				"industrial_3": title = "Factory+"
+			var detail := "%d coins · Lv %d" % [int(definition.get("cost", 0)), int(definition.get("level", 1))]
+			_add_submenu_button(str(type_id), title, category, detail, false, category, int(definition.get("level", 1)))
+	_finish_submenu_row()
 
-	if options.is_empty():
-		status_label.text = "No build items are available in this category."
-		_close_building_submenu(false)
-		return
+func _show_group_options(groups: Array, parent_category: String) -> void:
+	submenu_level = 1
+	for group in groups:
+		var group_id := str(group.get("id", ""))
+		var group_label := str(group.get("label", group_id))
+		var buildings: Array = group.get("buildings", [])
+		_add_submenu_button("group_" + group_id, group_label, group_id, "Choose category" if not buildings.is_empty() else "Coming later", false, parent_category, 1, buildings.is_empty())
+	_finish_submenu_row()
 
-	submenu.show()
-	var viewport_size := get_viewport().get_visible_rect().size
-	var columns := 2 if viewport_size.x < 1200.0 else 3
-	var panel_width := 220.0 if columns == 2 else 390.0
-	var rows := ceili(float(options.size() + 2) / float(columns))
-	var item_height := clampf((viewport_size.y - 28.0) / float(rows) - 6.0, 44.0, 58.0)
-	var panel_height := float(rows) * item_height + float(rows - 1) * 6.0
-	submenu.columns = columns
-	submenu.offset_left = -(panel_width + 12.0)
-	submenu.offset_right = -12.0
-	submenu.offset_top = -panel_height * 0.5
-	submenu.offset_bottom = panel_height * 0.5
-	var item_width := (panel_width - 12.0 - 6.0 * float(columns - 1)) / float(columns)
+func _show_group_buildings(group_id: String, parent_category: String) -> void:
+	active_service_group = group_id if parent_category == "services" else ""
+	active_specialization_group = group_id if parent_category == "specializations" else ""
+	submenu_level = 2
+	for child in submenu.get_children():
+		submenu.remove_child(child)
+		child.queue_free()
+	var groups: Array = SERVICE_GROUPS if parent_category == "services" else SPECIALIZATION_GROUPS
+	var selected_group: Dictionary = {}
+	for group in groups:
+		if str(group.get("id", "")) == group_id:
+			selected_group = group
+			break
+	if selected_group.is_empty():
+		_add_submenu_button("group_unavailable", "Unavailable", group_id, "Not available yet", true, parent_category)
+	else:
+		var buildings: Array = selected_group.get("buildings", [])
+		if buildings.is_empty():
+			_add_submenu_button("group_locked", str(selected_group.get("label", group_id)), group_id, "Unlocks in a future update", true, parent_category)
+		else:
+			for type_id_value in buildings:
+				var type_id := str(type_id_value)
+				if not BuildManager.building_types.has(type_id):
+					continue
+				var definition: Dictionary = BuildManager.building_types[type_id]
+				var detail := "%d coins · Lv %d" % [int(definition.get("cost", 0)), int(definition.get("level", 1))]
+				_add_submenu_button(type_id, str(definition.get("name", type_id)), group_id, detail, false, parent_category, int(definition.get("level", 1)))
+	_finish_submenu_row(true)
 
-	for option in options:
-		var type_id: String = str(option[0])
-		var title: String = str(option[1])
-		var required_level: int = int(option[2])
-		var locked := GameManager.level < required_level
-		var choice := Button.new()
-		choice.name = type_id
-		choice.custom_minimum_size = Vector2(item_width, item_height)
-		choice.focus_mode = Control.FOCUS_NONE
-		choice.tooltip_text = ("Unlocked at Level %d" % required_level) if locked else title
-		choice.add_theme_color_override("font_color", Color("#F4F8FC"))
-		choice.add_theme_color_override("font_disabled_color", Color("#F4F8FC"))
-		choice.add_theme_stylebox_override("normal", _toolbar_style(Color(0.10, 0.18, 0.23, 0.97), Color(0.55, 0.78, 0.9, 0.7)))
-		choice.add_theme_stylebox_override("hover", _toolbar_style(Color(0.18, 0.34, 0.42, 0.99), Color(0.95, 0.82, 0.48, 0.95)))
-		choice.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.30, 0.42, 0.28, 0.99), Color(0.95, 0.82, 0.48, 1.0)))
-		var choice_content := VBoxContainer.new()
-		choice_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		choice_content.alignment = BoxContainer.ALIGNMENT_CENTER
-		choice_content.add_theme_constant_override("separation", 0)
-		choice_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		choice.add_child(choice_content)
-		var title_label := Label.new()
-		title_label.text = title
-		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		title_label.add_theme_color_override("font_color", Color("#F4F8FC"))
-		title_label.add_theme_font_size_override("font_size", 12)
-		choice_content.add_child(title_label)
-		if locked:
-			var unlock_label := Label.new()
-			unlock_label.text = "Unlocked at Level %d" % required_level
-			unlock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			unlock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			unlock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			unlock_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			unlock_label.add_theme_color_override("font_color", Color("#FFD98A"))
-			unlock_label.add_theme_font_size_override("font_size", 10)
-			choice_content.add_child(unlock_label)
-		submenu.add_child(choice)
-		choice.pressed.connect(_on_submenu_option.bind(category, type_id))
+func _add_submenu_button(option_id: String, title: String, icon_name: String, detail: String, disabled: bool, category: String, required_level: int = 1, locked: bool = false) -> void:
+	var button := Button.new()
+	button.name = "Submenu_" + option_id
+	button.custom_minimum_size = Vector2(142, 78) * _ui_scale
+	button.focus_mode = Control.FOCUS_NONE
+	button.disabled = disabled
+	button.tooltip_text = ("Unlocks at Level %d" % required_level) if GameManager.level < required_level else detail
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.16, 0.21, 0.97), Color(0.52, 0.72, 0.82, 0.62)))
+	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.16, 0.31, 0.39, 0.99), Color("#FFE19A")))
+	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.25, 0.39, 0.30, 1.0), Color("#FFE19A")))
+	button.add_theme_stylebox_override("disabled", _toolbar_style(Color(0.12, 0.13, 0.15, 0.92), Color(0.35, 0.38, 0.40, 0.5)))
+	var content := HBoxContainer.new()
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 5)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(content)
+	var icon := IconAtlas.make_icon(icon_name, Vector2(30, 30) * _ui_scale)
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(icon)
+	var labels := VBoxContainer.new()
+	labels.alignment = BoxContainer.ALIGNMENT_CENTER
+	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	labels.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(labels)
+	var title_label := Label.new()
+	title_label.text = title
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title_label.add_theme_color_override("font_color", Color("#F4F8FC"))
+	title_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	labels.add_child(title_label)
+	var detail_label := Label.new()
+	detail_label.text = "LOCKED" if locked else detail
+	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_label.add_theme_color_override("font_color", Color("#FFD98A") if locked else Color("#B8C9D4"))
+	detail_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	labels.add_child(detail_label)
+	submenu.add_child(button)
+	button.pressed.connect(_on_submenu_option.bind(category, option_id))
 
-	var back_button := Button.new()
-	back_button.name = "BackToCategories"
-	back_button.text = "BACK"
-	back_button.custom_minimum_size = Vector2(item_width, item_height)
-	back_button.focus_mode = Control.FOCUS_NONE
-	back_button.add_theme_font_size_override("font_size", 14)
-	back_button.pressed.connect(_close_building_submenu.bind(false))
-	submenu.add_child(back_button)
-
-	var close_button := Button.new()
-	close_button.name = "CloseSubmenu"
-	close_button.text = "CLOSE  X"
-	close_button.custom_minimum_size = Vector2(item_width, item_height)
-	close_button.focus_mode = Control.FOCUS_NONE
-	close_button.tooltip_text = "Close Build Menu"
-	close_button.add_theme_font_size_override("font_size", 14)
-	close_button.pressed.connect(_close_build_menu)
-	submenu.add_child(close_button)
-
+func _finish_submenu_row(show_back: bool = false) -> void:
+	if show_back:
+		var back := Button.new()
+		back.name = "Submenu_Back"
+		back.text = "‹  BACK"
+		back.custom_minimum_size = Vector2(108, 78) * _ui_scale
+		back.focus_mode = Control.FOCUS_NONE
+		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
+		submenu.add_child(back)
+	var cancel := Button.new()
+	cancel.name = "Submenu_Cancel"
+	cancel.text = "CANCEL  X"
+	cancel.custom_minimum_size = Vector2(112, 78) * _ui_scale
+	cancel.focus_mode = Control.FOCUS_NONE
+	cancel.add_theme_color_override("font_color", Color("#FFE2D9"))
+	cancel.add_theme_stylebox_override("normal", _toolbar_style(Color(0.42, 0.12, 0.12, 0.96), Color("#E98978")))
+	cancel.add_theme_stylebox_override("hover", _toolbar_style(Color(0.62, 0.16, 0.14, 1.0), Color.WHITE))
+	cancel.pressed.connect(_on_cancel_pressed)
+	submenu.add_child(cancel)
+	submenu_scroll.show()
+	if bottom_actions:
+		bottom_actions.hide()
 
 func _select_building_type(type_id: String) -> void:
 	if not BuildManager.building_types.has(type_id):
