@@ -613,18 +613,39 @@ func _show_submenu(category: String) -> void:
 		var locked := GameManager.level < required_level
 		var choice := Button.new()
 		choice.name = type_id
-		choice.text = title
-		if locked:
-			choice.text += "\\nUnlocked at Level %d" % required_level
 		choice.custom_minimum_size = Vector2(item_width, item_height)
 		choice.focus_mode = Control.FOCUS_NONE
 		choice.tooltip_text = ("Unlocked at Level %d" % required_level) if locked else title
-		choice.add_theme_font_size_override("font_size", 13)
 		choice.add_theme_color_override("font_color", Color("#F4F8FC"))
 		choice.add_theme_color_override("font_disabled_color", Color("#F4F8FC"))
 		choice.add_theme_stylebox_override("normal", _toolbar_style(Color(0.10, 0.18, 0.23, 0.97), Color(0.55, 0.78, 0.9, 0.7)))
 		choice.add_theme_stylebox_override("hover", _toolbar_style(Color(0.18, 0.34, 0.42, 0.99), Color(0.95, 0.82, 0.48, 0.95)))
 		choice.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.30, 0.42, 0.28, 0.99), Color(0.95, 0.82, 0.48, 1.0)))
+		var choice_content := VBoxContainer.new()
+		choice_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		choice_content.alignment = BoxContainer.ALIGNMENT_CENTER
+		choice_content.add_theme_constant_override("separation", 0)
+		choice_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		choice.add_child(choice_content)
+		var title_label := Label.new()
+		title_label.text = title
+		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title_label.add_theme_color_override("font_color", Color("#F4F8FC"))
+		title_label.add_theme_font_size_override("font_size", 12)
+		choice_content.add_child(title_label)
+		if locked:
+			var unlock_label := Label.new()
+			unlock_label.text = "Unlocked at Level %d" % required_level
+			unlock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			unlock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			unlock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			unlock_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			unlock_label.add_theme_color_override("font_color", Color("#FFD98A"))
+			unlock_label.add_theme_font_size_override("font_size", 10)
+			choice_content.add_child(unlock_label)
 		submenu.add_child(choice)
 		choice.pressed.connect(_on_submenu_option.bind(category, type_id))
 
