@@ -222,7 +222,7 @@ for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health"
         errors.append(f"Services group is missing or out of order: {group_id}")
 for building_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
                     "fire_station_small", "fire_station", "police_station", "town_hall"]:
-    if f'"{building_id}"' not in building_ids:
+    if f'"{building_id}": {{"name"' not in build_manager:
         errors.append(f"Services menu building definition is missing: {building_id}")
 for service_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
                    "fire_station_small", "fire_station", "police_station", "town_hall"]:
