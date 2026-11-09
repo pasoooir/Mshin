@@ -183,11 +183,13 @@ func _test_build_menu_visibility() -> void:
 	hud._on_category_pressed("services")
 	await get_tree().process_frame
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
-	for group_id in ["group_power", "group_water", "group_fire", "group_police", "group_health"]:
+	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
+	_check(hud.submenu.get_child_count() == 9, "Services level one must contain exactly eight fixed groups and Cancel.")
 	hud._on_submenu_option("services", "group_fire")
 	await get_tree().process_frame
-	_check(hud.submenu.get_node_or_null("fire_station") != null, "Fire group must contain the Fire Station.")
+	_check(hud.submenu.get_node_or_null("fire_station_small") != null, "Fire group must contain the Small Fire Station.")
+	_check(hud.submenu.get_node_or_null("fire_station") != null, "Fire group must contain the Basic Fire Station.")
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Second-level Services submenu must provide Back.")
 	_check(hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Active submenu must always provide Cancel.")
 	hud._on_submenu_option("services", "back")
