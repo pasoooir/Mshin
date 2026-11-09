@@ -90,6 +90,18 @@ for visual_contract in [
     if visual_contract not in building_source:
         errors.append(f"Building Supplies visual contract is missing: {visual_contract}")
 
+# Level-one villa visual contract: saturated separated colours and warm emissive windows.
+for visual_contract in [
+    'if upgrade_stage == 1 and residential_subtype == "villa":',
+    "func _build_level_one_villa(",
+    "Large warm windows with luminous inner panes",
+    "Two-plane pitched roof with saturated red tiles",
+    "Emissive wall sconces",
+    "Flower boxes, tiny shrubs and a colourful front garden edge",
+]:
+    if visual_contract not in building_source:
+        errors.append(f"Level-one residential villa visual contract is missing: {visual_contract}")
+
 # Art Supplies is a separate gallery-style commercial hero, not the generic shop mesh.
 for visual_contract in [
     'if building_type == "art_supplies" or subtype == "art":',
