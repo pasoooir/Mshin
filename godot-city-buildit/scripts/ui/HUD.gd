@@ -440,12 +440,31 @@ func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
 	return style
 
 func _toggle_category_menu() -> void:
-	var toolbar := get_node_or_null("RightToolbar")
-	if toolbar:
-		toolbar.visible = not toolbar.visible
+	var toolbar := get_node_or_null("RightToolbar") as Control
+	if toolbar == null:
+		push_error("[HUD] RightToolbar is missing; Build menu cannot open.")
+		return
+
+	# The hard-hat button is the single entry point to the right-side category
+	# dock. Always close a floating category submenu before changing dock state.
 	if submenu and submenu.visible:
 		submenu.hide()
 		active_category = ""
+
+	if toolbar.visible:
+		toolbar.hide()
+	else:
+		toolbar.show()
+		toolbar.z_index = 60
+		toolbar.queue_sort()
+		toolbar.move_to_front()
+
+	# Keep the hard-hat control above the dock so it remains reachable to close
+	# the menu again on touch screens.
+	var build_button := get_node_or_null("BuildMenuButton") as Control
+	if build_button:
+		build_button.z_index = 61
+		build_button.move_to_front()
 
 func _on_category_pressed(category: String) -> void:
 	if category == "park":
