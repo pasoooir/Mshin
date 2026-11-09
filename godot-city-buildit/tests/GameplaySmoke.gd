@@ -3,6 +3,16 @@ extends Node3D
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 
+class FireHazardTestBuilding extends Node3D:
+	var building_id: String = ""
+	var building_type: String = ""
+	var definition: Dictionary = {}
+	var status: String = "constructing"
+	var smoke_active: bool = false
+
+	func set_fire_smoke(active: bool) -> void:
+		smoke_active = active
+
 var failures: Array[String] = []
 
 func _ready() -> void:
@@ -206,7 +216,8 @@ func _test_fire_hazard_state_machine() -> void:
 	FireHazardManager.unprotected_time.clear()
 	FireHazardManager.smoking_ids.clear()
 
-	var home = load("res://scripts/buildings/Building.gd").new()
+	var home = FireHazardTestBuilding.new()
+	add_child(home)
 	home.building_id = "fire_test_home"
 	home.building_type = "residential_1"
 	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
@@ -214,7 +225,8 @@ func _test_fire_hazard_state_machine() -> void:
 	home.global_position = Vector3.ZERO
 	BuildManager.buildings[home.building_id] = home
 
-	var station = load("res://scripts/buildings/Building.gd").new()
+	var station = FireHazardTestBuilding.new()
+	add_child(station)
 	station.building_id = "fire_test_station"
 	station.building_type = "fire_station"
 	station.definition = {"category": "service", "fire": 1}
@@ -244,7 +256,9 @@ func _test_fire_hazard_state_machine() -> void:
 	FireHazardManager._evaluate_hazards(0.0)
 	_check(not FireHazardManager.unprotected_time.has(home.building_id) and not FireHazardManager.smoking_ids.has(home.building_id), "Demolished homes must have all fire hazard state cleared.")
 
+	remove_child(home)
 	home.free()
+	remove_child(station)
 	station.free()
 	BuildManager.buildings = saved_buildings
 	FireHazardManager.unprotected_time = saved_timers
