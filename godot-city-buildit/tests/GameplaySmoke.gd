@@ -166,13 +166,13 @@ func _test_build_menu_visibility() -> void:
 	for type_id in ["hardware_store", "farmers_market", "furniture_store"]:
 		_check(hud.submenu.find_child(type_id, true, false) != null, "Commercial Build menu is missing " + type_id)
 	var hardware_choice := hud.submenu.find_child("hardware_store", true, false) as Button
-	_check(hardware_choice != null and hardware_choice.text.contains("Unlocked at Level 4"), "Hardware Store must show its English unlock level.")
+	_check(hardware_choice != null and _node_has_label_text(hardware_choice, "Unlocked at Level 4"), "Hardware Store must show its English unlock level.")
 	hud._show_submenu("services")
 	await get_tree().process_frame
 	for type_id in ["police_station", "sewage_pipe"]:
 		_check(hud.submenu.find_child(type_id, true, false) != null, "Services Build menu is missing " + type_id)
 	var police_choice := hud.submenu.find_child("police_station", true, false) as Button
-	_check(police_choice != null and police_choice.text.contains("Unlocked at Level 12"), "Police Station must show its English unlock level.")
+	_check(police_choice != null and _node_has_label_text(police_choice, "Unlocked at Level 12"), "Police Station must show its English unlock level.")
 	print("[BuildMenuSmoke] viewport=%s palette=%s" % [str(viewport_rect.size), str(hud.submenu.get_global_rect().size)])
 	_check(hud.submenu.get_global_rect().size.x < viewport_rect.size.x * 0.5, "Category item palette is not compactly docked.")
 	hud._close_build_menu()
@@ -276,7 +276,7 @@ func _run_gameplay_test() -> void:
 			hud._toggle_category_menu()
 			_check(not right_toolbar.visible, "Build button action did not close the category dock.")
 		hud._show_submenu("residential")
-		_check(hud.submenu.get_node("residential_villa").text == "Villa House", "Residential submenu label must be English.")
+		_check(_node_has_label_text(hud.submenu.get_node("residential_villa"), "Villa House"), "Residential submenu label must be English.")
 		_check(hud.submenu.get_child_count() == 7, "Residential submenu should show all five defined choices plus Back and Close.")
 		_check(hud.submenu.get_node_or_null("residential_villa") != null, "Residential villa option is missing.")
 		_check(hud.submenu.get_node_or_null("residential_apartment") != null, "Residential apartment option is missing.")
@@ -287,7 +287,7 @@ func _run_gameplay_test() -> void:
 		hud._show_submenu("commercial")
 		_check(hud.submenu.get_child_count() == 10, "Commercial submenu should show every defined store plus Back and Close.")
 		_check(hud.submenu.get_node_or_null("shop_chain") != null, "Chain store option is missing.")
-		_check(hud.submenu.get_node("shop_chain").text == "Chain Store", "Commercial submenu labels must be English.")
+		_check(_node_has_label_text(hud.submenu.get_node("shop_chain"), "Chain Store"), "Commercial submenu labels must be English.")
 		_check(hud.submenu.get_node_or_null("restaurant_traditional") != null, "Traditional restaurant option is missing.")
 		_check(hud.submenu.get_node_or_null("fast_food") != null, "Fast food option is missing.")
 		_check(hud.submenu.get_node_or_null("art_supplies") != null, "Art supplies option is missing.")
@@ -324,13 +324,13 @@ func _run_gameplay_test() -> void:
 		hud._on_cancel_pressed()
 		hud._show_submenu("industrial")
 		_check(hud.submenu.get_node_or_null("industrial_1") != null and hud.submenu.get_node_or_null("industrial_2") != null, "Both level-based factory choices must be listed.")
-		_check(hud.submenu.get_node("industrial_1").text == "Small Factory - Metal", "Industrial submenu labels must be English.")
+		_check(_node_has_label_text(hud.submenu.get_node("industrial_1"), "Small Factory - Metal"), "Industrial submenu labels must be English.")
 		hud._on_submenu_option("industrial", "industrial_1")
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "industrial_1", "Small factory menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._show_submenu("services")
 		_check(hud.submenu.get_node_or_null("power_wind") != null and hud.submenu.get_node_or_null("water_tower") != null and hud.submenu.get_node_or_null("fire_station") != null, "Power, water and fire service choices must be listed.")
-		_check(hud.submenu.get_node("power_wind").text == "Wind Power", "Services submenu labels must be English.")
+		_check(_node_has_label_text(hud.submenu.get_node("power_wind"), "Wind Power"), "Services submenu labels must be English.")
 		hud._on_submenu_option("services", "power_wind")
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "power_wind", "Wind power menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
@@ -339,7 +339,7 @@ func _run_gameplay_test() -> void:
 		hud._show_submenu("services")
 		var locked_fire = hud.submenu.get_node_or_null("fire_station")
 		_check(locked_fire != null and not locked_fire.disabled, "Locked fire station must remain clickable.")
-		_check(locked_fire.text.find("Unlocked at Level 5") >= 0, "Locked entries must use the plain English unlock label.")
+		_check(_node_has_label_text(locked_fire, "Unlocked at Level 5"), "Locked entries must use the plain English unlock label.")
 		hud._on_submenu_option("services", "fire_station")
 		_check(not BuildManager.is_placing and hud.status_label.text.find("Level 5") >= 0, "Locked fire station did not explain its unlock level.")
 		GameManager.level = menu_test_level
