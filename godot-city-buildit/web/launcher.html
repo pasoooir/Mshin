@@ -45,44 +45,47 @@
       const gameUrl = './game/__GAME_BUILD__/';
       const play = document.getElementById('play');
       const hint = document.getElementById('hint');
-      async function requestLandscapeFullscreen() {
-        // Browser security requires a trusted gesture. Start fullscreen first,
-        // then lock orientation; both are attempted before launching the game.
-        let fullscreenStarted = false;
-        try {
-          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-            await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
-            fullscreenStarted = true;
-          } else {
-            fullscreenStarted = !!document.fullscreenElement;
-          }
-        } catch (_) { /* Continue when browser policy blocks fullscreen. */ }
-        try {
-          if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock('landscape');
-          }
-        } catch (_) { /* iOS Safari and restricted browsers do not expose orientation lock. */ }
-        hint.textContent = fullscreenStarted
-          ? 'Fullscreen requested · Landscape mode requested'
-          : 'Landscape game starting · Browser fullscreen permission unavailable';
-      }
 
-      play.addEventListener('click', async () => {
+      play.addEventListener('click', () => {
+        // Launch immediately from the trusted tap. Do not await fullscreen or
+        // orientation APIs before creating the game frame: on some Android
+        // browsers those promises can be delayed or never settle.
         play.disabled = true;
         play.textContent = 'LOADING CITY…';
-        hint.textContent = 'Preparing fullscreen landscape…';
-        await requestLandscapeFullscreen();
-        // Keep this document alive: navigating would immediately exit browser fullscreen.
-        // A same-origin game iframe preserves the fullscreen session started by the Play gesture.
-        const frame = document.createElement("iframe");
-        frame.id = "game-frame";
-        frame.title = "Pasoo City BuildIt";
-        frame.allow = "fullscreen; autoplay; gamepad";
+        hint.textContent = 'Starting your city…';
+
+        // Request fullscreen synchronously while the tap activation is valid.
+        let fullscreenRequest = null;
+        try {
+          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            fullscreenRequest = document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+          }
+        } catch (_) { /* Fullscreen is optional; never block game launch. */ }
+
+        const frame = document.createElement('iframe');
+        frame.id = 'game-frame';
+        frame.title = 'Pasoo City BuildIt';
+        frame.allow = 'fullscreen; autoplay; gamepad';
         frame.allowFullscreen = true;
         frame.src = gameUrl;
         document.body.replaceChildren(frame);
-        document.documentElement.style.background = "#071b2b";
-        document.body.style.background = "#071b2b";
+        document.documentElement.style.background = '#071b2b';
+        document.body.style.background = '#071b2b';
+
+        // Orientation lock is best-effort and must not gate iframe creation.
+        const lockLandscape = () => {
+          try {
+            if (screen.orientation && screen.orientation.lock) {
+              const result = screen.orientation.lock('landscape');
+              if (result && typeof result.catch === 'function') result.catch(() => {});
+            }
+          } catch (_) { /* iOS Safari and restricted browsers may not support it. */ }
+        };
+        if (fullscreenRequest && typeof fullscreenRequest.then === 'function') {
+          fullscreenRequest.then(lockLandscape).catch(() => {});
+        } else {
+          lockLandscape();
+        }
       });
     })();
   </script>
