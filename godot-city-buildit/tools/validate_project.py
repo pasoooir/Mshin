@@ -95,23 +95,23 @@ if "multimesh.use_colors = true" not in world_source:
     errors.append("Tree instances must use per-instance natural color variation")
 
 build_icon_paths = {
-    "services": "assets/icons/services.svg",
-    "parks": "assets/icons/parks.svg",
-    "park": "assets/icons/park.svg",
-    "bulldoze": "assets/icons/bulldozer.svg",
+    "services": ("ui", "services"),
+    "parks": ("ui", "parks"),
+    "park": ("ui", "park"),
+    "bulldoze": ("ui", "bulldoze"),
 }
-for icon_name, relative_path in build_icon_paths.items():
-    icon_path = ROOT / relative_path
+for icon_name, (category, icon_id) in build_icon_paths.items():
+    icon_path = ROOT / "assets" / "icons" / category / f"{icon_id}.png"
     if not icon_path.is_file():
-        errors.append(f"Required Build icon is missing: {relative_path}")
+        errors.append(f"Required Build PNG icon is missing: {category}/{icon_id}.png")
         continue
-    icon_source = icon_path.read_text(encoding="utf-8")
-    if not all(token in icon_source for token in ['viewBox="0 0 128 128"', "<linearGradient", "<ellipse", "stroke-width="]):
-        errors.append(f"Build icon does not follow the shared dimensional gradient illustration style: {icon_name}")
-    if "<rect" in icon_source and re.search(r'<rect[^>]+fill="#[0-9A-Fa-f]{6}"', icon_source):
-        errors.append(f"Build icon contains an opaque rectangular background: {icon_name}")
-    if "res://assets/icons/" + Path(relative_path).name not in atlas:
-        errors.append(f"Build icon is not directly mapped to its local SVG: {icon_name}")
+    icon_data = icon_path.read_bytes()
+    if len(icon_data) < 26 or icon_data[:8] != b"\\x89PNG\\r\\n\\x1a\\n":
+        errors.append(f"Required Build icon is not a valid PNG: {category}/{icon_id}.png")
+        continue
+    bit_depth, color_type = struct.unpack(">BB", icon_data[24:26])
+    if bit_depth != 8 or color_type != 6:
+        errors.append(f"Required Build icon must be PNG-32 RGBA: {category}/{icon_id}.png")
 
 # Road rendering must be neighbor-driven, connected, seamless and independent from gameplay rules.
 road_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")
