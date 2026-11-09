@@ -349,6 +349,7 @@ func _test_build_menu_visibility() -> void:
 		_check(hud.submenu.get_node_or_null(health_id) != null, "Health submenu is missing: " + health_id)
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Health submenu must expose Back and Cancel.")
 	var locked_small_clinic := hud.submenu.get_node_or_null("clinic_small") as Button
+	_check(locked_small_clinic != null and _node_has_label_text_containing(locked_small_clinic, "Coverage: 10 tiles"), "Small Clinic must display its coverage range in the submenu.")
 	_check(locked_small_clinic != null and not locked_small_clinic.disabled, "Locked Small Clinic must remain tappable for unlock feedback.")
 	if locked_small_clinic:
 		locked_small_clinic.emit_signal("pressed")
