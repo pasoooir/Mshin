@@ -33,10 +33,14 @@ var building_types: Dictionary = {
 	"hardware_store": {"name":"Hardware Store", "category":"commercial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.3,0.55,0.85), "level":4, "production_slots":1, "recipes":["hammer","measuring_tape","shovel","paint"]},
 	"farmers_market": {"name":"Farmer's Market", "category":"commercial", "cost":800, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.4,0.75,0.4), "level":8, "production_slots":1, "recipes":["vegetables"]},
 	"furniture_store": {"name":"Furniture Store", "category":"commercial", "cost":1200, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.6,0.45,0.3), "level":10, "production_slots":1, "recipes":["chair","table"]},
-	"factory_small": {"name":"Small Factory", "category":"industrial", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood"], "pollution":1, "pollution_radius":12.0},
+	"factory_small": {"name":"Small Factory", "category":"industrial", "factory_tier":"small", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":1, "pollution_radius":12.0},
+	"factory_basic": {"name":"Basic Factory", "category":"industrial", "factory_tier":"basic", "cost":500, "size":Vector2i(2,2), "population":0, "population_required":4000, "build_time":5.0, "color":Color(0.48,0.50,0.56), "level":1, "production_slots":3, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":1, "pollution_radius":10.0},
+	"factory_mass": {"name":"Mass Production Factory", "category":"industrial", "factory_tier":"mass", "cost":7000, "size":Vector2i(2,2), "population":0, "population_required":27000, "build_time":6.0, "color":Color(0.43,0.47,0.53), "level":1, "production_slots":4, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":1, "pollution_radius":8.0},
+	"factory_hightech": {"name":"High-tech Factory", "category":"industrial", "factory_tier":"hightech", "cost":20000, "size":Vector2i(2,2), "population":0, "population_required":80000, "build_time":7.0, "color":Color(0.38,0.54,0.62), "level":1, "production_slots":5, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":1, "pollution_radius":6.0},
+	"factory_nano": {"name":"Nano-tech Factory", "category":"industrial", "factory_tier":"nano", "cost":50000, "size":Vector2i(2,2), "population":0, "population_required":150000, "build_time":8.0, "color":Color(0.34,0.62,0.66), "level":1, "production_slots":5, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":0, "pollution_radius":0.0},
 	"industrial_1": {"name":"Small Factory (Legacy)", "category":"industrial", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood"], "pollution":1, "pollution_radius":12.0},
-	"industrial_2": {"name":"Factory", "category":"industrial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.45,0.45,0.5), "produces":"wood", "level":2, "production_slots":2, "can_produce":["metal","wood"]},
-	"industrial_3": {"name":"Factory+", "category":"industrial", "cost":1500, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.4,0.42,0.48), "produces":"plastic", "level":5, "production_slots":2, "can_produce":["metal","wood","plastic"]},
+	"industrial_2": {"name":"Factory (Legacy Basic)", "category":"industrial", "factory_tier":"basic", "cost":500, "size":Vector2i(2,2), "population":0, "population_required":4000, "build_time":5.0, "color":Color(0.45,0.45,0.5), "produces":"wood", "level":1, "production_slots":3, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"]},
+	"industrial_3": {"name":"Factory+ (Legacy Mass)", "category":"industrial", "factory_tier":"mass", "cost":7000, "size":Vector2i(2,2), "population":0, "population_required":27000, "build_time":6.0, "color":Color(0.4,0.42,0.48), "produces":"plastic", "level":1, "production_slots":4, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"]},
 	"power_wind": {"name":"Wind Power Plant", "category":"service", "service_group":"power", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.7,0.9,0.85), "power":12, "pollution":0, "pollution_radius":0.0, "level":1},
 	"power_coal": {"name":"Coal Power Plant", "category":"service", "service_group":"power", "cost":1000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.38,0.39,0.42), "power":12, "pollution":1, "pollution_radius":10.0, "level":1},
 	"power_wind_deluxe": {"name":"Deluxe Wind Power Plant", "category":"service", "service_group":"power", "cost":15000, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.62,0.86,0.82), "power":22, "pollution":0, "pollution_radius":0.0, "level":10},
@@ -74,7 +78,7 @@ const MOVABLE_BUILDING_TYPES := [
 	"residential_1", "residential_villa", "residential_apartment", "residential_farm",
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
 	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
-	"factory_small", "industrial_1", "industrial_2", "industrial_3",
+	"factory_small", "factory_basic", "factory_mass", "factory_hightech", "factory_nano", "industrial_1", "industrial_2", "industrial_3",
 	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
 	"park_small"
 ]
@@ -82,12 +86,26 @@ const MOVABLE_BUILDING_TYPES := [
 func _ready() -> void:
 	print("[BuildManager] Ready: %d building types" % building_types.size())
 
+func can_build_another_factory() -> bool:
+	return factory_count < LevelProgression.get_factory_limit_for_level(GameManager.level)
+
+func can_build_factory_type(type_id: String) -> bool:
+	if not building_types.has(type_id):
+		return false
+	var definition: Dictionary = building_types[type_id]
+	if str(definition.get("category", "")) != "industrial":
+		return true
+	return GameManager.population >= int(definition.get("population_required", 0))
+
+func get_factory_type_population_requirement(type_id: String) -> int:
+	return int(building_types.get(type_id, {}).get("population_required", 0))
+
 func get_available_buildings(category: String = "") -> Array:
 	var result: Array = []
 	for key in building_types:
 		var definition: Dictionary = building_types[key]
 		if int(definition.get("level", 1)) <= GameManager.level and (category == "" or definition.get("category", "") == category):
-			if definition.get("category", "") != "industrial" or factory_count < LevelProgression.max_factories:
+			if definition.get("category", "") != "industrial" or (can_build_another_factory() and can_build_factory_type(key)):
 				result.append(key)
 	return result
 
@@ -98,7 +116,7 @@ func select_building(type_id: String) -> void:
 	var definition: Dictionary = building_types[type_id]
 	if int(definition.get("level", 1)) > GameManager.level:
 		return
-	if definition.get("category", "") == "industrial" and factory_count >= LevelProgression.max_factories:
+	if definition.get("category", "") == "industrial" and (not can_build_another_factory() or not can_build_factory_type(type_id)):
 		return
 	selected_building_type = type_id
 	is_placing = true
@@ -166,7 +184,7 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "") -> bool:
 		return false
 	if not EconomyManager.can_afford(int(definition.get("cost", 0))):
 		return false
-	if definition.get("category", "") == "industrial" and factory_count >= LevelProgression.max_factories:
+	if definition.get("category", "") == "industrial" and (not can_build_another_factory() or not can_build_factory_type(chosen)):
 		return false
 	return true
 
