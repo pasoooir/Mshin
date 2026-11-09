@@ -191,7 +191,7 @@ required_movable_types = {
     "art_supplies", "hardware_store", "farmers_market", "furniture_store",
     "industrial_1", "industrial_2", "industrial_3",
     "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
-    "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_pipe", "town_hall",
+    "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "town_hall",
     "park_small"
 }
 move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
@@ -210,7 +210,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 29"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 31"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
@@ -222,11 +222,11 @@ services_hud = hud[hud.find("const SERVICE_GROUPS"):hud.find("const SPECIALIZATI
 for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health", "government"]:
     if f'"id":"{group_id}"' not in services_hud:
         errors.append(f"Services group is missing or out of order: {group_id}")
-for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_pipe",
+for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
                     "fire_station_small", "fire_station", "police_station", "town_hall"]:
     if f'"{building_id}": {{"name"' not in build_manager:
         errors.append(f"Services menu building definition is missing: {building_id}")
-for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_pipe",
+for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
                    "fire_station_small", "fire_station", "police_station", "town_hall"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
     if '"service_group"' not in definition_line:
@@ -252,6 +252,28 @@ for water_id, expected_water, expected_level, expected_size in [("water_tower", 
         errors.append(f"Water facility must not add air pollution: {water_id}")
 if 'definition.get("water", 0)' not in service_manager_source:
     errors.append("ServiceManager must identify water providers by positive definition.water, not by building name")
+
+# Sewage facilities are separate catalog entries with generic numeric capacity metadata.
+for sewage_id, expected_capacity, expected_level, expected_size, expected_pollution, expected_radius in [
+    ("sewage_small", 7, 8, "Vector2i(1,1)", 1, "10.0"),
+    ("sewage_basic", 28, 8, "Vector2i(2,2)", 1, "12.0"),
+    ("sewage_deluxe", 55, 14, "Vector2i(2,3)", 0, "0.0"),
+]:
+    match = re.search(r'"' + sewage_id + r'": \{([^\n]+)\}', build_manager)
+    if match is None:
+        errors.append(f"Sewage facility definition is missing: {sewage_id}")
+        continue
+    definition = match.group(1)
+    if f'"sewage":{expected_capacity}' not in definition or f'"level":{expected_level}' not in definition:
+        errors.append(f"Sewage facility capacity/unlock contract is incorrect: {sewage_id}")
+    if '"service_group":"sewage"' not in definition or '"category":"service"' not in definition:
+        errors.append(f"Sewage facility lacks separate service catalog metadata: {sewage_id}")
+    if f'"size":{expected_size}' not in definition:
+        errors.append(f"Sewage facility footprint is incorrect: {sewage_id}")
+    if f'"pollution":{expected_pollution}' not in definition or f'"pollution_radius":{expected_radius}' not in definition:
+        errors.append(f"Sewage facility pollution metadata is incorrect: {sewage_id}")
+if '"sewage_pipe":' in build_manager or '"sewage_pipe"' in hud:
+    errors.append("Obsolete sewage_pipe catalog ID must not remain")
 
 for power_id, expected_power, expected_level in [("power_wind", 12, 1), ("power_coal", 12, 1), ("power_wind_deluxe", 22, 10), ("power_solar", 35, 15), ("power_oil", 40, 18), ("power_nuclear", 60, 22)]:
     match = re.search(r'"' + power_id + r'": \{([^\n]+)\}', build_manager)

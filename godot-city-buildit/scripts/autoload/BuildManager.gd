@@ -47,7 +47,9 @@ var building_types: Dictionary = {
 	"fire_station_small": {"name":"Small Fire Station", "category":"service", "service_group":"fire", "cost":1800, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.96,0.42,0.32), "fire":1, "level":1},
 	"fire_station": {"name":"Fire Station", "category":"service", "service_group":"fire", "cost":2500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.92,0.32,0.28), "fire":1, "level":5},
 	"police_station": {"name":"Police Station", "category":"service", "service_group":"police", "cost":3000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.28,0.42,0.78), "police":1, "level":12},
-	"sewage_pipe": {"name":"Sewage Pipe", "category":"service", "service_group":"sewage", "cost":2000, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.5,0.55,0.4), "sewage":1, "level":8},
+	"sewage_small": {"name":"Small Sewage Outflow", "category":"service", "service_group":"sewage", "cost":4000, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.48,0.56,0.39), "sewage":7, "pollution":1, "pollution_radius":10.0, "level":8},
+	"sewage_basic": {"name":"Basic Sewage Outflow", "category":"service", "service_group":"sewage", "cost":12000, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.43,0.51,0.38), "sewage":28, "pollution":1, "pollution_radius":12.0, "level":8},
+	"sewage_deluxe": {"name":"Deluxe Sewage Treatment Plant", "category":"service", "service_group":"sewage", "cost":35000, "size":Vector2i(2,3), "population":0, "build_time":8.0, "color":Color(0.48,0.68,0.62), "sewage":55, "pollution":0, "pollution_radius":0.0, "level":14},
 	"town_hall": {"name":"Town Hall", "category":"service", "service_group":"government", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.72,0.68,0.55), "level":1},
 	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5}
 }
@@ -61,7 +63,7 @@ const MOVABLE_BUILDING_TYPES := [
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
 	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
 	"industrial_1", "industrial_2", "industrial_3",
-	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_pipe", "town_hall",
+	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "town_hall",
 	"park_small"
 ]
 
