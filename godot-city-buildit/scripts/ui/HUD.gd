@@ -114,10 +114,22 @@ func _apply_responsive_layout() -> void:
 	if toolbar:
 		var width := (118.0 if compact else (132.0 if tablet else 148.0)) * scale_factor
 		var height := minf(viewport_size.y - 176.0 * scale_factor, 640.0 * scale_factor)
-		toolbar.offset_left = -width - 112.0 * scale_factor
-		toolbar.offset_right = -112.0 * scale_factor
+		if not compact and not tablet:
+			# Desktop gets a persistent left navigation rail; mobile/tablet keep it on the right.
+			toolbar.anchor_left = 0.0
+			toolbar.anchor_right = 0.0
+			toolbar.offset_left = 12.0 * scale_factor
+			toolbar.offset_right = 12.0 * scale_factor + width
+		else:
+			toolbar.anchor_left = 1.0
+			toolbar.anchor_right = 1.0
+			toolbar.offset_left = -width - 112.0 * scale_factor
+			toolbar.offset_right = -112.0 * scale_factor
 		toolbar.offset_top = -height * 0.5
 		toolbar.offset_bottom = height * 0.5
+	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
+	if left_stats:
+		left_stats.position.x = (174.0 if not compact and not tablet else 14.0) * scale_factor
 	var submenu_control := get_node_or_null("ToolSubmenuScroll") as Control
 	if submenu_control:
 		var half_width := minf(viewport_size.x * 0.5 - 24.0, (390.0 if compact else (500.0 if tablet else 560.0)) * scale_factor)
