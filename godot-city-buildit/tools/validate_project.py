@@ -256,7 +256,7 @@ for health_id, (expected_coverage, expected_size, expected_cost) in health_contr
 service_group_section = services_hud
 if service_group_section.rfind('"id":"government"') < service_group_section.rfind('"id":"health"'):
     errors.append("Government must be the final Services subgroup")
-town_hall_match = re.search(r'"town_hall": \\{([^\\n]+)\\}', build_manager)
+town_hall_match = re.search(r'"town_hall": \{([^\n]+)\}', build_manager)
 if town_hall_match is None:
     errors.append("Town Hall definition is missing")
 else:
