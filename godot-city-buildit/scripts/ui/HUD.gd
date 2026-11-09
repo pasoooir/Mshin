@@ -60,6 +60,7 @@ var xp_progress: ProgressBar
 var xp_text: Label
 var storage_label: Label
 var storage_panel: PanelContainer
+var production_panel: PanelContainer
 var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
@@ -1054,6 +1055,107 @@ func _on_roads_pressed() -> void:
 	if road_system:
 		road_system.set_road_mode(true)
 		status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile)"
+
+func open_production_panel(building: Building) -> void:
+	if not is_instance_valid(building) or building.status != "completed":
+		return
+	if is_instance_valid(production_panel):
+		production_panel.queue_free()
+	production_panel = PanelContainer.new()
+	production_panel.name = "BuildingProductionPanel"
+	production_panel.anchor_left = 0.5
+	production_panel.anchor_right = 0.5
+	production_panel.anchor_top = 0.5
+	production_panel.anchor_bottom = 0.5
+	production_panel.offset_left = -220.0 * _ui_scale
+	production_panel.offset_right = 220.0 * _ui_scale
+	production_panel.offset_top = -190.0 * _ui_scale
+	production_panel.offset_bottom = 190.0 * _ui_scale
+	production_panel.z_index = 100
+	production_panel.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035,0.075,0.105,0.98), Color(0.55,0.78,0.92,0.85)))
+	production_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(production_panel)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 9)
+	production_panel.add_child(layout)
+	var header := HBoxContainer.new()
+	layout.add_child(header)
+	var title := Label.new()
+	title.text = str(building.definition.get("name","Production"))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", int(21 * _ui_scale))
+	title.add_theme_color_override("font_color", Color.WHITE)
+	header.add_child(title)
+	var close := Button.new()
+	close.text = "✕"
+	close.custom_minimum_size = Vector2(44,44) * _ui_scale
+	close.pressed.connect(_close_production_panel)
+	header.add_child(close)
+	if building.has_ready_product:
+		var ready_label := Label.new()
+		ready_label.text = "Ready to collect: %s" % str(ProductionManager.raw_materials.get(building.current_product, ProductionManager.crafted_items.get(building.current_product, {})).get("name", building.current_product))
+		layout.add_child(ready_label)
+		var collect_button := Button.new()
+		collect_button.name = "ProductionCollect"
+		collect_button.text = "COLLECT"
+		collect_button.custom_minimum_size.y = 54 * _ui_scale
+		collect_button.pressed.connect(func():
+			var collected_id := building.current_product
+			if building.collect_production():
+				status_label.text = "Collected %s into City Storage." % collected_id.capitalize()
+			else:
+				status_label.text = "Storage full"
+			_close_production_panel()
+		)
+		layout.add_child(collect_button)
+	elif building.is_producing:
+		var timer_label := Label.new()
+		timer_label.text = "In production: %s — %d sec" % [building.current_product.capitalize(), int(ceil(building.production_timer))]
+		layout.add_child(timer_label)
+	else:
+		var item_ids: Array = []
+		if str(building.definition.get("category","")) == "industrial":
+			for item_id in building.definition.get("can_produce", ["metal","wood"]):
+				if ProductionManager.raw_materials.has(item_id) and int(ProductionManager.raw_materials[item_id].level) <= GameManager.level:
+					item_ids.append(str(item_id))
+		else:
+			for item_id in building.definition.get("recipes", []):
+				if ProductionManager.crafted_items.has(item_id) and int(ProductionManager.crafted_items[item_id].level) <= GameManager.level:
+					item_ids.append(str(item_id))
+		for item_id in item_ids:
+			var item_button := Button.new()
+			item_button.name = "Produce_" + item_id
+			var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
+			item_button.text = "%s  ·  %s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0)))]
+			item_button.custom_minimum_size.y = 48 * _ui_scale
+			item_button.pressed.connect(func():
+				var started := building.start_factory_production(item_id) if str(building.definition.get("category","")) == "industrial" else building.start_commercial_production(item_id)
+				if started:
+					status_label.text = "Production started: %s." % item_id.capitalize()
+				else:
+					var missing := ProductionManager.get_missing_inputs_text(item_id)
+					status_label.text = "Not enough materials: %s" % missing if missing != "" else "Cannot start this production."
+				_close_production_panel()
+			)
+			layout.add_child(item_button)
+	if building.definition.get("category","") == "commercial" and not building.is_producing and not building.has_ready_product:
+	var inventory_note := Label.new()
+	inventory_note.text = "Inputs are deducted from City Storage when crafting starts."
+	inventory_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inventory_note.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	layout.add_child(inventory_note)
+
+func _format_duration(seconds: int) -> String:
+	if seconds < 60:
+		return "%ds" % seconds
+	if seconds < 3600:
+		return "%dm" % int(seconds / 60)
+	return "%dh %dm" % [int(seconds / 3600), int((seconds % 3600) / 60)]
+
+func _close_production_panel() -> void:
+	if is_instance_valid(production_panel):
+		production_panel.queue_free()
+	production_panel = null
 
 func _on_storage_pressed() -> void:
 	BuildManager.cancel_placement()
