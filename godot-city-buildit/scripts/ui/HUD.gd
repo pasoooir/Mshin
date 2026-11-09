@@ -454,6 +454,7 @@ func _build_toolbars() -> void:
 	submenu.add_theme_constant_override("separation", 8)
 	submenu.alignment = BoxContainer.ALIGNMENT_CENTER
 	submenu_scroll.add_child(submenu)
+	submenu.hide()
 	submenu_scroll.hide()
 
 func _make_category_button(icon_name: String, label_text: String, button_size: Vector2) -> Button:
@@ -544,6 +545,8 @@ func _close_build_menu() -> void:
 	_set_bulldozer_indicator(false)
 	if submenu_scroll:
 		submenu_scroll.hide()
+	if submenu:
+		submenu.hide()
 	active_category = ""
 	active_service_group = ""
 	active_specialization_group = ""
@@ -657,7 +660,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 
 func _add_submenu_button(option_id: String, title: String, icon_name: String, detail: String, disabled: bool, category: String, required_level: int = 1, locked: bool = false) -> void:
 	var button := Button.new()
-	button.name = "Submenu_" + option_id
+	button.name = option_id
 	button.custom_minimum_size = Vector2(142, 78) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.disabled = disabled
@@ -716,6 +719,7 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 	cancel.add_theme_stylebox_override("hover", _toolbar_style(Color(0.62, 0.16, 0.14, 1.0), Color.WHITE))
 	cancel.pressed.connect(_on_cancel_pressed)
 	submenu.add_child(cancel)
+	submenu.show()
 	submenu_scroll.show()
 	if bottom_actions:
 		bottom_actions.hide()
@@ -1037,6 +1041,8 @@ func _on_cancel_pressed() -> void:
 	BuildManager.cancel_placement()
 	if submenu_scroll:
 		submenu_scroll.hide()
+	if submenu:
+		submenu.hide()
 	active_category = ""
 	active_service_group = ""
 	active_specialization_group = ""
