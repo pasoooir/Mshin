@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 import sys
+import struct
 
 ROOT = Path(__file__).resolve().parents[1]
 errors = []
@@ -10,6 +11,8 @@ for path in ROOT.rglob("*.gd"):
     if source.rstrip().endswith(("extends Node3D", "extends Node", "mat = mate")):
         errors.append(f"Likely truncated script: {path.relative_to(ROOT)}")
     for resource in re.findall(r'"res://([^" ]+)"', source):
+        if resource.endswith("/"):
+            continue
         if not (ROOT / resource).is_file():
             errors.append(f"Missing script resource {resource} in {path.relative_to(ROOT)}")
 
@@ -41,53 +44,22 @@ for item in re.findall(r'"item"[ \t]*:[ \t]*"([a-z0-9_]+)"', production):
         errors.append(f"Upgrade material missing from storage definitions: {item}")
 
 
-# Validate all three local UI sprite sheets and their atlas references.
-import struct
-
-atlas_path = ROOT / "scripts/ui/IconAtlas.gd"
-atlas = atlas_path.read_text(encoding="utf-8")
-expected_sheets = [ROOT / "assets/icons/Sheet1.png", ROOT / "assets/icons/Sheet2.png", ROOT / "assets/icons/Sheet3.png"]
-for sheet_index, sheet_path in enumerate(expected_sheets, start=1):
-    if not sheet_path.is_file():
-        errors.append(f"Missing local icon sheet {sheet_path.relative_to(ROOT)}")
-        continue
-    data = sheet_path.read_bytes()
-    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
-        errors.append(f"Icon sheet {sheet_path.name} is not a valid PNG")
-        continue
-    width, height = struct.unpack(">II", data[16:24])
-    if width < 1130 or height < 770:
-        errors.append(f"Icon sheet {sheet_path.name} has unexpected dimensions {width}x{height}")
-    if f'{sheet_index}: preload("res://assets/icons/{sheet_path.name}")' not in atlas:
-        errors.append(f"Icon sheet {sheet_path.name} is not preloaded by IconAtlas.gd")
-
-if "CanvasItem.TEXTURE_FILTER_LINEAR" not in atlas:
-    errors.append("UI atlas icons must use high-quality linear filtering")
-if "TEXTURE_FILTER_LINEAR_WITH_MIPMAPS" in atlas or "mipmaps" in atlas.lower() and "no mipmaps" not in atlas.lower():
-    errors.append("UI atlas icons must not generate or sample mipmaps")
-if "ImageTexture.create_from_image" not in atlas:
-    errors.append("UI atlas icons must be rebuilt as lossless runtime ImageTextures")
-if "color.a = 0.0" not in atlas or "crop.set_pixel" not in atlas:
-    errors.append("UI atlas background removal must write transparent alpha pixels")
+# The full transparent PNG catalog has a dedicated strict validator in CI.
+icons_helper_path = ROOT / "scripts/ui/Icons.gd"
+if not icons_helper_path.is_file():
+    errors.append("Centralized PNG Icons.gd helper is missing")
+else:
+    icons_helper = icons_helper_path.read_text(encoding="utf-8")
+    for contract in ["const ROOT := \"res://assets/icons/\"", "static func path(", "static func get_tex(", "ResourceLoader.exists(icon_path)", "ui/placeholder.png", "CanvasItem.TEXTURE_FILTER_LINEAR"]:
+        if contract not in icons_helper:
+            errors.append(f"PNG icon helper contract is missing: {contract}")
+placeholder_icon = ROOT / "assets/icons/ui/placeholder.png"
+if not placeholder_icon.is_file():
+    errors.append("Transparent PNG fallback icon is missing")
+if "const Icons = preload(\"res://scripts/ui/Icons.gd\")" not in (ROOT / "scripts/ui/IconAtlas.gd").read_text(encoding="utf-8"):
+    errors.append("Legacy IconAtlas facade must delegate to the centralized PNG helper")
 if "Color(0.0, 0.0, 0.0, 0.0)" not in hud:
     errors.append("Toolbar buttons must have transparent normal backgrounds")
-
-power_svg = ROOT / "assets/icons/power.svg"
-if not power_svg.is_file():
-    errors.append("Transparent local vector power icon is missing")
-elif "res://assets/icons/power.svg" not in atlas:
-    errors.append("HUD power icon is not mapped to the transparent local vector asset")
-
-atlas_keys = set(re.findall(r'"([a-z0-9_]+)": \[\d+, Rect2i', atlas))
-required_icons = {
-    "road", "residential", "commercial", "industrial", "services",
-    "bulldoze", "power", "water", "fire", "parks",
-    "storage", "trade", "save", "cancel", "education", "transportation",
-    "entertainment", "gambling", "beach", "mountain", "landmark",
-    "trade_depot", "global_trade", "epic", "regions"
-}
-for icon_key in sorted(required_icons - atlas_keys):
-    errors.append(f"Required HUD icon is missing from atlas: {icon_key}")
 
 toolbar_order = [
     '["road", "Roads", "road"]',
@@ -126,23 +98,23 @@ if "multimesh.use_colors = true" not in world_source:
     errors.append("Tree instances must use per-instance natural color variation")
 
 build_icon_paths = {
-    "services": "assets/icons/services.svg",
-    "parks": "assets/icons/parks.svg",
-    "park": "assets/icons/park.svg",
-    "bulldoze": "assets/icons/bulldozer.svg",
+    "services": ("ui", "services"),
+    "parks": ("ui", "parks"),
+    "park": ("ui", "park"),
+    "bulldoze": ("ui", "bulldoze"),
 }
-for icon_name, relative_path in build_icon_paths.items():
-    icon_path = ROOT / relative_path
+for icon_name, (category, icon_id) in build_icon_paths.items():
+    icon_path = ROOT / "assets" / "icons" / category / f"{icon_id}.png"
     if not icon_path.is_file():
-        errors.append(f"Required Build icon is missing: {relative_path}")
+        errors.append(f"Required Build PNG icon is missing: {category}/{icon_id}.png")
         continue
-    icon_source = icon_path.read_text(encoding="utf-8")
-    if not all(token in icon_source for token in ['viewBox="0 0 128 128"', "<linearGradient", "<ellipse", "stroke-width="]):
-        errors.append(f"Build icon does not follow the shared dimensional gradient illustration style: {icon_name}")
-    if "<rect" in icon_source and re.search(r'<rect[^>]+fill="#[0-9A-Fa-f]{6}"', icon_source):
-        errors.append(f"Build icon contains an opaque rectangular background: {icon_name}")
-    if "res://assets/icons/" + Path(relative_path).name not in atlas:
-        errors.append(f"Build icon is not directly mapped to its local SVG: {icon_name}")
+    icon_data = icon_path.read_bytes()
+    if len(icon_data) < 26 or icon_data[:8] != b"\x89PNG\r\n\x1a\n":
+        errors.append(f"Required Build icon is not a valid PNG: {category}/{icon_id}.png")
+        continue
+    bit_depth, color_type = struct.unpack(">BB", icon_data[24:26])
+    if bit_depth != 8 or color_type != 6:
+        errors.append(f"Required Build icon must be PNG-32 RGBA: {category}/{icon_id}.png")
 
 # Road rendering must be neighbor-driven, connected, seamless and independent from gameplay rules.
 road_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")

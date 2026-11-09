@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
+const Icons = preload("res://scripts/ui/Icons.gd")
 const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 
 const SERVICE_GROUPS := [
@@ -24,7 +24,7 @@ const SPECIALIZATION_GROUPS := [
 ]
 
 # The atlas does not currently contain a banknote glyph, so SimCash uses this
-# small locally drawn vector icon. All other status icons come from IconAtlas.
+# SimCash and all other HUD glyphs use local transparent PNG assets.
 class BanknoteGlyph extends Control:
 	func _draw() -> void:
 		var note := Rect2(Vector2(5.0, 12.0), Vector2(size.x - 10.0, size.y - 24.0))
@@ -138,7 +138,7 @@ func _build_top_hud() -> void:
 	level_overlay.custom_minimum_size = Vector2(108, 108) * _ui_scale
 	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_badge.add_child(level_overlay)
-	var level_icon := IconAtlas.make_icon("level", Vector2(96, 96) * _ui_scale)
+	var level_icon := Icons.make_icon("level", Vector2(96, 96) * _ui_scale)
 	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_icon)
@@ -220,7 +220,7 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(44, 44) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(44, 44) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
@@ -239,7 +239,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(44, 44) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(44, 44) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
@@ -304,10 +304,7 @@ func _build_simcash_capsule(parent: Container) -> void:
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var glyph := BanknoteGlyph.new()
-	glyph.custom_minimum_size = Vector2(44, 44) * _ui_scale
-	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_child(glyph)
+	content.add_child(Icons.make_icon("money", Vector2(44, 44) * _ui_scale))
 	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), int(25 * _ui_scale))
 	simcash_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	simcash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -415,7 +412,7 @@ func _build_toolbars() -> void:
 	build_content.add_theme_constant_override("separation", 1)
 	build_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_toggle.add_child(build_content)
-	var build_icon := IconAtlas.make_icon("hard_hat", Vector2(42, 42) * _ui_scale)
+	var build_icon := Icons.make_icon("hard_hat", Vector2(42, 42) * _ui_scale)
 	build_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_content.add_child(build_icon)
 	var build_label := Label.new()
@@ -487,7 +484,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
 	var icon_size := minf(38.0, button_size.y * 0.54)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(icon_size, icon_size))
+	var icon := Icons.make_icon(icon_name, Vector2(icon_size, icon_size))
 	content.add_child(icon)
 	var label := Label.new()
 	label.text = label_text
@@ -513,7 +510,7 @@ func _make_icon_button(kind: String, hint: String, requested_size: Vector2 = Vec
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := IconAtlas.make_icon(kind, button_size - Vector2(12, 12))
+	var icon := Icons.make_icon(kind, button_size - Vector2(12, 12))
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
@@ -521,7 +518,7 @@ func _make_icon_button(kind: String, hint: String, requested_size: Vector2 = Vec
 	icon.offset_bottom = -3
 	if icon.texture == null:
 		# Never substitute a font glyph: web fonts may not contain the symbol.
-		icon.texture = IconAtlas.texture_for("fallback")
+		icon.texture = Icons.get_tex("ui", "placeholder")
 	button.add_child(icon)
 	return button
 
@@ -614,9 +611,9 @@ func _show_submenu(category: String) -> void:
 		submenu.remove_child(child)
 		child.queue_free()
 	if category == "road":
-		_add_submenu_button("road_build", "Build Road", "road", "50 / tile", false, "road")
-		_add_submenu_button("road_upgrade", "Upgrade Road", "road", "Coming later", true, "road")
-		_add_submenu_button("bulldoze_road", "Bulldoze Road", "bulldoze", "Remove road", false, "road")
+		_add_submenu_button("road_build", "Build Road", "road_build", "50 / tile", false, "road")
+		_add_submenu_button("road_upgrade", "Upgrade Road", "road_upgrade", "Coming later", true, "road")
+		_add_submenu_button("bulldoze_road", "Bulldoze Road", "road_bulldoze", "Remove road", false, "road")
 	elif category == "services":
 		_show_group_options(SERVICE_GROUPS, "services")
 	elif category == "specializations":
@@ -640,7 +637,7 @@ func _show_submenu(category: String) -> void:
 				elif not BuildManager.can_build_another_factory():
 					detail += " · Factory limit reached"
 					locked = true
-			_add_submenu_button(str(type_id), title, category, detail, locked, category, int(definition.get("level", 1)), locked)
+			_add_submenu_button(str(type_id), title, str(type_id), detail, locked, category, int(definition.get("level", 1)), locked)
 	_finish_submenu_row()
 
 func _show_group_options(groups: Array, parent_category: String) -> void:
@@ -682,7 +679,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 					detail += " · Coverage: %d tiles" % int(definition.get("coverage_tiles", 15))
 				if int(definition.get("pollution", 0)) > 0:
 					detail += " · " + str(definition.get("pollution_label", "Pollutes"))
-				_add_submenu_button(type_id, str(definition.get("name", type_id)), group_id, detail, false, parent_category, int(definition.get("level", 1)))
+				_add_submenu_button(type_id, str(definition.get("name", type_id)), type_id, detail, false, parent_category, int(definition.get("level", 1)))
 	_finish_submenu_row(true)
 
 func _add_submenu_button(option_id: String, title: String, icon_name: String, detail: String, disabled: bool, category: String, required_level: int = 1, locked: bool = false) -> void:
@@ -705,20 +702,15 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_theme_constant_override("separation", 5)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var resolved_icon_name := icon_name
-	match icon_name:
-		"landmarks": resolved_icon_name = "landmark"
-		"worship", "sewage", "government", "health": resolved_icon_name = "services"
-	var icon := IconAtlas.make_icon(resolved_icon_name, Vector2(30, 30) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(34, 34) * _ui_scale)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if is_locked:
 		icon.modulate = Color(0.52, 0.56, 0.60, 0.72)
 	content.add_child(icon)
 	if is_locked:
-		var lock_glyph := LockGlyph.new()
-		lock_glyph.custom_minimum_size = Vector2(15, 22) * _ui_scale
-		lock_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		content.add_child(lock_glyph)
+		var lock_icon := Icons.make_icon("lock", Vector2(18, 18) * _ui_scale)
+		lock_icon.name = "LockIcon"
+		content.add_child(lock_icon)
 	var labels := VBoxContainer.new()
 	labels.alignment = BoxContainer.ALIGNMENT_CENTER
 	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -749,14 +741,16 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 	if show_back:
 		var back := Button.new()
 		back.name = "Submenu_Back"
-		back.text = "‹  BACK"
+		back.text = "BACK"
+		back.icon = Icons.get_tex("ui", "back")
 		back.custom_minimum_size = Vector2(108, 78) * _ui_scale
 		back.focus_mode = Control.FOCUS_NONE
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
 	var cancel := Button.new()
 	cancel.name = "Submenu_Cancel"
-	cancel.text = "CANCEL  X"
+	cancel.text = "CANCEL"
+	cancel.icon = Icons.get_tex("ui", "cancel")
 	cancel.custom_minimum_size = Vector2(112, 78) * _ui_scale
 	cancel.focus_mode = Control.FOCUS_NONE
 	cancel.add_theme_color_override("font_color", Color("#FFE2D9"))
@@ -1108,7 +1102,8 @@ func open_production_panel(building: Building) -> void:
 	title.add_theme_color_override("font_color", Color.WHITE)
 	header.add_child(title)
 	var close := Button.new()
-	close.text = "✕"
+	close.text = ""
+	close.icon = Icons.get_tex("ui", "close")
 	close.custom_minimum_size = Vector2(44,44) * _ui_scale
 	close.pressed.connect(_close_production_panel)
 	header.add_child(close)
@@ -1144,6 +1139,8 @@ func open_production_panel(building: Building) -> void:
 			for item_id in item_ids:
 				var item_button := Button.new()
 				item_button.name = "Slot%d_%s" % [slot_index, item_id]
+				item_button.icon = Icons.get_tex("raw" if component.is_factory else "crafted", item_id)
+				item_button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 				var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
 				var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 				item_button.text = "%s  ·  %s%s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0))), ("  ·  " + lock_reason) if lock_reason != "" else ""]
@@ -1165,6 +1162,7 @@ func open_production_panel(building: Building) -> void:
 				var collect_button := Button.new()
 				collect_button.name = "CollectSlot%d" % slot_index
 				collect_button.text = "COLLECT  %s" % item_id.capitalize()
+				collect_button.icon = Icons.get_tex("ui", "collect")
 				collect_button.custom_minimum_size.y = 46 * _ui_scale
 				collect_button.pressed.connect(func():
 					if component.collect(slot_index):
@@ -1180,7 +1178,10 @@ func open_production_panel(building: Building) -> void:
 				timer_label.name = "TimerSlot%d" % slot_index
 				timer_label.set_meta("slot_index", slot_index)
 				timer_label.text = "%s  ·  %s remaining" % [item_id.capitalize(), _format_duration(remaining)]
-				slot_layout.add_child(timer_label)
+				var timer_row := HBoxContainer.new()
+				timer_row.add_child(Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(32, 32) * _ui_scale))
+				timer_row.add_child(timer_label)
+				slot_layout.add_child(timer_row)
 				_production_timer_labels.append(timer_label)
 	if not component.is_factory:
 		var note := Label.new()
@@ -1325,6 +1326,8 @@ func _refresh_storage_panel() -> void:
 		item_row.add_theme_constant_override("separation", 8)
 		row.add_child(item_row)
 		var item_name := str(ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {})).get("name", str(item_id).capitalize()))
+		var item_category := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
+		item_row.add_child(Icons.make_item_icon(item_category, str(item_id), Vector2(34, 34) * _ui_scale))
 		var name_label := Label.new()
 		name_label.text = item_name
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
