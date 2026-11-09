@@ -889,6 +889,8 @@ func start_commercial_production(item_id: String) -> bool:
 
 func set_fire_smoke(active: bool) -> void:
 	if active:
+		if DisplayServer.get_name() == "headless":
+			return
 		if status != "completed" or str(definition.get("category", "")) != "residential":
 			return
 		if _fire_smoke == null:
