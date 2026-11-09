@@ -768,9 +768,14 @@ func _select_building_type(type_id: String) -> void:
 	if GameManager.level < required_level:
 		status_label.text = "Unlocked at Level %d." % required_level
 		return
-	if definition.get("category", "") == "industrial" and BuildManager.factory_count >= LevelProgression.max_factories:
-		status_label.text = "Factory limit reached (%d). Upgrade your city to unlock more factory slots." % LevelProgression.max_factories
-		return
+	if definition.get("category", "") == "industrial":
+		if not BuildManager.can_build_another_factory():
+			status_label.text = "Factory limit reached (%d). Level up to unlock another factory slot." % LevelProgression.get_factory_limit_for_level(GameManager.level)
+			return
+		if not BuildManager.can_build_factory_type(type_id):
+			var required_population := BuildManager.get_factory_type_population_requirement(type_id)
+			status_label.text = "%s requires %s city population." % [str(definition.get("name", type_id)), _format_count(required_population)]
+			return
 	_set_tool_modes_off()
 	BuildManager.select_building(type_id)
 	if BuildManager.is_placing:
@@ -1118,13 +1123,15 @@ func open_production_panel(building: Building) -> void:
 			else:
 				for item_id in building.definition.get("recipes", []):
 					var recipe := ProductionManager.get_recipe(str(item_id))
-					if not recipe.is_empty() and int(recipe.level) <= GameManager.level:
+					if not recipe.is_empty():
 						item_ids.append(str(item_id))
 			for item_id in item_ids:
 				var item_button := Button.new()
 				item_button.name = "Slot%d_%s" % [slot_index, item_id]
 				var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
-				item_button.text = "%s  ·  %s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0)))]
+				var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+				item_button.text = "%s  ·  %s%s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0))), ("  ·  " + lock_reason) if lock_reason != "" else ""]
+				item_button.disabled = lock_reason != ""
 				item_button.custom_minimum_size.y = 42 * _ui_scale
 				item_button.pressed.connect(func():
 					var started: bool = component.start_factory(item_id, slot_index) if component.is_factory else component.start_craft(item_id, slot_index)
