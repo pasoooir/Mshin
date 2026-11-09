@@ -431,7 +431,7 @@ func _build_level_one_villa(w: float, d: float, height: float, base_color: Color
 	for side in [-1.0, 1.0]:
 		_add_box(Vector3(0.72, 0.18, 0.28), Vector3(side * w * 0.30, 0.57, front * 1.23), coral)
 		for flower in range(3):
-			var flower_x := side * w * 0.30 - 0.22 + float(flower) * 0.22
+			var flower_x: float = float(side) * w * 0.30 - 0.22 + float(flower) * 0.22
 			_add_box(Vector3(0.13, 0.17, 0.13), Vector3(flower_x, 0.73, front * 1.25), [coral, yellow, turquoise][flower])
 	_add_box(Vector3(w * 0.72, 0.07, 0.34), Vector3(0, 0.08, d * 0.48), turquoise)
 
