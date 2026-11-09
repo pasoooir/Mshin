@@ -818,9 +818,6 @@ func _on_construction_finished() -> void:
 		FireHazardManager.on_city_changed()
 	if definition.get("happiness", 0) > 0:
 		GameManager.set_happiness(min(100.0, GameManager.happiness + definition.happiness))
-	# Factories begin their configured raw-material cycle as soon as construction ends.
-	if definition.get("category", "") == "industrial":
-		start_factory_production()
 
 func _play_completion_effect() -> void:
 	if DisplayServer.get_name() == "headless":
