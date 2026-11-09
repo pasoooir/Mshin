@@ -39,37 +39,59 @@ func _process(delta: float) -> void:
 		_begin_move_from_screen(pointer_id, pointer_start[pointer_id])
 
 func _begin_move_from_screen(pointer_id: int, screen_position: Vector2) -> void:
-	var world_position: Variant = _raycast_ground(screen_position)
-	if world_position == null:
-		_set_status("Tap and hold directly on a building to move it.")
-		return
-	var building = BuildManager.building_at_cell(BuildManager.world_to_grid(world_position))
+	# Resolve the visible building volume: in an oblique view the ground point
+	# under a roof/facade touch can be behind the actual building footprint.
+	var building := _building_at_screen(screen_position)
 	if building == null or not is_instance_valid(building):
-		_set_status("No building here. Hold your finger on a building to move it.")
+		_set_status("No building selected. Press and hold directly on a building to move it.")
 		return
 	if building.status != "completed":
 		_set_status("Still under construction")
 		return
 	if BuildManager.begin_move(building):
-		# Moving a placed building must work even when the build palette is still active.
-		# Exit placement mode only after a real building has been picked up.
 		if BuildManager.is_placing:
 			BuildManager.cancel_placement()
 		move_pointer_id = int(pointer_id)
 		pointer_moved[pointer_id] = true
-		_set_status("Move mode: drag the building to a green valid plot. Release to place or press X to cancel.")
+		_set_status("Move mode: drag the highlighted building to a green valid plot. Release to place or press X to cancel.")
 	else:
 		_set_status("This building cannot be moved right now.")
 
-# CameraController calls this while a pointer is down so it does not pan the
-# camera away from a building while the long-press timer is running.
+func _building_at_screen(screen_position: Vector2) -> Building:
+	if camera == null or not is_instance_valid(camera):
+		camera = get_viewport().get_camera_3d()
+	if camera == null:
+		return null
+	var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
+	var ray_direction: Vector3 = camera.project_ray_normal(screen_position)
+	var closest_building: Building = null
+	var closest_distance := INF
+	for candidate in BuildManager.buildings.values():
+		if not is_instance_valid(candidate) or not (candidate is Building):
+			continue
+		var building := candidate as Building
+		var footprint: Vector2i = building.definition.get("size", Vector2i(2, 2))
+		var half_width := float(footprint.x) * BuildManager.GRID_SIZE * 0.5 + 0.18
+		var half_depth := float(footprint.y) * BuildManager.GRID_SIZE * 0.5 + 0.18
+		# Conservative model-space envelope includes roof and upper facade.
+		var bounds := AABB(
+			Vector3(building.global_position.x - half_width, 0.0, building.global_position.z - half_depth),
+			Vector3(half_width * 2.0, 14.0, half_depth * 2.0)
+		)
+		var hit_position: Variant = bounds.intersects_ray(ray_origin, ray_direction)
+		if hit_position == null:
+			continue
+		var hit_distance := ray_origin.distance_to(hit_position)
+		if hit_distance < closest_distance:
+			closest_distance = hit_distance
+			closest_building = building
+	return closest_building
+
+# CameraController uses this to suppress one-finger pan during a building hold.
 func is_building_press_pending(pointer_id: int) -> bool:
 	if not pointer_start.has(pointer_id):
 		return false
-	var world_position: Variant = _raycast_ground(pointer_start[pointer_id])
-	if world_position == null:
-		return false
-	var building = BuildManager.building_at_cell(BuildManager.world_to_grid(world_position))
+	var building := _building_at_screen(pointer_start[pointer_id])
 	return building != null and is_instance_valid(building)
 
 func _update_move_from_screen(screen_position: Vector2) -> void:
