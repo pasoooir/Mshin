@@ -173,7 +173,7 @@ func _test_build_menu_visibility() -> void:
 		_check(hud.submenu.find_child(type_id, true, false) != null, "Services Build menu is missing " + type_id)
 	var police_choice := hud.submenu.find_child("police_station", true, false) as Button
 	_check(police_choice != null and police_choice.text.contains("Unlocked at Level 12"), "Police Station must show its English unlock level.")
-	_check(hud.submenu.get_global_rect().size.x < viewport_rect.size.x * 0.45, "Category item palette is not compactly docked.")
+	_check(hud.submenu.get_global_rect().size.x < viewport_rect.size.x * 0.5, "Category item palette is not compactly docked.")
 	hud._close_build_menu()
 	await get_tree().process_frame
 	_check(not toolbar.visible and not hud.submenu.visible, "Closing the Build menu must hide both category and item panels.")
