@@ -738,12 +738,7 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 				status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile). Press X to exit."
 			else:
 				status_label.text = "Road system is unavailable."
-			submenu.hide()
-			active_category = ""
-			var build_button_node := get_node_or_null("BuildMenuButton")
-	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
-			if build_label:
-				build_label.text = "BUILD"
+			_close_build_menu()
 		elif option_id == "bulldoze_road":
 			_start_bulldoze_road_mode()
 	else:
@@ -755,18 +750,23 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 	active_category = ""
 	if cancel_placement:
 		BuildManager.cancel_placement()
+	var category_toolbar := get_node_or_null("RightToolbar") as Control
+	var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if not BuildManager.is_placing:
-		var category_toolbar := get_node_or_null("RightToolbar")
 		if category_toolbar:
 			category_toolbar.show()
+		if build_label:
+			build_label.text = "CLOSE"
+		if build_button_node:
+			build_button_node.tooltip_text = "Close Build Menu"
 	else:
-		var build_button_node := get_node_or_null("BuildMenuButton")
-	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
+		if category_toolbar:
+			category_toolbar.hide()
 		if build_label:
 			build_label.text = "BUILD"
-		var build_button := get_node_or_null("BuildMenuButton") as Control
-		if build_button:
-			build_button.tooltip_text = "Open Build Menu"
+		if build_button_node:
+			build_button_node.tooltip_text = "Open Build Menu"
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
@@ -953,9 +953,16 @@ func _on_cancel_pressed() -> void:
 	BuildManager.cancel_placement()
 	if submenu:
 		submenu.hide()
-	var category_toolbar := get_node_or_null("RightToolbar")
-	if category_toolbar: category_toolbar.show()
 	active_category = ""
+	var category_toolbar := get_node_or_null("RightToolbar") as Control
+	if category_toolbar:
+		category_toolbar.show()
+	var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
+	if build_label:
+		build_label.text = "CLOSE"
+	if build_button_node:
+		build_button_node.tooltip_text = "Close Build Menu"
 	if was_moving:
 		status_label.text = "Move cancelled. Building returned to its original location."
 	else:
