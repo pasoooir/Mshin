@@ -256,7 +256,7 @@ func _build_top_hud() -> void:
 func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "StatBar"
-	bar.custom_minimum_size = Vector2(width * _ui_scale, 64 * _ui_scale)
+	bar.custom_minimum_size = Vector2(width * _ui_scale, 96 * _ui_scale)
 	bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
@@ -267,7 +267,7 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(44, 44) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(88, 88) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
@@ -286,7 +286,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(44, 44) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(88, 88) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
@@ -329,7 +329,7 @@ func _make_currency_plus_button(hint: String) -> Button:
 	var button := Button.new()
 	button.name = "CurrencyAddButton"
 	button.text = "+"
-	button.custom_minimum_size = Vector2(44, 44) * _ui_scale
+	button.custom_minimum_size = Vector2(88, 88) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = hint + " shop"
 	button.add_theme_font_size_override("font_size", int(30 * _ui_scale))
@@ -342,7 +342,7 @@ func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: S
 func _build_simcash_capsule(parent: Container) -> void:
 	var bar := PanelContainer.new()
 	bar.name = "SimCashCurrencyBar"
-	bar.custom_minimum_size = Vector2(248, 64) * _ui_scale
+	bar.custom_minimum_size = Vector2(280, 96) * _ui_scale
 	bar.tooltip_text = "SimCash"
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -351,7 +351,7 @@ func _build_simcash_capsule(parent: Container) -> void:
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	content.add_child(Icons.make_icon("money", Vector2(44, 44) * _ui_scale))
+	content.add_child(Icons.make_icon("money", Vector2(88, 88) * _ui_scale))
 	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), int(25 * _ui_scale))
 	simcash_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	simcash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
