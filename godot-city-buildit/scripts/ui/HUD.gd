@@ -7,7 +7,7 @@ const SERVICE_GROUPS := [
 	{"id":"power", "label":"Power", "buildings":["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear"]},
 	{"id":"water", "label":"Water", "buildings":["water_tower", "water_pump"]},
 	{"id":"sewage", "label":"Sewage", "buildings":["sewage_small", "sewage_basic", "sewage_deluxe"]},
-	{"id":"waste", "label":"Waste", "buildings":[]},
+	{"id":"waste", "label":"Waste", "buildings":["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]},
 	{"id":"fire", "label":"Fire", "buildings":["fire_station_small", "fire_station"]},
 	{"id":"police", "label":"Police", "buildings":["police_station"]},
 	{"id":"health", "label":"Health", "buildings":[]},
@@ -667,7 +667,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 				var footprint: Vector2i = definition.get("size", Vector2i.ONE)
 				var detail := "%d coins · Lv %d · %dx%d" % [int(definition.get("cost", 0)), int(definition.get("level", 1)), footprint.x, footprint.y]
 				if int(definition.get("pollution", 0)) > 0:
-					detail += " · Pollutes"
+					detail += " · " + str(definition.get("pollution_label", "Pollutes"))
 				_add_submenu_button(type_id, str(definition.get("name", type_id)), group_id, detail, false, parent_category, int(definition.get("level", 1)))
 	_finish_submenu_row(true)
 
@@ -694,7 +694,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	var resolved_icon_name := icon_name
 	match icon_name:
 		"landmarks": resolved_icon_name = "landmark"
-		"worship", "waste", "sewage", "government", "health": resolved_icon_name = "services"
+		"worship", "sewage", "government", "health": resolved_icon_name = "services"
 	var icon := IconAtlas.make_icon(resolved_icon_name, Vector2(30, 30) * _ui_scale)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if is_locked:

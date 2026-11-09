@@ -191,7 +191,7 @@ required_movable_types = {
     "art_supplies", "hardware_store", "farmers_market", "furniture_store",
     "industrial_1", "industrial_2", "industrial_3",
     "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
-    "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "town_hall",
+    "water_tower", "water_pump", "fire_station_small", "fire_station", "police_station", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
     "park_small"
 }
 move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
@@ -210,7 +210,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 31"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 35"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
@@ -274,6 +274,32 @@ for sewage_id, expected_capacity, expected_level, expected_size, expected_pollut
         errors.append(f"Sewage facility pollution metadata is incorrect: {sewage_id}")
 if '"sewage_pipe":' in build_manager or '"sewage_pipe"' in hud:
     errors.append("Obsolete sewage_pipe catalog ID must not remain")
+
+# Solid-waste facilities remain distinct from sewage and expose generic numeric capacity.
+for waste_id, expected_capacity, expected_level, expected_size, expected_pollution, expected_radius in [
+    ("waste_dump_small", 15, 14, "Vector2i(2,2)", 1, "10.0"),
+    ("waste_dump", 31, 14, "Vector2i(2,3)", 1, "12.0"),
+    ("waste_incinerator", 40, 14, "Vector2i(2,2)", 1, "16.0"),
+    ("waste_recycling", 70, 20, "Vector2i(3,2)", 0, "0.0"),
+]:
+    match = re.search(r'"' + waste_id + r'": \{([^\n]+)\}', build_manager)
+    if match is None:
+        errors.append(f"Waste facility definition is missing: {waste_id}")
+        continue
+    definition = match.group(1)
+    if f'"waste":{expected_capacity}' not in definition or f'"level":{expected_level}' not in definition:
+        errors.append(f"Waste facility capacity/unlock contract is incorrect: {waste_id}")
+    if '"service_group":"waste"' not in definition or '"category":"service"' not in definition:
+        errors.append(f"Waste facility lacks separate service catalog metadata: {waste_id}")
+    if f'"size":{expected_size}' not in definition:
+        errors.append(f"Waste facility footprint is incorrect: {waste_id}")
+    if f'"pollution":{expected_pollution}' not in definition or f'"pollution_radius":{expected_radius}' not in definition:
+        errors.append(f"Waste facility pollution metadata is incorrect: {waste_id}")
+if '"pollution_severity":"heavy"' not in build_manager or '"pollution_label":"Heavy pollution"' not in build_manager:
+    errors.append("Incinerator must carry an explicit heavy-pollution UI label")
+if '"waste_omega":' in build_manager:
+    errors.append("OMEGA waste facility is outside the current scope and must not be exposed")
+
 
 for power_id, expected_power, expected_level in [("power_wind", 12, 1), ("power_coal", 12, 1), ("power_wind_deluxe", 22, 10), ("power_solar", 35, 15), ("power_oil", 40, 18), ("power_nuclear", 60, 22)]:
     match = re.search(r'"' + power_id + r'": \{([^\n]+)\}', build_manager)
