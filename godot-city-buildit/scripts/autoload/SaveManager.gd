@@ -37,7 +37,13 @@ func save_game() -> bool:
 			"grid": [int(building.grid_pos.x), int(building.grid_pos.y)],
 			"stage": int(building.upgrade_stage),
 			"status": str(building.status),
-			"population": int(building.current_population)
+			"population": int(building.current_population),
+			"production": {
+				"current_product": building.current_product,
+				"is_producing": building.is_producing,
+				"has_ready_product": building.has_ready_product,
+				"production_finish_unix": building.production_finish_unix
+			}
 		})
 
 	var payload: Dictionary = {
@@ -54,10 +60,7 @@ func save_game() -> bool:
 			"golden_keys": EconomyManager.golden_keys,
 			"sim_cash": EconomyManager.sim_cash
 		},
-		"storage": {
-			"max_capacity": StorageManager.max_capacity,
-			"inventory": StorageManager.inventory
-		},
+		"storage": StorageManager.to_save_dict(),
 		"roads": road_data,
 		"buildings": building_data
 	}
@@ -104,11 +107,7 @@ func load_game() -> bool:
 	EconomyManager.golden_keys = int(economy_data.get("golden_keys", 5))
 	EconomyManager.sim_cash = int(economy_data.get("sim_cash", 0))
 
-	StorageManager.max_capacity = maxi(1, int(storage_data.get("max_capacity", 30)))
-	StorageManager.inventory = storage_data.get("inventory", {}).duplicate(true)
-	StorageManager.current_used = 0
-	for item_amount in StorageManager.inventory.values():
-		StorageManager.current_used += int(item_amount)
+	StorageManager.from_save_dict(storage_data)
 
 	var road_system = scene.get_node("World/RoadSystem")
 	var pending_roads: Array = parsed.get("roads", []).duplicate(true)
@@ -153,6 +152,8 @@ func load_game() -> bool:
 			load_completed.emit(false)
 			return false
 		var restored_building = BuildManager.building_at_cell(Vector2i(int(grid[0]), int(grid[1])))
+		if restored_building != null:
+			restored_building.restore_production_state(saved_building.get("production", {}))
 		if restored_building != null and str(restored_building.definition.get("category", "")) == "residential":
 			restored_building.current_population = clampi(int(saved_building.get("population", restored_building.current_population)), 0, HappinessManager._capacity_for_home(restored_building))
 			restored_building.set_meta("immigration_population_initialized", true)
