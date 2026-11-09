@@ -790,9 +790,15 @@ func _start_bulldoze_mode() -> void:
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
 	if city_input:
 		city_input.set_bulldoze_mode(true)
-	_close_build_menu()
+	active_category = "bulldoze"
+	_set_active_category_visuals("bulldoze")
 	_set_bulldozer_indicator(true)
-	status_label.text = "Bulldozer active — tap a building twice to demolish. Tap a road to remove it. Press X to cancel."
+	for child in submenu.get_children():
+		submenu.remove_child(child)
+		child.queue_free()
+	_add_submenu_button("bulldoze_active", "Bulldoze Active", "bulldoze", "Tap a building or road", true, "bulldoze")
+	_finish_submenu_row()
+	status_label.text = "Bulldozer active. Tap a building or road; press Cancel to exit."
 
 func _start_bulldoze_road_mode() -> void:
 	_set_tool_modes_off()
@@ -801,11 +807,33 @@ func _start_bulldoze_road_mode() -> void:
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
 	if city_input:
 		city_input.set_bulldoze_road_mode(true)
-	_close_build_menu()
+	active_category = "road"
+	_set_active_category_visuals("road")
 	_set_bulldozer_indicator(true)
-	status_label.text = "Bulldozer active — tap a road to remove it. Press X to cancel."
+	for child in submenu.get_children():
+		submenu.remove_child(child)
+		child.queue_free()
+	_add_submenu_button("bulldoze_road_active", "Road Bulldozer", "bulldoze", "Tap a road to remove it", true, "road")
+	_finish_submenu_row()
+	status_label.text = "Road bulldozer active. Tap a road to remove it."
 
 func _on_submenu_option(category: String, option_id: String) -> void:
+	if option_id == "back":
+		active_service_group = ""
+		active_specialization_group = ""
+		_show_submenu(active_category)
+		return
+	if option_id.begins_with("group_"):
+		var group_id := option_id.trim_prefix("group_")
+		var groups: Array = SERVICE_GROUPS if category == "services" else SPECIALIZATION_GROUPS
+		for group in groups:
+			if str(group.get("id", "")) == group_id:
+				var buildings: Array = group.get("buildings", [])
+				if buildings.is_empty():
+					status_label.text = "%s buildings are not available yet." % str(group.get("label", group_id))
+					return
+				_show_group_buildings(group_id, category)
+				return
 	if category == "road":
 		if option_id == "road_build":
 			_set_tool_modes_off()
@@ -814,52 +842,26 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 			var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 			if road_system:
 				road_system.set_road_mode(true)
-				status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile). Press X to exit."
+				status_label.text = "Road mode. Tap or drag from the highway (50 Simoleons per tile). Press Cancel to exit."
 			else:
 				status_label.text = "Road system is unavailable."
-			_close_build_menu()
+		elif option_id == "road_upgrade":
+			status_label.text = "Road upgrades will be available in a later update."
 		elif option_id == "bulldoze_road":
 			_start_bulldoze_road_mode()
 	else:
 		_select_building_type(option_id)
 
 func _close_building_submenu(cancel_placement: bool = true) -> void:
-	if submenu:
-		submenu.hide()
-	active_category = ""
 	if cancel_placement:
-		BuildManager.cancel_placement()
-	var category_toolbar := get_node_or_null("RightToolbar") as Control
-	var build_button_node := get_node_or_null("BuildMenuButton")
-	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
-	if not BuildManager.is_placing:
-		if category_toolbar:
-			category_toolbar.show()
-		if build_label:
-			build_label.text = "CLOSE"
-		if build_button_node:
-			build_button_node.tooltip_text = "Close Build Menu"
-	else:
-		if category_toolbar:
-			category_toolbar.hide()
-		if build_label:
-			build_label.text = "BUILD"
-		if build_button_node:
-			build_button_node.tooltip_text = "Open Build Menu"
+		_on_cancel_pressed()
+	elif submenu_scroll:
+		submenu_scroll.hide()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
 		_on_cancel_pressed()
 		get_viewport().set_input_as_handled()
-		return
-	if not submenu or not submenu.visible:
-		return
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if not submenu.get_global_rect().has_point(event.position):
-			_close_building_submenu(false)
-	elif event is InputEventScreenTouch and event.pressed:
-		if not submenu.get_global_rect().has_point(event.position):
-			_close_building_submenu(false)
 
 func _update_all() -> void:
 	_on_level_changed(GameManager.level)
