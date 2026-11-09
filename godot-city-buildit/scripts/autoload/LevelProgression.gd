@@ -27,6 +27,7 @@ var unlocks := {
 	14: {"materials": ["grass", "cement"], "commercial": ["gardening_supplies"], "services": ["waste"]},
 	15: {"materials": ["glue", "textiles"], "other": ["6lane_road", "beach"]},
 	16: {"materials": ["paint", "table"], "services": ["health"]},
+	17: {"materials": ["sugar_spices"]},
 	18: {"materials": ["donut", "fruit"], "commercial": ["donut_shop"], "factories": 7},
 	19: {"materials": ["glass"]},
 	20: {"other": ["entertainment", "avenue"]},
