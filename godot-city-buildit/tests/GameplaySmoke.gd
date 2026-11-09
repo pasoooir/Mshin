@@ -253,6 +253,35 @@ func _test_build_menu_visibility() -> void:
 
 	hud._on_submenu_option("services", "back")
 	await get_tree().process_frame
+	hud._on_submenu_option("services", "group_fire")
+	await get_tree().process_frame
+	for fire_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
+		_check(hud.submenu.get_node_or_null(fire_id) != null, "Fire submenu is missing: " + fire_id)
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Fire submenu must expose Back and Cancel.")
+	var locked_small_fire := hud.submenu.get_node_or_null("fire_station_small") as Button
+	_check(locked_small_fire != null and not locked_small_fire.disabled, "Locked Small Fire Station must remain tappable for unlock feedback.")
+	if locked_small_fire:
+		locked_small_fire.emit_signal("pressed")
+		_check(hud.status_label.text.contains("Level 5"), "Tapping a locked Fire Station must explain its Level 5 unlock.")
+	var fire_expected := {
+		"fire_station_small": {"coverage": 10, "size": Vector2i(1, 1), "cost": 3100},
+		"fire_station": {"coverage": 15, "size": Vector2i(2, 2), "cost": 5500},
+		"fire_station_deluxe": {"coverage": 22, "size": Vector2i(4, 2), "cost": 21000}
+	}
+	for fire_id in fire_expected:
+		var fire_definition: Dictionary = BuildManager.building_types[fire_id]
+		var expected: Dictionary = fire_expected[fire_id]
+		_check(int(fire_definition.get("fire", 0)) == 1, "Fire station must expose the generic fire coverage key: " + fire_id)
+		_check(fire_definition.get("service_group", "") == "fire", "Fire station must belong to the Fire service group: " + fire_id)
+		_check(int(fire_definition.get("coverage_tiles", 0)) == int(expected["coverage"]), "Fire station coverage tiles are incorrect: " + fire_id)
+		_check(fire_definition.get("size", Vector2i.ZERO) == expected["size"], "Fire station footprint is incorrect: " + fire_id)
+		_check(int(fire_definition.get("cost", 0)) == int(expected["cost"]), "Fire station cost is incorrect: " + fire_id)
+		_check(int(fire_definition.get("level", 0)) == 5, "All Fire stations must unlock at Level 5: " + fire_id)
+		_check(int(fire_definition.get("pollution", 0)) == 0, "Fire stations must not have pollution: " + fire_id)
+		_check(is_equal_approx(FireHazardManager.get_coverage_radius_world(fire_definition), float(expected["coverage"]) * BuildManager.GRID_SIZE), "Fire station world coverage radius is incorrect: " + fire_id)
+
+	hud._on_submenu_option("services", "back")
+	await get_tree().process_frame
 	hud._on_submenu_option("services", "back")
 	hud._on_submenu_option("services", "group_power")
 	await get_tree().process_frame
@@ -328,6 +357,16 @@ func _test_fire_hazard_state_machine() -> void:
 	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A restored uncovered home must wait another full 20 seconds.")
 	FireHazardManager._evaluate_hazards(0.2)
 	_check(FireHazardManager.smoking_ids.has(home.building_id), "Smoke must resume after a fresh continuous 20-second uncovered interval.")
+
+	station.definition = {"category": "service", "fire": 1, "coverage_tiles": 10}
+	station.global_position = Vector3(20.1, 0.0, 0.0)
+	FireHazardManager._evaluate_hazards(0.0)
+	FireHazardManager._evaluate_hazards(20.0)
+	_check(FireHazardManager.smoking_ids.has(home.building_id), "Small Fire Station must use its own 10-tile coverage, not the default 15-tile radius.")
+	station.definition = {"category": "service", "fire": 1, "coverage_tiles": 22}
+	station.global_position = Vector3(44.0, 0.0, 0.0)
+	FireHazardManager._evaluate_hazards(0.0)
+	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Deluxe Fire Station must cover homes within its 22-tile radius and stop smoke immediately.")
 
 	home.status = "constructing"
 	FireHazardManager._evaluate_hazards(0.0)
