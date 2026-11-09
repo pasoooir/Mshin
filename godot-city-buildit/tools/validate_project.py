@@ -11,6 +11,8 @@ for path in ROOT.rglob("*.gd"):
     if source.rstrip().endswith(("extends Node3D", "extends Node", "mat = mate")):
         errors.append(f"Likely truncated script: {path.relative_to(ROOT)}")
     for resource in re.findall(r'"res://([^" ]+)"', source):
+        if resource.endswith("/"):
+            continue
         if not (ROOT / resource).is_file():
             errors.append(f"Missing script resource {resource} in {path.relative_to(ROOT)}")
 
