@@ -530,7 +530,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	content.add_theme_constant_override("separation", 1)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon_size := minf(52.0 * _ui_scale, button_size.y * 0.62)
+	var icon_size := maxf(48.0 * _ui_scale, minf(56.0 * _ui_scale, button_size.y * 0.72))
 	var icon := Icons.make_icon(icon_name, Vector2(icon_size, icon_size))
 	content.add_child(icon)
 	var label := Label.new()
