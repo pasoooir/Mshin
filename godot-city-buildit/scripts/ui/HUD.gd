@@ -4,7 +4,7 @@ const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 
 const SERVICE_GROUPS := [
-	{"id":"power", "label":"Power", "buildings":["power_wind", "power_coal"]},
+	{"id":"power", "label":"Power", "buildings":["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear"]},
 	{"id":"water", "label":"Water", "buildings":["water_tower"]},
 	{"id":"sewage", "label":"Sewage", "buildings":["sewage_pipe"]},
 	{"id":"waste", "label":"Waste", "buildings":[]},
@@ -664,7 +664,10 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 				if not BuildManager.building_types.has(type_id):
 					continue
 				var definition: Dictionary = BuildManager.building_types[type_id]
-				var detail := "%d coins · Lv %d" % [int(definition.get("cost", 0)), int(definition.get("level", 1))]
+				var footprint: Vector2i = definition.get("size", Vector2i.ONE)
+				var detail := "%d coins · Lv %d · %dx%d" % [int(definition.get("cost", 0)), int(definition.get("level", 1)), footprint.x, footprint.y]
+				if int(definition.get("pollution", 0)) > 0:
+					detail += " · Pollutes"
 				_add_submenu_button(type_id, str(definition.get("name", type_id)), group_id, detail, false, parent_category, int(definition.get("level", 1)))
 	_finish_submenu_row(true)
 
