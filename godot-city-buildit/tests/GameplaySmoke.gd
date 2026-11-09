@@ -162,51 +162,41 @@ func _test_build_menu_visibility() -> void:
 	if build_button == null or toolbar == null:
 		return
 	_check(not toolbar.visible, "Right-side category toolbar should start closed.")
-	_check(_node_has_label_text(build_button, "BUILD"), "Build entry button must display a visible BUILD label.")
+	_check(_node_has_label_text(build_button, "BUILD"), "Build entry button must display BUILD.")
 	build_button.emit_signal("pressed")
 	await get_tree().process_frame
 	_check(toolbar.visible, "Tapping Build must reveal the right-side category toolbar.")
 	var viewport_rect := get_viewport().get_visible_rect()
 	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category toolbar is outside the visible screen.")
-	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.35, "Build category dock covers too much of the mobile play area.")
-	var category_labels := {
-		"Tool_Road": "Road",
-		"Tool_Residential": "Residential",
-		"Tool_Commercial": "Commercial",
-		"Tool_Industrial": "Industrial",
-		"Tool_Services": "Services",
-		"Tool_Parks": "Parks",
-		"Tool_Bulldoze": "Bulldoze"
-	}
-	for node_name in category_labels:
-		var category_button := toolbar.find_child(node_name, true, false)
-		_check(category_button != null, "Missing Build category button: " + node_name)
-		if category_button:
-			_check(_node_has_label_text(category_button, str(category_labels[node_name])), "Category label is not visible for " + node_name)
-
-	var close_button := toolbar.find_child("CloseBuildMenu", true, false) as Button
-	_check(close_button != null, "Build dock has no explicit Close button.")
-	if close_button:
-		close_button.emit_signal("pressed")
-		await get_tree().process_frame
-		_check(not toolbar.visible, "The explicit Close button did not close the Build dock.")
-
-	hud._show_submenu("commercial")
+	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.2, "Build category dock covers too much of the mobile play area.")
+	var toolbar_items := toolbar.find_child("RightToolbarItems", true, false) as VBoxContainer
+	_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right toolbar must show seven categories in a vertical list.")
+	var expected_names := ["Tool_Road", "Tool_Residential", "Tool_Commercial", "Tool_Industrial", "Tool_Services", "Tool_Specializations", "Tool_Bulldoze"]
+	for i in range(expected_names.size()):
+		var button := toolbar.find_child(expected_names[i], true, false) as Button
+		_check(button != null, "Missing ordered category button: " + expected_names[i])
+		if button and toolbar_items:
+			_check(toolbar_items.get_child(i) == button, "Build categories are not in the required top-to-bottom order.")
+			_check(button.custom_minimum_size.y >= 48.0, "Category touch target is too small.")
+	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
+	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
+	hud._on_category_pressed("services")
 	await get_tree().process_frame
-	for type_id in ["hardware_store", "farmers_market", "furniture_store"]:
-		_check(hud.submenu.find_child(type_id, true, false) != null, "Commercial Build menu is missing " + type_id)
-	var hardware_choice := hud.submenu.find_child("hardware_store", true, false) as Button
-	_check(hardware_choice != null and _node_has_label_text(hardware_choice, "Unlocked at Level 4"), "Hardware Store must show its English unlock level.")
-	hud._show_submenu("services")
+	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
+	for group_id in ["group_power", "group_water", "group_fire", "group_police", "group_health"]:
+		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
+	hud._on_submenu_option("services", "group_fire")
 	await get_tree().process_frame
-	for type_id in ["police_station", "sewage_pipe"]:
-		_check(hud.submenu.find_child(type_id, true, false) != null, "Services Build menu is missing " + type_id)
-	var police_choice := hud.submenu.find_child("police_station", true, false) as Button
-	_check(police_choice != null and _node_has_label_text(police_choice, "Unlocked at Level 12"), "Police Station must show its English unlock level.")
-	_check(hud.submenu.get_global_rect().size.x < viewport_rect.size.x * 0.5, "Category item palette is not compactly docked.")
+	_check(hud.submenu.get_node_or_null("fire_station") != null, "Fire group must contain the Fire Station.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Second-level Services submenu must provide Back.")
+	_check(hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Active submenu must always provide Cancel.")
+	hud._on_submenu_option("services", "back")
+	_check(hud.submenu.get_node_or_null("group_power") != null, "Back must return to the Services group list.")
+	hud._on_cancel_pressed()
+	await get_tree().process_frame
+	_check(not hud.submenu_scroll.visible and hud.get_node("BottomActions").visible, "Cancel must return to permanent city actions.")
 	hud._close_build_menu()
-	await get_tree().process_frame
-	_check(not toolbar.visible and not hud.submenu.visible, "Closing the Build menu must hide both category and item panels.")
+	_check(not toolbar.visible, "Closing Build must hide the category toolbar.")
 
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
