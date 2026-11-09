@@ -30,6 +30,7 @@ var _move_original_overlays: Dictionary = {}
 static var _shared_surface_texture: Texture2D
 const WIND_TURBINE_SPIN_RADIANS_PER_SECOND: float = 0.92
 var _wind_turbine_rotor: Node3D
+var _fire_smoke: CPUParticles3D = null
 
 @onready var mesh_root: Node3D = $MeshRoot
 @onready var scaffold_root: Node3D = $ScaffoldRoot
@@ -812,6 +813,8 @@ func _on_construction_finished() -> void:
 	if definition.has("water"):
 		ServiceManager.register_water(definition.water)
 	ServiceManager.recalculate_from_buildings()
+	if has_node("/root/FireHazardManager"):
+		FireHazardManager.on_city_changed()
 	if definition.get("happiness", 0) > 0:
 		GameManager.set_happiness(min(100.0, GameManager.happiness + definition.happiness))
 	# Factories begin their configured raw-material cycle as soon as construction ends.
@@ -883,6 +886,77 @@ func start_commercial_production(item_id: String) -> bool:
 		return false
 	_start_production(item_id)
 	return true
+
+func set_fire_smoke(active: bool) -> void:
+	if active:
+		if status != "completed" or str(definition.get("category", "")) != "residential":
+			return
+		if _fire_smoke == null:
+			_fire_smoke = _create_fire_smoke_particles()
+			add_child(_fire_smoke)
+			_fire_smoke.position = Vector3(0.0, _get_fire_smoke_anchor_height(), 0.0)
+		_fire_smoke.emitting = true
+	elif is_instance_valid(_fire_smoke):
+		_fire_smoke.emitting = false
+
+func _get_fire_smoke_anchor_height() -> float:
+	var subtype := str(definition.get("subtype", ""))
+	var height := 3.55 + float(maxi(upgrade_stage - 1, 0)) * 0.30
+	if subtype == "apartment":
+		height = 5.05 + float(maxi(upgrade_stage - 1, 0)) * 0.25
+	elif subtype == "farm":
+		height = 2.75
+	return height
+
+func _create_fire_smoke_particles() -> CPUParticles3D:
+	var particles := CPUParticles3D.new()
+	particles.name = "FireHazardBlackSmoke"
+	particles.amount = 52
+	particles.lifetime = 3.6
+	particles.preprocess = 0.8
+	particles.explosiveness = 0.0
+	particles.randomness = 0.35
+	particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	particles.emission_sphere_radius = 0.22
+	particles.direction = Vector3(0.0, 1.0, 0.0)
+	particles.spread = 20.0
+	particles.initial_velocity_min = 0.35
+	particles.initial_velocity_max = 0.85
+	particles.gravity = Vector3(0.0, -0.42, 0.0)
+	particles.scale_amount_min = 0.65
+	particles.scale_amount_max = 1.15
+	particles.local_coords = true
+	particles.visibility_aabb = AABB(Vector3(-3.5, -1.0, -3.5), Vector3(7.0, 10.0, 7.0))
+
+	var smoke_mesh := QuadMesh.new()
+	smoke_mesh.size = Vector2(0.95, 0.95)
+	var smoke_material := StandardMaterial3D.new()
+	smoke_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	smoke_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	smoke_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	smoke_material.albedo_color = Color(0.075, 0.075, 0.085, 0.72)
+	smoke_material.vertex_color_use_as_albedo = true
+	smoke_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	smoke_mesh.material = smoke_material
+	particles.mesh = smoke_mesh
+
+	var color_gradient := Gradient.new()
+	color_gradient.add_point(0.0, Color(0.055, 0.055, 0.065, 0.48))
+	color_gradient.add_point(0.22, Color(0.075, 0.075, 0.085, 0.76))
+	color_gradient.add_point(0.72, Color(0.105, 0.105, 0.115, 0.58))
+	color_gradient.add_point(1.0, Color(0.12, 0.12, 0.13, 0.0))
+	var color_texture := GradientTexture1D.new()
+	color_texture.gradient = color_gradient
+	particles.color_ramp = color_texture
+
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0.0, 0.42))
+	scale_curve.add_point(Vector2(0.35, 0.82))
+	scale_curve.add_point(Vector2(1.0, 1.55))
+	var scale_texture := CurveTexture.new()
+	scale_texture.curve = scale_curve
+	particles.scale_curve = scale_texture
+	return particles
 
 func _process(delta: float) -> void:
 	if status == "completed" and is_instance_valid(_wind_turbine_rotor):
