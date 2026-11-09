@@ -213,6 +213,27 @@ for contract in ["Long press on a completed residential building", "Touch releas
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
 
+
+# Services menu must expose all eight fixed groups and every selectable service
+# must resolve to a real BuildManager definition with explicit group metadata.
+services_hud = hud[hud.find("const SERVICE_GROUPS"):hud.find("const SPECIALIZATION_GROUPS")]
+for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health", "government"]:
+    if f'"id":"{group_id}"' not in services_hud:
+        errors.append(f"Services group is missing or out of order: {group_id}")
+for building_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
+                    "fire_station_small", "fire_station", "police_station", "town_hall"]:
+    if f'"{building_id}"' not in building_ids:
+        errors.append(f"Services menu building definition is missing: {building_id}")
+for service_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
+                   "fire_station_small", "fire_station", "police_station", "town_hall"]:
+    match = re.search(rf'^[ \\t]*"{service_id}"[ \\t]*:[ \\t]*\\{{([^\\n]+)', build_manager, re.M)
+    if match is None or '"service_group"' not in match.group(1):
+        errors.append(f"Service building lacks service_group metadata: {service_id}")
+for fire_id in ["fire_station_small", "fire_station"]:
+    match = re.search(rf'^[ \\t]*"{fire_id}"[ \\t]*:[ \\t]*\\{{([^\\n]+)', build_manager, re.M)
+    if match is None or '"fire":1' not in match.group(1):
+        errors.append(f"Fire station must provide fire coverage: {fire_id}")
+
 if errors:
     print("VALIDATION FAILED")
     for error in errors:
