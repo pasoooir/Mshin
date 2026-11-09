@@ -231,7 +231,7 @@ else:
         "WARNING_DELAY: float = 20.0", "COVERAGE_TILES: int = 15",
         "BuildManager.GRID_SIZE", "global_position.distance_to",
         'definition.get("fire", 0)', "func on_city_changed(",
-        "func _evaluate_hazards(", "smoking_ids"
+        "func _evaluate_hazards(", "func reset_for_city_load(", "smoking_ids"
     ]:
         if contract not in fire_manager:
             errors.append(f"Fire hazard manager contract is missing: {contract}")
@@ -239,6 +239,9 @@ if 'FireHazardManager="*res://scripts/autoload/FireHazardManager.gd"' not in pro
     errors.append("FireHazardManager is not registered as an autoload")
 if '"fire":1' not in build_manager:
     errors.append("Fire Station definition must expose the numeric fire coverage key")
+save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
+if "FireHazardManager.reset_for_city_load()" not in save_manager_source:
+    errors.append("City load must restart fire warning timers from zero")
 if "func set_fire_smoke(active: bool)" not in building_source or "CPUParticles3D.new()" not in building_source:
     errors.append("Building must expose the web-compatible black smoke particle API")
 for fire_test in [
