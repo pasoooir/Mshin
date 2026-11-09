@@ -135,7 +135,7 @@ func _apply_responsive_layout() -> void:
 		var half_width := minf(viewport_size.x * 0.5 - 24.0, (390.0 if compact else (500.0 if tablet else 560.0)) * scale_factor)
 		submenu_control.offset_left = -half_width
 		submenu_control.offset_right = half_width
-		submenu_control.offset_top = -184.0 * scale_factor
+		submenu_control.offset_top = -248.0 * scale_factor
 		submenu_control.offset_bottom = -16.0 * scale_factor
 	var actions := get_node_or_null("BottomActions") as Control
 	if actions:
@@ -500,7 +500,7 @@ func _build_toolbars() -> void:
 	submenu_scroll.anchor_bottom = 1.0
 	submenu_scroll.offset_left = -560.0 * _ui_scale
 	submenu_scroll.offset_right = 560.0 * _ui_scale
-	submenu_scroll.offset_top = -184.0 * _ui_scale
+	submenu_scroll.offset_top = -248.0 * _ui_scale
 	submenu_scroll.offset_bottom = -16.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -733,12 +733,12 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	var is_locked := locked or GameManager.level < required_level
 	var button := Button.new()
 	button.name = option_id
-	button.custom_minimum_size = Vector2(196, 148) * _ui_scale
+	button.custom_minimum_size = Vector2(248, 224) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.disabled = disabled
 	button.tooltip_text = ("Unlocks at Level %d" % required_level) if GameManager.level < required_level else detail
-	var normal_fill := Color(0.12, 0.13, 0.15, 0.96) if is_locked else Color(0.08, 0.16, 0.21, 0.97)
-	var normal_border := Color(0.38, 0.41, 0.44, 0.72) if is_locked else Color(0.52, 0.72, 0.82, 0.62)
+	var normal_fill := Color(0.0, 0.0, 0.0, 0.0)
+	var normal_border := Color(0.0, 0.0, 0.0, 0.0)
 	button.add_theme_stylebox_override("normal", _toolbar_style(normal_fill, normal_border))
 	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.16, 0.31, 0.39, 0.99), Color("#FFE19A")))
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.25, 0.39, 0.30, 1.0), Color("#FFE19A")))
@@ -749,13 +749,13 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_theme_constant_override("separation", 4)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(68, 68) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(136, 136) * _ui_scale)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if is_locked:
 		icon.modulate = Color(0.52, 0.56, 0.60, 0.72)
 	content.add_child(icon)
 	if is_locked:
-		var lock_icon := Icons.make_icon("lock", Vector2(24, 24) * _ui_scale)
+		var lock_icon := Icons.make_icon("lock", Vector2(48, 48) * _ui_scale)
 		lock_icon.name = "LockIcon"
 		content.add_child(lock_icon)
 	var labels := VBoxContainer.new()
@@ -790,7 +790,8 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		back.name = "Submenu_Back"
 		back.text = "BACK"
 		back.icon = Icons.get_tex("ui", "back")
-		back.custom_minimum_size = Vector2(128, 96) * _ui_scale
+		back.custom_minimum_size = Vector2(192, 144) * _ui_scale
+		back.icon_max_width = int(64 * _ui_scale)
 		back.focus_mode = Control.FOCUS_NONE
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
@@ -798,7 +799,8 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 	cancel.name = "Submenu_Cancel"
 	cancel.text = "CANCEL"
 	cancel.icon = Icons.get_tex("ui", "cancel")
-	cancel.custom_minimum_size = Vector2(128, 96) * _ui_scale
+	cancel.custom_minimum_size = Vector2(192, 144) * _ui_scale
+	cancel.icon_max_width = int(64 * _ui_scale)
 	cancel.focus_mode = Control.FOCUS_NONE
 	cancel.add_theme_color_override("font_color", Color("#FFE2D9"))
 	cancel.add_theme_stylebox_override("normal", _toolbar_style(Color(0.42, 0.12, 0.12, 0.96), Color("#E98978")))
