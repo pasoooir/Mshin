@@ -94,11 +94,20 @@ for category, icon_id in sorted(required):
     try:
         decoded = zlib.decompress(bytes(idat))
         stride = width * 4 + 1
-        top_alpha = decoded[1 + 3]
-        bottom_alpha = decoded[(height - 1) * stride + 1 + 3]
-        if top_alpha != 0 or bottom_alpha != 0:
+        corners = [
+            decoded[1 + 3],
+            decoded[1 + (width - 1) * 4 + 3],
+            decoded[(height - 1) * stride + 1 + 3],
+            decoded[(height - 1) * stride + 1 + (width - 1) * 4 + 3],
+        ]
+        if any(alpha != 0 for alpha in corners):
             errors.append(f"Icon canvas corners must be transparent: {category}/{icon_id}.png")
-        if not any(decoded[row * stride + 1 + 3] > 0 for row in range(height)):
+        has_artwork = any(
+            decoded[row * stride + 1 + column * 4 + 3] > 0
+            for row in range(height)
+            for column in range(width)
+        )
+        if not has_artwork:
             errors.append(f"Icon artwork is fully transparent: {category}/{icon_id}.png")
     except Exception as exc:
         errors.append(f"Could not decode icon PNG {category}/{icon_id}.png: {exc}")
