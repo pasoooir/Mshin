@@ -1,5 +1,7 @@
 // Deterministic offline PNG icon artwork generator for Pasoo City BuildIt.
 // Uses only Node built-ins. Produces 128x128 RGBA PNGs with a fully transparent canvas.
+const fs = require('node:fs');
+const path = require('node:path');
 const building = ["residential_1","residential_2","residential_villa","residential_apartment","residential_farm","building_supplies","shop_chain","restaurant_traditional","fast_food","art_supplies","hardware_store","farmers_market","furniture_store","factory_small","factory_basic","factory_mass","factory_hightech","factory_nano","industrial_1","industrial_2","industrial_3","power_wind","power_coal","power_wind_deluxe","power_solar","power_oil","power_nuclear","water_tower","water_pump","sewage_small","sewage_basic","sewage_deluxe","waste_dump_small","waste_dump","waste_incinerator","waste_recycling","fire_station_small","fire_station","fire_station_deluxe","police_station","police_small","police_basic","police_precinct","clinic_small","clinic","hospital","town_hall","park_small"];
 const raw = ["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"];
 const crafted = ["nails","planks","bricks","cement","glue","paint","hammer","measuring_tape","shovel","chair","table","vegetables"];
@@ -120,4 +122,16 @@ function pngFor(category,id){
  const png=new Uint8Array(sig.length+chunks.reduce((n,c)=>n+c.length,0));let p=0;png.set(sig,p);p+=sig.length;for(const c of chunks){png.set(c,p);p+=c.length;}
  const abc="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",out=[];for(let i=0;i<png.length;i+=3){const a=png[i],b=i+1<png.length?png[i+1]:0,c=i+2<png.length?png[i+2]:0,v=(a<<16)|(b<<8)|c;out.push(abc[(v>>18)&63]+abc[(v>>12)&63]+(i+1<png.length?abc[(v>>6)&63]:"=")+(i+2<png.length?abc[v&63]:"="));}return out.join("");
 }
-return {unique,allPaths,pngFor};
+if (require.main === module) {
+ const outputFiles = allPaths();
+ const generated = new Map(unique.map(item => [item.category + "/" + item.id, Buffer.from(pngFor(item.category, item.id), "base64")]));
+ for (const item of outputFiles) {
+   const bytes = generated.get(item.source);
+   if (!bytes) throw new Error("No generated icon source for " + item.path);
+   const destination = path.resolve(process.cwd(), item.path);
+   fs.mkdirSync(path.dirname(destination), { recursive: true });
+   fs.writeFileSync(destination, bytes);
+ }
+ console.log("Generated " + new Set(outputFiles.map(item => item.path)).size + " transparent PNG icon files.");
+}
+module.exports = { unique, allPaths, pngFor };
