@@ -28,6 +28,8 @@ var _move_highlight_root: Node3D
 var _move_ghost_material: StandardMaterial3D
 var _move_original_overlays: Dictionary = {}
 static var _shared_surface_texture: Texture2D
+const WIND_TURBINE_SPIN_RADIANS_PER_SECOND: float = 0.92
+var _wind_turbine_rotor: Node3D
 
 @onready var mesh_root: Node3D = $MeshRoot
 @onready var scaffold_root: Node3D = $ScaffoldRoot
@@ -527,19 +529,7 @@ func _build_service(w: float, d: float, height: float, color: Color) -> void:
 	var power = definition.get("power", 0)
 	var water = definition.get("water", 0)
 	if power > 0:
-		_add_cylinder(0.12, 0.18, 3.8, Vector3(0, 2.2, 0), Color(0.85, 0.88, 0.92))
-		_add_box(Vector3(0.6, 0.35, 0.35), Vector3(0, 4.1, 0), Color(0.9, 0.9, 0.95))
-		for i in range(3):
-			var blade = MeshInstance3D.new()
-			var box = BoxMesh.new()
-			box.size = Vector3(1.8, 0.12, 0.25)
-			blade.mesh = box
-			var mat = StandardMaterial3D.new()
-			mat.albedo_color = Color(0.95, 0.95, 1.0)
-			blade.material_override = mat
-			blade.position = Vector3(0, 4.1, 0)
-			blade.rotation_degrees = Vector3(0, 0, i * 120.0)
-			mesh_root.add_child(blade)
+		_build_wind_turbine()
 	elif water > 0:
 		_add_cylinder(0.7, 0.7, 1.2, Vector3(0, 2.8, 0), color)
 		_add_cylinder(0.15, 0.2, 2.2, Vector3(0, 1.3, 0), color.darkened(0.2))
@@ -548,6 +538,86 @@ func _build_service(w: float, d: float, height: float, color: Color) -> void:
 		_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
 		_add_box(Vector3(w * 0.95, 0.2, d * 0.95), Vector3(0, height + 0.35, 0), color.darkened(0.15))
 		_add_box(Vector3(0.5, 0.9, 0.1), Vector3(0, 0.7, d * 0.45), color.darkened(0.35))
+
+func _build_wind_turbine() -> void:
+	# A tapered tubular mast and layered nacelle give the generator a readable
+	# silhouette before the rotor begins its continuous, low-cost animation.
+	var tower_material := StandardMaterial3D.new()
+	tower_material.albedo_color = Color(0.88, 0.92, 0.94)
+	tower_material.metallic = 0.42
+	tower_material.roughness = 0.34
+	_add_cylinder(0.105, 0.235, 5.25, Vector3(0, 2.72, 0), Color(0.82, 0.87, 0.90))
+	_add_cylinder(0.31, 0.31, 0.22, Vector3(0, 0.16, 0), Color(0.34, 0.40, 0.44))
+	_add_cylinder(0.17, 0.17, 0.12, Vector3(0, 5.32, 0), Color(0.66, 0.73, 0.77))
+	_add_box(Vector3(0.88, 0.38, 0.42), Vector3(0, 5.48, -0.12), Color(0.90, 0.94, 0.96))
+	_add_box(Vector3(0.56, 0.12, 0.48), Vector3(0, 5.72, -0.12), Color(0.67, 0.75, 0.79))
+
+	var rotor := Node3D.new()
+	rotor.name = "WindTurbineRotor"
+	rotor.position = Vector3(0, 5.50, 0.24)
+	mesh_root.add_child(rotor)
+	_wind_turbine_rotor = rotor
+
+	var hub := MeshInstance3D.new()
+	var hub_mesh := SphereMesh.new()
+	hub_mesh.radius = 0.25
+	hub_mesh.height = 0.50
+	hub.mesh = hub_mesh
+	var hub_material := StandardMaterial3D.new()
+	hub_material.albedo_color = Color(0.96, 0.98, 1.0)
+	hub_material.metallic = 0.48
+	hub_material.roughness = 0.26
+	hub.material_override = hub_material
+	rotor.add_child(hub)
+
+	var blade_material := StandardMaterial3D.new()
+	blade_material.albedo_color = Color(0.94, 0.97, 0.98)
+	blade_material.metallic = 0.12
+	blade_material.roughness = 0.38
+	for blade_index in range(3):
+		var blade_pivot := Node3D.new()
+		blade_pivot.name = "Blade_%d" % blade_index
+		blade_pivot.rotation.z = TAU * float(blade_index) / 3.0
+		rotor.add_child(blade_pivot)
+		# Three progressively narrower aerodynamic sections create a tapered blade.
+		var sections := [
+			{"size": Vector3(0.34, 0.82, 0.12), "y": 0.47},
+			{"size": Vector3(0.25, 0.98, 0.095), "y": 1.30},
+			{"size": Vector3(0.12, 0.92, 0.065), "y": 2.25}
+		]
+		for section in sections:
+			var blade_section := MeshInstance3D.new()
+			var blade_mesh := BoxMesh.new()
+			blade_mesh.size = section["size"]
+			blade_section.mesh = blade_mesh
+			blade_section.material_override = blade_material
+			blade_section.position.y = section["y"]
+			blade_pivot.add_child(blade_section)
+		# A slim leading-edge accent catches sunlight and makes rotation legible.
+		var leading_edge := MeshInstance3D.new()
+		var edge_mesh := BoxMesh.new()
+		edge_mesh.size = Vector3(0.035, 2.58, 0.035)
+		leading_edge.mesh = edge_mesh
+		leading_edge.material_override = hub_material
+		leading_edge.position = Vector3(-0.105, 1.48, 0.0)
+		blade_pivot.add_child(leading_edge)
+
+	# A small red aviation beacon and dark access hatch finish the mast.
+	var beacon := MeshInstance3D.new()
+	var beacon_mesh := SphereMesh.new()
+	beacon_mesh.radius = 0.075
+	beacon_mesh.height = 0.15
+	beacon.mesh = beacon_mesh
+	var beacon_material := StandardMaterial3D.new()
+	beacon_material.albedo_color = Color(1.0, 0.18, 0.12)
+	beacon_material.emission_enabled = true
+	beacon_material.emission = Color(1.0, 0.08, 0.04)
+	beacon_material.emission_energy_multiplier = 1.3
+	beacon.material_override = beacon_material
+	beacon.position = Vector3(0, 5.91, -0.12)
+	mesh_root.add_child(beacon)
+	_add_box(Vector3(0.22, 0.68, 0.035), Vector3(0, 1.05, 0.22), Color(0.25, 0.31, 0.35))
+
 
 func _build_park(w: float, d: float, color: Color) -> void:
 	_add_box(Vector3(w * 0.9, 0.15, d * 0.9), Vector3(0, 0.1, 0), color)
@@ -819,6 +889,11 @@ func start_commercial_production(item_id: String) -> bool:
 	return true
 
 func _process(delta: float) -> void:
+	if status == "completed" and is_instance_valid(_wind_turbine_rotor):
+		_wind_turbine_rotor.rotation.z = wrapf(
+			_wind_turbine_rotor.rotation.z + WIND_TURBINE_SPIN_RADIANS_PER_SECOND * delta,
+			0.0, TAU
+		)
 	if is_producing and status == "completed" and not has_ready_product:
 		production_timer -= delta
 		if production_timer <= 0:
