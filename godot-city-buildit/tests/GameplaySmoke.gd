@@ -346,8 +346,10 @@ func _run_gameplay_test() -> void:
 	_check(indexed_house != null and indexed_house.building_type == "residential_1", "Building cell index did not resolve the placed house.")
 	_check(BuildManager.building_at_cell(Vector2i(1, 2)) == indexed_house, "Building cell index did not cover the full house footprint.")
 	var footprint_test_camera: Camera3D = get_viewport().get_camera_3d()
-	input_node._begin_move_from_screen(77, footprint_test_camera.unproject_position(BuildManager.grid_to_world(Vector2i(1, 2))))
-	_check(get_node("HUD/StatusLabel").text == "Still under construction", "Long-pressing a non-anchor footprint cell did not report construction status.")
+	var construction_roof_screen := footprint_test_camera.unproject_position(indexed_house.global_position + Vector3(0.0, 3.4, 0.0))
+	_check(input_node._building_at_screen(construction_roof_screen) == indexed_house, "Oblique-camera ray hit on the house roof did not resolve the building volume.")
+	input_node._begin_move_from_screen(77, construction_roof_screen)
+	_check(get_node("HUD/StatusLabel").text == "Still under construction", "Long-pressing the visible roof of a building under construction did not report construction status.")
 	input_node._begin_move_from_screen(78, footprint_test_camera.unproject_position(BuildManager.grid_to_world(Vector2i(12, 12))))
 	_check(get_node("HUD/StatusLabel").text == "No building here. Hold your finger on a building to move it.", "Long-pressing empty ground did not provide feedback.")
 	_check(not BuildManager.can_place_at(Vector2i(1, 1), "residential_1"), "Overlapping house footprint was incorrectly accepted.")
@@ -379,7 +381,7 @@ func _run_gameplay_test() -> void:
 	var home_center_world: Vector3 = BuildManager.grid_to_world(home.grid_pos) + home_center_offset
 	# Start on the second cell of the 2x2 footprint, not its anchor cell.
 	var non_anchor_cell_world: Vector3 = BuildManager.grid_to_world(Vector2i(1, 2))
-	var move_input_screen: Vector2 = active_move_camera.unproject_position(non_anchor_cell_world)
+	var move_input_screen: Vector2 = active_move_camera.unproject_position(home.global_position + Vector3(0.0, 3.5, 0.0))
 	var touch_down := InputEventScreenTouch.new()
 	touch_down.index = 0
 	touch_down.pressed = true
@@ -391,7 +393,7 @@ func _run_gameplay_test() -> void:
 	jitter_drag.position = move_input_screen + Vector2(18.0, 9.0)
 	jitter_drag.relative = Vector2(18.0, 9.0)
 	input_node._unhandled_input(jitter_drag)
-	_check(input_node.is_building_press_pending(0), "Touching a non-anchor cell of a building footprint was not detected as a building press.")
+	_check(input_node.is_building_press_pending(0), "Touching the visible house body/roof was not detected as a building press.")
 	_check(not BuildManager.is_moving, "Small finger jitter activated Move before the long-press duration elapsed.")
 	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
 	_check(BuildManager.is_moving and BuildManager.moving_building == home, "Long press on a completed residential building with small mobile touch jitter did not enter Move mode while placement was active.")
