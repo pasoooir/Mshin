@@ -140,6 +140,27 @@ func _node_has_label_text(node: Node, expected: String) -> bool:
 			return true
 	return false
 
+func _test_mobile_ui_touch_routing() -> void:
+	_check(bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", false)), "Mobile UI requires mouse-from-touch emulation so Godot Control buttons receive taps.")
+	var input_node = get_node_or_null("CityInput")
+	var hud = get_node_or_null("HUD")
+	var build_button := hud.get_node_or_null("BuildMenuButton") as Button if hud else null
+	_check(input_node != null and build_button != null, "Mobile touch routing test requires CityInput and the Build button.")
+	if input_node == null or build_button == null:
+		return
+	await get_tree().process_frame
+	var touch_position: Vector2 = build_button.get_global_rect().get_center()
+	_check(input_node._is_touch_over_ui(touch_position), "Build button touch must be classified as UI, not a map tap.")
+	var ui_touch := InputEventScreenTouch.new()
+	ui_touch.index = 91
+	ui_touch.pressed = true
+	ui_touch.position = touch_position
+	input_node._unhandled_input(ui_touch)
+	_check(not input_node.pointer_start.has(91), "A touch on the Build button leaked into city-map input.")
+	ui_touch.pressed = false
+	input_node._unhandled_input(ui_touch)
+	_check(not input_node.ui_touch_pointers.has(91), "UI touch suppression state was not released.")
+
 func _test_build_menu_visibility() -> void:
 	var hud = get_node_or_null("HUD")
 	_check(hud != null, "Main scene HUD is missing.")
@@ -200,6 +221,7 @@ func _test_build_menu_visibility() -> void:
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	await _test_mobile_ui_touch_routing()
 	await _test_build_menu_visibility()
 	_test_wind_turbine_rotor_animation()
 	_test_immigration_coefficients()
