@@ -71,6 +71,9 @@ var _level_up_effect = null
 var _level_up_camera: Camera3D
 var _level_up_camera_origin: Vector3 = Vector3.ZERO
 var _level_up_shake_elapsed := 0.0
+var _production_timer_labels: Array[Label] = []
+var _production_building: Building = null
+var _production_tick_accum := 0.0
 
 func _ready() -> void:
 	# Keep the existing gameplay signal wiring intact.
@@ -1002,9 +1005,13 @@ func _start_next_level_up_effect() -> void:
 		_level_up_shake_elapsed = 0.0
 
 func _process(delta: float) -> void:
-	if not is_instance_valid(_level_up_effect):
-		return
-	if not is_instance_valid(_level_up_camera):
+	if is_instance_valid(production_panel):
+		_production_tick_accum += delta
+		if _production_tick_accum >= 0.25:
+			_production_tick_accum = 0.0
+			_update_production_timers()
+
+	if not is_instance_valid(_level_up_effect) or not is_instance_valid(_level_up_camera):
 		return
 
 	# Tiny damped local offset; restore the exact camera position when the overlay ends.
@@ -1071,6 +1078,8 @@ func _on_roads_pressed() -> void:
 func open_production_panel(building: Building) -> void:
 	if not is_instance_valid(building) or building.status != "completed":
 		return
+	_clear_production_timer_tracking()
+	_production_building = building
 	if is_instance_valid(production_panel):
 		production_panel.queue_free()
 	production_panel = PanelContainer.new()
@@ -1168,8 +1177,11 @@ func open_production_panel(building: Building) -> void:
 			else:
 				var remaining := maxi(0, int(slot.get("finish_unix",0)) - int(Time.get_unix_time_from_system()))
 				var timer_label := Label.new()
+				timer_label.name = "TimerSlot%d" % slot_index
+				timer_label.set_meta("slot_index", slot_index)
 				timer_label.text = "%s  ·  %s remaining" % [item_id.capitalize(), _format_duration(remaining)]
 				slot_layout.add_child(timer_label)
+				_production_timer_labels.append(timer_label)
 	if not component.is_factory:
 		var note := Label.new()
 		note.text = "Recipe materials are deducted from City Storage when a slot starts."
@@ -1184,7 +1196,40 @@ func _format_duration(seconds: int) -> String:
 		return "%dm" % int(seconds / 60)
 	return "%dh %dm" % [int(seconds / 3600), int((seconds % 3600) / 60)]
 
+func _clear_production_timer_tracking() -> void:
+	_production_timer_labels.clear()
+	_production_building = null
+	_production_tick_accum = 0.0
+
+func _update_production_timers() -> void:
+	if not is_instance_valid(production_panel) or not is_instance_valid(_production_building):
+		return
+	var component = _production_building.production_component
+	if not is_instance_valid(component):
+		return
+	component.refresh_slots()
+	var now := int(Time.get_unix_time_from_system())
+	var need_rebuild := false
+	for label in _production_timer_labels:
+		if not is_instance_valid(label):
+			continue
+		var slot_index := int(label.get_meta("slot_index", -1))
+		if slot_index < 0:
+			continue
+		var slot: Dictionary = component.get_slot(slot_index)
+		if slot.is_empty() or bool(slot.get("ready", false)):
+			need_rebuild = true
+			break
+		var item_id := str(slot.get("item_id", ""))
+		var remaining := maxi(0, int(slot.get("finish_unix", 0)) - now)
+		label.text = "%s  ·  %s remaining" % [item_id.capitalize(), _format_duration(remaining)]
+		if remaining <= 0:
+			need_rebuild = true
+	if need_rebuild:
+		open_production_panel(_production_building)
+
 func _close_production_panel() -> void:
+	_clear_production_timer_tracking()
 	if is_instance_valid(production_panel):
 		production_panel.queue_free()
 	production_panel = null
