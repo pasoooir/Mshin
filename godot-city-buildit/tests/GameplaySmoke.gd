@@ -351,7 +351,7 @@ func _run_gameplay_test() -> void:
 	input_node._begin_move_from_screen(77, construction_roof_screen)
 	_check(get_node("HUD/StatusLabel").text == "Still under construction", "Long-pressing the visible roof of a building under construction did not report construction status.")
 	input_node._begin_move_from_screen(78, footprint_test_camera.unproject_position(BuildManager.grid_to_world(Vector2i(12, 12))))
-	_check(get_node("HUD/StatusLabel").text == "No building here. Hold your finger on a building to move it.", "Long-pressing empty ground did not provide feedback.")
+	_check(get_node("HUD/StatusLabel").text == "No building selected. Press and hold directly on a building to move it.", "Long-pressing empty ground did not provide feedback.")
 	_check(not BuildManager.can_place_at(Vector2i(1, 1), "residential_1"), "Overlapping house footprint was incorrectly accepted.")
 
 	BuildManager.select_building("industrial_1")
