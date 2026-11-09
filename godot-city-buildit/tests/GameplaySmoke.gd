@@ -22,6 +22,27 @@ func _find_building(type_id: String):
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
+func _test_wind_turbine_rotor_animation() -> void:
+	var building_script = load("res://scripts/buildings/Building.gd")
+	var test_building = building_script.new()
+	add_child(test_building)
+	var rotor := Node3D.new()
+	rotor.name = "WindTurbineRotor_Test"
+	test_building.add_child(rotor)
+	test_building._wind_turbine_rotor = rotor
+	test_building.definition = {"power": 12, "category": "service"}
+	test_building.status = "constructing"
+	test_building._process(1.0)
+	_check(is_zero_approx(rotor.rotation.z), "Wind turbine rotor must remain still while the structure is under construction.")
+	test_building.status = "completed"
+	test_building._process(1.0)
+	_check(rotor.rotation.z > 0.5, "Completed wind turbine rotor must rotate continuously.")
+	var first_rotation := rotor.rotation.z
+	test_building._process(1.0)
+	_check(rotor.rotation.z > first_rotation, "Wind turbine rotor animation must keep advancing every frame.")
+	test_building.queue_free()
+	await get_tree().process_frame
+
 func _test_immigration_coefficients() -> void:
 	_check(is_equal_approx(HappinessManager._immigration_happiness_factor(60.0), 0.3), "Immigration happiness factor at 60% must be 0.3.")
 	_check(is_equal_approx(HappinessManager._immigration_happiness_factor(70.0), 0.55), "Immigration happiness factor at 70% must be 0.55.")
@@ -181,6 +202,7 @@ func _test_build_menu_visibility() -> void:
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	await _test_build_menu_visibility()
+	_test_wind_turbine_rotor_animation()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
