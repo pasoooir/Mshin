@@ -179,6 +179,8 @@ func load_game() -> bool:
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
 	EconomyManager.keys_changed.emit(EconomyManager.golden_keys)
 	is_loading = false
+	if has_node("/root/FireHazardManager"):
+		FireHazardManager.reset_for_city_load()
 	load_completed.emit(true)
 	return true
 
