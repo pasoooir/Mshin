@@ -308,6 +308,8 @@ func unregister_building(building_id: String) -> void:
 	if building == null:
 		return
 	var definition: Dictionary = building.definition
+	if building.has_method("set_fire_smoke"):
+		building.set_fire_smoke(false)
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	for cell in get_footprint_cells(building.grid_pos, size):
 		if building_cells.get(cell) == building:
