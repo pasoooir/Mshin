@@ -17,12 +17,16 @@ func _ready() -> void:
 	_update_coverage_radius()
 	print("[FireHazardManager] Fire coverage online: %.1f world units" % coverage_radius)
 
+func get_coverage_radius_world(definition: Dictionary) -> float:
+	var coverage_tiles := maxf(0.0, float(definition.get("coverage_tiles", COVERAGE_TILES)))
+	return coverage_tiles * float(BuildManager.GRID_SIZE)
+
 func _update_coverage_radius() -> void:
 	if _radius_initialized:
 		return
 	if not is_instance_valid(BuildManager):
 		return
-	coverage_radius = float(COVERAGE_TILES) * float(BuildManager.GRID_SIZE)
+	coverage_radius = get_coverage_radius_world({})
 	_radius_initialized = true
 
 func _process(delta: float) -> void:
@@ -74,7 +78,10 @@ func _evaluate_hazards(delta: float) -> void:
 		active_home_ids[building_id] = true
 		var covered := false
 		for station in stations:
-			if home.global_position.distance_to(station.global_position) <= coverage_radius:
+			var station_radius := get_coverage_radius_world(station.definition)
+			var home_flat := Vector2(home.global_position.x, home.global_position.z)
+			var station_flat := Vector2(station.global_position.x, station.global_position.z)
+			if home_flat.distance_to(station_flat) <= station_radius:
 				covered = true
 				break
 
