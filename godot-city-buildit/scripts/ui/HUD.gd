@@ -34,6 +34,16 @@ class BanknoteGlyph extends Control:
 		draw_line(Vector2(12, 18), Vector2(20, 18), Color("#D9FFE1"), 2.4)
 		draw_line(Vector2(size.x - 20, size.y - 18), Vector2(size.x - 12, size.y - 18), Color("#D9FFE1"), 2.4)
 
+class LockGlyph extends Control:
+	func _ready() -> void:
+		name = "LockGlyph"
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	func _draw() -> void:
+		var lock_color := Color("#FFD98A")
+		var body := Rect2(Vector2(size.x * 0.18, size.y * 0.48), Vector2(size.x * 0.64, size.y * 0.42))
+		draw_rect(body, lock_color, true)
+		draw_arc(Vector2(size.x * 0.5, size.y * 0.49), size.x * 0.22, PI, TAU, 16, lock_color, maxf(1.5, size.x * 0.09))
+
 @onready var status_label: Label = $StatusLabel
 
 var submenu: HBoxContainer
@@ -660,13 +670,16 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	_finish_submenu_row(true)
 
 func _add_submenu_button(option_id: String, title: String, icon_name: String, detail: String, disabled: bool, category: String, required_level: int = 1, locked: bool = false) -> void:
+	var is_locked := locked or GameManager.level < required_level
 	var button := Button.new()
 	button.name = option_id
 	button.custom_minimum_size = Vector2(142, 78) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.disabled = disabled
 	button.tooltip_text = ("Unlocks at Level %d" % required_level) if GameManager.level < required_level else detail
-	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.16, 0.21, 0.97), Color(0.52, 0.72, 0.82, 0.62)))
+	var normal_fill := Color(0.12, 0.13, 0.15, 0.96) if is_locked else Color(0.08, 0.16, 0.21, 0.97)
+	var normal_border := Color(0.38, 0.41, 0.44, 0.72) if is_locked else Color(0.52, 0.72, 0.82, 0.62)
+	button.add_theme_stylebox_override("normal", _toolbar_style(normal_fill, normal_border))
 	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.16, 0.31, 0.39, 0.99), Color("#FFE19A")))
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.25, 0.39, 0.30, 1.0), Color("#FFE19A")))
 	button.add_theme_stylebox_override("disabled", _toolbar_style(Color(0.12, 0.13, 0.15, 0.92), Color(0.35, 0.38, 0.40, 0.5)))
@@ -676,9 +689,20 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_theme_constant_override("separation", 5)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(30, 30) * _ui_scale)
+	var resolved_icon_name := icon_name
+	match icon_name:
+		"landmarks": resolved_icon_name = "landmark"
+		"worship", "waste", "sewage", "government", "health": resolved_icon_name = "services"
+	var icon := IconAtlas.make_icon(resolved_icon_name, Vector2(30, 30) * _ui_scale)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if is_locked:
+		icon.modulate = Color(0.52, 0.56, 0.60, 0.72)
 	content.add_child(icon)
+	if is_locked:
+		var lock_glyph := LockGlyph.new()
+		lock_glyph.custom_minimum_size = Vector2(15, 22) * _ui_scale
+		lock_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content.add_child(lock_glyph)
 	var labels := VBoxContainer.new()
 	labels.alignment = BoxContainer.ALIGNMENT_CENTER
 	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -688,14 +712,14 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	title_label.text = title
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title_label.add_theme_color_override("font_color", Color("#F4F8FC"))
+	title_label.add_theme_color_override("font_color", Color("#AAB2B9") if is_locked else Color("#F4F8FC"))
 	title_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 	labels.add_child(title_label)
 	var detail_label := Label.new()
-	detail_label.text = "LOCKED" if locked else ("Unlocks at Level %d" % required_level if GameManager.level < required_level else detail)
+	detail_label.text = "Unlocks at Level %d" % required_level if GameManager.level < required_level else ("LOCKED" if locked else detail)
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_label.add_theme_color_override("font_color", Color("#FFD98A") if locked else Color("#B8C9D4"))
+	detail_label.add_theme_color_override("font_color", Color("#FFD98A") if is_locked else Color("#B8C9D4"))
 	detail_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 	labels.add_child(detail_label)
 	submenu.add_child(button)

@@ -397,6 +397,7 @@ func _run_gameplay_test() -> void:
 		hud._on_submenu_option("services", "group_fire")
 		var locked_fire = hud.submenu.get_node_or_null("fire_station")
 		_check(locked_fire != null and not locked_fire.disabled, "Locked fire station must remain clickable.")
+		_check(locked_fire != null and locked_fire.find_child("LockGlyph", true, false) != null, "Locked fire station must show a visible lock glyph.")
 		_check(_node_has_label_text(locked_fire, "Unlocks at Level 5"), "Locked fire station must show its unlock level.")
 		hud._on_submenu_option("services", "fire_station")
 		_check(not BuildManager.is_placing and hud.status_label.text.find("Level 5") >= 0, "Locked fire station did not explain its unlock level.")
