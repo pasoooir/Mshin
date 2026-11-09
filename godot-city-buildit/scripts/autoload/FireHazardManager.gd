@@ -37,6 +37,16 @@ func on_city_changed() -> void:
 	_update_coverage_radius()
 	_evaluate_hazards(0.0)
 
+func reset_for_city_load() -> void:
+	for building_id in smoking_ids.keys():
+		var home = BuildManager.buildings.get(building_id)
+		if is_instance_valid(home) and home.has_method("set_fire_smoke"):
+			home.set_fire_smoke(false)
+	unprotected_time.clear()
+	smoking_ids.clear()
+	_check_elapsed = 0.0
+	_evaluate_hazards(0.0)
+
 func _evaluate_hazards(delta: float) -> void:
 	_update_coverage_radius()
 	if not _radius_initialized:
