@@ -431,6 +431,9 @@ func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 	if building_type == "building_supplies" or subtype == "building_supplies":
 		_build_building_supplies_showcase(w, d, height, color)
 		return
+	if building_type == "art_supplies" or subtype == "art":
+		_build_art_supplies_showcase(w, d, height, color)
+		return
 	var wall := Color(0.73, 0.59, 0.43).lerp(color, 0.20)
 	var wall_shadow := wall.darkened(0.19)
 	var wall_light := wall.lightened(0.16)
@@ -571,6 +574,105 @@ func _build_building_supplies_showcase(w: float, d: float, height: float, color:
 	_add_box(Vector3(0.42, 0.30, 0.36), Vector3(w * 0.34, body_h + 0.82, -d * 0.38), concrete)
 	for vent in range(4):
 		_add_box(Vector3(0.32, 0.025, 0.035), Vector3(w * 0.34, body_h + 0.72 + float(vent) * 0.065, -d * 0.17), navy)
+
+
+# Signature art retailer: bright gallery glazing, paint displays and an unmistakable rooftop easel.
+# Kept procedural and local so the building is fully available offline on mobile.
+func _build_art_supplies_showcase(w: float, d: float, height: float, color: Color) -> void:
+	var body_h := maxf(height, 2.25)
+	var front := d * 0.5
+	var plum := Color(0.25, 0.16, 0.36)
+	var purple := Color(0.43, 0.25, 0.62)
+	var lavender := Color(0.72, 0.57, 0.86)
+	var teal := Color(0.10, 0.42, 0.48)
+	var teal_light := Color(0.20, 0.65, 0.67)
+	var cream := Color(0.98, 0.91, 0.78)
+	var glass := Color(0.12, 0.31, 0.40)
+	var gold := Color(1.0, 0.68, 0.12)
+	var wood := Color(0.48, 0.27, 0.15)
+	var paints: Array[Color] = [
+		Color(0.94, 0.20, 0.28), Color(1.0, 0.58, 0.12),
+		Color(0.98, 0.84, 0.20), Color(0.20, 0.67, 0.40),
+		Color(0.16, 0.55, 0.83), Color(0.52, 0.30, 0.76),
+		Color(0.94, 0.42, 0.65)
+	]
+
+	# Raised plinth, saturated gallery walls and a contrasting upper cornice.
+	_add_box(Vector3(w * 1.06, 0.30, d * 1.06), Vector3(0, 0.15, 0), plum)
+	_add_box(Vector3(w * 1.01, 0.09, d * 1.01), Vector3(0, 0.33, 0), gold)
+	_add_box(Vector3(w * 0.94, body_h, d * 0.88), Vector3(0, body_h * 0.5 + 0.38, 0), teal)
+	_add_box(Vector3(w * 0.97, 0.20, d * 0.94), Vector3(0, body_h + 0.47, 0), plum)
+	_add_box(Vector3(w * 0.92, 0.075, d * 0.90), Vector3(0, body_h + 0.61, 0), lavender)
+
+	# Full-height display glazing with warm gallery lighting and deep purple mullions.
+	var display_w := w * 0.76
+	var display_h := 1.24
+	_add_box(Vector3(display_w + 0.18, display_h + 0.18, 0.11),
+		Vector3(-w * 0.045, display_h * 0.5 + 0.43, front * 0.91), plum)
+	_add_box(Vector3(display_w, display_h, 0.055),
+		Vector3(-w * 0.045, display_h * 0.5 + 0.43, front * 0.96), glass)
+	_add_emissive_box(Vector3(display_w * 0.92, display_h * 0.88, 0.025),
+		Vector3(-w * 0.045, display_h * 0.5 + 0.43, front * 0.985), Color(1.0, 0.66, 0.28), 0.28)
+	for mullion in range(5):
+		var mx := -w * 0.045 - display_w * 0.5 + float(mullion) * display_w * 0.25
+		_add_box(Vector3(0.055, display_h + 0.06, 0.08),
+			Vector3(mx, display_h * 0.5 + 0.43, front * 1.01), cream)
+
+	# Framed miniature canvases behind the windows.
+	for canvas_index in range(3):
+		var cx := -w * 0.27 + float(canvas_index) * w * 0.22
+		_add_box(Vector3(0.36, 0.48, 0.045), Vector3(cx, 1.08, front * 0.82), wood)
+		_add_box(Vector3(0.29, 0.40, 0.025), Vector3(cx, 1.08, front * 0.85), paints[canvas_index * 2])
+		_add_box(Vector3(0.12, 0.06, 0.018), Vector3(cx - 0.035, 1.12, front * 0.87), paints[canvas_index * 2 + 1])
+
+	# Entrance and a bright gallery sign band.
+	_add_box(Vector3(0.52, 1.05, 0.11), Vector3(w * 0.36, 0.91, front * 0.91), cream)
+	_add_box(Vector3(0.40, 0.93, 0.06), Vector3(w * 0.36, 0.91, front * 0.96), glass)
+	_add_box(Vector3(0.035, 0.26, 0.035), Vector3(w * 0.29, 0.91, front * 1.0), gold)
+	_add_box(Vector3(w * 0.90, 0.22, 0.20), Vector3(0, 1.84, front * 0.97), purple)
+	_add_box(Vector3(w * 0.84, 0.06, 0.22), Vector3(0, 1.97, front * 0.99), gold)
+	# Individual vivid canopy panels read clearly at the mobile camera distance.
+	_add_box(Vector3(w * 0.98, 0.10, 0.48), Vector3(0, 1.55, front * 1.08), plum)
+	for stripe in range(8):
+		var sx := -w * 0.4375 + float(stripe) * w * 0.125
+		_add_box_rotated(Vector3(w * 0.12, 0.10, 0.45), Vector3(sx, 1.49, front * 1.12),
+			paints[stripe % paints.size()], Vector3(deg_to_rad(-8.0), 0, 0))
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.11, 0.20, 0.10), Vector3(side * w * 0.43, 1.56, front * 1.02), plum)
+		_add_emissive_box(Vector3(0.13, 0.17, 0.10), Vector3(side * w * 0.43, 1.42, front * 1.04), gold, 1.5)
+
+	# Display racks on the side walls: paint tubes, brushes and rolled paper.
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.07, 0.92, d * 0.40), Vector3(side * w * 0.47, 1.14, 0), plum)
+		for item in range(5):
+			var item_z := -d * 0.28 + float(item) * d * 0.14
+			_add_box(Vector3(0.12, 0.42, 0.10), Vector3(side * w * 0.50, 1.10, item_z), paints[item])
+			_add_box(Vector3(0.13, 0.045, 0.11), Vector3(side * w * 0.50, 1.33, item_z), cream)
+
+	# Rooftop artist's easel and oversized colourful canvas are the store's silhouette landmark.
+	_add_box(Vector3(w * 0.34, 0.12, d * 0.26), Vector3(-w * 0.25, body_h + 0.75, -d * 0.20), wood)
+	_add_box_rotated(Vector3(0.11, 1.12, 0.12), Vector3(-w * 0.29, body_h + 1.20, -d * 0.20), wood, Vector3(0, 0, deg_to_rad(-8.0)))
+	_add_box_rotated(Vector3(0.11, 1.12, 0.12), Vector3(-w * 0.10, body_h + 1.20, -d * 0.20), wood, Vector3(0, 0, deg_to_rad(8.0)))
+	_add_box(Vector3(0.66, 0.78, 0.10), Vector3(-w * 0.20, body_h + 1.38, -d * 0.12), cream)
+	_add_box(Vector3(0.54, 0.64, 0.045), Vector3(-w * 0.20, body_h + 1.39, -d * 0.055), paints[4])
+	_add_box(Vector3(0.28, 0.22, 0.035), Vector3(-w * 0.25, body_h + 1.50, -d * 0.025), paints[0])
+	_add_box(Vector3(0.20, 0.16, 0.035), Vector3(-w * 0.12, body_h + 1.25, -d * 0.025), paints[5])
+
+	# Neat rooftop paint tins and stacked canvases.
+	for tin in range(4):
+		var tx := w * 0.12 + float(tin) * 0.20
+		_add_box(Vector3(0.16, 0.24, 0.16), Vector3(tx, body_h + 0.82, -d * 0.18), paints[tin + 1])
+		_add_box(Vector3(0.17, 0.035, 0.17), Vector3(tx, body_h + 0.96, -d * 0.18), cream)
+	for canvas_stack in range(3):
+		_add_box(Vector3(0.52, 0.07, 0.36), Vector3(w * 0.27, body_h + 0.78 + float(canvas_stack) * 0.08, d * 0.22), cream)
+	# Roof vents and side glazing finish the massing.
+	_add_box(Vector3(0.38, 0.26, 0.34), Vector3(w * 0.34, body_h + 0.78, -d * 0.38), purple)
+	for vent in range(3):
+		_add_box(Vector3(0.30, 0.025, 0.035), Vector3(w * 0.34, body_h + 0.70 + float(vent) * 0.065, -d * 0.20), plum)
+	for floor in range(2):
+		_add_box(Vector3(0.055, 0.52, d * 0.30), Vector3(w * 0.49, 1.25 + float(floor) * 0.72, 0), plum)
+		_add_box(Vector3(0.07, 0.40, d * 0.25), Vector3(w * 0.51, 1.25 + float(floor) * 0.72, 0), teal_light)
+
 
 func _add_emissive_box(size: Vector3, pos: Vector3, color: Color, energy: float = 1.0) -> void:
 	var instance := MeshInstance3D.new()
