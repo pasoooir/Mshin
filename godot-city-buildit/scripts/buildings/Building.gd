@@ -542,10 +542,6 @@ func _build_service(w: float, d: float, height: float, color: Color) -> void:
 func _build_wind_turbine() -> void:
 	# A tapered tubular mast and layered nacelle give the generator a readable
 	# silhouette before the rotor begins its continuous, low-cost animation.
-	var tower_material := StandardMaterial3D.new()
-	tower_material.albedo_color = Color(0.88, 0.92, 0.94)
-	tower_material.metallic = 0.42
-	tower_material.roughness = 0.34
 	_add_cylinder(0.105, 0.235, 5.25, Vector3(0, 2.72, 0), Color(0.82, 0.87, 0.90))
 	_add_cylinder(0.31, 0.31, 0.22, Vector3(0, 0.16, 0), Color(0.34, 0.40, 0.44))
 	_add_cylinder(0.17, 0.17, 0.12, Vector3(0, 5.32, 0), Color(0.66, 0.73, 0.77))
