@@ -391,7 +391,7 @@ func _run_gameplay_test() -> void:
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "industrial_1", "Small factory menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("services")
-		for group_id in ["group_power", "group_water", "group_fire", "group_police", "group_health"]:
+		for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 			_check(hud.submenu.get_node_or_null(group_id) != null, "Services submenu is missing group " + group_id)
 		hud._on_submenu_option("services", "group_power")
 		_check(hud.submenu.get_node_or_null("power_wind") != null, "Power group must contain Wind Power.")
@@ -600,7 +600,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 21, "Move whitelist must include all 21 requested building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 24, "Move whitelist must include all 24 requested building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 
