@@ -259,7 +259,7 @@ for sewage_id, expected_capacity, expected_level, expected_size, expected_pollut
     ("sewage_basic", 28, 8, "Vector2i(2,2)", 1, "12.0"),
     ("sewage_deluxe", 55, 14, "Vector2i(2,3)", 0, "0.0"),
 ]:
-    match = re.search(r'"' + sewage_id + r'": \\{([^\\n]+)\\}', build_manager)
+    match = re.search(r'"' + sewage_id + r'": \{([^\n]+)\}', build_manager)
     if match is None:
         errors.append(f"Sewage facility definition is missing: {sewage_id}")
         continue
