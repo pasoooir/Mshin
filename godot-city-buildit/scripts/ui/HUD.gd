@@ -525,7 +525,8 @@ func _toggle_category_menu() -> void:
 	toolbar.show()
 	toolbar.z_index = 60
 	toolbar.move_to_front()
-	var build_label := get_node_or_null("BuildMenuButton/BuildButtonLabel") as Label
+	var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
 		build_label.text = "CLOSE"
 	var build_button := get_node_or_null("BuildMenuButton") as Control
@@ -540,7 +541,8 @@ func _close_build_menu() -> void:
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
 		toolbar.hide()
-	var build_label := get_node_or_null("BuildMenuButton/BuildButtonLabel") as Label
+	var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
 		build_label.text = "BUILD"
 	var build_button := get_node_or_null("BuildMenuButton") as Control
@@ -738,7 +740,8 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 				status_label.text = "Road system is unavailable."
 			submenu.hide()
 			active_category = ""
-			var build_label := get_node_or_null("BuildMenuButton/BuildButtonLabel") as Label
+			var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 			if build_label:
 				build_label.text = "BUILD"
 		elif option_id == "bulldoze_road":
@@ -757,7 +760,8 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 		if category_toolbar:
 			category_toolbar.show()
 	else:
-		var build_label := get_node_or_null("BuildMenuButton/BuildButtonLabel") as Label
+		var build_button_node := get_node_or_null("BuildMenuButton")
+	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 		if build_label:
 			build_label.text = "BUILD"
 		var build_button := get_node_or_null("BuildMenuButton") as Control
