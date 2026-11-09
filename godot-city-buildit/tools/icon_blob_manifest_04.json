@@ -1,0 +1,42 @@
+[
+  {
+    "source": "services/police_small",
+    "sha": "4345ccbf3202ef06e9e2662fe473f0cd62580e79"
+  },
+  {
+    "source": "services/police_basic",
+    "sha": "93c0f9ff062196bfc45b17aed34aa1d6b10dd11f"
+  },
+  {
+    "source": "services/police_precinct",
+    "sha": "a2a9e3e2b096403683d33da00165d4993a094c66"
+  },
+  {
+    "source": "services/clinic_small",
+    "sha": "fddf699f86b84cf18bcce27bc70feeb8f110065b"
+  },
+  {
+    "source": "services/clinic",
+    "sha": "86258b21e46b297bcef26dbb6d1cf9b5431b3418"
+  },
+  {
+    "source": "services/hospital",
+    "sha": "6ef0dc11374500af9e1680f6f14f44e51fa324be"
+  },
+  {
+    "source": "services/town_hall",
+    "sha": "7166c5228da5c5f6e58f7d446583500a954b7e40"
+  },
+  {
+    "source": "specializations/park_small",
+    "sha": "2e849dddcee275875e1b0ef6ddec0fa34415acfc"
+  },
+  {
+    "source": "raw/metal",
+    "sha": "b9dc19c7b1fee05a79f9700b3a139cc4a6635b47"
+  },
+  {
+    "source": "raw/wood",
+    "sha": "b446a2f4730f1f821eec781a45af44d3231a5eba"
+  }
+]
