@@ -345,6 +345,11 @@ func _run_gameplay_test() -> void:
 	var indexed_house = BuildManager.building_at_cell(Vector2i(0, 1))
 	_check(indexed_house != null and indexed_house.building_type == "residential_1", "Building cell index did not resolve the placed house.")
 	_check(BuildManager.building_at_cell(Vector2i(1, 2)) == indexed_house, "Building cell index did not cover the full house footprint.")
+	var footprint_test_camera: Camera3D = get_viewport().get_camera_3d()
+	input_node._begin_move_from_screen(77, footprint_test_camera.unproject_position(BuildManager.grid_to_world(Vector2i(1, 2))))
+	_check(get_node("HUD/StatusLabel").text == "Still under construction", "Long-pressing a non-anchor footprint cell did not report construction status.")
+	input_node._begin_move_from_screen(78, footprint_test_camera.unproject_position(BuildManager.grid_to_world(Vector2i(12, 12))))
+	_check(get_node("HUD/StatusLabel").text == "No building here. Hold your finger on a building to move it.", "Long-pressing empty ground did not provide feedback.")
 	_check(not BuildManager.can_place_at(Vector2i(1, 1), "residential_1"), "Overlapping house footprint was incorrectly accepted.")
 
 	BuildManager.select_building("industrial_1")
@@ -372,7 +377,9 @@ func _run_gameplay_test() -> void:
 	var home_footprint: Vector2i = home.definition.get("size", Vector2i(2, 2))
 	var home_center_offset := Vector3((home_footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (home_footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
 	var home_center_world: Vector3 = BuildManager.grid_to_world(home.grid_pos) + home_center_offset
-	var move_input_screen: Vector2 = active_move_camera.unproject_position(home_center_world)
+	# Start on the second cell of the 2x2 footprint, not its anchor cell.
+	var non_anchor_cell_world: Vector3 = BuildManager.grid_to_world(Vector2i(1, 2))
+	var move_input_screen: Vector2 = active_move_camera.unproject_position(non_anchor_cell_world)
 	var touch_down := InputEventScreenTouch.new()
 	touch_down.index = 0
 	touch_down.pressed = true
