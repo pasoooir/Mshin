@@ -709,6 +709,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_child(icon)
 	if is_locked:
 		var lock_icon := Icons.make_icon("lock", Vector2(18, 18) * _ui_scale)
+		lock_icon.name = "LockIcon"
 		content.add_child(lock_icon)
 	var labels := VBoxContainer.new()
 	labels.alignment = BoxContainer.ALIGNMENT_CENTER
