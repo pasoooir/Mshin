@@ -1,0 +1,42 @@
+[
+  {
+    "source": "residential/residential_1",
+    "sha": "2b2d90b6d3a1188e1547f1e564edf283256f00e2"
+  },
+  {
+    "source": "residential/residential_2",
+    "sha": "54e987edbe0d2bf0249fc5d362f8f237676b92e0"
+  },
+  {
+    "source": "residential/residential_villa",
+    "sha": "f88076035453d3a3be87c33e47757650c262ab0b"
+  },
+  {
+    "source": "residential/residential_apartment",
+    "sha": "faf781615c6d7ed2dc008ae53409e74ddabcbf04"
+  },
+  {
+    "source": "residential/residential_farm",
+    "sha": "faf781615c6d7ed2dc008ae53409e74ddabcbf04"
+  },
+  {
+    "source": "commercial/building_supplies",
+    "sha": "6e08dce7d06674dbb650dec5bdfd28d2127f6fd6"
+  },
+  {
+    "source": "commercial/shop_chain",
+    "sha": "039d0400a5a078a3a6f7866ffa67ce081065b441"
+  },
+  {
+    "source": "commercial/restaurant_traditional",
+    "sha": "db1090dd20e5f3cff38ad2629e0000710f918ea9"
+  },
+  {
+    "source": "commercial/fast_food",
+    "sha": "15a05a3a4dc83cd0ea02b97e9a411e7468a82ebc"
+  },
+  {
+    "source": "commercial/art_supplies",
+    "sha": "d9a75a378c1dcfceb941e007afe15cd272219fb7"
+  }
+]
