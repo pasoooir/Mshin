@@ -61,9 +61,32 @@ func get_available_crafted() -> Array:
 			result.append(item_id)
 	return result
 
+func are_recipe_inputs_unlocked(recipe: Dictionary) -> bool:
+	for input_id in recipe.get("inputs", {}):
+		var id := str(input_id)
+		if raw_materials.has(id) and int(raw_materials[id].get("level", 1)) > GameManager.level:
+			return false
+		if crafted_items.has(id) and int(crafted_items[id].get("level", 1)) > GameManager.level:
+			return false
+	return true
+
 func can_craft(item_id: String) -> bool:
 	var recipe := get_recipe(item_id)
-	return not recipe.is_empty() and int(recipe.level) <= GameManager.level and StorageManager.has_items(recipe.inputs)
+	return not recipe.is_empty() and int(recipe.level) <= GameManager.level and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.inputs)
+
+func get_recipe_lock_reason(item_id: String) -> String:
+	var recipe := get_recipe(item_id)
+	if recipe.is_empty():
+		return "Recipe unavailable"
+	if int(recipe.get("level", 1)) > GameManager.level:
+		return "Unlocks at Level %d" % int(recipe.level)
+	for input_id in recipe.get("inputs", {}):
+		var id := str(input_id)
+		if raw_materials.has(id) and int(raw_materials[id].get("level", 1)) > GameManager.level:
+			return "%s unlocks at Level %d" % [str(raw_materials[id].name), int(raw_materials[id].level)]
+		if crafted_items.has(id) and int(crafted_items[id].get("level", 1)) > GameManager.level:
+			return "%s unlocks at Level %d" % [str(crafted_items[id].name), int(crafted_items[id].level)]
+	return ""
 
 func consume_inputs(item_id: String) -> bool:
 	if not can_craft(item_id):

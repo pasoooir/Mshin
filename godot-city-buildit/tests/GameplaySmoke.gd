@@ -47,10 +47,59 @@ func _test_storage_and_production_chain() -> void:
 	_check(int(ProductionManager.raw_materials.chemicals.time_sec) == 7200, "Chemicals production must take 2 hours.")
 	_check(int(ProductionManager.raw_materials.electrical.time_sec) == 25200, "Electrical Components production must take 7 hours.")
 	_check(ProductionManager.raw_materials.size() == 11, "The complete 11-item SCBI raw-material catalog is required.")
+	var expected_raw_levels := {"metal":1,"wood":2,"plastic":5,"seeds":7,"minerals":11,"chemicals":13,"textiles":15,"sugar_spices":17,"glass":19,"animal_feed":23,"electrical":29}
+	var expected_raw_times := {"metal":60,"wood":180,"plastic":540,"seeds":1200,"minerals":1800,"chemicals":7200,"textiles":10800,"sugar_spices":14400,"glass":18000,"animal_feed":21600,"electrical":25200}
+	for raw_id in expected_raw_levels:
+		_check(int(ProductionManager.raw_materials[raw_id].get("level", 0)) == int(expected_raw_levels[raw_id]), "%s must unlock at its SCBI Mayor Level." % raw_id)
+		_check(int(ProductionManager.raw_materials[raw_id].get("time_sec", 0)) == int(expected_raw_times[raw_id]), "%s must retain its SCBI production time." % raw_id)
 	var nails: Dictionary = ProductionManager.get_recipe("nails")
 	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
 	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 2, "Small Factory must expose two parallel production slots.")
+	_check(BuildManager.building_types.factory_basic.get("production_slots",0) == 3 and BuildManager.building_types.factory_basic.get("population_required",0) == 4000, "Basic Factory must have 3 slots and require 4,000 population.")
+	_check(BuildManager.building_types.factory_mass.get("production_slots",0) == 4 and BuildManager.building_types.factory_mass.get("population_required",0) == 27000, "Mass Production must have 4 slots and require 27,000 population.")
+	_check(BuildManager.building_types.factory_hightech.get("production_slots",0) == 5 and BuildManager.building_types.factory_hightech.get("population_required",0) == 80000, "High-tech Factory must have 5 slots and require 80,000 population.")
+	_check(BuildManager.building_types.factory_nano.get("production_slots",0) == 5 and BuildManager.building_types.factory_nano.get("pollution",1) == 0 and BuildManager.building_types.factory_nano.get("population_required",0) == 150000, "Nano-tech Factory must have 5 slots, no pollution and require 150,000 population.")
+	_check(BuildManager.building_types.factory_small.get("can_produce",[]).has("electrical"), "Small Factory must support all raw products, gated only by each material's Mayor Level.")
 	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
+	# Mayor level unlocks materials; factory count and factory tier use separate gates.
+	var original_level := GameManager.level
+	var original_population := GameManager.population
+	var original_factory_count := BuildManager.factory_count
+	GameManager.level = 4
+	_check(ProductionManager.get_available_raw().has("metal") and ProductionManager.get_available_raw().has("wood"), "Level 4 must offer Metal and Wood.")
+	_check(not ProductionManager.get_available_raw().has("plastic") and not ProductionManager.get_available_raw().has("seeds"), "Level 4 must hide Plastic and Seeds until their own unlock levels.")
+	GameManager.level = 5
+	_check(ProductionManager.get_available_raw().has("plastic"), "Plastic must unlock at Mayor Level 5.")
+	GameManager.level = 11
+	_check(ProductionManager.get_available_raw().has("minerals"), "Minerals must unlock at Mayor Level 11.")
+	GameManager.level = 13
+	_check(ProductionManager.get_available_raw().has("chemicals"), "Chemicals must unlock at Mayor Level 13.")
+	_check(LevelProgression.get_factory_limit_for_level(1) == 2 and LevelProgression.get_factory_limit_for_level(2) == 3 and LevelProgression.get_factory_limit_for_level(3) == 4, "Early-game factory count caps must be 2/3/4 at levels 1/2/3.")
+	_check(LevelProgression.get_factory_limit_for_level(58) == 12, "Mayor Level 58 must unlock the 12th factory slot.")
+	GameManager.level = 1
+	GameManager.population = 3999
+	_check(not BuildManager.can_build_factory_type("factory_basic"), "Basic Factory must remain population-locked below 4,000 residents.")
+	GameManager.population = 4000
+	_check(BuildManager.can_build_factory_type("factory_basic"), "Basic Factory must unlock at 4,000 residents.")
+	GameManager.population = 26999
+	_check(not BuildManager.can_build_factory_type("factory_mass"), "Mass Production must remain locked below 27,000 residents.")
+	GameManager.population = 27000
+	_check(BuildManager.can_build_factory_type("factory_mass"), "Mass Production must unlock at 27,000 residents.")
+	GameManager.population = 79999
+	_check(not BuildManager.can_build_factory_type("factory_hightech"), "High-tech Factory must remain locked below 80,000 residents.")
+	GameManager.population = 80000
+	_check(BuildManager.can_build_factory_type("factory_hightech"), "High-tech Factory must unlock at 80,000 residents.")
+	GameManager.population = 150000
+	_check(BuildManager.can_build_factory_type("factory_nano"), "Nano-tech Factory must unlock at 150,000 residents.")
+	GameManager.population = original_population
+	GameManager.level = 1
+	BuildManager.factory_count = 2
+	_check(not BuildManager.can_build_another_factory(), "A level 1 city must not build a third factory.")
+	GameManager.level = 2
+	_check(BuildManager.can_build_another_factory(), "A level 2 city must be allowed to build a third factory.")
+	BuildManager.factory_count = original_factory_count
+	GameManager.level = original_level
+	GameManager.population = original_population
 
 	var factory = ProductionComponentScript.new()
 	factory.slot_count = 2
@@ -660,10 +709,10 @@ func _run_gameplay_test() -> void:
 		_check(input_node.bulldoze_road_mode, "Road bulldozer menu action did not enable road removal.")
 		hud._on_cancel_pressed()
 		hud._on_category_pressed("industrial")
-		_check(hud.submenu.get_node_or_null("industrial_1") != null and hud.submenu.get_node_or_null("industrial_2") != null, "Factory choices must be listed.")
-		_check(_node_has_label_text(hud.submenu.get_node("industrial_1"), "Small Factory"), "Industrial submenu labels must be clear.")
-		hud._on_submenu_option("industrial", "industrial_1")
-		_check(BuildManager.is_placing and BuildManager.selected_building_type == "industrial_1", "Small factory menu action did not enter placement mode.")
+		_check(hud.submenu.get_node_or_null("factory_small") != null and hud.submenu.get_node_or_null("factory_basic") != null, "Factory choices must be listed.")
+		_check(_node_has_label_text(hud.submenu.get_node("factory_small"), "Small Factory"), "Industrial submenu labels must be clear.")
+		hud._on_submenu_option("industrial", "factory_small")
+		_check(BuildManager.is_placing and BuildManager.selected_building_type == "factory_small", "Small factory menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("services")
 		for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
@@ -875,7 +924,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 43, "Move whitelist must include all 43 supported building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 47, "Move whitelist must include all 47 supported building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 

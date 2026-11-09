@@ -69,7 +69,7 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 	var recipe := ProductionManager.get_recipe(recipe_id)
 	if recipe.is_empty() or str(recipe.get("store", "")) != shop_id:
 		return false
-	if int(recipe.get("level", 1)) > GameManager.level:
+	if int(recipe.get("level", 1)) > GameManager.level or not ProductionManager.are_recipe_inputs_unlocked(recipe):
 		return false
 	var inputs: Dictionary = recipe.get("inputs", {})
 	if not StorageManager.has_items(inputs):

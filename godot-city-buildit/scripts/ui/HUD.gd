@@ -622,15 +622,22 @@ func _show_submenu(category: String) -> void:
 		var definition_category := "park" if category == "parks" else category
 		for type_id in BuildManager.building_types:
 			var definition: Dictionary = BuildManager.building_types[type_id]
-			if str(definition.get("category", "")) != definition_category:
+			if str(definition.get("category", "")) != definition_category or bool(definition.get("legacy_only", false)):
 				continue
 			var title := str(definition.get("name", type_id))
-			match str(type_id):
-				"industrial_1": title = "Small Factory"
-				"industrial_2": title = "Wood Factory"
-				"industrial_3": title = "Factory+"
 			var detail := "%d coins · Lv %d" % [int(definition.get("cost", 0)), int(definition.get("level", 1))]
-			_add_submenu_button(str(type_id), title, category, detail, false, category, int(definition.get("level", 1)))
+			var locked := false
+			if definition_category == "industrial":
+				var slots := int(definition.get("production_slots", 2))
+				var required_population := int(definition.get("population_required", 0))
+				detail += " · %d slots" % slots
+				if required_population > GameManager.population:
+					detail += " · Requires %s population" % _format_count(required_population)
+					locked = true
+				elif not BuildManager.can_build_another_factory():
+					detail += " · Factory limit reached"
+					locked = true
+			_add_submenu_button(str(type_id), title, category, detail, locked, category, int(definition.get("level", 1)), locked)
 	_finish_submenu_row()
 
 func _show_group_options(groups: Array, parent_category: String) -> void:
@@ -768,9 +775,14 @@ func _select_building_type(type_id: String) -> void:
 	if GameManager.level < required_level:
 		status_label.text = "Unlocked at Level %d." % required_level
 		return
-	if definition.get("category", "") == "industrial" and BuildManager.factory_count >= LevelProgression.max_factories:
-		status_label.text = "Factory limit reached (%d). Upgrade your city to unlock more factory slots." % LevelProgression.max_factories
-		return
+	if definition.get("category", "") == "industrial":
+		if not BuildManager.can_build_another_factory():
+			status_label.text = "Factory limit reached (%d). Level up to unlock another factory slot." % LevelProgression.get_factory_limit_for_level(GameManager.level)
+			return
+		if not BuildManager.can_build_factory_type(type_id):
+			var required_population := BuildManager.get_factory_type_population_requirement(type_id)
+			status_label.text = "%s requires %s city population." % [str(definition.get("name", type_id)), _format_count(required_population)]
+			return
 	_set_tool_modes_off()
 	BuildManager.select_building(type_id)
 	if BuildManager.is_placing:
@@ -1118,13 +1130,15 @@ func open_production_panel(building: Building) -> void:
 			else:
 				for item_id in building.definition.get("recipes", []):
 					var recipe := ProductionManager.get_recipe(str(item_id))
-					if not recipe.is_empty() and int(recipe.level) <= GameManager.level:
+					if not recipe.is_empty():
 						item_ids.append(str(item_id))
 			for item_id in item_ids:
 				var item_button := Button.new()
 				item_button.name = "Slot%d_%s" % [slot_index, item_id]
 				var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
-				item_button.text = "%s  ·  %s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0)))]
+				var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+				item_button.text = "%s  ·  %s%s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0))), ("  ·  " + lock_reason) if lock_reason != "" else ""]
+				item_button.disabled = lock_reason != ""
 				item_button.custom_minimum_size.y = 42 * _ui_scale
 				item_button.pressed.connect(func():
 					var started: bool = component.start_factory(item_id, slot_index) if component.is_factory else component.start_craft(item_id, slot_index)
