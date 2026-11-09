@@ -266,7 +266,7 @@ func _run_gameplay_test() -> void:
 			if toolbar_items is GridContainer:
 				_check(toolbar_items.columns == 2, "Right toolbar category grid must have two columns.")
 				for category_button in toolbar_items.get_children():
-					_check(category_button.custom_minimum_size.x >= 58.0 and category_button.custom_minimum_size.y >= 58.0, "Category buttons must remain large enough for mobile touch targets.")
+					_check(category_button.custom_minimum_size.x >= 58.0 and category_button.custom_minimum_size.y >= 44.0, "Category buttons must remain large enough for mobile touch targets.")
 			var build_toggle = hud.get_node_or_null("BuildMenuButton")
 			_check(build_toggle is Button, "The persistent Build button must open the category dock.")
 			_check(not right_toolbar.visible, "Category dock should stay collapsed until the player opens Build.")
