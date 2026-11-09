@@ -89,6 +89,20 @@ for visual_contract in [
 ]:
     if visual_contract not in building_source:
         errors.append(f"Building Supplies visual contract is missing: {visual_contract}")
+
+# Art Supplies is a separate gallery-style commercial hero, not the generic shop mesh.
+for visual_contract in [
+    'if building_type == "art_supplies" or subtype == "art":',
+    "func _build_art_supplies_showcase(",
+    "Rooftop artist's easel",
+    "Framed miniature canvases",
+    "Display racks on the side walls",
+    "Individual vivid canopy panels",
+]:
+    if visual_contract not in building_source:
+        errors.append(f"Art Supplies visual contract is missing: {visual_contract}")
+    if visual_contract not in building_source:
+        errors.append(f"Building Supplies visual contract is missing: {visual_contract}")
 if "stage_label.visible = false" not in building_source or 'stage_label.text = ""' not in building_source:
     errors.append("Floating building stage labels must remain hidden and empty")
 label_update = re.search(r"func _update_stage_label\(\).*?(?=\nfunc |\Z)", building_source, re.S)
