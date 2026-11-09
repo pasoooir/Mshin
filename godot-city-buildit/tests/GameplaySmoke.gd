@@ -387,6 +387,17 @@ func _run_gameplay_test() -> void:
 	touch_down.pressed = true
 	touch_down.position = move_input_screen
 	input_node._unhandled_input(touch_down)
+	# A browser/runtime may also synthesize mouse events for the same finger.
+	# They must not create a second pointer and block the one-finger hold timer.
+	var emulated_mouse_down := InputEventMouseButton.new()
+	emulated_mouse_down.button_index = MOUSE_BUTTON_LEFT
+	emulated_mouse_down.pressed = true
+	emulated_mouse_down.position = move_input_screen
+	input_node._unhandled_input(emulated_mouse_down)
+	var emulated_mouse_motion := InputEventMouseMotion.new()
+	emulated_mouse_motion.position = move_input_screen + Vector2(4.0, 2.0)
+	input_node._unhandled_input(emulated_mouse_motion)
+	_check(input_node.pointer_start.size() == 1 and input_node.pointer_start.has(0), "Emulated mouse events duplicated a physical touch and blocked the long-press timer.")
 	# Simulate normal finger tremor / touch-screen jitter before the hold timer expires.
 	var jitter_drag := InputEventScreenDrag.new()
 	jitter_drag.index = 0
