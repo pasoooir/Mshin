@@ -280,7 +280,7 @@ ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(enco
 for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_tiles", COVERAGE_TILES)', 'int(definition.get("fire", 0)) > 0', "home_flat.distance_to(station_flat) <= station_radius"]:
     if contract not in fire_manager_source:
         errors.append(f"FireHazardManager dynamic coverage contract is missing: {contract}")
-for contract in ["FireCoveragePreview", "CoverageArea", "CoverageBoundary", "FireHazardManager.get_coverage_radius_world(definition)"]:
+for contract in ["EmergencyCoveragePreview", "CoverageArea", "CoverageBoundary", "FireHazardManager.get_coverage_radius_world(definition)", 'int(definition.get("police", 0)) > 0', "Color(0.18, 0.38, 0.98, 0.95)"]:
     if contract not in ghost_preview_source:
         errors.append(f"Fire placement coverage preview contract is missing: {contract}")
 if city_input_source.count("BuildManager.building_types.get(BuildManager.selected_building_type, {})") < 2:
