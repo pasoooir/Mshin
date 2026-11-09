@@ -77,6 +77,18 @@ if any(position < 0 for position in positions) or positions != sorted(positions)
 
 # Visual-quality contracts: local Build SVGs, hidden roof labels, grounded trees and shared shadows.
 building_source = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")
+# The Building Supplies shop is the first detailed, colour-separated commercial hero asset.
+for visual_contract in [
+    'if building_type == "building_supplies" or subtype == "building_supplies":',
+    "func _build_building_supplies_showcase(",
+    "func _add_emissive_box(",
+    "Rooftop stock:",
+    "Compact rooftop jib crane:",
+    "Shelves and colourful product stacks",
+    "striped awning",
+]:
+    if visual_contract not in building_source:
+        errors.append(f"Building Supplies visual contract is missing: {visual_contract}")
 if "stage_label.visible = false" not in building_source or 'stage_label.text = ""' not in building_source:
     errors.append("Floating building stage labels must remain hidden and empty")
 label_update = re.search(r"func _update_stage_label\(\).*?(?=\nfunc |\Z)", building_source, re.S)
