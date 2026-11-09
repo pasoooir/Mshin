@@ -709,11 +709,7 @@ func _start_bulldoze_mode() -> void:
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
 	if city_input:
 		city_input.set_bulldoze_mode(true)
-	if submenu:
-		submenu.hide()
-	var category_toolbar := get_node_or_null("RightToolbar")
-	if category_toolbar: category_toolbar.hide()
-	active_category = ""
+	_close_build_menu()
 	_set_bulldozer_indicator(true)
 	status_label.text = "Bulldozer active — tap a building twice to demolish. Tap a road to remove it. Press X to cancel."
 
@@ -724,9 +720,7 @@ func _start_bulldoze_road_mode() -> void:
 	var city_input = scene.get_node_or_null("CityInput") if scene else null
 	if city_input:
 		city_input.set_bulldoze_road_mode(true)
-	if submenu:
-		submenu.hide()
-	active_category = ""
+	_close_build_menu()
 	_set_bulldozer_indicator(true)
 	status_label.text = "Bulldozer active — tap a road to remove it. Press X to cancel."
 
@@ -744,6 +738,9 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 				status_label.text = "Road system is unavailable."
 			submenu.hide()
 			active_category = ""
+			var build_label := get_node_or_null("BuildMenuButton/BuildButtonLabel") as Label
+			if build_label:
+				build_label.text = "BUILD"
 		elif option_id == "bulldoze_road":
 			_start_bulldoze_road_mode()
 	else:
@@ -757,7 +754,15 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 		BuildManager.cancel_placement()
 	if not BuildManager.is_placing:
 		var category_toolbar := get_node_or_null("RightToolbar")
-		if category_toolbar: category_toolbar.show()
+		if category_toolbar:
+			category_toolbar.show()
+	else:
+		var build_label := get_node_or_null("BuildMenuButton/BuildButtonLabel") as Label
+		if build_label:
+			build_label.text = "BUILD"
+		var build_button := get_node_or_null("BuildMenuButton") as Control
+		if build_button:
+			build_button.tooltip_text = "Open Build Menu"
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
