@@ -35,6 +35,9 @@ class BanknoteGlyph extends Control:
 		draw_line(Vector2(size.x - 20, size.y - 18), Vector2(size.x - 12, size.y - 18), Color("#D9FFE1"), 2.4)
 
 class LockGlyph extends Control:
+	func _ready() -> void:
+		name = "LockGlyph"
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
 	func _draw() -> void:
 		var lock_color := Color("#FFD98A")
 		var body := Rect2(Vector2(size.x * 0.18, size.y * 0.48), Vector2(size.x * 0.64, size.y * 0.42))
@@ -686,7 +689,11 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_theme_constant_override("separation", 5)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon := IconAtlas.make_icon(icon_name, Vector2(30, 30) * _ui_scale)
+	var resolved_icon_name := icon_name
+	match icon_name:
+		"landmarks": resolved_icon_name = "landmark"
+		"worship", "waste", "sewage", "government", "health": resolved_icon_name = "services"
+	var icon := IconAtlas.make_icon(resolved_icon_name, Vector2(30, 30) * _ui_scale)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if is_locked:
 		icon.modulate = Color(0.52, 0.56, 0.60, 0.72)
