@@ -32,6 +32,9 @@ jobs:
       - name: Static project validation
         run: python godot-city-buildit/tools/validate_project.py
 
+      - name: Validate transparent PNG icon catalog
+        run: python godot-city-buildit/tools/validate_icon_assets.py
+
       - name: Install Godot 4.3
         uses: chickensoft-games/setup-godot@v2
         with:
