@@ -251,6 +251,23 @@ for health_id, (expected_coverage, expected_size, expected_cost) in health_contr
     if '"fire":' in definition or '"police":' in definition or '"pollution":0' not in definition or '"pollution_radius":0.0' not in definition:
         errors.append(f"Health facility must be distinct from Fire/Police and pollution-free: {health_id}")
 
+
+# Government is the final Services group and Town Hall is administrative, not an emergency provider.
+service_group_section = services_hud
+if service_group_section.rfind('"id":"government"') < service_group_section.rfind('"id":"health"'):
+    errors.append("Government must be the final Services subgroup")
+town_hall_match = re.search(r'"town_hall": \{([^\n]+)\}', build_manager)
+if town_hall_match is None:
+    errors.append("Town Hall definition is missing")
+else:
+    town_hall_definition = town_hall_match.group(1)
+    if '"government":1' not in town_hall_definition or '"service_group":"government"' not in town_hall_definition:
+        errors.append("Town Hall must carry separate government metadata")
+    if any(f'"{key}":' in town_hall_definition for key in ["fire", "police", "health", "power", "water"]):
+        errors.append("Town Hall must not provide emergency or utility coverage")
+    if '"level":1' not in town_hall_definition or '"size":Vector2i(2,2)' not in town_hall_definition:
+        errors.append("Town Hall must be available at Level 1 with a 2x2 footprint")
+
 police_contracts = {
     "police_small": (10, "Vector2i(1,1)", 5100),
     "police_basic": (15, "Vector2i(2,2)", 9400),

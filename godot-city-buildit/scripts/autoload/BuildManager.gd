@@ -61,7 +61,7 @@ var building_types: Dictionary = {
 	"waste_dump": {"name":"Garbage Dump", "category":"service", "service_group":"waste", "cost":12000, "size":Vector2i(2,3), "population":0, "build_time":6.0, "color":Color(0.48,0.43,0.35), "waste":31, "pollution":1, "pollution_radius":12.0, "level":14},
 	"waste_incinerator": {"name":"Garbage Incinerator", "category":"service", "service_group":"waste", "cost":15000, "size":Vector2i(2,2), "population":0, "build_time":7.0, "color":Color(0.46,0.45,0.43), "waste":40, "pollution":1, "pollution_radius":16.0, "pollution_severity":"heavy", "pollution_label":"Heavy pollution", "level":14},
 	"waste_recycling": {"name":"Recycling Center", "category":"service", "service_group":"waste", "cost":60000, "size":Vector2i(3,2), "population":0, "build_time":9.0, "color":Color(0.36,0.72,0.52), "waste":70, "pollution":0, "pollution_radius":0.0, "level":20},
-	"town_hall": {"name":"Town Hall", "category":"service", "service_group":"government", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.72,0.68,0.55), "level":1},
+	"town_hall": {"name":"Town Hall", "category":"service", "service_group":"government", "government":1, "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.72,0.68,0.55), "level":1},
 	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5}
 }
 

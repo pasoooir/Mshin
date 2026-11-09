@@ -370,6 +370,28 @@ func _test_build_menu_visibility() -> void:
 		_check(int(health_definition.get("level", 0)) == 16, "Health facilities must unlock at Level 16: " + health_id)
 		_check(int(health_definition.get("pollution", 0)) == 0, "Health facilities must be pollution-free: " + health_id)
 		_check(int(health_definition.get("fire", 0)) == 0 and int(health_definition.get("police", 0)) == 0, "Health metadata must remain separate from Fire and Police: " + health_id)
+	# Government is administrative only: Town Hall must never provide emergency coverage.
+	hud._on_submenu_option("services", "back")
+	await get_tree().process_frame
+	hud._on_submenu_option("services", "group_government")
+	await get_tree().process_frame
+	_check(hud.submenu.get_node_or_null("town_hall") != null, "Government submenu must contain Town Hall.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Government submenu must expose Back and Cancel.")
+	var town_hall_definition: Dictionary = BuildManager.building_types["town_hall"]
+	_check(int(town_hall_definition.get("government", 0)) == 1, "Town Hall must expose the separate government metadata key.")
+	_check(str(town_hall_definition.get("service_group", "")) == "government", "Town Hall must belong to the Government group.")
+	_check(int(town_hall_definition.get("fire", 0)) == 0 and int(town_hall_definition.get("police", 0)) == 0 and int(town_hall_definition.get("health", 0)) == 0, "Town Hall must not provide Fire, Police or Health coverage.")
+	_check(int(town_hall_definition.get("power", 0)) == 0 and int(town_hall_definition.get("water", 0)) == 0, "Town Hall must not provide utility capacity.")
+	var saved_government_level := GameManager.level
+	GameManager.level = 1
+	hud._on_submenu_option("services", "town_hall")
+	_check(BuildManager.is_placing and BuildManager.selected_building_type == "town_hall", "Town Hall must be buildable at Level 1.")
+	BuildManager.cancel_placement()
+	GameManager.level = saved_government_level
+	hud._on_submenu_option("services", "back")
+	_check(hud.submenu.get_node_or_null("group_government") != null, "Government Back must return to the Services group list.")
+	hud._on_cancel_pressed()
+	await get_tree().process_frame
 	var previous_level := GameManager.level
 	GameManager.level = 16
 	hud._on_submenu_option("services", "clinic_small")
