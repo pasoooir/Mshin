@@ -186,6 +186,20 @@ func _test_build_menu_visibility() -> void:
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
 	_check(hud.submenu.get_child_count() == 9, "Services level one must contain exactly eight fixed groups and Cancel.")
+	hud._on_submenu_option("services", "back")
+	hud._on_submenu_option("services", "group_power")
+	await get_tree().process_frame
+	for power_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear"]:
+		_check(hud.submenu.get_node_or_null(power_id) != null, "Power submenu is missing: " + power_id)
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Power submenu must expose Back and Cancel.")
+	var locked_deluxe := hud.submenu.get_node_or_null("power_wind_deluxe") as Button
+	_check(locked_deluxe != null and not locked_deluxe.disabled, "Locked advanced power plant must remain tappable for unlock feedback.")
+	if locked_deluxe:
+		locked_deluxe.emit_signal("pressed")
+		_check(hud.status_label.text.contains("Level 10"), "Tapping a locked Deluxe Wind must explain its unlock level.")
+	_check(int(BuildManager.building_types["power_wind"].get("power", 0)) > 0 and int(BuildManager.building_types["power_coal"].get("power", 0)) > 0, "Wind and Coal must expose numeric power production.")
+	hud._on_submenu_option("services", "back")
+	await get_tree().process_frame
 	hud._on_submenu_option("services", "group_fire")
 	await get_tree().process_frame
 	_check(hud.submenu.get_node_or_null("fire_station_small") != null, "Fire group must contain the Small Fire Station.")
@@ -600,7 +614,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 24, "Move whitelist must include all 24 requested building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 28, "Move whitelist must include all 28 requested building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 

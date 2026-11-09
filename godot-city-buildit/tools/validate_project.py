@@ -189,7 +189,8 @@ required_movable_types = {
     "building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
     "art_supplies", "hardware_store", "farmers_market", "furniture_store",
     "industrial_1", "industrial_2", "industrial_3",
-    "power_wind", "water_tower", "fire_station", "police_station", "sewage_pipe",
+    "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
+    "water_tower", "fire_station_small", "fire_station", "police_station", "sewage_pipe", "town_hall",
     "park_small"
 }
 move_list_match = re.search(r"const MOVABLE_BUILDING_TYPES := \[(.*?)\]", build_manager_source, re.S)
@@ -208,7 +209,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 24"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 28"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
@@ -220,11 +221,11 @@ services_hud = hud[hud.find("const SERVICE_GROUPS"):hud.find("const SPECIALIZATI
 for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health", "government"]:
     if f'"id":"{group_id}"' not in services_hud:
         errors.append(f"Services group is missing or out of order: {group_id}")
-for building_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
+for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_pipe",
                     "fire_station_small", "fire_station", "police_station", "town_hall"]:
     if f'"{building_id}": {{"name"' not in build_manager:
         errors.append(f"Services menu building definition is missing: {building_id}")
-for service_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
+for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_pipe",
                    "fire_station_small", "fire_station", "police_station", "town_hall"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
     if '"service_group"' not in definition_line:
@@ -233,6 +234,23 @@ for fire_id in ["fire_station_small", "fire_station"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{fire_id}"' in line), "")
     if '"fire":1' not in definition_line:
         errors.append(f"Fire station must provide fire coverage: {fire_id}")
+
+for power_id, expected_power, expected_level in [("power_wind", 12, 1), ("power_coal", 12, 1), ("power_wind_deluxe", 22, 10), ("power_solar", 35, 15), ("power_oil", 40, 18), ("power_nuclear", 60, 22)]:
+    match = re.search(r'"' + power_id + r'": \{([^\n]+)\}', build_manager)
+    if match is None:
+        errors.append(f"Power plant definition is missing: {power_id}")
+        continue
+    definition = match.group(1)
+    if f'"power":{expected_power}' not in definition or f'"level":{expected_level}' not in definition:
+        errors.append(f"Power plant production/unlock contract is incorrect: {power_id}")
+    if '"service_group":"power"' not in definition or '"category":"service"' not in definition:
+        errors.append(f"Power plant lacks service catalog metadata: {power_id}")
+    if '"size":Vector2i(' not in definition:
+        errors.append(f"Power plant footprint is missing: {power_id}")
+for polluting_id in ["power_coal", "power_oil", "power_nuclear"]:
+    line = next((line for line in build_manager.splitlines() if f'"{polluting_id}"' in line), "")
+    if '"pollution":1' not in line or '"pollution_radius":' not in line:
+        errors.append(f"Polluting power plant needs pollution and radius metadata: {polluting_id}")
 
 if errors:
     print("VALIDATION FAILED")

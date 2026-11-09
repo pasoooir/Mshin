@@ -36,8 +36,12 @@ var building_types: Dictionary = {
 	"industrial_1": {"name":"Small Factory", "category":"industrial", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood"]},
 	"industrial_2": {"name":"Factory", "category":"industrial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.45,0.45,0.5), "produces":"wood", "level":2, "production_slots":2, "can_produce":["metal","wood"]},
 	"industrial_3": {"name":"Factory+", "category":"industrial", "cost":1500, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.4,0.42,0.48), "produces":"plastic", "level":5, "production_slots":2, "can_produce":["metal","wood","plastic"]},
-	"power_wind": {"name":"Wind Power", "category":"service", "service_group":"power", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.7,0.9,0.85), "power":12, "pollution":0, "level":1},
-	"power_coal": {"name":"Coal Power Plant", "category":"service", "service_group":"power", "cost":1000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.38,0.39,0.42), "power":12, "pollution":1, "level":1},
+	"power_wind": {"name":"Wind Power Plant", "category":"service", "service_group":"power", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.7,0.9,0.85), "power":12, "pollution":0, "pollution_radius":0.0, "level":1},
+	"power_coal": {"name":"Coal Power Plant", "category":"service", "service_group":"power", "cost":1000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.38,0.39,0.42), "power":12, "pollution":1, "pollution_radius":10.0, "level":1},
+	"power_wind_deluxe": {"name":"Deluxe Wind Power Plant", "category":"service", "service_group":"power", "cost":15000, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.62,0.86,0.82), "power":22, "pollution":0, "pollution_radius":0.0, "level":10},
+	"power_solar": {"name":"Solar Power Plant", "category":"service", "service_group":"power", "cost":22000, "size":Vector2i(2,4), "population":0, "build_time":7.0, "color":Color(0.95,0.78,0.35), "power":35, "pollution":0, "pollution_radius":0.0, "level":15},
+	"power_oil": {"name":"Oil Power Plant", "category":"service", "service_group":"power", "cost":15000, "size":Vector2i(2,4), "population":0, "build_time":7.0, "color":Color(0.42,0.39,0.34), "power":40, "pollution":1, "pollution_radius":8.0, "level":18},
+	"power_nuclear": {"name":"Nuclear Power Plant", "category":"service", "service_group":"power", "cost":35000, "size":Vector2i(3,3), "population":0, "build_time":9.0, "color":Color(0.58,0.72,0.62), "power":60, "pollution":1, "pollution_radius":12.0, "level":22},
 	"water_tower": {"name":"Water Tower", "category":"service", "service_group":"water", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.45,0.72,0.95), "water":12, "level":1},
 	"fire_station_small": {"name":"Small Fire Station", "category":"service", "service_group":"fire", "cost":1800, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.96,0.42,0.32), "fire":1, "level":1},
 	"fire_station": {"name":"Fire Station", "category":"service", "service_group":"fire", "cost":2500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.92,0.32,0.28), "fire":1, "level":5},
@@ -56,7 +60,7 @@ const MOVABLE_BUILDING_TYPES := [
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
 	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
 	"industrial_1", "industrial_2", "industrial_3",
-	"power_wind", "power_coal", "water_tower", "fire_station_small", "fire_station", "police_station", "sewage_pipe", "town_hall",
+	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "fire_station_small", "fire_station", "police_station", "sewage_pipe", "town_hall",
 	"park_small"
 ]
 
