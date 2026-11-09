@@ -523,7 +523,7 @@ func _build_building_supplies_showcase(w: float, d: float, height: float, color:
 		_add_box(Vector3(glass_w * 0.88, 0.055, 0.22), Vector3(0, y, front * 0.80), timber)
 		for product in range(7):
 			var px := -glass_w * 0.39 + float(product) * glass_w * 0.13
-			var product_col := [brick_light, safety_yellow, Color(0.10,0.48,0.72), Color(0.88,0.88,0.78)][product % 4]
+			var product_col: Color = [brick_light, safety_yellow, Color(0.10, 0.48, 0.72), Color(0.88, 0.88, 0.78)][product % 4]
 			_add_box(Vector3(0.12, 0.25 if shelf == 0 else 0.20, 0.12), Vector3(px, y + 0.15, front * 0.82), product_col)
 	# Central glazed entrance with bright metal handles.
 	_add_box(Vector3(0.48, 1.04, 0.10), Vector3(w * 0.37, 0.91, front * 0.91), cream)
