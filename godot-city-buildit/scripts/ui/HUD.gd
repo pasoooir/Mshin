@@ -8,7 +8,7 @@ const SERVICE_GROUPS := [
 	{"id":"water", "label":"Water", "buildings":["water_tower", "water_pump"]},
 	{"id":"sewage", "label":"Sewage", "buildings":["sewage_small", "sewage_basic", "sewage_deluxe"]},
 	{"id":"waste", "label":"Waste", "buildings":["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]},
-	{"id":"fire", "label":"Fire", "buildings":["fire_station_small", "fire_station"]},
+	{"id":"fire", "label":"Fire", "buildings":["fire_station_small", "fire_station", "fire_station_deluxe"]},
 	{"id":"police", "label":"Police", "buildings":["police_station"]},
 	{"id":"health", "label":"Health", "buildings":[]},
 	{"id":"government", "label":"Government", "buildings":["town_hall"]}
@@ -666,6 +666,8 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 				var definition: Dictionary = BuildManager.building_types[type_id]
 				var footprint: Vector2i = definition.get("size", Vector2i.ONE)
 				var detail := "%d coins · Lv %d · %dx%d" % [int(definition.get("cost", 0)), int(definition.get("level", 1)), footprint.x, footprint.y]
+				if int(definition.get("fire", 0)) > 0:
+					detail += " · Coverage: %d tiles" % int(definition.get("coverage_tiles", 15))
 				if int(definition.get("pollution", 0)) > 0:
 					detail += " · " + str(definition.get("pollution_label", "Pollutes"))
 				_add_submenu_button(type_id, str(definition.get("name", type_id)), group_id, detail, false, parent_category, int(definition.get("level", 1)))
