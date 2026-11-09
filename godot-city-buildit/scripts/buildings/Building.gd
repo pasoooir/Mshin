@@ -230,6 +230,10 @@ func _create_visual() -> void:
 			_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
+	var residential_subtype := str(definition.get("subtype", "villa"))
+	if upgrade_stage == 1 and residential_subtype == "villa":
+		_build_level_one_villa(w, d, height, color)
+		return
 	# Warm masonry palette: a stone plinth, sun-baked plaster, timber trim and clay tiles.
 	var plaster := Color(0.78, 0.65, 0.49).lerp(color, 0.24)
 	var plaster_light := plaster.lightened(0.14)
@@ -355,6 +359,82 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 				_add_box(Vector3(0.36, 0.18, 0.08), crop_pos + Vector3(0, 0.12, 0), Color(0.34, 0.55, 0.25))
 		for x_pos in [-w * 0.42, w * 0.42]:
 			_add_box(Vector3(0.07, 0.42, 0.07), Vector3(x_pos, 0.40, -d * 0.48), wood)
+
+# Level 1 starter home: a compact, colourful Sims-like villa with distinct facade,
+# roof, trim, garden and warm emissive windows. Emissive meshes avoid per-house lights.
+func _build_level_one_villa(w: float, d: float, height: float, base_color: Color) -> void:
+	var wall := Color(0.98, 0.72, 0.43).lerp(base_color, 0.18)
+	var coral := Color(0.98, 0.34, 0.28)
+	var turquoise := Color(0.10, 0.68, 0.67)
+	var yellow := Color(1.0, 0.78, 0.22)
+	var cream := Color(1.0, 0.91, 0.72)
+	var roof := Color(0.72, 0.18, 0.22)
+	var roof_dark := Color(0.42, 0.10, 0.16)
+	var wood := Color(0.34, 0.17, 0.11)
+	var glass := Color(0.12, 0.37, 0.48)
+	var body_h := maxf(height, 2.05)
+	var front := d * 0.43
+
+	# Coloured foundation, lower plinth and warm plaster walls.
+	_add_box(Vector3(w * 1.04, 0.18, d * 1.04), Vector3(0, 0.09, 0), turquoise)
+	_add_box(Vector3(w * 0.98, 0.18, d * 0.96), Vector3(0, 0.25, 0), cream)
+	_add_box(Vector3(w * 0.88, body_h, d * 0.82), Vector3(0, body_h * 0.5 + 0.34, 0), wall)
+	_add_box(Vector3(w * 0.91, 0.13, d * 0.86), Vector3(0, 0.48, 0), coral)
+	_add_box(Vector3(w * 0.94, 0.10, d * 0.90), Vector3(0, body_h + 0.34, 0), turquoise)
+
+	# Bold corner bands and a contrasting front gable.
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.13, body_h * 0.96, 0.13), Vector3(side * w * 0.39, body_h * 0.5 + 0.35, front), turquoise)
+	_add_box(Vector3(w * 0.44, 0.62, 0.13), Vector3(0, body_h + 0.58, front * 0.94), coral)
+	_add_box(Vector3(w * 0.31, 0.40, 0.07), Vector3(0, body_h + 0.59, front * 1.04), yellow)
+
+	# Large warm windows with luminous inner panes and crisp contrasting frames.
+	for x_pos in [-w * 0.27, w * 0.27]:
+		_add_box(Vector3(0.78, 0.78, 0.10), Vector3(x_pos, 1.18, front * 1.02), cream)
+		_add_box(Vector3(0.64, 0.64, 0.045), Vector3(x_pos, 1.18, front * 1.10), glass)
+		_add_emissive_box(Vector3(0.56, 0.56, 0.025), Vector3(x_pos, 1.18, front * 1.14), Color(1.0, 0.72, 0.32), 0.42)
+		_add_box(Vector3(0.055, 0.68, 0.045), Vector3(x_pos, 1.18, front * 1.17), turquoise)
+		_add_box(Vector3(0.70, 0.07, 0.16), Vector3(x_pos, 0.76, front * 1.18), coral)
+		_add_box(Vector3(0.12, 0.22, 0.12), Vector3(x_pos - 0.30, 0.91, front * 1.20), yellow)
+		_add_box(Vector3(0.12, 0.22, 0.12), Vector3(x_pos + 0.30, 0.91, front * 1.20), turquoise)
+
+	# Recessed front door, bright surround, handle and welcoming steps.
+	_add_box(Vector3(0.66, 1.22, 0.12), Vector3(0, 0.95, front * 1.03), turquoise)
+	_add_box(Vector3(0.48, 1.04, 0.07), Vector3(0, 0.94, front * 1.12), wood)
+	_add_box(Vector3(0.045, 0.82, 0.025), Vector3(-0.10, 0.95, front * 1.17), coral)
+	_add_box(Vector3(0.045, 0.055, 0.035), Vector3(0.15, 0.92, front * 1.19), yellow)
+	_add_box(Vector3(0.92, 0.12, 0.42), Vector3(0, 0.37, front * 1.28), yellow)
+	_add_box(Vector3(0.72, 0.10, 0.28), Vector3(0, 0.25, front * 1.46), cream)
+
+	# Two-plane pitched roof with saturated red tiles and golden ridge.
+	_add_gabled_roof(w * 1.10, d * 1.04, body_h + 0.34, 0.72, roof, roof_dark)
+	_add_box(Vector3(w * 1.14, 0.12, 0.15), Vector3(0, body_h + 1.09, 0), yellow)
+	for roof_side in [-1.0, 1.0]:
+		_add_box(Vector3(w * 0.96, 0.09, 0.11), Vector3(0, body_h + 0.39, roof_side * d * 0.32), cream)
+
+	# Small dormer, chimney and decorative roof panels give the silhouette a toy-town charm.
+	_add_box(Vector3(0.72, 0.48, 0.16), Vector3(0, body_h + 0.77, front * 0.52), yellow)
+	_add_box(Vector3(0.48, 0.30, 0.07), Vector3(0, body_h + 0.78, front * 0.60), glass)
+	_add_box(Vector3(0.30, 0.62, 0.30), Vector3(w * 0.30, body_h + 0.76, -d * 0.20), coral)
+	_add_box(Vector3(0.38, 0.09, 0.38), Vector3(w * 0.30, body_h + 1.10, -d * 0.20), yellow)
+
+	# Emissive wall sconces and a bright coloured canopy above the entrance.
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.18, 0.25, 0.09), Vector3(side * 0.52, 1.24, front * 1.12), turquoise)
+		_add_emissive_box(Vector3(0.12, 0.17, 0.045), Vector3(side * 0.52, 1.23, front * 1.18), yellow, 1.65)
+	_add_box(Vector3(1.42, 0.12, 0.48), Vector3(0, 1.88, front * 1.14), coral)
+	for stripe in range(5):
+		var stripe_x := -0.56 + float(stripe) * 0.28
+		_add_box(Vector3(0.22, 0.13, 0.46), Vector3(stripe_x, 1.87, front * 1.20), cream if stripe % 2 == 0 else yellow)
+
+	# Flower boxes, tiny shrubs and a colourful front garden edge.
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.72, 0.18, 0.28), Vector3(side * w * 0.30, 0.57, front * 1.23), coral)
+		for flower in range(3):
+			var flower_x: float = float(side) * w * 0.30 - 0.22 + float(flower) * 0.22
+			_add_box(Vector3(0.13, 0.17, 0.13), Vector3(flower_x, 0.73, front * 1.25), [coral, yellow, turquoise][flower])
+	_add_box(Vector3(w * 0.72, 0.07, 0.34), Vector3(0, 0.08, d * 0.48), turquoise)
+
 func _add_natural_window(pos: Vector3, frame_col: Color, glass_col: Color, side: bool = false) -> void:
 	var fw := 0.36 if side else 0.44
 	var fh := 0.40 if side else 0.48
