@@ -244,6 +244,10 @@ func _test_fire_hazard_state_machine() -> void:
 	station.global_position = Vector3(30.1, 0.0, 0.0)
 	FireHazardManager._evaluate_hazards(19.9)
 	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Losing fire coverage must restart the full 20-second warning timer.")
+	FireHazardManager.reset_for_city_load()
+	_check(is_zero_approx(float(FireHazardManager.unprotected_time.get(home.building_id, -1.0))), "Loading a city must reset uncovered time to zero.")
+	FireHazardManager._evaluate_hazards(19.9)
+	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A restored uncovered home must wait another full 20 seconds.")
 	FireHazardManager._evaluate_hazards(0.2)
 	_check(FireHazardManager.smoking_ids.has(home.building_id), "Smoke must resume after a fresh continuous 20-second uncovered interval.")
 
