@@ -881,17 +881,17 @@ func _run_gameplay_test() -> void:
 
 	# Production acceptance uses real SCBI durations and advances timestamps in
 	# the test fixture rather than sleeping for minutes.
-	var hud = get_node("HUD")
+	var production_hud = get_node("HUD")
 	var factory_component = factory.production_component
 	_check(factory_component != null and factory_component.get_slot_count() == 2, "Small Factory must expose two independent production slots.")
-	hud.open_production_panel(factory)
-	var metal_button := hud.production_panel.find_child("Slot0_metal", true, false) as Button
+	production_hud.open_production_panel(factory)
+	var metal_button := production_hud.production_panel.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
 		metal_button.emit_signal("pressed")
 	_check(not factory_component.get_slot(0).is_empty(), "Selecting Metal must start the first factory slot.")
-	hud.open_production_panel(factory)
-	var second_metal_button := hud.production_panel.find_child("Slot1_metal", true, false) as Button
+	production_hud.open_production_panel(factory)
+	var second_metal_button := production_hud.production_panel.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
 	if second_metal_button:
 		second_metal_button.emit_signal("pressed")
@@ -902,14 +902,14 @@ func _run_gameplay_test() -> void:
 		factory_component.slots[slot_index] = slot
 	factory_component.refresh_slots()
 	_check(bool(factory_component.get_slot(0).get("ready",false)), "Metal batch must become ready at its Unix finish timestamp.")
-	hud.open_production_panel(factory)
-	var collect_metal_0 := hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	production_hud.open_production_panel(factory)
+	var collect_metal_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
 	if collect_metal_0:
 		collect_metal_0.emit_signal("pressed")
 	else:
 		_check(false, "Ready Metal slot must expose a Collect button.")
-	hud.open_production_panel(factory)
-	var collect_metal_1 := hud.production_panel.find_child("CollectSlot1", true, false) as Button
+	production_hud.open_production_panel(factory)
+	var collect_metal_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
 	if collect_metal_1:
 		collect_metal_1.emit_signal("pressed")
 	else:
@@ -921,14 +921,14 @@ func _run_gameplay_test() -> void:
 	_check(shop_component != null and shop_component.get_slot_count() == 2, "Building Supplies must expose two craft queue slots.")
 	StorageManager.items = {}
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
-	hud.open_production_panel(supplies)
-	var nails_button_0 := hud.production_panel.find_child("Slot0_nails", true, false) as Button
+	production_hud.open_production_panel(supplies)
+	var nails_button_0 := production_hud.production_panel.find_child("Slot0_nails", true, false) as Button
 	if nails_button_0:
 		nails_button_0.emit_signal("pressed")
 	else:
 		_check(false, "Building Supplies must offer Nails at level 1.")
-	hud.open_production_panel(supplies)
-	var nails_button_1 := hud.production_panel.find_child("Slot1_nails", true, false) as Button
+	production_hud.open_production_panel(supplies)
+	var nails_button_1 := production_hud.production_panel.find_child("Slot1_nails", true, false) as Button
 	if nails_button_1:
 		nails_button_1.emit_signal("pressed")
 	else:
@@ -939,12 +939,12 @@ func _run_gameplay_test() -> void:
 		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
 		shop_component.slots[slot_index] = slot
 	shop_component.refresh_slots()
-	hud.open_production_panel(supplies)
-	var collect_nails_0 := hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	production_hud.open_production_panel(supplies)
+	var collect_nails_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
 	if collect_nails_0:
 		collect_nails_0.emit_signal("pressed")
-	hud.open_production_panel(supplies)
-	var collect_nails_1 := hud.production_panel.find_child("CollectSlot1", true, false) as Button
+	production_hud.open_production_panel(supplies)
+	var collect_nails_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
 	if collect_nails_1:
 		collect_nails_1.emit_signal("pressed")
 	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
