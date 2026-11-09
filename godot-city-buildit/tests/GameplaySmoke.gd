@@ -199,6 +199,30 @@ func _test_build_menu_visibility() -> void:
 	_check(int(BuildManager.building_types["water_tower"].get("water", 0)) > 0 and int(BuildManager.building_types["water_pump"].get("water", 0)) > 0, "Water facilities must expose positive numeric water production.")
 	_check(BuildManager.building_types["water_tower"].get("size", Vector2i.ZERO) == Vector2i(1, 1), "Water Tower footprint must be 1x1.")
 	_check(BuildManager.building_types["water_pump"].get("size", Vector2i.ZERO) == Vector2i(2, 3), "Water Pump footprint must be 2x3.")
+
+	# Sewage is catalogued independently from Water; capacity gameplay is intentionally deferred.
+	hud._on_submenu_option("services", "back")
+	await get_tree().process_frame
+	hud._on_submenu_option("services", "group_sewage")
+	await get_tree().process_frame
+	for sewage_id in ["sewage_small", "sewage_basic", "sewage_deluxe"]:
+		_check(hud.submenu.get_node_or_null(sewage_id) != null, "Sewage submenu is missing: " + sewage_id)
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Sewage submenu must expose Back and Cancel.")
+	var locked_sewage := hud.submenu.get_node_or_null("sewage_small") as Button
+	_check(locked_sewage != null and not locked_sewage.disabled, "Locked Small Sewage must remain tappable for unlock feedback.")
+	if locked_sewage:
+		locked_sewage.emit_signal("pressed")
+		_check(hud.status_label.text.contains("Level 8"), "Tapping locked Small Sewage must explain its unlock level.")
+	for sewage_id in ["sewage_small", "sewage_basic", "sewage_deluxe"]:
+		var sewage_definition: Dictionary = BuildManager.building_types[sewage_id]
+		_check(int(sewage_definition.get("sewage", 0)) > 0, "Sewage facility must expose generic positive sewage capacity: " + sewage_id)
+		_check(sewage_definition.get("service_group", "") == "sewage", "Sewage facility must remain in its own service group: " + sewage_id)
+	_check(BuildManager.building_types["sewage_small"].get("size", Vector2i.ZERO) == Vector2i(1, 1), "Small Sewage footprint must be 1x1.")
+	_check(BuildManager.building_types["sewage_basic"].get("size", Vector2i.ZERO) == Vector2i(2, 2), "Basic Sewage footprint must be 2x2.")
+	_check(BuildManager.building_types["sewage_deluxe"].get("size", Vector2i.ZERO) == Vector2i(2, 3), "Deluxe Treatment footprint must be 2x3.")
+	_check(int(BuildManager.building_types["sewage_small"].get("pollution", 0)) > 0 and float(BuildManager.building_types["sewage_small"].get("pollution_radius", 0.0)) > 0.0, "Small Sewage must expose dirty-site metadata.")
+	_check(int(BuildManager.building_types["sewage_basic"].get("pollution", 0)) > 0 and float(BuildManager.building_types["sewage_basic"].get("pollution_radius", 0.0)) > 0.0, "Basic Sewage must expose dirty-site metadata.")
+	_check(int(BuildManager.building_types["sewage_deluxe"].get("pollution", 0)) == 0 and float(BuildManager.building_types["sewage_deluxe"].get("pollution_radius", 0.0)) == 0.0, "Deluxe Treatment must be pollution-free.")
 	hud._on_submenu_option("services", "back")
 	await get_tree().process_frame
 	hud._on_submenu_option("services", "back")
