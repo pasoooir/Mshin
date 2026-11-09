@@ -173,7 +173,6 @@ func _test_build_menu_visibility() -> void:
 		_check(hud.submenu.find_child(type_id, true, false) != null, "Services Build menu is missing " + type_id)
 	var police_choice := hud.submenu.find_child("police_station", true, false) as Button
 	_check(police_choice != null and _node_has_label_text(police_choice, "Unlocked at Level 12"), "Police Station must show its English unlock level.")
-	print("[BuildMenuSmoke] viewport=%s palette=%s" % [str(viewport_rect.size), str(hud.submenu.get_global_rect().size)])
 	_check(hud.submenu.get_global_rect().size.x < viewport_rect.size.x * 0.5, "Category item palette is not compactly docked.")
 	hud._close_build_menu()
 	await get_tree().process_frame
@@ -181,7 +180,7 @@ func _test_build_menu_visibility() -> void:
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
-	_test_build_menu_visibility()
+	await _test_build_menu_visibility()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
