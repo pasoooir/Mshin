@@ -40,8 +40,7 @@ func _test_wind_turbine_rotor_animation() -> void:
 	var first_rotation := rotor.rotation.z
 	test_building._process(1.0)
 	_check(rotor.rotation.z > first_rotation, "Wind turbine rotor animation must keep advancing every frame.")
-	test_building.queue_free()
-	await get_tree().process_frame
+	test_building.free()
 
 func _test_immigration_coefficients() -> void:
 	_check(is_equal_approx(HappinessManager._immigration_happiness_factor(60.0), 0.3), "Immigration happiness factor at 60% must be 0.3.")
