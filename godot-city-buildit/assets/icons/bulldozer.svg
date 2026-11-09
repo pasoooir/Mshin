@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><g fill="none" stroke="#F4F8FC" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 43h39l8 9H13z"/><path d="M18 43V25h22l9 18M22 25l5-9h10l5 9" stroke="#FFC857"/><path d="M6 33h10m-6-7 6 7-6 7" stroke="#65C8F2"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs><linearGradient id="yellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE27A"/><stop offset=".5" stop-color="#F2B52F"/><stop offset="1" stop-color="#C9791E"/></linearGradient><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#D9F6FF"/><stop offset="1" stop-color="#4F9AB9"/></linearGradient><linearGradient id="track" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#53616A"/><stop offset="1" stop-color="#202E38"/></linearGradient></defs>
+<ellipse cx="64" cy="111" rx="45" ry="7" fill="#18384A" opacity=".16"/>
+<path d="m22 87 11-17h54l16 18-9 15H29z" fill="url(#track)" stroke="#26343C" stroke-width="3" stroke-linejoin="round"/>
+<path d="M28 91h61" stroke="#8D9AA0" stroke-width="4" stroke-dasharray="8 5"/>
+<path d="M37 77V43h37l17 34z" fill="url(#yellow)" stroke="#8A5C23" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M45 49h23l11 23H45z" fill="url(#glass)" stroke="#75552C" stroke-width="3"/>
+<path d="M74 42h12l10 34H82z" fill="#D98D23" stroke="#8A5C23" stroke-width="3"/>
+<path d="M29 78h66l8 12H23z" fill="#E8A42B" stroke="#8A5C23" stroke-width="3" stroke-linejoin="round"/>
+<path d="M18 73 10 89l12 12 13-9-4-17z" fill="url(#yellow)" stroke="#8A5C23" stroke-width="3" stroke-linejoin="round"/>
+<path d="M16 89h20" stroke="#FFE8A0" stroke-width="4" stroke-linecap="round"/>
+<path d="M91 73 109 80l7 15-10 4-14-12z" fill="#C77B22" stroke="#80521F" stroke-width="3" stroke-linejoin="round"/>
+<path d="M99 82 117 89l-5 13-18-7z" fill="url(#yellow)" stroke="#80521F" stroke-width="3" stroke-linejoin="round"/>
+<path d="M44 39h24" stroke="#FFF1B9" stroke-width="4" stroke-linecap="round"/>
+<circle cx="41" cy="92" r="5" fill="#AEB8BA"/><circle cx="75" cy="92" r="5" fill="#AEB8BA"/>
+</svg>
