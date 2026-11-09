@@ -24,7 +24,7 @@ const SPECIALIZATION_GROUPS := [
 ]
 
 # The atlas does not currently contain a banknote glyph, so SimCash uses this
-# small locally drawn vector icon. All other status icons come from IconAtlas.
+# SimCash and all other HUD glyphs use local transparent PNG assets.
 class BanknoteGlyph extends Control:
 	func _draw() -> void:
 		var note := Rect2(Vector2(5.0, 12.0), Vector2(size.x - 10.0, size.y - 24.0))
@@ -304,10 +304,7 @@ func _build_simcash_capsule(parent: Container) -> void:
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var glyph := BanknoteGlyph.new()
-	glyph.custom_minimum_size = Vector2(44, 44) * _ui_scale
-	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_child(glyph)
+	content.add_child(Icons.make_icon("money", Vector2(44, 44) * _ui_scale))
 	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), int(25 * _ui_scale))
 	simcash_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	simcash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -751,7 +748,8 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		submenu.add_child(back)
 	var cancel := Button.new()
 	cancel.name = "Submenu_Cancel"
-	cancel.text = "CANCEL  X"
+	cancel.text = "CANCEL"
+	cancel.icon = Icons.get_tex("ui", "cancel")
 	cancel.custom_minimum_size = Vector2(112, 78) * _ui_scale
 	cancel.focus_mode = Control.FOCUS_NONE
 	cancel.add_theme_color_override("font_color", Color("#FFE2D9"))
