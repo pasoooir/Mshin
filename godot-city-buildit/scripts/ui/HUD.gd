@@ -594,7 +594,7 @@ func _show_submenu(category: String) -> void:
 	submenu.show()
 	var viewport_size := get_viewport().get_visible_rect().size
 	var columns := 2 if viewport_size.x < 1200.0 else 3
-	var panel_width := 292.0 if columns == 2 else 390.0
+	var panel_width := 276.0 if columns == 2 else 390.0
 	var item_height := 58.0
 	var rows := ceili(float(options.size() + 2) / float(columns))
 	var panel_height := float(rows) * item_height + float(rows - 1) * 6.0
