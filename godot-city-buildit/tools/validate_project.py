@@ -220,11 +220,11 @@ services_hud = hud[hud.find("const SERVICE_GROUPS"):hud.find("const SPECIALIZATI
 for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health", "government"]:
     if f'"id":"{group_id}"' not in services_hud:
         errors.append(f"Services group is missing or out of order: {group_id}")
-for building_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
+for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_pipe",
                     "fire_station_small", "fire_station", "police_station", "town_hall"]:
     if f'"{building_id}": {{"name"' not in build_manager:
         errors.append(f"Services menu building definition is missing: {building_id}")
-for service_id in ["power_wind", "power_coal", "water_tower", "sewage_pipe",
+for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_pipe",
                    "fire_station_small", "fire_station", "police_station", "town_hall"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
     if '"service_group"' not in definition_line:
@@ -233,6 +233,23 @@ for fire_id in ["fire_station_small", "fire_station"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{fire_id}"' in line), "")
     if '"fire":1' not in definition_line:
         errors.append(f"Fire station must provide fire coverage: {fire_id}")
+
+for power_id, expected_power, expected_level in [("power_wind", 12, 1), ("power_coal", 12, 1), ("power_wind_deluxe", 22, 10), ("power_solar", 35, 15), ("power_oil", 40, 18), ("power_nuclear", 60, 22)]:
+    match = re.search(r'"' + power_id + r'": \{([^\n]+)\}', build_manager)
+    if match is None:
+        errors.append(f"Power plant definition is missing: {power_id}")
+        continue
+    definition = match.group(1)
+    if f'"power":{expected_power}' not in definition or f'"level":{expected_level}' not in definition:
+        errors.append(f"Power plant production/unlock contract is incorrect: {power_id}")
+    if '"service_group":"power"' not in definition or '"category":"service"' not in definition:
+        errors.append(f"Power plant lacks service catalog metadata: {power_id}")
+    if '"size":Vector2i(' not in definition:
+        errors.append(f"Power plant footprint is missing: {power_id}")
+for polluting_id in ["power_coal", "power_oil", "power_nuclear"]:
+    line = next((line for line in build_manager.splitlines() if f'"{polluting_id}"' in line), "")
+    if '"pollution":1' not in line or '"pollution_radius":' not in line:
+        errors.append(f"Polluting power plant needs pollution and radius metadata: {polluting_id}")
 
 if errors:
     print("VALIDATION FAILED")
