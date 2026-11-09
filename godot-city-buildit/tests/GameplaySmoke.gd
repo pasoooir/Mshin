@@ -112,8 +112,30 @@ func _test_drag_gestures_do_not_place() -> void:
 	_check(BuildManager.buildings.size() == initial_count, "Two-finger gesture triggered an unintended placement.")
 	BuildManager.cancel_placement()
 
+func _test_build_menu_visibility() -> void:
+	var hud = get_node_or_null("HUD")
+	_check(hud != null, "Main scene HUD is missing.")
+	if hud == null:
+		return
+	var build_button := hud.get_node_or_null("BuildMenuButton") as Button
+	var toolbar := hud.get_node_or_null("RightToolbar") as Control
+	_check(build_button != null, "Hard-hat Build button was not created.")
+	_check(toolbar != null, "Right-side category toolbar was not created.")
+	if build_button == null or toolbar == null:
+		return
+	_check(not toolbar.visible, "Right-side category toolbar should start closed.")
+	build_button.emit_signal("pressed")
+	await get_tree().process_frame
+	_check(toolbar.visible, "Tapping the hard-hat button must reveal the right-side category toolbar.")
+	var viewport_rect := get_viewport().get_visible_rect()
+	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category toolbar is outside the visible screen.")
+	build_button.emit_signal("pressed")
+	await get_tree().process_frame
+	_check(not toolbar.visible, "Tapping the hard-hat button a second time must close the category toolbar.")
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	_test_build_menu_visibility()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
