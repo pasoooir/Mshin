@@ -26,6 +26,7 @@ for script in re.findall(r'="[*]res://([^"]+)"', project):
 
 build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
+service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
 building_ids = set(re.findall(r'^[ \t]*"([a-z0-9_]+)"[ \t]*:[ \t]*[{]"name"', build_manager, re.M))
 for selected in re.findall(r'BuildManager[.]select_building[(]"([a-z0-9_]+)"[)]', hud):
     if selected not in building_ids:
@@ -249,7 +250,7 @@ for water_id, expected_water, expected_level, expected_size in [("water_tower", 
         errors.append(f"Water facility footprint is incorrect: {water_id}")
     if '"pollution":0' not in definition:
         errors.append(f"Water facility must not add air pollution: {water_id}")
-if 'definition.get("water", 0)' not in service_manager:
+if 'definition.get("water", 0)' not in service_manager_source:
     errors.append("ServiceManager must identify water providers by positive definition.water, not by building name")
 
 for power_id, expected_power, expected_level in [("power_wind", 12, 1), ("power_coal", 12, 1), ("power_wind_deluxe", 22, 10), ("power_solar", 35, 15), ("power_oil", 40, 18), ("power_nuclear", 60, 22)]:
