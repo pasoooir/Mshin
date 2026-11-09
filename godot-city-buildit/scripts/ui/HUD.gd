@@ -5,7 +5,7 @@ const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 
 const SERVICE_GROUPS := [
 	{"id":"power", "label":"Power", "buildings":["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear"]},
-	{"id":"water", "label":"Water", "buildings":["water_tower"]},
+	{"id":"water", "label":"Water", "buildings":["water_tower", "water_pump"]},
 	{"id":"sewage", "label":"Sewage", "buildings":["sewage_pipe"]},
 	{"id":"waste", "label":"Waste", "buildings":[]},
 	{"id":"fire", "label":"Fire", "buildings":["fire_station_small", "fire_station"]},
