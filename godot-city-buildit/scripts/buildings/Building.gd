@@ -16,6 +16,7 @@ var build_time: float = 10.0
 var production_timer: float = 0.0
 var production_time: float = 20.0
 var production_finish_unix: int = 0
+var production_component: Node = null
 var current_product: String = ""
 var is_producing: bool = false
 var has_ready_product: bool = false
@@ -30,6 +31,7 @@ var _move_ghost_material: StandardMaterial3D
 var _move_original_overlays: Dictionary = {}
 static var _shared_surface_texture: Texture2D
 const WIND_TURBINE_SPIN_RADIANS_PER_SECOND: float = 0.92
+const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 var _wind_turbine_rotor: Node3D
 var _fire_smoke: CPUParticles3D = null
 
@@ -793,6 +795,7 @@ func _start_construction() -> void:
 
 func _on_construction_finished() -> void:
 	status = "completed"
+	setup_production_from_definition()
 	if hard_hat: hard_hat.visible = false
 	if scaffold_root:
 		scaffold_root.visible = false
@@ -818,6 +821,16 @@ func _on_construction_finished() -> void:
 		FireHazardManager.on_city_changed()
 	if definition.get("happiness", 0) > 0:
 		GameManager.set_happiness(min(100.0, GameManager.happiness + definition.happiness))
+
+func setup_production_from_definition() -> void:
+	if is_instance_valid(production_component) or not definition.has("production_slots"):
+		return
+	var component = ProductionComponentScript.new()
+	component.slot_count = int(definition.get("production_slots", 1))
+	component.is_factory = str(definition.get("category", "")) == "industrial"
+	component.shop_id = str(definition.get("shop_id", "building_supplies" if building_type == "shop_chain" else building_type))
+	production_component = component
+	add_child(production_component)
 
 func _play_completion_effect() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -1060,6 +1073,8 @@ func get_info() -> String:
 	return info
 
 func restore_production_state(saved: Dictionary) -> void:
+	if is_instance_valid(production_component) and saved.get("slots", []) is Array:
+		production_component.from_save_array(saved.get("slots", []))
 	current_product = str(saved.get("current_product", ""))
 	is_producing = bool(saved.get("is_producing", false)) and not current_product.is_empty()
 	has_ready_product = bool(saved.get("has_ready_product", false))
