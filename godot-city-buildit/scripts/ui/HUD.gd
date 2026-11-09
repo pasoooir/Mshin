@@ -791,7 +791,6 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		back.text = "BACK"
 		back.icon = Icons.get_tex("ui", "back")
 		back.custom_minimum_size = Vector2(192, 144) * _ui_scale
-		back.icon_max_width = int(64 * _ui_scale)
 		back.focus_mode = Control.FOCUS_NONE
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
@@ -800,7 +799,6 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 	cancel.text = "CANCEL"
 	cancel.icon = Icons.get_tex("ui", "cancel")
 	cancel.custom_minimum_size = Vector2(192, 144) * _ui_scale
-	cancel.icon_max_width = int(64 * _ui_scale)
 	cancel.focus_mode = Control.FOCUS_NONE
 	cancel.add_theme_color_override("font_color", Color("#FFE2D9"))
 	cancel.add_theme_stylebox_override("normal", _toolbar_style(Color(0.42, 0.12, 0.12, 0.96), Color("#E98978")))
