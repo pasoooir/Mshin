@@ -310,6 +310,9 @@ func _test_build_menu_visibility() -> void:
 	hud._on_category_pressed("services")
 	await get_tree().process_frame
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
+	_check(hud.submenu_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER, "Horizontal submenu scrollbar chrome must stay hidden.")
+	_check(hud.submenu_scroll.scroll_deadzone <= 10, "Horizontal submenu swipe must respond with a short touch deadzone.")
+	_check(hud.submenu.alignment == BoxContainer.ALIGNMENT_BEGIN, "Horizontal submenu items must start at the leading edge for predictable swiping.")
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
 	_check(hud.submenu.get_child_count() == 9, "Services level one must contain exactly eight fixed groups and Cancel.")
@@ -320,7 +323,16 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Water submenu must expose Back and Cancel.")
 	var locked_pump := hud.submenu.get_node_or_null("water_pump") as Button
 	_check(locked_pump != null and not locked_pump.disabled, "Locked Water Pump must remain tappable for unlock feedback.")
+	var unlocked_tower := hud.submenu.get_node_or_null("water_tower") as Button
+	_check(unlocked_tower != null and unlocked_tower.find_child("UnlockLevelBadge", true, false) == null, "Unlocked Water Tower must not display a level badge.")
 	if locked_pump:
+		var unlock_badge := locked_pump.find_child("UnlockLevelBadge", true, false) as PanelContainer
+		var unlock_text := locked_pump.find_child("UnlockLevelText", true, false) as Label
+		var pump_art := locked_pump.find_child("SubmenuArtwork", true, false) as TextureRect
+		_check(unlock_badge != null and unlock_text != null and unlock_text.text == "LV 12", "Locked Water Pump must show a clear LV 12 unlock badge.")
+		_check(pump_art != null and pump_art.modulate == Color.WHITE, "Submenu icon artwork must remain untinted when locked.")
+		var pump_labels := locked_pump.find_children("*", "Label", true, false)
+		_check(pump_labels.size() == 1 and pump_labels[0].name == "UnlockLevelText", "Locked submenu choices must show only the level badge, without title/detail labels.")
 		locked_pump.emit_signal("pressed")
 		_check(hud.status_label.text.contains("Level 12"), "Tapping locked Water Pump must explain its unlock level.")
 	_check(int(BuildManager.building_types["water_tower"].get("water", 0)) > 0 and int(BuildManager.building_types["water_pump"].get("water", 0)) > 0, "Water facilities must expose positive numeric water production.")
@@ -386,7 +398,10 @@ func _test_build_menu_visibility() -> void:
 		_check(hud.submenu.get_node_or_null(fire_id) != null, "Fire submenu is missing: " + fire_id)
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Fire submenu must expose Back and Cancel.")
 	var basic_fire_button := hud.submenu.get_node_or_null("fire_station") as Button
-	_check(basic_fire_button != null and _node_has_label_text_containing(basic_fire_button, "Coverage: 15 tiles"), "Basic Fire Station must display its coverage range in the submenu.")
+	_check(int(BuildManager.building_types["fire_station"].get("coverage_tiles", 0)) == 15, "Basic Fire Station must retain its 15-tile coverage metadata.")
+	var basic_fire_badge := basic_fire_button.find_child("UnlockLevelBadge", true, false) as PanelContainer if basic_fire_button else null
+	var basic_fire_level := basic_fire_button.find_child("UnlockLevelText", true, false) as Label if basic_fire_button else null
+	_check(basic_fire_badge != null and basic_fire_level != null and basic_fire_level.text == "LV 5", "Basic Fire Station must show its LV 5 unlock badge.")
 	var locked_small_fire := hud.submenu.get_node_or_null("fire_station_small") as Button
 	_check(locked_small_fire != null and not locked_small_fire.disabled, "Locked Small Fire Station must remain tappable for unlock feedback.")
 	if locked_small_fire:
@@ -468,7 +483,10 @@ func _test_build_menu_visibility() -> void:
 		_check(hud.submenu.get_node_or_null(health_id) != null, "Health submenu is missing: " + health_id)
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Health submenu must expose Back and Cancel.")
 	var locked_small_clinic := hud.submenu.get_node_or_null("clinic_small") as Button
-	_check(locked_small_clinic != null and _node_has_label_text_containing(locked_small_clinic, "Coverage: 10 tiles"), "Small Clinic must display its coverage range in the submenu.")
+	_check(int(BuildManager.building_types["clinic_small"].get("coverage_tiles", 0)) == 10, "Small Clinic must retain its 10-tile coverage metadata.")
+	var clinic_badge := locked_small_clinic.find_child("UnlockLevelBadge", true, false) as PanelContainer if locked_small_clinic else null
+	var clinic_level := locked_small_clinic.find_child("UnlockLevelText", true, false) as Label if locked_small_clinic else null
+	_check(clinic_badge != null and clinic_level != null and clinic_level.text == "LV 16", "Locked Small Clinic must show its LV 16 unlock badge.")
 	_check(locked_small_clinic != null and not locked_small_clinic.disabled, "Locked Small Clinic must remain tappable for unlock feedback.")
 	if locked_small_clinic:
 		locked_small_clinic.emit_signal("pressed")
@@ -716,7 +734,10 @@ func _run_gameplay_test() -> void:
 		hud._on_cancel_pressed()
 		hud._on_category_pressed("industrial")
 		_check(hud.submenu.get_node_or_null("factory_small") != null and hud.submenu.get_node_or_null("factory_basic") != null, "Factory choices must be listed.")
-		_check(_node_has_label_text(hud.submenu.get_node("factory_small"), "Small Factory"), "Industrial submenu labels must be clear.")
+		var small_factory_button := hud.submenu.get_node("factory_small") as Button
+		var factory_art := small_factory_button.find_child("SubmenuArtwork", true, false) as TextureRect if small_factory_button else null
+		_check(factory_art != null and factory_art.texture != null, "Industrial submenu must show the original Small Factory artwork.")
+		_check(small_factory_button.find_child("TitleLabel", true, false) == null and small_factory_button.find_child("DetailLabel", true, false) == null, "Icon-only industrial submenu must not create title/detail labels.")
 		hud._on_submenu_option("industrial", "factory_small")
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "factory_small", "Small factory menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
@@ -734,8 +755,12 @@ func _run_gameplay_test() -> void:
 		hud._on_submenu_option("services", "group_fire")
 		var locked_fire = hud.submenu.get_node_or_null("fire_station")
 		_check(locked_fire != null and not locked_fire.disabled, "Locked fire station must remain clickable.")
-		_check(locked_fire != null and locked_fire.find_child("LockIcon", true, false) is TextureRect and (locked_fire.find_child("LockIcon", true, false) as TextureRect).texture != null, "Locked fire station must show the transparent PNG lock overlay.")
-		_check(_node_has_label_text_containing(locked_fire, "Unlocks at Level 5"), "Locked fire station must show its unlock level.")
+		var fire_unlock_badge := locked_fire.find_child("UnlockLevelBadge", true, false) as PanelContainer if locked_fire else null
+		var fire_unlock_text := locked_fire.find_child("UnlockLevelText", true, false) as Label if locked_fire else null
+		_check(fire_unlock_badge != null and fire_unlock_text != null and fire_unlock_text.text == "LV 5", "Locked fire station must show its LV 5 unlock badge.")
+		var fire_artwork := locked_fire.find_child("SubmenuArtwork", true, false) as TextureRect if locked_fire else null
+		_check(fire_artwork != null and fire_artwork.modulate == Color.WHITE, "Locked fire station artwork must remain untinted.")
+		_check(fire_unlock_text != null and fire_unlock_text.text == "LV 5", "Locked fire station must clearly communicate its unlock level.")
 		hud._on_submenu_option("services", "fire_station")
 		_check(not BuildManager.is_placing and hud.status_label.text.find("Level 5") >= 0, "Locked fire station did not explain its unlock level.")
 		GameManager.level = menu_test_level

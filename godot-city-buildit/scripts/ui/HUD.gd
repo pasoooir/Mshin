@@ -502,16 +502,18 @@ func _build_toolbars() -> void:
 	submenu_scroll.offset_right = 560.0 * _ui_scale
 	submenu_scroll.offset_top = -248.0 * _ui_scale
 	submenu_scroll.offset_bottom = -16.0 * _ui_scale
-	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	submenu_scroll.scroll_deadzone = 8
+	submenu_scroll.follow_focus = false
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	submenu_scroll.z_index = 63
 	add_child(submenu_scroll)
 	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
 	submenu.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	submenu.add_theme_constant_override("separation", 8)
-	submenu.alignment = BoxContainer.ALIGNMENT_CENTER
+	submenu.add_theme_constant_override("separation", 12)
+	submenu.alignment = BoxContainer.ALIGNMENT_BEGIN
 	submenu_scroll.add_child(submenu)
 	submenu.hide()
 	submenu_scroll.hide()
@@ -729,60 +731,73 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 				_add_submenu_button(type_id, str(definition.get("name", type_id)), type_id, detail, false, parent_category, int(definition.get("level", 1)))
 	_finish_submenu_row(true)
 
-func _add_submenu_button(option_id: String, title: String, icon_name: String, detail: String, disabled: bool, category: String, required_level: int = 1, locked: bool = false) -> void:
-	var is_locked := locked or GameManager.level < required_level
+func _add_submenu_button(option_id: String, _title: String, icon_name: String, _detail: String, disabled: bool, category: String, required_level: int = 1, _locked: bool = false) -> void:
+	var level_locked := GameManager.level < required_level
 	var button := Button.new()
 	button.name = option_id
-	button.custom_minimum_size = Vector2(248, 224) * _ui_scale
+	button.custom_minimum_size = Vector2(176, 176) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.disabled = disabled
-	button.tooltip_text = ("Unlocks at Level %d" % required_level) if GameManager.level < required_level else detail
-	var normal_fill := Color(0.0, 0.0, 0.0, 0.0)
-	var normal_border := Color(0.0, 0.0, 0.0, 0.0)
-	button.add_theme_stylebox_override("normal", _toolbar_style(normal_fill, normal_border))
-	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.16, 0.31, 0.39, 0.99), Color("#FFE19A")))
-	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.25, 0.39, 0.30, 1.0), Color("#FFE19A")))
-	button.add_theme_stylebox_override("disabled", _toolbar_style(Color(0.12, 0.13, 0.15, 0.92), Color(0.35, 0.38, 0.40, 0.5)))
+	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else _detail
+	# Submenu selection never paints a tile behind the artwork. Only the PNG
+	# itself scales on hover/press, so neighbouring cards keep their positions.
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 4)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
 	var icon := Icons.make_icon(icon_name, Vector2(136, 136) * _ui_scale)
+	icon.name = "SubmenuArtwork"
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if is_locked:
-		icon.modulate = Color(0.52, 0.56, 0.60, 0.72)
+	icon.custom_minimum_size = Vector2(136, 136) * _ui_scale
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	content.add_child(icon)
-	if is_locked:
-		var lock_icon := Icons.make_icon("lock", Vector2(48, 48) * _ui_scale)
-		lock_icon.name = "LockIcon"
-		content.add_child(lock_icon)
-	var labels := VBoxContainer.new()
-	labels.alignment = BoxContainer.ALIGNMENT_CENTER
-	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	labels.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_child(labels)
-	var title_label := Label.new()
-	title_label.text = title
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title_label.add_theme_color_override("font_color", Color("#AAB2B9") if is_locked else Color("#F4F8FC"))
-	title_label.add_theme_font_size_override("font_size", int(16 * _ui_scale))
-	labels.add_child(title_label)
-	var detail_label := Label.new()
-	var locked_detail := "Unlocks at Level %d" % required_level
-	var option_definition: Dictionary = BuildManager.building_types.get(option_id, {})
-	if int(option_definition.get("fire", 0)) > 0 or int(option_definition.get("police", 0)) > 0 or int(option_definition.get("health", 0)) > 0:
-		locked_detail += " · Coverage: %d tiles" % int(option_definition.get("coverage_tiles", 15))
-	detail_label.text = locked_detail if GameManager.level < required_level else ("LOCKED" if locked else detail)
-	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_label.add_theme_color_override("font_color", Color("#FFD98A") if is_locked else Color("#B8C9D4"))
-	detail_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-	labels.add_child(detail_label)
+	button.mouse_entered.connect(_set_submenu_icon_scale.bind(icon, 1.12))
+	button.mouse_exited.connect(_set_submenu_icon_scale.bind(icon, 1.0))
+	button.button_down.connect(_set_submenu_icon_scale.bind(icon, 1.12))
+	button.button_up.connect(_set_submenu_icon_scale.bind(icon, 1.0))
+	if level_locked:
+		var badge := PanelContainer.new()
+		badge.name = "UnlockLevelBadge"
+		badge.anchor_left = 1.0
+		badge.anchor_right = 1.0
+		badge.anchor_top = 0.0
+		badge.anchor_bottom = 0.0
+		badge.offset_left = -78.0 * _ui_scale
+		badge.offset_right = -5.0 * _ui_scale
+		badge.offset_top = 5.0 * _ui_scale
+		badge.offset_bottom = 34.0 * _ui_scale
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var badge_style := StyleBoxFlat.new()
+		badge_style.bg_color = Color(0.08, 0.10, 0.13, 0.92)
+		badge_style.border_color = Color("#FFD98A")
+		badge_style.set_border_width_all(1)
+		badge_style.set_corner_radius_all(8)
+		badge_style.content_margin_left = 5
+		badge_style.content_margin_right = 5
+		badge_style.content_margin_top = 1
+		badge_style.content_margin_bottom = 1
+		badge.add_theme_stylebox_override("panel", badge_style)
+		var level_text := Label.new()
+		level_text.name = "UnlockLevelText"
+		level_text.text = "LV %d" % required_level
+		level_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		level_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		level_text.add_theme_color_override("font_color", Color("#FFE5A8"))
+		level_text.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+		level_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.add_child(level_text)
+		button.add_child(badge)
 	submenu.add_child(button)
 	button.pressed.connect(_on_submenu_option.bind(category, option_id))
+
+func _set_submenu_icon_scale(icon: Control, factor: float) -> void:
+	if not is_instance_valid(icon):
+		return
+	icon.pivot_offset = icon.size * 0.5
+	icon.scale = Vector2.ONE * factor
 
 func _finish_submenu_row(show_back: bool = false) -> void:
 	if show_back:

@@ -24,12 +24,10 @@ The profile is based on the live viewport, not device model or user-agent. Re-ev
 
 ### Building catalog cards
 - Card baseline: 196 × 148 logical px.
-- Main transparent PNG illustration: 68 × 68 logical px or larger.
-- Name: 16 logical px minimum.
-- Price/level/status detail: 12 logical px minimum.
-- Cards use a vertical hierarchy: illustration, name, then cost/level/availability.
-- Locked cards explain the exact unlock requirement. They must not rely on opacity or color alone.
-- The horizontal catalog scrolls; cards must not be compressed until their labels become unreadable.
+- Submenu choices are icon-first: preserve the original transparent PNG artwork without tint, colored backing, or text labels beneath it.
+- Hover/press feedback scales only the artwork by approximately 10–15%; it must not move neighbouring choices or paint a background tile.
+- A choice locked by player level shows a compact, readable `LV n` badge beside the artwork; its tooltip/status explains that it unlocks at that level. Unlocked choices do not show a level badge.
+- Horizontal submenu catalogs support comfortable left/right touch swipes. Hide the scrollbar chrome without disabling scrolling, and keep card widths stable rather than compressing icons.
 
 ### HUD and action controls
 - Resource values must remain legible and must not overlap the city or each other.
