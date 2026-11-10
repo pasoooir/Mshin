@@ -738,7 +738,7 @@ func _add_submenu_button(option_id: String, _title: String, icon_name: String, _
 	button.custom_minimum_size = Vector2(176, 176) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.disabled = disabled
-	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else detail
+	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else _detail
 	# Submenu selection never paints a tile behind the artwork. Only the PNG
 	# itself scales on hover/press, so neighbouring cards keep their positions.
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
