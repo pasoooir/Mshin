@@ -310,6 +310,9 @@ func _test_build_menu_visibility() -> void:
 	hud._on_category_pressed("services")
 	await get_tree().process_frame
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
+	_check(hud.submenu_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER, "Horizontal submenu scrollbar chrome must stay hidden.")
+	_check(hud.submenu_scroll.scroll_deadzone <= 10, "Horizontal submenu swipe must respond with a short touch deadzone.")
+	_check(hud.submenu.alignment == BoxContainer.ALIGNMENT_BEGIN, "Horizontal submenu items must start at the leading edge for predictable swiping.")
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
 	_check(hud.submenu.get_child_count() == 9, "Services level one must contain exactly eight fixed groups and Cancel.")
@@ -321,6 +324,12 @@ func _test_build_menu_visibility() -> void:
 	var locked_pump := hud.submenu.get_node_or_null("water_pump") as Button
 	_check(locked_pump != null and not locked_pump.disabled, "Locked Water Pump must remain tappable for unlock feedback.")
 	if locked_pump:
+		var unlock_badge := locked_pump.find_child("UnlockLevelBadge", true, false) as PanelContainer
+		var unlock_text := locked_pump.find_child("UnlockLevelText", true, false) as Label
+		var pump_art := locked_pump.find_child("SubmenuArtwork", true, false) as TextureRect
+		_check(unlock_badge != null and unlock_text != null and unlock_text.text == "LV 12", "Locked Water Pump must show a clear LV 12 unlock badge.")
+		_check(pump_art != null and pump_art.modulate == Color.WHITE, "Submenu icon artwork must remain untinted when locked.")
+		_check(locked_pump.find_child("TitleLabel", true, false) == null and locked_pump.find_child("DetailLabel", true, false) == null, "Submenu icon names and detail labels must be removed.")
 		locked_pump.emit_signal("pressed")
 		_check(hud.status_label.text.contains("Level 12"), "Tapping locked Water Pump must explain its unlock level.")
 	_check(int(BuildManager.building_types["water_tower"].get("water", 0)) > 0 and int(BuildManager.building_types["water_pump"].get("water", 0)) > 0, "Water facilities must expose positive numeric water production.")
