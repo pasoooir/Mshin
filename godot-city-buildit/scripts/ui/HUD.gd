@@ -731,7 +731,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 				_add_submenu_button(type_id, str(definition.get("name", type_id)), type_id, detail, false, parent_category, int(definition.get("level", 1)))
 	_finish_submenu_row(true)
 
-func _add_submenu_button(option_id: String, title: String, icon_name: String, detail: String, disabled: bool, category: String, required_level: int = 1, locked: bool = false) -> void:
+func _add_submenu_button(option_id: String, _title: String, icon_name: String, _detail: String, disabled: bool, category: String, required_level: int = 1, _locked: bool = false) -> void:
 	var level_locked := GameManager.level < required_level
 	var button := Button.new()
 	button.name = option_id
