@@ -821,7 +821,7 @@ func _show_submenu(category: String) -> void:
 	if submenu == null or submenu_scroll == null:
 		return
 	_clear_catalog_cards()
-	_add_catalog_advisor()
+	_update_context_header(category)
 	if category == "road":
 		_add_submenu_button("road_build", "Build Road", "road_build", "50 / tile", false, "road")
 		_add_submenu_button("road_upgrade", "Upgrade Road", "road_upgrade", "Coming later", true, "road")
@@ -865,7 +865,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	for child in submenu.get_children():
 		submenu.remove_child(child)
 		child.queue_free()
-	_add_catalog_advisor()
+	_update_context_header(parent_category, group_id.replace("_", " ").capitalize() + " · Choose a building")
 	var groups: Array = SERVICE_GROUPS if parent_category == "services" else SPECIALIZATION_GROUPS
 	var selected_group: Dictionary = {}
 	for group in groups:
@@ -902,7 +902,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	button.disabled = disabled and not level_locked
 	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else detail
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-		button.add_theme_stylebox_override(state, _catalog_card_style(state))
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -991,28 +991,27 @@ func _clear_catalog_cards() -> void:
 	_hide_building_info()
 
 func _add_catalog_advisor() -> void:
-	var advisor := PanelContainer.new()
-	advisor.name = "CatalogAdvisor"
-	advisor.custom_minimum_size = Vector2(116, 188) * _ui_scale
-	advisor.add_theme_stylebox_override("panel", _catalog_card_style("normal"))
-	submenu.add_child(advisor)
-	var layout := VBoxContainer.new()
-	layout.alignment = BoxContainer.ALIGNMENT_CENTER
-	advisor.add_child(layout)
+	catalog_advisor = Control.new()
+	catalog_advisor.name = "CatalogAdvisor"
+	catalog_advisor.anchor_left = 0.0
+	catalog_advisor.anchor_right = 0.15
+	catalog_advisor.anchor_top = 1.0
+	catalog_advisor.anchor_bottom = 1.0
+	catalog_advisor.offset_top = -282.0 * _ui_scale
+	catalog_advisor.offset_bottom = -2.0 * _ui_scale
+	catalog_advisor.z_index = 64
+	catalog_advisor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(catalog_advisor)
 	var portrait := TextureRect.new()
 	portrait.name = "AdvisorPortrait"
-	portrait.custom_minimum_size = Vector2(100, 132) * _ui_scale
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.texture = Icons.get_advisor_tex()
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait.texture = Icons.get_advisor_tex()
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layout.add_child(portrait)
-	var caption := Label.new()
-	caption.text = "CITY ADVISOR"
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	caption.add_theme_color_override("font_color", Color("#3A596D"))
-	caption.add_theme_font_size_override("font_size", int(11 * _ui_scale))
-	layout.add_child(caption)
+	catalog_advisor.add_child(portrait)
+	catalog_advisor.hide()
 
 func _build_catalog_info_panel() -> void:
 	catalog_info_panel = PanelContainer.new()
@@ -1021,10 +1020,12 @@ func _build_catalog_info_panel() -> void:
 	catalog_info_panel.anchor_right = 0.0
 	catalog_info_panel.anchor_top = 1.0
 	catalog_info_panel.anchor_bottom = 1.0
-	catalog_info_panel.offset_left = 14 * _ui_scale
-	catalog_info_panel.offset_right = 286 * _ui_scale
-	catalog_info_panel.offset_top = -444 * _ui_scale
-	catalog_info_panel.offset_bottom = -232 * _ui_scale
+	catalog_info_panel.anchor_left = 0.15
+	catalog_info_panel.anchor_right = 0.39
+	catalog_info_panel.offset_left = 10 * _ui_scale
+	catalog_info_panel.offset_right = -8 * _ui_scale
+	catalog_info_panel.offset_top = -430 * _ui_scale
+	catalog_info_panel.offset_bottom = -218 * _ui_scale
 	catalog_info_panel.z_index = 65
 	catalog_info_panel.add_theme_stylebox_override("panel", _catalog_bar_style())
 	add_child(catalog_info_panel)
@@ -1123,9 +1124,21 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		submenu.add_child(back)
 	submenu.show()
 	submenu_scroll.show()
+	if catalog_base_bar:
+		catalog_base_bar.show()
+	if catalog_advisor:
+		catalog_advisor.show()
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.show()
+	var toolbar := get_node_or_null("RightToolbar") as Control
+	if toolbar:
+		toolbar.hide()
+	var build_button := get_node_or_null("BuildMenuButton") as Control
+	if build_button:
+		build_button.hide()
+	if context_header:
+		context_header.show()
 	submenu_scroll.modulate.a = 0.0
 	var tween := create_tween()
 	tween.tween_property(submenu_scroll, "modulate:a", 1.0, 0.20)
