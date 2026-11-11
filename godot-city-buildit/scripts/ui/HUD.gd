@@ -610,23 +610,36 @@ func _build_toolbars() -> void:
 			"storage": button.pressed.connect(_on_storage_pressed)
 			"trade": button.pressed.connect(_on_trade_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
+	catalog_base_bar = PanelContainer.new()
+	catalog_base_bar.name = "CatalogBaseBar"
+	catalog_base_bar.anchor_left = 0.15
+	catalog_base_bar.anchor_right = 0.95
+	catalog_base_bar.anchor_top = 1.0
+	catalog_base_bar.anchor_bottom = 1.0
+	catalog_base_bar.offset_top = -94.0 * _ui_scale
+	catalog_base_bar.offset_bottom = -8.0 * _ui_scale
+	catalog_base_bar.z_index = 61
+	catalog_base_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	catalog_base_bar.add_theme_stylebox_override("panel", _catalog_bar_style())
+	add_child(catalog_base_bar)
+	catalog_base_bar.hide()
 	submenu_scroll = ScrollContainer.new()
 	submenu_scroll.name = "ToolSubmenuScroll"
-	submenu_scroll.anchor_left = 0.5
-	submenu_scroll.anchor_right = 0.5
+	submenu_scroll.anchor_left = 0.15
+	submenu_scroll.anchor_right = 0.95
 	submenu_scroll.anchor_top = 1.0
 	submenu_scroll.anchor_bottom = 1.0
-	submenu_scroll.offset_left = -minf(650.0, viewport_size.x * 0.48) * _ui_scale
-	submenu_scroll.offset_right = minf(650.0, viewport_size.x * 0.48) * _ui_scale
-	submenu_scroll.offset_top = -224.0 * _ui_scale
-	submenu_scroll.offset_bottom = -12.0 * _ui_scale
+	submenu_scroll.offset_left = 0.0
+	submenu_scroll.offset_right = 0.0
+	submenu_scroll.offset_top = -202.0 * _ui_scale
+	submenu_scroll.offset_bottom = -8.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.scroll_deadzone = 8
 	submenu_scroll.follow_focus = false
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	submenu_scroll.z_index = 63
-	submenu_scroll.add_theme_stylebox_override("panel", _catalog_bar_style())
+	submenu_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(submenu_scroll)
 	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
@@ -635,25 +648,27 @@ func _build_toolbars() -> void:
 	submenu.alignment = BoxContainer.ALIGNMENT_BEGIN
 	submenu_scroll.add_child(submenu)
 	_build_catalog_info_panel()
+	_add_catalog_advisor()
 	var catalog_close := Button.new()
 	catalog_close.name = "CatalogCloseButton"
 	catalog_close.text = "×"
-	catalog_close.anchor_left = 1.0
+	catalog_close.anchor_left = 0.95
 	catalog_close.anchor_right = 1.0
 	catalog_close.anchor_top = 1.0
 	catalog_close.anchor_bottom = 1.0
-	catalog_close.offset_left = -58 * _ui_scale
-	catalog_close.offset_right = -12 * _ui_scale
-	catalog_close.offset_top = -210 * _ui_scale
-	catalog_close.offset_bottom = -164 * _ui_scale
-	catalog_close.custom_minimum_size = Vector2(46, 46) * _ui_scale
+	catalog_close.offset_left = 0.0
+	catalog_close.offset_right = -8 * _ui_scale
+	catalog_close.offset_top = -94 * _ui_scale
+	catalog_close.offset_bottom = -8 * _ui_scale
+	catalog_close.custom_minimum_size = Vector2(54, 86) * _ui_scale
 	catalog_close.z_index = 66
 	catalog_close.text = "×"
 	catalog_close.add_theme_font_size_override("font_size", int(28 * _ui_scale))
 	catalog_close.add_theme_color_override("font_color", Color("#526B7A"))
-	catalog_close.add_theme_stylebox_override("normal", _catalog_card_style("normal"))
-	catalog_close.add_theme_stylebox_override("hover", _catalog_card_style("hover"))
-	catalog_close.pressed.connect(_on_cancel_pressed)
+	catalog_close.add_theme_stylebox_override("normal", _catalog_close_style(false))
+	catalog_close.add_theme_stylebox_override("hover", _catalog_close_style(true))
+	catalog_close.add_theme_stylebox_override("pressed", _catalog_close_style(true))
+	catalog_close.pressed.connect(_close_build_menu)
 	add_child(catalog_close)
 	catalog_close.hide()
 	submenu.hide()
