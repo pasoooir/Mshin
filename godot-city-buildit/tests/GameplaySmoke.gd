@@ -24,6 +24,11 @@ func _check(condition: bool, message: String) -> void:
 		failures.append(message)
 		push_error("[GameplaySmoke] " + message)
 
+func _confirm_catalog_build(hud) -> void:
+	var action := hud.catalog_info_panel.find_child("CatalogBuildButton", true, false) as Button
+	if action != null and not action.disabled:
+		action.emit_signal("pressed")
+
 func _find_building(type_id: String):
 	for building in BuildManager.buildings.values():
 		if is_instance_valid(building) and building.building_type == type_id:
@@ -310,29 +315,29 @@ func _test_build_menu_visibility() -> void:
 	hud._on_category_pressed("services")
 	await get_tree().process_frame
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
-	_check(hud.submenu_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER, "Horizontal submenu scrollbar chrome must stay hidden.")
+	_check(hud.submenu_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER, "Catalog horizontal scroll chrome must stay hidden.")
 	_check(hud.submenu_scroll.scroll_deadzone <= 10, "Horizontal submenu swipe must respond with a short touch deadzone.")
 	_check(hud.submenu.alignment == BoxContainer.ALIGNMENT_BEGIN, "Horizontal submenu items must start at the leading edge for predictable swiping.")
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
-	_check(hud.submenu.get_child_count() == 9, "Services level one must contain exactly eight fixed groups and Cancel.")
+	_check(hud.submenu.get_child_count() == 9, "Services level one must contain eight fixed groups plus advisor.")
 	hud._on_submenu_option("services", "group_water")
 	await get_tree().process_frame
 	_check(hud.submenu.get_node_or_null("water_tower") != null, "Water submenu must contain the Water Tower.")
 	_check(hud.submenu.get_node_or_null("water_pump") != null, "Water submenu must contain the Water Pump.")
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Water submenu must expose Back and Cancel.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Water submenu must expose Back and Cancel.")
 	var locked_pump := hud.submenu.get_node_or_null("water_pump") as Button
 	_check(locked_pump != null and not locked_pump.disabled, "Locked Water Pump must remain tappable for unlock feedback.")
 	var unlocked_tower := hud.submenu.get_node_or_null("water_tower") as Button
 	_check(unlocked_tower != null and unlocked_tower.find_child("UnlockLevelBadge", true, false) == null, "Unlocked Water Tower must not display a level badge.")
 	if locked_pump:
-		var unlock_badge := locked_pump.find_child("UnlockLevelBadge", true, false) as PanelContainer
-		var unlock_text := locked_pump.find_child("UnlockLevelText", true, false) as Label
+		var unlock_badge := locked_pump.find_child("CatalogLock", true, false) as Label
+		var unlock_text := unlock_badge
 		var pump_art := locked_pump.find_child("SubmenuArtwork", true, false) as TextureRect
-		_check(unlock_badge != null and unlock_text != null and unlock_text.text == "LV 12", "Locked Water Pump must show a clear LV 12 unlock badge.")
+		_check(unlock_badge != null and unlock_text != null and unlock_text.text == "LOCKED", "Locked Water Pump must show a clear LV 12 unlock badge.")
 		_check(pump_art != null and pump_art.modulate == Color.WHITE, "Submenu icon artwork must remain untinted when locked.")
-		var pump_labels := locked_pump.find_children("*", "Label", true, false)
-		_check(pump_labels.size() == 1 and pump_labels[0].name == "UnlockLevelText", "Locked submenu choices must show only the level badge, without title/detail labels.")
+		var pump_lock := locked_pump.find_child("CatalogLock", true, false) as Label
+		_check(pump_lock != null and pump_lock.text == "LOCKED", "Locked catalog cards must show a visible lock state.")
 		locked_pump.emit_signal("pressed")
 		_check(hud.status_label.text.contains("Level 12"), "Tapping locked Water Pump must explain its unlock level.")
 	_check(int(BuildManager.building_types["water_tower"].get("water", 0)) > 0 and int(BuildManager.building_types["water_pump"].get("water", 0)) > 0, "Water facilities must expose positive numeric water production.")
@@ -346,7 +351,7 @@ func _test_build_menu_visibility() -> void:
 	await get_tree().process_frame
 	for sewage_id in ["sewage_small", "sewage_basic", "sewage_deluxe"]:
 		_check(hud.submenu.get_node_or_null(sewage_id) != null, "Sewage submenu is missing: " + sewage_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Sewage submenu must expose Back and Cancel.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Sewage submenu must expose Back and Cancel.")
 	var locked_sewage := hud.submenu.get_node_or_null("sewage_small") as Button
 	_check(locked_sewage != null and not locked_sewage.disabled, "Locked Small Sewage must remain tappable for unlock feedback.")
 	if locked_sewage:
@@ -370,7 +375,7 @@ func _test_build_menu_visibility() -> void:
 	await get_tree().process_frame
 	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
 		_check(hud.submenu.get_node_or_null(waste_id) != null, "Waste submenu is missing: " + waste_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Waste submenu must expose Back and Cancel.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Waste submenu must expose Back and Cancel.")
 	var locked_waste_facility := hud.submenu.get_node_or_null("waste_dump_small") as Button
 	_check(locked_waste_facility != null and not locked_waste_facility.disabled, "Locked Small Garbage Dump must remain tappable for unlock feedback.")
 	if locked_waste_facility:
@@ -396,7 +401,7 @@ func _test_build_menu_visibility() -> void:
 	await get_tree().process_frame
 	for fire_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
 		_check(hud.submenu.get_node_or_null(fire_id) != null, "Fire submenu is missing: " + fire_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Fire submenu must expose Back and Cancel.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Fire submenu must expose Back and Cancel.")
 	var basic_fire_button := hud.submenu.get_node_or_null("fire_station") as Button
 	_check(int(BuildManager.building_types["fire_station"].get("coverage_tiles", 0)) == 15, "Basic Fire Station must retain its 15-tile coverage metadata.")
 	var basic_fire_badge := basic_fire_button.find_child("UnlockLevelBadge", true, false) as PanelContainer if basic_fire_button else null
@@ -430,7 +435,7 @@ func _test_build_menu_visibility() -> void:
 	await get_tree().process_frame
 	for police_id in ["police_small", "police_basic", "police_precinct"]:
 		_check(hud.submenu.get_node_or_null(police_id) != null, "Police submenu is missing: " + police_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Police submenu must expose Back and Cancel.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Police submenu must expose Back and Cancel.")
 	var locked_small_police := hud.submenu.get_node_or_null("police_small") as Button
 	_check(locked_small_police != null and not locked_small_police.disabled, "Locked Small Police must remain tappable for unlock feedback.")
 	if locked_small_police:
@@ -460,7 +465,7 @@ func _test_build_menu_visibility() -> void:
 	await get_tree().process_frame
 	for power_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear"]:
 		_check(hud.submenu.get_node_or_null(power_id) != null, "Power submenu is missing: " + power_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Power submenu must expose Back and Cancel.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Power submenu must expose Back and Cancel.")
 	var locked_deluxe := hud.submenu.get_node_or_null("power_wind_deluxe") as Button
 	_check(locked_deluxe != null and not locked_deluxe.disabled, "Locked advanced power plant must remain tappable for unlock feedback.")
 	if locked_deluxe:
@@ -474,14 +479,14 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu.get_node_or_null("fire_station_small") != null, "Fire group must contain the Small Fire Station.")
 	_check(hud.submenu.get_node_or_null("fire_station") != null, "Fire group must contain the Basic Fire Station.")
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Second-level Services submenu must provide Back.")
-	_check(hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Active submenu must always provide Cancel.")
+	_check(hud.get_node_or_null("CatalogCloseButton") != null, "Active submenu must always provide Cancel.")
 	hud._on_submenu_option("services", "back")
 	_check(hud.submenu.get_node_or_null("group_power") != null, "Back must return to the Services group list.")
 	hud._on_submenu_option("services", "group_health")
 	await get_tree().process_frame
 	for health_id in ["clinic_small", "clinic", "hospital"]:
 		_check(hud.submenu.get_node_or_null(health_id) != null, "Health submenu is missing: " + health_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Health submenu must expose Back and Cancel.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Health submenu must expose Back and Cancel.")
 	var locked_small_clinic := hud.submenu.get_node_or_null("clinic_small") as Button
 	_check(int(BuildManager.building_types["clinic_small"].get("coverage_tiles", 0)) == 10, "Small Clinic must retain its 10-tile coverage metadata.")
 	var clinic_badge := locked_small_clinic.find_child("UnlockLevelBadge", true, false) as PanelContainer if locked_small_clinic else null
@@ -513,7 +518,7 @@ func _test_build_menu_visibility() -> void:
 	hud._on_submenu_option("services", "group_government")
 	await get_tree().process_frame
 	_check(hud.submenu.get_node_or_null("town_hall") != null, "Government submenu must contain Town Hall.")
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Government submenu must expose Back and Cancel.")
+	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Government submenu must expose Back and Cancel.")
 	var town_hall_definition: Dictionary = BuildManager.building_types["town_hall"]
 	_check(int(town_hall_definition.get("government", 0)) == 1, "Town Hall must expose the separate government metadata key.")
 	_check(str(town_hall_definition.get("service_group", "")) == "government", "Town Hall must belong to the Government group.")
@@ -522,6 +527,7 @@ func _test_build_menu_visibility() -> void:
 	var saved_government_level := GameManager.level
 	GameManager.level = 1
 	hud._on_submenu_option("services", "town_hall")
+		_confirm_catalog_build(hud)
 	_check(BuildManager.is_placing and BuildManager.selected_building_type == "town_hall", "Town Hall must be buildable at Level 1.")
 	BuildManager.cancel_placement()
 	GameManager.level = saved_government_level
@@ -532,6 +538,7 @@ func _test_build_menu_visibility() -> void:
 	var previous_level := GameManager.level
 	GameManager.level = 16
 	hud._on_submenu_option("services", "clinic_small")
+		_confirm_catalog_build(hud)
 	_check(BuildManager.is_placing and BuildManager.selected_building_type == "clinic_small", "Unlocked Small Clinic must enter building placement mode.")
 	BuildManager.cancel_placement()
 	GameManager.level = previous_level
@@ -711,7 +718,7 @@ func _run_gameplay_test() -> void:
 		hud._toggle_category_menu()
 		hud._on_category_pressed("residential")
 		_check(hud.submenu_scroll.visible and hud.submenu.get_node_or_null("residential_villa") != null, "Residential submenu must show available house choices.")
-		_check(hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Residential submenu must always include Cancel.")
+		_check(hud.get_node_or_null("CatalogCloseButton") != null, "Residential submenu must always include Cancel.")
 		hud._on_building_choice_pressed("residential_villa")
 		_check(BuildManager.selected_building_type == "residential_villa" and BuildManager.is_placing, "Villa choice did not enter placement mode.")
 		BuildManager.cancel_placement()
@@ -721,6 +728,7 @@ func _run_gameplay_test() -> void:
 		_check(hud.submenu.get_node_or_null("furniture_store") != null, "Commercial menu is missing Furniture Store.")
 		_check(ProductionManager.get_default_recipe_for_building("shop_chain") == "nails", "Chain store should reuse the existing Nails recipe.")
 		hud._on_submenu_option("commercial", "fast_food")
+		_confirm_catalog_build(hud)
 		_check(BuildManager.selected_building_type == "fast_food" and BuildManager.is_placing, "Fast Food choice did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("road")
@@ -739,6 +747,7 @@ func _run_gameplay_test() -> void:
 		_check(factory_art != null and factory_art.texture != null, "Industrial submenu must show the original Small Factory artwork.")
 		_check(small_factory_button.find_child("TitleLabel", true, false) == null and small_factory_button.find_child("DetailLabel", true, false) == null, "Icon-only industrial submenu must not create title/detail labels.")
 		hud._on_submenu_option("industrial", "factory_small")
+		_confirm_catalog_build(hud)
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "factory_small", "Small factory menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("services")
@@ -747,6 +756,7 @@ func _run_gameplay_test() -> void:
 		hud._on_submenu_option("services", "group_power")
 		_check(hud.submenu.get_node_or_null("power_wind") != null, "Power group must contain Wind Power.")
 		hud._on_submenu_option("services", "power_wind")
+		_confirm_catalog_build(hud)
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "power_wind", "Wind power menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
 		var menu_test_level := GameManager.level
@@ -755,12 +765,12 @@ func _run_gameplay_test() -> void:
 		hud._on_submenu_option("services", "group_fire")
 		var locked_fire = hud.submenu.get_node_or_null("fire_station")
 		_check(locked_fire != null and not locked_fire.disabled, "Locked fire station must remain clickable.")
-		var fire_unlock_badge := locked_fire.find_child("UnlockLevelBadge", true, false) as PanelContainer if locked_fire else null
-		var fire_unlock_text := locked_fire.find_child("UnlockLevelText", true, false) as Label if locked_fire else null
-		_check(fire_unlock_badge != null and fire_unlock_text != null and fire_unlock_text.text == "LV 5", "Locked fire station must show its LV 5 unlock badge.")
+		var fire_unlock_badge := locked_fire.find_child("CatalogLock", true, false) as Label if locked_fire else null
+		var fire_unlock_text := fire_unlock_badge
+		_check(fire_unlock_badge != null and fire_unlock_text.text == "LOCKED", "Locked fire station must show its lock state.")
 		var fire_artwork := locked_fire.find_child("SubmenuArtwork", true, false) as TextureRect if locked_fire else null
 		_check(fire_artwork != null and fire_artwork.modulate == Color.WHITE, "Locked fire station artwork must remain untinted.")
-		_check(fire_unlock_text != null and fire_unlock_text.text == "LV 5", "Locked fire station must clearly communicate its unlock level.")
+		_check(fire_unlock_text != null and fire_unlock_text.text == "LOCKED", "Locked fire station must clearly communicate its unlock level.")
 		hud._on_submenu_option("services", "fire_station")
 		_check(not BuildManager.is_placing and hud.status_label.text.find("Level 5") >= 0, "Locked fire station did not explain its unlock level.")
 		GameManager.level = menu_test_level
@@ -769,11 +779,12 @@ func _run_gameplay_test() -> void:
 		hud._on_submenu_option("specializations", "group_parks")
 		_check(hud.submenu.get_node_or_null("park_small") != null, "Parks subgroup must contain Small Park.")
 		hud._on_submenu_option("specializations", "park_small")
+		_confirm_catalog_build(hud)
 		_check(BuildManager.is_placing and BuildManager.selected_building_type == "park_small", "Small Park menu action did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("bulldoze")
 		_check(input_node.bulldoze_mode and not input_node.bulldoze_road_mode, "Main bulldozer category did not activate demolition mode.")
-		_check(hud.submenu_scroll.visible and hud.submenu.get_node_or_null("Submenu_Cancel") != null, "Bulldoze mode must show its indicator and Cancel action.")
+		_check(hud.submenu_scroll.visible and hud.get_node_or_null("CatalogCloseButton") != null, "Bulldoze mode must show its indicator and Cancel action.")
 		var bulldozer_badge = hud.get_node_or_null("BulldozerModeIndicator")
 		_check(bulldozer_badge != null and bulldozer_badge.visible, "Bulldozer active indicator was not shown.")
 		var cancel_key := InputEventKey.new()
