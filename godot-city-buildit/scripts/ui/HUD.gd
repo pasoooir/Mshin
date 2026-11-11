@@ -1843,8 +1843,9 @@ func _update_production_timers() -> void:
 
 func _close_production_panel() -> void:
 	_clear_production_timer_tracking()
-	if is_instance_valid(production_panel):
-		production_panel.queue_free()
+	if is_instance_valid(production_overlay):
+		production_overlay.queue_free()
+	production_overlay = null
 	production_panel = null
 
 func _on_storage_pressed() -> void:
