@@ -965,8 +965,8 @@ func _count_existing_buildings(type_id: String) -> int:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return count
-	for node in scene.find_children("*", "Building", true, false):
-		var building := node as Building
+	for building_value in BuildManager.buildings.values():
+		var building := building_value as Building
 		if is_instance_valid(building) and building.building_type == type_id:
 			count += 1
 	return count
@@ -1638,10 +1638,31 @@ func open_production_panel(building: Building) -> void:
 			item_button.custom_minimum_size = Vector2(112, 132) * _ui_scale
 			item_button.disabled = not lock_reason.is_empty()
 			item_button.focus_mode = Control.FOCUS_NONE
-			item_button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.88, 0.94, 0.97, 0.96), Color(1.0, 1.0, 1.0, 0.95)))
-			item_button.add_theme_stylebox_override("hover", _toolbar_style(Color(1.0, 1.0, 1.0, 1.0), Color("#FFD45C")))
-			item_button.add_theme_stylebox_override("pressed", _toolbar_style(Color("#E9F5FC"), Color("#F5C84C")))
-			item_button.add_theme_stylebox_override("disabled", _toolbar_style(Color(0.36, 0.42, 0.46, 0.78), Color(0.72, 0.78, 0.82, 0.35)))
+			item_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+			item_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+			item_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+			item_button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
+			var hex_size := Vector2(112, 132) * _ui_scale
+			var hex_points := PackedVector2Array([
+				Vector2(hex_size.x * 0.5, 0.0),
+				Vector2(hex_size.x - 4.0 * _ui_scale, hex_size.y * 0.22),
+				Vector2(hex_size.x - 4.0 * _ui_scale, hex_size.y * 0.76),
+				Vector2(hex_size.x * 0.5, hex_size.y),
+				Vector2(4.0 * _ui_scale, hex_size.y * 0.76),
+				Vector2(4.0 * _ui_scale, hex_size.y * 0.22)
+			])
+			var hex_background := Polygon2D.new()
+			hex_background.name = "HexagonBackground"
+			hex_background.polygon = hex_points
+			hex_background.color = Color(0.92, 0.97, 0.99, 0.97) if not item_button.disabled else Color(0.40, 0.46, 0.50, 0.84)
+			item_button.add_child(hex_background)
+			var hex_outline := Line2D.new()
+			hex_outline.name = "HexagonOutline"
+			hex_outline.points = hex_points
+			hex_outline.closed = true
+			hex_outline.width = 2.0 * _ui_scale
+			hex_outline.default_color = Color(1.0, 1.0, 1.0, 0.95)
+			item_button.add_child(hex_outline)
 			var card_content := VBoxContainer.new()
 			card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			card_content.alignment = BoxContainer.ALIGNMENT_CENTER
