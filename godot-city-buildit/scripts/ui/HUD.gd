@@ -500,23 +500,25 @@ func _build_toolbars() -> void:
 	submenu_scroll.anchor_right = 0.5
 	submenu_scroll.anchor_top = 1.0
 	submenu_scroll.anchor_bottom = 1.0
-	submenu_scroll.offset_left = -560.0 * _ui_scale
-	submenu_scroll.offset_right = 560.0 * _ui_scale
-	submenu_scroll.offset_top = -248.0 * _ui_scale
-	submenu_scroll.offset_bottom = -16.0 * _ui_scale
-	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	submenu_scroll.offset_left = -minf(650.0, viewport_size.x * 0.48) * _ui_scale
+	submenu_scroll.offset_right = minf(650.0, viewport_size.x * 0.48) * _ui_scale
+	submenu_scroll.offset_top = -224.0 * _ui_scale
+	submenu_scroll.offset_bottom = -12.0 * _ui_scale
+	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.scroll_deadzone = 8
 	submenu_scroll.follow_focus = false
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	submenu_scroll.z_index = 63
+	submenu_scroll.add_theme_stylebox_override("panel", _catalog_bar_style())
 	add_child(submenu_scroll)
 	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
 	submenu.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	submenu.add_theme_constant_override("separation", 12)
+	submenu.add_theme_constant_override("separation", 8)
 	submenu.alignment = BoxContainer.ALIGNMENT_BEGIN
 	submenu_scroll.add_child(submenu)
+	_build_catalog_info_panel()
 	submenu.hide()
 	submenu_scroll.hide()
 
@@ -658,9 +660,8 @@ func _on_category_pressed(category: String) -> void:
 func _show_submenu(category: String) -> void:
 	if submenu == null or submenu_scroll == null:
 		return
-	for child in submenu.get_children():
-		submenu.remove_child(child)
-		child.queue_free()
+	_clear_catalog_cards()
+	_add_catalog_advisor()
 	if category == "road":
 		_add_submenu_button("road_build", "Build Road", "road_build", "50 / tile", false, "road")
 		_add_submenu_button("road_upgrade", "Upgrade Road", "road_upgrade", "Coming later", true, "road")
@@ -679,9 +680,7 @@ func _show_submenu(category: String) -> void:
 			var detail := "%d coins · Lv %d" % [int(definition.get("cost", 0)), int(definition.get("level", 1))]
 			var locked := false
 			if definition_category == "industrial":
-				var slots := int(definition.get("production_slots", 2))
 				var required_population := int(definition.get("population_required", 0))
-				detail += " · %d slots" % slots
 				if required_population > GameManager.population:
 					detail += " · Requires %s population" % _format_count(required_population)
 					locked = true
@@ -949,25 +948,19 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 	if show_back:
 		var back := Button.new()
 		back.name = "Submenu_Back"
-		back.text = "BACK"
-		back.icon = Icons.get_tex("ui", "back")
-		back.custom_minimum_size = Vector2(192, 144) * _ui_scale
+		back.text = "‹"
+		back.tooltip_text = "Back to categories"
+		back.custom_minimum_size = Vector2(54, 188) * _ui_scale
 		back.focus_mode = Control.FOCUS_NONE
+		back.add_theme_stylebox_override("normal", _catalog_card_style("normal"))
+		back.add_theme_color_override("font_color", Color("#526B7A"))
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
-	var cancel := Button.new()
-	cancel.name = "Submenu_Cancel"
-	cancel.text = "CANCEL"
-	cancel.icon = Icons.get_tex("ui", "cancel")
-	cancel.custom_minimum_size = Vector2(192, 144) * _ui_scale
-	cancel.focus_mode = Control.FOCUS_NONE
-	cancel.add_theme_color_override("font_color", Color("#FFE2D9"))
-	cancel.add_theme_stylebox_override("normal", _toolbar_style(Color(0.42, 0.12, 0.12, 0.96), Color("#E98978")))
-	cancel.add_theme_stylebox_override("hover", _toolbar_style(Color(0.62, 0.16, 0.14, 1.0), Color.WHITE))
-	cancel.pressed.connect(_on_cancel_pressed)
-	submenu.add_child(cancel)
 	submenu.show()
 	submenu_scroll.show()
+	submenu_scroll.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(submenu_scroll, "modulate:a", 1.0, 0.20)
 	if bottom_actions:
 		bottom_actions.hide()
 
@@ -1117,7 +1110,7 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 		elif option_id == "bulldoze_road":
 			_start_bulldoze_road_mode()
 	else:
-		_select_building_type(option_id)
+		_show_building_info(option_id)
 
 func _close_building_submenu(cancel_placement: bool = true) -> void:
 	if cancel_placement:
