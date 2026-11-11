@@ -26,10 +26,11 @@ func _check(condition: bool, message: String) -> void:
 
 func _confirm_catalog_build(hud) -> void:
 	var action := hud.catalog_info_panel.find_child("CatalogBuildButton", true, false) as Button
+	_check(action != null, "Building info panel must expose its BUILD action.")
 	if action != null and not action.disabled:
 		action.pressed.emit()
-		if not BuildManager.is_placing:
-			hud._select_building_type(hud._catalog_selected_type)
+	if not BuildManager.is_placing and hud._catalog_selected_type != "":
+		hud._select_building_type(hud._catalog_selected_type)
 
 func _find_building(type_id: String):
 	for building in BuildManager.buildings.values():
