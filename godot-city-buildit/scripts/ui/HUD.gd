@@ -75,7 +75,6 @@ var _production_timer_labels: Array[Label] = []
 var _production_building: Building = null
 var _production_tick_accum := 0.0
 var _factory_ready_scan_accum := 0.0
-var _factory_ready_scan_accum := 0.0
 var catalog_info_panel: PanelContainer
 var catalog_base_bar: PanelContainer
 var catalog_advisor: Control
@@ -1459,7 +1458,6 @@ func _refresh_factory_ready_icons() -> void:
 			building.production_icon.modulate = Color("#FFE06B")
 			building.production_icon.outline_size = 12
 			building.production_icon.outline_modulate = Color(0.12, 0.08, 0.02, 0.95)
-			building.production_icon.tooltip_text = "Ready to collect: %s" % ready_item.capitalize() if not ready_item.is_empty() else ""
 
 func _on_level_up_effect_finished() -> void:
 	if is_instance_valid(_level_up_camera):
