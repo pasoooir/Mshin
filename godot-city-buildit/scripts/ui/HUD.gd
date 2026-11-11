@@ -184,8 +184,8 @@ func _apply_responsive_layout() -> void:
 		context_header.anchor_bottom = 0.0
 		context_header.offset_left = -header_width * 0.5
 		context_header.offset_right = header_width * 0.5
-		context_header.offset_top = 14.0 * scale_factor
-		context_header.offset_bottom = 184.0 * scale_factor
+		context_header.offset_top = 76.0 * scale_factor
+		context_header.offset_bottom = 230.0 * scale_factor
 	var actions := get_node_or_null("BottomActions") as Control
 	if actions:
 		var half_actions := minf(viewport_size.x * 0.34, 300.0 * scale_factor)
@@ -311,8 +311,8 @@ func _build_context_header(parent: Control) -> void:
 	context_header.anchor_right = 0.5
 	context_header.offset_left = -280
 	context_header.offset_right = 280
-	context_header.offset_top = 14
-	context_header.offset_bottom = 184
+	context_header.offset_top = 76
+	context_header.offset_bottom = 230
 	context_header.z_index = 25
 	context_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var glass := StyleBoxFlat.new()
@@ -796,7 +796,6 @@ func _close_build_menu() -> void:
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
 		build_label.text = "BUILD"
-	var build_button := get_node_or_null("BuildMenuButton") as Control
 	if build_button:
 		build_button.tooltip_text = "Open Build Menu"
 
