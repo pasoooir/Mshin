@@ -569,9 +569,9 @@ func _build_toolbars() -> void:
 	build_toggle.tooltip_text = "Close Build Menu"
 	build_toggle.focus_mode = Control.FOCUS_NONE
 	build_toggle.z_index = 61
-	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color("#EAF7FD"), Color("#B9D7E6")))
-	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color("#DDF3FC"), Color("#78C4E8")))
-	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color("#C8EAF8"), Color("#4FAED8")))
+	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color(0.055, 0.075, 0.09, 0.82), Color(1.0, 1.0, 1.0, 0.18)))
+	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color(0.10, 0.16, 0.19, 0.94), Color("#78C4E8")))
+	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.12, 0.25, 0.22, 0.96), Color("#A8E62E")))
 	var build_content := VBoxContainer.new()
 	build_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	build_content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -697,7 +697,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Color("#31566B"))
+	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.30))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
