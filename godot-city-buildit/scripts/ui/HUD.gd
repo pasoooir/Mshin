@@ -75,6 +75,12 @@ var _production_timer_labels: Array[Label] = []
 var _production_building: Building = null
 var _production_tick_accum := 0.0
 var catalog_info_panel: PanelContainer
+var catalog_base_bar: PanelContainer
+var catalog_advisor: Control
+var context_header: PanelContainer
+var context_header_title: Label
+var context_header_subtitle: Label
+var context_header_icons: HBoxContainer
 var _catalog_selected_type := ""
 
 func _ready() -> void:
@@ -134,11 +140,52 @@ func _apply_responsive_layout() -> void:
 		left_stats.position.x = (174.0 if not compact and not tablet else 14.0) * scale_factor
 	var submenu_control := get_node_or_null("ToolSubmenuScroll") as Control
 	if submenu_control:
-		var half_width := minf(viewport_size.x * 0.5 - 24.0, (390.0 if compact else (500.0 if tablet else 560.0)) * scale_factor)
-		submenu_control.offset_left = -half_width
-		submenu_control.offset_right = half_width
-		submenu_control.offset_top = -248.0 * scale_factor
-		submenu_control.offset_bottom = -16.0 * scale_factor
+		submenu_control.anchor_left = 0.15
+		submenu_control.anchor_right = 0.95
+		submenu_control.anchor_top = 1.0
+		submenu_control.anchor_bottom = 1.0
+		submenu_control.offset_left = 0.0
+		submenu_control.offset_right = 0.0
+		submenu_control.offset_top = -202.0 * scale_factor
+		submenu_control.offset_bottom = -8.0 * scale_factor
+	if catalog_base_bar:
+		catalog_base_bar.anchor_left = 0.15
+		catalog_base_bar.anchor_right = 0.95
+		catalog_base_bar.anchor_top = 1.0
+		catalog_base_bar.anchor_bottom = 1.0
+		catalog_base_bar.offset_left = 0.0
+		catalog_base_bar.offset_right = 0.0
+		catalog_base_bar.offset_top = -94.0 * scale_factor
+		catalog_base_bar.offset_bottom = -8.0 * scale_factor
+	if catalog_advisor:
+		catalog_advisor.anchor_left = 0.0
+		catalog_advisor.anchor_right = 0.15
+		catalog_advisor.anchor_top = 1.0
+		catalog_advisor.anchor_bottom = 1.0
+		catalog_advisor.offset_left = 0.0
+		catalog_advisor.offset_right = 0.0
+		catalog_advisor.offset_top = -282.0 * scale_factor
+		catalog_advisor.offset_bottom = -2.0 * scale_factor
+	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
+	if catalog_close:
+		catalog_close.anchor_left = 0.95
+		catalog_close.anchor_right = 1.0
+		catalog_close.anchor_top = 1.0
+		catalog_close.anchor_bottom = 1.0
+		catalog_close.offset_left = 0.0
+		catalog_close.offset_right = -8.0 * scale_factor
+		catalog_close.offset_top = -94.0 * scale_factor
+		catalog_close.offset_bottom = -8.0 * scale_factor
+	if context_header:
+		var header_width := minf(viewport_size.x * 0.46, 600.0 * scale_factor)
+		context_header.anchor_left = 0.5
+		context_header.anchor_right = 0.5
+		context_header.anchor_top = 0.0
+		context_header.anchor_bottom = 0.0
+		context_header.offset_left = -header_width * 0.5
+		context_header.offset_right = header_width * 0.5
+		context_header.offset_top = 76.0 * scale_factor
+		context_header.offset_bottom = 230.0 * scale_factor
 	var actions := get_node_or_null("BottomActions") as Control
 	if actions:
 		var half_actions := minf(viewport_size.x * 0.34, 300.0 * scale_factor)
@@ -254,6 +301,75 @@ func _build_top_hud() -> void:
 	keys_row.mouse_filter = Control.MOUSE_FILTER_PASS
 	right_stack.add_child(keys_row)
 	keys_label = _add_currency_bar(keys_row, "golden_key", "5", Color("#FFC107"), "Golden Keys", false, 100)
+
+	_build_context_header(top_hud)
+
+func _build_context_header(parent: Control) -> void:
+	context_header = PanelContainer.new()
+	context_header.name = "TopCenterContext"
+	context_header.anchor_left = 0.5
+	context_header.anchor_right = 0.5
+	context_header.offset_left = -280
+	context_header.offset_right = 280
+	context_header.offset_top = 76
+	context_header.offset_bottom = 230
+	context_header.z_index = 25
+	context_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var glass := StyleBoxFlat.new()
+	glass.bg_color = Color(0.08, 0.13, 0.19, 0.82)
+	glass.border_color = Color(0.78, 0.89, 0.96, 0.24)
+	glass.set_border_width_all(1)
+	glass.set_corner_radius_all(16)
+	glass.shadow_color = Color(0, 0, 0, 0.20)
+	glass.shadow_size = 8
+	glass.content_margin_left = 16
+	glass.content_margin_right = 16
+	glass.content_margin_top = 8
+	glass.content_margin_bottom = 8
+	context_header.add_theme_stylebox_override("panel", glass)
+	parent.add_child(context_header)
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 5)
+	context_header.add_child(stack)
+	context_header_title = Label.new()
+	context_header_title.name = "ContextTitle"
+	context_header_title.text = "CITY BUILDING"
+	context_header_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	context_header_title.add_theme_color_override("font_color", Color.WHITE)
+	context_header_title.add_theme_font_size_override("font_size", int(25 * _ui_scale))
+	stack.add_child(context_header_title)
+	context_header_subtitle = Label.new()
+	context_header_subtitle.name = "ContextSubtitle"
+	context_header_subtitle.text = "Choose a category to explore your city"
+	context_header_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	context_header_subtitle.add_theme_color_override("font_color", Color("#DCEAF3"))
+	context_header_subtitle.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	stack.add_child(context_header_subtitle)
+	context_header_icons = HBoxContainer.new()
+	context_header_icons.name = "ContextIconRow"
+	context_header_icons.alignment = BoxContainer.ALIGNMENT_CENTER
+	context_header_icons.add_theme_constant_override("separation", 10)
+	stack.add_child(context_header_icons)
+	for icon_id in ["road", "residential", "commercial", "industrial", "services", "parks"]:
+		context_header_icons.add_child(Icons.make_icon(icon_id, Vector2(30, 30) * _ui_scale))
+	context_header.hide()
+
+func _update_context_header(category: String, detail: String = "") -> void:
+	if not is_instance_valid(context_header):
+		return
+	var labels := {
+		"road": "ROADS & CONNECTIONS",
+		"residential": "RESIDENTIAL",
+		"commercial": "COMMERCIAL",
+		"industrial": "INDUSTRIAL",
+		"services": "CITY SERVICES",
+		"specializations": "CITY SPECIALIZATIONS",
+		"parks": "PARKS",
+		"bulldoze": "CITY REDEVELOPMENT"
+	}
+	context_header_title.text = labels.get(category, category.replace("_", " ").to_upper())
+	context_header_subtitle.text = detail if not detail.is_empty() else "Select a building to view its details and requirements"
+	context_header.show()
 
 func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
 	var bar := PanelContainer.new()
@@ -452,9 +568,9 @@ func _build_toolbars() -> void:
 	build_toggle.tooltip_text = "Close Build Menu"
 	build_toggle.focus_mode = Control.FOCUS_NONE
 	build_toggle.z_index = 61
-	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.19, 0.26, 0.98), Color("#FFC857")))
-	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color(0.13, 0.30, 0.40, 1.0), Color("#FFE19A")))
-	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.20, 0.34, 0.38, 1.0), Color("#FFE19A")))
+	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color("#EAF7FD"), Color("#B9D7E6")))
+	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color("#DDF3FC"), Color("#78C4E8")))
+	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color("#C8EAF8"), Color("#4FAED8")))
 	var build_content := VBoxContainer.new()
 	build_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	build_content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -468,7 +584,7 @@ func _build_toolbars() -> void:
 	build_label.name = "BuildButtonLabel"
 	build_label.text = "BUILD"
 	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	build_label.add_theme_color_override("font_color", Color.WHITE)
+	build_label.add_theme_color_override("font_color", Color("#31566B"))
 	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	build_content.add_child(build_label)
 	add_child(build_toggle)
@@ -494,23 +610,36 @@ func _build_toolbars() -> void:
 			"storage": button.pressed.connect(_on_storage_pressed)
 			"trade": button.pressed.connect(_on_trade_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
+	catalog_base_bar = PanelContainer.new()
+	catalog_base_bar.name = "CatalogBaseBar"
+	catalog_base_bar.anchor_left = 0.15
+	catalog_base_bar.anchor_right = 0.95
+	catalog_base_bar.anchor_top = 1.0
+	catalog_base_bar.anchor_bottom = 1.0
+	catalog_base_bar.offset_top = -94.0 * _ui_scale
+	catalog_base_bar.offset_bottom = -8.0 * _ui_scale
+	catalog_base_bar.z_index = 61
+	catalog_base_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	catalog_base_bar.add_theme_stylebox_override("panel", _catalog_bar_style())
+	add_child(catalog_base_bar)
+	catalog_base_bar.hide()
 	submenu_scroll = ScrollContainer.new()
 	submenu_scroll.name = "ToolSubmenuScroll"
-	submenu_scroll.anchor_left = 0.5
-	submenu_scroll.anchor_right = 0.5
+	submenu_scroll.anchor_left = 0.15
+	submenu_scroll.anchor_right = 0.95
 	submenu_scroll.anchor_top = 1.0
 	submenu_scroll.anchor_bottom = 1.0
-	submenu_scroll.offset_left = -minf(650.0, viewport_size.x * 0.48) * _ui_scale
-	submenu_scroll.offset_right = minf(650.0, viewport_size.x * 0.48) * _ui_scale
-	submenu_scroll.offset_top = -224.0 * _ui_scale
-	submenu_scroll.offset_bottom = -12.0 * _ui_scale
+	submenu_scroll.offset_left = 0.0
+	submenu_scroll.offset_right = 0.0
+	submenu_scroll.offset_top = -202.0 * _ui_scale
+	submenu_scroll.offset_bottom = -8.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.scroll_deadzone = 8
 	submenu_scroll.follow_focus = false
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	submenu_scroll.z_index = 63
-	submenu_scroll.add_theme_stylebox_override("panel", _catalog_bar_style())
+	submenu_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(submenu_scroll)
 	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
@@ -519,25 +648,27 @@ func _build_toolbars() -> void:
 	submenu.alignment = BoxContainer.ALIGNMENT_BEGIN
 	submenu_scroll.add_child(submenu)
 	_build_catalog_info_panel()
+	_add_catalog_advisor()
 	var catalog_close := Button.new()
 	catalog_close.name = "CatalogCloseButton"
 	catalog_close.text = "×"
-	catalog_close.anchor_left = 1.0
+	catalog_close.anchor_left = 0.95
 	catalog_close.anchor_right = 1.0
 	catalog_close.anchor_top = 1.0
 	catalog_close.anchor_bottom = 1.0
-	catalog_close.offset_left = -58 * _ui_scale
-	catalog_close.offset_right = -12 * _ui_scale
-	catalog_close.offset_top = -210 * _ui_scale
-	catalog_close.offset_bottom = -164 * _ui_scale
-	catalog_close.custom_minimum_size = Vector2(46, 46) * _ui_scale
+	catalog_close.offset_left = 0.0
+	catalog_close.offset_right = -8 * _ui_scale
+	catalog_close.offset_top = -94 * _ui_scale
+	catalog_close.offset_bottom = -8 * _ui_scale
+	catalog_close.custom_minimum_size = Vector2(54, 86) * _ui_scale
 	catalog_close.z_index = 66
 	catalog_close.text = "×"
 	catalog_close.add_theme_font_size_override("font_size", int(28 * _ui_scale))
 	catalog_close.add_theme_color_override("font_color", Color("#526B7A"))
-	catalog_close.add_theme_stylebox_override("normal", _catalog_card_style("normal"))
-	catalog_close.add_theme_stylebox_override("hover", _catalog_card_style("hover"))
-	catalog_close.pressed.connect(_on_cancel_pressed)
+	catalog_close.add_theme_stylebox_override("normal", _catalog_close_style(false))
+	catalog_close.add_theme_stylebox_override("hover", _catalog_close_style(true))
+	catalog_close.add_theme_stylebox_override("pressed", _catalog_close_style(true))
+	catalog_close.pressed.connect(_close_build_menu)
 	add_child(catalog_close)
 	catalog_close.hide()
 	submenu.hide()
@@ -548,9 +679,9 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	button.custom_minimum_size = button_size
 	button.tooltip_text = label_text
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
-	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.15, 0.30, 0.39, 0.96), Color("#FFC857")))
-	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.22, 0.34, 0.37, 1.0), Color("#FFE19A")))
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color("#F6FBFE"), Color("#D3E5EE")))
+	button.add_theme_stylebox_override("hover", _toolbar_style(Color("#E5F5FC"), Color("#83C8E7")))
+	button.add_theme_stylebox_override("pressed", _toolbar_style(Color("#D0EFFB"), Color("#5AAED2")))
 	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -565,8 +696,8 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Color("#F4F8FC"))
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.95))
+	label.add_theme_color_override("font_color", Color("#31566B"))
+	label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.30))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
@@ -641,6 +772,15 @@ func _close_build_menu() -> void:
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.hide()
+	if catalog_base_bar:
+		catalog_base_bar.hide()
+	if catalog_advisor:
+		catalog_advisor.hide()
+	if context_header:
+		context_header.hide()
+	var build_button := get_node_or_null("BuildMenuButton") as Control
+	if build_button:
+		build_button.show()
 	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
@@ -656,7 +796,6 @@ func _close_build_menu() -> void:
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
 		build_label.text = "BUILD"
-	var build_button := get_node_or_null("BuildMenuButton") as Control
 	if build_button:
 		build_button.tooltip_text = "Open Build Menu"
 
@@ -671,7 +810,7 @@ func _set_active_category_visuals(category: String) -> void:
 
 func _on_category_pressed(category: String) -> void:
 	if active_category == category and submenu_scroll and submenu_scroll.visible:
-		_on_cancel_pressed()
+		_close_build_menu()
 		return
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
@@ -690,7 +829,7 @@ func _show_submenu(category: String) -> void:
 	if submenu == null or submenu_scroll == null:
 		return
 	_clear_catalog_cards()
-	_add_catalog_advisor()
+	_update_context_header(category)
 	if category == "road":
 		_add_submenu_button("road_build", "Build Road", "road_build", "50 / tile", false, "road")
 		_add_submenu_button("road_upgrade", "Upgrade Road", "road_upgrade", "Coming later", true, "road")
@@ -734,7 +873,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	for child in submenu.get_children():
 		submenu.remove_child(child)
 		child.queue_free()
-	_add_catalog_advisor()
+	_update_context_header(parent_category, group_id.replace("_", " ").capitalize() + " · Choose a building")
 	var groups: Array = SERVICE_GROUPS if parent_category == "services" else SPECIALIZATION_GROUPS
 	var selected_group: Dictionary = {}
 	for group in groups:
@@ -771,7 +910,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	button.disabled = disabled and not level_locked
 	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else detail
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-		button.add_theme_stylebox_override(state, _catalog_card_style(state))
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -860,28 +999,27 @@ func _clear_catalog_cards() -> void:
 	_hide_building_info()
 
 func _add_catalog_advisor() -> void:
-	var advisor := PanelContainer.new()
-	advisor.name = "CatalogAdvisor"
-	advisor.custom_minimum_size = Vector2(116, 188) * _ui_scale
-	advisor.add_theme_stylebox_override("panel", _catalog_card_style("normal"))
-	submenu.add_child(advisor)
-	var layout := VBoxContainer.new()
-	layout.alignment = BoxContainer.ALIGNMENT_CENTER
-	advisor.add_child(layout)
+	catalog_advisor = Control.new()
+	catalog_advisor.name = "CatalogAdvisor"
+	catalog_advisor.anchor_left = 0.0
+	catalog_advisor.anchor_right = 0.15
+	catalog_advisor.anchor_top = 1.0
+	catalog_advisor.anchor_bottom = 1.0
+	catalog_advisor.offset_top = -282.0 * _ui_scale
+	catalog_advisor.offset_bottom = -2.0 * _ui_scale
+	catalog_advisor.z_index = 64
+	catalog_advisor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(catalog_advisor)
 	var portrait := TextureRect.new()
 	portrait.name = "AdvisorPortrait"
-	portrait.custom_minimum_size = Vector2(100, 132) * _ui_scale
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.texture = Icons.get_advisor_tex()
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait.texture = Icons.get_advisor_tex()
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layout.add_child(portrait)
-	var caption := Label.new()
-	caption.text = "CITY ADVISOR"
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	caption.add_theme_color_override("font_color", Color("#3A596D"))
-	caption.add_theme_font_size_override("font_size", int(11 * _ui_scale))
-	layout.add_child(caption)
+	catalog_advisor.add_child(portrait)
+	catalog_advisor.hide()
 
 func _build_catalog_info_panel() -> void:
 	catalog_info_panel = PanelContainer.new()
@@ -890,10 +1028,12 @@ func _build_catalog_info_panel() -> void:
 	catalog_info_panel.anchor_right = 0.0
 	catalog_info_panel.anchor_top = 1.0
 	catalog_info_panel.anchor_bottom = 1.0
-	catalog_info_panel.offset_left = 14 * _ui_scale
-	catalog_info_panel.offset_right = 286 * _ui_scale
-	catalog_info_panel.offset_top = -444 * _ui_scale
-	catalog_info_panel.offset_bottom = -232 * _ui_scale
+	catalog_info_panel.anchor_left = 0.15
+	catalog_info_panel.anchor_right = 0.39
+	catalog_info_panel.offset_left = 10 * _ui_scale
+	catalog_info_panel.offset_right = -8 * _ui_scale
+	catalog_info_panel.offset_top = -430 * _ui_scale
+	catalog_info_panel.offset_bottom = -218 * _ui_scale
 	catalog_info_panel.z_index = 65
 	catalog_info_panel.add_theme_stylebox_override("panel", _catalog_bar_style())
 	add_child(catalog_info_panel)
@@ -961,6 +1101,20 @@ func _add_info_line(parent: VBoxContainer, key_text: String, value_text: String)
 	value.add_theme_color_override("font_color", Color("#263746"))
 	row.add_child(value)
 
+func _catalog_close_style(hovered: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#F4FAFD") if hovered else Color("#FFFFFF")
+	style.border_color = Color("#D6E5EC")
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(14)
+	style.shadow_color = Color(0, 0, 0, 0.14)
+	style.shadow_size = 4
+	style.content_margin_left = 4
+	style.content_margin_right = 4
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	return style
+
 func _catalog_action_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#42A96B")
@@ -992,9 +1146,21 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		submenu.add_child(back)
 	submenu.show()
 	submenu_scroll.show()
+	if catalog_base_bar:
+		catalog_base_bar.show()
+	if catalog_advisor:
+		catalog_advisor.show()
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.show()
+	var toolbar := get_node_or_null("RightToolbar") as Control
+	if toolbar:
+		toolbar.hide()
+	var build_button := get_node_or_null("BuildMenuButton") as Control
+	if build_button:
+		build_button.hide()
+	if context_header:
+		context_header.show()
 	submenu_scroll.modulate.a = 0.0
 	var tween := create_tween()
 	tween.tween_property(submenu_scroll, "modulate:a", 1.0, 0.20)
@@ -1157,7 +1323,10 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
-		_on_cancel_pressed()
+		if submenu_scroll and submenu_scroll.visible:
+			_close_build_menu()
+		else:
+			_on_cancel_pressed()
 		get_viewport().set_input_as_handled()
 
 func _update_all() -> void:
@@ -1608,6 +1777,15 @@ func _on_cancel_pressed() -> void:
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.hide()
+	if catalog_base_bar:
+		catalog_base_bar.hide()
+	if catalog_advisor:
+		catalog_advisor.hide()
+	if context_header:
+		context_header.hide()
+	var build_toggle := get_node_or_null("BuildMenuButton") as Control
+	if build_toggle:
+		build_toggle.show()
 	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
