@@ -1559,7 +1559,7 @@ func open_production_panel(building: Building) -> void:
 	header.name = "ProductionHeader"
 	header.add_theme_constant_override("separation", 10)
 	layout.add_child(header)
-	var shop_icon := Icons.make_item_icon("ui", "factory", Vector2(54, 54) * _ui_scale)
+	var shop_icon := Icons.make_icon("factory_basic", Vector2(54, 54) * _ui_scale)
 	shop_icon.name = "ProductionBuildingIcon"
 	header.add_child(shop_icon)
 	var title_stack := VBoxContainer.new()
