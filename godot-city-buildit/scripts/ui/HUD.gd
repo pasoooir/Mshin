@@ -772,6 +772,15 @@ func _close_build_menu() -> void:
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.hide()
+	if catalog_base_bar:
+		catalog_base_bar.hide()
+	if catalog_advisor:
+		catalog_advisor.hide()
+	if context_header:
+		context_header.hide()
+	var build_button := get_node_or_null("BuildMenuButton") as Control
+	if build_button:
+		build_button.show()
 	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
@@ -802,7 +811,7 @@ func _set_active_category_visuals(category: String) -> void:
 
 func _on_category_pressed(category: String) -> void:
 	if active_category == category and submenu_scroll and submenu_scroll.visible:
-		_on_cancel_pressed()
+		_close_build_menu()
 		return
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
@@ -1092,6 +1101,20 @@ func _add_info_line(parent: VBoxContainer, key_text: String, value_text: String)
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value.add_theme_color_override("font_color", Color("#263746"))
 	row.add_child(value)
+
+func _catalog_close_style(hovered: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#F4FAFD") if hovered else Color("#FFFFFF")
+	style.border_color = Color("#D6E5EC")
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(14)
+	style.shadow_color = Color(0, 0, 0, 0.14)
+	style.shadow_size = 4
+	style.content_margin_left = 4
+	style.content_margin_right = 4
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	return style
 
 func _catalog_action_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
