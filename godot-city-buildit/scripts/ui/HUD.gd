@@ -391,14 +391,15 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	return value
 
 func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 184.0) -> Label:
+	var currency_node_prefix := icon_name.replace("_", " ").capitalize().replace(" ", "")
 	var row := HBoxContainer.new()
-	row.name = icon_name.capitalize() + "CurrencyRow"
+	row.name = currency_node_prefix + "CurrencyRow"
 	row.custom_minimum_size = Vector2(0, 54) * _ui_scale
 	row.add_theme_constant_override("separation", 7)
 	row.mouse_filter = Control.MOUSE_FILTER_PASS
 	parent.add_child(row)
 	var bar := PanelContainer.new()
-	bar.name = icon_name.capitalize() + "CurrencyBar"
+	bar.name = currency_node_prefix + "CurrencyBar"
 	bar.custom_minimum_size = Vector2(width, 54) * _ui_scale
 	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -414,7 +415,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(23 * _ui_scale))
-	value.name = icon_name.capitalize() + "CurrencyValue"
+	value.name = currency_node_prefix + "CurrencyValue"
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(value)
