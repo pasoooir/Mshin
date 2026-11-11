@@ -568,9 +568,9 @@ func _build_toolbars() -> void:
 	build_toggle.tooltip_text = "Close Build Menu"
 	build_toggle.focus_mode = Control.FOCUS_NONE
 	build_toggle.z_index = 61
-	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.19, 0.26, 0.98), Color("#FFC857")))
-	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color(0.13, 0.30, 0.40, 1.0), Color("#FFE19A")))
-	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.20, 0.34, 0.38, 1.0), Color("#FFE19A")))
+	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color("#EAF7FD"), Color("#B9D7E6")))
+	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color("#DDF3FC"), Color("#78C4E8")))
+	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color("#C8EAF8"), Color("#4FAED8")))
 	var build_content := VBoxContainer.new()
 	build_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	build_content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -584,7 +584,7 @@ func _build_toolbars() -> void:
 	build_label.name = "BuildButtonLabel"
 	build_label.text = "BUILD"
 	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	build_label.add_theme_color_override("font_color", Color.WHITE)
+	build_label.add_theme_color_override("font_color", Color("#31566B"))
 	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	build_content.add_child(build_label)
 	add_child(build_toggle)
@@ -679,9 +679,9 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	button.custom_minimum_size = button_size
 	button.tooltip_text = label_text
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, 0.0)))
-	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.15, 0.30, 0.39, 0.96), Color("#FFC857")))
-	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.22, 0.34, 0.37, 1.0), Color("#FFE19A")))
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color("#F6FBFE"), Color("#D3E5EE")))
+	button.add_theme_stylebox_override("hover", _toolbar_style(Color("#E5F5FC"), Color("#83C8E7")))
+	button.add_theme_stylebox_override("pressed", _toolbar_style(Color("#D0EFFB"), Color("#5AAED2")))
 	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -696,8 +696,8 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Color("#F4F8FC"))
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.95))
+	label.add_theme_color_override("font_color", Color("#31566B"))
+	label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.30))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
