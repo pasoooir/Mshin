@@ -302,6 +302,75 @@ func _build_top_hud() -> void:
 	right_stack.add_child(keys_row)
 	keys_label = _add_currency_bar(keys_row, "golden_key", "5", Color("#FFC107"), "Golden Keys", false, 100)
 
+	_build_context_header(top_hud)
+
+func _build_context_header(parent: Control) -> void:
+	context_header = PanelContainer.new()
+	context_header.name = "TopCenterContext"
+	context_header.anchor_left = 0.5
+	context_header.anchor_right = 0.5
+	context_header.offset_left = -280
+	context_header.offset_right = 280
+	context_header.offset_top = 14
+	context_header.offset_bottom = 184
+	context_header.z_index = 25
+	context_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var glass := StyleBoxFlat.new()
+	glass.bg_color = Color(0.08, 0.13, 0.19, 0.82)
+	glass.border_color = Color(0.78, 0.89, 0.96, 0.24)
+	glass.set_border_width_all(1)
+	glass.set_corner_radius_all(16)
+	glass.shadow_color = Color(0, 0, 0, 0.20)
+	glass.shadow_size = 8
+	glass.content_margin_left = 16
+	glass.content_margin_right = 16
+	glass.content_margin_top = 8
+	glass.content_margin_bottom = 8
+	context_header.add_theme_stylebox_override("panel", glass)
+	parent.add_child(context_header)
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 5)
+	context_header.add_child(stack)
+	context_header_title = Label.new()
+	context_header_title.name = "ContextTitle"
+	context_header_title.text = "CITY BUILDING"
+	context_header_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	context_header_title.add_theme_color_override("font_color", Color.WHITE)
+	context_header_title.add_theme_font_size_override("font_size", int(25 * _ui_scale))
+	stack.add_child(context_header_title)
+	context_header_subtitle = Label.new()
+	context_header_subtitle.name = "ContextSubtitle"
+	context_header_subtitle.text = "Choose a category to explore your city"
+	context_header_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	context_header_subtitle.add_theme_color_override("font_color", Color("#DCEAF3"))
+	context_header_subtitle.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	stack.add_child(context_header_subtitle)
+	context_header_icons = HBoxContainer.new()
+	context_header_icons.name = "ContextIconRow"
+	context_header_icons.alignment = BoxContainer.ALIGNMENT_CENTER
+	context_header_icons.add_theme_constant_override("separation", 10)
+	stack.add_child(context_header_icons)
+	for icon_id in ["road", "residential", "commercial", "industrial", "services", "parks"]:
+		context_header_icons.add_child(Icons.make_icon(icon_id, Vector2(30, 30) * _ui_scale))
+	context_header.hide()
+
+func _update_context_header(category: String, detail: String = "") -> void:
+	if not is_instance_valid(context_header):
+		return
+	var labels := {
+		"road": "ROADS & CONNECTIONS",
+		"residential": "RESIDENTIAL",
+		"commercial": "COMMERCIAL",
+		"industrial": "INDUSTRIAL",
+		"services": "CITY SERVICES",
+		"specializations": "CITY SPECIALIZATIONS",
+		"parks": "PARKS",
+		"bulldoze": "CITY REDEVELOPMENT"
+	}
+	context_header_title.text = labels.get(category, category.replace("_", " ").to_upper())
+	context_header_subtitle.text = detail if not detail.is_empty() else "Select a building to view its details and requirements"
+	context_header.show()
+
 func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "StatBar"
