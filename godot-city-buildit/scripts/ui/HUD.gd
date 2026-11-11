@@ -556,7 +556,7 @@ func _build_toolbars() -> void:
 	for item in tools:
 		var button := Button.new()
 		button.name = "Tool_" + str(item[0]).capitalize()
-		button.custom_minimum_size = Vector2(toolbar_width, 84.0) * _ui_scale
+		button.custom_minimum_size = Vector2(toolbar_width, 84.0 * _ui_scale)
 		button.tooltip_text = str(item[1])
 		button.focus_mode = Control.FOCUS_NONE
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
