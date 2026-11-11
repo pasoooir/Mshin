@@ -527,7 +527,7 @@ func _test_build_menu_visibility() -> void:
 	var saved_government_level := GameManager.level
 	GameManager.level = 1
 	hud._on_submenu_option("services", "town_hall")
-		_confirm_catalog_build(hud)
+	_confirm_catalog_build(hud)
 	_check(BuildManager.is_placing and BuildManager.selected_building_type == "town_hall", "Town Hall must be buildable at Level 1.")
 	BuildManager.cancel_placement()
 	GameManager.level = saved_government_level
@@ -538,7 +538,7 @@ func _test_build_menu_visibility() -> void:
 	var previous_level := GameManager.level
 	GameManager.level = 16
 	hud._on_submenu_option("services", "clinic_small")
-		_confirm_catalog_build(hud)
+	_confirm_catalog_build(hud)
 	_check(BuildManager.is_placing and BuildManager.selected_building_type == "clinic_small", "Unlocked Small Clinic must enter building placement mode.")
 	BuildManager.cancel_placement()
 	GameManager.level = previous_level
