@@ -311,7 +311,7 @@ func _test_build_menu_visibility() -> void:
 		_check(currency_stack != null and currency_stack.find_child(row_name, true, false) is HBoxContainer, "Missing resource row: " + row_name)
 	_check(currency_stack != null and currency_stack.find_child("SimoleonsCurrencyPlus", true, false) is Button, "Simoleons row must show the blue + tile.")
 	_check(currency_stack != null and currency_stack.find_child("SimCashCurrencyPlus", true, false) is Button, "SimCash row must show the blue + tile.")
-	_check(currency_stack != null and currency_stack.find_child("Golden KeysCurrencyPlus", true, false) == null, "Golden key row must not show an unnecessary + tile.")
+	_check(currency_stack != null and currency_stack.find_child("GoldenKeysCurrencyPlus", true, false) == null, "Golden key row must not show an unnecessary + tile.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
 	hud._on_category_pressed("services")
