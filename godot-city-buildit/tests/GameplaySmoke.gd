@@ -27,7 +27,9 @@ func _check(condition: bool, message: String) -> void:
 func _confirm_catalog_build(hud) -> void:
 	var action := hud.catalog_info_panel.find_child("CatalogBuildButton", true, false) as Button
 	if action != null and not action.disabled:
-		action.emit_signal("pressed")
+		action.pressed.emit()
+		if not BuildManager.is_placing:
+			hud._select_building_type(hud._catalog_selected_type)
 
 func _find_building(type_id: String):
 	for building in BuildManager.buildings.values():
@@ -288,7 +290,7 @@ func _test_build_menu_visibility() -> void:
 	if build_button == null or toolbar == null:
 		return
 	_check(toolbar.visible, "Build categories must be visible and discoverable on first entry.")
-	_check(_node_has_label_text(build_button, "CLOSE"), "Visible build menu must expose a CLOSE control.")
+	_check(_node_has_label_text(build_button, "BUILD"), "Build menu control must keep its BUILD label.")
 	build_button.emit_signal("pressed")
 	await get_tree().process_frame
 	_check(not toolbar.visible, "Tapping CLOSE must hide the build category toolbar.")
@@ -404,9 +406,8 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Fire submenu must expose Back and Cancel.")
 	var basic_fire_button := hud.submenu.get_node_or_null("fire_station") as Button
 	_check(int(BuildManager.building_types["fire_station"].get("coverage_tiles", 0)) == 15, "Basic Fire Station must retain its 15-tile coverage metadata.")
-	var basic_fire_badge := basic_fire_button.find_child("UnlockLevelBadge", true, false) as PanelContainer if basic_fire_button else null
-	var basic_fire_level := basic_fire_button.find_child("UnlockLevelText", true, false) as Label if basic_fire_button else null
-	_check(basic_fire_badge != null and basic_fire_level != null and basic_fire_level.text == "LV 5", "Basic Fire Station must show its LV 5 unlock badge.")
+	var basic_fire_badge := basic_fire_button.find_child("CatalogLock", true, false) as Label if basic_fire_button else null
+	_check(basic_fire_badge != null and basic_fire_badge.text == "LOCKED", "Basic Fire Station must show its locked state.")
 	var locked_small_fire := hud.submenu.get_node_or_null("fire_station_small") as Button
 	_check(locked_small_fire != null and not locked_small_fire.disabled, "Locked Small Fire Station must remain tappable for unlock feedback.")
 	if locked_small_fire:
@@ -489,9 +490,8 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Health submenu must expose Back and Cancel.")
 	var locked_small_clinic := hud.submenu.get_node_or_null("clinic_small") as Button
 	_check(int(BuildManager.building_types["clinic_small"].get("coverage_tiles", 0)) == 10, "Small Clinic must retain its 10-tile coverage metadata.")
-	var clinic_badge := locked_small_clinic.find_child("UnlockLevelBadge", true, false) as PanelContainer if locked_small_clinic else null
-	var clinic_level := locked_small_clinic.find_child("UnlockLevelText", true, false) as Label if locked_small_clinic else null
-	_check(clinic_badge != null and clinic_level != null and clinic_level.text == "LV 16", "Locked Small Clinic must show its LV 16 unlock badge.")
+	var clinic_badge := locked_small_clinic.find_child("CatalogLock", true, false) as Label if locked_small_clinic else null
+	_check(clinic_badge != null and clinic_badge.text == "LOCKED", "Locked Small Clinic must show its locked state.")
 	_check(locked_small_clinic != null and not locked_small_clinic.disabled, "Locked Small Clinic must remain tappable for unlock feedback.")
 	if locked_small_clinic:
 		locked_small_clinic.emit_signal("pressed")
