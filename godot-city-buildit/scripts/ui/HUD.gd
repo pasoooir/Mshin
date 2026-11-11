@@ -601,7 +601,7 @@ func _toggle_category_menu() -> void:
 	var build_button_node := get_node_or_null("BuildMenuButton")
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
-		build_label.text = "CLOSE"
+		build_label.text = "BUILD"
 	if build_button_node:
 		build_button_node.tooltip_text = "Build menu"
 
@@ -613,6 +613,7 @@ func _close_build_menu() -> void:
 		submenu_scroll.hide()
 	if submenu:
 		submenu.hide()
+	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
 	active_specialization_group = ""
@@ -705,6 +706,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	for child in submenu.get_children():
 		submenu.remove_child(child)
 		child.queue_free()
+	_add_catalog_advisor()
 	var groups: Array = SERVICE_GROUPS if parent_category == "services" else SPECIALIZATION_GROUPS
 	var selected_group: Dictionary = {}
 	for group in groups:
@@ -1583,7 +1585,7 @@ func _on_cancel_pressed() -> void:
 	if build_label:
 		build_label.text = "CLOSE"
 	if build_button_node:
-		build_button_node.tooltip_text = "Close Build Menu"
+		build_button_node.tooltip_text = "Build menu"
 	if was_moving:
 		status_label.text = "Move cancelled. Building returned to its original location."
 	elif was_bulldozing:
