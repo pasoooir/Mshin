@@ -309,7 +309,7 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
 	var currency_stack := hud.get_node_or_null("TopRightCurrencies") as VBoxContainer
 	_check(currency_stack != null and currency_stack.get_child_count() == 3, "Top-right resources must be exactly three compact rows.")
-	for row_name in ["SimoleonsCurrencyRow", "MoneyCurrencyRow", "Golden_keyCurrencyRow"]:
+	for row_name in ["SimoleonsCurrencyRow", "MoneyCurrencyRow", "GoldenKeyCurrencyRow"]:
 		_check(currency_stack != null and currency_stack.find_child(row_name, true, false) is HBoxContainer, "Missing resource row: " + row_name)
 	_check(currency_stack != null and currency_stack.find_child("SimoleonsCurrencyPlus", true, false) is Button, "Simoleons row must show the blue + tile.")
 	_check(currency_stack != null and currency_stack.find_child("SimCashCurrencyPlus", true, false) is Button, "SimCash row must show the blue + tile.")
