@@ -75,6 +75,12 @@ var _production_timer_labels: Array[Label] = []
 var _production_building: Building = null
 var _production_tick_accum := 0.0
 var catalog_info_panel: PanelContainer
+var catalog_base_bar: PanelContainer
+var catalog_advisor: Control
+var context_header: PanelContainer
+var context_header_title: Label
+var context_header_subtitle: Label
+var context_header_icons: HBoxContainer
 var _catalog_selected_type := ""
 
 func _ready() -> void:
@@ -134,11 +140,52 @@ func _apply_responsive_layout() -> void:
 		left_stats.position.x = (174.0 if not compact and not tablet else 14.0) * scale_factor
 	var submenu_control := get_node_or_null("ToolSubmenuScroll") as Control
 	if submenu_control:
-		var half_width := minf(viewport_size.x * 0.5 - 24.0, (390.0 if compact else (500.0 if tablet else 560.0)) * scale_factor)
-		submenu_control.offset_left = -half_width
-		submenu_control.offset_right = half_width
-		submenu_control.offset_top = -248.0 * scale_factor
-		submenu_control.offset_bottom = -16.0 * scale_factor
+		submenu_control.anchor_left = 0.15
+		submenu_control.anchor_right = 0.95
+		submenu_control.anchor_top = 1.0
+		submenu_control.anchor_bottom = 1.0
+		submenu_control.offset_left = 0.0
+		submenu_control.offset_right = 0.0
+		submenu_control.offset_top = -202.0 * scale_factor
+		submenu_control.offset_bottom = -8.0 * scale_factor
+	if catalog_base_bar:
+		catalog_base_bar.anchor_left = 0.15
+		catalog_base_bar.anchor_right = 0.95
+		catalog_base_bar.anchor_top = 1.0
+		catalog_base_bar.anchor_bottom = 1.0
+		catalog_base_bar.offset_left = 0.0
+		catalog_base_bar.offset_right = 0.0
+		catalog_base_bar.offset_top = -94.0 * scale_factor
+		catalog_base_bar.offset_bottom = -8.0 * scale_factor
+	if catalog_advisor:
+		catalog_advisor.anchor_left = 0.0
+		catalog_advisor.anchor_right = 0.15
+		catalog_advisor.anchor_top = 1.0
+		catalog_advisor.anchor_bottom = 1.0
+		catalog_advisor.offset_left = 0.0
+		catalog_advisor.offset_right = 0.0
+		catalog_advisor.offset_top = -282.0 * scale_factor
+		catalog_advisor.offset_bottom = -2.0 * scale_factor
+	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
+	if catalog_close:
+		catalog_close.anchor_left = 0.95
+		catalog_close.anchor_right = 1.0
+		catalog_close.anchor_top = 1.0
+		catalog_close.anchor_bottom = 1.0
+		catalog_close.offset_left = 0.0
+		catalog_close.offset_right = -8.0 * scale_factor
+		catalog_close.offset_top = -94.0 * scale_factor
+		catalog_close.offset_bottom = -8.0 * scale_factor
+	if context_header:
+		var header_width := minf(viewport_size.x * 0.46, 600.0 * scale_factor)
+		context_header.anchor_left = 0.5
+		context_header.anchor_right = 0.5
+		context_header.anchor_top = 0.0
+		context_header.anchor_bottom = 0.0
+		context_header.offset_left = -header_width * 0.5
+		context_header.offset_right = header_width * 0.5
+		context_header.offset_top = 14.0 * scale_factor
+		context_header.offset_bottom = 184.0 * scale_factor
 	var actions := get_node_or_null("BottomActions") as Control
 	if actions:
 		var half_actions := minf(viewport_size.x * 0.34, 300.0 * scale_factor)
