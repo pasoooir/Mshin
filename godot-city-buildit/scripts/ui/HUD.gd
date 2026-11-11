@@ -1323,7 +1323,10 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
-		_on_cancel_pressed()
+		if submenu_scroll and submenu_scroll.visible:
+			_close_build_menu()
+		else:
+			_on_cancel_pressed()
 		get_viewport().set_input_as_handled()
 
 func _update_all() -> void:
@@ -1774,6 +1777,15 @@ func _on_cancel_pressed() -> void:
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.hide()
+	if catalog_base_bar:
+		catalog_base_bar.hide()
+	if catalog_advisor:
+		catalog_advisor.hide()
+	if context_header:
+		context_header.hide()
+	var build_toggle := get_node_or_null("BuildMenuButton") as Control
+	if build_toggle:
+		build_toggle.show()
 	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
