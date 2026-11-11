@@ -985,12 +985,18 @@ func _run_gameplay_test() -> void:
 	var factory_component = factory.production_component
 	_check(factory_component != null and factory_component.get_slot_count() == 2, "Small Factory must expose two independent production slots.")
 	production_hud.open_production_panel(factory)
+	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
+	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
+	_check(production_hud.production_panel.find_child("ProductionProductsScroll", true, false) != null, "Factory panel must show a horizontally browsable product-card row.")
+	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
 	var metal_button := production_hud.production_panel.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
 		metal_button.emit_signal("pressed")
 	_check(not factory_component.get_slot(0).is_empty(), "Selecting Metal must start the first factory slot.")
 	production_hud.open_production_panel(factory)
+	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
+	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
 	var second_metal_button := production_hud.production_panel.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
 	if second_metal_button:
