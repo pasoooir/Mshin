@@ -504,7 +504,7 @@ func _build_toolbars() -> void:
 	submenu_scroll.offset_right = minf(650.0, viewport_size.x * 0.48) * _ui_scale
 	submenu_scroll.offset_top = -224.0 * _ui_scale
 	submenu_scroll.offset_bottom = -12.0 * _ui_scale
-	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.scroll_deadzone = 8
 	submenu_scroll.follow_focus = false
@@ -519,6 +519,27 @@ func _build_toolbars() -> void:
 	submenu.alignment = BoxContainer.ALIGNMENT_BEGIN
 	submenu_scroll.add_child(submenu)
 	_build_catalog_info_panel()
+	var catalog_close := Button.new()
+	catalog_close.name = "CatalogCloseButton"
+	catalog_close.text = "×"
+	catalog_close.anchor_left = 1.0
+	catalog_close.anchor_right = 1.0
+	catalog_close.anchor_top = 1.0
+	catalog_close.anchor_bottom = 1.0
+	catalog_close.offset_left = -58 * _ui_scale
+	catalog_close.offset_right = -12 * _ui_scale
+	catalog_close.offset_top = -210 * _ui_scale
+	catalog_close.offset_bottom = -164 * _ui_scale
+	catalog_close.custom_minimum_size = Vector2(46, 46) * _ui_scale
+	catalog_close.z_index = 66
+	catalog_close.text = "×"
+	catalog_close.add_theme_font_size_override("font_size", int(28 * _ui_scale))
+	catalog_close.add_theme_color_override("font_color", Color("#526B7A"))
+	catalog_close.add_theme_stylebox_override("normal", _catalog_card_style("normal"))
+	catalog_close.add_theme_stylebox_override("hover", _catalog_card_style("hover"))
+	catalog_close.pressed.connect(_on_cancel_pressed)
+	add_child(catalog_close)
+	catalog_close.hide()
 	submenu.hide()
 	submenu_scroll.hide()
 
@@ -613,6 +634,9 @@ func _close_build_menu() -> void:
 		submenu_scroll.hide()
 	if submenu:
 		submenu.hide()
+	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
+	if catalog_close:
+		catalog_close.hide()
 	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
@@ -960,6 +984,9 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		submenu.add_child(back)
 	submenu.show()
 	submenu_scroll.show()
+	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
+	if catalog_close:
+		catalog_close.show()
 	submenu_scroll.modulate.a = 0.0
 	var tween := create_tween()
 	tween.tween_property(submenu_scroll, "modulate:a", 1.0, 0.20)
