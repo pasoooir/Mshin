@@ -630,7 +630,11 @@ func _close_build_menu() -> void:
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
 	_set_bulldozer_indicator(false)
-	if submenu_scroll:
+	if submenu_scroll and submenu_scroll.visible:
+		var catalog_exit := create_tween()
+		catalog_exit.tween_property(submenu_scroll, "modulate:a", 0.0, 0.14)
+		catalog_exit.tween_callback(submenu_scroll.hide)
+	elif submenu_scroll:
 		submenu_scroll.hide()
 	if submenu:
 		submenu.hide()
