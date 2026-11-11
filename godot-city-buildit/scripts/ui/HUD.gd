@@ -1597,6 +1597,10 @@ func _on_cancel_pressed() -> void:
 		submenu_scroll.hide()
 	if submenu:
 		submenu.hide()
+	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
+	if catalog_close:
+		catalog_close.hide()
+	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
 	active_specialization_group = ""
@@ -1610,7 +1614,7 @@ func _on_cancel_pressed() -> void:
 	var build_button_node := get_node_or_null("BuildMenuButton")
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
-		build_label.text = "CLOSE"
+		build_label.text = "BUILD"
 	if build_button_node:
 		build_button_node.tooltip_text = "Build menu"
 	if was_moving:
