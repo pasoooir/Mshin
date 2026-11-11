@@ -124,21 +124,17 @@ func _apply_responsive_layout() -> void:
 	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
-		var width := (132.0 if compact else (148.0 if tablet else 168.0)) * scale_factor
-		var height := minf(viewport_size.y - 150.0 * scale_factor, 610.0 * scale_factor)
-		if not compact and not tablet:
-			# Desktop gets a persistent left navigation rail; mobile/tablet keep it on the right.
-			toolbar.anchor_left = 0.0
-			toolbar.anchor_right = 0.0
-			toolbar.offset_left = 12.0 * scale_factor
-			toolbar.offset_right = 12.0 * scale_factor + width
-		else:
-			toolbar.anchor_left = 1.0
-			toolbar.anchor_right = 1.0
-			toolbar.offset_left = -width - 12.0 * scale_factor
-			toolbar.offset_right = -12.0 * scale_factor
-		toolbar.offset_top = -height * 0.5
-		toolbar.offset_bottom = height * 0.5
+		# Keep the transparent PNG shortcuts on the right at every viewport size.
+		# They sit below the three compact resource rows and never use a hard-hat toggle.
+		var width := 92.0 * scale_factor
+		toolbar.anchor_left = 1.0
+		toolbar.anchor_right = 1.0
+		toolbar.anchor_top = 0.30
+		toolbar.anchor_bottom = 0.985
+		toolbar.offset_left = -width - 8.0 * scale_factor
+		toolbar.offset_right = -6.0 * scale_factor
+		toolbar.offset_top = 0.0
+		toolbar.offset_bottom = 0.0
 	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
 	if left_stats:
 		left_stats.position.x = (174.0 if not compact and not tablet else 14.0) * scale_factor
