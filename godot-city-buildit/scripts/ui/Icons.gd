@@ -65,6 +65,14 @@ static func resolved_id(id: String) -> String:
 static func get_icon_tex(id: String) -> Texture2D:
 	return get_tex(category_for_id(id), resolved_id(id))
 
+static func get_advisor_tex() -> Texture2D:
+	for candidate in ["res://assets/icons/ui/advisor.png"]:
+		if ResourceLoader.exists(candidate):
+			var texture := load(candidate) as Texture2D
+			if texture != null:
+				return texture
+	return get_icon_tex("hard_hat")
+
 static func make_icon(id: String, display_size: Vector2 = Vector2(64, 64)) -> TextureRect:
 	var icon := TextureRect.new()
 	icon.texture = get_icon_tex(id)

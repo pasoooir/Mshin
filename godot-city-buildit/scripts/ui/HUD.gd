@@ -74,6 +74,8 @@ var _level_up_shake_elapsed := 0.0
 var _production_timer_labels: Array[Label] = []
 var _production_building: Building = null
 var _production_tick_accum := 0.0
+var catalog_info_panel: PanelContainer
+var _catalog_selected_type := ""
 
 func _ready() -> void:
 	# Keep the existing gameplay signal wiring intact.
@@ -464,7 +466,7 @@ func _build_toolbars() -> void:
 	build_content.add_child(build_icon)
 	var build_label := Label.new()
 	build_label.name = "BuildButtonLabel"
-	build_label.text = "CLOSE"
+	build_label.text = "BUILD"
 	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	build_label.add_theme_color_override("font_color", Color.WHITE)
 	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
@@ -498,23 +500,46 @@ func _build_toolbars() -> void:
 	submenu_scroll.anchor_right = 0.5
 	submenu_scroll.anchor_top = 1.0
 	submenu_scroll.anchor_bottom = 1.0
-	submenu_scroll.offset_left = -560.0 * _ui_scale
-	submenu_scroll.offset_right = 560.0 * _ui_scale
-	submenu_scroll.offset_top = -248.0 * _ui_scale
-	submenu_scroll.offset_bottom = -16.0 * _ui_scale
+	submenu_scroll.offset_left = -minf(650.0, viewport_size.x * 0.48) * _ui_scale
+	submenu_scroll.offset_right = minf(650.0, viewport_size.x * 0.48) * _ui_scale
+	submenu_scroll.offset_top = -224.0 * _ui_scale
+	submenu_scroll.offset_bottom = -12.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.scroll_deadzone = 8
 	submenu_scroll.follow_focus = false
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	submenu_scroll.z_index = 63
+	submenu_scroll.add_theme_stylebox_override("panel", _catalog_bar_style())
 	add_child(submenu_scroll)
 	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
 	submenu.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	submenu.add_theme_constant_override("separation", 12)
+	submenu.add_theme_constant_override("separation", 8)
 	submenu.alignment = BoxContainer.ALIGNMENT_BEGIN
 	submenu_scroll.add_child(submenu)
+	_build_catalog_info_panel()
+	var catalog_close := Button.new()
+	catalog_close.name = "CatalogCloseButton"
+	catalog_close.text = "×"
+	catalog_close.anchor_left = 1.0
+	catalog_close.anchor_right = 1.0
+	catalog_close.anchor_top = 1.0
+	catalog_close.anchor_bottom = 1.0
+	catalog_close.offset_left = -58 * _ui_scale
+	catalog_close.offset_right = -12 * _ui_scale
+	catalog_close.offset_top = -210 * _ui_scale
+	catalog_close.offset_bottom = -164 * _ui_scale
+	catalog_close.custom_minimum_size = Vector2(46, 46) * _ui_scale
+	catalog_close.z_index = 66
+	catalog_close.text = "×"
+	catalog_close.add_theme_font_size_override("font_size", int(28 * _ui_scale))
+	catalog_close.add_theme_color_override("font_color", Color("#526B7A"))
+	catalog_close.add_theme_stylebox_override("normal", _catalog_card_style("normal"))
+	catalog_close.add_theme_stylebox_override("hover", _catalog_card_style("hover"))
+	catalog_close.pressed.connect(_on_cancel_pressed)
+	add_child(catalog_close)
+	catalog_close.hide()
 	submenu.hide()
 	submenu_scroll.hide()
 
@@ -597,18 +622,26 @@ func _toggle_category_menu() -> void:
 	var build_button_node := get_node_or_null("BuildMenuButton")
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
-		build_label.text = "CLOSE"
+		build_label.text = "BUILD"
 	if build_button_node:
-		build_button_node.tooltip_text = "Close Build Menu"
+		build_button_node.tooltip_text = "Build menu"
 
 func _close_build_menu() -> void:
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
 	_set_bulldozer_indicator(false)
-	if submenu_scroll:
+	if submenu_scroll and submenu_scroll.visible:
+		var catalog_exit := create_tween()
+		catalog_exit.tween_property(submenu_scroll, "modulate:a", 0.0, 0.14)
+		catalog_exit.tween_callback(submenu_scroll.hide)
+	elif submenu_scroll:
 		submenu_scroll.hide()
 	if submenu:
 		submenu.hide()
+	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
+	if catalog_close:
+		catalog_close.hide()
+	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
 	active_specialization_group = ""
@@ -656,9 +689,8 @@ func _on_category_pressed(category: String) -> void:
 func _show_submenu(category: String) -> void:
 	if submenu == null or submenu_scroll == null:
 		return
-	for child in submenu.get_children():
-		submenu.remove_child(child)
-		child.queue_free()
+	_clear_catalog_cards()
+	_add_catalog_advisor()
 	if category == "road":
 		_add_submenu_button("road_build", "Build Road", "road_build", "50 / tile", false, "road")
 		_add_submenu_button("road_upgrade", "Upgrade Road", "road_upgrade", "Coming later", true, "road")
@@ -677,9 +709,7 @@ func _show_submenu(category: String) -> void:
 			var detail := "%d coins · Lv %d" % [int(definition.get("cost", 0)), int(definition.get("level", 1))]
 			var locked := false
 			if definition_category == "industrial":
-				var slots := int(definition.get("production_slots", 2))
 				var required_population := int(definition.get("population_required", 0))
-				detail += " · %d slots" % slots
 				if required_population > GameManager.population:
 					detail += " · Requires %s population" % _format_count(required_population)
 					locked = true
@@ -704,6 +734,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	for child in submenu.get_children():
 		submenu.remove_child(child)
 		child.queue_free()
+	_add_catalog_advisor()
 	var groups: Array = SERVICE_GROUPS if parent_category == "services" else SPECIALIZATION_GROUPS
 	var selected_group: Dictionary = {}
 	for group in groups:
@@ -731,68 +762,216 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 				_add_submenu_button(type_id, str(definition.get("name", type_id)), type_id, detail, false, parent_category, int(definition.get("level", 1)))
 	_finish_submenu_row(true)
 
-func _add_submenu_button(option_id: String, _title: String, icon_name: String, _detail: String, disabled: bool, category: String, required_level: int = 1, _locked: bool = false) -> void:
-	var level_locked := GameManager.level < required_level
+func _add_submenu_button(option_id: String, title: String, icon_name: String, detail: String, disabled: bool, category: String, required_level: int = 1, locked: bool = false) -> void:
+	var level_locked := GameManager.level < required_level or locked
 	var button := Button.new()
 	button.name = option_id
-	button.custom_minimum_size = Vector2(176, 176) * _ui_scale
+	button.custom_minimum_size = Vector2(164, 188) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
-	button.disabled = disabled
-	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else _detail
-	# Submenu selection never paints a tile behind the artwork. Only the PNG
-	# itself scales on hover/press, so neighbouring cards keep their positions.
+	button.disabled = disabled and not level_locked
+	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else detail
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		button.add_theme_stylebox_override(state, _catalog_card_style(state))
 	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 2)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(136, 136) * _ui_scale)
+	var art := Control.new()
+	art.custom_minimum_size = Vector2(142, 126) * _ui_scale
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(art)
+	var icon := Icons.make_icon(icon_name, Vector2(132, 122) * _ui_scale)
 	icon.name = "SubmenuArtwork"
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon.custom_minimum_size = Vector2(136, 136) * _ui_scale
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	content.add_child(icon)
-	button.mouse_entered.connect(_set_submenu_icon_scale.bind(icon, 1.12))
-	button.mouse_exited.connect(_set_submenu_icon_scale.bind(icon, 1.0))
-	button.button_down.connect(_set_submenu_icon_scale.bind(icon, 1.12))
-	button.button_up.connect(_set_submenu_icon_scale.bind(icon, 1.0))
+	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.add_child(icon)
 	if level_locked:
-		var badge := PanelContainer.new()
-		badge.name = "UnlockLevelBadge"
-		badge.anchor_left = 1.0
-		badge.anchor_right = 1.0
-		badge.anchor_top = 0.0
-		badge.anchor_bottom = 0.0
-		badge.offset_left = -78.0 * _ui_scale
-		badge.offset_right = -5.0 * _ui_scale
-		badge.offset_top = 5.0 * _ui_scale
-		badge.offset_bottom = 34.0 * _ui_scale
-		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var badge_style := StyleBoxFlat.new()
-		badge_style.bg_color = Color(0.08, 0.10, 0.13, 0.92)
-		badge_style.border_color = Color("#FFD98A")
-		badge_style.set_border_width_all(1)
-		badge_style.set_corner_radius_all(8)
-		badge_style.content_margin_left = 5
-		badge_style.content_margin_right = 5
-		badge_style.content_margin_top = 1
-		badge_style.content_margin_bottom = 1
-		badge.add_theme_stylebox_override("panel", badge_style)
-		var level_text := Label.new()
-		level_text.name = "UnlockLevelText"
-		level_text.text = "LV %d" % required_level
-		level_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		level_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		level_text.add_theme_color_override("font_color", Color("#FFE5A8"))
-		level_text.add_theme_font_size_override("font_size", int(13 * _ui_scale))
-		level_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		badge.add_child(level_text)
-		button.add_child(badge)
+		var lock := Label.new()
+		lock.name = "CatalogLock"
+		lock.text = "LOCKED"
+		lock.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		lock.offset_left = -66 * _ui_scale
+		lock.offset_right = -3 * _ui_scale
+		lock.offset_top = 2 * _ui_scale
+		lock.offset_bottom = 25 * _ui_scale
+		lock.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		lock.add_theme_color_override("font_color", Color("#A66A16"))
+		art.add_child(lock)
+	var label := Label.new()
+	label.text = title
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size.y = 34 * _ui_scale
+	label.add_theme_color_override("font_color", Color("#344B5B") if not level_locked else Color("#84929B"))
+	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	content.add_child(label)
+	var count := Label.new()
+	count.name = "BuildingCount"
+	count.text = "%d/1" % _count_existing_buildings(option_id)
+	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	count.add_theme_color_override("font_color", Color("#748795"))
+	count.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	content.add_child(count)
+	button.mouse_entered.connect(_set_submenu_icon_scale.bind(icon, 1.06))
+	button.mouse_exited.connect(_set_submenu_icon_scale.bind(icon, 1.0))
 	submenu.add_child(button)
 	button.pressed.connect(_on_submenu_option.bind(category, option_id))
 
+func _count_existing_buildings(type_id: String) -> int:
+	var count := 0
+	var scene := get_tree().current_scene
+	if scene == null:
+		return count
+	for node in scene.find_children("*", "Building", true, false):
+		var building := node as Building
+		if is_instance_valid(building) and building.building_type == type_id:
+			count += 1
+	return count
+
+func _catalog_card_style(state: String) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#F4FBFF") if state == "hover" else (Color("#E8F5FC") if state == "pressed" else Color("#FFFFFF"))
+	style.border_color = Color("#75BFE7") if state == "pressed" else Color("#D8E5EC")
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(13)
+	style.content_margin_left = 5
+	style.content_margin_right = 5
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	return style
+
+func _catalog_bar_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.97, 0.99, 1.0, 0.97)
+	style.border_color = Color("#D8E5EC")
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(18)
+	style.shadow_color = Color(0, 0, 0, 0.18)
+	style.shadow_size = 8
+	style.shadow_offset = Vector2(0, -2)
+	return style
+
+func _clear_catalog_cards() -> void:
+	for child in submenu.get_children():
+		submenu.remove_child(child)
+		child.queue_free()
+	_catalog_selected_type = ""
+	_hide_building_info()
+
+func _add_catalog_advisor() -> void:
+	var advisor := PanelContainer.new()
+	advisor.name = "CatalogAdvisor"
+	advisor.custom_minimum_size = Vector2(116, 188) * _ui_scale
+	advisor.add_theme_stylebox_override("panel", _catalog_card_style("normal"))
+	submenu.add_child(advisor)
+	var layout := VBoxContainer.new()
+	layout.alignment = BoxContainer.ALIGNMENT_CENTER
+	advisor.add_child(layout)
+	var portrait := TextureRect.new()
+	portrait.name = "AdvisorPortrait"
+	portrait.custom_minimum_size = Vector2(100, 132) * _ui_scale
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.texture = Icons.get_advisor_tex()
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(portrait)
+	var caption := Label.new()
+	caption.text = "CITY ADVISOR"
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.add_theme_color_override("font_color", Color("#3A596D"))
+	caption.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	layout.add_child(caption)
+
+func _build_catalog_info_panel() -> void:
+	catalog_info_panel = PanelContainer.new()
+	catalog_info_panel.name = "BuildingInfoPanel"
+	catalog_info_panel.anchor_left = 0.0
+	catalog_info_panel.anchor_right = 0.0
+	catalog_info_panel.anchor_top = 1.0
+	catalog_info_panel.anchor_bottom = 1.0
+	catalog_info_panel.offset_left = 14 * _ui_scale
+	catalog_info_panel.offset_right = 286 * _ui_scale
+	catalog_info_panel.offset_top = -444 * _ui_scale
+	catalog_info_panel.offset_bottom = -232 * _ui_scale
+	catalog_info_panel.z_index = 65
+	catalog_info_panel.add_theme_stylebox_override("panel", _catalog_bar_style())
+	add_child(catalog_info_panel)
+	catalog_info_panel.hide()
+
+func _show_building_info(type_id: String) -> void:
+	if not BuildManager.building_types.has(type_id):
+		return
+	_catalog_selected_type = type_id
+	var definition: Dictionary = BuildManager.building_types[type_id]
+	for child in catalog_info_panel.get_children():
+		catalog_info_panel.remove_child(child)
+		child.queue_free()
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 4)
+	catalog_info_panel.add_child(layout)
+	var heading := HBoxContainer.new()
+	layout.add_child(heading)
+	var title := Label.new()
+	title.text = str(definition.get("name", type_id))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_color_override("font_color", Color("#263746"))
+	title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	heading.add_child(title)
+	var close := Button.new()
+	close.name = "BuildingInfoClose"
+	close.text = "×"
+	close.custom_minimum_size = Vector2(30, 30) * _ui_scale
+	close.pressed.connect(_hide_building_info)
+	heading.add_child(close)
+	var footprint: Vector2i = definition.get("size", Vector2i.ONE)
+	_add_info_line(layout, "Area", "%d × %d tiles" % [footprint.x, footprint.y])
+	var boost := int(definition.get("happiness", definition.get("population", definition.get("coverage_tiles", 0))))
+	_add_info_line(layout, "Boost", str(boost) if boost > 0 else "—")
+	_add_info_line(layout, "Price", "%s Simoleons" % _format_count(int(definition.get("cost", 0))))
+	var required_level := int(definition.get("level", 1))
+	_add_info_line(layout, "Requirements", "Level %d" % required_level)
+	if GameManager.level < required_level:
+		status_label.text = "Unlocked at Level %d." % required_level
+	var build := Button.new()
+	build.name = "CatalogBuildButton"
+	build.text = "BUILD" if GameManager.level >= required_level else "LOCKED · LEVEL %d" % required_level
+	build.disabled = GameManager.level < required_level
+	build.custom_minimum_size.y = 34 * _ui_scale
+	build.add_theme_stylebox_override("normal", _catalog_action_style())
+	build.add_theme_color_override("font_color", Color.WHITE)
+	build.pressed.connect(_select_building_type.bind(type_id))
+	layout.add_child(build)
+	catalog_info_panel.show()
+	catalog_info_panel.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(catalog_info_panel, "modulate:a", 1.0, 0.18)
+
+func _add_info_line(parent: VBoxContainer, key_text: String, value_text: String) -> void:
+	var row := HBoxContainer.new()
+	parent.add_child(row)
+	var key := Label.new()
+	key.text = key_text
+	key.custom_minimum_size.x = 88 * _ui_scale
+	key.add_theme_color_override("font_color", Color("#78909E"))
+	row.add_child(key)
+	var value := Label.new()
+	value.text = value_text
+	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value.add_theme_color_override("font_color", Color("#263746"))
+	row.add_child(value)
+
+func _catalog_action_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#42A96B")
+	style.set_corner_radius_all(9)
+	return style
+
+func _hide_building_info() -> void:
+	if is_instance_valid(catalog_info_panel):
+		var tween := create_tween()
+		tween.tween_property(catalog_info_panel, "modulate:a", 0.0, 0.12)
+		tween.tween_callback(catalog_info_panel.hide)
 func _set_submenu_icon_scale(icon: Control, factor: float) -> void:
 	if not is_instance_valid(icon):
 		return
@@ -803,25 +982,22 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 	if show_back:
 		var back := Button.new()
 		back.name = "Submenu_Back"
-		back.text = "BACK"
-		back.icon = Icons.get_tex("ui", "back")
-		back.custom_minimum_size = Vector2(192, 144) * _ui_scale
+		back.text = "‹"
+		back.tooltip_text = "Back to categories"
+		back.custom_minimum_size = Vector2(54, 188) * _ui_scale
 		back.focus_mode = Control.FOCUS_NONE
+		back.add_theme_stylebox_override("normal", _catalog_card_style("normal"))
+		back.add_theme_color_override("font_color", Color("#526B7A"))
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
-	var cancel := Button.new()
-	cancel.name = "Submenu_Cancel"
-	cancel.text = "CANCEL"
-	cancel.icon = Icons.get_tex("ui", "cancel")
-	cancel.custom_minimum_size = Vector2(192, 144) * _ui_scale
-	cancel.focus_mode = Control.FOCUS_NONE
-	cancel.add_theme_color_override("font_color", Color("#FFE2D9"))
-	cancel.add_theme_stylebox_override("normal", _toolbar_style(Color(0.42, 0.12, 0.12, 0.96), Color("#E98978")))
-	cancel.add_theme_stylebox_override("hover", _toolbar_style(Color(0.62, 0.16, 0.14, 1.0), Color.WHITE))
-	cancel.pressed.connect(_on_cancel_pressed)
-	submenu.add_child(cancel)
 	submenu.show()
 	submenu_scroll.show()
+	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
+	if catalog_close:
+		catalog_close.show()
+	submenu_scroll.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(submenu_scroll, "modulate:a", 1.0, 0.20)
 	if bottom_actions:
 		bottom_actions.hide()
 
@@ -971,7 +1147,7 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 		elif option_id == "bulldoze_road":
 			_start_bulldoze_road_mode()
 	else:
-		_select_building_type(option_id)
+		_show_building_info(option_id)
 
 func _close_building_submenu(cancel_placement: bool = true) -> void:
 	if cancel_placement:
@@ -1429,6 +1605,10 @@ func _on_cancel_pressed() -> void:
 		submenu_scroll.hide()
 	if submenu:
 		submenu.hide()
+	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
+	if catalog_close:
+		catalog_close.hide()
+	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
 	active_specialization_group = ""
@@ -1442,9 +1622,9 @@ func _on_cancel_pressed() -> void:
 	var build_button_node := get_node_or_null("BuildMenuButton")
 	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
 	if build_label:
-		build_label.text = "CLOSE"
+		build_label.text = "BUILD"
 	if build_button_node:
-		build_button_node.tooltip_text = "Close Build Menu"
+		build_button_node.tooltip_text = "Build menu"
 	if was_moving:
 		status_label.text = "Move cancelled. Building returned to its original location."
 	elif was_bulldozing:
