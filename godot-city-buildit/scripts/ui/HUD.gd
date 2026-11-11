@@ -924,11 +924,14 @@ func _show_building_info(type_id: String) -> void:
 	var boost := int(definition.get("happiness", definition.get("population", definition.get("coverage_tiles", 0))))
 	_add_info_line(layout, "Boost", str(boost) if boost > 0 else "—")
 	_add_info_line(layout, "Price", "%s Simoleons" % _format_count(int(definition.get("cost", 0))))
-	_add_info_line(layout, "Requirements", "Level %d" % int(definition.get("level", 1)))
+	var required_level := int(definition.get("level", 1))
+	_add_info_line(layout, "Requirements", "Level %d" % required_level)
+	if GameManager.level < required_level:
+		status_label.text = "Unlocked at Level %d." % required_level
 	var build := Button.new()
 	build.name = "CatalogBuildButton"
-	build.text = "BUILD" if GameManager.level >= int(definition.get("level", 1)) else "LOCKED · LEVEL %d" % int(definition.get("level", 1))
-	build.disabled = GameManager.level < int(definition.get("level", 1))
+	build.text = "BUILD" if GameManager.level >= required_level else "LOCKED · LEVEL %d" % required_level
+	build.disabled = GameManager.level < required_level
 	build.custom_minimum_size.y = 34 * _ui_scale
 	build.add_theme_stylebox_override("normal", _catalog_action_style())
 	build.add_theme_color_override("font_color", Color.WHITE)
