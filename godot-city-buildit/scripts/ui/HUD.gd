@@ -74,6 +74,8 @@ var _level_up_shake_elapsed := 0.0
 var _production_timer_labels: Array[Label] = []
 var _production_building: Building = null
 var _production_tick_accum := 0.0
+var _factory_ready_scan_accum := 0.0
+var _factory_ready_scan_accum := 0.0
 var catalog_info_panel: PanelContainer
 var catalog_base_bar: PanelContainer
 var catalog_advisor: Control
@@ -120,8 +122,8 @@ func _apply_responsive_layout() -> void:
 	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
-		var width := (156.0 if compact else (168.0 if tablet else 184.0)) * scale_factor
-		var height := minf(viewport_size.y - 176.0 * scale_factor, 640.0 * scale_factor)
+		var width := (132.0 if compact else (148.0 if tablet else 168.0)) * scale_factor
+		var height := minf(viewport_size.y - 150.0 * scale_factor, 610.0 * scale_factor)
 		if not compact and not tablet:
 			# Desktop gets a persistent left navigation rail; mobile/tablet keep it on the right.
 			toolbar.anchor_left = 0.0
@@ -131,8 +133,8 @@ func _apply_responsive_layout() -> void:
 		else:
 			toolbar.anchor_left = 1.0
 			toolbar.anchor_right = 1.0
-			toolbar.offset_left = -width - 156.0 * scale_factor
-			toolbar.offset_right = -156.0 * scale_factor
+			toolbar.offset_left = -width - 12.0 * scale_factor
+			toolbar.offset_right = -12.0 * scale_factor
 		toolbar.offset_top = -height * 0.5
 		toolbar.offset_bottom = height * 0.5
 	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
@@ -213,7 +215,7 @@ func _build_top_hud() -> void:
 	left_stack.name = "TopLeftStats"
 	left_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left_stack.position = Vector2(14, 10)
-	left_stack.custom_minimum_size = Vector2(620, 210) * _ui_scale
+	left_stack.custom_minimum_size = Vector2(470, 170) * _ui_scale
 	left_stack.add_theme_constant_override("separation", 5)
 	left_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(left_stack)
@@ -226,15 +228,15 @@ func _build_top_hud() -> void:
 
 	var level_badge := PanelContainer.new()
 	level_badge.name = "LevelBadge"
-	level_badge.custom_minimum_size = Vector2(112, 112) * _ui_scale
+	level_badge.custom_minimum_size = Vector2(88, 88) * _ui_scale
 	level_badge.add_theme_stylebox_override("panel", _level_badge_style())
 	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_stats.add_child(level_badge)
 	var level_overlay := Control.new()
-	level_overlay.custom_minimum_size = Vector2(108, 108) * _ui_scale
+	level_overlay.custom_minimum_size = Vector2(84, 84) * _ui_scale
 	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_badge.add_child(level_overlay)
-	var level_icon := Icons.make_icon("level", Vector2(144, 144) * _ui_scale)
+	var level_icon := Icons.make_icon("level", Vector2(108, 108) * _ui_scale)
 	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_icon)
@@ -251,15 +253,15 @@ func _build_top_hud() -> void:
 	level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_label)
 
-	population_label = _add_stat_bar(top_stats, "population", "0", Color("#4BA3FF"), "City population", 180)
-	storage_label = _add_stat_bar(top_stats, "storage", "0/30", Color("#5BB8F5"), "City storage", 170)
+	population_label = _add_stat_bar(top_stats, "population", "0", Color("#4BA3FF"), "City population", 142)
+	storage_label = _add_stat_bar(top_stats, "storage", "0/30", Color("#5BB8F5"), "City storage", 132)
 
 	var happiness_row := HBoxContainer.new()
 	happiness_row.name = "HappinessStatRow"
 	happiness_row.add_theme_constant_override("separation", 8)
 	happiness_row.mouse_filter = Control.MOUSE_FILTER_PASS
 	left_stack.add_child(happiness_row)
-	happiness_label = _add_stat_bar(happiness_row, "happiness", "100%", Color("#A8E62E"), "Citizen happiness", 220)
+	happiness_label = _add_stat_bar(happiness_row, "happiness", "100%", Color("#A8E62E"), "Citizen happiness", 178)
 
 	var xp_row := HBoxContainer.new()
 	xp_row.name = "ExperienceRow"
@@ -374,7 +376,7 @@ func _update_context_header(category: String, detail: String = "") -> void:
 func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "StatBar"
-	bar.custom_minimum_size = Vector2(width * _ui_scale, 96 * _ui_scale)
+	bar.custom_minimum_size = Vector2(width * _ui_scale, 70 * _ui_scale)
 	bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
@@ -385,17 +387,17 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(88, 88) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(54, 54) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
+	var value := _make_hud_value(initial_text, int(22 * _ui_scale))
 	content.add_child(value)
 	return value
 
 func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 214.0) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "CurrencyBar"
-	bar.custom_minimum_size = Vector2(width * _ui_scale, 64 * _ui_scale)
+	bar.custom_minimum_size = Vector2(width * _ui_scale, 58 * _ui_scale)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -404,7 +406,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(88, 88) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(50, 50) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
@@ -509,16 +511,16 @@ func _build_toolbars() -> void:
 		if old_node:
 			old_node.queue_free()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var toolbar_width := 168.0 * _ui_scale
-	var toolbar_height := minf(viewport_size.y - 176.0 * _ui_scale, 640.0 * _ui_scale)
+	var toolbar_width := 132.0 * _ui_scale
+	var toolbar_height := minf(viewport_size.y - 150.0 * _ui_scale, 610.0 * _ui_scale)
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
 	toolbar.anchor_left = 1.0
 	toolbar.anchor_right = 1.0
 	toolbar.anchor_top = 0.5
 	toolbar.anchor_bottom = 0.5
-	toolbar.offset_left = -toolbar_width - 112.0 * _ui_scale
-	toolbar.offset_right = -112.0 * _ui_scale
+	toolbar.offset_left = -toolbar_width - 12.0 * _ui_scale
+	toolbar.offset_right = -12.0 * _ui_scale
 	toolbar.offset_top = -toolbar_height * 0.5
 	toolbar.offset_bottom = toolbar_height * 0.5
 	toolbar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
@@ -547,7 +549,7 @@ func _build_toolbars() -> void:
 		["specializations", "Specializations", "parks"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
-	var category_height := clampf((toolbar_height - 24.0) / 7.0, 112.0 * _ui_scale, 132.0 * _ui_scale)
+	var category_height := clampf((toolbar_height - 24.0) / 7.0, 72.0 * _ui_scale, 94.0 * _ui_scale)
 	for item in tools:
 		var button := _make_category_button(str(item[2]), str(item[1]), Vector2(toolbar_width - 12.0, category_height))
 		button.name = "Tool_" + str(item[0]).capitalize()
@@ -560,11 +562,11 @@ func _build_toolbars() -> void:
 	build_toggle.anchor_right = 1.0
 	build_toggle.anchor_top = 0.5
 	build_toggle.anchor_bottom = 0.5
-	build_toggle.offset_left = -104.0 * _ui_scale
+	build_toggle.offset_left = -82.0 * _ui_scale
 	build_toggle.offset_right = -8.0 * _ui_scale
-	build_toggle.offset_top = -48.0 * _ui_scale
-	build_toggle.offset_bottom = 48.0 * _ui_scale
-	build_toggle.custom_minimum_size = Vector2(96, 96) * _ui_scale
+	build_toggle.offset_top = -38.0 * _ui_scale
+	build_toggle.offset_bottom = 38.0 * _ui_scale
+	build_toggle.custom_minimum_size = Vector2(74, 76) * _ui_scale
 	build_toggle.tooltip_text = "Close Build Menu"
 	build_toggle.focus_mode = Control.FOCUS_NONE
 	build_toggle.z_index = 61
@@ -577,14 +579,14 @@ func _build_toolbars() -> void:
 	build_content.add_theme_constant_override("separation", 1)
 	build_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_toggle.add_child(build_content)
-	var build_icon := Icons.make_icon("hard_hat", Vector2(108, 108) * _ui_scale)
+	var build_icon := Icons.make_icon("hard_hat", Vector2(66, 66) * _ui_scale)
 	build_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_content.add_child(build_icon)
 	var build_label := Label.new()
 	build_label.name = "BuildButtonLabel"
 	build_label.text = "BUILD"
 	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	build_label.add_theme_color_override("font_color", Color("#31566B"))
+	build_label.add_theme_color_override("font_color", Color.WHITE)
 	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	build_content.add_child(build_label)
 	add_child(build_toggle)
@@ -679,16 +681,16 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	button.custom_minimum_size = button_size
 	button.tooltip_text = label_text
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _toolbar_style(Color("#F6FBFE"), Color("#D3E5EE")))
-	button.add_theme_stylebox_override("hover", _toolbar_style(Color("#E5F5FC"), Color("#83C8E7")))
-	button.add_theme_stylebox_override("pressed", _toolbar_style(Color("#D0EFFB"), Color("#5AAED2")))
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.055, 0.075, 0.09, 0.78), Color(1.0, 1.0, 1.0, 0.12)))
+	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.10, 0.16, 0.19, 0.92), Color("#83C8E7")))
+	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.12, 0.25, 0.22, 0.96), Color("#A8E62E")))
 	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.add_theme_constant_override("separation", 1)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon_size := maxf(96.0 * _ui_scale, minf(112.0 * _ui_scale, button_size.y * 0.82))
+	var icon_size := maxf(48.0 * _ui_scale, minf(66.0 * _ui_scale, button_size.y * 0.72))
 	var icon := Icons.make_icon(icon_name, Vector2(icon_size, icon_size))
 	content.add_child(icon)
 	var label := Label.new()
@@ -1406,6 +1408,10 @@ func _start_next_level_up_effect() -> void:
 		_level_up_shake_elapsed = 0.0
 
 func _process(delta: float) -> void:
+	_factory_ready_scan_accum += delta
+	if _factory_ready_scan_accum >= 0.5:
+		_factory_ready_scan_accum = 0.0
+		_refresh_factory_ready_icons()
 	if is_instance_valid(production_panel):
 		_production_tick_accum += delta
 		if _production_tick_accum >= 0.25:
@@ -1424,6 +1430,36 @@ func _process(delta: float) -> void:
 		0.0
 	) * envelope
 	_level_up_camera.position = _level_up_camera_origin + shake
+
+
+func _refresh_factory_ready_icons() -> void:
+	# ProductionComponent slots are independent of the legacy single-item timer.
+	# Mirror a ready slot into the building's existing billboard so it is visible
+	# above the factory without adding a permanent HUD panel over the city.
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	for node in scene.find_children("*", "Building", true, false):
+		var building := node as Building
+		if not is_instance_valid(building) or building.status != "completed":
+			continue
+		var component = building.production_component
+		if not is_instance_valid(component):
+			continue
+		component.refresh_slots()
+		var ready_item := ""
+		for slot_index in range(component.get_slot_count()):
+			var slot: Dictionary = component.get_slot(slot_index)
+			if not slot.is_empty() and bool(slot.get("ready", false)):
+				ready_item = str(slot.get("item_id", ""))
+				break
+		if is_instance_valid(building.production_icon):
+			building.production_icon.text = "📦" if not ready_item.is_empty() else ""
+			building.production_icon.visible = not ready_item.is_empty()
+			building.production_icon.modulate = Color("#FFE06B")
+			building.production_icon.outline_size = 12
+			building.production_icon.outline_modulate = Color(0.12, 0.08, 0.02, 0.95)
+			building.production_icon.tooltip_text = "Ready to collect: %s" % ready_item.capitalize() if not ready_item.is_empty() else ""
 
 func _on_level_up_effect_finished() -> void:
 	if is_instance_valid(_level_up_camera):
