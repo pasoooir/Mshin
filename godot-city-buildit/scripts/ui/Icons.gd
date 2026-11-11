@@ -66,7 +66,7 @@ static func get_icon_tex(id: String) -> Texture2D:
 	return get_tex(category_for_id(id), resolved_id(id))
 
 static func get_advisor_tex() -> Texture2D:
-	for candidate in ["res://assets/icons/ui/advisor.png", "res://assets/ui/advisor.png"]:
+	for candidate in ["res://assets/icons/ui/advisor.png"]:
 		if ResourceLoader.exists(candidate):
 			var texture := load(candidate) as Texture2D
 			if texture != null:
