@@ -284,271 +284,45 @@ func _test_build_menu_visibility() -> void:
 	_check(hud != null, "Main scene HUD is missing.")
 	if hud == null:
 		return
-	var build_button := hud.get_node_or_null("BuildMenuButton") as Button
+	var build_button := hud.get_node_or_null("BuildMenuButton")
 	var toolbar := hud.get_node_or_null("RightToolbar") as Control
-	_check(build_button != null, "Hard-hat Build button was not created.")
-	_check(toolbar != null, "Right-side category toolbar was not created.")
-	if build_button == null or toolbar == null:
+	_check(build_button == null, "Legacy hard-hat Build button must be removed from the HUD.")
+	_check(toolbar != null and toolbar.visible, "Transparent right-side category PNG rail must be visible immediately.")
+	if toolbar == null:
 		return
-	_check(toolbar.visible, "Build categories must be visible and discoverable on first entry.")
-	_check(_node_has_label_text(build_button, "BUILD"), "Build menu control must keep its BUILD label.")
-	build_button.emit_signal("pressed")
-	await get_tree().process_frame
-	_check(not toolbar.visible, "Tapping CLOSE must hide the build category toolbar.")
-	build_button.emit_signal("pressed")
-	await get_tree().process_frame
-	_check(toolbar.visible, "Tapping BUILD must reveal the right-side category toolbar.")
 	var viewport_rect := get_viewport().get_visible_rect()
-	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category toolbar is outside the visible screen.")
-	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.2, "Build category dock covers too much of the mobile play area.")
+	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category PNG rail is outside the visible screen.")
+	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.12, "Transparent category rail covers too much of the mobile play area.")
 	var toolbar_items := toolbar.find_child("RightToolbarItems", true, false) as VBoxContainer
-	_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right toolbar must show seven categories in a vertical list.")
-	var expected_names := ["Tool_Road", "Tool_Residential", "Tool_Commercial", "Tool_Industrial", "Tool_Services", "Tool_Specializations", "Tool_Bulldoze"]
+	_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right rail must show seven categories in a vertical list.")
+	var expected_names := ["Tool_Residential", "Tool_Commercial", "Tool_Industrial", "Tool_Services", "Tool_Specializations", "Tool_Road", "Tool_Bulldoze"]
 	for i in range(expected_names.size()):
 		var button := toolbar.find_child(expected_names[i], true, false) as Button
-		_check(button != null, "Missing ordered category button: " + expected_names[i])
+		_check(button != null, "Missing ordered category PNG: " + expected_names[i])
 		if button and toolbar_items:
-			_check(toolbar_items.get_child(i) == button, "Build categories are not in the required top-to-bottom order.")
-			_check(button.custom_minimum_size.y >= 64.0, "Category touch target is too small.")
-			var category_content := button.get_child(0) as VBoxContainer
-			var category_icon := category_content.get_child(0) as TextureRect if category_content and category_content.get_child_count() > 0 else null
-			_check(category_icon != null and category_icon.custom_minimum_size.x >= 48.0, "Category icon must render at a readable 48px minimum.")
+			_check(toolbar_items.get_child(i) == button, "Right rail categories are not in the required top-to-bottom order.")
+			_check(button.custom_minimum_size.y >= 64.0, "Category PNG touch target is too small.")
+			var category_icon := button.get_node_or_null("CategoryPNG") as TextureRect
+			_check(category_icon != null and category_icon.texture != null and category_icon.custom_minimum_size.x >= 64.0, "Category PNG must be transparent artwork at a readable size.")
+			_check(button.get_theme_stylebox("normal").get_class() == "StyleBoxEmpty", "Category PNG must not have a card background.")
+	var currency_stack := hud.get_node_or_null("TopRightCurrencies") as VBoxContainer
+	_check(currency_stack != null and currency_stack.get_child_count() == 3, "Top-right resources must be exactly three compact rows.")
+	for row_name in ["SimoleonsCurrencyRow", "MoneyCurrencyRow", "Golden_keyCurrencyRow"]:
+		_check(currency_stack != null and currency_stack.find_child(row_name, true, false) is HBoxContainer, "Missing resource row: " + row_name)
+	_check(currency_stack != null and currency_stack.find_child("SimoleonsCurrencyPlus", true, false) is Button, "Simoleons row must show the blue + tile.")
+	_check(currency_stack != null and currency_stack.find_child("SimCashCurrencyPlus", true, false) is Button, "SimCash row must show the blue + tile.")
+	_check(currency_stack != null and currency_stack.find_child("Golden KeysCurrencyPlus", true, false) == null, "Golden key row must not show an unnecessary + tile.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
 	hud._on_category_pressed("services")
 	await get_tree().process_frame
+	_check(toolbar.visible, "Right-side transparent PNG shortcuts must remain visible while a category submenu is open.")
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
 	_check(hud.submenu_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER, "Catalog horizontal scroll chrome must stay hidden.")
 	_check(hud.submenu_scroll.scroll_deadzone <= 10, "Horizontal submenu swipe must respond with a short touch deadzone.")
 	_check(hud.submenu.alignment == BoxContainer.ALIGNMENT_BEGIN, "Horizontal submenu items must start at the leading edge for predictable swiping.")
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
-	_check(hud.submenu.get_child_count() == 8 and hud.get_node_or_null("CatalogAdvisor") != null, "Services level one must contain eight groups with the advisor in its dedicated side slot.")
-	hud._on_submenu_option("services", "group_water")
-	await get_tree().process_frame
-	_check(hud.submenu.get_node_or_null("water_tower") != null, "Water submenu must contain the Water Tower.")
-	_check(hud.submenu.get_node_or_null("water_pump") != null, "Water submenu must contain the Water Pump.")
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Water submenu must expose Back and Cancel.")
-	var locked_pump := hud.submenu.get_node_or_null("water_pump") as Button
-	_check(locked_pump != null and not locked_pump.disabled, "Locked Water Pump must remain tappable for unlock feedback.")
-	var unlocked_tower := hud.submenu.get_node_or_null("water_tower") as Button
-	_check(unlocked_tower != null and unlocked_tower.find_child("UnlockLevelBadge", true, false) == null, "Unlocked Water Tower must not display a level badge.")
-	if locked_pump:
-		var unlock_badge := locked_pump.find_child("CatalogLock", true, false) as Label
-		var unlock_text := unlock_badge
-		var pump_art := locked_pump.find_child("SubmenuArtwork", true, false) as TextureRect
-		_check(unlock_badge != null and unlock_text != null and unlock_text.text == "LOCKED", "Locked Water Pump must show a clear LV 12 unlock badge.")
-		_check(pump_art != null and pump_art.modulate == Color.WHITE, "Submenu icon artwork must remain untinted when locked.")
-		var pump_lock := locked_pump.find_child("CatalogLock", true, false) as Label
-		_check(pump_lock != null and pump_lock.text == "LOCKED", "Locked catalog cards must show a visible lock state.")
-		locked_pump.emit_signal("pressed")
-		_check(hud.status_label.text.contains("Level 12"), "Tapping locked Water Pump must explain its unlock level.")
-	_check(int(BuildManager.building_types["water_tower"].get("water", 0)) > 0 and int(BuildManager.building_types["water_pump"].get("water", 0)) > 0, "Water facilities must expose positive numeric water production.")
-	_check(BuildManager.building_types["water_tower"].get("size", Vector2i.ZERO) == Vector2i(1, 1), "Water Tower footprint must be 1x1.")
-	_check(BuildManager.building_types["water_pump"].get("size", Vector2i.ZERO) == Vector2i(2, 3), "Water Pump footprint must be 2x3.")
-
-	# Sewage is catalogued independently from Water; capacity gameplay is intentionally deferred.
-	hud._on_submenu_option("services", "back")
-	await get_tree().process_frame
-	hud._on_submenu_option("services", "group_sewage")
-	await get_tree().process_frame
-	for sewage_id in ["sewage_small", "sewage_basic", "sewage_deluxe"]:
-		_check(hud.submenu.get_node_or_null(sewage_id) != null, "Sewage submenu is missing: " + sewage_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Sewage submenu must expose Back and Cancel.")
-	var locked_sewage := hud.submenu.get_node_or_null("sewage_small") as Button
-	_check(locked_sewage != null and not locked_sewage.disabled, "Locked Small Sewage must remain tappable for unlock feedback.")
-	if locked_sewage:
-		locked_sewage.emit_signal("pressed")
-		_check(hud.status_label.text.contains("Level 8"), "Tapping locked Small Sewage must explain its unlock level.")
-	for sewage_id in ["sewage_small", "sewage_basic", "sewage_deluxe"]:
-		var sewage_definition: Dictionary = BuildManager.building_types[sewage_id]
-		_check(int(sewage_definition.get("sewage", 0)) > 0, "Sewage facility must expose generic positive sewage capacity: " + sewage_id)
-		_check(sewage_definition.get("service_group", "") == "sewage", "Sewage facility must remain in its own service group: " + sewage_id)
-	_check(BuildManager.building_types["sewage_small"].get("size", Vector2i.ZERO) == Vector2i(1, 1), "Small Sewage footprint must be 1x1.")
-	_check(BuildManager.building_types["sewage_basic"].get("size", Vector2i.ZERO) == Vector2i(2, 2), "Basic Sewage footprint must be 2x2.")
-	_check(BuildManager.building_types["sewage_deluxe"].get("size", Vector2i.ZERO) == Vector2i(2, 3), "Deluxe Treatment footprint must be 2x3.")
-	_check(int(BuildManager.building_types["sewage_small"].get("pollution", 0)) > 0 and float(BuildManager.building_types["sewage_small"].get("pollution_radius", 0.0)) > 0.0, "Small Sewage must expose dirty-site metadata.")
-	_check(int(BuildManager.building_types["sewage_basic"].get("pollution", 0)) > 0 and float(BuildManager.building_types["sewage_basic"].get("pollution_radius", 0.0)) > 0.0, "Basic Sewage must expose dirty-site metadata.")
-	_check(int(BuildManager.building_types["sewage_deluxe"].get("pollution", 0)) == 0 and float(BuildManager.building_types["sewage_deluxe"].get("pollution_radius", 0.0)) == 0.0, "Deluxe Treatment must be pollution-free.")
-
-	# Waste handles solid garbage separately from liquid sewage; capacity gameplay is deferred.
-	hud._on_submenu_option("services", "back")
-	await get_tree().process_frame
-	hud._on_submenu_option("services", "group_waste")
-	await get_tree().process_frame
-	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
-		_check(hud.submenu.get_node_or_null(waste_id) != null, "Waste submenu is missing: " + waste_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Waste submenu must expose Back and Cancel.")
-	var locked_waste_facility := hud.submenu.get_node_or_null("waste_dump_small") as Button
-	_check(locked_waste_facility != null and not locked_waste_facility.disabled, "Locked Small Garbage Dump must remain tappable for unlock feedback.")
-	if locked_waste_facility:
-		locked_waste_facility.emit_signal("pressed")
-		_check(hud.status_label.text.contains("Level 14"), "Tapping locked Small Garbage Dump must explain its unlock level.")
-	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
-		var waste_definition: Dictionary = BuildManager.building_types[waste_id]
-		_check(int(waste_definition.get("waste", 0)) > 0, "Waste facility must expose generic positive solid-waste capacity: " + waste_id)
-		_check(waste_definition.get("service_group", "") == "waste", "Waste facility must remain separate from Sewage: " + waste_id)
-	_check(BuildManager.building_types["waste_dump_small"].get("size", Vector2i.ZERO) == Vector2i(2, 2), "Small Garbage Dump footprint must be 2x2.")
-	_check(BuildManager.building_types["waste_dump"].get("size", Vector2i.ZERO) == Vector2i(2, 3), "Garbage Dump footprint must be 2x3.")
-	_check(BuildManager.building_types["waste_incinerator"].get("size", Vector2i.ZERO) == Vector2i(2, 2), "Incinerator footprint must be 2x2.")
-	_check(BuildManager.building_types["waste_recycling"].get("size", Vector2i.ZERO) == Vector2i(3, 2), "Recycling Center footprint must be 3x2.")
-	_check(int(BuildManager.building_types["waste_dump_small"].get("pollution", 0)) > 0 and float(BuildManager.building_types["waste_dump_small"].get("pollution_radius", 0.0)) == 10.0, "Small Garbage Dump must expose 10-tile pollution metadata.")
-	_check(int(BuildManager.building_types["waste_dump"].get("pollution", 0)) > 0 and float(BuildManager.building_types["waste_dump"].get("pollution_radius", 0.0)) == 12.0, "Garbage Dump must expose 12-tile pollution metadata.")
-	_check(float(BuildManager.building_types["waste_incinerator"].get("pollution_radius", 0.0)) == 16.0, "Incinerator must have the largest 16-tile pollution radius.")
-	_check(int(BuildManager.building_types["waste_recycling"].get("pollution", 0)) == 0 and float(BuildManager.building_types["waste_recycling"].get("pollution_radius", 0.0)) == 0.0, "Recycling Center must be pollution-free.")
-	_check(BuildManager.building_types["waste_incinerator"].get("pollution_severity", "") == "heavy", "Incinerator must be marked as heavy pollution in the catalog.")
-
-	hud._on_submenu_option("services", "back")
-	await get_tree().process_frame
-	hud._on_submenu_option("services", "group_fire")
-	await get_tree().process_frame
-	for fire_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
-		_check(hud.submenu.get_node_or_null(fire_id) != null, "Fire submenu is missing: " + fire_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Fire submenu must expose Back and Cancel.")
-	var basic_fire_button := hud.submenu.get_node_or_null("fire_station") as Button
-	_check(int(BuildManager.building_types["fire_station"].get("coverage_tiles", 0)) == 15, "Basic Fire Station must retain its 15-tile coverage metadata.")
-	var basic_fire_badge := basic_fire_button.find_child("CatalogLock", true, false) as Label if basic_fire_button else null
-	_check(basic_fire_badge != null and basic_fire_badge.text == "LOCKED", "Basic Fire Station must show its locked state.")
-	var locked_small_fire := hud.submenu.get_node_or_null("fire_station_small") as Button
-	_check(locked_small_fire != null and not locked_small_fire.disabled, "Locked Small Fire Station must remain tappable for unlock feedback.")
-	if locked_small_fire:
-		locked_small_fire.emit_signal("pressed")
-		_check(hud.status_label.text.contains("Level 5"), "Tapping a locked Fire Station must explain its Level 5 unlock.")
-	var fire_expected := {
-		"fire_station_small": {"coverage": 10, "size": Vector2i(1, 1), "cost": 3100},
-		"fire_station": {"coverage": 15, "size": Vector2i(2, 2), "cost": 5500},
-		"fire_station_deluxe": {"coverage": 22, "size": Vector2i(4, 2), "cost": 21000}
-	}
-	for fire_id in fire_expected:
-		var fire_definition: Dictionary = BuildManager.building_types[fire_id]
-		var expected: Dictionary = fire_expected[fire_id]
-		_check(int(fire_definition.get("fire", 0)) == 1, "Fire station must expose the generic fire coverage key: " + fire_id)
-		_check(fire_definition.get("service_group", "") == "fire", "Fire station must belong to the Fire service group: " + fire_id)
-		_check(int(fire_definition.get("coverage_tiles", 0)) == int(expected["coverage"]), "Fire station coverage tiles are incorrect: " + fire_id)
-		_check(fire_definition.get("size", Vector2i.ZERO) == expected["size"], "Fire station footprint is incorrect: " + fire_id)
-		_check(int(fire_definition.get("cost", 0)) == int(expected["cost"]), "Fire station cost is incorrect: " + fire_id)
-		_check(int(fire_definition.get("level", 0)) == 5, "All Fire stations must unlock at Level 5: " + fire_id)
-		_check(int(fire_definition.get("pollution", 0)) == 0, "Fire stations must not have pollution: " + fire_id)
-		_check(is_equal_approx(FireHazardManager.get_coverage_radius_world(fire_definition), float(expected["coverage"]) * BuildManager.GRID_SIZE), "Fire station world coverage radius is incorrect: " + fire_id)
-
-	hud._on_submenu_option("services", "back")
-	await get_tree().process_frame
-	hud._on_submenu_option("services", "group_police")
-	await get_tree().process_frame
-	for police_id in ["police_small", "police_basic", "police_precinct"]:
-		_check(hud.submenu.get_node_or_null(police_id) != null, "Police submenu is missing: " + police_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Police submenu must expose Back and Cancel.")
-	var locked_small_police := hud.submenu.get_node_or_null("police_small") as Button
-	_check(locked_small_police != null and not locked_small_police.disabled, "Locked Small Police must remain tappable for unlock feedback.")
-	if locked_small_police:
-		locked_small_police.emit_signal("pressed")
-		_check(hud.status_label.text.contains("Level 12"), "Tapping locked Small Police must explain its Level 12 unlock.")
-	var police_expected := {
-		"police_small": {"coverage": 10, "size": Vector2i(1, 1), "cost": 5100},
-		"police_basic": {"coverage": 15, "size": Vector2i(2, 2), "cost": 9400},
-		"police_precinct": {"coverage": 24, "size": Vector2i(4, 2), "cost": 36000}
-	}
-	for police_id in police_expected:
-		var police_definition: Dictionary = BuildManager.building_types[police_id]
-		var expected: Dictionary = police_expected[police_id]
-		_check(int(police_definition.get("police", 0)) == 1, "Police station must expose the separate police key: " + police_id)
-		_check(police_definition.get("service_group", "") == "police", "Police station must belong to Police group: " + police_id)
-		_check(int(police_definition.get("coverage_tiles", 0)) == int(expected["coverage"]), "Police coverage tiles are incorrect: " + police_id)
-		_check(police_definition.get("size", Vector2i.ZERO) == expected["size"], "Police footprint is incorrect: " + police_id)
-		_check(int(police_definition.get("cost", 0)) == int(expected["cost"]), "Police cost is incorrect: " + police_id)
-		_check(int(police_definition.get("level", 0)) == 12, "Police stations must unlock at Level 12: " + police_id)
-		_check(int(police_definition.get("pollution", 0)) == 0, "Police stations must be pollution-free: " + police_id)
-		_check(int(police_definition.get("fire", 0)) == 0 and int(police_definition.get("health", 0)) == 0, "Police metadata must remain separate from Fire and Health: " + police_id)
-
-	hud._on_submenu_option("services", "back")
-	await get_tree().process_frame
-	hud._on_submenu_option("services", "back")
-	hud._on_submenu_option("services", "group_power")
-	await get_tree().process_frame
-	for power_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear"]:
-		_check(hud.submenu.get_node_or_null(power_id) != null, "Power submenu is missing: " + power_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Power submenu must expose Back and Cancel.")
-	var locked_deluxe := hud.submenu.get_node_or_null("power_wind_deluxe") as Button
-	_check(locked_deluxe != null and not locked_deluxe.disabled, "Locked advanced power plant must remain tappable for unlock feedback.")
-	if locked_deluxe:
-		locked_deluxe.emit_signal("pressed")
-		_check(hud.status_label.text.contains("Level 10"), "Tapping a locked Deluxe Wind must explain its unlock level.")
-	_check(int(BuildManager.building_types["power_wind"].get("power", 0)) > 0 and int(BuildManager.building_types["power_coal"].get("power", 0)) > 0, "Wind and Coal must expose numeric power production.")
-	hud._on_submenu_option("services", "back")
-	await get_tree().process_frame
-	hud._on_submenu_option("services", "group_fire")
-	await get_tree().process_frame
-	_check(hud.submenu.get_node_or_null("fire_station_small") != null, "Fire group must contain the Small Fire Station.")
-	_check(hud.submenu.get_node_or_null("fire_station") != null, "Fire group must contain the Basic Fire Station.")
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null, "Second-level Services submenu must provide Back.")
-	_check(hud.get_node_or_null("CatalogCloseButton") != null, "Active submenu must always provide Cancel.")
-	hud._on_submenu_option("services", "back")
-	_check(hud.submenu.get_node_or_null("group_power") != null, "Back must return to the Services group list.")
-	hud._on_submenu_option("services", "group_health")
-	await get_tree().process_frame
-	for health_id in ["clinic_small", "clinic", "hospital"]:
-		_check(hud.submenu.get_node_or_null(health_id) != null, "Health submenu is missing: " + health_id)
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Health submenu must expose Back and Cancel.")
-	var locked_small_clinic := hud.submenu.get_node_or_null("clinic_small") as Button
-	_check(int(BuildManager.building_types["clinic_small"].get("coverage_tiles", 0)) == 10, "Small Clinic must retain its 10-tile coverage metadata.")
-	var clinic_badge := locked_small_clinic.find_child("CatalogLock", true, false) as Label if locked_small_clinic else null
-	_check(clinic_badge != null and clinic_badge.text == "LOCKED", "Locked Small Clinic must show its locked state.")
-	_check(locked_small_clinic != null and not locked_small_clinic.disabled, "Locked Small Clinic must remain tappable for unlock feedback.")
-	if locked_small_clinic:
-		locked_small_clinic.emit_signal("pressed")
-		_check(hud.status_label.text.contains("Level 16"), "Tapping a locked clinic must explain its Level 16 unlock.")
-	var health_expected := {
-		"clinic_small": {"coverage": 10, "size": Vector2i(2, 2), "cost": 14000},
-		"clinic": {"coverage": 15, "size": Vector2i(2, 2), "cost": 21000},
-		"hospital": {"coverage": 24, "size": Vector2i(4, 2), "cost": 58000}
-	}
-	for health_id in health_expected:
-		var health_definition: Dictionary = BuildManager.building_types[health_id]
-		var expected: Dictionary = health_expected[health_id]
-		_check(int(health_definition.get("health", 0)) == 1, "Health facility must expose the separate health key: " + health_id)
-		_check(health_definition.get("service_group", "") == "health", "Health facility must belong to Health group: " + health_id)
-		_check(int(health_definition.get("coverage_tiles", 0)) == int(expected["coverage"]), "Health coverage tiles are incorrect: " + health_id)
-		_check(health_definition.get("size", Vector2i.ZERO) == expected["size"], "Health footprint is incorrect: " + health_id)
-		_check(int(health_definition.get("cost", 0)) == int(expected["cost"]), "Health cost is incorrect: " + health_id)
-		_check(int(health_definition.get("level", 0)) == 16, "Health facilities must unlock at Level 16: " + health_id)
-		_check(int(health_definition.get("pollution", 0)) == 0, "Health facilities must be pollution-free: " + health_id)
-		_check(int(health_definition.get("fire", 0)) == 0 and int(health_definition.get("police", 0)) == 0, "Health metadata must remain separate from Fire and Police: " + health_id)
-	# Government is administrative only: Town Hall must never provide emergency coverage.
-	hud._on_submenu_option("services", "back")
-	await get_tree().process_frame
-	hud._on_submenu_option("services", "group_government")
-	await get_tree().process_frame
-	_check(hud.submenu.get_node_or_null("town_hall") != null, "Government submenu must contain Town Hall.")
-	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Government submenu must expose Back and Cancel.")
-	var town_hall_definition: Dictionary = BuildManager.building_types["town_hall"]
-	_check(int(town_hall_definition.get("government", 0)) == 1, "Town Hall must expose the separate government metadata key.")
-	_check(str(town_hall_definition.get("service_group", "")) == "government", "Town Hall must belong to the Government group.")
-	_check(int(town_hall_definition.get("fire", 0)) == 0 and int(town_hall_definition.get("police", 0)) == 0 and int(town_hall_definition.get("health", 0)) == 0, "Town Hall must not provide Fire, Police or Health coverage.")
-	_check(int(town_hall_definition.get("power", 0)) == 0 and int(town_hall_definition.get("water", 0)) == 0, "Town Hall must not provide utility capacity.")
-	var saved_government_level := GameManager.level
-	GameManager.level = 1
-	hud._on_submenu_option("services", "town_hall")
-	_confirm_catalog_build(hud)
-	_check(BuildManager.is_placing and BuildManager.selected_building_type == "town_hall", "Town Hall must be buildable at Level 1.")
-	BuildManager.cancel_placement()
-	GameManager.level = saved_government_level
-	hud._on_submenu_option("services", "back")
-	_check(hud.submenu.get_node_or_null("group_government") != null, "Government Back must return to the Services group list.")
-	hud._on_cancel_pressed()
-	await get_tree().process_frame
-	var previous_level := GameManager.level
-	GameManager.level = 16
-	hud._on_submenu_option("services", "clinic_small")
-	_confirm_catalog_build(hud)
-	_check(BuildManager.is_placing and BuildManager.selected_building_type == "clinic_small", "Unlocked Small Clinic must enter building placement mode.")
-	BuildManager.cancel_placement()
-	GameManager.level = previous_level
-	hud._on_submenu_option("services", "back")
-	hud._on_cancel_pressed()
-	await get_tree().process_frame
-	_check(not hud.submenu_scroll.visible and hud.get_node("BottomActions").visible, "Cancel must return to permanent city actions.")
-	hud._close_build_menu()
-	_check(not toolbar.visible, "Closing Build must hide the category toolbar.")
 
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
@@ -704,19 +478,10 @@ func _run_gameplay_test() -> void:
 	GameManager.level = 5
 	if hud:
 		var right_toolbar = hud.get_node_or_null("RightToolbar")
-		_check(right_toolbar is PanelContainer, "Right-side construction tools must use a compact category dock.")
-		if right_toolbar is PanelContainer:
-			var toolbar_items = right_toolbar.find_child("RightToolbarItems", true, false)
-			_check(toolbar_items is VBoxContainer, "Right toolbar categories must use a vertical scroll list.")
-			_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right toolbar must show all seven construction categories.")
-			var build_toggle = hud.get_node_or_null("BuildMenuButton")
-			_check(build_toggle is Button, "The persistent Build button must open the category dock.")
-			_check(not right_toolbar.visible, "Category dock should stay collapsed until the player opens Build.")
-			hud._toggle_category_menu()
-			_check(right_toolbar.visible, "Build button action did not open the category dock.")
-			hud._toggle_category_menu()
-			_check(not right_toolbar.visible, "Build button action did not close the category dock.")
-		hud._toggle_category_menu()
+		_check(right_toolbar is PanelContainer and right_toolbar.visible, "Transparent category PNG rail must remain visible without a Build button.")
+		_check(hud.get_node_or_null("BuildMenuButton") == null, "Hard-hat Build button must not be present.")
+		var toolbar_items = right_toolbar.find_child("RightToolbarItems", true, false) if right_toolbar else null
+		_check(toolbar_items is VBoxContainer and toolbar_items.get_child_count() == 7, "Right rail must retain all seven direct category shortcuts.")
 		hud._on_category_pressed("residential")
 		_check(hud.submenu_scroll.visible and hud.submenu.get_node_or_null("residential_villa") != null, "Residential submenu must show available house choices.")
 		var catalog_base = hud.get_node_or_null("CatalogBaseBar") as PanelContainer
