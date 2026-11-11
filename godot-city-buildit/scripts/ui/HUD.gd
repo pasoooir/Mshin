@@ -119,8 +119,6 @@ func _apply_responsive_layout() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
 		return
-	var compact := viewport_size.x < 900.0
-	var tablet := viewport_size.x >= 900.0 and viewport_size.x < 1440.0
 	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
