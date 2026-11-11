@@ -323,7 +323,7 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu.alignment == BoxContainer.ALIGNMENT_BEGIN, "Horizontal submenu items must start at the leading edge for predictable swiping.")
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
-	_check(hud.submenu.get_child_count() == 9, "Services level one must contain eight fixed groups plus advisor.")
+	_check(hud.submenu.get_child_count() == 8 and hud.get_node_or_null("CatalogAdvisor") != null, "Services level one must contain eight groups with the advisor in its dedicated side slot.")
 	hud._on_submenu_option("services", "group_water")
 	await get_tree().process_frame
 	_check(hud.submenu.get_node_or_null("water_tower") != null, "Water submenu must contain the Water Tower.")
