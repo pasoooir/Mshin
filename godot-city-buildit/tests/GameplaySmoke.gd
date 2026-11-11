@@ -845,6 +845,23 @@ func _run_gameplay_test() -> void:
 		_check(BuildManager.factory_count == factories_before_demo, "Demolishing a factory did not release its factory slot.")
 		input_node.set_bulldoze_mode(false)
 		hud._close_building_submenu(false)
+		# Verify the City Storage modal matches the reference inventory layout.
+		var storage_before_panel: Dictionary = StorageManager.to_save_dict()
+		StorageManager.capacity = 60
+		StorageManager.items = {"metal": 1, "wood": 5, "bricks": 2}
+		hud._show_storage_panel()
+		_check(is_instance_valid(hud.storage_overlay), "Opening City Storage must create a full-screen modal overlay.")
+		_check(hud.storage_overlay.find_child("StorageBackdrop", true, false) is ColorRect, "City Storage must dim the city behind its light inventory card.")
+		_check(hud.storage_panel != null, "City Storage modal panel was not created.")
+		_check(hud.storage_panel.find_child("StorageHeaderIcon", true, false) is TextureRect, "City Storage header must show the local blue storage icon.")
+		_check(hud.storage_panel.find_child("StorageCapacityBar", true, false) is ProgressBar, "City Storage must show the orange/blue capacity bar.")
+		var storage_grid := hud.storage_panel.find_child("StorageItemsGrid", true, false) as GridContainer
+		_check(storage_grid != null and storage_grid.columns == 2, "City Storage products must be displayed in a two-column icon grid.")
+		_check(storage_grid != null and storage_grid.find_child("StorageItem_metal", true, false) != null, "City Storage grid must show stored product icons.")
+		_check(hud.storage_panel.find_child("StorageIncreaseCapacity", true, false) is Button, "City Storage must show its green Increase Capacity action.")
+		hud._close_storage_panel()
+		_check(not is_instance_valid(hud.storage_overlay), "Closing City Storage must remove its dimmed backdrop.")
+		StorageManager.from_save_dict(storage_before_panel)
 	else:
 		_check(false, "HUD node is missing for building submenu tests.")
 	GameManager.level = saved_level
