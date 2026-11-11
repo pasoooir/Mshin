@@ -779,7 +779,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(art)
 	var icon := Icons.make_icon(icon_name, Vector2(132, 122) * _ui_scale)
-	icon.name = "CatalogBuildingArtwork"
+	icon.name = "SubmenuArtwork"
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art.add_child(icon)
 	if level_locked:
