@@ -56,6 +56,7 @@ func start_factory(item_id: String, slot_index: int) -> bool:
 		return false
 	slots[slot_index] = {
 		"item_id": item_id,
+		"start_unix": int(Time.get_unix_time_from_system()),
 		"finish_unix": int(Time.get_unix_time_from_system()) + int(definition.get("time_sec", 60)),
 		"ready": false
 	}
@@ -78,6 +79,7 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 		return false
 	slots[slot_index] = {
 		"item_id": recipe_id,
+		"start_unix": int(Time.get_unix_time_from_system()),
 		"finish_unix": int(Time.get_unix_time_from_system()) + int(recipe.get("time_sec", 300)),
 		"ready": false
 	}

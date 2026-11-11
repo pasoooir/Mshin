@@ -74,8 +74,16 @@ for category, icon_id in sorted(required):
         errors.append(f"Invalid PNG file: {category}/{icon_id}.png")
         continue
     width, height, bit_depth, color_type = struct.unpack(">IIBB", data[16:26])
-    if width < 128 or height < 128:
-        errors.append(f"Icon is smaller than 128x128: {category}/{icon_id}.png ({width}x{height})")
+    # The legacy UI control pack is intentionally 77x77 and is rendered at
+    # 48-66 logical pixels by HUD.gd. Keep the 128px minimum for catalog,
+    # production-item, road and status artwork, where the larger source size
+    # is needed for zoomed/building cards.
+    minimum_size = 64 if category == "ui" else 128
+    if width < minimum_size or height < minimum_size:
+        errors.append(
+            f"Icon is smaller than {minimum_size}x{minimum_size}: "
+            f"{category}/{icon_id}.png ({width}x{height})"
+        )
     if bit_depth != 8 or color_type != 6:
         errors.append(f"Icon must be 8-bit RGBA PNG-32: {category}/{icon_id}.png (depth={bit_depth}, type={color_type})")
         continue

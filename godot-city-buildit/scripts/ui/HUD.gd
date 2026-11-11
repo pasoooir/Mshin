@@ -61,6 +61,7 @@ var xp_text: Label
 var storage_label: Label
 var storage_panel: PanelContainer
 var production_panel: PanelContainer
+var production_overlay: Control
 var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
@@ -72,8 +73,10 @@ var _level_up_camera: Camera3D
 var _level_up_camera_origin: Vector3 = Vector3.ZERO
 var _level_up_shake_elapsed := 0.0
 var _production_timer_labels: Array[Label] = []
+var _production_progress_bars: Array[ProgressBar] = []
 var _production_building: Building = null
 var _production_tick_accum := 0.0
+var _factory_ready_scan_accum := 0.0
 var catalog_info_panel: PanelContainer
 var catalog_base_bar: PanelContainer
 var catalog_advisor: Control
@@ -120,8 +123,8 @@ func _apply_responsive_layout() -> void:
 	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
-		var width := (156.0 if compact else (168.0 if tablet else 184.0)) * scale_factor
-		var height := minf(viewport_size.y - 176.0 * scale_factor, 640.0 * scale_factor)
+		var width := (132.0 if compact else (148.0 if tablet else 168.0)) * scale_factor
+		var height := minf(viewport_size.y - 150.0 * scale_factor, 610.0 * scale_factor)
 		if not compact and not tablet:
 			# Desktop gets a persistent left navigation rail; mobile/tablet keep it on the right.
 			toolbar.anchor_left = 0.0
@@ -131,8 +134,8 @@ func _apply_responsive_layout() -> void:
 		else:
 			toolbar.anchor_left = 1.0
 			toolbar.anchor_right = 1.0
-			toolbar.offset_left = -width - 156.0 * scale_factor
-			toolbar.offset_right = -156.0 * scale_factor
+			toolbar.offset_left = -width - 12.0 * scale_factor
+			toolbar.offset_right = -12.0 * scale_factor
 		toolbar.offset_top = -height * 0.5
 		toolbar.offset_bottom = height * 0.5
 	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
@@ -213,7 +216,7 @@ func _build_top_hud() -> void:
 	left_stack.name = "TopLeftStats"
 	left_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left_stack.position = Vector2(14, 10)
-	left_stack.custom_minimum_size = Vector2(620, 210) * _ui_scale
+	left_stack.custom_minimum_size = Vector2(470, 170) * _ui_scale
 	left_stack.add_theme_constant_override("separation", 5)
 	left_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(left_stack)
@@ -226,15 +229,15 @@ func _build_top_hud() -> void:
 
 	var level_badge := PanelContainer.new()
 	level_badge.name = "LevelBadge"
-	level_badge.custom_minimum_size = Vector2(112, 112) * _ui_scale
+	level_badge.custom_minimum_size = Vector2(88, 88) * _ui_scale
 	level_badge.add_theme_stylebox_override("panel", _level_badge_style())
 	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_stats.add_child(level_badge)
 	var level_overlay := Control.new()
-	level_overlay.custom_minimum_size = Vector2(108, 108) * _ui_scale
+	level_overlay.custom_minimum_size = Vector2(84, 84) * _ui_scale
 	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_badge.add_child(level_overlay)
-	var level_icon := Icons.make_icon("level", Vector2(144, 144) * _ui_scale)
+	var level_icon := Icons.make_icon("level", Vector2(108, 108) * _ui_scale)
 	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_icon)
@@ -251,15 +254,15 @@ func _build_top_hud() -> void:
 	level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	level_overlay.add_child(level_label)
 
-	population_label = _add_stat_bar(top_stats, "population", "0", Color("#4BA3FF"), "City population", 180)
-	storage_label = _add_stat_bar(top_stats, "storage", "0/30", Color("#5BB8F5"), "City storage", 170)
+	population_label = _add_stat_bar(top_stats, "population", "0", Color("#4BA3FF"), "City population", 142)
+	storage_label = _add_stat_bar(top_stats, "storage", "0/30", Color("#5BB8F5"), "City storage", 132)
 
 	var happiness_row := HBoxContainer.new()
 	happiness_row.name = "HappinessStatRow"
 	happiness_row.add_theme_constant_override("separation", 8)
 	happiness_row.mouse_filter = Control.MOUSE_FILTER_PASS
 	left_stack.add_child(happiness_row)
-	happiness_label = _add_stat_bar(happiness_row, "happiness", "100%", Color("#A8E62E"), "Citizen happiness", 220)
+	happiness_label = _add_stat_bar(happiness_row, "happiness", "100%", Color("#A8E62E"), "Citizen happiness", 178)
 
 	var xp_row := HBoxContainer.new()
 	xp_row.name = "ExperienceRow"
@@ -374,7 +377,7 @@ func _update_context_header(category: String, detail: String = "") -> void:
 func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, width: float) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "StatBar"
-	bar.custom_minimum_size = Vector2(width * _ui_scale, 96 * _ui_scale)
+	bar.custom_minimum_size = Vector2(width * _ui_scale, 70 * _ui_scale)
 	bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
@@ -385,17 +388,17 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(88, 88) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(54, 54) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
+	var value := _make_hud_value(initial_text, int(22 * _ui_scale))
 	content.add_child(value)
 	return value
 
 func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 214.0) -> Label:
 	var bar := PanelContainer.new()
 	bar.name = icon_name.capitalize() + "CurrencyBar"
-	bar.custom_minimum_size = Vector2(width * _ui_scale, 64 * _ui_scale)
+	bar.custom_minimum_size = Vector2(width * _ui_scale, 58 * _ui_scale)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
 	bar.add_theme_stylebox_override("panel", _capsule_style())
@@ -404,7 +407,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.add_theme_constant_override("separation", 8)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(88, 88) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(50, 50) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
@@ -509,16 +512,16 @@ func _build_toolbars() -> void:
 		if old_node:
 			old_node.queue_free()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var toolbar_width := 168.0 * _ui_scale
-	var toolbar_height := minf(viewport_size.y - 176.0 * _ui_scale, 640.0 * _ui_scale)
+	var toolbar_width := 132.0 * _ui_scale
+	var toolbar_height := minf(viewport_size.y - 150.0 * _ui_scale, 610.0 * _ui_scale)
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
 	toolbar.anchor_left = 1.0
 	toolbar.anchor_right = 1.0
 	toolbar.anchor_top = 0.5
 	toolbar.anchor_bottom = 0.5
-	toolbar.offset_left = -toolbar_width - 112.0 * _ui_scale
-	toolbar.offset_right = -112.0 * _ui_scale
+	toolbar.offset_left = -toolbar_width - 12.0 * _ui_scale
+	toolbar.offset_right = -12.0 * _ui_scale
 	toolbar.offset_top = -toolbar_height * 0.5
 	toolbar.offset_bottom = toolbar_height * 0.5
 	toolbar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
@@ -547,7 +550,7 @@ func _build_toolbars() -> void:
 		["specializations", "Specializations", "parks"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
-	var category_height := clampf((toolbar_height - 24.0) / 7.0, 112.0 * _ui_scale, 132.0 * _ui_scale)
+	var category_height := clampf((toolbar_height - 24.0) / 7.0, 72.0 * _ui_scale, 94.0 * _ui_scale)
 	for item in tools:
 		var button := _make_category_button(str(item[2]), str(item[1]), Vector2(toolbar_width - 12.0, category_height))
 		button.name = "Tool_" + str(item[0]).capitalize()
@@ -560,31 +563,31 @@ func _build_toolbars() -> void:
 	build_toggle.anchor_right = 1.0
 	build_toggle.anchor_top = 0.5
 	build_toggle.anchor_bottom = 0.5
-	build_toggle.offset_left = -104.0 * _ui_scale
+	build_toggle.offset_left = -82.0 * _ui_scale
 	build_toggle.offset_right = -8.0 * _ui_scale
-	build_toggle.offset_top = -48.0 * _ui_scale
-	build_toggle.offset_bottom = 48.0 * _ui_scale
-	build_toggle.custom_minimum_size = Vector2(96, 96) * _ui_scale
+	build_toggle.offset_top = -38.0 * _ui_scale
+	build_toggle.offset_bottom = 38.0 * _ui_scale
+	build_toggle.custom_minimum_size = Vector2(74, 76) * _ui_scale
 	build_toggle.tooltip_text = "Close Build Menu"
 	build_toggle.focus_mode = Control.FOCUS_NONE
 	build_toggle.z_index = 61
-	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color("#EAF7FD"), Color("#B9D7E6")))
-	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color("#DDF3FC"), Color("#78C4E8")))
-	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color("#C8EAF8"), Color("#4FAED8")))
+	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color(0.055, 0.075, 0.09, 0.82), Color(1.0, 1.0, 1.0, 0.18)))
+	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color(0.10, 0.16, 0.19, 0.94), Color("#78C4E8")))
+	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.12, 0.25, 0.22, 0.96), Color("#A8E62E")))
 	var build_content := VBoxContainer.new()
 	build_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	build_content.alignment = BoxContainer.ALIGNMENT_CENTER
 	build_content.add_theme_constant_override("separation", 1)
 	build_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_toggle.add_child(build_content)
-	var build_icon := Icons.make_icon("hard_hat", Vector2(108, 108) * _ui_scale)
+	var build_icon := Icons.make_icon("hard_hat", Vector2(66, 66) * _ui_scale)
 	build_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_content.add_child(build_icon)
 	var build_label := Label.new()
 	build_label.name = "BuildButtonLabel"
 	build_label.text = "BUILD"
 	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	build_label.add_theme_color_override("font_color", Color("#31566B"))
+	build_label.add_theme_color_override("font_color", Color.WHITE)
 	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	build_content.add_child(build_label)
 	add_child(build_toggle)
@@ -679,16 +682,16 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	button.custom_minimum_size = button_size
 	button.tooltip_text = label_text
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _toolbar_style(Color("#F6FBFE"), Color("#D3E5EE")))
-	button.add_theme_stylebox_override("hover", _toolbar_style(Color("#E5F5FC"), Color("#83C8E7")))
-	button.add_theme_stylebox_override("pressed", _toolbar_style(Color("#D0EFFB"), Color("#5AAED2")))
+	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.055, 0.075, 0.09, 0.78), Color(1.0, 1.0, 1.0, 0.12)))
+	button.add_theme_stylebox_override("hover", _toolbar_style(Color(0.10, 0.16, 0.19, 0.92), Color("#83C8E7")))
+	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.12, 0.25, 0.22, 0.96), Color("#A8E62E")))
 	var content := VBoxContainer.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.add_theme_constant_override("separation", 1)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
-	var icon_size := maxf(96.0 * _ui_scale, minf(112.0 * _ui_scale, button_size.y * 0.82))
+	var icon_size := maxf(48.0 * _ui_scale, minf(66.0 * _ui_scale, button_size.y * 0.72))
 	var icon := Icons.make_icon(icon_name, Vector2(icon_size, icon_size))
 	content.add_child(icon)
 	var label := Label.new()
@@ -696,7 +699,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Color("#31566B"))
+	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.30))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
@@ -962,8 +965,8 @@ func _count_existing_buildings(type_id: String) -> int:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return count
-	for node in scene.find_children("*", "Building", true, false):
-		var building := node as Building
+	for building_value in BuildManager.buildings.values():
+		var building := building_value as Building
 		if is_instance_valid(building) and building.building_type == type_id:
 			count += 1
 	return count
@@ -1406,6 +1409,10 @@ func _start_next_level_up_effect() -> void:
 		_level_up_shake_elapsed = 0.0
 
 func _process(delta: float) -> void:
+	_factory_ready_scan_accum += delta
+	if _factory_ready_scan_accum >= 0.5:
+		_factory_ready_scan_accum = 0.0
+		_refresh_factory_ready_icons()
 	if is_instance_valid(production_panel):
 		_production_tick_accum += delta
 		if _production_tick_accum >= 0.25:
@@ -1424,6 +1431,35 @@ func _process(delta: float) -> void:
 		0.0
 	) * envelope
 	_level_up_camera.position = _level_up_camera_origin + shake
+
+
+func _refresh_factory_ready_icons() -> void:
+	# ProductionComponent slots are independent of the legacy single-item timer.
+	# Mirror a ready slot into the building's existing billboard so it is visible
+	# above the factory without adding a permanent HUD panel over the city.
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	for node in scene.find_children("*", "Building", true, false):
+		var building := node as Building
+		if not is_instance_valid(building) or building.status != "completed":
+			continue
+		var component = building.production_component
+		if not is_instance_valid(component):
+			continue
+		component.refresh_slots()
+		var ready_item := ""
+		for slot_index in range(component.get_slot_count()):
+			var slot: Dictionary = component.get_slot(slot_index)
+			if not slot.is_empty() and bool(slot.get("ready", false)):
+				ready_item = str(slot.get("item_id", ""))
+				break
+		if is_instance_valid(building.production_icon):
+			building.production_icon.text = "📦" if not ready_item.is_empty() else ""
+			building.production_icon.visible = not ready_item.is_empty()
+			building.production_icon.modulate = Color("#FFE06B")
+			building.production_icon.outline_size = 12
+			building.production_icon.outline_modulate = Color(0.12, 0.08, 0.02, 0.95)
 
 func _on_level_up_effect_finished() -> void:
 	if is_instance_valid(_level_up_camera):
@@ -1481,131 +1517,317 @@ func open_production_panel(building: Building) -> void:
 		return
 	_clear_production_timer_tracking()
 	_production_building = building
-	if is_instance_valid(production_panel):
-		production_panel.queue_free()
+	if is_instance_valid(production_overlay):
+		production_overlay.queue_free()
+	production_overlay = Control.new()
+	production_overlay.name = "ProductionOverlay"
+	production_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	production_overlay.z_index = 100
+	production_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(production_overlay)
+
+	var shade := ColorRect.new()
+	shade.name = "ProductionBackdrop"
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.025, 0.035, 0.66)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	production_overlay.add_child(shade)
+
 	production_panel = PanelContainer.new()
 	production_panel.name = "BuildingProductionPanel"
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
 	production_panel.anchor_top = 0.5
 	production_panel.anchor_bottom = 0.5
-	production_panel.offset_left = -235.0 * _ui_scale
-	production_panel.offset_right = 235.0 * _ui_scale
-	production_panel.offset_top = -235.0 * _ui_scale
-	production_panel.offset_bottom = 235.0 * _ui_scale
-	production_panel.z_index = 100
-	production_panel.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035,0.075,0.105,0.98), Color(0.55,0.78,0.92,0.85)))
+	var viewport_size := get_viewport().get_visible_rect().size
+	var panel_width := minf(viewport_size.x - 28.0, 900.0 * _ui_scale)
+	var panel_height := minf(viewport_size.y - 28.0, 560.0 * _ui_scale)
+	production_panel.offset_left = -panel_width * 0.5
+	production_panel.offset_right = panel_width * 0.5
+	production_panel.offset_top = -panel_height * 0.5
+	production_panel.offset_bottom = panel_height * 0.5
+	production_panel.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.98), Color(0.76, 0.84, 0.91, 0.78)))
 	production_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(production_panel)
+	production_overlay.add_child(production_panel)
+
 	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 8)
+	layout.name = "ProductionLayout"
+	layout.add_theme_constant_override("separation", 10)
 	production_panel.add_child(layout)
+
 	var header := HBoxContainer.new()
+	header.name = "ProductionHeader"
+	header.add_theme_constant_override("separation", 10)
 	layout.add_child(header)
+	var shop_icon := Icons.make_icon("factory_basic", Vector2(54, 54) * _ui_scale)
+	shop_icon.name = "ProductionBuildingIcon"
+	header.add_child(shop_icon)
+	var title_stack := VBoxContainer.new()
+	title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_stack.add_theme_constant_override("separation", 0)
+	header.add_child(title_stack)
 	var title := Label.new()
-	title.text = str(building.definition.get("name","Production"))
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", int(21 * _ui_scale))
+	title.text = str(building.definition.get("name", "Production")).to_upper()
+	title.add_theme_font_size_override("font_size", int(22 * _ui_scale))
 	title.add_theme_color_override("font_color", Color.WHITE)
-	header.add_child(title)
+	title_stack.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "CHOOSE A PRODUCT TO START PRODUCTION"
+	subtitle.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	subtitle.add_theme_color_override("font_color", Color("#A9C5D5"))
+	title_stack.add_child(subtitle)
 	var close := Button.new()
-	close.text = ""
-	close.icon = Icons.get_tex("ui", "close")
-	close.custom_minimum_size = Vector2(44,44) * _ui_scale
+	close.name = "ProductionClose"
+	close.text = "✕"
+	close.custom_minimum_size = Vector2(48, 48) * _ui_scale
+	close.add_theme_font_size_override("font_size", int(24 * _ui_scale))
+	close.add_theme_color_override("font_color", Color.WHITE)
+	close.add_theme_stylebox_override("normal", _toolbar_style(Color(0.12, 0.17, 0.21, 0.9), Color(1, 1, 1, 0.18)))
 	close.pressed.connect(_close_production_panel)
 	header.add_child(close)
+
+	var divider := HSeparator.new()
+	layout.add_child(divider)
 	var component = building.production_component
 	if not is_instance_valid(component):
 		var unavailable := Label.new()
 		unavailable.text = "Production is unavailable for this building."
 		layout.add_child(unavailable)
 		return
+
+	var available_slot := -1
 	for slot_index in range(component.get_slot_count()):
-		var slot_box := PanelContainer.new()
-		slot_box.add_theme_stylebox_override("panel", _toolbar_style(Color(0.07,0.13,0.18,0.96), Color(0.35,0.58,0.70,0.48)))
-		layout.add_child(slot_box)
-		var slot_layout := VBoxContainer.new()
-		slot_layout.add_theme_constant_override("separation", 5)
-		slot_box.add_child(slot_layout)
-		var slot_title := Label.new()
-		slot_title.text = "Production Slot %d" % (slot_index + 1)
-		slot_title.add_theme_color_override("font_color", Color("#8ED8FF"))
-		slot_layout.add_child(slot_title)
-		var slot: Dictionary = component.get_slot(slot_index)
-		if slot.is_empty():
-			var item_ids: Array = []
-			if component.is_factory:
-				for item_id in building.definition.get("can_produce", ["metal","wood"]):
-					if ProductionManager.raw_materials.has(item_id) and int(ProductionManager.raw_materials[item_id].level) <= GameManager.level:
-						item_ids.append(str(item_id))
-			else:
-				for item_id in building.definition.get("recipes", []):
-					var recipe := ProductionManager.get_recipe(str(item_id))
-					if not recipe.is_empty():
-						item_ids.append(str(item_id))
-			for item_id in item_ids:
-				var item_button := Button.new()
-				item_button.name = "Slot%d_%s" % [slot_index, item_id]
-				item_button.icon = Icons.get_tex("raw" if component.is_factory else "crafted", item_id)
-				item_button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-				var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
-				var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
-				item_button.text = "%s  ·  %s%s" % [str(data.get("name", item_id)), _format_duration(int(data.get("time_sec", 0))), ("  ·  " + lock_reason) if lock_reason != "" else ""]
-				item_button.disabled = lock_reason != ""
-				item_button.custom_minimum_size.y = 42 * _ui_scale
-				item_button.pressed.connect(func():
-					var started: bool = component.start_factory(item_id, slot_index) if component.is_factory else component.start_craft(item_id, slot_index)
-					if started:
-						status_label.text = "Production started: %s." % item_id.capitalize()
-					else:
-						var missing := ProductionManager.get_missing_inputs_text(item_id)
-						status_label.text = "Not enough materials: %s" % missing if missing != "" else "Cannot start this production."
-					_close_production_panel()
-				)
-				slot_layout.add_child(item_button)
+		if component.get_slot(slot_index).is_empty():
+			available_slot = slot_index
+			break
+	var products_title := Label.new()
+	products_title.text = "AVAILABLE PRODUCTS" if available_slot >= 0 else "PRODUCTION QUEUE"
+	products_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	products_title.add_theme_color_override("font_color", Color("#F6D36B"))
+	layout.add_child(products_title)
+
+	var product_scroll := ScrollContainer.new()
+	product_scroll.name = "ProductionProductsScroll"
+	product_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	product_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	product_scroll.custom_minimum_size.y = 142.0 * _ui_scale
+	layout.add_child(product_scroll)
+	var product_row := HBoxContainer.new()
+	product_row.name = "ProductionProductCards"
+	product_row.add_theme_constant_override("separation", 12)
+	product_scroll.add_child(product_row)
+
+	if available_slot >= 0:
+		var item_ids: Array = []
+		if component.is_factory:
+			for item_id in building.definition.get("can_produce", ["metal", "wood"]):
+				if ProductionManager.raw_materials.has(item_id):
+					item_ids.append(str(item_id))
 		else:
-			var item_id := str(slot.get("item_id",""))
+			for item_id in building.definition.get("recipes", []):
+				if not ProductionManager.get_recipe(str(item_id)).is_empty():
+					item_ids.append(str(item_id))
+		for item_id in item_ids:
+			var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
+			var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+			if not component.is_factory and lock_reason.is_empty() and not ProductionManager.can_craft(item_id):
+				lock_reason = "Need " + ProductionManager.get_missing_inputs_text(item_id)
+			var item_button := Button.new()
+			item_button.name = "Slot%d_%s" % [available_slot, item_id]
+			item_button.custom_minimum_size = Vector2(112, 132) * _ui_scale
+			item_button.disabled = not lock_reason.is_empty()
+			item_button.focus_mode = Control.FOCUS_NONE
+			item_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+			item_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+			item_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+			item_button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
+			var hex_size := Vector2(112, 132) * _ui_scale
+			var hex_points := PackedVector2Array([
+				Vector2(hex_size.x * 0.5, 0.0),
+				Vector2(hex_size.x - 4.0 * _ui_scale, hex_size.y * 0.22),
+				Vector2(hex_size.x - 4.0 * _ui_scale, hex_size.y * 0.76),
+				Vector2(hex_size.x * 0.5, hex_size.y),
+				Vector2(4.0 * _ui_scale, hex_size.y * 0.76),
+				Vector2(4.0 * _ui_scale, hex_size.y * 0.22)
+			])
+			var hex_background := Polygon2D.new()
+			hex_background.name = "HexagonBackground"
+			hex_background.polygon = hex_points
+			hex_background.color = Color(0.92, 0.97, 0.99, 0.97) if not item_button.disabled else Color(0.40, 0.46, 0.50, 0.84)
+			item_button.add_child(hex_background)
+			var hex_outline := Line2D.new()
+			hex_outline.name = "HexagonOutline"
+			hex_outline.points = hex_points
+			hex_outline.closed = true
+			hex_outline.width = 2.0 * _ui_scale
+			hex_outline.default_color = Color(1.0, 1.0, 1.0, 0.95)
+			item_button.add_child(hex_outline)
+			var card_content := VBoxContainer.new()
+			card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			card_content.alignment = BoxContainer.ALIGNMENT_CENTER
+			card_content.add_theme_constant_override("separation", 2)
+			card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			item_button.add_child(card_content)
+			var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(62, 62) * _ui_scale)
+			item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card_content.add_child(item_icon)
+			var item_name := Label.new()
+			item_name.text = str(data.get("name", item_id.capitalize()))
+			item_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			item_name.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+			item_name.add_theme_color_override("font_color", Color("#203744") if not item_button.disabled else Color("#E7EDF0"))
+			card_content.add_child(item_name)
+			var duration := Label.new()
+			duration.text = _format_duration(int(data.get("time_sec", 60)))
+			duration.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			duration.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+			duration.add_theme_color_override("font_color", Color("#557180") if not item_button.disabled else Color("#C4D0D6"))
+			card_content.add_child(duration)
+			if not lock_reason.is_empty():
+				item_button.tooltip_text = lock_reason
+			item_button.pressed.connect(func():
+				var started: bool = component.start_factory(item_id, available_slot) if component.is_factory else component.start_craft(item_id, available_slot)
+				if started:
+					status_label.text = "Production started: %s." % item_id.capitalize()
+				else:
+					var missing := ProductionManager.get_missing_inputs_text(item_id)
+					status_label.text = "Not enough materials: %s" % missing if not missing.is_empty() else "Cannot start this production."
+				open_production_panel(building)
+			)
+			product_row.add_child(item_button)
+	else:
+		var waiting := Label.new()
+		waiting.text = "All production slots are occupied. Collect a finished product or wait for a batch to finish."
+		waiting.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		waiting.add_theme_color_override("font_color", Color("#DCE8EF"))
+		product_row.add_child(waiting)
+
+	var queue_heading := HBoxContainer.new()
+	layout.add_child(queue_heading)
+	var queue_title := Label.new()
+	queue_title.text = "PRODUCTION QUEUE"
+	queue_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	queue_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	queue_title.add_theme_color_override("font_color", Color("#F6D36B"))
+	queue_heading.add_child(queue_title)
+	var queue_count := Label.new()
+	queue_count.text = "%d / %d SLOTS" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
+	queue_count.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	queue_count.add_theme_color_override("font_color", Color("#B9D0DC"))
+	queue_heading.add_child(queue_count)
+
+	var queue_scroll := ScrollContainer.new()
+	queue_scroll.name = "ProductionQueueScroll"
+	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	queue_scroll.custom_minimum_size.y = 104.0 * _ui_scale
+	layout.add_child(queue_scroll)
+	var queue_row := HBoxContainer.new()
+	queue_row.name = "ProductionQueueSlots"
+	queue_row.add_theme_constant_override("separation", 9)
+	queue_scroll.add_child(queue_row)
+	for slot_index in range(component.get_slot_count()):
+		var slot: Dictionary = component.get_slot(slot_index)
+		var slot_card := PanelContainer.new()
+		slot_card.name = "QueueSlot%d" % slot_index
+		slot_card.custom_minimum_size = Vector2(124, 94) * _ui_scale
+		var slot_fill := Color(0.06, 0.11, 0.15, 0.82) if not slot.is_empty() else Color(0.02, 0.04, 0.06, 0.20)
+		var slot_border := Color("#F3F6F8") if slot.is_empty() else Color("#6DA9C4")
+		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
+		queue_row.add_child(slot_card)
+		var slot_content := VBoxContainer.new()
+		slot_content.alignment = BoxContainer.ALIGNMENT_CENTER
+		slot_content.add_theme_constant_override("separation", 2)
+		slot_card.add_child(slot_content)
+		if slot.is_empty():
+			var empty_label := Label.new()
+			empty_label.text = "EMPTY"
+			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			empty_label.add_theme_color_override("font_color", Color("#E7EFF4"))
+			empty_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+			slot_content.add_child(empty_label)
+		else:
+			var item_id := str(slot.get("item_id", ""))
+			var item_category := "raw" if component.is_factory else "crafted"
+			var queue_item_row := HBoxContainer.new()
+			queue_item_row.alignment = BoxContainer.ALIGNMENT_CENTER
+			slot_content.add_child(queue_item_row)
+			queue_item_row.add_child(Icons.make_item_icon(item_category, item_id, Vector2(30, 30) * _ui_scale))
+			var queue_item_name := Label.new()
+			queue_item_name.text = item_id.capitalize()
+			queue_item_name.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+			queue_item_name.add_theme_color_override("font_color", Color.WHITE)
+			queue_item_row.add_child(queue_item_name)
 			if bool(slot.get("ready", false)):
 				var collect_button := Button.new()
 				collect_button.name = "CollectSlot%d" % slot_index
-				collect_button.text = "COLLECT  %s" % item_id.capitalize()
-				collect_button.icon = Icons.get_tex("ui", "collect")
-				collect_button.custom_minimum_size.y = 46 * _ui_scale
+				collect_button.text = "COLLECT"
+				collect_button.custom_minimum_size.y = 30 * _ui_scale
+				collect_button.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+				collect_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E6B93E"), Color("#FFE18A")))
+				collect_button.add_theme_color_override("font_color", Color("#34280B"))
 				collect_button.pressed.connect(func():
 					if component.collect(slot_index):
 						status_label.text = "Collected %s into City Storage." % item_id.capitalize()
 					else:
-						status_label.text = "Storage full"
-					_close_production_panel()
+						status_label.text = "Storage full — collect space in City Storage first."
+					open_production_panel(building)
 				)
-				slot_layout.add_child(collect_button)
+				slot_content.add_child(collect_button)
 			else:
-				var remaining := maxi(0, int(slot.get("finish_unix",0)) - int(Time.get_unix_time_from_system()))
+				var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
 				var timer_label := Label.new()
 				timer_label.name = "TimerSlot%d" % slot_index
 				timer_label.set_meta("slot_index", slot_index)
-				timer_label.text = "%s  ·  %s remaining" % [item_id.capitalize(), _format_duration(remaining)]
-				var timer_row := HBoxContainer.new()
-				timer_row.add_child(Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(32, 32) * _ui_scale))
-				timer_row.add_child(timer_label)
-				slot_layout.add_child(timer_row)
+				timer_label.text = _format_clock_duration(remaining)
+				timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				timer_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+				timer_label.add_theme_color_override("font_color", Color("#FFE18A"))
+				slot_content.add_child(timer_label)
+				var progress := ProgressBar.new()
+				progress.name = "ProgressSlot%d" % slot_index
+				progress.set_meta("slot_index", slot_index)
+				progress.show_percentage = false
+				progress.custom_minimum_size.y = 7.0 * _ui_scale
+				progress.max_value = 1.0
+				var total_seconds := maxf(1.0, ProductionManager.get_production_time(item_id))
+				var started_unix := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total_seconds)))
+				progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
+				progress.set_meta("start_unix", started_unix)
+				progress.set_meta("finish_unix", int(slot.get("finish_unix", 0)))
+				slot_content.add_child(progress)
 				_production_timer_labels.append(timer_label)
-	if not component.is_factory:
-		var note := Label.new()
-		note.text = "Recipe materials are deducted from City Storage when a slot starts."
-		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		note.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-		layout.add_child(note)
+				_production_progress_bars.append(progress)
+
+	var footer := Label.new()
+	footer.text = "Products are stored in City Storage when collected."
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	footer.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	footer.add_theme_color_override("font_color", Color("#9FB6C4"))
+	layout.add_child(footer)
+
+func _count_empty_production_slots(component: ProductionComponent) -> int:
+	var empty_count := 0
+	for index in range(component.get_slot_count()):
+		if component.get_slot(index).is_empty():
+			empty_count += 1
+	return empty_count
+
+func _format_clock_duration(seconds: int) -> String:
+	var safe_seconds := maxi(0, seconds)
+	var hours := int(safe_seconds / 3600)
+	var minutes := int((safe_seconds % 3600) / 60)
+	var remainder := safe_seconds % 60
+	return "%02d:%02d:%02d" % [hours, minutes, remainder] if hours > 0 else "%02d:%02d" % [minutes, remainder]
 
 func _format_duration(seconds: int) -> String:
-	if seconds < 60:
-		return "%ds" % seconds
-	if seconds < 3600:
-		return "%dm" % int(seconds / 60)
-	return "%dh %dm" % [int(seconds / 3600), int((seconds % 3600) / 60)]
+	return _format_clock_duration(seconds)
 
 func _clear_production_timer_tracking() -> void:
 	_production_timer_labels.clear()
+	_production_progress_bars.clear()
 	_production_building = null
 	_production_tick_accum = 0.0
 
@@ -1630,7 +1852,11 @@ func _update_production_timers() -> void:
 			break
 		var item_id := str(slot.get("item_id", ""))
 		var remaining := maxi(0, int(slot.get("finish_unix", 0)) - now)
-		label.text = "%s  ·  %s remaining" % [item_id.capitalize(), _format_duration(remaining)]
+		label.text = _format_clock_duration(remaining)
+		for progress in _production_progress_bars:
+			if is_instance_valid(progress) and int(progress.get_meta("slot_index", -1)) == slot_index:
+				var total_seconds := maxf(1.0, ProductionManager.get_production_time(item_id))
+				progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
 		if remaining <= 0:
 			need_rebuild = true
 	if need_rebuild:
@@ -1638,8 +1864,9 @@ func _update_production_timers() -> void:
 
 func _close_production_panel() -> void:
 	_clear_production_timer_tracking()
-	if is_instance_valid(production_panel):
-		production_panel.queue_free()
+	if is_instance_valid(production_overlay):
+		production_overlay.queue_free()
+	production_overlay = null
 	production_panel = null
 
 func _on_storage_pressed() -> void:
