@@ -119,26 +119,20 @@ func _apply_responsive_layout() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
 		return
-	var compact := viewport_size.x < 900.0
-	var tablet := viewport_size.x >= 900.0 and viewport_size.x < 1440.0
 	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
-		var width := (132.0 if compact else (148.0 if tablet else 168.0)) * scale_factor
-		var height := minf(viewport_size.y - 150.0 * scale_factor, 610.0 * scale_factor)
-		if not compact and not tablet:
-			# Desktop gets a persistent left navigation rail; mobile/tablet keep it on the right.
-			toolbar.anchor_left = 0.0
-			toolbar.anchor_right = 0.0
-			toolbar.offset_left = 12.0 * scale_factor
-			toolbar.offset_right = 12.0 * scale_factor + width
-		else:
-			toolbar.anchor_left = 1.0
-			toolbar.anchor_right = 1.0
-			toolbar.offset_left = -width - 12.0 * scale_factor
-			toolbar.offset_right = -12.0 * scale_factor
-		toolbar.offset_top = -height * 0.5
-		toolbar.offset_bottom = height * 0.5
+		# Keep the transparent PNG shortcuts on the right at every viewport size.
+		# They sit below the three compact resource rows and never use a hard-hat toggle.
+		var width := 92.0 * scale_factor
+		toolbar.anchor_left = 1.0
+		toolbar.anchor_right = 1.0
+		toolbar.anchor_top = 0.30
+		toolbar.anchor_bottom = 0.985
+		toolbar.offset_left = -width - 8.0 * scale_factor
+		toolbar.offset_right = -6.0 * scale_factor
+		toolbar.offset_top = 0.0
+		toolbar.offset_bottom = 0.0
 	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
 	if left_stats:
 		left_stats.position.x = (174.0 if not compact and not tablet else 14.0) * scale_factor
@@ -289,22 +283,16 @@ func _build_top_hud() -> void:
 	right_stack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	right_stack.anchor_left = 1.0
 	right_stack.anchor_right = 1.0
-	right_stack.offset_left = -340
-	right_stack.offset_right = -12
-	right_stack.offset_top = 10
-	right_stack.offset_bottom = 238
-	right_stack.add_theme_constant_override("separation", 7)
+	right_stack.offset_left = -276.0 * _ui_scale
+	right_stack.offset_right = -10.0 * _ui_scale
+	right_stack.offset_top = 8.0 * _ui_scale
+	right_stack.offset_bottom = 194.0 * _ui_scale
+	right_stack.add_theme_constant_override("separation", 5)
 	right_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	top_hud.add_child(right_stack)
-
-	simoleons_label = _add_currency_bar(right_stack, "simoleons", "5000", Color("#FFD24A"), "Simoleons", true)
-	_build_simcash_capsule(right_stack)
-	var keys_row := HBoxContainer.new()
-	keys_row.name = "PremiumCurrencyRow"
-	keys_row.add_theme_constant_override("separation", 8)
-	keys_row.mouse_filter = Control.MOUSE_FILTER_PASS
-	right_stack.add_child(keys_row)
-	keys_label = _add_currency_bar(keys_row, "golden_key", "5", Color("#FFC107"), "Golden Keys", false, 100)
+	simoleons_label = _add_currency_bar(right_stack, "simoleons", str(EconomyManager.simoleons), Color("#FFD24A"), "Simoleons", true, 184)
+	simcash_label = _add_currency_bar(right_stack, "money", str(EconomyManager.sim_cash), Color("#B8E89B"), "SimCash", true, 184)
+	keys_label = _add_currency_bar(right_stack, "golden_key", str(EconomyManager.golden_keys), Color("#FFC247"), "Golden Keys", false, 184)
 
 	_build_context_header(top_hud)
 
@@ -396,28 +384,37 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.add_child(value)
 	return value
 
-func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 214.0) -> Label:
+func _add_currency_bar(parent: Container, icon_name: String, initial_text: String, tint: Color, hint: String, show_plus: bool, width: float = 184.0) -> Label:
+	var currency_node_prefix := icon_name.replace("_", " ").capitalize().replace(" ", "")
+	var row := HBoxContainer.new()
+	row.name = currency_node_prefix + "CurrencyRow"
+	row.custom_minimum_size = Vector2(0, 54) * _ui_scale
+	row.add_theme_constant_override("separation", 7)
+	row.mouse_filter = Control.MOUSE_FILTER_PASS
+	parent.add_child(row)
 	var bar := PanelContainer.new()
-	bar.name = icon_name.capitalize() + "CurrencyBar"
-	bar.custom_minimum_size = Vector2(width * _ui_scale, 58 * _ui_scale)
+	bar.name = currency_node_prefix + "CurrencyBar"
+	bar.custom_minimum_size = Vector2(width, 54) * _ui_scale
+	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.tooltip_text = hint
 	bar.add_theme_stylebox_override("panel", _capsule_style())
-	parent.add_child(bar)
+	row.add_child(bar)
 	var content := HBoxContainer.new()
-	content.add_theme_constant_override("separation", 8)
+	content.add_theme_constant_override("separation", 7)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(50, 50) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(48, 48) * _ui_scale)
 	icon.modulate = tint
 	content.add_child(icon)
-	var value := _make_hud_value(initial_text, int(25 * _ui_scale))
+	var value := _make_hud_value(initial_text, int(23 * _ui_scale))
+	value.name = currency_node_prefix + "CurrencyValue"
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(value)
 	if show_plus:
-		var add_button := _make_currency_plus_button(hint)
-		content.add_child(add_button)
+		row.add_child(_make_currency_plus_button(hint))
 	return value
 
 func _make_hud_value(initial_text: String, font_size: int) -> Label:
@@ -449,36 +446,36 @@ func _level_badge_style() -> StyleBoxFlat:
 
 func _make_currency_plus_button(hint: String) -> Button:
 	var button := Button.new()
-	button.name = "CurrencyAddButton"
-	button.text = "+"
-	button.custom_minimum_size = Vector2(88, 88) * _ui_scale
+	button.name = hint.replace(" ", "") + "CurrencyPlus"
+	button.custom_minimum_size = Vector2(54, 54) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = hint + " shop"
-	button.add_theme_font_size_override("font_size", int(30 * _ui_scale))
-	_add_theme_color(button, Color("#4CD964"))
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color("#DDF4FF")
+	normal.border_color = Color("#83C8E8")
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(12)
+	normal.shadow_color = Color(0, 0, 0, 0.30)
+	normal.shadow_size = 5
+	normal.shadow_offset = Vector2(0, 3)
+	button.add_theme_stylebox_override("normal", normal)
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color("#F0FBFF")
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", normal)
+	var plus_icon := Icons.make_icon("plus", Vector2(43, 43) * _ui_scale)
+	plus_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	plus_icon.offset_left = 4
+	plus_icon.offset_top = 4
+	plus_icon.offset_right = -4
+	plus_icon.offset_bottom = -4
+	button.add_child(plus_icon)
 	button.pressed.connect(_on_currency_plus_pressed.bind(hint))
 	return button
+
 func _add_icon_capsule(parent: HBoxContainer, icon_name: String, initial_text: String, tint: Color, hint: String) -> Label:
 	return _add_stat_bar(parent, icon_name, initial_text, tint, hint, 150)
-func _build_simcash_capsule(parent: Container) -> void:
-	var bar := PanelContainer.new()
-	bar.name = "SimCashCurrencyBar"
-	bar.custom_minimum_size = Vector2(280, 96) * _ui_scale
-	bar.tooltip_text = "SimCash"
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.add_theme_stylebox_override("panel", _capsule_style())
-	parent.add_child(bar)
-	var content := HBoxContainer.new()
-	content.add_theme_constant_override("separation", 8)
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.add_child(content)
-	content.add_child(Icons.make_icon("money", Vector2(88, 88) * _ui_scale))
-	simcash_label = _make_hud_value(str(EconomyManager.sim_cash), int(25 * _ui_scale))
-	simcash_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	simcash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(simcash_label)
-	content.add_child(_make_currency_plus_button("SimCash"))
 func _add_theme_color(button: Button, tint: Color) -> void:
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = Color(tint.r, tint.g, tint.b, 0.22)
@@ -513,86 +510,66 @@ func _build_toolbars() -> void:
 		if old_node:
 			old_node.queue_free()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var toolbar_width := 132.0 * _ui_scale
-	var toolbar_height := minf(viewport_size.y - 150.0 * _ui_scale, 610.0 * _ui_scale)
+	var toolbar_width := 92.0 * _ui_scale
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
 	toolbar.anchor_left = 1.0
 	toolbar.anchor_right = 1.0
-	toolbar.anchor_top = 0.5
-	toolbar.anchor_bottom = 0.5
-	toolbar.offset_left = -toolbar_width - 12.0 * _ui_scale
-	toolbar.offset_right = -12.0 * _ui_scale
-	toolbar.offset_top = -toolbar_height * 0.5
-	toolbar.offset_bottom = toolbar_height * 0.5
+	toolbar.anchor_top = 0.30
+	toolbar.anchor_bottom = 0.985
+	toolbar.offset_left = -toolbar_width - 8.0 * _ui_scale
+	toolbar.offset_right = -6.0 * _ui_scale
 	toolbar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	toolbar.mouse_filter = Control.MOUSE_FILTER_STOP
+	toolbar.mouse_filter = Control.MOUSE_FILTER_PASS
 	toolbar.z_index = 60
 	add_child(toolbar)
-	toolbar.show()
 	var category_scroll := ScrollContainer.new()
 	category_scroll.name = "CategoryScroll"
 	category_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	category_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	category_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	category_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	category_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	toolbar.add_child(category_scroll)
 	var toolbar_items := VBoxContainer.new()
 	toolbar_items.name = "RightToolbarItems"
 	toolbar_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	toolbar_items.add_theme_constant_override("separation", 5)
+	toolbar_items.add_theme_constant_override("separation", 10 * _ui_scale)
+	toolbar_items.mouse_filter = Control.MOUSE_FILTER_PASS
 	category_scroll.add_child(toolbar_items)
 	var tools := [
-		["road", "Roads", "road"],
 		["residential", "Residential", "residential"],
 		["commercial", "Commercial", "commercial"],
 		["industrial", "Industrial", "industrial"],
 		["services", "Services", "services"],
 		["specializations", "Specializations", "parks"],
+		["road", "Roads", "road"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
-	var category_height := clampf((toolbar_height - 24.0) / 7.0, 72.0 * _ui_scale, 94.0 * _ui_scale)
+	var icon_size := 78.0 * _ui_scale
 	for item in tools:
-		var button := _make_category_button(str(item[2]), str(item[1]), Vector2(toolbar_width - 12.0, category_height))
+		var button := Button.new()
 		button.name = "Tool_" + str(item[0]).capitalize()
-		button.toggle_mode = true
+		button.custom_minimum_size = Vector2(toolbar_width, 84.0 * _ui_scale)
+		button.tooltip_text = str(item[1])
+		button.focus_mode = Control.FOCUS_NONE
+		button.mouse_filter = Control.MOUSE_FILTER_STOP
+		button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+		button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+		button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		var icon := Icons.make_icon(str(item[2]), Vector2(icon_size, icon_size))
+		icon.name = "CategoryPNG"
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		icon.offset_left = 4.0 * _ui_scale
+		icon.offset_top = 3.0 * _ui_scale
+		icon.offset_right = -4.0 * _ui_scale
+		icon.offset_bottom = -3.0 * _ui_scale
+		button.add_child(icon)
 		toolbar_items.add_child(button)
 		button.pressed.connect(_on_category_pressed.bind(str(item[0])))
-	var build_toggle := Button.new()
-	build_toggle.name = "BuildMenuButton"
-	build_toggle.anchor_left = 1.0
-	build_toggle.anchor_right = 1.0
-	build_toggle.anchor_top = 0.5
-	build_toggle.anchor_bottom = 0.5
-	build_toggle.offset_left = -82.0 * _ui_scale
-	build_toggle.offset_right = -8.0 * _ui_scale
-	build_toggle.offset_top = -38.0 * _ui_scale
-	build_toggle.offset_bottom = 38.0 * _ui_scale
-	build_toggle.custom_minimum_size = Vector2(74, 76) * _ui_scale
-	build_toggle.tooltip_text = "Close Build Menu"
-	build_toggle.focus_mode = Control.FOCUS_NONE
-	build_toggle.z_index = 61
-	build_toggle.add_theme_stylebox_override("normal", _toolbar_style(Color(0.055, 0.075, 0.09, 0.82), Color(1.0, 1.0, 1.0, 0.18)))
-	build_toggle.add_theme_stylebox_override("hover", _toolbar_style(Color(0.10, 0.16, 0.19, 0.94), Color("#78C4E8")))
-	build_toggle.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.12, 0.25, 0.22, 0.96), Color("#A8E62E")))
-	var build_content := VBoxContainer.new()
-	build_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	build_content.alignment = BoxContainer.ALIGNMENT_CENTER
-	build_content.add_theme_constant_override("separation", 1)
-	build_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	build_toggle.add_child(build_content)
-	var build_icon := Icons.make_icon("hard_hat", Vector2(66, 66) * _ui_scale)
-	build_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	build_content.add_child(build_icon)
-	var build_label := Label.new()
-	build_label.name = "BuildButtonLabel"
-	build_label.text = "BUILD"
-	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	build_label.add_theme_color_override("font_color", Color.WHITE)
-	build_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
-	build_content.add_child(build_label)
-	add_child(build_toggle)
-	build_toggle.pressed.connect(_toggle_category_menu)
+	toolbar.show()
 	bottom_actions = HBoxContainer.new()
 	bottom_actions.name = "BottomActions"
 	bottom_actions.anchor_left = 0.5
@@ -608,9 +585,10 @@ func _build_toolbars() -> void:
 	bottom_actions.z_index = 62
 	add_child(bottom_actions)
 	for item in [["storage","Storage"],["trade","Trade"],["save","Save"]]:
-		var button := _make_icon_button(item[0], item[1], Vector2(92, 82) * _ui_scale)
+		var button := _make_icon_button(str(item[0]), str(item[1]), Vector2(92, 82) * _ui_scale)
+		button.name = str(item[0]).capitalize() + "Action"
 		bottom_actions.add_child(button)
-		match item[0]:
+		match str(item[0]):
 			"storage": button.pressed.connect(_on_storage_pressed)
 			"trade": button.pressed.connect(_on_trade_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
@@ -744,22 +722,11 @@ func _toolbar_style(fill: Color, border: Color) -> StyleBoxFlat:
 	return style
 
 func _toggle_category_menu() -> void:
+	# Kept for compatibility with older callers; the category rail is persistent.
 	var toolbar := get_node_or_null("RightToolbar") as Control
-	if toolbar == null:
-		push_error("[HUD] RightToolbar is missing.")
-		return
-	if toolbar.visible:
-		_close_build_menu()
-		return
-	toolbar.show()
-	if bottom_actions:
-		bottom_actions.show()
-	var build_button_node := get_node_or_null("BuildMenuButton")
-	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
-	if build_label:
-		build_label.text = "BUILD"
-	if build_button_node:
-		build_button_node.tooltip_text = "Build menu"
+	if toolbar:
+		toolbar.show()
+
 
 func _close_build_menu() -> void:
 	_set_tool_modes_off()
@@ -782,9 +749,6 @@ func _close_build_menu() -> void:
 		catalog_advisor.hide()
 	if context_header:
 		context_header.hide()
-	var build_button := get_node_or_null("BuildMenuButton") as Control
-	if build_button:
-		build_button.show()
 	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
@@ -793,15 +757,10 @@ func _close_build_menu() -> void:
 	_set_active_category_visuals("")
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
-		toolbar.hide()
+		toolbar.show()
 	if bottom_actions:
 		bottom_actions.show()
-	var build_button_node := get_node_or_null("BuildMenuButton")
-	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
-	if build_label:
-		build_label.text = "BUILD"
-	if build_button:
-		build_button.tooltip_text = "Open Build Menu"
+
 
 func _set_active_category_visuals(category: String) -> void:
 	var items := get_node_or_null("RightToolbar/CategoryScroll/RightToolbarItems")
@@ -810,7 +769,10 @@ func _set_active_category_visuals(category: String) -> void:
 	for child in items.get_children():
 		if child is Button:
 			var button := child as Button
-			button.button_pressed = button.name.to_lower() == ("tool_" + category).to_lower()
+			var icon := button.get_node_or_null("CategoryPNG") as TextureRect
+			var selected := button.name.to_lower() == ("tool_" + category).to_lower()
+			if icon:
+				icon.modulate = Color("#FFFFFF") if selected or category.is_empty() else Color("#C9D6DC")
 
 func _on_category_pressed(category: String) -> void:
 	if active_category == category and submenu_scroll and submenu_scroll.visible:
@@ -1157,12 +1119,6 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.show()
-	var toolbar := get_node_or_null("RightToolbar") as Control
-	if toolbar:
-		toolbar.hide()
-	var build_button := get_node_or_null("BuildMenuButton") as Control
-	if build_button:
-		build_button.hide()
 	if context_header:
 		context_header.show()
 	submenu_scroll.modulate.a = 0.0
@@ -2116,9 +2072,6 @@ func _on_cancel_pressed() -> void:
 		catalog_advisor.hide()
 	if context_header:
 		context_header.hide()
-	var build_toggle := get_node_or_null("BuildMenuButton") as Control
-	if build_toggle:
-		build_toggle.show()
 	_hide_building_info()
 	active_category = ""
 	active_service_group = ""
@@ -2130,12 +2083,6 @@ func _on_cancel_pressed() -> void:
 		category_toolbar.show()
 	if bottom_actions:
 		bottom_actions.show()
-	var build_button_node := get_node_or_null("BuildMenuButton")
-	var build_label := build_button_node.find_child("BuildButtonLabel", true, false) as Label if build_button_node else null
-	if build_label:
-		build_label.text = "BUILD"
-	if build_button_node:
-		build_button_node.tooltip_text = "Build menu"
 	if was_moving:
 		status_label.text = "Move cancelled. Building returned to its original location."
 	elif was_bulldozing:

@@ -284,39 +284,39 @@ func _test_build_menu_visibility() -> void:
 	_check(hud != null, "Main scene HUD is missing.")
 	if hud == null:
 		return
-	var build_button := hud.get_node_or_null("BuildMenuButton") as Button
+	var build_button := hud.get_node_or_null("BuildMenuButton")
 	var toolbar := hud.get_node_or_null("RightToolbar") as Control
-	_check(build_button != null, "Hard-hat Build button was not created.")
-	_check(toolbar != null, "Right-side category toolbar was not created.")
-	if build_button == null or toolbar == null:
+	_check(build_button == null, "Legacy hard-hat Build button must be removed from the HUD.")
+	_check(toolbar != null and toolbar.visible, "Transparent right-side category PNG rail must be visible immediately.")
+	if toolbar == null:
 		return
-	_check(toolbar.visible, "Build categories must be visible and discoverable on first entry.")
-	_check(_node_has_label_text(build_button, "BUILD"), "Build menu control must keep its BUILD label.")
-	build_button.emit_signal("pressed")
-	await get_tree().process_frame
-	_check(not toolbar.visible, "Tapping CLOSE must hide the build category toolbar.")
-	build_button.emit_signal("pressed")
-	await get_tree().process_frame
-	_check(toolbar.visible, "Tapping BUILD must reveal the right-side category toolbar.")
 	var viewport_rect := get_viewport().get_visible_rect()
-	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category toolbar is outside the visible screen.")
-	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.2, "Build category dock covers too much of the mobile play area.")
+	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category PNG rail is outside the visible screen.")
+	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.12, "Transparent category rail covers too much of the mobile play area.")
 	var toolbar_items := toolbar.find_child("RightToolbarItems", true, false) as VBoxContainer
-	_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right toolbar must show seven categories in a vertical list.")
-	var expected_names := ["Tool_Road", "Tool_Residential", "Tool_Commercial", "Tool_Industrial", "Tool_Services", "Tool_Specializations", "Tool_Bulldoze"]
+	_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right rail must show seven categories in a vertical list.")
+	var expected_names := ["Tool_Residential", "Tool_Commercial", "Tool_Industrial", "Tool_Services", "Tool_Specializations", "Tool_Road", "Tool_Bulldoze"]
 	for i in range(expected_names.size()):
 		var button := toolbar.find_child(expected_names[i], true, false) as Button
 		_check(button != null, "Missing ordered category button: " + expected_names[i])
 		if button and toolbar_items:
 			_check(toolbar_items.get_child(i) == button, "Build categories are not in the required top-to-bottom order.")
 			_check(button.custom_minimum_size.y >= 64.0, "Category touch target is too small.")
-			var category_content := button.get_child(0) as VBoxContainer
-			var category_icon := category_content.get_child(0) as TextureRect if category_content and category_content.get_child_count() > 0 else null
-			_check(category_icon != null and category_icon.custom_minimum_size.x >= 48.0, "Category icon must render at a readable 48px minimum.")
+			var category_icon := button.get_node_or_null("CategoryPNG") as TextureRect
+			_check(category_icon != null and category_icon.texture != null and category_icon.custom_minimum_size.x >= 64.0, "Category PNG must be transparent artwork at a readable size.")
+			_check(button.get_theme_stylebox("normal").get_class() == "StyleBoxEmpty", "Category PNG must not have a card background.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
+	var currency_stack := hud.get_node_or_null("TopRightCurrencies") as VBoxContainer
+	_check(currency_stack != null and currency_stack.get_child_count() == 3, "Top-right resources must be exactly three compact rows.")
+	for row_name in ["SimoleonsCurrencyRow", "MoneyCurrencyRow", "GoldenKeyCurrencyRow"]:
+		_check(currency_stack != null and currency_stack.find_child(row_name, true, false) is HBoxContainer, "Missing resource row: " + row_name)
+	_check(currency_stack != null and currency_stack.find_child("SimoleonsCurrencyPlus", true, false) is Button, "Simoleons row must show the blue + tile.")
+	_check(currency_stack != null and currency_stack.find_child("SimCashCurrencyPlus", true, false) is Button, "SimCash row must show the blue + tile.")
+	_check(currency_stack != null and currency_stack.find_child("GoldenKeysCurrencyPlus", true, false) == null, "Golden key row must not show an unnecessary + tile.")
 	hud._on_category_pressed("services")
 	await get_tree().process_frame
+	_check(toolbar.visible, "Right-side transparent PNG shortcuts must remain visible while a category submenu is open.")
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
 	_check(hud.submenu_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER, "Catalog horizontal scroll chrome must stay hidden.")
 	_check(hud.submenu_scroll.scroll_deadzone <= 10, "Horizontal submenu swipe must respond with a short touch deadzone.")
@@ -704,19 +704,10 @@ func _run_gameplay_test() -> void:
 	GameManager.level = 5
 	if hud:
 		var right_toolbar = hud.get_node_or_null("RightToolbar")
-		_check(right_toolbar is PanelContainer, "Right-side construction tools must use a compact category dock.")
-		if right_toolbar is PanelContainer:
-			var toolbar_items = right_toolbar.find_child("RightToolbarItems", true, false)
-			_check(toolbar_items is VBoxContainer, "Right toolbar categories must use a vertical scroll list.")
-			_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right toolbar must show all seven construction categories.")
-			var build_toggle = hud.get_node_or_null("BuildMenuButton")
-			_check(build_toggle is Button, "The persistent Build button must open the category dock.")
-			_check(not right_toolbar.visible, "Category dock should stay collapsed until the player opens Build.")
-			hud._toggle_category_menu()
-			_check(right_toolbar.visible, "Build button action did not open the category dock.")
-			hud._toggle_category_menu()
-			_check(not right_toolbar.visible, "Build button action did not close the category dock.")
-		hud._toggle_category_menu()
+		_check(right_toolbar is PanelContainer and right_toolbar.visible, "Transparent category PNG rail must remain visible without a Build button.")
+		_check(hud.get_node_or_null("BuildMenuButton") == null, "Hard-hat Build button must not be present.")
+		var toolbar_items = right_toolbar.find_child("RightToolbarItems", true, false) if right_toolbar else null
+		_check(toolbar_items is VBoxContainer and toolbar_items.get_child_count() == 7, "Right rail must retain all seven direct category shortcuts.")
 		hud._on_category_pressed("residential")
 		_check(hud.submenu_scroll.visible and hud.submenu.get_node_or_null("residential_villa") != null, "Residential submenu must show available house choices.")
 		var catalog_base = hud.get_node_or_null("CatalogBaseBar") as PanelContainer
