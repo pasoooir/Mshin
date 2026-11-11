@@ -719,6 +719,14 @@ func _run_gameplay_test() -> void:
 		hud._toggle_category_menu()
 		hud._on_category_pressed("residential")
 		_check(hud.submenu_scroll.visible and hud.submenu.get_node_or_null("residential_villa") != null, "Residential submenu must show available house choices.")
+		var catalog_base = hud.get_node_or_null("CatalogBaseBar") as PanelContainer
+		var advisor_slot = hud.get_node_or_null("CatalogAdvisor") as Control
+		var catalog_close = hud.get_node_or_null("CatalogCloseButton") as Control
+		_check(catalog_base != null and catalog_base.visible, "Bright catalog base strip must be visible while selecting buildings.")
+		_check(advisor_slot != null and advisor_slot.visible and is_equal_approx(advisor_slot.anchor_right, 0.15), "Advisor must occupy the dedicated left fifteen-percent slot.")
+		_check(is_equal_approx(hud.submenu_scroll.anchor_left, 0.15) and is_equal_approx(hud.submenu_scroll.anchor_right, 0.95), "Building catalog must occupy the central eighty-percent width.")
+		_check(catalog_close != null and catalog_close.visible and is_equal_approx(catalog_close.anchor_left, 0.95), "Simple X close action must occupy the right five-percent slot.")
+		_check(hud.context_header != null and hud.context_header.visible, "Centered contextual header must be visible while a catalog category is open.")
 		_check(hud.get_node_or_null("CatalogCloseButton") != null, "Residential submenu must always include Cancel.")
 		hud._on_building_choice_pressed("residential_villa")
 		_check(BuildManager.selected_building_type == "residential_villa" and BuildManager.is_placing, "Villa choice did not enter placement mode.")
