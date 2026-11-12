@@ -1615,7 +1615,7 @@ func open_production_panel(building: Building) -> void:
 			if ProductionManager.raw_materials.has(item_id):
 				item_ids.append(str(item_id))
 	else:
-		for item_id in building.definition.get("recipes", []):
+		for item_id in ProductionManager.get_store_recipe_ids(str(component.shop_id)):
 			if not ProductionManager.get_recipe(str(item_id)).is_empty():
 				item_ids.append(str(item_id))
 
@@ -2116,9 +2116,9 @@ func open_city_needs_panel() -> void:
 		item_title.add_theme_color_override("font_color", Color("#18394D"))
 		text_stack.add_child(item_title)
 		var counts := Label.new()
-		counts.text = "Stored %d   ·   Required %d   ·   Producing %d   ·   Ready %d   ·   Deficit %d" % [
+		counts.text = "Stored %d   ·   Required %d   ·   Producing %d   ·   Ready %d   ·   Deficit %d   ·   Next ready %s" % [
 			int(item.get("stored", 0)), int(item.get("required", 0)), int(item.get("producing", 0)),
-			int(item.get("ready", 0)), int(item.get("deficit", 0))
+			int(item.get("ready", 0)), int(item.get("deficit", 0)), (_city_needs_duration(int(item.get("eta_seconds", -1))) if int(item.get("eta_seconds", -1)) >= 0 else "—")
 		]
 		counts.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		counts.add_theme_color_override("font_color", Color("#A13F35") if int(item.get("deficit", 0)) > 0 else Color("#34734D"))
