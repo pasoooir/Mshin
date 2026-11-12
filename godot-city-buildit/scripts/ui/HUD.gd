@@ -1611,7 +1611,7 @@ func open_production_panel(building: Building) -> void:
 
 	var item_ids: Array = []
 	if component.is_factory:
-		for item_id in building.definition.get("can_produce", ["metal", "wood"]):
+		for item_id in ProductionManager.get_factory_material_ids(str(component.factory_type)):
 			if ProductionManager.raw_materials.has(item_id):
 				item_ids.append(str(item_id))
 	else:
