@@ -301,7 +301,6 @@ func _test_build_menu_visibility() -> void:
 	_check(level_badge != null and level_badge.get_child_count() == 2, "Old level PNG must be removed; only the procedural circle and number may remain.")
 	_check(level_value != null and level_value.anchor_left == 0.0 and level_value.anchor_top == 0.0 and level_value.anchor_right == 1.0 and level_value.anchor_bottom == 1.0, "Level number must fill the badge bounds for exact geometric centering.")
 	_check(level_value != null and level_value.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER and level_value.vertical_alignment == VERTICAL_ALIGNMENT_CENTER, "Level number must be centered horizontally and vertically inside the circular badge.")
-	if level_value != null and level_badge != null:
 	if level_visual != null:
 		var expected_xp_fraction := float(GameManager.experience) / float(maxi(1, GameManager.get_xp_needed()))
 		_check(absf(float(level_visual.get("progress_fraction")) - expected_xp_fraction) < 0.001, "Circular XP ring must reflect the live Mayor XP progress.")
