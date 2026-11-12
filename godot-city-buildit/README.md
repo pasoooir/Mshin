@@ -30,6 +30,17 @@ Main scene: `res://scenes/main.tscn`.
 
 The detailed gameplay design contract is maintained in the [Persian Production Economy & City Needs Specification](docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC_FA.md), with a [technical English companion](docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC.md). These documents distinguish EA-confirmed behaviour, community-reference item data, and existing Mshin-specific rules.
 
+## Live production economy and City Needs
+
+- ProductionManager is the authoritative catalog for 11 raw materials, 23 craftable items, factory-tier permissions and store recipes. Storage display metadata is derived from this catalog.
+- The currently complete recipe catalogs are Building Supplies (6), Hardware Store (6), Farmer's Market (6) and Furniture Store (5). Fast Food displays its six SCBI product identities, but keeps production disabled until exact input recipes are verified. Traditional Restaurant and Art Supplies show an explicit no-verified-catalog state rather than fabricated products.
+- Every production slot stores start/finish timestamps, consumes craft inputs atomically at order start, and adds its output to City Storage only after the player collects it. A full warehouse blocks collection without deleting the ready batch.
+- Construction finish timestamps are saved and restored. Old save version 1 remains loadable; version 2 stores the construction timestamp.
+- The persistent City Needs HUD action aggregates all completed residential upgrade plans, allocates shared stock across homes without double-counting, and displays stored / producing / ready / deficit counts, suppliers, next-ready ETA, active jobs, storage, currencies, XP and city status.
+- Selecting a home opens its detailed upgrade plan; the city-wide dashboard exposes all home requirements without opening each building.
+
+Detailed implementation status and acceptance evidence: [Production Economy Implementation Tracker](docs/PRODUCTION_ECONOMY_IMPLEMENTATION_TRACKER.md).
+
 ## First city — complete gameplay loop
 
 1. Tap the **road** icon and place a connected road chain. Each tile costs 50 Simoleons; after the first tile, each new tile must connect to the existing road network.
@@ -51,7 +62,7 @@ This is the first visual-quality slice, not the final art target: production-qua
 
 ## HUD and local icon assets
 
-All visible catalog and HUD items use local transparent PNG-32 artwork from `assets/icons/<category>/<id>.png`. `scripts/ui/Icons.gd` is the single path/loading helper and falls back safely to `assets/icons/ui/placeholder.png`. Icons are 128×128 RGBA, alpha-transparent, locally generated, and filtered linearly for mobile UI. The icon validator scans building definitions, service/specialization groups, raw materials, crafted recipes, toolbar controls and status badges; missing files, non-RGBA PNGs, undersized art or opaque canvas corners fail CI. The artwork is original procedural artwork and uses no third-party icon pack or external runtime assets. Regenerate the complete set from the repository root with `node godot-city-buildit/tools/generate_icon_assets.js`; verify catalog coverage, RGBA format, dimensions and alpha transparency with `python godot-city-buildit/tools/validate_icon_assets.py`.
+Existing HUD/build icons use local transparent 128×128 PNG artwork. Newly added production products may use local transparent SVG artwork when no PNG exists; scripts/ui/Icons.gd resolves PNG first, then SVG, then the safe placeholder. All assets are bundled locally and work offline. The validator continues to enforce PNG requirements for required build icons and accepts a local PNG or SVG for catalog-only products. The artwork is original and uses no third-party icon pack or external runtime assets.
 \n## City services
 
 Wind power and water towers each provide 12 units of capacity within a 28 m coverage radius. Each completed home requires 2 power and 2 water. The HUD shows capacity used, and city happiness is calculated from homes receiving both services.
