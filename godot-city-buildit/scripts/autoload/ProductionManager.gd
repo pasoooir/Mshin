@@ -58,46 +58,46 @@ var crafted_items := {
 	"fruit_berries": {"name":"Fruit & Berries", "time":4320.0, "time_sec":4320, "value":420, "requires":{"seeds":2,"tree_sapling":1}, "level":18, "store":"farmers_market", "source":"Community-reference"},
 	"bread_roll": {"name":"Bread Roll", "time":3240.0, "time_sec":3240, "value":350, "requires":{"flour_bag":2,"cream":1}, "level":25, "store":"donut_shop", "source":"Community-reference"},
 	"bbq_grill": {"name":"BBQ Grill", "time":9900.0, "time_sec":9900, "value":760, "requires":{"metal":3,"cooking_utensils":1}, "level":29, "store":"home_appliances", "source":"Community-reference"},
-	"microwave_oven": {"name":"Microwave Oven", "time":7200.0, "time_sec":7200, "value":920, "requires":{"metal":4,"glass":1,"electrical":1}, "level":42, "store":"home_appliances", "source":"Community-reference"},
+	"microwave_oven": {"name":"Microwave Oven", "time":7200.0, "time_sec":7200, "value":480, "requires":{"metal":4,"glass":1,"electrical":1}, "level":42, "store":"home_appliances", "source":"Community-reference"},
 	"pizza": {"name":"Pizza", "time":1440.0, "time_sec":1440, "value":2560, "requires":{"flour_bag":1,"cheese":1,"beef":1}, "level":28, "store":"fast_food", "source":"Community-reference"},
 	"cheese_fries": {"name":"Cheese Fries", "time":1200.0, "time_sec":1200, "value":1050, "requires":{"cheese":1,"vegetables":1}, "level":33, "store":"fast_food", "source":"Community-reference"},
 	"ice_cream_sandwich": {"name":"Ice Cream Sandwich", "time":840.0, "time_sec":840, "value":720, "requires":{"cream":1,"bread_roll":1}, "level":25, "store":"fast_food", "source":"Community-reference"},
 	"burger": {"name":"Burger", "time":2100.0, "time_sec":2100, "value":1350, "requires":{"beef":1,"bread_roll":1,"bbq_grill":1}, "level":31, "store":"fast_food", "source":"Community-reference"},
-	"lemonade_bottle": {"name":"Lemonade Bottle", "time":3600.0, "time_sec":3600, "value":1480, "requires":{"glass":2,"sugar_spices":2,"fruit_berries":1}, "level":37, "store":"fast_food", "source":"Community-reference"}
+	"lemonade_bottle": {"name":"Lemonade Bottle", "time":3600.0, "time_sec":3600, "value":1480, "requires":{"glass":2,"sugar_spices":2,"fruit_berries":1}, "level":37, "store":"fast_food", "source":"Community-reference"},
+	"grass": {"name":"Grass", "time":1800.0, "time_sec":1800, "value":310, "requires":{"seeds":1,"shovel":1}, "level":14, "store":"gardening_supplies", "source":"HubsInfo"},
+	"tree_sapling": {"name":"Tree Saplings", "time":5400.0, "time_sec":5400, "value":420, "requires":{"seeds":2,"shovel":1}, "level":16, "store":"gardening_supplies", "source":"HubsInfo"},
+	"garden_furniture": {"name":"Garden Furniture", "time":8100.0, "time_sec":8100, "value":820, "requires":{"plastic":2,"textiles":2,"planks":2}, "level":21, "store":"gardening_supplies", "source":"HubsInfo"},
+	"fire_pit": {"name":"Fire Pit", "time":14400.0, "time_sec":14400, "value":1740, "requires":{"bricks":2,"cement":2,"shovel":1}, "level":28, "store":"gardening_supplies", "source":"HubsInfo"},
+	"garden_gnome": {"name":"Garden Gnomes", "time":5400.0, "time_sec":5400, "value":1600, "requires":{"cement":2,"glue":1}, "level":34, "store":"gardening_supplies", "source":"HubsInfo"},
+	"donuts": {"name":"Donuts", "time":2700.0, "time_sec":2700, "value":950, "requires":{"sugar_spices":1,"flour_bag":1}, "level":18, "store":"donut_shop", "source":"HubsInfo"},
+	"green_smoothie": {"name":"Green Smoothie", "time":1800.0, "time_sec":1800, "value":1150, "requires":{"vegetables":1,"fruit_berries":1}, "level":20, "store":"donut_shop", "source":"HubsInfo"},
+	"cherry_cheesecake": {"name":"Cherry Cheesecake", "time":5400.0, "time_sec":5400, "value":2240, "requires":{"flour_bag":1,"fruit_berries":1,"cheese":1}, "level":27, "store":"donut_shop", "source":"HubsInfo"},
+	"frozen_yogurt": {"name":"Frozen Yogurt", "time":14400.0, "time_sec":14400, "value":1750, "requires":{"sugar_spices":1,"fruit_berries":1,"cream":1}, "level":28, "store":"donut_shop", "source":"HubsInfo"},
+	"coffee": {"name":"Coffee", "time":3600.0, "time_sec":3600, "value":750, "requires":{"seeds":2,"sugar_spices":1,"cream":1}, "level":33, "store":"donut_shop", "source":"HubsInfo"},
+	"cap": {"name":"Cap", "time":3600.0, "time_sec":3600, "value":600, "requires":{"textiles":2,"measuring_tape":1}, "level":19, "store":"fashion_store", "source":"HubsInfo"},
+	"shoes": {"name":"Shoes", "time":4500.0, "time_sec":4500, "value":980, "requires":{"plastic":1,"textiles":2,"glue":1}, "level":21, "store":"fashion_store", "source":"HubsInfo"},
+	"watch": {"name":"Watch", "time":5400.0, "time_sec":5400, "value":580, "requires":{"plastic":2,"glass":1,"chemicals":1}, "level":22, "store":"fashion_store", "source":"HubsInfo"},
+	"business_suit": {"name":"Business Suits", "time":12600.0, "time_sec":12600, "value":1170, "requires":{"textiles":3,"glue":1,"measuring_tape":1}, "level":32, "store":"fashion_store", "source":"HubsInfo"},
+	"refrigerator": {"name":"Refrigerator", "time":12600.0, "time_sec":12600, "value":1060, "requires":{"plastic":2,"chemicals":2,"electrical":2}, "level":35, "store":"home_appliances", "source":"HubsInfo"},
+	"lighting_system": {"name":"Lighting System", "time":6300.0, "time_sec":6300, "value":890, "requires":{"chemicals":1,"glass":1,"electrical":1}, "level":36, "store":"home_appliances", "source":"HubsInfo"},
+	"tv": {"name":"TV", "time":9000.0, "time_sec":9000, "value":1280, "requires":{"plastic":2,"glass":2,"electrical":2}, "level":38, "store":"home_appliances", "source":"HubsInfo"},
+	"popcorn": {"name":"Popcorn", "time":1800.0, "time_sec":1800, "value":1250, "requires":{"corn":2,"microwave_oven":1}, "level":43, "store":"fast_food", "source":"HubsInfo"}
 }
 
 # Products with a verified store identity but unresolved input recipes remain
 # visible and disabled; never invent ingredient quantities or production times.
 var store_catalog := {
 	"fast_food": [
-		{"id":"popcorn","name":"Popcorn","level":43,"source":"Community-reference; unavailable at zero-star store level"}
 	],
 	"donut_shop": [
-		{"id":"donuts","name":"Donuts","level":18,"source":"Community-reference; recipe needs verification"},
-		{"id":"green_smoothie","name":"Green Smoothie","level":18,"source":"Community-reference; recipe needs verification"},
-		{"id":"cherry_cheesecake","name":"Cherry Cheesecake","level":26,"source":"Community-reference; recipe needs verification"},
-		{"id":"frozen_yogurt","name":"Frozen Yogurt","level":28,"source":"Community-reference; recipe needs verification"},
-		{"id":"coffee","name":"Coffee","level":30,"source":"Community-reference; recipe needs verification"}
 	],
 	"home_appliances": [
-		{"id":"refrigerator","name":"Refrigerator","level":35,"source":"Community-reference; recipe needs verification"},
-		{"id":"lighting_system","name":"Lighting System","level":36,"source":"Community-reference; recipe needs verification"},
-		{"id":"tv","name":"TV","level":38,"source":"Community-reference; recipe needs verification"}
 	],
 	"gardening_supplies": [
-		{"id":"grass","name":"Grass","level":14,"source":"Community-reference; recipe needs verification"},
-		{"id":"tree_sapling","name":"Tree Sapling","level":14,"source":"Community-reference; recipe needs verification"},
-		{"id":"garden_furniture","name":"Garden Furniture","level":19,"source":"Community-reference; recipe needs verification"},
-		{"id":"lawn_mower","name":"Lawn Mower","level":22,"source":"Community-reference; recipe needs verification"},
-		{"id":"fire_pit","name":"Fire Pit","level":24,"source":"Community-reference; recipe needs verification"},
-		{"id":"garden_gnome","name":"Garden Gnome","level":26,"source":"Community-reference; recipe needs verification"}
+		{"id":"lawn_mower","name":"Lawn Mower","level":30,"source":"Community-reference; recipe needs verification"},
 	],
 	"fashion_store": [
-		{"id":"cap","name":"Cap","level":19,"source":"Community-reference; recipe needs verification"},
-		{"id":"shoes","name":"Shoes","level":20,"source":"Community-reference; recipe needs verification"},
-		{"id":"watch","name":"Watch","level":22,"source":"Community-reference; recipe needs verification"},
-		{"id":"business_suit","name":"Business Suit","level":27,"source":"Community-reference; recipe needs verification"},
-		{"id":"backpack","name":"Backpack","level":29,"source":"Community-reference; recipe needs verification"}
+		{"id":"backpack","name":"Backpack","level":34,"source":"Community-reference; recipe needs verification"}
 	],
 	"sports_shop": [
 		{"id":"tennis_racket","name":"Tennis Racket","level":22,"source":"Community-reference; recipe needs verification"},
