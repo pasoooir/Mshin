@@ -2321,6 +2321,12 @@ func open_residential_panel(building: Building) -> void:
 	_city_panel_heading(layout, "RESIDENTIAL UPGRADE PLAN", _close_residential_panel)
 	var stage := int(building.upgrade_stage)
 	var requirements: Array = ProductionManager.get_upgrade_requirements(stage)
+	var city_snapshot := CityDemandManager.get_city_snapshot()
+	var home_data: Dictionary = {}
+	for candidate in city_snapshot.get("homes", []):
+		if str(candidate.get("building_id", "")) == building.building_id:
+			home_data = candidate
+			break
 	var title := Label.new()
 	title.text = "%s  ·  LEVEL %d → %d" % [str(building.definition.get("name", "Home")), stage, mini(stage + 1, 6)]
 	title.add_theme_font_size_override("font_size", int(15 * _ui_scale))
@@ -2336,19 +2342,39 @@ func open_residential_panel(building: Building) -> void:
 	for requirement in requirements:
 		var item_id := str(requirement.get("item", ""))
 		var amount := int(requirement.get("amount", 0))
-		var owned := StorageManager.get_count(item_id)
+		var allocated_need: Dictionary = {}
+		for home_need in home_data.get("needs", []):
+			if str(home_need.get("item_id", "")) == item_id:
+				allocated_need = home_need
+				break
+		var owned := int(allocated_need.get("stored", StorageManager.get_count(item_id)))
+		var ready_count := int(allocated_need.get("ready_to_collect", 0))
+		var producing_count := int(allocated_need.get("in_production", 0))
+		var shortage := int(allocated_need.get("shortage", maxi(0, amount - owned)))
 		if owned < amount:
 			all_available = false
+		var need_status := "READY"
+		var need_color := Color("#34734D")
+		if owned < amount:
+			if ready_count > 0:
+				need_status = "READY TO COLLECT %d" % ready_count
+				need_color = Color("#9A6B1D")
+			elif producing_count > 0:
+				need_status = "IN PRODUCTION %d" % producing_count
+				need_color = Color("#315C8A")
+			else:
+				need_status = "SHORT %d" % shortage
+				need_color = Color("#A13F35")
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		layout.add_child(row)
 		var icon_type := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
 		row.add_child(Icons.make_item_icon(icon_type, item_id, Vector2(46, 46) * _ui_scale))
 		var item_label := Label.new()
-		item_label.text = "%s   ·   %d / %d   ·   SHORT %d" % [CityDemandManager.get_item_name(item_id), owned, amount, maxi(0, amount - owned)]
+		item_label.text = "%s   ·   %d / %d   ·   %s" % [CityDemandManager.get_item_name(item_id), owned, amount, need_status]
 		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		item_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-		item_label.add_theme_color_override("font_color", Color("#34734D") if owned >= amount else Color("#A13F35"))
+		item_label.add_theme_color_override("font_color", need_color)
 		row.add_child(item_label)
 		var supplier_rows: Array = CityDemandManager.get_suppliers_for_item(item_id)
 		var supplier_line := Label.new()
