@@ -64,7 +64,7 @@ var crafted_items := {
 	"ice_cream_sandwich": {"name":"Ice Cream Sandwich", "time":840.0, "time_sec":840, "value":2560, "requires":{"cream":1,"bread_roll":1}, "level":25, "store":"fast_food", "source":"Fandom"},
 	"burger": {"name":"Burger", "time":2100.0, "time_sec":2100, "value":3620, "requires":{"beef":1,"bread_roll":1,"bbq_grill":1}, "level":31, "store":"fast_food", "source":"Fandom"},
 	"lemonade_bottle": {"name":"Lemonade Bottle", "time":3600.0, "time_sec":3600, "value":1690, "requires":{"glass":2,"sugar_spices":2,"fruit_berries":1}, "level":37, "store":"fast_food", "source":"Fandom"},
-	"popcorn": {"name":"Popcorn", "time":1800.0, "time_sec":1800, "value":1250, "requires":{"corn":2,"microwave_oven":1}, "level":43, "store":"fast_food", "source":"Fandom"},
+	"popcorn": {"name":"Popcorn", "time":1800.0, "time_sec":1800, "value":1250, "requires":{"corn":2,"microwave_oven":1}, "level":43, "required_stars":1, "store":"fast_food", "source":"Fandom"},
 	"grass": {"name":"Grass", "time":1800.0, "time_sec":1800, "value":310, "requires":{"seeds":1,"shovel":1}, "level":14, "store":"gardening_supplies", "source":"HubsInfo"},
 	"tree_sapling": {"name":"Tree Saplings", "time":5400.0, "time_sec":5400, "value":420, "requires":{"seeds":2,"shovel":1}, "level":16, "store":"gardening_supplies", "source":"HubsInfo"},
 	"lawn_mower": {"name":"Lawn Mower", "time":7200.0, "time_sec":7200, "value":840, "requires":{"metal":3,"electrical":1,"paint":1}, "level":30, "store":"gardening_supplies", "source":"Fandom"},
@@ -75,7 +75,7 @@ var crafted_items := {
 	"green_smoothie": {"name":"Green Smoothie", "time":1800.0, "time_sec":1800, "value":1150, "requires":{"vegetables":1,"fruit_berries":1}, "level":20, "store":"donut_shop", "source":"HubsInfo"},
 	"cherry_cheesecake": {"name":"Cherry Cheesecake", "time":5400.0, "time_sec":5400, "value":2240, "requires":{"flour_bag":1,"fruit_berries":1,"cheese":1}, "level":27, "store":"donut_shop", "source":"HubsInfo"},
 	"frozen_yogurt": {"name":"Frozen Yogurt", "time":14400.0, "time_sec":14400, "value":1750, "requires":{"sugar_spices":1,"fruit_berries":1,"cream":1}, "level":28, "store":"donut_shop", "source":"HubsInfo"},
-	"coffee": {"name":"Coffee", "time":3600.0, "time_sec":3600, "value":750, "requires":{"seeds":2,"sugar_spices":1,"cream":1}, "level":33, "store":"donut_shop", "source":"HubsInfo"},
+	"coffee": {"name":"Coffee", "time":3600.0, "time_sec":3600, "value":750, "requires":{"seeds":2,"sugar_spices":1,"cream":1}, "level":33, "required_stars":1, "store":"donut_shop", "source":"HubsInfo;Fandom"},
 	"cap": {"name":"Cap", "time":3600.0, "time_sec":3600, "value":600, "requires":{"textiles":2,"measuring_tape":1}, "level":19, "store":"fashion_store", "source":"HubsInfo"},
 	"shoes": {"name":"Shoes", "time":4500.0, "time_sec":4500, "value":980, "requires":{"plastic":1,"textiles":2,"glue":1}, "level":21, "store":"fashion_store", "source":"HubsInfo"},
 	"watch": {"name":"Watch", "time":5400.0, "time_sec":5400, "value":580, "requires":{"plastic":2,"glass":1,"chemicals":1}, "level":22, "store":"fashion_store", "source":"HubsInfo"},
@@ -399,8 +399,9 @@ func get_production_time(item_id: String, store_star_level: int = 0) -> float:
 	var reduction: float = float([0.0, 0.10, 0.15, 0.20][clampi(store_star_level, 0, 3)])
 	return maxf(1.0, ceil(base_seconds * (1.0 - reduction)))
 
-# Upgrade requirements are exposed only where the reference dataset supplies
-# both the level gate and Simoleon cost. Other stores retain base production time.
+# Each tier is enabled only when both its Mayor Level gate and Simoleon
+# price are backed by a store-specific reference. Donut Shop's third-star
+# price is intentionally omitted because references conflict (45k vs 49k).
 func get_store_star_offer(store_id: String, current_star_level: int) -> Dictionary:
 	var upgrade_data: Dictionary = {
 		"building_supplies": [
@@ -412,6 +413,40 @@ func get_store_star_offer(store_id: String, current_star_level: int) -> Dictiona
 			{"level": 16, "cost": 15000, "reduction": 10},
 			{"level": 28, "cost": 27000, "reduction": 15},
 			{"level": 36, "cost": 35000, "reduction": 20}
+		],
+		"farmers_market": [
+			{"level": 20, "cost": 19000, "reduction": 10},
+			{"level": 32, "cost": 31000, "reduction": 15},
+			{"level": 40, "cost": 39000, "reduction": 20}
+		],
+		"furniture_store": [
+			{"level": 22, "cost": 21000, "reduction": 10},
+			{"level": 34, "cost": 33000, "reduction": 15},
+			{"level": 42, "cost": 41000, "reduction": 20}
+		],
+		"gardening_supplies": [
+			{"level": 27, "cost": 25000, "reduction": 10},
+			{"level": 38, "cost": 37000, "reduction": 15},
+			{"level": 46, "cost": 45000, "reduction": 20}
+		],
+		"fashion_store": [
+			{"level": 31, "cost": 30000, "reduction": 10},
+			{"level": 43, "cost": 42000, "reduction": 15},
+			{"level": 51, "cost": 50000, "reduction": 20}
+		],
+		"home_appliances": [
+			{"level": 41, "cost": 40000, "reduction": 10},
+			{"level": 53, "cost": 52000, "reduction": 15},
+			{"level": 61, "cost": 60000, "reduction": 20}
+		],
+		"fast_food": [
+			{"level": 37, "cost": 36000, "reduction": 10},
+			{"level": 49, "cost": 48000, "reduction": 15},
+			{"level": 57, "cost": 56000, "reduction": 20}
+		],
+		"donut_shop": [
+			{"level": 30, "cost": 29000, "reduction": 10},
+			{"level": 42, "cost": 41000, "reduction": 15}
 		]
 	}
 	if not upgrade_data.has(store_id):
@@ -425,7 +460,7 @@ func get_store_star_offer(store_id: String, current_star_level: int) -> Dictiona
 	return offer
 
 func is_store_star_upgrade_supported(store_id: String) -> bool:
-	return store_id == "building_supplies" or store_id == "hardware_store"
+	return get_store_star_offer(store_id, 0).size() > 0
 
 func get_upgrade_requirements(from_stage: int) -> Array:
 	return upgrade_requirements.get(from_stage, [])
