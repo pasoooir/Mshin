@@ -29,6 +29,7 @@ var current_population: int = 0
 var upgrade_ready: bool = false
 var upgrade_in_progress: bool = false
 var upgrade_finish_unix: int = 0
+var residential_plan_selected: bool = false
 var _upgrade_tween: Tween
 var demolition_highlight_active: bool = false
 var _demolition_highlight_root: Node3D
@@ -1307,9 +1308,14 @@ func _check_upgrade_ready() -> void:
 		if hard_hat: hard_hat.visible = false
 		return
 	upgrade_ready = ProductionManager.can_afford_upgrade(upgrade_stage)
-	# Keep the plan indicator visible even before all materials are collected.
+	# Show the blue plan marker only while this home's upgrade plan is selected.
 	if hard_hat:
-		hard_hat.visible = status == "completed" and upgrade_stage < max_stage
+		hard_hat.visible = residential_plan_selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
+
+func set_residential_plan_selected(selected: bool) -> void:
+	residential_plan_selected = selected
+	if hard_hat:
+		hard_hat.visible = selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
 
 func try_upgrade() -> bool:
 	if definition.get("category") != "residential" or status != "completed" or upgrade_stage >= max_stage or upgrade_in_progress:
