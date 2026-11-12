@@ -54,7 +54,9 @@ var crafted_items := {
 	"cream": {"name":"Cream", "time":4500.0, "time_sec":4500, "value":440, "requires":{"animal_feed":1}, "level":23, "store":"farmers_market", "source":"Community-reference"},
 	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
 	"cheese": {"name":"Cheese", "time":6300.0, "time_sec":6300, "value":660, "requires":{"animal_feed":2}, "level":26, "store":"farmers_market", "source":"Community-reference"},
-	"beef": {"name":"Beef", "time":9000.0, "time_sec":9000, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"}
+	"beef": {"name":"Beef", "time":7200.0, "time_sec":7200, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"},
+	"pizza": {"name":"Pizza", "time":1440.0, "time_sec":1440, "value":2560, "requires":{"flour_bag":1,"cheese":1,"beef":1}, "level":28, "store":"fast_food", "source":"Community-reference"},
+	"cheese_fries": {"name":"Cheese Fries", "time":1200.0, "time_sec":1200, "value":1050, "requires":{"cheese":1,"vegetables":1}, "level":33, "store":"fast_food", "source":"Community-reference"}
 }
 
 # Products with a verified store identity but unresolved input recipes remain
@@ -62,9 +64,7 @@ var crafted_items := {
 var store_catalog := {
 	"fast_food": [
 		{"id":"ice_cream_sandwich","name":"Ice Cream Sandwich","level":25,"source":"Community-reference; recipe needs verification"},
-		{"id":"pizza","name":"Pizza","level":25,"source":"Community-reference; recipe needs verification"},
 		{"id":"burger","name":"Burger","level":25,"source":"Community-reference; recipe needs verification"},
-		{"id":"cheese_fries","name":"Cheese Fries","level":25,"source":"Community-reference; recipe needs verification"},
 		{"id":"lemonade_bottle","name":"Lemonade Bottle","level":25,"source":"Community-reference; recipe needs verification"},
 		{"id":"popcorn","name":"Popcorn","level":25,"source":"Community-reference; recipe needs verification"}
 	]
