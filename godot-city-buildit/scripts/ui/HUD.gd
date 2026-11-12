@@ -602,7 +602,7 @@ func _build_toolbars() -> void:
 	bottom_actions.add_theme_constant_override("separation", 10)
 	bottom_actions.z_index = 62
 	add_child(bottom_actions)
-	for item in [["storage","Storage"],["needs","City Needs"],["trade","Trade"],["save","Save"]]:
+	for item in [["storage","Storage"],["info","City Needs"],["trade","Trade"],["save","Save"]]:
 		var button := _make_icon_button(str(item[0]), str(item[1]), Vector2(92, 82) * _ui_scale)
 		button.name = str(item[0]).capitalize() + "Action"
 		bottom_actions.add_child(button)
@@ -2088,6 +2088,12 @@ func open_city_needs_panel() -> void:
 	items_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	items_title.add_theme_color_override("font_color", Color("#17364A"))
 	content.add_child(items_title)
+	if snapshot.get("items", []).is_empty():
+		var empty_needs := Label.new()
+		empty_needs.text = "No active residential upgrade requirements. Build and complete a home to create the first city demand plan."
+		empty_needs.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty_needs.add_theme_color_override("font_color", Color("#617A88"))
+		content.add_child(empty_needs)
 	for item in snapshot.get("items", []):
 		var row := PanelContainer.new()
 		row.name = "CityNeed_" + str(item.get("item_id", "unknown"))
@@ -2124,11 +2130,11 @@ func open_city_needs_panel() -> void:
 		text_stack.add_child(supplier_text)
 		var action := Button.new()
 		action.custom_minimum_size = Vector2(112, 38) * _ui_scale
-		action.text = "PRODUCE" if int(item.get("deficit", 0)) > 0 else ("COLLECT" if int(item.get("ready", 0)) > 0 else "COVERED")
+		action.text = ("BUILD" if str(supplier_list[0].get("status", "")) == "not_built" else "PRODUCE") if int(item.get("deficit", 0)) > 0 else ("COLLECT" if int(item.get("ready", 0)) > 0 else "COVERED")
 		action.disabled = supplier_list.is_empty() or (int(item.get("deficit", 0)) <= 0 and int(item.get("ready", 0)) <= 0)
 		action.add_theme_stylebox_override("normal", _toolbar_style(Color("#E9BF45"), Color("#F8D978")))
 		if not supplier_list.is_empty():
-			action.pressed.connect(_open_city_need_supplier.bind(str(supplier_list[0].get("building_id", ""))))
+			action.pressed.connect(_open_city_need_supplier.bind(supplier_list[0]))
 		row_layout.add_child(action)
 	var homes_title := Label.new()
 	homes_title.text = "RESIDENTIAL UPGRADE PLANS"
@@ -2193,11 +2199,23 @@ func _city_needs_duration(seconds: int) -> String:
 		return "%dm %02ds" % [safe / 60, safe % 60]
 	return "%ds" % safe
 
-func _open_city_need_supplier(building_id: String) -> void:
-	var building = BuildManager.buildings.get(building_id)
+func _open_city_need_supplier(supplier: Dictionary) -> void:
+	var building_id := str(supplier.get("building_id", ""))
+	var building = BuildManager.buildings.get(building_id) if not building_id.is_empty() else null
 	if is_instance_valid(building):
 		_close_city_needs_panel()
 		open_production_panel(building)
+		return
+	var type_id := str(supplier.get("building_type", ""))
+	var definition: Dictionary = BuildManager.building_types.get(type_id, {})
+	if definition.is_empty():
+		status_label.text = "No verified supplier building is registered for this item."
+		return
+	_close_city_needs_panel()
+	var category := str(definition.get("category", "commercial"))
+	_on_category_pressed(category)
+	_on_submenu_option(category, type_id)
+	status_label.text = "Build %s to supply this city need." % str(definition.get("name", type_id))
 
 func _upgrade_home_from_dashboard(building_id: String) -> void:
 	var building = BuildManager.buildings.get(building_id)
