@@ -1615,12 +1615,12 @@ func open_production_panel(building: Building) -> void:
 			if ProductionManager.raw_materials.has(item_id):
 				item_ids.append(str(item_id))
 	else:
-		for item_id in ProductionManager.get_store_recipe_ids(str(component.shop_id)):
+		for item_id in ProductionManager.get_store_catalog_ids(str(component.shop_id)):
 			if not ProductionManager.get_recipe(str(item_id)).is_empty():
 				item_ids.append(str(item_id))
 
 	for item_id in item_ids:
-		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
+		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
 		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 		var recipe: Dictionary = {} if component.is_factory else ProductionManager.get_recipe(item_id)
 		var inputs: Dictionary = recipe.get("inputs", {})
@@ -1818,7 +1818,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 
 	var component = building.production_component
 	var is_factory: bool = bool(component.is_factory)
-	var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
+	var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
 	var recipe: Dictionary = {} if is_factory else ProductionManager.get_recipe(item_id)
 	var inputs: Dictionary = recipe.get("inputs", {})
 	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
