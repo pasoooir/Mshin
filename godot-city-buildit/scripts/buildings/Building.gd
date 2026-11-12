@@ -52,17 +52,13 @@ var _fire_smoke: CPUParticles3D = null
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
-		# Label3D creates renderer-owned font meshes. Remove those visual-only nodes
-		# in dummy-renderer tests and clear their references before setup runs.
-		for visual_label in [production_icon, name_label, stage_label]:
-			if is_instance_valid(visual_label):
-				visual_label.free()
-		production_icon = null
-		name_label = null
-		stage_label = null
-		if is_instance_valid(hard_hat):
-			hard_hat.free()
-		hard_hat = null
+		# Keep the scene contract intact in dummy-renderer tests. Hidden visual
+		# nodes are safe; freeing Label3D nodes here passes a null font mesh to
+		# Godot's dummy renderer during resource teardown.
+		for visual_node in [production_icon, name_label, stage_label, hard_hat]:
+			if is_instance_valid(visual_node):
+				visual_node.visible = false
+		return
 	if hard_hat:
 		hard_hat.visible = false
 
