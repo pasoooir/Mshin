@@ -1325,7 +1325,6 @@ func collect_production() -> bool:
 	production_finish_unix = 0
 	collected.emit(collected_item, 1)
 	ProductionManager.item_produced.emit(collected_item, 1)
-	EconomyManager.add_simoleons(3)
 	GameManager.add_experience(2)
 
 	# Both factories and commercial shops become idle after collection.
