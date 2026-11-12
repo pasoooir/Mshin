@@ -2066,6 +2066,8 @@ func open_city_needs_panel() -> void:
 		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)),
 		int(summary.get("waiting_homes", 0)), int(summary.get("ready_orders", 0))
 	]
+	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary_label.custom_minimum_size.y = 28 * _ui_scale
 	summary_label.add_theme_font_size_override("font_size", int(11 * _ui_scale))
 	summary_label.add_theme_color_override("font_color", Color("#31566B"))
 	layout.add_child(summary_label)
@@ -2326,6 +2328,12 @@ func open_residential_panel(building: Building) -> void:
 		item_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 		item_label.add_theme_color_override("font_color", Color("#34734D") if owned >= amount else Color("#A13F35"))
 		row.add_child(item_label)
+		var supplier_rows: Array = CityDemandManager.get_suppliers_for_item(item_id)
+		var supplier_line := Label.new()
+		supplier_line.text = "SUPPLIER  " + (str(supplier_rows[0].get("name", "Unknown")) if not supplier_rows.is_empty() else "No registered supplier")
+		supplier_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		supplier_line.add_theme_color_override("font_color", Color("#607989"))
+		layout.add_child(supplier_line)
 	var upgrade := Button.new()
 	upgrade.name = "ResidentialUpgradeButton"
 	upgrade.text = "UPGRADE HOME" if stage < 6 else "MAXIMUM LEVEL"
