@@ -23,3 +23,25 @@
 - The current six-stage material table, population tiers, XP formula, and Simoleon reward formula are **Mshin fallback values**, not verified SCBI data. The UI now labels the material plan and reward values as unverified. Only the starter Nails + Metal pattern follows the user-provided example; exact quantities, later-stage plans, population progression, and reward ranges still need authoritative in-game captures or a complete reference dataset.
 - The 30-minute refresh-plan and hard-hat-transfer actions are not implemented yet. The plan generator/verified alternate-plan pool must exist before refresh can change material requirements without inventing data.
 - The blue marker is a deliberate Mshin UI choice; EA's beginner guide describes a yellow ready-to-upgrade hard hat.
+
+## Follow-up UI and production pass — 2026-11-12
+
+### Production UI
+- Commercial queue expansion now uses the published SimCash slot price schedule: Building Supplies / Hardware use the lower schedule; other standard commercial stores use the general schedule. No Vu Generator pricing is implemented.
+- The queue shows explicit Producing / In Queue / Collect / Storage Full states. A full warehouse disables Collect but the ready item remains in its production slot.
+- Store star timing and star purchase UI are enabled only for Building Supplies and Hardware, where the referenced pages provide the level gates and Simoleon costs. Their 10%, 15%, and 20% reductions are applied to new production orders.
+- Paint now requires one Building Supplies star, as specified by its item reference.
+- Star level is stored in the building's save data. Queue capacity remains persisted through the saved slot array.
+- Other stores continue using base production times until their own star progression requirements and costs are verified.
+
+### Residential UI
+- The plan panel now has an explicit readiness state: missing materials, all materials ready, maximum level, or temporary construction in progress.
+- Shortage rows continue to show owned / required quantities and the missing amount.
+- The in-progress label explicitly identifies the four-second construction phase as temporary Mshin behavior; it is not represented as an SCBI duration.
+
+### Sources for the production pass
+- Commercial building slot prices, default 2 slots, max 11 slots, and general star reductions: https://simcity-buildit.fandom.com/wiki/Commercial_Buildings
+- Building Supplies star level gates, Simoleon costs, product unlock and per-star production times: https://simcity-buildit.fandom.com/wiki/Building_Supplies_Store
+- Hardware Store star level gates, costs, and production-time table: https://simcity-buildit.fandom.com/wiki/Hardware_Store
+- Paint one-star requirement: https://simcity-buildit.fandom.com/wiki/Paint
+- Commercial store catalog / store-wide improvement summaries: https://scbuildit.hubsinfo.net/database/?ISubCateg=Store
