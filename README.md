@@ -29,7 +29,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 ### سند مرجع اقتصاد تولید، فروشگاه‌ها و نیازهای شهر
 
-- **[Production Economy & City Needs Specification](godot-city-buildit/docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC.md)** — سند جامع کارخانه‌ها، فهرست فروشگاه‌ها و خانواده محصولات، زنجیره‌های تولید، نیازهای ارتقای خانه، داشبورد سراسری کمبودها، اصول UI مشابه SimCity BuildIt، معماری داده، شکاف‌های فعلی Mshin و معیارهای پذیرش. این سند مرجع طراحی است؛ مقادیر جامعه‌محور باید پیش از تبدیل به قانون بالانس بازی دوباره اعتبارسنجی شوند.
+- **[سند فارسی اقتصاد تولید و نیازهای شهر](godot-city-buildit/docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC_FA.md)** — مرجع جامع کارخانه‌ها، فروشگاه‌ها، زنجیره‌های تولید، نیازهای ارتقای خانه، داشبورد سراسری کمبودها، UI، معماری داده، شکاف‌های فعلی و معیارهای پذیرش. [نسخه فنی انگلیسی](godot-city-buildit/docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC.md) نیز برای جزئیات مهندسی در دسترس است. مقادیر جامعه‌محور پیش از تبدیل به قانون بالانس باید دوباره اعتبارسنجی شوند.
 
 ### منابع مرجع اصلی (حتماً مطالعه شود)
 - [EA Official Beginner Guide](https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/)
