@@ -1251,6 +1251,17 @@ func _run_gameplay_test() -> void:
 	if buy_queue_slot:
 		buy_queue_slot.emit_signal("pressed")
 	_check(shop_component.get_slot_count() == 3 and EconomyManager.sim_cash == 96, "Buying the next queue slot from the production UI must increase capacity and spend the sourced SimCash amount.")
+
+	var standard_store_slot_probe = ProductionComponentScript.new()
+	standard_store_slot_probe.shop_id = "farmers_market"
+	add_child(standard_store_slot_probe)
+	_check(standard_store_slot_probe.get_next_store_queue_slot_cost() == 8, "Standard SCBI commercial stores must use the published 8 SimCash third-slot price.")
+	var custom_store_slot_probe = ProductionComponentScript.new()
+	custom_store_slot_probe.shop_id = "art_supplies"
+	add_child(custom_store_slot_probe)
+	_check(custom_store_slot_probe.get_next_store_queue_slot_cost() == 0, "Mshin-only custom stores must not display an invented queue-slot price.")
+	standard_store_slot_probe.queue_free()
+	custom_store_slot_probe.queue_free()
 	shop_component.store_star_level = 0
 	GameManager.level = previous_level_for_store_star
 	EconomyManager.simoleons = previous_simoleons_for_store_star
