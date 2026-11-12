@@ -604,7 +604,7 @@ func _build_toolbars() -> void:
 	add_child(bottom_actions)
 	for item in [["storage","Storage"],["city_needs","City Needs"],["trade","Trade"],["save","Save"]]:
 		var button := _make_icon_button(str(item[0]), str(item[1]), Vector2(92, 82) * _ui_scale)
-		button.name = str(item[0]).capitalize() + "Action"
+		button.name = "CityNeedsAction" if str(item[0]) == "city_needs" else str(item[0]).capitalize() + "Action"
 		bottom_actions.add_child(button)
 		match str(item[0]):
 			"storage": button.pressed.connect(_on_storage_pressed)
