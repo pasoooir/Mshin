@@ -34,27 +34,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 mesh = SubResource("Cyl_hat")
 surface_material_override/0 = SubResource("Mat_hat")
 
-[node name="ProductionIcon" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 0)
-visible = false
-pixel_size = 0.045
-text = "⚙️"
-font_size = 52
-outline_size = 10
 
-[node name="NameLabel" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
-visible = false
-pixel_size = 0.03
-text = ""
-font_size = 28
-outline_size = 6
 
-[node name="StageLabel" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2, 0)
-visible = false
-pixel_size = 0.035
-text = "Lv1"
-font_size = 36
-outline_size = 8
-modulate = Color(1, 0.95, 0.5, 1)
+
+
+
