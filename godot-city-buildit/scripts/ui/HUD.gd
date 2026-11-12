@@ -1850,6 +1850,15 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	production_time.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	production_time.add_theme_color_override("font_color", Color("#315C70"))
 	text_stack.add_child(production_time)
+	var provenance := str(data.get("source", ""))
+	if provenance.to_lower().contains("conflict") or provenance.to_lower().contains("verify"):
+		var provenance_warning := Label.new()
+		provenance_warning.name = "RecipeDataWarning"
+		provenance_warning.text = "REFERENCE DATA DISAGREES · VERIFY RECIPE BEFORE FINAL BALANCE"
+		provenance_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		provenance_warning.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		provenance_warning.add_theme_color_override("font_color", Color("#A13F35"))
+		text_stack.add_child(provenance_warning)
 	if is_factory:
 		var storage_label := Label.new()
 		storage_label.text = "IN CITY STORAGE  %d" % StorageManager.get_count(item_id)
