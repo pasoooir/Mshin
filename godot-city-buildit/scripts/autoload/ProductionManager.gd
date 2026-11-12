@@ -83,6 +83,19 @@ var crafted_items := {
 	"refrigerator": {"name":"Refrigerator", "time":12600.0, "time_sec":12600, "value":1060, "requires":{"plastic":2,"chemicals":2,"electrical":2}, "level":35, "store":"home_appliances", "source":"HubsInfo"},
 	"lighting_system": {"name":"Lighting System", "time":6300.0, "time_sec":6300, "value":890, "requires":{"chemicals":1,"glass":1,"electrical":1}, "level":36, "store":"home_appliances", "source":"HubsInfo"},
 	"tv": {"name":"TV", "time":9000.0, "time_sec":9000, "value":1280, "requires":{"plastic":2,"glass":2,"electrical":2}, "level":38, "store":"home_appliances", "source":"HubsInfo"},
+	"ping_pong_table": {"name":"Ping-Pong Table", "time":5400.0, "time_sec":5400, "value":1245, "requires":{"table":1,"minerals":4,"wood":4}, "level":55, "required_stars":1, "store":"sports_shop", "source":"Fandom;Japanese"},
+	"block_letters": {"name":"Letter Blocks", "time":3600.0, "time_sec":3600, "value":360, "requires":{"wood":4,"measuring_tape":1}, "level":40, "store":"toy_store", "source":"Fandom;Japanese"},
+	"game_console": {"name":"Game Console", "time":4500.0, "time_sec":4500, "value":2240, "requires":{"lighting_system":1,"glass":3,"electrical":3}, "level":58, "required_stars":1, "store":"toy_store", "source":"Fandom;Japanese"},
+	"forged_iron": {"name":"Wrought Iron", "time":1800.0, "time_sec":1800, "value":560, "requires":{"metal":4,"hammer":2,"chemicals":2}, "level":45, "store":"restoration_office", "source":"Fandom;Japanese"},
+	"carved_wood": {"name":"Carved Wood", "time":3600.0, "time_sec":3600, "value":2800, "requires":{"planks":5,"measuring_tape":2,"drill":2}, "level":54, "store":"restoration_office", "source":"Fandom;Japanese"},
+	"wool_shirt": {"name":"Wool Shirt", "time":4500.0, "time_sec":4500, "value":1700, "requires":{"textiles":4,"measuring_tape":2,"paint":2}, "level":50, "store":"farmers_store", "source":"Fandom;Japanese"},
+	"picnic_basket": {"name":"Picnic Basket", "time":3600.0, "time_sec":3600, "value":6000, "requires":{"fruit_berries":4,"textiles":4,"glue":2}, "level":59, "store":"farmers_store", "source":"Fandom;Japanese"},
+	"apple_jam": {"name":"Apple Jam", "time":3600.0, "time_sec":3600, "value":3700, "requires":{"seeds":4,"glass":2,"flour_bag":4}, "level":73, "required_stars":1, "store":"farmers_store", "source":"Fandom;Japanese"},
+	"tiramisu": {"name":"Tiramisu", "time":2700.0, "time_sec":2700, "value":1250, "requires":{"sugar_spices":1,"vegetables":1,"cream":1}, "level":55, "store":"dessert_shop", "source":"Fandom;Japanese"},
+	"churros": {"name":"Churros", "time":2100.0, "time_sec":2100, "value":1750, "requires":{"cooking_utensils":1,"flour_bag":2}, "level":63, "store":"dessert_shop", "source":"Fandom;Japanese"},
+	"profiterole": {"name":"Profiterole", "time":2100.0, "time_sec":2100, "value":6550, "requires":{"donuts":2,"bread_roll":2,"cream":1}, "level":71, "store":"dessert_shop", "source":"Fandom;Japanese"},
+	"mochi": {"name":"Mochi", "time":2700.0, "time_sec":2700, "value":3950, "requires":{"frozen_yogurt":1,"green_smoothie":1}, "level":79, "store":"dessert_shop", "source":"Fandom;Japanese"},
+	"pavlova": {"name":"Pavlova", "time":5400.0, "time_sec":5400, "value":3470, "requires":{"cooking_utensils":1,"fruit_berries":2,"cream":2}, "level":87, "required_stars":1, "store":"dessert_shop", "source":"Fandom;Japanese"}
 }
 
 # Products with a verified store identity but unresolved input recipes remain
