@@ -28,8 +28,8 @@ var building_types: Dictionary = {
 	# New commercial menu choices. shop_chain keeps the existing Nails recipe path.
 	"shop_chain": {"name":"Chain Store", "category":"commercial", "subtype":"chain", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":1},
 	"restaurant_traditional": {"name":"Traditional Restaurant", "category":"commercial", "subtype":"restaurant", "cost":400, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.75,0.45,0.30), "level":4, "production_slots":1, "shop_id":"restaurant_traditional"},
-	"fast_food": {"name":"Fast Food Restaurant", "category":"commercial", "subtype":"fast_food", "cost":25000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.95,0.55,0.20), "level":25, "recipes":[]},
-	"art_supplies": {"name":"Art Supplies Store", "category":"commercial", "subtype":"art", "cost":300, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.40,0.75), "level":5, "recipes":[]},
+	"fast_food": {"name":"Fast Food Restaurant", "category":"commercial", "subtype":"fast_food", "cost":25000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.95,0.55,0.20), "level":25, "production_slots":1},
+	"art_supplies": {"name":"Art Supplies Store", "category":"commercial", "subtype":"art", "cost":300, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.40,0.75), "level":5, "production_slots":1, "shop_id":"art_supplies"},
 	"hardware_store": {"name":"Hardware Store", "category":"commercial", "cost":2500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.3,0.55,0.85), "level":4, "production_slots":1},
 	"farmers_market": {"name":"Farmer's Market", "category":"commercial", "cost":5000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.4,0.75,0.4), "level":8, "production_slots":1},
 	"furniture_store": {"name":"Furniture Store", "category":"commercial", "cost":8000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.6,0.45,0.3), "level":10, "production_slots":1},
