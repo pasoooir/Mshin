@@ -1619,6 +1619,14 @@ func open_production_panel(building: Building) -> void:
 			if not ProductionManager.get_recipe(str(item_id)).is_empty():
 				item_ids.append(str(item_id))
 
+	if item_ids.is_empty():
+		var empty_catalog := Label.new()
+		empty_catalog.text = "No verified products are registered for this store yet. Production is intentionally disabled until item recipes are sourced."
+		empty_catalog.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty_catalog.custom_minimum_size = Vector2(280, 72) * _ui_scale
+		empty_catalog.add_theme_color_override("font_color", Color("#F5DFA0"))
+		product_grid.add_child(empty_catalog)
+
 	for item_id in item_ids:
 		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
 		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
