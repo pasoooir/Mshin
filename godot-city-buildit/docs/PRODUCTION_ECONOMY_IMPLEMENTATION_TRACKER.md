@@ -18,15 +18,15 @@
 
 ## Current production catalog coverage
 
-- Raw materials: 11.
+- Raw materials: 11; craftable products: 32; catalog-only product identities: 15.
 - Craftable products: 23.
 - Building Supplies: 6 verified recipe entries.
 - Hardware Store: 6 recipe entries.
-- Farmer's Market: 6 recipe entries.
+- Farmer's Market: 7 recipe entries.
 - Furniture Store: 5 recipe entries.
-- Fast Food Restaurant: 6 products visible; all start actions remain disabled because exact recipes have not been verified.
+- Fast Food Restaurant: 5 craftable products; Popcorn remains visible but disabled until the store-star recipe is verified.
 - Traditional Restaurant and Art Supplies: production panel opens with an explicit empty/verification message.
-- Additional SCBI stores still to add: Gardening Supplies, Donut Shop, Fashion Store, Home Appliances, Sports Shop, Toy Shop, Bureau of Restoration, Country Store and Dessert Shop.
+- Additional SCBI stores still to add: Fashion Store, Sports Shop, Toy Shop, Bureau of Restoration, Country Store and Dessert Shop. Donut Shop, Home Appliances and Gardening Supplies are now selectable and have product catalogs.
 
 ## Required invariants
 
