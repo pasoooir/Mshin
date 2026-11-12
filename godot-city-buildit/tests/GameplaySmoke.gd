@@ -116,6 +116,9 @@ func _test_storage_and_production_chain() -> void:
 	_check(ProductionManager.get_recipe("burger").get("inputs", {}) == {"beef":1,"bread_roll":1,"bbq_grill":1}, "Burger must use the verified Home Appliances supply chain.")
 	_check(ProductionManager.get_recipe("lemonade_bottle").get("inputs", {}) == {"glass":2,"sugar_spices":2,"fruit_berries":1}, "Lemonade Bottle must use the verified Farmer's Market supply chain.")
 	_check(ProductionManager.get_recipe("popcorn").get("inputs", {}) == {"corn":2,"microwave_oven":1} and int(ProductionManager.get_recipe("popcorn").get("time_sec", 0)) == 1800 and int(ProductionManager.get_recipe("popcorn").get("value", 0)) == 1250, "Popcorn must use the Fandom-verified Corn x2 + Microwave Oven x1 recipe.")
+	_check(ProductionManager.get_store_recipe_ids("fast_food").has("popcorn"), "Verified Popcorn must be an active Fast Food recipe.")
+	_check(ProductionManager.get_recipe("lawn_mower").get("inputs", {}) == {"metal":3,"electrical":1,"paint":1} and int(ProductionManager.get_recipe("lawn_mower").get("time_sec", 0)) == 7200 and int(ProductionManager.get_recipe("lawn_mower").get("value", 0)) == 840, "Lawn Mower must use the Fandom-verified Metal, Electrical Components and Paint recipe.")
+	_check(int(ProductionManager.get_recipe("measuring_tape").get("value", 0)) == 110 and int(ProductionManager.get_recipe("bbq_grill").get("value", 0)) == 530 and int(ProductionManager.get_recipe("bread_roll").get("value", 0)) == 1840, "Corrected commercial Max Values must match the Fandom item catalogue.")
 	StorageManager.items = {"tree_sapling":1}
 	var stocked_fruit_chain := ProductionManager.get_recipe_dependency_text("fruit_berries")
 	_check(stocked_fruit_chain.contains("Tree Saplings — required 1 | stock 1 | missing 0") and not stocked_fruit_chain.contains("Shovel"), "Dependency tree must stop expanding a product already present in City Storage.")
