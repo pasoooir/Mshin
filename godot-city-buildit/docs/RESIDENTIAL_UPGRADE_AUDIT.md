@@ -20,6 +20,6 @@
 
 ## Important unresolved differences
 
-- The current six-stage material table is a **Mshin fallback template**, not a verified recreation of SimCity BuildIt's randomized plan generator. The UI now says so explicitly. Only the starter Nails + Metal pattern follows the user-provided example; exact quantities and later-stage plans still need authoritative in-game captures or a complete reference dataset.
+- The current six-stage material table, population tiers, XP formula, and Simoleon reward formula are **Mshin fallback values**, not verified SCBI data. The UI now labels the material plan and reward values as unverified. Only the starter Nails + Metal pattern follows the user-provided example; exact quantities, later-stage plans, population progression, and reward ranges still need authoritative in-game captures or a complete reference dataset.
 - The 30-minute refresh-plan and hard-hat-transfer actions are not implemented yet. The plan generator/verified alternate-plan pool must exist before refresh can change material requirements without inventing data.
 - The blue marker is a deliberate Mshin UI choice; EA's beginner guide describes a yellow ready-to-upgrade hard hat.
