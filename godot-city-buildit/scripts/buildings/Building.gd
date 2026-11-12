@@ -13,6 +13,8 @@ signal construction_finished_signal
 var definition: Dictionary = {}
 var status: String = "constructing"
 var build_time: float = 10.0
+var construction_finish_unix: int = 0
+var _construction_tween: Tween
 var production_timer: float = 0.0
 var production_time: float = 20.0
 var production_finish_unix: int = 0
@@ -1062,7 +1064,15 @@ func _add_scaffold_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstanc
 	scaffold_root.add_child(mesh_instance)
 	return mesh_instance
 
-func _start_construction() -> void:
+func _start_construction(saved_finish_unix: int = 0) -> void:
+	if is_instance_valid(_construction_tween) and _construction_tween.is_running():
+		_construction_tween.kill()
+	var now := int(Time.get_unix_time_from_system())
+	construction_finish_unix = saved_finish_unix if saved_finish_unix > 0 else now + maxi(1, int(ceil(build_time)))
+	var remaining := maxi(0, construction_finish_unix - now)
+	if remaining <= 0:
+		_on_construction_finished()
+		return
 	if hard_hat:
 		hard_hat.visible = true
 	if mesh_root:
@@ -1072,22 +1082,24 @@ func _start_construction() -> void:
 		scaffold_root.visible = true
 		scaffold_root.scale = Vector3(1.0, 0.05, 1.0)
 
-	# Divide the configured construction duration into three visible phases.
-	var total_time := maxf(build_time, 0.3)
+	# Timestamp is authoritative; the tween only animates the visible construction phases.
+	var total_time := float(remaining)
 	var scaffold_time := total_time * 0.30
 	var building_time := total_time * 0.55
 	var dismantle_time := total_time * 0.15
-	var tween := create_tween()
-	tween.tween_property(scaffold_root, "scale:y", 1.0, scaffold_time) \
+	_construction_tween = create_tween()
+	_construction_tween.tween_property(scaffold_root, "scale:y", 1.0, scaffold_time) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(mesh_root, "scale:y", 1.0, building_time) \
+	_construction_tween.tween_property(mesh_root, "scale:y", 1.0, building_time) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(scaffold_root, "scale:y", 0.01, dismantle_time) \
+	_construction_tween.tween_property(scaffold_root, "scale:y", 0.01, dismantle_time) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	tween.tween_callback(_on_construction_finished)
 
 func _on_construction_finished() -> void:
+	if status == "completed":
+		return
 	status = "completed"
+	construction_finish_unix = 0
 	setup_production_from_definition()
 	if hard_hat: hard_hat.visible = false
 	if scaffold_root:
@@ -1261,6 +1273,8 @@ func _create_fire_smoke_particles() -> CPUParticles3D:
 	return particles
 
 func _process(delta: float) -> void:
+	if status == "constructing" and construction_finish_unix > 0 and int(Time.get_unix_time_from_system()) >= construction_finish_unix:
+		_on_construction_finished()
 	if status == "completed" and is_instance_valid(_wind_turbine_rotor):
 		_wind_turbine_rotor.rotation.z = wrapf(
 			_wind_turbine_rotor.rotation.z + WIND_TURBINE_SPIN_RADIANS_PER_SECOND * delta,
@@ -1364,6 +1378,10 @@ func get_info() -> String:
 	return info
 
 func restore_production_state(saved: Dictionary) -> void:
+	if status == "constructing":
+		var saved_construction_finish := int(saved.get("construction_finish_unix", 0))
+		if saved_construction_finish > 0:
+			_start_construction(saved_construction_finish)
 	if is_instance_valid(production_component) and saved.get("slots", []) is Array:
 		production_component.from_save_array(saved.get("slots", []))
 	current_product = str(saved.get("current_product", ""))
