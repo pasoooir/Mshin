@@ -46,12 +46,12 @@ func _find_building(type_id: String):
 func _simulate_touch_swipe(scroll: ScrollContainer, start_position: Vector2, end_position: Vector2) -> void:
 	# Feed a physical-touch-shaped gesture through the real Godot viewport GUI
 	# input path (not direct scroll property mutation).
-	var viewport := get_viewport()
+	
 	var touch_down := InputEventScreenTouch.new()
 	touch_down.index = 0
 	touch_down.pressed = true
 	touch_down.position = start_position
-	viewport.push_input(touch_down)
+	Input.parse_input_event(touch_down)
 	var previous_position := start_position
 	for step in range(1, 9):
 		var next_position := start_position.lerp(end_position, float(step) / 8.0)
@@ -60,14 +60,14 @@ func _simulate_touch_swipe(scroll: ScrollContainer, start_position: Vector2, end
 		drag.position = next_position
 		drag.relative = next_position - previous_position
 		drag.screen_velocity = drag.relative / maxf(get_process_delta_time(), 0.001)
-		viewport.push_input(drag)
+		Input.parse_input_event(drag)
 		previous_position = next_position
 		await get_tree().process_frame
 	var touch_up := InputEventScreenTouch.new()
 	touch_up.index = 0
 	touch_up.pressed = false
 	touch_up.position = end_position
-	viewport.push_input(touch_up)
+	Input.parse_input_event(touch_up)
 	await get_tree().process_frame
 
 func _wait_seconds(seconds: float) -> void:
