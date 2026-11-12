@@ -11,6 +11,7 @@ const MAX_STORE_QUEUE_SLOTS: int = 11
 @export var is_factory: bool = false
 @export var shop_id: String = ""
 @export var factory_type: String = ""
+@export_range(0, 3, 1) var store_star_level: int = 0
 var slots: Array[Dictionary] = []
 
 func _ready() -> void:
@@ -40,6 +41,38 @@ func get_slot(index: int) -> Dictionary:
 	if index < 0 or index >= slots.size():
 		return {}
 	return slots[index].duplicate(true)
+
+func get_item_production_time(item_id: String) -> float:
+	return ProductionManager.get_production_time(item_id, 0 if is_factory else store_star_level)
+
+func get_next_store_queue_slot_cost() -> int:
+	_ensure_slots()
+	if is_factory or slot_count >= MAX_STORE_QUEUE_SLOTS:
+		return 0
+	var next_slot := slot_count + 1
+	var costs: Array = []
+	if shop_id == "building_supplies" or shop_id == "hardware_store":
+		costs = [4, 10, 16, 22, 28, 34, 40, 46, 52]
+	else:
+		costs = [8, 14, 20, 26, 32, 38, 44, 50, 56]
+	var cost_index := next_slot - 3
+	return int(costs[cost_index]) if cost_index >= 0 and cost_index < costs.size() else 0
+
+func upgrade_store_star() -> bool:
+	if is_factory:
+		return false
+	var offer := ProductionManager.get_store_star_offer(shop_id, store_star_level)
+	if offer.is_empty() or GameManager.level < int(offer.get("level", 999)):
+		return false
+	var cost := int(offer.get("cost", 0))
+	if cost <= 0 or EconomyManager.simoleons < cost:
+		return false
+	EconomyManager.simoleons -= cost
+	EconomyManager.transaction_completed.emit("simoleon_spend", cost)
+	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
+	store_star_level = int(offer.get("star", store_star_level + 1))
+	slots_changed.emit()
+	return true
 
 # Store queue expansion is deliberately price-driven by the caller. This keeps
 # SimCash costs sourced/configured by the UI/catalog instead of inventing prices.
@@ -87,7 +120,7 @@ func _start_next_store_order() -> bool:
 		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_unix", 0)) > 0:
 			continue
 		var item_id := str(slot.get("item_id", ""))
-		var duration := int(ProductionManager.get_production_time(item_id))
+		var duration := int(ceil(get_item_production_time(item_id)))
 		slot["start_unix"] = int(Time.get_unix_time_from_system())
 		slot["finish_unix"] = int(slot["start_unix"]) + maxi(1, duration)
 		slot["queued"] = false
@@ -122,7 +155,7 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 	var recipe := ProductionManager.get_recipe(recipe_id)
 	if recipe.is_empty() or str(recipe.get("store", "")) != shop_id:
 		return false
-	if not ProductionManager.get_recipe_lock_reason(recipe_id).is_empty():
+	if not ProductionManager.get_recipe_lock_reason(recipe_id, store_star_level).is_empty():
 		return false
 	if not ProductionManager.are_recipe_inputs_unlocked(recipe):
 		return false
