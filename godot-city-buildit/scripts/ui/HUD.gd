@@ -836,12 +836,9 @@ func _show_submenu(category: String) -> void:
 			var detail := "%d coins · Lv %d" % [int(definition.get("cost", 0)), int(definition.get("level", 1))]
 			var locked := false
 			if definition_category == "industrial":
-				var required_population := int(definition.get("population_required", 0))
-				if required_population > GameManager.population:
-					detail += " · Requires %s population" % _format_count(required_population)
-					locked = true
-				elif not BuildManager.can_build_another_factory():
-					detail += " · Factory limit reached"
+				var lock_reason := BuildManager.get_factory_build_lock_reason(str(type_id))
+				if lock_reason != "":
+					detail += " · " + lock_reason
 					locked = true
 			_add_submenu_button(str(type_id), title, str(type_id), detail, locked, category, int(definition.get("level", 1)), locked)
 	_finish_submenu_row()
@@ -1157,12 +1154,9 @@ func _select_building_type(type_id: String) -> void:
 		status_label.text = "Unlocked at Level %d." % required_level
 		return
 	if definition.get("category", "") == "industrial":
-		if not BuildManager.can_build_another_factory():
-			status_label.text = "Factory limit reached (%d). Level up to unlock another factory slot." % LevelProgression.get_factory_limit_for_level(GameManager.level)
-			return
-		if not BuildManager.can_build_factory_type(type_id):
-			var required_population := BuildManager.get_factory_type_population_requirement(type_id)
-			status_label.text = "%s requires %s city population." % [str(definition.get("name", type_id)), _format_count(required_population)]
+		var lock_reason := BuildManager.get_factory_build_lock_reason(type_id)
+		if lock_reason != "":
+			status_label.text = lock_reason
 			return
 	_set_tool_modes_off()
 	BuildManager.select_building(type_id)

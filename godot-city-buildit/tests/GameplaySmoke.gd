@@ -93,7 +93,7 @@ func _test_storage_and_production_chain() -> void:
 	_check(BuildManager.building_types.factory_basic.get("production_slots",0) == 3 and BuildManager.building_types.factory_basic.get("population_required",0) == 4000, "Basic Factory must have 3 slots and require 4,000 population.")
 	_check(BuildManager.building_types.factory_mass.get("production_slots",0) == 4 and BuildManager.building_types.factory_mass.get("population_required",0) == 27000, "Mass Production must have 4 slots and require 27,000 population.")
 	_check(BuildManager.building_types.factory_hightech.get("production_slots",0) == 5 and BuildManager.building_types.factory_hightech.get("population_required",0) == 80000, "High-tech Factory must have 5 slots and require 80,000 population.")
-	_check(BuildManager.building_types.factory_nano.get("production_slots",0) == 5 and BuildManager.building_types.factory_nano.get("pollution",1) == 0 and BuildManager.building_types.factory_nano.get("population_required",0) == 150000, "Nano-tech Factory must have 5 slots, no pollution and require 150,000 population.")
+	_check(BuildManager.building_types.factory_nano.get("production_slots",0) == 5 and BuildManager.building_types.factory_nano.get("pollution",1) == 0 and BuildManager.building_types.factory_nano.get("population_required",0) == 1500000, "Nano-tech Factory must have 5 slots, no pollution and require 1,500,000 population.")
 	_check(ProductionManager.raw_materials.has("electrical"), "Small Factory must support all raw products, gated only by each material's Mayor Level.")
 	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
 	_check(BuildManager.building_types.fast_food.get("production_slots",0) == 1 and int(BuildManager.building_types.fast_food.get("level", 0)) == 25, "Fast Food Restaurant must follow its SCBI unlock and open a production panel.")
@@ -160,8 +160,16 @@ func _test_storage_and_production_chain() -> void:
 	_check(not BuildManager.can_build_factory_type("factory_hightech"), "High-tech Factory must remain locked below 80,000 residents.")
 	GameManager.population = 80000
 	_check(BuildManager.can_build_factory_type("factory_hightech"), "High-tech Factory must unlock at 80,000 residents.")
-	GameManager.population = 150000
-	_check(BuildManager.can_build_factory_type("factory_nano"), "Nano-tech Factory must unlock at 150,000 residents.")
+	GameManager.population = 1499999
+	_check(not BuildManager.can_build_factory_type("factory_nano"), "Nano-tech Factory must remain locked below 1,500,000 residents.")
+	GameManager.population = 1500000
+	_check(BuildManager.can_build_factory_type("factory_nano"), "Nano-tech Factory must unlock at 1,500,000 residents.")
+	var industrial_catalog := BuildManager.get_available_buildings("industrial")
+	for factory_id in ["factory_small", "factory_basic", "factory_mass", "factory_hightech", "factory_nano"]:
+		_check(industrial_catalog.has(factory_id), "%s must remain visible in the Industrial catalog while locked." % factory_id)
+	GameManager.population = 0
+	BuildManager.factory_count = 0
+	_check(BuildManager.get_factory_build_lock_reason("factory_basic").contains("4000"), "Basic Factory lock must explain its 4,000 population requirement.")
 	GameManager.population = original_population
 	GameManager.level = 1
 	BuildManager.factory_count = 2
