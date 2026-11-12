@@ -1522,7 +1522,7 @@ func open_production_panel(building: Building) -> void:
 	production_panel.offset_right = panel_width * 0.5
 	production_panel.offset_top = -panel_height * 0.5
 	production_panel.offset_bottom = panel_height * 0.5
-	production_panel.add_theme_stylebox_override("panel", _toolbar_style(Color(0.035, 0.075, 0.105, 0.98), Color(0.76, 0.84, 0.91, 0.78)))
+	production_panel.add_theme_stylebox_override("panel", _toolbar_style(Color("#102B3B"), Color("#72B9D8")))
 	production_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	production_overlay.add_child(production_panel)
 
@@ -1548,7 +1548,7 @@ func open_production_panel(building: Building) -> void:
 	title.add_theme_color_override("font_color", Color.WHITE)
 	title_stack.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "CHOOSE A PRODUCT TO START PRODUCTION"
+	subtitle.text = "SELECT AN ITEM · CHECK MATERIALS · START PRODUCTION"
 	subtitle.add_theme_font_size_override("font_size", int(11 * _ui_scale))
 	subtitle.add_theme_color_override("font_color", Color("#A9C5D5"))
 	title_stack.add_child(subtitle)
@@ -1611,56 +1611,64 @@ func open_production_panel(building: Building) -> void:
 				lock_reason = "Need " + ProductionManager.get_missing_inputs_text(item_id)
 			var item_button := Button.new()
 			item_button.name = "Slot%d_%s" % [available_slot, item_id]
-			item_button.custom_minimum_size = Vector2(112, 132) * _ui_scale
+			item_button.custom_minimum_size = Vector2(156, 178) * _ui_scale
 			item_button.disabled = not lock_reason.is_empty()
 			item_button.focus_mode = Control.FOCUS_NONE
-			item_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-			item_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-			item_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-			item_button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
-			var hex_size := Vector2(112, 132) * _ui_scale
-			var hex_points := PackedVector2Array([
-				Vector2(hex_size.x * 0.5, 0.0),
-				Vector2(hex_size.x - 4.0 * _ui_scale, hex_size.y * 0.22),
-				Vector2(hex_size.x - 4.0 * _ui_scale, hex_size.y * 0.76),
-				Vector2(hex_size.x * 0.5, hex_size.y),
-				Vector2(4.0 * _ui_scale, hex_size.y * 0.76),
-				Vector2(4.0 * _ui_scale, hex_size.y * 0.22)
-			])
-			var hex_background := Polygon2D.new()
-			hex_background.name = "HexagonBackground"
-			hex_background.polygon = hex_points
-			hex_background.color = Color(0.92, 0.97, 0.99, 0.97) if not item_button.disabled else Color(0.40, 0.46, 0.50, 0.84)
-			item_button.add_child(hex_background)
-			var hex_outline := Line2D.new()
-			hex_outline.name = "HexagonOutline"
-			hex_outline.points = hex_points
-			hex_outline.closed = true
-			hex_outline.width = 2.0 * _ui_scale
-			hex_outline.default_color = Color(1.0, 1.0, 1.0, 0.95)
-			item_button.add_child(hex_outline)
+			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+				var card_style := StyleBoxFlat.new()
+				card_style.bg_color = Color("#F1F8FC") if not item_button.disabled else Color("#8495A0")
+				card_style.border_color = Color("#75B7D9") if not item_button.disabled else Color("#AAB5BC")
+				card_style.set_border_width_all(2 if state == "hover" else 1)
+				card_style.set_corner_radius_all(15)
+				card_style.content_margin_left = 8
+				card_style.content_margin_right = 8
+				card_style.content_margin_top = 7
+				card_style.content_margin_bottom = 7
+				item_button.add_theme_stylebox_override(state, card_style)
 			var card_content := VBoxContainer.new()
 			card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			card_content.alignment = BoxContainer.ALIGNMENT_CENTER
-			card_content.add_theme_constant_override("separation", 2)
+			card_content.add_theme_constant_override("separation", 3)
 			card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			item_button.add_child(card_content)
-			var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(62, 62) * _ui_scale)
+			var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(58, 58) * _ui_scale)
 			item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			card_content.add_child(item_icon)
 			var item_name := Label.new()
 			item_name.text = str(data.get("name", item_id.capitalize()))
 			item_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			item_name.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-			item_name.add_theme_color_override("font_color", Color("#203744") if not item_button.disabled else Color("#E7EDF0"))
+			item_name.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+			item_name.add_theme_color_override("font_color", Color("#203B4B") if not item_button.disabled else Color("#E7EDF0"))
 			card_content.add_child(item_name)
 			var duration := Label.new()
-			duration.text = _format_duration(int(data.get("time_sec", 60)))
+			duration.text = "◷  " + _format_duration(int(data.get("time_sec", 60)))
 			duration.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			duration.add_theme_font_size_override("font_size", int(11 * _ui_scale))
-			duration.add_theme_color_override("font_color", Color("#557180") if not item_button.disabled else Color("#C4D0D6"))
+			duration.add_theme_color_override("font_color", Color("#26769D") if not item_button.disabled else Color("#E0E7EB"))
 			card_content.add_child(duration)
+			if not component.is_factory:
+				var recipe := ProductionManager.get_recipe(item_id)
+				var inputs: Dictionary = recipe.get("inputs", {})
+				var ingredient_parts: Array[String] = []
+				for input_id in inputs:
+					var input_data: Dictionary = ProductionManager.raw_materials.get(input_id, ProductionManager.crafted_items.get(input_id, {}))
+					ingredient_parts.append("%s ×%d" % [str(input_data.get("name", str(input_id).capitalize())), int(inputs[input_id])])
+				var ingredients := Label.new()
+				ingredients.name = "IngredientsLabel"
+				ingredients.text = " + ".join(ingredient_parts)
+				ingredients.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				ingredients.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				ingredients.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+				ingredients.add_theme_color_override("font_color", Color("#527183") if not item_button.disabled else Color("#DCE4E8"))
+				card_content.add_child(ingredients)
 			if not lock_reason.is_empty():
+				var lock_label := Label.new()
+				lock_label.text = "🔒 " + lock_reason
+				lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				lock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				lock_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+				lock_label.add_theme_color_override("font_color", Color("#FFF0C9"))
+				card_content.add_child(lock_label)
 				item_button.tooltip_text = lock_reason
 			item_button.pressed.connect(func():
 				var started: bool = component.start_factory(item_id, available_slot) if component.is_factory else component.start_craft(item_id, available_slot)
