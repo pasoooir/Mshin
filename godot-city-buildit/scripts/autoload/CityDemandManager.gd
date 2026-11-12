@@ -83,7 +83,7 @@ func _supplier_for(item_id: String) -> Array:
 		for building in BuildManager.buildings.values():
 			if not is_instance_valid(building) or building.status != "completed":
 				continue
-			if str(building.definition.get("category", "")) == "commercial" and str(building.definition.get("shop_id", building.building_type)) == shop_id and Array(building.definition.get("recipes", [])).has(item_id):
+			if str(building.definition.get("category", "")) == "commercial" and str(building.definition.get("shop_id", "building_supplies" if building.building_type == "shop_chain" else building.building_type)) == shop_id and Array(building.definition.get("recipes", [])).has(item_id):
 				result.append({"building_id":building.building_id,"name":str(building.definition.get("name","Store")),"status":"available"})
 	return result
 
@@ -139,7 +139,7 @@ func get_city_snapshot() -> Dictionary:
 		var stage := int(building.upgrade_stage)
 		var requirements: Array = ProductionManager.get_upgrade_requirements(stage)
 		var home_needs: Array = []
-		var all_available := not requirements.is_empty()
+		var all_available := true
 		for requirement in requirements:
 			var item_id := str(requirement.get("item", ""))
 			var amount := int(requirement.get("amount", 0))
