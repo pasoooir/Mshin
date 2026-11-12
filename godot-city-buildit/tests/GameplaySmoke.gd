@@ -1212,7 +1212,8 @@ func _run_gameplay_test() -> void:
 	var previous_level_for_store_star := GameManager.level
 	var previous_simoleons_for_store_star := EconomyManager.simoleons
 	var previous_sim_cash_for_store_slots := EconomyManager.sim_cash
-	GameManager.level = 16
+	# Level 50 unlocks Coffee and Popcorn so their star gates are the tested blocker.
+	GameManager.level = 50
 	EconomyManager.simoleons = 50000
 	EconomyManager.sim_cash = 100
 	_check(ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).contains("Store Star"), "Paint must remain locked until Building Supplies reaches its sourced one-star requirement.")
