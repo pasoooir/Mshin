@@ -1812,13 +1812,13 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		child.queue_free()
 
 	var component = building.production_component
-	var is_factory := component.is_factory
+	var is_factory: bool = bool(component.is_factory)
 	var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
 	var recipe: Dictionary = {} if is_factory else ProductionManager.get_recipe(item_id)
 	var inputs: Dictionary = recipe.get("inputs", {})
 	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 	var missing := "" if is_factory else ProductionManager.get_missing_inputs_text(item_id)
-	var can_start := slot_index >= 0 and lock_reason.is_empty() and (is_factory or missing.is_empty())
+	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (is_factory or missing.is_empty())
 
 	var detail := PanelContainer.new()
 	detail.name = "ProductionItemDetails"
