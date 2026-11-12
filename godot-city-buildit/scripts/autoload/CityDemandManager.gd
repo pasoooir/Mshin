@@ -271,3 +271,6 @@ func get_city_snapshot() -> Dictionary:
 
 func get_item_name(item_id: String) -> String:
 	return _item_name(item_id)
+
+func get_suppliers_for_item(item_id: String) -> Array:
+	return _supplier_for(item_id)
