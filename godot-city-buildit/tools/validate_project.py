@@ -65,7 +65,7 @@ toolbar_order = [
     "residential", "commercial", "industrial", "services",
     "specializations", "road", "bulldoze"
 ]
-toolbar_match = re.search(r"var tools := \[(.*?)\]", hud, re.S)
+toolbar_match = re.search(r"var tools := \[(.*?)\n\t\]", hud, re.S)
 toolbar_ids = re.findall(r'\["([a-z_]+)",\s*"[^"]+",\s*"[^"]+"\]', toolbar_match.group(1)) if toolbar_match else []
 if toolbar_ids != toolbar_order:
     errors.append("Right toolbar categories are missing or not in the required order")
