@@ -1768,7 +1768,7 @@ func open_production_panel(building: Building) -> void:
 			var empty_label := Label.new()
 			empty_label.text = "EMPTY"
 			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			empty_label.add_theme_color_override("font_color", Color("#FFFFFF"))
+			empty_label.add_theme_color_override("font_color", Color("#587487"))
 			empty_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 			slot_content.add_child(empty_label)
 		else:
@@ -1812,20 +1812,20 @@ func open_production_panel(building: Building) -> void:
 				else:
 					var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
 					var timer_label := Label.new()
-				timer_label.name = "TimerSlot%d" % slot_index
-				timer_label.set_meta("slot_index", slot_index)
-				timer_label.text = _format_clock_duration(remaining)
-				timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				timer_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-				timer_label.add_theme_color_override("font_color", Color("#A36B12"))
-				slot_content.add_child(timer_label)
-				var progress := ProgressBar.new()
-				progress.name = "ProgressSlot%d" % slot_index
-				progress.set_meta("slot_index", slot_index)
-				progress.show_percentage = false
-				progress.custom_minimum_size.y = 6.0 * _ui_scale
-				progress.max_value = 1.0
-				var total_seconds := maxf(1.0, ProductionManager.get_production_time(queued_item_id))
+					timer_label.name = "TimerSlot%d" % slot_index
+					timer_label.set_meta("slot_index", slot_index)
+					timer_label.text = _format_clock_duration(remaining)
+					timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+					timer_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+					timer_label.add_theme_color_override("font_color", Color("#A36B12"))
+					slot_content.add_child(timer_label)
+					var progress := ProgressBar.new()
+					progress.name = "ProgressSlot%d" % slot_index
+					progress.set_meta("slot_index", slot_index)
+					progress.show_percentage = false
+					progress.custom_minimum_size.y = 6.0 * _ui_scale
+					progress.max_value = 1.0
+					var total_seconds := maxf(1.0, ProductionManager.get_production_time(queued_item_id))
 					var started_unix := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total_seconds)))
 					progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
 					progress.set_meta("start_unix", started_unix)
@@ -1911,7 +1911,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		ingredients_label.name = "IngredientsLabel"
 		var ingredient_lines: Array[String] = []
 		for input_id in inputs:
-			var input_data: Dictionary = ProductionManager.raw_materials.get(input_id, ProductionManager.crafted_items.get(input_id, StorageManager.item_definitions.get(input_id, {})))
+			var input_data: Dictionary = ProductionManager.get_item_definition(str(input_id))
 			var required := int(inputs[input_id])
 			var owned := StorageManager.get_count(str(input_id))
 			ingredient_lines.append("%s  %d/%d" % [str(input_data.get("name", str(input_id).capitalize())), owned, required])
