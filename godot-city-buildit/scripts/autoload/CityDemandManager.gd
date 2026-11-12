@@ -93,6 +93,21 @@ func _supplier_for(item_id: String) -> Array:
 				continue
 			if str(building.definition.get("category", "")) == "commercial" and str(building.definition.get("shop_id", "building_supplies" if building.building_type == "shop_chain" else building.building_type)) == shop_id and Array(building.definition.get("recipes", [])).has(item_id):
 				result.append({"building_id":building.building_id,"name":str(building.definition.get("name","Store")),"status":"available"})
+ 	if result.is_empty():
+		var target_type := "factory_small" if ProductionManager.raw_materials.has(item_id) else str(ProductionManager.get_recipe(item_id).get("store", ""))
+		if target_type == "shop_chain":
+			target_type = "building_supplies"
+		var definition: Dictionary = BuildManager.building_types.get(target_type, {})
+		if definition.is_empty() and ProductionManager.raw_materials.has(item_id):
+			target_type = "factory_small"
+			definition = BuildManager.building_types.get(target_type, {})
+		if not definition.is_empty():
+			result.append({
+				"building_id":"",
+				"building_type":target_type,
+				"name":str(definition.get("name", "Supplier")),
+				"status":"not_built"
+			})
 	return result
 
 func _production_totals() -> Dictionary:
