@@ -530,6 +530,8 @@ func _build_toolbars() -> void:
 	category_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	category_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	category_scroll.scroll_deadzone = 4
+	category_scroll.follow_focus = false
 	category_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	category_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	toolbar.add_child(category_scroll)
@@ -540,12 +542,12 @@ func _build_toolbars() -> void:
 	toolbar_items.mouse_filter = Control.MOUSE_FILTER_PASS
 	category_scroll.add_child(toolbar_items)
 	var tools := [
-		["road", "Roads", "road"],
 		["residential", "Residential", "residential"],
 		["commercial", "Commercial", "commercial"],
 		["industrial", "Industrial", "industrial"],
 		["services", "Services", "services"],
 		["specializations", "Specializations", "parks"],
+		["road", "Roads", "road"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
 	var icon_size := 78.0 * _ui_scale
@@ -555,7 +557,7 @@ func _build_toolbars() -> void:
 		button.custom_minimum_size = Vector2(toolbar_width, 84.0 * _ui_scale)
 		button.tooltip_text = str(item[1])
 		button.focus_mode = Control.FOCUS_NONE
-		button.mouse_filter = Control.MOUSE_FILTER_STOP
+		button.mouse_filter = Control.MOUSE_FILTER_PASS
 		button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
@@ -618,7 +620,9 @@ func _build_toolbars() -> void:
 	submenu_scroll.offset_bottom = -8.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	submenu_scroll.scroll_deadzone = 8
+	submenu_scroll.scroll_deadzone = 4
+	submenu_scroll.follow_focus = false
+	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	submenu_scroll.follow_focus = false
 	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	submenu_scroll.z_index = 63
@@ -626,6 +630,7 @@ func _build_toolbars() -> void:
 	add_child(submenu_scroll)
 	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
+	submenu.mouse_filter = Control.MOUSE_FILTER_PASS
 	submenu.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	submenu.add_theme_constant_override("separation", 8)
 	submenu.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -874,6 +879,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	button.name = option_id
 	button.custom_minimum_size = Vector2(164, 188) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.disabled = disabled and not level_locked
 	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else detail
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
@@ -1107,7 +1113,9 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		back.tooltip_text = "Back to categories"
 		back.custom_minimum_size = Vector2(54, 188) * _ui_scale
 		back.focus_mode = Control.FOCUS_NONE
-		back.add_theme_stylebox_override("normal", _catalog_card_style("normal"))
+		back.mouse_filter = Control.MOUSE_FILTER_PASS
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			back.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 		back.add_theme_color_override("font_color", Color("#526B7A"))
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
@@ -1157,13 +1165,15 @@ func _select_building_type(type_id: String) -> void:
 		status_label.text = "Could not enter placement mode for %s." % str(definition.get("name", type_id))
 
 func _highlight_submenu_choice(type_id: String) -> void:
+	# Selection feedback must never paint opaque/dark cards behind the PNG artwork.
 	for child in submenu.get_children():
 		if child is Button:
 			var button := child as Button
-			if button.name == type_id:
-				button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.13, 0.32, 0.20, 1.0), Color("#A8E62E")))
-			elif not button.name.begins_with("Submenu_"):
-				button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.16, 0.21, 0.97), Color(0.52, 0.72, 0.82, 0.62)))
+			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+				button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+			var title := button.find_child("Label", true, false) as Label
+			if title:
+				title.add_theme_color_override("font_color", Color("#4B9E38") if button.name == type_id else Color("#344B5B"))
 
 func _on_building_choice_pressed(type_id: String) -> void:
 	# Keep the existing test and scene callback contract while routing through
