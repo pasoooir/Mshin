@@ -75,10 +75,10 @@ for icon_id in ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_fu
 for category, icon_id in sorted(required):
     path = ICON_ROOT / category / f"{icon_id}.png"
     if not path.is_file():
-        # Product-only catalog art may use original transparent SVG. Required
+        # New store/product art may use original transparent SVG. Required
         # build icons and toolbar controls remain strict PNG-32 assets.
         svg_path = ICON_ROOT / category / f"{icon_id}.svg"
-        if category == "crafted" and svg_path.is_file():
+        if category in ("crafted", "commercial") and svg_path.is_file():
             try:
                 svg_root = ET.parse(svg_path).getroot()
                 if not svg_root.tag.endswith("svg") or svg_root.attrib.get("viewBox") != "0 0 128 128":
