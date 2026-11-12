@@ -61,6 +61,10 @@ func _on_home_upgraded(_stage: int) -> void:
 func _on_xp_changed(_experience: int, _needed: int) -> void:
 	_queue_refresh()
 
+func _on_countdown_tick() -> void:
+	if _has_active_orders:
+		_queue_refresh()
+
 func _queue_refresh(_unused = null) -> void:
 	if _refresh_queued:
 		return
@@ -162,6 +166,7 @@ func _production_totals() -> Dictionary:
 				"remaining":maxi(0, int(slot.get("finish_unix", now)) - now),
 				"slot":index
 			})
+	_has_active_orders = not orders.is_empty()
 	return {"totals":totals,"orders":orders}
 
 func get_city_snapshot() -> Dictionary:
