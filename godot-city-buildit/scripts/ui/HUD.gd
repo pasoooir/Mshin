@@ -656,6 +656,8 @@ func _build_toolbars() -> void:
 	catalog_close.add_theme_stylebox_override("normal", _catalog_close_style(false))
 	catalog_close.add_theme_stylebox_override("hover", _catalog_close_style(true))
 	catalog_close.add_theme_stylebox_override("pressed", _catalog_close_style(true))
+	catalog_close.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
+	catalog_close.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	catalog_close.pressed.connect(_close_build_menu)
 	add_child(catalog_close)
 	catalog_close.hide()
@@ -1078,19 +1080,9 @@ func _add_info_line(parent: VBoxContainer, key_text: String, value_text: String)
 	value.add_theme_color_override("font_color", Color("#263746"))
 	row.add_child(value)
 
-func _catalog_close_style(hovered: bool) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#F4FAFD") if hovered else Color("#FFFFFF")
-	style.border_color = Color("#D6E5EC")
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(14)
-	style.shadow_color = Color(0, 0, 0, 0.14)
-	style.shadow_size = 4
-	style.content_margin_left = 4
-	style.content_margin_right = 4
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
-	return style
+func _catalog_close_style(_hovered: bool) -> StyleBox:
+	# The catalog close control is a plain X; it must not create a white tile.
+	return StyleBoxEmpty.new()
 
 func _catalog_action_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
