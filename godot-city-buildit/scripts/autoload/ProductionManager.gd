@@ -42,23 +42,23 @@ var crafted_items := {
 	"measuring_tape": {"name":"Measuring Tape", "time":1200.0, "time_sec":1200, "value":110, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store", "source":"Fandom"},
 	"shovel": {"name":"Shovel", "time":1800.0, "time_sec":1800, "value":150, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store", "source":"Fandom"},
 	"cooking_utensils": {"name":"Cooking Utensils", "time":2700.0, "time_sec":2700, "value":250, "requires":{"metal":2,"wood":2,"plastic":2}, "level":17, "store":"hardware_store", "source":"Fandom"},
-	"ladder": {"name":"Ladder", "time":3600.0, "time_sec":3600, "value":420, "requires":{"planks":2,"metal":2}, "level":20, "store":"hardware_store", "source":"Fandom"},
+	"ladder": {"name":"Ladder", "time":3600.0, "time_sec":3600, "value":420, "requires":{"planks":2,"metal":2}, "level":20, "required_stars":1, "store":"hardware_store", "source":"Fandom"},
 	"drill": {"name":"Drill", "time":7200.0, "time_sec":7200, "value":590, "requires":{"metal":2,"plastic":2,"electrical":1}, "level":30, "store":"hardware_store", "source":"Fandom"},
 	"chair": {"name":"Chair", "time":1200.0, "time_sec":1200, "value":300, "requires":{"wood":2,"nails":1,"hammer":1}, "level":10, "store":"furniture_store", "source":"Fandom"},
 	"home_textiles": {"name":"Home Textiles", "time":4500.0, "time_sec":4500, "value":610, "requires":{"textiles":2,"measuring_tape":1}, "level":25, "store":"furniture_store", "source":"Fandom"},
-	"cupboard": {"name":"Cupboard", "time":2700.0, "time_sec":2700, "value":900, "requires":{"planks":2,"glass":2,"paint":1}, "level":26, "store":"furniture_store", "source":"Fandom"},
+	"cupboard": {"name":"Cupboard", "time":2700.0, "time_sec":2700, "value":900, "requires":{"planks":2,"glass":2,"paint":1}, "level":26, "required_stars":1, "store":"furniture_store", "source":"Fandom"},
 	"couch": {"name":"Couch", "time":9000.0, "time_sec":9000, "value":1810, "requires":{"textiles":3,"drill":1,"glue":1}, "level":33, "store":"furniture_store", "source":"Fandom"},
 	"table": {"name":"Table", "time":1800.0, "time_sec":1800, "value":500, "requires":{"planks":1,"nails":2,"hammer":1}, "level":16, "store":"furniture_store", "source":"Fandom"},
 	"vegetables": {"name":"Vegetables", "time":1200.0, "time_sec":1200, "value":160, "requires":{"seeds":2}, "level":8, "store":"farmers_market", "source":"Fandom"},
 	"flour_bag": {"name":"Flour Bag", "time":1800.0, "time_sec":1800, "value":570, "requires":{"seeds":2,"textiles":2}, "level":17, "store":"farmers_market", "source":"Fandom"},
 	"cream": {"name":"Cream", "time":4500.0, "time_sec":4500, "value":440, "requires":{"animal_feed":1}, "level":23, "store":"farmers_market", "source":"Fandom"},
-	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Fandom"},
+	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "required_stars":1, "store":"farmers_market", "source":"Fandom"},
 	"cheese": {"name":"Cheese", "time":6300.0, "time_sec":6300, "value":660, "requires":{"animal_feed":2}, "level":26, "store":"farmers_market", "source":"Fandom"},
 	"beef": {"name":"Beef", "time":7200.0, "time_sec":7200, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Fandom"},
 	"fruit_berries": {"name":"Fruit & Berries", "time":5400.0, "time_sec":5400, "value":730, "requires":{"seeds":2,"tree_sapling":1}, "level":18, "store":"farmers_market", "source":"HubsInfo;Fandom"},
 	"bread_roll": {"name":"Bread Roll", "time":3600.0, "time_sec":3600, "value":1840, "requires":{"flour_bag":2,"cream":1}, "level":24, "store":"donut_shop", "source":"Fandom"},
 	"bbq_grill": {"name":"BBQ Grill", "time":9900.0, "time_sec":9900, "value":530, "requires":{"metal":3,"cooking_utensils":1}, "level":29, "store":"home_appliances", "source":"Fandom"},
-	"microwave_oven": {"name":"Microwave Oven", "time":7200.0, "time_sec":7200, "value":480, "requires":{"metal":4,"glass":1,"electrical":1}, "level":42, "store":"home_appliances", "source":"Fandom"},
+	"microwave_oven": {"name":"Microwave Oven", "time":7200.0, "time_sec":7200, "value":480, "requires":{"metal":4,"glass":1,"electrical":1}, "level":42, "required_stars":1, "store":"home_appliances", "source":"Fandom"},
 	"pizza": {"name":"Pizza", "time":1440.0, "time_sec":1440, "value":2560, "requires":{"flour_bag":1,"cheese":1,"beef":1}, "level":28, "store":"fast_food", "source":"Fandom"},
 	"cheese_fries": {"name":"Cheese Fries", "time":1200.0, "time_sec":1200, "value":1050, "requires":{"cheese":1,"vegetables":1}, "level":33, "store":"fast_food", "source":"Fandom"},
 	"ice_cream_sandwich": {"name":"Ice Cream Sandwich", "time":840.0, "time_sec":840, "value":2560, "requires":{"cream":1,"bread_roll":1}, "level":25, "store":"fast_food", "source":"Fandom"},
@@ -67,7 +67,7 @@ var crafted_items := {
 	"popcorn": {"name":"Popcorn", "time":1800.0, "time_sec":1800, "value":1250, "requires":{"corn":2,"microwave_oven":1}, "level":43, "required_stars":1, "store":"fast_food", "source":"Fandom"},
 	"grass": {"name":"Grass", "time":1800.0, "time_sec":1800, "value":310, "requires":{"seeds":1,"shovel":1}, "level":14, "store":"gardening_supplies", "source":"HubsInfo"},
 	"tree_sapling": {"name":"Tree Saplings", "time":5400.0, "time_sec":5400, "value":420, "requires":{"seeds":2,"shovel":1}, "level":16, "store":"gardening_supplies", "source":"HubsInfo"},
-	"lawn_mower": {"name":"Lawn Mower", "time":7200.0, "time_sec":7200, "value":840, "requires":{"metal":3,"electrical":1,"paint":1}, "level":30, "store":"gardening_supplies", "source":"Fandom"},
+	"lawn_mower": {"name":"Lawn Mower", "time":7200.0, "time_sec":7200, "value":840, "requires":{"metal":3,"electrical":1,"paint":1}, "level":30, "required_stars":1, "store":"gardening_supplies", "source":"Fandom"},
 	"garden_furniture": {"name":"Garden Furniture", "time":8100.0, "time_sec":8100, "value":820, "requires":{"plastic":2,"textiles":2,"planks":2}, "level":21, "store":"gardening_supplies", "source":"HubsInfo"},
 	"fire_pit": {"name":"Fire Pit", "time":14400.0, "time_sec":14400, "value":1740, "requires":{"bricks":2,"cement":2,"shovel":1}, "level":28, "store":"gardening_supplies", "source":"HubsInfo"},
 	"garden_gnome": {"name":"Garden Gnomes", "time":5400.0, "time_sec":5400, "value":1600, "requires":{"cement":2,"glue":1}, "level":34, "store":"gardening_supplies", "source":"HubsInfo"},
@@ -446,7 +446,8 @@ func get_store_star_offer(store_id: String, current_star_level: int) -> Dictiona
 		],
 		"donut_shop": [
 			{"level": 30, "cost": 29000, "reduction": 10},
-			{"level": 42, "cost": 41000, "reduction": 15}
+			{"level": 42, "cost": 41000, "reduction": 15},
+			{"level": 50, "cost": 49000, "reduction": 20}
 		]
 	}
 	if not upgrade_data.has(store_id):
