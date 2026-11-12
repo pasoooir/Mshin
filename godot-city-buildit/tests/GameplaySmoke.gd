@@ -80,11 +80,11 @@ func _test_storage_and_production_chain() -> void:
 	_check(int(ProductionManager.get_recipe("vegetables").get("time_sec", 0)) == 1200 and ProductionManager.get_recipe("vegetables").get("inputs", {}) == {"seeds":2}, "Vegetables must require two Seeds and take 20 minutes.")
 	_check(int(ProductionManager.get_recipe("chair").get("time_sec", 0)) == 1200 and ProductionManager.get_recipe("chair").get("inputs", {}) == {"wood":2,"nails":1,"hammer":1}, "Chair recipe must use the documented three-stage input chain.")
 	_check(int(ProductionManager.get_recipe("table").get("time_sec", 0)) == 1800 and ProductionManager.get_recipe("table").get("inputs", {}) == {"planks":1,"nails":2,"hammer":1}, "Table recipe must use the documented input chain.")
-	_check(BuildManager.building_types.hardware_store.get("recipes", []).has("drill") and BuildManager.building_types.farmers_market.get("recipes", []).has("beef") and BuildManager.building_types.furniture_store.get("recipes", []).has("couch"), "Commercial store catalogs must include their verified product families.")
+	_check(ProductionManager.get_store_recipe_ids("hardware_store").has("drill") and ProductionManager.get_store_recipe_ids("farmers_market").has("beef") and ProductionManager.get_store_recipe_ids("furniture_store").has("couch"), "Commercial store catalogs must include their verified product families.")
 	for recipe_id in ["cooking_utensils","ladder","drill","flour_bag","cream","corn","cheese","beef","home_textiles","cupboard","couch"]:
 		_check(StorageManager.item_definitions.has(recipe_id), "%s must be registered in City Storage." % recipe_id)
 		_check(Icons.CRAFTED_IDS.has(recipe_id), "%s must have a local product icon definition." % recipe_id)
-	_check(not BuildManager.building_types.hardware_store.get("recipes", []).has("paint"), "Paint must not appear in Hardware Store; its supplier is Building Supplies.")
+	_check(not ProductionManager.get_store_recipe_ids("hardware_store").has("paint"), "Paint must not appear in Hardware Store; its supplier is Building Supplies.")
 	var nails: Dictionary = ProductionManager.get_recipe("nails")
 	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
 	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 2, "Small Factory must expose two parallel production slots.")
@@ -92,7 +92,7 @@ func _test_storage_and_production_chain() -> void:
 	_check(BuildManager.building_types.factory_mass.get("production_slots",0) == 4 and BuildManager.building_types.factory_mass.get("population_required",0) == 27000, "Mass Production must have 4 slots and require 27,000 population.")
 	_check(BuildManager.building_types.factory_hightech.get("production_slots",0) == 5 and BuildManager.building_types.factory_hightech.get("population_required",0) == 80000, "High-tech Factory must have 5 slots and require 80,000 population.")
 	_check(BuildManager.building_types.factory_nano.get("production_slots",0) == 5 and BuildManager.building_types.factory_nano.get("pollution",1) == 0 and BuildManager.building_types.factory_nano.get("population_required",0) == 150000, "Nano-tech Factory must have 5 slots, no pollution and require 150,000 population.")
-	_check(BuildManager.building_types.factory_small.get("can_produce",[]).has("electrical"), "Small Factory must support all raw products, gated only by each material's Mayor Level.")
+	_check(ProductionManager.raw_materials.has("electrical"), "Small Factory must support all raw products, gated only by each material's Mayor Level.")
 	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
 	# Mayor level unlocks materials; factory count and factory tier use separate gates.
 	var original_level := GameManager.level
