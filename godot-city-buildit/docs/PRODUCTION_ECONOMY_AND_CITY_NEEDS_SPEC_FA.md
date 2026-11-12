@@ -619,16 +619,33 @@ EA وجود کارخانه‌ها، فروشگاه‌ها و مواد ویژه �
 | ۵. UI مشابه SCBI | کارت‌های محصول، جزئیات مواد، هشدار، صف و تایمر و پنل روشن مشترک پیاده‌سازی شده؛ مقایسه تصویری نهایی با نسخه واقعی بازی روی Android هنوز لازم است. | 🟡 بررسی بصری باقی است |
 | ۶. اتصال اقتصاد و ذخیره | هزینه ساخت، پاداش ارتقا، XP، جمعیت، تراکنش انبار، ذخیره زمان ساخت و مهاجرت نسخه ذخیره متصل شده‌اند. | 🟢 کد؛ CI/اجرای نهایی در انتظار |
 
-## ۲۷.۱ پوشش فعلی دستورهای قابل تولید
+## ۲۷.۱ پوشش ۱۴ خانواده فروشگاه تجاری SCBI
 
-- Building Supplies: شش محصول Nails، Planks، Bricks، Cement، Glue و Paint.
-- Hardware Store: شش محصول Hammer، Measuring Tape، Shovel، Cooking Utensils، Ladder و Drill.
-- Farmer's Market: هفت محصول Vegetables، Flour Bag، Cream، Corn، Cheese، Beef و Fruit & Berries.
-- Furniture Store: پنج محصول Chair، Table، Home Textiles، Cupboard و Couch.
-- Fast Food Restaurant: پنج محصول Ice Cream Sandwich، Pizza، Burger، Cheese Fries و Lemonade Bottle قابل تولید هستند؛ Popcorn تا زمان تأیید دستور وابسته به ستاره فروشگاه غیرفعال می‌ماند.
-- Donut Shop: محصول Bread Roll قابل تولید است و پنج محصول دیگر تا تأیید دستور غیرفعال‌اند. Home Appliances: BBQ Grill و Microwave Oven قابل تولیدند؛ Refrigerator، Lighting System و TV تا تأیید دستور غیرفعال‌اند. Gardening Supplies: شش محصول در کاتالوگ دیده می‌شوند اما دستورهای آن‌ها هنوز تأیید نشده‌اند. Traditional Restaurant و Art Supplies پنل دارند ولی کاتالوگ خالی و پیام شفاف دارند.
+هر ۱۴ خانواده استاندارد فروشگاه تجاری SCBI اکنون در منوی ساخت Mshin قابل انتخاب هستند و پنل اختصاصی خود را باز می‌کنند.
 
-تمام ۱۴ خانواده فروشگاه تجاری SCBI اکنون در منوی ساخت Mshin قابل انتخاب‌اند و پنل اختصاصی دارند. شش خانواده Fashion، Sports، Toy، Restoration، Farmer's Store و Dessert Shop نام محصولات را نمایش می‌دهند، اما دستور ساخت آن‌ها تا زمان تأیید ورودی‌ها و زمان تولید غیرفعال است. نام محصول به‌تنهایی برای حدس‌زدن مواد اولیه کافی نیست.
+| خانواده فروشگاه | محصولات قابل تولید | محصولات نمایشی با دستور تأییدنشده |
+|---|---:|---:|
+| Building Supplies | ۶ | ۰ |
+| Hardware Store | ۶ | ۰ |
+| Farmer's Market | ۷ | ۰ |
+| Furniture Store | ۵ | ۰ |
+| Fast Food Restaurant | ۵ | ۱ |
+| Donut Shop | ۱ | ۵ |
+| Home Appliances | ۲ | ۳ |
+| Gardening Supplies | ۰ | ۶ |
+| Fashion Store | ۰ | ۵ |
+| Sports Shop | ۰ | ۵ |
+| Toy Store | ۰ | ۴ |
+| Restoration Office | ۰ | ۵ |
+| Farmer's Store | ۰ | ۳ |
+| Dessert Shop | ۰ | ۵ |
+
+مجموع کاتالوگ فعلی: ۱۱ ماده خام، ۳۲ محصول قابل تولید و ۴۲ شناسه محصول نمایشی که دستور ساخت آن‌ها هنوز تأیید نشده است. محصولی که دستور آن تأیید نشده در پنل دیده می‌شود اما Start آن غیرفعال است و جزئیات صریحاً می‌گوید مواد اولیه و زمان تولید تأیید نشده‌اند؛ هیچ دستور یا زمانی جعل نمی‌شود.
+
+Fast Food اکنون پنج محصول Ice Cream Sandwich، Pizza، Burger، Cheese Fries و Lemonade Bottle را تولید می‌کند. Popcorn تا زمان پیاده‌سازی مدل ارتقای ستاره‌ای فروشگاه غیرفعال است. زنجیره‌های بالادستی Bread Roll در Donut Shop، BBQ Grill و Microwave Oven در Home Appliances و Fruit & Berries در Farmer's Market پیاده‌سازی شده‌اند. Tree Sapling در Gardening Supplies نمایش داده می‌شود اما دستور تولید خودش هنوز تأیید نشده است.
+
+Traditional Restaurant و Art Supplies فروشگاه‌های سفارشی Mshin هستند و تا ثبت دستور معتبر، پیام روشن نبود کاتالوگ تأییدشده نشان می‌دهند. Shop Chain قدیمی همچنان به خانواده دستورهای Building Supplies متصل است.
+
 
 ## ۲۷.۲ اختلاف داده‌های مرجع
 
