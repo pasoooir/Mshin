@@ -135,7 +135,8 @@ func _apply_responsive_layout() -> void:
 		toolbar.offset_bottom = 0.0
 	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
 	if left_stats:
-		left_stats.position.x = (174.0 if not compact and not tablet else 14.0) * scale_factor
+		# Keep the complete HUD stack aligned to a consistent inset from the left screen edge.
+		left_stats.position.x = 14.0 * scale_factor
 	var submenu_control := get_node_or_null("ToolSubmenuScroll") as Control
 	if submenu_control:
 		submenu_control.anchor_left = 0.15
