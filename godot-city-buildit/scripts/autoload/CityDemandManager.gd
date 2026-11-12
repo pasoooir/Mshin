@@ -90,8 +90,7 @@ func _supplier_for(item_id: String) -> Array:
 			if not is_instance_valid(building) or building.status != "completed":
 				continue
 			if str(building.definition.get("category", "")) == "industrial":
-				var allowed: Array = building.definition.get("can_produce", [])
-				if allowed.has(item_id):
+				if ProductionManager.raw_materials.has(item_id):
 					result.append({"building_id":building.building_id,"name":str(building.definition.get("name","Factory")),"status":"available"})
 	else:
 		var recipe := ProductionManager.get_recipe(item_id)
