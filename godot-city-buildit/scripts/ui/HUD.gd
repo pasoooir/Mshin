@@ -2463,6 +2463,13 @@ func open_residential_panel(building: Building) -> void:
 	reward.add_theme_font_size_override("font_size", int(11 * _ui_scale))
 	reward.add_theme_color_override("font_color", Color("#34734D"))
 	layout.add_child(reward)
+	var plan_note := Label.new()
+	plan_note.name = "ResidentialPlanDataNote"
+	plan_note.text = ProductionManager.get_upgrade_plan_note(stage)
+	plan_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	plan_note.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	plan_note.add_theme_color_override("font_color", Color("#8A672B"))
+	layout.add_child(plan_note)
 	if is_upgrading:
 		var upgrade_status := Label.new()
 		upgrade_status.name = "ResidentialUpgradeInProgress"
