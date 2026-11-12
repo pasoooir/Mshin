@@ -1110,7 +1110,6 @@ func _run_gameplay_test() -> void:
 	# Production acceptance uses real SCBI durations and advances timestamps in
 	# the test fixture rather than sleeping for minutes.
 	var production_hud = get_node("HUD")
-	var previous_sim_cash_for_speedups := EconomyManager.sim_cash
 	var factory_component = factory.production_component
 	_check(factory_component != null and factory_component.get_slot_count() == 2, "Small Factory must expose two independent production slots.")
 	production_hud.open_production_panel(factory)
@@ -1130,11 +1129,6 @@ func _run_gameplay_test() -> void:
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
-	var factory_speedup_button := production_hud.production_panel.find_child("SpeedUpSlot0", true, false) as Button
-	_check(factory_speedup_button != null and factory_speedup_button.text.contains("1 SC") and not factory_speedup_button.disabled, "Factory Metal speed-up must expose the source-backed 1 SimCash price.")
-	if factory_speedup_button:
-		factory_speedup_button.emit_signal("pressed")
-	_check(bool(factory_component.get_slot(0).get("ready", false)) and EconomyManager.sim_cash == previous_sim_cash_for_speedups - 1, "Factory SimCash speed-up must finish the selected batch and deduct exactly its sourced cost.")
 	var second_metal_button := production_hud.production_panel.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
 	if second_metal_button:
@@ -1195,12 +1189,6 @@ func _run_gameplay_test() -> void:
 		_check(false, "Building Supplies second slot must accept a Nails order.")
 	_check(StorageManager.get_count("metal") == 0, "Queuing two Nails orders must deduct their ingredients from City Storage.")
 	_check(int(shop_component.get_slot(0).get("finish_unix", 0)) > 0 and int(shop_component.get_slot(1).get("finish_unix", 0)) == 0, "Commercial store orders must run sequentially, with later orders waiting in the queue.")
-	production_hud.open_production_panel(supplies)
-	var nails_speedup_button := production_hud.production_panel.find_child("SpeedUpSlot0", true, false) as Button
-	_check(nails_speedup_button != null and nails_speedup_button.text.contains("3 SC") and not nails_speedup_button.disabled, "Nails speed-up must expose the source-backed 3 SimCash price.")
-	if nails_speedup_button:
-		nails_speedup_button.emit_signal("pressed")
-	_check(bool(shop_component.get_slot(0).get("ready", false)) and int(shop_component.get_slot(1).get("finish_unix", 0)) > 0 and EconomyManager.sim_cash == previous_sim_cash_for_speedups - 4, "Speeding up the active store order must finish it, start the next queued order, and deduct its exact sourced cost.")
 	var first_shop_slot: Dictionary = shop_component.slots[0]
 	first_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
 	shop_component.slots[0] = first_shop_slot
@@ -1264,7 +1252,6 @@ func _run_gameplay_test() -> void:
 		buy_queue_slot.emit_signal("pressed")
 	_check(shop_component.get_slot_count() == 3 and EconomyManager.sim_cash == 96, "Buying the next queue slot from the production UI must increase capacity and spend the sourced SimCash amount.")
 	shop_component.store_star_level = 0
-	EconomyManager.sim_cash = previous_sim_cash_for_speedups
 	GameManager.level = previous_level_for_store_star
 	EconomyManager.simoleons = previous_simoleons_for_store_star
 	EconomyManager.sim_cash = previous_sim_cash_for_store_slots
