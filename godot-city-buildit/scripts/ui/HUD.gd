@@ -1657,7 +1657,7 @@ func open_production_panel(building: Building) -> void:
 
 	for item_id in item_ids:
 		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
-		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 		var recipe: Dictionary = {} if component.is_factory else ProductionManager.get_recipe(item_id)
 		var inputs: Dictionary = recipe.get("inputs", {})
 		var can_start := available_slot >= 0 and lock_reason.is_empty()
