@@ -18,6 +18,14 @@ func _ready() -> void:
 		GameManager.level_changed.connect(_queue_refresh)
 	if not GameManager.population_changed.is_connected(_queue_refresh):
 		GameManager.population_changed.connect(_queue_refresh)
+	if not GameManager.xp_changed.is_connected(_queue_refresh):
+		GameManager.xp_changed.connect(_queue_refresh)
+	if not GameManager.happiness_changed.is_connected(_queue_refresh):
+		GameManager.happiness_changed.connect(_queue_refresh)
+	if not EconomyManager.simoleons_changed.is_connected(_queue_refresh):
+		EconomyManager.simoleons_changed.connect(_queue_refresh)
+	if not EconomyManager.keys_changed.is_connected(_queue_refresh):
+		EconomyManager.keys_changed.connect(_queue_refresh)
 	_queue_refresh()
 
 func _on_building_placed(data: Dictionary) -> void:
@@ -93,7 +101,7 @@ func _supplier_for(item_id: String) -> Array:
 				continue
 			if str(building.definition.get("category", "")) == "commercial" and str(building.definition.get("shop_id", "building_supplies" if building.building_type == "shop_chain" else building.building_type)) == shop_id and Array(building.definition.get("recipes", [])).has(item_id):
 				result.append({"building_id":building.building_id,"name":str(building.definition.get("name","Store")),"status":"available"})
- 	if result.is_empty():
+	if result.is_empty():
 		var target_type := "factory_small" if ProductionManager.raw_materials.has(item_id) else str(ProductionManager.get_recipe(item_id).get("store", ""))
 		if target_type == "shop_chain":
 			target_type = "building_supplies"
@@ -237,7 +245,7 @@ func get_city_snapshot() -> Dictionary:
 	return {
 		"storage":{"used":StorageManager.get_used(),"capacity":StorageManager.capacity,"free":StorageManager.get_free()},
 		"economy":{"simoleons":EconomyManager.simoleons,"sim_cash":EconomyManager.sim_cash,"keys":EconomyManager.golden_keys},
-		"city":{"level":GameManager.level,"population":GameManager.population,"happiness":GameManager.happiness},
+		"city":{"level":GameManager.level,"population":GameManager.population,"happiness":GameManager.happiness,"experience":GameManager.experience,"xp_needed":GameManager.get_xp_needed()},
 		"summary":{"homes":homes.size(),"ready_homes":ready_homes,"waiting_homes":waiting_homes,"critical_items":critical_count,"active_orders":production.orders.size(),"ready_orders":production.orders.filter(func(order: Dictionary) -> bool: return bool(order.ready)).size()},
 		"items":item_rows,
 		"homes":homes,
