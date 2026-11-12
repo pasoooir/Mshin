@@ -33,18 +33,41 @@ func get_slot(index: int) -> Dictionary:
 	return slots[index].duplicate(true)
 
 func refresh_slots() -> void:
+	_ensure_slots()
 	var now := int(Time.get_unix_time_from_system())
 	var changed := false
 	for index in range(slots.size()):
 		var slot: Dictionary = slots[index]
 		if slot.is_empty() or bool(slot.get("ready", false)):
 			continue
-		if now >= int(slot.get("finish_unix", 0)):
+		var finish_unix := int(slot.get("finish_unix", 0))
+		if finish_unix > 0 and now >= finish_unix:
 			slot["ready"] = true
 			slots[index] = slot
 			changed = true
+	if not is_factory and _start_next_store_order():
+		changed = true
 	if changed:
 		slots_changed.emit()
+
+func _start_next_store_order() -> bool:
+	if is_factory:
+		return false
+	for slot in slots:
+		if not slot.is_empty() and not bool(slot.get("ready", false)) and int(slot.get("finish_unix", 0)) > 0:
+			return false
+	for index in range(slots.size()):
+		var slot: Dictionary = slots[index]
+		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_unix", 0)) > 0:
+			continue
+		var item_id := str(slot.get("item_id", ""))
+		var duration := int(ProductionManager.get_production_time(item_id))
+		slot["start_unix"] = int(Time.get_unix_time_from_system())
+		slot["finish_unix"] = int(slot["start_unix"]) + maxi(1, duration)
+		slot["queued"] = false
+		slots[index] = slot
+		return true
+	return false
 
 func start_factory(item_id: String, slot_index: int) -> bool:
 	_ensure_slots()
@@ -80,10 +103,12 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 		return false
 	slots[slot_index] = {
 		"item_id": recipe_id,
-		"start_unix": int(Time.get_unix_time_from_system()),
-		"finish_unix": int(Time.get_unix_time_from_system()) + int(recipe.get("time_sec", 300)),
-		"ready": false
+		"start_unix": 0,
+		"finish_unix": 0,
+		"ready": false,
+		"queued": true
 	}
+	_start_next_store_order()
 	slots_changed.emit()
 	return true
 
