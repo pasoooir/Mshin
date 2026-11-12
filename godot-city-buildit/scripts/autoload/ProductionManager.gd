@@ -413,8 +413,8 @@ func get_production_time(item_id: String, store_star_level: int = 0) -> float:
 	return maxf(1.0, ceil(base_seconds * (1.0 - reduction)))
 
 # Each tier is enabled only when both its Mayor Level gate and Simoleon
-# price are backed by a store-specific reference. Donut Shop's third-star
-# price is intentionally omitted because references conflict (45k vs 49k).
+# price are backed by store-specific references. Partial arrays intentionally
+# stop before any tier whose level gate is still unknown.
 func get_store_star_offer(store_id: String, current_star_level: int) -> Dictionary:
 	var upgrade_data: Dictionary = {
 		"building_supplies": [
