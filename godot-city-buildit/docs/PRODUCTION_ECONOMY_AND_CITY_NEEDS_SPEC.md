@@ -4,7 +4,7 @@
 **Target project:** `godot-city-buildit` / Pasoo City BuildIt  
 **Reference game:** SimCity BuildIt (SCBI)  
 **Research snapshot:** 2026-11-12  
-**Implementation status:** Specification only. This document does not claim that the systems below are already implemented.
+**Implementation status:** Design reference plus active implementation contract. Current code status and remaining data gaps are tracked in [Production Economy Implementation Tracker](PRODUCTION_ECONOMY_IMPLEMENTATION_TRACKER.md).
 
 > **Purpose.** Establish one authoritative, detailed design contract for factories, commercial stores, item recipes, residential upgrade plans, citywide demand visibility, and the visual/UI language used by all related panels. The player must be able to understand and manage the city's production economy without opening every factory, store, or home individually.
 
@@ -624,3 +624,45 @@ This milestone is complete only when:
 | Local item/building icon IDs | `godot-city-buildit/scripts/ui/Icons.gd` |
 
 **Source caution:** Community references are living documents and sometimes disagree on production time, unlock level, or regional content. Revalidate a value against at least one current item reference before converting it into an authoritative Mshin balance rule.
+
+
+---
+
+# 28. Implementation status — 2026-11-12
+
+The six implementation slices now have corresponding code in the current Mshin implementation branch. This section distinguishes completed core behaviour from catalogues that remain intentionally disabled because their exact recipes are not verified.
+
+| Slice | Current implementation evidence | Status |
+|---|---|---|
+| 1. Central data catalogue | ProductionManager.gd owns raw materials, factory-tier permissions, 23 craftable products and store recipes; StorageManager derives display metadata from it. | 🟢 Core |
+| 2. Factory/store production | Tier-specific raw permissions; per-slot timestamp jobs; atomic input deduction; collect-to-warehouse; full-storage protection. | 🟢 Core |
+| 3. Residential upgrade plans | Existing six-stage Mshin plan retained; 1 Nail + 1 Metal remains the first upgrade; residential detail panel shows material counts and suppliers. | 🟢 Core |
+| 4. City Needs dashboard | CityDemandManager.gd aggregates home demand, production, ready jobs, supplier routes and shared-stock allocation; persistent HUD shortcut opens the dashboard. | 🟢 Core |
+| 5. SCBI-inspired UI | Shared light production/residential surfaces, product tiles, input details, status warnings, timers, queue and mobile scroll behaviour. | 🟡 Visual comparison still required on Android against current in-game reference captures |
+| 6. Economy/save integration | Build costs, upgrade rewards, XP, population, warehouse transactions, construction finish timestamps and save migration are connected. | 🟢 Code; CI/runtime validation pending |
+
+## 28.1 Current playable recipe coverage
+
+- Building Supplies: Nails, Planks, Bricks, Cement, Glue, Paint.
+- Hardware Store: Hammer, Measuring Tape, Shovel, Cooking Utensils, Ladder, Drill.
+- Farmer's Market: Vegetables, Flour Bag, Cream, Corn, Cheese, Beef.
+- Furniture Store: Chair, Table, Home Textiles, Cupboard, Couch.
+- Fast Food Restaurant: Ice Cream Sandwich, Pizza, Burger, Cheese Fries, Lemonade Bottle, Popcorn are visible as catalog entries but cannot be started until exact recipes are verified.
+- Traditional Restaurant and Art Supplies: production panels exist, but the catalogs remain empty and explicitly state that no verified recipes are registered.
+
+The additional SCBI commercial families (Gardening Supplies, Donut Shop, Fashion Store, Home Appliances, Sports Shop, Toy Shop, Bureau of Restoration, Country Store and Dessert Shop) remain catalog expansion work; do not infer their recipes from product names alone.
+
+## 28.2 Source conflicts retained visibly
+
+Community references disagree on several recipe inputs, including Glue, Paint, Cooking Utensils, Flour Bag and Corn. The implementation records provenance and surfaces a warning in the product details for disputed entries. These values must be checked against a current live-game capture before final economy balancing. This avoids silently treating one community table as an EA-confirmed recipe.
+
+## 28.3 Inventory and home allocation invariants
+
+- A stored item is allocated to at most one residential plan in the dashboard snapshot.
+- Ready-to-collect and in-production quantities are shown separately from stored inventory.
+- An upgrade button is enabled only when that home's allocated stored quantities cover its entire plan.
+- Starting a craft validates every input before mutating storage; failed starts do not partially consume items.
+- Collect adds exactly one output to storage; a full warehouse leaves the slot ready.
+- Construction and production finish timestamps survive save/load; version-1 saves remain accepted.
+
+For exact test names and paths, see [Production Economy Implementation Tracker](PRODUCTION_ECONOMY_IMPLEMENTATION_TRACKER.md).
