@@ -2118,10 +2118,10 @@ func open_city_needs_panel() -> void:
 	var city: Dictionary = snapshot.get("city", {})
 	var summary_label := Label.new()
 	summary_label.name = "CityNeedsSummary"
-	summary_label.text = "LEVEL %d   ·   XP %d/%d   ·   POPULATION %s   ·   HAPPINESS %d%%   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   WAITING %d   ·   ACTIVE ORDERS %d   ·   READY ORDERS %d" % [
+	summary_label.text = "LEVEL %d   ·   XP %d/%d   ·   POPULATION %s   ·   HAPPINESS %d%%   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   UPGRADING %d   ·   WAITING %d   ·   ACTIVE ORDERS %d   ·   READY ORDERS %d" % [
 		int(city.get("level", 1)), int(city.get("experience", 0)), int(city.get("xp_needed", 0)), _format_count(int(city.get("population", 0))), roundi(float(city.get("happiness", 0.0))),
 		int(storage.get("used", 0)), int(storage.get("capacity", 0)),
-		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)),
+		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)), int(summary.get("upgrading_homes", 0)),
 		int(summary.get("waiting_homes", 0)), int(summary.get("active_orders", 0)), int(summary.get("ready_orders", 0))
 	]
 	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2324,8 +2324,9 @@ func open_city_needs_panel() -> void:
 		home_title.add_theme_color_override("font_color", Color("#24485B"))
 		home_header.add_child(home_title)
 		var home_button := Button.new()
-		home_button.text = "UPGRADE" if bool(home.get("ready", false)) and int(home.get("stage", 1)) < 6 else "WAITING"
-		home_button.disabled = not bool(home.get("ready", false)) or int(home.get("stage", 1)) >= 6
+		var home_upgrading := bool(home.get("upgrading", false))
+		home_button.text = "UPGRADING" if home_upgrading else ("UPGRADE" if bool(home.get("ready", false)) and int(home.get("stage", 1)) < 6 else "WAITING")
+		home_button.disabled = home_upgrading or not bool(home.get("ready", false)) or int(home.get("stage", 1)) >= 6
 		home_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 		home_button.pressed.connect(_upgrade_home_from_dashboard.bind(str(home.get("building_id", ""))))
 		home_header.add_child(home_button)
@@ -2434,8 +2435,13 @@ func open_residential_panel(building: Building) -> void:
 	layout.add_theme_constant_override("separation", 8)
 	panel.add_child(layout)
 	_city_panel_heading(layout, "RESIDENTIAL UPGRADE PLAN", _close_residential_panel)
+	var plan_icon := Icons.make_icon("hard_hat", Vector2(38, 38) * _ui_scale)
+	plan_icon.name = "ResidentialPlanHardHat"
+	plan_icon.modulate = Color("#3D9DE5")
+	layout.add_child(plan_icon)
 	var stage := int(building.upgrade_stage)
-	var requirements: Array = ProductionManager.get_upgrade_requirements(stage)
+	var is_upgrading := bool(building.upgrade_in_progress)
+	var requirements: Array = [] if is_upgrading else ProductionManager.get_upgrade_requirements(stage)
 	var city_snapshot := CityDemandManager.get_city_snapshot()
 	var home_data: Dictionary = {}
 	for candidate in city_snapshot.get("homes", []):
@@ -2453,7 +2459,14 @@ func open_residential_panel(building: Building) -> void:
 	reward.add_theme_font_size_override("font_size", int(11 * _ui_scale))
 	reward.add_theme_color_override("font_color", Color("#34734D"))
 	layout.add_child(reward)
-	var all_available := not requirements.is_empty()
+	if is_upgrading:
+		var upgrade_status := Label.new()
+		upgrade_status.name = "ResidentialUpgradeInProgress"
+		upgrade_status.text = "SCAFFOLDING IN PROGRESS  ·  %d SECONDS REMAINING" % building.get_upgrade_remaining_seconds()
+		upgrade_status.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+		upgrade_status.add_theme_color_override("font_color", Color("#315C8A"))
+		layout.add_child(upgrade_status)
+	var all_available := not requirements.is_empty() and not is_upgrading
 	for requirement in requirements:
 		var item_id := str(requirement.get("item", ""))
 		var amount := int(requirement.get("amount", 0))
@@ -2499,8 +2512,8 @@ func open_residential_panel(building: Building) -> void:
 		layout.add_child(supplier_line)
 	var upgrade := Button.new()
 	upgrade.name = "ResidentialUpgradeButton"
-	upgrade.text = "UPGRADE HOME" if stage < 6 else "MAXIMUM LEVEL"
-	upgrade.disabled = stage >= 6 or not all_available
+	upgrade.text = "UPGRADING" if is_upgrading else ("UPGRADE HOME" if stage < 6 else "MAXIMUM LEVEL")
+	upgrade.disabled = is_upgrading or stage >= 6 or not all_available
 	upgrade.custom_minimum_size.y = 44 * _ui_scale
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 	upgrade.pressed.connect(_upgrade_residential_from_panel.bind(building))
