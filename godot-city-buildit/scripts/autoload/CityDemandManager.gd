@@ -29,7 +29,7 @@ func _ready() -> void:
 	_queue_refresh()
 
 func _on_building_placed(data: Dictionary) -> void:
-	var node := BuildManager.buildings.get(str(data.get("id", "")))
+	var node: Variant = BuildManager.buildings.get(str(data.get("id", "")))
 	if is_instance_valid(node):
 		_connect_building(node)
 	_queue_refresh()
