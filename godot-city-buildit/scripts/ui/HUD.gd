@@ -2546,6 +2546,7 @@ func open_residential_panel(building: Building) -> void:
 		upgrade_status.add_theme_color_override("font_color", Color("#315C8A"))
 		layout.add_child(upgrade_status)
 	var all_available := not requirements.is_empty() and not is_upgrading
+	var shortage_lines: Array[String] = []
 	for requirement in requirements:
 		var item_id := str(requirement.get("item", ""))
 		var amount := int(requirement.get("amount", 0))
@@ -2560,6 +2561,7 @@ func open_residential_panel(building: Building) -> void:
 		var shortage := int(allocated_need.get("shortage", maxi(0, amount - owned)))
 		if owned < amount:
 			all_available = false
+			shortage_lines.append("%s ×%d" % [CityDemandManager.get_item_name(item_id), maxi(0, amount - owned)])
 		var need_status := "READY"
 		var need_color := Color("#34734D")
 		if owned < amount:
@@ -2589,9 +2591,40 @@ func open_residential_panel(building: Building) -> void:
 		supplier_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 		supplier_line.add_theme_color_override("font_color", Color("#607989"))
 		layout.add_child(supplier_line)
+	var plan_status := Label.new()
+	plan_status.name = "ResidentialPlanStatus"
+	plan_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	plan_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if is_upgrading:
+		plan_status.text = "MSHIN TEMPORARY CONSTRUCTION · %d SEC LEFT" % building.get_upgrade_remaining_seconds()
+		plan_status.add_theme_color_override("font_color", Color("#315C8A"))
+	elif stage >= 6:
+		plan_status.text = "MAXIMUM RESIDENTIAL LEVEL"
+		plan_status.add_theme_color_override("font_color", Color("#587487"))
+	elif all_available:
+		plan_status.text = "ALL REQUIRED MATERIALS READY · HOME CAN BE UPGRADED"
+		plan_status.add_theme_color_override("font_color", Color("#34734D"))
+	else:
+		plan_status.text = "MATERIALS MISSING · " + (", ".join(shortage_lines) if not shortage_lines.is_empty() else "CHECK REQUIRED ITEMS")
+		plan_status.add_theme_color_override("font_color", Color("#A13F35"))
+	plan_status.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	layout.add_child(plan_status)
+	if is_upgrading:
+		var upgrade_progress := ProgressBar.new()
+		upgrade_progress.name = "ResidentialUpgradeProgress"
+		upgrade_progress.min_value = 0.0
+		upgrade_progress.max_value = 1.0
+		upgrade_progress.show_percentage = false
+		var remaining_seconds := building.get_upgrade_remaining_seconds()
+		upgrade_progress.value = clampf(1.0 - float(remaining_seconds) / 4.0, 0.0, 1.0)
+		upgrade_progress.custom_minimum_size.y = 10.0 * _ui_scale
+		layout.add_child(upgrade_progress)
+		if remaining_seconds > 0:
+			var progress_tween := create_tween()
+			progress_tween.tween_property(upgrade_progress, "value", 1.0, float(remaining_seconds))
 	var upgrade := Button.new()
 	upgrade.name = "ResidentialUpgradeButton"
-	upgrade.text = "UPGRADING" if is_upgrading else ("UPGRADE HOME" if stage < 6 else "MAXIMUM LEVEL")
+	upgrade.text = "CONSTRUCTION IN PROGRESS" if is_upgrading else ("DELIVER MATERIALS & UPGRADE" if all_available else ("MATERIALS MISSING" if stage < 6 else "MAXIMUM LEVEL"))
 	upgrade.disabled = is_upgrading or stage >= 6 or not all_available
 	upgrade.custom_minimum_size.y = 44 * _ui_scale
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
