@@ -1495,6 +1495,9 @@ func open_production_panel(building: Building) -> void:
 	_production_building = building
 	if is_instance_valid(production_overlay):
 		production_overlay.queue_free()
+
+	# SimCity BuildIt-inspired production studio: keep the city visible and
+	# arrange floating item hexagons above a compact production queue.
 	production_overlay = Control.new()
 	production_overlay.name = "ProductionOverlay"
 	production_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1505,66 +1508,27 @@ func open_production_panel(building: Building) -> void:
 	var shade := ColorRect.new()
 	shade.name = "ProductionBackdrop"
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.015, 0.025, 0.035, 0.66)
+	shade.color = Color(0.015, 0.025, 0.035, 0.24)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	production_overlay.add_child(shade)
 
 	production_panel = PanelContainer.new()
 	production_panel.name = "BuildingProductionPanel"
-	production_panel.anchor_left = 0.5
-	production_panel.anchor_right = 0.5
-	production_panel.anchor_top = 0.5
-	production_panel.anchor_bottom = 0.5
-	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(viewport_size.x - 28.0, 900.0 * _ui_scale)
-	var panel_height := minf(viewport_size.y - 28.0, 560.0 * _ui_scale)
-	production_panel.offset_left = -panel_width * 0.5
-	production_panel.offset_right = panel_width * 0.5
-	production_panel.offset_top = -panel_height * 0.5
-	production_panel.offset_bottom = panel_height * 0.5
-	production_panel.add_theme_stylebox_override("panel", _toolbar_style(Color("#102B3B"), Color("#72B9D8")))
-	production_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	production_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	production_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	production_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	production_overlay.add_child(production_panel)
 
 	var layout := VBoxContainer.new()
 	layout.name = "ProductionLayout"
-	layout.add_theme_constant_override("separation", 10)
+	layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layout.add_theme_constant_override("separation", 7)
+	layout.add_theme_constant_override("margin_left", int(16 * _ui_scale))
+	layout.add_theme_constant_override("margin_right", int(16 * _ui_scale))
+	layout.add_theme_constant_override("margin_top", int(10 * _ui_scale))
+	layout.add_theme_constant_override("margin_bottom", int(10 * _ui_scale))
 	production_panel.add_child(layout)
 
-	var header := HBoxContainer.new()
-	header.name = "ProductionHeader"
-	header.add_theme_constant_override("separation", 10)
-	layout.add_child(header)
-	var production_icon_id := building.building_type if Icons.COMMERCIAL_IDS.has(building.building_type) else "factory_basic"
-	var shop_icon := Icons.make_icon(production_icon_id, Vector2(54, 54) * _ui_scale)
-	shop_icon.name = "ProductionBuildingIcon"
-	header.add_child(shop_icon)
-	var title_stack := VBoxContainer.new()
-	title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_stack.add_theme_constant_override("separation", 0)
-	header.add_child(title_stack)
-	var title := Label.new()
-	title.text = str(building.definition.get("name", "Production")).to_upper()
-	title.add_theme_font_size_override("font_size", int(22 * _ui_scale))
-	title.add_theme_color_override("font_color", Color.WHITE)
-	title_stack.add_child(title)
-	var subtitle := Label.new()
-	subtitle.text = "SELECT AN ITEM · CHECK MATERIALS · START PRODUCTION"
-	subtitle.add_theme_font_size_override("font_size", int(11 * _ui_scale))
-	subtitle.add_theme_color_override("font_color", Color("#A9C5D5"))
-	title_stack.add_child(subtitle)
-	var close := Button.new()
-	close.name = "ProductionClose"
-	close.text = "✕"
-	close.custom_minimum_size = Vector2(48, 48) * _ui_scale
-	close.add_theme_font_size_override("font_size", int(24 * _ui_scale))
-	close.add_theme_color_override("font_color", Color.WHITE)
-	close.add_theme_stylebox_override("normal", _toolbar_style(Color(0.12, 0.17, 0.21, 0.9), Color(1, 1, 1, 0.18)))
-	close.pressed.connect(_close_production_panel)
-	header.add_child(close)
-
-	var divider := HSeparator.new()
-	layout.add_child(divider)
 	var component = building.production_component
 	if not is_instance_valid(component):
 		var unavailable := Label.new()
@@ -1572,15 +1536,56 @@ func open_production_panel(building: Building) -> void:
 		layout.add_child(unavailable)
 		return
 
+	# Narrow title ribbon mirrors the centered factory/store nameplate in SCBI.
+	var header_center := CenterContainer.new()
+	header_center.name = "ProductionHeaderCenter"
+	header_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.add_child(header_center)
+	var header := PanelContainer.new()
+	header.name = "ProductionHeader"
+	header.add_theme_stylebox_override("panel", _toolbar_style(Color("#17232D"), Color("#E8C64D")))
+	header_center.add_child(header)
+	var header_row := HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 9)
+	header.add_child(header_row)
+	var production_icon_id := building.building_type if Icons.COMMERCIAL_IDS.has(building.building_type) else "factory_basic"
+	var building_icon := Icons.make_icon(production_icon_id, Vector2(34, 34) * _ui_scale)
+	building_icon.name = "ProductionBuildingIcon"
+	header_row.add_child(building_icon)
+	var title := Label.new()
+	title.text = str(building.definition.get("name", "Production")).to_upper()
+	title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	title.add_theme_color_override("font_color", Color.WHITE)
+	header_row.add_child(title)
+	var close := Button.new()
+	close.name = "ProductionClose"
+	close.text = "✕"
+	close.custom_minimum_size = Vector2(38, 38) * _ui_scale
+	close.add_theme_font_size_override("font_size", int(20 * _ui_scale))
+	close.add_theme_color_override("font_color", Color.WHITE)
+	close.add_theme_stylebox_override("normal", _toolbar_style(Color(0.12, 0.17, 0.21, 0.9), Color(1, 1, 1, 0.18)))
+	close.pressed.connect(_close_production_panel)
+	header_row.add_child(close)
+
+	var hint := Label.new()
+	hint.text = "SELECT AN ITEM  •  REVIEW THE RECIPE  •  START PRODUCTION"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	hint.add_theme_color_override("font_color", Color("#F5F7F8"))
+	layout.add_child(hint)
+
 	var available_slot := -1
 	for slot_index in range(component.get_slot_count()):
 		if component.get_slot(slot_index).is_empty():
 			available_slot = slot_index
 			break
+
 	var products_title := Label.new()
-	products_title.text = "AVAILABLE PRODUCTS" if available_slot >= 0 else "PRODUCTION QUEUE"
-	products_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
-	products_title.add_theme_color_override("font_color", Color("#F6D36B"))
+	products_title.name = "AvailableProductsTitle"
+	products_title.text = "FACTORY MATERIALS" if component.is_factory else "SHOP PRODUCTS"
+	products_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	products_title.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	products_title.add_theme_color_override("font_color", Color("#FFE07A"))
 	layout.add_child(products_title)
 
 	var product_scroll := ScrollContainer.new()
@@ -1588,118 +1593,121 @@ func open_production_panel(building: Building) -> void:
 	product_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	product_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	product_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	product_scroll.custom_minimum_size.y = 142.0 * _ui_scale
 	layout.add_child(product_scroll)
-	var product_row := HBoxContainer.new()
-	product_row.name = "ProductionProductCards"
-	product_row.add_theme_constant_override("separation", 12)
-	product_scroll.add_child(product_row)
 
-	if available_slot >= 0:
-		var item_ids: Array = []
-		if component.is_factory:
-			for item_id in building.definition.get("can_produce", ["metal", "wood"]):
-				if ProductionManager.raw_materials.has(item_id):
-					item_ids.append(str(item_id))
-		else:
-			for item_id in building.definition.get("recipes", []):
-				if not ProductionManager.get_recipe(str(item_id)).is_empty():
-					item_ids.append(str(item_id))
-		for item_id in item_ids:
-			var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
-			var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
-			if not component.is_factory and lock_reason.is_empty() and not ProductionManager.can_craft(item_id):
-				lock_reason = "Need " + ProductionManager.get_missing_inputs_text(item_id)
-			var item_button := Button.new()
-			item_button.name = "Slot%d_%s" % [available_slot, item_id]
-			item_button.custom_minimum_size = Vector2(156, 178) * _ui_scale
-			item_button.disabled = not lock_reason.is_empty()
-			item_button.focus_mode = Control.FOCUS_NONE
-			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-				var card_style := StyleBoxFlat.new()
-				card_style.bg_color = Color("#F1F8FC") if not item_button.disabled else Color("#8495A0")
-				card_style.border_color = Color("#75B7D9") if not item_button.disabled else Color("#AAB5BC")
-				card_style.set_border_width_all(2 if state == "hover" else 1)
-				card_style.set_corner_radius_all(15)
-				card_style.content_margin_left = 8
-				card_style.content_margin_right = 8
-				card_style.content_margin_top = 7
-				card_style.content_margin_bottom = 7
-				item_button.add_theme_stylebox_override(state, card_style)
-			var card_content := VBoxContainer.new()
-			card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			card_content.alignment = BoxContainer.ALIGNMENT_CENTER
-			card_content.add_theme_constant_override("separation", 3)
-			card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			item_button.add_child(card_content)
-			var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(58, 58) * _ui_scale)
-			item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			card_content.add_child(item_icon)
-			var item_name := Label.new()
-			item_name.text = str(data.get("name", item_id.capitalize()))
-			item_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			item_name.add_theme_font_size_override("font_size", int(13 * _ui_scale))
-			item_name.add_theme_color_override("font_color", Color("#203B4B") if not item_button.disabled else Color("#E7EDF0"))
-			card_content.add_child(item_name)
-			var duration := Label.new()
-			duration.text = "◷  " + _format_duration(int(data.get("time_sec", 60)))
-			duration.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			duration.add_theme_font_size_override("font_size", int(11 * _ui_scale))
-			duration.add_theme_color_override("font_color", Color("#26769D") if not item_button.disabled else Color("#E0E7EB"))
-			card_content.add_child(duration)
-			if not component.is_factory:
-				var recipe := ProductionManager.get_recipe(item_id)
-				var inputs: Dictionary = recipe.get("inputs", {})
-				var ingredient_parts: Array[String] = []
-				for input_id in inputs:
-					var input_data: Dictionary = ProductionManager.raw_materials.get(input_id, ProductionManager.crafted_items.get(input_id, {}))
-					ingredient_parts.append("%s ×%d" % [str(input_data.get("name", str(input_id).capitalize())), int(inputs[input_id])])
-				var ingredients := Label.new()
-				ingredients.name = "IngredientsLabel"
-				ingredients.text = " + ".join(ingredient_parts)
-				ingredients.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				ingredients.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				ingredients.add_theme_font_size_override("font_size", int(9 * _ui_scale))
-				ingredients.add_theme_color_override("font_color", Color("#527183") if not item_button.disabled else Color("#DCE4E8"))
-				card_content.add_child(ingredients)
-			if not lock_reason.is_empty():
-				var lock_label := Label.new()
-				lock_label.text = "🔒 " + lock_reason
-				lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				lock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				lock_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
-				lock_label.add_theme_color_override("font_color", Color("#FFF0C9"))
-				card_content.add_child(lock_label)
-				item_button.tooltip_text = lock_reason
-			item_button.pressed.connect(func():
-				var started: bool = component.start_factory(item_id, available_slot) if component.is_factory else component.start_craft(item_id, available_slot)
-				if started:
-					status_label.text = "Production started: %s." % item_id.capitalize()
-				else:
-					var missing := ProductionManager.get_missing_inputs_text(item_id)
-					status_label.text = "Not enough materials: %s" % missing if not missing.is_empty() else "Cannot start this production."
-				open_production_panel(building)
-			)
-			product_row.add_child(item_button)
+	var product_grid := GridContainer.new()
+	product_grid.name = "ProductionProductCards"
+	product_grid.columns = 6
+	product_grid.add_theme_constant_override("h_separation", 8)
+	product_grid.add_theme_constant_override("v_separation", 4)
+	product_scroll.add_child(product_grid)
+
+	var item_ids: Array = []
+	if component.is_factory:
+		for item_id in building.definition.get("can_produce", ["metal", "wood"]):
+			if ProductionManager.raw_materials.has(item_id):
+				item_ids.append(str(item_id))
 	else:
-		var waiting := Label.new()
-		waiting.text = "All production slots are occupied. Collect a finished product or wait for a batch to finish."
-		waiting.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		waiting.add_theme_color_override("font_color", Color("#DCE8EF"))
-		product_row.add_child(waiting)
+		for item_id in building.definition.get("recipes", []):
+			if not ProductionManager.get_recipe(str(item_id)).is_empty():
+				item_ids.append(str(item_id))
+
+	for item_id in item_ids:
+		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
+		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+		var recipe: Dictionary = {} if component.is_factory else ProductionManager.get_recipe(item_id)
+		var inputs: Dictionary = recipe.get("inputs", {})
+		var can_start := available_slot >= 0 and lock_reason.is_empty()
+		if not component.is_factory and lock_reason.is_empty() and not StorageManager.has_items(inputs):
+			can_start = false
+
+		var item_button := Button.new()
+		item_button.name = "Slot%d_%s" % [available_slot, item_id]
+		item_button.custom_minimum_size = Vector2(104, 116) * _ui_scale
+		item_button.focus_mode = Control.FOCUS_NONE
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			item_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+
+		# Six-sided white tile with a subtle blue rim, matching the reference's
+		# floating hexagonal item selectors rather than generic rectangular cards.
+		var hex_size := Vector2(96, 104) * _ui_scale
+		var hex := Polygon2D.new()
+		hex.name = "HexagonBackground"
+		hex.position = Vector2(4, 3) * _ui_scale
+		hex.polygon = PackedVector2Array([
+			Vector2(hex_size.x * 0.5, 0),
+			Vector2(hex_size.x, hex_size.y * 0.25),
+			Vector2(hex_size.x, hex_size.y * 0.75),
+			Vector2(hex_size.x * 0.5, hex_size.y),
+			Vector2(0, hex_size.y * 0.75),
+			Vector2(0, hex_size.y * 0.25)
+		])
+		hex.color = Color("#EAF5FA") if lock_reason.is_empty() else Color("#9AAAB2")
+		item_button.add_child(hex)
+		var hex_outline := Line2D.new()
+		hex_outline.name = "HexagonOutline"
+		hex_outline.position = hex.position
+		hex_outline.points = PackedVector2Array([
+			Vector2(hex_size.x * 0.5, 0),
+			Vector2(hex_size.x, hex_size.y * 0.25),
+			Vector2(hex_size.x, hex_size.y * 0.75),
+			Vector2(hex_size.x * 0.5, hex_size.y),
+			Vector2(0, hex_size.y * 0.75),
+			Vector2(0, hex_size.y * 0.25)
+		])
+		hex_outline.closed = true
+		hex_outline.width = 2.0 * _ui_scale
+		hex_outline.default_color = Color("#FFFFFF")
+		item_button.add_child(hex_outline)
+
+		var tile_content := VBoxContainer.new()
+		tile_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		tile_content.alignment = BoxContainer.ALIGNMENT_CENTER
+		tile_content.add_theme_constant_override("separation", 0)
+		tile_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		item_button.add_child(tile_content)
+		var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(54, 54) * _ui_scale)
+		item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tile_content.add_child(item_icon)
+		var item_name := Label.new()
+		item_name.text = str(data.get("name", item_id.capitalize()))
+		item_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		item_name.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		item_name.add_theme_color_override("font_color", Color("#263F4B"))
+		tile_content.add_child(item_name)
+		if not lock_reason.is_empty():
+			var lock_label := Label.new()
+			lock_label.text = "LOCKED"
+			lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lock_label.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+			lock_label.add_theme_color_override("font_color", Color("#8B2930"))
+			tile_content.add_child(lock_label)
+		item_button.tooltip_text = lock_reason
+		item_button.pressed.connect(func():
+			_show_production_item_details(building, item_id, available_slot)
+		)
+		product_grid.add_child(item_button)
+
+	var details_host := Control.new()
+	details_host.name = "ProductionDetailsHost"
+	details_host.custom_minimum_size.y = 94.0 * _ui_scale
+	layout.add_child(details_host)
 
 	var queue_heading := HBoxContainer.new()
+	queue_heading.name = "ProductionQueueHeading"
 	layout.add_child(queue_heading)
 	var queue_title := Label.new()
 	queue_title.text = "PRODUCTION QUEUE"
 	queue_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
-	queue_title.add_theme_color_override("font_color", Color("#F6D36B"))
+	queue_title.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	queue_title.add_theme_color_override("font_color", Color("#FFE07A"))
 	queue_heading.add_child(queue_title)
 	var queue_count := Label.new()
-	queue_count.text = "%d / %d SLOTS" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
+	queue_count.text = "%d / %d" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
 	queue_count.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-	queue_count.add_theme_color_override("font_color", Color("#B9D0DC"))
+	queue_count.add_theme_color_override("font_color", Color.WHITE)
 	queue_heading.add_child(queue_count)
 
 	var queue_scroll := ScrollContainer.new()
@@ -1707,7 +1715,7 @@ func open_production_panel(building: Building) -> void:
 	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = 104.0 * _ui_scale
+	queue_scroll.custom_minimum_size.y = 96.0 * _ui_scale
 	layout.add_child(queue_scroll)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
@@ -1717,45 +1725,45 @@ func open_production_panel(building: Building) -> void:
 		var slot: Dictionary = component.get_slot(slot_index)
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
-		slot_card.custom_minimum_size = Vector2(124, 94) * _ui_scale
-		var slot_fill := Color(0.06, 0.11, 0.15, 0.82) if not slot.is_empty() else Color(0.02, 0.04, 0.06, 0.20)
-		var slot_border := Color("#F3F6F8") if slot.is_empty() else Color("#6DA9C4")
+		slot_card.custom_minimum_size = Vector2(124, 90) * _ui_scale
+		var slot_fill := Color(0.025, 0.045, 0.06, 0.72) if not slot.is_empty() else Color(0.025, 0.045, 0.06, 0.28)
+		var slot_border := Color("#FFFFFF") if slot.is_empty() else Color("#78C9E8")
 		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
 		queue_row.add_child(slot_card)
 		var slot_content := VBoxContainer.new()
 		slot_content.alignment = BoxContainer.ALIGNMENT_CENTER
-		slot_content.add_theme_constant_override("separation", 2)
+		slot_content.add_theme_constant_override("separation", 1)
 		slot_card.add_child(slot_content)
 		if slot.is_empty():
 			var empty_label := Label.new()
 			empty_label.text = "EMPTY"
 			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			empty_label.add_theme_color_override("font_color", Color("#E7EFF4"))
-			empty_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+			empty_label.add_theme_color_override("font_color", Color("#FFFFFF"))
+			empty_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 			slot_content.add_child(empty_label)
 		else:
-			var item_id := str(slot.get("item_id", ""))
+			var queued_item_id := str(slot.get("item_id", ""))
 			var item_category := "raw" if component.is_factory else "crafted"
 			var queue_item_row := HBoxContainer.new()
 			queue_item_row.alignment = BoxContainer.ALIGNMENT_CENTER
 			slot_content.add_child(queue_item_row)
-			queue_item_row.add_child(Icons.make_item_icon(item_category, item_id, Vector2(30, 30) * _ui_scale))
+			queue_item_row.add_child(Icons.make_item_icon(item_category, queued_item_id, Vector2(28, 28) * _ui_scale))
 			var queue_item_name := Label.new()
-			queue_item_name.text = item_id.capitalize()
-			queue_item_name.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
+			queue_item_name.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 			queue_item_name.add_theme_color_override("font_color", Color.WHITE)
 			queue_item_row.add_child(queue_item_name)
 			if bool(slot.get("ready", false)):
 				var collect_button := Button.new()
 				collect_button.name = "CollectSlot%d" % slot_index
 				collect_button.text = "COLLECT"
-				collect_button.custom_minimum_size.y = 30 * _ui_scale
-				collect_button.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+				collect_button.custom_minimum_size.y = 27 * _ui_scale
+				collect_button.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 				collect_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E6B93E"), Color("#FFE18A")))
 				collect_button.add_theme_color_override("font_color", Color("#34280B"))
 				collect_button.pressed.connect(func():
 					if component.collect(slot_index):
-						status_label.text = "Collected %s into City Storage." % item_id.capitalize()
+						status_label.text = "Collected %s into City Storage." % queued_item_id.capitalize()
 					else:
 						status_label.text = "Storage full — collect space in City Storage first."
 					open_production_panel(building)
@@ -1768,16 +1776,16 @@ func open_production_panel(building: Building) -> void:
 				timer_label.set_meta("slot_index", slot_index)
 				timer_label.text = _format_clock_duration(remaining)
 				timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				timer_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+				timer_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 				timer_label.add_theme_color_override("font_color", Color("#FFE18A"))
 				slot_content.add_child(timer_label)
 				var progress := ProgressBar.new()
 				progress.name = "ProgressSlot%d" % slot_index
 				progress.set_meta("slot_index", slot_index)
 				progress.show_percentage = false
-				progress.custom_minimum_size.y = 7.0 * _ui_scale
+				progress.custom_minimum_size.y = 6.0 * _ui_scale
 				progress.max_value = 1.0
-				var total_seconds := maxf(1.0, ProductionManager.get_production_time(item_id))
+				var total_seconds := maxf(1.0, ProductionManager.get_production_time(queued_item_id))
 				var started_unix := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total_seconds)))
 				progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
 				progress.set_meta("start_unix", started_unix)
@@ -1787,11 +1795,103 @@ func open_production_panel(building: Building) -> void:
 				_production_progress_bars.append(progress)
 
 	var footer := Label.new()
-	footer.text = "Products are stored in City Storage when collected."
-	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	footer.add_theme_font_size_override("font_size", int(10 * _ui_scale))
-	footer.add_theme_color_override("font_color", Color("#9FB6C4"))
+	footer.text = "Completed goods are collected into City Storage."
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	footer.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	footer.add_theme_color_override("font_color", Color("#E5EDF1"))
 	layout.add_child(footer)
+
+
+func _show_production_item_details(building: Building, item_id: String, slot_index: int) -> void:
+	if not is_instance_valid(production_panel) or not is_instance_valid(building):
+		return
+	var host := production_panel.find_child("ProductionDetailsHost", true, false) as Control
+	if not is_instance_valid(host):
+		return
+	for child in host.get_children():
+		child.queue_free()
+
+	var component = building.production_component
+	var is_factory := component.is_factory
+	var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.crafted_items.get(item_id, {}))
+	var recipe: Dictionary = {} if is_factory else ProductionManager.get_recipe(item_id)
+	var inputs: Dictionary = recipe.get("inputs", {})
+	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+	var missing := "" if is_factory else ProductionManager.get_missing_inputs_text(item_id)
+	var can_start := slot_index >= 0 and lock_reason.is_empty() and (is_factory or missing.is_empty())
+
+	var detail := PanelContainer.new()
+	detail.name = "ProductionItemDetails"
+	detail.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	detail.add_theme_stylebox_override("panel", _toolbar_style(Color("#F5FBFE"), Color("#9BD3E8")))
+	host.add_child(detail)
+	var detail_row := HBoxContainer.new()
+	detail_row.add_theme_constant_override("separation", 12)
+	detail.add_child(detail_row)
+
+	var selected_icon := Icons.make_item_icon("raw" if is_factory else "crafted", item_id, Vector2(52, 52) * _ui_scale)
+	detail_row.add_child(selected_icon)
+	var text_stack := VBoxContainer.new()
+	text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_stack.add_theme_constant_override("separation", 1)
+	detail_row.add_child(text_stack)
+	var selected_name := Label.new()
+	selected_name.text = str(data.get("name", item_id.capitalize()))
+	selected_name.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	selected_name.add_theme_color_override("font_color", Color("#173746"))
+	text_stack.add_child(selected_name)
+	var production_time := Label.new()
+	production_time.text = "PRODUCTION TIME  " + _format_duration(int(data.get("time_sec", 60)))
+	production_time.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	production_time.add_theme_color_override("font_color", Color("#315C70"))
+	text_stack.add_child(production_time)
+	if is_factory:
+		var storage_label := Label.new()
+		storage_label.text = "IN CITY STORAGE  %d" % StorageManager.get_count(item_id)
+		storage_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		storage_label.add_theme_color_override("font_color", Color("#315C70"))
+		text_stack.add_child(storage_label)
+	else:
+		var ingredients_label := Label.new()
+		ingredients_label.name = "IngredientsLabel"
+		var ingredient_lines: Array[String] = []
+		for input_id in inputs:
+			var input_data: Dictionary = ProductionManager.raw_materials.get(input_id, ProductionManager.crafted_items.get(input_id, {}))
+			var required := int(inputs[input_id])
+			var owned := StorageManager.get_count(str(input_id))
+			ingredient_lines.append("%s  %d/%d" % [str(input_data.get("name", str(input_id).capitalize())), owned, required])
+			if owned < required:
+				can_start = false
+		ingredients_label.text = "REQUIRED ITEMS  " + "   •   ".join(ingredient_lines)
+		ingredients_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		ingredients_label.add_theme_color_override("font_color", Color("#315C70") if can_start else Color("#A33A36"))
+		text_stack.add_child(ingredients_label)
+	if not lock_reason.is_empty() or not missing.is_empty():
+		var reason := Label.new()
+		reason.text = lock_reason if not lock_reason.is_empty() else "NEED " + missing
+		reason.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		reason.add_theme_color_override("font_color", Color("#A33A36"))
+		text_stack.add_child(reason)
+
+	var start_button := Button.new()
+	start_button.name = "StartProduction"
+	start_button.text = "START"
+	start_button.custom_minimum_size = Vector2(92, 44) * _ui_scale
+	start_button.disabled = not can_start
+	start_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E7BC43"), Color("#FFE18A")))
+	start_button.add_theme_stylebox_override("disabled", _toolbar_style(Color("#AAB7BE"), Color("#D1D9DE")))
+	start_button.add_theme_color_override("font_color", Color("#34280B"))
+	start_button.pressed.connect(func():
+		var started: bool = component.start_factory(item_id, slot_index) if is_factory else component.start_craft(item_id, slot_index)
+		if started:
+			status_label.text = "Production started: %s." % str(data.get("name", item_id))
+		else:
+			var latest_missing := ProductionManager.get_missing_inputs_text(item_id)
+			status_label.text = "Not enough materials: %s" % latest_missing if not latest_missing.is_empty() else "Cannot start this production."
+		open_production_panel(building)
+	)
+	detail_row.add_child(start_button)
+
 
 func _count_empty_production_slots(component: ProductionComponent) -> int:
 	var empty_count := 0
