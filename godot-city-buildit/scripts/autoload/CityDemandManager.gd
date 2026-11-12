@@ -209,9 +209,10 @@ func get_city_snapshot() -> Dictionary:
 				"shortage":still_needed,
 				"suppliers":_supplier_for(item_id)
 			})
-		if all_stored:
+		var can_upgrade := stage < 6 and all_stored
+		if stage < 6 and can_upgrade:
 			ready_homes += 1
-		else:
+		elif stage < 6:
 			waiting_homes += 1
 		homes.append({
 			"building_id":building.building_id,
@@ -219,7 +220,7 @@ func get_city_snapshot() -> Dictionary:
 			"stage":stage,
 			"next_stage":mini(stage + 1, 6),
 			"population":int(building.current_population),
-			"ready":all_stored,
+			"ready":can_upgrade,
 			"needs":home_needs
 		})
 	var item_rows: Array = []
