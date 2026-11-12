@@ -2073,7 +2073,7 @@ func open_city_needs_panel() -> void:
 	var city: Dictionary = snapshot.get("city", {})
 	var summary_label := Label.new()
 	summary_label.name = "CityNeedsSummary"
-	summary_label.text = "LEVEL %d   ·   XP %d/%d   ·   POPULATION %s   ·   HAPPINESS %d%%   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   WAITING %d   ·   READY ORDERS %d" % [
+	summary_label.text = "LEVEL %d   ·   XP %d/%d   ·   POPULATION %s   ·   HAPPINESS %d%%   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   WAITING %d   ·   ACTIVE ORDERS %d   ·   READY ORDERS %d" % [
 		int(city.get("level", 1)), int(city.get("experience", 0)), int(city.get("xp_needed", 0)), _format_count(int(city.get("population", 0))), roundi(float(city.get("happiness", 0.0))),
 		int(storage.get("used", 0)), int(storage.get("capacity", 0)),
 		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)),
