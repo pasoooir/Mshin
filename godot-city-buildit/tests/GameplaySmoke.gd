@@ -1216,6 +1216,17 @@ func _run_gameplay_test() -> void:
 	StorageManager.add_item("metal",1)
 	StorageManager.add_item("wood",1)
 	var hardware_component = hardware.production_component
+	_check(hardware_component.get_slot_count() == 2, "Every commercial store must start with two queue slots.")
+	var sim_cash_before_queue_expansion := EconomyManager.sim_cash
+	_check(hardware_component.purchase_store_queue_slot(1), "Commercial queue must allow a SimCash-funded slot expansion.")
+	_check(hardware_component.get_slot_count() == 3 and EconomyManager.sim_cash == sim_cash_before_queue_expansion - 1, "Purchased commercial queue capacity must add one slot and deduct the supplied SimCash price.")
+	var restored_queue := ProductionComponentScript.new()
+	restored_queue.shop_id = "hardware_store"
+	add_child(restored_queue)
+	restored_queue.from_save_array(hardware_component.to_save_array())
+	_check(restored_queue.get_slot_count() == 3, "Purchased commercial queue capacity must survive save/load.")
+	restored_queue.queue_free()
+	EconomyManager.sim_cash = sim_cash_before_queue_expansion
 	_check(hardware_component.start_craft("hammer",0), "Hardware Store must craft Hammer from Metal and Wood.")
 	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Hammer recipe must consume Metal and Wood at start.")
 	var hammer_slot: Dictionary = hardware_component.slots[0]
