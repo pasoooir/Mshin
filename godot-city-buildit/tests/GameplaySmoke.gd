@@ -83,7 +83,7 @@ func _test_storage_and_production_chain() -> void:
 	_check(int(ProductionManager.get_recipe("chair").get("time_sec", 0)) == 1200 and ProductionManager.get_recipe("chair").get("inputs", {}) == {"wood":2,"nails":1,"hammer":1}, "Chair recipe must use the documented three-stage input chain.")
 	_check(int(ProductionManager.get_recipe("table").get("time_sec", 0)) == 1800 and ProductionManager.get_recipe("table").get("inputs", {}) == {"planks":1,"nails":2,"hammer":1}, "Table recipe must use the documented input chain.")
 	_check(ProductionManager.get_store_recipe_ids("hardware_store").has("drill") and ProductionManager.get_store_recipe_ids("farmers_market").has("beef") and ProductionManager.get_store_recipe_ids("furniture_store").has("couch"), "Commercial store catalogs must include their verified product families.")
-	for recipe_id in ["cooking_utensils","ladder","drill","flour_bag","cream","corn","cheese","beef","home_textiles","cupboard","couch","pizza","cheese_fries"]:
+	for recipe_id in ["cooking_utensils","ladder","drill","flour_bag","cream","corn","cheese","beef","home_textiles","cupboard","couch","pizza","cheese_fries","fruit_berries","bread_roll","bbq_grill","microwave_oven","ice_cream_sandwich","burger","lemonade_bottle"]:
 		_check(StorageManager.item_definitions.has(recipe_id), "%s must be registered in City Storage." % recipe_id)
 		_check(Icons.CRAFTED_IDS.has(recipe_id), "%s must have a local product icon definition." % recipe_id)
 	_check(not ProductionManager.get_store_recipe_ids("hardware_store").has("paint"), "Paint must not appear in Hardware Store; its supplier is Building Supplies.")
@@ -96,12 +96,17 @@ func _test_storage_and_production_chain() -> void:
 	_check(BuildManager.building_types.factory_nano.get("production_slots",0) == 5 and BuildManager.building_types.factory_nano.get("pollution",1) == 0 and BuildManager.building_types.factory_nano.get("population_required",0) == 150000, "Nano-tech Factory must have 5 slots, no pollution and require 150,000 population.")
 	_check(ProductionManager.raw_materials.has("electrical"), "Small Factory must support all raw products, gated only by each material's Mayor Level.")
 	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
-	_check(BuildManager.building_types.fast_food.get("production_slots",0) == 1, "Fast Food Restaurant must open a production panel.")
+	_check(BuildManager.building_types.fast_food.get("production_slots",0) == 1 and int(BuildManager.building_types.fast_food.get("level", 0)) == 25, "Fast Food Restaurant must follow its SCBI unlock and open a production panel.")
+	_check(BuildManager.building_types.donut_shop.get("production_slots",0) == 1 and BuildManager.building_types.home_appliances.get("production_slots",0) == 1 and BuildManager.building_types.gardening_supplies.get("production_slots",0) == 1, "Upstream SCBI stores must expose production panels.")
+	_check(ProductionManager.get_store_recipe_ids("donut_shop").has("bread_roll") and ProductionManager.get_store_recipe_ids("home_appliances").has("bbq_grill") and ProductionManager.get_store_recipe_ids("home_appliances").has("microwave_oven") and ProductionManager.get_store_recipe_ids("farmers_market").has("fruit_berries"), "Fast Food upstream supply chains must resolve to their correct stores.")
 	_check(ProductionManager.get_store_catalog_ids("fast_food").size() == 6 and ProductionManager.get_store_recipe_ids("fast_food").has("pizza") and ProductionManager.get_store_recipe_ids("fast_food").has("cheese_fries"), "Fast Food must display all six products and activate verified recipes.")
 	_check(ProductionManager.get_recipe("pizza").get("inputs", {}) == {"flour_bag":1,"cheese":1,"beef":1} and int(ProductionManager.get_recipe("pizza").get("time_sec", 0)) == 1440, "Pizza must use its verified 24-minute recipe.")
 	_check(ProductionManager.get_recipe("cheese_fries").get("inputs", {}) == {"cheese":1,"vegetables":1} and int(ProductionManager.get_recipe("cheese_fries").get("time_sec", 0)) == 1200, "Cheese Fries must use its verified 20-minute recipe.")
-	_check(ProductionManager.get_recipe("ice_cream_sandwich").is_empty() and ProductionManager.get_recipe_lock_reason("ice_cream_sandwich").contains("not verified"), "Fast Food products without verified recipes must remain visible but unstartable.")
-	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn"]:
+	_check(ProductionManager.get_recipe("ice_cream_sandwich").get("inputs", {}) == {"cream":1,"bread_roll":1}, "Ice Cream Sandwich must use the verified Donut Shop supply chain.")
+	_check(ProductionManager.get_recipe("burger").get("inputs", {}) == {"beef":1,"bread_roll":1,"bbq_grill":1}, "Burger must use the verified Home Appliances supply chain.")
+	_check(ProductionManager.get_recipe("lemonade_bottle").get("inputs", {}) == {"glass":2,"sugar_spices":2,"fruit_berries":1}, "Lemonade Bottle must use the verified Farmer's Market supply chain.")
+	_check(ProductionManager.get_recipe("popcorn").is_empty() and ProductionManager.get_recipe_lock_reason("popcorn").contains("not verified"), "Popcorn must remain disabled until the store-star recipe is verified.")
+	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn","bread_roll","bbq_grill","microwave_oven","fruit_berries","tree_sapling","donuts","green_smoothie","cherry_cheesecake","frozen_yogurt","coffee","refrigerator","lighting_system","tv","grass","garden_furniture","lawn_mower","fire_pit","garden_gnome"]:
 		_check(Icons.CRAFTED_IDS.has(catalog_id), "%s must have a local product icon." % catalog_id)
 	# Mayor level unlocks materials; factory count and factory tier use separate gates.
 	var original_level := GameManager.level
@@ -796,8 +801,11 @@ func _run_gameplay_test() -> void:
 		_check(hud.submenu.get_node_or_null("farmers_market") != null, "Commercial menu is missing Farmer's Market.")
 		_check(hud.submenu.get_node_or_null("furniture_store") != null, "Commercial menu is missing Furniture Store.")
 		_check(ProductionManager.get_default_recipe_for_building("shop_chain") == "nails", "Chain store should reuse the existing Nails recipe.")
+		var saved_level_for_fast_food := GameManager.level
+		GameManager.level = 25
 		hud._on_submenu_option("commercial", "fast_food")
 		_confirm_catalog_build(hud)
+		GameManager.level = saved_level_for_fast_food
 		_check(BuildManager.selected_building_type == "fast_food" and BuildManager.is_placing, "Fast Food choice did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("road")
