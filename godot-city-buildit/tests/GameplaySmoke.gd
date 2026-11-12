@@ -1263,6 +1263,34 @@ func _run_gameplay_test() -> void:
 	_check(int(BuildManager.building_types["restoration_office"].level) == 45 and int(BuildManager.building_types["restoration_office"].cost) == 250000, "Bureau of Restoration unlock must use the current year-round level and cost.")
 	_check(int(BuildManager.building_types["farmers_store"].level) == 50 and int(BuildManager.building_types["farmers_store"].cost) == 300000, "Country Store unlock must use the current year-round level and cost.")
 	_check(int(BuildManager.building_types["dessert_shop"].level) == 55 and int(BuildManager.building_types["dessert_shop"].cost) == 350000, "Dessert Shop unlock must use the current year-round level and cost.")
+
+	GameManager.level = 90
+	var verified_later_recipes := {
+		"ping_pong_table": {"level": 55, "time": 5400, "stars": 1},
+		"block_letters": {"level": 40, "time": 3600, "stars": 0},
+		"game_console": {"level": 58, "time": 4500, "stars": 1},
+		"forged_iron": {"level": 45, "time": 1800, "stars": 0},
+		"carved_wood": {"level": 54, "time": 3600, "stars": 0},
+		"wool_shirt": {"level": 50, "time": 4500, "stars": 0},
+		"picnic_basket": {"level": 59, "time": 3600, "stars": 0},
+		"apple_jam": {"level": 73, "time": 3600, "stars": 1},
+		"tiramisu": {"level": 55, "time": 2700, "stars": 0},
+		"churros": {"level": 63, "time": 2100, "stars": 0},
+		"profiterole": {"level": 71, "time": 2100, "stars": 0},
+		"mochi": {"level": 79, "time": 2700, "stars": 0},
+		"pavlova": {"level": 87, "time": 5400, "stars": 1}
+	}
+	for item_id in verified_later_recipes:
+		var later_recipe: Dictionary = ProductionManager.get_recipe(item_id)
+		var later_recipe_case: Dictionary = verified_later_recipes[item_id]
+		_check(not later_recipe.is_empty() and int(later_recipe.get("level", 0)) == int(later_recipe_case.level) and int(later_recipe.get("time_sec", 0)) == int(later_recipe_case.time), "%s must use its sourced level and production time." % item_id)
+		if int(later_recipe_case.stars) > 0:
+			_check(ProductionManager.get_recipe_lock_reason(item_id, 0).contains("Store Star"), "%s must require its sourced store star." % item_id)
+			_check(ProductionManager.get_recipe_lock_reason(item_id, 1).is_empty(), "%s must unlock at its sourced store star." % item_id)
+		else:
+			_check(ProductionManager.get_recipe_lock_reason(item_id, 0).is_empty(), "%s must be craftable at its sourced Mayor Level." % item_id)
+	_check(ProductionManager.get_recipe("kite").is_empty() and ProductionManager.get_recipe("teddy_bear").is_empty(), "Products with unverified unlock levels or missing recipe verification must remain disabled.")
+	_check(ProductionManager.get_store_recipe_ids("dessert_shop").has("pavlova"), "Dessert Shop's verified product must appear in its production catalog.")
 	var donut_third_star_offer := ProductionManager.get_store_star_offer("donut_shop", 2)
 	_check(int(donut_third_star_offer.get("level", 0)) == 50 and int(donut_third_star_offer.get("cost", 0)) == 49000, "Donut Shop third star must use the 49,000 Simoleon value corroborated by the Japanese table and Planning Guide.")
 	for star_gated_item in ["ladder", "corn", "cupboard", "lawn_mower", "microwave_oven"]:
