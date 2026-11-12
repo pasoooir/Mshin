@@ -85,12 +85,14 @@ func has_item(item_id: String, amount: int = 1) -> bool:
 
 func has_items(requirements: Dictionary) -> bool:
 	for item_id in requirements:
-		if get_count(str(item_id)) < int(requirements[item_id]):
+		var amount := int(requirements[item_id])
+		if str(item_id).is_empty() or amount <= 0 or get_count(str(item_id)) < amount:
 			return false
 	return true
 
 func remove_items(requirements: Dictionary) -> bool:
-	if not has_items(requirements):
+	# Validate the complete transaction before mutating any inventory row.
+	if requirements.is_empty() or not has_items(requirements):
 		return false
 	for item_id in requirements:
 		var amount := int(requirements[item_id])
@@ -99,6 +101,22 @@ func remove_items(requirements: Dictionary) -> bool:
 			items.erase(str(item_id))
 		else:
 			items[str(item_id)] = remaining
+	storage_changed.emit()
+	return true
+
+func add_items(additions: Dictionary) -> bool:
+	if additions.is_empty():
+		return false
+	var total_to_add := 0
+	for item_id in additions:
+		var amount := int(additions[item_id])
+		if str(item_id).is_empty() or amount <= 0:
+			return false
+		total_to_add += amount
+	if get_free() < total_to_add:
+		return false
+	for item_id in additions:
+		items[str(item_id)] = get_count(str(item_id)) + int(additions[item_id])
 	storage_changed.emit()
 	return true
 
