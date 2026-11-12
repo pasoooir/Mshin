@@ -1759,7 +1759,7 @@ func open_production_panel(building: Building) -> void:
 	queue_count.add_theme_color_override("font_color", Color("#547286"))
 	queue_heading.add_child(queue_count)
 	if not component.is_factory:
-		var next_slot_cost := component.get_next_store_queue_slot_cost()
+		var next_slot_cost: int = component.get_next_store_queue_slot_cost()
 		var add_slot := Button.new()
 		add_slot.name = "PurchaseQueueSlot"
 		add_slot.text = ("+ SLOT · %d SC" % next_slot_cost) if next_slot_cost > 0 else "MAX SLOTS"
