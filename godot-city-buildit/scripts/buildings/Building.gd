@@ -1184,8 +1184,8 @@ func start_commercial_production(item_id: String) -> bool:
 		return false
 	if is_producing or has_ready_product or item_id == "":
 		return false
-	var allowed_recipes: Array = definition.get("recipes", [])
-	if not allowed_recipes.has(item_id) or not ProductionManager.can_craft(item_id):
+	var shop_id := str(definition.get("shop_id", "building_supplies" if building_type == "shop_chain" else building_type))
+	if not ProductionManager.get_store_recipe_ids(shop_id).has(item_id) or not ProductionManager.can_craft(item_id):
 		return false
 	if not ProductionManager.consume_inputs(item_id):
 		return false
