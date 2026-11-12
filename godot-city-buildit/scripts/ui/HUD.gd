@@ -1890,7 +1890,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			ingredient_lines.append("%s  %d/%d" % [str(input_data.get("name", str(input_id).capitalize())), owned, required])
 			if owned < required:
 				can_start = false
-		ingredients_label.text = "REQUIRED ITEMS  " + "   •   ".join(ingredient_lines)
+		ingredients_label.text = ("REQUIRED ITEMS  " + "   •   ".join(ingredient_lines)) if not inputs.is_empty() else "RECIPE INPUTS NOT VERIFIED — PRODUCTION DISABLED"
 		ingredients_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		ingredients_label.add_theme_color_override("font_color", Color("#315C70") if can_start else Color("#A33A36"))
 		text_stack.add_child(ingredients_label)
