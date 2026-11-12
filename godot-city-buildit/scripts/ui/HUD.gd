@@ -1580,6 +1580,25 @@ func open_production_panel(building: Building) -> void:
 	close.add_theme_color_override("font_color", Color("#17394D"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#DCECF5"), Color("#B7D4E3")))
 	close.pressed.connect(_close_production_panel)
+	if not component.is_factory and ProductionManager.is_store_star_upgrade_supported(str(component.shop_id)):
+		var star_status := Label.new()
+		star_status.name = "StoreStarStatus"
+		star_status.text = "★".repeat(component.store_star_level) + "☆".repeat(3 - component.store_star_level)
+		star_status.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+		star_status.add_theme_color_override("font_color", Color("#E4A82F"))
+		header_row.add_child(star_status)
+		var star_offer := ProductionManager.get_store_star_offer(str(component.shop_id), component.store_star_level)
+		if not star_offer.is_empty():
+			var star_button := Button.new()
+			star_button.name = "UpgradeStoreStar"
+			var required_level := int(star_offer.get("level", 999))
+			var star_cost := int(star_offer.get("cost", 0))
+			star_button.text = "UPGRADE · %d¢" % star_cost
+			star_button.disabled = GameManager.level < required_level or EconomyManager.simoleons < star_cost
+			star_button.tooltip_text = "Unlocks at Level %d · reduces production time by %d%%" % [required_level, int(star_offer.get("reduction", 0))]
+			star_button.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			star_button.pressed.connect(_upgrade_store_star.bind(building))
+			header_row.add_child(star_button)
 	header_row.add_child(close)
 
 	var hint := Label.new()
@@ -1739,6 +1758,16 @@ func open_production_panel(building: Building) -> void:
 	queue_count.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 	queue_count.add_theme_color_override("font_color", Color("#547286"))
 	queue_heading.add_child(queue_count)
+	if not component.is_factory:
+		var next_slot_cost := component.get_next_store_queue_slot_cost()
+		var add_slot := Button.new()
+		add_slot.name = "PurchaseQueueSlot"
+		add_slot.text = ("+ SLOT · %d SC" % next_slot_cost) if next_slot_cost > 0 else "MAX SLOTS"
+		add_slot.disabled = next_slot_cost <= 0 or EconomyManager.sim_cash < next_slot_cost
+		add_slot.tooltip_text = "Add one queue slot. SimCash cost is from the commercial-building reference." if next_slot_cost > 0 else "Maximum 11 queue slots."
+		add_slot.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		add_slot.pressed.connect(_purchase_store_queue_slot.bind(building))
+		queue_heading.add_child(add_slot)
 
 	var queue_scroll := ScrollContainer.new()
 	queue_scroll.name = "ProductionQueueScroll"
@@ -1786,7 +1815,10 @@ func open_production_panel(building: Building) -> void:
 			if bool(slot.get("ready", false)):
 				var collect_button := Button.new()
 				collect_button.name = "CollectSlot%d" % slot_index
-				collect_button.text = "COLLECT"
+				var storage_has_room := StorageManager.can_add(queued_item_id, 1)
+				collect_button.text = "COLLECT" if storage_has_room else "STORAGE FULL"
+				collect_button.disabled = not storage_has_room
+				collect_button.tooltip_text = "Collect into City Storage." if storage_has_room else "Free at least one storage slot; this completed item will remain here."
 				collect_button.custom_minimum_size.y = 27 * _ui_scale
 				collect_button.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 				collect_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E6B93E"), Color("#FFE18A")))
@@ -1810,6 +1842,13 @@ func open_production_panel(building: Building) -> void:
 					queued_label.add_theme_color_override("font_color", Color("#A36B12"))
 					slot_content.add_child(queued_label)
 				else:
+					if not component.is_factory:
+						var producing_label := Label.new()
+						producing_label.text = "PRODUCING"
+						producing_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+						producing_label.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+						producing_label.add_theme_color_override("font_color", Color("#315C8A"))
+						slot_content.add_child(producing_label)
 					var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
 					var timer_label := Label.new()
 					timer_label.name = "TimerSlot%d" % slot_index
@@ -1825,7 +1864,7 @@ func open_production_panel(building: Building) -> void:
 					progress.show_percentage = false
 					progress.custom_minimum_size.y = 6.0 * _ui_scale
 					progress.max_value = 1.0
-					var total_seconds := maxf(1.0, ProductionManager.get_production_time(queued_item_id))
+					var total_seconds := maxf(1.0, component.get_item_production_time(queued_item_id))
 					var started_unix := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total_seconds)))
 					progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
 					progress.set_meta("start_unix", started_unix)
@@ -1842,6 +1881,35 @@ func open_production_panel(building: Building) -> void:
 	layout.add_child(footer)
 
 
+func _purchase_store_queue_slot(building: Building) -> void:
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return
+	var component: ProductionComponent = building.production_component
+	var cost := component.get_next_store_queue_slot_cost()
+	if cost <= 0:
+		status_label.text = "This store already has the maximum 11 queue slots."
+	elif component.purchase_store_queue_slot(cost):
+		status_label.text = "Queue capacity increased to %d slots." % component.get_slot_count()
+	else:
+		status_label.text = "Not enough SimCash to unlock the next queue slot (%d required)." % cost
+	open_production_panel(building)
+
+func _upgrade_store_star(building: Building) -> void:
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return
+	var component: ProductionComponent = building.production_component
+	var offer := ProductionManager.get_store_star_offer(str(component.shop_id), component.store_star_level)
+	if offer.is_empty():
+		return
+	if GameManager.level < int(offer.get("level", 999)):
+		status_label.text = "Store upgrade unlocks at Level %d." % int(offer.level)
+	elif component.upgrade_store_star():
+		status_label.text = "Store upgraded to %d star. New orders use the reduced production time." % component.store_star_level
+	else:
+		status_label.text = "Not enough Simoleons for this store upgrade."
+	open_production_panel(building)
+
+
 func _show_production_item_details(building: Building, item_id: String, slot_index: int) -> void:
 	if not is_instance_valid(production_panel) or not is_instance_valid(building):
 		return
@@ -1856,7 +1924,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
 	var recipe: Dictionary = {} if is_factory else ProductionManager.get_recipe(item_id)
 	var inputs: Dictionary = recipe.get("inputs", {})
-	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 	var missing := "" if is_factory else ProductionManager.get_missing_inputs_text(item_id)
 	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (is_factory or missing.is_empty())
 
@@ -1887,7 +1955,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	elif selected_recipe.is_empty():
 		production_time.text = "PRODUCTION TIME  NOT VERIFIED"
 	else:
-		production_time.text = "PRODUCTION TIME  " + _format_duration(int(selected_recipe.get("time_sec", 60)))
+		production_time.text = "PRODUCTION TIME  " + _format_duration(int(ceil(component.get_item_production_time(item_id))))
 	production_time.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	production_time.add_theme_color_override("font_color", Color("#315C70"))
 	text_stack.add_child(production_time)
@@ -2005,7 +2073,7 @@ func _update_production_timers() -> void:
 		label.text = _format_clock_duration(remaining)
 		for progress in _production_progress_bars:
 			if is_instance_valid(progress) and int(progress.get_meta("slot_index", -1)) == slot_index:
-				var total_seconds := maxf(1.0, ProductionManager.get_production_time(item_id))
+				var total_seconds := maxf(1.0, _production_building.production_component.get_item_production_time(item_id))
 				progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
 		if remaining <= 0:
 			need_rebuild = true
