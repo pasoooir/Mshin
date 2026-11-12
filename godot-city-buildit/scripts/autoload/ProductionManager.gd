@@ -131,6 +131,9 @@ var store_catalog := {
 	]
 }
 
+# Residential material plans below are Mshin fallback templates, not an exact
+# SimCity BuildIt plan-roll table. The reference system randomizes material type
+# and quantity per requirement slot; do not treat these rows as verified SCBI data.
 var upgrade_requirements := {
 	1: [{"item":"nails","amount":1},{"item":"metal","amount":1}],
 	2: [{"item":"planks","amount":1},{"item":"wood","amount":1}],
@@ -387,6 +390,11 @@ func get_production_time(item_id: String) -> float:
 
 func get_upgrade_requirements(from_stage: int) -> Array:
 	return upgrade_requirements.get(from_stage, [])
+
+func get_upgrade_plan_note(from_stage: int) -> String:
+	if from_stage == 1:
+		return "MSHIN STARTER TEMPLATE — Nails + Metal; exact SCBI quantities are not independently verified."
+	return "MSHIN FALLBACK TEMPLATE — SCBI plan slots and material quantities vary; exact roll not verified."
 
 func get_population_for_stage(stage: int) -> int:
 	return residential_population.get(clampi(stage,1,6),15)
