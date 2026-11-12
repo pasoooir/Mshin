@@ -62,7 +62,7 @@ This is the first visual-quality slice, not the final art target: production-qua
 
 ## HUD and local icon assets
 
-Existing HUD/build icons use local transparent 128×128 PNG artwork. Newly added production products may use local transparent SVG artwork when no PNG exists; scripts/ui/Icons.gd resolves PNG first, then SVG, then the safe placeholder. All assets are bundled locally and work offline. The validator continues to enforce PNG requirements for required build icons and accepts a local PNG or SVG for catalog-only products. The artwork is original and uses no third-party icon pack or external runtime assets.
+Existing HUD/build icons use local transparent 128×128 PNG artwork. Newly added production products and commercial stores may use local transparent SVG artwork when no PNG exists; scripts/ui/Icons.gd resolves PNG first, then SVG, then the safe placeholder. All assets are bundled locally and work offline. The validator continues to enforce PNG requirements for required build icons and accepts a local PNG or SVG for catalog-only products. The artwork is original and uses no third-party icon pack or external runtime assets.
 \n## City services
 
 Wind power and water towers each provide 12 units of capacity within a 28 m coverage radius. Each completed home requires 2 power and 2 water. The HUD shows capacity used, and city happiness is calculated from homes receiving both services.
