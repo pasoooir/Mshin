@@ -307,6 +307,7 @@ func _test_build_menu_visibility() -> void:
 			for state in ["normal", "hover", "pressed", "focus"]:
 				_check(button.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Category PNG must remain transparent in every interaction state.")
 			_check(button.mouse_filter == Control.MOUSE_FILTER_PASS, "Category image must pass touch drags to its vertical ScrollContainer.")
+			_check(category_icon.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Category PNG must not intercept touch drags before the button/scroll container.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
 	var currency_stack := hud.get_node_or_null("TopRightCurrencies") as VBoxContainer
@@ -340,6 +341,8 @@ func _test_build_menu_visibility() -> void:
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			_check(locked_pump.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Catalog cards must not gain black/white backgrounds in any state.")
 		_check(locked_pump.mouse_filter == Control.MOUSE_FILTER_PASS, "Dragging from building artwork must reach the horizontal submenu scroller.")
+		var pump_artwork := locked_pump.find_child("SubmenuArtwork", true, false) as TextureRect
+		_check(pump_artwork != null and pump_artwork.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Building PNG must pass touch drags to its card and horizontal scroller.")
 	var unlocked_tower := hud.submenu.get_node_or_null("water_tower") as Button
 	_check(unlocked_tower != null and unlocked_tower.find_child("UnlockLevelBadge", true, false) == null, "Unlocked Water Tower must not display a level badge.")
 	if locked_pump:
