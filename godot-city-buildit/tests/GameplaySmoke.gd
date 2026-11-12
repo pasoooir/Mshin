@@ -55,6 +55,11 @@ func _test_storage_and_production_chain() -> void:
 	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_free() == 48, "Storage item count/free-space accounting is incorrect.")
 	_check(StorageManager.remove_items({"metal":2}), "Storage must remove a validated recipe input set.")
 	_check(StorageManager.get_used() == 0, "Removing recipe inputs must update used storage.")
+	_check(not StorageManager.remove_items({"metal":-1}), "Storage must reject negative inventory transactions.")
+	_check(StorageManager.add_items({"metal":2,"wood":1}), "Storage must atomically add a valid multi-item transaction.")
+	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_count("wood") == 1, "Atomic inventory addition lost an item.")
+	_check(StorageManager.remove_items({"metal":2,"wood":1}), "Storage must atomically remove a valid multi-item transaction.")
+	_check(StorageManager.get_used() == 0, "Atomic inventory removal must restore the original used capacity.")
 	_check(int(ProductionManager.raw_materials.metal.time_sec) == 60, "Metal production must take 60 seconds.")
 	_check(int(ProductionManager.raw_materials.wood.time_sec) == 180, "Wood production must take 180 seconds.")
 	_check(int(ProductionManager.raw_materials.chemicals.time_sec) == 7200, "Chemicals production must take 2 hours.")
@@ -65,6 +70,11 @@ func _test_storage_and_production_chain() -> void:
 	for raw_id in expected_raw_levels:
 		_check(int(ProductionManager.raw_materials[raw_id].get("level", 0)) == int(expected_raw_levels[raw_id]), "%s must unlock at its SCBI Mayor Level." % raw_id)
 		_check(int(ProductionManager.raw_materials[raw_id].get("time_sec", 0)) == int(expected_raw_times[raw_id]), "%s must retain its SCBI production time." % raw_id)
+	_check(int(ProductionManager.get_recipe("hammer").get("time_sec", 0)) == 840, "Hammer must use the documented 14-minute reference time.")
+	_check(int(ProductionManager.get_recipe("measuring_tape").get("time_sec", 0)) == 1200, "Measuring Tape must use the documented 20-minute reference time.")
+	_check(int(ProductionManager.get_recipe("shovel").get("time_sec", 0)) == 1800, "Shovel must use the documented 30-minute reference time.")
+	_check(str(ProductionManager.get_recipe("hammer").get("store", "")) == "hardware_store", "Hammer must be supplied by Hardware Store.")
+	_check(not BuildManager.building_types.hardware_store.get("recipes", []).has("paint"), "Paint must not appear in Hardware Store; its supplier is Building Supplies.")
 	var nails: Dictionary = ProductionManager.get_recipe("nails")
 	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
 	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 2, "Small Factory must expose two parallel production slots.")
@@ -925,6 +935,22 @@ func _run_gameplay_test() -> void:
 
 	await _wait_seconds(4.5)
 	var home = _find_building("residential_1")
+	var city_needs_snapshot: Dictionary = CityDemandManager.get_city_snapshot()
+	_check(int(city_needs_snapshot.get("summary", {}).get("homes", 0)) >= 1, "City Needs must aggregate completed residential buildings.")
+	var nails_need_found := false
+	for city_item in city_needs_snapshot.get("items", []):
+		if str(city_item.get("item_id", "")) == "nails":
+			nails_need_found = int(city_item.get("required", 0)) >= 1
+	_check(nails_need_found, "City Needs must expose the first residential plan's Nails requirement without opening the house.")
+	var needs_hud = get_node("HUD")
+	needs_hud.open_city_needs_panel()
+	_check(needs_hud.find_child("CityNeedsPanel", true, false) != null, "HUD must expose a city-wide needs dashboard.")
+	_check(needs_hud.find_child("CityNeed_nails", true, false) != null, "City Needs dashboard must show aggregated item shortage rows.")
+	needs_hud._close_city_needs_panel()
+	needs_hud.open_residential_panel(home)
+	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
+	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
+	needs_hud._close_residential_panel()
 	var factory = _find_building("industrial_1")
 	_check(home != null and home.status == "completed", "House construction did not finish.")
 	_check(factory != null and factory.status == "completed", "Factory construction did not finish.")
