@@ -2153,6 +2153,8 @@ func open_city_needs_panel() -> void:
 		var supplier_name := str(supplier_list[0].get("name", "Available")) if not supplier_list.is_empty() else "No registered supplier"
 		if supplier_status == "constructing":
 			supplier_name += " · UNDER CONSTRUCTION"
+		elif supplier_status == "catalog_only":
+			supplier_name += " · RECIPE PENDING"
 		var supplier_text := Label.new()
 		supplier_text.text = "SUPPLIER  " + supplier_name
 		supplier_text.add_theme_font_size_override("font_size", int(9 * _ui_scale))
@@ -2161,7 +2163,7 @@ func open_city_needs_panel() -> void:
 		var action := Button.new()
 		action.custom_minimum_size = Vector2(112, 38) * _ui_scale
 		if int(item.get("deficit", 0)) > 0:
-			action.text = "BUILD" if supplier_status == "not_built" else ("BUILDING" if supplier_status == "constructing" else "PRODUCE")
+			action.text = "BUILD" if supplier_status == "not_built" else ("BUILDING" if supplier_status == "constructing" else ("VIEW" if supplier_status == "catalog_only" else "PRODUCE"))
 		else:
 			action.text = "COLLECT" if int(item.get("ready", 0)) > 0 else "COVERED"
 		action.disabled = supplier_list.is_empty() or (int(item.get("deficit", 0)) <= 0 and int(item.get("ready", 0)) <= 0)
