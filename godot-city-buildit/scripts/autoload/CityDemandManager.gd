@@ -231,6 +231,15 @@ func get_city_snapshot() -> Dictionary:
 			"ready":can_upgrade,
 			"needs":home_needs
 		})
+	var inventory_rows: Array = []
+	for inventory_item in StorageManager.get_all_items():
+		var inventory_id := str(inventory_item)
+		var inventory_count := StorageManager.get_count(inventory_id)
+		if inventory_count > 0:
+			inventory_rows.append({"item_id":inventory_id,"name":_item_name(inventory_id),"count":inventory_count})
+	inventory_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return str(a.name) < str(b.name)
+	)
 	var item_rows: Array = []
 	var critical_count := 0
 	for item_variant in required.keys():
@@ -274,6 +283,7 @@ func get_city_snapshot() -> Dictionary:
 		"city":{"level":GameManager.level,"population":GameManager.population,"happiness":GameManager.happiness,"experience":GameManager.experience,"xp_needed":GameManager.get_xp_needed()},
 		"summary":{"homes":homes.size(),"ready_homes":ready_homes,"waiting_homes":waiting_homes,"critical_items":critical_count,"active_orders":production.orders.size(),"ready_orders":production.orders.filter(func(order: Dictionary) -> bool: return bool(order.ready)).size()},
 		"items":item_rows,
+		"inventory":inventory_rows,
 		"homes":homes,
 		"orders":production.orders
 	}
