@@ -1,7 +1,7 @@
 # Mshin City — Realistic 3D World Acceptance Specification
 
 Status: binding implementation backlog, 2026-11-04
-Scope: **City-building game only.** Racing remains a separate product slice with its own renderer, entry point, dependencies, tests and release gates. Do not change racing gameplay or renderer while implementing this specification.
+Scope: **Godot 4.3 city-building project only.** Keep this backlog within `godot-city-buildit`; do not reintroduce the retired web-renderer paths or mix unrelated game systems into the city project.
 
 ## Non-negotiable visual direction
 
@@ -28,7 +28,7 @@ Build a genuinely three-dimensional, inspectable, large-scale city and world. Do
 
 3. **Material and texture system**
    - Use 24-bit True Color RGB (16,777,216 possible RGB colors) with alpha where needed (RGBA8 / 32-bit storage); avoid palette-limited or flat-color-only surfaces.
-   - Create and integrate the six local 512×512 PNG city maps under assets/city/textures/generated/: grass.png, asphalt.png, sidewalk.png, brick.png, concrete.png, roof.png.
+   - Create and integrate the six local 512×512 PNG city maps under godot-city-buildit/assets/city/textures/generated/: grass.png, asphalt.png, sidewalk.png, brick.png, concrete.png, roof.png.
    - Apply textures to the correct Godot 4.3 PBR materials (StandardMaterial3D and imported glTF materials) and surfaces: ground, roads, sidewalks, walls, roofs and building details.
    - Use physically plausible PBR channels where supported: base color, normal, roughness and metallic; use appropriate glass, stone, brick, concrete, wood, metal, roof tile and asphalt response.
    - Prefer high-quality real-world/photographic texture sources with clear licenses (e.g. CC0) when needed; retain optimized local copies and deterministic procedural fallbacks. Never make runtime rendering depend on a remote CDN being available.
@@ -75,6 +75,6 @@ Work through items 1–8 in order, then sub-items individually. Record each as:
 
 Do not mark a feature complete because a file exists or a workflow passes unrelated tests. Do not merge or publish a release as a substitute for acceptance.
 
-## Separate racing workstream
+## Scope guard
 
-The existing racing-only PR #266 (feat/racing-photoreal-track-surfaces) remains separate. Its asphalt/grass/sand/snow/rock/concrete/bark/foliage RGBA8 procedural texture work and racing shader changes must not be mixed into city files or city acceptance claims.
+All implementation and acceptance evidence for this document must come from the current `godot-city-buildit` project. Historical pull requests targeting the retired root-level web renderer are not implementation evidence for this backlog.
