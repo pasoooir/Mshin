@@ -1244,6 +1244,25 @@ func _run_gameplay_test() -> void:
 		_check(is_equal_approx(ProductionManager.get_production_time(str(star_case.item), 1), float(star_case.base) * 0.9), "%s one-star production must reduce the base duration by 10%%." % store_id)
 	_check(ProductionManager.get_recipe_lock_reason("coffee", 0).contains("Store Star"), "Coffee must remain locked until Donut Shop reaches one star.")
 	_check(ProductionManager.get_recipe_lock_reason("popcorn", 0).contains("Store Star"), "Popcorn must remain locked until Fast Food reaches one star.")
+
+	var later_store_star_cases := {
+		"sports_shop": {"level": 55, "cost": 250000, "last_verified": 2},
+		"toy_store": {"level": 58, "cost": 280000, "last_verified": 1},
+		"restoration_office": {"level": 76, "cost": 450000, "last_verified": 2},
+		"farmers_store": {"level": 73, "cost": 310000, "last_verified": 2},
+		"dessert_shop": {"level": 87, "cost": 450000, "last_verified": 1}
+	}
+	for later_store_id in later_store_star_cases:
+		var later_case: Dictionary = later_store_star_cases[later_store_id]
+		var later_offer := ProductionManager.get_store_star_offer(later_store_id, 0)
+		_check(int(later_offer.get("level", 0)) == int(later_case.level) and int(later_offer.get("cost", 0)) == int(later_case.cost), "%s first-star offer must match sourced level and price." % later_store_id)
+		_check(ProductionManager.get_store_star_offer(later_store_id, int(later_case.last_verified)).is_empty(), "%s must not expose an upgrade tier with an unknown level gate." % later_store_id)
+		_check(ProductionManager.get_store_star_status_note(later_store_id, int(later_case.last_verified)) == "NEXT STAR LEVEL UNVERIFIED", "%s UI must explain why its next star is unavailable." % later_store_id)
+	_check(int(BuildManager.building_types["sports_shop"].level) == 35 and int(BuildManager.building_types["sports_shop"].cost) == 80000, "Sports Shop unlock must use the current year-round level and cost.")
+	_check(int(BuildManager.building_types["toy_store"].level) == 40 and int(BuildManager.building_types["toy_store"].cost) == 100000, "Toy Shop unlock must use the current year-round level and cost.")
+	_check(int(BuildManager.building_types["restoration_office"].level) == 45 and int(BuildManager.building_types["restoration_office"].cost) == 250000, "Bureau of Restoration unlock must use the current year-round level and cost.")
+	_check(int(BuildManager.building_types["farmers_store"].level) == 50 and int(BuildManager.building_types["farmers_store"].cost) == 300000, "Country Store unlock must use the current year-round level and cost.")
+	_check(int(BuildManager.building_types["dessert_shop"].level) == 55 and int(BuildManager.building_types["dessert_shop"].cost) == 350000, "Dessert Shop unlock must use the current year-round level and cost.")
 	var donut_third_star_offer := ProductionManager.get_store_star_offer("donut_shop", 2)
 	_check(int(donut_third_star_offer.get("level", 0)) == 50 and int(donut_third_star_offer.get("cost", 0)) == 49000, "Donut Shop third star must use the 49,000 Simoleon value corroborated by the Japanese table and Planning Guide.")
 	for star_gated_item in ["ladder", "corn", "cupboard", "lawn_mower", "microwave_oven"]:
