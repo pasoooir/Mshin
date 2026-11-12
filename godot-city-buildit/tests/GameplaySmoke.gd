@@ -70,6 +70,7 @@ func _test_storage_and_production_chain() -> void:
 	for raw_id in expected_raw_levels:
 		_check(int(ProductionManager.raw_materials[raw_id].get("level", 0)) == int(expected_raw_levels[raw_id]), "%s must unlock at its SCBI Mayor Level." % raw_id)
 		_check(int(ProductionManager.raw_materials[raw_id].get("time_sec", 0)) == int(expected_raw_times[raw_id]), "%s must retain its SCBI production time." % raw_id)
+	_check(ProductionManager.get_factory_material_ids("factory_small").has("electrical") and not ProductionManager.get_factory_material_ids("industrial_1").has("electrical"), "Factory tier restrictions must come from the central catalog.")
 	_check(int(ProductionManager.get_recipe("hammer").get("time_sec", 0)) == 840, "Hammer must use the documented 14-minute reference time.")
 	_check(int(ProductionManager.get_recipe("measuring_tape").get("time_sec", 0)) == 1200, "Measuring Tape must use the documented 20-minute reference time.")
 	_check(int(ProductionManager.get_recipe("shovel").get("time_sec", 0)) == 1800, "Shovel must use the documented 30-minute reference time.")
@@ -923,6 +924,8 @@ func _run_gameplay_test() -> void:
 	BuildManager.select_building("residential_1")
 	_check(BuildManager.can_place_at(Vector2i(0, 1)), "House plot beside road should be valid.")
 	_check(BuildManager.place_building(Vector2i(0, 1)), "Could not place starter house.")
+	var construction_fixture = BuildManager.building_at_cell(Vector2i(0, 1))
+	_check(construction_fixture != null and construction_fixture.construction_finish_unix > int(Time.get_unix_time_from_system()), "New construction must store an authoritative finish timestamp.")
 	var indexed_house = BuildManager.building_at_cell(Vector2i(0, 1))
 	_check(indexed_house != null and indexed_house.building_type == "residential_1", "Building cell index did not resolve the placed house.")
 	_check(BuildManager.building_at_cell(Vector2i(1, 2)) == indexed_house, "Building cell index did not cover the full house footprint.")
