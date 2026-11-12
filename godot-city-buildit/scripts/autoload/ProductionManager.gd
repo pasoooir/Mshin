@@ -178,12 +178,15 @@ func are_recipe_inputs_unlocked(recipe: Dictionary) -> bool:
 
 func can_craft(item_id: String) -> bool:
 	var recipe := get_recipe(item_id)
-	return not recipe.is_empty() and int(recipe.get("level", 1)) <= GameManager.level and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.get("inputs", {}))
+	return not recipe.is_empty() and get_recipe_lock_reason(item_id).is_empty() and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.get("inputs", {}))
 
 func get_recipe_lock_reason(item_id: String) -> String:
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
 		return "Recipe not verified — production disabled"
+	var source_text := str(recipe.get("source", "")).to_lower()
+	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
+		return "Recipe data unresolved — production disabled until verified"
 	if int(recipe.get("level", 1)) > GameManager.level:
 		return "Unlocks at Level %d" % int(recipe.level)
 	for input_id in recipe.get("inputs", {}):
