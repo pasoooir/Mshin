@@ -157,8 +157,12 @@ func load_game() -> bool:
 		if restored_building != null:
 			restored_building.restore_production_state(saved_building.get("production", {}))
 		if restored_building != null and str(restored_building.definition.get("category", "")) == "residential":
-			restored_building.current_population = clampi(int(saved_building.get("population", restored_building.current_population)), 0, HappinessManager._capacity_for_home(restored_building))
-			restored_building.set_meta("immigration_population_initialized", true)
+			if str(saved_building.get("status", "constructing")) == "completed":
+				restored_building.current_population = clampi(int(saved_building.get("population", restored_building.current_population)), 0, HappinessManager._capacity_for_home(restored_building))
+			else:
+				restored_building.current_population = maxi(0, int(restored_building.current_population))
+			if restored_building.status == "completed":
+				restored_building.set_meta("immigration_population_initialized", true)
 
 	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
 	# One-time welcome grant for cities created before the starter-economy update.
