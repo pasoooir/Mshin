@@ -46,21 +46,51 @@ var _fire_smoke: CPUParticles3D = null
 @onready var mesh_root: Node3D = $MeshRoot
 @onready var scaffold_root: Node3D = $ScaffoldRoot
 @onready var hard_hat: Node3D = $HardHat
-@onready var production_icon: Label3D = $ProductionIcon
-@onready var name_label: Label3D = $NameLabel
-@onready var stage_label: Label3D = $StageLabel
+@onready var production_icon: Label3D = get_node_or_null("ProductionIcon") as Label3D
+@onready var name_label: Label3D = get_node_or_null("NameLabel") as Label3D
+@onready var stage_label: Label3D = get_node_or_null("StageLabel") as Label3D
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
-		# Keep the scene contract intact in dummy-renderer tests. Hidden visual
-		# nodes are safe; freeing Label3D nodes here passes a null font mesh to
-		# Godot's dummy renderer during resource teardown.
-		for visual_node in [production_icon, name_label, stage_label, hard_hat]:
-			if is_instance_valid(visual_node):
-				visual_node.visible = false
+		if is_instance_valid(hard_hat):
+			hard_hat.visible = false
 		return
+	_create_visual_labels()
 	if hard_hat:
 		hard_hat.visible = false
+
+func _create_visual_labels() -> void:
+	if production_icon == null:
+		production_icon = Label3D.new()
+		production_icon.name = "ProductionIcon"
+		production_icon.position = Vector3(0.0, 4.5, 0.0)
+		production_icon.visible = false
+		production_icon.pixel_size = 0.045
+		production_icon.text = "⚙️"
+		production_icon.font_size = 52
+		production_icon.outline_size = 10
+		add_child(production_icon)
+	if name_label == null:
+		name_label = Label3D.new()
+		name_label.name = "NameLabel"
+		name_label.position = Vector3(0.0, -0.3, 0.0)
+		name_label.visible = false
+		name_label.pixel_size = 0.03
+		name_label.text = ""
+		name_label.font_size = 28
+		name_label.outline_size = 6
+		add_child(name_label)
+	if stage_label == null:
+		stage_label = Label3D.new()
+		stage_label.name = "StageLabel"
+		stage_label.position = Vector3(0.0, 5.2, 0.0)
+		stage_label.visible = false
+		stage_label.pixel_size = 0.035
+		stage_label.text = "Lv1"
+		stage_label.font_size = 36
+		stage_label.outline_size = 8
+		stage_label.modulate = Color(1.0, 0.95, 0.5, 1.0)
+		add_child(stage_label)
 
 func setup(data: Dictionary) -> void:
 	building_id = data.get("id", "")
