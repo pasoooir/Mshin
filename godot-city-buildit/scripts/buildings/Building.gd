@@ -1430,9 +1430,11 @@ func restore_production_state(saved: Dictionary) -> void:
 	upgrade_in_progress = bool(saved.get("upgrade_in_progress", false))
 	upgrade_finish_unix = int(saved.get("upgrade_finish_unix", 0))
 	if upgrade_in_progress:
+		# Let SaveManager restore the saved resident count before _process()
+		# completes an expired upgrade on the next frame.
 		if upgrade_finish_unix <= int(Time.get_unix_time_from_system()):
-			_finish_residential_upgrade()
-		elif is_instance_valid(scaffold_root):
+			upgrade_finish_unix = int(Time.get_unix_time_from_system())
+		if is_instance_valid(scaffold_root):
 			scaffold_root.visible = true
 			scaffold_root.scale = Vector3.ONE
 	current_product = str(saved.get("current_product", ""))
