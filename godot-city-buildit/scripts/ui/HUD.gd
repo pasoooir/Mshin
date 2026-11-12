@@ -34,6 +34,31 @@ class BanknoteGlyph extends Control:
 		draw_line(Vector2(12, 18), Vector2(20, 18), Color("#D9FFE1"), 2.4)
 		draw_line(Vector2(size.x - 20, size.y - 18), Vector2(size.x - 12, size.y - 18), Color("#D9FFE1"), 2.4)
 
+# Procedural Mayor Level badge: no raster icon, with a glossy purple face and live XP ring.
+class LevelBadgeVisual extends Control:
+	var progress_fraction: float = 0.0
+
+	func set_progress(value: float) -> void:
+		progress_fraction = clampf(value, 0.0, 1.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var center := size * 0.5
+		var radius := minf(size.x, size.y) * 0.5 - 4.0
+		# Soft drop shadow and metallic outer rim.
+		draw_circle(center + Vector2(0.0, 2.5), radius + 2.0, Color(0.035, 0.018, 0.075, 0.42))
+		draw_circle(center, radius + 2.0, Color("#F5A7FF"))
+		draw_circle(center, radius - 1.0, Color("#63218C"))
+		# Deep violet face with a subtle offset highlight for a polished 3D finish.
+		draw_circle(center + Vector2(0.0, 1.0), radius - 4.0, Color("#8F25C7"))
+		draw_circle(center + Vector2(-7.0, -10.0), radius * 0.58, Color(1.0, 0.78, 1.0, 0.13))
+		draw_arc(center, radius - 7.0, PI * 1.08, PI * 1.92, 36, Color(1.0, 0.86, 1.0, 0.30), 2.2, true)
+		# Dark track and bright magenta XP arc remain visible around the entire badge.
+		draw_arc(center, radius + 0.5, -PI * 0.5, PI * 1.5, 72, Color("#42134F"), 5.5, true)
+		if progress_fraction > 0.0:
+			draw_arc(center, radius + 0.5, -PI * 0.5, -PI * 0.5 + TAU * progress_fraction, 72, Color("#F45AF0"), 5.5, true)
+		draw_arc(center, radius - 4.0, PI * 1.08, PI * 1.90, 48, Color(1.0, 0.86, 1.0, 0.18), 1.2, true)
+
 class LockGlyph extends Control:
 	func _ready() -> void:
 		name = "LockGlyph"
@@ -54,6 +79,7 @@ var active_specialization_group := ""
 var submenu_level := 0
 var active_category := ""
 var level_label: Label
+var level_badge_visual: LevelBadgeVisual
 var population_label: Label
 var happiness_label: Label
 var xp_progress: ProgressBar
@@ -223,32 +249,31 @@ func _build_top_hud() -> void:
 	top_stats.mouse_filter = Control.MOUSE_FILTER_PASS
 	left_stack.add_child(top_stats)
 
-	var level_badge := PanelContainer.new()
+	var level_badge := Control.new()
 	level_badge.name = "LevelBadge"
 	level_badge.custom_minimum_size = Vector2(88, 88) * _ui_scale
-	level_badge.add_theme_stylebox_override("panel", _level_badge_style())
 	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_stats.add_child(level_badge)
-	var level_overlay := Control.new()
-	level_overlay.custom_minimum_size = Vector2(84, 84) * _ui_scale
-	level_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	level_badge.add_child(level_overlay)
-	var level_icon := Icons.make_icon("level", Vector2(108, 108) * _ui_scale)
-	level_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	level_overlay.add_child(level_icon)
+	level_badge_visual = LevelBadgeVisual.new()
+	level_badge_visual.name = "LevelBadgeVisual"
+	level_badge_visual.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	level_badge_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	level_badge.add_child(level_badge_visual)
 	level_label = Label.new()
 	level_label.name = "LevelValue"
 	level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	level_label.add_theme_font_size_override("font_size", int(38 * _ui_scale))
+	level_label.add_theme_font_size_override("font_size", int(36 * _ui_scale))
 	level_label.add_theme_color_override("font_color", Color.WHITE)
-	level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
-	level_label.add_theme_constant_override("shadow_offset_x", 2)
+	level_label.add_theme_color_override("font_outline_color", Color("#4B145F"))
+	level_label.add_theme_constant_override("outline_size", 4)
+	level_label.add_theme_color_override("font_shadow_color", Color(0.08, 0.015, 0.12, 0.85))
+	level_label.add_theme_constant_override("shadow_offset_x", 1)
 	level_label.add_theme_constant_override("shadow_offset_y", 2)
 	level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	level_overlay.add_child(level_label)
+	level_badge.add_child(level_label)
+	level_badge_visual.set_progress(float(GameManager.experience) / float(maxi(1, GameManager.get_xp_needed())))
 
 	population_label = _add_stat_bar(top_stats, "population", "0", Color("#4BA3FF"), "City population", 142)
 	storage_label = _add_stat_bar(top_stats, "storage", "0/30", Color("#5BB8F5"), "City storage", 132)
@@ -1341,6 +1366,8 @@ func _on_xp_changed(xp: int, needed: int) -> void:
 	if xp_progress:
 		xp_progress.max_value = maxi(1, needed)
 		xp_progress.value = clampi(xp, 0, needed)
+	if is_instance_valid(level_badge_visual):
+		level_badge_visual.set_progress(float(clampi(xp, 0, maxi(1, needed))) / float(maxi(1, needed)))
 
 func _on_level_up_rewarded(new_level: int, reward: int, keys: int) -> void:
 	# level_changed updates the badge; reward signal is the single celebration trigger.
