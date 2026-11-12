@@ -1800,7 +1800,7 @@ func open_production_panel(building: Building) -> void:
 				)
 				slot_content.add_child(collect_button)
 			else:
-				var queued_waiting := not component.is_factory and int(slot.get("finish_unix", 0)) <= 0 and not bool(slot.get("ready", false))
+				var queued_waiting: bool = (not bool(component.is_factory)) and int(slot.get("finish_unix", 0)) <= 0 and not bool(slot.get("ready", false))
 				if queued_waiting:
 					var queued_label := Label.new()
 					queued_label.name = "QueuedSlot%d" % slot_index
