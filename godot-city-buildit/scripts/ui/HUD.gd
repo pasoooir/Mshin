@@ -2176,6 +2176,41 @@ func open_city_needs_panel() -> void:
 		if not supplier_list.is_empty():
 			action.pressed.connect(_open_city_need_supplier.bind(supplier_list[0]))
 		row_layout.add_child(action)
+	var orders_title := Label.new()
+	orders_title.text = "ACTIVE PRODUCTION QUEUE"
+	orders_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	orders_title.add_theme_color_override("font_color", Color("#17364A"))
+	content.add_child(orders_title)
+	if snapshot.get("orders", []).is_empty():
+		var no_orders := Label.new()
+		no_orders.text = "No active factory or store orders."
+		no_orders.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		no_orders.add_theme_color_override("font_color", Color("#617A88"))
+		content.add_child(no_orders)
+	for order in snapshot.get("orders", []):
+		var order_row := PanelContainer.new()
+		order_row.name = "CityProductionOrder_%s_%d" % [str(order.get("building_id", "")), int(order.get("slot_index", 0))]
+		order_row.add_theme_stylebox_override("panel", _toolbar_style(Color("#F5FAFC"), Color("#D9E8EF")))
+		content.add_child(order_row)
+		var order_layout := HBoxContainer.new()
+		order_layout.add_theme_constant_override("separation", 8)
+		order_row.add_child(order_layout)
+		var order_item_id := str(order.get("item_id", ""))
+		var order_category := "raw" if ProductionManager.raw_materials.has(order_item_id) else "crafted"
+		order_layout.add_child(Icons.make_item_icon(order_category, order_item_id, Vector2(34, 34) * _ui_scale))
+		var order_info := Label.new()
+		var order_ready := bool(order.get("ready", false))
+		var order_timer := "READY TO COLLECT" if order_ready else _city_needs_duration(int(order.get("remaining", 0)))
+		order_info.text = "%s  ·  %s  ·  SLOT %d  ·  %s" % [str(order.get("name", order_item_id)), str(order.get("building_name", "Factory / Store")), int(order.get("slot_index", 0)) + 1, order_timer]
+		order_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		order_info.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		order_info.add_theme_color_override("font_color", Color("#9A6B1D") if order_ready else Color("#315C8A"))
+		order_layout.add_child(order_info)
+		var order_action := Button.new()
+		order_action.text = "COLLECT" if order_ready else "OPEN"
+		order_action.custom_minimum_size = Vector2(86, 34) * _ui_scale
+		order_action.pressed.connect(_open_city_production_order.bind(str(order.get("building_id", ""))))
+		order_layout.add_child(order_action)
 	var homes_title := Label.new()
 	homes_title.text = "RESIDENTIAL UPGRADE PLANS"
 	homes_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
@@ -2249,6 +2284,13 @@ func _city_needs_duration(seconds: int) -> String:
 	if safe >= 60:
 		return "%dm %02ds" % [safe / 60, safe % 60]
 	return "%ds" % safe
+
+func _open_city_production_order(building_id: String) -> void:
+	var building: Variant = BuildManager.buildings.get(building_id)
+	if not is_instance_valid(building) or building.status != "completed":
+		return
+	_close_city_needs_panel()
+	open_production_panel(building)
 
 func _open_city_need_supplier(supplier: Dictionary) -> void:
 	var building_id := str(supplier.get("building_id", ""))
