@@ -65,11 +65,8 @@ func upgrade_store_star() -> bool:
 	if offer.is_empty() or GameManager.level < int(offer.get("level", 999)):
 		return false
 	var cost := int(offer.get("cost", 0))
-	if cost <= 0 or EconomyManager.simoleons < cost:
+	if not EconomyManager.spend_simoleons(cost):
 		return false
-	EconomyManager.simoleons -= cost
-	EconomyManager.transaction_completed.emit("simoleon_spend", cost)
-	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
 	store_star_level = int(offer.get("star", store_star_level + 1))
 	slots_changed.emit()
 	return true
