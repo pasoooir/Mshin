@@ -73,7 +73,8 @@ smoke_order = [
     "Tool_Residential", "Tool_Commercial", "Tool_Industrial",
     "Tool_Services", "Tool_Specializations", "Tool_Road", "Tool_Bulldoze"
 ]
-if not all(f'"{name}"' in gameplay_smoke for name in smoke_order):
+toolbar_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
+if not all(f'"{name}"' in toolbar_smoke for name in smoke_order):
     errors.append("Gameplay smoke test is missing the canonical right-toolbar category order")
 
 # Side rails and catalog cards must remain transparent in every interaction state.
