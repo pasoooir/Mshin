@@ -29,6 +29,8 @@ func add_simoleons(amount: int) -> void:
 	transaction_completed.emit("simoleons_gain", amount)
 
 func spend_simoleons(amount: int) -> bool:
+	if amount <= 0:
+		return false
 	if simoleons >= amount:
 		simoleons -= amount
 		simoleons_changed.emit(simoleons)
@@ -44,6 +46,8 @@ func add_keys(amount: int) -> void:
 	keys_changed.emit(golden_keys)
 
 func spend_keys(amount: int) -> bool:
+	if amount <= 0:
+		return false
 	if golden_keys >= amount:
 		golden_keys -= amount
 		keys_changed.emit(golden_keys)
