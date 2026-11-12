@@ -108,6 +108,7 @@ func _test_storage_and_production_chain() -> void:
 	_check(ProductionManager.get_recipe("popcorn").is_empty() and ProductionManager.get_recipe_lock_reason("popcorn").contains("not verified"), "Popcorn must remain disabled until the store-star recipe is verified.")
 	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn","bread_roll","bbq_grill","microwave_oven","fruit_berries","tree_sapling","donuts","green_smoothie","cherry_cheesecake","frozen_yogurt","coffee","refrigerator","lighting_system","tv","grass","garden_furniture","lawn_mower","fire_pit","garden_gnome"]:
 		_check(Icons.CRAFTED_IDS.has(catalog_id), "%s must have a local product icon." % catalog_id)
+		_check(StorageManager.item_definitions.has(catalog_id), "%s must have a readable storage item definition." % catalog_id)
 	# Mayor level unlocks materials; factory count and factory tier use separate gates.
 	var original_level := GameManager.level
 	var original_population := GameManager.population
