@@ -1225,6 +1225,25 @@ func _run_gameplay_test() -> void:
 		star_upgrade_button.emit_signal("pressed")
 	_check(shop_component.store_star_level == 1 and ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).is_empty(), "Buying the first Building Supplies star must unlock Paint.")
 	_check(is_equal_approx(shop_component.get_item_production_time("nails"), 270.0), "New Nails orders must use the one-star production time.")
+
+	# Cross-store star upgrades are enabled only where level gates and prices are sourced.
+	var verified_store_star_cases := {
+		"farmers_market": {"level": 20, "cost": 19000, "item": "vegetables", "base": 1200.0},
+		"furniture_store": {"level": 22, "cost": 21000, "item": "chair", "base": 1200.0},
+		"gardening_supplies": {"level": 27, "cost": 25000, "item": "grass", "base": 1800.0},
+		"fashion_store": {"level": 31, "cost": 30000, "item": "cap", "base": 3600.0},
+		"home_appliances": {"level": 41, "cost": 40000, "item": "bbq_grill", "base": 9900.0},
+		"fast_food": {"level": 37, "cost": 36000, "item": "pizza", "base": 1440.0},
+		"donut_shop": {"level": 30, "cost": 29000, "item": "bread_roll", "base": 3600.0}
+	}
+	for store_id in verified_store_star_cases:
+		var star_case: Dictionary = verified_store_star_cases[store_id]
+		var offer := ProductionManager.get_store_star_offer(store_id, 0)
+		_check(not offer.is_empty() and int(offer.get("level", 0)) == int(star_case.level) and int(offer.get("cost", 0)) == int(star_case.cost), "%s first-star level and price must match the cited store data." % store_id)
+		_check(is_equal_approx(ProductionManager.get_production_time(str(star_case.item), 1), float(star_case.base) * 0.9), "%s one-star production must reduce the base duration by 10%%." % store_id)
+	_check(ProductionManager.get_recipe_lock_reason("coffee", 0).contains("Store Star"), "Coffee must remain locked until Donut Shop reaches one star.")
+	_check(ProductionManager.get_recipe_lock_reason("popcorn", 0).contains("Store Star"), "Popcorn must remain locked until Fast Food reaches one star.")
+	_check(ProductionManager.get_store_star_offer("donut_shop", 2).is_empty(), "Donut Shop third-star upgrade must remain unavailable while references disagree on its cost.")
 	production_hud.open_production_panel(supplies)
 	var buy_queue_slot := production_hud.production_panel.find_child("PurchaseQueueSlot", true, false) as Button
 	_check(buy_queue_slot != null and buy_queue_slot.text.contains("4 SC") and not buy_queue_slot.disabled, "Building Supplies next queue slot must show its sourced 4 SimCash price.")
