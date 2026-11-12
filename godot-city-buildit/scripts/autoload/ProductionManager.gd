@@ -393,8 +393,8 @@ func get_upgrade_requirements(from_stage: int) -> Array:
 
 func get_upgrade_plan_note(from_stage: int) -> String:
 	if from_stage == 1:
-		return "MSHIN STARTER TEMPLATE — Nails + Metal; exact SCBI quantities are not independently verified."
-	return "MSHIN FALLBACK TEMPLATE — SCBI plan slots and material quantities vary; exact roll not verified."
+		return "MSHIN STARTER TEMPLATE — Nails + Metal; exact SCBI material quantities, population, XP, and Simoleon rewards are not independently verified."
+	return "MSHIN FALLBACK TEMPLATE — SCBI plan slots, material quantities, population tiers, and reward ranges vary; exact values are not verified."
 
 func get_population_for_stage(stage: int) -> int:
 	return residential_population.get(clampi(stage,1,6),15)
