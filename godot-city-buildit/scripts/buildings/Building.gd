@@ -1121,6 +1121,7 @@ func setup_production_from_definition() -> void:
 	var component = ProductionComponentScript.new()
 	component.slot_count = int(definition.get("production_slots", 1))
 	component.is_factory = str(definition.get("category", "")) == "industrial"
+	component.factory_type = building_type
 	component.shop_id = str(definition.get("shop_id", "building_supplies" if building_type == "shop_chain" else building_type))
 	production_component = component
 	add_child(production_component)
@@ -1171,8 +1172,7 @@ func start_factory_production(item_id: String = "") -> bool:
 		product = str(definition.get("produces", ProductionManager.get_default_factory_product()))
 	if product == "" or definition.get("category", "") != "industrial":
 		return false
-	if not ProductionManager.raw_materials.has(product):
-		return false
+	if not ProductionManager.get_factory_material_ids(building_type).has(product) or not ProductionManager.raw_materials.has(product):
 	if int(ProductionManager.raw_materials[product].get("level", 1)) > GameManager.level:
 		return false
 	_start_production(product)
