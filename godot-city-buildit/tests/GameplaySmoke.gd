@@ -74,6 +74,16 @@ func _test_storage_and_production_chain() -> void:
 	_check(int(ProductionManager.get_recipe("measuring_tape").get("time_sec", 0)) == 1200, "Measuring Tape must use the documented 20-minute reference time.")
 	_check(int(ProductionManager.get_recipe("shovel").get("time_sec", 0)) == 1800, "Shovel must use the documented 30-minute reference time.")
 	_check(str(ProductionManager.get_recipe("hammer").get("store", "")) == "hardware_store", "Hammer must be supplied by Hardware Store.")
+	_check(int(ProductionManager.get_recipe("cooking_utensils").get("time_sec", 0)) == 2700, "Cooking Utensils must use the documented 45-minute base time.")
+	_check(int(ProductionManager.get_recipe("ladder").get("time_sec", 0)) == 3600, "Ladder must use the documented 60-minute base time.")
+	_check(int(ProductionManager.get_recipe("drill").get("time_sec", 0)) == 7200, "Drill must use the documented 120-minute base time.")
+	_check(int(ProductionManager.get_recipe("vegetables").get("time_sec", 0)) == 1200 and ProductionManager.get_recipe("vegetables").get("inputs", {}) == {"seeds":2}, "Vegetables must require two Seeds and take 20 minutes.")
+	_check(int(ProductionManager.get_recipe("chair").get("time_sec", 0)) == 1200 and ProductionManager.get_recipe("chair").get("inputs", {}) == {"wood":2,"nails":1,"hammer":1}, "Chair recipe must use the documented three-stage input chain.")
+	_check(int(ProductionManager.get_recipe("table").get("time_sec", 0)) == 1800 and ProductionManager.get_recipe("table").get("inputs", {}) == {"planks":1,"nails":2,"hammer":1}, "Table recipe must use the documented input chain.")
+	_check(BuildManager.building_types.hardware_store.get("recipes", []).has("drill") and BuildManager.building_types.farmers_market.get("recipes", []).has("beef") and BuildManager.building_types.furniture_store.get("recipes", []).has("couch"), "Commercial store catalogs must include their verified product families.")
+	for recipe_id in ["cooking_utensils","ladder","drill","flour_bag","cream","corn","cheese","beef","home_textiles","cupboard","couch"]:
+		_check(StorageManager.item_definitions.has(recipe_id), "%s must be registered in City Storage." % recipe_id)
+		_check(Icons.CRAFTED_IDS.has(recipe_id), "%s must have a local product icon definition." % recipe_id)
 	_check(not BuildManager.building_types.hardware_store.get("recipes", []).has("paint"), "Paint must not appear in Hardware Store; its supplier is Building Supplies.")
 	var nails: Dictionary = ProductionManager.get_recipe("nails")
 	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
@@ -345,7 +355,8 @@ func _test_build_menu_visibility() -> void:
 			if category_icon:
 				_check(category_icon.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Category PNG must not intercept touch drags before the button/scroll container.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
-	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
+	_check(hud.get_node("BottomActions").visible, "Storage, City Needs, Trade and Save should be visible while no category is selected.")
+	_check(hud.find_child("InfoAction", true, false) is Button, "City Needs must have a persistent HUD shortcut.")
 	var currency_stack := hud.find_child("TopRightCurrencies", true, false) as VBoxContainer
 	_check(currency_stack != null and currency_stack.get_child_count() == 3, "Top-right resources must be exactly three compact rows.")
 	for row_name in ["SimoleonsCurrencyRow", "MoneyCurrencyRow", "GoldenKeyCurrencyRow"]:
