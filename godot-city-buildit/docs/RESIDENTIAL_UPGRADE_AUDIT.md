@@ -76,7 +76,7 @@ The Fast Food Restaurant level gates are cross-checked against HubsInfo's store 
 - Donut Shop's third-star cost conflicts: the Fandom store page reports 45,000 Simoleons while the Japanese commercial table reports 49,000. Its third star remains unavailable until reconciled.
 - Speed-Up Tokens are documented by EA as 2x / 4x / 12x for both shops and eligible factories. The current project has no verified token inventory, token-part conversion, or legitimate token-acquisition systems. No free token balance or acquisition path has been invented.
 - EA confirms Factory Speed-Ups do not apply to the Ad-powered Factory. No token UI is activated until inventory and acquisition are represented in the game.
-- SimCash speed-up prices vary with remaining time. The available reference provides example time/cost pairs, not a complete deterministic quote formula; no guessed interpolation is implemented.
+- The Japanese factory/commercial tables list item-specific SimCash costs at the full base production duration, while the Fandom industrial/commercial references state that the live SimCash quote varies with remaining time. The exact remaining-time pricing curve is not documented by the sources found, so the static base-duration price is not misused as a live quote and no SimCash speed-up button is shown.
 - Residential plan refresh and hard-hat transfer both change the material plan and carry a 30-minute change period in the reference. They remain blocked because this branch deliberately does not introduce a randomized plan generator or an unverified alternate-plan pool.
 - Residential material quantities, population tiers, XP and Simoleon rewards remain Mshin fallback data; they are not claimed as canonical SCBI values.
 
@@ -90,4 +90,6 @@ The Fast Food Restaurant level gates are cross-checked against HubsInfo's store 
 - Fast Food Restaurant tiers: https://scbuildit.hubsinfo.net/database/?ISubCateg=Store and https://wikiwiki.jp/simcitybuild/%E5%95%86%E6%A5%AD
 - Donut Shop conflicting third-star cost: https://simcity-buildit.fandom.com/wiki/Donut_Shop and https://wikiwiki.jp/simcitybuild/%E5%95%86%E6%A5%AD
 - EA Speed-Up Tokens guide: https://help.ea.com/en/articles/simcity/simcity-buildit/speed-up-tokens/
+- Japanese industrial item speed-up prices (full-duration reference only): https://wikiwiki.jp/simcitybuild/%E5%B7%A5%E6%A5%AD
+- Japanese commercial item speed-up prices (full-duration reference only): https://wikiwiki.jp/simcitybuild/%E5%95%86%E6%A5%AD
 - Variable SimCash speed-up reference: https://simcity.fandom.com/wiki/SimCash
