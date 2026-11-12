@@ -31,7 +31,7 @@ var factory_materials := {
 	"industrial_3":["metal","wood","plastic"]
 }
 
-var crafted_items :={
+var crafted_items := {
 	"nails": {"name":"Nails", "time":300.0, "time_sec":300, "value":80, "requires":{"metal":2}, "level":1, "store":"building_supplies", "source":"Community-reference"},
 	"planks": {"name":"Planks", "time":1800.0, "time_sec":1800, "value":120, "requires":{"wood":2}, "level":3, "store":"building_supplies", "source":"Community-reference"},
 	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies", "source":"Community-reference"},
