@@ -32,7 +32,7 @@ The detailed gameplay design contract is maintained in the [Persian Production E
 
 ## Live production economy and City Needs
 
-- ProductionManager is the authoritative catalog for 11 raw materials, 23 craftable items, factory-tier permissions and store recipes. Storage display metadata is derived from this catalog.
+- ProductionManager is the authoritative catalog for 11 raw materials, 32 craftable items and 15 catalog-only identities, factory-tier permissions and store recipes. Storage display metadata is derived from this catalog.
 - The currently complete recipe catalogs are Building Supplies (6), Hardware Store (6), Farmer's Market (6) and Furniture Store (5). Fast Food displays all six SCBI products; Pizza and Cheese Fries have verified recipes enabled, while Ice Cream Sandwich, Burger, Lemonade Bottle and Popcorn remain disabled until their upstream dependencies are implemented and verified. Traditional Restaurant and Art Supplies show an explicit no-verified-catalog state rather than fabricated products.
 - Every production slot stores start/finish timestamps, consumes craft inputs atomically at order start, and adds its output to City Storage only after the player collects it. A full warehouse blocks collection without deleting the ready batch.
 - Construction finish timestamps are saved and restored. Old save version 1 remains loadable; version 2 stores the construction timestamp.
