@@ -5,17 +5,17 @@ signal item_produced(item_id: String, amount: int)
 # SCBI Industrial Buildings timings are the canonical source for raw production.
 # Keep legacy keys (time/value/level) because existing gameplay and HUD code reads them.
 var raw_materials := {
-	"metal": {"name":"Metal", "time":60.0, "time_sec":60, "value":10, "level":1},
-	"wood": {"name":"Wood", "time":180.0, "time_sec":180, "value":20, "level":2},
-	"plastic": {"name":"Plastic", "time":540.0, "time_sec":540, "value":25, "level":5},
-	"seeds": {"name":"Seeds", "time":1200.0, "time_sec":1200, "value":30, "level":7},
-	"minerals": {"name":"Minerals", "time":1800.0, "time_sec":1800, "value":40, "level":11},
-	"chemicals": {"name":"Chemicals", "time":7200.0, "time_sec":7200, "value":60, "level":13},
-	"textiles": {"name":"Textiles", "time":10800.0, "time_sec":10800, "value":90, "level":15},
-	"sugar_spices": {"name":"Sugar and Spices", "time":14400.0, "time_sec":14400, "value":110, "level":17},
-	"glass": {"name":"Glass", "time":18000.0, "time_sec":18000, "value":120, "level":19},
-	"animal_feed": {"name":"Animal Feed", "time":21600.0, "time_sec":21600, "value":140, "level":23},
-	"electrical": {"name":"Electrical Components", "time":25200.0, "time_sec":25200, "value":160, "level":29}
+	"metal": {"name":"Metal", "time":60.0, "time_sec":60, "value":10, "level":1, "source":"Community-reference"},
+	"wood": {"name":"Wood", "time":180.0, "time_sec":180, "value":20, "level":2, "source":"Community-reference"},
+	"plastic": {"name":"Plastic", "time":540.0, "time_sec":540, "value":25, "level":5, "source":"Community-reference"},
+	"seeds": {"name":"Seeds", "time":1200.0, "time_sec":1200, "value":30, "level":7, "source":"Community-reference"},
+	"minerals": {"name":"Minerals", "time":1800.0, "time_sec":1800, "value":40, "level":11, "source":"Community-reference"},
+	"chemicals": {"name":"Chemicals", "time":7200.0, "time_sec":7200, "value":60, "level":13, "source":"Community-reference"},
+	"textiles": {"name":"Textiles", "time":10800.0, "time_sec":10800, "value":90, "level":15, "source":"Community-reference"},
+	"sugar_spices": {"name":"Sugar and Spices", "time":14400.0, "time_sec":14400, "value":110, "level":17, "source":"Community-reference"},
+	"glass": {"name":"Glass", "time":18000.0, "time_sec":18000, "value":120, "level":19, "source":"Community-reference"},
+	"animal_feed": {"name":"Animal Feed", "time":21600.0, "time_sec":21600, "value":140, "level":23, "source":"Community-reference"},
+	"electrical": {"name":"Electrical Components", "time":25200.0, "time_sec":25200, "value":160, "level":29, "source":"Community-reference"}
 }
 
 # Recipes are stored as "requires" for compatibility with Building.gd and as
@@ -36,12 +36,12 @@ var crafted_items :={
 	"planks": {"name":"Planks", "time":1800.0, "time_sec":1800, "value":120, "requires":{"wood":2}, "level":3, "store":"building_supplies", "source":"Community-reference"},
 	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies", "source":"Community-reference"},
 	"cement": {"name":"Cement", "time":3000.0, "time_sec":3000, "value":440, "requires":{"minerals":2,"chemicals":1}, "level":14, "store":"building_supplies", "source":"Community-reference"},
-	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies", "source":"Community-reference; ingredient variants exist"},
+	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
 	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies", "source":"Community-reference; ingredient variants exist"},
 	"hammer": {"name":"Hammer", "time":840.0, "time_sec":840, "value":90, "requires":{"metal":1,"wood":1}, "level":4, "store":"hardware_store", "source":"Community-reference"},
 	"measuring_tape": {"name":"Measuring Tape", "time":1200.0, "time_sec":1200, "value":60, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store", "source":"Community-reference"},
 	"shovel": {"name":"Shovel", "time":1800.0, "time_sec":1800, "value":150, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store", "source":"Community-reference"},
-	"cooking_utensils": {"name":"Cooking Utensils", "time":2700.0, "time_sec":2700, "value":250, "requires":{"metal":2,"wood":2,"plastic":2}, "level":17, "store":"hardware_store", "source":"Community-reference; conflicting ingredient variants"},
+	"cooking_utensils": {"name":"Cooking Utensils", "time":2700.0, "time_sec":2700, "value":250, "requires":{"metal":2,"wood":2,"plastic":2}, "level":17, "store":"hardware_store", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
 	"ladder": {"name":"Ladder", "time":3600.0, "time_sec":3600, "value":420, "requires":{"planks":2,"metal":2}, "level":20, "store":"hardware_store", "source":"Community-reference"},
 	"drill": {"name":"Drill", "time":7200.0, "time_sec":7200, "value":590, "requires":{"metal":2,"plastic":2,"electrical":1}, "level":30, "store":"hardware_store", "source":"Community-reference"},
 	"chair": {"name":"Chair", "time":1200.0, "time_sec":1200, "value":300, "requires":{"wood":2,"nails":1,"hammer":1}, "level":10, "store":"furniture_store", "source":"Community-reference"},
@@ -52,7 +52,7 @@ var crafted_items :={
 	"vegetables": {"name":"Vegetables", "time":1200.0, "time_sec":1200, "value":160, "requires":{"seeds":2}, "level":8, "store":"farmers_market", "source":"Community-reference"},
 	"flour_bag": {"name":"Flour Bag", "time":1800.0, "time_sec":1800, "value":570, "requires":{"seeds":2,"textiles":2}, "level":17, "store":"farmers_market", "source":"Community-reference; ingredient variants exist"},
 	"cream": {"name":"Cream", "time":4500.0, "time_sec":4500, "value":440, "requires":{"animal_feed":1}, "level":23, "store":"farmers_market", "source":"Community-reference"},
-	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Community-reference; seed quantity differs by source"},
+	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
 	"cheese": {"name":"Cheese", "time":6300.0, "time_sec":6300, "value":660, "requires":{"animal_feed":2}, "level":26, "store":"farmers_market", "source":"Community-reference"},
 	"beef": {"name":"Beef", "time":9000.0, "time_sec":9000, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"}
 }
