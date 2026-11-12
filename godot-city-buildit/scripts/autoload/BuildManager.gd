@@ -46,7 +46,7 @@ var building_types: Dictionary = {
 	"factory_basic": {"name":"Basic Factory", "category":"industrial", "factory_tier":"basic", "cost":500, "size":Vector2i(2,2), "population":0, "population_required":4000, "build_time":5.0, "color":Color(0.48,0.50,0.56), "level":1, "production_slots":3, "pollution":1, "pollution_radius":10.0},
 	"factory_mass": {"name":"Mass Production Factory", "category":"industrial", "factory_tier":"mass", "cost":7000, "size":Vector2i(2,2), "population":0, "population_required":27000, "build_time":6.0, "color":Color(0.43,0.47,0.53), "level":1, "production_slots":4, "pollution":1, "pollution_radius":8.0},
 	"factory_hightech": {"name":"High-tech Factory", "category":"industrial", "factory_tier":"hightech", "cost":20000, "size":Vector2i(2,2), "population":0, "population_required":80000, "build_time":7.0, "color":Color(0.38,0.54,0.62), "level":1, "production_slots":5, "pollution":1, "pollution_radius":6.0},
-	"factory_nano": {"name":"Nano-tech Factory", "category":"industrial", "factory_tier":"nano", "cost":50000, "size":Vector2i(2,2), "population":0, "population_required":150000, "build_time":8.0, "color":Color(0.34,0.62,0.66), "level":1, "production_slots":5, "pollution":0, "pollution_radius":0.0},
+	"factory_nano": {"name":"Nano-tech Factory", "category":"industrial", "factory_tier":"nano", "cost":50000, "size":Vector2i(2,2), "population":0, "population_required":1500000, "build_time":8.0, "color":Color(0.34,0.62,0.66), "level":1, "production_slots":5, "pollution":0, "pollution_radius":0.0},
 	"industrial_1": {"name":"Small Factory (Legacy)", "category":"industrial", "legacy_only":true, "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "pollution":1, "pollution_radius":12.0},
 	"industrial_2": {"name":"Factory (Legacy)", "category":"industrial", "legacy_only":true, "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.45,0.45,0.5), "produces":"wood", "level":2, "production_slots":2},
 	"industrial_3": {"name":"Factory+ (Legacy)", "category":"industrial", "legacy_only":true, "cost":1500, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.4,0.42,0.48), "produces":"plastic", "level":5, "production_slots":2},
@@ -109,6 +109,26 @@ func can_build_factory_type(type_id: String) -> bool:
 func get_factory_type_population_requirement(type_id: String) -> int:
 	return int(building_types.get(type_id, {}).get("population_required", 0))
 
+func get_factory_build_lock_reason(type_id: String) -> String:
+	if not building_types.has(type_id):
+		return "Unknown factory type."
+	var definition: Dictionary = building_types[type_id]
+	if str(definition.get("category", "")) != "industrial":
+		return ""
+	if not can_build_another_factory():
+		return "Factory quota full. Reach the next Mayor Level."
+	var required_population := int(definition.get("population_required", 0))
+	if GameManager.population < required_population:
+		return "Requires %s population." % _format_population_for_message(required_population)
+	var cost := int(definition.get("cost", 0))
+	if not EconomyManager.can_afford(cost):
+		return "Need %s coins." % _format_population_for_message(cost)
+	return ""
+
+func _format_population_for_message(value: int) -> String:
+	# Keep exact values visible instead of rounded shorthand.
+	return str(value)
+
 func get_available_buildings(category: String = "") -> Array:
 	var result: Array = []
 	for key in building_types:
@@ -116,8 +136,8 @@ func get_available_buildings(category: String = "") -> Array:
 		if bool(definition.get("legacy_only", false)):
 			continue
 		if int(definition.get("level", 1)) <= GameManager.level and (category == "" or definition.get("category", "") == category):
-			if definition.get("category", "") != "industrial" or (can_build_another_factory() and can_build_factory_type(key)):
-				result.append(key)
+			# Keep factory tiers visible while locked; eligibility is shown separately.
+			result.append(key)
 	return result
 
 func select_building(type_id: String) -> void:
@@ -127,7 +147,7 @@ func select_building(type_id: String) -> void:
 	var definition: Dictionary = building_types[type_id]
 	if int(definition.get("level", 1)) > GameManager.level:
 		return
-	if definition.get("category", "") == "industrial" and (not can_build_another_factory() or not can_build_factory_type(type_id)):
+	if definition.get("category", "") == "industrial" and get_factory_build_lock_reason(type_id) != "":
 		return
 	selected_building_type = type_id
 	is_placing = true
@@ -188,14 +208,15 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "") -> bool:
 	if chosen == "" or not building_types.has(chosen):
 		return false
 	var definition: Dictionary = building_types[chosen]
-	var size: Vector2i = definition.get("size", Vector2i(2,2))
-	if not is_cell_free(grid_pos, size) or not has_road_access(grid_pos, size):
-		return false
 	if int(definition.get("level", 1)) > GameManager.level:
+		return false
+	# Factory gates are checked before affordability and physical placement.
+	if definition.get("category", "") == "industrial" and get_factory_build_lock_reason(chosen) != "":
 		return false
 	if not EconomyManager.can_afford(int(definition.get("cost", 0))):
 		return false
-	if definition.get("category", "") == "industrial" and (not can_build_another_factory() or not can_build_factory_type(chosen)):
+	var size: Vector2i = definition.get("size", Vector2i(2,2))
+	if not is_cell_free(grid_pos, size) or not has_road_access(grid_pos, size):
 		return false
 	return true
 

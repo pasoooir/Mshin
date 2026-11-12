@@ -48,7 +48,7 @@ var population_unlocks := {
 	20000: "cargo_ship",
 	27000: "mass_production_factory",
 	80000: "high_tech_factory",
-	150000: "nano_tech_factory"
+	1500000: "nano_tech_factory"
 }
 
 var unlocked_materials: Array = ["metal", "nails"]
