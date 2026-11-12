@@ -36,12 +36,12 @@ var crafted_items := {
 	"planks": {"name":"Planks", "time":1800.0, "time_sec":1800, "value":120, "requires":{"wood":2}, "level":3, "store":"building_supplies", "source":"Community-reference"},
 	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies", "source":"Community-reference"},
 	"cement": {"name":"Cement", "time":3000.0, "time_sec":3000, "value":440, "requires":{"minerals":2,"chemicals":1}, "level":14, "store":"building_supplies", "source":"Community-reference"},
-	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
-	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies", "source":"Community-reference; ingredient variants exist"},
+	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies", "source":"Fandom"},
+	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies", "source":"Fandom"},
 	"hammer": {"name":"Hammer", "time":840.0, "time_sec":840, "value":90, "requires":{"metal":1,"wood":1}, "level":4, "store":"hardware_store", "source":"Community-reference"},
-	"measuring_tape": {"name":"Measuring Tape", "time":1200.0, "time_sec":1200, "value":60, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store", "source":"Community-reference"},
+	"measuring_tape": {"name":"Measuring Tape", "time":1200.0, "time_sec":1200, "value":110, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store", "source":"Fandom"},
 	"shovel": {"name":"Shovel", "time":1800.0, "time_sec":1800, "value":150, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store", "source":"Community-reference"},
-	"cooking_utensils": {"name":"Cooking Utensils", "time":2700.0, "time_sec":2700, "value":250, "requires":{"metal":2,"wood":2,"plastic":2}, "level":17, "store":"hardware_store", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
+	"cooking_utensils": {"name":"Cooking Utensils", "time":2700.0, "time_sec":2700, "value":250, "requires":{"metal":2,"wood":2,"plastic":2}, "level":17, "store":"hardware_store", "source":"Fandom"},
 	"ladder": {"name":"Ladder", "time":3600.0, "time_sec":3600, "value":420, "requires":{"planks":2,"metal":2}, "level":20, "store":"hardware_store", "source":"Community-reference"},
 	"drill": {"name":"Drill", "time":7200.0, "time_sec":7200, "value":590, "requires":{"metal":2,"plastic":2,"electrical":1}, "level":30, "store":"hardware_store", "source":"Community-reference"},
 	"chair": {"name":"Chair", "time":1200.0, "time_sec":1200, "value":300, "requires":{"wood":2,"nails":1,"hammer":1}, "level":10, "store":"furniture_store", "source":"Community-reference"},
@@ -50,20 +50,21 @@ var crafted_items := {
 	"couch": {"name":"Couch", "time":9000.0, "time_sec":9000, "value":1810, "requires":{"textiles":3,"drill":1,"glue":1}, "level":33, "store":"furniture_store", "source":"Community-reference"},
 	"table": {"name":"Table", "time":1800.0, "time_sec":1800, "value":500, "requires":{"planks":1,"nails":2,"hammer":1}, "level":16, "store":"furniture_store", "source":"Community-reference"},
 	"vegetables": {"name":"Vegetables", "time":1200.0, "time_sec":1200, "value":160, "requires":{"seeds":2}, "level":8, "store":"farmers_market", "source":"Community-reference"},
-	"flour_bag": {"name":"Flour Bag", "time":1800.0, "time_sec":1800, "value":570, "requires":{"seeds":2,"textiles":2}, "level":17, "store":"farmers_market", "source":"Community-reference; ingredient variants exist"},
+	"flour_bag": {"name":"Flour Bag", "time":1800.0, "time_sec":1800, "value":570, "requires":{"seeds":2,"textiles":2}, "level":17, "store":"farmers_market", "source":"Fandom"},
 	"cream": {"name":"Cream", "time":4500.0, "time_sec":4500, "value":440, "requires":{"animal_feed":1}, "level":23, "store":"farmers_market", "source":"Community-reference"},
-	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
+	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Fandom"},
 	"cheese": {"name":"Cheese", "time":6300.0, "time_sec":6300, "value":660, "requires":{"animal_feed":2}, "level":26, "store":"farmers_market", "source":"Community-reference"},
 	"beef": {"name":"Beef", "time":7200.0, "time_sec":7200, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"},
 	"fruit_berries": {"name":"Fruit & Berries", "time":5400.0, "time_sec":5400, "value":730, "requires":{"seeds":2,"tree_sapling":1}, "level":18, "store":"farmers_market", "source":"HubsInfo;Fandom"},
-	"bread_roll": {"name":"Bread Roll", "time":3240.0, "time_sec":3240, "value":350, "requires":{"flour_bag":2,"cream":1}, "level":25, "store":"donut_shop", "source":"Community-reference"},
-	"bbq_grill": {"name":"BBQ Grill", "time":9900.0, "time_sec":9900, "value":760, "requires":{"metal":3,"cooking_utensils":1}, "level":29, "store":"home_appliances", "source":"Community-reference"},
+	"bread_roll": {"name":"Bread Roll", "time":3600.0, "time_sec":3600, "value":1840, "requires":{"flour_bag":2,"cream":1}, "level":24, "store":"donut_shop", "source":"Fandom"},
+	"bbq_grill": {"name":"BBQ Grill", "time":9900.0, "time_sec":9900, "value":530, "requires":{"metal":3,"cooking_utensils":1}, "level":29, "store":"home_appliances", "source":"Fandom"},
 	"microwave_oven": {"name":"Microwave Oven", "time":7200.0, "time_sec":7200, "value":480, "requires":{"metal":4,"glass":1,"electrical":1}, "level":42, "store":"home_appliances", "source":"Community-reference"},
 	"pizza": {"name":"Pizza", "time":1440.0, "time_sec":1440, "value":2560, "requires":{"flour_bag":1,"cheese":1,"beef":1}, "level":28, "store":"fast_food", "source":"Community-reference"},
 	"cheese_fries": {"name":"Cheese Fries", "time":1200.0, "time_sec":1200, "value":1050, "requires":{"cheese":1,"vegetables":1}, "level":33, "store":"fast_food", "source":"Community-reference"},
-	"ice_cream_sandwich": {"name":"Ice Cream Sandwich", "time":840.0, "time_sec":840, "value":720, "requires":{"cream":1,"bread_roll":1}, "level":25, "store":"fast_food", "source":"Community-reference"},
-	"burger": {"name":"Burger", "time":2100.0, "time_sec":2100, "value":1350, "requires":{"beef":1,"bread_roll":1,"bbq_grill":1}, "level":31, "store":"fast_food", "source":"Community-reference"},
-	"lemonade_bottle": {"name":"Lemonade Bottle", "time":3600.0, "time_sec":3600, "value":1480, "requires":{"glass":2,"sugar_spices":2,"fruit_berries":1}, "level":37, "store":"fast_food", "source":"Community-reference"},
+	"ice_cream_sandwich": {"name":"Ice Cream Sandwich", "time":840.0, "time_sec":840, "value":2560, "requires":{"cream":1,"bread_roll":1}, "level":25, "store":"fast_food", "source":"Fandom"},
+	"burger": {"name":"Burger", "time":2100.0, "time_sec":2100, "value":3620, "requires":{"beef":1,"bread_roll":1,"bbq_grill":1}, "level":31, "store":"fast_food", "source":"Fandom"},
+	"lemonade_bottle": {"name":"Lemonade Bottle", "time":3600.0, "time_sec":3600, "value":1690, "requires":{"glass":2,"sugar_spices":2,"fruit_berries":1}, "level":37, "store":"fast_food", "source":"Fandom"},
+	"popcorn": {"name":"Popcorn", "time":1800.0, "time_sec":1800, "value":1250, "requires":{"corn":2,"microwave_oven":1}, "level":43, "store":"fast_food", "source":"Fandom"},
 	"grass": {"name":"Grass", "time":1800.0, "time_sec":1800, "value":310, "requires":{"seeds":1,"shovel":1}, "level":14, "store":"gardening_supplies", "source":"HubsInfo"},
 	"tree_sapling": {"name":"Tree Saplings", "time":5400.0, "time_sec":5400, "value":420, "requires":{"seeds":2,"shovel":1}, "level":16, "store":"gardening_supplies", "source":"HubsInfo"},
 	"garden_furniture": {"name":"Garden Furniture", "time":8100.0, "time_sec":8100, "value":820, "requires":{"plastic":2,"textiles":2,"planks":2}, "level":21, "store":"gardening_supplies", "source":"HubsInfo"},
@@ -86,9 +87,7 @@ var crafted_items := {
 # Products with a verified store identity but unresolved input recipes remain
 # visible and disabled; never invent ingredient quantities or production times.
 var store_catalog := {
-	"fast_food": [
-		{"id":"popcorn","name":"Popcorn","level":43,"source":"HubsInfo; full upstream microwave-oven ingredient mapping still requires verification"}
-	],
+	"fast_food": [],
 	"donut_shop": [
 	],
 	"home_appliances": [
@@ -278,25 +277,51 @@ func get_item_definition(item_id: String) -> Dictionary:
 
 func get_recipe_dependency_text(item_id: String) -> String:
 	var lines: Array[String] = []
-	_append_recipe_dependency_lines(item_id, 1, 0, lines, {})
+	var remaining_stock: Dictionary = {}
+	_append_recipe_dependency_lines(item_id, 1, 0, lines, {}, remaining_stock)
 	return "\n".join(lines)
 
-func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, lines: Array[String], ancestry: Dictionary) -> void:
+func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, lines: Array[String], ancestry: Dictionary, remaining_stock: Dictionary) -> void:
 	var definition := get_item_definition(item_id)
 	if definition.is_empty():
-		lines.append("%s• %s ×%d — recipe unavailable" % ["  ".repeat(depth), item_id, amount])
+		lines.append("%s• %s ×%d — definition unavailable" % ["  ".repeat(depth), item_id, amount])
 		return
 	var item_name := str(definition.get("name", item_id))
-	var owned := StorageManager.get_count(item_id)
-	var stock_text := "stock %d" % owned
-	lines.append("%s• %s ×%d  (%s)" % ["  ".repeat(depth), item_name, amount, stock_text])
-	if ancestry.has(item_id) or not crafted_items.has(item_id):
+	var stock_available := int(remaining_stock.get(item_id, StorageManager.get_count(item_id)))
+	var used_from_stock := mini(amount, stock_available)
+	var missing_amount := maxi(0, amount - used_from_stock)
+	remaining_stock[item_id] = maxi(0, stock_available - used_from_stock)
+	var stock_line := "%s• %s — required %d | stock %d | missing %d" % [
+		"  ".repeat(depth), item_name, amount, stock_available, missing_amount
+	]
+	lines.append(stock_line)
+	if missing_amount <= 0:
+		return
+	if raw_materials.has(item_id):
+		lines[lines.size() - 1] += " | factory raw material"
+		return
+	if not crafted_items.has(item_id):
+		lines[lines.size() - 1] += " | recipe not verified; do not assume inputs"
+		return
+	var source_text := str(definition.get("source", "")).to_lower()
+	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
+		lines[lines.size() - 1] += " | recipe data unresolved"
+		return
+	if ancestry.has(item_id):
+		lines[lines.size() - 1] += " | dependency cycle detected"
 		return
 	var next_ancestry := ancestry.duplicate(true)
 	next_ancestry[item_id] = true
 	var requirements: Dictionary = crafted_items[item_id].get("requires", {})
 	for input_id in requirements:
-		_append_recipe_dependency_lines(str(input_id), amount * int(requirements[input_id]), depth + 1, lines, next_ancestry)
+		_append_recipe_dependency_lines(
+			str(input_id),
+			missing_amount * int(requirements[input_id]),
+			depth + 1,
+			lines,
+			next_ancestry,
+			remaining_stock
+		)
 
 func get_missing_inputs_text(item_id: String) -> String:
 	var recipe := get_recipe(item_id)
