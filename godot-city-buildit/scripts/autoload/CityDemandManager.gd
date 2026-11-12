@@ -16,8 +16,6 @@ func _ready() -> void:
 		BuildManager.construction_finished.connect(_on_construction_finished)
 	if not GameManager.level_changed.is_connected(_queue_refresh):
 		GameManager.level_changed.connect(_queue_refresh)
-	if not GameManager.level_changed.is_connected(_queue_refresh):
-		GameManager.level_changed.connect(_queue_refresh)
 	if not GameManager.population_changed.is_connected(_queue_refresh):
 		GameManager.population_changed.connect(_queue_refresh)
 	if not GameManager.xp_changed.is_connected(_on_xp_changed):
