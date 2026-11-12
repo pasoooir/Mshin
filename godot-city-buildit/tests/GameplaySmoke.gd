@@ -1086,7 +1086,7 @@ func _run_gameplay_test() -> void:
 	_check(nails_button_0 != null and nails_button_0.find_child("HexagonBackground", true, false) is Polygon2D, "Production choices must use floating hexagonal item tiles like SimCity BuildIt.")
 	if nails_button_0:
 		nails_button_0.emit_signal("pressed")
-		var detail_card := production_hud.production_panel.find_child("ProductionItemDetails", true, false)
+		var detail_card: Node = production_hud.production_panel.find_child("ProductionItemDetails", true, false)
 		var ingredient_label := production_hud.production_panel.find_child("IngredientsLabel", true, false) as Label
 		_check(detail_card != null and ingredient_label != null, "Selecting a shop product must open its separate white recipe detail card.")
 		if ingredient_label:
