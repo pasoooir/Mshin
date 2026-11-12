@@ -55,18 +55,42 @@ var crafted_items := {
 	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
 	"cheese": {"name":"Cheese", "time":6300.0, "time_sec":6300, "value":660, "requires":{"animal_feed":2}, "level":26, "store":"farmers_market", "source":"Community-reference"},
 	"beef": {"name":"Beef", "time":7200.0, "time_sec":7200, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"},
+	"fruit_berries": {"name":"Fruit & Berries", "time":4320.0, "time_sec":4320, "value":420, "requires":{"seeds":2,"tree_sapling":1}, "level":18, "store":"farmers_market", "source":"Community-reference"},
+	"bread_roll": {"name":"Bread Roll", "time":3240.0, "time_sec":3240, "value":350, "requires":{"flour_bag":2,"cream":1}, "level":25, "store":"donut_shop", "source":"Community-reference"},
+	"bbq_grill": {"name":"BBQ Grill", "time":9900.0, "time_sec":9900, "value":760, "requires":{"metal":3,"cooking_utensils":1}, "level":29, "store":"home_appliances", "source":"Community-reference"},
+	"microwave_oven": {"name":"Microwave Oven", "time":7200.0, "time_sec":7200, "value":920, "requires":{"metal":4,"glass":1,"electrical":1}, "level":42, "store":"home_appliances", "source":"Community-reference"},
 	"pizza": {"name":"Pizza", "time":1440.0, "time_sec":1440, "value":2560, "requires":{"flour_bag":1,"cheese":1,"beef":1}, "level":28, "store":"fast_food", "source":"Community-reference"},
-	"cheese_fries": {"name":"Cheese Fries", "time":1200.0, "time_sec":1200, "value":1050, "requires":{"cheese":1,"vegetables":1}, "level":33, "store":"fast_food", "source":"Community-reference"}
+	"cheese_fries": {"name":"Cheese Fries", "time":1200.0, "time_sec":1200, "value":1050, "requires":{"cheese":1,"vegetables":1}, "level":33, "store":"fast_food", "source":"Community-reference"},
+	"ice_cream_sandwich": {"name":"Ice Cream Sandwich", "time":840.0, "time_sec":840, "value":720, "requires":{"cream":1,"bread_roll":1}, "level":25, "store":"fast_food", "source":"Community-reference"},
+	"burger": {"name":"Burger", "time":2100.0, "time_sec":2100, "value":1350, "requires":{"beef":1,"bread_roll":1,"bbq_grill":1}, "level":31, "store":"fast_food", "source":"Community-reference"},
+	"lemonade_bottle": {"name":"Lemonade Bottle", "time":3600.0, "time_sec":3600, "value":1480, "requires":{"glass":2,"sugar_spices":2,"fruit_berries":1}, "level":37, "store":"fast_food", "source":"Community-reference"}
 }
 
 # Products with a verified store identity but unresolved input recipes remain
 # visible and disabled; never invent ingredient quantities or production times.
 var store_catalog := {
 	"fast_food": [
-		{"id":"ice_cream_sandwich","name":"Ice Cream Sandwich","level":25,"source":"Community-reference; recipe needs verification"},
-		{"id":"burger","name":"Burger","level":31,"source":"Community-reference; recipe needs verification"},
-		{"id":"lemonade_bottle","name":"Lemonade Bottle","level":37,"source":"Community-reference; recipe needs verification"},
-		{"id":"popcorn","name":"Popcorn","level":43,"source":"Community-reference; recipe needs verification"}
+		{"id":"popcorn","name":"Popcorn","level":43,"source":"Community-reference; unavailable at zero-star store level"}
+	],
+	"donut_shop": [
+		{"id":"donuts","name":"Donuts","level":18,"source":"Community-reference; recipe needs verification"},
+		{"id":"green_smoothie","name":"Green Smoothie","level":18,"source":"Community-reference; recipe needs verification"},
+		{"id":"cherry_cheesecake","name":"Cherry Cheesecake","level":26,"source":"Community-reference; recipe needs verification"},
+		{"id":"frozen_yogurt","name":"Frozen Yogurt","level":28,"source":"Community-reference; recipe needs verification"},
+		{"id":"coffee","name":"Coffee","level":30,"source":"Community-reference; recipe needs verification"}
+	],
+	"home_appliances": [
+		{"id":"refrigerator","name":"Refrigerator","level":35,"source":"Community-reference; recipe needs verification"},
+		{"id":"lighting_system","name":"Lighting System","level":36,"source":"Community-reference; recipe needs verification"},
+		{"id":"tv","name":"TV","level":38,"source":"Community-reference; recipe needs verification"}
+	],
+	"gardening_supplies": [
+		{"id":"grass","name":"Grass","level":14,"source":"Community-reference; recipe needs verification"},
+		{"id":"tree_sapling","name":"Tree Sapling","level":14,"source":"Community-reference; recipe needs verification"},
+		{"id":"garden_furniture","name":"Garden Furniture","level":19,"source":"Community-reference; recipe needs verification"},
+		{"id":"lawn_mower","name":"Lawn Mower","level":22,"source":"Community-reference; recipe needs verification"},
+		{"id":"fire_pit","name":"Fire Pit","level":24,"source":"Community-reference; recipe needs verification"},
+		{"id":"garden_gnome","name":"Garden Gnome","level":26,"source":"Community-reference; recipe needs verification"}
 	]
 }
 
@@ -86,6 +110,9 @@ func _ready() -> void:
 		StorageManager.register_item_definition(str(item_id), str(raw_materials[item_id].get("name", item_id)), "raw")
 	for item_id in crafted_items:
 		StorageManager.register_item_definition(str(item_id), str(crafted_items[item_id].get("name", item_id)), "crafted")
+	for store_id in store_catalog:
+		for product in store_catalog[store_id]:
+			StorageManager.register_item_definition(str(product.get("id", "")), str(product.get("name", product.get("id", ""))), "crafted")
 	print("[ProductionManager] SCBI catalog: %d raw, %d crafted" % [raw_materials.size(), crafted_items.size()])
 
 func get_available_raw() -> Array:
