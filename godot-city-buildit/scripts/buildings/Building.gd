@@ -14,6 +14,7 @@ var definition: Dictionary = {}
 var status: String = "constructing"
 var build_time: float = 10.0
 var construction_finish_unix: int = 0
+var _construction_initialized := false
 var _construction_tween: Tween
 var production_timer: float = 0.0
 var production_time: float = 20.0
@@ -1096,8 +1097,9 @@ func _start_construction(saved_finish_unix: int = 0) -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 
 func _on_construction_finished() -> void:
-	if status == "completed":
+	if _construction_initialized:
 		return
+	_construction_initialized = true
 	status = "completed"
 	construction_finish_unix = 0
 	setup_production_from_definition()
