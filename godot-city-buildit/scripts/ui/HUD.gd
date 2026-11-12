@@ -135,7 +135,8 @@ func _apply_responsive_layout() -> void:
 		toolbar.offset_bottom = 0.0
 	var left_stats := get_node_or_null("TopHUD/TopLeftStats") as Control
 	if left_stats:
-		left_stats.position.x = (174.0 if not compact and not tablet else 14.0) * scale_factor
+		# Keep the complete HUD stack aligned to a consistent inset from the left screen edge.
+		left_stats.position.x = 14.0 * scale_factor
 	var submenu_control := get_node_or_null("ToolSubmenuScroll") as Control
 	if submenu_control:
 		submenu_control.anchor_left = 0.15
@@ -529,6 +530,8 @@ func _build_toolbars() -> void:
 	category_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	category_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	category_scroll.scroll_deadzone = 4
+	category_scroll.follow_focus = false
 	category_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	category_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	toolbar.add_child(category_scroll)
@@ -554,13 +557,15 @@ func _build_toolbars() -> void:
 		button.custom_minimum_size = Vector2(toolbar_width, 84.0 * _ui_scale)
 		button.tooltip_text = str(item[1])
 		button.focus_mode = Control.FOCUS_NONE
-		button.mouse_filter = Control.MOUSE_FILTER_STOP
+		button.mouse_filter = Control.MOUSE_FILTER_PASS
 		button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+		button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		var icon := Icons.make_icon(str(item[2]), Vector2(icon_size, icon_size))
 		icon.name = "CategoryPNG"
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		icon.offset_left = 4.0 * _ui_scale
 		icon.offset_top = 3.0 * _ui_scale
@@ -617,14 +622,15 @@ func _build_toolbars() -> void:
 	submenu_scroll.offset_bottom = -8.0 * _ui_scale
 	submenu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	submenu_scroll.scroll_deadzone = 8
+	submenu_scroll.scroll_deadzone = 4
 	submenu_scroll.follow_focus = false
-	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	submenu_scroll.z_index = 63
 	submenu_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(submenu_scroll)
 	submenu = HBoxContainer.new()
 	submenu.name = "ToolSubmenu"
+	submenu.mouse_filter = Control.MOUSE_FILTER_PASS
 	submenu.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	submenu.add_theme_constant_override("separation", 8)
 	submenu.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -650,6 +656,8 @@ func _build_toolbars() -> void:
 	catalog_close.add_theme_stylebox_override("normal", _catalog_close_style(false))
 	catalog_close.add_theme_stylebox_override("hover", _catalog_close_style(true))
 	catalog_close.add_theme_stylebox_override("pressed", _catalog_close_style(true))
+	catalog_close.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
+	catalog_close.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	catalog_close.pressed.connect(_close_build_menu)
 	add_child(catalog_close)
 	catalog_close.hide()
@@ -873,6 +881,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	button.name = option_id
 	button.custom_minimum_size = Vector2(164, 188) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.disabled = disabled and not level_locked
 	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else detail
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
@@ -889,11 +898,13 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_child(art)
 	var icon := Icons.make_icon(icon_name, Vector2(132, 122) * _ui_scale)
 	icon.name = "SubmenuArtwork"
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art.add_child(icon)
 	if level_locked:
 		var lock := Label.new()
 		lock.name = "CatalogLock"
+		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		lock.text = "LOCKED"
 		lock.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 		lock.offset_left = -66 * _ui_scale
@@ -905,6 +916,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 		art.add_child(lock)
 	var label := Label.new()
 	label.text = title
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.y = 34 * _ui_scale
@@ -913,6 +925,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_child(label)
 	var count := Label.new()
 	count.name = "BuildingCount"
+	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	count.text = "%d/1" % _count_existing_buildings(option_id)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	count.add_theme_color_override("font_color", Color("#748795"))
@@ -1067,19 +1080,9 @@ func _add_info_line(parent: VBoxContainer, key_text: String, value_text: String)
 	value.add_theme_color_override("font_color", Color("#263746"))
 	row.add_child(value)
 
-func _catalog_close_style(hovered: bool) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#F4FAFD") if hovered else Color("#FFFFFF")
-	style.border_color = Color("#D6E5EC")
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(14)
-	style.shadow_color = Color(0, 0, 0, 0.14)
-	style.shadow_size = 4
-	style.content_margin_left = 4
-	style.content_margin_right = 4
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
-	return style
+func _catalog_close_style(_hovered: bool) -> StyleBox:
+	# The catalog close control is a plain X; it must not create a white tile.
+	return StyleBoxEmpty.new()
 
 func _catalog_action_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -1106,7 +1109,9 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		back.tooltip_text = "Back to categories"
 		back.custom_minimum_size = Vector2(54, 188) * _ui_scale
 		back.focus_mode = Control.FOCUS_NONE
-		back.add_theme_stylebox_override("normal", _catalog_card_style("normal"))
+		back.mouse_filter = Control.MOUSE_FILTER_PASS
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			back.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 		back.add_theme_color_override("font_color", Color("#526B7A"))
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
@@ -1156,13 +1161,15 @@ func _select_building_type(type_id: String) -> void:
 		status_label.text = "Could not enter placement mode for %s." % str(definition.get("name", type_id))
 
 func _highlight_submenu_choice(type_id: String) -> void:
+	# Selection feedback must never paint opaque/dark cards behind the PNG artwork.
 	for child in submenu.get_children():
 		if child is Button:
 			var button := child as Button
-			if button.name == type_id:
-				button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.13, 0.32, 0.20, 1.0), Color("#A8E62E")))
-			elif not button.name.begins_with("Submenu_"):
-				button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.08, 0.16, 0.21, 0.97), Color(0.52, 0.72, 0.82, 0.62)))
+			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+				button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+			var title := button.find_child("Label", true, false) as Label
+			if title:
+				title.add_theme_color_override("font_color", Color("#4B9E38") if button.name == type_id else Color("#344B5B"))
 
 func _on_building_choice_pressed(type_id: String) -> void:
 	# Keep the existing test and scene callback contract while routing through

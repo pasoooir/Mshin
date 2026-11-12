@@ -62,17 +62,35 @@ if "Color(0.0, 0.0, 0.0, 0.0)" not in hud:
     errors.append("Toolbar buttons must have transparent normal backgrounds")
 
 toolbar_order = [
-    '["road", "Roads", "road"]',
-    '["residential", "Residential", "residential"]',
-    '["commercial", "Commercial", "commercial"]',
-    '["industrial", "Industrial", "industrial"]',
-    '["services", "Services", "services"]',
-    '["specializations", "Specializations", "parks"]',
-    '["bulldoze", "Bulldoze", "bulldoze"]'
+    "residential", "commercial", "industrial", "services",
+    "specializations", "road", "bulldoze"
 ]
-positions = [hud.find(entry) for entry in toolbar_order]
-if any(position < 0 for position in positions) or positions != sorted(positions):
+toolbar_match = re.search(r"var tools := \[(.*?)\n\t\]", hud, re.S)
+toolbar_ids = re.findall(r'\["([a-z_]+)",\s*"[^"]+",\s*"[^"]+"\]', toolbar_match.group(1)) if toolbar_match else []
+if toolbar_ids != toolbar_order:
     errors.append("Right toolbar categories are missing or not in the required order")
+smoke_order = [
+    "Tool_Residential", "Tool_Commercial", "Tool_Industrial",
+    "Tool_Services", "Tool_Specializations", "Tool_Road", "Tool_Bulldoze"
+]
+toolbar_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
+if not all(f'"{name}"' in toolbar_smoke for name in smoke_order):
+    errors.append("Gameplay smoke test is missing the canonical right-toolbar category order")
+
+# Side rails and catalog cards must remain transparent in every interaction state.
+for contract in [
+    'category_scroll.scroll_deadzone = 4',
+    'category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO',
+    'category_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
+    'submenu_scroll.scroll_deadzone = 4',
+    'submenu_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
+    'button.mouse_filter = Control.MOUSE_FILTER_PASS',
+    'button.add_theme_stylebox_override(state, StyleBoxEmpty.new())'
+]:
+    if contract not in hud:
+        errors.append(f"Touch/transparent catalog contract is missing: {contract}")
+if '_toolbar_style(Color(0.08, 0.16, 0.21, 0.97)' in hud:
+    errors.append("Build selection must not apply dark backgrounds to submenu cards")
 
 
 # Visual-quality contracts: local Build SVGs, hidden roof labels, grounded trees and shared shadows.
