@@ -32,6 +32,13 @@ for variable, category in (("raw_materials", "raw"), ("crafted_items", "crafted"
     for icon_id in re.findall(r'^\s*"([a-z0-9_]+)"\s*:\s*\{', section_text, re.M):
         require(category, icon_id)
 
+# Disabled-but-visible product identities must still have local artwork.
+store_catalog_section = production.split("var store_catalog := {", 1)
+if len(store_catalog_section) == 2:
+    store_catalog_text = store_catalog_section[1].split("\nvar upgrade_requirements", 1)[0]
+    for icon_id in re.findall(r'"id":"([a-z0-9_]+)"', store_catalog_text):
+        require("crafted", icon_id)
+
 # Menu group IDs and their service/specialization buildings are also visible UI items.
 service_section = hud.split("const SERVICE_GROUPS := [", 1)[1].split("\n]", 1)[0]
 for group_id in re.findall(r'\{"id":"([a-z0-9_]+)"', service_section):
