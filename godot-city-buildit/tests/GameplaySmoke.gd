@@ -1004,6 +1004,7 @@ func _run_gameplay_test() -> void:
 	needs_hud.open_residential_panel(home)
 	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
 	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
+	_check(needs_hud.find_child("ResidentialPlanStatus", true, false) is Label, "Residential plan must clearly show whether materials are missing or the home is ready.")
 	needs_hud._close_residential_panel()
 	var factory = _find_building("industrial_1")
 	_check(home != null and home.status == "completed", "House construction did not finish.")
@@ -1207,6 +1208,34 @@ func _run_gameplay_test() -> void:
 		collect_nails_1.emit_signal("pressed")
 	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
 
+	# Sourced star progression and queue-slot pricing are exposed in the live panel.
+	var previous_level_for_store_star := GameManager.level
+	var previous_simoleons_for_store_star := EconomyManager.simoleons
+	var previous_sim_cash_for_store_slots := EconomyManager.sim_cash
+	GameManager.level = 16
+	EconomyManager.simoleons = 50000
+	EconomyManager.sim_cash = 100
+	_check(ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).contains("Store Star"), "Paint must remain locked until Building Supplies reaches its sourced one-star requirement.")
+	_check(is_equal_approx(ProductionManager.get_production_time("nails", 0), 300.0) and is_equal_approx(ProductionManager.get_production_time("nails", 1), 270.0), "Building Supplies one-star timing must apply the sourced 10% reduction.")
+	production_hud.open_production_panel(supplies)
+	_check(production_hud.production_panel.find_child("StoreStarStatus", true, false) is Label, "Supported commercial stores must display their current star level.")
+	var star_upgrade_button := production_hud.production_panel.find_child("UpgradeStoreStar", true, false) as Button
+	_check(star_upgrade_button != null and not star_upgrade_button.disabled, "Building Supplies one-star upgrade must be available at its sourced level and cost.")
+	if star_upgrade_button:
+		star_upgrade_button.emit_signal("pressed")
+	_check(shop_component.store_star_level == 1 and ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).is_empty(), "Buying the first Building Supplies star must unlock Paint.")
+	_check(is_equal_approx(shop_component.get_item_production_time("nails"), 270.0), "New Nails orders must use the one-star production time.")
+	production_hud.open_production_panel(supplies)
+	var buy_queue_slot := production_hud.production_panel.find_child("PurchaseQueueSlot", true, false) as Button
+	_check(buy_queue_slot != null and buy_queue_slot.text.contains("4 SC") and not buy_queue_slot.disabled, "Building Supplies next queue slot must show its sourced 4 SimCash price.")
+	if buy_queue_slot:
+		buy_queue_slot.emit_signal("pressed")
+	_check(shop_component.get_slot_count() == 3 and EconomyManager.sim_cash == 96, "Buying the next queue slot from the production UI must increase capacity and spend the sourced SimCash amount.")
+	shop_component.store_star_level = 0
+	GameManager.level = previous_level_for_store_star
+	EconomyManager.simoleons = previous_simoleons_for_store_star
+	EconomyManager.sim_cash = previous_sim_cash_for_store_slots
+
 	# Verify a full warehouse blocks collection without losing the ready batch.
 	_check(factory_component.start_factory("metal",0), "Factory must accept a new order after a collection.")
 	var full_slot: Dictionary = factory_component.slots[0]
@@ -1215,6 +1244,9 @@ func _run_gameplay_test() -> void:
 	factory_component.refresh_slots()
 	StorageManager.capacity = 1
 	StorageManager.items = {"occupied":1}
+	production_hud.open_production_panel(factory)
+	var storage_full_collect := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	_check(storage_full_collect != null and storage_full_collect.disabled and storage_full_collect.text == "STORAGE FULL", "A ready product must show a disabled Storage Full collection state when the warehouse is full.")
 	_check(not factory_component.collect(0) and bool(factory_component.get_slot(0).get("ready",false)), "Storage full must block Collect while preserving the ready output.")
 	StorageManager.capacity = 50
 	StorageManager.items = {}
