@@ -533,7 +533,7 @@ func _build_toolbars() -> void:
 	category_scroll.scroll_deadzone = 4
 	category_scroll.follow_focus = false
 	category_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	category_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	category_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	toolbar.add_child(category_scroll)
 	var toolbar_items := VBoxContainer.new()
 	toolbar_items.name = "RightToolbarItems"
@@ -624,7 +624,7 @@ func _build_toolbars() -> void:
 	submenu_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	submenu_scroll.scroll_deadzone = 4
 	submenu_scroll.follow_focus = false
-	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	submenu_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	submenu_scroll.z_index = 63
 	submenu_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(submenu_scroll)
