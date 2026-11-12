@@ -71,6 +71,12 @@ The Fast Food Restaurant level gates are cross-checked against HubsInfo's store 
 - Popcorn requires at least one Fast Food Restaurant star.
 - Paint continues to require one Building Supplies star.
 
+### Queue-price boundary
+
+- The standard commercial queue-price schedule is applied only to known SCBI commercial store IDs.
+- Mshin-only custom stores do not inherit the SCBI schedule. Their queue-slot action is shown as unavailable until a real price source exists.
+- Vu's Random Generator is not part of the current supported building catalog; its separate published slot-price schedule is not silently treated as a standard-store price.
+
 ### Explicit source gaps (not fabricated)
 
 - Donut Shop's third-star cost conflicts: the Fandom store page reports 45,000 Simoleons while the Japanese commercial table reports 49,000. Its third star remains unavailable until reconciled.
