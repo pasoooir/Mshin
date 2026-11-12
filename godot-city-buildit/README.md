@@ -26,6 +26,10 @@ godot --path godot-city-buildit
 
 Main scene: `res://scenes/main.tscn`.
 
+## Production economy and city-needs design
+
+The detailed reference and implementation contract for factory tiers, commercial-store catalogues, item recipes, residential upgrade plans, citywide demand visibility, SCBI-inspired production/residential panels, data architecture, known gaps and acceptance tests is maintained in [Production Economy & City Needs Specification](docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC.md). Treat that document as the gameplay design reference; it distinguishes verified SCBI behaviour, secondary-source item data and existing Mshin-specific rules.
+
 ## First city — complete gameplay loop
 
 1. Tap the **road** icon and place a connected road chain. Each tile costs 50 Simoleons; after the first tile, each new tile must connect to the existing road network.
