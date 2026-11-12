@@ -87,11 +87,10 @@ func _supplier_for(item_id: String) -> Array:
 	var result: Array = []
 	if ProductionManager.raw_materials.has(item_id):
 		for building in BuildManager.buildings.values():
-			if not is_instance_valid(building) or building.status != "completed":
+			if not is_instance_valid(building):
 				continue
-			if str(building.definition.get("category", "")) == "industrial":
-				if ProductionManager.raw_materials.has(item_id):
-					result.append({"building_id":building.building_id,"name":str(building.definition.get("name","Factory")),"status":"available"})
+			if str(building.definition.get("category", "")) == "industrial" and ProductionManager.get_factory_material_ids(building.building_type).has(item_id):
+				result.append({"building_id":building.building_id,"building_type":building.building_type,"name":str(building.definition.get("name","Factory")),"status":"available" if building.status == "completed" else "constructing"})
 	else:
 		var recipe := ProductionManager.get_recipe(item_id)
 		var shop_id := str(recipe.get("store", ""))
