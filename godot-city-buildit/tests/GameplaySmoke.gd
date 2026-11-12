@@ -4,6 +4,7 @@ const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const Icons = preload("res://scripts/ui/Icons.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
+const BuildingScene = preload("res://scenes/buildings/Building.tscn")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -225,8 +226,8 @@ func _test_storage_and_production_chain() -> void:
 	StorageManager.from_save_dict(saved_storage)
 
 func _test_wind_turbine_rotor_animation() -> void:
-	var building_script = load("res://scripts/buildings/Building.gd")
-	var test_building = building_script.new()
+	# Use the real scene so every @onready node path exists in the test fixture.
+	var test_building: Building = BuildingScene.instantiate()
 	add_child(test_building)
 	var rotor := Node3D.new()
 	rotor.name = "WindTurbineRotor_Test"
