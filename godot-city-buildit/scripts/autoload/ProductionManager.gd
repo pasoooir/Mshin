@@ -37,7 +37,7 @@ var crafted_items := {
 	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies", "source":"Fandom"},
 	"cement": {"name":"Cement", "time":3000.0, "time_sec":3000, "value":440, "requires":{"minerals":2,"chemicals":1}, "level":14, "store":"building_supplies", "source":"Fandom"},
 	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies", "source":"Fandom"},
-	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies", "source":"Fandom"},
+	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "required_stars":1, "store":"building_supplies", "source":"Fandom"},
 	"hammer": {"name":"Hammer", "time":840.0, "time_sec":840, "value":90, "requires":{"metal":1,"wood":1}, "level":4, "store":"hardware_store", "source":"Fandom"},
 	"measuring_tape": {"name":"Measuring Tape", "time":1200.0, "time_sec":1200, "value":110, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store", "source":"Fandom"},
 	"shovel": {"name":"Shovel", "time":1800.0, "time_sec":1800, "value":150, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store", "source":"Fandom"},
@@ -182,7 +182,7 @@ func can_craft(item_id: String) -> bool:
 	var recipe := get_recipe(item_id)
 	return not recipe.is_empty() and get_recipe_lock_reason(item_id).is_empty() and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.get("inputs", {}))
 
-func get_recipe_lock_reason(item_id: String) -> String:
+func get_recipe_lock_reason(item_id: String, store_star_level: int = 0) -> String:
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
 		return "Recipe not verified — production disabled"
@@ -191,6 +191,9 @@ func get_recipe_lock_reason(item_id: String) -> String:
 		return "Recipe data unresolved — production disabled until verified"
 	if int(recipe.get("level", 1)) > GameManager.level:
 		return "Unlocks at Level %d" % int(recipe.level)
+	var required_stars := int(recipe.get("required_stars", 0))
+	if store_star_level < required_stars:
+		return "Requires %d Store Star%s" % [required_stars, "" if required_stars == 1 else "s"]
 	for input_id in recipe.get("inputs", {}):
 		var id := str(input_id)
 		if raw_materials.has(id) and int(raw_materials[id].get("level", 1)) > GameManager.level:
@@ -383,10 +386,46 @@ func get_item_value(item_id: String) -> int:
 	if crafted_items.has(item_id): return int(crafted_items[item_id].value)
 	return 5
 
-func get_production_time(item_id: String) -> float:
-	if raw_materials.has(item_id): return float(raw_materials[item_id].time_sec)
-	if crafted_items.has(item_id): return float(crafted_items[item_id].time_sec)
-	return 20.0
+func get_production_time(item_id: String, store_star_level: int = 0) -> float:
+	if raw_materials.has(item_id):
+		return float(raw_materials[item_id].time_sec)
+	if not crafted_items.has(item_id):
+		return 20.0
+	var recipe: Dictionary = crafted_items[item_id]
+	var base_seconds := float(recipe.get("time_sec", 60))
+	var store_id := str(recipe.get("store", ""))
+	if store_star_level <= 0 or not is_store_star_upgrade_supported(store_id):
+		return base_seconds
+	var reduction := [0.0, 0.10, 0.15, 0.20][clampi(store_star_level, 0, 3)]
+	return maxf(1.0, ceil(base_seconds * (1.0 - reduction)))
+
+# Upgrade requirements are exposed only where the reference dataset supplies
+# both the level gate and Simoleon cost. Other stores retain base production time.
+func get_store_star_offer(store_id: String, current_star_level: int) -> Dictionary:
+	var upgrade_data: Dictionary = {
+		"building_supplies": [
+			{"level": 13, "cost": 12000, "reduction": 10},
+			{"level": 25, "cost": 24000, "reduction": 15},
+			{"level": 33, "cost": 32000, "reduction": 20}
+		],
+		"hardware_store": [
+			{"level": 16, "cost": 15000, "reduction": 10},
+			{"level": 28, "cost": 27000, "reduction": 15},
+			{"level": 36, "cost": 35000, "reduction": 20}
+		]
+	}
+	if not upgrade_data.has(store_id):
+		return {}
+	var next_star := current_star_level + 1
+	var tiers: Array = upgrade_data[store_id]
+	if next_star < 1 or next_star > tiers.size():
+		return {}
+	var offer: Dictionary = tiers[next_star - 1].duplicate(true)
+	offer["star"] = next_star
+	return offer
+
+func is_store_star_upgrade_supported(store_id: String) -> bool:
+	return store_id == "building_supplies" or store_id == "hardware_store"
 
 func get_upgrade_requirements(from_stage: int) -> Array:
 	return upgrade_requirements.get(from_stage, [])
