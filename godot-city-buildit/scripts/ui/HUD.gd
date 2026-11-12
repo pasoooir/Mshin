@@ -561,9 +561,11 @@ func _build_toolbars() -> void:
 		button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+		button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		var icon := Icons.make_icon(str(item[2]), Vector2(icon_size, icon_size))
 		icon.name = "CategoryPNG"
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		icon.offset_left = 4.0 * _ui_scale
 		icon.offset_top = 3.0 * _ui_scale
@@ -896,11 +898,13 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_child(art)
 	var icon := Icons.make_icon(icon_name, Vector2(132, 122) * _ui_scale)
 	icon.name = "SubmenuArtwork"
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art.add_child(icon)
 	if level_locked:
 		var lock := Label.new()
 		lock.name = "CatalogLock"
+		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		lock.text = "LOCKED"
 		lock.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 		lock.offset_left = -66 * _ui_scale
@@ -912,6 +916,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 		art.add_child(lock)
 	var label := Label.new()
 	label.text = title
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.y = 34 * _ui_scale
@@ -920,6 +925,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.add_child(label)
 	var count := Label.new()
 	count.name = "BuildingCount"
+	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	count.text = "%d/1" % _count_existing_buildings(option_id)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	count.add_theme_color_override("font_color", Color("#748795"))
