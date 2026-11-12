@@ -91,6 +91,45 @@ var store_catalog := {
 		{"id":"lawn_mower","name":"Lawn Mower","level":22,"source":"Community-reference; recipe needs verification"},
 		{"id":"fire_pit","name":"Fire Pit","level":24,"source":"Community-reference; recipe needs verification"},
 		{"id":"garden_gnome","name":"Garden Gnome","level":26,"source":"Community-reference; recipe needs verification"}
+	],
+	"fashion_store": [
+		{"id":"cap","name":"Cap","level":19,"source":"Community-reference; recipe needs verification"},
+		{"id":"shoes","name":"Shoes","level":20,"source":"Community-reference; recipe needs verification"},
+		{"id":"watch","name":"Watch","level":22,"source":"Community-reference; recipe needs verification"},
+		{"id":"business_suit","name":"Business Suit","level":27,"source":"Community-reference; recipe needs verification"},
+		{"id":"backpack","name":"Backpack","level":29,"source":"Community-reference; recipe needs verification"}
+	],
+	"sports_shop": [
+		{"id":"tennis_racket","name":"Tennis Racket","level":22,"source":"Community-reference; recipe needs verification"},
+		{"id":"sports_drink","name":"Sports Drink","level":23,"source":"Community-reference; recipe needs verification"},
+		{"id":"soccer_shoes","name":"Soccer Shoes","level":24,"source":"Community-reference; recipe needs verification"},
+		{"id":"protein_bar","name":"Protein Bar","level":28,"source":"Community-reference; recipe needs verification"},
+		{"id":"ping_pong_table","name":"Ping-Pong Table","level":31,"source":"Community-reference; recipe needs verification"}
+	],
+	"toy_store": [
+		{"id":"block_letters","name":"Block Letters","level":24,"source":"Community-reference; recipe needs verification"},
+		{"id":"kite","name":"Kite","level":25,"source":"Community-reference; recipe needs verification"},
+		{"id":"teddy_bear","name":"Teddy Bear","level":26,"source":"Community-reference; recipe needs verification"},
+		{"id":"game_console","name":"Game Console","level":32,"source":"Community-reference; recipe needs verification"}
+	],
+	"restoration_office": [
+		{"id":"forged_iron","name":"Forged Iron","level":26,"source":"Community-reference; recipe needs verification"},
+		{"id":"carved_wood","name":"Carved Wood","level":27,"source":"Community-reference; recipe needs verification"},
+		{"id":"cut_stone","name":"Cut Stone","level":28,"source":"Community-reference; recipe needs verification"},
+		{"id":"tapestries","name":"Tapestries","level":32,"source":"Community-reference; recipe needs verification"},
+		{"id":"stained_glass","name":"Stained Glass","level":34,"source":"Community-reference; recipe needs verification"}
+	],
+	"farmers_store": [
+		{"id":"wool_shirt","name":"Wool Shirt","level":28,"source":"Community-reference; recipe needs verification"},
+		{"id":"picnic_basket","name":"Picnic Basket","level":29,"source":"Community-reference; recipe needs verification"},
+		{"id":"apple_jam","name":"Apple Jam","level":31,"source":"Community-reference; recipe needs verification"}
+	],
+	"dessert_shop": [
+		{"id":"tiramisu","name":"Tiramisu","level":30,"source":"Community-reference; recipe needs verification"},
+		{"id":"churros","name":"Churros","level":31,"source":"Community-reference; recipe needs verification"},
+		{"id":"profiterole","name":"Profiterole","level":33,"source":"Community-reference; recipe needs verification"},
+		{"id":"mochi","name":"Mochi","level":35,"source":"Community-reference; recipe needs verification"},
+		{"id":"pavlova","name":"Pavlova","level":37,"source":"Community-reference; recipe needs verification"}
 	]
 }
 
