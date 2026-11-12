@@ -608,7 +608,7 @@ func _build_toolbars() -> void:
 		bottom_actions.add_child(button)
 		match str(item[0]):
 			"storage": button.pressed.connect(_on_storage_pressed)
-			"needs": button.pressed.connect(_on_city_needs_pressed)
+			"info": button.pressed.connect(_on_city_needs_pressed)
 			"trade": button.pressed.connect(_on_trade_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
 	catalog_base_bar = PanelContainer.new()
