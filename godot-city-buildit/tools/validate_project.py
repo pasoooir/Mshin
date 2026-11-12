@@ -60,6 +60,13 @@ if "const Icons = preload(\"res://scripts/ui/Icons.gd\")" not in (ROOT / "script
     errors.append("Legacy IconAtlas facade must delegate to the centralized PNG helper")
 if "Color(0.0, 0.0, 0.0, 0.0)" not in hud:
     errors.append("Toolbar buttons must have transparent normal backgrounds")
+if "class LevelBadgeVisual extends Control:" not in hud:
+    errors.append("Procedural Mayor Level badge renderer is missing")
+if 'Icons.make_icon("level"' in hud:
+    errors.append("Mayor Level badge must not use the old raster PNG")
+for contract in ["draw_circle(center", "draw_arc(center", "level_badge_visual.set_progress("]:
+    if contract not in hud:
+        errors.append(f"Procedural Mayor Level badge visual contract is missing: {contract}")
 
 toolbar_order = [
     "residential", "commercial", "industrial", "services",
