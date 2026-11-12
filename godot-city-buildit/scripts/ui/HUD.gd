@@ -1854,7 +1854,13 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	selected_name.add_theme_color_override("font_color", Color("#173746"))
 	text_stack.add_child(selected_name)
 	var production_time := Label.new()
-	production_time.text = "PRODUCTION TIME  " + _format_duration(int(data.get("time_sec", 60)))
+	var selected_recipe: Dictionary = {} if is_factory else ProductionManager.get_recipe(item_id)
+	if is_factory:
+		production_time.text = "PRODUCTION TIME  " + _format_duration(int(data.get("time_sec", 60)))
+	elif selected_recipe.is_empty():
+		production_time.text = "PRODUCTION TIME  NOT VERIFIED"
+	else:
+		production_time.text = "PRODUCTION TIME  " + _format_duration(int(selected_recipe.get("time_sec", 60)))
 	production_time.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	production_time.add_theme_color_override("font_color", Color("#315C70"))
 	text_stack.add_child(production_time)
@@ -1878,7 +1884,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		ingredients_label.name = "IngredientsLabel"
 		var ingredient_lines: Array[String] = []
 		for input_id in inputs:
-			var input_data: Dictionary = ProductionManager.raw_materials.get(input_id, ProductionManager.crafted_items.get(input_id, {}))
+			var input_data: Dictionary = ProductionManager.raw_materials.get(input_id, ProductionManager.crafted_items.get(input_id, StorageManager.item_definitions.get(input_id, {})))
 			var required := int(inputs[input_id])
 			var owned := StorageManager.get_count(str(input_id))
 			ingredient_lines.append("%s  %d/%d" % [str(input_data.get("name", str(input_id).capitalize())), owned, required])
