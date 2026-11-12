@@ -46,6 +46,7 @@ func save_game() -> bool:
 				"production_finish_unix": building.production_finish_unix,
 				"upgrade_in_progress": building.upgrade_in_progress,
 				"upgrade_finish_unix": building.upgrade_finish_unix,
+				"store_star_level": building.production_component.store_star_level if is_instance_valid(building.production_component) else 0,
 				"slots": building.production_component.to_save_array() if is_instance_valid(building.production_component) else []
 			}
 		})
