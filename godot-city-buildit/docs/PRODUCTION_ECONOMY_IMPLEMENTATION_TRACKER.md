@@ -62,6 +62,7 @@ Do not convert these values into EA-confirmed facts.
 - Storage multi-item atomic add/remove and rejection of negative inputs.
 - City Needs aggregation and first-home Nails requirement.
 - City Needs HUD shortcut and residential plan panel.
+- Complete City Storage inventory display and live per-slot production queue with one-second ETA refresh.
 - Local product icon catalog coverage.
 - Construction finish timestamp creation.
 - Fast Food catalog visibility, five enabled recipes and one disabled store-star recipe.
