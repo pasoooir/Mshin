@@ -193,6 +193,13 @@ func get_store_recipe_ids(store_id: String) -> Array:
 			result.append(str(item_id))
 	return result
 
+func get_catalog_supplier_id(item_id: String) -> String:
+	for store_id in store_catalog:
+		for product in store_catalog[store_id]:
+			if str(product.get("id", "")) == item_id:
+				return str(store_id)
+	return ""
+
 func get_store_catalog_ids(store_id: String) -> Array:
 	var result := get_store_recipe_ids(store_id)
 	for product in store_catalog.get(store_id, []):
