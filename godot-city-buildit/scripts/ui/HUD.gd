@@ -2304,20 +2304,6 @@ func open_city_needs_panel() -> void:
 			need_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 			need_line.add_theme_color_override("font_color", need_color)
 			home_layout.add_child(need_line)
-	var orders_title := Label.new()
-	orders_title.text = "ACTIVE PRODUCTION QUEUE"
-	orders_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
-	orders_title.add_theme_color_override("font_color", Color("#17364A"))
-	content.add_child(orders_title)
-	for order in snapshot.get("orders", []):
-		var order_label := Label.new()
-		order_label.text = "%s  ·  %s  ·  %s" % [
-			str(order.get("building_name", "Production")), str(order.get("item_name", "")),
-			"READY TO COLLECT" if bool(order.get("ready", false)) else _city_needs_duration(int(order.get("remaining", 0)))
-		]
-		order_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
-		order_label.add_theme_color_override("font_color", Color("#34734D") if bool(order.get("ready", false)) else Color("#31566B"))
-		content.add_child(order_label)
 
 func _city_needs_duration(seconds: int) -> String:
 	var safe := maxi(0, seconds)
