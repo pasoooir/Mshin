@@ -325,6 +325,43 @@ func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, l
 			remaining_stock
 		)
 
+func get_estimated_chain_seconds(item_id: String) -> float:
+	# Display-only estimate: raw inputs are treated as parallel and each
+	# commercial output batch is sequential. This value is never stored in a recipe.
+	return _estimate_item_chain_seconds(item_id, 1, {}, {})
+
+func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock: Dictionary, ancestry: Dictionary) -> float:
+	var stock_available := int(remaining_stock.get(item_id, StorageManager.get_count(item_id)))
+	var used_from_stock := mini(amount, stock_available)
+	var missing_amount := maxi(0, amount - used_from_stock)
+	remaining_stock[item_id] = maxi(0, stock_available - used_from_stock)
+	if missing_amount <= 0:
+		return 0.0
+	if raw_materials.has(item_id):
+		return float(raw_materials[item_id].get("time_sec", 0))
+	if not crafted_items.has(item_id) or ancestry.has(item_id):
+		return -1.0
+	var recipe: Dictionary = crafted_items[item_id]
+	var source_text := str(recipe.get("source", "")).to_lower()
+	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
+		return -1.0
+	var dependency_max := 0.0
+	var next_ancestry := ancestry.duplicate(true)
+	next_ancestry[item_id] = true
+	var requirements: Dictionary = recipe.get("requires", {})
+	for input_id in requirements:
+		var dependency_seconds := _estimate_item_chain_seconds(
+			str(input_id),
+			missing_amount * int(requirements[input_id]),
+			remaining_stock,
+			next_ancestry
+		)
+		if dependency_seconds < 0.0:
+			return -1.0
+		dependency_max = maxf(dependency_max, dependency_seconds)
+	# Repeated outputs from one commercial store are sequential jobs.
+	return dependency_max + float(missing_amount * int(recipe.get("time_sec", 0)))
+
 func get_missing_inputs_text(item_id: String) -> String:
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
