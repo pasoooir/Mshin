@@ -1,6 +1,7 @@
 extends Node3D
 
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
+const Icons = preload("res://scripts/ui/Icons.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 
