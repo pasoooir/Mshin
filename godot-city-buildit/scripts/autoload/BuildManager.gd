@@ -295,7 +295,11 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 	if world == null:
 		push_error("Cannot place building: World/Buildings node is missing.")
 		return false
+	var building_node = BuildingScene.instantiate()
+	if building_node == null:
+		return false
 	if cost > 0 and not EconomyManager.spend_simoleons(cost):
+		building_node.free()
 		return false
 	var building_id: String = "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
 	var data: Dictionary = {
@@ -307,7 +311,6 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 		"build_time": float(definition.get("build_time", 4.0)),
 		"upgrade_stage": clampi(saved_stage, 1, 6)
 	}
-	var building_node = BuildingScene.instantiate()
 	world.add_child(building_node)
 	var size: Vector2i = definition.get("size", Vector2i(2,2))
 	building_node.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
