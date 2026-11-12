@@ -3,9 +3,17 @@ extends Node
 signal city_needs_changed(snapshot: Dictionary)
 
 var _refresh_queued := false
+var _has_active_orders := false
+var _countdown_timer: Timer
 var _last_snapshot: Dictionary = {}
 
 func _ready() -> void:
+	_countdown_timer = Timer.new()
+	_countdown_timer.wait_time = 1.0
+	_countdown_timer.one_shot = false
+	_countdown_timer.autostart = true
+	_countdown_timer.timeout.connect(_on_countdown_tick)
+	add_child(_countdown_timer)
 	if not StorageManager.storage_changed.is_connected(_queue_refresh):
 		StorageManager.storage_changed.connect(_queue_refresh)
 	if not BuildManager.building_placed.is_connected(_on_building_placed):
