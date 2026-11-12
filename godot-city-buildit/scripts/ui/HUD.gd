@@ -2077,7 +2077,7 @@ func open_city_needs_panel() -> void:
 		int(city.get("level", 1)), int(city.get("experience", 0)), int(city.get("xp_needed", 0)), _format_count(int(city.get("population", 0))), roundi(float(city.get("happiness", 0.0))),
 		int(storage.get("used", 0)), int(storage.get("capacity", 0)),
 		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)),
-		int(summary.get("waiting_homes", 0)), int(summary.get("ready_orders", 0))
+		int(summary.get("waiting_homes", 0)), int(summary.get("active_orders", 0)), int(summary.get("ready_orders", 0))
 	]
 	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary_label.custom_minimum_size.y = 28 * _ui_scale
