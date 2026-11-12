@@ -1776,7 +1776,7 @@ func open_production_panel(building: Building) -> void:
 	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = 96.0 * _ui_scale
+	queue_scroll.custom_minimum_size.y = 120.0 * _ui_scale
 	layout.add_child(queue_scroll)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
@@ -1786,7 +1786,7 @@ func open_production_panel(building: Building) -> void:
 		var slot: Dictionary = component.get_slot(slot_index)
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
-		slot_card.custom_minimum_size = Vector2(124, 90) * _ui_scale
+		slot_card.custom_minimum_size = Vector2(124, 114) * _ui_scale
 		var slot_fill := Color("#FFFFFF") if not slot.is_empty() else Color("#F0F6FA")
 		var slot_border := Color("#C9DDE8") if slot.is_empty() else Color("#79B9D4")
 		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
@@ -1872,6 +1872,23 @@ func open_production_panel(building: Building) -> void:
 					progress.set_meta("start_unix", started_unix)
 					progress.set_meta("finish_unix", int(slot.get("finish_unix", 0)))
 					slot_content.add_child(progress)
+					var speedup_cost := ProductionManager.get_speedup_cash_cost(queued_item_id)
+					if speedup_cost > 0:
+						var speedup_button := Button.new()
+						speedup_button.name = "SpeedUpSlot%d" % slot_index
+						speedup_button.text = "SPEED UP · %d SC" % speedup_cost
+						speedup_button.disabled = EconomyManager.sim_cash < speedup_cost
+						speedup_button.tooltip_text = "Finish this production now. The SimCash price is item-specific and source-backed."
+						speedup_button.custom_minimum_size.y = 22.0 * _ui_scale
+						speedup_button.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+						speedup_button.pressed.connect(func():
+							if component.speed_up_slot(slot_index):
+								status_label.text = "Finished %s using %d SimCash." % [queued_item_id.capitalize(), speedup_cost]
+							else:
+							status_label.text = "Could not speed up this production."
+							open_production_panel(building)
+						)
+						slot_content.add_child(speedup_button)
 					_production_timer_labels.append(timer_label)
 					_production_progress_bars.append(progress)
 
