@@ -122,7 +122,9 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 	var recipe := ProductionManager.get_recipe(recipe_id)
 	if recipe.is_empty() or str(recipe.get("store", "")) != shop_id:
 		return false
-	if int(recipe.get("level", 1)) > GameManager.level or not ProductionManager.are_recipe_inputs_unlocked(recipe):
+	if not ProductionManager.get_recipe_lock_reason(recipe_id).is_empty():
+		return false
+	if not ProductionManager.are_recipe_inputs_unlocked(recipe):
 		return false
 	var inputs: Dictionary = recipe.get("inputs", {})
 	# Validate and deduct the complete input set atomically when the order is
