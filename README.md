@@ -27,6 +27,10 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 ساخت یک بازی شهرسازی سه‌بعدی با حس، ظاهر، کنترل و سیستم‌های گیم‌پلی نزدیک به SimCity BuildIt.
 
+### سند مرجع اقتصاد تولید، فروشگاه‌ها و نیازهای شهر
+
+- **[Production Economy & City Needs Specification](godot-city-buildit/docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC.md)** — سند جامع کارخانه‌ها، فهرست فروشگاه‌ها و خانواده محصولات، زنجیره‌های تولید، نیازهای ارتقای خانه، داشبورد سراسری کمبودها، اصول UI مشابه SimCity BuildIt، معماری داده، شکاف‌های فعلی Mshin و معیارهای پذیرش. این سند مرجع طراحی است؛ مقادیر جامعه‌محور باید پیش از تبدیل به قانون بالانس بازی دوباره اعتبارسنجی شوند.
+
 ### منابع مرجع اصلی (حتماً مطالعه شود)
 - [EA Official Beginner Guide](https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/)
 - [Level Up Table](https://simcity-buildit.fandom.com/wiki/Level_Up_Table)
