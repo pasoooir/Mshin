@@ -2170,12 +2170,23 @@ func open_city_needs_panel() -> void:
 		home_header.add_child(home_button)
 		for need in home.get("needs", []):
 			var need_line := Label.new()
-			need_line.text = "%s   %d / %d   %s" % [
-				str(need.get("name", need.get("item_id", ""))), int(need.get("stored", 0)), int(need.get("required", 0)),
-				("· SHORT " + str(need.get("shortage", 0))) if int(need.get("shortage", 0)) > 0 else "· READY"
+			var need_status := "READY"
+			var need_color := Color("#34734D")
+			if int(need.get("stored", 0)) < int(need.get("required", 0)):
+				if int(need.get("ready_to_collect", 0)) > 0:
+					need_status = "READY TO COLLECT %d" % int(need.get("ready_to_collect", 0))
+					need_color = Color("#9A6B1D")
+				elif int(need.get("in_production", 0)) > 0:
+					need_status = "IN PRODUCTION %d" % int(need.get("in_production", 0))
+					need_color = Color("#315C8A")
+				else:
+					need_status = "SHORT %d" % int(need.get("shortage", 0))
+					need_color = Color("#A13F35")
+			need_line.text = "%s   %d / %d   ·   %s" % [
+				str(need.get("name", need.get("item_id", ""))), int(need.get("stored", 0)), int(need.get("required", 0)), need_status
 			]
 			need_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
-			need_line.add_theme_color_override("font_color", Color("#A13F35") if int(need.get("shortage", 0)) > 0 else Color("#34734D"))
+			need_line.add_theme_color_override("font_color", need_color)
 			home_layout.add_child(need_line)
 	var orders_title := Label.new()
 	orders_title.text = "ACTIVE PRODUCTION QUEUE"
