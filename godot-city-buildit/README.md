@@ -28,7 +28,7 @@ Main scene: `res://scenes/main.tscn`.
 
 ## Production economy and city-needs design
 
-The detailed reference and implementation contract for factory tiers, commercial-store catalogues, item recipes, residential upgrade plans, citywide demand visibility, SCBI-inspired production/residential panels, data architecture, known gaps and acceptance tests is maintained in [Production Economy & City Needs Specification](docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC.md). Treat that document as the gameplay design reference; it distinguishes verified SCBI behaviour, secondary-source item data and existing Mshin-specific rules.
+The detailed gameplay design contract is maintained in the [Persian Production Economy & City Needs Specification](docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC_FA.md), with a [technical English companion](docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC.md). These documents distinguish EA-confirmed behaviour, community-reference item data, and existing Mshin-specific rules.
 
 ## First city — complete gameplay loop
 
