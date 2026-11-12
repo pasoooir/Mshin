@@ -29,7 +29,7 @@ Build a genuinely three-dimensional, inspectable, large-scale city and world. Do
 3. **Material and texture system**
    - Use 24-bit True Color RGB (16,777,216 possible RGB colors) with alpha where needed (RGBA8 / 32-bit storage); avoid palette-limited or flat-color-only surfaces.
    - Create and integrate the six local 512×512 PNG city maps under assets/city/textures/generated/: grass.png, asphalt.png, sidewalk.png, brick.png, concrete.png, roof.png.
-   - Apply textures to the correct Cocos Creator 3.8.6 materials and surfaces: ground, roads, sidewalks, walls, roofs and building details.
+   - Apply textures to the correct Godot 4.3 PBR materials (StandardMaterial3D and imported glTF materials) and surfaces: ground, roads, sidewalks, walls, roofs and building details.
    - Use physically plausible PBR channels where supported: base color, normal, roughness and metallic; use appropriate glass, stone, brick, concrete, wood, metal, roof tile and asphalt response.
    - Prefer high-quality real-world/photographic texture sources with clear licenses (e.g. CC0) when needed; retain optimized local copies and deterministic procedural fallbacks. Never make runtime rendering depend on a remote CDN being available.
    - Add multi-scale surface variation, weathering, seams, edge wear and natural detail; avoid obvious tiling and uniform green terrain.
@@ -61,7 +61,7 @@ Build a genuinely three-dimensional, inspectable, large-scale city and world. Do
 8. **Performance and delivery**
    - Keep city and racing dependency graphs, entry points, renderers and tests isolated. Shared code is allowed only when deliberately designed and regression-tested.
    - Use LOD, instancing, batching, texture atlases/mipmaps and frustum/distance culling where appropriate.
-   - Test Cocos Creator 3.8.6 scene/material integration, browser behavior, save/load and mobile viewport performance.
+   - Test Godot 4.3 scene/material integration, GLB/glTF imports and mobile rendering, browser behavior, save/load and mobile viewport performance.
    - Browser automation is not a substitute for physical Android/GPU/frame-time validation; record that limitation honestly.
    - No feature is complete based on documentation or asset generation alone: acceptance requires visible runtime integration plus tests and evidence.
 
