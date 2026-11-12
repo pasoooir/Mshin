@@ -81,9 +81,9 @@ if not all(f'"{name}"' in toolbar_smoke for name in smoke_order):
 for contract in [
     'category_scroll.scroll_deadzone = 4',
     'category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO',
-    'category_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
+    'category_scroll.mouse_filter = Control.MOUSE_FILTER_STOP',
     'submenu_scroll.scroll_deadzone = 4',
-    'submenu_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
+    'submenu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP',
     'button.mouse_filter = Control.MOUSE_FILTER_PASS',
     'button.add_theme_stylebox_override(state, StyleBoxEmpty.new())'
 ]:
