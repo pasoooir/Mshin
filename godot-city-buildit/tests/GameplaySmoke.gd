@@ -83,7 +83,7 @@ func _test_storage_and_production_chain() -> void:
 	_check(int(ProductionManager.get_recipe("chair").get("time_sec", 0)) == 1200 and ProductionManager.get_recipe("chair").get("inputs", {}) == {"wood":2,"nails":1,"hammer":1}, "Chair recipe must use the documented three-stage input chain.")
 	_check(int(ProductionManager.get_recipe("table").get("time_sec", 0)) == 1800 and ProductionManager.get_recipe("table").get("inputs", {}) == {"planks":1,"nails":2,"hammer":1}, "Table recipe must use the documented input chain.")
 	_check(ProductionManager.get_store_recipe_ids("hardware_store").has("drill") and ProductionManager.get_store_recipe_ids("farmers_market").has("beef") and ProductionManager.get_store_recipe_ids("furniture_store").has("couch"), "Commercial store catalogs must include their verified product families.")
-	for recipe_id in ["cooking_utensils","ladder","drill","flour_bag","cream","corn","cheese","beef","home_textiles","cupboard","couch","ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn"]:
+	for recipe_id in ["cooking_utensils","ladder","drill","flour_bag","cream","corn","cheese","beef","home_textiles","cupboard","couch"]:
 		_check(StorageManager.item_definitions.has(recipe_id), "%s must be registered in City Storage." % recipe_id)
 		_check(Icons.CRAFTED_IDS.has(recipe_id), "%s must have a local product icon definition." % recipe_id)
 	_check(not ProductionManager.get_store_recipe_ids("hardware_store").has("paint"), "Paint must not appear in Hardware Store; its supplier is Building Supplies.")
@@ -99,6 +99,8 @@ func _test_storage_and_production_chain() -> void:
 	_check(BuildManager.building_types.fast_food.get("production_slots",0) == 1, "Fast Food Restaurant must open a production panel.")
 	_check(ProductionManager.get_store_catalog_ids("fast_food").size() == 6, "Fast Food must display all six reference products.")
 	_check(ProductionManager.get_recipe("pizza").is_empty() and ProductionManager.get_recipe_lock_reason("pizza").contains("not verified"), "Fast Food products without verified recipes must remain visible but unstartable.")
+	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn"]:
+		_check(Icons.CRAFTED_IDS.has(catalog_id), "%s must have a local product icon." % catalog_id)
 	# Mayor level unlocks materials; factory count and factory tier use separate gates.
 	var original_level := GameManager.level
 	var original_population := GameManager.population
