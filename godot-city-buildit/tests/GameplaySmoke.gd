@@ -100,6 +100,11 @@ func _test_storage_and_production_chain() -> void:
 	_check(BuildManager.building_types.donut_shop.get("production_slots",0) == 1 and BuildManager.building_types.home_appliances.get("production_slots",0) == 1 and BuildManager.building_types.gardening_supplies.get("production_slots",0) == 1, "Upstream SCBI stores must expose production panels.")
 	_check(ProductionManager.get_store_catalog_ids("donut_shop").size() == 6 and ProductionManager.get_store_catalog_ids("home_appliances").size() == 5 and ProductionManager.get_store_catalog_ids("gardening_supplies").size() == 6, "Upstream stores must expose their complete product-family catalogs.")
 	_check(ProductionManager.get_store_catalog_ids("fashion_store").size() == 5 and ProductionManager.get_store_catalog_ids("sports_shop").size() == 5 and ProductionManager.get_store_catalog_ids("toy_store").size() == 4, "Fashion, Sports and Toy stores must expose their SCBI product families.")
+	for scbi_store_id in ["building_supplies","hardware_store","farmers_market","furniture_store","fast_food","donut_shop","home_appliances","gardening_supplies","fashion_store","sports_shop","toy_store","restoration_office","farmers_store","dessert_shop"]:
+		_check(BuildManager.building_types.has(scbi_store_id), "%s must be selectable from the commercial build catalog." % scbi_store_id)
+		_check(int(BuildManager.building_types.get(scbi_store_id, {}).get("production_slots", 0)) > 0, "%s must open its production panel." % scbi_store_id)
+		_check(not ProductionManager.get_store_catalog_ids(scbi_store_id).is_empty(), "%s must expose its store-specific product catalog." % scbi_store_id)
+		_check(Icons.COMMERCIAL_IDS.has(scbi_store_id), "%s must have a dedicated commercial icon." % scbi_store_id)
 	_check(ProductionManager.get_store_catalog_ids("restoration_office").size() == 5 and ProductionManager.get_store_catalog_ids("farmers_store").size() == 3 and ProductionManager.get_store_catalog_ids("dessert_shop").size() == 5, "Restoration, Farmer's Store and Dessert Shop must expose their SCBI product families.")
 	for store_id in ["fashion_store","sports_shop","toy_store","restoration_office","farmers_store","dessert_shop"]:
 		_check(BuildManager.building_types.has(store_id) and int(BuildManager.building_types[store_id].get("production_slots", 0)) == 1, "%s must be selectable and have a production panel." % store_id)
