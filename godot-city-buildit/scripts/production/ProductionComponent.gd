@@ -7,6 +7,7 @@ signal item_collected(item_id: String)
 @export var slot_count: int = 1
 @export var is_factory: bool = false
 @export var shop_id: String = ""
+@export var factory_type: String = ""
 var slots: Array[Dictionary] = []
 
 func _ready() -> void:
@@ -49,7 +50,7 @@ func start_factory(item_id: String, slot_index: int) -> bool:
 	_ensure_slots()
 	if not is_factory or slot_index < 0 or slot_index >= slots.size() or not slots[slot_index].is_empty():
 		return false
-	if not ProductionManager.raw_materials.has(item_id):
+	if not ProductionManager.get_factory_material_ids(factory_type).has(item_id) or not ProductionManager.raw_materials.has(item_id):
 		return false
 	var definition: Dictionary = ProductionManager.raw_materials[item_id]
 	if int(definition.get("level", 1)) > GameManager.level:
