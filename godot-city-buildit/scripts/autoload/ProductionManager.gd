@@ -57,6 +57,19 @@ var crafted_items :={
 	"beef": {"name":"Beef", "time":9000.0, "time_sec":9000, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"}
 }
 
+# Products with a verified store identity but unresolved input recipes remain
+# visible and disabled; never invent ingredient quantities or production times.
+var store_catalog := {
+	"fast_food": [
+		{"id":"ice_cream_sandwich","name":"Ice Cream Sandwich","level":25,"source":"Community-reference; recipe needs verification"},
+		{"id":"pizza","name":"Pizza","level":25,"source":"Community-reference; recipe needs verification"},
+		{"id":"burger","name":"Burger","level":25,"source":"Community-reference; recipe needs verification"},
+		{"id":"cheese_fries","name":"Cheese Fries","level":25,"source":"Community-reference; recipe needs verification"},
+		{"id":"lemonade_bottle","name":"Lemonade Bottle","level":25,"source":"Community-reference; recipe needs verification"},
+		{"id":"popcorn","name":"Popcorn","level":25,"source":"Community-reference; recipe needs verification"}
+	]
+}
+
 var upgrade_requirements := {
 	1: [{"item":"nails","amount":1},{"item":"metal","amount":1}],
 	2: [{"item":"planks","amount":1},{"item":"wood","amount":1}],
@@ -105,7 +118,7 @@ func can_craft(item_id: String) -> bool:
 func get_recipe_lock_reason(item_id: String) -> String:
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
-		return "Recipe unavailable"
+		return "Recipe not verified — production disabled"
 	if int(recipe.get("level", 1)) > GameManager.level:
 		return "Unlocks at Level %d" % int(recipe.level)
 	for input_id in recipe.get("inputs", {}):
@@ -152,6 +165,22 @@ func get_store_recipe_ids(store_id: String) -> Array:
 		if str(crafted_items[item_id].get("store", "")) == store_id:
 			result.append(str(item_id))
 	return result
+
+func get_store_catalog_ids(store_id: String) -> Array:
+	var result := get_store_recipe_ids(store_id)
+	for product in store_catalog.get(store_id, []):
+		var item_id := str(product.get("id", ""))
+		if not item_id.is_empty() and not result.has(item_id):
+			result.append(item_id)
+	return result
+
+func get_store_item_definition(store_id: String, item_id: String) -> Dictionary:
+	if crafted_items.has(item_id) and str(crafted_items[item_id].get("store", "")) == store_id:
+		return crafted_items[item_id].duplicate(true)
+	for product in store_catalog.get(store_id, []):
+		if str(product.get("id", "")) == item_id:
+			return product.duplicate(true)
+	return {}
 
 func get_default_factory_product() -> String:
 	return "metal"
