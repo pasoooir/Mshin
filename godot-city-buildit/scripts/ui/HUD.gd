@@ -1584,8 +1584,6 @@ func open_production_panel(building: Building) -> void:
 		var star_status := Label.new()
 		star_status.name = "StoreStarStatus"
 		star_status.text = "★".repeat(component.store_star_level) + "☆".repeat(3 - component.store_star_level)
-		if str(component.shop_id) == "donut_shop" and component.store_star_level >= 2:
-			star_status.text += " · 3RD STAR UNVERIFIED"
 		star_status.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		star_status.add_theme_color_override("font_color", Color("#E4A82F"))
 		header_row.add_child(star_status)
