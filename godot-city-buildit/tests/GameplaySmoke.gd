@@ -31,6 +31,11 @@ func _confirm_catalog_build(hud) -> void:
 		action.pressed.emit()
 	if not BuildManager.is_placing and hud._catalog_selected_type != "":
 		hud._select_building_type(hud._catalog_selected_type)
+	# BUILD must never turn every catalog item into a dark/white card.
+	for child in hud.submenu.get_children():
+		if child is Button:
+			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+				_check(child.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Pressing BUILD must keep every submenu item background transparent.")
 
 func _find_building(type_id: String):
 	for building in BuildManager.buildings.values():
