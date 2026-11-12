@@ -20,7 +20,18 @@ var raw_materials := {
 
 # Recipes are stored as "requires" for compatibility with Building.gd and as
 # exact SCBI time_sec/input data for the new inventory-driven craft flow.
-var crafted_items := {
+var factory_materials := {
+	"factory_small":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"factory_basic":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"factory_mass":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"factory_hightech":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"factory_nano":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"industrial_1":["metal","wood"],
+	"industrial_2":["metal","wood"],
+	"industrial_3":["metal","wood","plastic"]
+}
+
+var crafted_items :={
 	"nails": {"name":"Nails", "time":300.0, "time_sec":300, "value":80, "requires":{"metal":2}, "level":1, "store":"building_supplies", "source":"Community-reference"},
 	"planks": {"name":"Planks", "time":1800.0, "time_sec":1800, "value":120, "requires":{"wood":2}, "level":3, "store":"building_supplies", "source":"Community-reference"},
 	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies", "source":"Community-reference"},
@@ -129,6 +140,11 @@ func get_recipe(item_id: String) -> Dictionary:
 	var recipe: Dictionary = crafted_items[item_id].duplicate(true)
 	recipe["inputs"] = recipe.get("requires", {}).duplicate(true)
 	return recipe
+
+func get_factory_material_ids(factory_type: String) -> Array:
+	if factory_materials.has(factory_type):
+		return factory_materials[factory_type].duplicate()
+	return raw_materials.keys()
 
 func get_store_recipe_ids(store_id: String) -> Array:
 	var result: Array = []
