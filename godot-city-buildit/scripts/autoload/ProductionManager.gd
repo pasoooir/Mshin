@@ -279,7 +279,7 @@ func get_item_definition(item_id: String) -> Dictionary:
 func get_recipe_dependency_text(item_id: String) -> String:
 	var lines: Array[String] = []
 	_append_recipe_dependency_lines(item_id, 1, 0, lines, {})
-	return "\\n".join(lines)
+	return "\n".join(lines)
 
 func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, lines: Array[String], ancestry: Dictionary) -> void:
 	var definition := get_item_definition(item_id)
