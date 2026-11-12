@@ -4,7 +4,7 @@ const ROOT := "res://assets/icons/"
 const FALLBACK := "res://assets/icons/ui/placeholder.png"
 
 const RAW_IDS := ["metal", "wood", "plastic", "seeds", "minerals", "chemicals", "textiles", "sugar_spices", "glass", "animal_feed", "electrical"]
-const CRAFTED_IDS := ["nails", "planks", "bricks", "cement", "glue", "paint", "hammer", "measuring_tape", "shovel", "chair", "table", "vegetables"]
+const CRAFTED_IDS := ["nails", "planks", "bricks", "cement", "glue", "paint", "hammer", "measuring_tape", "shovel", "cooking_utensils", "ladder", "drill", "chair", "table", "home_textiles", "cupboard", "couch", "vegetables", "flour_bag", "cream", "corn", "cheese", "beef"]
 const RESIDENTIAL_IDS := ["residential_1", "residential_2", "residential_villa", "residential_apartment", "residential_farm"]
 const COMMERCIAL_IDS := ["building_supplies", "shop_chain", "restaurant_traditional", "fast_food", "art_supplies", "hardware_store", "farmers_market", "furniture_store"]
 const INDUSTRIAL_IDS := ["factory_small", "factory_basic", "factory_mass", "factory_hightech", "factory_nano", "industrial_1", "industrial_2", "industrial_3"]
@@ -22,6 +22,10 @@ static func path(category: String, id: String) -> String:
 
 static func get_tex(category: String, id: String) -> Texture2D:
 	var icon_path := path(category, id)
+	if not ResourceLoader.exists(icon_path):
+		var svg_path := "%s%s/%s.svg" % [ROOT, category, id]
+		if ResourceLoader.exists(svg_path):
+			icon_path = svg_path
 	if _texture_cache.has(icon_path):
 		return _texture_cache[icon_path] as Texture2D
 	if ResourceLoader.exists(icon_path):
