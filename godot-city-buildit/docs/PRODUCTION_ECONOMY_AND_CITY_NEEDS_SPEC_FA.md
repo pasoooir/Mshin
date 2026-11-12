@@ -625,7 +625,7 @@ EA وجود کارخانه‌ها، فروشگاه‌ها و مواد ویژه �
 - Hardware Store: شش محصول Hammer، Measuring Tape، Shovel، Cooking Utensils، Ladder و Drill.
 - Farmer's Market: شش محصول Vegetables، Flour Bag، Cream، Corn، Cheese و Beef.
 - Furniture Store: پنج محصول Chair، Table، Home Textiles، Cupboard و Couch.
-- Fast Food Restaurant: شش محصول مرجع در کاتالوگ دیده می‌شوند؛ تا زمان تأیید دستور دقیق، شروع تولید غیرفعال است.
+- Fast Food Restaurant: هر شش محصول مرجع نمایش داده می‌شوند؛ Pizza و Cheese Fries دستور تأییدشده و قابل تولید دارند، اما Ice Cream Sandwich، Burger، Lemonade Bottle و Popcorn تا تکمیل زنجیره‌های Donut Shop / Home Appliances / Gardening Supplies غیرفعال هستند.
 - Traditional Restaurant و Art Supplies: پنل تولید دارند اما تا زمان ثبت دستور معتبر، پیام نبود کاتالوگ تأییدشده نشان می‌دهند.
 
 فروشگاه‌های دیگر SCBI شامل Gardening Supplies، Donut Shop، Fashion Store، Home Appliances، Sports Shop، Toy Shop، Bureau of Restoration، Country Store و Dessert Shop هنوز باید به کاتالوگ قابل ساخت Mshin اضافه شوند. نام محصول به‌تنهایی برای حدس‌زدن مواد اولیه کافی نیست.
