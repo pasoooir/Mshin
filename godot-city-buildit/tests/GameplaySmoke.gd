@@ -1261,8 +1261,10 @@ func _run_gameplay_test() -> void:
 	_check(home != null and home.current_population == population_before_upgrade and GameManager.population == city_population_before_upgrade, "Residential population must not change before the upgrade animation completes.")
 	_check(home != null and home.get_upgrade_remaining_seconds() > 0, "Residential upgrade must expose a persisted remaining-time value.")
 	production_hud.open_residential_panel(home)
+	_check(home.residential_plan_selected, "Opening a home plan must select its blue hardhat indicator.")
 	_check(production_hud.residential_overlay.find_child("ResidentialUpgradeInProgress", true, false) != null, "Residential panel must show the scaffold upgrade state.")
 	production_hud._close_residential_panel()
+	_check(not home.residential_plan_selected, "Closing a home plan must hide its selected hardhat indicator.")
 	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
 	home._process(0.0)
 	_check(home != null and not home.upgrade_in_progress and home.upgrade_stage == 2, "Residential upgrade must complete when its finish timestamp elapses.")
