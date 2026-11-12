@@ -1255,11 +1255,26 @@ func _run_gameplay_test() -> void:
 	StorageManager.add_item("metal",1)
 	StorageManager.add_item("nails",1)
 	var population_before_upgrade: int = int(home.current_population) if home != null else 0
+	var city_population_before_upgrade := GameManager.population
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
-	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")
+	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 1, "House upgrade must enter a short scaffold phase before changing its level.")
+	_check(home != null and home.current_population == population_before_upgrade and GameManager.population == city_population_before_upgrade, "Residential population must not change before the upgrade animation completes.")
+	_check(home != null and home.get_upgrade_remaining_seconds() > 0, "Residential upgrade must expose a persisted remaining-time value.")
+	production_hud.open_residential_panel(home)
+	_check(production_hud.residential_overlay.find_child("ResidentialUpgradeInProgress", true, false) != null, "Residential panel must show the scaffold upgrade state.")
+	production_hud._close_residential_panel()
+	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
+	home._process(0.0)
+	_check(home != null and not home.upgrade_in_progress and home.upgrade_stage == 2, "Residential upgrade must complete when its finish timestamp elapses.")
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
-	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > population_before_upgrade, "House upgrade did not increase service-adjusted population.")
+	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > city_population_before_upgrade, "House upgrade did not increase service-adjusted population.")
 
+	# Save a second upgrade while its scaffold timer is active to verify timestamp persistence.
+	StorageManager.add_item("planks",1)
+	StorageManager.add_item("wood",1)
+	_check(home != null and home.try_upgrade(), "Second residential upgrade could not start with Planks and Wood.")
+	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
+	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) + 3600
 	var saved_population_expected := GameManager.population
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 
@@ -1279,7 +1294,12 @@ func _run_gameplay_test() -> void:
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
-	_check(GameManager.population == saved_population_expected, "Population was not restored from save.")
+	_check(restored_home != null and restored_home.upgrade_in_progress and restored_home.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Residential upgrade finish timestamp was not restored from save.")
+	if restored_home != null:
+		restored_home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
+		restored_home._process(0.0)
+		_check(not restored_home.upgrade_in_progress and restored_home.upgrade_stage == 3, "Restored residential upgrade did not finish from its saved timestamp.")
+	_check(GameManager.population > saved_population_expected, "Completing the restored upgrade must add residents without subtracting the previous population.")
 
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
