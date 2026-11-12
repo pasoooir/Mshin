@@ -67,6 +67,7 @@ var crafted_items := {
 	"popcorn": {"name":"Popcorn", "time":1800.0, "time_sec":1800, "value":1250, "requires":{"corn":2,"microwave_oven":1}, "level":43, "store":"fast_food", "source":"Fandom"},
 	"grass": {"name":"Grass", "time":1800.0, "time_sec":1800, "value":310, "requires":{"seeds":1,"shovel":1}, "level":14, "store":"gardening_supplies", "source":"HubsInfo"},
 	"tree_sapling": {"name":"Tree Saplings", "time":5400.0, "time_sec":5400, "value":420, "requires":{"seeds":2,"shovel":1}, "level":16, "store":"gardening_supplies", "source":"HubsInfo"},
+	"lawn_mower": {"name":"Lawn Mower", "time":7200.0, "time_sec":7200, "value":840, "requires":{"metal":3,"electrical":1,"paint":1}, "level":30, "store":"gardening_supplies", "source":"Fandom"},
 	"garden_furniture": {"name":"Garden Furniture", "time":8100.0, "time_sec":8100, "value":820, "requires":{"plastic":2,"textiles":2,"planks":2}, "level":21, "store":"gardening_supplies", "source":"HubsInfo"},
 	"fire_pit": {"name":"Fire Pit", "time":14400.0, "time_sec":14400, "value":1740, "requires":{"bricks":2,"cement":2,"shovel":1}, "level":28, "store":"gardening_supplies", "source":"HubsInfo"},
 	"garden_gnome": {"name":"Garden Gnomes", "time":5400.0, "time_sec":5400, "value":1600, "requires":{"cement":2,"glue":1}, "level":34, "store":"gardening_supplies", "source":"HubsInfo"},
@@ -92,9 +93,7 @@ var store_catalog := {
 	],
 	"home_appliances": [
 	],
-	"gardening_supplies": [
-		{"id":"lawn_mower","name":"Lawn Mower","level":30,"source":"Community-reference; recipe needs verification"},
-	],
+	"gardening_supplies": [],
 	"fashion_store": [
 		{"id":"backpack","name":"Backpack","level":34,"source":"Community-reference; recipe needs verification"}
 	],
