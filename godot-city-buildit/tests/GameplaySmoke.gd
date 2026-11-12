@@ -376,7 +376,7 @@ func _test_build_menu_visibility() -> void:
 				_check(category_icon.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Category PNG must not intercept touch drags before the button/scroll container.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, City Needs, Trade and Save should be visible while no category is selected.")
-	_check(hud.find_child("InfoAction", true, false) is Button, "City Needs must have a persistent HUD shortcut.")
+	_check(hud.find_child("CityNeedsAction", true, false) is Button, "City Needs must have a persistent HUD shortcut.")
 	var currency_stack := hud.find_child("TopRightCurrencies", true, false) as VBoxContainer
 	_check(currency_stack != null and currency_stack.get_child_count() == 3, "Top-right resources must be exactly three compact rows.")
 	for row_name in ["SimoleonsCurrencyRow", "MoneyCurrencyRow", "GoldenKeyCurrencyRow"]:
