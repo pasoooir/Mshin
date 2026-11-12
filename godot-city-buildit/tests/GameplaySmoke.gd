@@ -293,6 +293,11 @@ func _test_build_menu_visibility() -> void:
 	var viewport_rect := get_viewport().get_visible_rect()
 	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category PNG rail is outside the visible screen.")
 	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.12, "Transparent category rail covers too much of the mobile play area.")
+	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
+	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
+	_check(category_scroll != null and category_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Right category scroller must receive touch drags.")
+	if category_scroll:
+		_check(category_scroll.get_v_scroll_bar().max_value > category_scroll.get_v_scroll_bar().page, "Right category rail must expose vertical overflow on the mobile viewport.")
 	var toolbar_items := toolbar.find_child("RightToolbarItems", true, false) as VBoxContainer
 	_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right rail must show seven categories in a vertical list.")
 	var expected_names := ["Tool_Residential", "Tool_Commercial", "Tool_Industrial", "Tool_Services", "Tool_Specializations", "Tool_Road", "Tool_Bulldoze"]
@@ -304,10 +309,11 @@ func _test_build_menu_visibility() -> void:
 			_check(button.custom_minimum_size.y >= 64.0, "Category touch target is too small.")
 			var category_icon := button.get_node_or_null("CategoryPNG") as TextureRect
 			_check(category_icon != null and category_icon.texture != null and category_icon.custom_minimum_size.x >= 64.0, "Category PNG must be transparent artwork at a readable size.")
-			for state in ["normal", "hover", "pressed", "focus"]:
+			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 				_check(button.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Category PNG must remain transparent in every interaction state.")
 			_check(button.mouse_filter == Control.MOUSE_FILTER_PASS, "Category image must pass touch drags to its vertical ScrollContainer.")
-			_check(category_icon.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Category PNG must not intercept touch drags before the button/scroll container.")
+			if category_icon:
+				_check(category_icon.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Category PNG must not intercept touch drags before the button/scroll container.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
 	var currency_stack := hud.get_node_or_null("TopRightCurrencies") as VBoxContainer
