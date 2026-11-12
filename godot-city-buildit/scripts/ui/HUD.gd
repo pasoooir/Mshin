@@ -1971,6 +1971,9 @@ func _close_production_panel() -> void:
 
 func _on_city_needs_pressed() -> void:
 	BuildManager.cancel_placement()
+	_close_production_panel()
+	_close_storage_panel()
+	_close_residential_panel()
 	open_city_needs_panel()
 
 func _on_city_needs_changed(_snapshot: Dictionary) -> void:
@@ -2013,6 +2016,9 @@ func _city_panel_heading(parent: VBoxContainer, title_text: String, close_callba
 	heading.add_child(close)
 
 func open_city_needs_panel() -> void:
+	_close_production_panel()
+	_close_storage_panel()
+	_close_residential_panel()
 	if is_instance_valid(city_needs_overlay):
 		city_needs_overlay.queue_free()
 	city_needs_overlay = Control.new()
@@ -2255,6 +2261,9 @@ func _close_city_needs_panel() -> void:
 func open_residential_panel(building: Building) -> void:
 	if not is_instance_valid(building) or building.status != "completed":
 		return
+	_close_city_needs_panel()
+	_close_production_panel()
+	_close_storage_panel()
 	if is_instance_valid(residential_overlay):
 		residential_overlay.queue_free()
 	residential_overlay = Control.new()
