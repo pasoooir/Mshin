@@ -35,6 +35,11 @@ var current_used: int:
 	get: return get_used()
 	set(_value): pass
 
+func register_item_definition(item_id: String, item_name: String, item_type: String) -> void:
+	if item_id.is_empty() or item_name.is_empty():
+		return
+	item_definitions[item_id] = {"name":item_name,"type":item_type}
+
 func get_count(item_id: String) -> int:
 	return int(items.get(item_id, 0))
 
