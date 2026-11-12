@@ -48,6 +48,7 @@ func _simulate_touch_swipe(scroll: ScrollContainer, start_position: Vector2, end
 	# input path (not direct scroll property mutation).
 	
 	var touch_down := InputEventScreenTouch.new()
+	touch_down.device = 0 # Physical touchscreen device; -1 is Godot's mouse-emulation device.
 	touch_down.index = 0
 	touch_down.pressed = true
 	touch_down.position = start_position
@@ -56,6 +57,7 @@ func _simulate_touch_swipe(scroll: ScrollContainer, start_position: Vector2, end
 	for step in range(1, 9):
 		var next_position := start_position.lerp(end_position, float(step) / 8.0)
 		var drag := InputEventScreenDrag.new()
+		drag.device = 0
 		drag.index = 0
 		drag.position = next_position
 		drag.relative = next_position - previous_position
@@ -64,6 +66,7 @@ func _simulate_touch_swipe(scroll: ScrollContainer, start_position: Vector2, end
 		previous_position = next_position
 		await get_tree().process_frame
 	var touch_up := InputEventScreenTouch.new()
+	touch_up.device = 0
 	touch_up.index = 0
 	touch_up.pressed = false
 	touch_up.position = end_position
