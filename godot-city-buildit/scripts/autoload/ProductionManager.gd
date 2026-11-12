@@ -448,6 +448,24 @@ func get_store_star_offer(store_id: String, current_star_level: int) -> Dictiona
 			{"level": 30, "cost": 29000, "reduction": 10},
 			{"level": 42, "cost": 41000, "reduction": 15},
 			{"level": 50, "cost": 49000, "reduction": 20}
+		],
+		"sports_shop": [
+			{"level": 55, "cost": 250000, "reduction": 10},
+			{"level": 60, "cost": 350000, "reduction": 15}
+		],
+		"toy_store": [
+			{"level": 58, "cost": 280000, "reduction": 10}
+		],
+		"restoration_office": [
+			{"level": 76, "cost": 450000, "reduction": 10},
+			{"level": 81, "cost": 600000, "reduction": 15}
+		],
+		"farmers_store": [
+			{"level": 73, "cost": 310000, "reduction": 10},
+			{"level": 85, "cost": 400000, "reduction": 15}
+		],
+		"dessert_shop": [
+			{"level": 87, "cost": 450000, "reduction": 10}
 		]
 	}
 	if not upgrade_data.has(store_id):
@@ -462,6 +480,19 @@ func get_store_star_offer(store_id: String, current_star_level: int) -> Dictiona
 
 func is_store_star_upgrade_supported(store_id: String) -> bool:
 	return get_store_star_offer(store_id, 0).size() > 0
+
+func get_store_star_status_note(store_id: String, current_star_level: int) -> String:
+	var verified_tier_count := {
+		"sports_shop": 2,
+		"toy_store": 1,
+		"restoration_office": 2,
+		"farmers_store": 2,
+		"dessert_shop": 1
+	}
+	var highest_verified := int(verified_tier_count.get(store_id, 3))
+	if current_star_level >= highest_verified and current_star_level < 3:
+		return "NEXT STAR LEVEL UNVERIFIED"
+	return ""
 
 func get_upgrade_requirements(from_stage: int) -> Array:
 	return upgrade_requirements.get(from_stage, [])
