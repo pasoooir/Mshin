@@ -540,12 +540,12 @@ func _build_toolbars() -> void:
 	toolbar_items.mouse_filter = Control.MOUSE_FILTER_PASS
 	category_scroll.add_child(toolbar_items)
 	var tools := [
+		["road", "Roads", "road"],
 		["residential", "Residential", "residential"],
 		["commercial", "Commercial", "commercial"],
 		["industrial", "Industrial", "industrial"],
 		["services", "Services", "services"],
 		["specializations", "Specializations", "parks"],
-		["road", "Roads", "road"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
 	var icon_size := 78.0 * _ui_scale
