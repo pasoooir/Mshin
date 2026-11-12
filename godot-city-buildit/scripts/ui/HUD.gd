@@ -89,6 +89,8 @@ var storage_panel: PanelContainer
 var storage_overlay: Control
 var production_panel: PanelContainer
 var production_overlay: Control
+var city_needs_overlay: Control
+var residential_overlay: Control
 var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
@@ -125,6 +127,7 @@ func _ready() -> void:
 	EconomyManager.simoleons_changed.connect(_on_simoleons_changed)
 	EconomyManager.keys_changed.connect(_on_keys_changed)
 	StorageManager.storage_changed.connect(_on_storage_changed)
+	CityDemandManager.city_needs_changed.connect(_on_city_needs_changed)
 	BuildManager.placement_mode_changed.connect(_on_placement_mode)
 	ServiceManager.power_changed.connect(_on_power_changed)
 	ServiceManager.water_changed.connect(_on_water_changed)
@@ -599,12 +602,13 @@ func _build_toolbars() -> void:
 	bottom_actions.add_theme_constant_override("separation", 10)
 	bottom_actions.z_index = 62
 	add_child(bottom_actions)
-	for item in [["storage","Storage"],["trade","Trade"],["save","Save"]]:
+	for item in [["storage","Storage"],["needs","City Needs"],["trade","Trade"],["save","Save"]]:
 		var button := _make_icon_button(str(item[0]), str(item[1]), Vector2(92, 82) * _ui_scale)
 		button.name = str(item[0]).capitalize() + "Action"
 		bottom_actions.add_child(button)
 		match str(item[0]):
 			"storage": button.pressed.connect(_on_storage_pressed)
+			"needs": button.pressed.connect(_on_city_needs_pressed)
 			"trade": button.pressed.connect(_on_trade_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
 	catalog_base_bar = PanelContainer.new()
@@ -1953,6 +1957,341 @@ func _close_production_panel() -> void:
 		production_overlay.queue_free()
 	production_overlay = null
 	production_panel = null
+
+
+func _on_city_needs_pressed() -> void:
+	BuildManager.cancel_placement()
+	open_city_needs_panel()
+
+func _on_city_needs_changed(_snapshot: Dictionary) -> void:
+	if is_instance_valid(city_needs_overlay):
+		open_city_needs_panel()
+
+func _city_panel_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#F4F9FD")
+	style.border_color = Color("#D3E7F4")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(18)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
+	style.shadow_size = 12
+	style.shadow_offset = Vector2(0, 5)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	return style
+
+func _city_panel_heading(parent: VBoxContainer, title_text: String, close_callback: Callable) -> void:
+	var heading := HBoxContainer.new()
+	heading.add_theme_constant_override("separation", 8)
+	parent.add_child(heading)
+	var title := Label.new()
+	title.text = title_text
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", int(23 * _ui_scale))
+	title.add_theme_color_override("font_color", Color("#17364A"))
+	heading.add_child(title)
+	var close := Button.new()
+	close.text = "×"
+	close.custom_minimum_size = Vector2(42, 42) * _ui_scale
+	close.add_theme_font_size_override("font_size", int(30 * _ui_scale))
+	close.add_theme_color_override("font_color", Color("#17364A"))
+	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#DCECF5"), Color("#A8C9DA")))
+	close.pressed.connect(close_callback)
+	heading.add_child(close)
+
+func open_city_needs_panel() -> void:
+	if is_instance_valid(city_needs_overlay):
+		city_needs_overlay.queue_free()
+	city_needs_overlay = Control.new()
+	city_needs_overlay.name = "CityNeedsOverlay"
+	city_needs_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	city_needs_overlay.z_index = 120
+	city_needs_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(city_needs_overlay)
+	var shade := ColorRect.new()
+	shade.name = "CityNeedsBackdrop"
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.025, 0.035, 0.62)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	city_needs_overlay.add_child(shade)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var panel_width := minf(820.0 * _ui_scale, viewport_size.x * 0.92)
+	var panel_height := minf(650.0 * _ui_scale, viewport_size.y * 0.90)
+	var panel := PanelContainer.new()
+	panel.name = "CityNeedsPanel"
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -panel_width * 0.5
+	panel.offset_right = panel_width * 0.5
+	panel.offset_top = -panel_height * 0.5
+	panel.offset_bottom = panel_height * 0.5
+	panel.add_theme_stylebox_override("panel", _city_panel_style())
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	city_needs_overlay.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.name = "CityNeedsLayout"
+	layout.add_theme_constant_override("separation", 8)
+	panel.add_child(layout)
+	_city_panel_heading(layout, "CITY NEEDS  ·  PRODUCTION OVERVIEW", _close_city_needs_panel)
+	var snapshot: Dictionary = CityDemandManager.get_city_snapshot()
+	var summary: Dictionary = snapshot.get("summary", {})
+	var storage: Dictionary = snapshot.get("storage", {})
+	var city: Dictionary = snapshot.get("city", {})
+	var summary_label := Label.new()
+	summary_label.name = "CityNeedsSummary"
+	summary_label.text = "LEVEL %d   ·   POPULATION %s   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   WAITING %d   ·   READY ORDERS %d" % [
+		int(city.get("level", 1)), _format_count(int(city.get("population", 0))),
+		int(storage.get("used", 0)), int(storage.get("capacity", 0)),
+		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)),
+		int(summary.get("waiting_homes", 0)), int(summary.get("ready_orders", 0))
+	]
+	summary_label.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	summary_label.add_theme_color_override("font_color", Color("#31566B"))
+	layout.add_child(summary_label)
+	var tabs := HBoxContainer.new()
+	tabs.name = "CityNeedsResourceSummary"
+	tabs.add_theme_constant_override("separation", 8)
+	layout.add_child(tabs)
+	for metric in [
+		["SIMOLEONS", str(int(snapshot.get("economy", {}).get("simoleons", 0)))],
+		["SIMCASH", str(int(snapshot.get("economy", {}).get("sim_cash", 0)))],
+		["GOLDEN KEYS", str(int(snapshot.get("economy", {}).get("keys", 0)))],
+		["FREE STORAGE", str(int(storage.get("free", 0)))]
+	]:
+		var badge := PanelContainer.new()
+		badge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		badge.add_theme_stylebox_override("panel", _toolbar_style(Color("#E4F1F8"), Color("#C4DFED")))
+		tabs.add_child(badge)
+		var metric_label := Label.new()
+		metric_label.text = str(metric[0]) + "\\n" + str(metric[1])
+		metric_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		metric_label.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+		metric_label.add_theme_color_override("font_color", Color("#1C4358"))
+		badge.add_child(metric_label)
+	var scroll := ScrollContainer.new()
+	scroll.name = "CityNeedsScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	layout.add_child(scroll)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(content)
+	var items_title := Label.new()
+	items_title.text = "CITY-WIDE MATERIAL SHORTAGES"
+	items_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	items_title.add_theme_color_override("font_color", Color("#17364A"))
+	content.add_child(items_title)
+	for item in snapshot.get("items", []):
+		var row := PanelContainer.new()
+		row.name = "CityNeed_" + str(item.get("item_id", "unknown"))
+		row.add_theme_stylebox_override("panel", _toolbar_style(Color("#FFFFFF"), Color("#D6E7F0")))
+		content.add_child(row)
+		var row_layout := HBoxContainer.new()
+		row_layout.add_theme_constant_override("separation", 8)
+		row.add_child(row_layout)
+		var item_id := str(item.get("item_id", ""))
+		var category := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
+		row_layout.add_child(Icons.make_item_icon(category, item_id, Vector2(44, 44) * _ui_scale))
+		var text_stack := VBoxContainer.new()
+		text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text_stack.add_theme_constant_override("separation", 1)
+		row_layout.add_child(text_stack)
+		var item_title := Label.new()
+		item_title.text = str(item.get("name", item_id))
+		item_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+		item_title.add_theme_color_override("font_color", Color("#18394D"))
+		text_stack.add_child(item_title)
+		var counts := Label.new()
+		counts.text = "Stored %d   ·   Required %d   ·   Producing %d   ·   Ready %d   ·   Deficit %d" % [
+			int(item.get("stored", 0)), int(item.get("required", 0)), int(item.get("producing", 0)),
+			int(item.get("ready", 0)), int(item.get("deficit", 0))
+		]
+		counts.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		counts.add_theme_color_override("font_color", Color("#A13F35") if int(item.get("deficit", 0)) > 0 else Color("#34734D"))
+		text_stack.add_child(counts)
+		var supplier_list: Array = item.get("suppliers", [])
+		var supplier_text := Label.new()
+		supplier_text.text = "SUPPLIER  " + (str(supplier_list[0].get("name", "Available")) if not supplier_list.is_empty() else "No completed supplier built")
+		supplier_text.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		supplier_text.add_theme_color_override("font_color", Color("#607989"))
+		text_stack.add_child(supplier_text)
+		var action := Button.new()
+		action.custom_minimum_size = Vector2(112, 38) * _ui_scale
+		action.text = "PRODUCE" if int(item.get("deficit", 0)) > 0 else ("COLLECT" if int(item.get("ready", 0)) > 0 else "COVERED")
+		action.disabled = supplier_list.is_empty() or (int(item.get("deficit", 0)) <= 0 and int(item.get("ready", 0)) <= 0)
+		action.add_theme_stylebox_override("normal", _toolbar_style(Color("#E9BF45"), Color("#F8D978")))
+		if not supplier_list.is_empty():
+			action.pressed.connect(_open_city_need_supplier.bind(str(supplier_list[0].get("building_id", ""))))
+		row_layout.add_child(action)
+	var homes_title := Label.new()
+	homes_title.text = "RESIDENTIAL UPGRADE PLANS"
+	homes_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	homes_title.add_theme_color_override("font_color", Color("#17364A"))
+	content.add_child(homes_title)
+	var note := Label.new()
+	note.text = "Inventory is shared city-wide. The totals above are aggregated; item stock is not reserved for multiple homes."
+	note.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	note.add_theme_color_override("font_color", Color("#617A88"))
+	content.add_child(note)
+	for home in snapshot.get("homes", []):
+		var home_card := PanelContainer.new()
+		home_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#FDFEFF"), Color("#D9E8EF")))
+		content.add_child(home_card)
+		var home_layout := VBoxContainer.new()
+		home_layout.add_theme_constant_override("separation", 3)
+		home_card.add_child(home_layout)
+		var home_header := HBoxContainer.new()
+		home_layout.add_child(home_header)
+		var home_title := Label.new()
+		home_title.text = "%s  ·  LEVEL %d → %d" % [str(home.get("name", "Home")), int(home.get("stage", 1)), int(home.get("next_stage", 6))]
+		home_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		home_title.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+		home_title.add_theme_color_override("font_color", Color("#24485B"))
+		home_header.add_child(home_title)
+		var home_button := Button.new()
+		home_button.text = "UPGRADE" if bool(home.get("ready", false)) and int(home.get("stage", 1)) < 6 else "WAITING"
+		home_button.disabled = not bool(home.get("ready", false)) or int(home.get("stage", 1)) >= 6
+		home_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
+		home_button.pressed.connect(_upgrade_home_from_dashboard.bind(str(home.get("building_id", ""))))
+		home_header.add_child(home_button)
+		for need in home.get("needs", []):
+			var need_line := Label.new()
+			need_line.text = "%s   %d / %d   %s" % [
+				str(need.get("name", need.get("item_id", ""))), int(need.get("stored", 0)), int(need.get("required", 0)),
+				("· SHORT " + str(need.get("shortage", 0))) if int(need.get("shortage", 0)) > 0 else "· READY"
+			]
+			need_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			need_line.add_theme_color_override("font_color", Color("#A13F35") if int(need.get("shortage", 0)) > 0 else Color("#34734D"))
+			home_layout.add_child(need_line)
+	var orders_title := Label.new()
+	orders_title.text = "ACTIVE PRODUCTION QUEUE"
+	orders_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	orders_title.add_theme_color_override("font_color", Color("#17364A"))
+	content.add_child(orders_title)
+	for order in snapshot.get("orders", []):
+		var order_label := Label.new()
+		order_label.text = "%s  ·  %s  ·  %s" % [
+			str(order.get("building_name", "Production")), str(order.get("item_name", "")),
+			"READY TO COLLECT" if bool(order.get("ready", false)) else _city_needs_duration(int(order.get("remaining", 0)))
+		]
+		order_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		order_label.add_theme_color_override("font_color", Color("#34734D") if bool(order.get("ready", false)) else Color("#31566B"))
+		content.add_child(order_label)
+
+func _city_needs_duration(seconds: int) -> String:
+	var safe := maxi(0, seconds)
+	if safe >= 3600:
+		return "%dh %02dm" % [safe / 3600, (safe % 3600) / 60]
+	if safe >= 60:
+		return "%dm %02ds" % [safe / 60, safe % 60]
+	return "%ds" % safe
+
+func _open_city_need_supplier(building_id: String) -> void:
+	var building = BuildManager.buildings.get(building_id)
+	if is_instance_valid(building):
+		_close_city_needs_panel()
+		open_production_panel(building)
+
+func _upgrade_home_from_dashboard(building_id: String) -> void:
+	var building = BuildManager.buildings.get(building_id)
+	if is_instance_valid(building) and building.try_upgrade():
+		_close_city_needs_panel()
+		open_city_needs_panel()
+
+func _close_city_needs_panel() -> void:
+	if is_instance_valid(city_needs_overlay):
+		city_needs_overlay.queue_free()
+	city_needs_overlay = null
+
+func open_residential_panel(building: Building) -> void:
+	if not is_instance_valid(building) or building.status != "completed":
+		return
+	if is_instance_valid(residential_overlay):
+		residential_overlay.queue_free()
+	residential_overlay = Control.new()
+	residential_overlay.name = "ResidentialUpgradeOverlay"
+	residential_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	residential_overlay.z_index = 125
+	residential_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(residential_overlay)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.025, 0.035, 0.62)
+	residential_overlay.add_child(shade)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var width := minf(600.0 * _ui_scale, viewport_size.x * 0.90)
+	var height := minf(520.0 * _ui_scale, viewport_size.y * 0.88)
+	var panel := PanelContainer.new()
+	panel.name = "ResidentialUpgradePanel"
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -width * 0.5
+	panel.offset_right = width * 0.5
+	panel.offset_top = -height * 0.5
+	panel.offset_bottom = height * 0.5
+	panel.add_theme_stylebox_override("panel", _city_panel_style())
+	residential_overlay.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 8)
+	panel.add_child(layout)
+	_city_panel_heading(layout, "RESIDENTIAL UPGRADE PLAN", _close_residential_panel)
+	var stage := int(building.upgrade_stage)
+	var requirements: Array = ProductionManager.get_upgrade_requirements(stage)
+	var title := Label.new()
+	title.text = "%s  ·  LEVEL %d → %d" % [str(building.definition.get("name", "Home")), stage, mini(stage + 1, 6)]
+	title.add_theme_font_size_override("font_size", int(15 * _ui_scale))
+	title.add_theme_color_override("font_color", Color("#24485B"))
+	layout.add_child(title)
+	var population_gain := ProductionManager.get_population_for_stage(mini(stage + 1, 6)) - int(building.current_population)
+	var reward := Label.new()
+	reward.text = "POPULATION +%d   ·   XP +%d   ·   SIMOLEONS +%d" % [maxi(0, population_gain), maxi(0, population_gain) + 10, 50 * (stage + 1)]
+	reward.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	reward.add_theme_color_override("font_color", Color("#34734D"))
+	layout.add_child(reward)
+	var all_available := not requirements.is_empty()
+	for requirement in requirements:
+		var item_id := str(requirement.get("item", ""))
+		var amount := int(requirement.get("amount", 0))
+		var owned := StorageManager.get_count(item_id)
+		if owned < amount:
+			all_available = false
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		layout.add_child(row)
+		var icon_type := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
+		row.add_child(Icons.make_item_icon(icon_type, item_id, Vector2(46, 46) * _ui_scale))
+		var item_label := Label.new()
+		item_label.text = "%s   ·   %d / %d   ·   SHORT %d" % [CityDemandManager.get_item_name(item_id), owned, amount, maxi(0, amount - owned)]
+		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		item_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+		item_label.add_theme_color_override("font_color", Color("#34734D") if owned >= amount else Color("#A13F35"))
+		row.add_child(item_label)
+	var upgrade := Button.new()
+	upgrade.name = "ResidentialUpgradeButton"
+	upgrade.text = "UPGRADE HOME" if stage < 6 else "MAXIMUM LEVEL"
+	upgrade.disabled = stage >= 6 or not all_available
+	upgrade.custom_minimum_size.y = 44 * _ui_scale
+	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
+	upgrade.pressed.connect(_upgrade_residential_from_panel.bind(building))
+	layout.add_child(upgrade)
+
+func _upgrade_residential_from_panel(building: Building) -> void:
+	if is_instance_valid(building) and building.try_upgrade():
+		_close_residential_panel()
+
+func _close_residential_panel() -> void:
+	if is_instance_valid(residential_overlay):
+		residential_overlay.queue_free()
+	residential_overlay = null
 
 func _on_storage_pressed() -> void:
 	BuildManager.cancel_placement()
