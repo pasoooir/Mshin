@@ -1262,6 +1262,7 @@ func _run_gameplay_test() -> void:
 	_check(home != null and home.get_upgrade_remaining_seconds() > 0, "Residential upgrade must expose a persisted remaining-time value.")
 	production_hud.open_residential_panel(home)
 	_check(home.residential_plan_selected, "Opening a home plan must select its blue hardhat indicator.")
+	_check(production_hud.residential_overlay.find_child("ResidentialPlanDataNote", true, false) != null, "Residential panel must disclose that the fixed plan table is a Mshin fallback.")
 	_check(production_hud.residential_overlay.find_child("ResidentialUpgradeInProgress", true, false) != null, "Residential panel must show the scaffold upgrade state.")
 	production_hud._close_residential_panel()
 	_check(not home.residential_plan_selected, "Closing a home plan must hide its selected hardhat indicator.")
