@@ -396,7 +396,7 @@ func get_production_time(item_id: String, store_star_level: int = 0) -> float:
 	var store_id := str(recipe.get("store", ""))
 	if store_star_level <= 0 or not is_store_star_upgrade_supported(store_id):
 		return base_seconds
-	var reduction := [0.0, 0.10, 0.15, 0.20][clampi(store_star_level, 0, 3)]
+	var reduction: float = float([0.0, 0.10, 0.15, 0.20][clampi(store_star_level, 0, 3)])
 	return maxf(1.0, ceil(base_seconds * (1.0 - reduction)))
 
 # Upgrade requirements are exposed only where the reference dataset supplies
