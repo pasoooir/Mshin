@@ -133,7 +133,8 @@ static func validate_all_icons() -> bool:
 	for category in catalog:
 		for icon_id in catalog[category]:
 			var icon_path := path(str(category), str(icon_id))
-			if not ResourceLoader.exists(icon_path):
-				push_error("Missing PNG icon resource: " + icon_path)
+			var svg_path := "%s%s/%s.svg" % [ROOT, str(category), str(icon_id)]
+			if not ResourceLoader.exists(icon_path) and not ResourceLoader.exists(svg_path):
+				push_error("Missing local PNG/SVG icon resource: " + icon_path)
 				valid = false
 	return valid
