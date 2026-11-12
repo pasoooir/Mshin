@@ -1187,6 +1187,7 @@ func start_factory_production(item_id: String = "") -> bool:
 	if product == "" or definition.get("category", "") != "industrial":
 		return false
 	if not ProductionManager.get_factory_material_ids(building_type).has(product) or not ProductionManager.raw_materials.has(product):
+		return false
 	if int(ProductionManager.raw_materials[product].get("level", 1)) > GameManager.level:
 		return false
 	_start_production(product)
