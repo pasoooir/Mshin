@@ -45,30 +45,6 @@ func get_slot(index: int) -> Dictionary:
 func get_item_production_time(item_id: String) -> float:
 	return ProductionManager.get_production_time(item_id, 0 if is_factory else store_star_level)
 
-func speed_up_slot(slot_index: int) -> bool:
-	_ensure_slots()
-	if slot_index < 0 or slot_index >= slots.size():
-		return false
-	var slot: Dictionary = slots[slot_index]
-	if slot.is_empty() or bool(slot.get("ready", false)):
-		return false
-	var now := int(Time.get_unix_time_from_system())
-	var finish_unix := int(slot.get("finish_unix", 0))
-	if finish_unix <= now:
-		refresh_slots()
-		return false
-	var item_id := str(slot.get("item_id", ""))
-	var simcash_cost := ProductionManager.get_speedup_cash_cost(item_id)
-	if simcash_cost <= 0 or EconomyManager.sim_cash < simcash_cost:
-		return false
-	EconomyManager.sim_cash -= simcash_cost
-	EconomyManager.transaction_completed.emit("sim_cash_spend", simcash_cost)
-	slot["finish_unix"] = now
-	slots[slot_index] = slot
-	refresh_slots()
-	slots_changed.emit()
-	return true
-
 func get_next_store_queue_slot_cost() -> int:
 	_ensure_slots()
 	if is_factory or slot_count >= MAX_STORE_QUEUE_SLOTS:
