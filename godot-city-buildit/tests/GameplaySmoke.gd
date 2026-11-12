@@ -375,7 +375,7 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu.mouse_filter == Control.MOUSE_FILTER_PASS, "Submenu content must pass touch drags to its ScrollContainer.")
 	_check(hud.submenu_scroll.get_h_scroll_bar().max_value > hud.submenu_scroll.get_h_scroll_bar().page, "Services catalog must expose a real horizontal overflow range for swipe testing.")
 	await get_tree().process_frame
-	var horizontal_before := hud.submenu_scroll.scroll_horizontal
+	var horizontal_before: int = hud.submenu_scroll.scroll_horizontal
 	var first_service_card := hud.submenu.get_node_or_null("group_power") as Control
 	_check(first_service_card != null, "First Services card must exist for a real touch swipe test.")
 	if first_service_card:
