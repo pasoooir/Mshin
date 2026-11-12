@@ -304,7 +304,9 @@ func _test_build_menu_visibility() -> void:
 			_check(button.custom_minimum_size.y >= 64.0, "Category touch target is too small.")
 			var category_icon := button.get_node_or_null("CategoryPNG") as TextureRect
 			_check(category_icon != null and category_icon.texture != null and category_icon.custom_minimum_size.x >= 64.0, "Category PNG must be transparent artwork at a readable size.")
-			_check(button.get_theme_stylebox("normal").get_class() == "StyleBoxEmpty", "Category PNG must not have a card background.")
+			for state in ["normal", "hover", "pressed", "focus"]:
+				_check(button.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Category PNG must remain transparent in every interaction state.")
+			_check(button.mouse_filter == Control.MOUSE_FILTER_PASS, "Category image must pass touch drags to its vertical ScrollContainer.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
 	var currency_stack := hud.get_node_or_null("TopRightCurrencies") as VBoxContainer
@@ -319,7 +321,10 @@ func _test_build_menu_visibility() -> void:
 	_check(toolbar.visible, "Right-side transparent PNG shortcuts must remain visible while a category submenu is open.")
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
 	_check(hud.submenu_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER, "Catalog horizontal scroll chrome must stay hidden.")
-	_check(hud.submenu_scroll.scroll_deadzone <= 10, "Horizontal submenu swipe must respond with a short touch deadzone.")
+	_check(hud.submenu_scroll.scroll_deadzone <= 4, "Horizontal submenu swipe must respond with a minimal touch deadzone.")
+	_check(hud.submenu_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Submenu ScrollContainer must receive touch drags.")
+	_check(hud.submenu.mouse_filter == Control.MOUSE_FILTER_PASS, "Submenu content must pass touch drags to its ScrollContainer.")
+	_check(hud.submenu_scroll.get_h_scroll_bar().max_value > hud.submenu_scroll.get_h_scroll_bar().page, "Services catalog must expose a real horizontal overflow range for swipe testing.")
 	_check(hud.submenu.alignment == BoxContainer.ALIGNMENT_BEGIN, "Horizontal submenu items must start at the leading edge for predictable swiping.")
 	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
@@ -331,6 +336,10 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu.get_node_or_null("Submenu_Back") != null and hud.get_node_or_null("CatalogCloseButton") != null, "Water submenu must expose Back and Cancel.")
 	var locked_pump := hud.submenu.get_node_or_null("water_pump") as Button
 	_check(locked_pump != null and not locked_pump.disabled, "Locked Water Pump must remain tappable for unlock feedback.")
+	if locked_pump:
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			_check(locked_pump.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Catalog cards must not gain black/white backgrounds in any state.")
+		_check(locked_pump.mouse_filter == Control.MOUSE_FILTER_PASS, "Dragging from building artwork must reach the horizontal submenu scroller.")
 	var unlocked_tower := hud.submenu.get_node_or_null("water_tower") as Button
 	_check(unlocked_tower != null and unlocked_tower.find_child("UnlockLevelBadge", true, false) == null, "Unlocked Water Tower must not display a level badge.")
 	if locked_pump:
