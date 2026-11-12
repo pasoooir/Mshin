@@ -187,13 +187,15 @@ func get_city_snapshot() -> Dictionary:
 	var homes: Array = []
 	var ready_homes := 0
 	var waiting_homes := 0
+	var upgrading_homes := 0
 	for building in BuildManager.buildings.values():
 		if not is_instance_valid(building) or building.status != "completed":
 			continue
 		if str(building.definition.get("category", "")) != "residential":
 			continue
 		var stage := int(building.upgrade_stage)
-		var requirements: Array = ProductionManager.get_upgrade_requirements(stage)
+		var is_upgrading := bool(building.upgrade_in_progress)
+		var requirements: Array = [] if is_upgrading else ProductionManager.get_upgrade_requirements(stage)
 		var home_needs: Array = []
 		var all_stored := true
 		for requirement in requirements:
@@ -228,8 +230,10 @@ func get_city_snapshot() -> Dictionary:
 				"shortage":still_needed,
 				"suppliers":_supplier_for(item_id)
 			})
-		var can_upgrade := stage < 6 and all_stored
-		if stage < 6 and can_upgrade:
+		var can_upgrade := stage < 6 and all_stored and not is_upgrading
+		if is_upgrading:
+			upgrading_homes += 1
+		elif stage < 6 and can_upgrade:
 			ready_homes += 1
 		elif stage < 6:
 			waiting_homes += 1
@@ -240,6 +244,8 @@ func get_city_snapshot() -> Dictionary:
 			"next_stage":mini(stage + 1, 6),
 			"population":int(building.current_population),
 			"ready":can_upgrade,
+			"upgrading":is_upgrading,
+			"upgrade_remaining_seconds":building.get_upgrade_remaining_seconds(),
 			"needs":home_needs
 		})
 	var inventory_rows: Array = []
@@ -292,7 +298,7 @@ func get_city_snapshot() -> Dictionary:
 		"storage":{"used":StorageManager.get_used(),"capacity":StorageManager.capacity,"free":StorageManager.get_free()},
 		"economy":{"simoleons":EconomyManager.simoleons,"sim_cash":EconomyManager.sim_cash,"keys":EconomyManager.golden_keys},
 		"city":{"level":GameManager.level,"population":GameManager.population,"happiness":GameManager.happiness,"experience":GameManager.experience,"xp_needed":GameManager.get_xp_needed()},
-		"summary":{"homes":homes.size(),"ready_homes":ready_homes,"waiting_homes":waiting_homes,"critical_items":critical_count,"active_orders":production.orders.size(),"ready_orders":production.orders.filter(func(order: Dictionary) -> bool: return bool(order.ready)).size()},
+		"summary":{"homes":homes.size(),"ready_homes":ready_homes,"waiting_homes":waiting_homes,"upgrading_homes":upgrading_homes,"critical_items":critical_count,"active_orders":production.orders.size(),"ready_orders":production.orders.filter(func(order: Dictionary) -> bool: return bool(order.ready)).size()},
 		"items":item_rows,
 		"inventory":inventory_rows,
 		"homes":homes,
