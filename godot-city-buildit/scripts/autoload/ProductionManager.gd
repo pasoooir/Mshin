@@ -21,18 +21,29 @@ var raw_materials := {
 # Recipes are stored as "requires" for compatibility with Building.gd and as
 # exact SCBI time_sec/input data for the new inventory-driven craft flow.
 var crafted_items := {
-	"nails": {"name":"Nails", "time":300.0, "time_sec":300, "value":80, "requires":{"metal":2}, "level":1, "store":"building_supplies"},
-	"planks": {"name":"Planks", "time":1800.0, "time_sec":1800, "value":120, "requires":{"wood":2}, "level":3, "store":"building_supplies"},
-	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies"},
-	"cement": {"name":"Cement", "time":3000.0, "time_sec":3000, "value":440, "requires":{"minerals":2,"chemicals":1}, "level":14, "store":"building_supplies"},
-	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies"},
-	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies"},
+	"nails": {"name":"Nails", "time":300.0, "time_sec":300, "value":80, "requires":{"metal":2}, "level":1, "store":"building_supplies", "source":"Community-reference"},
+	"planks": {"name":"Planks", "time":1800.0, "time_sec":1800, "value":120, "requires":{"wood":2}, "level":3, "store":"building_supplies", "source":"Community-reference"},
+	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies", "source":"Community-reference"},
+	"cement": {"name":"Cement", "time":3000.0, "time_sec":3000, "value":440, "requires":{"minerals":2,"chemicals":1}, "level":14, "store":"building_supplies", "source":"Community-reference"},
+	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies", "source":"Community-reference; ingredient variants exist"},
+	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies", "source":"Community-reference; ingredient variants exist"},
 	"hammer": {"name":"Hammer", "time":840.0, "time_sec":840, "value":90, "requires":{"metal":1,"wood":1}, "level":4, "store":"hardware_store", "source":"Community-reference"},
 	"measuring_tape": {"name":"Measuring Tape", "time":1200.0, "time_sec":1200, "value":60, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store", "source":"Community-reference"},
-	"shovel": {"name":"Shovel", "time":1800.0, "time_sec":1800, "value":65, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store", "source":"Community-reference"},
-	"chair": {"name":"Chair", "time":2400.0, "time_sec":2400, "value":65, "requires":{"wood":1,"planks":1}, "level":10, "store":"furniture_store"},
-	"table": {"name":"Table", "time":3300.0, "time_sec":3300, "value":90, "requires":{"planks":2}, "level":16, "store":"furniture_store"},
-	"vegetables": {"name":"Vegetables", "time":3000.0, "time_sec":3000, "value":45, "requires":{"seeds":1}, "level":8, "store":"farmers_market"}
+	"shovel": {"name":"Shovel", "time":1800.0, "time_sec":1800, "value":150, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store", "source":"Community-reference"},
+	"cooking_utensils": {"name":"Cooking Utensils", "time":2700.0, "time_sec":2700, "value":250, "requires":{"metal":2,"wood":2,"plastic":2}, "level":17, "store":"hardware_store", "source":"Community-reference; conflicting ingredient variants"},
+	"ladder": {"name":"Ladder", "time":3600.0, "time_sec":3600, "value":420, "requires":{"planks":2,"metal":2}, "level":20, "store":"hardware_store", "source":"Community-reference"},
+	"drill": {"name":"Drill", "time":7200.0, "time_sec":7200, "value":590, "requires":{"metal":2,"plastic":2,"electrical":1}, "level":30, "store":"hardware_store", "source":"Community-reference"},
+	"chair": {"name":"Chair", "time":1200.0, "time_sec":1200, "value":300, "requires":{"wood":2,"nails":1,"hammer":1}, "level":10, "store":"furniture_store", "source":"Community-reference"},
+	"home_textiles": {"name":"Home Textiles", "time":4500.0, "time_sec":4500, "value":610, "requires":{"textiles":2,"measuring_tape":1}, "level":25, "store":"furniture_store", "source":"Community-reference"},
+	"cupboard": {"name":"Cupboard", "time":2700.0, "time_sec":2700, "value":900, "requires":{"planks":2,"glass":2,"paint":1}, "level":26, "store":"furniture_store", "source":"Community-reference"},
+	"couch": {"name":"Couch", "time":9000.0, "time_sec":9000, "value":1810, "requires":{"textiles":3,"drill":1,"glue":1}, "level":33, "store":"furniture_store", "source":"Community-reference"},
+	"table": {"name":"Table", "time":1800.0, "time_sec":1800, "value":500, "requires":{"planks":1,"nails":2,"hammer":1}, "level":16, "store":"furniture_store", "source":"Community-reference"},
+	"vegetables": {"name":"Vegetables", "time":1200.0, "time_sec":1200, "value":160, "requires":{"seeds":2}, "level":8, "store":"farmers_market", "source":"Community-reference"},
+	"flour_bag": {"name":"Flour Bag", "time":1800.0, "time_sec":1800, "value":570, "requires":{"seeds":2,"textiles":2}, "level":17, "store":"farmers_market", "source":"Community-reference; ingredient variants exist"},
+	"cream": {"name":"Cream", "time":4500.0, "time_sec":4500, "value":440, "requires":{"animal_feed":1}, "level":23, "store":"farmers_market", "source":"Community-reference"},
+	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Community-reference; seed quantity differs by source"},
+	"cheese": {"name":"Cheese", "time":6300.0, "time_sec":6300, "value":660, "requires":{"animal_feed":2}, "level":26, "store":"farmers_market", "source":"Community-reference"},
+	"beef": {"name":"Beef", "time":9000.0, "time_sec":9000, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"}
 }
 
 var upgrade_requirements := {
