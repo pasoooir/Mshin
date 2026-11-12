@@ -80,6 +80,7 @@ if not all(f'"{name}"' in toolbar_smoke for name in smoke_order):
 # Side rails and catalog cards must remain transparent in every interaction state.
 for contract in [
     'category_scroll.scroll_deadzone = 4',
+    'category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO',
     'category_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
     'submenu_scroll.scroll_deadzone = 4',
     'submenu_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
