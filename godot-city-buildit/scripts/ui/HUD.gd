@@ -2114,6 +2114,48 @@ func open_city_needs_panel() -> void:
 	content.add_theme_constant_override("separation", 8)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(content)
+	var inventory_title := Label.new()
+	inventory_title.text = "CITY STORAGE INVENTORY  ·  %d ITEM TYPES" % snapshot.get("inventory", []).size()
+	inventory_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	inventory_title.add_theme_color_override("font_color", Color("#17364A"))
+	content.add_child(inventory_title)
+	var inventory_grid := GridContainer.new()
+	inventory_grid.name = "CityStorageInventory"
+	inventory_grid.columns = 5
+	inventory_grid.add_theme_constant_override("h_separation", 6)
+	inventory_grid.add_theme_constant_override("v_separation", 6)
+	content.add_child(inventory_grid)
+	if snapshot.get("inventory", []).is_empty():
+		var empty_inventory := Label.new()
+		empty_inventory.text = "City Storage is currently empty."
+		empty_inventory.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		empty_inventory.add_theme_color_override("font_color", Color("#617A88"))
+		inventory_grid.add_child(empty_inventory)
+	for inventory_item in snapshot.get("inventory", []):
+		var inventory_card := PanelContainer.new()
+		inventory_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#F5FAFC"), Color("#D9E8EF")))
+		inventory_grid.add_child(inventory_card)
+		var inventory_layout := VBoxContainer.new()
+		inventory_layout.add_theme_constant_override("separation", 1)
+		inventory_card.add_child(inventory_layout)
+		var inventory_id := str(inventory_item.get("item_id", ""))
+		var inventory_category := "raw" if ProductionManager.raw_materials.has(inventory_id) else "crafted"
+		var inventory_icon := Icons.make_item_icon(inventory_category, inventory_id, Vector2(34, 34) * _ui_scale)
+		inventory_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		inventory_layout.add_child(inventory_icon)
+		var inventory_name := Label.new()
+		inventory_name.text = str(inventory_item.get("name", inventory_id))
+		inventory_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		inventory_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		inventory_name.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+		inventory_name.add_theme_color_override("font_color", Color("#24485B"))
+		inventory_layout.add_child(inventory_name)
+		var inventory_count := Label.new()
+		inventory_count.text = "× %d" % int(inventory_item.get("count", 0))
+		inventory_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		inventory_count.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		inventory_count.add_theme_color_override("font_color", Color("#34734D"))
+		inventory_layout.add_child(inventory_count)
 	var items_title := Label.new()
 	items_title.text = "CITY-WIDE MATERIAL SHORTAGES"
 	items_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
