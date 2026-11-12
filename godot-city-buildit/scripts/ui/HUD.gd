@@ -2134,13 +2134,13 @@ func open_city_needs_panel() -> void:
 		text_stack.add_child(counts)
 		var supplier_list: Array = item.get("suppliers", [])
 		var supplier_text := Label.new()
-		supplier_text.text = "SUPPLIER  " + (str(supplier_list[0].get("name", "Available")) if not supplier_list.is_empty() else "No completed supplier built")
+		supplier_text.text = "SUPPLIER  " + (str(supplier_list[0].get("name", "Available")) + (" · UNDER CONSTRUCTION" if str(supplier_list[0].get("status", "")) == "constructing" else "") if not supplier_list.is_empty() else "No completed supplier built")
 		supplier_text.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 		supplier_text.add_theme_color_override("font_color", Color("#607989"))
 		text_stack.add_child(supplier_text)
 		var action := Button.new()
 		action.custom_minimum_size = Vector2(112, 38) * _ui_scale
-		action.text = ("BUILD" if str(supplier_list[0].get("status", "")) == "not_built" else "PRODUCE") if int(item.get("deficit", 0)) > 0 else ("COLLECT" if int(item.get("ready", 0)) > 0 else "COVERED")
+		action.text = ("BUILD" if str(supplier_list[0].get("status", "")) == "not_built" else ("BUILDING" if str(supplier_list[0].get("status", "")) == "constructing" else "PRODUCE")) if int(item.get("deficit", 0)) > 0 else ("COLLECT" if int(item.get("ready", 0)) > 0 else "COVERED")
 		action.disabled = supplier_list.is_empty() or (int(item.get("deficit", 0)) <= 0 and int(item.get("ready", 0)) <= 0)
 		action.add_theme_stylebox_override("normal", _toolbar_style(Color("#E9BF45"), Color("#F8D978")))
 		if not supplier_list.is_empty():
@@ -2224,6 +2224,9 @@ func _open_city_need_supplier(supplier: Dictionary) -> void:
 	var building_id := str(supplier.get("building_id", ""))
 	var building = BuildManager.buildings.get(building_id) if not building_id.is_empty() else null
 	if is_instance_valid(building):
+		if building.status != "completed":
+			status_label.text = "%s is still under construction." % str(building.definition.get("name", "Supplier"))
+			return
 		_close_city_needs_panel()
 		open_production_panel(building)
 		return
