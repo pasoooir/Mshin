@@ -1764,9 +1764,9 @@ func open_production_panel(building: Building) -> void:
 		var next_slot_cost: int = component.get_next_store_queue_slot_cost()
 		var add_slot := Button.new()
 		add_slot.name = "PurchaseQueueSlot"
-		add_slot.text = ("+ SLOT · %d SC" % next_slot_cost) if next_slot_cost > 0 else "MAX SLOTS"
+		add_slot.text = ("+ SLOT · %d SC" % next_slot_cost) if next_slot_cost > 0 else ("MAX SLOTS" if component.get_slot_count() >= ProductionComponent.MAX_STORE_QUEUE_SLOTS else "UNAVAILABLE")
 		add_slot.disabled = next_slot_cost <= 0 or EconomyManager.sim_cash < next_slot_cost
-		add_slot.tooltip_text = "Add one queue slot. SimCash cost is from the commercial-building reference." if next_slot_cost > 0 else "Maximum 11 queue slots."
+		add_slot.tooltip_text = "Add one queue slot. SimCash cost is from the commercial-building reference." if next_slot_cost > 0 else ("Maximum 11 queue slots." if component.get_slot_count() >= ProductionComponent.MAX_STORE_QUEUE_SLOTS else "No verified queue-slot price is configured for this custom store.")
 		add_slot.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 		add_slot.pressed.connect(_purchase_store_queue_slot.bind(building))
 		queue_heading.add_child(add_slot)
