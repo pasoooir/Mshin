@@ -1064,6 +1064,7 @@ func _show_building_info(type_id: String) -> void:
 	_add_info_line(layout, "Price", "%s Simoleons" % _format_count(int(definition.get("cost", 0))))
 	var required_level := int(definition.get("level", 1))
 	_add_info_line(layout, "Requirements", "Level %d" % required_level)
+	_add_info_line(layout, "Construction", _format_duration(int(definition.get("build_time", 0))))
 	if GameManager.level < required_level:
 		status_label.text = "Unlocked at Level %d." % required_level
 	var build := Button.new()
@@ -2044,8 +2045,8 @@ func open_city_needs_panel() -> void:
 	var city: Dictionary = snapshot.get("city", {})
 	var summary_label := Label.new()
 	summary_label.name = "CityNeedsSummary"
-	summary_label.text = "LEVEL %d   ·   POPULATION %s   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   WAITING %d   ·   READY ORDERS %d" % [
-		int(city.get("level", 1)), _format_count(int(city.get("population", 0))),
+	summary_label.text = "LEVEL %d   ·   XP %d/%d   ·   POPULATION %s   ·   HAPPINESS %d%%   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   WAITING %d   ·   READY ORDERS %d" % [
+		int(city.get("level", 1)), int(city.get("experience", 0)), int(city.get("xp_needed", 0)), _format_count(int(city.get("population", 0))), roundi(float(city.get("happiness", 0.0))),
 		int(storage.get("used", 0)), int(storage.get("capacity", 0)),
 		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)),
 		int(summary.get("waiting_homes", 0)), int(summary.get("ready_orders", 0))
