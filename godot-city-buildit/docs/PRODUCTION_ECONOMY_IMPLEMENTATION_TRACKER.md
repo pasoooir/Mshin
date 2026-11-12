@@ -3,7 +3,11 @@
 **Snapshot:** 2026-11-12  
 **Project:** godot-city-buildit  
 **Branch:** docs/scbi-production-economy-city-needs  
-**Status:** Implementation committed to the working PR branch; CI and Android visual acceptance are still required. This tracker does not imply merge or deployment.
+**Status:** Merged to main and deployed to GitHub Pages on 2026-11-12. Automated CI and desktop/mobile Chromium checks passed. Physical Android side-by-side visual acceptance remains open; do not claim pixel-identical SCBI UI until that review is complete.
+
+**PR:** #394 — merge commit 06c3e2bd87435ddc3dce5df0d2c73ff37bff8fa8.
+**Godot validation:** run 43208197179 — success.
+**Web build / Chromium / Pages deploy:** run 43208197118 — success.
 
 ## Six implementation slices
 
@@ -69,11 +73,13 @@ Do not convert these values into EA-confirmed facts.
 - All 14 SCBI commercial store types and product-family catalog counts.
 - Existing gameplay smoke continues to cover production, collection, first home upgrade, save and load.
 
-## Final acceptance still required
+## Final acceptance
 
-- GitHub Actions CI must pass on the PR head.
-- Godot 4.3 headless GameplaySmoke must pass.
-- Web export and Pages deployment must pass after merge.
-- Android landscape screenshots must be compared side-by-side with current SimCity BuildIt production and residential panels.
-- Touch scroll, tap, collect, close and upgrade actions must be checked on a real Android device.
-- Do not call the UI pixel-identical until that comparison is completed.
+- [x] GitHub Actions CI passed on the merged main commit.
+- [x] Godot 4.3 import, startup and end-to-end GameplaySmoke passed.
+- [x] Web export passed.
+- [x] Desktop and mobile-landscape Chromium launch checks passed.
+- [x] GitHub Pages deployment completed successfully.
+- [ ] Android landscape screenshots still need side-by-side comparison with current SimCity BuildIt production and residential panels.
+- [ ] Touch scroll, tap, collect, close and upgrade actions still need a final check on a physical Android device.
+- Do not call the UI pixel-identical until the Android comparison is completed.
