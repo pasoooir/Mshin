@@ -304,6 +304,7 @@ func _test_build_menu_visibility() -> void:
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
 	_check(category_scroll != null and category_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Right category scroller must receive touch drags.")
+	_check(category_scroll != null and category_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Right category rail must enable vertical scrolling when its content exceeds the viewport.")
 	if category_scroll:
 	var toolbar_items := toolbar.find_child("RightToolbarItems", true, false) as VBoxContainer
 	_check(toolbar_items != null and toolbar_items.get_child_count() == 7, "Right rail must show seven categories in a vertical list.")
