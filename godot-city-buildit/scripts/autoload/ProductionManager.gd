@@ -81,13 +81,13 @@ var crafted_items := {
 	"refrigerator": {"name":"Refrigerator", "time":12600.0, "time_sec":12600, "value":1060, "requires":{"plastic":2,"chemicals":2,"electrical":2}, "level":35, "store":"home_appliances", "source":"HubsInfo"},
 	"lighting_system": {"name":"Lighting System", "time":6300.0, "time_sec":6300, "value":890, "requires":{"chemicals":1,"glass":1,"electrical":1}, "level":36, "store":"home_appliances", "source":"HubsInfo"},
 	"tv": {"name":"TV", "time":9000.0, "time_sec":9000, "value":1280, "requires":{"plastic":2,"glass":2,"electrical":2}, "level":38, "store":"home_appliances", "source":"HubsInfo"},
-	"popcorn": {"name":"Popcorn", "time":1800.0, "time_sec":1800, "value":1250, "requires":{"corn":2,"microwave_oven":1}, "level":43, "store":"fast_food", "source":"HubsInfo"}
 }
 
 # Products with a verified store identity but unresolved input recipes remain
 # visible and disabled; never invent ingredient quantities or production times.
 var store_catalog := {
 	"fast_food": [
+		{"id":"popcorn","name":"Popcorn","level":43,"source":"HubsInfo; full upstream microwave-oven ingredient mapping still requires verification"}
 	],
 	"donut_shop": [
 	],
