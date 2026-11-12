@@ -4,7 +4,7 @@ signal save_completed(path: String)
 signal load_completed(success: bool)
 
 const SAVE_PATH: String = "user://pasoo_city_buildit_save.json"
-const SAVE_VERSION: int = 1
+const SAVE_VERSION: int = 2
 const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
@@ -88,7 +88,7 @@ func load_game() -> bool:
 		return false
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
-	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != SAVE_VERSION:
+	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) < 1 or int(parsed.get("version", 0)) > SAVE_VERSION:
 		push_warning("City save is invalid or uses an unsupported version.")
 		load_completed.emit(false)
 		return false
