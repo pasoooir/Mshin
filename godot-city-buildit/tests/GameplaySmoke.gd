@@ -1244,7 +1244,11 @@ func _run_gameplay_test() -> void:
 		_check(is_equal_approx(ProductionManager.get_production_time(str(star_case.item), 1), float(star_case.base) * 0.9), "%s one-star production must reduce the base duration by 10%%." % store_id)
 	_check(ProductionManager.get_recipe_lock_reason("coffee", 0).contains("Store Star"), "Coffee must remain locked until Donut Shop reaches one star.")
 	_check(ProductionManager.get_recipe_lock_reason("popcorn", 0).contains("Store Star"), "Popcorn must remain locked until Fast Food reaches one star.")
-	_check(ProductionManager.get_store_star_offer("donut_shop", 2).is_empty(), "Donut Shop third-star upgrade must remain unavailable while references disagree on its cost.")
+	var donut_third_star_offer := ProductionManager.get_store_star_offer("donut_shop", 2)
+	_check(int(donut_third_star_offer.get("level", 0)) == 50 and int(donut_third_star_offer.get("cost", 0)) == 49000, "Donut Shop third star must use the 49,000 Simoleon value corroborated by the Japanese table and Planning Guide.")
+	for star_gated_item in ["ladder", "corn", "cupboard", "lawn_mower", "microwave_oven"]:
+		_check(ProductionManager.get_recipe_lock_reason(star_gated_item, 0).contains("Store Star"), "%s must require its source-documented first store star." % star_gated_item)
+		_check(ProductionManager.get_recipe_lock_reason(star_gated_item, 1).is_empty(), "%s must unlock after its store receives one star." % star_gated_item)
 	production_hud.open_production_panel(supplies)
 	var buy_queue_slot := production_hud.production_panel.find_child("PurchaseQueueSlot", true, false) as Button
 	_check(buy_queue_slot != null and buy_queue_slot.text.contains("4 SC") and not buy_queue_slot.disabled, "Building Supplies next queue slot must show its sourced 4 SimCash price.")
