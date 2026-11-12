@@ -27,9 +27,9 @@ var crafted_items := {
 	"cement": {"name":"Cement", "time":3000.0, "time_sec":3000, "value":440, "requires":{"minerals":2,"chemicals":1}, "level":14, "store":"building_supplies"},
 	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies"},
 	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies"},
-	"hammer": {"name":"Hammer", "time":2400.0, "time_sec":2400, "value":90, "requires":{"metal":1,"wood":1}, "level":4, "store":"hardware_store"},
-	"measuring_tape": {"name":"Measuring Tape", "time":2400.0, "time_sec":2400, "value":60, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store"},
-	"shovel": {"name":"Shovel", "time":2700.0, "time_sec":2700, "value":65, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store"},
+	"hammer": {"name":"Hammer", "time":840.0, "time_sec":840, "value":90, "requires":{"metal":1,"wood":1}, "level":4, "store":"hardware_store", "source":"Community-reference"},
+	"measuring_tape": {"name":"Measuring Tape", "time":1200.0, "time_sec":1200, "value":60, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store", "source":"Community-reference"},
+	"shovel": {"name":"Shovel", "time":1800.0, "time_sec":1800, "value":65, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store", "source":"Community-reference"},
 	"chair": {"name":"Chair", "time":2400.0, "time_sec":2400, "value":65, "requires":{"wood":1,"planks":1}, "level":10, "store":"furniture_store"},
 	"table": {"name":"Table", "time":3300.0, "time_sec":3300, "value":90, "requires":{"planks":2}, "level":16, "store":"furniture_store"},
 	"vegetables": {"name":"Vegetables", "time":3000.0, "time_sec":3000, "value":45, "requires":{"seeds":1}, "level":8, "store":"farmers_market"}
@@ -72,7 +72,7 @@ func are_recipe_inputs_unlocked(recipe: Dictionary) -> bool:
 
 func can_craft(item_id: String) -> bool:
 	var recipe := get_recipe(item_id)
-	return not recipe.is_empty() and int(recipe.level) <= GameManager.level and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.inputs)
+	return not recipe.is_empty() and int(recipe.get("level", 1)) <= GameManager.level and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.get("inputs", {}))
 
 func get_recipe_lock_reason(item_id: String) -> String:
 	var recipe := get_recipe(item_id)
@@ -91,7 +91,7 @@ func get_recipe_lock_reason(item_id: String) -> String:
 func consume_inputs(item_id: String) -> bool:
 	if not can_craft(item_id):
 		return false
-	return StorageManager.remove_items(get_recipe(item_id).inputs)
+	return StorageManager.remove_items(get_recipe(item_id).get("inputs", {}))
 
 # Legacy immediate craft API remains available to old callers. New building
 # production uses Building.start_commercial_production() and timestamped timers.
