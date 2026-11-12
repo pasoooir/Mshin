@@ -455,21 +455,6 @@ func _make_hud_value(initial_text: String, font_size: int) -> Label:
 	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return value
 
-func _level_badge_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.10, 0.13, 0.17, 0.88)
-	style.border_color = Color(1, 1, 1, 0.35)
-	style.set_border_width_all(4)
-	style.set_corner_radius_all(40)
-	style.shadow_color = Color(0, 0, 0, 0.35)
-	style.shadow_size = 7
-	style.shadow_offset = Vector2(0, 3)
-	style.content_margin_left = 3
-	style.content_margin_right = 3
-	style.content_margin_top = 3
-	style.content_margin_bottom = 3
-	return style
-
 func _make_currency_plus_button(hint: String) -> Button:
 	var button := Button.new()
 	button.name = hint.replace(" ", "") + "CurrencyPlus"
