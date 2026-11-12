@@ -2250,7 +2250,7 @@ func open_city_needs_panel() -> void:
 		var order_info := Label.new()
 		var order_ready := bool(order.get("ready", false))
 		var order_timer := "READY TO COLLECT" if order_ready else _city_needs_duration(int(order.get("remaining", 0)))
-		order_info.text = "%s  ·  %s  ·  SLOT %d  ·  %s" % [CityDemandManager.get_item_name(order_item_id), str(order.get("building_name", "Factory / Store")), int(order.get("slot_index", 0)) + 1, order_timer]
+		order_info.text = "%s  ·  %s  ·  SLOT %d  ·  %s" % [CityDemandManager.get_item_name(order_item_id), str(order.get("building_name", "Factory / Store")), int(order.get("slot", 0)) + 1, order_timer]
 		order_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		order_info.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		order_info.add_theme_color_override("font_color", Color("#9A6B1D") if order_ready else Color("#315C8A"))
