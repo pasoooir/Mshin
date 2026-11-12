@@ -634,7 +634,7 @@ The six implementation slices now have corresponding code in the current Mshin i
 
 | Slice | Current implementation evidence | Status |
 |---|---|---|
-| 1. Central data catalogue | ProductionManager.gd owns raw materials, factory-tier permissions, 23 craftable products and store recipes; StorageManager derives display metadata from it. | 🟢 Core |
+| 1. Central data catalogue | ProductionManager.gd owns raw materials, factory-tier permissions, 32 craftable products and store recipes; StorageManager derives display metadata from it. | 🟢 Core |
 | 2. Factory/store production | Tier-specific raw permissions; per-slot timestamp jobs; atomic input deduction; collect-to-warehouse; full-storage protection. | 🟢 Core |
 | 3. Residential upgrade plans | Existing six-stage Mshin plan retained; 1 Nail + 1 Metal remains the first upgrade; residential detail panel shows material counts and suppliers. | 🟢 Core |
 | 4. City Needs dashboard | CityDemandManager.gd aggregates home demand, production, ready jobs, supplier routes and shared-stock allocation; persistent HUD shortcut opens the dashboard. | 🟢 Core |
@@ -645,12 +645,12 @@ The six implementation slices now have corresponding code in the current Mshin i
 
 - Building Supplies: Nails, Planks, Bricks, Cement, Glue, Paint.
 - Hardware Store: Hammer, Measuring Tape, Shovel, Cooking Utensils, Ladder, Drill.
-- Farmer's Market: Vegetables, Flour Bag, Cream, Corn, Cheese, Beef.
+- Farmer's Market: Vegetables, Flour Bag, Cream, Corn, Cheese, Beef, Fruit & Berries.
 - Furniture Store: Chair, Table, Home Textiles, Cupboard, Couch.
 - Fast Food Restaurant: all six products are visible; Pizza and Cheese Fries are craftable from verified recipes, while Ice Cream Sandwich, Burger, Lemonade Bottle and Popcorn remain disabled pending upstream Donut Shop / Home Appliances / Gardening Supplies dependencies.
-- Traditional Restaurant and Art Supplies: production panels exist, but the catalogs remain empty and explicitly state that no verified recipes are registered.
+- Donut Shop: Bread Roll is craftable; five other products remain visible pending recipes. Home Appliances: BBQ Grill and Microwave Oven are craftable; Refrigerator, Lighting System and TV remain visible pending recipes. Gardening Supplies: six products are visible; their recipes remain pending verification. Traditional Restaurant and Art Supplies: production panels exist, but the catalogs remain empty and explicitly state that no verified recipes are registered.
 
-The additional SCBI commercial families (Gardening Supplies, Donut Shop, Fashion Store, Home Appliances, Sports Shop, Toy Shop, Bureau of Restoration, Country Store and Dessert Shop) remain catalog expansion work; do not infer their recipes from product names alone.
+The remaining SCBI commercial families (Fashion Store, Sports Shop, Toy Shop, Bureau of Restoration, Country Store and Dessert Shop) remain catalog expansion work; do not infer their recipes from product names alone.
 
 ## 28.2 Source conflicts retained visibly
 
