@@ -3,6 +3,7 @@ import re
 import struct
 import sys
 import zlib
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 ICON_ROOT = ROOT / "assets" / "icons"
@@ -30,6 +31,13 @@ for variable, category in (("raw_materials", "raw"), ("crafted_items", "crafted"
     section_text = section[1].split("\n}", 1)[0]
     for icon_id in re.findall(r'^\s*"([a-z0-9_]+)"\s*:\s*\{', section_text, re.M):
         require(category, icon_id)
+
+# Disabled-but-visible product identities must still have local artwork.
+store_catalog_section = production.split("var store_catalog := {", 1)
+if len(store_catalog_section) == 2:
+    store_catalog_text = store_catalog_section[1].split("\nvar upgrade_requirements", 1)[0]
+    for icon_id in re.findall(r'"id":"([a-z0-9_]+)"', store_catalog_text):
+        require("crafted", icon_id)
 
 # Menu group IDs and their service/specialization buildings are also visible UI items.
 service_section = hud.split("const SERVICE_GROUPS := [", 1)[1].split("\n]", 1)[0]
@@ -67,6 +75,17 @@ for icon_id in ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_fu
 for category, icon_id in sorted(required):
     path = ICON_ROOT / category / f"{icon_id}.png"
     if not path.is_file():
+        # New store/product art may use original transparent SVG. Required
+        # build icons and toolbar controls remain strict PNG-32 assets.
+        svg_path = ICON_ROOT / category / f"{icon_id}.svg"
+        if category in ("crafted", "commercial", "ui") and svg_path.is_file():
+            try:
+                svg_root = ET.parse(svg_path).getroot()
+                if not svg_root.tag.endswith("svg") or svg_root.attrib.get("viewBox") != "0 0 128 128":
+                    errors.append(f"Invalid product SVG viewBox/root: {category}/{icon_id}.svg")
+            except Exception as exc:
+                errors.append(f"Invalid product SVG: {category}/{icon_id}.svg ({exc})")
+            continue
         errors.append(f"Missing icon: {category}/{icon_id}.png")
         continue
     data = path.read_bytes()
@@ -126,4 +145,4 @@ if errors:
         print(" - " + error)
     sys.exit(1)
 
-print(f"Transparent PNG icon validation passed: {len(required)} catalog/UI/status assets checked.")
+print(f"Local icon validation passed: {len(required)} catalog/UI/status assets checked (PNG-32 plus approved product SVGs).")

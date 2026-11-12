@@ -4,15 +4,15 @@ const ROOT := "res://assets/icons/"
 const FALLBACK := "res://assets/icons/ui/placeholder.png"
 
 const RAW_IDS := ["metal", "wood", "plastic", "seeds", "minerals", "chemicals", "textiles", "sugar_spices", "glass", "animal_feed", "electrical"]
-const CRAFTED_IDS := ["nails", "planks", "bricks", "cement", "glue", "paint", "hammer", "measuring_tape", "shovel", "chair", "table", "vegetables"]
+const CRAFTED_IDS := ["nails", "planks", "bricks", "cement", "glue", "paint", "hammer", "measuring_tape", "shovel", "cooking_utensils", "ladder", "drill", "chair", "table", "home_textiles", "cupboard", "couch", "vegetables", "flour_bag", "cream", "corn", "cheese", "beef", "ice_cream_sandwich", "pizza", "burger", "cheese_fries", "lemonade_bottle", "popcorn", "bread_roll", "bbq_grill", "microwave_oven", "fruit_berries", "tree_sapling", "donuts", "green_smoothie", "cherry_cheesecake", "frozen_yogurt", "coffee", "refrigerator", "lighting_system", "tv", "grass", "garden_furniture", "lawn_mower", "fire_pit", "garden_gnome", "cap", "shoes", "watch", "business_suit", "backpack", "tennis_racket", "sports_drink", "soccer_shoes", "protein_bar", "ping_pong_table", "block_letters", "kite", "teddy_bear", "game_console", "forged_iron", "carved_wood", "cut_stone", "tapestries", "stained_glass", "wool_shirt", "picnic_basket", "apple_jam", "tiramisu", "churros", "profiterole", "mochi", "pavlova"]
 const RESIDENTIAL_IDS := ["residential_1", "residential_2", "residential_villa", "residential_apartment", "residential_farm"]
-const COMMERCIAL_IDS := ["building_supplies", "shop_chain", "restaurant_traditional", "fast_food", "art_supplies", "hardware_store", "farmers_market", "furniture_store"]
+const COMMERCIAL_IDS := ["building_supplies", "shop_chain", "restaurant_traditional", "fast_food", "art_supplies", "hardware_store", "farmers_market", "furniture_store", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]
 const INDUSTRIAL_IDS := ["factory_small", "factory_basic", "factory_mass", "factory_hightech", "factory_nano", "industrial_1", "industrial_2", "industrial_3"]
 const SERVICE_IDS := ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "town_hall"]
 const SPECIALIZATION_IDS := ["park_small"]
 const SERVICE_GROUP_IDS := ["power", "water", "sewage", "waste", "fire", "police", "health", "government"]
 const SPECIALIZATION_GROUP_IDS := ["parks", "education", "transportation", "entertainment", "gambling", "landmarks", "worship"]
-const UI_IDS := ["placeholder", "storage", "trade", "save", "cancel", "close", "collect", "lock", "back", "confirm", "bulldoze", "build_menu", "settings", "info", "plus", "money", "population", "happiness", "level", "warning", "check", "arrow_left", "arrow_right", "services", "commercial", "industrial", "road", "residential", "parks", "hard_hat", "simoleons", "golden_key", "fire", "power", "water", "park", "police", "health", "sewage", "waste", "government", "education", "transportation", "entertainment", "gambling", "beach", "mountain", "landmark", "trade_depot", "global_trade", "epic", "regions", "fallback"]
+const UI_IDS := ["placeholder", "storage", "trade", "save", "cancel", "close", "collect", "lock", "back", "confirm", "bulldoze", "build_menu", "settings", "info", "plus", "city_needs", "money", "population", "happiness", "level", "warning", "check", "arrow_left", "arrow_right", "services", "commercial", "industrial", "road", "residential", "parks", "hard_hat", "simoleons", "golden_key", "fire", "power", "water", "park", "police", "health", "sewage", "waste", "government", "education", "transportation", "entertainment", "gambling", "beach", "mountain", "landmark", "trade_depot", "global_trade", "epic", "regions", "fallback"]
 const ROAD_IDS := ["road", "road_build", "road_upgrade", "road_bulldoze"]
 const STATUS_IDS := ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_full", "ready_collect", "upgrading", "abandoned"]
 static var _texture_cache: Dictionary = {}
@@ -22,6 +22,10 @@ static func path(category: String, id: String) -> String:
 
 static func get_tex(category: String, id: String) -> Texture2D:
 	var icon_path := path(category, id)
+	if not ResourceLoader.exists(icon_path):
+		var svg_path := "%s%s/%s.svg" % [ROOT, category, id]
+		if ResourceLoader.exists(svg_path):
+			icon_path = svg_path
 	if _texture_cache.has(icon_path):
 		return _texture_cache[icon_path] as Texture2D
 	if ResourceLoader.exists(icon_path):
@@ -129,7 +133,8 @@ static func validate_all_icons() -> bool:
 	for category in catalog:
 		for icon_id in catalog[category]:
 			var icon_path := path(str(category), str(icon_id))
-			if not ResourceLoader.exists(icon_path):
-				push_error("Missing PNG icon resource: " + icon_path)
+			var svg_path := "%s%s/%s.svg" % [ROOT, str(category), str(icon_id)]
+			if not ResourceLoader.exists(icon_path) and not ResourceLoader.exists(svg_path):
+				push_error("Missing local PNG/SVG icon resource: " + icon_path)
 				valid = false
 	return valid

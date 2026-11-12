@@ -38,10 +38,12 @@ if "commercial_1" in hud:
     errors.append("Obsolete commercial_1 reference remains in HUD")
 
 production = (ROOT / "scripts/autoload/ProductionManager.gd").read_text(encoding="utf-8")
-storage = (ROOT / "scripts/autoload/StorageManager.gd").read_text(encoding="utf-8")
+# ProductionManager is the single source of truth for item identities. StorageManager
+# derives display metadata at startup, so validate upgrade references against the
+# authoritative raw/crafted catalog instead of expecting a duplicate storage list.
 for item in re.findall(r'"item"[ \t]*:[ \t]*"([a-z0-9_]+)"', production):
-    if f'"{item}"' not in storage:
-        errors.append(f"Upgrade material missing from storage definitions: {item}")
+    if not re.search(rf'"{re.escape(item)}"[ \t]*:', production):
+        errors.append(f"Upgrade material missing from production catalog: {item}")
 
 
 # The full transparent PNG catalog has a dedicated strict validator in CI.

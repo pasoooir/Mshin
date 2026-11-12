@@ -5,34 +5,132 @@ signal item_produced(item_id: String, amount: int)
 # SCBI Industrial Buildings timings are the canonical source for raw production.
 # Keep legacy keys (time/value/level) because existing gameplay and HUD code reads them.
 var raw_materials := {
-	"metal": {"name":"Metal", "time":60.0, "time_sec":60, "value":10, "level":1},
-	"wood": {"name":"Wood", "time":180.0, "time_sec":180, "value":20, "level":2},
-	"plastic": {"name":"Plastic", "time":540.0, "time_sec":540, "value":25, "level":5},
-	"seeds": {"name":"Seeds", "time":1200.0, "time_sec":1200, "value":30, "level":7},
-	"minerals": {"name":"Minerals", "time":1800.0, "time_sec":1800, "value":40, "level":11},
-	"chemicals": {"name":"Chemicals", "time":7200.0, "time_sec":7200, "value":60, "level":13},
-	"textiles": {"name":"Textiles", "time":10800.0, "time_sec":10800, "value":90, "level":15},
-	"sugar_spices": {"name":"Sugar and Spices", "time":14400.0, "time_sec":14400, "value":110, "level":17},
-	"glass": {"name":"Glass", "time":18000.0, "time_sec":18000, "value":120, "level":19},
-	"animal_feed": {"name":"Animal Feed", "time":21600.0, "time_sec":21600, "value":140, "level":23},
-	"electrical": {"name":"Electrical Components", "time":25200.0, "time_sec":25200, "value":160, "level":29}
+	"metal": {"name":"Metal", "time":60.0, "time_sec":60, "value":10, "level":1, "source":"Community-reference"},
+	"wood": {"name":"Wood", "time":180.0, "time_sec":180, "value":20, "level":2, "source":"Community-reference"},
+	"plastic": {"name":"Plastic", "time":540.0, "time_sec":540, "value":25, "level":5, "source":"Community-reference"},
+	"seeds": {"name":"Seeds", "time":1200.0, "time_sec":1200, "value":30, "level":7, "source":"Community-reference"},
+	"minerals": {"name":"Minerals", "time":1800.0, "time_sec":1800, "value":40, "level":11, "source":"Community-reference"},
+	"chemicals": {"name":"Chemicals", "time":7200.0, "time_sec":7200, "value":60, "level":13, "source":"Community-reference"},
+	"textiles": {"name":"Textiles", "time":10800.0, "time_sec":10800, "value":90, "level":15, "source":"Community-reference"},
+	"sugar_spices": {"name":"Sugar and Spices", "time":14400.0, "time_sec":14400, "value":110, "level":17, "source":"Community-reference"},
+	"glass": {"name":"Glass", "time":18000.0, "time_sec":18000, "value":120, "level":19, "source":"Community-reference"},
+	"animal_feed": {"name":"Animal Feed", "time":21600.0, "time_sec":21600, "value":140, "level":23, "source":"Community-reference"},
+	"electrical": {"name":"Electrical Components", "time":25200.0, "time_sec":25200, "value":160, "level":29, "source":"Community-reference"}
 }
 
 # Recipes are stored as "requires" for compatibility with Building.gd and as
 # exact SCBI time_sec/input data for the new inventory-driven craft flow.
+var factory_materials := {
+	"factory_small":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"factory_basic":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"factory_mass":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"factory_hightech":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"factory_nano":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
+	"industrial_1":["metal","wood"],
+	"industrial_2":["metal","wood"],
+	"industrial_3":["metal","wood","plastic"]
+}
+
 var crafted_items := {
-	"nails": {"name":"Nails", "time":300.0, "time_sec":300, "value":80, "requires":{"metal":2}, "level":1, "store":"building_supplies"},
-	"planks": {"name":"Planks", "time":1800.0, "time_sec":1800, "value":120, "requires":{"wood":2}, "level":3, "store":"building_supplies"},
-	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies"},
-	"cement": {"name":"Cement", "time":3000.0, "time_sec":3000, "value":440, "requires":{"minerals":2,"chemicals":1}, "level":14, "store":"building_supplies"},
-	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies"},
-	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies"},
-	"hammer": {"name":"Hammer", "time":2400.0, "time_sec":2400, "value":90, "requires":{"metal":1,"wood":1}, "level":4, "store":"hardware_store"},
-	"measuring_tape": {"name":"Measuring Tape", "time":2400.0, "time_sec":2400, "value":60, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store"},
-	"shovel": {"name":"Shovel", "time":2700.0, "time_sec":2700, "value":65, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store"},
-	"chair": {"name":"Chair", "time":2400.0, "time_sec":2400, "value":65, "requires":{"wood":1,"planks":1}, "level":10, "store":"furniture_store"},
-	"table": {"name":"Table", "time":3300.0, "time_sec":3300, "value":90, "requires":{"planks":2}, "level":16, "store":"furniture_store"},
-	"vegetables": {"name":"Vegetables", "time":3000.0, "time_sec":3000, "value":45, "requires":{"seeds":1}, "level":8, "store":"farmers_market"}
+	"nails": {"name":"Nails", "time":300.0, "time_sec":300, "value":80, "requires":{"metal":2}, "level":1, "store":"building_supplies", "source":"Community-reference"},
+	"planks": {"name":"Planks", "time":1800.0, "time_sec":1800, "value":120, "requires":{"wood":2}, "level":3, "store":"building_supplies", "source":"Community-reference"},
+	"bricks": {"name":"Bricks", "time":1200.0, "time_sec":1200, "value":190, "requires":{"minerals":2}, "level":13, "store":"building_supplies", "source":"Community-reference"},
+	"cement": {"name":"Cement", "time":3000.0, "time_sec":3000, "value":440, "requires":{"minerals":2,"chemicals":1}, "level":14, "store":"building_supplies", "source":"Community-reference"},
+	"glue": {"name":"Glue", "time":3600.0, "time_sec":3600, "value":440, "requires":{"plastic":1,"chemicals":2}, "level":15, "store":"building_supplies", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
+	"paint": {"name":"Paint", "time":3600.0, "time_sec":3600, "value":320, "requires":{"metal":2,"minerals":1,"chemicals":2}, "level":16, "store":"building_supplies", "source":"Community-reference; ingredient variants exist"},
+	"hammer": {"name":"Hammer", "time":840.0, "time_sec":840, "value":90, "requires":{"metal":1,"wood":1}, "level":4, "store":"hardware_store", "source":"Community-reference"},
+	"measuring_tape": {"name":"Measuring Tape", "time":1200.0, "time_sec":1200, "value":60, "requires":{"metal":1,"plastic":1}, "level":6, "store":"hardware_store", "source":"Community-reference"},
+	"shovel": {"name":"Shovel", "time":1800.0, "time_sec":1800, "value":150, "requires":{"metal":1,"wood":1,"plastic":1}, "level":9, "store":"hardware_store", "source":"Community-reference"},
+	"cooking_utensils": {"name":"Cooking Utensils", "time":2700.0, "time_sec":2700, "value":250, "requires":{"metal":2,"wood":2,"plastic":2}, "level":17, "store":"hardware_store", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
+	"ladder": {"name":"Ladder", "time":3600.0, "time_sec":3600, "value":420, "requires":{"planks":2,"metal":2}, "level":20, "store":"hardware_store", "source":"Community-reference"},
+	"drill": {"name":"Drill", "time":7200.0, "time_sec":7200, "value":590, "requires":{"metal":2,"plastic":2,"electrical":1}, "level":30, "store":"hardware_store", "source":"Community-reference"},
+	"chair": {"name":"Chair", "time":1200.0, "time_sec":1200, "value":300, "requires":{"wood":2,"nails":1,"hammer":1}, "level":10, "store":"furniture_store", "source":"Community-reference"},
+	"home_textiles": {"name":"Home Textiles", "time":4500.0, "time_sec":4500, "value":610, "requires":{"textiles":2,"measuring_tape":1}, "level":25, "store":"furniture_store", "source":"Community-reference"},
+	"cupboard": {"name":"Cupboard", "time":2700.0, "time_sec":2700, "value":900, "requires":{"planks":2,"glass":2,"paint":1}, "level":26, "store":"furniture_store", "source":"Community-reference"},
+	"couch": {"name":"Couch", "time":9000.0, "time_sec":9000, "value":1810, "requires":{"textiles":3,"drill":1,"glue":1}, "level":33, "store":"furniture_store", "source":"Community-reference"},
+	"table": {"name":"Table", "time":1800.0, "time_sec":1800, "value":500, "requires":{"planks":1,"nails":2,"hammer":1}, "level":16, "store":"furniture_store", "source":"Community-reference"},
+	"vegetables": {"name":"Vegetables", "time":1200.0, "time_sec":1200, "value":160, "requires":{"seeds":2}, "level":8, "store":"farmers_market", "source":"Community-reference"},
+	"flour_bag": {"name":"Flour Bag", "time":1800.0, "time_sec":1800, "value":570, "requires":{"seeds":2,"textiles":2}, "level":17, "store":"farmers_market", "source":"Community-reference; ingredient variants exist"},
+	"cream": {"name":"Cream", "time":4500.0, "time_sec":4500, "value":440, "requires":{"animal_feed":1}, "level":23, "store":"farmers_market", "source":"Community-reference"},
+	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
+	"cheese": {"name":"Cheese", "time":6300.0, "time_sec":6300, "value":660, "requires":{"animal_feed":2}, "level":26, "store":"farmers_market", "source":"Community-reference"},
+	"beef": {"name":"Beef", "time":7200.0, "time_sec":7200, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"},
+	"fruit_berries": {"name":"Fruit & Berries", "time":4320.0, "time_sec":4320, "value":420, "requires":{"seeds":2,"tree_sapling":1}, "level":18, "store":"farmers_market", "source":"Community-reference"},
+	"bread_roll": {"name":"Bread Roll", "time":3240.0, "time_sec":3240, "value":350, "requires":{"flour_bag":2,"cream":1}, "level":25, "store":"donut_shop", "source":"Community-reference"},
+	"bbq_grill": {"name":"BBQ Grill", "time":9900.0, "time_sec":9900, "value":760, "requires":{"metal":3,"cooking_utensils":1}, "level":29, "store":"home_appliances", "source":"Community-reference"},
+	"microwave_oven": {"name":"Microwave Oven", "time":7200.0, "time_sec":7200, "value":920, "requires":{"metal":4,"glass":1,"electrical":1}, "level":42, "store":"home_appliances", "source":"Community-reference"},
+	"pizza": {"name":"Pizza", "time":1440.0, "time_sec":1440, "value":2560, "requires":{"flour_bag":1,"cheese":1,"beef":1}, "level":28, "store":"fast_food", "source":"Community-reference"},
+	"cheese_fries": {"name":"Cheese Fries", "time":1200.0, "time_sec":1200, "value":1050, "requires":{"cheese":1,"vegetables":1}, "level":33, "store":"fast_food", "source":"Community-reference"},
+	"ice_cream_sandwich": {"name":"Ice Cream Sandwich", "time":840.0, "time_sec":840, "value":720, "requires":{"cream":1,"bread_roll":1}, "level":25, "store":"fast_food", "source":"Community-reference"},
+	"burger": {"name":"Burger", "time":2100.0, "time_sec":2100, "value":1350, "requires":{"beef":1,"bread_roll":1,"bbq_grill":1}, "level":31, "store":"fast_food", "source":"Community-reference"},
+	"lemonade_bottle": {"name":"Lemonade Bottle", "time":3600.0, "time_sec":3600, "value":1480, "requires":{"glass":2,"sugar_spices":2,"fruit_berries":1}, "level":37, "store":"fast_food", "source":"Community-reference"}
+}
+
+# Products with a verified store identity but unresolved input recipes remain
+# visible and disabled; never invent ingredient quantities or production times.
+var store_catalog := {
+	"fast_food": [
+		{"id":"popcorn","name":"Popcorn","level":43,"source":"Community-reference; unavailable at zero-star store level"}
+	],
+	"donut_shop": [
+		{"id":"donuts","name":"Donuts","level":18,"source":"Community-reference; recipe needs verification"},
+		{"id":"green_smoothie","name":"Green Smoothie","level":18,"source":"Community-reference; recipe needs verification"},
+		{"id":"cherry_cheesecake","name":"Cherry Cheesecake","level":26,"source":"Community-reference; recipe needs verification"},
+		{"id":"frozen_yogurt","name":"Frozen Yogurt","level":28,"source":"Community-reference; recipe needs verification"},
+		{"id":"coffee","name":"Coffee","level":30,"source":"Community-reference; recipe needs verification"}
+	],
+	"home_appliances": [
+		{"id":"refrigerator","name":"Refrigerator","level":35,"source":"Community-reference; recipe needs verification"},
+		{"id":"lighting_system","name":"Lighting System","level":36,"source":"Community-reference; recipe needs verification"},
+		{"id":"tv","name":"TV","level":38,"source":"Community-reference; recipe needs verification"}
+	],
+	"gardening_supplies": [
+		{"id":"grass","name":"Grass","level":14,"source":"Community-reference; recipe needs verification"},
+		{"id":"tree_sapling","name":"Tree Sapling","level":14,"source":"Community-reference; recipe needs verification"},
+		{"id":"garden_furniture","name":"Garden Furniture","level":19,"source":"Community-reference; recipe needs verification"},
+		{"id":"lawn_mower","name":"Lawn Mower","level":22,"source":"Community-reference; recipe needs verification"},
+		{"id":"fire_pit","name":"Fire Pit","level":24,"source":"Community-reference; recipe needs verification"},
+		{"id":"garden_gnome","name":"Garden Gnome","level":26,"source":"Community-reference; recipe needs verification"}
+	],
+	"fashion_store": [
+		{"id":"cap","name":"Cap","level":19,"source":"Community-reference; recipe needs verification"},
+		{"id":"shoes","name":"Shoes","level":20,"source":"Community-reference; recipe needs verification"},
+		{"id":"watch","name":"Watch","level":22,"source":"Community-reference; recipe needs verification"},
+		{"id":"business_suit","name":"Business Suit","level":27,"source":"Community-reference; recipe needs verification"},
+		{"id":"backpack","name":"Backpack","level":29,"source":"Community-reference; recipe needs verification"}
+	],
+	"sports_shop": [
+		{"id":"tennis_racket","name":"Tennis Racket","level":22,"source":"Community-reference; recipe needs verification"},
+		{"id":"sports_drink","name":"Sports Drink","level":23,"source":"Community-reference; recipe needs verification"},
+		{"id":"soccer_shoes","name":"Soccer Shoes","level":24,"source":"Community-reference; recipe needs verification"},
+		{"id":"protein_bar","name":"Protein Bar","level":28,"source":"Community-reference; recipe needs verification"},
+		{"id":"ping_pong_table","name":"Ping-Pong Table","level":31,"source":"Community-reference; recipe needs verification"}
+	],
+	"toy_store": [
+		{"id":"block_letters","name":"Block Letters","level":24,"source":"Community-reference; recipe needs verification"},
+		{"id":"kite","name":"Kite","level":25,"source":"Community-reference; recipe needs verification"},
+		{"id":"teddy_bear","name":"Teddy Bear","level":26,"source":"Community-reference; recipe needs verification"},
+		{"id":"game_console","name":"Game Console","level":32,"source":"Community-reference; recipe needs verification"}
+	],
+	"restoration_office": [
+		{"id":"forged_iron","name":"Forged Iron","level":26,"source":"Community-reference; recipe needs verification"},
+		{"id":"carved_wood","name":"Carved Wood","level":27,"source":"Community-reference; recipe needs verification"},
+		{"id":"cut_stone","name":"Cut Stone","level":28,"source":"Community-reference; recipe needs verification"},
+		{"id":"tapestries","name":"Tapestries","level":32,"source":"Community-reference; recipe needs verification"},
+		{"id":"stained_glass","name":"Stained Glass","level":34,"source":"Community-reference; recipe needs verification"}
+	],
+	"farmers_store": [
+		{"id":"wool_shirt","name":"Wool Shirt","level":28,"source":"Community-reference; recipe needs verification"},
+		{"id":"picnic_basket","name":"Picnic Basket","level":29,"source":"Community-reference; recipe needs verification"},
+		{"id":"apple_jam","name":"Apple Jam","level":31,"source":"Community-reference; recipe needs verification"}
+	],
+	"dessert_shop": [
+		{"id":"tiramisu","name":"Tiramisu","level":30,"source":"Community-reference; recipe needs verification"},
+		{"id":"churros","name":"Churros","level":31,"source":"Community-reference; recipe needs verification"},
+		{"id":"profiterole","name":"Profiterole","level":33,"source":"Community-reference; recipe needs verification"},
+		{"id":"mochi","name":"Mochi","level":35,"source":"Community-reference; recipe needs verification"},
+		{"id":"pavlova","name":"Pavlova","level":37,"source":"Community-reference; recipe needs verification"}
+	]
 }
 
 var upgrade_requirements := {
@@ -45,6 +143,15 @@ var upgrade_requirements := {
 var residential_population := {1:15,2:30,3:50,4:90,5:160,6:280}
 
 func _ready() -> void:
+	# ProductionManager is the authoritative item catalogue. Storage's display
+	# metadata is a derived cache so item names/types are never maintained twice.
+	for item_id in raw_materials:
+		StorageManager.register_item_definition(str(item_id), str(raw_materials[item_id].get("name", item_id)), "raw")
+	for item_id in crafted_items:
+		StorageManager.register_item_definition(str(item_id), str(crafted_items[item_id].get("name", item_id)), "crafted")
+	for store_id in store_catalog:
+		for product in store_catalog[store_id]:
+			StorageManager.register_item_definition(str(product.get("id", "")), str(product.get("name", product.get("id", ""))), "crafted")
 	print("[ProductionManager] SCBI catalog: %d raw, %d crafted" % [raw_materials.size(), crafted_items.size()])
 
 func get_available_raw() -> Array:
@@ -72,12 +179,12 @@ func are_recipe_inputs_unlocked(recipe: Dictionary) -> bool:
 
 func can_craft(item_id: String) -> bool:
 	var recipe := get_recipe(item_id)
-	return not recipe.is_empty() and int(recipe.level) <= GameManager.level and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.inputs)
+	return not recipe.is_empty() and int(recipe.get("level", 1)) <= GameManager.level and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.get("inputs", {}))
 
 func get_recipe_lock_reason(item_id: String) -> String:
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
-		return "Recipe unavailable"
+		return "Recipe not verified — production disabled"
 	if int(recipe.get("level", 1)) > GameManager.level:
 		return "Unlocks at Level %d" % int(recipe.level)
 	for input_id in recipe.get("inputs", {}):
@@ -91,7 +198,7 @@ func get_recipe_lock_reason(item_id: String) -> String:
 func consume_inputs(item_id: String) -> bool:
 	if not can_craft(item_id):
 		return false
-	return StorageManager.remove_items(get_recipe(item_id).inputs)
+	return StorageManager.remove_items(get_recipe(item_id).get("inputs", {}))
 
 # Legacy immediate craft API remains available to old callers. New building
 # production uses Building.start_commercial_production() and timestamped timers.
@@ -112,6 +219,41 @@ func get_recipe(item_id: String) -> Dictionary:
 	var recipe: Dictionary = crafted_items[item_id].duplicate(true)
 	recipe["inputs"] = recipe.get("requires", {}).duplicate(true)
 	return recipe
+
+func get_factory_material_ids(factory_type: String) -> Array:
+	if factory_materials.has(factory_type):
+		return factory_materials[factory_type].duplicate()
+	return raw_materials.keys()
+
+func get_store_recipe_ids(store_id: String) -> Array:
+	var result: Array = []
+	for item_id in crafted_items:
+		if str(crafted_items[item_id].get("store", "")) == store_id:
+			result.append(str(item_id))
+	return result
+
+func get_catalog_supplier_id(item_id: String) -> String:
+	for store_id in store_catalog:
+		for product in store_catalog[store_id]:
+			if str(product.get("id", "")) == item_id:
+				return str(store_id)
+	return ""
+
+func get_store_catalog_ids(store_id: String) -> Array:
+	var result := get_store_recipe_ids(store_id)
+	for product in store_catalog.get(store_id, []):
+		var item_id := str(product.get("id", ""))
+		if not item_id.is_empty() and not result.has(item_id):
+			result.append(item_id)
+	return result
+
+func get_store_item_definition(store_id: String, item_id: String) -> Dictionary:
+	if crafted_items.has(item_id) and str(crafted_items[item_id].get("store", "")) == store_id:
+		return crafted_items[item_id].duplicate(true)
+	for product in store_catalog.get(store_id, []):
+		if str(product.get("id", "")) == item_id:
+			return product.duplicate(true)
+	return {}
 
 func get_default_factory_product() -> String:
 	return "metal"

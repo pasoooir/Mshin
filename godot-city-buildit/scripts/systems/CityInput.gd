@@ -465,13 +465,12 @@ func _try_interact(world_position: Vector3) -> void:
 
 	var category := str(building.definition.get("category", ""))
 
-	# Residential
+	# Residential buildings open a full upgrade-plan panel. The city-wide
+	# dashboard remains available so the player never needs to inspect homes one by one.
 	if category == "residential":
-		if building.upgrade_ready:
-			if building.try_upgrade():
-				_set_status("House upgraded to level %d." % building.upgrade_stage)
-			else:
-				_set_status("Upgrade failed. Check materials.")
+		var hud := get_tree().current_scene.get_node_or_null("HUD")
+		if hud and hud.has_method("open_residential_panel"):
+			hud.open_residential_panel(building)
 		else:
 			_set_status(building.get_info())
 		return

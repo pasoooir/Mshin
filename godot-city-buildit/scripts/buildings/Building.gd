@@ -13,6 +13,9 @@ signal construction_finished_signal
 var definition: Dictionary = {}
 var status: String = "constructing"
 var build_time: float = 10.0
+var construction_finish_unix: int = 0
+var _construction_initialized := false
+var _construction_tween: Tween
 var production_timer: float = 0.0
 var production_time: float = 20.0
 var production_finish_unix: int = 0
@@ -1062,7 +1065,15 @@ func _add_scaffold_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstanc
 	scaffold_root.add_child(mesh_instance)
 	return mesh_instance
 
-func _start_construction() -> void:
+func _start_construction(saved_finish_unix: int = 0) -> void:
+	if is_instance_valid(_construction_tween) and _construction_tween.is_running():
+		_construction_tween.kill()
+	var now := int(Time.get_unix_time_from_system())
+	construction_finish_unix = saved_finish_unix if saved_finish_unix > 0 else now + maxi(1, int(ceil(build_time)))
+	var remaining := maxi(0, construction_finish_unix - now)
+	if remaining <= 0:
+		_on_construction_finished()
+		return
 	if hard_hat:
 		hard_hat.visible = true
 	if mesh_root:
@@ -1072,22 +1083,25 @@ func _start_construction() -> void:
 		scaffold_root.visible = true
 		scaffold_root.scale = Vector3(1.0, 0.05, 1.0)
 
-	# Divide the configured construction duration into three visible phases.
-	var total_time := maxf(build_time, 0.3)
+	# Timestamp is authoritative; the tween only animates the visible construction phases.
+	var total_time := float(remaining)
 	var scaffold_time := total_time * 0.30
 	var building_time := total_time * 0.55
 	var dismantle_time := total_time * 0.15
-	var tween := create_tween()
-	tween.tween_property(scaffold_root, "scale:y", 1.0, scaffold_time) \
+	_construction_tween = create_tween()
+	_construction_tween.tween_property(scaffold_root, "scale:y", 1.0, scaffold_time) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(mesh_root, "scale:y", 1.0, building_time) \
+	_construction_tween.tween_property(mesh_root, "scale:y", 1.0, building_time) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(scaffold_root, "scale:y", 0.01, dismantle_time) \
+	_construction_tween.tween_property(scaffold_root, "scale:y", 0.01, dismantle_time) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	tween.tween_callback(_on_construction_finished)
 
 func _on_construction_finished() -> void:
+	if _construction_initialized:
+		return
+	_construction_initialized = true
 	status = "completed"
+	construction_finish_unix = 0
 	setup_production_from_definition()
 	if hard_hat: hard_hat.visible = false
 	if scaffold_root:
@@ -1121,6 +1135,7 @@ func setup_production_from_definition() -> void:
 	var component = ProductionComponentScript.new()
 	component.slot_count = int(definition.get("production_slots", 1))
 	component.is_factory = str(definition.get("category", "")) == "industrial"
+	component.factory_type = building_type
 	component.shop_id = str(definition.get("shop_id", "building_supplies" if building_type == "shop_chain" else building_type))
 	production_component = component
 	add_child(production_component)
@@ -1171,8 +1186,7 @@ func start_factory_production(item_id: String = "") -> bool:
 		product = str(definition.get("produces", ProductionManager.get_default_factory_product()))
 	if product == "" or definition.get("category", "") != "industrial":
 		return false
-	var allowed: Array = definition.get("can_produce", [definition.get("produces", ProductionManager.get_default_factory_product())])
-	if not allowed.has(product) or not ProductionManager.raw_materials.has(product):
+	if not ProductionManager.get_factory_material_ids(building_type).has(product) or not ProductionManager.raw_materials.has(product):
 		return false
 	if int(ProductionManager.raw_materials[product].get("level", 1)) > GameManager.level:
 		return false
@@ -1184,8 +1198,8 @@ func start_commercial_production(item_id: String) -> bool:
 		return false
 	if is_producing or has_ready_product or item_id == "":
 		return false
-	var allowed_recipes: Array = definition.get("recipes", [])
-	if not allowed_recipes.has(item_id) or not ProductionManager.can_craft(item_id):
+	var shop_id := str(definition.get("shop_id", "building_supplies" if building_type == "shop_chain" else building_type))
+	if not ProductionManager.get_store_recipe_ids(shop_id).has(item_id) or not ProductionManager.can_craft(item_id):
 		return false
 	if not ProductionManager.consume_inputs(item_id):
 		return false
@@ -1262,6 +1276,8 @@ func _create_fire_smoke_particles() -> CPUParticles3D:
 	return particles
 
 func _process(delta: float) -> void:
+	if status == "constructing" and construction_finish_unix > 0 and int(Time.get_unix_time_from_system()) >= construction_finish_unix:
+		_on_construction_finished()
 	if status == "completed" and is_instance_valid(_wind_turbine_rotor):
 		_wind_turbine_rotor.rotation.z = wrapf(
 			_wind_turbine_rotor.rotation.z + WIND_TURBINE_SPIN_RADIANS_PER_SECOND * delta,
@@ -1325,7 +1341,6 @@ func collect_production() -> bool:
 	production_finish_unix = 0
 	collected.emit(collected_item, 1)
 	ProductionManager.item_produced.emit(collected_item, 1)
-	EconomyManager.add_simoleons(3)
 	GameManager.add_experience(2)
 
 	# Both factories and commercial shops become idle after collection.
@@ -1366,6 +1381,10 @@ func get_info() -> String:
 	return info
 
 func restore_production_state(saved: Dictionary) -> void:
+	if status == "constructing":
+		var saved_construction_finish := int(saved.get("construction_finish_unix", 0))
+		if saved_construction_finish > 0:
+			_start_construction(saved_construction_finish)
 	if is_instance_valid(production_component) and saved.get("slots", []) is Array:
 		production_component.from_save_array(saved.get("slots", []))
 	current_product = str(saved.get("current_product", ""))

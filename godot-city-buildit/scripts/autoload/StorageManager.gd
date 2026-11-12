@@ -7,21 +7,8 @@ const DEFAULT_CAPACITY: int = 50
 var capacity: int = DEFAULT_CAPACITY
 var items: Dictionary = {}
 
-const ITEM_DEFINITIONS := {
-	"metal":{"name":"Metal","type":"raw"},"wood":{"name":"Wood","type":"raw"},
-	"plastic":{"name":"Plastic","type":"raw"},"seeds":{"name":"Seeds","type":"raw"},
-	"minerals":{"name":"Minerals","type":"raw"},"chemicals":{"name":"Chemicals","type":"raw"},
-	"textiles":{"name":"Textiles","type":"raw"},"sugar_spices":{"name":"Sugar and Spices","type":"raw"},
-	"glass":{"name":"Glass","type":"raw"},"animal_feed":{"name":"Animal Feed","type":"raw"},
-	"electrical":{"name":"Electrical Components","type":"raw"},
-	"nails":{"name":"Nails","type":"crafted"},"planks":{"name":"Planks","type":"crafted"},
-	"bricks":{"name":"Bricks","type":"crafted"},"cement":{"name":"Cement","type":"crafted"},
-	"glue":{"name":"Glue","type":"crafted"},"paint":{"name":"Paint","type":"crafted"},
-	"hammer":{"name":"Hammer","type":"crafted"},"measuring_tape":{"name":"Measuring Tape","type":"crafted"},
-	"shovel":{"name":"Shovel","type":"crafted"},"chair":{"name":"Chair","type":"crafted"},
-	"table":{"name":"Table","type":"crafted"},"vegetables":{"name":"Vegetables","type":"crafted"}
-}
-var item_definitions: Dictionary = ITEM_DEFINITIONS
+# Display metadata is registered by ProductionManager from its authoritative catalog.
+var item_definitions: Dictionary = {}
 
 
 # Backwards-compatible aliases used by existing HUD, trade and save code.
@@ -34,6 +21,11 @@ var inventory: Dictionary:
 var current_used: int:
 	get: return get_used()
 	set(_value): pass
+
+func register_item_definition(item_id: String, item_name: String, item_type: String) -> void:
+	if item_id.is_empty() or item_name.is_empty():
+		return
+	item_definitions[item_id] = {"name":item_name,"type":item_type}
 
 func get_count(item_id: String) -> int:
 	return int(items.get(item_id, 0))
@@ -85,12 +77,14 @@ func has_item(item_id: String, amount: int = 1) -> bool:
 
 func has_items(requirements: Dictionary) -> bool:
 	for item_id in requirements:
-		if get_count(str(item_id)) < int(requirements[item_id]):
+		var amount := int(requirements[item_id])
+		if str(item_id).is_empty() or amount <= 0 or get_count(str(item_id)) < amount:
 			return false
 	return true
 
 func remove_items(requirements: Dictionary) -> bool:
-	if not has_items(requirements):
+	# Validate the complete transaction before mutating any inventory row.
+	if requirements.is_empty() or not has_items(requirements):
 		return false
 	for item_id in requirements:
 		var amount := int(requirements[item_id])
@@ -99,6 +93,22 @@ func remove_items(requirements: Dictionary) -> bool:
 			items.erase(str(item_id))
 		else:
 			items[str(item_id)] = remaining
+	storage_changed.emit()
+	return true
+
+func add_items(additions: Dictionary) -> bool:
+	if additions.is_empty():
+		return false
+	var total_to_add := 0
+	for item_id in additions:
+		var amount := int(additions[item_id])
+		if str(item_id).is_empty() or amount <= 0:
+			return false
+		total_to_add += amount
+	if get_free() < total_to_add:
+		return false
+	for item_id in additions:
+		items[str(item_id)] = get_count(str(item_id)) + int(additions[item_id])
 	storage_changed.emit()
 	return true
 

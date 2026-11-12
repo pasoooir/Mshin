@@ -1,6 +1,7 @@
 extends Node3D
 
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
+const Icons = preload("res://scripts/ui/Icons.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 
@@ -55,6 +56,11 @@ func _test_storage_and_production_chain() -> void:
 	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_free() == 48, "Storage item count/free-space accounting is incorrect.")
 	_check(StorageManager.remove_items({"metal":2}), "Storage must remove a validated recipe input set.")
 	_check(StorageManager.get_used() == 0, "Removing recipe inputs must update used storage.")
+	_check(not StorageManager.remove_items({"metal":-1}), "Storage must reject negative inventory transactions.")
+	_check(StorageManager.add_items({"metal":2,"wood":1}), "Storage must atomically add a valid multi-item transaction.")
+	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_count("wood") == 1, "Atomic inventory addition lost an item.")
+	_check(StorageManager.remove_items({"metal":2,"wood":1}), "Storage must atomically remove a valid multi-item transaction.")
+	_check(StorageManager.get_used() == 0, "Atomic inventory removal must restore the original used capacity.")
 	_check(int(ProductionManager.raw_materials.metal.time_sec) == 60, "Metal production must take 60 seconds.")
 	_check(int(ProductionManager.raw_materials.wood.time_sec) == 180, "Wood production must take 180 seconds.")
 	_check(int(ProductionManager.raw_materials.chemicals.time_sec) == 7200, "Chemicals production must take 2 hours.")
@@ -65,6 +71,22 @@ func _test_storage_and_production_chain() -> void:
 	for raw_id in expected_raw_levels:
 		_check(int(ProductionManager.raw_materials[raw_id].get("level", 0)) == int(expected_raw_levels[raw_id]), "%s must unlock at its SCBI Mayor Level." % raw_id)
 		_check(int(ProductionManager.raw_materials[raw_id].get("time_sec", 0)) == int(expected_raw_times[raw_id]), "%s must retain its SCBI production time." % raw_id)
+	_check(ProductionManager.get_factory_material_ids("factory_small").has("electrical") and not ProductionManager.get_factory_material_ids("industrial_1").has("electrical"), "Factory tier restrictions must come from the central catalog.")
+	_check(int(ProductionManager.get_recipe("hammer").get("time_sec", 0)) == 840, "Hammer must use the documented 14-minute reference time.")
+	_check(int(ProductionManager.get_recipe("measuring_tape").get("time_sec", 0)) == 1200, "Measuring Tape must use the documented 20-minute reference time.")
+	_check(int(ProductionManager.get_recipe("shovel").get("time_sec", 0)) == 1800, "Shovel must use the documented 30-minute reference time.")
+	_check(str(ProductionManager.get_recipe("hammer").get("store", "")) == "hardware_store", "Hammer must be supplied by Hardware Store.")
+	_check(int(ProductionManager.get_recipe("cooking_utensils").get("time_sec", 0)) == 2700, "Cooking Utensils must use the documented 45-minute base time.")
+	_check(int(ProductionManager.get_recipe("ladder").get("time_sec", 0)) == 3600, "Ladder must use the documented 60-minute base time.")
+	_check(int(ProductionManager.get_recipe("drill").get("time_sec", 0)) == 7200, "Drill must use the documented 120-minute base time.")
+	_check(int(ProductionManager.get_recipe("vegetables").get("time_sec", 0)) == 1200 and ProductionManager.get_recipe("vegetables").get("inputs", {}) == {"seeds":2}, "Vegetables must require two Seeds and take 20 minutes.")
+	_check(int(ProductionManager.get_recipe("chair").get("time_sec", 0)) == 1200 and ProductionManager.get_recipe("chair").get("inputs", {}) == {"wood":2,"nails":1,"hammer":1}, "Chair recipe must use the documented three-stage input chain.")
+	_check(int(ProductionManager.get_recipe("table").get("time_sec", 0)) == 1800 and ProductionManager.get_recipe("table").get("inputs", {}) == {"planks":1,"nails":2,"hammer":1}, "Table recipe must use the documented input chain.")
+	_check(ProductionManager.get_store_recipe_ids("hardware_store").has("drill") and ProductionManager.get_store_recipe_ids("farmers_market").has("beef") and ProductionManager.get_store_recipe_ids("furniture_store").has("couch"), "Commercial store catalogs must include their verified product families.")
+	for recipe_id in ["cooking_utensils","ladder","drill","flour_bag","cream","corn","cheese","beef","home_textiles","cupboard","couch","pizza","cheese_fries","fruit_berries","bread_roll","bbq_grill","microwave_oven","ice_cream_sandwich","burger","lemonade_bottle"]:
+		_check(StorageManager.item_definitions.has(recipe_id), "%s must be registered in City Storage." % recipe_id)
+		_check(Icons.CRAFTED_IDS.has(recipe_id), "%s must have a local product icon definition." % recipe_id)
+	_check(not ProductionManager.get_store_recipe_ids("hardware_store").has("paint"), "Paint must not appear in Hardware Store; its supplier is Building Supplies.")
 	var nails: Dictionary = ProductionManager.get_recipe("nails")
 	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
 	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 2, "Small Factory must expose two parallel production slots.")
@@ -72,8 +94,31 @@ func _test_storage_and_production_chain() -> void:
 	_check(BuildManager.building_types.factory_mass.get("production_slots",0) == 4 and BuildManager.building_types.factory_mass.get("population_required",0) == 27000, "Mass Production must have 4 slots and require 27,000 population.")
 	_check(BuildManager.building_types.factory_hightech.get("production_slots",0) == 5 and BuildManager.building_types.factory_hightech.get("population_required",0) == 80000, "High-tech Factory must have 5 slots and require 80,000 population.")
 	_check(BuildManager.building_types.factory_nano.get("production_slots",0) == 5 and BuildManager.building_types.factory_nano.get("pollution",1) == 0 and BuildManager.building_types.factory_nano.get("population_required",0) == 150000, "Nano-tech Factory must have 5 slots, no pollution and require 150,000 population.")
-	_check(BuildManager.building_types.factory_small.get("can_produce",[]).has("electrical"), "Small Factory must support all raw products, gated only by each material's Mayor Level.")
+	_check(ProductionManager.raw_materials.has("electrical"), "Small Factory must support all raw products, gated only by each material's Mayor Level.")
 	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
+	_check(BuildManager.building_types.fast_food.get("production_slots",0) == 1 and int(BuildManager.building_types.fast_food.get("level", 0)) == 25, "Fast Food Restaurant must follow its SCBI unlock and open a production panel.")
+	_check(BuildManager.building_types.donut_shop.get("production_slots",0) == 1 and BuildManager.building_types.home_appliances.get("production_slots",0) == 1 and BuildManager.building_types.gardening_supplies.get("production_slots",0) == 1, "Upstream SCBI stores must expose production panels.")
+	_check(ProductionManager.get_store_catalog_ids("donut_shop").size() == 6 and ProductionManager.get_store_catalog_ids("home_appliances").size() == 5 and ProductionManager.get_store_catalog_ids("gardening_supplies").size() == 6, "Upstream stores must expose their complete product-family catalogs.")
+	_check(ProductionManager.get_store_catalog_ids("fashion_store").size() == 5 and ProductionManager.get_store_catalog_ids("sports_shop").size() == 5 and ProductionManager.get_store_catalog_ids("toy_store").size() == 4, "Fashion, Sports and Toy stores must expose their SCBI product families.")
+	for scbi_store_id in ["building_supplies","hardware_store","farmers_market","furniture_store","fast_food","donut_shop","home_appliances","gardening_supplies","fashion_store","sports_shop","toy_store","restoration_office","farmers_store","dessert_shop"]:
+		_check(BuildManager.building_types.has(scbi_store_id), "%s must be selectable from the commercial build catalog." % scbi_store_id)
+		_check(int(BuildManager.building_types.get(scbi_store_id, {}).get("production_slots", 0)) > 0, "%s must open its production panel." % scbi_store_id)
+		_check(not ProductionManager.get_store_catalog_ids(scbi_store_id).is_empty(), "%s must expose its store-specific product catalog." % scbi_store_id)
+		_check(Icons.COMMERCIAL_IDS.has(scbi_store_id), "%s must have a dedicated commercial icon." % scbi_store_id)
+	_check(ProductionManager.get_store_catalog_ids("restoration_office").size() == 5 and ProductionManager.get_store_catalog_ids("farmers_store").size() == 3 and ProductionManager.get_store_catalog_ids("dessert_shop").size() == 5, "Restoration, Farmer's Store and Dessert Shop must expose their SCBI product families.")
+	for store_id in ["fashion_store","sports_shop","toy_store","restoration_office","farmers_store","dessert_shop"]:
+		_check(BuildManager.building_types.has(store_id) and int(BuildManager.building_types[store_id].get("production_slots", 0)) == 1, "%s must be selectable and have a production panel." % store_id)
+	_check(ProductionManager.get_store_recipe_ids("donut_shop").has("bread_roll") and ProductionManager.get_store_recipe_ids("home_appliances").has("bbq_grill") and ProductionManager.get_store_recipe_ids("home_appliances").has("microwave_oven") and ProductionManager.get_store_recipe_ids("farmers_market").has("fruit_berries"), "Fast Food upstream supply chains must resolve to their correct stores.")
+	_check(ProductionManager.get_store_catalog_ids("fast_food").size() == 6 and ProductionManager.get_store_recipe_ids("fast_food").has("pizza") and ProductionManager.get_store_recipe_ids("fast_food").has("cheese_fries"), "Fast Food must display all six products and activate verified recipes.")
+	_check(ProductionManager.get_recipe("pizza").get("inputs", {}) == {"flour_bag":1,"cheese":1,"beef":1} and int(ProductionManager.get_recipe("pizza").get("time_sec", 0)) == 1440, "Pizza must use its verified 24-minute recipe.")
+	_check(ProductionManager.get_recipe("cheese_fries").get("inputs", {}) == {"cheese":1,"vegetables":1} and int(ProductionManager.get_recipe("cheese_fries").get("time_sec", 0)) == 1200, "Cheese Fries must use its verified 20-minute recipe.")
+	_check(ProductionManager.get_recipe("ice_cream_sandwich").get("inputs", {}) == {"cream":1,"bread_roll":1}, "Ice Cream Sandwich must use the verified Donut Shop supply chain.")
+	_check(ProductionManager.get_recipe("burger").get("inputs", {}) == {"beef":1,"bread_roll":1,"bbq_grill":1}, "Burger must use the verified Home Appliances supply chain.")
+	_check(ProductionManager.get_recipe("lemonade_bottle").get("inputs", {}) == {"glass":2,"sugar_spices":2,"fruit_berries":1}, "Lemonade Bottle must use the verified Farmer's Market supply chain.")
+	_check(ProductionManager.get_recipe("popcorn").is_empty() and ProductionManager.get_recipe_lock_reason("popcorn").contains("not verified"), "Popcorn must remain disabled until the store-star recipe is verified.")
+	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn","bread_roll","bbq_grill","microwave_oven","fruit_berries","tree_sapling","donuts","green_smoothie","cherry_cheesecake","frozen_yogurt","coffee","refrigerator","lighting_system","tv","grass","garden_furniture","lawn_mower","fire_pit","garden_gnome","cap","shoes","watch","business_suit","backpack","tennis_racket","sports_drink","soccer_shoes","protein_bar","ping_pong_table","block_letters","kite","teddy_bear","game_console","forged_iron","carved_wood","cut_stone","tapestries","stained_glass","wool_shirt","picnic_basket","apple_jam","tiramisu","churros","profiterole","mochi","pavlova"]:
+		_check(Icons.CRAFTED_IDS.has(catalog_id), "%s must have a local product icon." % catalog_id)
+		_check(StorageManager.item_definitions.has(catalog_id), "%s must have a readable storage item definition." % catalog_id)
 	# Mayor level unlocks materials; factory count and factory tier use separate gates.
 	var original_level := GameManager.level
 	var original_population := GameManager.population
@@ -335,7 +380,8 @@ func _test_build_menu_visibility() -> void:
 			if category_icon:
 				_check(category_icon.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Category PNG must not intercept touch drags before the button/scroll container.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
-	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
+	_check(hud.get_node("BottomActions").visible, "Storage, City Needs, Trade and Save should be visible while no category is selected.")
+	_check(hud.find_child("CityNeedsAction", true, false) is Button, "City Needs must have a persistent HUD shortcut.")
 	var currency_stack := hud.find_child("TopRightCurrencies", true, false) as VBoxContainer
 	_check(currency_stack != null and currency_stack.get_child_count() == 3, "Top-right resources must be exactly three compact rows.")
 	for row_name in ["SimoleonsCurrencyRow", "MoneyCurrencyRow", "GoldenKeyCurrencyRow"]:
@@ -766,8 +812,11 @@ func _run_gameplay_test() -> void:
 		_check(hud.submenu.get_node_or_null("farmers_market") != null, "Commercial menu is missing Farmer's Market.")
 		_check(hud.submenu.get_node_or_null("furniture_store") != null, "Commercial menu is missing Furniture Store.")
 		_check(ProductionManager.get_default_recipe_for_building("shop_chain") == "nails", "Chain store should reuse the existing Nails recipe.")
+		var saved_level_for_fast_food := GameManager.level
+		GameManager.level = 25
 		hud._on_submenu_option("commercial", "fast_food")
 		_confirm_catalog_build(hud)
+		GameManager.level = saved_level_for_fast_food
 		_check(BuildManager.selected_building_type == "fast_food" and BuildManager.is_placing, "Fast Food choice did not enter placement mode.")
 		BuildManager.cancel_placement()
 		hud._on_category_pressed("road")
@@ -902,6 +951,8 @@ func _run_gameplay_test() -> void:
 	BuildManager.select_building("residential_1")
 	_check(BuildManager.can_place_at(Vector2i(0, 1)), "House plot beside road should be valid.")
 	_check(BuildManager.place_building(Vector2i(0, 1)), "Could not place starter house.")
+	var construction_fixture = BuildManager.building_at_cell(Vector2i(0, 1))
+	_check(construction_fixture != null and construction_fixture.construction_finish_unix > int(Time.get_unix_time_from_system()), "New construction must store an authoritative finish timestamp.")
 	var indexed_house = BuildManager.building_at_cell(Vector2i(0, 1))
 	_check(indexed_house != null and indexed_house.building_type == "residential_1", "Building cell index did not resolve the placed house.")
 	_check(BuildManager.building_at_cell(Vector2i(1, 2)) == indexed_house, "Building cell index did not cover the full house footprint.")
@@ -925,6 +976,22 @@ func _run_gameplay_test() -> void:
 
 	await _wait_seconds(4.5)
 	var home = _find_building("residential_1")
+	var city_needs_snapshot: Dictionary = CityDemandManager.get_city_snapshot()
+	_check(int(city_needs_snapshot.get("summary", {}).get("homes", 0)) >= 1, "City Needs must aggregate completed residential buildings.")
+	var nails_need_found := false
+	for city_item in city_needs_snapshot.get("items", []):
+		if str(city_item.get("item_id", "")) == "nails":
+			nails_need_found = int(city_item.get("required", 0)) >= 1
+	_check(nails_need_found, "City Needs must expose the first residential plan's Nails requirement without opening the house.")
+	var needs_hud = get_node("HUD")
+	needs_hud.open_city_needs_panel()
+	_check(needs_hud.find_child("CityNeedsPanel", true, false) != null, "HUD must expose a city-wide needs dashboard.")
+	_check(needs_hud.find_child("CityNeed_nails", true, false) != null, "City Needs dashboard must show aggregated item shortage rows.")
+	needs_hud._close_city_needs_panel()
+	needs_hud.open_residential_panel(home)
+	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
+	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
+	needs_hud._close_residential_panel()
 	var factory = _find_building("industrial_1")
 	_check(home != null and home.status == "completed", "House construction did not finish.")
 	_check(factory != null and factory.status == "completed", "Factory construction did not finish.")

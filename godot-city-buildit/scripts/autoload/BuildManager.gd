@@ -24,23 +24,32 @@ var building_types: Dictionary = {
 	"residential_villa": {"name":"Villa House", "category":"residential", "subtype":"villa", "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
 	"residential_apartment": {"name":"Apartment", "category":"residential", "subtype":"apartment", "cost":200, "size":Vector2i(2,2), "population":35, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
 	"residential_farm": {"name":"Farm", "category":"residential", "subtype":"farm", "cost":150, "size":Vector2i(2,2), "population":12, "build_time":4.0, "color":Color(0.72,0.78,0.45), "level":2},
-	"building_supplies": {"name":"Building Supplies", "category":"commercial", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":2, "recipes":["nails","planks","bricks","cement","glue","paint"]},
+	"building_supplies": {"name":"Building Supplies", "category":"commercial", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":2},
 	# New commercial menu choices. shop_chain keeps the existing Nails recipe path.
-	"shop_chain": {"name":"Chain Store", "category":"commercial", "subtype":"chain", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":1, "recipes":["nails"]},
-	"restaurant_traditional": {"name":"Traditional Restaurant", "category":"commercial", "subtype":"restaurant", "cost":400, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.75,0.45,0.30), "level":4, "recipes":[]},
-	"fast_food": {"name":"Fast Food", "category":"commercial", "subtype":"fast_food", "cost":350, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.95,0.55,0.20), "level":3, "recipes":[]},
-	"art_supplies": {"name":"Art Supplies Store", "category":"commercial", "subtype":"art", "cost":300, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.40,0.75), "level":5, "recipes":[]},
-	"hardware_store": {"name":"Hardware Store", "category":"commercial", "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.3,0.55,0.85), "level":4, "production_slots":1, "recipes":["hammer","measuring_tape","shovel","paint"]},
-	"farmers_market": {"name":"Farmer's Market", "category":"commercial", "cost":800, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.4,0.75,0.4), "level":8, "production_slots":1, "recipes":["vegetables"]},
-	"furniture_store": {"name":"Furniture Store", "category":"commercial", "cost":1200, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.6,0.45,0.3), "level":10, "production_slots":1, "recipes":["chair","table"]},
-	"factory_small": {"name":"Small Factory", "category":"industrial", "factory_tier":"small", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":1, "pollution_radius":12.0},
-	"factory_basic": {"name":"Basic Factory", "category":"industrial", "factory_tier":"basic", "cost":500, "size":Vector2i(2,2), "population":0, "population_required":4000, "build_time":5.0, "color":Color(0.48,0.50,0.56), "level":1, "production_slots":3, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":1, "pollution_radius":10.0},
-	"factory_mass": {"name":"Mass Production Factory", "category":"industrial", "factory_tier":"mass", "cost":7000, "size":Vector2i(2,2), "population":0, "population_required":27000, "build_time":6.0, "color":Color(0.43,0.47,0.53), "level":1, "production_slots":4, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":1, "pollution_radius":8.0},
-	"factory_hightech": {"name":"High-tech Factory", "category":"industrial", "factory_tier":"hightech", "cost":20000, "size":Vector2i(2,2), "population":0, "population_required":80000, "build_time":7.0, "color":Color(0.38,0.54,0.62), "level":1, "production_slots":5, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":1, "pollution_radius":6.0},
-	"factory_nano": {"name":"Nano-tech Factory", "category":"industrial", "factory_tier":"nano", "cost":50000, "size":Vector2i(2,2), "population":0, "population_required":150000, "build_time":8.0, "color":Color(0.34,0.62,0.66), "level":1, "production_slots":5, "can_produce":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"], "pollution":0, "pollution_radius":0.0},
-	"industrial_1": {"name":"Small Factory (Legacy)", "category":"industrial", "legacy_only":true, "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "can_produce":["metal","wood"], "pollution":1, "pollution_radius":12.0},
-	"industrial_2": {"name":"Factory (Legacy)", "category":"industrial", "legacy_only":true, "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.45,0.45,0.5), "produces":"wood", "level":2, "production_slots":2, "can_produce":["metal","wood"]},
-	"industrial_3": {"name":"Factory+ (Legacy)", "category":"industrial", "legacy_only":true, "cost":1500, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.4,0.42,0.48), "produces":"plastic", "level":5, "production_slots":2, "can_produce":["metal","wood","plastic"]},
+	"shop_chain": {"name":"Chain Store", "category":"commercial", "subtype":"chain", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":1},
+	"restaurant_traditional": {"name":"Traditional Restaurant", "category":"commercial", "subtype":"restaurant", "cost":400, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.75,0.45,0.30), "level":4, "production_slots":1, "shop_id":"restaurant_traditional"},
+	"fast_food": {"name":"Fast Food Restaurant", "category":"commercial", "subtype":"fast_food", "cost":25000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.95,0.55,0.20), "level":25, "production_slots":1},
+	"art_supplies": {"name":"Art Supplies Store", "category":"commercial", "subtype":"art", "cost":300, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.40,0.75), "level":5, "production_slots":1, "shop_id":"art_supplies"},
+	"hardware_store": {"name":"Hardware Store", "category":"commercial", "cost":2500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.3,0.55,0.85), "level":4, "production_slots":1},
+	"farmers_market": {"name":"Farmer's Market", "category":"commercial", "cost":5000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.4,0.75,0.4), "level":8, "production_slots":1},
+	"furniture_store": {"name":"Furniture Store", "category":"commercial", "cost":8000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.6,0.45,0.3), "level":10, "production_slots":1},
+	"gardening_supplies": {"name":"Gardening Supplies Store", "category":"commercial", "subtype":"gardening_supplies", "cost":13000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.40,0.68,0.38), "level":14, "production_slots":1, "shop_id":"gardening_supplies"},
+	"donut_shop": {"name":"Donut Shop", "category":"commercial", "subtype":"donut_shop", "cost":17000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.92,0.55,0.62), "level":18, "production_slots":1, "shop_id":"donut_shop"},
+	"home_appliances": {"name":"Home Appliances Store", "category":"commercial", "subtype":"home_appliances", "cost":30000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.36,0.58,0.78), "level":29, "production_slots":1, "shop_id":"home_appliances"},
+	"fashion_store": {"name":"Fashion Store", "category":"commercial", "subtype":"fashion_store", "cost":22000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.82,0.48,0.68), "level":19, "production_slots":1, "shop_id":"fashion_store"},
+	"sports_shop": {"name":"Sports Shop", "category":"commercial", "subtype":"sports_shop", "cost":25000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.42,0.66,0.46), "level":22, "production_slots":1, "shop_id":"sports_shop"},
+	"toy_store": {"name":"Toy Store", "category":"commercial", "subtype":"toy_store", "cost":30000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.90,0.64,0.26), "level":24, "production_slots":1, "shop_id":"toy_store"},
+	"restoration_office": {"name":"Restoration Office", "category":"commercial", "subtype":"restoration_office", "cost":35000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.55,0.58,0.64), "level":26, "production_slots":1, "shop_id":"restoration_office"},
+	"farmers_store": {"name":"Farmer's Store", "category":"commercial", "subtype":"farmers_store", "cost":40000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.68,0.54,0.34), "level":28, "production_slots":1, "shop_id":"farmers_store"},
+	"dessert_shop": {"name":"Dessert Shop", "category":"commercial", "subtype":"dessert_shop", "cost":45000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.90,0.58,0.68), "level":30, "production_slots":1, "shop_id":"dessert_shop"},
+	"factory_small": {"name":"Small Factory", "category":"industrial", "factory_tier":"small", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "pollution":1, "pollution_radius":12.0},
+	"factory_basic": {"name":"Basic Factory", "category":"industrial", "factory_tier":"basic", "cost":500, "size":Vector2i(2,2), "population":0, "population_required":4000, "build_time":5.0, "color":Color(0.48,0.50,0.56), "level":1, "production_slots":3, "pollution":1, "pollution_radius":10.0},
+	"factory_mass": {"name":"Mass Production Factory", "category":"industrial", "factory_tier":"mass", "cost":7000, "size":Vector2i(2,2), "population":0, "population_required":27000, "build_time":6.0, "color":Color(0.43,0.47,0.53), "level":1, "production_slots":4, "pollution":1, "pollution_radius":8.0},
+	"factory_hightech": {"name":"High-tech Factory", "category":"industrial", "factory_tier":"hightech", "cost":20000, "size":Vector2i(2,2), "population":0, "population_required":80000, "build_time":7.0, "color":Color(0.38,0.54,0.62), "level":1, "production_slots":5, "pollution":1, "pollution_radius":6.0},
+	"factory_nano": {"name":"Nano-tech Factory", "category":"industrial", "factory_tier":"nano", "cost":50000, "size":Vector2i(2,2), "population":0, "population_required":150000, "build_time":8.0, "color":Color(0.34,0.62,0.66), "level":1, "production_slots":5, "pollution":0, "pollution_radius":0.0},
+	"industrial_1": {"name":"Small Factory (Legacy)", "category":"industrial", "legacy_only":true, "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "pollution":1, "pollution_radius":12.0},
+	"industrial_2": {"name":"Factory (Legacy)", "category":"industrial", "legacy_only":true, "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.45,0.45,0.5), "produces":"wood", "level":2, "production_slots":2},
+	"industrial_3": {"name":"Factory+ (Legacy)", "category":"industrial", "legacy_only":true, "cost":1500, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.4,0.42,0.48), "produces":"plastic", "level":5, "production_slots":2},
 	"power_wind": {"name":"Wind Power Plant", "category":"service", "service_group":"power", "cost":1500, "size":Vector2i(1,1), "population":0, "build_time":4.0, "color":Color(0.7,0.9,0.85), "power":12, "pollution":0, "pollution_radius":0.0, "level":1},
 	"power_coal": {"name":"Coal Power Plant", "category":"service", "service_group":"power", "cost":1000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.38,0.39,0.42), "power":12, "pollution":1, "pollution_radius":10.0, "level":1},
 	"power_wind_deluxe": {"name":"Deluxe Wind Power Plant", "category":"service", "service_group":"power", "cost":15000, "size":Vector2i(2,2), "population":0, "build_time":6.0, "color":Color(0.62,0.86,0.82), "power":22, "pollution":0, "pollution_radius":0.0, "level":10},
@@ -288,7 +297,18 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 		return false
 	var definition: Dictionary = building_types[chosen]
 	var cost: int = int(definition.get("cost", 0))
+	if cost > 0 and not EconomyManager.can_afford(cost):
+		return false
+	var scene = get_tree().current_scene
+	var world = scene.get_node_or_null("World/Buildings") if scene else null
+	if world == null:
+		push_error("Cannot place building: World/Buildings node is missing.")
+		return false
+	var building_node = BuildingScene.instantiate()
+	if building_node == null:
+		return false
 	if cost > 0 and not EconomyManager.spend_simoleons(cost):
+		building_node.free()
 		return false
 	var building_id: String = "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
 	var data: Dictionary = {
@@ -300,12 +320,6 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 		"build_time": float(definition.get("build_time", 4.0)),
 		"upgrade_stage": clampi(saved_stage, 1, 6)
 	}
-	var building_node = BuildingScene.instantiate()
-	var scene = get_tree().current_scene
-	var world = scene.get_node_or_null("World/Buildings") if scene else null
-	if world == null:
-		push_error("Cannot place building: World/Buildings node is missing.")
-		return false
 	world.add_child(building_node)
 	var size: Vector2i = definition.get("size", Vector2i(2,2))
 	building_node.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
