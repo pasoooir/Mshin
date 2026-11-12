@@ -39,6 +39,7 @@ func save_game() -> bool:
 			"status": str(building.status),
 			"population": int(building.current_population),
 			"production": {
+				"construction_finish_unix": building.construction_finish_unix,
 				"current_product": building.current_product,
 				"is_producing": building.is_producing,
 				"has_ready_product": building.has_ready_product,
@@ -173,7 +174,15 @@ func load_game() -> bool:
 	# the same population instead of reinitializing households from scratch.
 	GameManager.level = maxi(1, int(game_data.get("level", 1)))
 	GameManager.experience = int(game_data.get("experience", 0))
-	GameManager.population = int(game_data.get("population", 0))
+	var restored_population := 0
+	for restored_building in BuildManager.buildings.values():
+		if not is_instance_valid(restored_building) or restored_building.status != "completed":
+			continue
+		if str(restored_building.definition.get("category", "")) == "residential":
+			restored_population += int(restored_building.current_population)
+		else:
+			restored_population += int(restored_building.definition.get("population", 0))
+	GameManager.population = maxi(0, restored_population)
 	GameManager.happiness = float(game_data.get("happiness", 100.0))
 	GameManager.level_changed.emit(GameManager.level)
 	GameManager.population_changed.emit(GameManager.population)
