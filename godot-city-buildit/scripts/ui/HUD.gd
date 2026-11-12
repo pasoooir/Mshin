@@ -1584,7 +1584,10 @@ func open_production_panel(building: Building) -> void:
 		var star_status := Label.new()
 		star_status.name = "StoreStarStatus"
 		star_status.text = "★".repeat(component.store_star_level) + "☆".repeat(3 - component.store_star_level)
-		star_status.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		var star_note := ProductionManager.get_store_star_status_note(str(component.shop_id), component.store_star_level)
+		if not star_note.is_empty():
+			star_status.text += " · " + star_note
+		star_status.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 		star_status.add_theme_color_override("font_color", Color("#E4A82F"))
 		header_row.add_child(star_status)
 		var star_offer := ProductionManager.get_store_star_offer(str(component.shop_id), component.store_star_level)
