@@ -1173,16 +1173,21 @@ func _run_gameplay_test() -> void:
 			second_shop_start.emit_signal("pressed")
 	else:
 		_check(false, "Building Supplies second slot must accept a Nails order.")
-	_check(StorageManager.get_count("metal") == 0, "Starting two Nails orders must deduct four Metal immediately.")
-	for slot_index in range(2):
-		var slot: Dictionary = shop_component.slots[slot_index]
-		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-		shop_component.slots[slot_index] = slot
+	_check(StorageManager.get_count("metal") == 0, "Queuing two Nails orders must deduct their ingredients from City Storage.")
+	_check(int(shop_component.get_slot(0).get("finish_unix", 0)) > 0 and int(shop_component.get_slot(1).get("finish_unix", 0)) == 0, "Commercial store orders must run sequentially, with later orders waiting in the queue.")
+	var first_shop_slot: Dictionary = shop_component.slots[0]
+	first_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	shop_component.slots[0] = first_shop_slot
 	shop_component.refresh_slots()
+	_check(bool(shop_component.get_slot(0).get("ready", false)) and int(shop_component.get_slot(1).get("finish_unix", 0)) > 0, "The next commercial order must start when the previous order completes.")
 	production_hud.open_production_panel(supplies)
 	var collect_nails_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
 	if collect_nails_0:
 		collect_nails_0.emit_signal("pressed")
+	var second_shop_slot: Dictionary = shop_component.slots[1]
+	second_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	shop_component.slots[1] = second_shop_slot
+	shop_component.refresh_slots()
 	production_hud.open_production_panel(supplies)
 	var collect_nails_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
 	if collect_nails_1:
