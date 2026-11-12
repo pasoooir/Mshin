@@ -96,16 +96,20 @@ func _supplier_for(item_id: String) -> Array:
 				result.append({"building_id":building.building_id,"building_type":building.building_type,"name":str(building.definition.get("name","Factory")),"status":"available" if building.status == "completed" else "constructing"})
 	else:
 		var recipe := ProductionManager.get_recipe(item_id)
-		var shop_id := str(recipe.get("store", ""))
+		var shop_id := str(recipe.get("store", "")) if not recipe.is_empty() else ProductionManager.get_catalog_supplier_id(item_id)
 		for building in BuildManager.buildings.values():
 			if not is_instance_valid(building):
 				continue
-			if str(building.definition.get("category", "")) == "commercial" and str(building.definition.get("shop_id", "building_supplies" if building.building_type == "shop_chain" else building.building_type)) == shop_id and ProductionManager.get_store_recipe_ids(shop_id).has(item_id):
-				result.append({"building_id":building.building_id,"building_type":building.building_type,"name":str(building.definition.get("name","Store")),"status":"available" if building.status == "completed" else "constructing"})
+			if str(building.definition.get("category", "")) == "commercial" and str(building.definition.get("shop_id", "building_supplies" if building.building_type == "shop_chain" else building.building_type)) == shop_id and ProductionManager.get_store_catalog_ids(shop_id).has(item_id):
+				var catalog_only := not ProductionManager.get_store_recipe_ids(shop_id).has(item_id)
+				var supplier_status := "catalog_only" if catalog_only and building.status == "completed" else ("available" if building.status == "completed" else "constructing")
+				result.append({"building_id":building.building_id,"building_type":building.building_type,"name":str(building.definition.get("name","Store")),"status":supplier_status})
 	if result.is_empty():
 		var target_type := "factory_small" if ProductionManager.raw_materials.has(item_id) else str(ProductionManager.get_recipe(item_id).get("store", ""))
 		if target_type == "shop_chain":
 			target_type = "building_supplies"
+		if target_type.is_empty():
+			target_type = ProductionManager.get_catalog_supplier_id(item_id)
 		var definition: Dictionary = BuildManager.building_types.get(target_type, {})
 		if definition.is_empty() and ProductionManager.raw_materials.has(item_id):
 			target_type = "factory_small"
