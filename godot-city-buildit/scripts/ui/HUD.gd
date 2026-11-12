@@ -1991,7 +1991,14 @@ func _on_city_needs_pressed() -> void:
 
 func _on_city_needs_changed(_snapshot: Dictionary) -> void:
 	if is_instance_valid(city_needs_overlay):
+		var previous_scroll := 0
+		var previous_scroll_node = city_needs_overlay.find_child("CityNeedsScroll", true, false)
+		if is_instance_valid(previous_scroll_node):
+			previous_scroll = previous_scroll_node.scroll_vertical
 		open_city_needs_panel()
+		var refreshed_scroll_node = city_needs_overlay.find_child("CityNeedsScroll", true, false)
+		if is_instance_valid(refreshed_scroll_node):
+			refreshed_scroll_node.scroll_vertical = previous_scroll
 
 func _city_panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
