@@ -1431,8 +1431,10 @@ func restore_production_state(saved: Dictionary) -> void:
 		var saved_construction_finish := int(saved.get("construction_finish_unix", 0))
 		if saved_construction_finish > 0:
 			_start_construction(saved_construction_finish)
-	if is_instance_valid(production_component) and saved.get("slots", []) is Array:
-		production_component.from_save_array(saved.get("slots", []))
+	if is_instance_valid(production_component):
+		production_component.store_star_level = clampi(int(saved.get("store_star_level", 0)), 0, 3)
+		if saved.get("slots", []) is Array:
+			production_component.from_save_array(saved.get("slots", []))
 	upgrade_in_progress = bool(saved.get("upgrade_in_progress", false))
 	upgrade_finish_unix = int(saved.get("upgrade_finish_unix", 0))
 	if upgrade_in_progress:
@@ -1447,7 +1449,7 @@ func restore_production_state(saved: Dictionary) -> void:
 	is_producing = bool(saved.get("is_producing", false)) and not current_product.is_empty()
 	has_ready_product = bool(saved.get("has_ready_product", false))
 	production_finish_unix = int(saved.get("production_finish_unix", 0))
-	production_time = ProductionManager.get_production_time(current_product) if not current_product.is_empty() else 0.0
+	production_time = production_component.get_item_production_time(current_product) if not current_product.is_empty() and is_instance_valid(production_component) else (ProductionManager.get_production_time(current_product) if not current_product.is_empty() else 0.0)
 	if is_producing and not has_ready_product:
 		production_timer = maxf(0.0, float(production_finish_unix - int(Time.get_unix_time_from_system())))
 		if production_finish_unix <= int(Time.get_unix_time_from_system()):
