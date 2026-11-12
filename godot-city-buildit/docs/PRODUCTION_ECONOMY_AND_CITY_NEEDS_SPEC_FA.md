@@ -612,7 +612,7 @@ EA وجود کارخانه‌ها، فروشگاه‌ها و مواد ویژه �
 
 | مرحله | خروجی پیاده‌سازی | وضعیت |
 |---|---|---|
-| ۱. بانک داده مرکزی | کاتالوگ ۱۱ ماده خام، ۲۳ محصول قابل تولید، مجوز مواد هر رده کارخانه و دستورهای فروشگاه در ProductionManager؛ متادیتای انبار از همین منبع ساخته می‌شود. | 🟢 هسته |
+| ۱. بانک داده مرکزی | کاتالوگ ۱۱ ماده خام، ۳۲ محصول قابل تولید، مجوز مواد هر رده کارخانه و دستورهای فروشگاه در ProductionManager؛ متادیتای انبار از همین منبع ساخته می‌شود. | 🟢 هسته |
 | ۲. رفتار تولید | اسلات مستقل، زمان پایان timestamp، کسر اتمیک مواد در شروع، جمع‌آوری صریح به انبار و حفظ محصول آماده هنگام پر بودن انبار. | 🟢 هسته |
 | ۳. ارتقای خانه | نقشه شش‌مرحله‌ای فعلی Mshin حفظ شده؛ اولین ارتقا همچنان ۱ Nail + ۱ Metal است؛ پنل خانه مواد و تأمین‌کننده را نشان می‌دهد. | 🟢 هسته |
 | ۴. داشبورد City Needs | تجمیع نیاز تمام خانه‌ها، تخصیص موجودی مشترک بدون دوباره‌شماری، تولید در جریان، آماده جمع‌آوری، کسری و مسیر تأمین. | 🟢 هسته |
@@ -623,12 +623,12 @@ EA وجود کارخانه‌ها، فروشگاه‌ها و مواد ویژه �
 
 - Building Supplies: شش محصول Nails، Planks، Bricks، Cement، Glue و Paint.
 - Hardware Store: شش محصول Hammer، Measuring Tape، Shovel، Cooking Utensils، Ladder و Drill.
-- Farmer's Market: شش محصول Vegetables، Flour Bag، Cream، Corn، Cheese و Beef.
+- Farmer's Market: هفت محصول Vegetables، Flour Bag، Cream، Corn، Cheese، Beef و Fruit & Berries.
 - Furniture Store: پنج محصول Chair، Table، Home Textiles، Cupboard و Couch.
-- Fast Food Restaurant: هر شش محصول مرجع نمایش داده می‌شوند؛ Pizza و Cheese Fries دستور تأییدشده و قابل تولید دارند، اما Ice Cream Sandwich، Burger، Lemonade Bottle و Popcorn تا تکمیل زنجیره‌های Donut Shop / Home Appliances / Gardening Supplies غیرفعال هستند.
-- Traditional Restaurant و Art Supplies: پنل تولید دارند اما تا زمان ثبت دستور معتبر، پیام نبود کاتالوگ تأییدشده نشان می‌دهند.
+- Fast Food Restaurant: پنج محصول Ice Cream Sandwich، Pizza، Burger، Cheese Fries و Lemonade Bottle قابل تولید هستند؛ Popcorn تا زمان تأیید دستور وابسته به ستاره فروشگاه غیرفعال می‌ماند.
+- Donut Shop: محصول Bread Roll قابل تولید است و پنج محصول دیگر تا تأیید دستور غیرفعال‌اند. Home Appliances: BBQ Grill و Microwave Oven قابل تولیدند؛ Refrigerator، Lighting System و TV تا تأیید دستور غیرفعال‌اند. Gardening Supplies: شش محصول در کاتالوگ دیده می‌شوند اما دستورهای آن‌ها هنوز تأیید نشده‌اند. Traditional Restaurant و Art Supplies پنل دارند ولی کاتالوگ خالی و پیام شفاف دارند.
 
-فروشگاه‌های دیگر SCBI شامل Gardening Supplies، Donut Shop، Fashion Store، Home Appliances، Sports Shop، Toy Shop، Bureau of Restoration، Country Store و Dessert Shop هنوز باید به کاتالوگ قابل ساخت Mshin اضافه شوند. نام محصول به‌تنهایی برای حدس‌زدن مواد اولیه کافی نیست.
+فروشگاه‌های دیگر SCBI شامل Fashion Store، Sports Shop، Toy Shop، Bureau of Restoration، Country Store و Dessert Shop هنوز باید به کاتالوگ قابل ساخت Mshin اضافه شوند. نام محصول به‌تنهایی برای حدس‌زدن مواد اولیه کافی نیست.
 
 ## ۲۷.۲ اختلاف داده‌های مرجع
 
