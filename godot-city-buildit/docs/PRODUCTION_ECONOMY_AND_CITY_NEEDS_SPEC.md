@@ -647,7 +647,7 @@ The six implementation slices now have corresponding code in the current Mshin i
 - Hardware Store: Hammer, Measuring Tape, Shovel, Cooking Utensils, Ladder, Drill.
 - Farmer's Market: Vegetables, Flour Bag, Cream, Corn, Cheese, Beef.
 - Furniture Store: Chair, Table, Home Textiles, Cupboard, Couch.
-- Fast Food Restaurant: Ice Cream Sandwich, Pizza, Burger, Cheese Fries, Lemonade Bottle, Popcorn are visible as catalog entries but cannot be started until exact recipes are verified.
+- Fast Food Restaurant: all six products are visible; Pizza and Cheese Fries are craftable from verified recipes, while Ice Cream Sandwich, Burger, Lemonade Bottle and Popcorn remain disabled pending upstream Donut Shop / Home Appliances / Gardening Supplies dependencies.
 - Traditional Restaurant and Art Supplies: production panels exist, but the catalogs remain empty and explicitly state that no verified recipes are registered.
 
 The additional SCBI commercial families (Gardening Supplies, Donut Shop, Fashion Store, Home Appliances, Sports Shop, Toy Shop, Bureau of Restoration, Country Store and Dessert Shop) remain catalog expansion work; do not infer their recipes from product names alone.
