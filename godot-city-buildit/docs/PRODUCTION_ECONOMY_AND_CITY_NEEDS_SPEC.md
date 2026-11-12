@@ -641,16 +641,33 @@ The six implementation slices now have corresponding code in the current Mshin i
 | 5. SCBI-inspired UI | Shared light production/residential surfaces, product tiles, input details, status warnings, timers, queue and mobile scroll behaviour. | 🟡 Visual comparison still required on Android against current in-game reference captures |
 | 6. Economy/save integration | Build costs, upgrade rewards, XP, population, warehouse transactions, construction finish timestamps and save migration are connected. | 🟢 Code; CI/runtime validation pending |
 
-## 28.1 Current playable recipe coverage
+## 28.1 Current SCBI commercial-store coverage
 
-- Building Supplies: Nails, Planks, Bricks, Cement, Glue, Paint.
-- Hardware Store: Hammer, Measuring Tape, Shovel, Cooking Utensils, Ladder, Drill.
-- Farmer's Market: Vegetables, Flour Bag, Cream, Corn, Cheese, Beef, Fruit & Berries.
-- Furniture Store: Chair, Table, Home Textiles, Cupboard, Couch.
-- Fast Food Restaurant: all six products are visible; Pizza and Cheese Fries are craftable from verified recipes, while Ice Cream Sandwich, Burger, Lemonade Bottle and Popcorn remain disabled pending upstream Donut Shop / Home Appliances / Gardening Supplies dependencies.
-- Donut Shop: Bread Roll is craftable; five other products remain visible pending recipes. Home Appliances: BBQ Grill and Microwave Oven are craftable; Refrigerator, Lighting System and TV remain visible pending recipes. Gardening Supplies: six products are visible; their recipes remain pending verification. Traditional Restaurant and Art Supplies: production panels exist, but the catalogs remain empty and explicitly state that no verified recipes are registered.
+All 14 standard SCBI commercial families are selectable in Mshin and open a store-specific production/catalog panel.
 
-The remaining SCBI commercial families (Fashion Store, Sports Shop, Toy Shop, Bureau of Restoration, Country Store and Dessert Shop) remain catalog expansion work; do not infer their recipes from product names alone.
+| Store family | Craftable products | Visible but unverified products |
+|---|---:|---:|
+| Building Supplies | 6 | 0 |
+| Hardware Store | 6 | 0 |
+| Farmer's Market | 7 | 0 |
+| Furniture Store | 5 | 0 |
+| Fast Food Restaurant | 5 | 1 |
+| Donut Shop | 1 | 5 |
+| Home Appliances | 2 | 3 |
+| Gardening Supplies | 0 | 6 |
+| Fashion Store | 0 | 5 |
+| Sports Shop | 0 | 5 |
+| Toy Store | 0 | 4 |
+| Restoration Office | 0 | 5 |
+| Farmer's Store | 0 | 3 |
+| Dessert Shop | 0 | 5 |
+
+Current catalog totals: 11 raw materials, 32 craftable products and 42 visible catalog-only product identities. A catalog-only product remains visible but cannot start production; its detail card explicitly says that recipe inputs and time are not verified. No recipe or production time is fabricated.
+
+Fast Food currently supports Ice Cream Sandwich, Pizza, Burger, Cheese Fries and Lemonade Bottle. Popcorn remains disabled because its default zero-star production recipe is not available in the current Mshin store-upgrade model. Bread Roll (Donut Shop), BBQ Grill and Microwave Oven (Home Appliances), and Fruit & Berries (Farmer's Market) are implemented as upstream recipe chains. Tree Sapling is visible in Gardening Supplies but its own recipe remains unverified.
+
+Traditional Restaurant and Art Supplies are Mshin-specific custom stores; their production panels explicitly show that no verified product catalog is registered yet. The legacy Shop Chain routes to the Building Supplies recipe family.
+
 
 ## 28.2 Source conflicts retained visibly
 
