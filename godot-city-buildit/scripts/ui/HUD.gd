@@ -1924,7 +1924,9 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		if not inputs.is_empty():
 			var chain_label := Label.new()
 			chain_label.name = "RecipeSupplyChain"
-			chain_label.text = "SUPPLY CHAIN\n" + ProductionManager.get_recipe_dependency_text(item_id)
+			var chain_estimate_seconds: float = ProductionManager.get_estimated_chain_seconds(item_id)
+			var chain_estimate_text := "EST. REMAINING: " + _format_clock_duration(int(chain_estimate_seconds)) + " (APPROX.)" if chain_estimate_seconds >= 0.0 else "ESTIMATE UNAVAILABLE — RECIPE DATA NOT VERIFIED"
+			chain_label.text = "SUPPLY CHAIN\n" + ProductionManager.get_recipe_dependency_text(item_id) + "\n" + chain_estimate_text
 			chain_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			chain_label.add_theme_font_size_override("font_size", int(8 * _ui_scale))
 			chain_label.add_theme_color_override("font_color", Color("#587487"))
