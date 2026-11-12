@@ -683,3 +683,8 @@ Community references disagree on several recipe inputs, including Glue, Paint, C
 - Construction and production finish timestamps survive save/load; version-1 saves remain accepted.
 
 For exact test names and paths, see [Production Economy Implementation Tracker](PRODUCTION_ECONOMY_IMPLEMENTATION_TRACKER.md).
+
+
+## 28.4 Live inventory and production queue in City Needs
+
+City Needs includes every stored City Storage item with its local icon, name and count, plus a live list of every factory/store job: product, supplier building, slot, remaining time and Ready-to-Collect state. A queue action opens the relevant supplier panel; collection remains an explicit player action. Active ETAs refresh once per second while jobs exist, preserving the current City Needs scroll position.
