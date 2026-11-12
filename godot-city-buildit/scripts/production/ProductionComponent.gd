@@ -53,8 +53,15 @@ func get_next_store_queue_slot_cost() -> int:
 	var costs: Array = []
 	if shop_id == "building_supplies" or shop_id == "hardware_store":
 		costs = [4, 10, 16, 22, 28, 34, 40, 46, 52]
-	else:
+	elif [
+		"farmers_market", "furniture_store", "gardening_supplies", "donut_shop",
+		"fashion_store", "fast_food", "home_appliances", "sports_shop",
+		"toy_store", "restoration_office", "farmers_store", "dessert_shop"
+	].has(shop_id):
 		costs = [8, 14, 20, 26, 32, 38, 44, 50, 56]
+	else:
+		# Mshin-only/custom stores have no SCBI slot-price reference.
+		return 0
 	var cost_index := next_slot - 3
 	return int(costs[cost_index]) if cost_index >= 0 and cost_index < costs.size() else 0
 
