@@ -330,7 +330,7 @@ func _test_build_menu_visibility() -> void:
 	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.12, "Transparent category rail covers too much of the mobile play area.")
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
-	_check(category_scroll != null and category_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Right category scroller must receive touch drags.")
+	_check(category_scroll != null and category_scroll.mouse_filter == Control.MOUSE_FILTER_STOP, "Right category scroller must capture touch drags.")
 	_check(category_scroll != null and category_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Right category rail must enable vertical scrolling when its content exceeds the viewport.")
 	if category_scroll:
 		await get_tree().process_frame
@@ -371,7 +371,7 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu_scroll.visible and not hud.get_node("BottomActions").visible, "Selecting a category must replace city actions with its bottom submenu.")
 	_check(hud.submenu_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER, "Catalog horizontal scroll chrome must stay hidden.")
 	_check(hud.submenu_scroll.scroll_deadzone <= 4, "Horizontal submenu swipe must respond with a minimal touch deadzone.")
-	_check(hud.submenu_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Submenu ScrollContainer must receive touch drags.")
+	_check(hud.submenu_scroll.mouse_filter == Control.MOUSE_FILTER_STOP, "Submenu ScrollContainer must capture touch drags.")
 	_check(hud.submenu.mouse_filter == Control.MOUSE_FILTER_PASS, "Submenu content must pass touch drags to its ScrollContainer.")
 	_check(hud.submenu_scroll.get_h_scroll_bar().max_value > hud.submenu_scroll.get_h_scroll_bar().page, "Services catalog must expose a real horizontal overflow range for swipe testing.")
 	await get_tree().process_frame
