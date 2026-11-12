@@ -100,3 +100,50 @@ The Fast Food Restaurant level gates are cross-checked against HubsInfo's store 
 - Japanese industrial item speed-up prices (full-duration reference only): https://wikiwiki.jp/simcitybuild/%E5%B7%A5%E6%A5%AD
 - Japanese commercial item speed-up prices (full-duration reference only): https://wikiwiki.jp/simcitybuild/%E5%95%86%E6%A5%AD
 - Variable SimCash speed-up reference: https://simcity.fandom.com/wiki/SimCash
+
+
+## Later year-round commercial stores — 2026-11-12
+
+### Corrected building unlock data
+
+| Store | Mayor Level | Simoleon cost |
+|---|---:|---:|
+| Sports Shop | 35 | 80,000 |
+| Toy Shop | 40 | 100,000 |
+| Bureau of Restoration | 45 | 250,000 |
+| Country Store (formerly Farmer's Store) | 50 | 300,000 |
+| Dessert Shop | 55 | 350,000 |
+
+These replace incorrect early placeholder levels/costs in the Mshin building catalog.
+
+### Newly enabled sourced recipes
+
+- Sports Shop: Ping-Pong Table (Level 55, 90 minutes, one-star requirement).
+- Toy Shop: Letter Blocks (Level 40, 60 minutes); Game Console (Level 58, 75 minutes, one-star requirement).
+- Bureau of Restoration: Wrought Iron (Level 45, 30 minutes); Carved Wood (Level 54, 60 minutes).
+- Country Store: Wool Shirt (Level 50, 75 minutes); Picnic Basket (Level 59, 60 minutes); Apple Jam (Level 73, 60-minute base, one-star requirement; 54 minutes at one star).
+- Dessert Shop: Tiramisu (Level 55, 45 minutes); Churros (Level 63, 35 minutes); Profiterole (Level 71, 35 minutes); Mochi (Level 79, 45 minutes); Pavlova (Level 87, 90-minute base, one-star requirement; 81 minutes at one star).
+
+### Partially verified upgrade tiers
+
+- Sports Shop: Level 55 / 250,000 and Level 60 / 350,000; third-star level is unknown.
+- Toy Shop: Level 58 / 280,000; second-star level is unknown.
+- Bureau of Restoration: Level 76 / 450,000 and Level 81 / 600,000; third-star level is unknown.
+- Country Store: Level 73 / 310,000 and Level 85 / 400,000; third-star level is unknown.
+- Dessert Shop: Level 87 / 450,000; second- and third-star levels are unknown.
+
+The panel explicitly displays “NEXT STAR LEVEL UNVERIFIED” once it reaches the last sourced tier. Unknown tiers are not purchasable.
+
+### Still-disabled catalog entries
+
+Sports Shop items whose item unlock levels are absent from the source, Toy Shop Kite and Teddy Bear whose exact unlock levels are absent, and Bureau of Restoration products whose production time is not listed remain visible but disabled. No level, recipe, or timer has been inferred for them.
+
+### Additional sources
+
+- Sports Shop: https://simcity-buildit.fandom.com/wiki/Sports_Shop
+- Toy Shop: https://simcity-buildit.fandom.com/wiki/Toy_Shop
+- Bureau of Restoration: https://simcity-buildit.fandom.com/wiki/Bureau_of_Restoration
+- Country Store: https://simcity-buildit.fandom.com/wiki/Country_Store
+- Dessert Shop: https://simcity-buildit.fandom.com/wiki/Dessert_Shop
+- Newer-store star tiers and production times: https://wikiwiki.jp/simcitybuild/%E5%95%86%E6%A5%AD
+- Product unlock and star requirements: https://simcity-buildit.fandom.com/wiki/Level_Up_Table
