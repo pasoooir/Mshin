@@ -2259,7 +2259,7 @@ func open_city_needs_panel() -> void:
 	homes_title.add_theme_color_override("font_color", Color("#17364A"))
 	content.add_child(homes_title)
 	var note := Label.new()
-	note.text = "Inventory is shared city-wide. The totals above are aggregated; item stock is not reserved for multiple homes."
+	note.text = "Shared stock is allocated once across home plans in this view. Producing and ready-to-collect batches stay separate until collected into City Storage."
 	note.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 	note.add_theme_color_override("font_color", Color("#617A88"))
 	content.add_child(note)
