@@ -157,7 +157,14 @@ func _production_totals() -> Dictionary:
 	return {"totals":totals,"orders":orders}
 
 func get_city_snapshot() -> Dictionary:
+	var production := _production_totals()
 	var required := {}
+	var remaining_stored := StorageManager.get_all_items()
+	var remaining_ready := {}
+	var remaining_producing := {}
+	for item_id in production.totals:
+		remaining_ready[item_id] = int(production.totals[item_id].get("ready", 0))
+		remaining_producing[item_id] = int(production.totals[item_id].get("producing", 0))
 	var homes: Array = []
 	var ready_homes := 0
 	var waiting_homes := 0
@@ -169,41 +176,52 @@ func get_city_snapshot() -> Dictionary:
 		var stage := int(building.upgrade_stage)
 		var requirements: Array = ProductionManager.get_upgrade_requirements(stage)
 		var home_needs: Array = []
-		var all_available := true
+		var all_stored := true
 		for requirement in requirements:
 			var item_id := str(requirement.get("item", ""))
 			var amount := int(requirement.get("amount", 0))
 			if item_id.is_empty() or amount <= 0:
 				continue
 			required[item_id] = int(required.get(item_id, 0)) + amount
-			var owned := StorageManager.get_count(item_id)
-			if owned < amount:
-				all_available = false
+			# Allocate each unit of inventory only once across all homes. This avoids
+			# showing the same stored Nail as available to several upgrade plans.
+			var stored_available := int(remaining_stored.get(item_id, 0))
+			var stored_allocated := mini(stored_available, amount)
+			remaining_stored[item_id] = stored_available - stored_allocated
+			var still_needed := amount - stored_allocated
+			var ready_available := int(remaining_ready.get(item_id, 0))
+			var ready_allocated := mini(ready_available, still_needed)
+			remaining_ready[item_id] = ready_available - ready_allocated
+			still_needed -= ready_allocated
+			var producing_available := int(remaining_producing.get(item_id, 0))
+			var producing_allocated := mini(producing_available, still_needed)
+			remaining_producing[item_id] = producing_available - producing_allocated
+			still_needed -= producing_allocated
+			if stored_allocated < amount:
+				all_stored = false
 			home_needs.append({
 				"item_id":item_id,
 				"name":_item_name(item_id),
 				"required":amount,
-				"stored":owned,
-				"shortage":maxi(0, amount - owned),
+				"stored":stored_allocated,
+				"ready_to_collect":ready_allocated,
+				"in_production":producing_allocated,
+				"shortage":still_needed,
 				"suppliers":_supplier_for(item_id)
 			})
-		if requirements.is_empty():
+		if all_stored:
 			ready_homes += 1
 		else:
-			if all_available:
-				ready_homes += 1
-			else:
-				waiting_homes += 1
+			waiting_homes += 1
 		homes.append({
 			"building_id":building.building_id,
 			"name":str(building.definition.get("name","Residential")),
 			"stage":stage,
 			"next_stage":mini(stage + 1, 6),
 			"population":int(building.current_population),
-			"ready":all_available,
+			"ready":all_stored,
 			"needs":home_needs
 		})
-	var production := _production_totals()
 	var item_rows: Array = []
 	var critical_count := 0
 	for item_variant in required.keys():
