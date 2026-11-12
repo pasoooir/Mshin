@@ -115,7 +115,20 @@ func _test_storage_and_production_chain() -> void:
 	_check(ProductionManager.get_recipe("ice_cream_sandwich").get("inputs", {}) == {"cream":1,"bread_roll":1}, "Ice Cream Sandwich must use the verified Donut Shop supply chain.")
 	_check(ProductionManager.get_recipe("burger").get("inputs", {}) == {"beef":1,"bread_roll":1,"bbq_grill":1}, "Burger must use the verified Home Appliances supply chain.")
 	_check(ProductionManager.get_recipe("lemonade_bottle").get("inputs", {}) == {"glass":2,"sugar_spices":2,"fruit_berries":1}, "Lemonade Bottle must use the verified Farmer's Market supply chain.")
-	_check(ProductionManager.get_recipe("popcorn").is_empty() and ProductionManager.get_recipe_lock_reason("popcorn").contains("not verified"), "Popcorn must remain disabled until the store-star recipe is verified.")
+	_check(ProductionManager.get_recipe("popcorn").get("inputs", {}) == {"corn":2,"microwave_oven":1} and int(ProductionManager.get_recipe("popcorn").get("time_sec", 0)) == 1800 and int(ProductionManager.get_recipe("popcorn").get("value", 0)) == 1250, "Popcorn must use the Fandom-verified Corn x2 + Microwave Oven x1 recipe.")
+	_check(ProductionManager.get_store_recipe_ids("fast_food").has("popcorn"), "Verified Popcorn must be an active Fast Food recipe.")
+	_check(ProductionManager.get_recipe("lawn_mower").get("inputs", {}) == {"metal":3,"electrical":1,"paint":1} and int(ProductionManager.get_recipe("lawn_mower").get("time_sec", 0)) == 7200 and int(ProductionManager.get_recipe("lawn_mower").get("value", 0)) == 840, "Lawn Mower must use the Fandom-verified Metal, Electrical Components and Paint recipe.")
+	_check(int(ProductionManager.get_recipe("measuring_tape").get("value", 0)) == 110 and int(ProductionManager.get_recipe("bbq_grill").get("value", 0)) == 530 and int(ProductionManager.get_recipe("bread_roll").get("value", 0)) == 1840, "Corrected commercial Max Values must match the Fandom item catalogue.")
+	StorageManager.items = {"tree_sapling":1}
+	var stocked_fruit_chain := ProductionManager.get_recipe_dependency_text("fruit_berries")
+	_check(stocked_fruit_chain.contains("Tree Saplings — required 1 | stock 1 | missing 0") and not stocked_fruit_chain.contains("Shovel"), "Dependency tree must stop expanding a product already present in City Storage.")
+	StorageManager.items = {"seeds":1}
+	var shortage_fruit_chain := ProductionManager.get_recipe_dependency_text("fruit_berries")
+	_check(shortage_fruit_chain.contains("Seeds — required 2 | stock 1 | missing 1") and shortage_fruit_chain.contains("Shovel"), "Dependency tree must calculate missing quantities and recursively expose intermediate ingredients.")
+	StorageManager.items = {}
+	_check(is_equal_approx(ProductionManager.get_estimated_chain_seconds("nails"), 360.0), "Nails chain estimate must show parallel Metal production plus five-minute store production.")
+	_check(ProductionManager.get_estimated_chain_seconds("backpack") < 0.0, "Unverified catalog-only recipes must not receive a fabricated chain-time estimate.")
+	StorageManager.items = {}
 	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn","bread_roll","bbq_grill","microwave_oven","fruit_berries","tree_sapling","donuts","green_smoothie","cherry_cheesecake","frozen_yogurt","coffee","refrigerator","lighting_system","tv","grass","garden_furniture","lawn_mower","fire_pit","garden_gnome","cap","shoes","watch","business_suit","backpack","tennis_racket","sports_drink","soccer_shoes","protein_bar","ping_pong_table","block_letters","kite","teddy_bear","game_console","forged_iron","carved_wood","cut_stone","tapestries","stained_glass","wool_shirt","picnic_basket","apple_jam","tiramisu","churros","profiterole","mochi","pavlova"]:
 		_check(Icons.CRAFTED_IDS.has(catalog_id), "%s must have a local product icon." % catalog_id)
 		_check(StorageManager.item_definitions.has(catalog_id), "%s must have a readable storage item definition." % catalog_id)
@@ -991,6 +1004,7 @@ func _run_gameplay_test() -> void:
 	needs_hud.open_residential_panel(home)
 	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
 	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
+	_check(needs_hud.find_child("ResidentialPlanStatus", true, false) is Label, "Residential plan must clearly show whether materials are missing or the home is ready.")
 	needs_hud._close_residential_panel()
 	var factory = _find_building("industrial_1")
 	_check(home != null and home.status == "completed", "House construction did not finish.")
@@ -1173,21 +1187,136 @@ func _run_gameplay_test() -> void:
 			second_shop_start.emit_signal("pressed")
 	else:
 		_check(false, "Building Supplies second slot must accept a Nails order.")
-	_check(StorageManager.get_count("metal") == 0, "Starting two Nails orders must deduct four Metal immediately.")
-	for slot_index in range(2):
-		var slot: Dictionary = shop_component.slots[slot_index]
-		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-		shop_component.slots[slot_index] = slot
+	_check(StorageManager.get_count("metal") == 0, "Queuing two Nails orders must deduct their ingredients from City Storage.")
+	_check(int(shop_component.get_slot(0).get("finish_unix", 0)) > 0 and int(shop_component.get_slot(1).get("finish_unix", 0)) == 0, "Commercial store orders must run sequentially, with later orders waiting in the queue.")
+	var first_shop_slot: Dictionary = shop_component.slots[0]
+	first_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	shop_component.slots[0] = first_shop_slot
 	shop_component.refresh_slots()
+	_check(bool(shop_component.get_slot(0).get("ready", false)) and int(shop_component.get_slot(1).get("finish_unix", 0)) > 0, "The next commercial order must start when the previous order completes.")
 	production_hud.open_production_panel(supplies)
 	var collect_nails_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
 	if collect_nails_0:
 		collect_nails_0.emit_signal("pressed")
+	var second_shop_slot: Dictionary = shop_component.slots[1]
+	second_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	shop_component.slots[1] = second_shop_slot
+	shop_component.refresh_slots()
 	production_hud.open_production_panel(supplies)
 	var collect_nails_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
 	if collect_nails_1:
 		collect_nails_1.emit_signal("pressed")
 	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
+
+	# Sourced star progression and queue-slot pricing are exposed in the live panel.
+	var previous_level_for_store_star := GameManager.level
+	var previous_simoleons_for_store_star := EconomyManager.simoleons
+	var previous_sim_cash_for_store_slots := EconomyManager.sim_cash
+	# Level 50 unlocks Coffee and Popcorn so their star gates are the tested blocker.
+	GameManager.level = 50
+	EconomyManager.simoleons = 50000
+	EconomyManager.sim_cash = 100
+	_check(ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).contains("Store Star"), "Paint must remain locked until Building Supplies reaches its sourced one-star requirement.")
+	_check(is_equal_approx(ProductionManager.get_production_time("nails", 0), 300.0) and is_equal_approx(ProductionManager.get_production_time("nails", 1), 270.0), "Building Supplies one-star timing must apply the sourced 10% reduction.")
+	production_hud.open_production_panel(supplies)
+	_check(production_hud.production_panel.find_child("StoreStarStatus", true, false) is Label, "Supported commercial stores must display their current star level.")
+	var star_upgrade_button := production_hud.production_panel.find_child("UpgradeStoreStar", true, false) as Button
+	_check(star_upgrade_button != null and not star_upgrade_button.disabled, "Building Supplies one-star upgrade must be available at its sourced level and cost.")
+	if star_upgrade_button:
+		star_upgrade_button.emit_signal("pressed")
+	_check(shop_component.store_star_level == 1 and ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).is_empty(), "Buying the first Building Supplies star must unlock Paint.")
+	_check(is_equal_approx(shop_component.get_item_production_time("nails"), 270.0), "New Nails orders must use the one-star production time.")
+
+	# Cross-store star upgrades are enabled only where level gates and prices are sourced.
+	var verified_store_star_cases := {
+		"farmers_market": {"level": 20, "cost": 19000, "item": "vegetables", "base": 1200.0},
+		"furniture_store": {"level": 22, "cost": 21000, "item": "chair", "base": 1200.0},
+		"gardening_supplies": {"level": 27, "cost": 25000, "item": "grass", "base": 1800.0},
+		"fashion_store": {"level": 31, "cost": 30000, "item": "cap", "base": 3600.0},
+		"home_appliances": {"level": 41, "cost": 40000, "item": "bbq_grill", "base": 9900.0},
+		"fast_food": {"level": 37, "cost": 36000, "item": "pizza", "base": 1440.0},
+		"donut_shop": {"level": 30, "cost": 29000, "item": "bread_roll", "base": 3600.0}
+	}
+	for store_id in verified_store_star_cases:
+		var star_case: Dictionary = verified_store_star_cases[store_id]
+		var offer := ProductionManager.get_store_star_offer(store_id, 0)
+		_check(not offer.is_empty() and int(offer.get("level", 0)) == int(star_case.level) and int(offer.get("cost", 0)) == int(star_case.cost), "%s first-star level and price must match the cited store data." % store_id)
+		_check(is_equal_approx(ProductionManager.get_production_time(str(star_case.item), 1), float(star_case.base) * 0.9), "%s one-star production must reduce the base duration by 10%%." % store_id)
+	_check(ProductionManager.get_recipe_lock_reason("coffee", 0).contains("Store Star"), "Coffee must remain locked until Donut Shop reaches one star.")
+	_check(ProductionManager.get_recipe_lock_reason("popcorn", 0).contains("Store Star"), "Popcorn must remain locked until Fast Food reaches one star.")
+
+	var later_store_star_cases := {
+		"sports_shop": {"level": 55, "cost": 250000, "last_verified": 2},
+		"toy_store": {"level": 58, "cost": 280000, "last_verified": 1},
+		"restoration_office": {"level": 76, "cost": 450000, "last_verified": 2},
+		"farmers_store": {"level": 73, "cost": 310000, "last_verified": 2},
+		"dessert_shop": {"level": 87, "cost": 450000, "last_verified": 1}
+	}
+	for later_store_id in later_store_star_cases:
+		var later_case: Dictionary = later_store_star_cases[later_store_id]
+		var later_offer := ProductionManager.get_store_star_offer(later_store_id, 0)
+		_check(int(later_offer.get("level", 0)) == int(later_case.level) and int(later_offer.get("cost", 0)) == int(later_case.cost), "%s first-star offer must match sourced level and price." % later_store_id)
+		_check(ProductionManager.get_store_star_offer(later_store_id, int(later_case.last_verified)).is_empty(), "%s must not expose an upgrade tier with an unknown level gate." % later_store_id)
+		_check(ProductionManager.get_store_star_status_note(later_store_id, int(later_case.last_verified)) == "NEXT STAR LEVEL UNVERIFIED", "%s UI must explain why its next star is unavailable." % later_store_id)
+	_check(int(BuildManager.building_types["sports_shop"].level) == 35 and int(BuildManager.building_types["sports_shop"].cost) == 80000, "Sports Shop unlock must use the current year-round level and cost.")
+	_check(int(BuildManager.building_types["toy_store"].level) == 40 and int(BuildManager.building_types["toy_store"].cost) == 100000, "Toy Shop unlock must use the current year-round level and cost.")
+	_check(int(BuildManager.building_types["restoration_office"].level) == 45 and int(BuildManager.building_types["restoration_office"].cost) == 250000, "Bureau of Restoration unlock must use the current year-round level and cost.")
+	_check(int(BuildManager.building_types["farmers_store"].level) == 50 and int(BuildManager.building_types["farmers_store"].cost) == 300000, "Country Store unlock must use the current year-round level and cost.")
+	_check(int(BuildManager.building_types["dessert_shop"].level) == 55 and int(BuildManager.building_types["dessert_shop"].cost) == 350000, "Dessert Shop unlock must use the current year-round level and cost.")
+
+	GameManager.level = 90
+	var verified_later_recipes := {
+		"ping_pong_table": {"level": 55, "time": 5400, "stars": 1},
+		"block_letters": {"level": 40, "time": 3600, "stars": 0},
+		"game_console": {"level": 58, "time": 4500, "stars": 1},
+		"forged_iron": {"level": 45, "time": 1800, "stars": 0},
+		"carved_wood": {"level": 54, "time": 3600, "stars": 0},
+		"wool_shirt": {"level": 50, "time": 4500, "stars": 0},
+		"picnic_basket": {"level": 59, "time": 3600, "stars": 0},
+		"apple_jam": {"level": 73, "time": 3600, "stars": 1},
+		"tiramisu": {"level": 55, "time": 2700, "stars": 0},
+		"churros": {"level": 63, "time": 2100, "stars": 0},
+		"profiterole": {"level": 71, "time": 2100, "stars": 0},
+		"mochi": {"level": 79, "time": 2700, "stars": 0},
+		"pavlova": {"level": 87, "time": 5400, "stars": 1}
+	}
+	for item_id in verified_later_recipes:
+		var later_recipe: Dictionary = ProductionManager.get_recipe(item_id)
+		var later_recipe_case: Dictionary = verified_later_recipes[item_id]
+		_check(not later_recipe.is_empty() and int(later_recipe.get("level", 0)) == int(later_recipe_case.level) and int(later_recipe.get("time_sec", 0)) == int(later_recipe_case.time), "%s must use its sourced level and production time." % item_id)
+		if int(later_recipe_case.stars) > 0:
+			_check(ProductionManager.get_recipe_lock_reason(item_id, 0).contains("Store Star"), "%s must require its sourced store star." % item_id)
+			_check(ProductionManager.get_recipe_lock_reason(item_id, 1).is_empty(), "%s must unlock at its sourced store star." % item_id)
+		else:
+			_check(ProductionManager.get_recipe_lock_reason(item_id, 0).is_empty(), "%s must be craftable at its sourced Mayor Level." % item_id)
+	_check(ProductionManager.get_recipe("kite").is_empty() and ProductionManager.get_recipe("teddy_bear").is_empty(), "Products with unverified unlock levels or missing recipe verification must remain disabled.")
+	_check(ProductionManager.get_store_recipe_ids("dessert_shop").has("pavlova"), "Dessert Shop's verified product must appear in its production catalog.")
+	var donut_third_star_offer := ProductionManager.get_store_star_offer("donut_shop", 2)
+	_check(int(donut_third_star_offer.get("level", 0)) == 50 and int(donut_third_star_offer.get("cost", 0)) == 49000, "Donut Shop third star must use the 49,000 Simoleon value corroborated by the Japanese table and Planning Guide.")
+	for star_gated_item in ["ladder", "corn", "cupboard", "lawn_mower", "microwave_oven"]:
+		_check(ProductionManager.get_recipe_lock_reason(star_gated_item, 0).contains("Store Star"), "%s must require its source-documented first store star." % star_gated_item)
+		_check(ProductionManager.get_recipe_lock_reason(star_gated_item, 1).is_empty(), "%s must unlock after its store receives one star." % star_gated_item)
+	production_hud.open_production_panel(supplies)
+	var buy_queue_slot := production_hud.production_panel.find_child("PurchaseQueueSlot", true, false) as Button
+	_check(buy_queue_slot != null and buy_queue_slot.text.contains("4 SC") and not buy_queue_slot.disabled, "Building Supplies next queue slot must show its sourced 4 SimCash price.")
+	if buy_queue_slot:
+		buy_queue_slot.emit_signal("pressed")
+	_check(shop_component.get_slot_count() == 3 and EconomyManager.sim_cash == 96, "Buying the next queue slot from the production UI must increase capacity and spend the sourced SimCash amount.")
+
+	var standard_store_slot_probe = ProductionComponentScript.new()
+	standard_store_slot_probe.shop_id = "farmers_market"
+	add_child(standard_store_slot_probe)
+	_check(standard_store_slot_probe.get_next_store_queue_slot_cost() == 8, "Standard SCBI commercial stores must use the published 8 SimCash third-slot price.")
+	var custom_store_slot_probe = ProductionComponentScript.new()
+	custom_store_slot_probe.shop_id = "art_supplies"
+	add_child(custom_store_slot_probe)
+	_check(custom_store_slot_probe.get_next_store_queue_slot_cost() == 0, "Mshin-only custom stores must not display an invented queue-slot price.")
+	standard_store_slot_probe.queue_free()
+	custom_store_slot_probe.queue_free()
+	shop_component.store_star_level = 0
+	GameManager.level = previous_level_for_store_star
+	EconomyManager.simoleons = previous_simoleons_for_store_star
+	EconomyManager.sim_cash = previous_sim_cash_for_store_slots
 
 	# Verify a full warehouse blocks collection without losing the ready batch.
 	_check(factory_component.start_factory("metal",0), "Factory must accept a new order after a collection.")
@@ -1197,6 +1326,9 @@ func _run_gameplay_test() -> void:
 	factory_component.refresh_slots()
 	StorageManager.capacity = 1
 	StorageManager.items = {"occupied":1}
+	production_hud.open_production_panel(factory)
+	var storage_full_collect := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	_check(storage_full_collect != null and storage_full_collect.disabled and storage_full_collect.text == "STORAGE FULL", "A ready product must show a disabled Storage Full collection state when the warehouse is full.")
 	_check(not factory_component.collect(0) and bool(factory_component.get_slot(0).get("ready",false)), "Storage full must block Collect while preserving the ready output.")
 	StorageManager.capacity = 50
 	StorageManager.items = {}
@@ -1211,6 +1343,17 @@ func _run_gameplay_test() -> void:
 	StorageManager.add_item("metal",1)
 	StorageManager.add_item("wood",1)
 	var hardware_component = hardware.production_component
+	_check(hardware_component.get_slot_count() == 2, "Every commercial store must start with two queue slots.")
+	var sim_cash_before_queue_expansion := EconomyManager.sim_cash
+	_check(hardware_component.purchase_store_queue_slot(1), "Commercial queue must allow a SimCash-funded slot expansion.")
+	_check(hardware_component.get_slot_count() == 3 and EconomyManager.sim_cash == sim_cash_before_queue_expansion - 1, "Purchased commercial queue capacity must add one slot and deduct the supplied SimCash price.")
+	var restored_queue := ProductionComponentScript.new()
+	restored_queue.shop_id = "hardware_store"
+	add_child(restored_queue)
+	restored_queue.from_save_array(hardware_component.to_save_array())
+	_check(restored_queue.get_slot_count() == 3, "Purchased commercial queue capacity must survive save/load.")
+	restored_queue.queue_free()
+	EconomyManager.sim_cash = sim_cash_before_queue_expansion
 	_check(hardware_component.start_craft("hammer",0), "Hardware Store must craft Hammer from Metal and Wood.")
 	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Hammer recipe must consume Metal and Wood at start.")
 	var hammer_slot: Dictionary = hardware_component.slots[0]
@@ -1226,11 +1369,29 @@ func _run_gameplay_test() -> void:
 	StorageManager.add_item("metal",1)
 	StorageManager.add_item("nails",1)
 	var population_before_upgrade: int = int(home.current_population) if home != null else 0
+	var city_population_before_upgrade := GameManager.population
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
-	_check(home != null and home.upgrade_stage == 2, "House did not advance to level 2.")
+	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 1, "House upgrade must enter a short scaffold phase before changing its level.")
+	_check(home != null and home.current_population == population_before_upgrade and GameManager.population == city_population_before_upgrade, "Residential population must not change before the upgrade animation completes.")
+	_check(home != null and home.get_upgrade_remaining_seconds() > 0, "Residential upgrade must expose a persisted remaining-time value.")
+	production_hud.open_residential_panel(home)
+	_check(home.residential_plan_selected, "Opening a home plan must select its blue hardhat indicator.")
+	_check(production_hud.residential_overlay.find_child("ResidentialPlanDataNote", true, false) != null, "Residential panel must disclose that the fixed plan table is a Mshin fallback.")
+	_check(production_hud.residential_overlay.find_child("ResidentialUpgradeInProgress", true, false) != null, "Residential panel must show the scaffold upgrade state.")
+	production_hud._close_residential_panel()
+	_check(not home.residential_plan_selected, "Closing a home plan must hide its selected hardhat indicator.")
+	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
+	home._process(0.0)
+	_check(home != null and not home.upgrade_in_progress and home.upgrade_stage == 2, "Residential upgrade must complete when its finish timestamp elapses.")
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
-	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > population_before_upgrade, "House upgrade did not increase service-adjusted population.")
+	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > city_population_before_upgrade, "House upgrade did not increase service-adjusted population.")
 
+	# Save a second upgrade while its scaffold timer is active to verify timestamp persistence.
+	StorageManager.add_item("planks",1)
+	StorageManager.add_item("wood",1)
+	_check(home != null and home.try_upgrade(), "Second residential upgrade could not start with Planks and Wood.")
+	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
+	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) + 3600
 	var saved_population_expected := GameManager.population
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 
@@ -1250,7 +1411,12 @@ func _run_gameplay_test() -> void:
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
-	_check(GameManager.population == saved_population_expected, "Population was not restored from save.")
+	_check(restored_home != null and restored_home.upgrade_in_progress and restored_home.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Residential upgrade finish timestamp was not restored from save.")
+	if restored_home != null:
+		restored_home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
+		restored_home._process(0.0)
+		_check(not restored_home.upgrade_in_progress and restored_home.upgrade_stage == 3, "Restored residential upgrade did not finish from its saved timestamp.")
+	_check(GameManager.population > saved_population_expected, "Completing the restored upgrade must add residents without subtracting the previous population.")
 
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")

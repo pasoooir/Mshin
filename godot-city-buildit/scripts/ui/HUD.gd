@@ -356,7 +356,7 @@ func _build_context_header(parent: Control) -> void:
 	context_header_title.name = "ContextTitle"
 	context_header_title.text = "CITY BUILDING"
 	context_header_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	context_header_title.add_theme_color_override("font_color", Color.WHITE)
+	context_header_title.add_theme_color_override("font_color", Color("#17394D"))
 	context_header_title.add_theme_font_size_override("font_size", int(25 * _ui_scale))
 	stack.add_child(context_header_title)
 	context_header_subtitle = Label.new()
@@ -1513,14 +1513,24 @@ func open_production_panel(building: Building) -> void:
 	var shade := ColorRect.new()
 	shade.name = "ProductionBackdrop"
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.015, 0.025, 0.035, 0.24)
+	shade.color = Color(0.08, 0.16, 0.22, 0.16)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	production_overlay.add_child(shade)
 
 	production_panel = PanelContainer.new()
 	production_panel.name = "BuildingProductionPanel"
-	production_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	production_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var viewport_size := get_viewport().get_visible_rect().size
+	var panel_width := minf(1040.0 * _ui_scale, viewport_size.x * 0.94)
+	var panel_height := minf(610.0 * _ui_scale, viewport_size.y * 0.90)
+	production_panel.anchor_left = 0.5
+	production_panel.anchor_right = 0.5
+	production_panel.anchor_top = 0.5
+	production_panel.anchor_bottom = 0.5
+	production_panel.offset_left = -panel_width * 0.5
+	production_panel.offset_right = panel_width * 0.5
+	production_panel.offset_top = -panel_height * 0.5
+	production_panel.offset_bottom = panel_height * 0.5
+	production_panel.add_theme_stylebox_override("panel", _city_panel_style())
 	production_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	production_overlay.add_child(production_panel)
 
@@ -1528,10 +1538,10 @@ func open_production_panel(building: Building) -> void:
 	layout.name = "ProductionLayout"
 	layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layout.add_theme_constant_override("separation", 7)
-	layout.add_theme_constant_override("margin_left", int(16 * _ui_scale))
-	layout.add_theme_constant_override("margin_right", int(16 * _ui_scale))
-	layout.add_theme_constant_override("margin_top", int(10 * _ui_scale))
-	layout.add_theme_constant_override("margin_bottom", int(10 * _ui_scale))
+	layout.add_theme_constant_override("margin_left", int(18 * _ui_scale))
+	layout.add_theme_constant_override("margin_right", int(18 * _ui_scale))
+	layout.add_theme_constant_override("margin_top", int(14 * _ui_scale))
+	layout.add_theme_constant_override("margin_bottom", int(14 * _ui_scale))
 	production_panel.add_child(layout)
 
 	var component = building.production_component
@@ -1548,7 +1558,7 @@ func open_production_panel(building: Building) -> void:
 	layout.add_child(header_center)
 	var header := PanelContainer.new()
 	header.name = "ProductionHeader"
-	header.add_theme_stylebox_override("panel", _toolbar_style(Color("#17232D"), Color("#E8C64D")))
+	header.add_theme_stylebox_override("panel", _toolbar_style(Color("#EAF5FB"), Color("#C6DFEC")))
 	header_center.add_child(header)
 	var header_row := HBoxContainer.new()
 	header_row.add_theme_constant_override("separation", 9)
@@ -1567,16 +1577,38 @@ func open_production_panel(building: Building) -> void:
 	close.text = "✕"
 	close.custom_minimum_size = Vector2(38, 38) * _ui_scale
 	close.add_theme_font_size_override("font_size", int(20 * _ui_scale))
-	close.add_theme_color_override("font_color", Color.WHITE)
-	close.add_theme_stylebox_override("normal", _toolbar_style(Color(0.12, 0.17, 0.21, 0.9), Color(1, 1, 1, 0.18)))
+	close.add_theme_color_override("font_color", Color("#17394D"))
+	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#DCECF5"), Color("#B7D4E3")))
 	close.pressed.connect(_close_production_panel)
+	if not component.is_factory and ProductionManager.is_store_star_upgrade_supported(str(component.shop_id)):
+		var star_status := Label.new()
+		star_status.name = "StoreStarStatus"
+		star_status.text = "★".repeat(component.store_star_level) + "☆".repeat(3 - component.store_star_level)
+		var star_note := ProductionManager.get_store_star_status_note(str(component.shop_id), component.store_star_level)
+		if not star_note.is_empty():
+			star_status.text += " · " + star_note
+		star_status.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		star_status.add_theme_color_override("font_color", Color("#E4A82F"))
+		header_row.add_child(star_status)
+		var star_offer := ProductionManager.get_store_star_offer(str(component.shop_id), component.store_star_level)
+		if not star_offer.is_empty():
+			var star_button := Button.new()
+			star_button.name = "UpgradeStoreStar"
+			var required_level := int(star_offer.get("level", 999))
+			var star_cost := int(star_offer.get("cost", 0))
+			star_button.text = "UPGRADE · %d¢" % star_cost
+			star_button.disabled = GameManager.level < required_level or EconomyManager.simoleons < star_cost
+			star_button.tooltip_text = "Unlocks at Level %d · reduces production time by %d%%" % [required_level, int(star_offer.get("reduction", 0))]
+			star_button.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			star_button.pressed.connect(_upgrade_store_star.bind(building))
+			header_row.add_child(star_button)
 	header_row.add_child(close)
 
 	var hint := Label.new()
-	hint.text = "SELECT AN ITEM  •  REVIEW THE RECIPE  •  START PRODUCTION"
+	hint.text = "CHOOSE A MATERIAL OR PRODUCT  ·  CHECK STOCK  ·  ADD TO PRODUCTION"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
-	hint.add_theme_color_override("font_color", Color("#F5F7F8"))
+	hint.add_theme_color_override("font_color", Color("#577487"))
 	layout.add_child(hint)
 
 	var available_slot := -1
@@ -1587,10 +1619,10 @@ func open_production_panel(building: Building) -> void:
 
 	var products_title := Label.new()
 	products_title.name = "AvailableProductsTitle"
-	products_title.text = "FACTORY MATERIALS" if component.is_factory else "SHOP PRODUCTS"
+	products_title.text = "RAW MATERIALS  ·  PARALLEL FACTORY SLOTS" if component.is_factory else "STORE CATALOG  ·  ADD PRODUCTS TO THE QUEUE"
 	products_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	products_title.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-	products_title.add_theme_color_override("font_color", Color("#FFE07A"))
+	products_title.add_theme_color_override("font_color", Color("#244B62"))
 	layout.add_child(products_title)
 
 	var product_scroll := ScrollContainer.new()
@@ -1599,7 +1631,7 @@ func open_production_panel(building: Building) -> void:
 	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	product_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	product_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	product_scroll.custom_minimum_size.y = 142.0 * _ui_scale
+	product_scroll.custom_minimum_size.y = 150.0 * _ui_scale
 	layout.add_child(product_scroll)
 
 	var product_grid := GridContainer.new()
@@ -1628,7 +1660,7 @@ func open_production_panel(building: Building) -> void:
 
 	for item_id in item_ids:
 		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
-		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 		var recipe: Dictionary = {} if component.is_factory else ProductionManager.get_recipe(item_id)
 		var inputs: Dictionary = recipe.get("inputs", {})
 		var can_start := available_slot >= 0 and lock_reason.is_empty()
@@ -1696,7 +1728,15 @@ func open_production_panel(building: Building) -> void:
 			lock_label.add_theme_font_size_override("font_size", int(8 * _ui_scale))
 			lock_label.add_theme_color_override("font_color", Color("#8B2930"))
 			tile_content.add_child(lock_label)
-		item_button.tooltip_text = lock_reason
+		var inventory_status := "READY" if component.is_factory or StorageManager.has_items(inputs) else "MATERIALS NEEDED"
+		var status_label := Label.new()
+		status_label.text = lock_reason if not lock_reason.is_empty() else inventory_status
+		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		status_label.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+		status_label.add_theme_color_override("font_color", Color("#A13F35") if not lock_reason.is_empty() else (Color("#34734D") if inventory_status == "READY" else Color("#A36B12")))
+		tile_content.add_child(status_label)
+		item_button.disabled = not lock_reason.is_empty()
+		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else inventory_status
 		item_button.pressed.connect(func():
 			_show_production_item_details(building, item_id, available_slot)
 		)
@@ -1704,7 +1744,7 @@ func open_production_panel(building: Building) -> void:
 
 	var details_host := Control.new()
 	details_host.name = "ProductionDetailsHost"
-	details_host.custom_minimum_size.y = 94.0 * _ui_scale
+	details_host.custom_minimum_size.y = 164.0 * _ui_scale
 	layout.add_child(details_host)
 
 	var queue_heading := HBoxContainer.new()
@@ -1714,13 +1754,23 @@ func open_production_panel(building: Building) -> void:
 	queue_title.text = "PRODUCTION QUEUE"
 	queue_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	queue_title.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-	queue_title.add_theme_color_override("font_color", Color("#FFE07A"))
+	queue_title.add_theme_color_override("font_color", Color("#244B62"))
 	queue_heading.add_child(queue_title)
 	var queue_count := Label.new()
 	queue_count.text = "%d / %d" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
 	queue_count.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-	queue_count.add_theme_color_override("font_color", Color.WHITE)
+	queue_count.add_theme_color_override("font_color", Color("#547286"))
 	queue_heading.add_child(queue_count)
+	if not component.is_factory:
+		var next_slot_cost: int = component.get_next_store_queue_slot_cost()
+		var add_slot := Button.new()
+		add_slot.name = "PurchaseQueueSlot"
+		add_slot.text = ("+ SLOT · %d SC" % next_slot_cost) if next_slot_cost > 0 else ("MAX SLOTS" if component.get_slot_count() >= ProductionComponent.MAX_STORE_QUEUE_SLOTS else "UNAVAILABLE")
+		add_slot.disabled = next_slot_cost <= 0 or EconomyManager.sim_cash < next_slot_cost
+		add_slot.tooltip_text = "Add one queue slot. SimCash cost is from the commercial-building reference." if next_slot_cost > 0 else ("Maximum 11 queue slots." if component.get_slot_count() >= ProductionComponent.MAX_STORE_QUEUE_SLOTS else "No verified queue-slot price is configured for this custom store.")
+		add_slot.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		add_slot.pressed.connect(_purchase_store_queue_slot.bind(building))
+		queue_heading.add_child(add_slot)
 
 	var queue_scroll := ScrollContainer.new()
 	queue_scroll.name = "ProductionQueueScroll"
@@ -1738,8 +1788,8 @@ func open_production_panel(building: Building) -> void:
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
 		slot_card.custom_minimum_size = Vector2(124, 90) * _ui_scale
-		var slot_fill := Color(0.025, 0.045, 0.06, 0.72) if not slot.is_empty() else Color(0.025, 0.045, 0.06, 0.28)
-		var slot_border := Color("#FFFFFF") if slot.is_empty() else Color("#78C9E8")
+		var slot_fill := Color("#FFFFFF") if not slot.is_empty() else Color("#F0F6FA")
+		var slot_border := Color("#C9DDE8") if slot.is_empty() else Color("#79B9D4")
 		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
 		queue_row.add_child(slot_card)
 		var slot_content := VBoxContainer.new()
@@ -1750,7 +1800,7 @@ func open_production_panel(building: Building) -> void:
 			var empty_label := Label.new()
 			empty_label.text = "EMPTY"
 			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			empty_label.add_theme_color_override("font_color", Color("#FFFFFF"))
+			empty_label.add_theme_color_override("font_color", Color("#587487"))
 			empty_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 			slot_content.add_child(empty_label)
 		else:
@@ -1763,12 +1813,15 @@ func open_production_panel(building: Building) -> void:
 			var queue_item_name := Label.new()
 			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
 			queue_item_name.add_theme_font_size_override("font_size", int(10 * _ui_scale))
-			queue_item_name.add_theme_color_override("font_color", Color.WHITE)
+			queue_item_name.add_theme_color_override("font_color", Color("#23465A"))
 			queue_item_row.add_child(queue_item_name)
 			if bool(slot.get("ready", false)):
 				var collect_button := Button.new()
 				collect_button.name = "CollectSlot%d" % slot_index
-				collect_button.text = "COLLECT"
+				var storage_has_room := StorageManager.can_add(queued_item_id, 1)
+				collect_button.text = "COLLECT" if storage_has_room else "STORAGE FULL"
+				collect_button.disabled = not storage_has_room
+				collect_button.tooltip_text = "Collect into City Storage." if storage_has_room else "Free at least one storage slot; this completed item will remain here."
 				collect_button.custom_minimum_size.y = 27 * _ui_scale
 				collect_button.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 				collect_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E6B93E"), Color("#FFE18A")))
@@ -1782,36 +1835,82 @@ func open_production_panel(building: Building) -> void:
 				)
 				slot_content.add_child(collect_button)
 			else:
-				var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
-				var timer_label := Label.new()
-				timer_label.name = "TimerSlot%d" % slot_index
-				timer_label.set_meta("slot_index", slot_index)
-				timer_label.text = _format_clock_duration(remaining)
-				timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				timer_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
-				timer_label.add_theme_color_override("font_color", Color("#FFE18A"))
-				slot_content.add_child(timer_label)
-				var progress := ProgressBar.new()
-				progress.name = "ProgressSlot%d" % slot_index
-				progress.set_meta("slot_index", slot_index)
-				progress.show_percentage = false
-				progress.custom_minimum_size.y = 6.0 * _ui_scale
-				progress.max_value = 1.0
-				var total_seconds := maxf(1.0, ProductionManager.get_production_time(queued_item_id))
-				var started_unix := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total_seconds)))
-				progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
-				progress.set_meta("start_unix", started_unix)
-				progress.set_meta("finish_unix", int(slot.get("finish_unix", 0)))
-				slot_content.add_child(progress)
-				_production_timer_labels.append(timer_label)
-				_production_progress_bars.append(progress)
+				var queued_waiting: bool = (not bool(component.is_factory)) and int(slot.get("finish_unix", 0)) <= 0 and not bool(slot.get("ready", false))
+				if queued_waiting:
+					var queued_label := Label.new()
+					queued_label.name = "QueuedSlot%d" % slot_index
+					queued_label.text = "IN QUEUE"
+					queued_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+					queued_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+					queued_label.add_theme_color_override("font_color", Color("#A36B12"))
+					slot_content.add_child(queued_label)
+				else:
+					if not component.is_factory:
+						var producing_label := Label.new()
+						producing_label.text = "PRODUCING"
+						producing_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+						producing_label.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+						producing_label.add_theme_color_override("font_color", Color("#315C8A"))
+						slot_content.add_child(producing_label)
+					var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
+					var timer_label := Label.new()
+					timer_label.name = "TimerSlot%d" % slot_index
+					timer_label.set_meta("slot_index", slot_index)
+					timer_label.text = _format_clock_duration(remaining)
+					timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+					timer_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+					timer_label.add_theme_color_override("font_color", Color("#A36B12"))
+					slot_content.add_child(timer_label)
+					var progress := ProgressBar.new()
+					progress.name = "ProgressSlot%d" % slot_index
+					progress.set_meta("slot_index", slot_index)
+					progress.show_percentage = false
+					progress.custom_minimum_size.y = 6.0 * _ui_scale
+					progress.max_value = 1.0
+					var total_seconds := maxf(1.0, component.get_item_production_time(queued_item_id))
+					var started_unix := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total_seconds)))
+					progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
+					progress.set_meta("start_unix", started_unix)
+					progress.set_meta("finish_unix", int(slot.get("finish_unix", 0)))
+					slot_content.add_child(progress)
+					_production_timer_labels.append(timer_label)
+					_production_progress_bars.append(progress)
 
 	var footer := Label.new()
 	footer.text = "Completed goods are collected into City Storage."
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.add_theme_font_size_override("font_size", int(9 * _ui_scale))
-	footer.add_theme_color_override("font_color", Color("#E5EDF1"))
+	footer.add_theme_color_override("font_color", Color("#587487"))
 	layout.add_child(footer)
+
+
+func _purchase_store_queue_slot(building: Building) -> void:
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return
+	var component: ProductionComponent = building.production_component
+	var cost := component.get_next_store_queue_slot_cost()
+	if cost <= 0:
+		status_label.text = "This store already has the maximum 11 queue slots."
+	elif component.purchase_store_queue_slot(cost):
+		status_label.text = "Queue capacity increased to %d slots." % component.get_slot_count()
+	else:
+		status_label.text = "Not enough SimCash to unlock the next queue slot (%d required)." % cost
+	open_production_panel(building)
+
+func _upgrade_store_star(building: Building) -> void:
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return
+	var component: ProductionComponent = building.production_component
+	var offer := ProductionManager.get_store_star_offer(str(component.shop_id), component.store_star_level)
+	if offer.is_empty():
+		return
+	if GameManager.level < int(offer.get("level", 999)):
+		status_label.text = "Store upgrade unlocks at Level %d." % int(offer.level)
+	elif component.upgrade_store_star():
+		status_label.text = "Store upgraded to %d star. New orders use the reduced production time." % component.store_star_level
+	else:
+		status_label.text = "Not enough Simoleons for this store upgrade."
+	open_production_panel(building)
 
 
 func _show_production_item_details(building: Building, item_id: String, slot_index: int) -> void:
@@ -1828,7 +1927,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
 	var recipe: Dictionary = {} if is_factory else ProductionManager.get_recipe(item_id)
 	var inputs: Dictionary = recipe.get("inputs", {})
-	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id) if not is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 	var missing := "" if is_factory else ProductionManager.get_missing_inputs_text(item_id)
 	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (is_factory or missing.is_empty())
 
@@ -1859,7 +1958,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	elif selected_recipe.is_empty():
 		production_time.text = "PRODUCTION TIME  NOT VERIFIED"
 	else:
-		production_time.text = "PRODUCTION TIME  " + _format_duration(int(selected_recipe.get("time_sec", 60)))
+		production_time.text = "PRODUCTION TIME  " + _format_duration(int(ceil(component.get_item_production_time(item_id))))
 	production_time.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	production_time.add_theme_color_override("font_color", Color("#315C70"))
 	text_stack.add_child(production_time)
@@ -1883,7 +1982,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		ingredients_label.name = "IngredientsLabel"
 		var ingredient_lines: Array[String] = []
 		for input_id in inputs:
-			var input_data: Dictionary = ProductionManager.raw_materials.get(input_id, ProductionManager.crafted_items.get(input_id, StorageManager.item_definitions.get(input_id, {})))
+			var input_data: Dictionary = ProductionManager.get_item_definition(str(input_id))
 			var required := int(inputs[input_id])
 			var owned := StorageManager.get_count(str(input_id))
 			ingredient_lines.append("%s  %d/%d" % [str(input_data.get("name", str(input_id).capitalize())), owned, required])
@@ -1893,9 +1992,19 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		ingredients_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		ingredients_label.add_theme_color_override("font_color", Color("#315C70") if can_start else Color("#A33A36"))
 		text_stack.add_child(ingredients_label)
-	if not lock_reason.is_empty() or not missing.is_empty():
+		if not inputs.is_empty():
+			var chain_label := Label.new()
+			chain_label.name = "RecipeSupplyChain"
+			var chain_estimate_seconds: float = ProductionManager.get_estimated_chain_seconds(item_id)
+			var chain_estimate_text := "EST. REMAINING: " + _format_clock_duration(int(chain_estimate_seconds)) + " (APPROX.)" if chain_estimate_seconds >= 0.0 else "ESTIMATE UNAVAILABLE — RECIPE DATA NOT VERIFIED"
+			chain_label.text = "SUPPLY CHAIN\n" + ProductionManager.get_recipe_dependency_text(item_id) + "\n" + chain_estimate_text
+			chain_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			chain_label.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+			chain_label.add_theme_color_override("font_color", Color("#587487"))
+			text_stack.add_child(chain_label)
+	if not lock_reason.is_empty() or not missing.is_empty() or slot_index < 0:
 		var reason := Label.new()
-		reason.text = lock_reason if not lock_reason.is_empty() else "NEED " + missing
+		reason.text = lock_reason if not lock_reason.is_empty() else ("NO FREE PRODUCTION SLOT" if slot_index < 0 else "NEED " + missing)
 		reason.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 		reason.add_theme_color_override("font_color", Color("#A33A36"))
 		text_stack.add_child(reason)
@@ -1967,7 +2076,7 @@ func _update_production_timers() -> void:
 		label.text = _format_clock_duration(remaining)
 		for progress in _production_progress_bars:
 			if is_instance_valid(progress) and int(progress.get_meta("slot_index", -1)) == slot_index:
-				var total_seconds := maxf(1.0, ProductionManager.get_production_time(item_id))
+				var total_seconds := maxf(1.0, _production_building.production_component.get_item_production_time(item_id))
 				progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
 		if remaining <= 0:
 			need_rebuild = true
@@ -2080,10 +2189,10 @@ func open_city_needs_panel() -> void:
 	var city: Dictionary = snapshot.get("city", {})
 	var summary_label := Label.new()
 	summary_label.name = "CityNeedsSummary"
-	summary_label.text = "LEVEL %d   ·   XP %d/%d   ·   POPULATION %s   ·   HAPPINESS %d%%   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   WAITING %d   ·   ACTIVE ORDERS %d   ·   READY ORDERS %d" % [
+	summary_label.text = "LEVEL %d   ·   XP %d/%d   ·   POPULATION %s   ·   HAPPINESS %d%%   ·   STORAGE %d/%d   ·   HOMES READY %d/%d   ·   UPGRADING %d   ·   WAITING %d   ·   ACTIVE ORDERS %d   ·   READY ORDERS %d" % [
 		int(city.get("level", 1)), int(city.get("experience", 0)), int(city.get("xp_needed", 0)), _format_count(int(city.get("population", 0))), roundi(float(city.get("happiness", 0.0))),
 		int(storage.get("used", 0)), int(storage.get("capacity", 0)),
-		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)),
+		int(summary.get("ready_homes", 0)), int(summary.get("homes", 0)), int(summary.get("upgrading_homes", 0)),
 		int(summary.get("waiting_homes", 0)), int(summary.get("active_orders", 0)), int(summary.get("ready_orders", 0))
 	]
 	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2286,8 +2395,9 @@ func open_city_needs_panel() -> void:
 		home_title.add_theme_color_override("font_color", Color("#24485B"))
 		home_header.add_child(home_title)
 		var home_button := Button.new()
-		home_button.text = "UPGRADE" if bool(home.get("ready", false)) and int(home.get("stage", 1)) < 6 else "WAITING"
-		home_button.disabled = not bool(home.get("ready", false)) or int(home.get("stage", 1)) >= 6
+		var home_upgrading := bool(home.get("upgrading", false))
+		home_button.text = "UPGRADING" if home_upgrading else ("UPGRADE" if bool(home.get("ready", false)) and int(home.get("stage", 1)) < 6 else "WAITING")
+		home_button.disabled = home_upgrading or not bool(home.get("ready", false)) or int(home.get("stage", 1)) >= 6
 		home_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 		home_button.pressed.connect(_upgrade_home_from_dashboard.bind(str(home.get("building_id", ""))))
 		home_header.add_child(home_button)
@@ -2362,6 +2472,10 @@ func _close_city_needs_panel() -> void:
 func open_residential_panel(building: Building) -> void:
 	if not is_instance_valid(building) or building.status != "completed":
 		return
+	for city_building in BuildManager.buildings.values():
+		if is_instance_valid(city_building) and str(city_building.definition.get("category", "")) == "residential":
+			city_building.set_residential_plan_selected(false)
+	building.set_residential_plan_selected(true)
 	_close_city_needs_panel()
 	_close_production_panel()
 	_close_storage_panel()
@@ -2396,8 +2510,13 @@ func open_residential_panel(building: Building) -> void:
 	layout.add_theme_constant_override("separation", 8)
 	panel.add_child(layout)
 	_city_panel_heading(layout, "RESIDENTIAL UPGRADE PLAN", _close_residential_panel)
+	var plan_icon := Icons.make_icon("hard_hat", Vector2(38, 38) * _ui_scale)
+	plan_icon.name = "ResidentialPlanHardHat"
+	plan_icon.modulate = Color("#3D9DE5")
+	layout.add_child(plan_icon)
 	var stage := int(building.upgrade_stage)
-	var requirements: Array = ProductionManager.get_upgrade_requirements(stage)
+	var is_upgrading := bool(building.upgrade_in_progress)
+	var requirements: Array = [] if is_upgrading else ProductionManager.get_upgrade_requirements(stage)
 	var city_snapshot := CityDemandManager.get_city_snapshot()
 	var home_data: Dictionary = {}
 	for candidate in city_snapshot.get("homes", []):
@@ -2415,7 +2534,22 @@ func open_residential_panel(building: Building) -> void:
 	reward.add_theme_font_size_override("font_size", int(11 * _ui_scale))
 	reward.add_theme_color_override("font_color", Color("#34734D"))
 	layout.add_child(reward)
-	var all_available := not requirements.is_empty()
+	var plan_note := Label.new()
+	plan_note.name = "ResidentialPlanDataNote"
+	plan_note.text = ProductionManager.get_upgrade_plan_note(stage)
+	plan_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	plan_note.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	plan_note.add_theme_color_override("font_color", Color("#8A672B"))
+	layout.add_child(plan_note)
+	if is_upgrading:
+		var upgrade_status := Label.new()
+		upgrade_status.name = "ResidentialUpgradeInProgress"
+		upgrade_status.text = "SCAFFOLDING IN PROGRESS  ·  %d SECONDS REMAINING" % building.get_upgrade_remaining_seconds()
+		upgrade_status.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+		upgrade_status.add_theme_color_override("font_color", Color("#315C8A"))
+		layout.add_child(upgrade_status)
+	var all_available := not requirements.is_empty() and not is_upgrading
+	var shortage_lines: Array[String] = []
 	for requirement in requirements:
 		var item_id := str(requirement.get("item", ""))
 		var amount := int(requirement.get("amount", 0))
@@ -2430,6 +2564,7 @@ func open_residential_panel(building: Building) -> void:
 		var shortage := int(allocated_need.get("shortage", maxi(0, amount - owned)))
 		if owned < amount:
 			all_available = false
+			shortage_lines.append("%s ×%d" % [CityDemandManager.get_item_name(item_id), maxi(0, amount - owned)])
 		var need_status := "READY"
 		var need_color := Color("#34734D")
 		if owned < amount:
@@ -2459,10 +2594,41 @@ func open_residential_panel(building: Building) -> void:
 		supplier_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 		supplier_line.add_theme_color_override("font_color", Color("#607989"))
 		layout.add_child(supplier_line)
+	var plan_status := Label.new()
+	plan_status.name = "ResidentialPlanStatus"
+	plan_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	plan_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if is_upgrading:
+		plan_status.text = "MSHIN TEMPORARY CONSTRUCTION · %d SEC LEFT" % building.get_upgrade_remaining_seconds()
+		plan_status.add_theme_color_override("font_color", Color("#315C8A"))
+	elif stage >= 6:
+		plan_status.text = "MAXIMUM RESIDENTIAL LEVEL"
+		plan_status.add_theme_color_override("font_color", Color("#587487"))
+	elif all_available:
+		plan_status.text = "ALL REQUIRED MATERIALS READY · HOME CAN BE UPGRADED"
+		plan_status.add_theme_color_override("font_color", Color("#34734D"))
+	else:
+		plan_status.text = "MATERIALS MISSING · " + (", ".join(shortage_lines) if not shortage_lines.is_empty() else "CHECK REQUIRED ITEMS")
+		plan_status.add_theme_color_override("font_color", Color("#A13F35"))
+	plan_status.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	layout.add_child(plan_status)
+	if is_upgrading:
+		var upgrade_progress := ProgressBar.new()
+		upgrade_progress.name = "ResidentialUpgradeProgress"
+		upgrade_progress.min_value = 0.0
+		upgrade_progress.max_value = 1.0
+		upgrade_progress.show_percentage = false
+		var remaining_seconds := building.get_upgrade_remaining_seconds()
+		upgrade_progress.value = clampf(1.0 - float(remaining_seconds) / 4.0, 0.0, 1.0)
+		upgrade_progress.custom_minimum_size.y = 10.0 * _ui_scale
+		layout.add_child(upgrade_progress)
+		if remaining_seconds > 0:
+			var progress_tween := create_tween()
+			progress_tween.tween_property(upgrade_progress, "value", 1.0, float(remaining_seconds))
 	var upgrade := Button.new()
 	upgrade.name = "ResidentialUpgradeButton"
-	upgrade.text = "UPGRADE HOME" if stage < 6 else "MAXIMUM LEVEL"
-	upgrade.disabled = stage >= 6 or not all_available
+	upgrade.text = "CONSTRUCTION IN PROGRESS" if is_upgrading else ("DELIVER MATERIALS & UPGRADE" if all_available else ("MATERIALS MISSING" if stage < 6 else "MAXIMUM LEVEL"))
+	upgrade.disabled = is_upgrading or stage >= 6 or not all_available
 	upgrade.custom_minimum_size.y = 44 * _ui_scale
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 	upgrade.pressed.connect(_upgrade_residential_from_panel.bind(building))
@@ -2473,6 +2639,9 @@ func _upgrade_residential_from_panel(building: Building) -> void:
 		_close_residential_panel()
 
 func _close_residential_panel() -> void:
+	for city_building in BuildManager.buildings.values():
+		if is_instance_valid(city_building) and str(city_building.definition.get("category", "")) == "residential":
+			city_building.set_residential_plan_selected(false)
 	if is_instance_valid(residential_overlay):
 		residential_overlay.queue_free()
 	residential_overlay = null

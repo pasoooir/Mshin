@@ -27,6 +27,10 @@ var upgrade_stage: int = 1
 var max_stage: int = 6
 var current_population: int = 0
 var upgrade_ready: bool = false
+var upgrade_in_progress: bool = false
+var upgrade_finish_unix: int = 0
+var residential_plan_selected: bool = false
+var _upgrade_tween: Tween
 var demolition_highlight_active: bool = false
 var _demolition_highlight_root: Node3D
 var _move_highlight_root: Node3D
@@ -34,6 +38,7 @@ var _move_ghost_material: StandardMaterial3D
 var _move_original_overlays: Dictionary = {}
 static var _shared_surface_texture: Texture2D
 const WIND_TURBINE_SPIN_RADIANS_PER_SECOND: float = 0.92
+const RESIDENTIAL_UPGRADE_DURATION_SECONDS: int = 4
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 var _wind_turbine_rotor: Node3D
 var _fire_smoke: CPUParticles3D = null
@@ -1292,40 +1297,79 @@ func _process(delta: float) -> void:
 			if production_icon:
 				production_icon.text = "✅"
 			production_ready.emit(current_product)
+	if upgrade_in_progress and upgrade_finish_unix > 0 and int(Time.get_unix_time_from_system()) >= upgrade_finish_unix:
+		_finish_residential_upgrade()
 	if definition.get("category") == "residential" and status == "completed" and upgrade_stage < max_stage:
 		_check_upgrade_ready()
 
 func _check_upgrade_ready() -> void:
-	if upgrade_stage >= max_stage:
+	if upgrade_stage >= max_stage or upgrade_in_progress:
 		upgrade_ready = false
 		if hard_hat: hard_hat.visible = false
 		return
 	upgrade_ready = ProductionManager.can_afford_upgrade(upgrade_stage)
+	# Show the blue plan marker only while this home's upgrade plan is selected.
 	if hard_hat:
-		hard_hat.visible = upgrade_ready
+		hard_hat.visible = residential_plan_selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
+
+func set_residential_plan_selected(selected: bool) -> void:
+	residential_plan_selected = selected
+	if hard_hat:
+		hard_hat.visible = selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
 
 func try_upgrade() -> bool:
-	if definition.get("category") != "residential" or upgrade_stage >= max_stage:
+	if definition.get("category") != "residential" or status != "completed" or upgrade_stage >= max_stage or upgrade_in_progress:
 		return false
 	if not ProductionManager.can_afford_upgrade(upgrade_stage):
 		print("[Building] Need materials for upgrade to stage ", upgrade_stage + 1)
 		return false
 	if not ProductionManager.consume_upgrade_materials(upgrade_stage):
 		return false
-	var old_population = current_population
-	upgrade_stage += 1
-	current_population = ProductionManager.get_population_for_stage(upgrade_stage)
-	var gained = current_population - old_population
+	upgrade_in_progress = true
+	upgrade_finish_unix = int(Time.get_unix_time_from_system()) + RESIDENTIAL_UPGRADE_DURATION_SECONDS
+	upgrade_ready = false
+	if hard_hat: hard_hat.visible = false
+	_start_residential_upgrade_animation()
+	return true
+
+func _start_residential_upgrade_animation() -> void:
+	if DisplayServer.get_name() == "headless" or not is_instance_valid(scaffold_root):
+		return
+	if is_instance_valid(_upgrade_tween) and _upgrade_tween.is_running():
+		_upgrade_tween.kill()
+	scaffold_root.visible = true
+	scaffold_root.scale = Vector3(1.0, 0.01, 1.0)
+	_upgrade_tween = create_tween()
+	_upgrade_tween.tween_property(scaffold_root, "scale", Vector3.ONE, 0.65).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+func _finish_residential_upgrade() -> void:
+	if not upgrade_in_progress:
+		return
+	var old_population := current_population
+	upgrade_stage = mini(upgrade_stage + 1, max_stage)
+	# Population never drops during an upgrade; new residents are added only
+	# when the short scaffold phase has completed.
+	current_population = maxi(old_population, ProductionManager.get_population_for_stage(upgrade_stage))
+	var gained := current_population - old_population
+	upgrade_in_progress = false
+	upgrade_finish_unix = 0
+	if is_instance_valid(scaffold_root):
+		scaffold_root.visible = false
+		scaffold_root.scale = Vector3.ONE
+	_create_visual()
+	_update_stage_label()
+	_play_completion_effect()
 	GameManager.add_population(gained)
 	GameManager.add_experience(gained + 10)
 	EconomyManager.add_simoleons(50 * upgrade_stage)
-	_create_visual()
-	_update_stage_label()
-	upgrade_ready = false
-	if hard_hat: hard_hat.visible = false
+	_check_upgrade_ready()
 	upgraded.emit(upgrade_stage)
 	ServiceManager.recalculate_from_buildings()
-	return true
+
+func get_upgrade_remaining_seconds() -> int:
+	if not upgrade_in_progress:
+		return 0
+	return maxi(0, upgrade_finish_unix - int(Time.get_unix_time_from_system()))
 
 func collect_production() -> bool:
 	if not has_ready_product:
@@ -1361,6 +1405,8 @@ func get_info() -> String:
 	var info = definition.get("name", "Building")
 	if definition.get("category") == "residential":
 		info += " [Lv%d/6] Population:%d" % [upgrade_stage, current_population]
+		if upgrade_in_progress:
+			info += " — UPGRADING %ds" % get_upgrade_remaining_seconds()
 		var requirements: Array = ProductionManager.get_upgrade_requirements(upgrade_stage)
 		if not requirements.is_empty():
 			var needed_text := " — Need: "
@@ -1385,13 +1431,25 @@ func restore_production_state(saved: Dictionary) -> void:
 		var saved_construction_finish := int(saved.get("construction_finish_unix", 0))
 		if saved_construction_finish > 0:
 			_start_construction(saved_construction_finish)
-	if is_instance_valid(production_component) and saved.get("slots", []) is Array:
-		production_component.from_save_array(saved.get("slots", []))
+	if is_instance_valid(production_component):
+		production_component.store_star_level = clampi(int(saved.get("store_star_level", 0)), 0, 3)
+		if saved.get("slots", []) is Array:
+			production_component.from_save_array(saved.get("slots", []))
+	upgrade_in_progress = bool(saved.get("upgrade_in_progress", false))
+	upgrade_finish_unix = int(saved.get("upgrade_finish_unix", 0))
+	if upgrade_in_progress:
+		# Let SaveManager restore the saved resident count before _process()
+		# completes an expired upgrade on the next frame.
+		if upgrade_finish_unix <= int(Time.get_unix_time_from_system()):
+			upgrade_finish_unix = int(Time.get_unix_time_from_system())
+		if is_instance_valid(scaffold_root):
+			scaffold_root.visible = true
+			scaffold_root.scale = Vector3.ONE
 	current_product = str(saved.get("current_product", ""))
 	is_producing = bool(saved.get("is_producing", false)) and not current_product.is_empty()
 	has_ready_product = bool(saved.get("has_ready_product", false))
 	production_finish_unix = int(saved.get("production_finish_unix", 0))
-	production_time = ProductionManager.get_production_time(current_product) if not current_product.is_empty() else 0.0
+	production_time = production_component.get_item_production_time(current_product) if not current_product.is_empty() and is_instance_valid(production_component) else (ProductionManager.get_production_time(current_product) if not current_product.is_empty() else 0.0)
 	if is_producing and not has_ready_product:
 		production_timer = maxf(0.0, float(production_finish_unix - int(Time.get_unix_time_from_system())))
 		if production_finish_unix <= int(Time.get_unix_time_from_system()):
