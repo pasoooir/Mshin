@@ -2094,7 +2094,7 @@ func open_city_needs_panel() -> void:
 		badge.add_theme_stylebox_override("panel", _toolbar_style(Color("#E4F1F8"), Color("#C4DFED")))
 		tabs.add_child(badge)
 		var metric_label := Label.new()
-		metric_label.text = str(metric[0]) + "\\n" + str(metric[1])
+		metric_label.text = str(metric[0]) + "\n" + str(metric[1])
 		metric_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		metric_label.add_theme_font_size_override("font_size", int(11 * _ui_scale))
 		metric_label.add_theme_color_override("font_color", Color("#1C4358"))
@@ -2149,14 +2149,21 @@ func open_city_needs_panel() -> void:
 		counts.add_theme_color_override("font_color", Color("#A13F35") if int(item.get("deficit", 0)) > 0 else Color("#34734D"))
 		text_stack.add_child(counts)
 		var supplier_list: Array = item.get("suppliers", [])
+		var supplier_status := str(supplier_list[0].get("status", "")) if not supplier_list.is_empty() else "missing"
+		var supplier_name := str(supplier_list[0].get("name", "Available")) if not supplier_list.is_empty() else "No registered supplier"
+		if supplier_status == "constructing":
+			supplier_name += " · UNDER CONSTRUCTION"
 		var supplier_text := Label.new()
-		supplier_text.text = "SUPPLIER  " + (str(supplier_list[0].get("name", "Available")) + (" · UNDER CONSTRUCTION" if str(supplier_list[0].get("status", "")) == "constructing" else "") if not supplier_list.is_empty() else "No completed supplier built")
+		supplier_text.text = "SUPPLIER  " + supplier_name
 		supplier_text.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 		supplier_text.add_theme_color_override("font_color", Color("#607989"))
 		text_stack.add_child(supplier_text)
 		var action := Button.new()
 		action.custom_minimum_size = Vector2(112, 38) * _ui_scale
-		action.text = ("BUILD" if str(supplier_list[0].get("status", "")) == "not_built" else ("BUILDING" if str(supplier_list[0].get("status", "")) == "constructing" else "PRODUCE")) if int(item.get("deficit", 0)) > 0 else ("COLLECT" if int(item.get("ready", 0)) > 0 else "COVERED")
+		if int(item.get("deficit", 0)) > 0:
+			action.text = "BUILD" if supplier_status == "not_built" else ("BUILDING" if supplier_status == "constructing" else "PRODUCE")
+		else:
+			action.text = "COLLECT" if int(item.get("ready", 0)) > 0 else "COVERED"
 		action.disabled = supplier_list.is_empty() or (int(item.get("deficit", 0)) <= 0 and int(item.get("ready", 0)) <= 0)
 		action.add_theme_stylebox_override("normal", _toolbar_style(Color("#E9BF45"), Color("#F8D978")))
 		if not supplier_list.is_empty():
