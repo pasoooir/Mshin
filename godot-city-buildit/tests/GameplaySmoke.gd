@@ -1076,6 +1076,10 @@ func _run_gameplay_test() -> void:
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
 	production_hud.open_production_panel(supplies)
 	var nails_button_0 := production_hud.production_panel.find_child("Slot0_nails", true, false) as Button
+	_check(nails_button_0 != null and nails_button_0.find_child("IngredientsLabel", true, false) is Label, "Commercial product cards must show the exact recipe ingredients before ordering.")
+	if nails_button_0:
+		var ingredient_label := nails_button_0.find_child("IngredientsLabel", true, false) as Label
+		_check(ingredient_label.text.contains("Metal") and ingredient_label.text.contains("2"), "Nails card must clearly show its Metal x2 requirement.")
 	if nails_button_0:
 		nails_button_0.emit_signal("pressed")
 	else:
