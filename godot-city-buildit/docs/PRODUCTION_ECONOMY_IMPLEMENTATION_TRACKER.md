@@ -18,15 +18,15 @@
 
 ## Current production catalog coverage
 
-- Raw materials: 11; craftable products: 32; catalog-only product identities: 15.
-- Craftable products: 23.
+- Raw materials: 11; craftable products: 32; catalog-only product identities: 42.
 - Building Supplies: 6 verified recipe entries.
 - Hardware Store: 6 recipe entries.
 - Farmer's Market: 7 recipe entries.
 - Furniture Store: 5 recipe entries.
 - Fast Food Restaurant: 5 craftable products; Popcorn remains visible but disabled until the store-star recipe is verified.
-- Traditional Restaurant and Art Supplies: production panel opens with an explicit empty/verification message.
-- Additional SCBI stores still to add: Fashion Store, Sports Shop, Toy Shop, Bureau of Restoration, Country Store and Dessert Shop. Donut Shop, Home Appliances and Gardening Supplies are now selectable and have product catalogs.
+- Donut Shop: Bread Roll recipe; Home Appliances: BBQ Grill and Microwave Oven recipes; Gardening Supplies: six visible products with unverified recipes.
+- Fashion Store, Sports Shop, Toy Store, Restoration Office, Farmer's Store and Dessert Shop: all six store families are selectable with their product identities visible; recipes remain disabled until exact inputs/times are sourced.
+- Traditional Restaurant and Art Supplies: Mshin-specific production panels open with an explicit empty/verification message.
 
 ## Required invariants
 
@@ -64,7 +64,8 @@ Do not convert these values into EA-confirmed facts.
 - City Needs HUD shortcut and residential plan panel.
 - Local product icon catalog coverage.
 - Construction finish timestamp creation.
-- Fast Food catalog visibility with recipe start disabled.
+- Fast Food catalog visibility, five enabled recipes and one disabled store-star recipe.
+- All 14 SCBI commercial store types and product-family catalog counts.
 - Existing gameplay smoke continues to cover production, collection, first home upgrade, save and load.
 
 ## Final acceptance still required
