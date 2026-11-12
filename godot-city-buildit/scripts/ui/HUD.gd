@@ -2401,6 +2401,10 @@ func _close_city_needs_panel() -> void:
 func open_residential_panel(building: Building) -> void:
 	if not is_instance_valid(building) or building.status != "completed":
 		return
+	for city_building in BuildManager.buildings.values():
+		if is_instance_valid(city_building) and str(city_building.definition.get("category", "")) == "residential":
+			city_building.set_residential_plan_selected(false)
+	building.set_residential_plan_selected(true)
 	_close_city_needs_panel()
 	_close_production_panel()
 	_close_storage_panel()
@@ -2524,6 +2528,9 @@ func _upgrade_residential_from_panel(building: Building) -> void:
 		_close_residential_panel()
 
 func _close_residential_panel() -> void:
+	for city_building in BuildManager.buildings.values():
+		if is_instance_valid(city_building) and str(city_building.definition.get("category", "")) == "residential":
+			city_building.set_residential_plan_selected(false)
 	if is_instance_valid(residential_overlay):
 		residential_overlay.queue_free()
 	residential_overlay = null
