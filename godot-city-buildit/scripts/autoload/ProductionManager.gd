@@ -55,7 +55,7 @@ var crafted_items := {
 	"corn": {"name":"Corn", "time":3600.0, "time_sec":3600, "value":280, "requires":{"minerals":1,"seeds":4}, "level":24, "store":"farmers_market", "source":"Community-reference; CONFLICTING INGREDIENT DATA — verify"},
 	"cheese": {"name":"Cheese", "time":6300.0, "time_sec":6300, "value":660, "requires":{"animal_feed":2}, "level":26, "store":"farmers_market", "source":"Community-reference"},
 	"beef": {"name":"Beef", "time":7200.0, "time_sec":7200, "value":860, "requires":{"animal_feed":3}, "level":27, "store":"farmers_market", "source":"Community-reference"},
-	"fruit_berries": {"name":"Fruit & Berries", "time":4320.0, "time_sec":4320, "value":420, "requires":{"seeds":2,"tree_sapling":1}, "level":18, "store":"farmers_market", "source":"Community-reference"},
+	"fruit_berries": {"name":"Fruit & Berries", "time":5400.0, "time_sec":5400, "value":730, "requires":{"seeds":2,"tree_sapling":1}, "level":18, "store":"farmers_market", "source":"HubsInfo;Fandom"},
 	"bread_roll": {"name":"Bread Roll", "time":3240.0, "time_sec":3240, "value":350, "requires":{"flour_bag":2,"cream":1}, "level":25, "store":"donut_shop", "source":"Community-reference"},
 	"bbq_grill": {"name":"BBQ Grill", "time":9900.0, "time_sec":9900, "value":760, "requires":{"metal":3,"cooking_utensils":1}, "level":29, "store":"home_appliances", "source":"Community-reference"},
 	"microwave_oven": {"name":"Microwave Oven", "time":7200.0, "time_sec":7200, "value":480, "requires":{"metal":4,"glass":1,"electrical":1}, "level":42, "store":"home_appliances", "source":"Community-reference"},
@@ -265,6 +265,39 @@ func get_default_recipe_for_building(building_type: String) -> String:
 			return item_id
 	return ""
 
+func get_item_definition(item_id: String) -> Dictionary:
+	if raw_materials.has(item_id):
+		return raw_materials[item_id].duplicate(true)
+	if crafted_items.has(item_id):
+		return crafted_items[item_id].duplicate(true)
+	for store_id in store_catalog:
+		for product in store_catalog[store_id]:
+			if str(product.get("id", "")) == item_id:
+				return product.duplicate(true)
+	return {}
+
+func get_recipe_dependency_text(item_id: String) -> String:
+	var lines: Array[String] = []
+	_append_recipe_dependency_lines(item_id, 1, 0, lines, {})
+	return "\\n".join(lines)
+
+func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, lines: Array[String], ancestry: Dictionary) -> void:
+	var definition := get_item_definition(item_id)
+	if definition.is_empty():
+		lines.append("%s• %s ×%d — recipe unavailable" % ["  ".repeat(depth), item_id, amount])
+		return
+	var item_name := str(definition.get("name", item_id))
+	var owned := StorageManager.get_count(item_id)
+	var stock_text := "stock %d" % owned
+	lines.append("%s• %s ×%d  (%s)" % ["  ".repeat(depth), item_name, amount, stock_text])
+	if ancestry.has(item_id) or not crafted_items.has(item_id):
+		return
+	var next_ancestry := ancestry.duplicate(true)
+	next_ancestry[item_id] = true
+	var requirements: Dictionary = crafted_items[item_id].get("requires", {})
+	for input_id in requirements:
+		_append_recipe_dependency_lines(str(input_id), amount * int(requirements[input_id]), depth + 1, lines, next_ancestry)
+
 func get_missing_inputs_text(item_id: String) -> String:
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
@@ -274,7 +307,7 @@ func get_missing_inputs_text(item_id: String) -> String:
 		var needed := int(recipe.inputs[material])
 		var available := StorageManager.get_count(str(material))
 		if available < needed:
-			var material_name := str(raw_materials.get(material, {}).get("name", str(material).capitalize()))
+			var material_name := str(get_item_definition(str(material)).get("name", str(material).capitalize()))
 			missing.append("%d %s" % [needed - available, material_name])
 	return ", ".join(missing)
 
