@@ -288,6 +288,13 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 		return false
 	var definition: Dictionary = building_types[chosen]
 	var cost: int = int(definition.get("cost", 0))
+	if cost > 0 and not EconomyManager.can_afford(cost):
+		return false
+	var scene = get_tree().current_scene
+	var world = scene.get_node_or_null("World/Buildings") if scene else null
+	if world == null:
+		push_error("Cannot place building: World/Buildings node is missing.")
+		return false
 	if cost > 0 and not EconomyManager.spend_simoleons(cost):
 		return false
 	var building_id: String = "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
@@ -301,11 +308,6 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 		"upgrade_stage": clampi(saved_stage, 1, 6)
 	}
 	var building_node = BuildingScene.instantiate()
-	var scene = get_tree().current_scene
-	var world = scene.get_node_or_null("World/Buildings") if scene else null
-	if world == null:
-		push_error("Cannot place building: World/Buildings node is missing.")
-		return false
 	world.add_child(building_node)
 	var size: Vector2i = definition.get("size", Vector2i(2,2))
 	building_node.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
