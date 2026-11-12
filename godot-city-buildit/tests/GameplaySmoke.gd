@@ -1040,7 +1040,11 @@ func _run_gameplay_test() -> void:
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
 		metal_button.emit_signal("pressed")
-	_check(not factory_component.get_slot(0).is_empty(), "Selecting Metal must start the first factory slot.")
+		var factory_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
+		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must open its detail card with an enabled Start action.")
+		if factory_start:
+			factory_start.emit_signal("pressed")
+	_check(not factory_component.get_slot(0).is_empty(), "Confirming Metal production must start the first factory slot.")
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
@@ -1048,6 +1052,9 @@ func _run_gameplay_test() -> void:
 	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
 	if second_metal_button:
 		second_metal_button.emit_signal("pressed")
+		var second_factory_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
+		if second_factory_start:
+			second_factory_start.emit_signal("pressed")
 	_check(not factory_component.get_slot(1).is_empty(), "Factory must run two parallel batches.")
 	for slot_index in range(2):
 		var slot: Dictionary = factory_component.slots[slot_index]
@@ -1076,18 +1083,27 @@ func _run_gameplay_test() -> void:
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
 	production_hud.open_production_panel(supplies)
 	var nails_button_0 := production_hud.production_panel.find_child("Slot0_nails", true, false) as Button
-	_check(nails_button_0 != null and nails_button_0.find_child("IngredientsLabel", true, false) is Label, "Commercial product cards must show the exact recipe ingredients before ordering.")
-	if nails_button_0:
-		var ingredient_label := nails_button_0.find_child("IngredientsLabel", true, false) as Label
-		_check(ingredient_label.text.contains("Metal") and ingredient_label.text.contains("2"), "Nails card must clearly show its Metal x2 requirement.")
+	_check(nails_button_0 != null and nails_button_0.find_child("HexagonBackground", true, false) is Polygon2D, "Production choices must use floating hexagonal item tiles like SimCity BuildIt.")
 	if nails_button_0:
 		nails_button_0.emit_signal("pressed")
+		var detail_card := production_hud.production_panel.find_child("ProductionItemDetails", true, false)
+		var ingredient_label := production_hud.production_panel.find_child("IngredientsLabel", true, false) as Label
+		_check(detail_card != null and ingredient_label != null, "Selecting a shop product must open its separate white recipe detail card.")
+		if ingredient_label:
+			_check(ingredient_label.text.contains("Metal") and ingredient_label.text.contains("2"), "Nails detail must clearly show its Metal x2 requirement.")
+		var shop_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
+		_check(shop_start != null and not shop_start.disabled, "Nails must be startable when two Metal are in City Storage.")
+		if shop_start:
+			shop_start.emit_signal("pressed")
 	else:
 		_check(false, "Building Supplies must offer Nails at level 1.")
 	production_hud.open_production_panel(supplies)
 	var nails_button_1 := production_hud.production_panel.find_child("Slot1_nails", true, false) as Button
 	if nails_button_1:
 		nails_button_1.emit_signal("pressed")
+		var second_shop_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
+		if second_shop_start:
+			second_shop_start.emit_signal("pressed")
 	else:
 		_check(false, "Building Supplies second slot must accept a Nails order.")
 	_check(StorageManager.get_count("metal") == 0, "Starting two Nails orders must deduct four Metal immediately.")
