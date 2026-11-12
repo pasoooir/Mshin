@@ -285,6 +285,9 @@ func _node_has_label_text_containing(node: Node, expected: String) -> bool:
 	return false
 
 func _test_build_menu_visibility() -> void:
+	# Allow the dynamically-created HUD containers to complete their first layout pass.
+	await get_tree().process_frame
+	await get_tree().process_frame
 	var hud = get_node_or_null("HUD")
 	_check(hud != null, "Main scene HUD is missing.")
 	if hud == null:
@@ -321,7 +324,7 @@ func _test_build_menu_visibility() -> void:
 				_check(category_icon.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Category PNG must not intercept touch drags before the button/scroll container.")
 	_check(hud.get_node_or_null("BottomActions") != null, "Permanent city actions are missing.")
 	_check(hud.get_node("BottomActions").visible, "Storage, Trade and Save should be visible while no category is selected.")
-	var currency_stack := hud.get_node_or_null("TopRightCurrencies") as VBoxContainer
+	var currency_stack := hud.find_child("TopRightCurrencies", true, false) as VBoxContainer
 	_check(currency_stack != null and currency_stack.get_child_count() == 3, "Top-right resources must be exactly three compact rows.")
 	for row_name in ["SimoleonsCurrencyRow", "MoneyCurrencyRow", "GoldenKeyCurrencyRow"]:
 		_check(currency_stack != null and currency_stack.find_child(row_name, true, false) is HBoxContainer, "Missing resource row: " + row_name)
@@ -571,7 +574,7 @@ func _test_build_menu_visibility() -> void:
 	await get_tree().process_frame
 	_check(not hud.submenu_scroll.visible and hud.get_node("BottomActions").visible, "Cancel must return to permanent city actions.")
 	hud._close_build_menu()
-	_check(not toolbar.visible, "Closing Build must hide the category toolbar.")
+	_check(toolbar.visible, "Closing a submenu must restore the persistent transparent category toolbar.")
 
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
