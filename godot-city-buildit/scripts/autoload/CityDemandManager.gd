@@ -18,8 +18,8 @@ func _ready() -> void:
 		GameManager.level_changed.connect(_queue_refresh)
 	if not GameManager.population_changed.is_connected(_queue_refresh):
 		GameManager.population_changed.connect(_queue_refresh)
-	if not GameManager.xp_changed.is_connected(_queue_refresh):
-		GameManager.xp_changed.connect(_queue_refresh)
+	if not GameManager.xp_changed.is_connected(_on_xp_changed):
+		GameManager.xp_changed.connect(_on_xp_changed)
 	if not GameManager.happiness_changed.is_connected(_queue_refresh):
 		GameManager.happiness_changed.connect(_queue_refresh)
 	if not EconomyManager.simoleons_changed.is_connected(_queue_refresh):
@@ -54,6 +54,9 @@ func _connect_building(building: Node) -> void:
 		building.upgraded.connect(_on_home_upgraded)
 
 func _on_home_upgraded(_stage: int) -> void:
+	_queue_refresh()
+
+func _on_xp_changed(_experience: int, _needed: int) -> void:
 	_queue_refresh()
 
 func _queue_refresh(_unused = null) -> void:
