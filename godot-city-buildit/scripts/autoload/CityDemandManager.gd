@@ -12,6 +12,8 @@ func _ready() -> void:
 		BuildManager.building_placed.connect(_on_building_placed)
 	if not BuildManager.building_removed.is_connected(_on_building_removed):
 		BuildManager.building_removed.connect(_on_building_removed)
+	if not BuildManager.construction_finished.is_connected(_on_construction_finished):
+		BuildManager.construction_finished.connect(_on_construction_finished)
 	if not GameManager.level_changed.is_connected(_queue_refresh):
 		GameManager.level_changed.connect(_queue_refresh)
 	if not GameManager.population_changed.is_connected(_queue_refresh):
@@ -25,6 +27,12 @@ func _on_building_placed(data: Dictionary) -> void:
 	_queue_refresh()
 
 func _on_building_removed(_building_id: String) -> void:
+	_queue_refresh()
+
+func _on_construction_finished(building_id: String) -> void:
+	var building = BuildManager.buildings.get(building_id)
+	if is_instance_valid(building):
+		_connect_building(building)
 	_queue_refresh()
 
 func _connect_building(building: Node) -> void:
