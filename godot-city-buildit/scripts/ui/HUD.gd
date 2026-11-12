@@ -1616,8 +1616,7 @@ func open_production_panel(building: Building) -> void:
 				item_ids.append(str(item_id))
 	else:
 		for item_id in ProductionManager.get_store_catalog_ids(str(component.shop_id)):
-			if not ProductionManager.get_recipe(str(item_id)).is_empty():
-				item_ids.append(str(item_id))
+			item_ids.append(str(item_id))
 
 	if item_ids.is_empty():
 		var empty_catalog := Label.new()
