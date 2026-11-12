@@ -115,7 +115,14 @@ func _test_storage_and_production_chain() -> void:
 	_check(ProductionManager.get_recipe("ice_cream_sandwich").get("inputs", {}) == {"cream":1,"bread_roll":1}, "Ice Cream Sandwich must use the verified Donut Shop supply chain.")
 	_check(ProductionManager.get_recipe("burger").get("inputs", {}) == {"beef":1,"bread_roll":1,"bbq_grill":1}, "Burger must use the verified Home Appliances supply chain.")
 	_check(ProductionManager.get_recipe("lemonade_bottle").get("inputs", {}) == {"glass":2,"sugar_spices":2,"fruit_berries":1}, "Lemonade Bottle must use the verified Farmer's Market supply chain.")
-	_check(ProductionManager.get_recipe("popcorn").is_empty() and ProductionManager.get_recipe_lock_reason("popcorn").contains("not verified"), "Popcorn must remain disabled until the store-star recipe is verified.")
+	_check(ProductionManager.get_recipe("popcorn").get("inputs", {}) == {"corn":2,"microwave_oven":1} and int(ProductionManager.get_recipe("popcorn").get("time_sec", 0)) == 1800 and int(ProductionManager.get_recipe("popcorn").get("value", 0)) == 1250, "Popcorn must use the Fandom-verified Corn x2 + Microwave Oven x1 recipe.")
+	StorageManager.items = {"tree_sapling":1}
+	var stocked_fruit_chain := ProductionManager.get_recipe_dependency_text("fruit_berries")
+	_check(stocked_fruit_chain.contains("Tree Saplings — required 1 | stock 1 | missing 0") and not stocked_fruit_chain.contains("Shovel"), "Dependency tree must stop expanding a product already present in City Storage.")
+	StorageManager.items = {"seeds":1}
+	var shortage_fruit_chain := ProductionManager.get_recipe_dependency_text("fruit_berries")
+	_check(shortage_fruit_chain.contains("Seeds — required 2 | stock 1 | missing 1") and shortage_fruit_chain.contains("Shovel"), "Dependency tree must calculate missing quantities and recursively expose intermediate ingredients.")
+	StorageManager.items = {}
 	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn","bread_roll","bbq_grill","microwave_oven","fruit_berries","tree_sapling","donuts","green_smoothie","cherry_cheesecake","frozen_yogurt","coffee","refrigerator","lighting_system","tv","grass","garden_furniture","lawn_mower","fire_pit","garden_gnome","cap","shoes","watch","business_suit","backpack","tennis_racket","sports_drink","soccer_shoes","protein_bar","ping_pong_table","block_letters","kite","teddy_bear","game_console","forged_iron","carved_wood","cut_stone","tapestries","stained_glass","wool_shirt","picnic_basket","apple_jam","tiramisu","churros","profiterole","mochi","pavlova"]:
 		_check(Icons.CRAFTED_IDS.has(catalog_id), "%s must have a local product icon." % catalog_id)
 		_check(StorageManager.item_definitions.has(catalog_id), "%s must have a readable storage item definition." % catalog_id)
