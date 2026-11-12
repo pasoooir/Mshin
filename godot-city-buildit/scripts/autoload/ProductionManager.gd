@@ -56,6 +56,12 @@ var upgrade_requirements := {
 var residential_population := {1:15,2:30,3:50,4:90,5:160,6:280}
 
 func _ready() -> void:
+	# ProductionManager is the authoritative item catalogue. Storage's display
+	# metadata is a derived cache so item names/types are never maintained twice.
+	for item_id in raw_materials:
+		StorageManager.register_item_definition(str(item_id), str(raw_materials[item_id].get("name", item_id)), "raw")
+	for item_id in crafted_items:
+		StorageManager.register_item_definition(str(item_id), str(crafted_items[item_id].get("name", item_id)), "crafted")
 	print("[ProductionManager] SCBI catalog: %d raw, %d crafted" % [raw_materials.size(), crafted_items.size()])
 
 func get_available_raw() -> Array:
@@ -123,6 +129,13 @@ func get_recipe(item_id: String) -> Dictionary:
 	var recipe: Dictionary = crafted_items[item_id].duplicate(true)
 	recipe["inputs"] = recipe.get("requires", {}).duplicate(true)
 	return recipe
+
+func get_store_recipe_ids(store_id: String) -> Array:
+	var result: Array = []
+	for item_id in crafted_items:
+		if str(crafted_items[item_id].get("store", "")) == store_id:
+			result.append(str(item_id))
+	return result
 
 func get_default_factory_product() -> String:
 	return "metal"
