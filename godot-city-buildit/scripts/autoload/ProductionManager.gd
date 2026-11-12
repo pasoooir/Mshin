@@ -64,9 +64,9 @@ var crafted_items := {
 var store_catalog := {
 	"fast_food": [
 		{"id":"ice_cream_sandwich","name":"Ice Cream Sandwich","level":25,"source":"Community-reference; recipe needs verification"},
-		{"id":"burger","name":"Burger","level":25,"source":"Community-reference; recipe needs verification"},
-		{"id":"lemonade_bottle","name":"Lemonade Bottle","level":25,"source":"Community-reference; recipe needs verification"},
-		{"id":"popcorn","name":"Popcorn","level":25,"source":"Community-reference; recipe needs verification"}
+		{"id":"burger","name":"Burger","level":31,"source":"Community-reference; recipe needs verification"},
+		{"id":"lemonade_bottle","name":"Lemonade Bottle","level":37,"source":"Community-reference; recipe needs verification"},
+		{"id":"popcorn","name":"Popcorn","level":43,"source":"Community-reference; recipe needs verification"}
 	]
 }
 
