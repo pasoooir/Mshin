@@ -2120,7 +2120,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		storage_label.add_theme_color_override("font_color", Color("#315C70"))
 		text_stack.add_child(storage_label)
 	else:
-			var ingredients_label := Label.new()
+		var ingredients_label := Label.new()
 		ingredients_label.name = "IngredientsLabel"
 		ingredients_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		ingredients_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
