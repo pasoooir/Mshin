@@ -211,6 +211,14 @@ func has_road_access(anchor: Vector2i, size: Vector2i) -> bool:
 			return true
 	return false
 
+func is_building_operational(building: Node) -> bool:
+	if not is_instance_valid(building) or str(building.get("status")) != "completed":
+		return false
+	var definition: Dictionary = building.get("definition")
+	var anchor: Vector2i = building.get("grid_pos")
+	var size: Vector2i = definition.get("size", Vector2i(2, 2))
+	return has_road_access(anchor, size)
+
 func can_place_at(grid_pos: Vector2i, type_id: String = "") -> bool:
 	var chosen: String = type_id if type_id != "" else selected_building_type
 	if chosen == "" or not building_types.has(chosen):
