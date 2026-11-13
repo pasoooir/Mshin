@@ -120,6 +120,7 @@ var context_header_icons: HBoxContainer
 var service_warning_panel: PanelContainer
 var trade_overlay: Control
 var trade_panel: PanelContainer
+var _trade_active_tab := "depot"
 var service_warning_label: Label
 var _catalog_selected_type := ""
 
@@ -143,6 +144,7 @@ func _ready() -> void:
 	ServiceManager.sewage_changed.connect(_on_sewage_changed)
 	ServiceManager.waste_changed.connect(_on_waste_changed)
 	TrafficManager.traffic_changed.connect(_on_traffic_changed)
+	TradeManager.trade_state_changed.connect(_on_trade_state_changed)
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
@@ -3083,12 +3085,30 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	body.add_theme_constant_override("separation", 8)
 	scroll.add_child(body)
 
-	if tab == "market":
+	_trade_active_tab = "market" if tab == "market" else "depot"
+	if _trade_active_tab == "market":
 		market_tab.add_theme_stylebox_override("normal", _catalog_action_style())
-		_build_global_trade_content(body)
 	else:
 		depot_tab.add_theme_stylebox_override("normal", _catalog_action_style())
+	_refresh_trade_panel_content()
+
+func _refresh_trade_panel_content() -> void:
+	if not is_instance_valid(trade_panel):
+		return
+	var body := trade_panel.find_child("TradeContent", true, false) as VBoxContainer
+	if body == null:
+		return
+	for child in body.get_children():
+		body.remove_child(child)
+		child.queue_free()
+	if _trade_active_tab == "market":
+		_build_global_trade_content(body)
+	else:
 		_build_trade_depot_content(body)
+
+func _on_trade_state_changed() -> void:
+	if is_instance_valid(trade_panel) and trade_panel.visible:
+		_refresh_trade_panel_content()
 
 func _trade_message(parent: VBoxContainer, message: String) -> void:
 	var label := Label.new()
