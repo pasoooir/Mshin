@@ -70,6 +70,14 @@ func recalculate_city() -> void:
 		building.current_population = clampi(int(building.current_population), 0, capacity)
 		population_total += int(building.current_population)
 
+	GameManager.set_population(population_total)
+	TrafficManager.recalculate_from_roads()
+	# Re-score after the updated population has changed city-wide traffic demand.
+	happiness_total = 0.0
+	for home in homes:
+		var updated_score := calculate_home_happiness(home)
+		scores[home.building_id] = updated_score
+		happiness_total += updated_score
 	var average := 100.0 if homes.is_empty() else happiness_total / float(homes.size())
 	if not homes.is_empty() and average >= 80.0:
 		_high_happiness_elapsed += RECALC_INTERVAL
@@ -80,7 +88,6 @@ func recalculate_city() -> void:
 		_high_happiness_elapsed = 0.0
 	home_scores = scores
 	GameManager.set_happiness(average)
-	GameManager.set_population(population_total)
 	EconomyManager.set_tax_income(roundi(float(population_total) * (average / 100.0) * 0.15))
 	happiness_recalculated.emit(average, home_scores)
 
@@ -247,6 +254,8 @@ func calculate_home_happiness(home: Node3D) -> float:
 			score += 6.0
 		else:
 			score -= 6.0
+	if has_node("/root/TrafficManager"):
+		score += TrafficManager.get_happiness_penalty()
 	if _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 		score += 8.0
 	return clampf(score, 0.0, 100.0)
