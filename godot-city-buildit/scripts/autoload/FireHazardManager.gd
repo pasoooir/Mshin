@@ -61,29 +61,21 @@ func _evaluate_hazards(delta: float) -> void:
 		return
 
 	var homes: Array[Node3D] = []
-	var stations: Array[Node3D] = []
 	for candidate in BuildManager.buildings.values():
 		if not is_instance_valid(candidate) or candidate.status != "completed":
 			continue
 		var definition: Dictionary = candidate.definition
 		if str(definition.get("category", "")) == "residential":
 			homes.append(candidate)
-		elif int(definition.get("fire", 0)) > 0:
-			stations.append(candidate)
 
 	var previous_smoking_count := smoking_ids.size()
 	var active_home_ids: Dictionary = {}
 	for home in homes:
 		var building_id := str(home.building_id)
 		active_home_ids[building_id] = true
-		var covered := false
-		for station in stations:
-			var station_radius := get_coverage_radius_world(station.definition)
-			var home_flat := Vector2(home.global_position.x, home.global_position.z)
-			var station_flat := Vector2(station.global_position.x, station.global_position.z)
-			if home_flat.distance_to(station_flat) <= station_radius:
-				covered = true
-				break
+		# ServiceManager owns the authoritative, Gateway-connected Fire coverage
+		# allocation. Smoke hazards must never use a separate geometric shortcut.
+		var covered := ServiceManager.fire_served_ids.has(building_id)
 
 		if covered:
 			unprotected_time.erase(building_id)

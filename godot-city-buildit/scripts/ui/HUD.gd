@@ -1589,11 +1589,14 @@ func _on_traffic_changed(_demand: int, _capacity: int, _ratio: float) -> void:
 	_update_service_summary()
 
 func _service_summary_text() -> String:
-	return "Demand / capacity — Power %d/%d · Water %d/%d · Sewage %d/%d · Waste %d/%d · Traffic %d/%d (%d%%)" % [
+	return "Demand / capacity — Power %d/%d · Water %d/%d · Sewage %d/%d · Waste %d/%d · Fire %d/%d homes · Police %d/%d homes · Health %d/%d homes · Traffic %d/%d (%d%%)" % [
 		ServiceManager.demand_power, ServiceManager.total_power,
 		ServiceManager.demand_water, ServiceManager.total_water,
 		ServiceManager.demand_sewage, ServiceManager.total_sewage,
 		ServiceManager.demand_waste, ServiceManager.total_waste,
+		ServiceManager.served_fire_homes, ServiceManager.demand_fire_homes,
+		ServiceManager.served_police_homes, ServiceManager.demand_police_homes,
+		ServiceManager.served_health_homes, ServiceManager.demand_health_homes,
 		TrafficManager.traffic_demand, TrafficManager.road_capacity, TrafficManager.get_congestion_percent()
 	]
 

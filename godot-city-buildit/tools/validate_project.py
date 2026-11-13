@@ -905,7 +905,7 @@ fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
-for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_tiles", COVERAGE_TILES)', 'int(definition.get("fire", 0)) > 0', "home_flat.distance_to(station_flat) <= station_radius"]:
+for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_tiles", COVERAGE_TILES)', "ServiceManager.fire_served_ids.has(building_id)"]:
     if contract not in fire_manager_source:
         errors.append(f"FireHazardManager dynamic coverage contract is missing: {contract}")
 for contract in [
@@ -976,6 +976,16 @@ for contract in [
     if contract not in ghost_preview_source:
         errors.append(f"Sewage/Waste city-wide network preview contract is missing: {contract}")
 for contract in [
+    "ServiceManager.served_fire_homes, ServiceManager.demand_fire_homes",
+    "ServiceManager.served_police_homes, ServiceManager.demand_police_homes",
+    "ServiceManager.served_health_homes, ServiceManager.demand_health_homes",
+    'context_header_subtitle.text.contains("Fire")',
+    "Emergency service HUD metrics must report covered homes against all completed homes",
+]:
+    if contract not in gameplay_smoke_source and contract not in hud:
+        errors.append(f"Emergency service coverage UI contract is missing: {contract}")
+
+for contract in [
     "var sewage_preview: Dictionary",
     "var waste_preview: Dictionary",
     "Sewage placement must communicate city-wide road-network service",
@@ -1007,9 +1017,28 @@ for contract in [
     "if not _has_gateway_road_access(candidate):",
     "if _has_gateway_road_access(building):",
     "if not _has_gateway_road_access(home):",
+    "func _has_nearby_emergency_facility(",
+    "var fire_served_ids: Dictionary = {}",
+    "var police_served_ids: Dictionary = {}",
+    "var health_served_ids: Dictionary = {}",
+    "DEFAULT_EMERGENCY_COVERAGE_TILES",
+    'fire_served_ids[home.building_id] = true',
+    'police_served_ids[home.building_id] = true',
+    'health_served_ids[home.building_id] = true',
+    "func is_home_served_by_group(",
 ]:
     if contract not in service_manager_source:
         errors.append(f"Power/water Gateway connectivity contract is missing: {contract}")
+for contract in [
+    "func _test_emergency_service_tier_happiness() -> void:",
+    "Emergency service must not serve a home without Gateway road access",
+    "Cutting the home's Gateway road must revoke every emergency service.",
+    "A fire station disconnected from Gateway must not suppress residential fire hazards.",
+    "_test_emergency_service_tier_happiness()",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Emergency service coverage regression test is missing: {contract}")
+
 for contract in [
     "func _test_power_water_gateway_access() -> void:",
     "ServiceManager.total_power == 0 and ServiceManager.total_water == 0",
@@ -1128,10 +1157,14 @@ for contract in [
         errors.append(f"Road gateway connectivity regression test is missing: {contract}")
 
 for contract in [
-    "func _test_emergency_service_tier_happiness()",
-    "Every completed emergency service tier must provide its existing happiness bonus",
-    "outside its service radius",
-    "under construction",
+    "func _test_emergency_service_tier_happiness() -> void:",
+    "Every connected emergency service tier must serve a connected home inside its catalog radius",
+    "Emergency service must not serve a home without Gateway road access",
+    "An emergency facility under construction must not provide coverage",
+    "An emergency facility outside its tier coverage radius must not serve a home",
+    "An emergency facility disconnected from Gateway must not serve a nearby home",
+    "Cutting the home's Gateway road must revoke every emergency service.",
+    "Restoring Gateway road access must restore Fire coverage.",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Emergency service-tier regression test is missing: {contract}")

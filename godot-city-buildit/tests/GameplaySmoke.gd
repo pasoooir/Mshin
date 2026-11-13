@@ -596,7 +596,7 @@ func _test_build_menu_visibility() -> void:
 	hud._on_cancel_pressed()
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
 	hud._show_submenu("services")
-	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
+	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Fire") and hud.context_header_subtitle.text.contains("Police") and hud.context_header_subtitle.text.contains("Health") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
 	hud._on_cancel_pressed()
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
@@ -1099,36 +1099,27 @@ func _test_power_water_gateway_access() -> void:
 
 func _test_emergency_service_tier_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
-	var saved_total_power := ServiceManager.total_power
-	var saved_total_water := ServiceManager.total_water
-	var saved_power_served: Dictionary = ServiceManager.power_served_ids.duplicate()
-	var saved_water_served: Dictionary = ServiceManager.water_served_ids.duplicate()
+	var saved_level := GameManager.level
+	var saved_simoleons := EconomyManager.simoleons
 	BuildManager.buildings.clear()
-	ServiceManager.total_power = 1
-	ServiceManager.total_water = 1
-	ServiceManager.power_served_ids.clear()
-	ServiceManager.water_served_ids.clear()
+	GameManager.level = 16
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
 
-	var home := FireHazardTestBuilding.new()
-	add_child(home)
-	home.building_id = "emergency_service_test_home"
-	home.building_type = "residential_1"
-	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
-	home.status = "completed"
-	home.grid_pos = Vector2i(35, 35)
-	home.global_position = Vector3.ZERO
-	BuildManager.buildings[home.building_id] = home
+	var home := _create_service_test_home("emergency_service_test_home", 1, Vector2i(1, 1))
+	var disconnected_home := _create_service_test_home("emergency_service_disconnected_home", 1, Vector2i(35, 35))
+	ServiceManager.recalculate_from_buildings()
 	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
-
 	var service_cases := {
-		"fire": {"radius": 38.0, "bonus": 8.0, "ids": ["fire_station_small", "fire_station", "fire_station_deluxe"]},
-		"police": {"radius": 38.0, "bonus": 8.0, "ids": ["police_station", "police_small", "police_basic", "police_precinct"]},
-		"health": {"radius": 42.0, "bonus": 8.0, "ids": ["clinic_small", "clinic", "hospital"]}
+		"fire": {"bonus": 8.0, "served_key": "fire_served_ids", "ids": ["fire_station_small", "fire_station", "fire_station_deluxe"]},
+		"police": {"bonus": 8.0, "served_key": "police_served_ids", "ids": ["police_station", "police_small", "police_basic", "police_precinct"]},
+		"health": {"bonus": 8.0, "served_key": "health_served_ids", "ids": ["clinic_small", "clinic", "hospital"]}
 	}
 	for service_group in service_cases:
 		var service_case: Dictionary = service_cases[service_group]
-		var radius := float(service_case["radius"])
 		var bonus := float(service_case["bonus"])
+		var served_ids: Dictionary = ServiceManager.get(str(service_case["served_key"]))
 		for service_id in service_case["ids"]:
 			var facility := FireHazardTestBuilding.new()
 			add_child(facility)
@@ -1136,33 +1127,76 @@ func _test_emergency_service_tier_happiness() -> void:
 			facility.building_type = service_id
 			facility.definition = BuildManager.building_types[service_id]
 			facility.status = "completed"
+			facility.grid_pos = Vector2i(1, -2)
+			var coverage_tiles := float(facility.definition.get("coverage_tiles", ServiceManager.DEFAULT_EMERGENCY_COVERAGE_TILES))
+			var radius := coverage_tiles * BuildManager.GRID_SIZE
 			facility.global_position = Vector3(radius - 0.1, 0.0, 0.0)
 			BuildManager.buildings[facility.building_id] = facility
+			ServiceManager.recalculate_from_buildings()
 			_check(str(facility.definition.get("service_group", "")) == service_group, "Emergency service catalog tier must belong to its declared service group: " + service_id)
-			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + bonus), "Every completed emergency service tier must provide its existing happiness bonus: " + service_id)
-			_check(HappinessManager._home_has_extra_service(home), "Every completed emergency service tier must count as an extra nearby service: " + service_id)
+			_check(served_ids.has(home.building_id), "Every connected emergency service tier must serve a connected home inside its catalog radius: " + service_id)
+			var coverage_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
+			_check(int(coverage_warnings.get(service_group, -1)) == 1, "Emergency service warnings must count only the disconnected unserved home: " + service_id)
+			_check(not served_ids.has(disconnected_home.building_id), "Emergency service must not serve a home without Gateway road access: " + service_id)
+			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + bonus), "Every connected emergency service tier must provide its existing happiness bonus: " + service_id)
+			_check(HappinessManager._home_has_extra_service(home), "Every connected emergency service tier must count as an extra service: " + service_id)
 
 			facility.status = "constructing"
-			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility under construction must not provide happiness coverage: " + service_id)
-			_check(not HappinessManager._home_has_extra_service(home), "An emergency facility under construction must not count as an extra service: " + service_id)
+			ServiceManager.recalculate_from_buildings()
+			_check(not served_ids.has(home.building_id), "An emergency facility under construction must not provide coverage: " + service_id)
+			var construction_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
+			_check(int(construction_warnings.get(service_group, -1)) == 2, "Emergency service warnings must include all homes when the provider is under construction: " + service_id)
+			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility under construction must not provide happiness: " + service_id)
 
 			facility.status = "completed"
 			facility.global_position = Vector3(radius + 0.1, 0.0, 0.0)
-			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility outside its service radius must not add happiness: " + service_id)
-			_check(not HappinessManager._home_has_extra_service(home), "An emergency facility outside its service radius must not count as an extra service: " + service_id)
+			ServiceManager.recalculate_from_buildings()
+			_check(not served_ids.has(home.building_id), "An emergency facility outside its tier coverage radius must not serve a home: " + service_id)
+
+			facility.global_position = Vector3.ZERO
+			facility.grid_pos = Vector2i(35, 35)
+			ServiceManager.recalculate_from_buildings()
+			_check(not served_ids.has(home.building_id), "An emergency facility disconnected from Gateway must not serve a nearby home: " + service_id)
 
 			BuildManager.buildings.erase(facility.building_id)
 			remove_child(facility)
 			facility.free()
+			ServiceManager.recalculate_from_buildings()
 
-	BuildManager.buildings.erase(home.building_id)
-	remove_child(home)
-	home.free()
+	# A home loses all local emergency coverage when its only Gateway-adjacent
+	# road tile is removed, and regains it when the road is restored.
+	var fire_facility := FireHazardTestBuilding.new()
+	add_child(fire_facility)
+	fire_facility.building_id = "emergency_road_cut_fire"
+	fire_facility.definition = BuildManager.building_types["fire_station"]
+	fire_facility.status = "completed"
+	fire_facility.grid_pos = Vector2i(1, -2)
+	fire_facility.global_position = Vector3.ZERO
+	BuildManager.buildings[fire_facility.building_id] = fire_facility
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.fire_served_ids.has(home.building_id), "A connected Fire Station must cover a connected nearby home.")
+	_check(ServiceManager.served_fire_homes == 1 and ServiceManager.demand_fire_homes == 2, "Emergency service HUD metrics must report covered homes against all completed homes.")
+	if road_system:
+		_check(road_system.remove_road(Vector2i(1, 0)), "Emergency coverage test must be able to cut the home's only Gateway access tile.")
+		ServiceManager.recalculate_from_buildings()
+		_check(not ServiceManager.fire_served_ids.has(home.building_id), "Cutting the home's Gateway road must revoke Fire coverage.")
+		_check(not ServiceManager.police_served_ids.has(home.building_id) and not ServiceManager.health_served_ids.has(home.building_id), "Cutting the home's Gateway road must revoke every emergency service.")
+		_check(road_system.place_road(Vector2i(1, 0)), "Emergency coverage test must restore the home's Gateway access tile.")
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.fire_served_ids.has(home.building_id), "Restoring Gateway road access must restore Fire coverage.")
+		_check(ServiceManager.served_fire_homes == 1, "Restoring Gateway road access must restore the emergency covered-home metric.")
+
+	BuildManager.buildings.erase(fire_facility.building_id)
+	remove_child(fire_facility)
+	fire_facility.free()
+	for home_node in [home, disconnected_home]:
+		BuildManager.buildings.erase(home_node.building_id)
+		remove_child(home_node)
+		home_node.free()
 	BuildManager.buildings = saved_buildings
-	ServiceManager.total_power = saved_total_power
-	ServiceManager.total_water = saved_total_water
-	ServiceManager.power_served_ids = saved_power_served
-	ServiceManager.water_served_ids = saved_water_served
+	GameManager.level = saved_level
+	EconomyManager.simoleons = saved_simoleons
+	ServiceManager.recalculate_from_buildings()
 
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
@@ -1171,6 +1205,9 @@ func _test_fire_hazard_state_machine() -> void:
 	BuildManager.buildings.clear()
 	FireHazardManager.unprotected_time.clear()
 	FireHazardManager.smoking_ids.clear()
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
 
 	var home = FireHazardTestBuilding.new()
 	add_child(home)
@@ -1178,6 +1215,7 @@ func _test_fire_hazard_state_machine() -> void:
 	home.building_type = "residential_1"
 	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
 	home.status = "completed"
+	home.grid_pos = Vector2i(1, 1)
 	home.global_position = Vector3.ZERO
 	BuildManager.buildings[home.building_id] = home
 
@@ -1185,19 +1223,23 @@ func _test_fire_hazard_state_machine() -> void:
 	add_child(station)
 	station.building_id = "fire_test_station"
 	station.building_type = "fire_station"
-	station.definition = {"category": "service", "fire": 1}
+	station.definition = BuildManager.building_types["fire_station"]
 	station.status = "completed"
+	station.grid_pos = Vector2i(1, -2)
 	station.global_position = Vector3(30.1, 0.0, 0.0)
 	BuildManager.buildings[station.building_id] = station
+	ServiceManager.recalculate_from_buildings()
 
 	FireHazardManager._evaluate_hazards(10.0)
 	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A residential home must not smoke before 20 seconds without fire coverage.")
 	FireHazardManager._evaluate_hazards(10.1)
 	_check(FireHazardManager.smoking_ids.has(home.building_id), "An uncovered completed home must start smoking after 20 seconds.")
 	station.global_position = Vector3(30.0, 0.0, 0.0)
+	ServiceManager.recalculate_from_buildings()
 	FireHazardManager._evaluate_hazards(0.0)
 	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A fire station exactly 15 tiles away must immediately stop smoke.")
 	station.global_position = Vector3(30.1, 0.0, 0.0)
+	ServiceManager.recalculate_from_buildings()
 	FireHazardManager._evaluate_hazards(19.9)
 	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Losing fire coverage must restart the full 20-second warning timer.")
 	FireHazardManager.reset_for_city_load()
@@ -1207,22 +1249,33 @@ func _test_fire_hazard_state_machine() -> void:
 	FireHazardManager._evaluate_hazards(0.2)
 	_check(FireHazardManager.smoking_ids.has(home.building_id), "Smoke must resume after a fresh continuous 20-second uncovered interval.")
 
-	station.definition = {"category": "service", "fire": 1, "coverage_tiles": 10}
+	station.definition = {"category": "service", "service_group": "fire", "fire": 1, "coverage_tiles": 10}
 	station.global_position = Vector3(20.1, 0.0, 0.0)
+	ServiceManager.recalculate_from_buildings()
 	FireHazardManager._evaluate_hazards(0.0)
 	FireHazardManager._evaluate_hazards(20.0)
 	_check(FireHazardManager.smoking_ids.has(home.building_id), "Small Fire Station must use its own 10-tile coverage, not the default 15-tile radius.")
-	station.definition = {"category": "service", "fire": 1, "coverage_tiles": 22}
+	station.definition = {"category": "service", "service_group": "fire", "fire": 1, "coverage_tiles": 22}
 	station.global_position = Vector3(44.0, 0.0, 0.0)
+	ServiceManager.recalculate_from_buildings()
 	FireHazardManager._evaluate_hazards(0.0)
 	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Deluxe Fire Station must cover homes within its 22-tile radius and stop smoke immediately.")
 
+	# A station that loses Gateway access must stop suppressing fire hazards.
+	station.grid_pos = Vector2i(35, 35)
+	ServiceManager.recalculate_from_buildings()
+	FireHazardManager._evaluate_hazards(20.0)
+	_check(FireHazardManager.smoking_ids.has(home.building_id), "A fire station disconnected from Gateway must not suppress residential fire hazards.")
+
 	home.status = "constructing"
+	ServiceManager.recalculate_from_buildings()
 	FireHazardManager._evaluate_hazards(0.0)
 	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Homes still under construction must not remain in the fire hazard system.")
 	home.status = "completed"
+	ServiceManager.recalculate_from_buildings()
 	FireHazardManager._evaluate_hazards(0.0)
 	BuildManager.buildings.erase(home.building_id)
+	ServiceManager.recalculate_from_buildings()
 	FireHazardManager._evaluate_hazards(0.0)
 	_check(not FireHazardManager.unprotected_time.has(home.building_id) and not FireHazardManager.smoking_ids.has(home.building_id), "Demolished homes must have all fire hazard state cleared.")
 
@@ -1233,6 +1286,7 @@ func _test_fire_hazard_state_machine() -> void:
 	BuildManager.buildings = saved_buildings
 	FireHazardManager.unprotected_time = saved_timers
 	FireHazardManager.smoking_ids = saved_smoking
+	ServiceManager.recalculate_from_buildings()
 	FireHazardManager.on_city_changed()
 
 func _test_placement_rotation_contract() -> void:
