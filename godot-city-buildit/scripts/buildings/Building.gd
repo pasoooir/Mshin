@@ -226,10 +226,6 @@ func _create_visual() -> void:
 	for child in mesh_root.get_children():
 		child.queue_free()
 	var model_path := str(definition.get("model_path", ""))
-	if _should_use_external_model(model_path):
-		var model_scale: Vector3 = definition.get("model_scale", Vector3.ONE)
-		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
-			return
 
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	var color: Color = definition.get("color", Color(0.8, 0.8, 0.8))
@@ -242,6 +238,30 @@ func _create_visual() -> void:
 	if category == "residential":
 		height_mult = 0.7 + upgrade_stage * 0.15
 	var height: float = 1.6 * height_mult
+
+	# Keep the verified local GLTF base models in use. Residential upgrades
+	# receive their level-specific architectural additions on top of that base,
+	# so the imported model is retained without freezing the house silhouette.
+	if _should_use_external_model(model_path):
+		var model_scale: Vector3 = definition.get("model_scale", Vector3.ONE)
+		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
+			if category == "residential" and upgrade_stage > 1:
+				var is_apartment := subtype == "apartment"
+				var is_farm := subtype == "farm"
+				var body_h := height
+				if is_apartment:
+					var floors := 3 if upgrade_stage < 5 else 4
+					body_h = maxf(height, float(floors) * 1.35)
+				elif is_farm:
+					body_h = minf(height, 1.85)
+				_build_residential_level_architecture(
+					w, d, body_h, color, color.lightened(0.14),
+					Color(0.66, 0.59, 0.48), Color(0.48, 0.22, 0.16),
+					Color(0.88, 0.82, 0.69), Color(0.24, 0.43, 0.54),
+					is_apartment, is_farm
+				)
+			return
+
 	match category:
 		"residential":
 			# Visible architectural milestones: starter villa, expanded two-storey home,
@@ -273,14 +293,10 @@ func _create_visual() -> void:
 func _should_use_external_model(model_path: String) -> bool:
 	if model_path.is_empty():
 		return false
-	# Residential growth is stage-authored geometry. A category-wide GLTF must
-	# never mask the actual architectural change when a home is upgraded.
-	var category := str(definition.get("category", ""))
-	if category == "residential" or category == "commercial" or category == "industrial":
-		# Current category GLTFs are shared placeholders. Use the authored
-		# type-specific Godot architecture until a verified bespoke GLB exists.
-		return false
-	return true
+	# Preserve the hand-authored level-one villa hero. Higher residential
+	# stages may use their local GLTF base, with unique stage geometry layered on top.
+	var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1
+	return not is_starter_villa
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
 	var residential_subtype := str(definition.get("subtype", "villa"))
