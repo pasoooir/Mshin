@@ -42,6 +42,9 @@ func can_list_for_sale(item_id: String, amount: int = 1) -> bool:
 		return false
 	return StorageManager.get_count(item_id) >= amount
 
+func can_sell(item_id: String, amount: int = 1) -> bool:
+	return can_list_for_sale(item_id, amount)
+
 func list_for_sale(item_id: String, amount: int = 1) -> bool:
 	if not can_list_for_sale(item_id, amount):
 		return false
