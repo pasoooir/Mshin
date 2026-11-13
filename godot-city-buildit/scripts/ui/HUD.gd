@@ -242,8 +242,9 @@ func _apply_responsive_layout() -> void:
 		submenu_control.anchor_bottom = 1.0
 		submenu_control.offset_left = 0.0
 		submenu_control.offset_right = 0.0
-		submenu_control.offset_top = -202.0 * scale_factor
-		submenu_control.offset_bottom = -8.0 * scale_factor
+		var catalog_scale := maxf(scale_factor, 0.90)
+		submenu_control.offset_top = -202.0 * catalog_scale
+		submenu_control.offset_bottom = -8.0 * catalog_scale
 	if catalog_base_bar:
 		catalog_base_bar.anchor_left = 0.15
 		catalog_base_bar.anchor_right = 0.95
@@ -251,8 +252,9 @@ func _apply_responsive_layout() -> void:
 		catalog_base_bar.anchor_bottom = 1.0
 		catalog_base_bar.offset_left = 0.0
 		catalog_base_bar.offset_right = 0.0
-		catalog_base_bar.offset_top = -94.0 * scale_factor
-		catalog_base_bar.offset_bottom = -8.0 * scale_factor
+		var catalog_scale := maxf(scale_factor, 0.90)
+		catalog_base_bar.offset_top = -94.0 * catalog_scale
+		catalog_base_bar.offset_bottom = -8.0 * catalog_scale
 	if catalog_advisor:
 		catalog_advisor.anchor_left = 0.0
 		catalog_advisor.anchor_right = 0.15
@@ -260,8 +262,9 @@ func _apply_responsive_layout() -> void:
 		catalog_advisor.anchor_bottom = 1.0
 		catalog_advisor.offset_left = 0.0
 		catalog_advisor.offset_right = 0.0
-		catalog_advisor.offset_top = -282.0 * scale_factor
-		catalog_advisor.offset_bottom = -2.0 * scale_factor
+		var catalog_scale := maxf(scale_factor, 0.90)
+		catalog_advisor.offset_top = -282.0 * catalog_scale
+		catalog_advisor.offset_bottom = -2.0 * catalog_scale
 	var info_panel := get_node_or_null("BuildingInfoPanel") as Control
 	if info_panel:
 		var compact_profile := _responsive_profile_for_size(viewport_size) == "compact"
@@ -282,8 +285,9 @@ func _apply_responsive_layout() -> void:
 		catalog_close.anchor_bottom = 1.0
 		catalog_close.offset_left = 0.0
 		catalog_close.offset_right = -8.0 * scale_factor
-		catalog_close.offset_top = -94.0 * scale_factor
-		catalog_close.offset_bottom = -8.0 * scale_factor
+		var catalog_scale := maxf(scale_factor, 0.90)
+		catalog_close.offset_top = -94.0 * catalog_scale
+		catalog_close.offset_bottom = -8.0 * catalog_scale
 	if context_header:
 		var header_width := minf(viewport_size.x * 0.46, 600.0 * scale_factor)
 		context_header.anchor_left = 0.5
@@ -1711,7 +1715,7 @@ func open_production_panel(building: Building) -> void:
 	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	product_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	product_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	product_scroll.custom_minimum_size.y = (104.0 if profile == "compact" else 132.0) * _ui_scale
+	product_scroll.custom_minimum_size.y = (104.0 if profile == "compact" else 132.0) * maxf(_ui_scale, 0.90)
 	layout.add_child(product_scroll)
 
 	var product_grid := GridContainer.new()
@@ -1825,7 +1829,7 @@ func open_production_panel(building: Building) -> void:
 
 	var details_host := Control.new()
 	details_host.name = "ProductionDetailsHost"
-	details_host.custom_minimum_size.y = (112.0 if profile == "compact" else 144.0) * _ui_scale
+	details_host.custom_minimum_size.y = (112.0 if profile == "compact" else 144.0) * maxf(_ui_scale, 0.90)
 	layout.add_child(details_host)
 
 	var queue_heading := HBoxContainer.new()
@@ -1858,7 +1862,7 @@ func open_production_panel(building: Building) -> void:
 	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = (76.0 if profile == "compact" else 92.0) * _ui_scale
+	queue_scroll.custom_minimum_size.y = (90.0 if profile == "compact" else 92.0) * maxf(_ui_scale, 0.90)
 	layout.add_child(queue_scroll)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
