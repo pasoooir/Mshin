@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://c8mainscene001"]
+[gd_scene load_steps=10 format=3 uid="uid://c8mainscene001"]
 
 [ext_resource type="Script" path="res://scripts/systems/CameraController.gd" id="1_camera"]
 [ext_resource type="Script" path="res://scripts/ui/HUD.gd" id="2_hud"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/GameBootstrap.gd" id="6_bootstrap"]
 [ext_resource type="Script" path="res://scripts/world/WorldPresentation.gd" id="7_world"]
 [ext_resource type="Script" path="res://scripts/ui/CitizenFeedbackBubbles.gd" id="8_citizen_feedback"]
+[ext_resource type="Script" path="res://scripts/ui/TutorialGuide.gd" id="9_tutorial"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("6_bootstrap")
@@ -186,3 +187,6 @@ horizontal_alignment = 1
 [connection signal="pressed" from="HUD/LeftMenu/BtnTrade" to="HUD" method="_on_trade_pressed"]
 [connection signal="pressed" from="HUD/LeftMenu/BtnSave" to="HUD" method="_on_save_pressed"]
 [connection signal="pressed" from="HUD/LeftMenu/BtnCancel" to="HUD" method="_on_cancel_pressed"]
+
+[node name="TutorialGuide" type="CanvasLayer" parent="."]
+script = ExtResource("9_tutorial")
