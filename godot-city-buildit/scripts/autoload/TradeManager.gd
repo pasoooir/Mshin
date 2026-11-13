@@ -6,6 +6,9 @@ signal trade_state_changed
 
 const DEPOT_UNLOCK_POPULATION := 8000
 const GLOBAL_TRADE_UNLOCK_POPULATION := 10000
+const CARGO_SHIP_UNLOCK_POPULATION := 20000
+const SHIP_RETURN_SECONDS := 180.0
+const SHIP_CRATE_COUNT := 3
 const MAX_SELL_SLOTS := 4
 const SELL_LISTING_SECONDS := 120.0
 const MARKET_REFRESH_SECONDS := 180.0
@@ -15,11 +18,16 @@ var sell_slots: Array[Dictionary] = []
 var current_orders: Array[Dictionary] = []
 var market_offers: Array[Dictionary] = []
 var market_refresh_time_left := MARKET_REFRESH_SECONDS
+var ship_crates: Array[Dictionary] = []
+var ship_departed := false
+var ship_return_time_left := 0.0
+var ship_departures := 0
 
 func _ready() -> void:
 	print("[TradeManager] Trade system online")
 	_generate_orders()
 	_generate_market_offers()
+	_generate_ship_manifest()
 
 func has_trade_building(type_id: String) -> bool:
 	for building in BuildManager.buildings.values():
@@ -34,6 +42,9 @@ func is_depot_operational() -> bool:
 
 func is_global_trade_operational() -> bool:
 	return GameManager.population >= GLOBAL_TRADE_UNLOCK_POPULATION and has_trade_building("global_trade_hq")
+
+func is_cargo_ship_operational() -> bool:
+	return GameManager.population >= CARGO_SHIP_UNLOCK_POPULATION and has_trade_building("cargo_port")
 
 func can_list_for_sale(item_id: String, amount: int = 1) -> bool:
 	if not is_depot_operational() or amount <= 0 or sell_slots.size() >= MAX_SELL_SLOTS:
@@ -100,8 +111,79 @@ func _process(delta: float) -> void:
 			_generate_market_offers()
 			market_refresh_time_left = MARKET_REFRESH_SECONDS
 			changed = true
+	if is_cargo_ship_operational() and ship_departed:
+		ship_return_time_left = maxf(0.0, ship_return_time_left - delta)
+		if ship_return_time_left <= 0.0:
+			ship_departed = false
+			ship_return_time_left = 0.0
+			_generate_ship_manifest()
+			_set_ship_visual_departed(false)
+			changed = true
 	if changed:
 		trade_state_changed.emit()
+
+func _generate_ship_manifest() -> void:
+	ship_crates.clear()
+	var pool: Array[String] = []
+	for item_id in ProductionManager.raw_materials.keys():
+		var definition: Dictionary = ProductionManager.raw_materials[item_id]
+		if int(definition.get("level", 1)) <= GameManager.level:
+			pool.append(str(item_id))
+	for item_id in ProductionManager.crafted_items.keys():
+		var definition: Dictionary = ProductionManager.crafted_items[item_id]
+		if int(definition.get("level", 1)) <= GameManager.level:
+			pool.append(str(item_id))
+	pool.shuffle()
+	if pool.is_empty():
+		pool.append("metal")
+	for index in range(SHIP_CRATE_COUNT):
+		var item_id := pool[index % pool.size()]
+		var amount := randi_range(2, 4)
+		ship_crates.append({
+			"item_id": item_id,
+			"amount": amount,
+			"delivered": false
+		})
+	trade_state_changed.emit()
+
+func deliver_ship_crate(crate_index: int) -> bool:
+	if not is_cargo_ship_operational() or ship_departed or crate_index < 0 or crate_index >= ship_crates.size():
+		return false
+	var crate: Dictionary = ship_crates[crate_index]
+	if bool(crate.get("delivered", false)):
+		return false
+	var item_id := str(crate.get("item_id", ""))
+	var amount := int(crate.get("amount", 0))
+	if not _item_exists(item_id) or amount <= 0 or StorageManager.get_count(item_id) < amount:
+		return false
+	var requested_items: Dictionary = {}
+	requested_items[item_id] = amount
+	if not StorageManager.remove_items(requested_items):
+		return false
+	crate["delivered"] = true
+	ship_crates[crate_index] = crate
+	var all_delivered := true
+	for entry in ship_crates:
+		if not bool(entry.get("delivered", false)):
+			all_delivered = false
+			break
+	if all_delivered:
+		ship_departed = true
+		ship_return_time_left = SHIP_RETURN_SECONDS
+		ship_departures += 1
+		EconomyManager.add_keys(1)
+		_set_ship_visual_departed(true)
+	trade_state_changed.emit()
+	return true
+
+func get_ship_crates() -> Array:
+	return ship_crates
+
+func _set_ship_visual_departed(departed: bool) -> void:
+	var scene := get_tree().current_scene
+	var visual = scene.get_node_or_null("World/WorldPresentation/CargoShipVisual") if scene else null
+	if visual and visual.has_method("set_departed"):
+		visual.set_departed(departed)
 
 func _item_exists(item_id: String) -> bool:
 	return ProductionManager.raw_materials.has(item_id) or ProductionManager.crafted_items.has(item_id)
@@ -183,7 +265,11 @@ func to_save_dict() -> Dictionary:
 		"sell_slots": sell_slots.duplicate(true),
 		"current_orders": current_orders.duplicate(true),
 		"market_offers": market_offers.duplicate(true),
-		"market_refresh_time_left": market_refresh_time_left
+		"market_refresh_time_left": market_refresh_time_left,
+		"ship_crates": ship_crates.duplicate(true),
+		"ship_departed": ship_departed,
+		"ship_return_time_left": ship_return_time_left,
+		"ship_departures": ship_departures
 	}
 
 func from_save_dict(data: Dictionary) -> void:
@@ -200,6 +286,16 @@ func from_save_dict(data: Dictionary) -> void:
 		if offer is Dictionary:
 			market_offers.append(offer.duplicate(true))
 	market_refresh_time_left = maxf(0.0, float(data.get("market_refresh_time_left", MARKET_REFRESH_SECONDS)))
+	ship_crates.clear()
+	for crate in data.get("ship_crates", []):
+		if crate is Dictionary:
+			ship_crates.append(crate.duplicate(true))
+	ship_departed = bool(data.get("ship_departed", false))
+	ship_return_time_left = maxf(0.0, float(data.get("ship_return_time_left", 0.0)))
+	ship_departures = maxi(0, int(data.get("ship_departures", 0)))
+	if ship_crates.is_empty():
+		_generate_ship_manifest()
+	_set_ship_visual_departed(ship_departed)
 	if current_orders.is_empty():
 		_generate_orders()
 	if market_offers.is_empty():
