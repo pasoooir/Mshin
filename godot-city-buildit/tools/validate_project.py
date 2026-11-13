@@ -199,6 +199,7 @@ cargo_ship_visual_source = (ROOT / "scripts/world/CargoShipVisual.gd").read_text
 citizen_feedback_source = (ROOT / "scripts/ui/CitizenFeedbackBubbles.gd").read_text(encoding="utf-8")
 epic_project_manager_source = (ROOT / "scripts/autoload/EpicProjectManager.gd").read_text(encoding="utf-8")
 achievement_manager_source = (ROOT / "scripts/autoload/AchievementManager.gd").read_text(encoding="utf-8")
+region_manager_source = (ROOT / "scripts/autoload/RegionManager.gd").read_text(encoding="utf-8")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
 
 for contract in [
@@ -356,8 +357,53 @@ for contract in [
     if contract not in gameplay_smoke_source:
         errors.append(f"Achievement regression test is missing: {contract}")
 
-if "EpicProjectManager.to_save_dict()" not in save_manager_source or 'EpicProjectManager.from_save_dict(parsed.get("epic_projects", {}))' not in save_manager_source:
-    errors.append("Epic Project state must be saved and restored")
+if 'RegionManager="*res://scripts/autoload/RegionManager.gd"' not in project:
+    errors.append("RegionManager must be registered as an autoload")
+for contract in [
+    '"id":"sunny_isles", "name":"Sunny Isles", "unlock_level":25',
+    '"id":"frosty_fjords", "name":"Frosty Fjords", "unlock_level":30',
+    '"id":"cactus_canyon", "name":"Cactus Canyon", "unlock_level":35',
+    '"id":"green_valley", "name":"Green Valley", "unlock_level":40',
+    '"id":"limestone_cliffs", "name":"Limestone Cliffs", "unlock_level":45',
+    "func switch_region(region_id: String, persist_after_switch: bool = true) -> bool:",
+    "func to_save_dict() -> Dictionary:",
+    "func from_save_dict(data: Dictionary) -> void:",
+]:
+    if contract not in region_manager_source:
+        errors.append(f"Region manager contract is missing: {contract}")
+for contract in [
+    "func capture_region_snapshot() -> Dictionary:",
+    "func load_region_snapshot(snapshot: Dictionary) -> bool:",
+    '"regions": RegionManager.to_save_dict()',
+    "RegionManager.store_active_region_snapshot(capture_region_snapshot())",
+    "RegionManager.from_save_dict(parsed.get(\"regions\", {}))",
+]:
+    if contract not in save_manager_source:
+        errors.append(f"Region save/load contract is missing: {contract}")
+for contract in [
+    "func open_regions_panel() -> void:",
+    "RegionManager.switch_region(region_id)",
+    "RegionManager.region_changed.connect(_on_region_changed)",
+]:
+    if contract not in hud:
+        errors.append(f"Region selector HUD contract is missing: {contract}")
+for contract in [
+    "func _apply_region_climate(sky_material: ProceduralSkyMaterial, environment: Environment) -> void:",
+    "func refresh_region_appearance() -> void:",
+    "RegionManager.region_changed.connect(_on_region_changed)",
+]:
+    if contract not in world_presentation_source:
+        errors.append(f"Region climate rendering contract is missing: {contract}")
+for contract in [
+    "func _test_region_city_snapshots() -> void:",
+    "must open as an independent region",
+    "must restore its independent road layout",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Region snapshot regression test is missing: {contract}")
+
+if "EpicProjectManager.to_save_dict()" not in save_manager_source or "EpicProjectManager.from_save_dict(epic_data)" not in save_manager_source:
+    errors.append("Epic Project state must be saved and restored per region")
 for contract in [
     "func _open_epic_project_panel(building: Building) -> void:",
     "EpicProjectManager.start_project(building.building_id)",
