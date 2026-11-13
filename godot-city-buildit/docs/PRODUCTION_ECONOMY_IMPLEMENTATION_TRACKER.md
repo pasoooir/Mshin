@@ -2,14 +2,19 @@
 
 **Snapshot:** 2026-11-13  
 **Project:** godot-city-buildit  
-**Working branch:** `feat/production-economy-final-acceptance`  
-**PR:** [#438 — Complete production economy validation and recipe coverage](https://github.com/pasoooir/Mshin/pull/438)  
-**Baseline:** PR #394 — `06c3e2bd87435ddc3dce5df0d2c73ff37bff8fa8`  
-**Previous expansion:** PR #437 — `c9ea5e7b6ed61a2b3afa2a92e33406522da528ff`
+**Branch:** main  
+**Status:** PR #438 is merged. Recipe data, economy audit, trade eligibility, offline/queue stress coverage and mobile catalog layout are implemented and CI-verified. Physical Android visual/touch acceptance remains open, so the domain is not falsely marked fully closed.
 
-**Current evidence:** Godot Validation run `43488845705` and Mshin Playable Web run `43488845632` both passed on PR #438 head `676fc03c9ba8a450d303b41f936a6731f17ffae8`. The Web workflow passed Godot import, startup, GameplaySmoke, Web export and Chromium desktop/mobile launch checks. These checks do not constitute physical Android handset acceptance.
+**Baseline:** PR #394 — `06c3e2bd87435ddc3dce5df0d2c73ff37bff8fa8`.  
+**Previous expansion:** PR #437 — `c9ea5e7b6ed61a2b3afa2a92e33406522da528ff`.  
+**Completion PR:** [#438](https://github.com/pasoooir/Mshin/pull/438) — merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93`.
 
-**Acceptance boundary:** production code, recipe integrity, economy diagnostics, long-session/offline regression tests and mobile-viewport UI behavior are automated and passing. A real Android device screenshot comparison and physical touch test remain unverified. Do not mark this domain fully closed or claim pixel-identical SimCity BuildIt UI until that physical check is performed.
+**Main-branch evidence after Merge:**
+- Godot City BuildIt Validation: run `43489826154` — success.
+- Mshin Playable Web: run `43489826228` — success, including GameplaySmoke, Web export and Chromium desktop/mobile landscape launch.
+- GitHub Pages build/deploy: run `43489825540` — success.
+
+**Acceptance boundary:** production code, recipe integrity, economy diagnostics, long-session/offline regression tests and mobile-viewport UI behavior are automated and passing. A real Android device screenshot comparison and physical touch test remain unverified. Do not claim pixel-identical SimCity BuildIt UI until that physical check is performed.
 
 ## Six implementation slices
 
@@ -45,12 +50,12 @@
 - Farmer's Store: 3 recipes.
 - Dessert Shop: 5 recipes.
 
-### New source-backed product records in PR #438
+### Source-backed product records added in PR #438
 
-- Football Shoes: Shoes ×1 + Chemicals ×3; 35-minute base time; reference value 920. The exact item Mayor Level is unknown, so it cannot be produced or selected for generated Global Trade/Cargo Ship offers.
+- Football Shoes: Shoes ×1 + Chemicals ×3; 35-minute base production; reference value 920. Exact item Mayor Level is unknown, so it cannot be produced or selected for generated Global Trade/Cargo Ship offers.
 - Kite: Home Textiles ×2 + Planks ×2 + Paint ×2; 75-minute base time; reference value 1,000. Exact item Mayor Level remains unknown and is not guessed.
 - Teddy Bear: Home Textiles ×4 + Plastic ×2; 60-minute base time; reference value 600. Exact item Mayor Level remains unknown and is not guessed.
-- Tapestry: reference time 210 minutes and reference value 2,560 are recorded. Current Bureau of Restoration 2024 table reports Textiles ×4 + Paint ×2 + Glue ×2; its product page reports Textiles ×3 + Paint ×2 + Glue ×2. Both candidate ingredient sets are exposed in the detail panel; production remains disabled until the conflict is resolved.
+- Tapestry: reference time 210 minutes and reference value 2,560 are recorded. Current Bureau of Restoration 2024 table reports Textiles ×4 + Paint ×2 + Glue ×2; its product page reports Textiles ×3 + Paint ×2 + Glue ×2. Both candidate ingredient sets are exposed in the detail panel; production remains disabled.
 - Sources are community-reference pages, not official EA documentation. A missing Mayor Level is represented as unverified metadata, not replaced with a guessed level.
 
 ### Previous recipe expansion
@@ -117,15 +122,15 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 
 ## Final acceptance
 
-- [x] PR #394 production-economy foundation exists and is merged.
-- [x] PR #437 verified recipe expansion exists and is merged.
-- [x] PR #438 source-backed product metadata, economy audit, trade filtering, queue stress tests and mobile panel robustness are implemented on the PR branch.
-- [x] Godot Validation run `43488845705` passed on PR #438 head `676fc03c9ba8a450d303b41f936a6731f17ffae8`.
-- [x] Mshin Playable Web run `43488845632` passed, including GameplaySmoke, Web export and Chromium desktop/mobile launch.
+- [x] PR #394 production-economy foundation merged to main.
+- [x] PR #437 verified recipe expansion merged to main.
+- [x] PR #438 source-backed product metadata, economy audit, trade filtering, queue stress tests and mobile panel robustness merged to main.
+- [x] Godot Validation run `43489826154` passed on main merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93`.
+- [x] Web/Chromium desktop and mobile launch run `43489826228` passed on the same main commit.
+- [x] GitHub Pages build/deploy run `43489825540` passed on the same main commit.
 - [x] 73/74 product identities have recipe definitions; 70 are currently craftable, three are safely locked by unknown Mayor Level, and one Tapestry record remains disabled due to conflicting inputs.
 - [x] Long-session/offline queue, parallel factory, save/restore and full-storage collection regression tests pass in CI.
 - [x] Mobile Chromium landscape launch and production catalog scroll contract pass in CI.
 - [ ] Physical Android screenshot comparison against current SimCity BuildIt production/residential panels.
 - [ ] Physical Android touch acceptance: horizontal catalog scroll, select product, start, collect, close, queue expansion and upgrade.
-- [ ] Merge PR #438 and re-run main-branch validation/deployment before calling the branch delivered.
 - Do not claim this domain fully closed until the two physical-device checks above are evidenced.
