@@ -51,7 +51,7 @@
 ### Services
 - `ServiceManager.gd`: ظرفیت، تقاضا، شعاع و فهرست خانه‌های برخوردار از برق/آب را محاسبه می‌کند.
 - `FireHazardManager.gd`: شعاع آتش‌نشانی و ارزیابی خطر آتش را انجام می‌دهد.
-- `GhostPreview.gd`: پیش‌نمایش محدوده Fire/Police/Health/Power/Water دارد؛ Sewage/Waste هنوز پیش‌نمایش جانمایی ندارند.
+- `GhostPreview.gd`: پیش‌نمایش محدوده Fire/Police/Health/Power/Water/Sewage/Waste دارد؛ شعاع Sewage/Waste از ثابت‌های مشترک با منطق رضایت Mshin خوانده می‌شود.
 - `HappinessManager.gd`: برق، آب، پارک، آلودگی صنعتی، Fire/Police/Health و پوشش پایه Sewage/Waste روی رضایت اثر می‌گذارند. Fire/Police/Health با `service_group` بررسی می‌شوند تا همه Tierهای تعریف‌شده پوشش داده شوند.
 - شناسه‌های Sewage یکدست شده‌اند: `sewage_small`، `sewage_basic` و `sewage_deluxe` در هر دو مسیر رضایت و خدمات اضافی شناسایی می‌شوند؛ تست هر سه Tier وجود دارد.
 - Waste از طریق `service_group: waste` و شعاع ۳۰ واحد در پوشش نزدیک‌خانه و رضایت پایه لحاظ می‌شود؛ ظرفیت عددی کاتالوگ هنوز به محاسبه سراسری تقاضا/ظرفیت شهر متصل نیست.
@@ -84,7 +84,7 @@
 - Android landscape روی گوشی کوچک و بزرگ، و تبلت در landscape/portrait.
 - دسکتاپ در 1280×720 و 1920×1080.
 - Screenshot و تست تعامل Factory، Store، Product detail، Queue، City Needs، Residential Upgrade، Storage و Building Info.
-- بررسی مستقل نیاز/ظرفیت سراسری Sewage/Waste و افزودن پیش‌نمایش جانمایی آن‌ها.
+- بررسی مستقل نیاز/ظرفیت سراسری Sewage/Waste.
 - آزمون خرید ارتقای ظرفیت انبار و رفتار ذخیره/بازیابی ظرفیت پس از بارگذاری.
 - بنچمارک FPS روی دستگاه هدف.
 
