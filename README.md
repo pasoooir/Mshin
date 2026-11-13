@@ -111,6 +111,8 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#436](https://github.com/pasoooir/Mshin/pull/436) | اصلاح wrap و گسترش افقی خلاصه خدمات شهری در HUD موبایل | Godot Validation و Web desktop/mobile Chromium موفق |
 | [#437](https://github.com/pasoooir/Mshin/pull/437) | افزایش کاتالوگ به ۷۰ Recipe قابل تولید؛ داده‌های نامعلوم عمداً حدس زده نشدند | Godot Validation، Web export، Chromium desktop/mobile و Pages موفق |
 | [#438](https://github.com/pasoooir/Mshin/pull/438) | ۷۳ تعریف Recipe از ۷۴ محصول؛ ۷۰ قابل تولید، سه محصول قفل‌شده به‌دلیل سطح نامعلوم، Tapestry با تعارض شفاف؛ ممیزی اقتصاد، تست صف آفلاین و اصلاح کاتالوگ موبایل | Godot Validation، Web/Chromium desktop+mobile و Pages deploy روی main موفق |
+| [#439](https://github.com/pasoooir/Mshin/pull/439) | AudioManager محلی با موسیقی/صدای محیط WAV رویه‌ای، شش افکت، اتصال رویدادهای گیم‌پلی و ذخیره کنترل‌های صوتی | Godot Validation و Web موفق؛ اجرای صوتی فیزیکی هنوز تأیید نشده |
+| [#440](https://github.com/pasoooir/Mshin/pull/440) | راهنمای شش‌مرحله‌ای رویدادمحور اولین شهر، ذخیره پیشرفت، رد/تعویق و بازگشایی؛ GameplaySmoke قرارداد مراحل را پوشش می‌دهد | Godot Validation، Web/Chromium و Pages build/deploy روی main موفق؛ تأیید تعاملی فیزیکی هنوز باقی است |
 
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
 
