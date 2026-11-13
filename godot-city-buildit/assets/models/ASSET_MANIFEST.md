@@ -9,7 +9,7 @@ All four GLTF files in this directory are original procedural architectural mesh
 | Neighborhood shop | `commercial/neighborhood_shop.gltf` | 3.5 × 3.5 × 5.3 | Generic commercial building visual |
 | Small factory | `industrial/small_factory.gltf` | 3.5 × 3.5 × 7.7 | Generic industrial building visual |
 
-Materials use glTF 2.0 metallic-roughness PBR factors (base color, metallic, roughness). The current assets do **not** contain photographic texture maps. Their geometry includes facade openings/frames, glass, entry features, roof structures, balconies, signage, loading door and industrial equipment details as appropriate.
+Materials use glTF 2.0 metallic-roughness PBR factors plus embedded procedural PNG texture maps for Base Color, tangent-space Normal and Metallic-Roughness. The texture maps are generated patterns, not photographic scans or high-resolution photogrammetry textures. Their geometry includes facade openings/frames, glass, entry features, roof structures, balconies, signage, loading door and industrial equipment details as appropriate.
 
 ## Validation
 
