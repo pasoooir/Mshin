@@ -78,9 +78,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		last_mouse_position = event.position
 	elif event is InputEventScreenTouch:
 		if event.pressed:
-			if touch_points.is_empty():
-				pan_velocity = Vector2.ZERO
-				orbit_velocity = 0.0
+			pan_velocity = Vector2.ZERO
+			orbit_velocity = 0.0
 			touch_points[event.index] = event.position
 			if touch_points.size() >= 2:
 				_update_pinch_baseline()
@@ -97,7 +96,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			# Do not move the camera underneath the drag preview.
 			if not _is_road_mode() and not BuildManager.is_moving and not _is_building_press_pending(event.index):
 				_pan(event.relative)
-				pan_velocity = event.screen_velocity
+				orbit_velocity = 0.0
+				var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
+				pan_velocity = event.screen_velocity if event.screen_velocity.length_squared() > 0.0 else event.relative / frame_delta
 		elif touch_points.size() >= 2:
 			_update_pinch(event.relative)
 
