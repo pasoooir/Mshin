@@ -30,6 +30,8 @@ for script in re.findall(r'="[*]res://([^"]+)"', project):
 build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
+happiness_manager_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_text(encoding="utf-8")
+gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
 building_ids = set(re.findall(r'^[ \t]*"([a-z0-9_]+)"[ \t]*:[ \t]*[{]"name"', build_manager, re.M))
 for selected in re.findall(r'BuildManager[.]select_building[(]"([a-z0-9_]+)"[)]', hud):
     if selected not in building_ids:
@@ -396,8 +398,23 @@ for sewage_id, expected_capacity, expected_level, expected_size, expected_pollut
         errors.append(f"Sewage facility footprint is incorrect: {sewage_id}")
     if f'"pollution":{expected_pollution}' not in definition or f'"pollution_radius":{expected_radius}' not in definition:
         errors.append(f"Sewage facility pollution metadata is incorrect: {sewage_id}")
-if '"sewage_pipe":' in build_manager or '"sewage_pipe"' in hud:
-    errors.append("Obsolete sewage_pipe catalog ID must not remain")
+if '"sewage_pipe":' in build_manager or '"sewage_pipe"' in hud or '"sewage_pipe"' in happiness_manager_source:
+    errors.append("Obsolete sewage_pipe ID must not remain in building, HUD or happiness logic")
+for contract in [
+    'const SEWAGE_SERVICE_IDS := ["sewage_small", "sewage_basic", "sewage_deluxe"]',
+    "func _nearby_sewage_service(",
+    "_nearby_sewage_service(home, 30.0)",
+]:
+    if contract not in happiness_manager_source:
+        errors.append(f"Sewage happiness coverage contract is missing: {contract}")
+for contract in [
+    "func _test_sewage_service_happiness()",
+    "Each sewage catalog tier must add the existing +6 happiness bonus",
+    "outside the 30-unit radius",
+    "under construction",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Sewage gameplay regression test is missing: {contract}")
 
 # Solid-waste facilities remain distinct from sewage and expose generic numeric capacity.
 for waste_id, expected_capacity, expected_level, expected_size, expected_pollution, expected_radius in [
