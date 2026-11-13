@@ -28,6 +28,14 @@ func capture_region_snapshot() -> Dictionary:
 	var road_data: Array = []
 	for cell in road_system.roads.keys():
 		road_data.append([int(cell.x), int(cell.y), road_system.get_road_level(cell)])
+	var gateway_position: Vector2i = RoadSystemScript.GATEWAY_ROAD_CELL
+	var gateway_saved := false
+	for saved_road in road_data:
+		if Vector2i(int(saved_road[0]), int(saved_road[1])) == gateway_position:
+			gateway_saved = true
+			break
+	if not gateway_saved:
+		road_data.append([gateway_position.x, gateway_position.y, 1])
 	var building_data: Array = []
 	for building in BuildManager.buildings.values():
 		if not is_instance_valid(building):
@@ -181,7 +189,7 @@ func load_game() -> bool:
 	return true
 
 
-func _restore_region_world(road_data: Array, building_data: Array, epic_data: Dictionary, allow_empty_region: bool) -> bool:
+func _restore_region_world(road_data: Array, building_data: Array, epic_data: Dictionary, _allow_empty_region: bool) -> bool:
 	var scene = get_tree().current_scene
 	if scene == null:
 		return false
@@ -205,7 +213,7 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 			gateway_index = index
 			break
 	if gateway_index < 0:
-		if not allow_empty_region or not pending_roads.is_empty():
+		if not pending_roads.is_empty():
 			push_error("Saved region road network is missing its permanent highway gateway tile.")
 			return false
 		if not road_system.place_road(gateway_position):
