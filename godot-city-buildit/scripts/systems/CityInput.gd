@@ -53,7 +53,10 @@ func _process(delta: float) -> void:
 	pointer_hold_elapsed[pointer_id] = float(pointer_hold_elapsed.get(pointer_id, 0.0)) + delta
 	if float(pointer_hold_elapsed[pointer_id]) >= LONG_PRESS_SECONDS:
 		pointer_hold_elapsed[pointer_id] = -1.0
-		if BuildManager.is_placing:
+		var pressed_building := _building_at_screen(pointer_start[pointer_id])
+		if pressed_building != null:
+			_begin_move_from_screen(pointer_id, pointer_start[pointer_id])
+		elif BuildManager.is_placing:
 			if BuildManager.rotate_placement():
 				placement_rotate_pointer[pointer_id] = true
 				pointer_moved[pointer_id] = true
