@@ -25,6 +25,11 @@ var building_types: Dictionary = {
 	"residential_villa": {"name":"Villa House", "category":"residential", "subtype":"villa", "service_demand":1, "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
 	"residential_apartment": {"name":"Apartment", "category":"residential", "subtype":"apartment", "service_demand":2, "cost":200, "size":Vector2i(2,2), "population":35, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
 	"residential_farm": {"name":"Farm", "category":"residential", "subtype":"farm", "service_demand":1, "cost":150, "size":Vector2i(2,2), "population":12, "build_time":4.0, "color":Color(0.72,0.78,0.45), "level":2},
+	"island_cottage": {"name":"Island Cottage", "category":"residential", "subtype":"villa", "region":"sunny_isles", "service_demand":1, "cost":25000, "size":Vector2i(2,2), "population":30, "build_time":7.0, "color":Color("#55C8C5"), "level":25},
+	"fjord_chalet": {"name":"Fjord Chalet", "category":"residential", "subtype":"villa", "region":"frosty_fjords", "service_demand":1, "cost":30000, "size":Vector2i(2,2), "population":32, "build_time":8.0, "color":Color("#8AAEC8"), "level":30},
+	"desert_hacienda": {"name":"Desert Hacienda", "category":"residential", "subtype":"villa", "region":"cactus_canyon", "service_demand":1, "cost":35000, "size":Vector2i(2,2), "population":34, "build_time":8.0, "color":Color("#D9A45E"), "level":35},
+	"valley_eco_home": {"name":"Valley Eco Home", "category":"residential", "subtype":"villa", "region":"green_valley", "service_demand":1, "cost":40000, "size":Vector2i(2,2), "population":36, "build_time":9.0, "color":Color("#6FAE70"), "level":40},
+	"cliffside_villa": {"name":"Cliffside Villa", "category":"residential", "subtype":"villa", "region":"limestone_cliffs", "service_demand":1, "cost":45000, "size":Vector2i(2,2), "population":38, "build_time":9.0, "color":Color("#D4C5A2"), "level":45},
 	"building_supplies": {"name":"Building Supplies", "category":"commercial", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":2},
 	# New commercial menu choices. shop_chain keeps the existing Nails recipe path.
 	"shop_chain": {"name":"Chain Store", "category":"commercial", "subtype":"chain", "cost":100, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.35,0.68,0.95), "level":1, "production_slots":1},
@@ -43,6 +48,12 @@ var building_types: Dictionary = {
 	"restoration_office": {"name":"Restoration Office", "category":"commercial", "subtype":"restoration_office", "cost":250000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.55,0.58,0.64), "level":45, "production_slots":1, "shop_id":"restoration_office"},
 	"farmers_store": {"name":"Country Store", "category":"commercial", "subtype":"farmers_store", "cost":300000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.68,0.54,0.34), "level":50, "production_slots":1, "shop_id":"farmers_store"},
 	"dessert_shop": {"name":"Dessert Shop", "category":"commercial", "subtype":"dessert_shop", "cost":350000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.90,0.58,0.68), "level":55, "production_slots":1, "shop_id":"dessert_shop"},
+
+	"coconut_grove": {"name":"Coconut Grove", "category":"industrial", "factory_tier":"small", "region":"sunny_isles", "cost":15000, "size":Vector2i(3,3), "population":0, "build_time":7.0, "color":Color("#4BAE9A"), "level":25, "production_slots":2},
+	"snowberry_farm": {"name":"Snowberry Farm", "category":"industrial", "factory_tier":"small", "region":"frosty_fjords", "cost":18000, "size":Vector2i(3,3), "population":0, "build_time":8.0, "color":Color("#91B7D1"), "level":30, "production_slots":2},
+	"cactus_farm": {"name":"Cactus Farm", "category":"industrial", "factory_tier":"small", "region":"cactus_canyon", "cost":22000, "size":Vector2i(3,3), "population":0, "build_time":8.0, "color":Color("#B88B4E"), "level":35, "production_slots":2},
+	"herb_garden": {"name":"Herb Garden", "category":"industrial", "factory_tier":"small", "region":"green_valley", "cost":26000, "size":Vector2i(3,3), "population":0, "build_time":9.0, "color":Color("#5D9D57"), "level":40, "production_slots":2},
+	"olive_grove": {"name":"Olive Grove", "category":"industrial", "factory_tier":"small", "region":"limestone_cliffs", "cost":30000, "size":Vector2i(3,3), "population":0, "build_time":9.0, "color":Color("#87965B"), "level":45, "production_slots":2},
 	"factory_small": {"name":"Small Factory", "category":"industrial", "factory_tier":"small", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "pollution":1, "pollution_radius":12.0},
 	"factory_basic": {"name":"Basic Factory", "category":"industrial", "factory_tier":"basic", "cost":500, "size":Vector2i(2,2), "population":0, "population_required":4000, "build_time":5.0, "color":Color(0.48,0.50,0.56), "level":1, "production_slots":3, "pollution":1, "pollution_radius":10.0},
 	"factory_mass": {"name":"Mass Production Factory", "category":"industrial", "factory_tier":"mass", "cost":7000, "size":Vector2i(2,2), "population":0, "population_required":27000, "build_time":6.0, "color":Color(0.43,0.47,0.53), "level":1, "production_slots":4, "pollution":1, "pollution_radius":8.0},
@@ -89,10 +100,10 @@ var moving_building: Building = null
 var moving_original_grid: Vector2i = Vector2i.ZERO
 var moving_preview_valid: bool = false
 const MOVABLE_BUILDING_TYPES := [
-	"residential_1", "residential_villa", "residential_apartment", "residential_farm",
+	"residential_1", "residential_villa", "residential_apartment", "residential_farm", "island_cottage", "fjord_chalet", "desert_hacienda", "valley_eco_home", "cliffside_villa",
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
 	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
-	"factory_small", "factory_basic", "factory_mass", "factory_hightech", "factory_nano", "industrial_1", "industrial_2", "industrial_3",
+	"factory_small", "factory_basic", "factory_mass", "factory_hightech", "factory_nano", "industrial_1", "industrial_2", "industrial_3", "coconut_grove", "snowberry_farm", "cactus_farm", "herb_garden", "olive_grove",
 	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall", "epic_projects_department", "trade_depot", "global_trade_hq", "cargo_port",
 	"park_small"
 ]
@@ -125,6 +136,15 @@ func _ready() -> void:
 			definition["model_scale"] = Vector3.ONE
 			building_types[type_id] = definition
 	print("[BuildManager] Ready: %d building types" % building_types.size())
+
+func get_region_build_lock_reason(type_id: String) -> String:
+	if not building_types.has(type_id):
+		return "Unknown building type"
+	var required_region := str(building_types[type_id].get("region", ""))
+	if required_region.is_empty() or required_region == RegionManager.active_region_id:
+		return ""
+	var region := RegionManager.get_region_definition(required_region)
+	return "Available only in %s" % str(region.get("name", required_region))
 
 func get_population_build_lock_reason(type_id: String) -> String:
 	if not building_types.has(type_id):
@@ -185,6 +205,8 @@ func select_building(type_id: String) -> void:
 		return
 	var definition: Dictionary = building_types[type_id]
 	if int(definition.get("level", 1)) > GameManager.level:
+		return
+	if get_region_build_lock_reason(type_id) != "":
 		return
 	if get_population_build_lock_reason(type_id) != "":
 		return
@@ -267,6 +289,8 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: i
 		return false
 	var definition: Dictionary = building_types[chosen]
 	if int(definition.get("level", 1)) > GameManager.level:
+		return false
+	if get_region_build_lock_reason(chosen) != "":
 		return false
 	if get_population_build_lock_reason(chosen) != "":
 		return false
