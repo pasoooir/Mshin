@@ -6,7 +6,7 @@ signal load_completed(success: bool)
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 
 const SAVE_PATH: String = "user://pasoo_city_buildit_save.json"
-const SAVE_VERSION: int = 2
+const SAVE_VERSION: int = 3
 const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
@@ -69,6 +69,7 @@ func save_game() -> bool:
 			"sim_cash": EconomyManager.sim_cash
 		},
 		"storage": StorageManager.to_save_dict(),
+		"trade": TradeManager.to_save_dict(),
 		"roads": road_data,
 		"buildings": building_data
 	}
@@ -116,6 +117,7 @@ func load_game() -> bool:
 	EconomyManager.sim_cash = int(economy_data.get("sim_cash", 0))
 
 	StorageManager.from_save_dict(storage_data)
+	TradeManager.from_save_dict(parsed.get("trade", {}))
 
 	var road_system = scene.get_node("World/RoadSystem")
 	var pending_roads: Array = parsed.get("roads", []).duplicate(true)
