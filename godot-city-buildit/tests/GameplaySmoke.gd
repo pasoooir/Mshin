@@ -1279,6 +1279,25 @@ func _test_regional_building_and_material_gates() -> void:
 			RegionManager.active_region_id = other_region
 			_check(not BuildManager.get_region_build_lock_reason(home_id).is_empty(), "Regional home must be locked outside its own region: %s" % home_id)
 			_check(not BuildManager.get_region_build_lock_reason(factory_id).is_empty(), "Regional factory must be locked outside its own region: %s" % factory_id)
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_experience := GameManager.experience
+	StorageManager.capacity = 50
+	StorageManager.items = {}
+	var regional_component = ProductionComponentScript.new()
+	regional_component.is_factory = true
+	regional_component.factory_type = "coconut_grove"
+	regional_component.slot_count = 2
+	add_child(regional_component)
+	_check(regional_component.start_factory("coconut", 0), "Sunny Isles Resource Factory must start its local Coconut production.")
+	var coconut_slot: Dictionary = regional_component.slots[0]
+	coconut_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	regional_component.slots[0] = coconut_slot
+	regional_component.refresh_slots()
+	_check(regional_component.collect(0) and StorageManager.get_count("coconut") == 1, "Regional factory output must collect into shared city storage.")
+	regional_component.queue_free()
+	StorageManager.from_save_dict(previous_storage)
+	GameManager.experience = previous_experience
+	GameManager.xp_changed.emit(GameManager.experience, GameManager.get_xp_needed())
 	RegionManager.active_region_id = previous_region
 	GameManager.level = previous_level
 	BuildManager.factory_count = previous_factory_count
