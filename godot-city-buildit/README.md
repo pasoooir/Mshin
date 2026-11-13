@@ -85,6 +85,8 @@ Wind power and water towers each provide 12 units of capacity within a 28 m cove
 - Successful building placement and successful product collection request short optional vibration pulses through the browser Vibration API in Web builds. Browsers/devices without API support continue silently; native Android/iOS haptics and physical-device behavior are not yet verified.
 - The right-side vertical toolbar uses locally drawn vector icons (no emoji glyphs, external textures or CDN): roads, residential, commercial, industrial, services, specializations and bulldoze. Selecting a category opens a compact icon-only submenu. Storage, trade, save and cancel remain in the bottom action row. Specialization options beyond parks and destructive bulldozing are currently UI entry points; their full gameplay behavior is not yet implemented.
 - The **save** icon writes the city immediately. The game also autosaves every 30 seconds and on window close.
+- **Trade Depot** unlocks at 8,000 population and must be placed/completed in Services → Trade. It provides four timed sale slots; goods are removed when listed and Simoleons are collected manually when a listing is ready.
+- **Global Trade HQ** unlocks at 10,000 population and must be placed/completed in Services → Trade. Its purchase board is currently an offline local simulation, not a live player-to-player marketplace. Trade listings and market offers are included in save version 3.
 
 ## Validation and automated gameplay test
 
