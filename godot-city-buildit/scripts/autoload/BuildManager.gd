@@ -99,6 +99,9 @@ func _ready() -> void:
 		var definition: Dictionary = building_types[type_id]
 		if definition.has("model_path"):
 			continue
+		# Preserve hand-authored hero visuals for the starter villa and showcase shops.
+		if type_id == "building_supplies" or type_id == "art_supplies":
+			continue
 		var model_path := ""
 		match str(definition.get("category", "")):
 			"residential":

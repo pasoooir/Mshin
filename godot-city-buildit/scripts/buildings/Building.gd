@@ -226,10 +226,20 @@ func _create_visual() -> void:
 	for child in mesh_root.get_children():
 		child.queue_free()
 	var model_path := str(definition.get("model_path", ""))
-	if not model_path.is_empty():
+	if _should_use_external_model(model_path):
 		var model_scale: Vector3 = definition.get("model_scale", Vector3.ONE)
 		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
 			return
+
+func _should_use_external_model(model_path: String) -> bool:
+	if model_path.is_empty():
+		return false
+	# Keep the custom level-one villa and bespoke shop showcases intact.
+	var is_starter_villa := str(definition.get("category", "")) == "residential" \
+		and building_type != "residential_2" \
+		and str(definition.get("subtype", "villa")) == "villa" \
+		and upgrade_stage == 1
+	return not is_starter_villa
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	var color: Color = definition.get("color", Color(0.8, 0.8, 0.8))
 	var category: String = definition.get("category", "residential")

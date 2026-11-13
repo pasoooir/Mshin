@@ -1207,8 +1207,18 @@ func _test_building_model_loader_contract() -> void:
 		instance.free()
 	_check(str(BuildManager.building_types["residential_villa"].get("model_path", "")) == model_paths[0], "Villa definitions must select the local villa model.")
 	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local tower model.")
-	_check(str(BuildManager.building_types["building_supplies"].get("model_path", "")) == model_paths[2], "Commercial definitions must select the local shop model.")
+	_check(str(BuildManager.building_types["hardware_store"].get("model_path", "")) == model_paths[2], "Generic commercial definitions must select the local shop model.")
 	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[3], "Industrial definitions must select the local factory model.")
+	_check(not BuildManager.building_types["building_supplies"].has("model_path"), "Building Supplies must retain its bespoke showcase visual.")
+	_check(not BuildManager.building_types["art_supplies"].has("model_path"), "Art Supplies must retain its bespoke gallery visual.")
+	var villa_visual_probe := Building.new()
+	villa_visual_probe.building_type = "residential_villa"
+	villa_visual_probe.definition = {"category": "residential", "subtype": "villa"}
+	villa_visual_probe.upgrade_stage = 1
+	_check(not villa_visual_probe._should_use_external_model(model_paths[0]), "Level-one starter villa must retain its bespoke hero visual.")
+	villa_visual_probe.upgrade_stage = 2
+	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
+	villa_visual_probe.free()
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
