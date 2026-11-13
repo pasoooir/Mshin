@@ -15,7 +15,7 @@
 | Commercial | فروشگاه‌ها و بخشی از زنجیره‌ها فعال؛ برخی محصولات فقط کاتالوگی‌اند و Recipe آن‌ها غیرفعال است |
 | Residential | پنل، مواد، کمبود، تأمین‌کننده، تحویل مواد و تایمر وجود دارد؛ داده‌های plan/population دقیق SCBI نیست |
 | Storage | ظرفیت انبار از UI با هزینه ۵۰۰ Simoleons و افزایش ۱۰ واحد قابل ارتقاست؛ موجودی، affordability و refresh تست شده‌اند |
-| Services | ظرفیت/تقاضای سراسری Sewage/Waste با اتصال Gateway و واحدهای تقاضای ۱/۲/۵ پیاده‌سازی و آزمون شده؛ Fire/Police/Health هنوز ظرفیت عددی سراسری ندارند |
+| Services | هر هفت خدمت حیاتی عملیاتی و آزمون شده‌اند: Power/Water با ظرفیت و شعاع، Sewage/Waste با ظرفیت سراسری، Fire/Police/Health با پوشش محلی متصل به Gateway؛ CI مربوط به PR #435 سبز است |
 | Trade | فروش و سفارش پایه وجود دارد؛ Trade Depot و Global Trade مستقل وجود ندارند |
 | Move/Demolish | جابه‌جایی ساختمان، تخریب ساختمان و حذف جاده وجود دارند |
 | Responsive UI | در main تطبیق کامل همه پنل‌های عمیق برای سه فرم‌فاکتور تأیید نشده؛ PR #396 هنگام ممیزی Draft و خارج از main بود |
@@ -55,13 +55,15 @@
 - `HappinessManager.gd`: آستانه رهاشدن ۲۵ و مهلت ۹۰ ثانیه دارد.
 
 ### Services
-- `ServiceManager.gd`: ظرفیت/تقاضا و خانه‌های برخوردار از برق/آب را با شعاع محاسبه می‌کند؛ ظرفیت سراسری Sewage/Waste را فقط از تأسیسات و خانه‌های متصل به Gateway تخصیص می‌دهد.
-- `FireHazardManager.gd`: شعاع آتش‌نشانی و ارزیابی خطر آتش را انجام می‌دهد.
+- `ServiceManager.gd`: ظرفیت/تقاضا و شناسه خانه‌های برخوردار از Power/Water را با شعاع محاسبه می‌کند؛ ظرفیت سراسری Sewage/Waste را فقط از تأسیسات و خانه‌های متصل به Gateway تخصیص می‌دهد.
+- Fire/Police/Health نیز مجموعه‌های `fire_served_ids`، `police_served_ids` و `health_served_ids` دارند؛ هر دو سمت خانه و مرکز باید به Gateway متصل باشند و شعاع هر Tier از `coverage_tiles` کاتالوگ خوانده می‌شود.
+- این سه خدمت اضطراری، مدل پوشش محلی هستند نه استخر ظرفیت سراسری؛ برای آن‌ها ظرفیت عددی بی‌منبع ساخته نشده است.
+- `FireHazardManager.gd` دیگر شعاع را مستقل از خدمات محاسبه نمی‌کند و مهار آتش را از `ServiceManager.fire_served_ids` می‌خواند.
 - `GhostPreview.gd`: پیش‌نمایش شعاعی Fire/Police/Health/Power/Water دارد؛ Sewage/Waste به‌عنوان سرویس سراسری شبکه‌ای ثبت می‌شوند و شعاع محلی ندارند.
-- `HappinessManager.gd`: برق/آب، پارک، آلودگی صنعتی، Fire/Police/Health و وضعیت ظرفیت Sewage/Waste روی رضایت اثر می‌گذارند؛ کمبود Sewage از Level 8 و Waste از Level 14 با جریمه Mshin برابر ۶- امتیاز اعمال می‌شود.
+- `HappinessManager.gd`: برق/آب، پارک، آلودگی صنعتی، Fire/Police/Health و وضعیت ظرفیت Sewage/Waste روی رضایت اثر می‌گذارند؛ Fire/Police/Health از شناسه‌های مرکزی برخورداری استفاده می‌کنند؛ کمبود Sewage از Level 8 و Waste از Level 14 با جریمه Mshin برابر ۶- امتیاز اعمال می‌شود.
 - شناسه‌های Sewage یکدست‌اند: `sewage_small`، `sewage_basic` و `sewage_deluxe` با ظرفیت‌های ۷/۲۸/۵۵ در محاسبه سراسری لحاظ می‌شوند؛ تست هر سه Tier، کمبود ظرفیت و وضعیت ساخت وجود دارد.
 - Waste از طریق `service_group: waste` و ظرفیت‌های ۱۵/۳۱/۴۰/۷۰ محاسبه می‌شود؛ سرویس city-wide است و تأسیسات/خانه‌ها برای دریافت خدمت باید به Gateway متصل باشند.
-- بررسی Fire/Police/Health از `service_group` کاتالوگ استفاده می‌کند؛ تست تمام Tierها برای وضعیت تکمیل‌شده، در حال ساخت و خارج از شعاع افزوده شده است.
+- بررسی Fire/Police/Health از `service_group` و `coverage_tiles` کاتالوگ استفاده می‌کند؛ GameplaySmoke همه Tierها، ساخت، شعاع، قطع اتصال مرکز/خانه و قطع/وصل جاده را آزمون می‌کند.
 
 
 ## شاخه کاری هشدار پایدار خدمات شهر — 2026-11-13
@@ -70,7 +72,7 @@
 - هر گروه خدماتی فقط از سطح بازشدن اولین ساختمان همان `service_group` وارد هشدار می‌شود؛ برای برق/آب/فاضلاب/زباله از مجموعه‌های تخصیص‌یافته `ServiceManager` و برای خدمات اضطراری از همان شعاع‌هایی استفاده می‌شود که HappinessManager برای رضایت استفاده می‌کند.
 - HUD یک بنر مستقل و پایدار دارد که تا رفع کمبود نمایش داده می‌شود و با سیگنال محاسبه مجدد رضایت به‌روز می‌شود؛ پیام موقت `StatusLabel` جایگزین این هشدار نیست.
 - GameplaySmoke حذف موقت پوشش برق، مشاهده هشدار، بازگرداندن پوشش و پاک‌شدن هشدار را بررسی می‌کند.
-- این تغییر هنوز روی main ادغام نشده است. خوانایی و عدم تداخل بنر در viewport واقعی Android/iOS نیز باید جداگانه بررسی شود.
+- هشدارهای خدمات اکنون روی main هستند؛ PR #435 منطق تخصیص اضطراری را با همین شناسه‌های مرکزی همگام کرد. خوانایی و عدم تداخل بنر در viewport واقعی Android/iOS همچنان باید جداگانه بررسی شود.
 
 ### Trade و Progression
 - `TradeManager.gd`: چهار slot فروش و سفارش‌های ساده مبتنی بر آیتم دارد؛ این با Trade Depot و Global Trade HQ مستقل برابر نیست.
@@ -93,7 +95,7 @@
 - تغییر شبکه جاده پس از ساخت/تخریب جاده، ظرفیت خدمات سراسری را دوباره محاسبه می‌کند. کارت ساخت Sewage/Waste عبارت City-wide capacity / Gateway road required را نشان می‌دهد و Services header تقاضا/ظرفیت چهار خدمت پایه را نمایش می‌دهد.
 - GameplaySmoke تمام Tierها، واحدهای تقاضای ۱/۲/۵، کمبود ظرفیت، خانه/تأسیسات جدا از Gateway، وضعیت ساخت، تغییر رضایت و حذف شعاع محلی نادرست را آزمون می‌کند.
 - منابع: [Residential Buildings / demand units](https://simcity-buildit.fandom.com/wiki/Residential_Buildings)، [Services](https://simcity-buildit.fandom.com/wiki/Services)، [Efficiency List / service capacities](https://scbuildit.hubsinfo.net/simcity-buildIt-efficiency-list/)، [EA Services 2.0 feedback thread](https://forums.ea.com/discussions/simcity-buildit-en/%E2%9C%A8service-2-0-update---feedback-thread%E2%9C%A8/12987164/replies/13166414)، [EA Roads guide](https://help.ea.com/hu/articles/simcity/simcity-buildit/beginner-guide/).
-- محدودیت باقی‌مانده: ظرفیت عددی و تخصیص سراسری Fire/Police/Health هنوز پیاده‌سازی نشده است.
+- محدودیت باقی‌مانده: Fire/Police/Health به‌صورت پوشش محلی پیاده‌سازی شده‌اند و ظرفیت عددی سراسری ندارند؛ این کمبود نیست و با مدل پوشش شعاعی فعلی سازگار است. آزمون فیزیکی موبایل و توازن نهایی پاداش‌ها/جریمه‌ها همچنان باز است.
 ### خودروی سه‌بعدی Gateway — PR #416
 - `TrafficVehicle.gd` یک خودروی سه‌بعدی سبک و اصلی Mshin با بدنه، کابین، چهار چرخ و چراغ جلو می‌سازد و بین مرکز خانه‌های جاده حرکت می‌کند.
 - `TrafficManager.build_gateway_round_trip_route()` با BFS فقط روی قطعاتی مسیر می‌سازد که به `GATEWAY_ROAD_CELL` متصل‌اند؛ مقصد، دورترین خانه جاده در گراف متصل است و مسیر برگشت تا همان Gateway به route اضافه می‌شود.
@@ -135,7 +137,7 @@
 3. بعضی محصولات کاتالوگی‌اند و Recipe ندارند/غیرفعال‌اند.
 4. ارتقای ظرفیت انبار با Simoleons و افزایش ثابت ۱۰ واحدی پیاده‌سازی شده؛ ارتقای مبتنی بر Special Items هنوز پیاده‌سازی نشده است.
 5. Trade Depot و Global Trade فقط Unlock flag دارند.
-6. ظرفیت عددی سراسری Fire/Police/Health و تخصیص ظرفیت آن‌ها هنوز کامل نیست؛ Sewage/Waste از این محدودیت خارج شده‌اند (PR #414).
+6. Fire/Police/Health از PR #435 پوشش محلی متصل به Gateway، تخصیص مرکزی و تست رگرسیون دارند؛ ظرفیت عددی سراسری برای این خدمات تعریف نشده چون مدل آن‌ها area coverage است.
 7. Android/iOS و 60 FPS روی دستگاه واقعی اندازه‌گیری نشده‌اند.
 8. آموزش، دستاورد، Regions و Epic Projects پیاده‌سازی نشده‌اند.
 
@@ -154,7 +156,7 @@
 - Android landscape روی گوشی کوچک و بزرگ، و تبلت در landscape/portrait.
 - دسکتاپ در 1280×720 و 1920×1080.
 - Screenshot و تست تعامل Factory، Store، Product detail، Queue، City Needs، Residential Upgrade، Storage و Building Info.
-- تکمیل ظرفیت/تقاضای عددی و تخصیص ظرفیت برای خدمات تخصصی Fire/Police/Health.
+- آزمون فیزیکی موبایل برای خوانایی هشدارهای خدمات و بررسی توازن رضایت خدمات اضطراری.
 - آزمون خرید ارتقای ظرفیت انبار و رفتار ذخیره/بازیابی ظرفیت پس از بارگذاری.
 - بنچمارک FPS روی دستگاه هدف.
 
@@ -180,7 +182,7 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - `Building.gd` اکنون rotation_y را از داده جانمایی دریافت می‌کند. `SaveManager.gd` زاویه را به‌صورت quarter-turn ذخیره و هنگام بارگذاری بازیابی می‌کند.
 - شاخه کاری `feat/mobile-building-placement-rotation` چرخش ۹۰ درجه‌ای پیش از جانمایی را با نگه‌داشتن لمس و کلید `R` اضافه می‌کند؛ footprint مستطیلی نیز در محاسبه فضای اشغال‌شده جابه‌جا می‌شود. این تغییر تا زمان موفقیت CI و ادغام، بخشی از قابلیت‌های main نیست.
 - آزمون فیزیکی gesture روی دستگاه Android/iOS، پایداری چرخش در تعامل واقعی، و بررسی بصری مدل‌های نامتقارن هنوز انجام‌نشده است.
-- هیچ‌یک از شکاف‌های مدل‌های اختصاصی تمام ساختمان‌ها، ظرفیت سراسری Fire/Police/Health، Trade Depot/Global Trade، Epic Projects، Regions، Achievements، Audio، Tutorial، خروجی نصب‌شدنی و بنچمارک 60 FPS با PR #420 بسته نشده‌اند.
+- شکاف‌های مدل‌های اختصاصی تمام ساختمان‌ها، Trade Depot/Global Trade کامل و آنلاین، Epic Projects، Regions، Achievements، Audio، Tutorial، خروجی نصب‌شدنی و بنچمارک 60 FPS با PR #420 بسته نشده‌اند. پوشش اضطراری Fire/Police/Health بعداً با PR #435 تکمیل شد.
 
 ## وضعیت پس از ادغام PR #421 و #422 و پیاده‌سازی بازخورد لمسی — 2026-11-13
 
@@ -265,3 +267,15 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - برای هر خانه، کارخانه و ماده آیکون SVG محلی اضافه شده است. پنل Regions نام ماده و ساختمان شاخص هر منطقه را نمایش می‌دهد.
 - GameplaySmoke قفل منطقه‌ای، مواد اختصاصی هر کارخانه، Level Gate، خارج بودن Resource Factory از سهمیه کارخانه و قابلیت جابه‌جایی/ذخیره ساختمان‌ها را بررسی می‌کند.
 - محدودیت: خانه‌ها هنوز از مدل پایه مسکونی با رنگ‌بندی منطقه استفاده می‌کنند و کارخانه‌ها از مدل پایه کارخانه؛ GLB اختصاصی هر منطقه، چند سطح ارتقا، زنجیره تولید چندمرحله‌ای و اقتصاد/بازار محلی هنوز کامل نیست. بنابراین وضعیت کل محتوای Region همچنان [~] است.
+
+## تکمیل خدمات اضطراری و تأیید حوزه خدمات شهری — PR #435
+
+- PR #435 با commit ادغام `7839b06100bd9ff2b55c6e8fc787a7cf159bf10f` در `main` ادغام شد.
+- `ServiceManager.gd` مجموعه‌های مستقل خانه‌های برخوردار از Fire/Police/Health را می‌سازد. هم خانه و هم مرکز ارائه‌دهنده باید تکمیل‌شده و متصل به شبکه جاده Gateway باشند.
+- شعاع پوشش از `coverage_tiles` همان Tier خوانده می‌شود؛ برای تعریف‌های قدیمی بدون این فیلد، مقدار پیش‌فرض ۱۵ خانه است.
+- `HappinessManager.gd`، مهاجرت، هشدارهای پایدار شهر و `FireHazardManager.gd` از تخصیص مرکزی مشترک استفاده می‌کنند؛ هشدار HUD و دود آتش با وضعیت واقعی پوشش همگام‌اند.
+- HUD تعداد خانه‌های برخوردار/کل را برای Fire/Police/Health نمایش می‌دهد؛ این سه خدمت مدل ظرفیت سراسری ندارند و به‌عنوان area coverage پیاده‌سازی شده‌اند؛ مقدار ظرفیت ساختگی اضافه نشده است.
+- GameplaySmoke همه Tierها، حالت در حال ساخت، بیرون از شعاع، مرکز/خانه جدا از Gateway، قطع/وصل دسترسی جاده، هشدارها و معیارهای HUD را آزمون می‌کند.
+- Godot City BuildIt Validation برای commit `ca709dcf01ed80d2eb89d799cbaa6db94f90f9a6` با run `43464009803` موفق شد؛ شامل Static Validation، Import/Parse، Headless Startup و End-to-end GameplaySmoke.
+- Mshin Playable Web برای همان commit با run `43464009799` موفق شد؛ شامل Web export و Chromium desktop/mobile smoke. این اجرای PR، Pages deploy جدید انجام نداد.
+- نتیجه: منطق هفت خدمت حیاتی در پروژه پیاده‌سازی و با CI تأیید شده است؛ آزمون فیزیکی Android/iOS و سنجش نهایی توازن خدمات همچنان خارج از این تأیید هستند.
