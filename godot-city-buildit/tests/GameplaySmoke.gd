@@ -27,6 +27,17 @@ func _check(condition: bool, message: String) -> void:
 		push_error("[GameplaySmoke] " + message)
 
 
+func _debug_ui_tree(root: Node, depth: int = 0) -> void:
+	if root is Control:
+		var control := root as Control
+		var detail := ""
+		if root is Label:
+			detail = " text=%s wrap=%s" % [(root as Label).text, str((root as Label).autowrap_mode)]
+		print("[GameplaySmoke] UI tree %s%s class=%s min=%s size=%s%s" % ["  ".repeat(depth), root.name, root.get_class(), str(control.get_combined_minimum_size()), str(control.size), detail])
+	for child in root.get_children():
+		_debug_ui_tree(child, depth + 1)
+
+
 func _assert_panel_inside_viewport(panel: Control, panel_name: String) -> void:
 	_check(panel != null, "%s panel is missing." % panel_name)
 	if panel == null:
@@ -37,6 +48,9 @@ func _assert_panel_inside_viewport(panel: Control, panel_name: String) -> void:
 	if panel_name == "Factory Production":
 		var production_layout := panel.find_child("ProductionLayout", true, false) as VBoxContainer
 		if production_layout:
+			var header_debug := production_layout.find_child("ProductionHeaderCenter", true, false)
+			if header_debug:
+				_debug_ui_tree(header_debug)
 			for child in production_layout.get_children():
 				if child is Control:
 					print("[GameplaySmoke] Production child %s min=%s rect=%s" % [child.name, str((child as Control).get_combined_minimum_size()), str((child as Control).get_rect())])
