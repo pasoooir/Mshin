@@ -46,7 +46,9 @@ func list_for_sale(item_id: String, amount: int = 1) -> bool:
 	if not can_list_for_sale(item_id, amount):
 		return false
 	var price := ProductionManager.get_item_value(item_id) * amount
-	if price <= 0 or not StorageManager.remove_items({item_id: amount}):
+	var requested_items: Dictionary = {}
+	requested_items[item_id] = amount
+	if price <= 0 or not StorageManager.remove_items(requested_items):
 		return false
 	sell_slots.append({
 		"item_id": item_id,
@@ -159,7 +161,9 @@ func try_complete_order(order_index: int) -> bool:
 	var amount := int(order.get("amount", 0))
 	if bool(order.get("completed", false)) or amount <= 0 or StorageManager.get_count(item_id) < amount:
 		return false
-	if not StorageManager.remove_items({item_id: amount}):
+	var requested_items: Dictionary = {}
+	requested_items[item_id] = amount
+	if not StorageManager.remove_items(requested_items):
 		return false
 	var reward := int(order.get("reward", 0))
 	EconomyManager.add_simoleons(reward)
