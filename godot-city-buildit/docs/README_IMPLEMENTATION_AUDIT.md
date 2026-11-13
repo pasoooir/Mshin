@@ -415,3 +415,10 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - OptionButton در Settings کیفیت را بدون بارگذاری مجدد صحنه تغییر می‌دهد؛ Restore defaults کیفیت Balanced را بازمی‌گرداند.
 - `GameplaySmoke.gd::_test_settings_panel_contract` وجود سه گزینه، تغییر Viewport، خاموش شدن MSAA در Low و persistence را بررسی می‌کند.
 - محدودیت پذیرش: این presetها کنترل پایه resolution scale و MSAA هستند، نه تنظیمات جامع کیفیت؛ هیچ benchmark فیزیکی برای انتخاب بهترین preset روی دستگاه هدف انجام نشده است.
+
+
+## جلوگیری از جمع‌آوری محصول در Building جدا از شبکه جاده — PR در حال آماده‌سازی
+
+- `Building.collect_production()` مسیر قدیمی جمع‌آوری مستقیم را نیز به `BuildManager.is_building_operational(self)` وابسته می‌کند؛ در صورت قطع اتصال Gateway، محصول آماده روی ساختمان باقی می‌ماند و جمع‌آوری رد می‌شود.
+- در `GameplaySmoke.gd::_test_road_gateway_connectivity` یک Building مسکونی تکمیل‌شده پس از قطع دو قطعه پل Gateway، محصول آماده دارد و باید جمع‌آوری را رد کند؛ تست‌های قبلی factory/store queue و خدمات شهری نیز حفظ شده‌اند.
+- محدودیت: این patch فقط مسیر قدیمی Building-level collection را می‌بندد؛ مکث زمان ساخت/ارتقای در حال اجرا و همه تعاملات تمام ساختمان‌ها/تأسیسات هنوز به پوشش جامع نیاز دارند.
