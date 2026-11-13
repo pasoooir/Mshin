@@ -13,6 +13,14 @@ const EPIC_POPULATION_BONUS := 1.25
 var active_projects: Dictionary = {}
 var epic_tokens: Dictionary = {"turtle": 0, "llama": 0, "cheetah": 0}
 
+func _process(_delta: float) -> void:
+	var now := int(Time.get_unix_time_from_system())
+	for project_id in active_projects.keys():
+		var state: Dictionary = active_projects[project_id]
+		if str(state.get("status", "")) == "active" and int(state.get("expires_unix", 0)) > 0 and int(state.get("expires_unix", 0)) <= now:
+			active_projects.erase(project_id)
+			project_changed.emit(str(project_id), {})
+
 func has_department() -> bool:
 	if GameManager.level < DEPARTMENT_LEVEL:
 		return false
@@ -38,6 +46,12 @@ func get_nearby_specialization_sources(home: Node3D) -> Array:
 			sources.append(candidate)
 	return sources
 
+func get_nearby_specialization_points(home: Node3D) -> int:
+	var total := 0
+	for source in get_nearby_specialization_sources(home):
+		total += int(source.definition.get("epic_points", 0))
+	return total
+
 func can_start_project(home: Node) -> bool:
 	if not is_instance_valid(home) or GameManager.level < PROJECT_LEVEL or not has_department():
 		return false
@@ -45,7 +59,7 @@ func can_start_project(home: Node) -> bool:
 		return false
 	if int(home.get("upgrade_stage")) < 6 or is_epic_building(home) or active_projects.has(str(home.get("building_id"))):
 		return false
-	return not get_nearby_specialization_sources(home).is_empty()
+	return get_nearby_specialization_points(home) >= PROJECT_TARGET_POINTS
 
 func get_start_block_reason(home: Node) -> String:
 	if GameManager.level < DEPARTMENT_LEVEL:
@@ -62,8 +76,8 @@ func get_start_block_reason(home: Node) -> String:
 		return "This home is already an Epic Building."
 	if active_projects.has(str(home.get("building_id"))):
 		return "This home already has an active Epic Project."
-	if get_nearby_specialization_sources(home).is_empty():
-		return "Build a Park within 48 meters of this home."
+	if get_nearby_specialization_points(home) < PROJECT_TARGET_POINTS:
+		return "Build enough Parks within 48 meters to provide 40 Epic Points."
 	return ""
 
 func start_project(building_id: String) -> bool:
@@ -119,6 +133,7 @@ func claim_project(building_id: String) -> bool:
 	if not is_instance_valid(home) or not home.has_method("set_epic_tier"):
 		return false
 	home.set_epic_tier(1)
+	home.current_population = roundi(float(home.current_population) * EPIC_POPULATION_BONUS)
 	epic_tokens["turtle"] = int(epic_tokens.get("turtle", 0)) + 1
 	EconomyManager.add_experience(200)
 	EconomyManager.add_simoleons(5000)
@@ -130,7 +145,8 @@ func claim_project(building_id: String) -> bool:
 func get_project_state(building_id: String) -> Dictionary:
 	if not active_projects.has(building_id):
 		return {}
-	return (active_projects[building_id] as Dictionary).duplicate(true)
+	var state: Dictionary = active_projects[building_id]
+	return state.duplicate(true)
 
 func get_project_progress(building_id: String) -> float:
 	var state := get_project_state(building_id)
