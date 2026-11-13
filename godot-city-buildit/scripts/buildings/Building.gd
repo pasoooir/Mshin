@@ -1171,6 +1171,7 @@ func setup_production_from_definition() -> void:
 		return
 	var component = ProductionComponentScript.new()
 	component.slot_count = int(definition.get("production_slots", 1))
+	component.owner_building = self
 	component.is_factory = str(definition.get("category", "")) == "industrial"
 	component.factory_type = building_type
 	component.shop_id = str(definition.get("shop_id", "building_supplies" if building_type == "shop_chain" else building_type))
@@ -1214,6 +1215,8 @@ func _start_production(item_id: String) -> void:
 		production_icon.text = "⚙️"
 
 func start_factory_production(item_id: String = "") -> bool:
+	if not BuildManager.is_building_operational(self):
+		return false
 	if status != "completed":
 		return false
 	if is_producing or has_ready_product:
@@ -1231,6 +1234,8 @@ func start_factory_production(item_id: String = "") -> bool:
 	return true
 
 func start_commercial_production(item_id: String) -> bool:
+	if not BuildManager.is_building_operational(self):
+		return false
 	if status != "completed" or definition.get("category", "") != "commercial":
 		return false
 	if is_producing or has_ready_product or item_id == "":
@@ -1335,6 +1340,10 @@ func _process(delta: float) -> void:
 		_check_upgrade_ready()
 
 func _check_upgrade_ready() -> void:
+	if not BuildManager.is_building_operational(self):
+		upgrade_ready = false
+		if hard_hat: hard_hat.visible = false
+		return
 	if upgrade_stage >= max_stage or upgrade_in_progress:
 		upgrade_ready = false
 		if hard_hat: hard_hat.visible = false
@@ -1350,6 +1359,8 @@ func set_residential_plan_selected(selected: bool) -> void:
 		hard_hat.visible = selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
 
 func try_upgrade() -> bool:
+	if not BuildManager.is_building_operational(self):
+		return false
 	if definition.get("category") != "residential" or status != "completed" or upgrade_stage >= max_stage or upgrade_in_progress:
 		return false
 	if not ProductionManager.can_afford_upgrade(upgrade_stage):
