@@ -56,6 +56,7 @@ for script in re.findall(r'="[*]res://([^"]+)"', project):
 build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
+traffic_manager_source = (ROOT / "scripts/autoload/TrafficManager.gd").read_text(encoding="utf-8")
 road_system_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")
 happiness_manager_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_text(encoding="utf-8")
 gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
@@ -569,6 +570,34 @@ for contract in [
 ]:
     if contract not in service_manager_source:
         errors.append(f"City-wide service capacity/demand contract is missing: {contract}")
+
+# Road tier changes must alter the network's traffic capacity and city happiness.
+for contract in [
+    "RESIDENTS_PER_TRAFFIC_UNIT: int = 50",
+    "var traffic_demand: int = 0",
+    "var road_capacity: int = 0",
+    "func recalculate_from_roads()",
+    "var lane_count := road_system.get_road_level(cell) * 2",
+    "func get_happiness_penalty() -> float:",
+    "if congestion_ratio >= 1.0:",
+]:
+    if contract not in traffic_manager_source:
+        errors.append(f"Road traffic-capacity contract is missing: {contract}")
+for contract in [
+    "TrafficManager.traffic_changed.connect(_on_traffic_changed)",
+    "TrafficManager.traffic_demand, TrafficManager.road_capacity",
+    "TrafficManager.get_congestion_percent()",
+]:
+    if contract not in hud:
+        errors.append(f"Traffic demand/capacity UI contract is missing: {contract}")
+for contract in [
+    "func _test_road_traffic_capacity(",
+    "Fifty connected two-lane road tiles must provide 100 traffic units of capacity",
+    "Five Avenue tiles must add 30 traffic-capacity units to the Gateway network",
+    "Road capacity upgrades must remove the traffic happiness penalty",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Road traffic-capacity regression test is missing: {contract}")
 
 # Solid-waste facilities remain distinct from sewage and expose generic numeric capacity.
 for waste_id, expected_capacity, expected_level, expected_size, expected_pollution, expected_radius in [
