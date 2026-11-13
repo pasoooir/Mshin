@@ -577,7 +577,7 @@ for contract in [
     "var traffic_demand: int = 0",
     "var road_capacity: int = 0",
     "func recalculate_from_roads()",
-    "var lane_count := road_system.get_road_level(cell) * 2",
+    "var lane_count: int = road_system.get_road_level(road_cell) * 2",
     "func get_happiness_penalty() -> float:",
     "if congestion_ratio >= 1.0:",
 ]:
