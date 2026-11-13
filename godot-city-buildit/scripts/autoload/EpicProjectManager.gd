@@ -52,7 +52,7 @@ func get_nearby_specialization_points(home: Node3D) -> int:
 		total += int(source.definition.get("epic_points", 0))
 	return total
 
-func can_start_project(home: Node) -> bool:
+func can_start_project(home: Node3D) -> bool:
 	if not is_instance_valid(home) or GameManager.level < PROJECT_LEVEL or not has_department():
 		return false
 	var home_definition: Dictionary = home.get("definition")
@@ -62,7 +62,7 @@ func can_start_project(home: Node) -> bool:
 		return false
 	return get_nearby_specialization_points(home) >= PROJECT_TARGET_POINTS
 
-func get_start_block_reason(home: Node) -> String:
+func get_start_block_reason(home: Node3D) -> String:
 	if GameManager.level < DEPARTMENT_LEVEL:
 		return "Department of Epic Projects unlocks at Level 16."
 	if not has_department():
