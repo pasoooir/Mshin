@@ -109,6 +109,7 @@ func _test_storage_and_production_chain() -> void:
 	_check(tapestry_definition.get("candidate_inputs", []).size() == 2 and int(tapestry_definition.get("time_sec", 0)) == 12600 and int(tapestry_definition.get("value", 0)) == 2560, "Tapestry must expose both conflicting ingredient candidates plus its sourced 210-minute time and reference value.")
 	_check(ProductionManager.get_recipe_lock_reason("tapestries").contains("conflict"), "Tapestry conflict must be explicit in its production lock reason.")
 	_check(not ProductionManager.get_available_crafted().has("soccer_shoes") and not ProductionManager.get_available_crafted().has("kite") and not ProductionManager.get_available_crafted().has("teddy_bear"), "Products with unresolved Mayor Level gates must not be treated as unlocked inventory offers.")
+	_check(not TradeManager.get_trade_eligible_item_ids().has("soccer_shoes") and not TradeManager.get_trade_eligible_item_ids().has("kite") and not TradeManager.get_trade_eligible_item_ids().has("teddy_bear"), "The shared trade-eligibility policy must exclude products with unverified unlock levels.")
 	var previous_market_offers: Array = TradeManager.market_offers.duplicate(true)
 	var previous_ship_crates: Array = TradeManager.ship_crates.duplicate(true)
 	TradeManager._generate_market_offers()
