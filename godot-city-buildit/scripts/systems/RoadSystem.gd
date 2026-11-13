@@ -113,6 +113,7 @@ func restore_road_level(grid_pos: Vector2i, level: int) -> void:
 	_refresh_road_neighborhood(grid_pos)
 
 func seed_starter_access() -> void:
+	road_levels.clear()
 	# Seed the complete two-row starter connector first, then build each tile
 	# against the finished neighbor graph so no tile keeps a stale end-cap mesh.
 	for x in range(-23, 2):
@@ -349,7 +350,7 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 
 	_add_road_markings(marking_tool, white_marking_tool, sidewalk_tool, grid_pos, tile_kind, arms, road_level)
 	marking_boxes = _count_marking_boxes(tile_kind, arms, grid_pos)
-	white_marking_boxes = arms.size() * 5 if tile_kind == TILE_CROSS else arms.size() * _lane_divider_offsets(road_level).size() * 4
+	white_marking_boxes = arms.size() * 5 if tile_kind == TILE_CROSS else arms.size() * _lane_divider_offsets(road_level).size() * 2
 	if tile_kind == TILE_CROSS:
 		sidewalk_boxes += 4
 
@@ -466,7 +467,7 @@ func _add_lane_divider_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, dir
 	var lateral := Vector2i(-direction.y, direction.x)
 	for offset in _lane_divider_offsets(road_level):
 		for side in [-1.0, 1.0]:
-			for distance in [0.43, 0.77]:
+			for distance in [0.62]:
 				var center := _direction_to_world(direction) * float(distance) + _direction_to_world(lateral) * (offset * side)
 				center.y = 0.091
 				var dash_size := Vector3(0.28, 0.006, 0.035) if direction.x != 0 else Vector3(0.035, 0.006, 0.28)
