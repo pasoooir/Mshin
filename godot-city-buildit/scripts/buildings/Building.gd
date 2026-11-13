@@ -97,6 +97,7 @@ func setup(data: Dictionary) -> void:
 	building_id = data.get("id", "")
 	building_type = data.get("type", "")
 	grid_pos = data.get("grid_pos", Vector2i.ZERO)
+	rotation.y = float(data.get("rotation_y", 0.0))
 	definition = data.get("definition", {})
 	status = data.get("status", "constructing")
 	build_time = definition.get("build_time", 10.0)
