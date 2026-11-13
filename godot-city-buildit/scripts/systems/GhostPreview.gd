@@ -73,28 +73,34 @@ func show_at(world_pos: Vector3, size: Vector2i = Vector2i(2, 2), valid: bool = 
 	_set_color(valid)
 	_update_coverage_preview(definition)
 
+static func get_coverage_preview_data(definition: Dictionary) -> Dictionary:
+	if int(definition.get("power", 0)) > 0:
+		return {"visible": true, "radius": ServiceManager.coverage_radius, "disc_color": Color(0.92, 0.66, 0.10, 0.16), "ring_color": Color(1.0, 0.76, 0.16, 0.96)}
+	if int(definition.get("water", 0)) > 0:
+		return {"visible": true, "radius": ServiceManager.coverage_radius, "disc_color": Color(0.08, 0.42, 0.92, 0.16), "ring_color": Color(0.20, 0.62, 1.0, 0.96)}
+	if int(definition.get("fire", 0)) > 0:
+		return {"visible": true, "radius": FireHazardManager.get_coverage_radius_world(definition), "disc_color": Color(0.08, 0.82, 0.91, 0.13), "ring_color": Color(0.12, 0.94, 1.0, 0.92)}
+	if int(definition.get("police", 0)) > 0:
+		var radius := float(definition.get("coverage_tiles", 15)) * float(BuildManager.GRID_SIZE)
+		return {"visible": true, "radius": radius, "disc_color": Color(0.10, 0.22, 0.72, 0.15), "ring_color": Color(0.18, 0.38, 0.98, 0.95)}
+	if int(definition.get("health", 0)) > 0:
+		var radius := float(definition.get("coverage_tiles", 15)) * float(BuildManager.GRID_SIZE)
+		return {"visible": true, "radius": radius, "disc_color": Color(0.12, 0.72, 0.48, 0.16), "ring_color": Color(0.20, 0.96, 0.62, 0.96)}
+	return {"visible": false, "radius": -1.0}
+
 func _update_coverage_preview(definition: Dictionary) -> void:
 	if not is_instance_valid(coverage_preview_root):
 		return
-	var is_fire_station := int(definition.get("fire", 0)) > 0
-	var is_police_station := int(definition.get("police", 0)) > 0
-	var is_health_station := int(definition.get("health", 0)) > 0
-	coverage_preview_root.visible = is_fire_station or is_police_station or is_health_station
+	var preview: Dictionary = get_coverage_preview_data(definition)
+	coverage_preview_root.visible = bool(preview.get("visible", false))
 	if not coverage_preview_root.visible:
 		current_coverage_radius = -1.0
 		return
-	var radius := FireHazardManager.get_coverage_radius_world(definition) if is_fire_station else float(definition.get("coverage_tiles", 15)) * float(BuildManager.GRID_SIZE)
+	var radius := float(preview.get("radius", 0.0))
 	var disc_material := coverage_disc.material_override as StandardMaterial3D
 	var ring_material := coverage_ring.material_override as StandardMaterial3D
-	if is_police_station:
-		disc_material.albedo_color = Color(0.10, 0.22, 0.72, 0.15)
-		ring_material.albedo_color = Color(0.18, 0.38, 0.98, 0.95)
-	elif is_health_station:
-		disc_material.albedo_color = Color(0.12, 0.72, 0.48, 0.16)
-		ring_material.albedo_color = Color(0.20, 0.96, 0.62, 0.96)
-	else:
-		disc_material.albedo_color = Color(0.08, 0.82, 0.91, 0.13)
-		ring_material.albedo_color = Color(0.12, 0.94, 1.0, 0.92)
+	disc_material.albedo_color = preview["disc_color"]
+	ring_material.albedo_color = preview["ring_color"]
 	if is_equal_approx(radius, current_coverage_radius):
 		return
 	current_coverage_radius = radius
