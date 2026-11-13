@@ -6,7 +6,7 @@ signal load_completed(success: bool)
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 
 const SAVE_PATH: String = "user://pasoo_city_buildit_save.json"
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4
 const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
@@ -39,6 +39,7 @@ func save_game() -> bool:
 			"grid": [int(building.grid_pos.x), int(building.grid_pos.y)],
 			"rotation_quarters": posmod(roundi(building.rotation.y / (PI * 0.5)), 4),
 			"stage": int(building.upgrade_stage),
+			"epic_tier": int(building.epic_tier),
 			"status": str(building.status),
 			"population": int(building.current_population),
 			"production": {
@@ -70,6 +71,7 @@ func save_game() -> bool:
 		},
 		"storage": StorageManager.to_save_dict(),
 		"trade": TradeManager.to_save_dict(),
+		"epic": EpicProjectManager.to_save_dict(),
 		"roads": road_data,
 		"buildings": building_data
 	}
@@ -192,6 +194,8 @@ func load_game() -> bool:
 		var restored_building = BuildManager.building_at_cell(Vector2i(int(grid[0]), int(grid[1])))
 		if restored_building != null:
 			restored_building.restore_production_state(saved_building.get("production", {}))
+		if restored_building != null and restored_building.has_method("set_epic_tier"):
+			restored_building.set_epic_tier(int(saved_building.get("epic_tier", 0)))
 		if restored_building != null and str(restored_building.definition.get("category", "")) == "residential":
 			if str(saved_building.get("status", "constructing")) == "completed":
 				restored_building.current_population = clampi(int(saved_building.get("population", restored_building.current_population)), 0, HappinessManager._capacity_for_home(restored_building))
@@ -200,6 +204,7 @@ func load_game() -> bool:
 			if restored_building.status == "completed":
 				restored_building.set_meta("immigration_population_initialized", true)
 
+	EpicProjectManager.from_save_dict(parsed.get("epic", {}))
 	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
 	# One-time welcome grant for cities created before the starter-economy update.
 	if not bool(parsed.get("starter_grant_claimed", false)):
