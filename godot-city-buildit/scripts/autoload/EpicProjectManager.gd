@@ -100,6 +100,8 @@ func start_project(building_id: String) -> bool:
 	return true
 
 func claim_specialization_points(source_building_id: String) -> int:
+	if not has_department():
+		return 0
 	var source = BuildManager.buildings.get(source_building_id)
 	if not is_instance_valid(source) or str(source.get("status")) != "completed":
 		return 0
