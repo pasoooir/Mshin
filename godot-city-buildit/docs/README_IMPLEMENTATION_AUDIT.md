@@ -424,3 +424,12 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - محدودیت: این patch فقط مسیر قدیمی Building-level collection را می‌بندد؛ مکث زمان ساخت/ارتقای در حال اجرا و همه تعاملات تمام ساختمان‌ها/تأسیسات هنوز به پوشش جامع نیاز دارند.
 
 - PR #446 با merge commit `bbcd6be14b87a18b9f701e7b7f2796fb000d551a` و PR #447 با merge commit `fd16d11ce7c4d535aa2780666a5309dc798a23d4` وارد main شدند؛ پس از هر دو، Godot Validation run `43504807542`، Web/Chromium + game deploy run `43504807516` و Pages build/deploy run `43504805774` موفق شدند.
+
+
+## توقف و ادامه تایمر ارتقای مسکونی هنگام قطع Gateway — PR در حال آماده‌سازی
+
+- `Building.update_upgrade_access_state()` هنگام قطع دسترسی Gateway، `upgrade_finish_unix` را صفر و زمان باقی‌مانده دقیق را در `upgrade_paused_remaining_seconds` نگه می‌دارد؛ زمان سیستم در دوره قطع اتصال مصرف نمی‌شود.
+- پس از اتصال دوباره، زمان پایان جدید از زمان فعلی + ثانیه‌های باقی‌مانده ساخته می‌شود؛ اگر زمان در حالت متصل تمام شده باشد، ارتقا طبق روال قبلی کامل می‌شود.
+- `SaveManager.capture_region_snapshot()` قبل از ثبت ساختمان، وضعیت تایمر را به‌روز می‌کند و `upgrade_paused_remaining_seconds` را در بخش production ذخیره می‌کند؛ `restore_production_state()` حالت paused را بازسازی می‌کند.
+- تست `GameplaySmoke.gd::_test_road_gateway_connectivity` توقف، ثابت ماندن زمان در قطعی طولانی، ذخیره در snapshot و ادامه با همان دو ثانیه پس از اتصال را بررسی می‌کند.
+- محدودیت: این تغییر فقط تایمر ارتقای مسکونی را پوشش می‌دهد؛ تایمر ساخت اولیه و تعاملات تمام انواع ساختمان‌ها/تأسیسات هنوز کامل نیستند.
