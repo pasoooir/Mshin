@@ -222,7 +222,7 @@ func _apply_responsive_layout() -> void:
 	if toolbar:
 		# Keep the transparent PNG shortcuts on the right at every viewport size.
 		# They sit below the three compact resource rows and never use a hard-hat toggle.
-		var width := 92.0 * scale_factor
+		var width := maxf(72.0, 92.0 * scale_factor)
 		toolbar.anchor_left = 1.0
 		toolbar.anchor_right = 1.0
 		toolbar.anchor_top = 0.30
@@ -612,7 +612,7 @@ func _build_toolbars() -> void:
 		if old_node:
 			old_node.queue_free()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var toolbar_width := 92.0 * _ui_scale
+	var toolbar_width := maxf(72.0, 92.0 * _ui_scale)
 	var toolbar := PanelContainer.new()
 	toolbar.name = "RightToolbar"
 	toolbar.anchor_left = 1.0
@@ -651,11 +651,11 @@ func _build_toolbars() -> void:
 		["road", "Roads", "road"],
 		["bulldoze", "Bulldoze", "bulldoze"]
 	]
-	var icon_size := 78.0 * _ui_scale
+	var icon_size := maxf(64.0, 78.0 * _ui_scale)
 	for item in tools:
 		var button := Button.new()
 		button.name = "Tool_" + str(item[0]).capitalize()
-		button.custom_minimum_size = Vector2(toolbar_width, 84.0 * _ui_scale)
+		button.custom_minimum_size = Vector2(toolbar_width, maxf(64.0, 84.0 * _ui_scale))
 		button.tooltip_text = str(item[1])
 		button.focus_mode = Control.FOCUS_NONE
 		button.mouse_filter = Control.MOUSE_FILTER_PASS
