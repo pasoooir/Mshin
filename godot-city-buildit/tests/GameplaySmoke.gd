@@ -38,6 +38,15 @@ func _debug_ui_tree(root: Node, depth: int = 0) -> void:
 		_debug_ui_tree(child, depth + 1)
 
 
+func _assert_panel_fits_target(panel: Control, target_size: Vector2, panel_name: String, width_ratio: float, height_ratio: float) -> void:
+	_check(panel != null, "%s panel is missing for responsive target sizing." % panel_name)
+	if panel == null:
+		return
+	var panel_size := panel.get_global_rect().size
+	_check(panel_size.x <= target_size.x * width_ratio + 1.0, "%s panel exceeds its responsive target width %s." % [panel_name, str(target_size)])
+	_check(panel_size.y <= target_size.y * height_ratio + 1.0, "%s panel exceeds its responsive target height %s." % [panel_name, str(target_size)])
+
+
 func _assert_panel_inside_viewport(panel: Control, panel_name: String) -> void:
 	_check(panel != null, "%s panel is missing." % panel_name)
 	if panel == null:
@@ -1024,6 +1033,9 @@ func _run_gameplay_test() -> void:
 		var active_viewport := get_viewport().get_visible_rect().size
 		var expected_storage_columns := 1 if active_viewport.x < 520.0 else 2
 		_check(storage_grid != null and storage_grid.columns == expected_storage_columns, "City Storage must choose one or two columns based on available viewport width.")
+		hud._apply_overlay_responsive_layout(Vector2(854, 480))
+		await get_tree().process_frame
+		_assert_panel_fits_target(hud.storage_panel, Vector2(854, 480), "City Storage mobile", 0.96, 0.94)
 		hud._apply_overlay_responsive_layout(Vector2(390, 844))
 		_check(storage_grid != null and storage_grid.columns == 1, "Narrow portrait storage must reflow to one readable column.")
 		hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
@@ -1089,8 +1101,14 @@ func _run_gameplay_test() -> void:
 	var expected_needs_inventory_columns := 3 if needs_profile == "compact" else (4 if needs_profile == "tablet" else 5)
 	_check(needs_inventory != null and needs_inventory.columns == expected_needs_inventory_columns, "City Needs inventory must match the active viewport profile.")
 	needs_hud._apply_overlay_responsive_layout(Vector2(854, 480))
+	await get_tree().process_frame
+	_assert_panel_fits_target(city_needs_panel, Vector2(854, 480), "City Needs mobile", 0.98, 0.95)
 	_check(needs_metrics != null and needs_metrics.columns == 2, "City Needs resource metrics must reflow to two columns on mobile.")
 	_check(needs_inventory != null and needs_inventory.columns == 3, "City Needs inventory must reflow to three columns on mobile.")
+	needs_hud._apply_overlay_responsive_layout(Vector2(1920, 1080))
+	await get_tree().process_frame
+	_assert_panel_fits_target(city_needs_panel, Vector2(1920, 1080), "City Needs desktop", 0.94, 0.95)
+	_check(needs_inventory != null and needs_inventory.columns == 5, "City Needs inventory must expand to five columns on desktop.")
 	needs_hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 	needs_hud._close_city_needs_panel()
 	needs_hud.open_residential_panel(home)
@@ -1224,8 +1242,16 @@ func _run_gameplay_test() -> void:
 	_check(details_scroll != null and details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Long recipe inputs and supply-chain details must remain vertically scrollable.")
 	_check(product_grid != null and product_grid.columns == expected_product_columns, "Production catalog must use the correct number of columns for the active viewport.")
 	production_hud._apply_overlay_responsive_layout(Vector2(854, 480))
+	await get_tree().process_frame
+	_assert_panel_fits_target(production_hud.production_panel, Vector2(854, 480), "Factory Production mobile", 0.98, 0.99)
 	_check(product_grid != null and product_grid.columns == 3, "Production product cards must reflow to three columns on compact mobile.")
+	production_hud._apply_overlay_responsive_layout(Vector2(1024, 768))
+	await get_tree().process_frame
+	_assert_panel_fits_target(production_hud.production_panel, Vector2(1024, 768), "Factory Production tablet", 0.96, 0.96)
+	_check(product_grid != null and product_grid.columns == 4, "Production product cards must use four columns on tablet.")
 	production_hud._apply_overlay_responsive_layout(Vector2(1920, 1080))
+	await get_tree().process_frame
+	_assert_panel_fits_target(production_hud.production_panel, Vector2(1920, 1080), "Factory Production desktop", 0.96, 0.96)
 	_check(product_grid != null and product_grid.columns == 6, "Production product cards must use six columns on desktop.")
 	production_hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
