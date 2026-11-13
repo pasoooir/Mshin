@@ -80,6 +80,7 @@ func switch_region(region_id: String) -> bool:
 	var target_snapshot: Dictionary = region_states.get(region_id, {}).duplicate(true)
 	if not SaveManager.load_region_snapshot(target_snapshot):
 		active_region_id = previous_region
+		SaveManager.load_region_snapshot(current_snapshot)
 		return false
 	region_changed.emit(active_region_id)
 	region_state_changed.emit()
