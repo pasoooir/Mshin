@@ -11,6 +11,7 @@ class FireHazardTestBuilding extends Node3D:
 	var building_type: String = ""
 	var definition: Dictionary = {}
 	var status: String = "constructing"
+	var grid_pos: Vector2i = Vector2i.ZERO
 	var smoke_active: bool = false
 
 	func set_fire_smoke(active: bool) -> void:
@@ -665,6 +666,63 @@ func _test_build_menu_visibility() -> void:
 	hud._close_build_menu()
 	_check(toolbar.visible, "Closing a submenu must restore the persistent transparent category toolbar.")
 
+func _test_sewage_service_happiness() -> void:
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_total_power := ServiceManager.total_power
+	var saved_total_water := ServiceManager.total_water
+	var saved_power_served: Dictionary = ServiceManager.power_served_ids.duplicate()
+	var saved_water_served: Dictionary = ServiceManager.water_served_ids.duplicate()
+	BuildManager.buildings.clear()
+	ServiceManager.total_power = 1
+	ServiceManager.total_water = 1
+	ServiceManager.power_served_ids.clear()
+	ServiceManager.water_served_ids.clear()
+
+	var home := FireHazardTestBuilding.new()
+	add_child(home)
+	home.building_id = "sewage_test_home"
+	home.building_type = "residential_1"
+	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
+	home.status = "completed"
+	home.grid_pos = Vector2i(35, 35)
+	home.global_position = Vector3.ZERO
+	BuildManager.buildings[home.building_id] = home
+	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
+
+	for sewage_id in ["sewage_small", "sewage_basic", "sewage_deluxe"]:
+		var facility := FireHazardTestBuilding.new()
+		add_child(facility)
+		facility.building_id = "sewage_test_" + sewage_id
+		facility.building_type = sewage_id
+		facility.definition = BuildManager.building_types[sewage_id]
+		facility.status = "completed"
+		facility.global_position = Vector3(29.9, 0.0, 0.0)
+		BuildManager.buildings[facility.building_id] = facility
+		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + 6.0), "Each sewage catalog tier must add the existing +6 happiness bonus: " + sewage_id)
+		_check(HappinessManager._home_has_extra_service(home), "Each sewage catalog tier must count as an extra nearby service: " + sewage_id)
+
+		facility.status = "constructing"
+		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A sewage facility under construction must not provide happiness coverage: " + sewage_id)
+		_check(not HappinessManager._home_has_extra_service(home), "A sewage facility under construction must not count as an extra service: " + sewage_id)
+
+		facility.status = "completed"
+		facility.global_position = Vector3(30.1, 0.0, 0.0)
+		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A sewage facility outside the 30-unit radius must not add happiness: " + sewage_id)
+		_check(not HappinessManager._home_has_extra_service(home), "A sewage facility outside the 30-unit radius must not count as an extra service: " + sewage_id)
+
+		BuildManager.buildings.erase(facility.building_id)
+		remove_child(facility)
+		facility.free()
+
+	BuildManager.buildings.erase(home.building_id)
+	remove_child(home)
+	home.free()
+	BuildManager.buildings = saved_buildings
+	ServiceManager.total_power = saved_total_power
+	ServiceManager.total_water = saved_total_water
+	ServiceManager.power_served_ids = saved_power_served
+	ServiceManager.water_served_ids = saved_water_served
+
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_timers: Dictionary = FireHazardManager.unprotected_time.duplicate()
@@ -742,6 +800,7 @@ func _run_gameplay_test() -> void:
 	_test_wind_turbine_rotor_animation()
 	_test_storage_and_production_chain()
 	_test_fire_hazard_state_machine()
+	_test_sewage_service_happiness()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
