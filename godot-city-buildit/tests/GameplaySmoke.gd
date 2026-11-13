@@ -1891,6 +1891,10 @@ func _test_audio_manager_contract() -> void:
 	_check(ProductionManager.is_connected("item_produced", Callable(AudioManager, "_on_item_produced")), "Collected production items must trigger the audio service.")
 	_check(GameManager.is_connected("level_up_rewarded", Callable(AudioManager, "_on_level_up_rewarded")), "Level-up rewards must trigger the audio service.")
 	_check(AchievementManager.is_connected("achievement_unlocked", Callable(AudioManager, "_on_achievement_unlocked")), "Achievement rewards must trigger the audio service.")
+	var audio_test_button := Button.new()
+	add_child(audio_test_button)
+	_check(audio_test_button.is_connected("pressed", Callable(AudioManager, "play_ui_click")), "New UI buttons must automatically receive the click sound handler.")
+	audio_test_button.queue_free()
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
