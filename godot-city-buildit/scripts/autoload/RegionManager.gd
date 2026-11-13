@@ -43,7 +43,6 @@ func get_active_region() -> Dictionary:
 	return get_region_definition(active_region_id)
 
 func get_region_list() -> Array[Dictionary]:
-	_refresh_unlocks()
 	var result: Array[Dictionary] = []
 	for region in REGION_DEFINITIONS:
 		var entry: Dictionary = region.duplicate(true)
