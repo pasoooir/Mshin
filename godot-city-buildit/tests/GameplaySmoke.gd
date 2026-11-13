@@ -521,6 +521,15 @@ func _test_build_menu_visibility() -> void:
 	var viewport_rect := get_viewport().get_visible_rect()
 	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category PNG rail is outside the visible screen.")
 	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.12, "Transparent category rail covers too much of the mobile play area.")
+	# The road category must expose an active upgrade action, not a disabled placeholder.
+	hud._show_submenu("road")
+	var road_upgrade_button := hud.find_child("road_upgrade", true, false) as Button
+	_check(road_upgrade_button != null and not road_upgrade_button.disabled, "Road upgrade must be selectable from the road catalog.")
+	var road_system_for_menu = get_node_or_null("World/RoadSystem")
+	hud._on_submenu_option("road", "road_upgrade")
+	_check(road_system_for_menu != null and road_system_for_menu.is_road_upgrade_mode, "Selecting Upgrade Road must activate tap-to-upgrade mode.")
+	hud._on_cancel_pressed()
+	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
 	_check(category_scroll != null and category_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Right category scroller must capture touch drags.")
