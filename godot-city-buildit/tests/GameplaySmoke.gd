@@ -1100,6 +1100,7 @@ func _test_power_water_gateway_access() -> void:
 func _test_emergency_service_tier_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
+	var saved_simoleons := EconomyManager.simoleons
 	BuildManager.buildings.clear()
 	GameManager.level = 16
 	var road_system = get_node_or_null("World/RoadSystem")
@@ -1194,6 +1195,7 @@ func _test_emergency_service_tier_happiness() -> void:
 		home_node.free()
 	BuildManager.buildings = saved_buildings
 	GameManager.level = saved_level
+	EconomyManager.simoleons = saved_simoleons
 	ServiceManager.recalculate_from_buildings()
 
 func _test_fire_hazard_state_machine() -> void:
