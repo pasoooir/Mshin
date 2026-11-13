@@ -14,7 +14,8 @@ const SERVICE_GROUPS := [
 	{"id":"fire", "label":"Fire", "buildings":["fire_station_small", "fire_station", "fire_station_deluxe"]},
 	{"id":"police", "label":"Police", "buildings":["police_small", "police_basic", "police_precinct"]},
 	{"id":"health", "label":"Health", "buildings":["clinic_small", "clinic", "hospital"]},
-	{"id":"government", "label":"Government", "buildings":["town_hall"]}
+	{"id":"government", "label":"Government", "buildings":["town_hall"]},
+	{"id":"trade", "label":"Trade", "buildings":["trade_depot", "global_trade_hq"]}
 ]
 const SPECIALIZATION_GROUPS := [
 	{"id":"parks", "label":"Parks", "buildings":["park_small"]},
@@ -895,13 +896,16 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 				var definition: Dictionary = BuildManager.building_types[type_id]
 				var footprint: Vector2i = definition.get("size", Vector2i.ONE)
 				var detail := "%d coins · Lv %d · %dx%d" % [int(definition.get("cost", 0)), int(definition.get("level", 1)), footprint.x, footprint.y]
+				var population_lock := BuildManager.get_population_build_lock_reason(type_id)
+				if population_lock != "":
+					detail += " · " + population_lock
 				if int(definition.get("fire", 0)) > 0 or int(definition.get("police", 0)) > 0 or int(definition.get("health", 0)) > 0:
 					detail += " · Coverage: %d tiles" % int(definition.get("coverage_tiles", 15))
 				if int(definition.get("pollution", 0)) > 0:
 					detail += " · " + str(definition.get("pollution_label", "Pollutes"))
 				if str(definition.get("service_group", "")) in ["sewage", "waste"]:
 					detail += " · City-wide capacity · Gateway road required"
-				_add_submenu_button(type_id, str(definition.get("name", type_id)), type_id, detail, false, parent_category, int(definition.get("level", 1)))
+				_add_submenu_button(type_id, str(definition.get("name", type_id)), type_id, detail, false, parent_category, int(definition.get("level", 1)), population_lock != "")
 	_finish_submenu_row(true)
 
 func _add_submenu_button(option_id: String, title: String, icon_name: String, detail: String, disabled: bool, category: String, required_level: int = 1, locked: bool = false) -> void:
@@ -1078,14 +1082,19 @@ func _show_building_info(type_id: String) -> void:
 	_add_info_line(layout, "Boost", str(boost) if boost > 0 else "—")
 	_add_info_line(layout, "Price", "%s Simoleons" % _format_count(int(definition.get("cost", 0))))
 	var required_level := int(definition.get("level", 1))
-	_add_info_line(layout, "Requirements", "Level %d" % required_level)
+	var required_population := int(definition.get("population_required", 0))
+	var requirements_text := "Level %d" % required_level
+	if required_population > 0:
+		requirements_text += " · Population %s" % _format_count(required_population)
+	_add_info_line(layout, "Requirements", requirements_text)
+	var population_lock := BuildManager.get_population_build_lock_reason(type_id)
 	_add_info_line(layout, "Construction", _format_duration(int(definition.get("build_time", 0))))
 	if GameManager.level < required_level:
 		status_label.text = "Unlocked at Level %d." % required_level
 	var build := Button.new()
 	build.name = "CatalogBuildButton"
-	build.text = "BUILD" if GameManager.level >= required_level else "LOCKED · LEVEL %d" % required_level
-	build.disabled = GameManager.level < required_level
+	build.text = "BUILD" if GameManager.level >= required_level and population_lock == "" else ("LOCKED · POPULATION %s" % _format_count(required_population) if population_lock != "" else "LOCKED · LEVEL %d" % required_level)
+	build.disabled = GameManager.level < required_level or population_lock != ""
 	build.custom_minimum_size.y = 34 * _ui_scale
 	build.add_theme_stylebox_override("normal", _catalog_action_style())
 	build.add_theme_color_override("font_color", Color.WHITE)
@@ -1170,6 +1179,10 @@ func _select_building_type(type_id: String) -> void:
 	var required_level := int(definition.get("level", 1))
 	if GameManager.level < required_level:
 		status_label.text = "Unlocked at Level %d." % required_level
+		return
+	var population_lock := BuildManager.get_population_build_lock_reason(type_id)
+	if population_lock != "":
+		status_label.text = population_lock
 		return
 	if definition.get("category", "") == "industrial":
 		var lock_reason := BuildManager.get_factory_build_lock_reason(type_id)
