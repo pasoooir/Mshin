@@ -109,6 +109,17 @@ func _test_storage_and_production_chain() -> void:
 	_check(tapestry_definition.get("candidate_inputs", []).size() == 2 and int(tapestry_definition.get("time_sec", 0)) == 12600 and int(tapestry_definition.get("value", 0)) == 2560, "Tapestry must expose both conflicting ingredient candidates plus its sourced 210-minute time and reference value.")
 	_check(ProductionManager.get_recipe_lock_reason("tapestries").contains("conflict"), "Tapestry conflict must be explicit in its production lock reason.")
 	_check(not ProductionManager.get_available_crafted().has("soccer_shoes") and not ProductionManager.get_available_crafted().has("kite") and not ProductionManager.get_available_crafted().has("teddy_bear"), "Products with unresolved Mayor Level gates must not be treated as unlocked inventory offers.")
+	var previous_market_offers: Array = TradeManager.market_offers.duplicate(true)
+	var previous_ship_crates: Array = TradeManager.ship_crates.duplicate(true)
+	TradeManager._generate_market_offers()
+	TradeManager._generate_ship_manifest()
+	for offer in TradeManager.market_offers:
+		_check(not ["soccer_shoes", "kite", "teddy_bear"].has(str(offer.get("item_id", ""))), "Global Trade must not offer products with unverified Mayor Level gates.")
+	for crate in TradeManager.ship_crates:
+		_check(not ["soccer_shoes", "kite", "teddy_bear"].has(str(crate.get("item_id", ""))), "Cargo Ship must not request products with unverified Mayor Level gates.")
+	TradeManager.market_offers = previous_market_offers
+	TradeManager.ship_crates = previous_ship_crates
+	TradeManager.trade_state_changed.emit()
 	_check(is_equal_approx(ProductionManager.get_estimated_chain_seconds("soccer_shoes"), -1.0), "A product with an unknown unlock gate must not receive an availability estimate.")
 	_check(ProductionManager.get_item_value("missing_product") == 0 and is_zero_approx(ProductionManager.get_production_time("missing_product")), "Unknown item IDs must not receive fabricated fallback prices or production times.")
 	var economy_audit := ProductionManager.get_economy_catalog_audit()
