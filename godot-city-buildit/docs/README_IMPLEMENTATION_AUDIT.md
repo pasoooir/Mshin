@@ -85,6 +85,14 @@
 - GameplaySmoke تمام Tierها، واحدهای تقاضای ۱/۲/۵، کمبود ظرفیت، خانه/تأسیسات جدا از Gateway، وضعیت ساخت، تغییر رضایت و حذف شعاع محلی نادرست را آزمون می‌کند.
 - منابع: [Residential Buildings / demand units](https://simcity-buildit.fandom.com/wiki/Residential_Buildings)، [Services](https://simcity-buildit.fandom.com/wiki/Services)، [Efficiency List / service capacities](https://scbuildit.hubsinfo.net/simcity-buildIt-efficiency-list/)، [EA Services 2.0 feedback thread](https://forums.ea.com/discussions/simcity-buildit-en/%E2%9C%A8service-2-0-update---feedback-thread%E2%9C%A8/12987164/replies/13166414)، [EA Roads guide](https://help.ea.com/hu/articles/simcity/simcity-buildit/beginner-guide/).
 - محدودیت باقی‌مانده: ظرفیت عددی و تخصیص سراسری Fire/Police/Health هنوز پیاده‌سازی نشده است.
+### ظرفیت ترافیک وابسته به Tier جاده — PR #415
+- `TrafficManager.gd` به‌عنوان Autoload اضافه شد و ظرفیت را فقط از قطعات متصل به Gateway جمع می‌زند.
+- ظرفیت هر خانه جاده برابر تعداد لاین آن است: Tierهای ۲/۴/۶/Avenue به‌ترتیب ۲/۴/۶/۸ واحد ظرفیت. این‌ها واحدهای شبیه‌سازی Mshin هستند، نه شمار رسمی خودرو در SimCity BuildIt.
+- تقاضای ترافیک برابر `ceil(population / 50)` است؛ یک واحد ترافیک Mshin معادل برنامه‌ریزی‌شده حدود ۵۰ ساکن است. این ضریب توازن Mshin است و مقدار منتشرشده EA نیست.
+- نسبت ازدحام `traffic_demand / road_capacity` است؛ جریمه رضایت Mshin در آستانه‌های ۸۰٪، ۱۰۰٪ و ۱۵۰٪ به‌ترتیب ۴-، ۸- و ۱۲- امتیاز است.
+- ساخت/ارتقا/تخریب جاده و تغییر جمعیت، محاسبه ترافیک را به‌روزرسانی می‌کند. Services header تقاضا/ظرفیت و درصد ازدحام را نشان می‌دهد.
+- GameplaySmoke با ۵۰ قطعه جاده ۲ لاین، ظرفیت ۱۰۰ و جمعیت ۵۰۰۰، تقاضای ۱۰۰ و جریمه ۸- را تأیید می‌کند؛ ارتقای ۵ قطعه به Avenue ظرفیت را به ۱۳۰ می‌رساند، ازدحام را زیر ۸۰٪ می‌آورد و جریمه را حذف می‌کند.
+- محدودیت باقی‌مانده: هنوز خودروهای مستقل، مسیر‌یابی روی گراف، جهت خطوط، turn restrictions، ازدحام قطعه‌ای و ورود/خروج متحرک از Gateway وجود ندارد؛ معیارهای آن در `docs/CITY_HIGHWAY_GATEWAY_SPEC.md` باز می‌مانند.
 ### ارتقای جاده — PR #413
 - ابزار موجود Road > Upgrade Road از حالت placeholder خارج شد و اکنون روی موبایل/ماوس با لمس یک خانه جاده، همان خانه را ارتقا می‌دهد؛ Gateway دائمی و قطعات جداشده از شبکه قابل ارتقا نیستند.
 - Tierها: ۲ لاین (پایه)، ۴ لاین از City Level 9، ۶ لاین از Level 15 و Avenue از Level 20.
@@ -94,7 +102,7 @@
 - SaveManager سطح هر خانه را در رکورد `[x, y, level]` ذخیره می‌کند و همچنان رکورد قدیمی `[x, y]` را با سطح پایه ۱ می‌خواند.
 - GameplaySmoke مسیر فعال‌سازی/لغو UI، قفل سطح ۹/۱۵/۲۰، قیمت‌ها، محافظت Gateway، بازپرداخت تخریب و حفظ Avenue در Save/Load را بررسی می‌کند.
 - منابع: [Roads](https://simcity-buildit.fandom.com/wiki/Roads)، [Level Up Table](https://simcity-buildit.fandom.com/wiki/Level_Up_Table).
-- محدودیت باقی‌مانده: TrafficManager هنوز ظرفیت/تراکم را از Tier جاده استخراج نمی‌کند؛ این مورد در README به‌صورت ناقص باقی می‌ماند.
+- محدودیت باقی‌مانده پس از PR #415: ظرفیت/ازدحام سراسری از Tier جاده محاسبه می‌شود؛ مسیریابی خودروهای مستقل، ازدحام قطعه‌ای، جهت خطوط/محدودیت گردش و خودروهای متحرک Gateway هنوز پیاده‌سازی نشده‌اند.
 ### توقف عملیات هنگام قطع دسترسی جاده — PR #410
 - `BuildManager.is_building_operational()` وضعیت تکمیل ساختمان و اتصال footprint آن به Gateway را بررسی می‌کند.
 - `Building.gd` شروع تولید کارخانه/فروشگاه و ارتقای خانه را برای ساختمان غیرعملیاتی رد می‌کند.
