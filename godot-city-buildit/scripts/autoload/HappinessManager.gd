@@ -179,9 +179,9 @@ func _home_has_extra_service(home: Node3D) -> bool:
 		return true
 	if _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
 		return true
-	if _nearby_sewage_service(home, SEWAGE_COVERAGE_RADIUS):
+	if _nearby_sewage_service(home):
 		return true
-	if _nearby_waste_service(home, WASTE_COVERAGE_RADIUS):
+	if _nearby_waste_service(home):
 		return true
 	if _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 		return true
