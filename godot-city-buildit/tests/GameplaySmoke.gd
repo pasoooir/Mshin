@@ -808,62 +808,83 @@ func _test_build_menu_visibility() -> void:
 	hud._close_build_menu()
 	_check(toolbar.visible, "Closing a submenu must restore the persistent transparent category toolbar.")
 
-func _test_sewage_service_happiness() -> void:
-	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
-	var saved_total_power := ServiceManager.total_power
-	var saved_total_water := ServiceManager.total_water
-	var saved_power_served: Dictionary = ServiceManager.power_served_ids.duplicate()
-	var saved_water_served: Dictionary = ServiceManager.water_served_ids.duplicate()
-	BuildManager.buildings.clear()
-	ServiceManager.total_power = 1
-	ServiceManager.total_water = 1
-	ServiceManager.power_served_ids.clear()
-	ServiceManager.water_served_ids.clear()
-
+func _create_service_test_home(building_id: String, service_demand: int, grid_pos: Vector2i) -> FireHazardTestBuilding:
 	var home := FireHazardTestBuilding.new()
 	add_child(home)
-	home.building_id = "sewage_test_home"
+	home.building_id = building_id
 	home.building_type = "residential_1"
-	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
+	home.definition = {"category": "residential", "size": Vector2i(2, 2), "service_demand": service_demand}
 	home.status = "completed"
-	home.grid_pos = Vector2i(35, 35)
+	home.grid_pos = grid_pos
 	home.global_position = Vector3.ZERO
 	BuildManager.buildings[home.building_id] = home
-	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
+	return home
 
-	for sewage_id in ["sewage_small", "sewage_basic", "sewage_deluxe"]:
+func _test_sewage_service_happiness() -> void:
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_level := GameManager.level
+	BuildManager.buildings.clear()
+	GameManager.level = 8
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
+
+	var low_home := _create_service_test_home("sewage_low_home", 1, Vector2i(1, 1))
+	var medium_home := _create_service_test_home("sewage_medium_home", 2, Vector2i(1, 1))
+	var high_home := _create_service_test_home("sewage_high_home", 5, Vector2i(1, 1))
+	var disconnected_home := _create_service_test_home("sewage_disconnected_home", 1, Vector2i(35, 35))
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_sewage == 9, "Sewage demand must count low/medium/high homes and disconnected completed homes.")
+	_check(ServiceManager.total_sewage == 0 and ServiceManager.used_sewage == 0, "No sewage capacity may be served without a completed sewage facility.")
+	var baseline_happiness := HappinessManager.calculate_home_happiness(low_home)
+
+	var expected_capacities := {"sewage_small": 7, "sewage_basic": 28, "sewage_deluxe": 55}
+	var service_positions := {"sewage_small": Vector2i(1, -2), "sewage_basic": Vector2i(1, -3), "sewage_deluxe": Vector2i(1, -4)}
+	for sewage_id in expected_capacities.keys():
 		var facility := FireHazardTestBuilding.new()
 		add_child(facility)
 		facility.building_id = "sewage_test_" + sewage_id
 		facility.building_type = sewage_id
 		facility.definition = BuildManager.building_types[sewage_id]
 		facility.status = "completed"
-		facility.global_position = Vector3(29.9, 0.0, 0.0)
+		facility.grid_pos = service_positions[sewage_id]
+		facility.global_position = Vector3.ZERO
 		BuildManager.buildings[facility.building_id] = facility
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + 6.0), "Each sewage catalog tier must add the existing +6 happiness bonus: " + sewage_id)
-		_check(HappinessManager._home_has_extra_service(home), "Each sewage catalog tier must count as an extra nearby service: " + sewage_id)
+		ServiceManager.recalculate_from_buildings()
+		var expected_capacity: int = expected_capacities[sewage_id]
+		_check(ServiceManager.total_sewage == expected_capacity, "Sewage tier capacity must match its catalog data: " + sewage_id)
+		_check(ServiceManager.demand_sewage == 9, "Sewage demand must be independent of facility capacity.")
+		_check(not ServiceManager.sewage_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive sewage service.")
+		if expected_capacity == 7:
+			_check(ServiceManager.used_sewage == 3, "A 7-unit sewage plant must serve the 1-unit and 2-unit homes but not the 5-unit home.")
+			_check(not ServiceManager.sewage_served_ids.has(high_home.building_id), "A high-demand home must remain unserved when capacity is insufficient.")
+		else:
+			_check(ServiceManager.used_sewage == 8, "Sewage capacity above connected demand must serve all connected homes.")
+			_check(ServiceManager.sewage_served_ids.has(high_home.building_id), "The 5-unit home must be served when sufficient capacity exists.")
+		_check(HappinessManager._home_has_extra_service(low_home), "A sewage-served home must count as receiving an extra service.")
+		_check(is_equal_approx(HappinessManager.calculate_home_happiness(low_home), baseline_happiness + 12.0), "Sewage service must replace the -6 shortage penalty with the existing +6 service bonus.")
 
 		facility.status = "constructing"
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A sewage facility under construction must not provide happiness coverage: " + sewage_id)
-		_check(not HappinessManager._home_has_extra_service(home), "A sewage facility under construction must not count as an extra service: " + sewage_id)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_sewage == 0 and ServiceManager.used_sewage == 0, "A sewage facility under construction must not contribute capacity: " + sewage_id)
+		_check(not ServiceManager.sewage_served_ids.has(low_home.building_id), "A sewage facility under construction must not serve homes: " + sewage_id)
 
 		facility.status = "completed"
-		facility.global_position = Vector3(30.1, 0.0, 0.0)
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A sewage facility outside the 30-unit radius must not add happiness: " + sewage_id)
-		_check(not HappinessManager._home_has_extra_service(home), "A sewage facility outside the 30-unit radius must not count as an extra service: " + sewage_id)
+		facility.grid_pos = Vector2i(35, 35)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_sewage == 0, "A sewage facility disconnected from the Gateway must not contribute capacity: " + sewage_id)
 
 		BuildManager.buildings.erase(facility.building_id)
 		remove_child(facility)
 		facility.free()
 
-	BuildManager.buildings.erase(home.building_id)
-	remove_child(home)
-	home.free()
+	for home in [low_home, medium_home, high_home, disconnected_home]:
+		BuildManager.buildings.erase(home.building_id)
+		remove_child(home)
+		home.free()
 	BuildManager.buildings = saved_buildings
-	ServiceManager.total_power = saved_total_power
-	ServiceManager.total_water = saved_total_water
-	ServiceManager.power_served_ids = saved_power_served
-	ServiceManager.water_served_ids = saved_water_served
+	GameManager.level = saved_level
+	ServiceManager.recalculate_from_buildings()
 
 func _test_power_water_coverage_preview() -> void:
 	var power_preview: Dictionary = GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["power_wind"])
@@ -884,988 +905,120 @@ func _test_power_water_coverage_preview() -> void:
 
 func _test_waste_service_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
-	var saved_total_power := ServiceManager.total_power
-	var saved_total_water := ServiceManager.total_water
-	var saved_power_served: Dictionary = ServiceManager.power_served_ids.duplicate()
-	var saved_water_served: Dictionary = ServiceManager.water_served_ids.duplicate()
+	var saved_level := GameManager.level
 	BuildManager.buildings.clear()
-	ServiceManager.total_power = 1
-	ServiceManager.total_water = 1
-	ServiceManager.power_served_ids.clear()
-	ServiceManager.water_served_ids.clear()
+	GameManager.level = 14
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
 
-	var home := FireHazardTestBuilding.new()
-	add_child(home)
-	home.building_id = "waste_test_home"
-	home.building_type = "residential_1"
-	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
-	home.status = "completed"
-	home.grid_pos = Vector2i(35, 35)
-	home.global_position = Vector3.ZERO
-	BuildManager.buildings[home.building_id] = home
-	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
+	var low_home := _create_service_test_home("waste_low_home", 1, Vector2i(1, 1))
+	var medium_home := _create_service_test_home("waste_medium_home", 2, Vector2i(1, 1))
+	var high_home := _create_service_test_home("waste_high_home", 5, Vector2i(1, 1))
+	var extra_homes: Array[FireHazardTestBuilding] = []
+	for index in range(10):
+		extra_homes.append(_create_service_test_home("waste_extra_home_%d" % index, 1, Vector2i(1, 1)))
+	var disconnected_home := _create_service_test_home("waste_disconnected_home", 1, Vector2i(35, 35))
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_waste == 19, "Waste demand must count all completed homes, including uninhabited and disconnected homes.")
 
-	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
+	var expected_capacities := {"waste_dump_small": 15, "waste_dump": 31, "waste_incinerator": 40, "waste_recycling": 70}
+	var service_positions := {"waste_dump_small": Vector2i(1, -3), "waste_dump": Vector2i(1, -4), "waste_incinerator": Vector2i(1, -3), "waste_recycling": Vector2i(1, -3)}
+	for waste_id in expected_capacities.keys():
 		var facility := FireHazardTestBuilding.new()
 		add_child(facility)
 		facility.building_id = "waste_test_" + waste_id
 		facility.building_type = waste_id
 		facility.definition = BuildManager.building_types[waste_id]
 		facility.status = "completed"
-		facility.global_position = Vector3(29.9, 0.0, 0.0)
+		facility.grid_pos = service_positions[waste_id]
+		facility.global_position = Vector3.ZERO
 		BuildManager.buildings[facility.building_id] = facility
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + 6.0), "Each Waste catalog tier must add the existing +6 Mshin service happiness bonus: " + waste_id)
-		_check(HappinessManager._home_has_extra_service(home), "Each completed Waste facility within 30 units must count as an extra service: " + waste_id)
+		ServiceManager.recalculate_from_buildings()
+		var expected_capacity: int = expected_capacities[waste_id]
+		_check(ServiceManager.total_waste == expected_capacity, "Waste tier capacity must match its catalog data: " + waste_id)
+		_check(ServiceManager.demand_waste == 19, "Waste demand must remain independent of capacity.")
+		_check(not ServiceManager.waste_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive waste service.")
+		if expected_capacity == 15:
+			_check(ServiceManager.used_waste == 15, "A 15-unit waste facility must serve only 15 of the 18 connected demand units.")
+			_check(ServiceManager.waste_served_ids.size() < 14, "A small waste facility must leave some connected homes unserved.")
+		else:
+			_check(ServiceManager.used_waste == 18, "A larger waste facility must serve all connected demand units.")
+			_check(ServiceManager.waste_served_ids.size() == 14, "A sufficient waste facility must serve all connected homes.")
+		_check(HappinessManager._home_has_extra_service(low_home), "A waste-served home must count as receiving an extra service.")
 
 		facility.status = "constructing"
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A Waste facility under construction must not provide happiness coverage: " + waste_id)
-		_check(not HappinessManager._home_has_extra_service(home), "A Waste facility under construction must not count as an extra service: " + waste_id)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_waste == 0 and ServiceManager.used_waste == 0, "A waste facility under construction must not contribute capacity: " + waste_id)
+		_check(not ServiceManager.waste_served_ids.has(low_home.building_id), "A waste facility under construction must not serve homes: " + waste_id)
 
 		facility.status = "completed"
-		facility.global_position = Vector3(30.1, 0.0, 0.0)
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A Waste facility outside the 30-unit radius must not add happiness: " + waste_id)
-		_check(not HappinessManager._home_has_extra_service(home), "A Waste facility outside the 30-unit radius must not count as an extra service: " + waste_id)
+		facility.grid_pos = Vector2i(35, 35)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_waste == 0, "A waste facility disconnected from the Gateway must not contribute capacity: " + waste_id)
 
 		BuildManager.buildings.erase(facility.building_id)
 		remove_child(facility)
 		facility.free()
 
-	BuildManager.buildings.erase(home.building_id)
-	remove_child(home)
-	home.free()
+	for home in [low_home, medium_home, high_home, disconnected_home]:
+		BuildManager.buildings.erase(home.building_id)
+		remove_child(home)
+		home.free()
+	for home in extra_homes:
+		BuildManager.buildings.erase(home.building_id)
+		remove_child(home)
+		home.free()
 	BuildManager.buildings = saved_buildings
-	ServiceManager.total_power = saved_total_power
-	ServiceManager.total_water = saved_total_water
-	ServiceManager.power_served_ids = saved_power_served
-	ServiceManager.water_served_ids = saved_water_served
-
-func _test_emergency_service_tier_happiness() -> void:
-	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
-	var saved_total_power := ServiceManager.total_power
-	var saved_total_water := ServiceManager.total_water
-	var saved_power_served: Dictionary = ServiceManager.power_served_ids.duplicate()
-	var saved_water_served: Dictionary = ServiceManager.water_served_ids.duplicate()
-	BuildManager.buildings.clear()
-	ServiceManager.total_power = 1
-	ServiceManager.total_water = 1
-	ServiceManager.power_served_ids.clear()
-	ServiceManager.water_served_ids.clear()
-
-	var home := FireHazardTestBuilding.new()
-	add_child(home)
-	home.building_id = "emergency_service_test_home"
-	home.building_type = "residential_1"
-	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
-	home.status = "completed"
-	home.grid_pos = Vector2i(35, 35)
-	home.global_position = Vector3.ZERO
-	BuildManager.buildings[home.building_id] = home
-	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
-
-	var service_cases := {
-		"fire": {"radius": 38.0, "bonus": 8.0, "ids": ["fire_station_small", "fire_station", "fire_station_deluxe"]},
-		"police": {"radius": 38.0, "bonus": 8.0, "ids": ["police_station", "police_small", "police_basic", "police_precinct"]},
-		"health": {"radius": 42.0, "bonus": 8.0, "ids": ["clinic_small", "clinic", "hospital"]}
-	}
-	for service_group in service_cases:
-		var service_case: Dictionary = service_cases[service_group]
-		var radius := float(service_case["radius"])
-		var bonus := float(service_case["bonus"])
-		for service_id in service_case["ids"]:
-			var facility := FireHazardTestBuilding.new()
-			add_child(facility)
-			facility.building_id = "emergency_service_test_" + service_id
-			facility.building_type = service_id
-			facility.definition = BuildManager.building_types[service_id]
-			facility.status = "completed"
-			facility.global_position = Vector3(radius - 0.1, 0.0, 0.0)
-			BuildManager.buildings[facility.building_id] = facility
-			_check(str(facility.definition.get("service_group", "")) == service_group, "Emergency service catalog tier must belong to its declared service group: " + service_id)
-			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + bonus), "Every completed emergency service tier must provide its existing happiness bonus: " + service_id)
-			_check(HappinessManager._home_has_extra_service(home), "Every completed emergency service tier must count as an extra nearby service: " + service_id)
-
-			facility.status = "constructing"
-			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility under construction must not provide happiness coverage: " + service_id)
-			_check(not HappinessManager._home_has_extra_service(home), "An emergency facility under construction must not count as an extra service: " + service_id)
-
-			facility.status = "completed"
-			facility.global_position = Vector3(radius + 0.1, 0.0, 0.0)
-			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility outside its service radius must not add happiness: " + service_id)
-			_check(not HappinessManager._home_has_extra_service(home), "An emergency facility outside its service radius must not count as an extra service: " + service_id)
-
-			BuildManager.buildings.erase(facility.building_id)
-			remove_child(facility)
-			facility.free()
-
-	BuildManager.buildings.erase(home.building_id)
-	remove_child(home)
-	home.free()
-	BuildManager.buildings = saved_buildings
-	ServiceManager.total_power = saved_total_power
-	ServiceManager.total_water = saved_total_water
-	ServiceManager.power_served_ids = saved_power_served
-	ServiceManager.water_served_ids = saved_water_served
-
-func _test_fire_hazard_state_machine() -> void:
-	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
-	var saved_timers: Dictionary = FireHazardManager.unprotected_time.duplicate()
-	var saved_smoking: Dictionary = FireHazardManager.smoking_ids.duplicate()
-	BuildManager.buildings.clear()
-	FireHazardManager.unprotected_time.clear()
-	FireHazardManager.smoking_ids.clear()
-
-	var home = FireHazardTestBuilding.new()
-	add_child(home)
-	home.building_id = "fire_test_home"
-	home.building_type = "residential_1"
-	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
-	home.status = "completed"
-	home.global_position = Vector3.ZERO
-	BuildManager.buildings[home.building_id] = home
-
-	var station = FireHazardTestBuilding.new()
-	add_child(station)
-	station.building_id = "fire_test_station"
-	station.building_type = "fire_station"
-	station.definition = {"category": "service", "fire": 1}
-	station.status = "completed"
-	station.global_position = Vector3(30.1, 0.0, 0.0)
-	BuildManager.buildings[station.building_id] = station
-
-	FireHazardManager._evaluate_hazards(10.0)
-	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A residential home must not smoke before 20 seconds without fire coverage.")
-	FireHazardManager._evaluate_hazards(10.1)
-	_check(FireHazardManager.smoking_ids.has(home.building_id), "An uncovered completed home must start smoking after 20 seconds.")
-	station.global_position = Vector3(30.0, 0.0, 0.0)
-	FireHazardManager._evaluate_hazards(0.0)
-	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A fire station exactly 15 tiles away must immediately stop smoke.")
-	station.global_position = Vector3(30.1, 0.0, 0.0)
-	FireHazardManager._evaluate_hazards(19.9)
-	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Losing fire coverage must restart the full 20-second warning timer.")
-	FireHazardManager.reset_for_city_load()
-	_check(is_zero_approx(float(FireHazardManager.unprotected_time.get(home.building_id, -1.0))), "Loading a city must reset uncovered time to zero.")
-	FireHazardManager._evaluate_hazards(19.9)
-	_check(not FireHazardManager.smoking_ids.has(home.building_id), "A restored uncovered home must wait another full 20 seconds.")
-	FireHazardManager._evaluate_hazards(0.2)
-	_check(FireHazardManager.smoking_ids.has(home.building_id), "Smoke must resume after a fresh continuous 20-second uncovered interval.")
-
-	station.definition = {"category": "service", "fire": 1, "coverage_tiles": 10}
-	station.global_position = Vector3(20.1, 0.0, 0.0)
-	FireHazardManager._evaluate_hazards(0.0)
-	FireHazardManager._evaluate_hazards(20.0)
-	_check(FireHazardManager.smoking_ids.has(home.building_id), "Small Fire Station must use its own 10-tile coverage, not the default 15-tile radius.")
-	station.definition = {"category": "service", "fire": 1, "coverage_tiles": 22}
-	station.global_position = Vector3(44.0, 0.0, 0.0)
-	FireHazardManager._evaluate_hazards(0.0)
-	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Deluxe Fire Station must cover homes within its 22-tile radius and stop smoke immediately.")
-
-	home.status = "constructing"
-	FireHazardManager._evaluate_hazards(0.0)
-	_check(not FireHazardManager.smoking_ids.has(home.building_id), "Homes still under construction must not remain in the fire hazard system.")
-	home.status = "completed"
-	FireHazardManager._evaluate_hazards(0.0)
-	BuildManager.buildings.erase(home.building_id)
-	FireHazardManager._evaluate_hazards(0.0)
-	_check(not FireHazardManager.unprotected_time.has(home.building_id) and not FireHazardManager.smoking_ids.has(home.building_id), "Demolished homes must have all fire hazard state cleared.")
-
-	remove_child(home)
-	home.free()
-	remove_child(station)
-	station.free()
-	BuildManager.buildings = saved_buildings
-	FireHazardManager.unprotected_time = saved_timers
-	FireHazardManager.smoking_ids = saved_smoking
-	FireHazardManager.on_city_changed()
-
-func _test_building_model_loader_contract() -> void:
-	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa.glb"), "Local GLB model paths under assets/models must be accepted.")
-	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/shop.gltf"), "Local glTF model paths under assets/models must be accepted.")
-	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/vehicle.obj"), "Unsupported model formats must be rejected.")
-	_check(not BuildingModelLoader.is_supported_model_path("res://outside/villa.glb"), "Model loading must be restricted to the local models directory.")
-	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/../outside/villa.glb"), "Model paths must reject parent-directory traversal.")
-	_check(not BuildingModelLoader.is_supported_model_path("https://example.com/villa.glb"), "Remote model URLs must not be accepted.")
-	_check(BuildingModelLoader.load_model_scene("res://assets/models/not-installed.glb") == null, "A missing optional model must return null so the procedural fallback can render.")
-
-func _run_gameplay_test() -> void:
-	await get_tree().process_frame
-	_test_building_model_loader_contract()
-	await _test_build_menu_visibility()
-	_test_wind_turbine_rotor_animation()
-	_test_storage_and_production_chain()
-	_test_fire_hazard_state_machine()
-	_test_sewage_service_happiness()
-	_test_waste_service_happiness()
-	_test_emergency_service_tier_happiness()
-	_test_power_water_coverage_preview()
-	_test_immigration_coefficients()
-	_test_camera_inertia_math()
-	_test_camera_focus_math()
-	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
-	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
-	_check(IconAtlas.validate_required_build_icons(), "A required Build icon is missing, invalid or lacks transparent corners.")
-	var input_node = get_node("CityInput")
-	var world = get_node_or_null("World")
-	_check(world != null and world.get_node_or_null("WorldPresentation/NaturalTerrain") != null, "Natural terrain was not generated.")
-	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
-	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")
-	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalHighway") != null, "Coastal highway was not generated.")
-	_check(EconomyManager.simoleons >= 25000, "Starter Simoleons grant is too small.")
-	_check(EconomyManager.golden_keys >= 10 and EconomyManager.sim_cash >= 25, "Starter premium currency grant is missing.")
-	var road_system = get_node_or_null("World/RoadSystem")
-	_check(road_system != null, "Main scene has no RoadSystem.")
-	if road_system == null:
-		_finish()
-		return
-	road_system.seed_starter_access()
-	_test_road_gateway_connectivity(road_system)
-	var starter_road_count: int = road_system.get_road_count()
-	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
-
-	_test_road_painting_drag(road_system)
-	for x in range(6, 18):
-		_check(road_system.place_road(Vector2i(x, 0)), "Could not extend starter road with tile %d." % x)
-
-	# Neighbor-driven road topology and local mesh refresh regression coverage.
-	_check(road_system.get_road_tile_kind(Vector2i(0, 0)) == RoadSystemScript.TILE_T, "A three-neighbor starter-road tile was not classified as a T-junction.")
-	_check(road_system.get_road_tile_kind(Vector2i(0, -1)) == RoadSystemScript.TILE_T, "The opposite starter-road row did not resolve its T-junction topology.")
-	var topology_center := Vector2i(18, 0)
-	var money_before_topology := EconomyManager.simoleons
-	_check(road_system.place_road(topology_center), "Could not create topology test end/stub road.")
-	_check(EconomyManager.simoleons == money_before_topology - RoadSystemScript.ROAD_COST, "Road placement must retain the existing 50-Simoleon cost.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_END, "A road with one neighbor must be an End/stub.")
-	var first_revision := int(road_system.roads[topology_center].get_meta("road_revision", 0))
-	_check(road_system.place_road(Vector2i(19, 0)), "Could not extend topology test into a straight road.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_STRAIGHT, "Opposite neighbors must produce a Straight tile.")
-	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystemScript.TILE_STRAIGHT, "Placed road mesh was not refreshed to Straight after its neighbor was added.")
-	_check(int(road_system.roads[topology_center].get_meta("road_revision", 0)) > first_revision, "Road mesh revision did not advance after neighbor placement.")
-	_check(road_system.roads[Vector2i(17, 0)].get_meta("road_tile_kind") == RoadSystemScript.TILE_STRAIGHT, "The adjacent road mesh was not refreshed after placement.")
-	_check(road_system.place_road(Vector2i(18, -1)), "Could not create topology test corner/T connection.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_T, "Three connected neighbors must produce a T-junction.")
-	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystemScript.TILE_T, "T-junction visual mesh was not refreshed.")
-	_check(road_system.place_road(Vector2i(18, 1)), "Could not complete topology test four-way intersection.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_CROSS, "Four connected neighbors must produce a Cross intersection.")
-	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystemScript.TILE_CROSS, "Cross visual mesh was not refreshed.")
-	_check(road_system.remove_road(Vector2i(18, 1)), "Could not remove topology test cross arm.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_T, "Removing a cross arm must refresh the center back to T.")
-	_check(road_system.remove_road(Vector2i(19, 0)), "Could not remove topology test straight arm.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_CORNER, "Removing one T arm must refresh the center to Corner.")
-	_check(road_system.roads[topology_center].get_meta("road_tile_kind") == RoadSystemScript.TILE_CORNER, "Corner visual mesh was not refreshed after road removal.")
-	_check(road_system.remove_road(Vector2i(18, -1)), "Could not remove topology test corner arm.")
-	_check(road_system.get_road_tile_kind(topology_center) == RoadSystemScript.TILE_END, "Removing the corner arm must refresh the center to End.")
-	_check(road_system.remove_road(topology_center), "Could not remove topology test center road.")
-	_check(road_system.roads[Vector2i(17, 0)].get_meta("road_tile_kind") == RoadSystemScript.TILE_END, "Neighbor mesh was not refreshed after deleting the connecting road.")
-
-	var hud = get_node_or_null("HUD")
-	var saved_level := GameManager.level
-	if hud:
-		# Exercise the actual HUD reward handler and the full timed celebration.
-		hud._on_level_up_rewarded(2, 200, 1)
-		var celebration = hud.get_node_or_null("LevelUpCelebration")
-		_check(celebration != null, "Level Up reward did not create its celebration overlay.")
-		if celebration:
-			var title = celebration.find_child("LevelUpTitle", true, false)
-			var subtitle = celebration.find_child("MayorCongratulations", true, false)
-			_check(title is Label and title.text == "LEVEL UP!", "Level Up title is missing.")
-			_check(subtitle is Label and subtitle.text == "Congratulations Mayor!", "Mayor congratulations message is missing.")
-			await _wait_seconds(1.3)
-			var simoleon_reward = celebration.find_child("SimoleonReward", true, false)
-			var key_reward = celebration.find_child("GoldenKeyReward", true, false)
-			_check(simoleon_reward is Label and simoleon_reward.text == "+200 Simoleons", "Simoleon reward counter did not animate to the awarded amount.")
-			_check(key_reward is Label and key_reward.text == "+1 Golden Key", "Golden Key reward counter did not animate to the awarded amount.")
-			await _wait_seconds(1.6)
-		_check(hud.get_node_or_null("LevelUpCelebration") == null, "Level Up celebration did not clean itself up after 2–3 seconds.")
-	GameManager.level = 5
-	if hud:
-		var right_toolbar = hud.get_node_or_null("RightToolbar")
-		_check(right_toolbar is PanelContainer and right_toolbar.visible, "Transparent category PNG rail must remain visible without a Build button.")
-		_check(hud.get_node_or_null("BuildMenuButton") == null, "Hard-hat Build button must not be present.")
-		var toolbar_items = right_toolbar.find_child("RightToolbarItems", true, false) if right_toolbar else null
-		_check(toolbar_items is VBoxContainer and toolbar_items.get_child_count() == 7, "Right rail must retain all seven direct category shortcuts.")
-		hud._on_category_pressed("residential")
-		_check(hud.submenu_scroll.visible and hud.submenu.get_node_or_null("residential_villa") != null, "Residential submenu must show available house choices.")
-		var catalog_base = hud.get_node_or_null("CatalogBaseBar") as PanelContainer
-		var advisor_slot = hud.get_node_or_null("CatalogAdvisor") as Control
-		var catalog_close = hud.get_node_or_null("CatalogCloseButton") as Control
-		_check(catalog_base != null and catalog_base.visible, "Bright catalog base strip must be visible while selecting buildings.")
-		_check(advisor_slot != null and advisor_slot.visible and is_equal_approx(advisor_slot.anchor_right, 0.15), "Advisor must occupy the dedicated left fifteen-percent slot.")
-		_check(is_equal_approx(hud.submenu_scroll.anchor_left, 0.15) and is_equal_approx(hud.submenu_scroll.anchor_right, 0.95), "Building catalog must occupy the central eighty-percent width.")
-		_check(catalog_close != null and catalog_close.visible and is_equal_approx(catalog_close.anchor_left, 0.95), "Simple X close action must occupy the right five-percent slot.")
-		_check(hud.context_header != null and hud.context_header.visible, "Centered contextual header must be visible while a catalog category is open.")
-		_check(hud.get_node_or_null("CatalogCloseButton") != null, "Residential submenu must always include Cancel.")
-		hud._on_building_choice_pressed("residential_villa")
-		_check(BuildManager.selected_building_type == "residential_villa" and BuildManager.is_placing, "Villa choice did not enter placement mode.")
-		BuildManager.cancel_placement()
-		hud._on_category_pressed("commercial")
-		_check(hud.submenu.get_node_or_null("hardware_store") != null, "Commercial menu is missing Hardware Store.")
-		_check(hud.submenu.get_node_or_null("farmers_market") != null, "Commercial menu is missing Farmer's Market.")
-		_check(hud.submenu.get_node_or_null("furniture_store") != null, "Commercial menu is missing Furniture Store.")
-		_check(ProductionManager.get_default_recipe_for_building("shop_chain") == "nails", "Chain store should reuse the existing Nails recipe.")
-		var saved_level_for_fast_food := GameManager.level
-		GameManager.level = 25
-		hud._on_submenu_option("commercial", "fast_food")
-		_confirm_catalog_build(hud)
-		GameManager.level = saved_level_for_fast_food
-		_check(BuildManager.selected_building_type == "fast_food" and BuildManager.is_placing, "Fast Food choice did not enter placement mode.")
-		BuildManager.cancel_placement()
-		hud._on_category_pressed("road")
-		_check(hud.submenu.get_node_or_null("road_build") != null and hud.submenu.get_node_or_null("road_upgrade") != null and hud.submenu.get_node_or_null("bulldoze_road") != null, "Road submenu must show Build, Upgrade and Bulldoze.")
-		hud._on_submenu_option("road", "road_build")
-		_check(road_system.is_road_mode, "Road build menu action did not enable road placement.")
-		hud._on_cancel_pressed()
-		hud._on_category_pressed("road")
-		hud._on_submenu_option("road", "bulldoze_road")
-		_check(input_node.bulldoze_road_mode, "Road bulldozer menu action did not enable road removal.")
-		hud._on_cancel_pressed()
-		hud._on_category_pressed("industrial")
-		_check(hud.submenu.get_node_or_null("factory_small") != null and hud.submenu.get_node_or_null("factory_basic") != null, "Factory choices must be listed.")
-		var small_factory_button := hud.submenu.get_node("factory_small") as Button
-		var factory_art := small_factory_button.find_child("SubmenuArtwork", true, false) as TextureRect if small_factory_button else null
-		_check(factory_art != null and factory_art.texture != null, "Industrial submenu must show the original Small Factory artwork.")
-		_check(small_factory_button.find_child("TitleLabel", true, false) == null and small_factory_button.find_child("DetailLabel", true, false) == null, "Icon-only industrial submenu must not create title/detail labels.")
-		hud._on_submenu_option("industrial", "factory_small")
-		_confirm_catalog_build(hud)
-		_check(BuildManager.is_placing and BuildManager.selected_building_type == "factory_small", "Small factory menu action did not enter placement mode.")
-		BuildManager.cancel_placement()
-		hud._on_category_pressed("services")
-		for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
-			_check(hud.submenu.get_node_or_null(group_id) != null, "Services submenu is missing group " + group_id)
-		hud._on_submenu_option("services", "group_power")
-		_check(hud.submenu.get_node_or_null("power_wind") != null, "Power group must contain Wind Power.")
-		hud._on_submenu_option("services", "power_wind")
-		_confirm_catalog_build(hud)
-		_check(BuildManager.is_placing and BuildManager.selected_building_type == "power_wind", "Wind power menu action did not enter placement mode.")
-		BuildManager.cancel_placement()
-		var menu_test_level := GameManager.level
-		GameManager.level = 1
-		hud._on_category_pressed("services")
-		hud._on_submenu_option("services", "group_fire")
-		var locked_fire = hud.submenu.get_node_or_null("fire_station")
-		_check(locked_fire != null and not locked_fire.disabled, "Locked fire station must remain clickable.")
-		var fire_unlock_badge := locked_fire.find_child("CatalogLock", true, false) as Label if locked_fire else null
-		var fire_unlock_text := fire_unlock_badge
-		_check(fire_unlock_badge != null and fire_unlock_text.text == "LOCKED", "Locked fire station must show its lock state.")
-		var fire_artwork := locked_fire.find_child("SubmenuArtwork", true, false) as TextureRect if locked_fire else null
-		_check(fire_artwork != null and fire_artwork.modulate == Color.WHITE, "Locked fire station artwork must remain untinted.")
-		_check(fire_unlock_text != null and fire_unlock_text.text == "LOCKED", "Locked fire station must clearly communicate its unlock level.")
-		hud._on_submenu_option("services", "fire_station")
-		_check(not BuildManager.is_placing and hud.status_label.text.find("Level 5") >= 0, "Locked fire station did not explain its unlock level.")
-		GameManager.level = menu_test_level
-		hud._on_category_pressed("specializations")
-		_check(hud.submenu.get_node_or_null("group_parks") != null, "Specializations must show Parks as a subgroup.")
-		hud._on_submenu_option("specializations", "group_parks")
-		_check(hud.submenu.get_node_or_null("park_small") != null, "Parks subgroup must contain Small Park.")
-		hud._on_submenu_option("specializations", "park_small")
-		_confirm_catalog_build(hud)
-		_check(BuildManager.is_placing and BuildManager.selected_building_type == "park_small", "Small Park menu action did not enter placement mode.")
-		BuildManager.cancel_placement()
-		hud._on_category_pressed("bulldoze")
-		_check(input_node.bulldoze_mode and not input_node.bulldoze_road_mode, "Main bulldozer category did not activate demolition mode.")
-		_check(hud.submenu_scroll.visible and hud.get_node_or_null("CatalogCloseButton") != null, "Bulldoze mode must show its indicator and Cancel action.")
-		var bulldozer_badge = hud.get_node_or_null("BulldozerModeIndicator")
-		_check(bulldozer_badge != null and bulldozer_badge.visible, "Bulldozer active indicator was not shown.")
-		var cancel_key := InputEventKey.new()
-		cancel_key.pressed = true
-		cancel_key.keycode = KEY_X
-		hud._unhandled_input(cancel_key)
-		_check(hud.get_node_or_null("BulldozerModeIndicator") == null or not hud.get_node("BulldozerModeIndicator").visible, "X did not hide the bulldozer indicator.")
-		_check(not input_node.bulldoze_mode and not input_node.bulldoze_road_mode, "X/Cancel did not exit bulldozer mode.")
-		# Exercise road-only demolition: one asphalt tile disappears, nothing else changes.
-		var test_road_cell := Vector2i(18, 0)
-		_check(road_system.place_road(test_road_cell), "Could not create test road tile for demolition.")
-		input_node.set_bulldoze_road_mode(true)
-		input_node._handle_bulldoze_cell(test_road_cell, road_system)
-		_check(not road_system.has_road(test_road_cell), "Road-only bulldozer did not remove the selected asphalt tile.")
-		input_node.set_bulldoze_road_mode(false)
-		# The general bulldozer must also remove road tiles without touching buildings.
-		var general_road_cell := Vector2i(18, 0)
-		_check(road_system.place_road(general_road_cell), "Could not create test road tile for general bulldozer.")
-		input_node.set_bulldoze_mode(true)
-		input_node._handle_bulldoze_cell(general_road_cell, road_system)
-		_check(not road_system.has_road(general_road_cell), "General bulldozer did not remove a road tile.")
-		input_node.set_bulldoze_mode(false)
-		# General building demolition requires a second tap and unregisters the whole footprint.
-		var demo_cell := Vector2i(12, 1)
-		_check(BuildManager.place_building(demo_cell, "residential_villa", 1, "completed"), "Could not create test building for demolition.")
-		var demo_building = BuildManager.building_at_cell(demo_cell)
-		var population_before_demo := GameManager.population
-		print("[GameplaySmoke] demolition before=%d house_pop=%d city=%d" % [population_before_demo, demo_building.current_population if demo_building else -1, GameManager.population])
-		input_node.set_bulldoze_mode(true)
-		input_node._handle_bulldoze_cell(demo_cell, road_system)
-		_check(BuildManager.building_at_cell(demo_cell) == demo_building, "First bulldozer tap should only request confirmation.")
-		_check(demo_building.demolition_highlight_active, "First bulldozer tap did not highlight the selected building.")
-		input_node._handle_bulldoze_cell(demo_cell, road_system)
-		_check(BuildManager.building_at_cell(demo_cell) == null, "Second bulldozer tap did not remove the building footprint.")
-		_check(not demo_building.demolition_highlight_active, "Demolition highlight was not cleared after removal.")
-		print("[GameplaySmoke] demolition after=%d" % GameManager.population)
-		_check(GameManager.population < population_before_demo, "Demolishing a residential building did not remove its population.")
-		input_node.set_bulldoze_mode(false)
-		# Factory removal must release its factory slot as well as its occupied cells.
-		var factories_before_demo := BuildManager.factory_count
-		var factory_demo_cell := Vector2i(14, 1)
-		_check(BuildManager.place_building(factory_demo_cell, "industrial_1", 1, "completed"), "Could not create test factory for demolition.")
-		var factory_demo = BuildManager.building_at_cell(factory_demo_cell)
-		_check(BuildManager.factory_count == factories_before_demo + 1, "Test factory did not reserve a factory slot.")
-		input_node.set_bulldoze_mode(true)
-		input_node._handle_bulldoze_cell(factory_demo_cell, road_system)
-		input_node._handle_bulldoze_cell(factory_demo_cell, road_system)
-		_check(BuildManager.building_at_cell(factory_demo_cell) == null, "Bulldozer did not remove the factory footprint.")
-		_check(BuildManager.factory_count == factories_before_demo, "Demolishing a factory did not release its factory slot.")
-		input_node.set_bulldoze_mode(false)
-		hud._close_building_submenu(false)
-		# Verify the City Storage modal matches the reference inventory layout.
-		var storage_before_panel: Dictionary = StorageManager.to_save_dict()
-		StorageManager.capacity = 60
-		StorageManager.items = {"metal": 1, "wood": 5, "bricks": 2}
-		hud._show_storage_panel()
-		_check(is_instance_valid(hud.storage_overlay), "Opening City Storage must create a full-screen modal overlay.")
-		_check(hud.storage_overlay.find_child("StorageBackdrop", true, false) is ColorRect, "City Storage must dim the city behind its light inventory card.")
-		_check(hud.storage_panel != null, "City Storage modal panel was not created.")
-		_check(hud.storage_panel.find_child("StorageHeaderIcon", true, false) is TextureRect, "City Storage header must show the local blue storage icon.")
-		_check(hud.storage_panel.find_child("StorageCapacityBar", true, false) is ProgressBar, "City Storage must show the orange/blue capacity bar.")
-		var storage_grid := hud.storage_panel.find_child("StorageItemsGrid", true, false) as GridContainer
-		_check(storage_grid != null and storage_grid.columns == 2, "City Storage products must be displayed in a two-column icon grid.")
-		_check(storage_grid != null and storage_grid.find_child("StorageItem_metal", true, false) != null, "City Storage grid must show stored product icons.")
-		var upgrade_button := hud.storage_panel.find_child("StorageIncreaseCapacity", true, false) as Button
-		_check(upgrade_button != null, "City Storage must show its green Increase Capacity action.")
-		if upgrade_button != null:
-			_check(not upgrade_button.disabled, "Storage capacity upgrade action must be enabled.")
-			_check(upgrade_button.text.contains("500") and upgrade_button.text.contains("10"), "Storage upgrade button must disclose its 500-Simoleon / +10-slot price.")
-			StorageManager.capacity_changed.connect(_on_test_storage_capacity_changed)
-			StorageManager.storage_changed.connect(_on_test_storage_changed)
-			var saved_simoleons_for_storage := EconomyManager.simoleons
-			EconomyManager.simoleons = 0
-			upgrade_button.pressed.emit()
-			_check(hud.status_label.text.contains("Not enough Simoleons"), "Unaffordable storage upgrade must show a clear status message.")
-			_check(StorageManager.capacity == 60 and EconomyManager.simoleons == 0, "Unaffordable storage upgrade must not change capacity or money.")
-			EconomyManager.simoleons = 500
-			upgrade_button.pressed.emit()
-			_check(StorageManager.capacity == 70, "Successful storage upgrade must add exactly 10 slots.")
-			_check(EconomyManager.simoleons == 0, "Successful storage upgrade must deduct exactly 500 Simoleons.")
-			_check(storage_capacity_signal_count == 1, "Successful storage upgrade must emit capacity_changed exactly once.")
-			_check(storage_changed_signal_count == 1, "Successful storage upgrade must emit storage_changed exactly once.")
-			var refreshed_capacity_label := hud.storage_panel.find_child("StorageCapacity", true, false) as Label
-			var refreshed_capacity_bar := hud.storage_panel.find_child("StorageCapacityBar", true, false) as ProgressBar
-			_check(refreshed_capacity_label != null and refreshed_capacity_label.text == "8/70", "Storage capacity label must refresh immediately after purchase.")
-			_check(refreshed_capacity_bar != null and int(refreshed_capacity_bar.max_value) == 70 and int(refreshed_capacity_bar.value) == 8, "Storage capacity progress bar must refresh immediately after purchase.")
-			_check(hud.status_label.text.contains("70"), "Successful storage upgrade must report the new capacity.")
-			StorageManager.capacity_changed.disconnect(_on_test_storage_capacity_changed)
-			StorageManager.storage_changed.disconnect(_on_test_storage_changed)
-			EconomyManager.simoleons = saved_simoleons_for_storage
-			EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
-		hud._close_storage_panel()
-		_check(not is_instance_valid(hud.storage_overlay), "Closing City Storage must remove its dimmed backdrop.")
-		StorageManager.from_save_dict(storage_before_panel)
-	else:
-		_check(false, "HUD node is missing for building submenu tests.")
 	GameManager.level = saved_level
-	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
-	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
-	_test_drag_gestures_do_not_place()
+	ServiceManager.recalculate_from_buildings()
 
-	BuildManager.select_building("residential_1")
-	_check(BuildManager.can_place_at(Vector2i(0, 1)), "House plot beside road should be valid.")
-	_check(BuildManager.place_building(Vector2i(0, 1)), "Could not place starter house.")
-	var construction_fixture = BuildManager.building_at_cell(Vector2i(0, 1))
-	_check(construction_fixture != null and construction_fixture.construction_finish_unix > int(Time.get_unix_time_from_system()), "New construction must store an authoritative finish timestamp.")
-	var indexed_house = BuildManager.building_at_cell(Vector2i(0, 1))
-	_check(indexed_house != null and indexed_house.building_type == "residential_1", "Building cell index did not resolve the placed house.")
-	_check(BuildManager.building_at_cell(Vector2i(1, 2)) == indexed_house, "Building cell index did not cover the full house footprint.")
-	var footprint_test_camera: Camera3D = get_viewport().get_camera_3d()
-	var construction_roof_screen := footprint_test_camera.unproject_position(indexed_house.global_position + Vector3(0.0, 3.4, 0.0))
-	_check(input_node._building_at_screen(construction_roof_screen) == indexed_house, "Oblique-camera ray hit on the house roof did not resolve the building volume.")
-	input_node._begin_move_from_screen(77, construction_roof_screen)
-	_check(get_node("HUD/StatusLabel").text == "Still under construction", "Long-pressing the visible roof of a building under construction did not report construction status.")
-	input_node._begin_move_from_screen(78, footprint_test_camera.unproject_position(BuildManager.grid_to_world(Vector2i(12, 12))))
-	_check(get_node("HUD/StatusLabel").text == "No building selected. Press and hold directly on a building to move it.", "Long-pressing empty ground did not provide feedback.")
-	_check(not BuildManager.can_place_at(Vector2i(1, 1), "residential_1"), "Overlapping house footprint was incorrectly accepted.")
-
-	BuildManager.select_building("industrial_1")
-	_check(BuildManager.place_building(Vector2i(2, 1)), "Could not place factory.")
-	BuildManager.select_building("building_supplies")
-	_check(BuildManager.place_building(Vector2i(4, 1)), "Could not place Building Supplies shop.")
-	BuildManager.select_building("power_wind")
-	_check(BuildManager.place_building(Vector2i(6, 1)), "Could not place wind power utility.")
-	BuildManager.select_building("water_tower")
-	_check(BuildManager.place_building(Vector2i(7, 1)), "Could not place water tower.")
-
-	await _wait_seconds(4.5)
-	var home = _find_building("residential_1")
-	var city_needs_snapshot: Dictionary = CityDemandManager.get_city_snapshot()
-	_check(int(city_needs_snapshot.get("summary", {}).get("homes", 0)) >= 1, "City Needs must aggregate completed residential buildings.")
-	var nails_need_found := false
-	for city_item in city_needs_snapshot.get("items", []):
-		if str(city_item.get("item_id", "")) == "nails":
-			nails_need_found = int(city_item.get("required", 0)) >= 1
-	_check(nails_need_found, "City Needs must expose the first residential plan's Nails requirement without opening the house.")
-	var needs_hud = get_node("HUD")
-	needs_hud.open_city_needs_panel()
-	_check(needs_hud.find_child("CityNeedsPanel", true, false) != null, "HUD must expose a city-wide needs dashboard.")
-	_check(needs_hud.find_child("CityNeed_nails", true, false) != null, "City Needs dashboard must show aggregated item shortage rows.")
-	needs_hud._close_city_needs_panel()
-	needs_hud.open_residential_panel(home)
-	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
-	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
-	_check(needs_hud.find_child("ResidentialPlanStatus", true, false) is Label, "Residential plan must clearly show whether materials are missing or the home is ready.")
-	needs_hud._close_residential_panel()
-	var factory = _find_building("industrial_1")
-	_check(home != null and home.status == "completed", "House construction did not finish.")
-	_check(factory != null and factory.status == "completed", "Factory construction did not finish.")
-	_check(GameManager.population > 0, "Completed house did not add any occupied population.")
-	_check(GameManager.happiness > 0.0 and GameManager.happiness <= 100.0, "First completed house happiness must remain in the valid non-zero range.")
-	_check(ServiceManager.total_power >= 12 and ServiceManager.total_water >= 12, "Power/water capacity was not registered.")
-	_check(home != null and ServiceManager.is_building_served(home), "House was not served by nearby power and water.")
-
-	# Exercise the actual touch long-press, drag and release event path while the build palette is still active.
-	BuildManager.select_building("residential_1")
-	var active_move_camera: Camera3D = get_viewport().get_camera_3d()
-	var home_footprint: Vector2i = home.definition.get("size", Vector2i(2, 2))
-	var home_center_offset := Vector3((home_footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (home_footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
-	var home_center_world: Vector3 = BuildManager.grid_to_world(home.grid_pos) + home_center_offset
-	# Start on the second cell of the 2x2 footprint, not its anchor cell.
-	var non_anchor_cell_world: Vector3 = BuildManager.grid_to_world(Vector2i(1, 2))
-	var move_input_screen: Vector2 = active_move_camera.unproject_position(home.global_position + Vector3(0.0, 3.5, 0.0))
-	var touch_down := InputEventScreenTouch.new()
-	touch_down.index = 0
-	touch_down.pressed = true
-	touch_down.position = move_input_screen
-	input_node._unhandled_input(touch_down)
-	# A browser/runtime may also synthesize mouse events for the same finger.
-	# They must not create a second pointer and block the one-finger hold timer.
-	var emulated_mouse_down := InputEventMouseButton.new()
-	emulated_mouse_down.button_index = MOUSE_BUTTON_LEFT
-	emulated_mouse_down.pressed = true
-	emulated_mouse_down.position = move_input_screen
-	input_node._unhandled_input(emulated_mouse_down)
-	var emulated_mouse_motion := InputEventMouseMotion.new()
-	emulated_mouse_motion.position = move_input_screen + Vector2(4.0, 2.0)
-	input_node._unhandled_input(emulated_mouse_motion)
-	_check(input_node.pointer_start.size() == 1 and input_node.pointer_start.has(0), "Emulated mouse events duplicated a physical touch and blocked the long-press timer.")
-	# Simulate normal finger tremor / touch-screen jitter before the hold timer expires.
-	var jitter_drag := InputEventScreenDrag.new()
-	jitter_drag.index = 0
-	jitter_drag.position = move_input_screen + Vector2(18.0, 9.0)
-	jitter_drag.relative = Vector2(18.0, 9.0)
-	input_node._unhandled_input(jitter_drag)
-	_check(input_node.is_building_press_pending(0), "Touching the visible house body/roof was not detected as a building press.")
-	_check(not BuildManager.is_moving, "Small finger jitter activated Move before the long-press duration elapsed.")
-	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
-	_check(BuildManager.is_moving and BuildManager.moving_building == home, "Long press on a completed residential building with small mobile touch jitter did not enter Move mode while placement was active.")
-	_check(not BuildManager.is_placing, "Starting a building move did not exit the active placement palette.")
-	var moved_to := Vector2i(8, 1)
-	var moved_footprint: Vector2i = home.definition.get("size", Vector2i(2, 2))
-	var moved_center_offset := Vector3((moved_footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (moved_footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
-	var moved_center_world: Vector3 = BuildManager.grid_to_world(moved_to) + moved_center_offset
-	_check(input_node._move_anchor_from_world(moved_center_world) == moved_to, "Move drag did not map the building centre to the footprint anchor.")
-	var moved_screen: Vector2 = active_move_camera.unproject_position(moved_center_world)
-	var touch_drag := InputEventScreenDrag.new()
-	touch_drag.index = 0
-	touch_drag.position = moved_screen
-	touch_drag.relative = moved_screen - move_input_screen
-	input_node._unhandled_input(touch_drag)
-	var touch_up := InputEventScreenTouch.new()
-	touch_up.index = 0
-	touch_up.pressed = false
-	touch_up.position = moved_screen
-	input_node._unhandled_input(touch_up)
-	_check(home.grid_pos == moved_to and BuildManager.building_at_cell(moved_to) == home, "Touch release did not commit the valid building move.")
-	_check(BuildManager.building_at_cell(Vector2i(0, 1)) == null, "Old building footprint remained occupied after moving.")
-	_check(ServiceManager.is_building_served(home), "Moving a house failed to recalculate nearby power/water coverage.")
-	# Occupied destination is red/invalid and release must restore the original footprint.
-	_check(BuildManager.begin_move(home), "Could not re-enter Move mode for invalid-placement test.")
-	_check(not BuildManager.preview_move_at(Vector2i(2, 1)), "Move preview accepted a destination occupied by the factory.")
-	_check(not BuildManager.finish_move(), "Invalid move should not commit.")
-	_check(home.grid_pos == moved_to and BuildManager.building_at_cell(moved_to) == home, "Invalid move did not restore the previous position.")
-	# A pointer leaving the map must invalidate the last otherwise-green preview.
-	_check(BuildManager.begin_move(home), "Could not begin move for out-of-map rejection test.")
-	_check(BuildManager.preview_move_at(Vector2i(0, 1)), "Out-of-map test needs an initial valid preview.")
-	BuildManager.invalidate_move_preview()
-	_check(not BuildManager.finish_move(), "Move release outside the map must not commit a stale valid preview.")
-	_check(home.grid_pos == moved_to and BuildManager.building_at_cell(moved_to) == home, "Out-of-map release did not restore the previous position.")
-	# Cancel must restore the building even after a valid preview has been shown.
-	_check(BuildManager.begin_move(home), "Could not begin move for Cancel test.")
-	_check(BuildManager.preview_move_at(Vector2i(0, 1)), "Cancel test destination should be valid.")
-	BuildManager.cancel_move()
-	_check(not BuildManager.is_moving and home.grid_pos == moved_to and BuildManager.building_at_cell(moved_to) == home, "Cancel did not restore the building to its original location.")
-	# Exercise desktop mouse long-press, drag and release to return the fixture.
-	var mouse_down := InputEventMouseButton.new()
-	mouse_down.button_index = MOUSE_BUTTON_LEFT
-	mouse_down.pressed = true
-	mouse_down.position = moved_screen
-	input_node._unhandled_input(mouse_down)
-	input_node._process(input_node.LONG_PRESS_SECONDS + 0.01)
-	var mouse_motion := InputEventMouseMotion.new()
-	var home_center_screen: Vector2 = active_move_camera.unproject_position(home_center_world)
-	mouse_motion.position = home_center_screen
-	mouse_motion.relative = home_center_screen - moved_screen
-	input_node._unhandled_input(mouse_motion)
-	var mouse_up := InputEventMouseButton.new()
-	mouse_up.button_index = MOUSE_BUTTON_LEFT
-	mouse_up.pressed = false
-	mouse_up.position = home_center_screen
-	input_node._unhandled_input(mouse_up)
-	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 47, "Move whitelist must include all 47 supported building types.")
-	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
-		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
-
-	# Production acceptance uses real SCBI durations and advances timestamps in
-	# the test fixture rather than sleeping for minutes.
-	var production_hud = get_node("HUD")
-	var factory_component = factory.production_component
-	_check(factory_component != null and factory_component.get_slot_count() == 2, "Small Factory must expose two independent production slots.")
-	production_hud.open_production_panel(factory)
-	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
-	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
-	_check(production_hud.production_panel.find_child("ProductionProductsScroll", true, false) != null, "Factory panel must show a horizontally browsable product-card row.")
-	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
-	var metal_button := production_hud.production_panel.find_child("Slot0_metal", true, false) as Button
-	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
-	if metal_button:
-		metal_button.emit_signal("pressed")
-		var factory_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
-		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must open its detail card with an enabled Start action.")
-		if factory_start:
-			factory_start.emit_signal("pressed")
-	_check(not factory_component.get_slot(0).is_empty(), "Confirming Metal production must start the first factory slot.")
-	production_hud.open_production_panel(factory)
-	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
-	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
-	var second_metal_button := production_hud.production_panel.find_child("Slot1_metal", true, false) as Button
-	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
-	if second_metal_button:
-		second_metal_button.emit_signal("pressed")
-		var second_factory_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
-		if second_factory_start:
-			second_factory_start.emit_signal("pressed")
-	_check(not factory_component.get_slot(1).is_empty(), "Factory must run two parallel batches.")
-	for slot_index in range(2):
-		var slot: Dictionary = factory_component.slots[slot_index]
-		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-		factory_component.slots[slot_index] = slot
-	factory_component.refresh_slots()
-	_check(bool(factory_component.get_slot(0).get("ready",false)), "Metal batch must become ready at its Unix finish timestamp.")
-	production_hud.open_production_panel(factory)
-	var collect_metal_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
-	if collect_metal_0:
-		collect_metal_0.emit_signal("pressed")
-	else:
-		_check(false, "Ready Metal slot must expose a Collect button.")
-	production_hud.open_production_panel(factory)
-	var collect_metal_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
-	if collect_metal_1:
-		collect_metal_1.emit_signal("pressed")
-	else:
-		_check(false, "Second ready Metal slot must expose a Collect button.")
-	_check(StorageManager.get_count("metal") == 2, "Two parallel factory collections must add two Metal to City Storage.")
-
-	var supplies = _find_building("building_supplies")
-	var shop_component = supplies.production_component
-	_check(shop_component != null and shop_component.get_slot_count() == 2, "Building Supplies must expose two craft queue slots.")
-	StorageManager.items = {}
-	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
-	production_hud.open_production_panel(supplies)
-	var nails_button_0 := production_hud.production_panel.find_child("Slot0_nails", true, false) as Button
-	_check(nails_button_0 != null and nails_button_0.find_child("HexagonBackground", true, false) is Polygon2D, "Production choices must use floating hexagonal item tiles like SimCity BuildIt.")
-	if nails_button_0:
-		nails_button_0.emit_signal("pressed")
-		var detail_card: Node = production_hud.production_panel.find_child("ProductionItemDetails", true, false)
-		var ingredient_label := production_hud.production_panel.find_child("IngredientsLabel", true, false) as Label
-		_check(detail_card != null and ingredient_label != null, "Selecting a shop product must open its separate white recipe detail card.")
-		if ingredient_label:
-			_check(ingredient_label.text.contains("Metal") and ingredient_label.text.contains("2"), "Nails detail must clearly show its Metal x2 requirement.")
-		var shop_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
-		_check(shop_start != null and not shop_start.disabled, "Nails must be startable when two Metal are in City Storage.")
-		if shop_start:
-			shop_start.emit_signal("pressed")
-	else:
-		_check(false, "Building Supplies must offer Nails at level 1.")
-	production_hud.open_production_panel(supplies)
-	var nails_button_1 := production_hud.production_panel.find_child("Slot1_nails", true, false) as Button
-	if nails_button_1:
-		nails_button_1.emit_signal("pressed")
-		var second_shop_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
-		if second_shop_start:
-			second_shop_start.emit_signal("pressed")
-	else:
-		_check(false, "Building Supplies second slot must accept a Nails order.")
-	_check(StorageManager.get_count("metal") == 0, "Queuing two Nails orders must deduct their ingredients from City Storage.")
-	_check(int(shop_component.get_slot(0).get("finish_unix", 0)) > 0 and int(shop_component.get_slot(1).get("finish_unix", 0)) == 0, "Commercial store orders must run sequentially, with later orders waiting in the queue.")
-	var first_shop_slot: Dictionary = shop_component.slots[0]
-	first_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-	shop_component.slots[0] = first_shop_slot
-	shop_component.refresh_slots()
-	_check(bool(shop_component.get_slot(0).get("ready", false)) and int(shop_component.get_slot(1).get("finish_unix", 0)) > 0, "The next commercial order must start when the previous order completes.")
-	production_hud.open_production_panel(supplies)
-	var collect_nails_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
-	if collect_nails_0:
-		collect_nails_0.emit_signal("pressed")
-	var second_shop_slot: Dictionary = shop_component.slots[1]
-	second_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-	shop_component.slots[1] = second_shop_slot
-	shop_component.refresh_slots()
-	production_hud.open_production_panel(supplies)
-	var collect_nails_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
-	if collect_nails_1:
-		collect_nails_1.emit_signal("pressed")
-	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
-
-	# Sourced star progression and queue-slot pricing are exposed in the live panel.
-	var previous_level_for_store_star := GameManager.level
-	var previous_simoleons_for_store_star := EconomyManager.simoleons
-	var previous_sim_cash_for_store_slots := EconomyManager.sim_cash
-	# Level 50 unlocks Coffee and Popcorn so their star gates are the tested blocker.
-	GameManager.level = 50
-	EconomyManager.simoleons = 50000
-	EconomyManager.sim_cash = 100
-	_check(ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).contains("Store Star"), "Paint must remain locked until Building Supplies reaches its sourced one-star requirement.")
-	_check(is_equal_approx(ProductionManager.get_production_time("nails", 0), 300.0) and is_equal_approx(ProductionManager.get_production_time("nails", 1), 270.0), "Building Supplies one-star timing must apply the sourced 10% reduction.")
-	production_hud.open_production_panel(supplies)
-	_check(production_hud.production_panel.find_child("StoreStarStatus", true, false) is Label, "Supported commercial stores must display their current star level.")
-	var star_upgrade_button := production_hud.production_panel.find_child("UpgradeStoreStar", true, false) as Button
-	_check(star_upgrade_button != null and not star_upgrade_button.disabled, "Building Supplies one-star upgrade must be available at its sourced level and cost.")
-	if star_upgrade_button:
-		star_upgrade_button.emit_signal("pressed")
-	_check(shop_component.store_star_level == 1 and ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).is_empty(), "Buying the first Building Supplies star must unlock Paint.")
-	_check(is_equal_approx(shop_component.get_item_production_time("nails"), 270.0), "New Nails orders must use the one-star production time.")
-
-	# Cross-store star upgrades are enabled only where level gates and prices are sourced.
-	var verified_store_star_cases := {
-		"farmers_market": {"level": 20, "cost": 19000, "item": "vegetables", "base": 1200.0},
-		"furniture_store": {"level": 22, "cost": 21000, "item": "chair", "base": 1200.0},
-		"gardening_supplies": {"level": 27, "cost": 25000, "item": "grass", "base": 1800.0},
-		"fashion_store": {"level": 31, "cost": 30000, "item": "cap", "base": 3600.0},
-		"home_appliances": {"level": 41, "cost": 40000, "item": "bbq_grill", "base": 9900.0},
-		"fast_food": {"level": 37, "cost": 36000, "item": "pizza", "base": 1440.0},
-		"donut_shop": {"level": 30, "cost": 29000, "item": "bread_roll", "base": 3600.0}
-	}
-	for store_id in verified_store_star_cases:
-		var star_case: Dictionary = verified_store_star_cases[store_id]
-		var offer := ProductionManager.get_store_star_offer(store_id, 0)
-		_check(not offer.is_empty() and int(offer.get("level", 0)) == int(star_case.level) and int(offer.get("cost", 0)) == int(star_case.cost), "%s first-star level and price must match the cited store data." % store_id)
-		_check(is_equal_approx(ProductionManager.get_production_time(str(star_case.item), 1), float(star_case.base) * 0.9), "%s one-star production must reduce the base duration by 10%%." % store_id)
-	_check(ProductionManager.get_recipe_lock_reason("coffee", 0).contains("Store Star"), "Coffee must remain locked until Donut Shop reaches one star.")
-	_check(ProductionManager.get_recipe_lock_reason("popcorn", 0).contains("Store Star"), "Popcorn must remain locked until Fast Food reaches one star.")
-
-	var later_store_star_cases := {
-		"sports_shop": {"level": 55, "cost": 250000, "last_verified": 2},
-		"toy_store": {"level": 58, "cost": 280000, "last_verified": 1},
-		"restoration_office": {"level": 76, "cost": 450000, "last_verified": 2},
-		"farmers_store": {"level": 73, "cost": 310000, "last_verified": 2},
-		"dessert_shop": {"level": 87, "cost": 450000, "last_verified": 1}
-	}
-	for later_store_id in later_store_star_cases:
-		var later_case: Dictionary = later_store_star_cases[later_store_id]
-		var later_offer := ProductionManager.get_store_star_offer(later_store_id, 0)
-		_check(int(later_offer.get("level", 0)) == int(later_case.level) and int(later_offer.get("cost", 0)) == int(later_case.cost), "%s first-star offer must match sourced level and price." % later_store_id)
-		_check(ProductionManager.get_store_star_offer(later_store_id, int(later_case.last_verified)).is_empty(), "%s must not expose an upgrade tier with an unknown level gate." % later_store_id)
-		_check(ProductionManager.get_store_star_status_note(later_store_id, int(later_case.last_verified)) == "NEXT STAR LEVEL UNVERIFIED", "%s UI must explain why its next star is unavailable." % later_store_id)
-	_check(int(BuildManager.building_types["sports_shop"].level) == 35 and int(BuildManager.building_types["sports_shop"].cost) == 80000, "Sports Shop unlock must use the current year-round level and cost.")
-	_check(int(BuildManager.building_types["toy_store"].level) == 40 and int(BuildManager.building_types["toy_store"].cost) == 100000, "Toy Shop unlock must use the current year-round level and cost.")
-	_check(int(BuildManager.building_types["restoration_office"].level) == 45 and int(BuildManager.building_types["restoration_office"].cost) == 250000, "Bureau of Restoration unlock must use the current year-round level and cost.")
-	_check(int(BuildManager.building_types["farmers_store"].level) == 50 and int(BuildManager.building_types["farmers_store"].cost) == 300000, "Country Store unlock must use the current year-round level and cost.")
-	_check(int(BuildManager.building_types["dessert_shop"].level) == 55 and int(BuildManager.building_types["dessert_shop"].cost) == 350000, "Dessert Shop unlock must use the current year-round level and cost.")
-
-	GameManager.level = 90
-	var verified_later_recipes := {
-		"ping_pong_table": {"level": 55, "time": 5400, "stars": 1},
-		"block_letters": {"level": 40, "time": 3600, "stars": 0},
-		"game_console": {"level": 58, "time": 4500, "stars": 1},
-		"forged_iron": {"level": 45, "time": 1800, "stars": 0},
-		"carved_wood": {"level": 54, "time": 3600, "stars": 0},
-		"wool_shirt": {"level": 50, "time": 4500, "stars": 0},
-		"picnic_basket": {"level": 59, "time": 3600, "stars": 0},
-		"apple_jam": {"level": 73, "time": 3600, "stars": 1},
-		"tiramisu": {"level": 55, "time": 2700, "stars": 0},
-		"churros": {"level": 63, "time": 2100, "stars": 0},
-		"profiterole": {"level": 71, "time": 2100, "stars": 0},
-		"mochi": {"level": 79, "time": 2700, "stars": 0},
-		"pavlova": {"level": 87, "time": 5400, "stars": 1}
-	}
-	for item_id in verified_later_recipes:
-		var later_recipe: Dictionary = ProductionManager.get_recipe(item_id)
-		var later_recipe_case: Dictionary = verified_later_recipes[item_id]
-		_check(not later_recipe.is_empty() and int(later_recipe.get("level", 0)) == int(later_recipe_case.level) and int(later_recipe.get("time_sec", 0)) == int(later_recipe_case.time), "%s must use its sourced level and production time." % item_id)
-		if int(later_recipe_case.stars) > 0:
-			_check(ProductionManager.get_recipe_lock_reason(item_id, 0).contains("Store Star"), "%s must require its sourced store star." % item_id)
-			_check(ProductionManager.get_recipe_lock_reason(item_id, 1).is_empty(), "%s must unlock at its sourced store star." % item_id)
+e_id in expected_capacities.keys():
+		var facility := FireHazardTestBuilding.new()
+		add_child(facility)
+		facility.building_id = "waste_test_" + waste_id
+		facility.building_type = waste_id
+		facility.definition = BuildManager.building_types[waste_id]
+		facility.status = "completed"
+		facility.grid_pos = service_positions[waste_id]
+		facility.global_position = Vector3.ZERO
+		BuildManager.buildings[facility.building_id] = facility
+		ServiceManager.recalculate_from_buildings()
+		var expected_capacity: int = expected_capacities[waste_id]
+		_check(ServiceManager.total_waste == expected_capacity, "Waste tier capacity must match its catalog data: " + waste_id)
+		_check(ServiceManager.demand_waste == 19, "Waste demand must remain independent of capacity.")
+		_check(not ServiceManager.waste_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive waste service.")
+		if expected_capacity == 15:
+			_check(ServiceManager.used_waste == 15, "A 15-unit waste facility must serve only 15 of the 18 connected demand units.")
+			_check(ServiceManager.waste_served_ids.size() < 14, "A small waste facility must leave some connected homes unserved.")
 		else:
-			_check(ProductionManager.get_recipe_lock_reason(item_id, 0).is_empty(), "%s must be craftable at its sourced Mayor Level." % item_id)
-	_check(ProductionManager.get_recipe("kite").is_empty() and ProductionManager.get_recipe("teddy_bear").is_empty(), "Products with unverified unlock levels or missing recipe verification must remain disabled.")
-	_check(ProductionManager.get_store_recipe_ids("dessert_shop").has("pavlova"), "Dessert Shop's verified product must appear in its production catalog.")
-	var donut_third_star_offer := ProductionManager.get_store_star_offer("donut_shop", 2)
-	_check(int(donut_third_star_offer.get("level", 0)) == 50 and int(donut_third_star_offer.get("cost", 0)) == 49000, "Donut Shop third star must use the 49,000 Simoleon value corroborated by the Japanese table and Planning Guide.")
-	for star_gated_item in ["ladder", "corn", "cupboard", "lawn_mower", "microwave_oven"]:
-		_check(ProductionManager.get_recipe_lock_reason(star_gated_item, 0).contains("Store Star"), "%s must require its source-documented first store star." % star_gated_item)
-		_check(ProductionManager.get_recipe_lock_reason(star_gated_item, 1).is_empty(), "%s must unlock after its store receives one star." % star_gated_item)
-	production_hud.open_production_panel(supplies)
-	var buy_queue_slot := production_hud.production_panel.find_child("PurchaseQueueSlot", true, false) as Button
-	_check(buy_queue_slot != null and buy_queue_slot.text.contains("4 SC") and not buy_queue_slot.disabled, "Building Supplies next queue slot must show its sourced 4 SimCash price.")
-	if buy_queue_slot:
-		buy_queue_slot.emit_signal("pressed")
-	_check(shop_component.get_slot_count() == 3 and EconomyManager.sim_cash == 96, "Buying the next queue slot from the production UI must increase capacity and spend the sourced SimCash amount.")
+			_check(ServiceManager.used_waste == 18, "A larger waste facility must serve all connected demand units.")
+			_check(ServiceManager.waste_served_ids.size() == 14, "A sufficient waste facility must serve all connected homes.")
+		_check(HappinessManager._home_has_extra_service(low_home), "A waste-served home must count as receiving an extra service.")
 
-	var standard_store_slot_probe = ProductionComponentScript.new()
-	standard_store_slot_probe.shop_id = "farmers_market"
-	add_child(standard_store_slot_probe)
-	_check(standard_store_slot_probe.get_next_store_queue_slot_cost() == 8, "Standard SCBI commercial stores must use the published 8 SimCash third-slot price.")
-	var custom_store_slot_probe = ProductionComponentScript.new()
-	custom_store_slot_probe.shop_id = "art_supplies"
-	add_child(custom_store_slot_probe)
-	_check(custom_store_slot_probe.get_next_store_queue_slot_cost() == 0, "Mshin-only custom stores must not display an invented queue-slot price.")
-	standard_store_slot_probe.queue_free()
-	custom_store_slot_probe.queue_free()
-	shop_component.store_star_level = 0
-	GameManager.level = previous_level_for_store_star
-	EconomyManager.simoleons = previous_simoleons_for_store_star
-	EconomyManager.sim_cash = previous_sim_cash_for_store_slots
+		facility.status = "constructing"
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_waste == 0 and ServiceManager.used_waste == 0, "A waste facility under construction must not contribute capacity: " + waste_id)
+		_check(not ServiceManager.waste_served_ids.has(low_home.building_id), "A waste facility under construction must not serve homes: " + waste_id)
 
-	# Verify a full warehouse blocks collection without losing the ready batch.
-	_check(factory_component.start_factory("metal",0), "Factory must accept a new order after a collection.")
-	var full_slot: Dictionary = factory_component.slots[0]
-	full_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-	factory_component.slots[0] = full_slot
-	factory_component.refresh_slots()
-	StorageManager.capacity = 1
-	StorageManager.items = {"occupied":1}
-	production_hud.open_production_panel(factory)
-	var storage_full_collect := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
-	_check(storage_full_collect != null and storage_full_collect.disabled and storage_full_collect.text == "STORAGE FULL", "A ready product must show a disabled Storage Full collection state when the warehouse is full.")
-	_check(not factory_component.collect(0) and bool(factory_component.get_slot(0).get("ready",false)), "Storage full must block Collect while preserving the ready output.")
-	StorageManager.capacity = 50
-	StorageManager.items = {}
+		facility.status = "completed"
+		facility.grid_pos = Vector2i(35, 35)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_waste == 0, "A waste facility disconnected from the Gateway must not contribute capacity: " + waste_id)
 
-	# Hardware Store remains compatible with the same component and consumes inputs at order time.
-	var previous_level := GameManager.level
-	GameManager.level = 4
-	_check(BuildManager.place_building(Vector2i(9, 1), "hardware_store"), "Could not place Hardware Store for production acceptance.")
-	await _wait_seconds(5.5)
-	var hardware = _find_building("hardware_store")
-	_check(hardware != null and hardware.status == "completed", "Hardware Store construction did not finish.")
-	StorageManager.add_item("metal",1)
-	StorageManager.add_item("wood",1)
-	var hardware_component = hardware.production_component
-	_check(hardware_component.get_slot_count() == 2, "Every commercial store must start with two queue slots.")
-	var sim_cash_before_queue_expansion := EconomyManager.sim_cash
-	_check(hardware_component.purchase_store_queue_slot(1), "Commercial queue must allow a SimCash-funded slot expansion.")
-	_check(hardware_component.get_slot_count() == 3 and EconomyManager.sim_cash == sim_cash_before_queue_expansion - 1, "Purchased commercial queue capacity must add one slot and deduct the supplied SimCash price.")
-	var restored_queue := ProductionComponentScript.new()
-	restored_queue.shop_id = "hardware_store"
-	add_child(restored_queue)
-	restored_queue.from_save_array(hardware_component.to_save_array())
-	_check(restored_queue.get_slot_count() == 3, "Purchased commercial queue capacity must survive save/load.")
-	restored_queue.queue_free()
-	EconomyManager.sim_cash = sim_cash_before_queue_expansion
-	_check(hardware_component.start_craft("hammer",0), "Hardware Store must craft Hammer from Metal and Wood.")
-	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Hammer recipe must consume Metal and Wood at start.")
-	var hammer_slot: Dictionary = hardware_component.slots[0]
-	hammer_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-	hardware_component.slots[0] = hammer_slot
-	hardware_component.refresh_slots()
-	_check(hardware_component.collect(0) and StorageManager.get_count("hammer") == 1, "Completed Hammer must collect into City Storage.")
-	BuildManager.unregister_building(hardware.building_id)
-	hardware.queue_free()
-	GameManager.level = previous_level
+		BuildManager.buildings.erase(facility.building_id)
+		remove_child(facility)
+		facility.free()
 
-	# Existing level-1 upgrade recipe needs Nails and Metal from the shared warehouse.
-	StorageManager.add_item("metal",1)
-	StorageManager.add_item("nails",1)
-	var population_before_upgrade: int = int(home.current_population) if home != null else 0
-	var city_population_before_upgrade := GameManager.population
-	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
-	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 1, "House upgrade must enter a short scaffold phase before changing its level.")
-	_check(home != null and home.current_population == population_before_upgrade and GameManager.population == city_population_before_upgrade, "Residential population must not change before the upgrade animation completes.")
-	_check(home != null and home.get_upgrade_remaining_seconds() > 0, "Residential upgrade must expose a persisted remaining-time value.")
-	production_hud.open_residential_panel(home)
-	_check(home.residential_plan_selected, "Opening a home plan must select its blue hardhat indicator.")
-	_check(production_hud.residential_overlay.find_child("ResidentialPlanDataNote", true, false) != null, "Residential panel must disclose that the fixed plan table is a Mshin fallback.")
-	_check(production_hud.residential_overlay.find_child("ResidentialUpgradeInProgress", true, false) != null, "Residential panel must show the scaffold upgrade state.")
-	production_hud._close_residential_panel()
-	_check(not home.residential_plan_selected, "Closing a home plan must hide its selected hardhat indicator.")
-	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
-	home._process(0.0)
-	_check(home != null and not home.upgrade_in_progress and home.upgrade_stage == 2, "Residential upgrade must complete when its finish timestamp elapses.")
-	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
-	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > city_population_before_upgrade, "House upgrade did not increase service-adjusted population.")
+	for home in [low_home, medium_home, high_home, disconnected_home]:
+		BuildManager.buildings.erase(home.building_id)
+		remove_child(home)
+		home.free()
+	for home in extra_homes:
+		BuildManager.buildings.erase(home.building_id)
+		remove_child(home)
+		home.free()
+	BuildManager.buildings = saved_buildings
+	GameManager.level = saved_level
+	ServiceManager.recalculate_from_buildings()
 
-	# Save a second upgrade while its scaffold timer is active to verify timestamp persistence.
-	StorageManager.add_item("planks",1)
-	StorageManager.add_item("wood",1)
-	_check(home != null and home.try_upgrade(), "Second residential upgrade could not start with Planks and Wood.")
-	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
-	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) + 3600
-
-	# Verify the four supported road tiers, their real unlock levels and the
-	# researched upper-end per-tile upgrade costs before persisting the city.
-	var road_upgrade_cell := Vector2i(0, 0)
-	var saved_level_before_road_test := GameManager.level
-	var saved_money_before_road_test := EconomyManager.simoleons
-	GameManager.level = 8
-	EconomyManager.simoleons = 5000
-	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 9"), "Four-lane roads must remain locked before City Level 9.")
-	GameManager.level = 9
-	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 300, "Four-lane road upgrade must use the sourced 300-Simoleon upper-range per-tile cost.")
-	_check(road_system.upgrade_road(road_upgrade_cell), "A road must upgrade to four lanes at City Level 9.")
-	_check(road_system.get_road_level(road_upgrade_cell) == 2, "Four-lane upgrade did not persist its road tier.")
-	GameManager.level = 14
-	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 15"), "Six-lane roads must remain locked before City Level 15.")
-	GameManager.level = 15
-	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 1200, "Six-lane road upgrade must use the sourced 1200-Simoleon upper-range per-tile cost.")
-	_check(road_system.upgrade_road(road_upgrade_cell), "A four-lane road must upgrade to six lanes at City Level 15.")
-	GameManager.level = 19
-	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 20"), "Avenues must remain locked before City Level 20.")
-	GameManager.level = 20
-	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 1500, "Avenue upgrade must use the sourced 1500-Simoleon upper-range per-tile cost.")
-	_check(road_system.upgrade_road(road_upgrade_cell), "A six-lane road must upgrade to an Avenue at City Level 20.")
-	_check(road_system.get_road_level(road_upgrade_cell) == 4, "Avenue upgrade did not reach road tier four.")
-	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("already an Avenue"), "An Avenue must reject further upgrades.")
-	_check(road_system.get_road_upgrade_error(RoadSystemScript.GATEWAY_ROAD_CELL).contains("Gateway"), "The permanent highway Gateway must not be upgraded.")
-
-	# Bulldozing an upgraded tile refunds half of its most recent upgrade only.
-	GameManager.level = 9
-	var refund_test_cell := Vector2i(18, 0)
-	_check(road_system.place_road(refund_test_cell), "Could not create the isolated road tile for the upgrade-refund test.")
-	_check(road_system.upgrade_road(refund_test_cell), "Refund test road could not be upgraded to four lanes.")
-	var money_before_refund := EconomyManager.simoleons
-	_check(road_system.remove_road(refund_test_cell), "Could not bulldoze the upgraded refund-test road.")
-	_check(EconomyManager.simoleons == money_before_refund + 150, "Bulldozing a four-lane road must refund 50% of its latest 300-Simoleon upgrade.")
-	GameManager.level = saved_level_before_road_test
-	EconomyManager.simoleons = saved_money_before_road_test
-	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
-
-	var saved_population_expected := GameManager.population
-	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
-
-	for building in BuildManager.buildings.values():
-		if is_instance_valid(building):
-			building.queue_free()
-	BuildManager.buildings.clear()
-	BuildManager.building_cells.clear()
-	BuildManager.factory_count = 0
-	for road_mesh in road_system.roads.values():
-		if is_instance_valid(road_mesh):
-			road_mesh.queue_free()
-	road_system.roads.clear()
-	await get_tree().process_frame
-	_check(SaveManager.load_game(), "SaveManager could not restore the saved city.")
-	var restored_home = _find_building("residential_1")
-	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
-	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "Save/load must restore the permanent highway gateway before other road tiles.")
-	_check(road_system.get_road_level(Vector2i(0, 0)) == 4, "Save/load must preserve the upgraded Avenue road tier.")
-	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
-	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
-	_check(restored_home != null and restored_home.upgrade_in_progress and restored_home.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Residential upgrade finish timestamp was not restored from save.")
-	if restored_home != null:
-		restored_home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
-		restored_home._process(0.0)
-		_check(not restored_home.upgrade_in_progress and restored_home.upgrade_stage == 3, "Restored residential upgrade did not finish from its saved timestamp.")
-	_check(GameManager.population > saved_population_expected, "Completing the restored upgrade must add residents without subtracting the previous population.")
-
-	if failures.is_empty():
-		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
-		_finish(0)
-	else:
-		push_error("[GameplaySmoke] FAILURES: %d" % failures.size())
-		_finish(1)
-
-func _finish(exit_code: int = 0) -> void:
-	get_tree().quit(exit_code)
