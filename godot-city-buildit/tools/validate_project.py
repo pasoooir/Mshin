@@ -30,6 +30,7 @@ for script in re.findall(r'="[*]res://([^"]+)"', project):
 build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
+road_system_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")
 happiness_manager_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_text(encoding="utf-8")
 gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
 building_ids = set(re.findall(r'^[ \t]*"([a-z0-9_]+)"[ \t]*:[ \t]*[{]"name"', build_manager, re.M))
@@ -475,6 +476,28 @@ for contract in [
     if contract not in happiness_manager_source:
         errors.append(f"Emergency service-group happiness contract is missing: {contract}")
 for contract in [
+    "GATEWAY_ROAD_CELL",
+    "func get_gateway_connected_roads()",
+    "func is_road_connected_to_gateway(",
+    "func invalidate_road_connectivity_cache()",
+    "func clear_roads()",
+    "Road must connect to the active highway network.",
+    "if grid_pos == GATEWAY_ROAD_CELL or not roads.has(grid_pos):",
+]:
+    if contract not in road_system_source:
+        errors.append(f"Road gateway connectivity contract is missing: {contract}")
+if "road_system.is_road_connected_to_gateway(" not in build_manager:
+    errors.append("Building road access must require a path-connected road tile.")
+for contract in [
+    "func _test_road_gateway_connectivity(",
+    "must disconnect the far road segment from the highway gateway",
+    "must not extend a disconnected road segment",
+    "Restoring the bridge must reconnect the far road segment",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Road gateway connectivity regression test is missing: {contract}")
+
+for contract in [
     "func _test_emergency_service_tier_happiness()",
     "Every completed emergency service tier must provide its existing happiness bonus",
     "outside its service radius",
@@ -568,6 +591,8 @@ if 'FireHazardManager="*res://scripts/autoload/FireHazardManager.gd"' not in pro
 if '"fire":1' not in build_manager:
     errors.append("Fire Station definition must expose the numeric fire coverage key")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
+if "road_system.clear_roads()" not in save_manager_source or "RoadSystemScript.GATEWAY_ROAD_CELL" not in save_manager_source:
+    errors.append("City load must clear the old road network and restore its gateway before other road tiles")
 if "FireHazardManager.reset_for_city_load()" not in save_manager_source:
     errors.append("City load must restart fire warning timers from zero")
 if "func set_fire_smoke(active: bool)" not in building_source or "CPUParticles3D.new()" not in building_source:

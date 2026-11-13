@@ -280,6 +280,22 @@ func _test_camera_inertia_math() -> void:
 	_check(absf(damped_orbit) < absf(initial_orbit), "Camera orbit inertia must decay over time.")
 	_check(damped_orbit > 0.0, "Camera orbit inertia must preserve the rotation direction while decaying.")
 
+func _test_road_gateway_connectivity(road_system) -> void:
+	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "The seeded highway gateway tile must belong to the connected road network.")
+	_check(not road_system.remove_road(RoadSystemScript.GATEWAY_ROAD_CELL), "The permanent highway gateway tile must not be removable.")
+	_check(road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "The far end of the seeded starter connector must be connected to the gateway.")
+
+	_check(road_system.remove_road(Vector2i(0, -1)), "The first gateway bridge tile must be removable for the connectivity test.")
+	_check(road_system.remove_road(Vector2i(0, 0)), "The second gateway bridge tile must be removable for the connectivity test.")
+	_check(not road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "Removing both bridge tiles must disconnect the far road segment from the highway gateway.")
+	_check(not BuildManager.has_road_access(Vector2i(1, 1), Vector2i.ONE), "A building beside a disconnected road segment must lose valid road access.")
+	_check(road_system.get_road_placement_error(Vector2i(2, 0)).contains("highway network"), "New roads must not extend a disconnected road segment.")
+
+	_check(road_system.place_road(Vector2i(0, -1)), "The first bridge tile must reconnect to the gateway.")
+	_check(road_system.place_road(Vector2i(0, 0)), "The second bridge tile must reconnect the far segment.")
+	_check(road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "Restoring the bridge must reconnect the far road segment.")
+	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 2)
+
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
 	var active_camera: Camera3D = get_viewport().get_camera_3d()
@@ -980,6 +996,7 @@ func _run_gameplay_test() -> void:
 		_finish()
 		return
 	road_system.seed_starter_access()
+	_test_road_gateway_connectivity(road_system)
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
@@ -1672,6 +1689,7 @@ func _run_gameplay_test() -> void:
 	_check(SaveManager.load_game(), "SaveManager could not restore the saved city.")
 	var restored_home = _find_building("residential_1")
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
+	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "Save/load must restore the permanent highway gateway before other road tiles.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
 	_check(restored_home != null and restored_home.upgrade_in_progress and restored_home.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Residential upgrade finish timestamp was not restored from save.")
