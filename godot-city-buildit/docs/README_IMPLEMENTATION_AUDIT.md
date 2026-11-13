@@ -15,7 +15,7 @@
 | Commercial | فروشگاه‌ها و بخشی از زنجیره‌ها فعال؛ برخی محصولات فقط کاتالوگی‌اند و Recipe آن‌ها غیرفعال است |
 | Residential | پنل، مواد، کمبود، تأمین‌کننده، تحویل مواد و تایمر وجود دارد؛ داده‌های plan/population دقیق SCBI نیست |
 | Storage | نمایش موجودی/ظرفیت وجود دارد؛ دکمه افزایش ظرفیت در UI غیرفعال است |
-| Services | برق/آب و Fire پایه فعال؛ Sewage/Waste و برخی Tierهای Police/Health ناقص‌اند |
+| Services | برق/آب و Fire پایه فعال؛ Sewage/Waste پوشش نزدیک‌خانه و اثر پایه بر رضایت دارند؛ ظرفیت/تقاضای سراسری آن‌ها و برخی Tierهای Police/Health ناقص‌اند |
 | Trade | فروش و سفارش پایه وجود دارد؛ Trade Depot و Global Trade مستقل وجود ندارند |
 | Move/Demolish | جابه‌جایی ساختمان، تخریب ساختمان و حذف جاده وجود دارند |
 | Responsive UI | در main تطبیق کامل همه پنل‌های عمیق برای سه فرم‌فاکتور تأیید نشده؛ PR #396 هنگام ممیزی Draft و خارج از main بود |
@@ -51,10 +51,10 @@
 ### Services
 - `ServiceManager.gd`: ظرفیت، تقاضا، شعاع و فهرست خانه‌های برخوردار از برق/آب را محاسبه می‌کند.
 - `FireHazardManager.gd`: شعاع آتش‌نشانی و ارزیابی خطر آتش را انجام می‌دهد.
-- `GhostPreview.gd`: پیش‌نمایش محدوده Fire/Police/Health دارد؛ Power/Water/Sewage/Waste کامل نیست.
-- `HappinessManager.gd`: برق، آب، پارک، آلودگی صنعتی و بعضی خدمات روی رضایت اثر می‌گذارند.
-- **شکاف مشخص:** تابع رضایت شناسه `sewage_pipe` را بررسی می‌کند، اما کاتالوگ `sewage_small`، `sewage_basic` و `sewage_deluxe` دارد؛ این عدم تطابق باید رفع و تست شود.
-- Waste در تابع محاسبه رضایت/ظرفیت خدمت خانه مشاهده نشد.
+- `GhostPreview.gd`: پیش‌نمایش محدوده Fire/Police/Health/Power/Water دارد؛ Sewage/Waste هنوز پیش‌نمایش جانمایی ندارند.
+- `HappinessManager.gd`: برق، آب، پارک، آلودگی صنعتی، Fire/Police/Health و پوشش پایه Sewage/Waste روی رضایت اثر می‌گذارند.
+- شناسه‌های Sewage یکدست شده‌اند: `sewage_small`، `sewage_basic` و `sewage_deluxe` در هر دو مسیر رضایت و خدمات اضافی شناسایی می‌شوند؛ تست هر سه Tier وجود دارد.
+- Waste از طریق `service_group: waste` و شعاع ۳۰ واحد در پوشش نزدیک‌خانه و رضایت پایه لحاظ می‌شود؛ ظرفیت عددی کاتالوگ هنوز به محاسبه سراسری تقاضا/ظرفیت شهر متصل نیست.
 - بررسی مستقیم Police/Health فقط شناسه‌های پایه `police_station` و `hospital` را می‌شناسد؛ همه Tierها پوشش داده نمی‌شوند.
 
 ### Trade و Progression
@@ -76,7 +76,7 @@
 3. بعضی محصولات کاتالوگی‌اند و Recipe ندارند/غیرفعال‌اند.
 4. دکمه افزایش ظرفیت انبار غیرفعال است.
 5. Trade Depot و Global Trade فقط Unlock flag دارند.
-6. Sewage/Waste و بعضی Tierهای Police/Health رفتار کامل ندارند.
+6. Sewage/Waste هنوز ظرفیت و تقاضای سراسری شهر را محاسبه نمی‌کنند؛ بعضی Tierهای Police/Health نیز در همه مسیرهای رفتار یکپارچه نیستند.
 7. Android/iOS و 60 FPS روی دستگاه واقعی اندازه‌گیری نشده‌اند.
 8. آموزش، دستاورد، Regions و Epic Projects پیاده‌سازی نشده‌اند.
 
@@ -84,7 +84,7 @@
 - Android landscape روی گوشی کوچک و بزرگ، و تبلت در landscape/portrait.
 - دسکتاپ در 1280×720 و 1920×1080.
 - Screenshot و تست تعامل Factory، Store، Product detail، Queue، City Needs، Residential Upgrade، Storage و Building Info.
-- رفع mismatch شناسه Sewage و افزودن تست Waste و همه Tierهای Police/Health.
+- افزودن تست همه Tierهای Police/Health و بررسی مستقل نیاز/ظرفیت سراسری Sewage/Waste.
 - فعال‌سازی واقعی یا حذف/برچسب‌گذاری صادقانه دکمه افزایش ظرفیت انبار.
 - بنچمارک FPS روی دستگاه هدف.
 

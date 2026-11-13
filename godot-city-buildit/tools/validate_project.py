@@ -440,6 +440,21 @@ if '"pollution_severity":"heavy"' not in build_manager or '"pollution_label":"He
     errors.append("Incinerator must carry an explicit heavy-pollution UI label")
 if '"waste_omega":' in build_manager:
     errors.append("OMEGA waste facility is outside the current scope and must not be exposed")
+for contract in [
+    'const WASTE_SERVICE_GROUP := "waste"',
+    "func _nearby_waste_service(",
+    "_nearby_waste_service(home, 30.0)",
+]:
+    if contract not in happiness_manager_source:
+        errors.append(f"Waste happiness coverage contract is missing: {contract}")
+for contract in [
+    "func _test_waste_service_happiness()",
+    "Each Waste catalog tier must add the existing +6 Mshin service happiness bonus",
+    "outside the 30-unit radius",
+    "under construction",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Waste gameplay regression test is missing: {contract}")
 
 
 for power_id, expected_power, expected_level in [("power_wind", 12, 1), ("power_coal", 12, 1), ("power_wind_deluxe", 22, 10), ("power_solar", 35, 15), ("power_oil", 40, 18), ("power_nuclear", 60, 22)]:

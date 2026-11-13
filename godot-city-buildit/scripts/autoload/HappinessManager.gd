@@ -14,6 +14,7 @@ const IMMIGRATION_MIN_HAPPINESS := 60.0
 const PARK_RADIUS := 24.0
 const INDUSTRIAL_POLLUTION_RADIUS := 42.0
 const SEWAGE_SERVICE_IDS := ["sewage_small", "sewage_basic", "sewage_deluxe"]
+const WASTE_SERVICE_GROUP := "waste"
 
 var home_scores: Dictionary = {}
 var low_happiness_time: Dictionary = {}
@@ -179,6 +180,8 @@ func _home_has_extra_service(home: Node3D) -> bool:
 		return true
 	if _nearby_sewage_service(home, 30.0):
 		return true
+	if _nearby_waste_service(home, 30.0):
+		return true
 	if _nearby_service(home, "hospital", 42.0):
 		return true
 	return false
@@ -232,6 +235,8 @@ func calculate_home_happiness(home: Node3D) -> float:
 		score += 8.0
 	if _nearby_sewage_service(home, 30.0):
 		score += 6.0
+	if _nearby_waste_service(home, 30.0):
+		score += 6.0
 	if _nearby_service(home, "hospital", 42.0):
 		score += 8.0
 	return clampf(score, 0.0, 100.0)
@@ -269,6 +274,16 @@ func _nearby_sewage_service(home: Node3D, radius: float) -> bool:
 		if not is_instance_valid(candidate) or candidate.status != "completed":
 			continue
 		if not SEWAGE_SERVICE_IDS.has(candidate.building_type):
+			continue
+		if candidate.global_position.distance_to(home.global_position) <= radius:
+			return true
+	return false
+
+func _nearby_waste_service(home: Node3D, radius: float) -> bool:
+	for candidate in BuildManager.buildings.values():
+		if not is_instance_valid(candidate) or candidate.status != "completed":
+			continue
+		if str(candidate.definition.get("service_group", "")) != WASTE_SERVICE_GROUP:
 			continue
 		if candidate.global_position.distance_to(home.global_position) <= radius:
 			return true
