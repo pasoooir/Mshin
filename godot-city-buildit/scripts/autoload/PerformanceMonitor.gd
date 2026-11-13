@@ -48,7 +48,9 @@ func _finish_benchmark() -> void:
 	var report := {
 		"created_at": Time.get_datetime_string_from_system(true),
 		"platform": OS.get_name(),
+		"device_model": OS.get_model_name(),
 		"processor": OS.get_processor_name(),
+		"architecture": Engine.get_architecture_name(),
 		"processor_count": OS.get_processor_count(),
 		"engine_version": str(version_info.get("string", "unknown")),
 		"viewport_width": int(viewport_size.x),
@@ -85,7 +87,7 @@ static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 			"average_frame_ms": 0.0,
 			"p95_frame_ms": 0.0,
 			"max_frame_ms": 0.0,
-			"frames_under_60fps_percent": 0.0,
+			"frames_within_60fps_budget_percent": 0.0,
 			"target_60fps_pass": false
 		}
 	var total_seconds := 0.0
