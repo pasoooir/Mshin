@@ -422,7 +422,7 @@ if '"sewage_pipe":' in build_manager or '"sewage_pipe"' in hud or '"sewage_pipe"
 for contract in [
     'const SEWAGE_SERVICE_IDS := ["sewage_small", "sewage_basic", "sewage_deluxe"]',
     "func _nearby_sewage_service(",
-    "_nearby_sewage_service(home, 30.0)",
+    "_nearby_sewage_service(home, SEWAGE_COVERAGE_RADIUS)",
 ]:
     if contract not in happiness_manager_source:
         errors.append(f"Sewage happiness coverage contract is missing: {contract}")
@@ -490,7 +490,7 @@ if '"waste_omega":' in build_manager:
 for contract in [
     'const WASTE_SERVICE_GROUP := "waste"',
     "func _nearby_waste_service(",
-    "_nearby_waste_service(home, 30.0)",
+    "_nearby_waste_service(home, WASTE_COVERAGE_RADIUS)",
 ]:
     if contract not in happiness_manager_source:
         errors.append(f"Waste happiness coverage contract is missing: {contract}")
