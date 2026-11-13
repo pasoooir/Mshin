@@ -27,6 +27,7 @@ func _ready() -> void:
 	_build_players()
 	_build_local_audio_library()
 	_connect_game_events()
+	get_tree().node_added.connect(_on_node_added)
 	_apply_volumes()
 	audio_ready = true
 	if music_enabled:
@@ -130,6 +131,13 @@ func _generate_stream(kind: String, duration: float, should_loop: bool) -> Audio
 		stream.loop_begin = 0
 		stream.loop_end = sample_count
 	return stream
+
+
+func _on_node_added(node: Node) -> void:
+	if node is BaseButton:
+		var callback := Callable(self, "play_ui_click")
+		if not node.is_connected("pressed", callback):
+			node.pressed.connect(callback)
 
 
 func _connect_game_events() -> void:
