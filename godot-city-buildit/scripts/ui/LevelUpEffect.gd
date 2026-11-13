@@ -122,6 +122,7 @@ func _create_message_card() -> void:
 	layout.add_child(divider)
 
 	var rewards := GridContainer.new()
+	rewards.name = "LevelUpRewardsGrid"
 	_rewards_grid = rewards
 	rewards.columns = 2
 	rewards.add_theme_constant_override("h_separation", 20)
@@ -144,10 +145,11 @@ func _create_message_card() -> void:
 	_reward_keys.add_theme_color_override("font_color", Color("#FFE7A0"))
 	rewards.add_child(_reward_keys)
 
-func _apply_responsive_layout() -> void:
+func _apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	if not is_instance_valid(_center_card):
 		return
-	var viewport_size := get_viewport_rect().size
+	if viewport_size == Vector2.ZERO:
+		viewport_size = get_viewport_rect().size
 	var compact := viewport_size.x < 900.0
 	var card_width := minf(viewport_size.x * 0.92, 560.0)
 	var card_height := 240.0 if compact else 264.0
