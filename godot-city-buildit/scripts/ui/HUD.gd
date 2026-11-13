@@ -14,7 +14,7 @@ const SERVICE_GROUPS := [
 	{"id":"fire", "label":"Fire", "buildings":["fire_station_small", "fire_station", "fire_station_deluxe"]},
 	{"id":"police", "label":"Police", "buildings":["police_small", "police_basic", "police_precinct"]},
 	{"id":"health", "label":"Health", "buildings":["clinic_small", "clinic", "hospital"]},
-	{"id":"government", "label":"Government", "buildings":["town_hall"]},
+	{"id":"government", "label":"Government", "buildings":["town_hall", "epic_projects_department"]},
 	{"id":"trade", "label":"Trade", "buildings":["trade_depot", "global_trade_hq", "cargo_port"]}
 ]
 const SPECIALIZATION_GROUPS := [
