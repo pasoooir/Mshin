@@ -81,7 +81,7 @@ def _validate_embedded_gltf(path: Path) -> None:
         except (ValueError, base64.binascii.Error) as error:
             errors.append(f"Invalid embedded PNG {path.relative_to(ROOT)}: {error}")
             continue
-        if not png.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+        if not png.startswith(b"\x89PNG\r\n\x1a\n"):
             errors.append(f"Invalid PNG signature in {path.relative_to(ROOT)}")
             continue
         offset = 8
