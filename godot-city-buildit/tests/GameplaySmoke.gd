@@ -552,7 +552,7 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	var paused_snapshot := SaveManager.capture_region_snapshot()
 	var paused_state_saved := false
 	for saved_building in paused_snapshot.get("buildings", []):
-		if saved_building.get("grid", []) == [1, 1]:
+		if str(saved_building.get("type", "")) == "residential_villa" and saved_building.get("grid", []) == [1, 1]:
 			var saved_production: Dictionary = saved_building.get("production", {})
 			paused_state_saved = int(saved_production.get("upgrade_paused_remaining_seconds", -1)) == 2
 	_check(paused_state_saved, "SaveManager must persist the remaining time of a road-paused residential upgrade.")
