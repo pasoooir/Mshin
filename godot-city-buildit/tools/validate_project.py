@@ -295,6 +295,12 @@ for contract in [
     "must not pay out before its sale timer completes",
     "must complete an affordable market purchase",
     "must preserve sold market offers",
+    "func deliver_ship_crate(crate_index: int) -> bool",
+    "must accept a crate when its required items are in storage",
+    "must send the ship away exactly once",
+    "must grant one Golden Key",
+    "must receive a fresh three-crate manifest",
+    "CargoShipVisual",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Trade gameplay regression test is missing: {contract}")
