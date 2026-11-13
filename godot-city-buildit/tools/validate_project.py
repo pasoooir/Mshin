@@ -1147,10 +1147,14 @@ for contract in [
         errors.append(f"Road gateway connectivity regression test is missing: {contract}")
 
 for contract in [
-    "func _test_emergency_service_tier_happiness()",
-    "Every completed emergency service tier must provide its existing happiness bonus",
-    "outside its service radius",
-    "under construction",
+    "func _test_emergency_service_tier_happiness() -> void:",
+    "Every connected emergency service tier must serve a connected home inside its catalog radius",
+    "Emergency service must not serve a home without Gateway road access",
+    "An emergency facility under construction must not provide coverage",
+    "An emergency facility outside its tier coverage radius must not serve a home",
+    "An emergency facility disconnected from Gateway must not serve a nearby home",
+    "Cutting the home's Gateway road must revoke every emergency service.",
+    "Restoring Gateway road access must restore Fire coverage.",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Emergency service-tier regression test is missing: {contract}")
