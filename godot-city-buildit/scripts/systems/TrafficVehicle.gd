@@ -51,7 +51,7 @@ func _lane_position(cell: Vector2i, travel_direction: Vector2i) -> Vector3:
 	var direction := Vector2(float(travel_direction.x), float(travel_direction.y)).normalized()
 	var right := Vector2(-direction.y, direction.x)
 	var center := _cell_center(cell)
-	return center + Vector3(right.x * 0.32, 0.0, right.y * 0.32)
+	return center + Vector3(right.x * 0.14, 0.0, right.y * 0.14)
 
 func _build_vehicle_mesh() -> void:
 	var body_material := StandardMaterial3D.new()
