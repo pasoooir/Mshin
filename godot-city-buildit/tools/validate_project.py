@@ -6,6 +6,29 @@ import struct
 ROOT = Path(__file__).resolve().parents[1]
 errors = []
 
+def _resource_paths_from_load_calls(source: str) -> list[str]:
+    """Return only literal project paths used by Godot resource-loading calls."""
+    pattern = r'\b(?:preload|load|load_threaded_request)\s*\(\s*["\']res://([^"\']+)["\']'
+    return re.findall(pattern, source)
+
+
+def _test_resource_path_scanner() -> None:
+    # Regression: res:// strings used as API/test inputs are not dependencies.
+    fixture = '''
+    const VALID := preload("res://scripts/example.gd")
+    var loaded = load("res://scenes/example.tscn")
+    ResourceLoader.load("res://assets/models/example.glb")
+    BuildingModelLoader.is_supported_model_path("res://assets/models/missing.glb")
+    BuildingModelLoader.is_supported_model_path("res://assets/models/../outside.glb")
+    '''
+    expected = ["scripts/example.gd", "scenes/example.tscn", "assets/models/example.glb"]
+    actual = _resource_paths_from_load_calls(fixture)
+    if actual != expected:
+        raise AssertionError(f"Resource-load scanner regression: expected {expected}, got {actual}")
+
+
+_test_resource_path_scanner()
+
 for path in ROOT.rglob("*.gd"):
     source = path.read_text(encoding="utf-8")
     if source.rstrip().endswith(("extends Node3D", "extends Node", "mat = mate")):
@@ -13,8 +36,7 @@ for path in ROOT.rglob("*.gd"):
     # Only validate paths passed to actual Godot resource-loading calls.
     # Arbitrary res:// strings are also used as test inputs (including deliberately
     # missing/traversal paths) and must not be mistaken for project dependencies.
-    resource_load_pattern = r'\b(?:preload|load|load_threaded_request)\s*\(\s*["\']res://([^"\']+)["\']'
-    for resource in re.findall(resource_load_pattern, source):
+    for resource in _resource_paths_from_load_calls(source):
         if resource.endswith("/"):
             continue
         if not (ROOT / resource).is_file():
