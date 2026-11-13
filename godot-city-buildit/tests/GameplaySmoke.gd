@@ -270,6 +270,14 @@ func _test_immigration_coefficients() -> void:
 	_check(is_equal_approx(HappinessManager._immigration_service_factor(true, true, false), 1.0), "Dual-utility immigration factor must be 1.0.")
 	_check(is_equal_approx(HappinessManager._immigration_service_factor(true, true, true), 1.15), "Full-service immigration factor must be 1.15.")
 
+func _test_camera_focus_math() -> void:
+	var current := Vector3(-9.0, 0.0, 2.5)
+	var target := Vector3(18.0, 0.0, -12.0)
+	var focused_step := CameraControllerScript.interpolate_focus(current, target, 0.1, 8.0)
+	_check(focused_step.distance_to(target) < current.distance_to(target), "Camera focus interpolation must move toward the selected building.")
+	_check(is_equal_approx(focused_step.y, current.y), "Camera focus interpolation must preserve the rig height.")
+	_check(focused_step.distance_to(target) > 0.0, "Camera focus must ease toward the building instead of teleporting instantly.")
+
 func _test_camera_inertia_math() -> void:
 	var initial_pan := Vector2(120.0, -60.0)
 	var damped_pan := CameraControllerScript.decay_pan_velocity(initial_pan, 0.1, 8.0)
@@ -979,6 +987,7 @@ func _run_gameplay_test() -> void:
 	_test_power_water_coverage_preview()
 	_test_immigration_coefficients()
 	_test_camera_inertia_math()
+	_test_camera_focus_math()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
 	_check(IconAtlas.validate_required_build_icons(), "A required Build icon is missing, invalid or lacks transparent corners.")
