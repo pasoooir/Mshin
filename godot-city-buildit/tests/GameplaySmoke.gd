@@ -597,6 +597,7 @@ func _test_build_menu_visibility() -> void:
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
 	hud._show_submenu("services")
 	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Fire") and hud.context_header_subtitle.text.contains("Police") and hud.context_header_subtitle.text.contains("Health") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
+	_check(hud.context_header_subtitle.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART and hud.context_header_subtitle.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "The long City Services summary must wrap within the mobile header instead of overflowing horizontally.")
 	hud._on_cancel_pressed()
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")

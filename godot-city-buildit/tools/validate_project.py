@@ -980,6 +980,8 @@ for contract in [
     "ServiceManager.served_police_homes, ServiceManager.demand_police_homes",
     "ServiceManager.served_health_homes, ServiceManager.demand_health_homes",
     'context_header_subtitle.text.contains("Fire")',
+    "context_header_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART",
+    "long City Services summary must wrap within the mobile header",
     "Emergency service HUD metrics must report covered homes against all completed homes",
 ]:
     if contract not in gameplay_smoke_source and contract not in hud:
