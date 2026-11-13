@@ -120,7 +120,7 @@ func _add_fixed_height_scroll(parent: Control, scroll_name: String, min_height: 
 func _layout_centered_panel(panel: Control, viewport_size: Vector2, width_ratio: float, height_ratio: float, max_width: float, max_height: float) -> void:
 	if not is_instance_valid(panel):
 		return
-	var width := minf(viewport_size.x * width_ratio, max_width * _ui_scale)
+	var width := minf(viewport_size.x * width_ratio, max_width * maxf(_ui_scale, 0.98))
 	var height := minf(viewport_size.y * height_ratio, max_height * _ui_scale)
 	panel.anchor_left = 0.5
 	panel.anchor_right = 0.5
@@ -133,6 +133,7 @@ func _layout_centered_panel(panel: Control, viewport_size: Vector2, width_ratio:
 
 
 func _apply_overlay_responsive_layout(viewport_size: Vector2) -> void:
+	_ui_scale = _responsive_scale_for_size(viewport_size)
 	var profile := _responsive_profile_for_size(viewport_size)
 	var compact := profile == "compact"
 	_layout_centered_panel(find_child("BuildingProductionPanel", true, false) as Control, viewport_size, 0.98 if compact else 0.96, 0.99 if compact else 0.96, 1040.0, 700.0 if compact else 650.0)
@@ -151,6 +152,23 @@ func _apply_overlay_responsive_layout(viewport_size: Vector2) -> void:
 	var storage_grid := find_child("StorageItemsGrid", true, false) as GridContainer
 	if storage_grid:
 		storage_grid.columns = 1 if viewport_size.x < 520.0 else 2
+	var production_layout := find_child("ProductionLayout", true, false) as VBoxContainer
+	if production_layout:
+		production_layout.add_theme_constant_override("separation", 4 if compact else 7)
+		var product_frame := find_child("ProductionProductsScrollFrame", true, false) as Control
+		if product_frame:
+			product_frame.custom_minimum_size.y = (104.0 if compact else 132.0) * maxf(_ui_scale, 0.90)
+		var details_frame := find_child("ProductionDetailsHostFrame", true, false) as Control
+		if details_frame:
+			details_frame.custom_minimum_size.y = (92.0 if compact else 144.0) * maxf(_ui_scale, 0.90)
+		var queue_frame := find_child("ProductionQueueScrollFrame", true, false) as Control
+		if queue_frame:
+			queue_frame.custom_minimum_size.y = (90.0 if compact else 92.0) * maxf(_ui_scale, 0.90)
+		var production_panel := find_child("BuildingProductionPanel", true, false) as Control
+		var production_header := find_child("ProductionHeader", true, false) as Control
+		if production_panel and production_header:
+			var target_width := minf(viewport_size.x * (0.98 if compact else 0.96), 1040.0 * maxf(_ui_scale, 0.98))
+			production_header.custom_minimum_size.x = minf(920.0 * maxf(_ui_scale, 0.90), target_width * 0.88)
 
 
 @onready var status_label: Label = $StatusLabel
