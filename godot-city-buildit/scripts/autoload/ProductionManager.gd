@@ -106,6 +106,15 @@ var crafted_items := {
 	"profiterole": {"name":"Profiterole", "time":2100.0, "time_sec":2100, "value":6550, "requires":{"donuts":2,"bread_roll":2,"cream":1}, "level":71, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"mochi": {"name":"Mochi", "time":2700.0, "time_sec":2700, "value":3950, "requires":{"frozen_yogurt":1,"green_smoothie":1}, "level":79, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"pavlova": {"name":"Pavlova", "time":5400.0, "time_sec":5400, "value":3470, "requires":{"cooking_utensils":1,"fruit_berries":2,"cream":2}, "level":87, "required_stars":1, "store":"dessert_shop", "source":"Fandom;Japanese"}
+
+	"backpack": {"name":"Backpack", "time":7200.0, "time_sec":7200, "value":430, "requires":{"textiles":2,"plastic":2,"measuring_tape":1}, "level":34, "store":"fashion_store", "source":"Fandom"},
+	"tennis_racket": {"name":"Tennis Racket", "time":2700.0, "time_sec":2700, "value":780, "requires":{"minerals":4,"hammer":2}, "level":35, "store":"sports_shop", "source":"Fandom 2024"},
+	"sports_drink": {"name":"Sports Drink", "time":2100.0, "time_sec":2100, "value":270, "requires":{"fruit_berries":2,"sugar_spices":4}, "level":39, "store":"sports_shop", "source":"Fandom 2024"},
+	"protein_bar": {"name":"Protein Bar", "time":2700.0, "time_sec":2700, "value":1045, "requires":{"cherry_cheesecake":1,"sugar_spices":2}, "level":35, "store":"sports_shop", "source":"Fandom 2024"},
+	"cut_stone": {"name":"Chiseled Stone", "time":9000.0, "time_sec":9000, "value":2300, "requires":{"hammer":2,"minerals":6,"drill":2}, "level":59, "store":"restoration_office", "source":"Fandom 2024"},
+	"tapestries": {"name":"Tapestry", "time":12600.0, "time_sec":12600, "value":2560, "requires":{"textiles":4,"paint":2,"glue":2}, "level":67, "store":"restoration_office", "source":"Fandom 2024"},
+	"stained_glass": {"name":"Stained Glass", "time":14400.0, "time_sec":14400, "value":2300, "requires":{"metal":5,"glass":6,"glue":2}, "level":76, "required_stars":1, "store":"restoration_office", "source":"Fandom 2024"}
+
 }
 
 # Products with a verified store identity but unresolved input recipes remain
