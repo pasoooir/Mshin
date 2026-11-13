@@ -105,8 +105,7 @@ var crafted_items := {
 	"churros": {"name":"Churros", "time":2100.0, "time_sec":2100, "value":1750, "requires":{"cooking_utensils":1,"flour_bag":2}, "level":63, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"profiterole": {"name":"Profiterole", "time":2100.0, "time_sec":2100, "value":6550, "requires":{"donuts":2,"bread_roll":2,"cream":1}, "level":71, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"mochi": {"name":"Mochi", "time":2700.0, "time_sec":2700, "value":3950, "requires":{"frozen_yogurt":1,"green_smoothie":1}, "level":79, "store":"dessert_shop", "source":"Fandom;Japanese"},
-	"pavlova": {"name":"Pavlova", "time":5400.0, "time_sec":5400, "value":3470, "requires":{"cooking_utensils":1,"fruit_berries":2,"cream":2}, "level":87, "required_stars":1, "store":"dessert_shop", "source":"Fandom;Japanese"}
-
+	"pavlova": {"name":"Pavlova", "time":5400.0, "time_sec":5400, "value":3470, "requires":{"cooking_utensils":1,"fruit_berries":2,"cream":2}, "level":87, "required_stars":1, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"backpack": {"name":"Backpack", "time":7200.0, "time_sec":7200, "value":430, "requires":{"textiles":2,"plastic":2,"measuring_tape":1}, "level":34, "store":"fashion_store", "source":"Fandom"},
 	"tennis_racket": {"name":"Tennis Racket", "time":2700.0, "time_sec":2700, "value":780, "requires":{"minerals":4,"hammer":2}, "level":35, "store":"sports_shop", "source":"Fandom 2024"},
 	"sports_drink": {"name":"Sports Drink", "time":2100.0, "time_sec":2100, "value":270, "requires":{"fruit_berries":2,"sugar_spices":4}, "level":39, "store":"sports_shop", "source":"Fandom 2024"},
