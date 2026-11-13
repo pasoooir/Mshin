@@ -156,6 +156,8 @@ func _ready() -> void:
 	AchievementManager.state_changed.connect(_on_achievement_state_changed)
 	RegionManager.region_changed.connect(_on_region_changed)
 	RegionManager.region_state_changed.connect(_on_region_state_changed)
+	PerformanceMonitor.benchmark_progress.connect(_on_performance_benchmark_progress)
+	PerformanceMonitor.benchmark_finished.connect(_on_performance_benchmark_finished)
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
@@ -3717,6 +3719,23 @@ func _show_settings_panel() -> void:
 	_add_audio_setting_slider(sliders, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
 	_add_audio_setting_slider(sliders, "AmbientVolumeSlider", "City ambience volume", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
 	_add_audio_setting_slider(sliders, "SfxVolumeSlider", "Sound effects volume", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
+	var performance_section := Label.new()
+	performance_section.text = "DEVICE PERFORMANCE"
+	performance_section.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	performance_section.add_theme_color_override("font_color", Color("#28799C"))
+	sliders.add_child(performance_section)
+	var performance_note := Label.new()
+	performance_note.text = "Run a 30-second test during normal gameplay. The report is saved locally on this device."
+	performance_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	performance_note.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	performance_note.add_theme_color_override("font_color", Color("#526A78"))
+	sliders.add_child(performance_note)
+	var performance_button := Button.new()
+	performance_button.name = "RunDeviceBenchmarkButton"
+	performance_button.text = "Run 30-second device test"
+	performance_button.custom_minimum_size = Vector2(240, 44) * _ui_scale
+	performance_button.pressed.connect(_start_performance_benchmark)
+	sliders.add_child(performance_button)
 
 	var footer := HBoxContainer.new()
 	footer.alignment = BoxContainer.ALIGNMENT_END
@@ -3782,6 +3801,27 @@ func _reset_audio_settings() -> void:
 	AudioManager.set_sfx_enabled(true)
 	HapticsManager.set_enabled(true)
 	_show_settings_panel()
+
+
+func _start_performance_benchmark() -> void:
+	_close_settings_panel()
+	if PerformanceMonitor.start_benchmark(30.0):
+		status_label.text = "Device benchmark running — keep playing normally for 30 seconds."
+	else:
+		status_label.text = "A device benchmark is already running."
+
+func _on_performance_benchmark_progress(elapsed_seconds: float, duration_seconds: float) -> void:
+	if not PerformanceMonitor.benchmark_running:
+		return
+	status_label.text = "Device benchmark: %d / %d seconds — keep playing normally." % [int(elapsed_seconds), int(duration_seconds)]
+
+func _on_performance_benchmark_finished(report: Dictionary) -> void:
+	var summary: Dictionary = report.get("summary", {})
+	var target_result := "PASS" if bool(summary.get("target_60fps_pass", false)) else "NOT MET"
+	var average_fps := float(summary.get("average_fps", 0.0))
+	var p95_frame_ms := float(summary.get("p95_frame_ms", 0.0))
+	var report_path := str(report.get("report_path", "save failed"))
+	status_label.text = "Device benchmark: %.1f avg FPS · p95 %.1f ms · 60 FPS: %s · %s" % [average_fps, p95_frame_ms, target_result, report_path]
 
 func _on_trade_pressed() -> void:
 	BuildManager.cancel_placement()
