@@ -56,7 +56,7 @@ for buildings in re.findall(r'"buildings":\[([^\]]*)\]', special_section):
 
 # All permanent HUD, modal, and toolbar controls have dedicated named PNGs.
 ui_ids = """
-placeholder storage trade save achievements cancel close collect lock back confirm bulldoze
+placeholder storage trade save achievements regions cancel close collect lock back confirm bulldoze
 build_menu settings info plus money population happiness level warning check
 arrow_left arrow_right services commercial industrial road residential parks
 hard_hat simoleons golden_key fire power water park police health sewage waste
