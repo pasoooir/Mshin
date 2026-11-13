@@ -1268,7 +1268,7 @@ func _test_achievements() -> void:
 		home.definition = {"category":"residential"}
 		if index == 0:
 			home.is_epic_building = true
-			 home.epic_tier = 1
+			home.epic_tier = 1
 		BuildManager.buildings[home.building_id] = home
 		add_child(home)
 		temporary_nodes.append(home)
