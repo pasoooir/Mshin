@@ -1271,8 +1271,8 @@ func _test_region_city_snapshots() -> void:
 	_check(road_system.has_road(marker_road) and road_system.get_road_count() == capital_snapshot.get("roads", []).size(), "Returning to Capital City must restore its independent road layout.")
 	_check(RegionManager.region_states.get("capital", {}).has("epic_projects"), "Switching regions must preserve region-specific Epic Project state.")
 	SaveManager.load_region_snapshot(original_snapshot)
-	RegionManager.from_save_dict(previous_regions)
 	GameManager.level = previous_level
+	RegionManager.from_save_dict(previous_regions)
 	GameManager.level_changed.emit(GameManager.level)
 
 func _test_achievements() -> void:
