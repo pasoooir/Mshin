@@ -531,6 +531,8 @@ func _test_build_menu_visibility() -> void:
 	_check(road_system_for_menu != null and road_system_for_menu.is_road_upgrade_mode, "Selecting Upgrade Road must activate tap-to-upgrade mode.")
 	hud._on_cancel_pressed()
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
+	hud._show_submenu("services")
+	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste"), "The City Services header must show sewage and waste demand/capacity.")
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
 	_check(category_scroll != null and category_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Right category scroller must capture touch drags.")
@@ -835,6 +837,7 @@ func _test_sewage_service_happiness() -> void:
 	var disconnected_home := _create_service_test_home("sewage_disconnected_home", 1, Vector2i(35, 35))
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.demand_sewage == 9, "Sewage demand must count low/medium/high homes and disconnected completed homes.")
+	_check(ServiceManager.demand_power == 9 and ServiceManager.demand_water == 9, "Power and water demand must use the same per-home service-demand units.")
 	_check(ServiceManager.total_sewage == 0 and ServiceManager.used_sewage == 0, "No sewage capacity may be served without a completed sewage facility.")
 	var baseline_happiness := HappinessManager.calculate_home_happiness(low_home)
 
@@ -920,6 +923,7 @@ func _test_waste_service_happiness() -> void:
 	var disconnected_home := _create_service_test_home("waste_disconnected_home", 1, Vector2i(35, 35))
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.demand_waste == 19, "Waste demand must count all completed homes, including uninhabited and disconnected homes.")
+	_check(ServiceManager.demand_power == 19 and ServiceManager.demand_water == 19, "Power and water demand must use the same low/medium/high home demand units.")
 
 	var expected_capacities := {"waste_dump_small": 15, "waste_dump": 31, "waste_incinerator": 40, "waste_recycling": 70}
 	var service_positions := {"waste_dump_small": Vector2i(1, -3), "waste_dump": Vector2i(1, -4), "waste_incinerator": Vector2i(1, -3), "waste_recycling": Vector2i(1, -3)}
