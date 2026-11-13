@@ -112,7 +112,6 @@ var crafted_items := {
 	"sports_drink": {"name":"Sports Drink", "time":2100.0, "time_sec":2100, "value":270, "requires":{"fruit_berries":2,"sugar_spices":4}, "level":39, "store":"sports_shop", "source":"Fandom 2024"},
 	"protein_bar": {"name":"Protein Bar", "time":2700.0, "time_sec":2700, "value":1045, "requires":{"cherry_cheesecake":1,"sugar_spices":2}, "level":35, "store":"sports_shop", "source":"Fandom 2024"},
 	"cut_stone": {"name":"Chiseled Stone", "time":9000.0, "time_sec":9000, "value":2300, "requires":{"hammer":2,"minerals":6,"drill":2}, "level":59, "store":"restoration_office", "source":"Fandom 2024"},
-	"tapestries": {"name":"Tapestry", "time":12600.0, "time_sec":12600, "value":2560, "requires":{"textiles":4,"paint":2,"glue":2}, "level":67, "store":"restoration_office", "source":"Fandom 2024"},
 	"stained_glass": {"name":"Stained Glass", "time":14400.0, "time_sec":14400, "value":2300, "requires":{"metal":5,"glass":6,"glue":2}, "level":76, "required_stars":1, "store":"restoration_office", "source":"Fandom 2024"}
 
 }
