@@ -678,6 +678,35 @@ for contract in [
     if contract not in happiness_manager_source:
         errors.append(f"Sewage city-wide service contract is missing: {contract}")
 for contract in [
+    "func get_city_service_warnings() -> Dictionary:",
+    "func _service_group_is_unlocked(service_group: String) -> bool:",
+    'counts["power"] += 1',
+    'counts["water"] += 1',
+    'counts["sewage"] += 1',
+    'counts["waste"] += 1',
+    'counts["fire"] += 1',
+    'counts["police"] += 1',
+    'counts["health"] += 1',
+]:
+    if contract not in happiness_manager_source:
+        errors.append(f"Persistent city service-warning contract is missing: {contract}")
+for contract in [
+    "HappinessManager.happiness_recalculated.connect(_on_city_happiness_recalculated)",
+    "func _build_service_warning_banner() -> void:",
+    "func _update_service_warning_banner() -> void:",
+    "service_warning_panel.visible = not summary.is_empty()",
+]:
+    if contract not in hud:
+        errors.append(f"Persistent HUD service-warning contract is missing: {contract}")
+for contract in [
+    "HappinessManager.get_city_service_warnings()",
+    'get("counts", {}).get("power", 0)',
+    "Persistent city service warnings must count completed homes missing available power coverage.",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Persistent city service-warning regression test is missing: {contract}")
+
+for contract in [
     "func _test_sewage_service_happiness()",
     "ServiceManager.total_sewage == expected_capacity",
     "ServiceManager.demand_sewage == 9",
