@@ -517,6 +517,9 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	}
 	_check(road_system.remove_road(Vector2i(0, -1)), "The first gateway tile must disconnect store and residential operation tests.")
 	_check(road_system.remove_road(Vector2i(0, 0)), "The second gateway tile must disconnect store and residential operation tests.")
+	disconnected_home.current_product = "nails"
+	disconnected_home.has_ready_product = true
+	_check(not disconnected_home.collect_production(), "A disconnected Building must not collect a ready product through the legacy Building-level collection path.")
 	_check(not disconnected_store.start_craft("nails", 1), "A disconnected commercial building must not accept a new store order.")
 	disconnected_store.refresh_slots()
 	var paused_store_slot: Dictionary = disconnected_store.get_slot(0)
