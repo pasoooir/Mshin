@@ -24,6 +24,12 @@
 
 ## شواهد فنی
 
+### مدل‌های سه‌بعدی محلی
+- `scripts/buildings/BuildingModelLoader.gd`: مسیر مدل را به `res://assets/models/` محدود می‌کند، فقط GLB/GLTF را می‌پذیرد، مسیرهای traversal/URL خارجی را رد می‌کند و PackedScene محلی را بارگذاری می‌کند.
+- `scripts/buildings/Building.gd::_create_visual`: اگر تعریف ساختمان `model_path` معتبر و قابل بارگذاری داشته باشد، مدل وارد `MeshRoot` می‌شود؛ در نبود یا شکست بارگذاری، ساخت رویه‌ای فعلی حفظ می‌شود.
+- `tests/GameplaySmoke.gd::_test_building_model_loader_contract`: پسوند، مسیر مجاز، traversal، URL خارجی و رفتار فایل غایب را بررسی می‌کند.
+- محدودیت مهم: در این commit هنوز فایل GLB/GLTF واقعی در Repository وجود ندارد؛ بنابراین کیفیت مدل معماری یا تطابق آن با BuildIt تأیید نشده است.
+
 ### HUD، کنترل و ظاهر
 - `godot-city-buildit/scripts/ui/HUD.gd::_build_top_hud`: HUD سطح، جمعیت، رضایت، XP، انبار و ارزها.
 - `HUD.gd::_build_catalog_info_panel` و `_show_building_info`: پنل اطلاعات کاتالوگ؛ به‌تنهایی جزئیات کامل هر ساختمان ساخته‌شده نیست.

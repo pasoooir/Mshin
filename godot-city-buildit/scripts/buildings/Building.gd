@@ -40,6 +40,7 @@ static var _shared_surface_texture: Texture2D
 const WIND_TURBINE_SPIN_RADIANS_PER_SECOND: float = 0.92
 const RESIDENTIAL_UPGRADE_DURATION_SECONDS: int = 4
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
+const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 var _wind_turbine_rotor: Node3D
 var _fire_smoke: CPUParticles3D = null
 
@@ -224,6 +225,11 @@ func _create_visual() -> void:
 		return
 	for child in mesh_root.get_children():
 		child.queue_free()
+	var model_path := str(definition.get("model_path", ""))
+	if not model_path.is_empty():
+		var model_scale: Vector3 = definition.get("model_scale", Vector3.ONE)
+		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
+			return
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	var color: Color = definition.get("color", Color(0.8, 0.8, 0.8))
 	var category: String = definition.get("category", "residential")

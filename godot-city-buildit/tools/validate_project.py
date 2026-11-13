@@ -10,7 +10,11 @@ for path in ROOT.rglob("*.gd"):
     source = path.read_text(encoding="utf-8")
     if source.rstrip().endswith(("extends Node3D", "extends Node", "mat = mate")):
         errors.append(f"Likely truncated script: {path.relative_to(ROOT)}")
-    for resource in re.findall(r'"res://([^" ]+)"', source):
+    # Only validate paths passed to actual Godot resource-loading calls.
+    # Arbitrary res:// strings are also used as test inputs (including deliberately
+    # missing/traversal paths) and must not be mistaken for project dependencies.
+    resource_load_pattern = r'\b(?:preload|load|load_threaded_request)\s*\(\s*["\']res://([^"\']+)["\']'
+    for resource in re.findall(resource_load_pattern, source):
         if resource.endswith("/"):
             continue
         if not (ROOT / resource).is_file():
