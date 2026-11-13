@@ -1197,6 +1197,8 @@ func _run_gameplay_test() -> void:
 	var production_profile := production_hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
 	var expected_product_columns := 3 if production_profile == "compact" else (4 if production_profile == "tablet" else 6)
 	_check(product_scroll != null and product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Production catalog must scroll vertically when reflowed for narrow screens.")
+	var details_scroll := production_hud.production_panel.find_child("ProductionDetailsHost", true, false) as ScrollContainer
+	_check(details_scroll != null and details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Long recipe inputs and supply-chain details must remain vertically scrollable.")
 	_check(product_grid != null and product_grid.columns == expected_product_columns, "Production catalog must use the correct number of columns for the active viewport.")
 	production_hud._apply_overlay_responsive_layout(Vector2(854, 480))
 	_check(product_grid != null and product_grid.columns == 3, "Production product cards must reflow to three columns on compact mobile.")
