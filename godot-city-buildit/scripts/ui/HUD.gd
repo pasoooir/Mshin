@@ -971,7 +971,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	var level_locked := GameManager.level < required_level or locked
 	var button := Button.new()
 	button.name = option_id
-	button.custom_minimum_size = Vector2(164, 188) * _ui_scale
+	button.custom_minimum_size = Vector2(164, 188) * maxf(_ui_scale, 0.90)
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.disabled = disabled and not level_locked
@@ -985,7 +985,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(content)
 	var art := Control.new()
-	art.custom_minimum_size = Vector2(142, 126) * _ui_scale
+	art.custom_minimum_size = Vector2(142, 126) * maxf(_ui_scale, 0.90)
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(art)
 	var icon := Icons.make_icon(icon_name, Vector2(132, 122) * _ui_scale)
@@ -1749,14 +1749,14 @@ func open_production_panel(building: Building) -> void:
 
 		var item_button := Button.new()
 		item_button.name = "Slot%d_%s" % [available_slot, item_id]
-		item_button.custom_minimum_size = Vector2(104, 116) * _ui_scale
+		item_button.custom_minimum_size = Vector2(104, 116) * maxf(_ui_scale, 0.90)
 		item_button.focus_mode = Control.FOCUS_NONE
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			item_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 
 		# Six-sided white tile with a subtle blue rim, matching the reference's
 		# floating hexagonal item selectors rather than generic rectangular cards.
-		var hex_size := Vector2(96, 104) * _ui_scale
+		var hex_size := Vector2(96, 104) * maxf(_ui_scale, 0.90)
 		var hex := Polygon2D.new()
 		hex.name = "HexagonBackground"
 		hex.position = Vector2(4, 3) * _ui_scale
@@ -1792,7 +1792,7 @@ func open_production_panel(building: Building) -> void:
 		tile_content.add_theme_constant_override("separation", 0)
 		tile_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		item_button.add_child(tile_content)
-		var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(54, 54) * _ui_scale)
+		var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(54, 54) * maxf(_ui_scale, 0.90))
 		item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile_content.add_child(item_icon)
 		var item_name := Label.new()
@@ -1867,7 +1867,7 @@ func open_production_panel(building: Building) -> void:
 		var slot: Dictionary = component.get_slot(slot_index)
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
-		slot_card.custom_minimum_size = Vector2(124, 90) * _ui_scale
+		slot_card.custom_minimum_size = Vector2(124, 90) * maxf(_ui_scale, 0.90)
 		var slot_fill := Color("#FFFFFF") if not slot.is_empty() else Color("#F0F6FA")
 		var slot_border := Color("#C9DDE8") if slot.is_empty() else Color("#79B9D4")
 		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
@@ -1889,7 +1889,7 @@ func open_production_panel(building: Building) -> void:
 			var queue_item_row := HBoxContainer.new()
 			queue_item_row.alignment = BoxContainer.ALIGNMENT_CENTER
 			slot_content.add_child(queue_item_row)
-			queue_item_row.add_child(Icons.make_item_icon(item_category, queued_item_id, Vector2(28, 28) * _ui_scale))
+			queue_item_row.add_child(Icons.make_item_icon(item_category, queued_item_id, Vector2(28, 28) * maxf(_ui_scale, 0.90)))
 			var queue_item_name := Label.new()
 			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
 			queue_item_name.add_theme_font_size_override("font_size", int(10 * _ui_scale))
@@ -2022,7 +2022,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	detail_row.add_theme_constant_override("separation", 12)
 	detail.add_child(detail_row)
 
-	var selected_icon := Icons.make_item_icon("raw" if is_factory else "crafted", item_id, Vector2(52, 52) * _ui_scale)
+	var selected_icon := Icons.make_item_icon("raw" if is_factory else "crafted", item_id, Vector2(52, 52) * maxf(_ui_scale, 0.90))
 	detail_row.add_child(selected_icon)
 	var text_stack := VBoxContainer.new()
 	text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2341,7 +2341,7 @@ func open_city_needs_panel() -> void:
 		inventory_card.add_child(inventory_layout)
 		var inventory_id := str(inventory_item.get("item_id", ""))
 		var inventory_category := "raw" if ProductionManager.raw_materials.has(inventory_id) else "crafted"
-		var inventory_icon := Icons.make_item_icon(inventory_category, inventory_id, Vector2(34, 34) * _ui_scale)
+		var inventory_icon := Icons.make_item_icon(inventory_category, inventory_id, Vector2(34, 34) * maxf(_ui_scale, 1.0))
 		inventory_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		inventory_layout.add_child(inventory_icon)
 		var inventory_name := Label.new()
@@ -2378,7 +2378,7 @@ func open_city_needs_panel() -> void:
 		row.add_child(row_layout)
 		var item_id := str(item.get("item_id", ""))
 		var category := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
-		row_layout.add_child(Icons.make_item_icon(category, item_id, Vector2(44, 44) * _ui_scale))
+		row_layout.add_child(Icons.make_item_icon(category, item_id, Vector2(44, 44) * maxf(_ui_scale, 0.90)))
 		var text_stack := VBoxContainer.new()
 		text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_stack.add_theme_constant_override("separation", 1)
@@ -2610,7 +2610,7 @@ func open_residential_panel(building: Building) -> void:
 	layout.add_theme_constant_override("separation", 8)
 	residential_scroll.add_child(layout)
 	_city_panel_heading(layout, "RESIDENTIAL UPGRADE PLAN", _close_residential_panel)
-	var plan_icon := Icons.make_icon("hard_hat", Vector2(38, 38) * _ui_scale)
+	var plan_icon := Icons.make_icon("hard_hat", Vector2(38, 38) * maxf(_ui_scale, 1.0))
 	plan_icon.name = "ResidentialPlanHardHat"
 	plan_icon.modulate = Color("#3D9DE5")
 	layout.add_child(plan_icon)
@@ -2681,7 +2681,7 @@ func open_residential_panel(building: Building) -> void:
 		row.add_theme_constant_override("separation", 8)
 		layout.add_child(row)
 		var icon_type := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
-		row.add_child(Icons.make_item_icon(icon_type, item_id, Vector2(46, 46) * _ui_scale))
+		row.add_child(Icons.make_item_icon(icon_type, item_id, Vector2(46, 46) * maxf(_ui_scale, 0.90)))
 		var item_label := Label.new()
 		item_label.text = "%s   ·   %d / %d   ·   %s" % [CityDemandManager.get_item_name(item_id), owned, amount, need_status]
 		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2936,7 +2936,7 @@ func _refresh_storage_panel() -> void:
 		var item_category := str(definition.get("type", "crafted"))
 		var item_cell := Control.new()
 		item_cell.name = "StorageItem_" + item_key
-		item_cell.custom_minimum_size = Vector2(180, 100) * _ui_scale
+		item_cell.custom_minimum_size = Vector2(180, 100) * maxf(_ui_scale, 0.90)
 		item_cell.tooltip_text = item_name
 		grid.add_child(item_cell)
 		var item_row := HBoxContainer.new()
@@ -2944,7 +2944,7 @@ func _refresh_storage_panel() -> void:
 		item_row.alignment = BoxContainer.ALIGNMENT_CENTER
 		item_row.add_theme_constant_override("separation", 3)
 		item_cell.add_child(item_row)
-		var item_icon := Icons.make_item_icon(item_category, item_key, Vector2(78, 78) * _ui_scale)
+		var item_icon := Icons.make_item_icon(item_category, item_key, Vector2(78, 78) * maxf(_ui_scale, 0.90))
 		item_icon.name = "StorageItemIcon"
 		item_row.add_child(item_icon)
 		var count_label := Label.new()
