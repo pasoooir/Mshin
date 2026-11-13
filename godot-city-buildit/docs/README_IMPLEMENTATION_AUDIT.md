@@ -372,3 +372,12 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - دکمه Cancel مسیر واحد `_on_cancel_pressed` را فراخوانی می‌کند و کنترل‌های جانمایی با خروج از حالت placement پنهان می‌شوند.
 - `GameplaySmoke.gd::_test_placement_rotation_contract` وجود کنترل‌های لمسی، اندازه مناسب hit target، افزایش یک quarter-turn با دکمه Rotate و مخفی شدن کنترل‌ها پس از لغو را بررسی می‌کند.
 - محدودیت پذیرش: تست خودکار منطق و اتصال UI است؛ لمس واقعی، خوانایی و نمایش footprint چرخیده روی دستگاه Android/iOS فیزیکی هنوز تأیید نشده است، پس ردیف README در `[~]` باقی می‌ماند.
+
+
+## بازخورد لمسی Native و تنظیمات آن — PR در حال آماده‌سازی
+
+- `HapticsManager` برای Web مسیر Vibration API هم‌زمان با gesture را حفظ می‌کند و برای Android/iOS از `Input.vibrate_handheld(duration_ms)` استفاده می‌کند؛ درخواست‌ها به ۴۰ms محدود می‌شوند.
+- وضعیت فعال/غیرفعال haptics در `user://haptics_settings.cfg` ذخیره می‌شود و کلید `Haptic feedback` به Settings اضافه شده است.
+- Android Debug preset در `export_presets.cfg` با `permissions/vibrate=true` ثبت شده است؛ preset صرفاً پیکربندی export است و وجود آن به معنی تولید یا تست APK نیست.
+- `GameplaySmoke.gd::_test_mobile_haptics_contract` backendهای Web/Android/iOS، محدودیت مدت پالس و پلتفرم unsupported را بررسی می‌کند؛ تست Settings وجود کلید haptics را نیز می‌سنجد.
+- محدودیت پذیرش: تست خودکار فقط مسیر API و پیکربندی را ثابت می‌کند؛ لرزش واقعی، شدت و رفتار تنظیمات دستگاه روی Android/iOS فیزیکی هنوز تست نشده است.
