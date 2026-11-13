@@ -1653,6 +1653,8 @@ func open_production_panel(building: Building) -> void:
 	header_row.add_child(building_icon)
 	var title := Label.new()
 	title.text = str(building.definition.get("name", "Production")).to_upper()
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	title.add_theme_color_override("font_color", Color.WHITE)
 	header_row.add_child(title)
@@ -1827,8 +1829,11 @@ func open_production_panel(building: Building) -> void:
 		)
 		product_grid.add_child(item_button)
 
-	var details_host := Control.new()
+	var details_host := ScrollContainer.new()
 	details_host.name = "ProductionDetailsHost"
+	details_host.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	details_host.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	details_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details_host.custom_minimum_size.y = (112.0 if profile == "compact" else 144.0) * maxf(_ui_scale, 0.90)
 	layout.add_child(details_host)
 
@@ -1897,6 +1902,8 @@ func open_production_panel(building: Building) -> void:
 			queue_item_row.add_child(Icons.make_item_icon(item_category, queued_item_id, Vector2(28, 28) * maxf(_ui_scale, 0.90)))
 			var queue_item_name := Label.new()
 			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
+			queue_item_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			queue_item_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			queue_item_name.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 			queue_item_name.add_theme_color_override("font_color", Color("#23465A"))
 			queue_item_row.add_child(queue_item_name)
@@ -2020,10 +2027,11 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 
 	var detail := PanelContainer.new()
 	detail.name = "ProductionItemDetails"
-	detail.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail.add_theme_stylebox_override("panel", _toolbar_style(Color("#F5FBFE"), Color("#9BD3E8")))
 	host.add_child(detail)
 	var detail_row := HBoxContainer.new()
+	detail_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail_row.add_theme_constant_override("separation", 12)
 	detail.add_child(detail_row)
 
