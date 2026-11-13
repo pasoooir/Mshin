@@ -97,6 +97,7 @@ var city_needs_overlay: Control
 var residential_overlay: Control
 var epic_project_overlay: Control
 var achievements_overlay: Control
+var regions_overlay: Control
 var _epic_panel_building: Building = null
 var simoleons_label: Label
 var simcash_label: Label
@@ -151,6 +152,8 @@ func _ready() -> void:
 	EpicProjectManager.epic_state_changed.connect(_on_epic_project_state_changed)
 	AchievementManager.achievement_unlocked.connect(_on_achievement_unlocked)
 	AchievementManager.state_changed.connect(_on_achievement_state_changed)
+	RegionManager.region_changed.connect(_on_region_changed)
+	RegionManager.region_state_changed.connect(_on_region_state_changed)
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
@@ -621,16 +624,16 @@ func _build_toolbars() -> void:
 	bottom_actions.anchor_right = 0.5
 	bottom_actions.anchor_top = 1.0
 	bottom_actions.anchor_bottom = 1.0
-	bottom_actions.offset_left = -260.0 * _ui_scale
-	bottom_actions.offset_right = 260.0 * _ui_scale
+	bottom_actions.offset_left = -300.0 * _ui_scale
+	bottom_actions.offset_right = 300.0 * _ui_scale
 	bottom_actions.offset_top = -104.0 * _ui_scale
 	bottom_actions.offset_bottom = -14.0 * _ui_scale
 	bottom_actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	bottom_actions.add_theme_constant_override("separation", 10)
 	bottom_actions.z_index = 62
 	add_child(bottom_actions)
-	for item in [["storage","Storage"],["city_needs","City Needs"],["trade","Trade"],["achievements","Achievements"],["save","Save"]]:
-		var button := _make_icon_button(str(item[0]), str(item[1]), Vector2(92, 82) * _ui_scale)
+	for item in [["storage","Storage"],["city_needs","City Needs"],["trade","Trade"],["regions","Regions"],["achievements","Achievements"],["save","Save"]]:
+		var button := _make_icon_button(str(item[0]), str(item[1]), Vector2(86, 76) * _ui_scale)
 		button.name = "CityNeedsAction" if str(item[0]) == "city_needs" else str(item[0]).capitalize() + "Action"
 		bottom_actions.add_child(button)
 		match str(item[0]):
@@ -638,6 +641,7 @@ func _build_toolbars() -> void:
 			"city_needs": button.pressed.connect(_on_city_needs_pressed)
 			"trade": button.pressed.connect(_on_trade_pressed)
 			"achievements": button.pressed.connect(_on_achievements_pressed)
+			"regions": button.pressed.connect(_on_regions_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
 	catalog_base_bar = PanelContainer.new()
 	catalog_base_bar.name = "CatalogBaseBar"
@@ -3538,6 +3542,115 @@ func _on_cancel_pressed() -> void:
 		status_label.text = "Bulldozer cancelled."
 	else:
 		status_label.text = "Cancelled."
+
+func _on_regions_pressed() -> void:
+	BuildManager.cancel_placement()
+	_close_production_panel()
+	_close_storage_panel()
+	_close_residential_panel()
+	_close_trade_panel()
+	_close_city_needs_panel()
+	_close_achievements_panel()
+	open_regions_panel()
+
+func _on_region_changed(region_id: String) -> void:
+	var region := RegionManager.get_region_definition(region_id)
+	status_label.text = "Entered region: %s" % str(region.get("name", region_id))
+
+func _on_region_state_changed() -> void:
+	if is_instance_valid(regions_overlay):
+		open_regions_panel()
+
+func open_regions_panel() -> void:
+	_close_regions_panel()
+	var viewport_size := get_viewport().get_visible_rect().size
+	regions_overlay = Control.new()
+	regions_overlay.name = "RegionsOverlay"
+	regions_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	regions_overlay.z_index = 138
+	regions_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(regions_overlay)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.025, 0.035, 0.70)
+	regions_overlay.add_child(shade)
+	var width := minf(660.0 * _ui_scale, viewport_size.x * 0.92)
+	var height := minf(610.0 * _ui_scale, viewport_size.y * 0.90)
+	var panel := PanelContainer.new()
+	panel.name = "RegionsPanel"
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -width * 0.5
+	panel.offset_right = width * 0.5
+	panel.offset_top = -height * 0.5
+	panel.offset_bottom = height * 0.5
+	panel.add_theme_stylebox_override("panel", _city_panel_style())
+	regions_overlay.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 8)
+	panel.add_child(layout)
+	_city_panel_heading(layout, "REGIONS", _close_regions_panel)
+	var summary := Label.new()
+	summary.text = "Choose a region. Each region keeps its own roads, buildings and Epic Project state."
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.add_theme_color_override("font_color", Color("#526D7D"))
+	layout.add_child(summary)
+	var scroll := ScrollContainer.new()
+	scroll.name = "RegionListScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(scroll)
+	var entries := VBoxContainer.new()
+	entries.add_theme_constant_override("separation", 8)
+	scroll.add_child(entries)
+	for region in RegionManager.get_region_list():
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", _toolbar_style(Color("#EAF2F7"), Color("#C7D9E5")))
+		entries.add_child(card)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		card.add_child(row)
+		var details := VBoxContainer.new()
+		details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		details.add_theme_constant_override("separation", 2)
+		row.add_child(details)
+		var title := Label.new()
+		title.text = str(region.get("name", "Region"))
+		title.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+		title.add_theme_color_override("font_color", Color("#A87522") if bool(region.get("active", false)) else Color("#24485B"))
+		details.add_child(title)
+		var climate := Label.new()
+		climate.text = "%s climate  ·  Mayor Level %d+" % [str(region.get("climate", "temperate")).capitalize(), int(region.get("unlock_level", 1))]
+		climate.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		details.add_child(climate)
+		var population := Label.new()
+		population.text = "Saved regional population: %s" % String.num_int64(int(region.get("population", 0)))
+		population.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		population.add_theme_color_override("font_color", Color("#526D7D"))
+		details.add_child(population)
+		var action := Button.new()
+		action.custom_minimum_size = Vector2(116, 44) * _ui_scale
+		if bool(region.get("active", false)):
+			action.text = "CURRENT"
+			action.disabled = true
+		elif bool(region.get("unlocked", false)):
+			action.text = "TRAVEL"
+			action.pressed.connect(_travel_to_region.bind(str(region.get("id", ""))))
+		else:
+			action.text = "LOCKED"
+			action.disabled = true
+			action.tooltip_text = "Reach Mayor Level %d" % int(region.get("unlock_level", 1))
+		row.add_child(action)
+
+func _travel_to_region(region_id: String) -> void:
+	if RegionManager.switch_region(region_id):
+		_close_regions_panel()
+
+func _close_regions_panel() -> void:
+	if is_instance_valid(regions_overlay):
+		regions_overlay.queue_free()
+	regions_overlay = null
 
 func _on_achievements_pressed() -> void:
 	BuildManager.cancel_placement()
