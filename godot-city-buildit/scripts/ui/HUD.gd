@@ -95,6 +95,7 @@ var production_panel: PanelContainer
 var production_overlay: Control
 var city_needs_overlay: Control
 var residential_overlay: Control
+var epic_department_overlay: Control
 var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
@@ -2603,7 +2604,7 @@ func open_residential_panel(building: Building) -> void:
 	residential_overlay.add_child(shade)
 	var viewport_size := get_viewport().get_visible_rect().size
 	var width := minf(600.0 * _ui_scale, viewport_size.x * 0.90)
-	var height := minf(520.0 * _ui_scale, viewport_size.y * 0.88)
+	var height := minf(640.0 * _ui_scale, viewport_size.y * 0.90)
 	var panel := PanelContainer.new()
 	panel.name = "ResidentialUpgradePanel"
 	panel.anchor_left = 0.5
@@ -2743,6 +2744,131 @@ func open_residential_panel(building: Building) -> void:
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 	upgrade.pressed.connect(_upgrade_residential_from_panel.bind(building))
 	layout.add_child(upgrade)
+	_add_epic_project_section(layout, building)
+
+func _add_epic_project_section(layout: VBoxContainer, building: Building) -> void:
+	if int(building.upgrade_stage) < 6:
+		return
+	var divider := HSeparator.new()
+	layout.add_child(divider)
+	var heading := Label.new()
+	heading.text = "EPIC PROJECT"
+	heading.add_theme_font_size_override("font_size", int(16 * _ui_scale))
+	heading.add_theme_color_override("font_color", Color("#8A641C"))
+	layout.add_child(heading)
+	if EpicProjectManager.is_epic_building(building):
+		var epic_status := Label.new()
+		epic_status.text = "EPIC BUILDING · TIER %d · +25%% RESIDENTIAL CAPACITY" % building.epic_tier
+		epic_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		epic_status.add_theme_color_override("font_color", Color("#8A641C"))
+		layout.add_child(epic_status)
+		var tokens := Label.new()
+		tokens.text = "EPIC TOKENS  ·  TURTLE %d  ·  LLAMA %d  ·  CHEETAH %d" % [int(EpicProjectManager.epic_tokens.get("turtle", 0)), int(EpicProjectManager.epic_tokens.get("llama", 0)), int(EpicProjectManager.epic_tokens.get("cheetah", 0))]
+		tokens.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		layout.add_child(tokens)
+		return
+	var state := EpicProjectManager.get_project_state(building.building_id)
+	if state.is_empty():
+		var reason := EpicProjectManager.get_start_block_reason(building)
+		var note := Label.new()
+		note.text = "Department unlocks at Level 16; projects at Level 24. A Level 6 home needs 40 nearby Epic Points from Parks (10 each).\n" + reason
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		note.add_theme_color_override("font_color", Color("#6E5B3B"))
+		layout.add_child(note)
+		var start := Button.new()
+		start.name = "StartEpicProjectButton"
+		start.text = "START EPIC PROJECT"
+		start.disabled = reason != ""
+		start.pressed.connect(_on_start_epic_project.bind(building))
+		layout.add_child(start)
+		return
+	var points := int(state.get("points", 0))
+	var target := int(state.get("target_points", EpicProjectManager.PROJECT_TARGET_POINTS))
+	var progress_label := Label.new()
+	progress_label.text = "PROJECT POINTS  ·  %d / %d  ·  %d HOURS LEFT" % [points, target, maxi(0, ceili(float(int(state.get("expires_unix", 0)) - int(Time.get_unix_time_from_system())) / 3600.0))]
+	progress_label.add_theme_color_override("font_color", Color("#8A641C"))
+	layout.add_child(progress_label)
+	var progress := ProgressBar.new()
+	progress.name = "EpicProjectProgress"
+	progress.min_value = 0
+	progress.max_value = target
+	progress.value = points
+	progress.show_percentage = false
+	progress.custom_minimum_size.y = 12 * _ui_scale
+	layout.add_child(progress)
+	if str(state.get("status", "")) == "ready":
+		var claim := Button.new()
+		claim.name = "ClaimEpicBuildingButton"
+		claim.text = "CLAIM EPIC BUILDING"
+		claim.pressed.connect(_on_claim_epic_project.bind(building))
+		layout.add_child(claim)
+	else:
+		var hint := Label.new()
+		hint.text = "Tap each nearby Park once to collect its 10 Epic Points."
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		hint.add_theme_color_override("font_color", Color("#6E5B3B"))
+		layout.add_child(hint)
+
+func _on_start_epic_project(building: Building) -> void:
+	if is_instance_valid(building) and EpicProjectManager.start_project(building.building_id):
+		open_residential_panel(building)
+
+func _on_claim_epic_project(building: Building) -> void:
+	if is_instance_valid(building) and EpicProjectManager.claim_project(building.building_id):
+		open_residential_panel(building)
+
+func open_epic_department_panel() -> void:
+	_close_epic_department_panel()
+	_close_residential_panel()
+	_close_production_panel()
+	_close_storage_panel()
+	var viewport_size := get_viewport().get_visible_rect().size
+	epic_department_overlay = Control.new()
+	epic_department_overlay.name = "EpicDepartmentOverlay"
+	epic_department_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	epic_department_overlay.z_index = 126
+	epic_department_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(epic_department_overlay)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.025, 0.035, 0.62)
+	epic_department_overlay.add_child(shade)
+	var panel := PanelContainer.new()
+	panel.name = "EpicDepartmentPanel"
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	var width := minf(560.0 * _ui_scale, viewport_size.x * 0.90)
+	var height := minf(430.0 * _ui_scale, viewport_size.y * 0.88)
+	panel.offset_left = -width * 0.5
+	panel.offset_right = width * 0.5
+	panel.offset_top = -height * 0.5
+	panel.offset_bottom = height * 0.5
+	panel.add_theme_stylebox_override("panel", _city_panel_style())
+	epic_department_overlay.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 12)
+	panel.add_child(layout)
+	_city_panel_heading(layout, "DEPARTMENT OF EPIC PROJECTS", _close_epic_department_panel)
+	var description := Label.new()
+	description.text = "Unlocks at Level 16. Epic Projects become available at Level 24 for fully upgraded Level 6 homes."
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(description)
+	var requirements := Label.new()
+	requirements.text = "Build 4 Parks within 48 meters of a Level 6 home. Tap each Park once to contribute 10 points. 40 points complete the project; active projects expire after 24 hours."
+	requirements.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(requirements)
+	var tokens := Label.new()
+	tokens.text = "TOKEN INVENTORY  ·  TURTLE %d  ·  LLAMA %d  ·  CHEETAH %d" % [int(EpicProjectManager.epic_tokens.get("turtle", 0)), int(EpicProjectManager.epic_tokens.get("llama", 0)), int(EpicProjectManager.epic_tokens.get("cheetah", 0))]
+	layout.add_child(tokens)
+
+func _close_epic_department_panel() -> void:
+	if is_instance_valid(epic_department_overlay):
+		epic_department_overlay.queue_free()
+	epic_department_overlay = null
 
 func _upgrade_residential_from_panel(building: Building) -> void:
 	if is_instance_valid(building) and building.try_upgrade():
