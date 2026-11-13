@@ -226,10 +226,6 @@ func _create_visual() -> void:
 	for child in mesh_root.get_children():
 		child.queue_free()
 	var model_path := str(definition.get("model_path", ""))
-	if _should_use_external_model(model_path):
-		var model_scale: Vector3 = definition.get("model_scale", Vector3.ONE)
-		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
-			return
 
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	var color: Color = definition.get("color", Color(0.8, 0.8, 0.8))
@@ -242,6 +238,40 @@ func _create_visual() -> void:
 	if category == "residential":
 		height_mult = 0.7 + upgrade_stage * 0.15
 	var height: float = 1.6 * height_mult
+
+	# Keep the verified local GLTF base models in use. Residential upgrades
+	# receive their level-specific architectural additions on top of that base,
+	# so the imported model is retained without freezing the house silhouette.
+	if _should_use_external_model(model_path):
+		var model_scale: Vector3 = definition.get("model_scale", Vector3.ONE)
+		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
+			if category == "residential" and upgrade_stage > 1:
+				var is_apartment := subtype == "apartment"
+				var is_farm := subtype == "farm"
+				var residential_body_h := height
+				if is_apartment:
+					var residential_floors := 3 if upgrade_stage < 5 else 4
+					residential_body_h = maxf(height, float(residential_floors) * 1.35)
+				elif is_farm:
+					residential_body_h = minf(height, 1.85)
+				_build_residential_level_architecture(
+					w, d, residential_body_h, color, color.lightened(0.14),
+					Color(0.66, 0.59, 0.48), Color(0.48, 0.22, 0.16),
+					Color(0.88, 0.82, 0.69), Color(0.24, 0.43, 0.54),
+					is_apartment, is_farm
+				)
+			elif category == "commercial":
+				var commercial_floors := 1 if upgrade_stage < 3 else (2 if upgrade_stage < 5 else 3)
+				var commercial_body_h := height if commercial_floors == 1 else maxf(height, 2.0 + float(commercial_floors - 1) * 1.25)
+				_build_commercial_identity(w, d, commercial_body_h, d * 0.5, upgrade_stage)
+			elif category == "industrial":
+				_build_industrial_identity(w, d, height, upgrade_stage)
+			elif category == "service":
+				_build_service_identity(w, d, height)
+			elif category == "park":
+				_build_park(w, d, color)
+			return
+
 	match category:
 		"residential":
 			# Visible architectural milestones: starter villa, expanded two-storey home,
@@ -273,14 +303,10 @@ func _create_visual() -> void:
 func _should_use_external_model(model_path: String) -> bool:
 	if model_path.is_empty():
 		return false
-	# Residential growth is stage-authored geometry. A category-wide GLTF must
-	# never mask the actual architectural change when a home is upgraded.
-	var category := str(definition.get("category", ""))
-	if category == "residential" or category == "commercial" or category == "industrial":
-		# Current category GLTFs are shared placeholders. Use the authored
-		# type-specific Godot architecture until a verified bespoke GLB exists.
-		return false
-	return true
+	# Preserve the hand-authored level-one villa hero. Higher residential
+	# stages may use their local GLTF base, with unique stage geometry layered on top.
+	var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1
+	return not is_starter_villa
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
 	var residential_subtype := str(definition.get("subtype", "villa"))
@@ -757,6 +783,16 @@ func _build_commercial_identity(w: float, d: float, body_h: float, front: float,
 	var green := Color(0.20, 0.52, 0.30)
 	var accent := Color(0.96, 0.62, 0.16)
 	match id:
+		"shop_chain":
+			# Franchise store: broad branded fascia, projecting corner sign and
+			# a repeated modular canopy distinguish it from independent shops.
+			_add_box(Vector3(w * 0.96, 0.34, 0.16), Vector3(0, 1.88, front + 0.30), Color(0.12, 0.34, 0.72))
+			_add_box(Vector3(w * 0.82, 0.08, 0.20), Vector3(0, 2.08, front + 0.34), Color(0.98, 0.82, 0.18))
+			_add_box(Vector3(0.18, 0.92, 0.18), Vector3(w * 0.46, 1.32, front + 0.28), Color(0.12, 0.34, 0.72))
+			_add_box(Vector3(w * 0.22, 0.22, 0.20), Vector3(w * 0.46, 1.84, front + 0.28), Color(0.98, 0.82, 0.18))
+			for bay in range(5):
+				var x := -w * 0.40 + float(bay) * w * 0.20
+				_add_box(Vector3(w * 0.16, 0.08, 0.34), Vector3(x, 1.58, front + 0.34), Color(0.96, 0.94, 0.86) if bay % 2 == 0 else Color(0.12, 0.34, 0.72))
 		"restaurant_traditional":
 			_add_box(Vector3(w * 0.74, 0.12, d * 0.38), Vector3(0, 1.95, front + 0.28), Color(0.56, 0.16, 0.10))
 			_add_cylinder(0.13, 0.17, 1.25, Vector3(w * 0.32, roof_y, -d * 0.28), dark)
@@ -1163,6 +1199,10 @@ func _build_service_identity(w: float, d: float, height: float) -> void:
 	var white := Color(0.92, 0.94, 0.91)
 	var front := d * 0.48
 	match id:
+		"power_wind", "power_wind_deluxe":
+			if id == "power_wind_deluxe":
+				_add_box(Vector3(w * 0.72, 0.22, d * 0.54), Vector3(0, 0.24, 0), Color(0.34, 0.48, 0.54))
+				_add_box(Vector3(w * 0.46, 0.70, d * 0.34), Vector3(0, 0.70, -d * 0.06), Color(0.82, 0.88, 0.90))
 		"fire_station_small", "fire_station", "fire_station_deluxe":
 			_add_box(Vector3(w * 0.94, 0.18, d * 0.92), Vector3(0, height + 0.38, 0), red)
 			for bay in range(2 if w < 4.0 else 4):
@@ -1180,10 +1220,16 @@ func _build_service_identity(w: float, d: float, height: float) -> void:
 			_add_box(Vector3(0.14, 0.42, 0.10), Vector3(0, height + 0.72, front + 0.09), red)
 			if id == "hospital":
 				_add_box(Vector3(w * 0.28, 1.15, d * 0.30), Vector3(-w * 0.32, height + 0.82, -d * 0.22), Color(0.76,0.86,0.88))
-		"water_tower", "water_pump":
+		"water_tower":
 			_add_cylinder(0.42, 0.52, 0.20, Vector3(0, height + 0.30, 0), Color(0.20,0.52,0.78))
+			_add_cylinder(0.34, 0.42, 0.86, Vector3(0, height - 0.16, 0), Color(0.50,0.58,0.62))
 			for leg in [-1.0, 1.0]:
 				_add_box(Vector3(0.08, 0.82, 0.08), Vector3(leg * 0.32, height - 0.20, 0), Color(0.50,0.58,0.62))
+		"water_pump":
+			_add_box(Vector3(w * 0.82, 0.22, d * 0.72), Vector3(0, height + 0.22, 0), Color(0.24,0.48,0.62))
+			_add_box(Vector3(w * 0.56, 0.92, d * 0.42), Vector3(0, 0.76, -d * 0.10), Color(0.70,0.78,0.80))
+			for pipe in [-1.0, 1.0]:
+				_add_cylinder(0.07, 0.09, d * 0.82, Vector3(pipe * w * 0.30, 0.48, 0), Color(0.30,0.58,0.72))
 		"sewage_small", "sewage_basic", "sewage_deluxe":
 			for tank in range(2 if id == "sewage_small" else 3):
 				_add_cylinder(0.42, 0.48, 0.72, Vector3(-w * 0.28 + float(tank) * w * 0.28, 0.72, -d * 0.16), Color(0.48,0.62,0.60))
