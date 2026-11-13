@@ -866,10 +866,13 @@ func _run_gameplay_test() -> void:
 			_check(title is Label and title.text == "LEVEL UP!", "Level Up title is missing.")
 			_check(subtitle is Label and subtitle.text == "Congratulations Mayor!", "Mayor congratulations message is missing.")
 			var reward_grid := celebration.find_child("LevelUpRewardsGrid", true, false) as GridContainer
+			var reward_card := celebration.find_child("CenterCard", true, false) as Control
 			var active_profile: String = hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
 			_check(reward_grid != null and reward_grid.columns == (1 if active_profile == "compact" else 2), "Level-up reward layout must match the active viewport profile.")
 			celebration._apply_responsive_layout(Vector2(854, 480))
 			_check(reward_grid != null and reward_grid.columns == 1, "Compact level-up rewards must stack vertically without clipping.")
+			var compact_reward_size := reward_card.get_global_rect().size if reward_card else Vector2.ZERO
+			_check(compact_reward_size.x <= 854.0 * 0.92 + 1.0 and compact_reward_size.y <= 240.0 + 1.0, "Compact level-up dialog must stay within its mobile width and height budget.")
 			celebration._apply_responsive_layout(get_viewport().get_visible_rect().size)
 			await _wait_seconds(1.3)
 			var simoleon_reward = celebration.find_child("SimoleonReward", true, false)
@@ -1119,6 +1122,13 @@ func _run_gameplay_test() -> void:
 	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
 	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
 	_check(needs_hud.find_child("ResidentialUpgradeScroll", true, false) is ScrollContainer, "Residential upgrade details must scroll vertically instead of clipping on short screens.")
+	needs_hud._apply_overlay_responsive_layout(Vector2(854, 480))
+	await get_tree().process_frame
+	_assert_panel_fits_target(residential_panel, Vector2(854, 480), "Residential Upgrade mobile", 0.98, 0.95)
+	needs_hud._apply_overlay_responsive_layout(Vector2(1024, 768))
+	await get_tree().process_frame
+	_assert_panel_fits_target(residential_panel, Vector2(1024, 768), "Residential Upgrade tablet", 0.94, 0.95)
+	needs_hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 	_check(needs_hud.find_child("ResidentialPlanStatus", true, false) is Label, "Residential plan must clearly show whether materials are missing or the home is ready.")
 	needs_hud._close_residential_panel()
 	var factory = _find_building("industrial_1")
