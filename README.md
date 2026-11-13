@@ -306,17 +306,23 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 ```
 godot-city-buildit/
-├── assets/
+├── assets/icons/       # آیکون‌های محلی UI، ساختمان‌ها و محصولات
+├── docs/               # مشخصات، ممیزی‌ها و استانداردهای پذیرش
 ├── scenes/
 │   ├── main.tscn
 │   └── buildings/Building.tscn
 ├── scripts/
-│   ├── autoload/     # Game, Economy, Storage, Build, Production, Trade, Service, LevelProgression
-│   ├── systems/      # Camera, CityInput, GhostPreview, RoadSystem
-│   ├── buildings/    # Building.gd
-│   └── ui/           # HUD
-├── resources/
-└── addons/
+│   ├── autoload/       # مدیران بازی، اقتصاد، تولید، خدمات، ذخیره و پیشرفت
+│   ├── buildings/
+│   ├── production/
+│   ├── systems/        # دوربین، ورودی شهر، Ghost و جاده
+│   ├── ui/             # HUD و آیکون‌ها
+│   └── world/
+├── tests/              # GameplaySmoke و تست‌های یکپارچه
+├── tools/              # اعتبارسنجی و ابزار دارایی‌ها
+├── web/                # پوسته و راه‌انداز نسخه مرورگر
+├── project.godot
+└── export_presets.cfg
 ```
 
 ---
