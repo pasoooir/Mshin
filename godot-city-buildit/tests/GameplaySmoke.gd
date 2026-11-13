@@ -1242,6 +1242,74 @@ func _test_building_model_loader_contract() -> void:
 	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
 	villa_visual_probe.free()
 
+func _test_achievements() -> void:
+	var previous_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var previous_achievements: Dictionary = AchievementManager.to_save_dict()
+	var previous_level := GameManager.level
+	var previous_experience := GameManager.experience
+	var previous_population := GameManager.population
+	var previous_simoleons := EconomyManager.simoleons
+	var previous_sales := TradeManager.completed_sales
+	var previous_market_purchases := TradeManager.market_purchases
+	var previous_ship_departures := TradeManager.ship_departures
+	AchievementManager.from_save_dict({})
+	BuildManager.buildings = {}
+	GameManager.level = 10
+	GameManager.population = 10000
+	TradeManager.completed_sales = 1
+	TradeManager.market_purchases = 1
+	TradeManager.ship_departures = 1
+	var temporary_nodes: Array[Node] = []
+	for index in range(5):
+		var home := FireHazardTestBuilding.new()
+		home.building_id = "smoke_achievement_home_%d" % index
+		home.building_type = "residential_villa"
+		home.status = "completed"
+		home.definition = {"category":"residential"}
+		if index == 0:
+			home.is_epic_building = true
+			 home.epic_tier = 1
+		BuildManager.buildings[home.building_id] = home
+		add_child(home)
+		temporary_nodes.append(home)
+	for index in range(3):
+		var factory := FireHazardTestBuilding.new()
+		factory.building_id = "smoke_achievement_factory_%d" % index
+		factory.building_type = "factory_small"
+		factory.status = "completed"
+		factory.definition = {"category":"industrial"}
+		BuildManager.buildings[factory.building_id] = factory
+		add_child(factory)
+		temporary_nodes.append(factory)
+		var park := FireHazardTestBuilding.new()
+		park.building_id = "smoke_achievement_park_%d" % index
+		park.building_type = "park_small"
+		park.status = "completed"
+		park.definition = {"category":"park"}
+		BuildManager.buildings[park.building_id] = park
+		add_child(park)
+		temporary_nodes.append(park)
+
+	AchievementManager._check_achievements()
+	for achievement_id in ["first_home", "home_builder", "city_of_1000", "metropolis", "mayor_level_5", "mayor_level_10", "industrialist", "green_city", "trade_seller", "global_buyer", "cargo_captain", "epic_master"]:
+		_check(bool(AchievementManager.unlocked.get(achievement_id, false)), "Achievement should unlock from its real city metric: %s" % achievement_id)
+	_check(AchievementManager.get_unlocked_count() >= 12, "Achievement manager must unlock every satisfied milestone.")
+	var saved_achievements: Dictionary = AchievementManager.to_save_dict()
+	AchievementManager.from_save_dict(saved_achievements)
+	_check(bool(AchievementManager.unlocked.get("epic_master", false)) and AchievementManager.get_unlocked_count() >= 12, "Achievement unlocks must survive save/load.")
+
+	BuildManager.buildings = previous_buildings
+	GameManager.level = previous_level
+	GameManager.experience = previous_experience
+	GameManager.population = previous_population
+	EconomyManager.simoleons = previous_simoleons
+	TradeManager.completed_sales = previous_sales
+	TradeManager.market_purchases = previous_market_purchases
+	TradeManager.ship_departures = previous_ship_departures
+	AchievementManager.from_save_dict(previous_achievements)
+	for node in temporary_nodes:
+		node.queue_free()
+
 func _test_epic_project_core() -> void:
 	var previous_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var previous_level := GameManager.level
@@ -1473,6 +1541,7 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_mobile_haptics_contract()
 	_test_epic_project_core()
+	_test_achievements()
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
