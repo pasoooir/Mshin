@@ -196,10 +196,18 @@ func has_road_access(anchor: Vector2i, size: Vector2i) -> bool:
 	if road_system == null:
 		return false
 	for x in range(size.x):
-		if road_system.has_road(anchor + Vector2i(x, -1)) or road_system.has_road(anchor + Vector2i(x, size.y)):
+		var north := anchor + Vector2i(x, -1)
+		var south := anchor + Vector2i(x, size.y)
+		if road_system.has_road(north) and road_system.is_road_connected_to_gateway(north):
+			return true
+		if road_system.has_road(south) and road_system.is_road_connected_to_gateway(south):
 			return true
 	for y in range(size.y):
-		if road_system.has_road(anchor + Vector2i(-1, y)) or road_system.has_road(anchor + Vector2i(size.x, y)):
+		var west := anchor + Vector2i(-1, y)
+		var east := anchor + Vector2i(size.x, y)
+		if road_system.has_road(west) and road_system.is_road_connected_to_gateway(west):
+			return true
+		if road_system.has_road(east) and road_system.is_road_connected_to_gateway(east):
 			return true
 	return false
 
