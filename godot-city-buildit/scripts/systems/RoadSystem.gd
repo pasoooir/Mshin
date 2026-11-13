@@ -153,7 +153,7 @@ func place_road_at_world(world_pos: Vector3) -> bool:
 	return place_road(BuildManager.world_to_grid(world_pos))
 
 func remove_road(grid_pos: Vector2i) -> bool:
-	if not roads.has(grid_pos):
+	if grid_pos == GATEWAY_ROAD_CELL or not roads.has(grid_pos):
 		return false
 	var road_mesh = roads[grid_pos]
 	roads.erase(grid_pos)
