@@ -1898,7 +1898,9 @@ func _test_citizen_feedback_bubbles() -> void:
 	var first_citizen_line: String = feedback_manager.get_citizen_line("road", home.building_id, 0) if feedback_manager else ""
 	var next_citizen_line: String = feedback_manager.get_citizen_line("road", home.building_id, 1) if feedback_manager else ""
 	_check(not first_citizen_line.is_empty() and not next_citizen_line.is_empty() and first_citizen_line != next_citizen_line, "Citizens must rotate between distinct short dialogue lines across feedback cycles.")
-	_check(feedback_manager.get_citizen_line("happy", home.building_id, 0).contains("love") or feedback_manager.get_citizen_line("happy", home.building_id, 1).contains("good"), "Satisfied residents must use positive citizen dialogue.")
+	var happy_line: String = feedback_manager.get_citizen_line("happy", home.building_id, 0) if feedback_manager else ""
+	var positive_lines: Array = CitizenFeedbackBubblesScript.CITIZEN_DIALOGUE["happy"]
+	_check(positive_lines.has(happy_line), "Satisfied residents must use one of the authored positive citizen dialogue lines.")
 	_check(CitizenFeedbackBubblesScript.BUBBLE_POP_DURATION > 0.0 and CitizenFeedbackBubblesScript.BUBBLE_FADE_DURATION > 0.0 and CitizenFeedbackBubblesScript.BUBBLE_BOB_AMPLITUDE > 0.0, "Citizen bubbles must define non-zero pop, fade and floating animation timing.")
 	var rotation_candidates: Array[Dictionary] = []
 	for index in range(4):
