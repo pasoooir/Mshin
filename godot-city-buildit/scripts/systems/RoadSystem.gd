@@ -2,13 +2,16 @@ extends Node3D
 
 signal road_placed(grid_pos: Vector2i)
 signal road_removed(grid_pos: Vector2i)
+signal road_upgraded(grid_pos: Vector2i, new_level: int)
 
 const GRID_SIZE: float = 2.0
 const GRID_HALF: float = GRID_SIZE * 0.5
 const ROAD_COST: int = 50
-const ROAD_HALF_WIDTH: float = 0.66
+const ROAD_HALF_WIDTH_BY_LEVEL: Array[float] = [0.66, 0.70, 0.74, 0.78]
+const SIDEWALK_WIDTH_BY_LEVEL: Array[float] = [0.24, 0.20, 0.16, 0.12]
 const CURB_WIDTH: float = 0.08
-const SIDEWALK_WIDTH: float = 0.24
+const ROAD_UPGRADE_COSTS_PER_TILE: Array[int] = [300, 1200, 1500]
+const ROAD_UPGRADE_REQUIRED_LEVELS: Array[int] = [9, 15, 20]
 const ROAD_SURFACE_Y: float = 0.04
 const ROAD_SURFACE_HEIGHT: float = 0.08
 const ROAD_TEXTURE_WORLD_SCALE: float = 8.0
@@ -27,8 +30,10 @@ const TILE_T: String = "t_junction"
 const TILE_CROSS: String = "cross"
 
 var roads: Dictionary = {}
+var road_levels: Dictionary = {}
 var road_refresh_counts: Dictionary = {}
 var is_road_mode: bool = false
+var is_road_upgrade_mode: bool = false
 var _road_connectivity_dirty := true
 var _gateway_connected_roads: Dictionary = {}
 
@@ -44,7 +49,61 @@ func _ready() -> void:
 func set_road_mode(active: bool) -> void:
 	is_road_mode = active
 	if active:
+		is_road_upgrade_mode = false
 		BuildManager.cancel_placement()
+
+func set_road_upgrade_mode(active: bool) -> void:
+	is_road_upgrade_mode = active
+	if active:
+		is_road_mode = false
+		BuildManager.cancel_placement()
+
+func get_road_level(grid_pos: Vector2i) -> int:
+	return clampi(int(road_levels.get(grid_pos, 1)), 1, 4)
+
+func get_road_upgrade_cost(grid_pos: Vector2i) -> int:
+	if not roads.has(grid_pos):
+		return 0
+	var level := get_road_level(grid_pos)
+	return ROAD_UPGRADE_COSTS_PER_TILE[level - 1] if level <= ROAD_UPGRADE_COSTS_PER_TILE.size() else 0
+
+func get_road_upgrade_error(grid_pos: Vector2i) -> String:
+	if not roads.has(grid_pos):
+		return "Tap an existing road tile to upgrade it."
+	if grid_pos == GATEWAY_ROAD_CELL:
+		return "The permanent highway Gateway cannot be upgraded."
+	var level := get_road_level(grid_pos)
+	if level >= 4:
+		return "This road is already an Avenue."
+	var required_level := ROAD_UPGRADE_REQUIRED_LEVELS[level - 1]
+	if GameManager.level < required_level:
+		return "Unlocks at City Level %d." % required_level
+	var cost := get_road_upgrade_cost(grid_pos)
+	if not EconomyManager.can_afford(cost):
+		return "Not enough Simoleons. Upgrade costs %d per tile." % cost
+	return ""
+
+func upgrade_road(grid_pos: Vector2i) -> bool:
+	if get_road_upgrade_error(grid_pos) != "":
+		return false
+	var cost := get_road_upgrade_cost(grid_pos)
+	if not EconomyManager.spend_simoleons(cost):
+		return false
+	var new_level := get_road_level(grid_pos) + 1
+	road_levels[grid_pos] = new_level
+	_refresh_road_neighborhood(grid_pos)
+	road_upgraded.emit(grid_pos, new_level)
+	return true
+
+func restore_road_level(grid_pos: Vector2i, level: int) -> void:
+	if not roads.has(grid_pos):
+		return
+	var restored_level := clampi(level, 1, 4)
+	if restored_level <= 1:
+		road_levels.erase(grid_pos)
+	else:
+		road_levels[grid_pos] = restored_level
+	_refresh_road_neighborhood(grid_pos)
 
 func seed_starter_access() -> void:
 	# Seed the complete two-row starter connector first, then build each tile
@@ -88,6 +147,7 @@ func clear_roads() -> void:
 		if is_instance_valid(road_mesh):
 			road_mesh.queue_free()
 	roads.clear()
+	road_levels.clear()
 	road_refresh_counts.clear()
 	invalidate_road_connectivity_cache()
 
@@ -163,8 +223,13 @@ func place_road_at_world(world_pos: Vector3) -> bool:
 func remove_road(grid_pos: Vector2i) -> bool:
 	if grid_pos == GATEWAY_ROAD_CELL or not roads.has(grid_pos):
 		return false
+	var level := get_road_level(grid_pos)
+	if level > 1:
+		var last_upgrade_cost := ROAD_UPGRADE_COSTS_PER_TILE[level - 2]
+		EconomyManager.add_simoleons(int(floor(float(last_upgrade_cost) * 0.5)))
 	var road_mesh = roads[grid_pos]
 	roads.erase(grid_pos)
+	road_levels.erase(grid_pos)
 	invalidate_road_connectivity_cache()
 	if is_instance_valid(road_mesh):
 		road_mesh.queue_free()
@@ -189,6 +254,7 @@ func _refresh_road_mesh(grid_pos: Vector2i) -> void:
 	var revision := int(road_refresh_counts.get(grid_pos, 0)) + 1
 	road_refresh_counts[grid_pos] = revision
 	new_mesh.set_meta("road_tile_kind", get_road_tile_kind(grid_pos))
+	new_mesh.set_meta("road_level", get_road_level(grid_pos))
 	new_mesh.set_meta("road_revision", revision)
 	add_child(new_mesh)
 	new_mesh.position = Vector3(
@@ -208,6 +274,9 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 
 	var arms := _get_tile_arms(grid_pos)
 	var tile_kind := get_road_tile_kind(grid_pos)
+	var road_level := get_road_level(grid_pos)
+	var road_half_width := ROAD_HALF_WIDTH_BY_LEVEL[road_level - 1]
+	var sidewalk_width := SIDEWALK_WIDTH_BY_LEVEL[road_level - 1]
 	var asphalt_tool := SurfaceTool.new()
 	var marking_tool := SurfaceTool.new()
 	var white_marking_tool := SurfaceTool.new()
@@ -233,8 +302,8 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 		var right_direction := -left_direction
 		var left_connected: bool = arms.has(left_direction)
 		var right_connected: bool = arms.has(right_direction)
-		var left_extent: float = GRID_HALF if left_connected else ROAD_HALF_WIDTH
-		var right_extent: float = GRID_HALF if right_connected else ROAD_HALF_WIDTH
+		var left_extent: float = GRID_HALF if left_connected else road_half_width
+		var right_extent: float = GRID_HALF if right_connected else road_half_width
 		var width: float = left_extent + right_extent
 		var side_offset: float = (right_extent - left_extent) * 0.5
 		var arm_center_along := _direction_to_world(direction) * 0.5
@@ -254,9 +323,9 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 			_append_box(curb_tool, grid_pos, curb_center, curb_size)
 			curb_boxes += 1
 
-			var sidewalk_center := arm_center_along + _direction_to_world(side_direction) * (side_extent + CURB_WIDTH + SIDEWALK_WIDTH * 0.5)
+			var sidewalk_center := arm_center_along + _direction_to_world(side_direction) * (side_extent + CURB_WIDTH + sidewalk_width * 0.5)
 			sidewalk_center.y = 0.03
-			var sidewalk_size := Vector3(1.02, 0.06, SIDEWALK_WIDTH) if along_x else Vector3(SIDEWALK_WIDTH, 0.06, 1.02)
+			var sidewalk_size := Vector3(1.02, 0.06, sidewalk_width) if along_x else Vector3(sidewalk_width, 0.06, 1.02)
 			_append_box(sidewalk_tool, grid_pos, sidewalk_center, sidewalk_size)
 			sidewalk_boxes += 1
 
@@ -267,13 +336,13 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 		var cap_direction := -travel_direction
 		var cap_center := _direction_to_world(cap_direction) * 0.965
 		cap_center.y = 0.09
-		var cap_size := Vector3(ROAD_HALF_WIDTH * 2.0, 0.14, CURB_WIDTH) if cap_direction.x != 0 else Vector3(CURB_WIDTH, 0.14, ROAD_HALF_WIDTH * 2.0)
+		var cap_size := Vector3(road_half_width * 2.0, 0.14, CURB_WIDTH) if cap_direction.x != 0 else Vector3(CURB_WIDTH, 0.14, road_half_width * 2.0)
 		_append_box(curb_tool, grid_pos, cap_center, cap_size)
 		curb_boxes += 1
 
-	_add_road_markings(marking_tool, white_marking_tool, sidewalk_tool, grid_pos, tile_kind, arms)
+	_add_road_markings(marking_tool, white_marking_tool, sidewalk_tool, grid_pos, tile_kind, arms, road_level)
 	marking_boxes = _count_marking_boxes(tile_kind, arms, grid_pos)
-	white_marking_boxes = arms.size() * 5 if tile_kind == TILE_CROSS else 0
+	white_marking_boxes = arms.size() * 5 if tile_kind == TILE_CROSS else arms.size() * _lane_divider_offsets(road_level).size() * 4
 	if tile_kind == TILE_CROSS:
 		sidewalk_boxes += 4
 
@@ -285,7 +354,7 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 	_add_surface(road_mesh, sidewalk_tool, _get_sidewalk_material(), sidewalk_boxes)
 
 	var instance := MeshInstance3D.new()
-	instance.name = "Road_%d_%d_%s" % [grid_pos.x, grid_pos.y, tile_kind]
+	instance.name = "Road_%d_%d_L%d_%s" % [grid_pos.x, grid_pos.y, road_level, tile_kind]
 	instance.mesh = road_mesh
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	return instance
@@ -316,7 +385,10 @@ func _append_box(surface_tool: SurfaceTool, grid_pos: Vector2i, center: Vector3,
 			))
 			surface_tool.add_vertex(point)
 
-func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTool, sidewalk_surface_tool: SurfaceTool, grid_pos: Vector2i, tile_kind: String, arms: Array[Vector2i]) -> void:
+func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTool, sidewalk_surface_tool: SurfaceTool, grid_pos: Vector2i, tile_kind: String, arms: Array[Vector2i], road_level: int) -> void:
+	if tile_kind != TILE_CROSS:
+		for direction in arms:
+			_add_lane_divider_dashes(white_surface_tool, grid_pos, direction, road_level)
 	if tile_kind == TILE_CROSS:
 		for direction in arms:
 			_add_crosswalk(white_surface_tool, grid_pos, direction)
@@ -372,6 +444,26 @@ func _add_arm_center_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, direc
 		center.y = 0.088
 		var dash_size := Vector3(0.28, 0.006, 0.045) if direction.x != 0 else Vector3(0.045, 0.006, 0.28)
 		_append_box(surface_tool, grid_pos, center, dash_size)
+
+func _lane_divider_offsets(level: int) -> Array[float]:
+	match clampi(level, 1, 4):
+		2:
+			return [0.28]
+		3:
+			return [0.28, 0.52]
+		4:
+			return [0.28, 0.52, 0.70]
+	return []
+
+func _add_lane_divider_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Vector2i, road_level: int) -> void:
+	var lateral := Vector2i(-direction.y, direction.x)
+	for offset in _lane_divider_offsets(road_level):
+		for side in [-1.0, 1.0]:
+			for distance in [0.43, 0.77]:
+				var center := _direction_to_world(direction) * float(distance) + _direction_to_world(lateral) * (offset * side)
+				center.y = 0.091
+				var dash_size := Vector3(0.28, 0.006, 0.035) if direction.x != 0 else Vector3(0.035, 0.006, 0.28)
+				_append_box(surface_tool, grid_pos, center, dash_size)
 
 func _add_crosswalk(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Vector2i) -> void:
 	var lateral := Vector2i(-direction.y, direction.x)
