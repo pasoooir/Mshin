@@ -184,7 +184,7 @@ func _test_storage_and_production_chain() -> void:
 	_check(shortage_fruit_chain.contains("Seeds — required 2 | stock 1 | missing 1") and shortage_fruit_chain.contains("Shovel"), "Dependency tree must calculate missing quantities and recursively expose intermediate ingredients.")
 	StorageManager.items = {}
 	_check(is_equal_approx(ProductionManager.get_estimated_chain_seconds("nails"), 360.0), "Nails chain estimate must show parallel Metal production plus five-minute store production.")
-	_check(ProductionManager.get_estimated_chain_seconds("backpack") < 0.0, "Unverified catalog-only recipes must not receive a fabricated chain-time estimate.")
+	_check(is_equal_approx(ProductionManager.get_estimated_chain_seconds("backpack"), 25200.0), "Backpack chain estimate must include parallel raw inputs and its verified 120-minute Fashion Store production.")
 	StorageManager.items = {}
 	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn","bread_roll","bbq_grill","microwave_oven","fruit_berries","tree_sapling","donuts","green_smoothie","cherry_cheesecake","frozen_yogurt","coffee","refrigerator","lighting_system","tv","grass","garden_furniture","lawn_mower","fire_pit","garden_gnome","cap","shoes","watch","business_suit","backpack","tennis_racket","sports_drink","soccer_shoes","protein_bar","ping_pong_table","block_letters","kite","teddy_bear","game_console","forged_iron","carved_wood","cut_stone","tapestries","stained_glass","wool_shirt","picnic_basket","apple_jam","tiramisu","churros","profiterole","mochi","pavlova"]:
 		_check(Icons.CRAFTED_IDS.has(catalog_id), "%s must have a local product icon." % catalog_id)
