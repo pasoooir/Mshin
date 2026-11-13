@@ -943,7 +943,6 @@ func _test_waste_service_happiness() -> void:
 		BuildManager.buildings[facility.building_id] = facility
 		ServiceManager.recalculate_from_buildings()
 		var expected_capacity: int = expected_capacities[waste_id]
-		print("[ServiceCapacityTest] ", waste_id, " completed total=", ServiceManager.total_waste, " demand=", ServiceManager.demand_waste, " used=", ServiceManager.used_waste, " served=", ServiceManager.waste_served_ids.size())
 		_check(ServiceManager.total_waste == expected_capacity, "Waste tier capacity must match its catalog data: " + waste_id)
 		_check(ServiceManager.demand_waste == 19, "Waste demand must remain independent of capacity.")
 		_check(not ServiceManager.waste_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive waste service.")
@@ -958,14 +957,12 @@ func _test_waste_service_happiness() -> void:
 
 		facility.status = "constructing"
 		ServiceManager.recalculate_from_buildings()
-		print("[ServiceCapacityTest] ", waste_id, " constructing total=", ServiceManager.total_waste, " demand=", ServiceManager.demand_waste, " used=", ServiceManager.used_waste, " served=", ServiceManager.waste_served_ids.size())
 		_check(ServiceManager.total_waste == 0 and ServiceManager.used_waste == 0, "A waste facility under construction must not contribute capacity: " + waste_id)
 		_check(not ServiceManager.waste_served_ids.has(low_home.building_id), "A waste facility under construction must not serve homes: " + waste_id)
 
 		facility.status = "completed"
 		facility.grid_pos = Vector2i(35, 35)
 		ServiceManager.recalculate_from_buildings()
-		print("[ServiceCapacityTest] ", waste_id, " disconnected total=", ServiceManager.total_waste, " demand=", ServiceManager.demand_waste, " used=", ServiceManager.used_waste, " served=", ServiceManager.waste_served_ids.size())
 		_check(ServiceManager.total_waste == 0, "A waste facility disconnected from the Gateway must not contribute capacity: " + waste_id)
 
 		BuildManager.buildings.erase(facility.building_id)
