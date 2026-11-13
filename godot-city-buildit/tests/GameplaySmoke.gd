@@ -352,7 +352,7 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.place_road(Vector2i(0, 0)), "The second gateway tile must restore ready-product access.")
 	disconnected_factory.queue_free()
 	disconnected_building.queue_free()
-	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 2)
+	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 6)
 
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
