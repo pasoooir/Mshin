@@ -893,14 +893,13 @@ func _test_power_water_coverage_preview() -> void:
 	var waste_preview: Dictionary = GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["waste_dump_small"])
 	_check(bool(power_preview.get("visible", false)), "Power placement must show a coverage preview.")
 	_check(bool(water_preview.get("visible", false)), "Water placement must show a coverage preview.")
-	_check(bool(sewage_preview.get("visible", false)), "Sewage placement must show a coverage preview.")
-	_check(bool(waste_preview.get("visible", false)), "Waste placement must show a coverage preview.")
+	_check(not bool(sewage_preview.get("visible", false)), "Sewage placement must not show a misleading local-radius preview.")
+	_check(not bool(waste_preview.get("visible", false)), "Waste placement must not show a misleading local-radius preview.")
+	_check(bool(sewage_preview.get("network_required", false)) and sewage_preview.get("network_scope", "") == "citywide", "Sewage placement must communicate city-wide road-network service.")
+	_check(bool(waste_preview.get("network_required", false)) and waste_preview.get("network_scope", "") == "citywide", "Waste placement must communicate city-wide road-network service.")
 	_check(is_equal_approx(float(power_preview.get("radius", -1.0)), ServiceManager.coverage_radius), "Power preview radius must match the live ServiceManager coverage radius.")
 	_check(is_equal_approx(float(water_preview.get("radius", -1.0)), ServiceManager.coverage_radius), "Water preview radius must match the live ServiceManager coverage radius.")
-	_check(is_equal_approx(float(sewage_preview.get("radius", -1.0)), HappinessManager.SEWAGE_COVERAGE_RADIUS), "Sewage preview radius must match its happiness coverage radius.")
-	_check(is_equal_approx(float(waste_preview.get("radius", -1.0)), HappinessManager.WASTE_COVERAGE_RADIUS), "Waste preview radius must match its happiness coverage radius.")
 	_check(power_preview.get("disc_color", Color.WHITE) != water_preview.get("disc_color", Color.WHITE), "Power and Water coverage previews must use distinct colors.")
-	_check(sewage_preview.get("disc_color", Color.WHITE) != waste_preview.get("disc_color", Color.WHITE), "Sewage and Waste coverage previews must use distinct colors.")
 	_check(not bool(GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["factory_small"]).get("visible", false)), "Non-service buildings must not show a coverage preview.")
 
 func _test_waste_service_happiness() -> void:
