@@ -235,10 +235,7 @@ func _should_use_external_model(model_path: String) -> bool:
 	if model_path.is_empty():
 		return false
 	# Keep the custom level-one villa and bespoke shop showcases intact.
-	var is_starter_villa := str(definition.get("category", "")) == "residential" \
-		and building_type != "residential_2" \
-		and str(definition.get("subtype", "villa")) == "villa" \
-		and upgrade_stage == 1
+	var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1
 	return not is_starter_villa
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	var color: Color = definition.get("color", Color(0.8, 0.8, 0.8))
