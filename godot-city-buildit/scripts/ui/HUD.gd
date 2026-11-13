@@ -1105,15 +1105,22 @@ func _show_building_info(type_id: String) -> void:
 	var requirements_text := "Level %d" % required_level
 	if required_population > 0:
 		requirements_text += " · Population %s" % _format_count(required_population)
+	var region_lock := BuildManager.get_region_build_lock_reason(type_id)
+	if not region_lock.is_empty():
+		requirements_text += " · " + region_lock
 	_add_info_line(layout, "Requirements", requirements_text)
 	var population_lock := BuildManager.get_population_build_lock_reason(type_id)
+	var factory_lock := BuildManager.get_factory_build_lock_reason(type_id) if str(definition.get("category", "")) == "industrial" else ""
 	_add_info_line(layout, "Construction", _format_duration(int(definition.get("build_time", 0))))
 	if GameManager.level < required_level:
 		status_label.text = "Unlocked at Level %d." % required_level
+	elif not region_lock.is_empty():
+		status_label.text = region_lock
+	var can_build := GameManager.level >= required_level and population_lock.is_empty() and factory_lock.is_empty() and region_lock.is_empty()
 	var build := Button.new()
 	build.name = "CatalogBuildButton"
-	build.text = "BUILD" if GameManager.level >= required_level and population_lock == "" else ("LOCKED · POPULATION %s" % _format_count(required_population) if population_lock != "" else "LOCKED · LEVEL %d" % required_level)
-	build.disabled = GameManager.level < required_level or population_lock != ""
+	build.text = "BUILD" if can_build else ("LOCKED · " + region_lock if not region_lock.is_empty() else ("LOCKED · " + factory_lock if not factory_lock.is_empty() else ("LOCKED · POPULATION %s" % _format_count(required_population) if population_lock != "" else "LOCKED · LEVEL %d" % required_level)))
+	build.disabled = not can_build
 	build.custom_minimum_size.y = 34 * _ui_scale
 	build.add_theme_stylebox_override("normal", _catalog_action_style())
 	build.add_theme_color_override("font_color", Color.WHITE)
@@ -3633,6 +3640,13 @@ func open_regions_panel() -> void:
 		population.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		population.add_theme_color_override("font_color", Color("#526D7D"))
 		details.add_child(population)
+		if str(region.get("id", "")) != "capital":
+			var regional_content := Label.new()
+			regional_content.text = "Regional resource: %s  ·  Building: %s" % [str(region.get("signature_material", "—")), str(region.get("signature_building", "—"))]
+			regional_content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			regional_content.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			regional_content.add_theme_color_override("font_color", Color("#8A672B"))
+			details.add_child(regional_content)
 		var action := Button.new()
 		action.custom_minimum_size = Vector2(116, 44) * _ui_scale
 		if bool(region.get("active", false)):
