@@ -1440,20 +1440,24 @@ func _test_trade_depot_and_global_market() -> void:
 	TradeManager._process(0.1)
 	_check(bool(TradeManager.sell_slots[0].get("ready", false)), "A finished sale listing must become ready for manual collection.")
 	var coins_before_collection := EconomyManager.simoleons
+	var sales_before_collection := TradeManager.completed_sales
 	_check(TradeManager.collect_sale(0), "A ready Trade Depot listing must collect successfully.")
+	_check(TradeManager.completed_sales == sales_before_collection + 1, "A collected sale must increment the persistent trade achievement counter.")
 	_check(EconomyManager.simoleons == coins_before_collection + ProductionManager.get_item_value("metal"), "Collecting a sale must pay its exact listed price.")
 	_check(TradeManager.sell_slots.is_empty(), "Collected listings must release their depot slot.")
 
 	TradeManager.market_offers = [{"item_id":"metal", "amount":1, "price":15, "sold":false}]
 	var coins_before_purchase := EconomyManager.simoleons
+	var purchases_before := TradeManager.market_purchases
 	_check(TradeManager.buy_global_offer(0), "Global Trade HQ must complete an affordable market purchase.")
+	_check(TradeManager.market_purchases == purchases_before + 1, "A completed Global Trade purchase must increment its achievement counter.")
 	_check(StorageManager.get_count("metal") == 2, "Global market purchase must add the offered goods to storage.")
 	_check(EconomyManager.simoleons == coins_before_purchase - 15, "Global market purchase must deduct the exact offer price.")
 	_check(bool(TradeManager.market_offers[0].get("sold", false)), "Purchased market offers must not be purchasable twice.")
 	var saved_trade := TradeManager.to_save_dict()
 	TradeManager.from_save_dict(saved_trade)
 	_check(TradeManager.market_offers.size() == 1 and bool(TradeManager.market_offers[0].get("sold", false)), "Trade save data must preserve sold market offers.")
-	_check(TradeManager.to_save_dict().has("sell_slots") and TradeManager.to_save_dict().has("market_refresh_unix"), "Trade save data must include depot listings and absolute market refresh time.")
+	_check(TradeManager.to_save_dict().has("sell_slots") and TradeManager.to_save_dict().has("market_refresh_unix") and TradeManager.to_save_dict().has("completed_sales") and TradeManager.to_save_dict().has("market_purchases"), "Trade save data must include depot listings and absolute market refresh time.")
 	TradeManager.market_refresh_unix = int(Time.get_unix_time_from_system()) - 1
 	TradeManager._process(0.1)
 	_check(TradeManager.market_refresh_unix > int(Time.get_unix_time_from_system()) and not TradeManager.market_offers.is_empty() and not bool(TradeManager.market_offers[0].get("sold", false)), "Expired market offers must refresh from their persisted wall-clock deadline.")
