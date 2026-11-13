@@ -481,6 +481,7 @@ for contract in [
     "func is_road_connected_to_gateway(",
     "func invalidate_road_connectivity_cache()",
     "Road must connect to the active highway network.",
+    "if grid_pos == GATEWAY_ROAD_CELL or not roads.has(grid_pos):",
 ]:
     if contract not in road_system_source:
         errors.append(f"Road gateway connectivity contract is missing: {contract}")
