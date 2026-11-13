@@ -399,6 +399,37 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	disconnected_building.queue_free()
 	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 8)
 
+func _test_road_traffic_capacity(road_system) -> void:
+	var saved_level := GameManager.level
+	var saved_population := GameManager.population
+	var saved_money := EconomyManager.simoleons
+	road_system.clear_roads()
+	road_system.seed_starter_access()
+	GameManager.level = 20
+	EconomyManager.simoleons = 50000
+	GameManager.set_population(5000)
+	TrafficManager.recalculate_from_roads()
+	_check(road_system.get_road_count() == 50, "Traffic capacity test must start with the 50-tile Gateway connector.")
+	_check(TrafficManager.traffic_demand == 100, "Traffic demand must convert 5,000 residents into 100 Mshin traffic units.")
+	_check(TrafficManager.road_capacity == 100, "Fifty connected two-lane road tiles must provide 100 traffic units of capacity.")
+	_check(is_equal_approx(TrafficManager.congestion_ratio, 1.0), "Traffic congestion ratio must reflect demand divided by road capacity.")
+	_check(is_equal_approx(TrafficManager.get_happiness_penalty(), -8.0), "At-capacity traffic must apply the documented Mshin -8 happiness penalty.")
+
+	var upgrade_cells: Array[Vector2i] = [Vector2i(1, 0), Vector2i(0, 0), Vector2i(-1, 0), Vector2i(-2, 0), Vector2i(-3, 0)]
+	for cell in upgrade_cells:
+		for tier_step in range(3):
+			_check(road_system.upgrade_road(cell), "Connected road tile must upgrade through all three tiers for traffic-capacity validation.")
+	_check(TrafficManager.road_capacity == 130, "Five Avenue tiles must add 30 traffic-capacity units to the Gateway network.")
+	_check(TrafficManager.congestion_ratio < 0.8, "Upgrading roads must reduce congestion below the service-penalty threshold.")
+	_check(is_equal_approx(TrafficManager.get_happiness_penalty(), 0.0), "Road capacity upgrades must remove the traffic happiness penalty when capacity is sufficient.")
+
+	for cell in upgrade_cells:
+		road_system.restore_road_level(cell, 1)
+	GameManager.level = saved_level
+	GameManager.set_population(saved_population)
+	EconomyManager.simoleons = saved_money
+	TrafficManager.recalculate_from_roads()
+
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
 	var active_camera: Camera3D = get_viewport().get_camera_3d()
@@ -534,7 +565,7 @@ func _test_build_menu_visibility() -> void:
 	hud._on_cancel_pressed()
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
 	hud._show_submenu("services")
-	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste"), "The City Services header must show sewage and waste demand/capacity.")
+	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
 	hud._on_cancel_pressed()
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
@@ -1161,6 +1192,7 @@ func _run_gameplay_test() -> void:
 		return
 	road_system.seed_starter_access()
 	_test_road_gateway_connectivity(road_system)
+	_test_road_traffic_capacity(road_system)
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
