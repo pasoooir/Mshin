@@ -54,6 +54,12 @@ Detailed implementation status and acceptance evidence: [Production Economy Impl
 
 The first upgrade consumes **1 Nail + 1 Metal**. House progression has six stages. The initial city starts with 5,000 Simoleons so the complete starter loop, including two utilities, can be tested immediately.
 
+## Residential architectural progression — first implementation slice
+
+Residential visuals now use authored level-specific procedural architecture instead of the same category-wide GLTF being reused after every upgrade. Villa stages 2–6 add distinct building massing and silhouettes: attached garage/roof wing, offset upper floor and balcony, glass sunroom/pergola terrace, split-level modernist volume with roof garden and solar canopy, then a premium penthouse volume with full-height glazing. Apartment progression has podium/wing/glass-core/tower-crown changes; farm progression adds a barn, silo, greenhouse and expanded crop infrastructure.
+
+This is an implemented procedural visual foundation, **not** a claim that the full catalog has production GLB assets. Commercial, industrial, civic/service and recreation assets still require their own type-specific models; residential stages also remain subject to in-game visual review and mobile performance profiling. The automated validator checks that the stage-specific architecture paths remain present and that residential buildings are not masked by the shared category GLTF.
+
 ## Visual foundation — Phase 0.1 first slice
 
 The coastal environment uses local procedural assets only (no runtime downloads): multi-palette terrain vertex colors, instanced grass blades and varied tree crowns, a layered beach/shallow-water transition, animated blue/turquoise water shader, locally generated asphalt grain, raised curbs and sidewalks. Building facades include framed windows, doors, awnings, roof details, signs and industrial vents; construction completion uses a lightweight sparkle burst. Warm directional fill and atmospheric fog are configured for the GL Compatibility renderer.
