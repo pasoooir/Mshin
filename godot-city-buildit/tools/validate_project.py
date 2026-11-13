@@ -8,7 +8,7 @@ errors = []
 
 def _resource_paths_from_load_calls(source: str) -> list[str]:
     """Return only literal project paths used by Godot resource-loading calls."""
-    pattern = r'\\b(?:preload|load|load_threaded_request)\\s*\\(\\s*["\\']res://([^"\\']+)["\\']'
+    pattern = r'\b(?:preload|load|load_threaded_request)\s*\(\s*["\']res://([^"\']+)["\']'
     return re.findall(pattern, source)
 
 
