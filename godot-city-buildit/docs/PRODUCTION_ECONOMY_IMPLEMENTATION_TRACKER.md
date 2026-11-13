@@ -1,36 +1,44 @@
 # Production Economy & City Needs — Implementation Tracker
 
-**Snapshot:** 2026-11-12  
+**Snapshot:** 2026-11-13  
 **Project:** godot-city-buildit  
-**Branch:** docs/scbi-production-economy-city-needs  
-**Status:** Merged to main and deployed to GitHub Pages on 2026-11-12. Automated CI and desktop/mobile Chromium checks passed. Physical Android side-by-side visual acceptance remains open; do not claim pixel-identical SCBI UI until that review is complete.
+**Branch:** main  
+**Status:** Production-economy foundation from PR #394 and verified-recipe expansion PR #437 are merged. Godot validation, Web build/Chromium desktop+mobile, and GitHub Pages deployment passed on the post-merge main commit. Physical Android side-by-side visual acceptance remains open; do not claim pixel-identical SCBI UI until that review is complete.
 
-**PR:** #394 — merge commit 06c3e2bd87435ddc3dce5df0d2c73ff37bff8fa8.
-**Godot validation:** run 43208197179 — success.
-**Web build / Chromium / Pages deploy:** run 43208197118 — success.
-
-## Six implementation slices
+**Baseline PR:** #394 — merge commit `06c3e2bd87435ddc3dce5df0d2c73ff37bff8fa8`.  
+**Recipe expansion PR:** [#437](https://git## Six implementation slices
 
 | Slice | Deliverable | Evidence | Status |
 |---|---|---|---|
-| 1 | Single authoritative product/factory/store catalog | scripts/autoload/ProductionManager.gd; StorageManager registers display metadata from ProductionManager | 🟢 Core |
-| 2 | Correct per-slot production and warehouse transfer | scripts/production/ProductionComponent.gd; scripts/autoload/StorageManager.gd; scripts/buildings/Building.gd | 🟢 Core |
-| 3 | Residential upgrade plan and supplier details | scripts/ui/HUD.gd; scripts/buildings/Building.gd; ProductionManager upgrade requirements | 🟢 Core |
-| 4 | City-wide needs dashboard and no-double-count allocation | scripts/autoload/CityDemandManager.gd; HUD City Needs shortcut | 🟢 Core |
-| 5 | SCBI-inspired mobile production/residential panels | scripts/ui/HUD.gd; scripts/ui/Icons.gd; local crafted SVG icons | 🟡 Android screenshot comparison pending |
-| 6 | Economy, construction timers, save/load and scores | scripts/autoload/EconomyManager.gd; SaveManager.gd; BuildManager.gd; Building.gd | 🟢 Code; CI pending |
+| 1 | Single authoritative product/factory/store catalog | `scripts/autoload/ProductionManager.gd`; 70 craftable recipes plus four unresolved catalog-only identities | 🟢 70/74 products; four intentionally disabled |
+| 2 | Correct per-slot production and warehouse transfer | `scripts/production/ProductionComponent.gd`; `scripts/autoload/StorageManager.gd`; `scripts/buildings/Building.gd` | 🟢 Core |
+| 3 | Residential upgrade plan and supplier details | `scripts/ui/HUD.gd`; `scripts/buildings/Building.gd`; ProductionManager upgrade requirements | 🟢 Core |
+| 4 | City-wide needs dashboard and no-double-count allocation | `scripts/autoload/CityDemandManager.gd`; HUD City Needs shortcut | 🟢 Core |
+| 5 | SCBI-inspired mobile production/residential panels | `scripts/ui/HUD.gd`; `scripts/ui/Icons.gd`; local crafted SVG icons | 🟡 Android screenshot comparison pending |
+| 6 | Economy, construction timers, save/load and scores | `scripts/autoload/EconomyManager.gd`; `SaveManager.gd`; `BuildManager.gd`; `Building.gd` | 🟢 Code and CI passed; physical-device review remains separate |
 
 ## Current production catalog coverage
 
-- Raw materials: 11; craftable products: 32; catalog-only product identities: 42.
-- Building Supplies: 6 verified recipe entries.
-- Hardware Store: 6 recipe entries.
-- Farmer's Market: 7 recipe entries.
-- Furniture Store: 5 recipe entries.
-- Fast Food Restaurant: 5 craftable products; Popcorn remains visible but disabled until the store-star recipe is verified.
-- Donut Shop: Bread Roll recipe; Home Appliances: BBQ Grill and Microwave Oven recipes; Gardening Supplies: six visible products with unverified recipes.
-- Fashion Store, Sports Shop, Toy Store, Restoration Office, Farmer's Store and Dessert Shop: all six store families are selectable with their product identities visible; recipes remain disabled until exact inputs/times are sourced.
+- Raw materials: 11; craftable commercial products: 70; unresolved catalog-only product identities: 4 (74 standard product identities across the 14 commercial store families).
+- Building Supplies: 6 recipes.
+- Hardware Store: 6 recipes.
+- Farmer's Market: 7 recipes.
+- Furniture Store: 5 recipes.
+- Fast Food Restaurant: 6 recipes.
+- Donut Shop: 6 recipes.
+- Home Appliances: 5 recipes.
+- Gardening Supplies: 6 recipes.
+- Fashion Store: 5 recipes.
+- Sports Shop: 4 recipes.
+- Toy Shop: 2 recipes.
+- Bureau of Restoration: 4 recipes.
+- Country Store / Farmer's Store: 3 recipes.
+- Dessert Shop: 5 recipes.
+- The four unresolved products remain visible but disabled: Football Shoes (item unlock level unknown), Kite (item unlock level unknown), Teddy Bear (item unlock level and production time unresolved), and Tapestry (community references disagree on Textiles ×3 vs ×4).
+- PR #437 added verified recipes for Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone and Stained Glass. Stained Glass requires the first store star; the recipe and production-time gate are tested.
+- `store_catalog` now contains only unresolved product identities. Verified recipes remain in the authoritative `crafted_items` catalog and are not duplicated as unresolved placeholders.
 - Traditional Restaurant and Art Supplies: Mshin-specific production panels open with an explicit empty/verification message.
+- All recipe data from community-reference sources remains community-derived, not EA-confirmed. Do not silently turn disputed quantities into official balancing facts.
 
 ## Required invariants
 
@@ -53,6 +61,8 @@ The following community-reference inputs differ between available tables and mus
 - Cooking Utensils ingredient quantities.
 - Flour Bag ingredient quantities.
 - Corn seed quantity.
+- Tapestry ingredient quantities: the product page and store-family tables differ on Textiles ×3 vs ×4. Tapestry remains catalog-only and cannot be produced.
+- Football Shoes and Kite have unresolved item unlock levels; Teddy Bear has unresolved unlock level and production time. These remain disabled rather than receiving guessed values.
 
 Do not convert these values into EA-confirmed facts.
 
@@ -75,11 +85,12 @@ Do not convert these values into EA-confirmed facts.
 
 ## Final acceptance
 
-- [x] GitHub Actions CI passed on the merged main commit.
-- [x] Godot 4.3 import, startup and end-to-end GameplaySmoke passed.
-- [x] Web export passed.
-- [x] Desktop and mobile-landscape Chromium launch checks passed.
-- [x] GitHub Pages deployment completed successfully.
+- [x] PR #394 production-economy foundation merged to main.
+- [x] PR #437 verified commercial-recipe expansion merged to main.
+- [x] Godot 4.3 import, startup and end-to-end GameplaySmoke passed on post-merge main (run 43486114412).
+- [x] Web export and Chromium desktop/mobile launch checks passed on post-merge main (run 43486114191).
+- [x] GitHub Pages build and deployment completed successfully (run 43486112974).
+- [x] 70 of 74 standard commercial product identities have enabled, source-backed recipes; four unresolved identities remain visible but disabled.
 - [ ] Android landscape screenshots still need side-by-side comparison with current SimCity BuildIt production and residential panels.
 - [ ] Touch scroll, tap, collect, close and upgrade actions still need a final check on a physical Android device.
 - Do not call the UI pixel-identical until the Android comparison is completed.
