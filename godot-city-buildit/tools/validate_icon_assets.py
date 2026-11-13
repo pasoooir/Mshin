@@ -61,7 +61,7 @@ build_menu settings info plus money population happiness level warning check
 arrow_left arrow_right services commercial industrial road residential parks
 hard_hat simoleons golden_key fire power water park police health sewage waste
 government education transportation entertainment gambling beach mountain
-landmark trade_depot global_trade epic regions fallback
+landmark global_trade epic regions fallback
 """.split()
 for icon_id in ui_ids:
     require("ui", icon_id)
@@ -75,10 +75,10 @@ for icon_id in ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_fu
 for category, icon_id in sorted(required):
     path = ICON_ROOT / category / f"{icon_id}.png"
     if not path.is_file():
-        # New store/product art may use original transparent SVG. Required
-        # build icons and toolbar controls remain strict PNG-32 assets.
+        # New product and service-building art may use original transparent SVG.
+        # Required build icons and toolbar controls remain strict PNG-32 assets.
         svg_path = ICON_ROOT / category / f"{icon_id}.svg"
-        if category in ("crafted", "commercial", "ui") and svg_path.is_file():
+        if category in ("crafted", "commercial", "services", "ui") and svg_path.is_file():
             try:
                 svg_root = ET.parse(svg_path).getroot()
                 if not svg_root.tag.endswith("svg") or svg_root.attrib.get("viewBox") != "0 0 128 128":

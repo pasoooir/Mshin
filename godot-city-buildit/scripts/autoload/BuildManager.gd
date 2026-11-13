@@ -77,6 +77,8 @@ var building_types: Dictionary = {
 	"waste_incinerator": {"name":"Garbage Incinerator", "category":"service", "service_group":"waste", "cost":15000, "size":Vector2i(2,2), "population":0, "build_time":7.0, "color":Color(0.46,0.45,0.43), "waste":40, "pollution":1, "pollution_radius":16.0, "pollution_severity":"heavy", "pollution_label":"Heavy pollution", "level":14},
 	"waste_recycling": {"name":"Recycling Center", "category":"service", "service_group":"waste", "cost":60000, "size":Vector2i(3,2), "population":0, "build_time":9.0, "color":Color(0.36,0.72,0.52), "waste":70, "pollution":0, "pollution_radius":0.0, "level":20},
 	"town_hall": {"name":"Town Hall", "category":"service", "service_group":"government", "government":1, "cost":500, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.72,0.68,0.55), "level":1},
+	"trade_depot": {"name":"Trade Depot", "category":"service", "service_group":"trade", "trade_role":"depot", "cost":15000, "size":Vector2i(3,2), "population":0, "population_required":8000, "build_time":8.0, "color":Color(0.30,0.62,0.78), "level":1},
+	"global_trade_hq": {"name":"Global Trade HQ", "category":"service", "service_group":"trade", "trade_role":"market", "cost":30000, "size":Vector2i(3,3), "population":0, "population_required":10000, "build_time":10.0, "color":Color(0.32,0.48,0.76), "level":1},
 	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5}
 }
 
@@ -89,7 +91,7 @@ const MOVABLE_BUILDING_TYPES := [
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
 	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
 	"factory_small", "factory_basic", "factory_mass", "factory_hightech", "factory_nano", "industrial_1", "industrial_2", "industrial_3",
-	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
+	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall", "trade_depot", "global_trade_hq",
 	"park_small"
 ]
 
@@ -121,6 +123,14 @@ func _ready() -> void:
 			definition["model_scale"] = Vector3.ONE
 			building_types[type_id] = definition
 	print("[BuildManager] Ready: %d building types" % building_types.size())
+
+func get_population_build_lock_reason(type_id: String) -> String:
+	if not building_types.has(type_id):
+		return "Unknown building type."
+	var required_population := int(building_types[type_id].get("population_required", 0))
+	if GameManager.population < required_population:
+		return "Requires %d population." % required_population
+	return ""
 
 func can_build_another_factory() -> bool:
 	return factory_count < LevelProgression.get_factory_limit_for_level(GameManager.level)
@@ -173,6 +183,8 @@ func select_building(type_id: String) -> void:
 		return
 	var definition: Dictionary = building_types[type_id]
 	if int(definition.get("level", 1)) > GameManager.level:
+		return
+	if get_population_build_lock_reason(type_id) != "":
 		return
 	if definition.get("category", "") == "industrial" and get_factory_build_lock_reason(type_id) != "":
 		return
@@ -253,6 +265,8 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: i
 		return false
 	var definition: Dictionary = building_types[chosen]
 	if int(definition.get("level", 1)) > GameManager.level:
+		return false
+	if get_population_build_lock_reason(chosen) != "":
 		return false
 	# Factory gates are checked before affordability and physical placement.
 	if definition.get("category", "") == "industrial" and get_factory_build_lock_reason(chosen) != "":

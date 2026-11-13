@@ -507,6 +507,13 @@ func _try_interact(world_position: Vector3) -> void:
 
 	var category := str(building.definition.get("category", ""))
 
+	var trade_role := str(building.definition.get("trade_role", ""))
+	if trade_role != "":
+		var trade_hud := get_tree().current_scene.get_node_or_null("HUD")
+		if trade_hud and trade_hud.has_method("open_trade_panel"):
+			trade_hud.open_trade_panel(trade_role)
+		return
+
 	# Residential buildings open a full upgrade-plan panel. The city-wide
 	# dashboard remains available so the player never needs to inspect homes one by one.
 	if category == "residential":
