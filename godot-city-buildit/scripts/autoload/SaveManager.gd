@@ -3,6 +3,8 @@ extends Node
 signal save_completed(path: String)
 signal load_completed(success: bool)
 
+const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
+
 const SAVE_PATH: String = "user://pasoo_city_buildit_save.json"
 const SAVE_VERSION: int = 2
 const AUTOSAVE_INTERVAL: float = 30.0
@@ -116,7 +118,7 @@ func load_game() -> bool:
 
 	var road_system = scene.get_node("World/RoadSystem")
 	var pending_roads: Array = parsed.get("roads", []).duplicate(true)
-	var gateway_position: Vector2i = RoadSystem.GATEWAY_ROAD_CELL
+	var gateway_position: Vector2i = RoadSystemScript.GATEWAY_ROAD_CELL
 	var gateway_index := -1
 	for index in range(pending_roads.size()):
 		var road: Variant = pending_roads[index]
