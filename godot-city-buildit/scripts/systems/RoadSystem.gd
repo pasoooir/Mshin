@@ -34,6 +34,7 @@ var road_levels: Dictionary = {}
 var road_refresh_counts: Dictionary = {}
 var is_road_mode: bool = false
 var is_road_upgrade_mode: bool = false
+var _service_recalc_queued: bool = false
 var _road_connectivity_dirty := true
 var _gateway_connected_roads: Dictionary = {}
 
@@ -124,6 +125,7 @@ func seed_starter_access() -> void:
 	for cell in roads.keys():
 		_refresh_road_mesh(cell)
 	invalidate_road_connectivity_cache()
+	_queue_service_recalculation()
 
 func invalidate_road_connectivity_cache() -> void:
 	_road_connectivity_dirty = true
@@ -227,6 +229,7 @@ func place_road(grid_pos: Vector2i) -> bool:
 	invalidate_road_connectivity_cache()
 	_refresh_road_neighborhood(grid_pos)
 	road_placed.emit(grid_pos)
+	_queue_service_recalculation()
 	return true
 
 func place_road_at_world(world_pos: Vector3) -> bool:
@@ -247,7 +250,19 @@ func remove_road(grid_pos: Vector2i) -> bool:
 		road_mesh.queue_free()
 	_refresh_road_neighborhood(grid_pos)
 	road_removed.emit(grid_pos)
+	_queue_service_recalculation()
 	return true
+
+func _queue_service_recalculation() -> void:
+	if _service_recalc_queued:
+		return
+	_service_recalc_queued = true
+	call_deferred("_flush_service_recalculation")
+
+func _flush_service_recalculation() -> void:
+	_service_recalc_queued = false
+	if has_node("/root/ServiceManager"):
+		ServiceManager.recalculate_from_buildings()
 
 func _refresh_road_neighborhood(grid_pos: Vector2i) -> void:
 	# Connectivity changes can alter the removed/placed tile and each of its

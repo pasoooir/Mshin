@@ -16,6 +16,8 @@ class FireHazardTestBuilding extends Node3D:
 	var status: String = "constructing"
 	var grid_pos: Vector2i = Vector2i.ZERO
 	var smoke_active: bool = false
+	var current_population: int = 0
+	var upgrade_stage: int = 1
 
 	func set_fire_smoke(active: bool) -> void:
 		smoke_active = active
@@ -531,6 +533,9 @@ func _test_build_menu_visibility() -> void:
 	_check(road_system_for_menu != null and road_system_for_menu.is_road_upgrade_mode, "Selecting Upgrade Road must activate tap-to-upgrade mode.")
 	hud._on_cancel_pressed()
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
+	hud._show_submenu("services")
+	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste"), "The City Services header must show sewage and waste demand/capacity.")
+	hud._on_cancel_pressed()
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
 	_check(category_scroll != null and category_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Right category scroller must capture touch drags.")
@@ -808,62 +813,84 @@ func _test_build_menu_visibility() -> void:
 	hud._close_build_menu()
 	_check(toolbar.visible, "Closing a submenu must restore the persistent transparent category toolbar.")
 
-func _test_sewage_service_happiness() -> void:
-	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
-	var saved_total_power := ServiceManager.total_power
-	var saved_total_water := ServiceManager.total_water
-	var saved_power_served: Dictionary = ServiceManager.power_served_ids.duplicate()
-	var saved_water_served: Dictionary = ServiceManager.water_served_ids.duplicate()
-	BuildManager.buildings.clear()
-	ServiceManager.total_power = 1
-	ServiceManager.total_water = 1
-	ServiceManager.power_served_ids.clear()
-	ServiceManager.water_served_ids.clear()
-
+func _create_service_test_home(building_id: String, service_demand: int, grid_pos: Vector2i) -> FireHazardTestBuilding:
 	var home := FireHazardTestBuilding.new()
 	add_child(home)
-	home.building_id = "sewage_test_home"
+	home.building_id = building_id
 	home.building_type = "residential_1"
-	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
+	home.definition = {"category": "residential", "size": Vector2i(2, 2), "service_demand": service_demand}
 	home.status = "completed"
-	home.grid_pos = Vector2i(35, 35)
+	home.grid_pos = grid_pos
 	home.global_position = Vector3.ZERO
 	BuildManager.buildings[home.building_id] = home
-	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
+	return home
 
-	for sewage_id in ["sewage_small", "sewage_basic", "sewage_deluxe"]:
+func _test_sewage_service_happiness() -> void:
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_level := GameManager.level
+	BuildManager.buildings.clear()
+	GameManager.level = 8
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
+
+	var low_home := _create_service_test_home("sewage_low_home", 1, Vector2i(1, 1))
+	var medium_home := _create_service_test_home("sewage_medium_home", 2, Vector2i(1, 1))
+	var high_home := _create_service_test_home("sewage_high_home", 5, Vector2i(1, 1))
+	var disconnected_home := _create_service_test_home("sewage_disconnected_home", 1, Vector2i(35, 35))
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_sewage == 9, "Sewage demand must count low/medium/high homes and disconnected completed homes.")
+	_check(ServiceManager.demand_power == 9 and ServiceManager.demand_water == 9, "Power and water demand must use the same per-home service-demand units.")
+	_check(ServiceManager.total_sewage == 0 and ServiceManager.used_sewage == 0, "No sewage capacity may be served without a completed sewage facility.")
+	var baseline_happiness := HappinessManager.calculate_home_happiness(low_home)
+
+	var expected_capacities := {"sewage_small": 7, "sewage_basic": 28, "sewage_deluxe": 55}
+	var service_positions := {"sewage_small": Vector2i(1, -2), "sewage_basic": Vector2i(1, -3), "sewage_deluxe": Vector2i(1, -4)}
+	for sewage_id in expected_capacities.keys():
 		var facility := FireHazardTestBuilding.new()
 		add_child(facility)
 		facility.building_id = "sewage_test_" + sewage_id
 		facility.building_type = sewage_id
 		facility.definition = BuildManager.building_types[sewage_id]
 		facility.status = "completed"
-		facility.global_position = Vector3(29.9, 0.0, 0.0)
+		facility.grid_pos = service_positions[sewage_id]
+		facility.global_position = Vector3.ZERO
 		BuildManager.buildings[facility.building_id] = facility
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + 6.0), "Each sewage catalog tier must add the existing +6 happiness bonus: " + sewage_id)
-		_check(HappinessManager._home_has_extra_service(home), "Each sewage catalog tier must count as an extra nearby service: " + sewage_id)
+		ServiceManager.recalculate_from_buildings()
+		var expected_capacity: int = expected_capacities[sewage_id]
+		_check(ServiceManager.total_sewage == expected_capacity, "Sewage tier capacity must match its catalog data: " + sewage_id)
+		_check(ServiceManager.demand_sewage == 9, "Sewage demand must be independent of facility capacity.")
+		_check(not ServiceManager.sewage_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive sewage service.")
+		if expected_capacity == 7:
+			_check(ServiceManager.used_sewage == 3, "A 7-unit sewage plant must serve the 1-unit and 2-unit homes but not the 5-unit home.")
+			_check(not ServiceManager.sewage_served_ids.has(high_home.building_id), "A high-demand home must remain unserved when capacity is insufficient.")
+		else:
+			_check(ServiceManager.used_sewage == 8, "Sewage capacity above connected demand must serve all connected homes.")
+			_check(ServiceManager.sewage_served_ids.has(high_home.building_id), "The 5-unit home must be served when sufficient capacity exists.")
+		_check(HappinessManager._home_has_extra_service(low_home), "A sewage-served home must count as receiving an extra service.")
+		_check(HappinessManager.calculate_home_happiness(low_home) > baseline_happiness, "Sewage service must improve happiness by replacing the shortage penalty with the service bonus.")
 
 		facility.status = "constructing"
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A sewage facility under construction must not provide happiness coverage: " + sewage_id)
-		_check(not HappinessManager._home_has_extra_service(home), "A sewage facility under construction must not count as an extra service: " + sewage_id)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_sewage == 0 and ServiceManager.used_sewage == 0, "A sewage facility under construction must not contribute capacity: " + sewage_id)
+		_check(not ServiceManager.sewage_served_ids.has(low_home.building_id), "A sewage facility under construction must not serve homes: " + sewage_id)
 
 		facility.status = "completed"
-		facility.global_position = Vector3(30.1, 0.0, 0.0)
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A sewage facility outside the 30-unit radius must not add happiness: " + sewage_id)
-		_check(not HappinessManager._home_has_extra_service(home), "A sewage facility outside the 30-unit radius must not count as an extra service: " + sewage_id)
+		facility.grid_pos = Vector2i(35, 35)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_sewage == 0, "A sewage facility disconnected from the Gateway must not contribute capacity: " + sewage_id)
 
 		BuildManager.buildings.erase(facility.building_id)
 		remove_child(facility)
 		facility.free()
 
-	BuildManager.buildings.erase(home.building_id)
-	remove_child(home)
-	home.free()
+	for home in [low_home, medium_home, high_home, disconnected_home]:
+		BuildManager.buildings.erase(home.building_id)
+		remove_child(home)
+		home.free()
 	BuildManager.buildings = saved_buildings
-	ServiceManager.total_power = saved_total_power
-	ServiceManager.total_water = saved_total_water
-	ServiceManager.power_served_ids = saved_power_served
-	ServiceManager.water_served_ids = saved_water_served
+	GameManager.level = saved_level
+	ServiceManager.recalculate_from_buildings()
 
 func _test_power_water_coverage_preview() -> void:
 	var power_preview: Dictionary = GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["power_wind"])
@@ -872,72 +899,88 @@ func _test_power_water_coverage_preview() -> void:
 	var waste_preview: Dictionary = GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["waste_dump_small"])
 	_check(bool(power_preview.get("visible", false)), "Power placement must show a coverage preview.")
 	_check(bool(water_preview.get("visible", false)), "Water placement must show a coverage preview.")
-	_check(bool(sewage_preview.get("visible", false)), "Sewage placement must show a coverage preview.")
-	_check(bool(waste_preview.get("visible", false)), "Waste placement must show a coverage preview.")
+	_check(not bool(sewage_preview.get("visible", false)), "Sewage placement must not show a misleading local-radius preview.")
+	_check(not bool(waste_preview.get("visible", false)), "Waste placement must not show a misleading local-radius preview.")
+	_check(bool(sewage_preview.get("network_required", false)) and sewage_preview.get("network_scope", "") == "citywide", "Sewage placement must communicate city-wide road-network service.")
+	_check(bool(waste_preview.get("network_required", false)) and waste_preview.get("network_scope", "") == "citywide", "Waste placement must communicate city-wide road-network service.")
 	_check(is_equal_approx(float(power_preview.get("radius", -1.0)), ServiceManager.coverage_radius), "Power preview radius must match the live ServiceManager coverage radius.")
 	_check(is_equal_approx(float(water_preview.get("radius", -1.0)), ServiceManager.coverage_radius), "Water preview radius must match the live ServiceManager coverage radius.")
-	_check(is_equal_approx(float(sewage_preview.get("radius", -1.0)), HappinessManager.SEWAGE_COVERAGE_RADIUS), "Sewage preview radius must match its happiness coverage radius.")
-	_check(is_equal_approx(float(waste_preview.get("radius", -1.0)), HappinessManager.WASTE_COVERAGE_RADIUS), "Waste preview radius must match its happiness coverage radius.")
 	_check(power_preview.get("disc_color", Color.WHITE) != water_preview.get("disc_color", Color.WHITE), "Power and Water coverage previews must use distinct colors.")
-	_check(sewage_preview.get("disc_color", Color.WHITE) != waste_preview.get("disc_color", Color.WHITE), "Sewage and Waste coverage previews must use distinct colors.")
 	_check(not bool(GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["factory_small"]).get("visible", false)), "Non-service buildings must not show a coverage preview.")
 
 func _test_waste_service_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
-	var saved_total_power := ServiceManager.total_power
-	var saved_total_water := ServiceManager.total_water
-	var saved_power_served: Dictionary = ServiceManager.power_served_ids.duplicate()
-	var saved_water_served: Dictionary = ServiceManager.water_served_ids.duplicate()
+	var saved_level := GameManager.level
 	BuildManager.buildings.clear()
-	ServiceManager.total_power = 1
-	ServiceManager.total_water = 1
-	ServiceManager.power_served_ids.clear()
-	ServiceManager.water_served_ids.clear()
+	GameManager.level = 14
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
 
-	var home := FireHazardTestBuilding.new()
-	add_child(home)
-	home.building_id = "waste_test_home"
-	home.building_type = "residential_1"
-	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
-	home.status = "completed"
-	home.grid_pos = Vector2i(35, 35)
-	home.global_position = Vector3.ZERO
-	BuildManager.buildings[home.building_id] = home
-	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
+	var low_home := _create_service_test_home("waste_low_home", 1, Vector2i(1, 1))
+	var medium_home := _create_service_test_home("waste_medium_home", 2, Vector2i(1, 1))
+	var high_home := _create_service_test_home("waste_high_home", 5, Vector2i(1, 1))
+	var extra_homes: Array[FireHazardTestBuilding] = []
+	for index in range(10):
+		extra_homes.append(_create_service_test_home("waste_extra_home_%d" % index, 1, Vector2i(1, 1)))
+	var disconnected_home := _create_service_test_home("waste_disconnected_home", 1, Vector2i(35, 35))
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_waste == 19, "Waste demand must count all completed homes, including uninhabited and disconnected homes.")
+	_check(ServiceManager.demand_power == 19 and ServiceManager.demand_water == 19, "Power and water demand must use the same low/medium/high home demand units.")
+	var baseline_happiness := HappinessManager.calculate_home_happiness(low_home)
 
-	for waste_id in ["waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling"]:
+	var expected_capacities := {"waste_dump_small": 15, "waste_dump": 31, "waste_incinerator": 40, "waste_recycling": 70}
+	var service_positions := {"waste_dump_small": Vector2i(1, -3), "waste_dump": Vector2i(1, -4), "waste_incinerator": Vector2i(1, -3), "waste_recycling": Vector2i(1, -3)}
+	for waste_id in expected_capacities.keys():
 		var facility := FireHazardTestBuilding.new()
 		add_child(facility)
 		facility.building_id = "waste_test_" + waste_id
 		facility.building_type = waste_id
 		facility.definition = BuildManager.building_types[waste_id]
 		facility.status = "completed"
-		facility.global_position = Vector3(29.9, 0.0, 0.0)
+		facility.grid_pos = service_positions[waste_id]
+		facility.global_position = Vector3.ZERO
 		BuildManager.buildings[facility.building_id] = facility
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + 6.0), "Each Waste catalog tier must add the existing +6 Mshin service happiness bonus: " + waste_id)
-		_check(HappinessManager._home_has_extra_service(home), "Each completed Waste facility within 30 units must count as an extra service: " + waste_id)
+		ServiceManager.recalculate_from_buildings()
+		var expected_capacity: int = expected_capacities[waste_id]
+		_check(ServiceManager.total_waste == expected_capacity, "Waste tier capacity must match its catalog data: " + waste_id)
+		_check(ServiceManager.demand_waste == 19, "Waste demand must remain independent of capacity.")
+		_check(not ServiceManager.waste_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive waste service.")
+		if expected_capacity == 15:
+			_check(ServiceManager.used_waste == 15, "A 15-unit waste facility must serve only 15 of the 18 connected demand units.")
+			_check(ServiceManager.waste_served_ids.size() == 10, "A small waste facility must leave three connected low-demand homes unserved.")
+		else:
+			_check(ServiceManager.used_waste == 18, "A larger waste facility must serve all connected demand units.")
+			_check(ServiceManager.waste_served_ids.size() == 13, "A sufficient waste facility must serve all connected homes.")
+		_check(HappinessManager._home_has_extra_service(low_home), "A waste-served home must count as receiving an extra service.")
+		_check(HappinessManager.calculate_home_happiness(low_home) > baseline_happiness, "Waste service must improve happiness by replacing the shortage penalty with the service bonus.")
 
 		facility.status = "constructing"
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A Waste facility under construction must not provide happiness coverage: " + waste_id)
-		_check(not HappinessManager._home_has_extra_service(home), "A Waste facility under construction must not count as an extra service: " + waste_id)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_waste == 0 and ServiceManager.used_waste == 0, "A waste facility under construction must not contribute capacity: " + waste_id)
+		_check(not ServiceManager.waste_served_ids.has(low_home.building_id), "A waste facility under construction must not serve homes: " + waste_id)
 
 		facility.status = "completed"
-		facility.global_position = Vector3(30.1, 0.0, 0.0)
-		_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "A Waste facility outside the 30-unit radius must not add happiness: " + waste_id)
-		_check(not HappinessManager._home_has_extra_service(home), "A Waste facility outside the 30-unit radius must not count as an extra service: " + waste_id)
+		facility.grid_pos = Vector2i(35, 35)
+		ServiceManager.recalculate_from_buildings()
+		_check(ServiceManager.total_waste == 0, "A waste facility disconnected from the Gateway must not contribute capacity: " + waste_id)
 
 		BuildManager.buildings.erase(facility.building_id)
 		remove_child(facility)
 		facility.free()
 
-	BuildManager.buildings.erase(home.building_id)
-	remove_child(home)
-	home.free()
+	for home in [low_home, medium_home, high_home, disconnected_home]:
+		BuildManager.buildings.erase(home.building_id)
+		remove_child(home)
+		home.free()
+	for home in extra_homes:
+		BuildManager.buildings.erase(home.building_id)
+		remove_child(home)
+		home.free()
 	BuildManager.buildings = saved_buildings
-	ServiceManager.total_power = saved_total_power
-	ServiceManager.total_water = saved_total_water
-	ServiceManager.power_served_ids = saved_power_served
-	ServiceManager.water_served_ids = saved_water_served
+	GameManager.level = saved_level
+	ServiceManager.recalculate_from_buildings()
+
 
 func _test_emergency_service_tier_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()

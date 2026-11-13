@@ -134,6 +134,8 @@ func _ready() -> void:
 	BuildManager.placement_mode_changed.connect(_on_placement_mode)
 	ServiceManager.power_changed.connect(_on_power_changed)
 	ServiceManager.water_changed.connect(_on_water_changed)
+	ServiceManager.sewage_changed.connect(_on_sewage_changed)
+	ServiceManager.waste_changed.connect(_on_waste_changed)
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
@@ -381,6 +383,8 @@ func _build_context_header(parent: Control) -> void:
 func _update_context_header(category: String, detail: String = "") -> void:
 	if not is_instance_valid(context_header):
 		return
+	if detail.is_empty() and category == "services":
+		detail = _service_summary_text()
 	var labels := {
 		"road": "ROADS & CONNECTIONS",
 		"residential": "RESIDENTIAL",
@@ -886,6 +890,8 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 					detail += " · Coverage: %d tiles" % int(definition.get("coverage_tiles", 15))
 				if int(definition.get("pollution", 0)) > 0:
 					detail += " · " + str(definition.get("pollution_label", "Pollutes"))
+				if str(definition.get("service_group", "")) in ["sewage", "waste"]:
+					detail += " · City-wide capacity · Gateway road required"
 				_add_submenu_button(type_id, str(definition.get("name", type_id)), type_id, detail, false, parent_category, int(definition.get("level", 1)))
 	_finish_submenu_row(true)
 
@@ -1329,8 +1335,9 @@ func _update_all() -> void:
 	_on_keys_changed(EconomyManager.golden_keys)
 	_on_storage_changed()
 	_update_simcash()
-	_on_power_changed(ServiceManager.total_power, ServiceManager.used_power)
-	_on_water_changed(ServiceManager.total_water, ServiceManager.used_water)
+	_on_power_changed(ServiceManager.total_power, ServiceManager.demand_power)
+	_on_water_changed(ServiceManager.total_water, ServiceManager.demand_water)
+	_update_service_summary()
 
 func _update_simcash() -> void:
 	if simcash_label == null:
@@ -1471,15 +1478,32 @@ func _on_storage_changed() -> void:
 	if is_instance_valid(storage_panel):
 		_refresh_storage_panel()
 
-func _on_power_changed(total: int, used: int) -> void:
-	if status_label:
-		status_label.tooltip_text = "Power usage: %d / %d" % [used, total]
+func _on_power_changed(_total: int, _demand: int) -> void:
+	_update_service_summary()
 
-func _on_water_changed(total: int, used: int) -> void:
+func _on_water_changed(_total: int, _demand: int) -> void:
+	_update_service_summary()
+
+func _on_sewage_changed(_total: int, _demand: int) -> void:
+	_update_service_summary()
+
+func _on_waste_changed(_total: int, _demand: int) -> void:
+	_update_service_summary()
+
+func _service_summary_text() -> String:
+	return "Demand / capacity — Power %d/%d · Water %d/%d · Sewage %d/%d · Waste %d/%d" % [
+		ServiceManager.demand_power, ServiceManager.total_power,
+		ServiceManager.demand_water, ServiceManager.total_water,
+		ServiceManager.demand_sewage, ServiceManager.total_sewage,
+		ServiceManager.demand_waste, ServiceManager.total_waste
+	]
+
+func _update_service_summary() -> void:
+	var summary := _service_summary_text()
 	if status_label:
-		status_label.tooltip_text = "Power usage: %d / %d  |  Water usage: %d / %d" % [
-			ServiceManager.used_power, ServiceManager.total_power, used, total
-		]
+		status_label.tooltip_text = summary
+	if active_category == "services" and is_instance_valid(context_header_subtitle):
+		context_header_subtitle.text = summary
 
 func _format_count(value: int) -> String:
 	if value >= 1000000:

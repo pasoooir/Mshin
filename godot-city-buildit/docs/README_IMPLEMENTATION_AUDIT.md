@@ -15,7 +15,7 @@
 | Commercial | فروشگاه‌ها و بخشی از زنجیره‌ها فعال؛ برخی محصولات فقط کاتالوگی‌اند و Recipe آن‌ها غیرفعال است |
 | Residential | پنل، مواد، کمبود، تأمین‌کننده، تحویل مواد و تایمر وجود دارد؛ داده‌های plan/population دقیق SCBI نیست |
 | Storage | ظرفیت انبار از UI با هزینه ۵۰۰ Simoleons و افزایش ۱۰ واحد قابل ارتقاست؛ موجودی، affordability و refresh تست شده‌اند |
-| Services | تمام Tierهای Fire/Police/Health از طریق service_group در پاداش رضایت شناسایی می‌شوند؛ ظرفیت/تقاضای سراسری Sewage/Waste هنوز ناقص است |
+| Services | ظرفیت/تقاضای سراسری Sewage/Waste با اتصال Gateway و واحدهای تقاضای ۱/۲/۵ پیاده‌سازی و آزمون شده؛ Fire/Police/Health هنوز ظرفیت عددی سراسری ندارند |
 | Trade | فروش و سفارش پایه وجود دارد؛ Trade Depot و Global Trade مستقل وجود ندارند |
 | Move/Demolish | جابه‌جایی ساختمان، تخریب ساختمان و حذف جاده وجود دارند |
 | Responsive UI | در main تطبیق کامل همه پنل‌های عمیق برای سه فرم‌فاکتور تأیید نشده؛ PR #396 هنگام ممیزی Draft و خارج از main بود |
@@ -55,12 +55,12 @@
 - `HappinessManager.gd`: آستانه رهاشدن ۲۵ و مهلت ۹۰ ثانیه دارد.
 
 ### Services
-- `ServiceManager.gd`: ظرفیت، تقاضا، شعاع و فهرست خانه‌های برخوردار از برق/آب را محاسبه می‌کند.
+- `ServiceManager.gd`: ظرفیت/تقاضا و خانه‌های برخوردار از برق/آب را با شعاع محاسبه می‌کند؛ ظرفیت سراسری Sewage/Waste را فقط از تأسیسات و خانه‌های متصل به Gateway تخصیص می‌دهد.
 - `FireHazardManager.gd`: شعاع آتش‌نشانی و ارزیابی خطر آتش را انجام می‌دهد.
-- `GhostPreview.gd`: پیش‌نمایش محدوده Fire/Police/Health/Power/Water/Sewage/Waste دارد؛ شعاع Sewage/Waste از ثابت‌های مشترک با منطق رضایت Mshin خوانده می‌شود.
-- `HappinessManager.gd`: برق، آب، پارک، آلودگی صنعتی، Fire/Police/Health و پوشش پایه Sewage/Waste روی رضایت اثر می‌گذارند. Fire/Police/Health با `service_group` بررسی می‌شوند تا همه Tierهای تعریف‌شده پوشش داده شوند.
-- شناسه‌های Sewage یکدست شده‌اند: `sewage_small`، `sewage_basic` و `sewage_deluxe` در هر دو مسیر رضایت و خدمات اضافی شناسایی می‌شوند؛ تست هر سه Tier وجود دارد.
-- Waste از طریق `service_group: waste` و شعاع ۳۰ واحد در پوشش نزدیک‌خانه و رضایت پایه لحاظ می‌شود؛ ظرفیت عددی کاتالوگ هنوز به محاسبه سراسری تقاضا/ظرفیت شهر متصل نیست.
+- `GhostPreview.gd`: پیش‌نمایش شعاعی Fire/Police/Health/Power/Water دارد؛ Sewage/Waste به‌عنوان سرویس سراسری شبکه‌ای ثبت می‌شوند و شعاع محلی ندارند.
+- `HappinessManager.gd`: برق/آب، پارک، آلودگی صنعتی، Fire/Police/Health و وضعیت ظرفیت Sewage/Waste روی رضایت اثر می‌گذارند؛ کمبود Sewage از Level 8 و Waste از Level 14 با جریمه Mshin برابر ۶- امتیاز اعمال می‌شود.
+- شناسه‌های Sewage یکدست‌اند: `sewage_small`، `sewage_basic` و `sewage_deluxe` با ظرفیت‌های ۷/۲۸/۵۵ در محاسبه سراسری لحاظ می‌شوند؛ تست هر سه Tier، کمبود ظرفیت و وضعیت ساخت وجود دارد.
+- Waste از طریق `service_group: waste` و ظرفیت‌های ۱۵/۳۱/۴۰/۷۰ محاسبه می‌شود؛ سرویس city-wide است و تأسیسات/خانه‌ها برای دریافت خدمت باید به Gateway متصل باشند.
 - بررسی Fire/Police/Health از `service_group` کاتالوگ استفاده می‌کند؛ تست تمام Tierها برای وضعیت تکمیل‌شده، در حال ساخت و خارج از شعاع افزوده شده است.
 
 ### Trade و Progression
@@ -76,6 +76,15 @@
 - `CityInput.gd::_handle_bulldoze_cell`: تخریب ساختمان با تأیید دوباره و حذف قطعه جاده.
 - `RoadSystem.gd`: اتصال شبکه با BFS از Gateway ثابت `Vector2i(-23, -1)` بررسی و تا تغییر شبکه cache می‌شود؛ خود Gateway قابل حذف نیست. افزودن جاده و دسترسی ساختمان به شبکه متصل به Gateway محدود شده است. `SaveManager.gd` هنگام بارگذاری شبکه قبلی را پاک می‌کند و Gateway ذخیره‌شده را پیش از سایر قطعات بازیابی می‌کند. خانه جداشده دسترسی جاده/پاداش رضایت را از دست می‌دهد.
 
+### ظرفیت سراسری Sewage/Waste — PR #414
+- واحد تقاضای هر خانه از فیلد `service_demand` خوانده می‌شود: Low=1، Medium=2، High=5. در کاتالوگ فعلی Mshin، خانه کوچک/ویلا/مزرعه=1 و آپارتمان‌ها=2؛ مقدار ۵ برای ساختمان‌های مسکونی پرتراکم آینده آماده است.
+- تمام خانه‌های تکمیل‌شده در تقاضا شمرده می‌شوند، حتی اگر جمعیت فعلی صفر یا اتصال جاده‌ای نداشته باشند. فقط خانه‌های متصل به Gateway می‌توانند در ظرفیت موجود سهم بگیرند.
+- فقط تأسیسات تکمیل‌شده و متصل به Gateway ظرفیت می‌دهند؛ Sewage ظرفیت‌های ۷/۲۸/۵۵ و Waste ظرفیت‌های ۱۵/۳۱/۴۰/۷۰ را از کاتالوگ می‌خواند. Sewage/Waste سرویس سراسری‌اند و شعاع محلی ندارند.
+- ظرفیت به ترتیب ثبت خانه‌ها تخصیص می‌یابد؛ کمبود ظرفیت، خانه‌های باقی‌مانده را unserved نگه می‌دارد. برای Sewage از City Level 8 و Waste از Level 14، خدمت‌گرفته‌ها پاداش فعلی Mshin برابر +۶ و خانه‌های بدون خدمت جریمه Mshin برابر -۶ می‌گیرند؛ این اعداد تنظیم توازن Mshin هستند، نه ادعای مقدار رسمی EA.
+- تغییر شبکه جاده پس از ساخت/تخریب جاده، ظرفیت خدمات سراسری را دوباره محاسبه می‌کند. کارت ساخت Sewage/Waste عبارت City-wide capacity / Gateway road required را نشان می‌دهد و Services header تقاضا/ظرفیت چهار خدمت پایه را نمایش می‌دهد.
+- GameplaySmoke تمام Tierها، واحدهای تقاضای ۱/۲/۵، کمبود ظرفیت، خانه/تأسیسات جدا از Gateway، وضعیت ساخت، تغییر رضایت و حذف شعاع محلی نادرست را آزمون می‌کند.
+- منابع: [Residential Buildings / demand units](https://simcity-buildit.fandom.com/wiki/Residential_Buildings)، [Services](https://simcity-buildit.fandom.com/wiki/Services)، [Efficiency List / service capacities](https://scbuildit.hubsinfo.net/simcity-buildIt-efficiency-list/)، [EA Services 2.0 feedback thread](https://forums.ea.com/discussions/simcity-buildit-en/%E2%9C%A8service-2-0-update---feedback-thread%E2%9C%A8/12987164/replies/13166414)، [EA Roads guide](https://help.ea.com/hu/articles/simcity/simcity-buildit/beginner-guide/).
+- محدودیت باقی‌مانده: ظرفیت عددی و تخصیص سراسری Fire/Police/Health هنوز پیاده‌سازی نشده است.
 ### ارتقای جاده — PR #413
 - ابزار موجود Road > Upgrade Road از حالت placeholder خارج شد و اکنون روی موبایل/ماوس با لمس یک خانه جاده، همان خانه را ارتقا می‌دهد؛ Gateway دائمی و قطعات جداشده از شبکه قابل ارتقا نیستند.
 - Tierها: ۲ لاین (پایه)، ۴ لاین از City Level 9، ۶ لاین از Level 15 و Avenue از Level 20.
@@ -101,7 +110,7 @@
 3. بعضی محصولات کاتالوگی‌اند و Recipe ندارند/غیرفعال‌اند.
 4. ارتقای ظرفیت انبار با Simoleons و افزایش ثابت ۱۰ واحدی پیاده‌سازی شده؛ ارتقای مبتنی بر Special Items هنوز پیاده‌سازی نشده است.
 5. Trade Depot و Global Trade فقط Unlock flag دارند.
-6. Sewage/Waste هنوز ظرفیت و تقاضای سراسری شهر را محاسبه نمی‌کنند؛ پیش‌نمایش جانمایی این دو گروه نیز باقی است.
+6. ظرفیت عددی سراسری Fire/Police/Health و تخصیص ظرفیت آن‌ها هنوز کامل نیست؛ Sewage/Waste از این محدودیت خارج شده‌اند (PR #414).
 7. Android/iOS و 60 FPS روی دستگاه واقعی اندازه‌گیری نشده‌اند.
 8. آموزش، دستاورد، Regions و Epic Projects پیاده‌سازی نشده‌اند.
 
@@ -120,7 +129,7 @@
 - Android landscape روی گوشی کوچک و بزرگ، و تبلت در landscape/portrait.
 - دسکتاپ در 1280×720 و 1920×1080.
 - Screenshot و تست تعامل Factory، Store، Product detail، Queue، City Needs، Residential Upgrade، Storage و Building Info.
-- بررسی مستقل نیاز/ظرفیت سراسری Sewage/Waste.
+- تکمیل ظرفیت/تقاضای عددی و تخصیص ظرفیت برای خدمات تخصصی Fire/Police/Health.
 - آزمون خرید ارتقای ظرفیت انبار و رفتار ذخیره/بازیابی ظرفیت پس از بارگذاری.
 - بنچمارک FPS روی دستگاه هدف.
 

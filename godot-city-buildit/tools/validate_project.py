@@ -421,23 +421,20 @@ for contract in ["EmergencyCoveragePreview", "CoverageArea", "CoverageBoundary",
         errors.append(f"Fire placement coverage preview contract is missing: {contract}")
 
 for contract in [
-    'service_group == "sewage"',
-    'service_group == "waste"',
-    "HappinessManager.SEWAGE_COVERAGE_RADIUS",
-    "HappinessManager.WASTE_COVERAGE_RADIUS",
-    "Color(0.68, 0.76, 0.36, 0.96)",
-    "Color(1.0, 0.58, 0.16, 0.96)",
+    'service_group == "sewage" or service_group == "waste"',
+    '"network_required": true',
+    '"network_scope": "citywide"',
 ]:
     if contract not in ghost_preview_source:
-        errors.append(f"Sewage/Waste placement coverage preview contract is missing: {contract}")
+        errors.append(f"Sewage/Waste city-wide network preview contract is missing: {contract}")
 for contract in [
     "var sewage_preview: Dictionary",
     "var waste_preview: Dictionary",
-    "Sewage preview radius must match its happiness coverage radius",
-    "Waste preview radius must match its happiness coverage radius",
+    "Sewage placement must communicate city-wide road-network service",
+    "Waste placement must communicate city-wide road-network service",
 ]:
     if contract not in gameplay_smoke_source:
-        errors.append(f"Sewage/Waste coverage preview regression test is missing: {contract}")
+        errors.append(f"Sewage/Waste city-wide network regression test is missing: {contract}")
 if city_input_source.count("BuildManager.building_types.get(BuildManager.selected_building_type, {})") < 2:
     errors.append("CityInput must pass selected building metadata to both placement preview paths")
 
@@ -480,20 +477,21 @@ for sewage_id, expected_capacity, expected_level, expected_size, expected_pollut
 if '"sewage_pipe":' in build_manager or '"sewage_pipe"' in hud or '"sewage_pipe"' in happiness_manager_source:
     errors.append("Obsolete sewage_pipe ID must not remain in building, HUD or happiness logic")
 for contract in [
-    'const SEWAGE_SERVICE_IDS := ["sewage_small", "sewage_basic", "sewage_deluxe"]',
-    "func _nearby_sewage_service(",
-    "_nearby_sewage_service(home, SEWAGE_COVERAGE_RADIUS)",
+    "func _nearby_sewage_service(home: Node3D",
+    "ServiceManager.sewage_served_ids.has(home.building_id)",
+    "GameManager.level >= 8",
 ]:
     if contract not in happiness_manager_source:
-        errors.append(f"Sewage happiness coverage contract is missing: {contract}")
+        errors.append(f"Sewage city-wide service contract is missing: {contract}")
 for contract in [
     "func _test_sewage_service_happiness()",
-    "Each sewage catalog tier must add the existing +6 happiness bonus",
-    "outside the 30-unit radius",
-    "under construction",
+    "ServiceManager.total_sewage == expected_capacity",
+    "ServiceManager.demand_sewage == 9",
+    "ServiceManager.used_sewage == 3",
+    "A sewage facility disconnected from the Gateway must not contribute capacity",
 ]:
     if contract not in gameplay_smoke_source:
-        errors.append(f"Sewage gameplay regression test is missing: {contract}")
+        errors.append(f"Sewage capacity/demand regression test is missing: {contract}")
 
 # Every Fire, Police and Health catalog tier must feed the same service-group
 # happiness lookup; checking only a single legacy building ID misses valid tiers.
@@ -545,6 +543,33 @@ for contract in [
     if contract not in gameplay_smoke_source:
         errors.append(f"Emergency service-tier regression test is missing: {contract}")
 
+# City-wide base-service demand uses the SimCity BuildIt low/medium/high units.
+for residential_id, expected_demand in [
+    ("residential_1", 1),
+    ("residential_2", 2),
+    ("residential_villa", 1),
+    ("residential_apartment", 2),
+    ("residential_farm", 1),
+]:
+    match = re.search(r'"' + residential_id + r'": \{([^\n]+)\}', build_manager)
+    if match is None or f'"service_demand":{expected_demand}' not in match.group(1):
+        errors.append(f"Residential service-demand tier is incorrect: {residential_id}")
+for contract in [
+    "func get_home_service_demand(home: Node3D)",
+    "var total_sewage: int",
+    "var demand_sewage: int",
+    "var total_waste: int",
+    "var demand_waste: int",
+    "used_waste = 0",
+    "func _has_gateway_road_access(building: Node3D)",
+    "demand_sewage += get_home_service_demand(building)",
+    "demand_waste += get_home_service_demand(building)",
+    "if sewage_remaining >= demand:",
+    "if waste_remaining >= demand:",
+]:
+    if contract not in service_manager_source:
+        errors.append(f"City-wide service capacity/demand contract is missing: {contract}")
+
 # Solid-waste facilities remain distinct from sewage and expose generic numeric capacity.
 for waste_id, expected_capacity, expected_level, expected_size, expected_pollution, expected_radius in [
     ("waste_dump_small", 15, 14, "Vector2i(2,2)", 1, "10.0"),
@@ -570,20 +595,22 @@ if '"pollution_severity":"heavy"' not in build_manager or '"pollution_label":"He
 if '"waste_omega":' in build_manager:
     errors.append("OMEGA waste facility is outside the current scope and must not be exposed")
 for contract in [
-    'const WASTE_SERVICE_GROUP := "waste"',
-    "func _nearby_waste_service(",
-    "_nearby_waste_service(home, WASTE_COVERAGE_RADIUS)",
+    "func _nearby_waste_service(home: Node3D",
+    "ServiceManager.waste_served_ids.has(home.building_id)",
+    "GameManager.level >= 14",
 ]:
     if contract not in happiness_manager_source:
-        errors.append(f"Waste happiness coverage contract is missing: {contract}")
+        errors.append(f"Waste city-wide service contract is missing: {contract}")
 for contract in [
     "func _test_waste_service_happiness()",
-    "Each Waste catalog tier must add the existing +6 Mshin service happiness bonus",
-    "outside the 30-unit radius",
-    "under construction",
+    "ServiceManager.total_waste == expected_capacity",
+    "ServiceManager.demand_waste == 19",
+    "ServiceManager.used_waste == 15",
+    "ServiceManager.waste_served_ids.size() == 13",
+    "A waste facility disconnected from the Gateway must not contribute capacity",
 ]:
     if contract not in gameplay_smoke_source:
-        errors.append(f"Waste gameplay regression test is missing: {contract}")
+        errors.append(f"Waste capacity/demand regression test is missing: {contract}")
 
 
 for power_id, expected_power, expected_level in [("power_wind", 12, 1), ("power_coal", 12, 1), ("power_wind_deluxe", 22, 10), ("power_solar", 35, 15), ("power_oil", 40, 18), ("power_nuclear", 60, 22)]:

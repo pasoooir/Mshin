@@ -87,10 +87,8 @@ static func get_coverage_preview_data(definition: Dictionary) -> Dictionary:
 		var radius := float(definition.get("coverage_tiles", 15)) * float(BuildManager.GRID_SIZE)
 		return {"visible": true, "radius": radius, "disc_color": Color(0.12, 0.72, 0.48, 0.16), "ring_color": Color(0.20, 0.96, 0.62, 0.96)}
 	var service_group := str(definition.get("service_group", ""))
-	if service_group == "sewage":
-		return {"visible": true, "radius": HappinessManager.SEWAGE_COVERAGE_RADIUS, "disc_color": Color(0.34, 0.38, 0.24, 0.18), "ring_color": Color(0.68, 0.76, 0.36, 0.96)}
-	if service_group == "waste":
-		return {"visible": true, "radius": HappinessManager.WASTE_COVERAGE_RADIUS, "disc_color": Color(0.72, 0.34, 0.08, 0.17), "ring_color": Color(1.0, 0.58, 0.16, 0.96)}
+	if service_group == "sewage" or service_group == "waste":
+		return {"visible": false, "radius": -1.0, "network_required": true, "network_scope": "citywide"}
 	return {"visible": false, "radius": -1.0}
 
 func _update_coverage_preview(definition: Dictionary) -> void:
