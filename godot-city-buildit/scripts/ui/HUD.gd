@@ -3625,7 +3625,7 @@ func open_regions_panel() -> void:
 		climate.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		details.add_child(climate)
 		var population := Label.new()
-		population.text = "Saved regional population: %s" % String.num_int64(int(region.get("population", 0)))
+		population.text = "Saved regional population: %s" % str(int(region.get("population", 0)))
 		population.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		population.add_theme_color_override("font_color", Color("#526D7D"))
 		details.add_child(population)
