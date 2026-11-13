@@ -90,6 +90,21 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 >
 > این وضعیت‌ها با کد شاخه `main` بازبینی می‌شوند و پس از هر قابلیت تأییدشده به‌روزرسانی خواهند شد. جزئیات شواهد و شکاف‌ها در [گزارش ممیزی README](godot-city-buildit/docs/README_IMPLEMENTATION_AUDIT.md) ثبت شده است. تغییرات PRهای Mergeنشده جزو وضعیت main محسوب نمی‌شوند.
 
+### آخرین تغییرات ادغام‌شده و راستی‌آزمایی CI در main
+
+موارد زیر بر اساس وضعیت واقعی PRها، commitهای ادغام‌شده و اجرای GitHub Actions ثبت شده‌اند؛ موفقیت CI فقط آزمون‌های همان workflow را تأیید می‌کند و جای آزمون دستگاه فیزیکی یا تکمیل کل قابلیت را نمی‌گیرد.
+
+| PR | تغییر ادغام‌شده | وضعیت شواهد CI |
+|---|---|---|
+| [#410](https://github.com/pasoooir/Mshin/pull/410) | جلوگیری از عملیات تولید/ارتقای مشخص‌شده هنگام قطع دسترسی جاده و توقف زمان‌سنج صف‌ها | Godot Validation، Web و Pages موفق |
+| [#411](https://github.com/pasoooir/Mshin/pull/411) | آزمون رگرسیون توقف زمان کارخانه و ممنوعیت جمع‌آوری در زمان قطع جاده | Godot Validation و Pages موفق؛ اجرای جداگانه Web لغو شده است |
+| [#412](https://github.com/pasoooir/Mshin/pull/412) | آزمون رگرسیون صف فروشگاه و ارتقای خانه هنگام قطع/وصل جاده | Godot Validation، Web و Pages موفق |
+| [#414](https://github.com/pasoooir/Mshin/pull/414) | ظرفیت سراسری Sewage/Waste بر پایه تقاضای خانه‌ها و اتصال Gateway | Godot Validation، Web و Pages موفق |
+| [#415](https://github.com/pasoooir/Mshin/pull/415) | محاسبه ظرفیت و ازدحام ترافیک بر اساس Tier جاده | Godot Validation، Web و Pages موفق |
+| [#416](https://github.com/pasoooir/Mshin/pull/416) | حرکت رفت‌وبرگشت خودروی سه‌بعدی سبک از Gateway روی شبکه متصل | Godot Validation، Web و Pages موفق |
+
+آخرین commit ادغام‌شده‌ای که این بخش بر اساس آن بازبینی شده است: `a662e62888ffbbe4565f425b77c2777f193779de` (ادغام PR #416). این فهرست به معنی تکمیل محدودیت‌های باقیمانده ذکرشده در بخش‌های پایین نیست.
+
 # نقشه راه کامل توسعه (Roadmap)
 
 این نقشه راه باید **مرحله به مرحله** و با اولویت اجرا شود.  
