@@ -223,7 +223,7 @@ func _generate_market_offers() -> void:
 			pool.append(str(item_id))
 	for item_id in ProductionManager.crafted_items.keys():
 		var definition: Dictionary = ProductionManager.crafted_items[item_id]
-		if int(definition.get("level", 1)) <= GameManager.level:
+		if bool(definition.get("unlock_level_verified", true)) and int(definition.get("level", 1)) <= GameManager.level and ProductionManager.get_item_value(str(item_id)) > 0:
 			pool.append(str(item_id))
 	pool.shuffle()
 	for index in range(mini(MARKET_OFFER_COUNT, pool.size())):
