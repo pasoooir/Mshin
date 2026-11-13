@@ -104,7 +104,7 @@ func refresh_region_appearance() -> void:
 	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater"]:
 		var old_node := get_node_or_null(node_name)
 		if is_instance_valid(old_node):
-			old_node.queue_free()
+			old_node.free()
 	_build_terrain()
 
 
