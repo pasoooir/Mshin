@@ -834,7 +834,7 @@ func _run_gameplay_test() -> void:
 			_check(title is Label and title.text == "LEVEL UP!", "Level Up title is missing.")
 			_check(subtitle is Label and subtitle.text == "Congratulations Mayor!", "Mayor congratulations message is missing.")
 			var reward_grid := celebration.find_child("LevelUpRewardsGrid", true, false) as GridContainer
-			var active_profile := hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
+			var active_profile: String = hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
 			_check(reward_grid != null and reward_grid.columns == (1 if active_profile == "compact" else 2), "Level-up reward layout must match the active viewport profile.")
 			celebration._apply_responsive_layout(Vector2(854, 480))
 			_check(reward_grid != null and reward_grid.columns == 1, "Compact level-up rewards must stack vertically without clipping.")
@@ -1061,7 +1061,7 @@ func _run_gameplay_test() -> void:
 	_check(needs_hud.find_child("CityNeed_nails", true, false) != null, "City Needs dashboard must show aggregated item shortage rows.")
 	var needs_metrics := needs_hud.find_child("CityNeedsResourceSummary", true, false) as GridContainer
 	var needs_inventory := needs_hud.find_child("CityStorageInventory", true, false) as GridContainer
-	var needs_profile := needs_hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
+	var needs_profile: String = needs_hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
 	_check(needs_metrics != null and needs_metrics.columns == (2 if needs_profile == "compact" else 4), "City Needs resource metrics must match the compact or wide viewport profile.")
 	var expected_needs_inventory_columns := 3 if needs_profile == "compact" else (4 if needs_profile == "tablet" else 5)
 	_check(needs_inventory != null and needs_inventory.columns == expected_needs_inventory_columns, "City Needs inventory must match the active viewport profile.")
@@ -1194,7 +1194,7 @@ func _run_gameplay_test() -> void:
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
 	var product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
 	var product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
-	var production_profile := production_hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
+	var production_profile: String = production_hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
 	var expected_product_columns := 3 if production_profile == "compact" else (4 if production_profile == "tablet" else 6)
 	_check(product_scroll != null and product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Production catalog must scroll vertically when reflowed for narrow screens.")
 	var details_scroll := production_hud.production_panel.find_child("ProductionDetailsHost", true, false) as ScrollContainer
