@@ -419,6 +419,7 @@ func _test_road_traffic_capacity(road_system) -> void:
 	for cell in upgrade_cells:
 		for tier_step in range(3):
 			_check(road_system.upgrade_road(cell), "Connected road tile must upgrade through all three tiers for traffic-capacity validation.")
+	TrafficManager.recalculate_from_roads()
 	_check(TrafficManager.road_capacity == 130, "Five Avenue tiles must add 30 traffic-capacity units to the Gateway network.")
 	_check(TrafficManager.congestion_ratio < 0.8, "Upgrading roads must reduce congestion below the service-penalty threshold.")
 	_check(is_equal_approx(TrafficManager.get_happiness_penalty(), 0.0), "Road capacity upgrades must remove the traffic happiness penalty when capacity is sufficient.")
