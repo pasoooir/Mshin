@@ -60,3 +60,15 @@ jobs:
           if grep -q "SCRIPT ERROR" /tmp/godot-gameplay.log; then exit 1; fi
           if grep -q "ERROR: [GameplaySmoke]" /tmp/godot-gameplay.log; then exit 1; fi
           grep -F "[GameplaySmoke] PASS" /tmp/godot-gameplay.log
+
+      - name: Responsive UI viewport matrix
+        run: |
+          set -o pipefail
+          for viewport in 854x480 1024x768 1920x1080; do
+            log="/tmp/godot-responsive-${viewport}.log"
+            echo "Running responsive UI acceptance at ${viewport}"
+            timeout 90s godot --headless --path godot-city-buildit --resolution "${viewport}" res://tests/gameplay_smoke.tscn 2>&1 | tee "${log}"
+            if grep -q "SCRIPT ERROR" "${log}"; then exit 1; fi
+            if grep -q "ERROR: [GameplaySmoke]" "${log}"; then exit 1; fi
+            grep -F "[GameplaySmoke] PASS" "${log}"
+          done
