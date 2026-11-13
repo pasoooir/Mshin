@@ -9,6 +9,7 @@ var _overlay: Control
 var _active_bubbles: Array[Dictionary] = []
 var _showing := false
 var _elapsed := 0.0
+var _priority_offsets: Dictionary = {}
 
 func _ready() -> void:
 	layer = 90
@@ -68,6 +69,36 @@ func get_feedback_for_home(home: Node3D) -> Dictionary:
 func _feedback(kind: String, message: String, icon_id: String, priority: int) -> Dictionary:
 	return {"kind": kind, "message": message, "icon": icon_id, "priority": priority}
 
+
+func _select_feedback_candidates(candidates: Array[Dictionary]) -> Array[Dictionary]:
+	# Keep urgent issue categories first, but rotate homes within each priority
+	# tier so the same first three dictionary entries do not monopolize bubbles.
+	var grouped: Dictionary = {}
+	for candidate in candidates:
+		var feedback: Dictionary = candidate.get("feedback", {})
+		var priority := int(feedback.get("priority", 99))
+		if not grouped.has(priority):
+			grouped[priority] = []
+		var group: Array = grouped[priority]
+		group.append(candidate)
+		grouped[priority] = group
+	var priorities: Array = grouped.keys()
+	priorities.sort()
+	var selected: Array[Dictionary] = []
+	for priority_value in priorities:
+		var priority := int(priority_value)
+		var group: Array = grouped[priority]
+		if group.is_empty():
+			continue
+		var offset := posmod(int(_priority_offsets.get(priority, 0)), group.size())
+		var count := mini(MAX_VISIBLE_BUBBLES - selected.size(), group.size())
+		for index in range(count):
+			selected.append(group[(offset + index) % group.size()])
+		_priority_offsets[priority] = (offset + count) % group.size()
+		if selected.size() >= MAX_VISIBLE_BUBBLES:
+			break
+	return selected
+
 func _spawn_feedback_bubbles() -> void:
 	_clear_bubbles()
 	var candidates: Array[Dictionary] = []
@@ -80,12 +111,8 @@ func _spawn_feedback_bubbles() -> void:
 		candidates.append({"building": building, "feedback": feedback})
 	if candidates.is_empty():
 		return
-	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return int(a.feedback.get("priority", 99)) < int(b.feedback.get("priority", 99))
-	)
-	var selected := mini(MAX_VISIBLE_BUBBLES, candidates.size())
-	for index in range(selected):
-		var entry: Dictionary = candidates[index]
+	var selected := _select_feedback_candidates(candidates)
+	for entry in selected:
 		var building: Node3D = entry.building
 		var feedback: Dictionary = entry.feedback
 		var bubble := _create_bubble(building, feedback)
