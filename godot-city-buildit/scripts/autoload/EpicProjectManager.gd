@@ -43,7 +43,8 @@ func _get_specialization_buildings() -> Array[Node3D]:
 func get_start_block_reason(building: Node3D) -> String:
 	if not is_instance_valid(building):
 		return "Select a residential building."
-	if str(building.get("status")) != "completed" or str(building.get("definition", {}).get("category", "")) != "residential":
+	var definition: Dictionary = building.get("definition")
+	if str(building.get("status")) != "completed" or str(definition.get("category", "")) != "residential":
 		return "Epic Projects require a completed residential building."
 	if bool(building.get("is_epic_building")):
 		return "This home is already an Epic Building."
