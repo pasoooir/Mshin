@@ -113,6 +113,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#438](https://github.com/pasoooir/Mshin/pull/438) | ۷۳ تعریف Recipe از ۷۴ محصول؛ ۷۰ قابل تولید، سه محصول قفل‌شده به‌دلیل سطح نامعلوم، Tapestry با تعارض شفاف؛ ممیزی اقتصاد، تست صف آفلاین و اصلاح کاتالوگ موبایل | Godot Validation، Web/Chromium desktop+mobile و Pages deploy روی main موفق |
 | [#439](https://github.com/pasoooir/Mshin/pull/439) | AudioManager محلی با موسیقی/صدای محیط WAV رویه‌ای، شش افکت، اتصال رویدادهای گیم‌پلی و ذخیره کنترل‌های صوتی | Godot Validation و Web موفق؛ اجرای صوتی فیزیکی هنوز تأیید نشده |
 | [#440](https://github.com/pasoooir/Mshin/pull/440) | راهنمای شش‌مرحله‌ای رویدادمحور اولین شهر، ذخیره پیشرفت، رد/تعویق و بازگشایی؛ GameplaySmoke قرارداد مراحل را پوشش می‌دهد | Godot Validation، Web/Chromium و Pages build/deploy روی main موفق؛ تأیید تعاملی فیزیکی هنوز باقی است |
+| [#441](https://github.com/pasoooir/Mshin/pull/441) | منوی Settings موبایلی با سه کلید صوتی و چهار اسلایدر حجم، بازنشانی تنظیمات و آزمون GameplaySmoke؛ گرافیک/کنترل/زبان و آزمون صوتی فیزیکی همچنان ناقص‌اند | PR Godot Validation و Web/Chromium موفق؛ پس از Merge، Godot Validation، Web/Chromium و Pages deploy روی main موفق |
 
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
 
@@ -372,3 +373,6 @@ godot-city-buildit/
 **ریپازیتوری:** https://github.com/pasoooir/Mshin  
 
 این README نقشه راه رسمی پروژه است. هر هوش مصنوعی یا برنامه‌نویس باید طبق همین فازها جلو برود.
+
+
+PR #441 با merge commit `e8ce602f2c73e280d5588e2e9f5a9962bf6505fe` وارد main شد. Godot Validation run `43499325570`، Web/Chromium + Pages deploy run `43499325445` و Pages build/deploy run `43499324239` همگی موفق شدند. تنظیمات صوتی داخل بازی فعال‌اند؛ تکمیل تنظیمات گرافیک/کنترل/زبان و شنیدن واقعی روی دستگاه فیزیکی هنوز ادعا نمی‌شود.
