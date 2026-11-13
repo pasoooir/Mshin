@@ -1259,7 +1259,13 @@ func _test_trade_depot_and_global_market() -> void:
 	add_child(hq)
 	BuildManager.buildings[hq.building_id] = hq
 
+	GameManager.population = 7999
+	_check(BuildManager.get_population_build_lock_reason("trade_depot") != "", "Trade Depot must remain locked below 8,000 population.")
+	GameManager.population = 8000
+	_check(BuildManager.get_population_build_lock_reason("trade_depot").is_empty(), "Trade Depot must unlock at exactly 8,000 population.")
+	_check(BuildManager.get_population_build_lock_reason("global_trade_hq") != "", "Global Trade HQ must remain locked below 10,000 population.")
 	GameManager.population = 10000
+	_check(BuildManager.get_population_build_lock_reason("global_trade_hq").is_empty(), "Global Trade HQ must unlock at exactly 10,000 population.")
 	StorageManager.capacity = 50
 	StorageManager.items = {"metal": 2}
 	TradeManager.from_save_dict({})
