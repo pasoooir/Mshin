@@ -31,6 +31,7 @@ var _hint: Label
 var _progress: ProgressBar
 var _counter: Label
 var _skip_button: Button
+var _later_button: Button
 var _dismissed := false
 
 func _ready() -> void:
@@ -197,6 +198,11 @@ func _build_guide_panel() -> void:
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_END
 	layout.add_child(actions)
+	_later_button = Button.new()
+	_later_button.text = "Later"
+	_later_button.custom_minimum_size = Vector2(86, 38)
+	_later_button.pressed.connect(_hide_for_later)
+	actions.add_child(_later_button)
 	_skip_button = Button.new()
 	_skip_button.text = "Skip tutorial"
 	_skip_button.custom_minimum_size = Vector2(130, 38)
@@ -236,11 +242,14 @@ func _skip_tutorial() -> void:
 	_save_progress()
 	_show_completion()
 
-func _close_guide() -> void:
+func _hide_for_later() -> void:
 	_dismissed = true
 	if is_instance_valid(_panel):
 		_panel.hide()
 	_build_reopen_button()
+
+func _close_guide() -> void:
+	_hide_for_later()
 
 func _build_reopen_button() -> void:
 	if get_node_or_null("ReopenTutorial") != null:
