@@ -120,6 +120,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#445](https://github.com/pasoooir/Mshin/pull/445) | حباب‌های شهروندی با pop/fade، شناوری ظریف و متن‌های متنوع برای ده حالت بازخورد؛ سقف سه حباب، اولویت و چرخش منصفانه حفظ شده است؛ NPC سه‌بعدی و گفت‌وگوی چندمرحله‌ای هنوز باقی است | PR Godot Validation و Web/Chromium موفق؛ پس از Merge، Godot Validation، Web/Chromium + game deploy و Pages build/deploy روی main موفق |
 | [#446](https://github.com/pasoooir/Mshin/pull/446) | سه preset ذخیره‌شونده کیفیت 3D Low/Balanced/High؛ تغییر runtime render scale و MSAA بدون کاهش رزولوشن HUD | PR Godot Validation و Web/Chromium موفق؛ main validation، Web/Chromium + game deploy و Pages پس از merge #447 موفق |
 | [#447](https://github.com/pasoooir/Mshin/pull/447) | بستن مسیر legacy `Building.collect_production()` هنگام قطع اتصال Gateway و افزودن رگرسیون Building واقعی | PR Godot Validation و Web/Chromium موفق؛ main validation، Web/Chromium + game deploy و Pages deploy موفق |
+| [#448](https://github.com/pasoooir/Mshin/pull/448) | توقف تایمر ارتقای مسکونی هنگام قطع Gateway، ذخیره ثانیه‌های باقی‌مانده در SaveManager و ادامه دقیق پس از اتصال مجدد | Godot Validation و Web/Chromium PR موفق؛ Pages build/deploy روی main موفق؛ ساخت اولیه هنوز پوشش داده نشده |
 
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
 
@@ -391,3 +392,6 @@ PR #445 با merge commit `1aa24b3c5a7dc31593e3a33f8110052b073309a9` وارد ma
 
 
 PR #446 با merge commit `bbcd6be14b87a18b9f701e7b7f2796fb000d551a` و PR #447 با merge commit `fd16d11ce7c4d535aa2780666a5309dc798a23d4` وارد main شدند. پس از هر دو، Godot Validation run `43504807542`، Web/Chromium + game deploy run `43504807516` و Pages build/deploy run `43504805774` همگی موفق شدند.
+
+
+PR #448 با merge commit `899971802b48180df7c0bf944f62e8e2866c31bc` وارد main شد. Godot Validation run `43505492984` و Web/Chromium run `43505492951` موفق شدند؛ Pages build/deploy run `43505790334` نیز با موفقیت کامل شد.
