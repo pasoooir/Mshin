@@ -514,6 +514,26 @@ func _try_interact(world_position: Vector3) -> void:
 			trade_hud.open_trade_panel(trade_role)
 		return
 
+	if building.building_type == "epic_department":
+		var epic_hud := get_tree().current_scene.get_node_or_null("HUD")
+		if epic_hud and epic_hud.has_method("open_epic_department_panel"):
+			epic_hud.open_epic_department_panel()
+		return
+
+	if category == "park":
+		var gained_epic_points := EpicProjectManager.claim_specialization_points(str(building.building_id))
+		if gained_epic_points > 0:
+			_set_status("Epic Project +%d points. Visit another nearby Park." % gained_epic_points)
+			var epic_home_hud := get_tree().current_scene.get_node_or_null("HUD")
+			for home in BuildManager.buildings.values():
+				if is_instance_valid(home) and bool(home.get("residential_plan_selected")):
+					if epic_home_hud and epic_home_hud.has_method("open_residential_panel"):
+						epic_home_hud.open_residential_panel(home)
+					break
+		else:
+			_set_status(building.get_info())
+		return
+
 	# Residential buildings open a full upgrade-plan panel. The city-wide
 	# dashboard remains available so the player never needs to inspect homes one by one.
 	if category == "residential":
