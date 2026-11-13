@@ -51,6 +51,8 @@ func _assert_readable_control_tree(root: Node, screen_name: String) -> void:
 
 
 func _test_responsive_profile_contract(hud: Node) -> void:
+	var actual_viewport := get_viewport().get_visible_rect().size
+	print("[GameplaySmoke] Responsive viewport=%s profile=%s" % [str(actual_viewport), hud._responsive_profile_for_size(actual_viewport)])
 	_check(hud._responsive_profile_for_size(Vector2(854, 480)) == "compact", "854x480 phone landscape must use the compact touch-first profile.")
 	_check(hud._responsive_profile_for_size(Vector2(1024, 768)) == "tablet", "1024x768 tablet must use the tablet profile.")
 	_check(hud._responsive_profile_for_size(Vector2(1920, 1080)) == "desktop", "1920x1080 desktop must use the desktop profile.")
