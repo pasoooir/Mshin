@@ -340,7 +340,7 @@ func _build_top_hud() -> void:
 
 	var level_badge := Control.new()
 	level_badge.name = "LevelBadge"
-	level_badge.custom_minimum_size = Vector2(88, 88) * _ui_scale
+	level_badge.custom_minimum_size = Vector2(88, 88) * maxf(_ui_scale, 80.0 / 88.0)
 	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_stats.add_child(level_badge)
 	level_badge_visual = LevelBadgeVisual.new()
@@ -1902,7 +1902,7 @@ func open_production_panel(building: Building) -> void:
 			var queue_item_row := HBoxContainer.new()
 			queue_item_row.alignment = BoxContainer.ALIGNMENT_CENTER
 			slot_content.add_child(queue_item_row)
-			queue_item_row.add_child(Icons.make_item_icon(item_category, queued_item_id, Vector2(28, 28) * maxf(_ui_scale, 0.90)))
+			queue_item_row.add_child(Icons.make_item_icon(item_category, queued_item_id, Vector2(36, 36) * maxf(_ui_scale, 1.0)))
 			var queue_item_name := Label.new()
 			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
 			queue_item_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2038,7 +2038,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	detail_row.add_theme_constant_override("separation", 12)
 	detail.add_child(detail_row)
 
-	var selected_icon := Icons.make_item_icon("raw" if is_factory else "crafted", item_id, Vector2(52, 52) * maxf(_ui_scale, 0.90))
+	var selected_icon := Icons.make_item_icon("raw" if is_factory else "crafted", item_id, Vector2(52, 52) * maxf(_ui_scale, 48.0 / 52.0))
 	detail_row.add_child(selected_icon)
 	var text_stack := VBoxContainer.new()
 	text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
