@@ -1175,6 +1175,19 @@ func _test_fire_hazard_state_machine() -> void:
 	FireHazardManager.smoking_ids = saved_smoking
 	FireHazardManager.on_city_changed()
 
+func _test_placement_rotation_contract() -> void:
+	var rectangular_definition := {"size": Vector2i(2, 3)}
+	var rotated_definition: Dictionary = BuildManager._definition_for_rotation(rectangular_definition, 1)
+	_check(rotated_definition.get("size") == Vector2i(3, 2), "A quarter-turn must swap a rectangular building footprint.")
+	_check(BuildManager.get_building_size("residential_villa", 1) == Vector2i(2, 2), "Square building footprints must remain unchanged when rotated.")
+	BuildManager.select_building("residential_villa")
+	_check(BuildManager.rotate_placement() and BuildManager.placement_rotation_quarters == 1, "Placement rotation must advance by one quarter-turn.")
+	BuildManager.rotate_placement()
+	BuildManager.rotate_placement()
+	BuildManager.rotate_placement()
+	_check(BuildManager.placement_rotation_quarters == 0, "Placement rotation must wrap after four quarter-turns.")
+	BuildManager.cancel_placement()
+
 func _test_building_model_loader_contract() -> void:
 	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa_house.gltf"), "Local villa GLTF model paths must be accepted.")
 	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/neighborhood_shop.gltf"), "Local commercial GLTF model paths must be accepted.")
@@ -1236,6 +1249,7 @@ func _run_gameplay_test() -> void:
 	_test_immigration_coefficients()
 	_test_camera_inertia_math()
 	_test_camera_focus_math()
+	_test_placement_rotation_contract()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
 	_check(IconAtlas.validate_required_build_icons(), "A required Build icon is missing, invalid or lacks transparent corners.")
