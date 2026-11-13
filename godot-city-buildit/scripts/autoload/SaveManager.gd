@@ -37,6 +37,7 @@ func save_game() -> bool:
 		building_data.append({
 			"type": building.building_type,
 			"grid": [int(building.grid_pos.x), int(building.grid_pos.y)],
+			"rotation_quarters": posmod(roundi(building.rotation.y / (PI * 0.5)), 4),
 			"stage": int(building.upgrade_stage),
 			"status": str(building.status),
 			"population": int(building.current_population),
@@ -178,7 +179,8 @@ func load_game() -> bool:
 			Vector2i(int(grid[0]), int(grid[1])),
 			type_id,
 			int(saved_building.get("stage", 1)),
-			str(saved_building.get("status", "constructing"))
+			str(saved_building.get("status", "constructing")),
+			int(saved_building.get("rotation_quarters", 0))
 		)
 		if not restored:
 			push_error("Could not restore saved building: " + type_id)
