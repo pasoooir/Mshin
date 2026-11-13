@@ -262,7 +262,10 @@ func calculate_home_happiness(home: Node3D) -> float:
 
 func _capacity_for_home(home: Node3D) -> int:
 	var base_capacity := int(home.definition.get("population", 15))
-	return maxi(base_capacity, ProductionManager.get_population_for_stage(home.upgrade_stage))
+	base_capacity = maxi(base_capacity, ProductionManager.get_population_for_stage(home.upgrade_stage))
+	if bool(home.get("is_epic_building")):
+		base_capacity = roundi(float(base_capacity) * EpicProjectManager.EPIC_POPULATION_MULTIPLIER)
+	return base_capacity
 
 func _service_capacity_factor(home: Node3D) -> float:
 	var factor := 1.0
