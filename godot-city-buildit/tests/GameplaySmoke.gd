@@ -1949,7 +1949,7 @@ func _test_performance_benchmark_contract() -> void:
 	_check(is_equal_approx(float(summary.get("average_fps", 0.0)), 45.0), "Average FPS must be calculated from total frames and elapsed frame time.")
 	_check(is_equal_approx(float(summary.get("average_frame_ms", 0.0)), 22.22), "Average frame time must be reported in milliseconds.")
 	_check(float(summary.get("p95_frame_ms", 0.0)) >= 33.3, "P95 frame time must expose slow-frame spikes.")
-	_check(is_equal_approx(float(summary.get("frames_under_60fps_percent", 0.0)), 66.7), "60 FPS budget percentage must use the 16.67 ms frame budget.")
+	_check(is_equal_approx(float(summary.get("frames_within_60fps_budget_percent", 0.0)), 66.7), "60 FPS budget percentage must use the 16.67 ms frame budget.")
 	_check(not bool(summary.get("target_60fps_pass", true)), "A sample with 30 FPS frames must not pass the 60 FPS target.")
 	var empty_samples: Array[float] = []
 	_check(not bool(PerformanceMonitor.summarize_frame_times(empty_samples).get("target_60fps_pass", true)), "An empty benchmark must never pass the target.")
