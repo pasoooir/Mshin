@@ -104,7 +104,8 @@ static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 	var average_fps := float(frame_times.size()) / total_seconds if total_seconds > 0.0 else 0.0
 	var average_frame_ms := total_seconds * 1000.0 / float(frame_times.size())
 	var p95_index := clampi(int(ceil(float(sorted_times.size()) * 0.95)) - 1, 0, sorted_times.size() - 1)
-	var p95_frame_ms := sorted_times[p95_index] * 1000.0
+	var p95_frame_seconds := sorted_times[p95_index]
+	var p95_frame_ms := p95_frame_seconds * 1000.0
 	var max_frame_ms := max_frame_seconds * 1000.0
 	var under_budget_percent := float(frames_within_budget) * 100.0 / float(frame_times.size())
 	return {
@@ -114,5 +115,5 @@ static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 		"p95_frame_ms": snappedf(p95_frame_ms, 0.01),
 		"max_frame_ms": snappedf(max_frame_ms, 0.01),
 		"frames_within_60fps_budget_percent": snappedf(under_budget_percent, 0.1),
-		"target_60fps_pass": average_fps >= 60.0 and p95_frame_ms <= TARGET_FRAME_MS
+		"target_60fps_pass": average_fps >= 60.0 and p95_frame_seconds <= 1.0 / 60.0
 	}
