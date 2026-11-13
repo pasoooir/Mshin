@@ -42,13 +42,13 @@ func _initialize_after_city_restore() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_load_progress()
-	if completed:
-		_build_reopen_button()
-		return
 	_connect_gameplay_events()
 	_sync_existing_city_state()
 	_build_guide_panel()
-	_refresh_guide()
+	if completed:
+		_show_completion()
+	else:
+		_refresh_guide()
 
 func _connect_gameplay_events() -> void:
 	if not BuildManager.building_placed.is_connected(_on_building_placed):
