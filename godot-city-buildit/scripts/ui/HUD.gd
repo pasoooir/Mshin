@@ -276,8 +276,9 @@ func _apply_responsive_layout() -> void:
 		info_panel.anchor_bottom = 1.0
 		info_panel.offset_left = 8.0 * scale_factor
 		info_panel.offset_right = -8.0 * scale_factor
-		info_panel.offset_top = -460.0 * scale_factor
-		info_panel.offset_bottom = -140.0 * scale_factor
+		var info_scale := maxf(scale_factor, 0.90)
+		info_panel.offset_top = -460.0 * info_scale
+		info_panel.offset_bottom = -140.0 * info_scale
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.anchor_left = 0.95
