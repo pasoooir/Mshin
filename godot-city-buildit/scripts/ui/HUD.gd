@@ -104,11 +104,24 @@ func _layout_centered_panel(panel: Control, viewport_size: Vector2, width_ratio:
 
 
 func _apply_overlay_responsive_layout(viewport_size: Vector2) -> void:
-	var compact := _responsive_profile_for_size(viewport_size) == "compact"
+	var profile := _responsive_profile_for_size(viewport_size)
+	var compact := profile == "compact"
 	_layout_centered_panel(find_child("BuildingProductionPanel", true, false) as Control, viewport_size, 0.98 if compact else 0.96, 0.96, 1040.0, 650.0)
 	_layout_centered_panel(find_child("CityNeedsPanel", true, false) as Control, viewport_size, 0.98 if compact else 0.94, 0.95, 900.0, 760.0)
 	_layout_centered_panel(find_child("ResidentialUpgradePanel", true, false) as Control, viewport_size, 0.98 if compact else 0.94, 0.95, 680.0, 720.0)
 	_layout_centered_panel(find_child("CityStoragePanel", true, false) as Control, viewport_size, 0.96 if compact else 0.88, 0.94, 560.0, 720.0)
+	var product_grid := find_child("ProductionProductCards", true, false) as GridContainer
+	if product_grid:
+		product_grid.columns = 3 if compact else (4 if profile == "tablet" else 6)
+	var needs_inventory := find_child("CityStorageInventory", true, false) as GridContainer
+	if needs_inventory:
+		needs_inventory.columns = 3 if compact else (4 if profile == "tablet" else 5)
+	var needs_metrics := find_child("CityNeedsResourceSummary", true, false) as GridContainer
+	if needs_metrics:
+		needs_metrics.columns = 2 if compact else 4
+	var storage_grid := find_child("StorageItemsGrid", true, false) as GridContainer
+	if storage_grid:
+		storage_grid.columns = 1 if viewport_size.x < 520.0 else 2
 
 
 func _ready() -> void:
@@ -1126,6 +1139,7 @@ func _show_building_info(type_id: String) -> void:
 	build.add_theme_color_override("font_color", Color.WHITE)
 	build.pressed.connect(_select_building_type.bind(type_id))
 	layout.add_child(build)
+	_apply_minimum_readable_text(catalog_info_panel)
 	catalog_info_panel.show()
 	catalog_info_panel.modulate.a = 0.0
 	var tween := create_tween()
@@ -1181,6 +1195,7 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		back.pressed.connect(_on_submenu_option.bind(active_category, "back"))
 		submenu.add_child(back)
 	submenu.show()
+	_apply_minimum_readable_text(submenu)
 	submenu_scroll.show()
 	if catalog_base_bar:
 		catalog_base_bar.show()
@@ -2169,10 +2184,10 @@ func _city_panel_style() -> StyleBoxFlat:
 	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
 	style.shadow_size = 12
 	style.shadow_offset = Vector2(0, 5)
-	style.content_margin_left = 14
-	style.content_margin_right = 14
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
+	style.content_margin_left = 14.0 * _ui_scale
+	style.content_margin_right = 14.0 * _ui_scale
+	style.content_margin_top = 10.0 * _ui_scale
+	style.content_margin_bottom = 10.0 * _ui_scale
 	return style
 
 func _city_panel_heading(parent: VBoxContainer, title_text: String, close_callback: Callable) -> void:
@@ -2476,6 +2491,10 @@ func open_city_needs_panel() -> void:
 			need_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 			need_line.add_theme_color_override("font_color", need_color)
 			home_layout.add_child(need_line)
+
+	_apply_minimum_readable_text(city_needs_overlay)
+	_apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
+
 
 func _city_needs_duration(seconds: int) -> String:
 	var safe := maxi(0, seconds)
