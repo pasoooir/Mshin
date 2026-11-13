@@ -323,3 +323,12 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - پنل تولید کاتالوگ را در یک ردیف افقی scrollable نگه می‌دارد و برچسب مواد/ورودی‌های متعارض را wrap می‌کند. CI مرورگر در viewport لمسی 844×390 موفق است.
 - محدودیت واقعی: CI مرورگر و GameplaySmoke جایگزین تست روی گوشی Android فیزیکی نیستند. مقایسه screenshot و لمس واقعی هنوز انجام نشده است و نباید تکمیل‌شده اعلام شود.
 - منابع جامعه‌محور مورد استفاده: Football Shoes، Sports Shop، Kite، Teddy Bear، Toy Shop، Tapestry و Bureau of Restoration در SimCity BuildIt Fandom. این صفحات منبع رسمی EA نیستند.
+
+## وضعیت نهایی PR #438 پس از Merge به main
+
+- PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` ادغام شد.
+- Godot City BuildIt Validation روی main: run `43489826154` — موفق.
+- Mshin Playable Web روی main: run `43489826228` — موفق؛ شامل GameplaySmoke، Web export، Chromium دسکتاپ و viewport لمسی موبایل landscape.
+- GitHub Pages build/deploy روی main: run `43489825540` — موفق.
+- کد و تست‌های چهار اقدام باقی‌مانده در PR #438 وارد main شدند: تعیین تکلیف داده محصولات با قفل صادقانه سطح نامعلوم/تعارض، ممیزی اقتصاد بدون جعل سود خالص، آزمون طولانی‌مدت صف/آفلاین/انبار، و اصلاح اسکرول/متن پنل موبایل.
+- تست فیزیکی Android انجام نشده است. بنابراین ادعای تأیید چشمی یا لمس روی دستگاه واقعی مجاز نیست و پذیرش نهایی آن بخش باز می‌ماند.
