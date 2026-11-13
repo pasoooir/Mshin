@@ -795,6 +795,73 @@ func _test_waste_service_happiness() -> void:
 	ServiceManager.power_served_ids = saved_power_served
 	ServiceManager.water_served_ids = saved_water_served
 
+func _test_emergency_service_tier_happiness() -> void:
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_total_power := ServiceManager.total_power
+	var saved_total_water := ServiceManager.total_water
+	var saved_power_served: Dictionary = ServiceManager.power_served_ids.duplicate()
+	var saved_water_served: Dictionary = ServiceManager.water_served_ids.duplicate()
+	BuildManager.buildings.clear()
+	ServiceManager.total_power = 1
+	ServiceManager.total_water = 1
+	ServiceManager.power_served_ids.clear()
+	ServiceManager.water_served_ids.clear()
+
+	var home := FireHazardTestBuilding.new()
+	add_child(home)
+	home.building_id = "emergency_service_test_home"
+	home.building_type = "residential_1"
+	home.definition = {"category": "residential", "size": Vector2i(2, 2)}
+	home.status = "completed"
+	home.grid_pos = Vector2i(35, 35)
+	home.global_position = Vector3.ZERO
+	BuildManager.buildings[home.building_id] = home
+	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
+
+	var service_cases := {
+		"fire": {"radius": 38.0, "bonus": 8.0, "ids": ["fire_station_small", "fire_station", "fire_station_deluxe"]},
+		"police": {"radius": 38.0, "bonus": 8.0, "ids": ["police_station", "police_small", "police_basic", "police_precinct"]},
+		"health": {"radius": 42.0, "bonus": 8.0, "ids": ["clinic_small", "clinic", "hospital"]}
+	}
+	for service_group in service_cases:
+		var service_case: Dictionary = service_cases[service_group]
+		var radius := float(service_case["radius"])
+		var bonus := float(service_case["bonus"])
+		for service_id in service_case["ids"]:
+			var facility := FireHazardTestBuilding.new()
+			add_child(facility)
+			facility.building_id = "emergency_service_test_" + service_id
+			facility.building_type = service_id
+			facility.definition = BuildManager.building_types[service_id]
+			facility.status = "completed"
+			facility.global_position = Vector3(radius - 0.1, 0.0, 0.0)
+			BuildManager.buildings[facility.building_id] = facility
+			_check(str(facility.definition.get("service_group", "")) == service_group, "Emergency service catalog tier must belong to its declared service group: " + service_id)
+			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + bonus), "Every completed emergency service tier must provide its existing happiness bonus: " + service_id)
+			_check(HappinessManager._home_has_extra_service(home), "Every completed emergency service tier must count as an extra nearby service: " + service_id)
+
+			facility.status = "constructing"
+			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility under construction must not provide happiness coverage: " + service_id)
+			_check(not HappinessManager._home_has_extra_service(home), "An emergency facility under construction must not count as an extra service: " + service_id)
+
+			facility.status = "completed"
+			facility.global_position = Vector3(radius + 0.1, 0.0, 0.0)
+			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility outside its service radius must not add happiness: " + service_id)
+			_check(not HappinessManager._home_has_extra_service(home), "An emergency facility outside its service radius must not count as an extra service: " + service_id)
+
+			BuildManager.buildings.erase(facility.building_id)
+			remove_child(facility)
+			facility.free()
+
+	BuildManager.buildings.erase(home.building_id)
+	remove_child(home)
+	home.free()
+	BuildManager.buildings = saved_buildings
+	ServiceManager.total_power = saved_total_power
+	ServiceManager.total_water = saved_total_water
+	ServiceManager.power_served_ids = saved_power_served
+	ServiceManager.water_served_ids = saved_water_served
+
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_timers: Dictionary = FireHazardManager.unprotected_time.duplicate()
@@ -874,6 +941,7 @@ func _run_gameplay_test() -> void:
 	_test_fire_hazard_state_machine()
 	_test_sewage_service_happiness()
 	_test_waste_service_happiness()
+	_test_emergency_service_tier_happiness()
 	_test_power_water_coverage_preview()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
