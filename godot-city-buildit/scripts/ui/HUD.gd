@@ -1664,6 +1664,7 @@ func open_production_panel(building: Building) -> void:
 	var header := PanelContainer.new()
 	header.name = "ProductionHeader"
 	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.custom_minimum_size.x = minf(920.0 * _ui_scale, panel_width * 0.88)
 	header.add_theme_stylebox_override("panel", _toolbar_style(Color("#EAF5FB"), Color("#C6DFEC")))
 	header_center.add_child(header)
 	var header_row := HBoxContainer.new()
