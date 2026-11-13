@@ -560,6 +560,7 @@ for contract in [
     "var demand_sewage: int",
     "var total_waste: int",
     "var demand_waste: int",
+    "used_waste = 0",
     "func _has_gateway_road_access(building: Node3D)",
     "demand_sewage += get_home_service_demand(building)",
     "demand_waste += get_home_service_demand(building)",
