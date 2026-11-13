@@ -633,9 +633,9 @@ func _test_build_menu_visibility() -> void:
 	_check(hud.submenu_scroll.get_h_scroll_bar().max_value > hud.submenu_scroll.get_h_scroll_bar().page, "Services catalog must expose a real horizontal overflow range for swipe testing.")
 
 	_check(hud.submenu.alignment == BoxContainer.ALIGNMENT_BEGIN, "Horizontal submenu items must start at the leading edge for predictable swiping.")
-	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government"]:
+	for group_id in ["group_power", "group_water", "group_sewage", "group_waste", "group_fire", "group_police", "group_health", "group_government", "group_trade"]:
 		_check(hud.submenu.get_node_or_null(group_id) != null, "Services group is missing: " + group_id)
-	_check(hud.submenu.get_child_count() == 8 and hud.get_node_or_null("CatalogAdvisor") != null, "Services level one must contain eight groups with the advisor in its dedicated side slot.")
+	_check(hud.submenu.get_child_count() == 9 and hud.get_node_or_null("CatalogAdvisor") != null, "Services level one must contain nine groups with the advisor in its dedicated side slot.")
 	hud._on_submenu_option("services", "group_water")
 	await get_tree().process_frame
 	_check(hud.submenu.get_node_or_null("water_tower") != null, "Water submenu must contain the Water Tower.")
@@ -1730,7 +1730,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 47, "Move whitelist must include all 47 supported building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 49, "Move whitelist must include all 49 supported building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 
