@@ -480,6 +480,7 @@ for contract in [
     "func get_gateway_connected_roads()",
     "func is_road_connected_to_gateway(",
     "func invalidate_road_connectivity_cache()",
+    "func clear_roads()",
     "Road must connect to the active highway network.",
     "if grid_pos == GATEWAY_ROAD_CELL or not roads.has(grid_pos):",
 ]:
@@ -590,6 +591,8 @@ if 'FireHazardManager="*res://scripts/autoload/FireHazardManager.gd"' not in pro
 if '"fire":1' not in build_manager:
     errors.append("Fire Station definition must expose the numeric fire coverage key")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
+if "road_system.clear_roads()" not in save_manager_source or "RoadSystem.GATEWAY_ROAD_CELL" not in save_manager_source:
+    errors.append("City load must clear the old road network and restore its gateway before other road tiles")
 if "FireHazardManager.reset_for_city_load()" not in save_manager_source:
     errors.append("City load must restart fire warning timers from zero")
 if "func set_fire_smoke(active: bool)" not in building_source or "CPUParticles3D.new()" not in building_source:
