@@ -14,6 +14,7 @@ func _ready() -> void:
 		_add_headless_test_markers()
 		print("[WorldPresentation] Procedural visuals skipped in headless test mode")
 		return
+	RegionManager.region_changed.connect(_on_region_changed)
 	_build_environment()
 	_build_terrain()
 	_build_city_grid()
@@ -26,6 +27,7 @@ func _ready() -> void:
 
 func _build_environment() -> void:
 	var world_environment := WorldEnvironment.new()
+	world_environment.name = "WorldEnvironment"
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
@@ -34,6 +36,7 @@ func _build_environment() -> void:
 	sky_material.sky_horizon_color = Color(0.72, 0.84, 0.91)
 	sky_material.ground_bottom_color = Color(0.13, 0.19, 0.17)
 	sky_material.ground_horizon_color = Color(0.55, 0.63, 0.61)
+	_apply_region_climate(sky_material, environment)
 	sky_material.sun_angle_max = 18.0
 	sky.sky_material = sky_material
 	environment.sky = sky
@@ -47,6 +50,63 @@ func _build_environment() -> void:
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	world_environment.environment = environment
 	add_child(world_environment)
+
+
+func _apply_region_climate(sky_material: ProceduralSkyMaterial, environment: Environment) -> void:
+	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
+	match climate:
+		"tropical":
+			sky_material.sky_top_color = Color("#176A9A")
+			sky_material.sky_horizon_color = Color("#A7DCE7")
+			sky_material.ground_bottom_color = Color("#285B4B")
+			sky_material.ground_horizon_color = Color("#6C9B84")
+			environment.fog_light_color = Color("#A9D5D5")
+		"arctic":
+			sky_material.sky_top_color = Color("#405A79")
+			sky_material.sky_horizon_color = Color("#D4E2EB")
+			sky_material.ground_bottom_color = Color("#899BA7")
+			sky_material.ground_horizon_color = Color("#C0D0D8")
+			environment.fog_light_color = Color("#C4D4DF")
+		"desert":
+			sky_material.sky_top_color = Color("#9A603A")
+			sky_material.sky_horizon_color = Color("#F0C88E")
+			sky_material.ground_bottom_color = Color("#8B6B43")
+			sky_material.ground_horizon_color = Color("#C7A36B")
+			environment.fog_light_color = Color("#E6C89D")
+		"lush":
+			sky_material.sky_top_color = Color("#226A75")
+			sky_material.sky_horizon_color = Color("#B7D9A8")
+			sky_material.ground_bottom_color = Color("#244C32")
+			sky_material.ground_horizon_color = Color("#6E9860")
+			environment.fog_light_color = Color("#B9D4AE")
+		"mediterranean":
+			sky_material.sky_top_color = Color("#3977A5")
+			sky_material.sky_horizon_color = Color("#E8D0A3")
+			sky_material.ground_bottom_color = Color("#596342")
+			sky_material.ground_horizon_color = Color("#A9A078")
+			environment.fog_light_color = Color("#D9D0B7")
+		_:
+			sky_material.sky_top_color = Color(0.12, 0.34, 0.55)
+			sky_material.sky_horizon_color = Color(0.72, 0.84, 0.91)
+			sky_material.ground_bottom_color = Color(0.13, 0.19, 0.17)
+			sky_material.ground_horizon_color = Color(0.55, 0.63, 0.61)
+			environment.fog_light_color = Color(0.72, 0.82, 0.82)
+
+func _on_region_changed(_region_id: String) -> void:
+	refresh_region_appearance()
+
+func refresh_region_appearance() -> void:
+	var world_environment := get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if is_instance_valid(world_environment) and world_environment.environment != null and world_environment.environment.sky != null:
+		var sky_material := world_environment.environment.sky.sky_material as ProceduralSkyMaterial
+		if is_instance_valid(sky_material):
+			_apply_region_climate(sky_material, world_environment.environment)
+	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater"]:
+		var old_node := get_node_or_null(node_name)
+		if is_instance_valid(old_node):
+			old_node.queue_free()
+	_build_terrain()
+
 
 func _build_terrain() -> void:
 	var surface := SurfaceTool.new()
@@ -121,6 +181,18 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		var grass_palette: Array[Color] = [Color(0.12, 0.29, 0.15), Color(0.19, 0.39, 0.18), Color(0.31, 0.48, 0.22), Color(0.43, 0.50, 0.25)]
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % grass_palette.size()
 		color = grass_palette[palette_index].lerp(Color(0.52, 0.55, 0.29), blend * 0.35)
+	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
+	match climate:
+		"arctic":
+			color = color.lerp(Color("#DCE7EC"), 0.72)
+		"desert":
+			color = color.lerp(Color("#B58B55"), 0.68)
+		"tropical":
+			color = color.lerp(Color("#2F6F43"), 0.30)
+		"lush":
+			color = color.lerp(Color("#3E783C"), 0.42)
+		"mediterranean":
+			color = color.lerp(Color("#8C875B"), 0.38)
 	surface.set_color(color)
 	surface.add_vertex(point)
 
