@@ -155,6 +155,15 @@ func _apply_overlay_responsive_layout(viewport_size: Vector2) -> void:
 	var production_layout := find_child("ProductionLayout", true, false) as VBoxContainer
 	if production_layout:
 		production_layout.add_theme_constant_override("separation", 4 if compact else 7)
+		var products_title := find_child("AvailableProductsTitle", true, false) as Label
+		if products_title:
+			products_title.visible = not compact
+		var production_hint := find_child("ProductionHint", true, false) as Label
+		if production_hint and compact:
+			production_hint.text = "SELECT A PRODUCT FOR ITS RECIPE · COLLECTED GOODS GO TO CITY STORAGE"
+		var storage_hint := find_child("ProductionStorageHint", true, false) as Label
+		if storage_hint:
+			storage_hint.visible = not compact
 		var product_frame := find_child("ProductionProductsScrollFrame", true, false) as Control
 		if product_frame:
 			product_frame.custom_minimum_size.y = (104.0 if compact else 132.0) * maxf(_ui_scale, 0.90)
@@ -1732,6 +1741,7 @@ func open_production_panel(building: Building) -> void:
 	header_row.add_child(close)
 
 	var hint := Label.new()
+	hint.name = "ProductionHint"
 	hint.text = "CHOOSE A MATERIAL OR PRODUCT  ·  CHECK STOCK  ·  ADD TO PRODUCTION"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
@@ -2009,6 +2019,7 @@ func open_production_panel(building: Building) -> void:
 					_production_progress_bars.append(progress)
 
 	var footer := Label.new()
+	footer.name = "ProductionStorageHint"
 	footer.text = "Completed goods are collected into City Storage."
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.add_theme_font_size_override("font_size", int(9 * _ui_scale))
