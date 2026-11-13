@@ -757,6 +757,16 @@ func _build_commercial_identity(w: float, d: float, body_h: float, front: float,
 	var green := Color(0.20, 0.52, 0.30)
 	var accent := Color(0.96, 0.62, 0.16)
 	match id:
+		"shop_chain":
+			# Franchise store: broad branded fascia, projecting corner sign and
+			# a repeated modular canopy distinguish it from independent shops.
+			_add_box(Vector3(w * 0.96, 0.34, 0.16), Vector3(0, 1.88, front + 0.30), Color(0.12, 0.34, 0.72))
+			_add_box(Vector3(w * 0.82, 0.08, 0.20), Vector3(0, 2.08, front + 0.34), Color(0.98, 0.82, 0.18))
+			_add_box(Vector3(0.18, 0.92, 0.18), Vector3(w * 0.46, 1.32, front + 0.28), Color(0.12, 0.34, 0.72))
+			_add_box(Vector3(w * 0.22, 0.22, 0.20), Vector3(w * 0.46, 1.84, front + 0.28), Color(0.98, 0.82, 0.18))
+			for bay in range(5):
+				var x := -w * 0.40 + float(bay) * w * 0.20
+				_add_box(Vector3(w * 0.16, 0.08, 0.34), Vector3(x, 1.58, front + 0.34), Color(0.96, 0.94, 0.86) if bay % 2 == 0 else Color(0.12, 0.34, 0.72))
 		"restaurant_traditional":
 			_add_box(Vector3(w * 0.74, 0.12, d * 0.38), Vector3(0, 1.95, front + 0.28), Color(0.56, 0.16, 0.10))
 			_add_cylinder(0.13, 0.17, 1.25, Vector3(w * 0.32, roof_y, -d * 0.28), dark)
@@ -1163,6 +1173,10 @@ func _build_service_identity(w: float, d: float, height: float) -> void:
 	var white := Color(0.92, 0.94, 0.91)
 	var front := d * 0.48
 	match id:
+		"power_wind", "power_wind_deluxe":
+			if id == "power_wind_deluxe":
+				_add_box(Vector3(w * 0.72, 0.22, d * 0.54), Vector3(0, 0.24, 0), Color(0.34, 0.48, 0.54))
+				_add_box(Vector3(w * 0.46, 0.70, d * 0.34), Vector3(0, 0.70, -d * 0.06), Color(0.82, 0.88, 0.90))
 		"fire_station_small", "fire_station", "fire_station_deluxe":
 			_add_box(Vector3(w * 0.94, 0.18, d * 0.92), Vector3(0, height + 0.38, 0), red)
 			for bay in range(2 if w < 4.0 else 4):
@@ -1180,10 +1194,16 @@ func _build_service_identity(w: float, d: float, height: float) -> void:
 			_add_box(Vector3(0.14, 0.42, 0.10), Vector3(0, height + 0.72, front + 0.09), red)
 			if id == "hospital":
 				_add_box(Vector3(w * 0.28, 1.15, d * 0.30), Vector3(-w * 0.32, height + 0.82, -d * 0.22), Color(0.76,0.86,0.88))
-		"water_tower", "water_pump":
+		"water_tower":
 			_add_cylinder(0.42, 0.52, 0.20, Vector3(0, height + 0.30, 0), Color(0.20,0.52,0.78))
+			_add_cylinder(0.34, 0.42, 0.86, Vector3(0, height - 0.16, 0), Color(0.50,0.58,0.62))
 			for leg in [-1.0, 1.0]:
 				_add_box(Vector3(0.08, 0.82, 0.08), Vector3(leg * 0.32, height - 0.20, 0), Color(0.50,0.58,0.62))
+		"water_pump":
+			_add_box(Vector3(w * 0.82, 0.22, d * 0.72), Vector3(0, height + 0.22, 0), Color(0.24,0.48,0.62))
+			_add_box(Vector3(w * 0.56, 0.92, d * 0.42), Vector3(0, 0.76, -d * 0.10), Color(0.70,0.78,0.80))
+			for pipe in [-1.0, 1.0]:
+				_add_cylinder(0.07, 0.09, d * 0.82, Vector3(pipe * w * 0.30, 0.48, 0), Color(0.30,0.58,0.72))
 		"sewage_small", "sewage_basic", "sewage_deluxe":
 			for tank in range(2 if id == "sewage_small" else 3):
 				_add_cylinder(0.42, 0.48, 0.72, Vector3(-w * 0.28 + float(tank) * w * 0.28, 0.72, -d * 0.16), Color(0.48,0.62,0.60))
