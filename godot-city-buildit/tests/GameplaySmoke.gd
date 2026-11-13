@@ -1302,6 +1302,9 @@ func _test_achievements() -> void:
 	GameManager.level = previous_level
 	GameManager.experience = previous_experience
 	GameManager.population = previous_population
+	GameManager.xp_changed.emit(GameManager.experience, GameManager.get_xp_needed())
+	GameManager.level_changed.emit(GameManager.level)
+	GameManager.population_changed.emit(GameManager.population)
 	EconomyManager.simoleons = previous_simoleons
 	TradeManager.completed_sales = previous_sales
 	TradeManager.market_purchases = previous_market_purchases
