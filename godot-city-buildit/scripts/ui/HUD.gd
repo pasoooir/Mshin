@@ -125,6 +125,7 @@ var service_warning_panel: PanelContainer
 var trade_overlay: Control
 var trade_panel: PanelContainer
 var settings_overlay: Control
+var placement_controls: PanelContainer
 var _trade_active_tab := "depot"
 var service_warning_label: Label
 var _catalog_selected_type := ""
@@ -650,6 +651,7 @@ func _build_toolbars() -> void:
 	settings_button.name = "SettingsAction"
 	settings_button.pressed.connect(_on_settings_pressed)
 	bottom_actions.add_child(settings_button)
+	_build_placement_controls()
 	catalog_base_bar = PanelContainer.new()
 	catalog_base_bar.name = "CatalogBaseBar"
 	catalog_base_bar.anchor_left = 0.15
@@ -1624,9 +1626,80 @@ func _format_count(value: int) -> String:
 func _on_currency_plus_pressed(currency: String) -> void:
 	status_label.text = currency + " purchases are not available yet."
 
+
+func _build_placement_controls() -> void:
+	placement_controls = PanelContainer.new()
+	placement_controls.name = "PlacementControls"
+	placement_controls.anchor_left = 0.0
+	placement_controls.anchor_right = 0.0
+	placement_controls.anchor_top = 1.0
+	placement_controls.anchor_bottom = 1.0
+	placement_controls.offset_left = 12.0 * _ui_scale
+	placement_controls.offset_right = 272.0 * _ui_scale
+	placement_controls.offset_top = -82.0 * _ui_scale
+	placement_controls.offset_bottom = -12.0 * _ui_scale
+	placement_controls.z_index = 120
+	placement_controls.mouse_filter = Control.MOUSE_FILTER_STOP
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#102B3B")
+	panel_style.border_color = Color("#8AD7F5")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(14)
+	panel_style.content_margin_left = 5
+	panel_style.content_margin_right = 5
+	panel_style.content_margin_top = 5
+	panel_style.content_margin_bottom = 5
+	placement_controls.add_theme_stylebox_override("panel", panel_style)
+	add_child(placement_controls)
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 6)
+	placement_controls.add_child(actions)
+	var rotate_button := Button.new()
+	rotate_button.name = "RotatePlacementButton"
+	rotate_button.text = "↻ Rotate"
+	rotate_button.tooltip_text = "Rotate building 90 degrees"
+	rotate_button.custom_minimum_size = Vector2(126, 54) * _ui_scale
+	rotate_button.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	rotate_button.add_theme_color_override("font_color", Color("#102B3B"))
+	rotate_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#8AD7F5"), Color("#D8F4FF")))
+	rotate_button.add_theme_stylebox_override("hover", _toolbar_style(Color("#B2E8FA"), Color.WHITE))
+	rotate_button.add_theme_stylebox_override("pressed", _toolbar_style(Color("#54B9E1"), Color("#D8F4FF")))
+	rotate_button.pressed.connect(_on_rotate_placement_pressed)
+	actions.add_child(rotate_button)
+	var cancel_button := Button.new()
+	cancel_button.name = "CancelPlacementButton"
+	cancel_button.text = "✕ Cancel"
+	cancel_button.tooltip_text = "Cancel building placement"
+	cancel_button.custom_minimum_size = Vector2(104, 54) * _ui_scale
+	cancel_button.add_theme_font_size_override("font_size", int(16 * _ui_scale))
+	cancel_button.add_theme_color_override("font_color", Color("#FFFFFF"))
+	cancel_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#D94E56"), Color("#FFB7B7")))
+	cancel_button.add_theme_stylebox_override("hover", _toolbar_style(Color("#EC6870"), Color.WHITE))
+	cancel_button.add_theme_stylebox_override("pressed", _toolbar_style(Color("#B93440"), Color("#FFDADA")))
+	cancel_button.pressed.connect(_on_cancel_pressed)
+	actions.add_child(cancel_button)
+	placement_controls.hide()
+
+func _on_rotate_placement_pressed() -> void:
+	if not BuildManager.rotate_placement():
+		return
+	var ghost := get_tree().current_scene.get_node_or_null("GhostPreview") if get_tree().current_scene else null
+	if is_instance_valid(ghost) and ghost.visible:
+		var previous_rotation := posmod(BuildManager.placement_rotation_quarters - 1, 4)
+		var previous_size: Vector2i = BuildManager.get_building_size(BuildManager.selected_building_type, previous_rotation)
+		var anchor_world: Vector3 = ghost.global_position - Vector3((previous_size.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.95, (previous_size.y - 1) * BuildManager.GRID_SIZE * 0.5)
+		var grid := BuildManager.world_to_grid(anchor_world)
+		var definition: Dictionary = BuildManager.building_types.get(BuildManager.selected_building_type, {})
+		ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid, BuildManager.selected_building_type, BuildManager.placement_rotation_quarters), definition, float(BuildManager.placement_rotation_quarters) * PI * 0.5)
+	status_label.text = "Building rotated 90 degrees. Check the green/red footprint, then tap to place."
+
 func _on_placement_mode(active: bool) -> void:
-	if active: status_label.text = "Placement mode — tap a clear plot beside a road. Cancel with X."
-	else: status_label.text = ""
+	if is_instance_valid(placement_controls):
+		placement_controls.visible = active
+	if active:
+		status_label.text = "Placement mode — rotate with ↻, cancel with X."
+	else:
+		status_label.text = ""
 
 func _on_roads_pressed() -> void:
 	BuildManager.cancel_placement()

@@ -363,3 +363,12 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - PR #440 با merge commit `e05e27ae6b261ac98120ff365b7de6b96bdaa996` وارد main شد؛ Godot Validation run `43498519067`، Web/Chromium run `43498519145` و Pages build/deploy run `43498517282` همگی موفق شدند.
 
 - PR #441 با merge commit `e8ce602f2c73e280d5588e2e9f5a9962bf6505fe` وارد main شد؛ Godot Validation run `43499325570`، Web/Chromium + Pages deploy run `43499325445` و Pages build/deploy run `43499324239` همگی موفق شدند.
+
+
+## کنترل چرخش و لغو جانمایی ساختمان در موبایل — PR در حال آماده‌سازی
+
+- `BuildManager.rotate_placement()` و `GhostPreview.show_at(..., rotation_y)` از قبل پشتیبانی چرخش ۹۰ درجه را داشتند؛ مسیر قبلی برای موبایل به لمس طولانی متکی بود و آشکار نبود.
+- HUD اکنون هنگام ورود به placement mode یک پنل شناور با دکمه‌های بزرگ `Rotate` و `Cancel` نشان می‌دهد؛ Rotate اندازه footprint، اعتبار جانمایی و زاویه GhostPreview را با rotation جدید دوباره محاسبه می‌کند.
+- دکمه Cancel مسیر واحد `_on_cancel_pressed` را فراخوانی می‌کند و کنترل‌های جانمایی با خروج از حالت placement پنهان می‌شوند.
+- `GameplaySmoke.gd::_test_placement_rotation_contract` وجود کنترل‌های لمسی، اندازه مناسب hit target، افزایش یک quarter-turn با دکمه Rotate و مخفی شدن کنترل‌ها پس از لغو را بررسی می‌کند.
+- محدودیت پذیرش: تست خودکار منطق و اتصال UI است؛ لمس واقعی، خوانایی و نمایش footprint چرخیده روی دستگاه Android/iOS فیزیکی هنوز تأیید نشده است، پس ردیف README در `[~]` باقی می‌ماند.
