@@ -230,7 +230,7 @@ func calculate_home_happiness(home: Node3D) -> float:
 		score += 8.0
 	if _nearby_service(home, "police_station", 38.0):
 		score += 8.0
-	if _nearby_service(home, "sewage_pipe", 30.0):
+	if _nearby_sewage_service(home, 30.0):
 		score += 6.0
 	if _nearby_service(home, "hospital", 42.0):
 		score += 8.0
