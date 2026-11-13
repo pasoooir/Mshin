@@ -108,8 +108,11 @@ func recalculate_from_buildings() -> void:
 			total_sewage += int(definition.get("sewage", 0))
 		elif str(definition.get("service_group", "")) == "waste" and _has_gateway_road_access(building):
 			total_waste += int(definition.get("waste", 0))
-		total_power += int(definition.get("power", 0))
-		total_water += int(definition.get("water", 0))
+		# Capacity is operational only while the facility itself is connected
+		# to the Gateway. Disconnected plants must not inflate city totals.
+		if _has_gateway_road_access(building):
+			total_power += int(definition.get("power", 0))
+			total_water += int(definition.get("water", 0))
 
 	# Power and water keep their local-radius service model, but demand is
 	# derived from each home's explicit low/medium/high service-demand value.
