@@ -525,6 +525,26 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	var paused_store_slot: Dictionary = disconnected_store.get_slot(0)
 	_check(int(paused_store_slot.get("paused_at_unix", 0)) > 0, "A running store order must record its pause when road access is lost.")
 	_check(not disconnected_home.try_upgrade(), "A residential building disconnected from the gateway must reject an upgrade.")
+	disconnected_home.upgrade_in_progress = true
+	disconnected_home.upgrade_finish_unix = store_pause_now + 3
+	disconnected_home.upgrade_paused_remaining_seconds = -1
+	disconnected_home.update_upgrade_access_state(store_pause_now + 1)
+	_check(disconnected_home.upgrade_paused_remaining_seconds == 2 and disconnected_home.upgrade_finish_unix == 0, "A residential upgrade must freeze with its exact remaining seconds when road access is lost.")
+	disconnected_home.update_upgrade_access_state(store_pause_now + 100)
+	_check(disconnected_home.upgrade_paused_remaining_seconds == 2, "A long road outage must not consume the paused residential upgrade time.")
+	var previous_registered_home = BuildManager.buildings.get(disconnected_home.building_id)
+	BuildManager.buildings[disconnected_home.building_id] = disconnected_home
+	var paused_snapshot := SaveManager.capture_region_snapshot()
+	var paused_state_saved := false
+	for saved_building in paused_snapshot.get("buildings", []):
+		if saved_building.get("grid", []) == [1, 1]:
+			var saved_production: Dictionary = saved_building.get("production", {})
+			paused_state_saved = int(saved_production.get("upgrade_paused_remaining_seconds", -1)) == 2
+	_check(paused_state_saved, "SaveManager must persist the remaining time of a road-paused residential upgrade.")
+	if previous_registered_home == null:
+		BuildManager.buildings.erase(disconnected_home.building_id)
+	else:
+		BuildManager.buildings[disconnected_home.building_id] = previous_registered_home
 	paused_store_slot["paused_at_unix"] = store_pause_now - 15
 	disconnected_store.slots[0] = paused_store_slot
 	_check(road_system.place_road(Vector2i(0, -1)), "The first gateway tile must reconnect store and residential operation tests.")
@@ -533,6 +553,11 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	var resumed_store_slot: Dictionary = disconnected_store.get_slot(0)
 	_check(int(resumed_store_slot.get("finish_unix", 0)) >= store_pause_now + 135, "A store must preserve its remaining order time across a 15-second road outage.")
 	_check(not resumed_store_slot.has("paused_at_unix"), "A reconnected store order must clear its paused timestamp.")
+	disconnected_home.update_upgrade_access_state(store_pause_now + 100)
+	_check(disconnected_home.upgrade_in_progress and disconnected_home.upgrade_paused_remaining_seconds == -1 and disconnected_home.upgrade_finish_unix == store_pause_now + 102, "A residential upgrade must resume with its preserved two seconds after Gateway reconnection.")
+	disconnected_home.upgrade_in_progress = false
+	disconnected_home.upgrade_finish_unix = 0
+	disconnected_home.upgrade_paused_remaining_seconds = -1
 
 	disconnected_store.queue_free()
 	disconnected_home.queue_free()

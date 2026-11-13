@@ -40,6 +40,8 @@ func capture_region_snapshot() -> Dictionary:
 	for building in BuildManager.buildings.values():
 		if not is_instance_valid(building):
 			continue
+		if building.upgrade_in_progress:
+			building.update_upgrade_access_state()
 		building_data.append({
 			"type": building.building_type,
 			"grid": [int(building.grid_pos.x), int(building.grid_pos.y)],
@@ -57,6 +59,7 @@ func capture_region_snapshot() -> Dictionary:
 				"production_finish_unix": building.production_finish_unix,
 				"upgrade_in_progress": building.upgrade_in_progress,
 				"upgrade_finish_unix": building.upgrade_finish_unix,
+				"upgrade_paused_remaining_seconds": building.upgrade_paused_remaining_seconds,
 				"store_star_level": building.production_component.store_star_level if is_instance_valid(building.production_component) else 0,
 				"slots": building.production_component.to_save_array() if is_instance_valid(building.production_component) else []
 			}
