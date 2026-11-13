@@ -89,7 +89,7 @@ func _apply_minimum_readable_text(root: Node) -> void:
 		label.clip_text = false
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var parent_is_product_card := label.get_parent() is VBoxContainer and label.get_parent().get_parent() is Button
-		if label.text.length() > 14 or parent_is_product_card:
+		if label.text.length() > 24 or parent_is_product_card:
 			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	elif root is Button:
 		var button := root as Button
