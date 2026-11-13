@@ -286,6 +286,8 @@ for contract in [
     "MAX_VISIBLE_BUBBLES := 3",
     "BUBBLE_SHOW_SECONDS := 5.5",
     "BUBBLE_HIDE_SECONDS := 2.5",
+    "func _select_feedback_candidates(candidates: Array[Dictionary]) -> Array[Dictionary]:",
+    "_priority_offsets[priority] = (offset + count) % group.size()",
     "BuildManager.has_road_access(grid_pos, size)",
     "ServiceManager.power_served_ids.has(home_id)",
     "ServiceManager.water_served_ids.has(home_id)",
