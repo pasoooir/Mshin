@@ -11,6 +11,7 @@ const MAX_STORE_QUEUE_SLOTS: int = 11
 @export var is_factory: bool = false
 @export var shop_id: String = ""
 @export var factory_type: String = ""
+var owner_building: Node = null
 @export_range(0, 3, 1) var store_star_level: int = 0
 var slots: Array[Dictionary] = []
 
@@ -93,10 +94,42 @@ func purchase_store_queue_slot(simcash_cost: int) -> bool:
 	slots_changed.emit()
 	return true
 
+func _owner_has_road_access() -> bool:
+	# Standalone components are used by isolated catalog tests. In-game
+	# components always receive their owning Building before they can run.
+	if owner_building == null:
+		return true
+	if not is_instance_valid(owner_building):
+		return false
+	return BuildManager.is_building_operational(owner_building)
+
 func refresh_slots() -> void:
 	_ensure_slots()
 	var now := int(Time.get_unix_time_from_system())
 	var changed := false
+	if not _owner_has_road_access():
+		for index in range(slots.size()):
+			var paused_slot: Dictionary = slots[index]
+			if paused_slot.is_empty() or bool(paused_slot.get("ready", false)):
+				continue
+			if int(paused_slot.get("finish_unix", 0)) > 0 and int(paused_slot.get("paused_at_unix", 0)) <= 0:
+				paused_slot["paused_at_unix"] = now
+				slots[index] = paused_slot
+				changed = true
+		if changed:
+			slots_changed.emit()
+		return
+	# Preserve the remaining production time while a road connection is lost.
+	for index in range(slots.size()):
+		var resumed_slot: Dictionary = slots[index]
+		var paused_at := int(resumed_slot.get("paused_at_unix", 0))
+		if paused_at <= 0:
+			continue
+		if int(resumed_slot.get("finish_unix", 0)) > 0:
+			resumed_slot["finish_unix"] = int(resumed_slot["finish_unix"]) + maxi(0, now - paused_at)
+		resumed_slot.erase("paused_at_unix")
+		slots[index] = resumed_slot
+		changed = true
 	for index in range(slots.size()):
 		var slot: Dictionary = slots[index]
 		if slot.is_empty() or bool(slot.get("ready", false)):
@@ -112,7 +145,7 @@ func refresh_slots() -> void:
 		slots_changed.emit()
 
 func _start_next_store_order() -> bool:
-	if is_factory:
+	if is_factory or not _owner_has_road_access():
 		return false
 	# One store runs one active order at a time. A completed order occupies its
 	# queue slot until collected, while the next queued order may begin.
@@ -134,7 +167,7 @@ func _start_next_store_order() -> bool:
 
 func start_factory(item_id: String, slot_index: int) -> bool:
 	_ensure_slots()
-	if not is_factory or slot_index < 0 or slot_index >= slots.size() or not slots[slot_index].is_empty():
+	if not is_factory or not _owner_has_road_access() or slot_index < 0 or slot_index >= slots.size() or not slots[slot_index].is_empty():
 		return false
 	if not ProductionManager.get_factory_material_ids(factory_type).has(item_id) or not ProductionManager.raw_materials.has(item_id):
 		return false
@@ -154,7 +187,7 @@ func start_factory(item_id: String, slot_index: int) -> bool:
 
 func start_craft(recipe_id: String, slot_index: int) -> bool:
 	_ensure_slots()
-	if is_factory or slot_index < 0 or slot_index >= slots.size() or not slots[slot_index].is_empty():
+	if is_factory or not _owner_has_road_access() or slot_index < 0 or slot_index >= slots.size() or not slots[slot_index].is_empty():
 		return false
 	var recipe := ProductionManager.get_recipe(recipe_id)
 	if recipe.is_empty() or str(recipe.get("store", "")) != shop_id:
@@ -181,7 +214,7 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 
 func collect(slot_index: int) -> bool:
 	_ensure_slots()
-	if slot_index < 0 or slot_index >= slots.size():
+	if not _owner_has_road_access() or slot_index < 0 or slot_index >= slots.size():
 		return false
 	var slot: Dictionary = slots[slot_index]
 	if slot.is_empty() or not bool(slot.get("ready", false)):
