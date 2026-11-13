@@ -19,6 +19,11 @@ class FireHazardTestBuilding extends Node3D:
 	var smoke_active: bool = false
 	var current_population: int = 0
 	var upgrade_stage: int = 1
+	var epic_tier: int = 0
+	var residential_plan_selected: bool = false
+
+	func set_epic_tier(value: int) -> void:
+		epic_tier = value
 
 	func set_fire_smoke(active: bool) -> void:
 		smoke_active = active
