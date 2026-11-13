@@ -355,6 +355,7 @@ for fire_id, (expected_coverage, expected_size, expected_cost) in fire_contracts
 fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text(encoding="utf-8")
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
+city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
 for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_tiles", COVERAGE_TILES)', 'int(definition.get("fire", 0)) > 0', "home_flat.distance_to(station_flat) <= station_radius"]:
     if contract not in fire_manager_source:
         errors.append(f"FireHazardManager dynamic coverage contract is missing: {contract}")
@@ -366,9 +367,21 @@ for contract in [
     "static func decay_orbit_velocity(",
     "pan_inertia_damping",
     "orbit_inertia_damping",
+    "func focus_on(target_position: Vector3) -> void:",
+    "static func interpolate_focus(",
 ]:
     if contract not in camera_controller_source:
         errors.append(f"Camera inertia implementation contract is missing: {contract}")
+if "camera_rig.focus_on(building.global_position)" not in city_input_source:
+    errors.append("Selecting a building must smoothly focus the city camera on its world position.")
+for contract in [
+    "func _test_camera_focus_math()",
+    "Camera focus interpolation must move toward the selected building",
+    "Camera focus must ease toward the building instead of teleporting instantly",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Camera building-focus regression test is missing: {contract}")
+
 for contract in [
     "func _test_camera_inertia_math()",
     "Camera pan inertia must decay over time",
