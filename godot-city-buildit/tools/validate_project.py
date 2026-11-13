@@ -131,6 +131,29 @@ def _validate_embedded_gltf(path: Path) -> None:
             if int(primitive.get("material", -1)) not in range(len(document.get("materials", []))):
                 errors.append(f"GLTF primitive material is invalid: {path.relative_to(ROOT)}")
 
+    # Keep the recorded physical dimensions tied to the actual position accessor bounds.
+    position_accessors = []
+    for mesh in document.get("meshes", []):
+        for primitive in mesh.get("primitives", []):
+            position_index = primitive.get("attributes", {}).get("POSITION")
+            if position_index is not None and int(position_index) in range(len(document.get("accessors", []))):
+                position_accessors.append(document["accessors"][int(position_index)])
+    extras = document.get("asset", {}).get("extras", {})
+    recorded = extras.get("dimensions_m", {})
+    if position_accessors:
+        measured_min = [min(float(item["min"][axis]) for item in position_accessors) for axis in range(3)]
+        measured_max = [max(float(item["max"][axis]) for item in position_accessors) for axis in range(3)]
+        measured = {
+            "width": measured_max[0] - measured_min[0],
+            "height": measured_max[1] - measured_min[1],
+            "depth": measured_max[2] - measured_min[2],
+        }
+        for dimension, value in measured.items():
+            if dimension not in recorded or abs(float(recorded[dimension]) - value) > 0.01:
+                errors.append(f"GLTF measured {dimension} does not match asset metadata: {path.relative_to(ROOT)}")
+    if extras.get("license") != "CC0-1.0":
+        errors.append(f"GLTF asset license metadata is missing or incorrect: {path.relative_to(ROOT)}")
+
 
 for gltf_path in (ROOT / "assets/models").rglob("*.gltf"):
     _validate_embedded_gltf(gltf_path)

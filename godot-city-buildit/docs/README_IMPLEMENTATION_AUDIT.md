@@ -154,7 +154,7 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 
 
 ## مدل‌های معماری GLTF محلی — PR #417
-- چهار فایل مستقل در `assets/models/` اضافه شده‌اند: `residential/villa_house.gltf`، `residential/apartment_tower.gltf`، `commercial/neighborhood_shop.gltf` و `industrial/small_factory.gltf`.
+- چهار فایل مستقل در `assets/models/` اضافه شده‌اند؛ برج مسکونی با ارتفاع اندازه‌گیری‌شده ۷۴٫۵۷۵ متر ساخته شده است: `residential/villa_house.gltf`، `residential/apartment_tower.gltf`، `commercial/neighborhood_shop.gltf` و `industrial/small_factory.gltf`.
 - هندسه‌ها به‌صورت original procedural mesh برای پروژه ساخته شده‌اند؛ هر GLTF با buffer داخلی Base64، چند primitive/material، نرمال و UV، index buffer، و textureهای PNG تعبیه‌شده برای Base Color، Normal و Metallic-Roughness self-contained است؛ فایل بیرونی یا CDN لازم نیست.
 - `BuildManager._ready()` مسیر مدل محلی را بر اساس دسته و subtype به تعریف ساختمان اضافه می‌کند: ویلا/خانه قدیمی (پس از مرحله اول)، آپارتمان، فروشگاه‌های تجاری عمومی و کارخانه‌های صنعتی. Farm همچنان از visual رویه‌ای استفاده می‌کند؛ Building Supplies، Art Supplies و ویلای مرحله اول برای حفظ showcase اختصاصی خودشان مدل GLTF عمومی را override نمی‌کنند. تعریف‌های Gameplay، اندازه/هزینه/قفل‌ها و سیستم تولید تغییر نکرده‌اند.
 - `GameplaySmoke._test_building_model_loader_contract()` وجود، import، instantiate و وجود MeshInstance3D در هر چهار مدل را بررسی می‌کند و اتصال مسیر مدل به نوع‌های representative را کنترل می‌کند.
