@@ -298,6 +298,7 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.remove_road(Vector2i(0, 0)), "The second gateway bridge tile must be removable for the connectivity test.")
 	_check(not road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "Removing both bridge tiles must disconnect the far road segment from the highway gateway.")
 	_check(not BuildManager.has_road_access(Vector2i(1, 1), Vector2i.ONE), "A building beside a disconnected road segment must lose valid road access.")
+	_check(road_system.get_road_upgrade_error(Vector2i(1, 0)).contains("connected to the highway Gateway"), "A disconnected road tile must not be upgraded.")
 	var disconnected_building := FireHazardTestBuilding.new()
 	disconnected_building.status = "completed"
 	disconnected_building.grid_pos = Vector2i(1, 1)
