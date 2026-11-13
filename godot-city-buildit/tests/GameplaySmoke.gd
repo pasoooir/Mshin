@@ -19,6 +19,12 @@ class FireHazardTestBuilding extends Node3D:
 	var smoke_active: bool = false
 	var current_population: int = 0
 	var upgrade_stage: int = 1
+	var is_epic_building: bool = false
+	var epic_tier: int = 0
+
+	func set_epic_tier(tier: int) -> void:
+		epic_tier = clampi(tier, 0, 3)
+		is_epic_building = epic_tier > 0
 
 	func set_fire_smoke(active: bool) -> void:
 		smoke_active = active
@@ -1236,6 +1242,82 @@ func _test_building_model_loader_contract() -> void:
 	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
 	villa_visual_probe.free()
 
+func _test_epic_project_core() -> void:
+	var previous_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var previous_level := GameManager.level
+	var previous_population := GameManager.population
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_epic: Dictionary = EpicProjectManager.to_save_dict()
+	EpicProjectManager.from_save_dict({})
+	BuildManager.buildings = {}
+	StorageManager.capacity = 50
+	StorageManager.items = {"metal": 5}
+	var department := FireHazardTestBuilding.new()
+	department.building_id = "smoke_epic_department"
+	department.building_type = "epic_projects_department"
+	department.status = "completed"
+	department.definition = {"category":"service", "service_group":"government"}
+	BuildManager.buildings[department.building_id] = department
+	add_child(department)
+	var home := FireHazardTestBuilding.new()
+	home.building_id = "smoke_epic_home"
+	home.building_type = "residential_villa"
+	home.status = "completed"
+	home.upgrade_stage = 6
+	home.current_population = ProductionManager.get_population_for_stage(6)
+	home.definition = {"category":"residential", "size":Vector2i(2, 2)}
+	BuildManager.buildings[home.building_id] = home
+	add_child(home)
+	var park := FireHazardTestBuilding.new()
+	park.building_id = "smoke_epic_park"
+	park.building_type = "park_small"
+	park.status = "completed"
+	park.definition = {"category":"park", "epic_specialization":true}
+	BuildManager.buildings[park.building_id] = park
+	add_child(park)
+
+	GameManager.level = 23
+	_check(not EpicProjectManager.can_start_project(home), "Epic Projects must remain locked below Mayor Level 24.")
+	GameManager.level = 24
+	_check(EpicProjectManager.has_department(), "A completed Department of Epic Projects at Level 24 must activate the feature.")
+	_check(EpicProjectManager.can_start_project(home), "A fully upgraded regular home with a Department and specialization building must be eligible.")
+	_check(EpicProjectManager.start_project(home.building_id), "An eligible residential building must start an Epic Project.")
+	_check(int(EpicProjectManager.active_project.get("deadline_unix", 0)) >= int(Time.get_unix_time_from_system()) + EpicProjectManager.PROJECT_DURATION_SECONDS - 1, "An Epic Project must receive its full 24-hour deadline.")
+	var tasks: Array = EpicProjectManager.active_project.get("tasks", [])
+	_check(not tasks.is_empty(), "A completed specialization building must provide an Epic task.")
+	if not tasks.is_empty():
+		var task: Dictionary = tasks[0]
+		task["item_id"] = "metal"
+		task["amount"] = 1
+		task["points"] = 200
+		tasks[0] = task
+		EpicProjectManager.active_project["tasks"] = tasks
+		var old_population := home.current_population
+		_check(EpicProjectManager.contribute_to_task(str(task.get("id", ""))), "Epic task contribution must consume available inventory.")
+		_check(bool(EpicProjectManager.active_project.get("finished", false)) and str(EpicProjectManager.active_project.get("tier", "")) == "gold", "Reaching 200 Epic Points must finish the project at Gold tier.")
+		_check(EpicProjectManager.claim_project(), "A completed Gold project must convert the home into an Epic Building.")
+		_check(home.is_epic_building and home.epic_tier == 3, "Epic conversion must persist the Gold tier on the residential building.")
+		_check(home.current_population > old_population and home.current_population <= HappinessManager._capacity_for_home(home), "Epic conversion must apply the 31% residential capacity/population increase.")
+		var epic_record: Dictionary = EpicProjectManager.epic_buildings.get(home.building_id, {})
+		_check(int(epic_record.get("next_token_part_unix", 0)) > int(Time.get_unix_time_from_system()), "Epic Buildings must receive a daily token-part collection deadline.")
+		_check(not EpicProjectManager.collect_token_part(home.building_id), "A token part must not be collectable before its daily timer.")
+		epic_record["next_token_part_unix"] = int(Time.get_unix_time_from_system()) - 1
+		EpicProjectManager.epic_buildings[home.building_id] = epic_record
+		_check(EpicProjectManager.collect_token_part(home.building_id) and EpicProjectManager.get_token_part_count("gold") == 1, "A ready Gold Epic Building must grant one Gold token part.")
+		var saved_epic: Dictionary = EpicProjectManager.to_save_dict()
+		home.set_epic_tier(0)
+		EpicProjectManager.from_save_dict(saved_epic)
+		_check(home.is_epic_building and home.epic_tier == 3 and EpicProjectManager.get_token_part_count("gold") == 1, "Epic Building tier and token-part inventory must survive save/load.")
+
+	BuildManager.buildings = previous_buildings
+	GameManager.level = previous_level
+	GameManager.population = previous_population
+	StorageManager.from_save_dict(previous_storage)
+	EpicProjectManager.from_save_dict(previous_epic)
+	department.queue_free()
+	home.queue_free()
+	park.queue_free()
+
 func _test_mobile_haptics_contract() -> void:
 	_check(HapticsManager.get_pulse_duration_ms("place") == 18, "Successful building placement must use the short 18 ms haptic pulse.")
 	_check(HapticsManager.get_pulse_duration_ms("collect") == 26, "Successful product collection must use the 26 ms haptic pulse.")
@@ -1390,6 +1472,7 @@ func _test_citizen_feedback_bubbles() -> void:
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_mobile_haptics_contract()
+	_test_epic_project_core()
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
