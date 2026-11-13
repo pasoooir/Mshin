@@ -113,6 +113,6 @@ static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 		"average_frame_ms": snappedf(average_frame_ms, 0.01),
 		"p95_frame_ms": snappedf(p95_frame_ms, 0.01),
 		"max_frame_ms": snappedf(max_frame_ms, 0.01),
-		"frames_under_60fps_percent": snappedf(under_budget_percent, 0.1),
+		"frames_within_60fps_budget_percent": snappedf(under_budget_percent, 0.1),
 		"target_60fps_pass": average_fps >= 60.0 and p95_frame_ms <= TARGET_FRAME_MS
 	}
