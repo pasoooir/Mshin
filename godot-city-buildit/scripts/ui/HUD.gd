@@ -3702,6 +3702,7 @@ func _show_settings_panel() -> void:
 	_add_audio_setting_toggle(toggles, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
 	_add_audio_setting_toggle(toggles, "AmbientToggle", "City ambience", AudioManager.ambient_enabled, AudioManager.set_ambient_enabled)
 	_add_audio_setting_toggle(toggles, "SfxToggle", "Sound effects", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
+	_add_audio_setting_toggle(toggles, "HapticsToggle", "Haptic feedback", HapticsManager.enabled, HapticsManager.set_enabled)
 
 	var scroll := ScrollContainer.new()
 	scroll.name = "SettingsScroll"
@@ -3779,6 +3780,7 @@ func _reset_audio_settings() -> void:
 	AudioManager.set_music_enabled(true)
 	AudioManager.set_ambient_enabled(true)
 	AudioManager.set_sfx_enabled(true)
+	HapticsManager.set_enabled(true)
 	_show_settings_panel()
 
 func _on_trade_pressed() -> void:

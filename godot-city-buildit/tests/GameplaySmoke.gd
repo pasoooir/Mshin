@@ -1745,6 +1745,18 @@ func _test_mobile_haptics_contract() -> void:
 	_check(HapticsManager.get_pulse_duration_ms("place") == 18, "Successful building placement must use the short 18 ms haptic pulse.")
 	_check(HapticsManager.get_pulse_duration_ms("collect") == 26, "Successful product collection must use the 26 ms haptic pulse.")
 	_check(HapticsManager.get_pulse_duration_ms("unsupported") == 0, "Unknown haptic events must not request vibration.")
+	_check(HapticsManager.get_safe_pulse_duration_ms(500) == 40 and HapticsManager.get_safe_pulse_duration_ms(0) == 0, "Haptic requests must be capped to the short mobile-safe duration.")
+	_check(HapticsManager.get_backend_for_features(PackedStringArray(["android"])) == "android_native", "Android must use Godot's native handheld vibration backend.")
+	_check(HapticsManager.get_backend_for_features(PackedStringArray(["ios"])) == "ios_native", "iOS must use Godot's native handheld vibration backend.")
+	_check(HapticsManager.get_backend_for_features(PackedStringArray(["web"])) == "web", "Web must keep its browser vibration backend.")
+	_check(HapticsManager.get_backend_for_features(PackedStringArray()) == "unsupported", "Unsupported platforms must remain a safe no-op.")
+	var preset_text := FileAccess.get_file_as_string("res://export_presets.cfg")
+	_check(preset_text.contains("permissions/vibrate=true"), "Android export preset must request the VIBRATE permission required by Godot.")
+	var previous_haptics_enabled := HapticsManager.enabled
+	HapticsManager.set_enabled(false)
+	var haptics_config := ConfigFile.new()
+	_check(haptics_config.load("user://haptics_settings.cfg") == OK and not bool(haptics_config.get_value("haptics", "enabled", true)), "Haptic preference must persist in the user settings file.")
+	HapticsManager.set_enabled(previous_haptics_enabled)
 	_check(not HapticsManager.pulse(0), "A zero-duration haptic request must be rejected safely on unsupported platforms.")
 
 func _test_trade_depot_and_global_market() -> void:
@@ -1915,8 +1927,8 @@ func _test_settings_panel_contract() -> void:
 	for node_name in ["MasterVolumeSlider", "MusicVolumeSlider", "AmbientVolumeSlider", "SfxVolumeSlider"]:
 		var slider := hud.find_child(node_name, true, false) as HSlider
 		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must provide a usable 0–100 volume control." % node_name)
-	for node_name in ["MusicToggle", "AmbientToggle", "SfxToggle"]:
-		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must expose an independent audio enable switch." % node_name)
+	for node_name in ["MusicToggle", "AmbientToggle", "SfxToggle", "HapticsToggle"]:
+		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must expose an independent settings enable switch." % node_name)
 	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
 	if master_slider != null:
 		master_slider.value = 55.0
