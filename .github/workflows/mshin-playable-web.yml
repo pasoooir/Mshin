@@ -91,7 +91,7 @@ jobs:
           if grep -Fq "__GAME_BUILD__" "$GITHUB_WORKSPACE/site/index.html"; then exit 1; fi
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 
-      - name: Verify desktop and mobile Web launches in Chromium
+      - name: Verify desktop, tablet and mobile Web launches in Chromium
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
@@ -110,8 +110,20 @@ jobs:
           await gameFrame.waitFor({ state: 'attached', timeout: 10000 });
           await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
           await page.waitForTimeout(2000);
-          // Release the desktop WebGL context before starting the mobile viewport.
+          await page.frameLocator('#game-frame').locator('canvas').screenshot({ path: '/tmp/mshin-desktop-canvas.png' });
+          // Release the desktop WebGL context before starting the tablet viewport.
           await page.close();
+
+          const tabletPage = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
+          const tabletErrors = [];
+          tabletPage.on('pageerror', error => tabletErrors.push(error.message));
+          await tabletPage.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
+          await tabletPage.getByRole('button', { name: /PLAY MSHIN/i }).click();
+          await tabletPage.locator('#game-frame').waitFor({ state: 'attached', timeout: 10000 });
+          await tabletPage.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
+          await tabletPage.waitForTimeout(2000);
+          await tabletPage.frameLocator('#game-frame').locator('canvas').screenshot({ path: '/tmp/mshin-tablet-canvas.png' });
+          await tabletPage.close();
 
           // Repeat the real launch path in a touch-enabled mobile landscape viewport.
           const mobilePage = await browser.newPage({
@@ -131,11 +143,20 @@ jobs:
           // emulation can stall Chromium's compositor.
           await mobilePage.waitForTimeout(2000);
 
-          if (errors.length || mobileErrors.length) {
-            throw new Error('Browser page errors: ' + [...errors, ...mobileErrors].join(' | '));
+          if (errors.length || tabletErrors.length || mobileErrors.length) {
+            throw new Error('Browser page errors: ' + [...errors, ...tabletErrors, ...mobileErrors].join(' | '));
           }
           await browser.close();
           NODE
+      - name: Upload desktop and tablet canvas screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-canvas-${{ github.sha }}
+          path: |
+            /tmp/mshin-desktop-canvas.png
+            /tmp/mshin-tablet-canvas.png
+          if-no-files-found: error
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
