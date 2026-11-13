@@ -310,6 +310,7 @@ for level_contract in [
 # Every non-residential category also has a type-specific identity path.
 for identity_contract in [
     'func _build_commercial_identity(',
+    '"shop_chain":',
     '"restaurant_traditional":',
     '"fast_food":',
     '"hardware_store":',
@@ -328,6 +329,9 @@ for identity_contract in [
     '"hightech", "factory_hightech":',
     '"nano", "factory_nano":',
     'func _build_service_identity(',
+    '"power_wind", "power_wind_deluxe":',
+    '"water_tower":',
+    '"water_pump":',
     '"fire_station_small", "fire_station", "fire_station_deluxe":',
     '"police_small", "police_station", "police_basic", "police_precinct":',
     '"clinic_small", "clinic", "hospital":',
