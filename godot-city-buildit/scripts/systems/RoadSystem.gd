@@ -469,13 +469,14 @@ func _lane_divider_offsets(level: int) -> Array[float]:
 
 func _add_lane_divider_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Vector2i, road_level: int) -> void:
 	var lateral := Vector2i(-direction.y, direction.x)
-	for offset in _lane_divider_offsets(road_level):
+	var offsets: Array[float] = _lane_divider_offsets(road_level)
+	for offset: float in offsets:
 		for side in [-1.0, 1.0]:
-			for distance in [0.62]:
-				var center := _direction_to_world(direction) * float(distance) + _direction_to_world(lateral) * (offset * side)
-				center.y = 0.091
-				var dash_size := Vector3(0.28, 0.006, 0.035) if direction.x != 0 else Vector3(0.035, 0.006, 0.28)
-				_append_box(surface_tool, grid_pos, center, dash_size)
+			var side_sign: float = float(side)
+			var center: Vector3 = _direction_to_world(direction) * 0.62 + _direction_to_world(lateral) * (offset * side_sign)
+			center.y = 0.091
+			var dash_size: Vector3 = Vector3(0.28, 0.006, 0.035) if direction.x != 0 else Vector3(0.035, 0.006, 0.28)
+			_append_box(surface_tool, grid_pos, center, dash_size)
 
 func _add_crosswalk(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Vector2i) -> void:
 	var lateral := Vector2i(-direction.y, direction.x)
