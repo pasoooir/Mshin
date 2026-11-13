@@ -596,7 +596,7 @@ func _test_build_menu_visibility() -> void:
 	hud._on_cancel_pressed()
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
 	hud._show_submenu("services")
-	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
+	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Fire") and hud.context_header_subtitle.text.contains("Police") and hud.context_header_subtitle.text.contains("Health") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
 	hud._on_cancel_pressed()
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
@@ -1134,6 +1134,8 @@ func _test_emergency_service_tier_happiness() -> void:
 			ServiceManager.recalculate_from_buildings()
 			_check(str(facility.definition.get("service_group", "")) == service_group, "Emergency service catalog tier must belong to its declared service group: " + service_id)
 			_check(served_ids.has(home.building_id), "Every connected emergency service tier must serve a connected home inside its catalog radius: " + service_id)
+			var coverage_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
+			_check(int(coverage_warnings.get(service_group, -1)) == 1, "Emergency service warnings must count only the disconnected unserved home: " + service_id)
 			_check(not served_ids.has(disconnected_home.building_id), "Emergency service must not serve a home without Gateway road access: " + service_id)
 			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + bonus), "Every connected emergency service tier must provide its existing happiness bonus: " + service_id)
 			_check(HappinessManager._home_has_extra_service(home), "Every connected emergency service tier must count as an extra service: " + service_id)
@@ -1141,6 +1143,8 @@ func _test_emergency_service_tier_happiness() -> void:
 			facility.status = "constructing"
 			ServiceManager.recalculate_from_buildings()
 			_check(not served_ids.has(home.building_id), "An emergency facility under construction must not provide coverage: " + service_id)
+			var construction_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
+			_check(int(construction_warnings.get(service_group, -1)) == 2, "Emergency service warnings must include all homes when the provider is under construction: " + service_id)
 			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility under construction must not provide happiness: " + service_id)
 
 			facility.status = "completed"
@@ -1170,6 +1174,7 @@ func _test_emergency_service_tier_happiness() -> void:
 	BuildManager.buildings[fire_facility.building_id] = fire_facility
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.fire_served_ids.has(home.building_id), "A connected Fire Station must cover a connected nearby home.")
+	_check(ServiceManager.served_fire_homes == 1 and ServiceManager.demand_fire_homes == 2, "Emergency service HUD metrics must report covered homes against all completed homes.")
 	if road_system:
 		_check(road_system.remove_road(Vector2i(1, 0)), "Emergency coverage test must be able to cut the home's only Gateway access tile.")
 		ServiceManager.recalculate_from_buildings()
@@ -1178,6 +1183,7 @@ func _test_emergency_service_tier_happiness() -> void:
 		_check(road_system.place_road(Vector2i(1, 0)), "Emergency coverage test must restore the home's Gateway access tile.")
 		ServiceManager.recalculate_from_buildings()
 		_check(ServiceManager.fire_served_ids.has(home.building_id), "Restoring Gateway road access must restore Fire coverage.")
+		_check(ServiceManager.served_fire_homes == 1, "Restoring Gateway road access must restore the emergency covered-home metric.")
 
 	BuildManager.buildings.erase(fire_facility.building_id)
 	remove_child(fire_facility)
