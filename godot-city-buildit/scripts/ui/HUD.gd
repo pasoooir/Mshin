@@ -99,6 +99,23 @@ func _apply_minimum_readable_text(root: Node) -> void:
 		_apply_minimum_readable_text(child)
 
 
+func _add_fixed_height_scroll(parent: Control, scroll_name: String, min_height: float, horizontal_mode: int, vertical_mode: int) -> ScrollContainer:
+	var frame := Control.new()
+	frame.name = scroll_name + "Frame"
+	frame.custom_minimum_size.y = min_height
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(frame)
+	var scroll := ScrollContainer.new()
+	scroll.name = scroll_name
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = horizontal_mode
+	scroll.vertical_scroll_mode = vertical_mode
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	frame.add_child(scroll)
+	return scroll
+
+
 func _layout_centered_panel(panel: Control, viewport_size: Vector2, width_ratio: float, height_ratio: float, max_width: float, max_height: float) -> void:
 	if not is_instance_valid(panel):
 		return
@@ -1714,14 +1731,13 @@ func open_production_panel(building: Building) -> void:
 	products_title.add_theme_color_override("font_color", Color("#244B62"))
 	layout.add_child(products_title)
 
-	var product_scroll := ScrollContainer.new()
-	product_scroll.name = "ProductionProductsScroll"
-	product_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	product_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	product_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	product_scroll.custom_minimum_size.y = (104.0 if profile == "compact" else 132.0) * maxf(_ui_scale, 0.90)
-	layout.add_child(product_scroll)
+	var product_scroll := _add_fixed_height_scroll(
+		layout,
+		"ProductionProductsScroll",
+		(104.0 if profile == "compact" else 132.0) * maxf(_ui_scale, 0.90),
+		ScrollContainer.SCROLL_MODE_DISABLED,
+		ScrollContainer.SCROLL_MODE_AUTO
+	)
 
 	var product_grid := GridContainer.new()
 	product_grid.name = "ProductionProductCards"
@@ -1832,13 +1848,13 @@ func open_production_panel(building: Building) -> void:
 		)
 		product_grid.add_child(item_button)
 
-	var details_host := ScrollContainer.new()
-	details_host.name = "ProductionDetailsHost"
-	details_host.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	details_host.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	details_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	details_host.custom_minimum_size.y = (112.0 if profile == "compact" else 144.0) * maxf(_ui_scale, 0.90)
-	layout.add_child(details_host)
+	var details_host := _add_fixed_height_scroll(
+		layout,
+		"ProductionDetailsHost",
+		(112.0 if profile == "compact" else 144.0) * maxf(_ui_scale, 0.90),
+		ScrollContainer.SCROLL_MODE_DISABLED,
+		ScrollContainer.SCROLL_MODE_AUTO
+	)
 
 	var queue_heading := HBoxContainer.new()
 	queue_heading.name = "ProductionQueueHeading"
@@ -1865,13 +1881,13 @@ func open_production_panel(building: Building) -> void:
 		add_slot.pressed.connect(_purchase_store_queue_slot.bind(building))
 		queue_heading.add_child(add_slot)
 
-	var queue_scroll := ScrollContainer.new()
-	queue_scroll.name = "ProductionQueueScroll"
-	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = (90.0 if profile == "compact" else 92.0) * maxf(_ui_scale, 0.90)
-	layout.add_child(queue_scroll)
+	var queue_scroll := _add_fixed_height_scroll(
+		layout,
+		"ProductionQueueScroll",
+		(90.0 if profile == "compact" else 92.0) * maxf(_ui_scale, 0.90),
+		ScrollContainer.SCROLL_MODE_AUTO,
+		ScrollContainer.SCROLL_MODE_DISABLED
+	)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
 	queue_row.add_theme_constant_override("separation", 9)
