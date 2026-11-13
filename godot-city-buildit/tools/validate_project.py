@@ -353,9 +353,29 @@ for fire_id, (expected_coverage, expected_size, expected_cost) in fire_contracts
         errors.append(f"Fire station must be pollution-free: {fire_id}")
 fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text(encoding="utf-8")
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
+camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_tiles", COVERAGE_TILES)', 'int(definition.get("fire", 0)) > 0', "home_flat.distance_to(station_flat) <= station_radius"]:
     if contract not in fire_manager_source:
         errors.append(f"FireHazardManager dynamic coverage contract is missing: {contract}")
+for contract in [
+    "func _process(delta: float) -> void:",
+    "pan_velocity * delta",
+    "rotation_degrees.y += rad_to_deg(orbit_velocity * delta)",
+    "static func decay_pan_velocity(",
+    "static func decay_orbit_velocity(",
+    "pan_inertia_damping",
+    "orbit_inertia_damping",
+]:
+    if contract not in camera_controller_source:
+        errors.append(f"Camera inertia implementation contract is missing: {contract}")
+for contract in [
+    "func _test_camera_inertia_math()",
+    "Camera pan inertia must decay over time",
+    "Camera orbit inertia must decay over time",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Camera inertia regression test is missing: {contract}")
+
 for contract in ["EmergencyCoveragePreview", "CoverageArea", "CoverageBoundary", "FireHazardManager.get_coverage_radius_world(definition)", 'int(definition.get("police", 0)) > 0', 'int(definition.get("health", 0)) > 0', "Color(0.18, 0.38, 0.98, 0.95)", "Color(0.20, 0.96, 0.62, 0.96)"]:
     if contract not in ghost_preview_source:
         errors.append(f"Fire placement coverage preview contract is missing: {contract}")
