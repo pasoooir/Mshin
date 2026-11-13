@@ -67,7 +67,7 @@ func get_active_snapshot() -> Dictionary:
 func store_active_region_snapshot(snapshot: Dictionary) -> void:
 	region_states[active_region_id] = snapshot.duplicate(true)
 
-func switch_region(region_id: String) -> bool:
+func switch_region(region_id: String, persist_after_switch: bool = true) -> bool:
 	if region_id == active_region_id or region_id not in unlocked_regions or get_region_definition(region_id).is_empty():
 		return false
 	var previous_region := active_region_id
@@ -83,7 +83,8 @@ func switch_region(region_id: String) -> bool:
 		return false
 	region_changed.emit(active_region_id)
 	region_state_changed.emit()
-	SaveManager.save_game()
+	if persist_after_switch:
+		SaveManager.save_game()
 	return true
 
 func to_save_dict() -> Dictionary:
