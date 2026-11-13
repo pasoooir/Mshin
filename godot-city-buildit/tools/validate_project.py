@@ -424,7 +424,7 @@ for service_group, service_ids in {
     "health": ["clinic_small", "clinic", "hospital"],
 }.items():
     for service_id in service_ids:
-        match = re.search(r'"' + service_id + r'": \\{([^\\n]+)\\}', build_manager)
+        match = re.search(r'"' + service_id + r'": \{([^\n]+)\}', build_manager)
         if match is None or f'"service_group":"{service_group}"' not in match.group(1):
             errors.append(f"{service_group} service tier is missing its catalog group: {service_id}")
 for contract in [
