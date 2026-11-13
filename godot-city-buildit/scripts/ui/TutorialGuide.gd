@@ -231,9 +231,10 @@ func _show_completion() -> void:
 	_counter.text = "Complete"
 	_progress.value = STEP_DATA.size()
 	_skip_button.text = "Close"
-	for connection in _skip_button.pressed.get_connections():
-		_skip_button.pressed.disconnect(connection.callable)
-	_skip_button.pressed.connect(_close_guide)
+	if _skip_button.pressed.is_connected(_skip_tutorial):
+		_skip_button.pressed.disconnect(_skip_tutorial)
+	if not _skip_button.pressed.is_connected(_close_guide):
+		_skip_button.pressed.connect(_close_guide)
 	_build_reopen_button()
 
 func _skip_tutorial() -> void:
