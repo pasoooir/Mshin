@@ -232,15 +232,15 @@ func calculate_home_happiness(home: Node3D) -> float:
 	if industrial_distance < INDUSTRIAL_POLLUTION_RADIUS:
 		score -= lerpf(30.0, 15.0, clampf(industrial_distance / INDUSTRIAL_POLLUTION_RADIUS, 0.0, 1.0))
 
-	if _nearby_service(home, "fire_station", 38.0):
+	if _nearby_service_group(home, FIRE_SERVICE_GROUP, 38.0):
 		score += 8.0
-	if _nearby_service(home, "police_station", 38.0):
+	if _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
 		score += 8.0
 	if _nearby_sewage_service(home, 30.0):
 		score += 6.0
 	if _nearby_waste_service(home, 30.0):
 		score += 6.0
-	if _nearby_service(home, "hospital", 42.0):
+	if _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 		score += 8.0
 	return clampf(score, 0.0, 100.0)
 
