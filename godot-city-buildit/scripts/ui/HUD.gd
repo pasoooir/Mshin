@@ -118,6 +118,8 @@ var context_header_title: Label
 var context_header_subtitle: Label
 var context_header_icons: HBoxContainer
 var service_warning_panel: PanelContainer
+var trade_overlay: Control
+var trade_panel: PanelContainer
 var service_warning_label: Label
 var _catalog_selected_type := ""
 
@@ -2979,9 +2981,242 @@ func _close_storage_panel() -> void:
 	storage_overlay = null
 	storage_panel = null
 
+func open_trade_panel(tab: String = "depot") -> void:
+	BuildManager.cancel_placement()
+	_show_trade_panel(tab)
+
+func _close_trade_panel() -> void:
+	if is_instance_valid(trade_overlay):
+		trade_overlay.queue_free()
+	trade_overlay = null
+	trade_panel = null
+
+func _show_trade_panel(tab: String = "depot") -> void:
+	_close_trade_panel()
+	var viewport_size := get_viewport().get_visible_rect().size
+	trade_overlay = Control.new()
+	trade_overlay.name = "TradeOverlay"
+	trade_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	trade_overlay.z_index = 110
+	trade_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(trade_overlay)
+
+	var backdrop := ColorRect.new()
+	backdrop.name = "TradeBackdrop"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.015, 0.025, 0.035, 0.72)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	trade_overlay.add_child(backdrop)
+
+	var panel_width := minf(660.0 * _ui_scale, viewport_size.x * 0.92)
+	var panel_height := minf(610.0 * _ui_scale, viewport_size.y * 0.90)
+	trade_panel = PanelContainer.new()
+	trade_panel.name = "TradePanel"
+	trade_panel.anchor_left = 0.5
+	trade_panel.anchor_right = 0.5
+	trade_panel.anchor_top = 0.5
+	trade_panel.anchor_bottom = 0.5
+	trade_panel.offset_left = -panel_width * 0.5
+	trade_panel.offset_right = panel_width * 0.5
+	trade_panel.offset_top = -panel_height * 0.5
+	trade_panel.offset_bottom = panel_height * 0.5
+	trade_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#F1F8FE")
+	panel_style.border_color = Color("#D7EAF7")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(20)
+	panel_style.shadow_color = Color(0.0, 0.0, 0.0, 0.42)
+	panel_style.shadow_size = 14
+	panel_style.content_margin_left = 16
+	panel_style.content_margin_right = 16
+	panel_style.content_margin_top = 12
+	panel_style.content_margin_bottom = 12
+	trade_panel.add_theme_stylebox_override("panel", panel_style)
+	trade_overlay.add_child(trade_panel)
+
+	var layout := VBoxContainer.new()
+	layout.name = "TradeLayout"
+	layout.add_theme_constant_override("separation", 10)
+	trade_panel.add_child(layout)
+
+	var heading := HBoxContainer.new()
+	layout.add_child(heading)
+	var title := Label.new()
+	title.text = "City Trade"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", int(26 * _ui_scale))
+	title.add_theme_color_override("font_color", Color("#172330"))
+	heading.add_child(title)
+	var close := Button.new()
+	close.name = "TradeClose"
+	close.text = "×"
+	close.custom_minimum_size = Vector2(44, 44) * _ui_scale
+	close.add_theme_font_size_override("font_size", int(32 * _ui_scale))
+	close.pressed.connect(_close_trade_panel)
+	heading.add_child(close)
+
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 8)
+	layout.add_child(tabs)
+	var depot_tab := Button.new()
+	depot_tab.name = "TradeDepotTab"
+	depot_tab.text = "TRADE DEPOT"
+	depot_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	depot_tab.pressed.connect(_show_trade_panel.bind("depot"))
+	tabs.add_child(depot_tab)
+	var market_tab := Button.new()
+	market_tab.name = "GlobalMarketTab"
+	market_tab.text = "GLOBAL TRADE"
+	market_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	market_tab.pressed.connect(_show_trade_panel.bind("market"))
+	tabs.add_child(market_tab)
+
+	var scroll := ScrollContainer.new()
+	scroll.name = "TradeContentScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.name = "TradeContent"
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 8)
+	scroll.add_child(body)
+
+	if tab == "market":
+		market_tab.add_theme_stylebox_override("normal", _catalog_action_style())
+		_build_global_trade_content(body)
+	else:
+		depot_tab.add_theme_stylebox_override("normal", _catalog_action_style())
+		_build_trade_depot_content(body)
+
+func _trade_message(parent: VBoxContainer, message: String) -> void:
+	var label := Label.new()
+	label.text = message
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size.y = 70 * _ui_scale
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	label.add_theme_color_override("font_color", Color("#526C7C"))
+	parent.add_child(label)
+
+func _build_trade_depot_content(parent: VBoxContainer) -> void:
+	if GameManager.population < TradeManager.DEPOT_UNLOCK_POPULATION:
+		_trade_message(parent, "Trade Depot unlocks at 8,000 city population.")
+		return
+	if not TradeManager.has_trade_building("trade_depot"):
+		_trade_message(parent, "Place and complete the Trade Depot from Services → Trade to start selling city products.")
+		return
+
+	var heading := Label.new()
+	heading.text = "LIST PRODUCTS · 4 MARKET SLOTS"
+	heading.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	heading.add_theme_color_override("font_color", Color("#24465A"))
+	parent.add_child(heading)
+	var items := StorageManager.get_all_items()
+	var item_ids: Array = items.keys()
+	item_ids.sort()
+	if item_ids.is_empty():
+		_trade_message(parent, "City Storage is empty. Produce or collect items before listing them.")
+	for item_value in item_ids:
+		var item_id := str(item_value)
+		var count := int(items[item_value])
+		var row := HBoxContainer.new()
+		row.name = "TradeListRow_" + item_id
+		row.custom_minimum_size.y = 48 * _ui_scale
+		parent.add_child(row)
+		var label := Label.new()
+		label.text = "%s  ×%d" % [str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id.capitalize())), count]
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color", Color("#263746"))
+		row.add_child(label)
+		var list_button := Button.new()
+		list_button.name = "TradeList_" + item_id
+		list_button.text = "LIST 1 · §%d" % ProductionManager.get_item_value(item_id)
+		list_button.disabled = not TradeManager.can_list_for_sale(item_id, 1)
+		list_button.pressed.connect(_on_trade_list_item.bind(item_id))
+		row.add_child(list_button)
+
+	var listings_heading := Label.new()
+	listings_heading.text = "YOUR LISTINGS"
+	listings_heading.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	listings_heading.add_theme_color_override("font_color", Color("#24465A"))
+	parent.add_child(listings_heading)
+	var listings := TradeManager.get_sell_slots()
+	if listings.is_empty():
+		_trade_message(parent, "No active listings.")
+	for index in range(listings.size()):
+		var listing: Dictionary = listings[index]
+		var row := HBoxContainer.new()
+		row.name = "TradeListing_%d" % index
+		row.custom_minimum_size.y = 48 * _ui_scale
+		parent.add_child(row)
+		var item_name := str(StorageManager.item_definitions.get(str(listing.get("item_id", "")), {}).get("name", str(listing.get("item_id", "Item")).capitalize()))
+		var ready := bool(listing.get("ready", false))
+		var status := "READY TO COLLECT" if ready else "%ds remaining" % ceili(float(listing.get("time_left", 0.0)))
+		var label := Label.new()
+		label.text = "%s ×%d · %s" % [item_name, int(listing.get("amount", 0)), status]
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color", Color("#263746"))
+		row.add_child(label)
+		var collect := Button.new()
+		collect.name = "TradeCollect_%d" % index
+		collect.text = "COLLECT §%d" % int(listing.get("price", 0))
+		collect.disabled = not ready
+		collect.pressed.connect(_on_trade_collect_sale.bind(index))
+		row.add_child(collect)
+
+func _build_global_trade_content(parent: VBoxContainer) -> void:
+	if GameManager.population < TradeManager.GLOBAL_TRADE_UNLOCK_POPULATION:
+		_trade_message(parent, "Global Trade HQ unlocks at 10,000 city population.")
+		return
+	if not TradeManager.has_trade_building("global_trade_hq"):
+		_trade_message(parent, "Place and complete Global Trade HQ from Services → Trade to access the market.")
+		return
+	_trade_message(parent, "Offline local market simulation. These offers are generated by the game; live player-to-player trading is not connected.")
+	var offers := TradeManager.get_market_offers()
+	for index in range(offers.size()):
+		var offer: Dictionary = offers[index]
+		var item_id := str(offer.get("item_id", ""))
+		var amount := int(offer.get("amount", 0))
+		var price := int(offer.get("price", 0))
+		var row := HBoxContainer.new()
+		row.name = "GlobalOffer_%d" % index
+		row.custom_minimum_size.y = 54 * _ui_scale
+		parent.add_child(row)
+		var label := Label.new()
+		label.text = "%s ×%d · §%d" % [str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id.capitalize())), amount, price]
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color", Color("#263746"))
+		row.add_child(label)
+		var buy := Button.new()
+		buy.name = "GlobalBuy_%d" % index
+		buy.text = "SOLD" if bool(offer.get("sold", false)) else "BUY"
+		buy.disabled = bool(offer.get("sold", false)) or StorageManager.get_free() < amount or not EconomyManager.can_afford(price)
+		buy.pressed.connect(_on_trade_buy_offer.bind(index))
+		row.add_child(buy)
+
+func _on_trade_list_item(item_id: String) -> void:
+	if not TradeManager.list_for_sale(item_id, 1):
+		status_label.text = "Could not list this item. Check stock, slots and Trade Depot access."
+	_show_trade_panel("depot")
+
+func _on_trade_collect_sale(slot_index: int) -> void:
+	if not TradeManager.collect_sale(slot_index):
+		status_label.text = "This listing is not ready to collect."
+	_show_trade_panel("depot")
+
+func _on_trade_buy_offer(offer_index: int) -> void:
+	if not TradeManager.buy_global_offer(offer_index):
+		status_label.text = "Could not buy this offer. Check Simoleons and storage capacity."
+	_show_trade_panel("market")
+
 func _on_trade_pressed() -> void:
 	BuildManager.cancel_placement()
-	status_label.text = "Trade — %d active orders." % TradeManager.get_orders().size()
+	_show_trade_panel("depot")
 
 func _on_cancel_pressed() -> void:
 	var scene := get_tree().current_scene
