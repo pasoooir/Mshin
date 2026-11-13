@@ -1985,6 +1985,9 @@ func _run_gameplay_test() -> void:
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
 
 	var saved_population_expected := GameManager.population
+	var rotation_test_building = _find_building("residential_1")
+	if rotation_test_building != null:
+		rotation_test_building.rotation.y = PI * 0.5
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 
 	for building in BuildManager.buildings.values():
@@ -2005,6 +2008,7 @@ func _run_gameplay_test() -> void:
 	_check(road_system.get_road_level(Vector2i(0, 0)) == 4, "Save/load must preserve the upgraded Avenue road tier.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
+	_check(restored_home != null and is_equal_approx(restored_home.rotation.y, PI * 0.5), "Building orientation must survive save/load.")
 	_check(restored_home != null and restored_home.upgrade_in_progress and restored_home.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Residential upgrade finish timestamp was not restored from save.")
 	if restored_home != null:
 		restored_home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
