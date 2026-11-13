@@ -286,3 +286,20 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - GameplaySmoke قرارداد autowrap و اندازه‌گیری فضای افقی Label را بررسی می‌کند؛ Static Validation نیز این قرارداد را اجباری کرده است.
 - Godot City BuildIt Validation برای head commit شاخه PR با run `43465117078` موفق شد؛ Mshin Playable Web با run `43465117136` موفق شد و مراحل Web export، Chromium desktop/mobile و deploy به GitHub Pages را گذراند.
 - محدودیت باقی‌مانده: تأیید چشمی روی دستگاه فیزیکی Android/iOS هنوز انجام نشده است؛ موفقیت Chromium mobile viewport معادل آزمون فیزیکی نیست.
+
+## گسترش Recipeهای تأییدشده اقتصاد تولید — PR #437
+
+- PR #437 با merge commit `c9ea5e7b6ed61a2b3afa2a92e33406522da528ff` در `main` ادغام شد.
+- کاتالوگ ۱۴ خانواده فروشگاه استاندارد اکنون ۷۰ Recipe قابل تولید از ۷۴ محصول شناخته‌شده دارد. شمارش از `ProductionManager.crafted_items` و چهار هویت حل‌نشده در `store_catalog` استخراج شده است؛ کاتالوگ فقط محصولات حل‌نشده را نگه می‌دارد.
+- Recipeهای اضافه‌شده:
+  - Backpack در Fashion Store؛ سطح ۳۴، Textiles ×2، Plastic ×2، Measuring Tape ×1، زمان پایه ۱۲۰ دقیقه.
+  - Tennis Racket در Sports Shop؛ نسخه ۲۰۲۴، سطح ۳۵، Minerals ×4، Hammer ×2، زمان پایه ۴۵ دقیقه.
+  - Sports Drink در Sports Shop؛ نسخه ۲۰۲۴، سطح ۳۹، Fruit & Berries ×2، Sugar and Spices ×4، زمان پایه ۳۵ دقیقه.
+  - Protein Bar در Sports Shop؛ نسخه ۲۰۲۴، سطح ۳۵، Cherry Cheesecake ×1، Sugar and Spices ×2، زمان پایه ۴۵ دقیقه.
+  - Chiseled Stone در Bureau of Restoration؛ سطح ۵۹، Hammer ×2، Minerals ×6، Drill ×2، زمان پایه ۱۵۰ دقیقه.
+  - Stained Glass در Bureau of Restoration؛ سطح ۷۶، Metal ×5، Glass ×6، Glue ×2، نیازمند یک Store Star و زمان پایه ۲۴۰ دقیقه (۳ ساعت و ۳۶ دقیقه پس از کاهش ۱۰٪ ستاره اول).
+- چهار محصول حل‌نشده عمداً غیرفعال باقی ماندند: Football Shoes (سطح بازشدن آیتم نامعلوم)، Kite (سطح بازشدن نامعلوم)، Teddy Bear (سطح و زمان تولید نامعلوم)، و Tapestry (اختلاف منبع در مقدار Textiles، سه یا چهار واحد). برای هیچ‌کدام مقدار یا سطح حدس زده نشده است.
+- GameplaySmoke ورودی‌ها، زمان پایه، سطح بازشدن، تعلق به فروشگاه، قفل ستاره‌ای Stained Glass، زمان زنجیره Backpack و غیرفعال ماندن چهار محصول حل‌نشده را بررسی می‌کند.
+- Godot City BuildIt Validation برای PR با run `43485834859` موفق شد؛ Mshin Playable Web برای PR با run `43485834688` موفق شد.
+- پس از Merge نیز Godot Validation با run `43486114412`، Web/Chromium desktop+mobile با run `43486114191` و Pages build/deploy با run `43486112974` موفق شدند.
+- منابع Recipeها community-reference هستند و تأیید رسمی EA محسوب نمی‌شوند. بررسی تصویری پنل‌ها و تعامل لمسی روی Android فیزیکی همچنان باز است.
