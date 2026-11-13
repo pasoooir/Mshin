@@ -1283,7 +1283,10 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(TradeManager.list_for_sale("metal", 1), "Trade Depot must accept a valid item listing.")
 	_check(StorageManager.get_count("metal") == 1, "Listing an item must remove it from City Storage exactly once.")
 	_check(not TradeManager.collect_sale(0), "A listing must not pay out before its sale timer completes.")
-	TradeManager.sell_slots[0]["time_left"] = 0.0
+	_check(int(TradeManager.sell_slots[0].get("finish_unix", 0)) > int(Time.get_unix_time_from_system()), "A sale listing must persist an absolute completion timestamp.")
+	TradeManager.sell_slots[0]["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	var saved_listing_state: Dictionary = TradeManager.to_save_dict()
+	TradeManager.from_save_dict(saved_listing_state)
 	TradeManager._process(0.1)
 	_check(bool(TradeManager.sell_slots[0].get("ready", false)), "A finished sale listing must become ready for manual collection.")
 	var coins_before_collection := EconomyManager.simoleons
@@ -1297,11 +1300,13 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(StorageManager.get_count("metal") == 2, "Global market purchase must add the offered goods to storage.")
 	_check(EconomyManager.simoleons == coins_before_purchase - 15, "Global market purchase must deduct the exact offer price.")
 	_check(bool(TradeManager.market_offers[0].get("sold", false)), "Purchased market offers must not be purchasable twice.")
-
 	var saved_trade := TradeManager.to_save_dict()
 	TradeManager.from_save_dict(saved_trade)
 	_check(TradeManager.market_offers.size() == 1 and bool(TradeManager.market_offers[0].get("sold", false)), "Trade save data must preserve sold market offers.")
-	_check(TradeManager.to_save_dict().has("sell_slots"), "Trade save data must include depot listings.")
+	_check(TradeManager.to_save_dict().has("sell_slots") and TradeManager.to_save_dict().has("market_refresh_unix"), "Trade save data must include depot listings and absolute market refresh time.")
+	TradeManager.market_refresh_unix = int(Time.get_unix_time_from_system()) - 1
+	TradeManager._process(0.1)
+	_check(TradeManager.market_refresh_unix > int(Time.get_unix_time_from_system()) and not TradeManager.market_offers.is_empty() and not bool(TradeManager.market_offers[0].get("sold", false)), "Expired market offers must refresh from their persisted wall-clock deadline.")
 
 	GameManager.population = 19999
 	_check(BuildManager.get_population_build_lock_reason("cargo_port") != "", "Cargo Port must remain locked below 20,000 population.")
@@ -1323,10 +1328,25 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(TradeManager.deliver_ship_crate(1) and TradeManager.deliver_ship_crate(2), "Cargo Ship must accept the remaining manifest crates.")
 	_check(TradeManager.ship_departed and TradeManager.ship_departures == 1, "Completing all three crates must send the ship away exactly once.")
 	_check(EconomyManager.golden_keys == keys_before_ship + 1, "A completed cargo ship manifest must grant one Golden Key.")
-	TradeManager.ship_return_time_left = 0.0
+	_check(TradeManager.ship_return_unix > int(Time.get_unix_time_from_system()), "Ship departure must persist an absolute return timestamp.")
+	TradeManager.ship_return_unix = int(Time.get_unix_time_from_system()) - 1
+	var saved_departed_ship: Dictionary = TradeManager.to_save_dict()
+	TradeManager.from_save_dict(saved_departed_ship)
 	TradeManager._process(0.1)
 	_check(not TradeManager.ship_departed and TradeManager.ship_crates.size() == TradeManager.SHIP_CRATE_COUNT, "A returned cargo ship must receive a fresh three-crate manifest.")
-	_check(TradeManager.to_save_dict().has("ship_crates") and TradeManager.to_save_dict().has("ship_departed"), "Trade save data must preserve cargo ship manifest and departure state.")
+	_check(TradeManager.to_save_dict().has("ship_crates") and TradeManager.to_save_dict().has("ship_departed") and TradeManager.to_save_dict().has("ship_return_unix"), "Trade save data must preserve cargo ship manifest and departure state.")
+	var legacy_trade_save: Dictionary = {
+		"sell_slots": [{"item_id":"metal", "amount":1, "price":10, "time_left":30.0, "ready":false}],
+		"market_refresh_time_left": 25.0,
+		"ship_crates": [{"item_id":"metal", "amount":1, "delivered":false}],
+		"ship_departed": true,
+		"ship_return_time_left": 50.0
+	}
+	TradeManager.from_save_dict(legacy_trade_save)
+	var legacy_load_time := int(Time.get_unix_time_from_system())
+	_check(int(TradeManager.sell_slots[0].get("finish_unix", 0)) >= legacy_load_time + 30, "Legacy sale saves must derive a deadline from their remaining time.")
+	_check(TradeManager.market_refresh_unix >= legacy_load_time + 25, "Legacy market saves must derive a refresh deadline from their remaining time.")
+	_check(TradeManager.ship_return_unix >= legacy_load_time + 50, "Legacy ship saves must derive a return deadline from their remaining time.")
 	BuildManager.buildings.erase(depot.building_id)
 	BuildManager.buildings.erase(hq.building_id)
 	BuildManager.buildings.erase(port.building_id)

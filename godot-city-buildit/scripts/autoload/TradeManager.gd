@@ -18,15 +18,18 @@ var sell_slots: Array[Dictionary] = []
 var current_orders: Array[Dictionary] = []
 var market_offers: Array[Dictionary] = []
 var market_refresh_time_left := MARKET_REFRESH_SECONDS
+var market_refresh_unix: int = 0
 var ship_crates: Array[Dictionary] = []
 var ship_departed := false
 var ship_return_time_left := 0.0
+var ship_return_unix: int = 0
 var ship_departures := 0
 
 func _ready() -> void:
 	print("[TradeManager] Trade system online")
 	_generate_orders()
 	_generate_market_offers()
+	market_refresh_unix = int(Time.get_unix_time_from_system()) + int(MARKET_REFRESH_SECONDS)
 	_generate_ship_manifest()
 
 func has_trade_building(type_id: String) -> bool:
@@ -69,6 +72,7 @@ func list_for_sale(item_id: String, amount: int = 1) -> bool:
 		"amount": amount,
 		"price": price,
 		"time_left": SELL_LISTING_SECONDS,
+		"finish_unix": int(Time.get_unix_time_from_system()) + int(SELL_LISTING_SECONDS),
 		"ready": false
 	})
 	trade_state_changed.emit()
@@ -91,33 +95,51 @@ func collect_sale(slot_index: int) -> bool:
 	trade_state_changed.emit()
 	return true
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var changed := false
+	var now := int(Time.get_unix_time_from_system())
 	if is_depot_operational():
 		for index in range(sell_slots.size()):
 			var slot: Dictionary = sell_slots[index]
 			if bool(slot.get("ready", false)):
 				continue
 			var previous_display_seconds := ceili(float(slot.get("time_left", 0.0)))
-			slot["time_left"] = maxf(0.0, float(slot.get("time_left", 0.0)) - delta)
+			var finish_unix := int(slot.get("finish_unix", 0))
+			if finish_unix <= 0:
+				# Backward compatibility for older saves that only stored time_left.
+				finish_unix = now + ceili(maxf(0.0, float(slot.get("time_left", 0.0))))
+				slot["finish_unix"] = finish_unix
+			slot["time_left"] = maxf(0.0, float(finish_unix - now))
 			if float(slot["time_left"]) <= 0.0:
 				slot["ready"] = true
 			if ceili(float(slot["time_left"])) != previous_display_seconds or bool(slot["ready"]):
 				changed = true
 			sell_slots[index] = slot
 	if is_global_trade_operational():
-		market_refresh_time_left = maxf(0.0, market_refresh_time_left - delta)
+		var previous_market_seconds := ceili(market_refresh_time_left)
+		if market_refresh_unix <= 0:
+			market_refresh_unix = now + ceili(maxf(0.0, market_refresh_time_left))
+		market_refresh_time_left = maxf(0.0, float(market_refresh_unix - now))
 		if market_refresh_time_left <= 0.0:
 			_generate_market_offers()
+			market_refresh_unix = now + int(MARKET_REFRESH_SECONDS)
 			market_refresh_time_left = MARKET_REFRESH_SECONDS
 			changed = true
+		elif ceili(market_refresh_time_left) != previous_market_seconds:
+			changed = true
 	if is_cargo_ship_operational() and ship_departed:
-		ship_return_time_left = maxf(0.0, ship_return_time_left - delta)
+		var previous_ship_seconds := ceili(ship_return_time_left)
+		if ship_return_unix <= 0:
+			ship_return_unix = now + ceili(maxf(0.0, ship_return_time_left))
+		ship_return_time_left = maxf(0.0, float(ship_return_unix - now))
 		if ship_return_time_left <= 0.0:
 			ship_departed = false
 			ship_return_time_left = 0.0
+			ship_return_unix = 0
 			_generate_ship_manifest()
 			_set_ship_visual_departed(false)
+			changed = true
+		elif ceili(ship_return_time_left) != previous_ship_seconds:
 			changed = true
 	if changed:
 		trade_state_changed.emit()
@@ -170,6 +192,7 @@ func deliver_ship_crate(crate_index: int) -> bool:
 	if all_delivered:
 		ship_departed = true
 		ship_return_time_left = SHIP_RETURN_SECONDS
+		ship_return_unix = int(Time.get_unix_time_from_system()) + int(SHIP_RETURN_SECONDS)
 		ship_departures += 1
 		EconomyManager.add_keys(1)
 		_set_ship_visual_departed(true)
@@ -266,19 +289,26 @@ func to_save_dict() -> Dictionary:
 		"current_orders": current_orders.duplicate(true),
 		"market_offers": market_offers.duplicate(true),
 		"market_refresh_time_left": market_refresh_time_left,
+		"market_refresh_unix": market_refresh_unix,
 		"ship_crates": ship_crates.duplicate(true),
 		"ship_departed": ship_departed,
 		"ship_return_time_left": ship_return_time_left,
+		"ship_return_unix": ship_return_unix,
 		"ship_departures": ship_departures
 	}
 
 func from_save_dict(data: Dictionary) -> void:
+	var now := int(Time.get_unix_time_from_system())
 	sell_slots.clear()
 	current_orders.clear()
 	market_offers.clear()
 	for slot in data.get("sell_slots", []):
 		if slot is Dictionary:
-			sell_slots.append(slot.duplicate(true))
+			var restored_slot: Dictionary = slot.duplicate(true)
+			if not bool(restored_slot.get("ready", false)) and int(restored_slot.get("finish_unix", 0)) <= 0:
+				# Legacy save: start its remaining countdown from this load.
+				restored_slot["finish_unix"] = now + ceili(maxf(0.0, float(restored_slot.get("time_left", 0.0))))
+			sell_slots.append(restored_slot)
 	for order in data.get("current_orders", []):
 		if order is Dictionary:
 			current_orders.append(order.duplicate(true))
@@ -286,12 +316,18 @@ func from_save_dict(data: Dictionary) -> void:
 		if offer is Dictionary:
 			market_offers.append(offer.duplicate(true))
 	market_refresh_time_left = maxf(0.0, float(data.get("market_refresh_time_left", MARKET_REFRESH_SECONDS)))
+	market_refresh_unix = int(data.get("market_refresh_unix", 0))
+	if market_refresh_unix <= 0:
+		market_refresh_unix = now + ceili(market_refresh_time_left)
 	ship_crates.clear()
 	for crate in data.get("ship_crates", []):
 		if crate is Dictionary:
 			ship_crates.append(crate.duplicate(true))
 	ship_departed = bool(data.get("ship_departed", false))
 	ship_return_time_left = maxf(0.0, float(data.get("ship_return_time_left", 0.0)))
+	ship_return_unix = int(data.get("ship_return_unix", 0))
+	if ship_departed and ship_return_unix <= 0:
+		ship_return_unix = now + ceili(ship_return_time_left)
 	ship_departures = maxi(0, int(data.get("ship_departures", 0)))
 	if ship_crates.is_empty():
 		_generate_ship_manifest()
