@@ -1245,6 +1245,7 @@ func _test_building_model_loader_contract() -> void:
 func _test_region_city_snapshots() -> void:
 	var previous_regions: Dictionary = RegionManager.to_save_dict()
 	var previous_level := GameManager.level
+	var previous_simoleons := EconomyManager.simoleons
 	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
 	_check(road_system != null, "Region snapshot test requires the active RoadSystem.")
 	if road_system == null:
@@ -1272,6 +1273,7 @@ func _test_region_city_snapshots() -> void:
 	_check(RegionManager.region_states.get("capital", {}).has("epic_projects"), "Switching regions must preserve region-specific Epic Project state.")
 	SaveManager.load_region_snapshot(original_snapshot)
 	GameManager.level = previous_level
+	EconomyManager.simoleons = previous_simoleons
 	RegionManager.from_save_dict(previous_regions)
 	GameManager.level_changed.emit(GameManager.level)
 
