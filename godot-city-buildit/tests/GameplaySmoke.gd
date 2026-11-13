@@ -1354,7 +1354,8 @@ func _test_citizen_feedback_bubbles() -> void:
 	_check(str(feedback.get("kind", "")) == "road", "A residential home without connected road access must produce a road feedback bubble.")
 	_check(str(feedback.get("message", "")).contains("Road"), "Citizen feedback must explain the missing road access in readable text.")
 	_check(str(feedback.get("icon", "")) == "road", "Road feedback must use the local road icon.")
-	_check(feedback_manager.get_feedback_for_home(null).is_empty(), "Citizen feedback must ignore invalid building references.")
+	var invalid_feedback: Dictionary = feedback_manager.get_feedback_for_home(null) if feedback_manager else {}
+	_check(invalid_feedback.is_empty(), "Citizen feedback must ignore invalid building references.")
 	BuildManager.buildings.erase(home.building_id)
 	home.queue_free()
 
