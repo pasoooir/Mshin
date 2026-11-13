@@ -36,6 +36,7 @@ AchievementManager="*res://scripts/autoload/AchievementManager.gd"
 AudioManager="*res://scripts/autoload/AudioManager.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
 PerformanceMonitor="*res://scripts/autoload/PerformanceMonitor.gd"
+GraphicsSettingsManager="*res://scripts/autoload/GraphicsSettingsManager.gd"
 
 [display]
 
