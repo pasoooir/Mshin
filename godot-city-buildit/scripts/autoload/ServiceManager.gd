@@ -82,6 +82,7 @@ func recalculate_from_buildings() -> void:
 	used_sewage = 0
 	total_waste = 0
 	demand_waste = 0
+	used_waste = 0
 	power_served_ids.clear()
 	water_served_ids.clear()
 	sewage_served_ids.clear()
