@@ -303,3 +303,23 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - Godot City BuildIt Validation برای PR با run `43485834859` موفق شد؛ Mshin Playable Web برای PR با run `43485834688` موفق شد.
 - پس از Merge نیز Godot Validation با run `43486114412`، Web/Chromium desktop+mobile با run `43486114191` و Pages build/deploy با run `43486112974` موفق شدند.
 - منابع Recipeها community-reference هستند و تأیید رسمی EA محسوب نمی‌شوند. بررسی تصویری پنل‌ها و تعامل لمسی روی Android فیزیکی همچنان باز است.
+
+## تکمیل اعتبارسنجی اقتصاد تولید — PR #438
+
+- PR #438: [Complete production economy validation and recipe coverage](https://github.com/pasoooir/Mshin/pull/438)؛ شاخه `feat/production-economy-final-acceptance`.
+- Head زمان اجرای CI: `676fc03c9ba8a450d303b41f936a6731f17ffae8`.
+- Godot City BuildIt Validation run `43488845705`: موفق؛ شامل static validation، import/parse، headless startup و GameplaySmoke.
+- Mshin Playable Web run `43488845632`: موفق؛ شامل GameplaySmoke، Web export و Chromium desktop/mobile landscape launch.
+- کاتالوگ پس از PR #438 دارای ۷۳ تعریف Recipe از ۷۴ هویت محصول است؛ ۷۰ محصول با سطح فعلی قابل تولیدند. سه محصول Recipe و زمان/مواد مرجع دارند اما سطح دقیق Mayor Level آن‌ها نامعلوم است و به همین دلیل تولید، Global Trade و Cargo Ship برای آن‌ها قفل می‌ماند.
+- Football Shoes: Shoes ×1 + Chemicals ×3، زمان پایه ۳۵ دقیقه، ارزش مرجع ۹۲۰؛ سطح بازشدن آیتم نامعلوم.
+- Kite: Home Textiles ×2 + Planks ×2 + Paint ×2، زمان پایه ۷۵ دقیقه، ارزش مرجع ۱۰۰۰؛ سطح بازشدن آیتم نامعلوم.
+- Teddy Bear: Home Textiles ×4 + Plastic ×2، زمان پایه ۶۰ دقیقه، ارزش مرجع ۶۰۰؛ سطح بازشدن آیتم نامعلوم.
+- Tapestry: زمان مرجع ۲۱۰ دقیقه و ارزش مرجع ۲۵۶۰ ثبت شده است؛ صفحه Bureau 2024 مقدار Textiles ×4 و صفحه محصول مقدار Textiles ×3 نشان می‌دهد. هر دو candidate در UI نمایش داده می‌شوند و تولید قفل است.
+- `ProductionManager.get_recipe_economy_profile()` ارزش مرجع خروجی، مجموع ارزش مرجع ورودی‌ها، spread و زمان تولید را محاسبه می‌کند. این spread سود خالص نیست و هزینه زمان، کارمزد، مالیات و پاداش‌ها را در بر نمی‌گیرد.
+- `get_economy_catalog_audit()` صحت زمان/ارزش/فروشگاه/مواد اولیه/تعداد و تکراری نبودن محصول‌ها را بررسی می‌کند. شناسه ناشناخته دیگر قیمت ساختگی ۵ یا زمان ساختگی ۲۰ ثانیه دریافت نمی‌کند.
+- spread مرجع منفی برای Sports Drink، Protein Bar، Football Shoes، Kite و Teddy Bear به‌صورت warning گزارش می‌شود؛ قیمت‌های مرجع بدون مدرک داخل بازی دستکاری نشده‌اند.
+- انتخاب محصولات Global Trade و Cargo Ship از تابع مرکزی `TradeManager.get_trade_eligible_item_ids()` عبور می‌کند و محصول با سطح بازشدن نامعلوم را پیشنهاد نمی‌دهد.
+- GameplaySmoke صف سه‌سفارش تجاری، رزرو یک‌باره مواد، ذخیره/بازیابی صف، تکمیل آفلاین ترتیبی، حفظ محصول آماده در انبار پر و جمع‌آوری بعد از آزادشدن ظرفیت را بررسی می‌کند؛ همچنین پنج slot کارخانه را به‌صورت موازی تست می‌کند.
+- پنل تولید کاتالوگ را در یک ردیف افقی scrollable نگه می‌دارد و برچسب مواد/ورودی‌های متعارض را wrap می‌کند. CI مرورگر در viewport لمسی 844×390 موفق است.
+- محدودیت واقعی: CI مرورگر و GameplaySmoke جایگزین تست روی گوشی Android فیزیکی نیستند. مقایسه screenshot و لمس واقعی هنوز انجام نشده است و نباید تکمیل‌شده اعلام شود.
+- منابع جامعه‌محور مورد استفاده: Football Shoes، Sports Shop، Kite، Teddy Bear، Toy Shop، Tapestry و Bureau of Restoration در SimCity BuildIt Fandom. این صفحات منبع رسمی EA نیستند.

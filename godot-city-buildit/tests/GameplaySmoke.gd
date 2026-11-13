@@ -95,9 +95,40 @@ func _test_storage_and_production_chain() -> void:
 	for item_id in ["tennis_racket","sports_drink","protein_bar"]:
 		_check(ProductionManager.get_store_recipe_ids("sports_shop").has(item_id), "Sports Shop must expose verified 2024 recipe %s." % item_id)
 	_check(ProductionManager.get_store_recipe_ids("restoration_office").has("cut_stone") and ProductionManager.get_store_recipe_ids("restoration_office").has("stained_glass"), "Bureau of Restoration must expose the verified Chiseled Stone and Stained Glass recipes.")
-	_check(ProductionManager.get_recipe("soccer_shoes").is_empty(), "Football Shoes must remain disabled while its item unlock level is unresolved.")
-	_check(ProductionManager.get_recipe("kite").is_empty() and ProductionManager.get_recipe("teddy_bear").is_empty(), "Toy Shop products with unresolved item unlock/time evidence must remain disabled.")
-	_check(ProductionManager.get_recipe("tapestries").is_empty(), "Tapestry must not be enabled from conflicting ingredient tables.")
+	var football_shoes := ProductionManager.get_recipe("soccer_shoes")
+	_check(football_shoes.get("inputs", {}) == {"shoes":1,"chemicals":3} and int(football_shoes.get("time_sec", 0)) == 2100 and int(football_shoes.get("value", 0)) == 920, "Football Shoes must use the documented 2024 recipe, 35-minute base time and 920 reference value.")
+	_check(not bool(football_shoes.get("unlock_level_verified", true)) and ProductionManager.get_recipe_lock_reason("soccer_shoes").contains("Level unlock not verified"), "Football Shoes must remain locked without an invented Mayor Level gate.")
+	var kite_recipe := ProductionManager.get_recipe("kite")
+	_check(kite_recipe.get("inputs", {}) == {"home_textiles":2,"planks":2,"paint":2} and int(kite_recipe.get("time_sec", 0)) == 4500 and int(kite_recipe.get("value", 0)) == 1000, "Kite must retain its sourced 2024 inputs, 75-minute time and reference value.")
+	_check(not bool(kite_recipe.get("unlock_level_verified", true)) and ProductionManager.get_recipe_lock_reason("kite").contains("Level unlock not verified"), "Kite must remain locked while its exact item level is unknown.")
+	var teddy_recipe := ProductionManager.get_recipe("teddy_bear")
+	_check(teddy_recipe.get("inputs", {}) == {"home_textiles":4,"plastic":2} and int(teddy_recipe.get("time_sec", 0)) == 3600 and int(teddy_recipe.get("value", 0)) == 600, "Teddy Bear must use its documented 60-minute time and source-backed inputs/value.")
+	_check(not bool(teddy_recipe.get("unlock_level_verified", true)) and ProductionManager.get_recipe_lock_reason("teddy_bear").contains("Level unlock not verified"), "Teddy Bear must remain locked while its exact item level is unknown.")
+	var tapestry_definition := ProductionManager.get_item_definition("tapestries")
+	_check(ProductionManager.get_recipe("tapestries").is_empty() and bool(tapestry_definition.get("recipe_conflict", false)), "Tapestry must remain disabled while current references disagree on Textiles quantity.")
+	_check(tapestry_definition.get("candidate_inputs", []).size() == 2 and int(tapestry_definition.get("time_sec", 0)) == 12600 and int(tapestry_definition.get("value", 0)) == 2560, "Tapestry must expose both conflicting ingredient candidates plus its sourced 210-minute time and reference value.")
+	_check(ProductionManager.get_recipe_lock_reason("tapestries").contains("conflict"), "Tapestry conflict must be explicit in its production lock reason.")
+	_check(not ProductionManager.get_available_crafted().has("soccer_shoes") and not ProductionManager.get_available_crafted().has("kite") and not ProductionManager.get_available_crafted().has("teddy_bear"), "Products with unresolved Mayor Level gates must not be treated as unlocked inventory offers.")
+	_check(not TradeManager.get_trade_eligible_item_ids().has("soccer_shoes") and not TradeManager.get_trade_eligible_item_ids().has("kite") and not TradeManager.get_trade_eligible_item_ids().has("teddy_bear"), "The shared trade-eligibility policy must exclude products with unverified unlock levels.")
+	var previous_market_offers: Array = TradeManager.market_offers.duplicate(true)
+	var previous_ship_crates: Array = TradeManager.ship_crates.duplicate(true)
+	TradeManager._generate_market_offers()
+	TradeManager._generate_ship_manifest()
+	for offer in TradeManager.market_offers:
+		_check(not ["soccer_shoes", "kite", "teddy_bear"].has(str(offer.get("item_id", ""))), "Global Trade must not offer products with unverified Mayor Level gates.")
+	for crate in TradeManager.ship_crates:
+		_check(not ["soccer_shoes", "kite", "teddy_bear"].has(str(crate.get("item_id", ""))), "Cargo Ship must not request products with unverified Mayor Level gates.")
+	TradeManager.market_offers = previous_market_offers
+	TradeManager.ship_crates = previous_ship_crates
+	TradeManager.trade_state_changed.emit()
+	_check(is_equal_approx(ProductionManager.get_estimated_chain_seconds("soccer_shoes"), -1.0), "A product with an unknown unlock gate must not receive an availability estimate.")
+	_check(ProductionManager.get_item_value("missing_product") == 0 and is_zero_approx(ProductionManager.get_production_time("missing_product")), "Unknown item IDs must not receive fabricated fallback prices or production times.")
+	var economy_audit := ProductionManager.get_economy_catalog_audit()
+	_check(economy_audit.get("errors", []).is_empty(), "Economy catalog audit found invalid source values, times, stores or ingredient references: %s" % str(economy_audit.get("errors", [])))
+	_check(int(economy_audit.get("recipe_count", 0)) == 73 and int(economy_audit.get("catalog_only_count", 0)) == 1, "Economy audit must account for 73 recipe definitions plus one conflict-only catalog product.")
+	_check(economy_audit.get("negative_reference_spread_items", []).has("sports_drink") and economy_audit.get("negative_reference_spread_items", []).has("protein_bar"), "Economy audit must surface negative ingredient-to-output reference spreads instead of presenting those products as guaranteed profit.")
+	var backpack_economy := ProductionManager.get_recipe_economy_profile("backpack")
+	_check(int(backpack_economy.get("output_reference_value", 0)) == 430 and int(backpack_economy.get("production_seconds", 0)) == 7200 and backpack_economy.has("gross_reference_spread"), "Backpack economy profile must expose reference value, production duration and ingredient-value spread without claiming net profit.")
 	_check(is_equal_approx(ProductionManager.get_production_time("tennis_racket", 3), 2160.0), "Tennis Racket three-star production time must reduce to 36 minutes.")
 	_check(is_equal_approx(ProductionManager.get_production_time("sports_drink", 3), 1680.0), "Sports Drink three-star production time must reduce to 28 minutes.")
 	_check(is_equal_approx(ProductionManager.get_production_time("stained_glass", 1), 12960.0), "Stained Glass one-star production time must be 3 hours 36 minutes.")
@@ -280,6 +311,74 @@ func _test_storage_and_production_chain() -> void:
 	restored_factory.queue_free()
 	shop.queue_free()
 	StorageManager.from_save_dict(saved_storage)
+
+func _test_production_queue_stress() -> void:
+	var saved_storage: Dictionary = StorageManager.to_save_dict()
+	var saved_level := GameManager.level
+	GameManager.level = 90
+	StorageManager.capacity = 100
+	StorageManager.items = {"metal": 6}
+	var store := ProductionComponentScript.new()
+	store.shop_id = "building_supplies"
+	store.slot_count = 3
+	add_child(store)
+	for slot_index in range(3):
+		_check(store.start_craft("nails", slot_index), "Stress test must enqueue Nails order %d." % (slot_index + 1))
+	_check(StorageManager.get_count("metal") == 0, "All queued orders must reserve ingredients exactly once at enqueue time.")
+	var queued_save := store.to_save_array()
+	var restored := ProductionComponentScript.new()
+	restored.shop_id = "building_supplies"
+	restored.slot_count = 3
+	add_child(restored)
+	restored.from_save_array(queued_save)
+	_check(restored.get_slot_count() == 3 and restored.get_slot(0).get("item_id", "") == "nails" and restored.get_slot(1).get("item_id", "") == "nails" and restored.get_slot(2).get("item_id", "") == "nails", "Save/load must preserve every queued commercial order and queue capacity.")
+	_check(StorageManager.get_count("metal") == 0, "Restoring a production queue must not deduct its reserved inputs a second time.")
+	for slot_index in range(3):
+		var slot: Dictionary = restored.slots[slot_index]
+		if slot_index == 0:
+			slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		restored.slots[slot_index] = slot
+	restored.refresh_slots()
+	_check(bool(restored.get_slot(0).get("ready", false)) and int(restored.get_slot(1).get("finish_unix", 0)) > 0, "Offline completion must retain the finished order and start exactly the next queued order.")
+	var second: Dictionary = restored.slots[1]
+	second["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	restored.slots[1] = second
+	restored.refresh_slots()
+	_check(bool(restored.get_slot(1).get("ready", false)) and int(restored.get_slot(2).get("finish_unix", 0)) > 0, "A second offline completion must advance the sequential queue without skipping or duplicating orders.")
+	var third: Dictionary = restored.slots[2]
+	third["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	restored.slots[2] = third
+	restored.refresh_slots()
+	_check(bool(restored.get_slot(0).get("ready", false)) and bool(restored.get_slot(1).get("ready", false)) and bool(restored.get_slot(2).get("ready", false)), "All three queued commercial batches must eventually become ready.")
+	StorageManager.capacity = 1
+	StorageManager.items = {"occupied": 1}
+	_check(not restored.collect(0) and bool(restored.get_slot(0).get("ready", false)), "A full warehouse must preserve a completed batch for later collection.")
+	StorageManager.capacity = 100
+	StorageManager.items = {}
+	for slot_index in range(3):
+		_check(restored.collect(slot_index), "A completed batch must collect after warehouse capacity becomes available.")
+	_check(StorageManager.get_count("nails") == 3 and restored.get_slot_count() == 3, "Collecting all restored batches must produce exactly three Nails without losing purchased queue capacity.")
+	var parallel_factory := ProductionComponentScript.new()
+	parallel_factory.is_factory = true
+	parallel_factory.slot_count = 5
+	add_child(parallel_factory)
+	for slot_index in range(5):
+		_check(parallel_factory.start_factory("metal", slot_index), "Five-slot factory must accept parallel raw-material batch %d." % (slot_index + 1))
+	for slot_index in range(5):
+		var slot: Dictionary = parallel_factory.slots[slot_index]
+		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		parallel_factory.slots[slot_index] = slot
+	parallel_factory.refresh_slots()
+	for slot_index in range(5):
+		_check(bool(parallel_factory.get_slot(slot_index).get("ready", false)), "Factory slot %d must finish independently while other batches are active." % slot_index)
+	for slot_index in range(5):
+		_check(parallel_factory.collect(slot_index), "Factory slot %d must collect its completed raw material." % slot_index)
+	_check(StorageManager.get_count("metal") == 5, "Five independent factory slots must yield exactly five raw materials.")
+	store.queue_free()
+	restored.queue_free()
+	parallel_factory.queue_free()
+	StorageManager.from_save_dict(saved_storage)
+	GameManager.level = saved_level
 
 func _test_wind_turbine_rotor_animation() -> void:
 	# Use the real scene so every @onready node path exists in the test fixture.
@@ -1793,6 +1892,7 @@ func _run_gameplay_test() -> void:
 	await _test_build_menu_visibility()
 	_test_wind_turbine_rotor_animation()
 	_test_storage_and_production_chain()
+	_test_production_queue_stress()
 	_test_fire_hazard_state_machine()
 	_test_sewage_service_happiness()
 	_test_waste_service_happiness()
@@ -2325,6 +2425,10 @@ func _run_gameplay_test() -> void:
 	if collect_nails_1:
 		collect_nails_1.emit_signal("pressed")
 	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
+	var product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
+	var product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
+	_check(product_grid != null and product_grid.columns == ProductionManager.get_store_catalog_ids("building_supplies").size() and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The complete store catalog must remain in one accessible row rather than wrapping below the mobile horizontal viewport.")
+	_check(product_scroll != null and product_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "The production catalog must support horizontal touch scrolling without clipping a second row.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level
@@ -2407,7 +2511,7 @@ func _run_gameplay_test() -> void:
 			_check(ProductionManager.get_recipe_lock_reason(item_id, 1).is_empty(), "%s must unlock at its sourced store star." % item_id)
 		else:
 			_check(ProductionManager.get_recipe_lock_reason(item_id, 0).is_empty(), "%s must be craftable at its sourced Mayor Level." % item_id)
-	_check(ProductionManager.get_recipe("kite").is_empty() and ProductionManager.get_recipe("teddy_bear").is_empty(), "Products with unverified unlock levels or missing recipe verification must remain disabled.")
+	_check(not ProductionManager.get_recipe("kite").is_empty() and not ProductionManager.get_recipe("teddy_bear").is_empty() and not ProductionManager.can_craft("kite") and not ProductionManager.can_craft("teddy_bear"), "Kite and Teddy Bear must expose sourced recipe data but remain uncraftable until their exact unlock levels are verified.")
 	_check(ProductionManager.get_store_recipe_ids("dessert_shop").has("pavlova"), "Dessert Shop's verified product must appear in its production catalog.")
 	var donut_third_star_offer := ProductionManager.get_store_star_offer("donut_shop", 2)
 	_check(int(donut_third_star_offer.get("level", 0)) == 50 and int(donut_third_star_offer.get("cost", 0)) == 49000, "Donut Shop third star must use the 49,000 Simoleon value corroborated by the Japanese table and Planning Guide.")
