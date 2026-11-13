@@ -55,7 +55,7 @@ func get_region_list() -> Array[Dictionary]:
 func _population_from_snapshot(snapshot: Dictionary) -> int:
 	var population := 0
 	for saved_building in snapshot.get("buildings", []):
-		if not saved_building is Dictionary or str(saved_building.get("status", "")) != "completed":
+		if not (saved_building is Dictionary) or str(saved_building.get("status", "")) != "completed":
 			continue
 		if str(saved_building.get("type", "")).begins_with("residential"):
 			population += int(saved_building.get("population", 0))
