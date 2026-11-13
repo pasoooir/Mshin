@@ -96,6 +96,7 @@ var production_overlay: Control
 var city_needs_overlay: Control
 var residential_overlay: Control
 var epic_project_overlay: Control
+var achievements_overlay: Control
 var _epic_panel_building: Building = null
 var simoleons_label: Label
 var simcash_label: Label
@@ -148,6 +149,8 @@ func _ready() -> void:
 	TrafficManager.traffic_changed.connect(_on_traffic_changed)
 	TradeManager.trade_state_changed.connect(_on_trade_state_changed)
 	EpicProjectManager.epic_state_changed.connect(_on_epic_project_state_changed)
+	AchievementManager.achievement_unlocked.connect(_on_achievement_unlocked)
+	AchievementManager.state_changed.connect(_on_achievement_state_changed)
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
@@ -626,7 +629,7 @@ func _build_toolbars() -> void:
 	bottom_actions.add_theme_constant_override("separation", 10)
 	bottom_actions.z_index = 62
 	add_child(bottom_actions)
-	for item in [["storage","Storage"],["city_needs","City Needs"],["trade","Trade"],["save","Save"]]:
+	for item in [["storage","Storage"],["city_needs","City Needs"],["trade","Trade"],["achievements","Achievements"],["save","Save"]]:
 		var button := _make_icon_button(str(item[0]), str(item[1]), Vector2(92, 82) * _ui_scale)
 		button.name = "CityNeedsAction" if str(item[0]) == "city_needs" else str(item[0]).capitalize() + "Action"
 		bottom_actions.add_child(button)
@@ -634,6 +637,7 @@ func _build_toolbars() -> void:
 			"storage": button.pressed.connect(_on_storage_pressed)
 			"city_needs": button.pressed.connect(_on_city_needs_pressed)
 			"trade": button.pressed.connect(_on_trade_pressed)
+			"achievements": button.pressed.connect(_on_achievements_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
 	catalog_base_bar = PanelContainer.new()
 	catalog_base_bar.name = "CatalogBaseBar"
@@ -3534,6 +3538,111 @@ func _on_cancel_pressed() -> void:
 		status_label.text = "Bulldozer cancelled."
 	else:
 		status_label.text = "Cancelled."
+
+func _on_achievements_pressed() -> void:
+	BuildManager.cancel_placement()
+	_close_production_panel()
+	_close_storage_panel()
+	_close_residential_panel()
+	_close_trade_panel()
+	_close_city_needs_panel()
+	open_achievements_panel()
+
+func _on_achievement_unlocked(_id: String, title: String, simoleons_reward: int, xp_reward: int) -> void:
+	status_label.text = "Achievement unlocked: %s  ·  +%d Simoleons  ·  +%d XP" % [title, simoleons_reward, xp_reward]
+
+func _on_achievement_state_changed() -> void:
+	if is_instance_valid(achievements_overlay):
+		open_achievements_panel()
+
+func open_achievements_panel() -> void:
+	_close_achievements_panel()
+	var viewport_size := get_viewport().get_visible_rect().size
+	achievements_overlay = Control.new()
+	achievements_overlay.name = "AchievementsOverlay"
+	achievements_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	achievements_overlay.z_index = 135
+	achievements_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(achievements_overlay)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.025, 0.035, 0.68)
+	achievements_overlay.add_child(shade)
+	var width := minf(650.0 * _ui_scale, viewport_size.x * 0.92)
+	var height := minf(620.0 * _ui_scale, viewport_size.y * 0.90)
+	var panel := PanelContainer.new()
+	panel.name = "AchievementsPanel"
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -width * 0.5
+	panel.offset_right = width * 0.5
+	panel.offset_top = -height * 0.5
+	panel.offset_bottom = height * 0.5
+	panel.add_theme_stylebox_override("panel", _city_panel_style())
+	achievements_overlay.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 8)
+	panel.add_child(layout)
+	_city_panel_heading(layout, "CITY ACHIEVEMENTS", _close_achievements_panel)
+	var summary := Label.new()
+	summary.name = "AchievementSummary"
+	summary.text = "UNLOCKED  ·  %d / %d" % [AchievementManager.get_unlocked_count(), AchievementManager.get_total_count()]
+	summary.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	summary.add_theme_color_override("font_color", Color("#9A6A20"))
+	layout.add_child(summary)
+	var scroll := ScrollContainer.new()
+	scroll.name = "AchievementScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(scroll)
+	var entries := VBoxContainer.new()
+	entries.add_theme_constant_override("separation", 8)
+	scroll.add_child(entries)
+	for entry in AchievementManager.get_entries():
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", _toolbar_style(Color("#EAF2F7"), Color("#C7D9E5")))
+		entries.add_child(card)
+		var content := VBoxContainer.new()
+		content.add_theme_constant_override("separation", 3)
+		card.add_child(content)
+		var header := HBoxContainer.new()
+		header.add_theme_constant_override("separation", 8)
+		content.add_child(header)
+		var title := Label.new()
+		title.text = str(entry.get("title", "Achievement"))
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+		title.add_theme_color_override("font_color", Color("#A87522") if bool(entry.get("unlocked", false)) else Color("#24485B"))
+		header.add_child(title)
+		var state := Label.new()
+		state.text = "UNLOCKED" if bool(entry.get("unlocked", false)) else "%d / %d" % [int(entry.get("progress", 0)), int(entry.get("target", 1))]
+		state.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		state.add_theme_color_override("font_color", Color("#34734D") if bool(entry.get("unlocked", false)) else Color("#607989"))
+		header.add_child(state)
+		var description := Label.new()
+		description.text = str(entry.get("description", ""))
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		description.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		description.add_theme_color_override("font_color", Color("#526D7D"))
+		content.add_child(description)
+		var progress_bar := ProgressBar.new()
+		progress_bar.min_value = 0
+		progress_bar.max_value = maxi(1, int(entry.get("target", 1)))
+		progress_bar.value = int(entry.get("progress", 0))
+		progress_bar.show_percentage = false
+		progress_bar.custom_minimum_size.y = 7 * _ui_scale
+		content.add_child(progress_bar)
+		var reward := Label.new()
+		reward.text = "REWARD  ·  +%d SIMOLEONS  ·  +%d XP" % [int(entry.get("simoleons", 0)), int(entry.get("xp", 0))]
+		reward.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		reward.add_theme_color_override("font_color", Color("#8A672B"))
+		content.add_child(reward)
+
+func _close_achievements_panel() -> void:
+	if is_instance_valid(achievements_overlay):
+		achievements_overlay.queue_free()
+	achievements_overlay = null
 
 func _on_save_pressed() -> void:
 	status_label.text = "City saved successfully." if SaveManager.save_game() else "Could not save the city."
