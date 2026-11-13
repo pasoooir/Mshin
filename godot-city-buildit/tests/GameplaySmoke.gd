@@ -7,6 +7,7 @@ const ProductionComponentScript = preload("res://scripts/production/ProductionCo
 const BuildingScene = preload("res://scenes/buildings/Building.tscn")
 const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
+const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -975,8 +976,18 @@ func _test_fire_hazard_state_machine() -> void:
 	FireHazardManager.smoking_ids = saved_smoking
 	FireHazardManager.on_city_changed()
 
+func _test_building_model_loader_contract() -> void:
+	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa.glb"), "Local GLB model paths under assets/models must be accepted.")
+	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/shop.gltf"), "Local glTF model paths under assets/models must be accepted.")
+	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/vehicle.obj"), "Unsupported model formats must be rejected.")
+	_check(not BuildingModelLoader.is_supported_model_path("res://outside/villa.glb"), "Model loading must be restricted to the local models directory.")
+	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/../outside/villa.glb"), "Model paths must reject parent-directory traversal.")
+	_check(not BuildingModelLoader.is_supported_model_path("https://example.com/villa.glb"), "Remote model URLs must not be accepted.")
+	_check(BuildingModelLoader.load_model_scene("res://assets/models/not-installed.glb") == null, "A missing optional model must return null so the procedural fallback can render.")
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	_test_building_model_loader_contract()
 	await _test_build_menu_visibility()
 	_test_wind_turbine_rotor_animation()
 	_test_storage_and_production_chain()
