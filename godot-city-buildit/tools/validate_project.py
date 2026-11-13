@@ -307,6 +307,38 @@ for level_contract in [
     if level_contract not in building_source:
         errors.append(f"Residential level architecture contract is missing: {level_contract}")
 
+# Every non-residential category also has a type-specific identity path.
+for identity_contract in [
+    'func _build_commercial_identity(',
+    '"restaurant_traditional":',
+    '"fast_food":',
+    '"hardware_store":',
+    '"farmers_market":',
+    '"furniture_store":',
+    '"gardening_supplies":',
+    '"donut_shop":',
+    '"home_appliances":',
+    '"fashion_store":',
+    '"sports_shop":',
+    '"toy_store":',
+    '"restoration_office":',
+    '"farmers_store":',
+    '"dessert_shop":',
+    'func _build_industrial_identity(',
+    '"hightech", "factory_hightech":',
+    '"nano", "factory_nano":',
+    'func _build_service_identity(',
+    '"fire_station_small", "fire_station", "fire_station_deluxe":',
+    '"police_small", "police_station", "police_basic", "police_precinct":',
+    '"clinic_small", "clinic", "hospital":',
+    '"sewage_small", "sewage_basic", "sewage_deluxe":',
+    '"waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling":',
+    'func _build_park(w: float, d: float, color: Color) -> void:',
+    'a paved entry, crossing path, planted beds, seating and',
+]:
+    if identity_contract not in building_source:
+        errors.append(f"Building identity visual contract is missing: {identity_contract}")
+
 # Art Supplies is a separate gallery-style commercial hero, not the generic shop mesh.
 for visual_contract in [
     'if building_type == "art_supplies" or subtype == "art":',
