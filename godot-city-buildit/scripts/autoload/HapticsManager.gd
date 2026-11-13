@@ -19,7 +19,7 @@ func pulse_for(event_name: String) -> bool:
 	return pulse(get_pulse_duration_ms(event_name))
 
 func pulse(duration_ms: int) -> bool:
-	if not OS.has_feature("web"):
+	if not OS.has_feature("web") or duration_ms <= 0:
 		return false
 	var safe_duration := clampi(duration_ms, 1, MAX_PULSE_DURATION_MS)
 	if safe_duration <= 0:
