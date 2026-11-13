@@ -231,12 +231,6 @@ func _create_visual() -> void:
 		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
 			return
 
-func _should_use_external_model(model_path: String) -> bool:
-	if model_path.is_empty():
-		return false
-	# Keep the custom level-one villa and bespoke shop showcases intact.
-	var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1
-	return not is_starter_villa
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	var color: Color = definition.get("color", Color(0.8, 0.8, 0.8))
 	var category: String = definition.get("category", "residential")
@@ -275,6 +269,13 @@ func _should_use_external_model(model_path: String) -> bool:
 			_build_park(w, d, color)
 		_:
 			_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
+
+func _should_use_external_model(model_path: String) -> bool:
+	if model_path.is_empty():
+		return false
+	# Keep the custom level-one villa and bespoke shop showcases intact.
+	var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1
+	return not is_starter_villa
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
 	var residential_subtype := str(definition.get("subtype", "villa"))
