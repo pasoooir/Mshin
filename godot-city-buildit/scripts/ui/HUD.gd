@@ -201,6 +201,7 @@ func _ready() -> void:
 	_ui_scale = _responsive_scale_for_size(viewport_size)
 	_build_top_hud()
 	_build_toolbars()
+	_apply_minimum_readable_text(self)
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_apply_responsive_layout()
 	_update_all()
