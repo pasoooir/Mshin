@@ -261,8 +261,10 @@ func calculate_home_happiness(home: Node3D) -> float:
 	return clampf(score, 0.0, 100.0)
 
 func _capacity_for_home(home: Node3D) -> int:
-	var base_capacity := int(home.definition.get("population", 15))
-	return maxi(base_capacity, ProductionManager.get_population_for_stage(home.upgrade_stage))
+	var base_capacity := maxi(int(home.definition.get("population", 15)), ProductionManager.get_population_for_stage(home.upgrade_stage))
+	if int(home.get("epic_tier")) > 0:
+		base_capacity = roundi(float(base_capacity) * EpicProjectManager.EPIC_POPULATION_BONUS)
+	return base_capacity
 
 func _service_capacity_factor(home: Node3D) -> float:
 	var factor := 1.0
