@@ -1879,8 +1879,22 @@ func _test_citizen_feedback_bubbles() -> void:
 	BuildManager.buildings.erase(home.building_id)
 	home.queue_free()
 
+func _test_audio_manager_contract() -> void:
+	_check(AudioManager.is_audio_ready(), "AudioManager must initialize local music, ambience and all sound-effect streams.")
+	var audio_status: Dictionary = AudioManager.get_audio_status()
+	_check(bool(audio_status.get("ready", false)), "Audio status must report a ready audio service.")
+	_check(int(audio_status.get("effect_count", 0)) == 6, "AudioManager must expose all six generated sound-effect cues.")
+	_check(audio_status.get("music_stream") is AudioStreamWAV, "Background music must use a locally generated WAV stream.")
+	_check(audio_status.get("ambient_stream") is AudioStreamWAV, "Ambient city sound must use a locally generated WAV stream.")
+	_check(BuildManager.is_connected("construction_started", Callable(AudioManager, "_on_construction_started")), "Construction start events must be connected to the audio service.")
+	_check(BuildManager.is_connected("construction_finished", Callable(AudioManager, "_on_construction_finished")), "Construction completion events must be connected to the audio service.")
+	_check(ProductionManager.is_connected("item_produced", Callable(AudioManager, "_on_item_produced")), "Collected production items must trigger the audio service.")
+	_check(GameManager.is_connected("level_up_rewarded", Callable(AudioManager, "_on_level_up_rewarded")), "Level-up rewards must trigger the audio service.")
+	_check(AchievementManager.is_connected("achievement_unlocked", Callable(AudioManager, "_on_achievement_unlocked")), "Achievement rewards must trigger the audio service.")
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	_test_audio_manager_contract()
 	_test_mobile_haptics_contract()
 	_test_epic_project_core()
 	_test_achievements()
