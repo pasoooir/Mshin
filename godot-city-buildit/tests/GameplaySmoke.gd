@@ -24,9 +24,7 @@ func _ready() -> void:
 		var dimensions := requested_viewport.split("x")
 		if dimensions.size() == 2:
 			var requested_size := Vector2i(int(dimensions[0]), int(dimensions[1]))
-			var root_window := get_window()
-			root_window.mode = Window.MODE_WINDOWED
-			root_window.size = requested_size
+			get_viewport().size = requested_size
 			await get_tree().process_frame
 			var actual_size := get_viewport().get_visible_rect().size
 			print("[GameplaySmoke] Requested viewport=%s actual=%s" % [str(requested_size), str(actual_size)])
