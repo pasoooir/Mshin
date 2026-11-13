@@ -81,7 +81,7 @@ var building_types: Dictionary = {
 	"trade_depot": {"name":"Trade Depot", "category":"service", "service_group":"trade", "trade_role":"depot", "cost":15000, "size":Vector2i(3,2), "population":0, "population_required":8000, "build_time":8.0, "color":Color(0.30,0.62,0.78), "level":1},
 	"global_trade_hq": {"name":"Global Trade HQ", "category":"service", "service_group":"trade", "trade_role":"market", "cost":30000, "size":Vector2i(3,3), "population":0, "population_required":10000, "build_time":10.0, "color":Color(0.32,0.48,0.76), "level":1},
 	"cargo_port": {"name":"Cargo Port", "category":"service", "service_group":"trade", "trade_role":"ship", "cost":45000, "size":Vector2i(4,3), "population":0, "population_required":20000, "build_time":12.0, "color":Color(0.25,0.55,0.67), "level":1},
-	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5}
+	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5, "epic_points":10}
 }
 
 var is_moving: bool = false
