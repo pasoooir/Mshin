@@ -386,9 +386,12 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - PR #443 با merge commit `5d503f3d0443fecb18d1e0c513fb051f15cad9e9` ادغام شد؛ PR Godot Validation run `43500720088` و Web/Chromium run `43500720101` موفق بودند.
 
 
-## بنچمارک واقعی روی دستگاه — PR در حال آماده‌سازی
+## بنچمارک واقعی روی دستگاه — PR #444 ادغام‌شده
 
 - `scripts/autoload/PerformanceMonitor.gd` در زمان اجرای foreground بازی، delta هر فریم را برای ۳۰ ثانیه ثبت می‌کند و میانگین FPS، میانگین/P95/بیشینه frame time، درصد فریم‌های زیر ۱۶٫۶۷ms و معیارهای render را جمع‌آوری می‌کند.
 - گزارش JSON شامل پلتفرم، CPU، نسخه Godot، ابعاد viewport و scope اندازه‌گیری در `user://performance_benchmark_latest.json` ذخیره می‌شود. دکمه اجرای تست در Settings اضافه شده و نتیجه ۶۰fps در HUD نمایش داده می‌شود.
 - `GameplaySmoke.gd::_test_performance_benchmark_contract` محاسبات روی داده نمونه معلوم، رد کردن نتیجه ناموفق، حداقل مدت آزمون و لغو آزمون را بررسی می‌کند.
 - محدودیت پذیرش: این تغییر ابزار اندازه‌گیری را فراهم می‌کند، اما هیچ بنچمارک واقعی از گوشی هدف به مخزن ارسال نشده است؛ پس ۶۰fps هنوز تأیید نشده و ردیف README `[~]` است.
+
+- PR #444 با merge commit `de71a375c93c1323e44b11a9bc31b01c343438e6` وارد main شد؛ Godot Validation run `43501838869`، Web/Chromium + game deploy run `43501839025` و Pages build/deploy run `43501837955` همگی موفق شدند.
+- این merge ابزار سنجش را در بازی قابل اجرا کرده است، اما هیچ فایل `performance_benchmark_latest.json` از گوشی هدف به مخزن اضافه نشده؛ نتیجه فیزیکی ۶۰fps همچنان باز است.
