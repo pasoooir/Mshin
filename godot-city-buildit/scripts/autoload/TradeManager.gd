@@ -24,6 +24,8 @@ var ship_departed := false
 var ship_return_time_left := 0.0
 var ship_return_unix: int = 0
 var ship_departures := 0
+var completed_sales: int = 0
+var market_purchases: int = 0
 
 func _ready() -> void:
 	print("[TradeManager] Trade system online")
@@ -90,6 +92,7 @@ func collect_sale(slot_index: int) -> bool:
 	if item_id.is_empty() or amount <= 0 or price <= 0:
 		return false
 	EconomyManager.add_simoleons(price)
+	completed_sales += 1
 	sell_slots.remove_at(slot_index)
 	trade_completed.emit(item_id, amount, price)
 	trade_state_changed.emit()
@@ -251,6 +254,7 @@ func buy_global_offer(offer_index: int) -> bool:
 		return false
 	offer["sold"] = true
 	market_offers[offer_index] = offer
+	market_purchases += 1
 	trade_state_changed.emit()
 	return true
 
@@ -294,7 +298,9 @@ func to_save_dict() -> Dictionary:
 		"ship_departed": ship_departed,
 		"ship_return_time_left": ship_return_time_left,
 		"ship_return_unix": ship_return_unix,
-		"ship_departures": ship_departures
+		"ship_departures": ship_departures,
+		"completed_sales": completed_sales,
+		"market_purchases": market_purchases
 	}
 
 func from_save_dict(data: Dictionary) -> void:
@@ -329,6 +335,8 @@ func from_save_dict(data: Dictionary) -> void:
 	if ship_departed and ship_return_unix <= 0:
 		ship_return_unix = now + ceili(ship_return_time_left)
 	ship_departures = maxi(0, int(data.get("ship_departures", 0)))
+	completed_sales = maxi(0, int(data.get("completed_sales", 0)))
+	market_purchases = maxi(0, int(data.get("market_purchases", 0)))
 	if ship_crates.is_empty():
 		_generate_ship_manifest()
 	_set_ship_visual_departed(ship_departed)
