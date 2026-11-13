@@ -83,6 +83,14 @@ func get_gateway_connected_roads() -> Dictionary:
 func is_road_connected_to_gateway(grid_pos: Vector2i) -> bool:
 	return get_gateway_connected_roads().has(grid_pos)
 
+func clear_roads() -> void:
+	for road_mesh in roads.values():
+		if is_instance_valid(road_mesh):
+			road_mesh.queue_free()
+	roads.clear()
+	road_refresh_counts.clear()
+	invalidate_road_connectivity_cache()
+
 func has_road(grid_pos: Vector2i) -> bool:
 	return roads.has(grid_pos)
 
