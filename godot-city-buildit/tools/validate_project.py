@@ -438,6 +438,8 @@ for contract in [
     "func _test_regional_building_and_material_gates() -> void:",
     "Regional resource factory must produce only its matching local material",
     "Regional home must be locked outside its own region",
+    "Sunny Isles Resource Factory must start its local Coconut production.",
+    "Regional factory output must collect into shared city storage.",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Regional building/material regression test is missing: {contract}")
