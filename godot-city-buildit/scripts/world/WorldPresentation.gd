@@ -1,5 +1,7 @@
 extends Node3D
 
+const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
+
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -90.0
 const CITY_HALF_EXTENT := 40
@@ -19,6 +21,7 @@ func _ready() -> void:
 	_build_tree_belts()
 	_build_grass_detail()
 	_build_shoreline_details()
+	_build_cargo_ship_visual()
 	_build_sunlight()
 
 func _build_environment() -> void:
@@ -512,6 +515,11 @@ func _build_shoreline_details() -> void:
 		pebble.material_override = pebble_material
 		add_child(pebble)
 
+func _build_cargo_ship_visual() -> void:
+	var ship := CargoShipVisualScript.new()
+	ship.name = "CargoShipVisual"
+	add_child(ship)
+
 func _build_sunlight() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.name = "CoastalWarmSun"
@@ -531,7 +539,7 @@ func _build_sunlight() -> void:
 func _add_headless_test_markers() -> void:
 	# These names are part of the smoke-test scene contract; they intentionally
 	# contain no MeshInstance3D nodes and therefore allocate no render meshes.
-	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "CoastalHighway"]:
+	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "CoastalHighway", "CargoShipVisual"]:
 		var marker := Node3D.new()
 		marker.name = marker_name
 		add_child(marker)

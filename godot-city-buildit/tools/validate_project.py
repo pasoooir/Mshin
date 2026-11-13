@@ -194,6 +194,8 @@ gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="ut
 haptics_manager_source = (ROOT / "scripts/autoload/HapticsManager.gd").read_text(encoding="utf-8")
 production_component_source = (ROOT / "scripts/production/ProductionComponent.gd").read_text(encoding="utf-8")
 trade_manager_source = (ROOT / "scripts/autoload/TradeManager.gd").read_text(encoding="utf-8")
+world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
+cargo_ship_visual_source = (ROOT / "scripts/world/CargoShipVisual.gd").read_text(encoding="utf-8")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
 
 for contract in [
@@ -258,6 +260,33 @@ if 'open_trade_panel(trade_role)' not in city_input_source:
     errors.append("Trade buildings must open their matching trade panel")
 if "TradeManager.to_save_dict()" not in save_manager_source or 'TradeManager.from_save_dict(parsed.get("trade", {}))' not in save_manager_source:
     errors.append("Trade Depot and Global Trade state must be persisted and restored")
+for contract in [
+    "func is_cargo_ship_operational() -> bool:",
+    "func deliver_ship_crate(crate_index: int) -> bool:",
+    "func _generate_ship_manifest() -> void:",
+    "SHIP_CRATE_COUNT := 3",
+    "SHIP_RETURN_SECONDS := 180.0",
+    "EconomyManager.add_keys(1)",
+    '"ship_crates": ship_crates.duplicate(true)',
+    '"ship_departed": ship_departed',
+]:
+    if contract not in trade_manager_source:
+        errors.append(f"Cargo Ship delivery contract is missing: {contract}")
+if '"cargo_port": {"name":"Cargo Port"' not in build_manager or '"population_required":20000' not in build_manager:
+    errors.append("Cargo Port must be a placeable 20,000-population trade building")
+if '20000: "cargo_ship"' not in (ROOT / "scripts/autoload/LevelProgression.gd").read_text(encoding="utf-8"):
+    errors.append("Cargo Ship 20,000 population milestone is missing")
+if "CargoShipVisualScript" not in world_presentation_source or "CargoShipVisual" not in world_presentation_source:
+    errors.append("WorldPresentation must include the visible cargo ship")
+for contract in [
+    "func set_departed(value: bool) -> void:",
+    "const OPEN_WATER_X := 142.0",
+    "CargoHull",
+    "Container_A",
+    "Bridge",
+]:
+    if contract not in cargo_ship_visual_source:
+        errors.append(f"Procedural cargo ship visual contract is missing: {contract}")
 if "const SAVE_VERSION: int = 3" not in save_manager_source:
     errors.append("Save format must be version 3 for persisted trade state")
 for contract in [
@@ -266,6 +295,12 @@ for contract in [
     "must not pay out before its sale timer completes",
     "must complete an affordable market purchase",
     "must preserve sold market offers",
+    "TradeManager.deliver_ship_crate(0)",
+    "must accept a crate when its required items are in storage",
+    "must send the ship away exactly once",
+    "must grant one Golden Key",
+    "must receive a fresh three-crate manifest",
+    "CargoShipVisual",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Trade gameplay regression test is missing: {contract}")
@@ -549,7 +584,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 49"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 50"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
@@ -562,11 +597,11 @@ for group_id in ["power", "water", "sewage", "waste", "fire", "police", "health"
     if f'"id":"{group_id}"' not in services_hud:
         errors.append(f"Services group is missing or out of order: {group_id}")
 for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
-                    "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "town_hall", "trade_depot", "global_trade_hq"]:
+                    "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "town_hall", "trade_depot", "global_trade_hq", "cargo_port"]:
     if f'"{building_id}": {{"name"' not in build_manager:
         errors.append(f"Services menu building definition is missing: {building_id}")
 for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
-                   "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "clinic_small", "clinic", "hospital", "town_hall", "trade_depot", "global_trade_hq"]:
+                   "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "clinic_small", "clinic", "hospital", "town_hall", "trade_depot", "global_trade_hq", "cargo_port"]:
     definition_line = next((line for line in build_manager.splitlines() if f'"{service_id}"' in line), "")
     if '"service_group"' not in definition_line:
         errors.append(f"Service building lacks service_group metadata: {service_id}")
