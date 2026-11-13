@@ -259,7 +259,10 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: i
 		return false
 	if not EconomyManager.can_afford(int(definition.get("cost", 0))):
 		return false
-	var size: Vector2i = get_building_size(chosen, rotation_quarters)
+	var applied_rotation := rotation_quarters
+	if applied_rotation < 0:
+		applied_rotation = placement_rotation_quarters if chosen == selected_building_type else 0
+	var size: Vector2i = get_building_size(chosen, applied_rotation)
 	if not is_cell_free(grid_pos, size) or not has_road_access(grid_pos, size):
 		return false
 	return true
