@@ -41,6 +41,8 @@ func save_game() -> bool:
 			"stage": int(building.upgrade_stage),
 			"status": str(building.status),
 			"population": int(building.current_population),
+			"is_epic_building": bool(building.is_epic_building),
+			"epic_tier": int(building.epic_tier),
 			"production": {
 				"construction_finish_unix": building.construction_finish_unix,
 				"current_product": building.current_product,
@@ -70,6 +72,7 @@ func save_game() -> bool:
 		},
 		"storage": StorageManager.to_save_dict(),
 		"trade": TradeManager.to_save_dict(),
+		"epic_projects": EpicProjectManager.to_save_dict(),
 		"roads": road_data,
 		"buildings": building_data
 	}
@@ -192,6 +195,8 @@ func load_game() -> bool:
 		var restored_building = BuildManager.building_at_cell(Vector2i(int(grid[0]), int(grid[1])))
 		if restored_building != null:
 			restored_building.restore_production_state(saved_building.get("production", {}))
+		if restored_building != null and bool(saved_building.get("is_epic_building", false)):
+			restored_building.set_epic_tier(int(saved_building.get("epic_tier", 1)))
 		if restored_building != null and str(restored_building.definition.get("category", "")) == "residential":
 			if str(saved_building.get("status", "constructing")) == "completed":
 				restored_building.current_population = clampi(int(saved_building.get("population", restored_building.current_population)), 0, HappinessManager._capacity_for_home(restored_building))
@@ -199,6 +204,8 @@ func load_game() -> bool:
 				restored_building.current_population = maxi(0, int(restored_building.current_population))
 			if restored_building.status == "completed":
 				restored_building.set_meta("immigration_population_initialized", true)
+
+	EpicProjectManager.from_save_dict(parsed.get("epic_projects", {}))
 
 	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
 	# One-time welcome grant for cities created before the starter-economy update.

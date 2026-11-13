@@ -30,6 +30,7 @@ TrafficManager="*res://scripts/autoload/TrafficManager.gd"
 HappinessManager="*res://scripts/autoload/HappinessManager.gd"
 HapticsManager="*res://scripts/autoload/HapticsManager.gd"
 LevelProgression="*res://scripts/autoload/LevelProgression.gd"
+EpicProjectManager="*res://scripts/autoload/EpicProjectManager.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
 
 [display]

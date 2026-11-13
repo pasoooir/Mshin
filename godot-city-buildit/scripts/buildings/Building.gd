@@ -24,6 +24,9 @@ var current_product: String = ""
 var is_producing: bool = false
 var has_ready_product: bool = false
 var upgrade_stage: int = 1
+var is_epic_building: bool = false
+var epic_tier: int = 0
+var epic_badge: Label3D = null
 var max_stage: int = 6
 var current_population: int = 0
 var upgrade_ready: bool = false
@@ -102,6 +105,8 @@ func setup(data: Dictionary) -> void:
 	status = data.get("status", "constructing")
 	build_time = definition.get("build_time", 10.0)
 	upgrade_stage = data.get("upgrade_stage", 1)
+	epic_tier = clampi(int(data.get("epic_tier", 0)), 0, 3)
+	is_epic_building = bool(data.get("is_epic_building", epic_tier > 0))
 	# Procedural building meshes are visual-only. Headless integration tests exercise
 	# the building state machine without instantiating renderer resources.
 	if DisplayServer.get_name() != "headless":
@@ -113,11 +118,39 @@ func setup(data: Dictionary) -> void:
 		stage_label.text = ""
 	if name_label:
 		name_label.text = definition.get("name", "")
+	if is_epic_building:
+		set_epic_tier(epic_tier)
 	if status == "constructing":
 		if hard_hat: hard_hat.visible = true
 		_start_construction()
 	else:
 		_on_construction_finished()
+
+
+func set_epic_tier(tier: int) -> void:
+	epic_tier = clampi(tier, 0, 3)
+	is_epic_building = epic_tier > 0
+	if DisplayServer.get_name() == "headless":
+		return
+	if not is_epic_building:
+		if is_instance_valid(epic_badge):
+			epic_badge.queue_free()
+		epic_badge = null
+		return
+	if not is_instance_valid(epic_badge):
+		epic_badge = Label3D.new()
+		epic_badge.name = "EpicBuildingBadge"
+		epic_badge.position = Vector3(0.0, 6.4, 0.0)
+		epic_badge.pixel_size = 0.04
+		epic_badge.font_size = 38
+		epic_badge.outline_size = 8
+		epic_badge.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		add_child(epic_badge)
+	var tier_names: Array[String] = ["", "BRONZE", "SILVER", "GOLD"]
+	var tier_colors: Array[Color] = [Color.WHITE, Color("#C78B4B"), Color("#C7D5E0"), Color("#FFD75E")]
+	epic_badge.text = "★ EPIC · " + tier_names[epic_tier]
+	epic_badge.modulate = tier_colors[epic_tier]
+	epic_badge.visible = true
 
 func _apply_move_transparency(node: Node, active: bool) -> void:
 	if node is GeometryInstance3D:
@@ -1754,7 +1787,7 @@ func set_residential_plan_selected(selected: bool) -> void:
 func try_upgrade() -> bool:
 	if not BuildManager.is_building_operational(self):
 		return false
-	if definition.get("category") != "residential" or status != "completed" or upgrade_stage >= max_stage or upgrade_in_progress:
+	if definition.get("category") != "residential" or status != "completed" or is_epic_building or upgrade_stage >= max_stage or upgrade_in_progress:
 		return false
 	if not ProductionManager.can_afford_upgrade(upgrade_stage):
 		print("[Building] Need materials for upgrade to stage ", upgrade_stage + 1)
