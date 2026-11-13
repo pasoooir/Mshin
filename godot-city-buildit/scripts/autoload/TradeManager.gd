@@ -87,10 +87,12 @@ func _process(delta: float) -> void:
 			var slot: Dictionary = sell_slots[index]
 			if bool(slot.get("ready", false)):
 				continue
+			var previous_display_seconds := ceili(float(slot.get("time_left", 0.0)))
 			slot["time_left"] = maxf(0.0, float(slot.get("time_left", 0.0)) - delta)
 			if float(slot["time_left"]) <= 0.0:
 				slot["ready"] = true
-			changed = true
+			if ceili(float(slot["time_left"])) != previous_display_seconds or bool(slot["ready"]):
+				changed = true
 			sell_slots[index] = slot
 	if is_global_trade_operational():
 		market_refresh_time_left = maxf(0.0, market_refresh_time_left - delta)
