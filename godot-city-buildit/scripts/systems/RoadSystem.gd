@@ -103,6 +103,7 @@ func upgrade_road(grid_pos: Vector2i) -> bool:
 	road_levels[grid_pos] = new_level
 	_refresh_road_neighborhood(grid_pos)
 	road_upgraded.emit(grid_pos, new_level)
+	_queue_service_recalculation()
 	return true
 
 func restore_road_level(grid_pos: Vector2i, level: int) -> void:
@@ -261,6 +262,8 @@ func _queue_service_recalculation() -> void:
 
 func _flush_service_recalculation() -> void:
 	_service_recalc_queued = false
+	if has_node("/root/TrafficManager"):
+		TrafficManager.recalculate_from_roads()
 	if has_node("/root/ServiceManager"):
 		ServiceManager.recalculate_from_buildings()
 
