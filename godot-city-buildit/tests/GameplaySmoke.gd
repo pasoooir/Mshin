@@ -17,6 +17,14 @@ class FireHazardTestBuilding extends Node3D:
 		smoke_active = active
 
 var failures: Array[String] = []
+var storage_capacity_signal_count := 0
+var storage_changed_signal_count := 0
+
+func _on_test_storage_capacity_changed(_new_capacity: int) -> void:
+	storage_capacity_signal_count += 1
+
+func _on_test_storage_changed() -> void:
+	storage_changed_signal_count += 1
 
 func _ready() -> void:
 	call_deferred("_run_gameplay_test")
@@ -959,7 +967,33 @@ func _run_gameplay_test() -> void:
 		var storage_grid := hud.storage_panel.find_child("StorageItemsGrid", true, false) as GridContainer
 		_check(storage_grid != null and storage_grid.columns == 2, "City Storage products must be displayed in a two-column icon grid.")
 		_check(storage_grid != null and storage_grid.find_child("StorageItem_metal", true, false) != null, "City Storage grid must show stored product icons.")
-		_check(hud.storage_panel.find_child("StorageIncreaseCapacity", true, false) is Button, "City Storage must show its green Increase Capacity action.")
+		var upgrade_button := hud.storage_panel.find_child("StorageIncreaseCapacity", true, false) as Button
+		_check(upgrade_button != null, "City Storage must show its green Increase Capacity action.")
+		if upgrade_button != null:
+			_check(not upgrade_button.disabled, "Storage capacity upgrade action must be enabled.")
+			_check(upgrade_button.text.contains("500") and upgrade_button.text.contains("10"), "Storage upgrade button must disclose its 500-Simoleon / +10-slot price.")
+			StorageManager.capacity_changed.connect(_on_test_storage_capacity_changed)
+			StorageManager.storage_changed.connect(_on_test_storage_changed)
+			var saved_simoleons_for_storage := EconomyManager.simoleons
+			EconomyManager.simoleons = 0
+			upgrade_button.pressed.emit()
+			_check(hud.status_label.text.contains("Not enough Simoleons"), "Unaffordable storage upgrade must show a clear status message.")
+			_check(StorageManager.capacity == 60 and EconomyManager.simoleons == 0, "Unaffordable storage upgrade must not change capacity or money.")
+			EconomyManager.simoleons = 500
+			upgrade_button.pressed.emit()
+			_check(StorageManager.capacity == 70, "Successful storage upgrade must add exactly 10 slots.")
+			_check(EconomyManager.simoleons == 0, "Successful storage upgrade must deduct exactly 500 Simoleons.")
+			_check(storage_capacity_signal_count == 1, "Successful storage upgrade must emit capacity_changed exactly once.")
+			_check(storage_changed_signal_count == 1, "Successful storage upgrade must emit storage_changed exactly once.")
+			var refreshed_capacity_label := hud.storage_panel.find_child("StorageCapacity", true, false) as Label
+			var refreshed_capacity_bar := hud.storage_panel.find_child("StorageCapacityBar", true, false) as ProgressBar
+			_check(refreshed_capacity_label != null and refreshed_capacity_label.text == "8/70", "Storage capacity label must refresh immediately after purchase.")
+			_check(refreshed_capacity_bar != null and int(refreshed_capacity_bar.max_value) == 70 and int(refreshed_capacity_bar.value) == 8, "Storage capacity progress bar must refresh immediately after purchase.")
+			_check(hud.status_label.text.contains("70"), "Successful storage upgrade must report the new capacity.")
+			StorageManager.capacity_changed.disconnect(_on_test_storage_capacity_changed)
+			StorageManager.storage_changed.disconnect(_on_test_storage_changed)
+			EconomyManager.simoleons = saved_simoleons_for_storage
+			EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
 		hud._close_storage_panel()
 		_check(not is_instance_valid(hud.storage_overlay), "Closing City Storage must remove its dimmed backdrop.")
 		StorageManager.from_save_dict(storage_before_panel)

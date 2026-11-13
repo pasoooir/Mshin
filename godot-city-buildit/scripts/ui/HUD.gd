@@ -3,6 +3,9 @@ extends CanvasLayer
 const Icons = preload("res://scripts/ui/Icons.gd")
 const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 
+const STORAGE_CAPACITY_UPGRADE_COST := 500
+const STORAGE_CAPACITY_UPGRADE_GAIN := 10
+
 const SERVICE_GROUPS := [
 	{"id":"power", "label":"Power", "buildings":["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear"]},
 	{"id":"water", "label":"Water", "buildings":["water_tower", "water_pump"]},
@@ -2781,10 +2784,23 @@ func _show_storage_panel() -> void:
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#83D900"), Color("#B7F44C")))
 	upgrade.add_theme_stylebox_override("hover", _toolbar_style(Color("#9BEA16"), Color("#D8FF83")))
 	upgrade.add_theme_stylebox_override("pressed", _toolbar_style(Color("#65B900"), Color("#A6E94C")))
-	upgrade.disabled = true
-	upgrade.tooltip_text = "Capacity expansion purchase is not configured yet."
+	upgrade.disabled = false
+	upgrade.text = "INCREASE CAPACITY  (+%d) — %d" % [STORAGE_CAPACITY_UPGRADE_GAIN, STORAGE_CAPACITY_UPGRADE_COST]
+	upgrade.tooltip_text = "Add %d storage slots for %d Simoleons." % [STORAGE_CAPACITY_UPGRADE_GAIN, STORAGE_CAPACITY_UPGRADE_COST]
+	upgrade.pressed.connect(_on_storage_capacity_upgrade_pressed)
 	layout.add_child(upgrade)
 	_refresh_storage_panel()
+
+
+func _on_storage_capacity_upgrade_pressed() -> void:
+	if EconomyManager.simoleons < STORAGE_CAPACITY_UPGRADE_COST:
+		status_label.text = "Not enough Simoleons. Need %d; you have %d." % [STORAGE_CAPACITY_UPGRADE_COST, EconomyManager.simoleons]
+		return
+	if not StorageManager.try_upgrade_capacity(STORAGE_CAPACITY_UPGRADE_COST, STORAGE_CAPACITY_UPGRADE_GAIN):
+		status_label.text = "Storage upgrade failed. No capacity was added."
+		return
+	# StorageManager emits capacity_changed and storage_changed; the latter refreshes this open panel.
+	status_label.text = "Storage expanded to %d slots." % StorageManager.capacity
 
 
 func _refresh_storage_panel() -> void:
