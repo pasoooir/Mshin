@@ -79,6 +79,8 @@ func get_road_upgrade_error(grid_pos: Vector2i) -> String:
 		return "Tap an existing road tile to upgrade it."
 	if grid_pos == GATEWAY_ROAD_CELL:
 		return "The permanent highway Gateway cannot be upgraded."
+	if not is_road_connected_to_gateway(grid_pos):
+		return "Road must be connected to the highway Gateway before upgrading."
 	var level := get_road_level(grid_pos)
 	if level >= 4:
 		return "This road is already an Avenue."
