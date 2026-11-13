@@ -1254,6 +1254,8 @@ func _run_gameplay_test() -> void:
 	production_hud._apply_overlay_responsive_layout(Vector2(854, 480))
 	await get_tree().process_frame
 	_assert_panel_fits_target(production_hud.production_panel, Vector2(854, 480), "Factory Production mobile", 0.98, 0.99)
+	var compact_hint := production_hud.production_panel.find_child("ProductionHint", true, false) as Label
+	_check(compact_hint != null and compact_hint.text.contains("RECIPE") and compact_hint.text.contains("CITY STORAGE"), "Compact production guidance must retain recipe and collection destination information.")
 	_check(product_grid != null and product_grid.columns == 3, "Production product cards must reflow to three columns on compact mobile.")
 	production_hud._apply_overlay_responsive_layout(Vector2(1024, 768))
 	await get_tree().process_frame
