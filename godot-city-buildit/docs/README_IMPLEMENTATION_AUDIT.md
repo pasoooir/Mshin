@@ -153,7 +153,7 @@
 README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده اصلاح شده است. موارد ناقص عمداً تیک کامل نگرفته‌اند. این ممیزی ادعای تکمیل کل بازی یا تأیید کیفیت بصری روی دستگاه فیزیکی نیست.
 
 
-## مدل‌های معماری GLTF محلی — PR در حال آماده‌سازی
+## مدل‌های معماری GLTF محلی — PR #417
 - چهار فایل مستقل در `assets/models/` اضافه شده‌اند: `residential/villa_house.gltf`، `residential/apartment_tower.gltf`، `commercial/neighborhood_shop.gltf` و `industrial/small_factory.gltf`.
 - هندسه‌ها به‌صورت original procedural mesh برای پروژه ساخته شده‌اند؛ هر GLTF با buffer داخلی Base64، چند primitive/material، نرمال و UV، index buffer، و textureهای PNG تعبیه‌شده برای Base Color، Normal و Metallic-Roughness self-contained است؛ فایل بیرونی یا CDN لازم نیست.
 - `BuildManager._ready()` مسیر مدل محلی را بر اساس دسته و subtype به تعریف ساختمان اضافه می‌کند: ویلا/خانه قدیمی، آپارتمان، فروشگاه‌های تجاری، و کارخانه‌های صنعتی. Farm همچنان از visual رویه‌ای استفاده می‌کند. تعریف‌های Gameplay، اندازه/هزینه/قفل‌ها و سیستم تولید تغییر نکرده‌اند.
