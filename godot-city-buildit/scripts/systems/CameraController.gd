@@ -7,6 +7,7 @@ extends Node3D
 @export var camera_pitch_degrees: float = 48.0
 @export var pan_inertia_damping: float = 8.0
 @export var orbit_inertia_damping: float = 10.0
+@export var focus_smoothing: float = 8.0
 
 @onready var camera: Camera3D = $Camera3D
 
@@ -18,6 +19,8 @@ var last_pinch_distance: float = 0.0
 var last_pinch_angle: float = 0.0
 var pan_velocity: Vector2 = Vector2.ZERO
 var orbit_velocity: float = 0.0
+var focus_target: Vector3 = Vector3.ZERO
+var is_focus_animating := false
 
 const PAN_INERTIA_STOP_SPEED := 6.0
 const ORBIT_INERTIA_STOP_SPEED := 0.01
@@ -27,6 +30,7 @@ func _ready() -> void:
 	# Frame the starter highway and first adjacent build plots on entry.
 	global_position = Vector3(-9.0, 0.0, 2.5)
 	_update_camera_transform()
+	focus_target = global_position
 
 func _process(delta: float) -> void:
 	if delta <= 0.0:
@@ -34,6 +38,13 @@ func _process(delta: float) -> void:
 	if _is_road_mode() or BuildManager.is_moving:
 		pan_velocity = Vector2.ZERO
 		orbit_velocity = 0.0
+		is_focus_animating = false
+		return
+	if is_focus_animating:
+		global_position = interpolate_focus(global_position, focus_target, delta, focus_smoothing)
+		if global_position.distance_to(focus_target) <= 0.05:
+			global_position = focus_target
+			is_focus_animating = false
 		return
 	if not touch_points.is_empty() or is_mouse_panning:
 		return
@@ -47,6 +58,16 @@ func _process(delta: float) -> void:
 		orbit_velocity = decay_orbit_velocity(orbit_velocity, delta, orbit_inertia_damping)
 	else:
 		orbit_velocity = 0.0
+
+func focus_on(target_position: Vector3) -> void:
+	focus_target = Vector3(target_position.x, global_position.y, target_position.z)
+	pan_velocity = Vector2.ZERO
+	orbit_velocity = 0.0
+	is_focus_animating = global_position.distance_to(focus_target) > 0.05
+
+static func interpolate_focus(current: Vector3, target: Vector3, delta: float, smoothing: float) -> Vector3:
+	var weight := 1.0 - exp(-maxf(0.0, smoothing) * maxf(0.0, delta))
+	return current.lerp(target, weight)
 
 static func decay_pan_velocity(velocity: Vector2, delta: float, damping: float) -> Vector2:
 	return velocity * exp(-maxf(0.0, damping) * maxf(0.0, delta))
@@ -66,6 +87,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event.pressed:
 				pan_velocity = Vector2.ZERO
 				orbit_velocity = 0.0
+				is_focus_animating = false
 			last_mouse_position = event.position
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			_zoom(-2.0)
@@ -80,6 +102,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.pressed:
 			pan_velocity = Vector2.ZERO
 			orbit_velocity = 0.0
+			is_focus_animating = false
 			touch_points[event.index] = event.position
 			if touch_points.size() >= 2:
 				_update_pinch_baseline()
@@ -130,6 +153,7 @@ func _update_pinch(_relative: Vector2) -> void:
 	last_pinch_angle = angle
 
 func _pan(screen_delta: Vector2) -> void:
+	is_focus_animating = false
 	var right: Vector3 = global_transform.basis.x
 	var forward: Vector3 = global_transform.basis.z
 	right.y = 0.0
