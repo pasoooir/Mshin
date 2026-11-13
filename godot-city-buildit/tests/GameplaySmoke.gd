@@ -811,7 +811,8 @@ func _run_gameplay_test() -> void:
 			_check(title is Label and title.text == "LEVEL UP!", "Level Up title is missing.")
 			_check(subtitle is Label and subtitle.text == "Congratulations Mayor!", "Mayor congratulations message is missing.")
 			var reward_grid := celebration.find_child("LevelUpRewardsGrid", true, false) as GridContainer
-			_check(reward_grid != null and reward_grid.columns == 2, "Desktop/tablet level-up rewards must use a two-column layout.")
+			var active_profile := hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
+			_check(reward_grid != null and reward_grid.columns == (1 if active_profile == "compact" else 2), "Level-up reward layout must match the active viewport profile.")
 			celebration._apply_responsive_layout(Vector2(854, 480))
 			_check(reward_grid != null and reward_grid.columns == 1, "Compact level-up rewards must stack vertically without clipping.")
 			celebration._apply_responsive_layout(get_viewport().get_visible_rect().size)
@@ -971,7 +972,9 @@ func _run_gameplay_test() -> void:
 		_check(hud.storage_panel.find_child("StorageHeaderIcon", true, false) is TextureRect, "City Storage header must show the local blue storage icon.")
 		_check(hud.storage_panel.find_child("StorageCapacityBar", true, false) is ProgressBar, "City Storage must show the orange/blue capacity bar.")
 		var storage_grid := hud.storage_panel.find_child("StorageItemsGrid", true, false) as GridContainer
-		_check(storage_grid != null and storage_grid.columns == 2, "City Storage products must use the tablet/desktop two-column inventory grid.")
+		var active_viewport := get_viewport().get_visible_rect().size
+		var expected_storage_columns := 1 if active_viewport.x < 520.0 else 2
+		_check(storage_grid != null and storage_grid.columns == expected_storage_columns, "City Storage must choose one or two columns based on available viewport width.")
 		hud._apply_overlay_responsive_layout(Vector2(390, 844))
 		_check(storage_grid != null and storage_grid.columns == 1, "Narrow portrait storage must reflow to one readable column.")
 		hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
@@ -1028,8 +1031,10 @@ func _run_gameplay_test() -> void:
 	_check(needs_hud.find_child("CityNeed_nails", true, false) != null, "City Needs dashboard must show aggregated item shortage rows.")
 	var needs_metrics := needs_hud.find_child("CityNeedsResourceSummary", true, false) as GridContainer
 	var needs_inventory := needs_hud.find_child("CityStorageInventory", true, false) as GridContainer
-	_check(needs_metrics != null and needs_metrics.columns == 4, "City Needs resource metrics must use four columns at the current tablet viewport.")
-	_check(needs_inventory != null and needs_inventory.columns == 4, "City Needs inventory must use four columns at the current tablet viewport.")
+	var needs_profile := needs_hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
+	_check(needs_metrics != null and needs_metrics.columns == (2 if needs_profile == "compact" else 4), "City Needs resource metrics must match the compact or wide viewport profile.")
+	var expected_needs_inventory_columns := 3 if needs_profile == "compact" else (4 if needs_profile == "tablet" else 5)
+	_check(needs_inventory != null and needs_inventory.columns == expected_needs_inventory_columns, "City Needs inventory must match the active viewport profile.")
 	needs_hud._apply_overlay_responsive_layout(Vector2(854, 480))
 	_check(needs_metrics != null and needs_metrics.columns == 2, "City Needs resource metrics must reflow to two columns on mobile.")
 	_check(needs_inventory != null and needs_inventory.columns == 3, "City Needs inventory must reflow to three columns on mobile.")
@@ -1152,8 +1157,10 @@ func _run_gameplay_test() -> void:
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
 	var product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
 	var product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
+	var production_profile := production_hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
+	var expected_product_columns := 3 if production_profile == "compact" else (4 if production_profile == "tablet" else 6)
 	_check(product_scroll != null and product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Production catalog must scroll vertically when reflowed for narrow screens.")
-	_check(product_grid != null and product_grid.columns == 4, "Production catalog must use four columns at the current tablet viewport.")
+	_check(product_grid != null and product_grid.columns == expected_product_columns, "Production catalog must use the correct number of columns for the active viewport.")
 	production_hud._apply_overlay_responsive_layout(Vector2(854, 480))
 	_check(product_grid != null and product_grid.columns == 3, "Production product cards must reflow to three columns on compact mobile.")
 	production_hud._apply_overlay_responsive_layout(Vector2(1920, 1080))
