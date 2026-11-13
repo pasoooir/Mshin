@@ -9,6 +9,7 @@ var pointer_start: Dictionary = {}
 var pointer_moved: Dictionary = {}
 var pointer_hold_elapsed: Dictionary = {}
 var pointer_last_position: Dictionary = {}
+var placement_rotate_pointer: Dictionary = {}
 var move_pointer_id: int = -999
 const LONG_PRESS_SECONDS: float = 0.55
 var multi_touch_gesture: bool = false
@@ -52,7 +53,14 @@ func _process(delta: float) -> void:
 	pointer_hold_elapsed[pointer_id] = float(pointer_hold_elapsed.get(pointer_id, 0.0)) + delta
 	if float(pointer_hold_elapsed[pointer_id]) >= LONG_PRESS_SECONDS:
 		pointer_hold_elapsed[pointer_id] = -1.0
-		_begin_move_from_screen(pointer_id, pointer_start[pointer_id])
+		if BuildManager.is_placing:
+			if BuildManager.rotate_placement():
+				placement_rotate_pointer[pointer_id] = true
+				pointer_moved[pointer_id] = true
+				_update_ghost(last_position)
+				_set_status("Building rotated 90 degrees. Keep holding to rotate again, or tap a plot to place.")
+		else:
+			_begin_move_from_screen(pointer_id, pointer_start[pointer_id])
 
 func _begin_move_from_screen(pointer_id: int, screen_position: Vector2) -> void:
 	# Resolve the visible building volume: in an oblique view the ground point
@@ -131,6 +139,14 @@ func _move_anchor_from_world(world_position: Vector3) -> Vector2i:
 	return BuildManager.world_to_grid(world_position - anchor_offset)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R and BuildManager.is_placing:
+		if BuildManager.rotate_placement():
+			var ghost = get_tree().current_scene.get_node_or_null("GhostPreview") if get_tree().current_scene else null
+			if ghost and ghost.visible:
+				ghost.rotation.y = float(BuildManager.placement_rotation_quarters) * PI * 0.5
+			_set_status("Building rotated 90 degrees.")
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
 		if BuildManager.is_moving:
 			BuildManager.cancel_move()
@@ -180,7 +196,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				var moved := bool(pointer_moved.get(-1, false))
 				# In building mode, dragging the placement ghost commits the final
 				# green preview on release. Other interactions remain tap-only.
-				if BuildManager.is_placing and moved:
+				if BuildManager.is_placing and moved and not placement_rotate_pointer.has(-1):
 					_handle_tap(event.position)
 				elif start.distance_to(event.position) <= TAP_SLOP and not moved:
 					_handle_tap(event.position)
@@ -188,6 +204,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_moved.erase(-1)
 			pointer_hold_elapsed.erase(-1)
 			pointer_last_position.erase(-1)
+			placement_rotate_pointer.erase(-1)
 	elif event is InputEventMouseMotion:
 		if _has_active_screen_touch():
 			return
@@ -229,7 +246,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					var start: Vector2 = pointer_start[event.index]
 					var moved := bool(pointer_moved.get(event.index, false))
 					if not multi_touch_gesture and not BuildManager.is_moving:
-						if BuildManager.is_placing and moved:
+						if BuildManager.is_placing and moved and not placement_rotate_pointer.has(event.index):
 							_handle_tap(event.position)
 						elif start.distance_to(event.position) <= TAP_SLOP and not moved:
 							_handle_tap(event.position)
@@ -237,6 +254,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			pointer_moved.erase(event.index)
 			pointer_hold_elapsed.erase(event.index)
 			pointer_last_position.erase(event.index)
+			placement_rotate_pointer.erase(event.index)
 			if pointer_start.is_empty():
 				multi_touch_gesture = false
 	elif event is InputEventScreenDrag:
@@ -426,7 +444,7 @@ func _handle_tap(screen_position: Vector2) -> void:
 		var grid := BuildManager.world_to_grid(world_position)
 		var ghost = get_tree().current_scene.get_node_or_null("GhostPreview")
 		if ghost:
-			ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid), BuildManager.building_types.get(BuildManager.selected_building_type, {}))
+			ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid), BuildManager.building_types.get(BuildManager.selected_building_type, {}), float(BuildManager.placement_rotation_quarters) * PI * 0.5)
 		if BuildManager.place_building_at_world(world_position):
 			_set_status("Construction started. Tap another green plot to build again.")
 			if ghost:
@@ -447,7 +465,7 @@ func _update_ghost(screen_position: Vector2) -> void:
 	if ghost == null or world_position == null or not BuildManager.is_placing:
 		return
 	var grid: Vector2i = BuildManager.world_to_grid(world_position)
-	ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid), BuildManager.building_types.get(BuildManager.selected_building_type, {}))
+	ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid), BuildManager.building_types.get(BuildManager.selected_building_type, {}), float(BuildManager.placement_rotation_quarters) * PI * 0.5)
 
 func _raycast_ground(screen_position: Vector2) -> Variant:
 	if camera == null or not is_instance_valid(camera):
