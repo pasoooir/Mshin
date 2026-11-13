@@ -111,22 +111,31 @@ var crafted_items := {
 	"sports_drink": {"name":"Sports Drink", "time":2100.0, "time_sec":2100, "value":270, "requires":{"fruit_berries":2,"sugar_spices":4}, "level":39, "store":"sports_shop", "source":"Fandom 2024"},
 	"protein_bar": {"name":"Protein Bar", "time":2700.0, "time_sec":2700, "value":1045, "requires":{"cherry_cheesecake":1,"sugar_spices":2}, "level":35, "store":"sports_shop", "source":"Fandom 2024"},
 	"cut_stone": {"name":"Chiseled Stone", "time":9000.0, "time_sec":9000, "value":2300, "requires":{"hammer":2,"minerals":6,"drill":2}, "level":59, "store":"restoration_office", "source":"Fandom 2024"},
-	"stained_glass": {"name":"Stained Glass", "time":14400.0, "time_sec":14400, "value":2300, "requires":{"metal":5,"glass":6,"glue":2}, "level":76, "required_stars":1, "store":"restoration_office", "source":"Fandom 2024"}
+	"stained_glass": {"name":"Stained Glass", "time":14400.0, "time_sec":14400, "value":2300, "requires":{"metal":5,"glass":6,"glue":2}, "level":76, "required_stars":1, "store":"restoration_office", "source":"Fandom 2024"},
+	# Inputs, base time and reference value are documented; Mayor Level gate is still unknown.
+	"soccer_shoes": {"name":"Football Shoes", "time":2100.0, "time_sec":2100, "value":920, "requires":{"shoes":1,"chemicals":3}, "level":0, "unlock_level_verified":false, "store":"sports_shop", "source":"Fandom 2024; unlock level unresolved"},
+	"kite": {"name":"Kite", "time":4500.0, "time_sec":4500, "value":1000, "requires":{"home_textiles":2,"planks":2,"paint":2}, "level":0, "unlock_level_verified":false, "store":"toy_store", "source":"Fandom 2024; unlock level unresolved"},
+	"teddy_bear": {"name":"Teddy Bear", "time":3600.0, "time_sec":3600, "value":600, "requires":{"home_textiles":4,"plastic":2}, "level":0, "unlock_level_verified":false, "store":"toy_store", "source":"Fandom 2024; unlock level unresolved"}
 
 }
 
-# Products with a verified store identity but unresolved input recipes remain
-# visible and disabled; never invent ingredient quantities or production times.
+# Tapestry's current Bureau table documents Textiles x4, while its product page
+# still lists Textiles x3. Keep both candidates explicit and production disabled.
 var store_catalog := {
-	"sports_shop": [
-		{"id":"soccer_shoes","name":"Football Shoes","source":"Community-reference; item unlock level unresolved"}
-	],
-	"toy_store": [
-		{"id":"kite","name":"Kite","source":"Community-reference; item unlock level unresolved"},
-		{"id":"teddy_bear","name":"Teddy Bear","source":"Community-reference; item unlock level and production time unresolved"}
-	],
 	"restoration_office": [
-		{"id":"tapestries","name":"Tapestry","source":"Community-reference; ingredient quantities conflict (Textiles x3 vs x4)"}
+		{
+			"id":"tapestries",
+			"name":"Tapestry",
+			"time_sec":12600,
+			"value":2560,
+			"candidate_inputs":[
+				{"textiles":3,"paint":2,"glue":2},
+				{"textiles":4,"paint":2,"glue":2}
+			],
+			"recipe_conflict":true,
+			"unlock_level_verified":false,
+			"source":"Fandom 2024 Bureau table vs product page conflict: Textiles x3 vs x4; unlock level unresolved"
+		}
 	]
 }
 
@@ -164,7 +173,7 @@ func get_available_raw() -> Array:
 func get_available_crafted() -> Array:
 	var result: Array = []
 	for item_id in crafted_items:
-		if int(crafted_items[item_id].level) <= GameManager.level:
+		if bool(crafted_items[item_id].get("unlock_level_verified", true)) and int(crafted_items[item_id].level) <= GameManager.level:
 			result.append(item_id)
 	return result
 
@@ -173,8 +182,9 @@ func are_recipe_inputs_unlocked(recipe: Dictionary) -> bool:
 		var id := str(input_id)
 		if raw_materials.has(id) and int(raw_materials[id].get("level", 1)) > GameManager.level:
 			return false
-		if crafted_items.has(id) and int(crafted_items[id].get("level", 1)) > GameManager.level:
-			return false
+		if crafted_items.has(id):
+			if not bool(crafted_items[id].get("unlock_level_verified", true)) or int(crafted_items[id].get("level", 1)) > GameManager.level:
+				return false
 	return true
 
 func can_craft(item_id: String) -> bool:
@@ -184,10 +194,15 @@ func can_craft(item_id: String) -> bool:
 func get_recipe_lock_reason(item_id: String, store_star_level: int = 0) -> String:
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
+		var catalog_definition := get_item_definition(item_id)
+		if bool(catalog_definition.get("recipe_conflict", false)):
+			return "Recipe data conflict — production disabled until verified"
 		return "Recipe not verified — production disabled"
 	var source_text := str(recipe.get("source", "")).to_lower()
 	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
 		return "Recipe data unresolved — production disabled until verified"
+	if not bool(recipe.get("unlock_level_verified", true)):
+		return "Mayor Level unlock not verified — production disabled"
 	if int(recipe.get("level", 1)) > GameManager.level:
 		return "Unlocks at Level %d" % int(recipe.level)
 	var required_stars := int(recipe.get("required_stars", 0))
@@ -197,8 +212,11 @@ func get_recipe_lock_reason(item_id: String, store_star_level: int = 0) -> Strin
 		var id := str(input_id)
 		if raw_materials.has(id) and int(raw_materials[id].get("level", 1)) > GameManager.level:
 			return "%s unlocks at Level %d" % [str(raw_materials[id].name), int(raw_materials[id].level)]
-		if crafted_items.has(id) and int(crafted_items[id].get("level", 1)) > GameManager.level:
-			return "%s unlocks at Level %d" % [str(crafted_items[id].name), int(crafted_items[id].level)]
+		if crafted_items.has(id):
+			if not bool(crafted_items[id].get("unlock_level_verified", true)):
+				return "%s unlock level is not verified" % str(crafted_items[id].name)
+			if int(crafted_items[id].get("level", 1)) > GameManager.level:
+				return "%s unlocks at Level %d" % [str(crafted_items[id].name), int(crafted_items[id].level)]
 	return ""
 
 func consume_inputs(item_id: String) -> bool:
@@ -267,7 +285,7 @@ func get_default_factory_product() -> String:
 func get_default_recipe_for_building(building_type: String) -> String:
 	var recipe_store := "building_supplies" if building_type in ["shop_chain","building_supplies"] else building_type
 	for item_id in crafted_items:
-		if str(crafted_items[item_id].get("store","")) == recipe_store and int(crafted_items[item_id].level) <= GameManager.level:
+		if str(crafted_items[item_id].get("store","")) == recipe_store and bool(crafted_items[item_id].get("unlock_level_verified", true)) and int(crafted_items[item_id].level) <= GameManager.level:
 			return item_id
 	return ""
 
@@ -333,6 +351,8 @@ func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, l
 func get_estimated_chain_seconds(item_id: String) -> float:
 	# Display-only estimate: raw inputs are treated as parallel and each
 	# commercial output batch is sequential. This value is never stored in a recipe.
+	if crafted_items.has(item_id) and not bool(crafted_items[item_id].get("unlock_level_verified", true)):
+		return -1.0
 	return _estimate_item_chain_seconds(item_id, 1, {}, {})
 
 func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock: Dictionary, ancestry: Dictionary) -> float:
@@ -347,6 +367,8 @@ func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock:
 	if not crafted_items.has(item_id) or ancestry.has(item_id):
 		return -1.0
 	var recipe: Dictionary = crafted_items[item_id]
+	if not bool(recipe.get("unlock_level_verified", true)):
+		return -1.0
 	var source_text := str(recipe.get("source", "")).to_lower()
 	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
 		return -1.0
@@ -367,6 +389,72 @@ func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock:
 	# Repeated outputs from one commercial store are sequential jobs.
 	return dependency_max + float(missing_amount * int(recipe.get("time_sec", 0)))
 
+ 
+func get_recipe_economy_profile(item_id: String) -> Dictionary:
+	var recipe := get_recipe(item_id)
+	if recipe.is_empty() or int(recipe.get("value", 0)) <= 0 or int(recipe.get("time_sec", 0)) <= 0:
+		return {}
+	var input_reference_value := 0
+	for input_id in recipe.get("inputs", {}):
+		var quantity := int(recipe.inputs[input_id])
+		var unit_value := get_item_value(str(input_id))
+		if quantity <= 0 or unit_value <= 0:
+			return {}
+		input_reference_value += quantity * unit_value
+	var output_reference_value := int(recipe.value)
+	var gross_reference_spread := output_reference_value - input_reference_value
+	return {
+		"item_id": item_id,
+		"output_reference_value": output_reference_value,
+		"input_reference_value": input_reference_value,
+		"gross_reference_spread": gross_reference_spread,
+		"production_seconds": int(recipe.time_sec),
+		"gross_reference_spread_per_minute": float(gross_reference_spread) / (float(recipe.time_sec) / 60.0),
+		"unlock_level_verified": bool(recipe.get("unlock_level_verified", true)),
+		"basis": "Reference max-selling values only; excludes time opportunity cost, taxes, trade fees and player-specific bonuses."
+	}
+
+func get_economy_catalog_audit() -> Dictionary:
+	var errors: Array[String] = []
+	var warnings: Array[String] = []
+	for item_id in raw_materials:
+		var raw: Dictionary = raw_materials[item_id]
+		if int(raw.get("value", 0)) <= 0 or int(raw.get("time_sec", 0)) <= 0:
+			errors.append("Raw material %s has missing value or production time." % str(item_id))
+	for item_id in crafted_items:
+		var recipe: Dictionary = crafted_items[item_id]
+		if str(recipe.get("store", "")).is_empty():
+			errors.append("Recipe %s has no supplier store." % str(item_id))
+		if int(recipe.get("value", 0)) <= 0 or int(recipe.get("time_sec", 0)) <= 0:
+			errors.append("Recipe %s has missing reference value or production time." % str(item_id))
+		var inputs: Dictionary = recipe.get("requires", {})
+		if inputs.is_empty():
+			errors.append("Recipe %s has no input definition." % str(item_id))
+		for input_id in inputs:
+			var input_key := str(input_id)
+			var quantity := int(inputs[input_id])
+			if quantity <= 0:
+				errors.append("Recipe %s has non-positive input quantity for %s." % [str(item_id), input_key])
+			if not raw_materials.has(input_key) and not crafted_items.has(input_key):
+				errors.append("Recipe %s references unknown input %s." % [str(item_id), input_key])
+			elif get_item_value(input_key) <= 0:
+				errors.append("Recipe %s references input %s without a reference value." % [str(item_id), input_key])
+		if not bool(recipe.get("unlock_level_verified", true)):
+			warnings.append("Recipe %s has verified inputs/time/value but an unresolved Mayor Level gate; it remains locked." % str(item_id))
+	for store_id in store_catalog:
+		for product in store_catalog[store_id]:
+			var product_id := str(product.get("id", ""))
+			if product_id.is_empty() or crafted_items.has(product_id):
+				errors.append("Catalog-only product in %s has an empty or duplicated ID." % str(store_id))
+			if bool(product.get("recipe_conflict", false)):
+				warnings.append("Product %s has conflicting recipe evidence and remains disabled." % product_id)
+	return {
+		"recipe_count": crafted_items.size(),
+		"catalog_only_count": store_catalog.values().reduce(func(total: int, products: Array) -> int: return total + products.size(), 0),
+		"errors": errors,
+		"warnings": warnings
+	}
+
 func get_missing_inputs_text(item_id: String) -> String:
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
@@ -383,13 +471,14 @@ func get_missing_inputs_text(item_id: String) -> String:
 func get_item_value(item_id: String) -> int:
 	if raw_materials.has(item_id): return int(raw_materials[item_id].value)
 	if crafted_items.has(item_id): return int(crafted_items[item_id].value)
-	return 5
+	var definition := get_item_definition(item_id)
+	return int(definition.get("value", 0)) if not definition.is_empty() else 0
 
 func get_production_time(item_id: String, store_star_level: int = 0) -> float:
 	if raw_materials.has(item_id):
 		return float(raw_materials[item_id].time_sec)
 	if not crafted_items.has(item_id):
-		return 20.0
+		return 0.0
 	var recipe: Dictionary = crafted_items[item_id]
 	var base_seconds := float(recipe.get("time_sec", 60))
 	var store_id := str(recipe.get("store", ""))
