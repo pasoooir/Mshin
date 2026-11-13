@@ -941,10 +941,10 @@ func _test_waste_service_happiness() -> void:
 		_check(not ServiceManager.waste_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive waste service.")
 		if expected_capacity == 15:
 			_check(ServiceManager.used_waste == 15, "A 15-unit waste facility must serve only 15 of the 18 connected demand units.")
-			_check(ServiceManager.waste_served_ids.size() < 14, "A small waste facility must leave some connected homes unserved.")
+			_check(ServiceManager.waste_served_ids.size() == 10, "A small waste facility must leave three connected low-demand homes unserved.")
 		else:
 			_check(ServiceManager.used_waste == 18, "A larger waste facility must serve all connected demand units.")
-			_check(ServiceManager.waste_served_ids.size() == 14, "A sufficient waste facility must serve all connected homes.")
+			_check(ServiceManager.waste_served_ids.size() == 13, "A sufficient waste facility must serve all connected homes.")
 		_check(HappinessManager._home_has_extra_service(low_home), "A waste-served home must count as receiving an extra service.")
 
 		facility.status = "constructing"
