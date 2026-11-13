@@ -116,6 +116,8 @@ var context_header: PanelContainer
 var context_header_title: Label
 var context_header_subtitle: Label
 var context_header_icons: HBoxContainer
+var service_warning_panel: PanelContainer
+var service_warning_label: Label
 var _catalog_selected_type := ""
 
 func _ready() -> void:
@@ -125,6 +127,7 @@ func _ready() -> void:
 	GameManager.happiness_changed.connect(_on_happiness_changed)
 	HappinessManager.immigrants_arrived.connect(_on_immigrants_arrived)
 	HappinessManager.immigration_advice.connect(_on_immigration_advice)
+	HappinessManager.happiness_recalculated.connect(_on_city_happiness_recalculated)
 	GameManager.xp_changed.connect(_on_xp_changed)
 	GameManager.level_up_rewarded.connect(_on_level_up_rewarded)
 	EconomyManager.simoleons_changed.connect(_on_simoleons_changed)
@@ -142,6 +145,7 @@ func _ready() -> void:
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	_build_top_hud()
 	_build_toolbars()
+	_build_service_warning_banner()
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_apply_responsive_layout()
 	_update_all()
@@ -172,6 +176,10 @@ func _apply_responsive_layout() -> void:
 	if left_stats:
 		# Keep the complete HUD stack aligned to a consistent inset from the left screen edge.
 		left_stats.position.x = 14.0 * scale_factor
+	if is_instance_valid(service_warning_panel):
+		var warning_width := minf(680.0, maxf(240.0, viewport_size.x - 24.0 * scale_factor))
+		service_warning_panel.offset_left = -warning_width * 0.5
+		service_warning_panel.offset_right = warning_width * 0.5
 	var submenu_control := get_node_or_null("ToolSubmenuScroll") as Control
 	if submenu_control:
 		submenu_control.anchor_left = 0.15
@@ -1327,6 +1335,52 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_cancel_pressed()
 		get_viewport().set_input_as_handled()
 
+func _build_service_warning_banner() -> void:
+	service_warning_panel = PanelContainer.new()
+	service_warning_panel.name = "PersistentServiceWarnings"
+	service_warning_panel.anchor_left = 0.5
+	service_warning_panel.anchor_right = 0.5
+	service_warning_panel.anchor_top = 0.0
+	service_warning_panel.anchor_bottom = 0.0
+	service_warning_panel.offset_left = -320.0
+	service_warning_panel.offset_top = 112.0
+	service_warning_panel.offset_right = 320.0
+	service_warning_panel.offset_bottom = 164.0
+	service_warning_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	service_warning_panel.z_index = 20
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.30, 0.13, 0.035, 0.92)
+	panel_style.border_color = Color(0.95, 0.62, 0.20, 0.95)
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(9)
+	panel_style.content_margin_left = 12.0
+	panel_style.content_margin_right = 12.0
+	panel_style.content_margin_top = 6.0
+	panel_style.content_margin_bottom = 6.0
+	service_warning_panel.add_theme_stylebox_override("panel", panel_style)
+	service_warning_label = Label.new()
+	service_warning_label.name = "WarningText"
+	service_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	service_warning_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	service_warning_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	service_warning_label.add_theme_color_override("font_color", Color(1.0, 0.91, 0.72))
+	service_warning_label.add_theme_font_size_override("font_size", 14)
+	service_warning_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	service_warning_panel.add_child(service_warning_label)
+	add_child(service_warning_panel)
+	_update_service_warning_banner()
+
+func _on_city_happiness_recalculated(_average: float, _scores: Dictionary) -> void:
+	_update_service_warning_banner()
+
+func _update_service_warning_banner() -> void:
+	if not is_instance_valid(service_warning_panel) or not is_instance_valid(service_warning_label):
+		return
+	var warning_data: Dictionary = HappinessManager.get_city_service_warnings()
+	var summary := str(warning_data.get("summary", ""))
+	service_warning_panel.visible = not summary.is_empty()
+	service_warning_label.text = summary
+
 func _update_all() -> void:
 	_on_level_changed(GameManager.level)
 	_on_population_changed(GameManager.population)
@@ -1339,6 +1393,7 @@ func _update_all() -> void:
 	_on_power_changed(ServiceManager.total_power, ServiceManager.demand_power)
 	_on_water_changed(ServiceManager.total_water, ServiceManager.demand_water)
 	_update_service_summary()
+	_update_service_warning_banner()
 
 func _update_simcash() -> void:
 	if simcash_label == null:
