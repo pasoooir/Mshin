@@ -130,14 +130,15 @@ func _advance_completed_steps() -> void:
 func _build_guide_panel() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "FirstCityTutorial"
-	_panel.anchor_left = 0.5
-	_panel.anchor_right = 0.5
-	_panel.anchor_top = 1.0
-	_panel.anchor_bottom = 1.0
-	_panel.offset_left = -minf(340.0, get_viewport().get_visible_rect().size.x * 0.42)
-	_panel.offset_right = minf(340.0, get_viewport().get_visible_rect().size.x * 0.42)
-	_panel.offset_top = -214.0
-	_panel.offset_bottom = -12.0
+	_panel.anchor_left = 0.0
+	_panel.anchor_right = 0.0
+	_panel.anchor_top = 0.0
+	_panel.anchor_bottom = 0.0
+	var viewport_size := get_viewport().get_visible_rect().size
+	_panel.offset_left = 12.0
+	_panel.offset_right = minf(432.0, viewport_size.x * 0.49)
+	_panel.offset_top = minf(180.0, viewport_size.y * 0.43)
+	_panel.offset_bottom = viewport_size.y - 12.0
 	_panel.z_index = 110
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var style := StyleBoxFlat.new()
@@ -249,14 +250,14 @@ func _build_reopen_button() -> void:
 	reopen.text = "?"
 	reopen.tooltip_text = "Open city tutorial"
 	reopen.custom_minimum_size = Vector2(48, 48)
-	reopen.anchor_left = 1.0
-	reopen.anchor_right = 1.0
-	reopen.anchor_top = 0.0
-	reopen.anchor_bottom = 0.0
-	reopen.offset_left = -62
-	reopen.offset_right = -10
-	reopen.offset_top = 204
-	reopen.offset_bottom = 256
+	reopen.anchor_left = 0.0
+	reopen.anchor_right = 0.0
+	reopen.anchor_top = 1.0
+	reopen.anchor_bottom = 1.0
+	reopen.offset_left = 12
+	reopen.offset_right = 64
+	reopen.offset_top = -64
+	reopen.offset_bottom = -12
 	reopen.z_index = 111
 	reopen.pressed.connect(_reopen_guide)
 	add_child(reopen)
