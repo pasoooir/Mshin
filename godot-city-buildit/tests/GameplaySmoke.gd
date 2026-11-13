@@ -1241,9 +1241,65 @@ func _test_mobile_haptics_contract() -> void:
 	_check(HapticsManager.get_pulse_duration_ms("unsupported") == 0, "Unknown haptic events must not request vibration.")
 	_check(not HapticsManager.pulse(0), "A zero-duration haptic request must be rejected safely on unsupported platforms.")
 
+func _test_trade_depot_and_global_market() -> void:
+	var previous_population := GameManager.population
+	var previous_simoleons := EconomyManager.simoleons
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_trade: Dictionary = TradeManager.to_save_dict()
+	var depot := FireHazardTestBuilding.new()
+	depot.building_id = "smoke_trade_depot"
+	depot.building_type = "trade_depot"
+	depot.status = "completed"
+	add_child(depot)
+	BuildManager.buildings[depot.building_id] = depot
+	var hq := FireHazardTestBuilding.new()
+	hq.building_id = "smoke_global_trade_hq"
+	hq.building_type = "global_trade_hq"
+	hq.status = "completed"
+	add_child(hq)
+	BuildManager.buildings[hq.building_id] = hq
+
+	GameManager.population = 10000
+	StorageManager.capacity = 50
+	StorageManager.items = {"metal": 2}
+	TradeManager.from_save_dict({})
+	_check(TradeManager.is_depot_operational(), "A completed Trade Depot at 8,000+ population must activate selling.")
+	_check(TradeManager.is_global_trade_operational(), "A completed Global Trade HQ at 10,000+ population must activate the market.")
+	_check(TradeManager.list_for_sale("metal", 1), "Trade Depot must accept a valid item listing.")
+	_check(StorageManager.get_count("metal") == 1, "Listing an item must remove it from City Storage exactly once.")
+	_check(not TradeManager.collect_sale(0), "A listing must not pay out before its sale timer completes.")
+	TradeManager.sell_slots[0]["time_left"] = 0.0
+	TradeManager._process(0.1)
+	_check(bool(TradeManager.sell_slots[0].get("ready", false)), "A finished sale listing must become ready for manual collection.")
+	var coins_before_collection := EconomyManager.simoleons
+	_check(TradeManager.collect_sale(0), "A ready Trade Depot listing must collect successfully.")
+	_check(EconomyManager.simoleons == coins_before_collection + ProductionManager.get_item_value("metal"), "Collecting a sale must pay its exact listed price.")
+	_check(TradeManager.sell_slots.is_empty(), "Collected listings must release their depot slot.")
+
+	TradeManager.market_offers = [{"item_id":"metal", "amount":1, "price":15, "sold":false}]
+	var coins_before_purchase := EconomyManager.simoleons
+	_check(TradeManager.buy_global_offer(0), "Global Trade HQ must complete an affordable market purchase.")
+	_check(StorageManager.get_count("metal") == 2, "Global market purchase must add the offered goods to storage.")
+	_check(EconomyManager.simoleons == coins_before_purchase - 15, "Global market purchase must deduct the exact offer price.")
+	_check(bool(TradeManager.market_offers[0].get("sold", false)), "Purchased market offers must not be purchasable twice.")
+
+	var saved_trade := TradeManager.to_save_dict()
+	TradeManager.from_save_dict(saved_trade)
+	_check(TradeManager.market_offers.size() == 1 and bool(TradeManager.market_offers[0].get("sold", false)), "Trade save data must preserve sold market offers.")
+	_check(TradeManager.to_save_dict().has("sell_slots"), "Trade save data must include depot listings.")
+	BuildManager.buildings.erase(depot.building_id)
+	BuildManager.buildings.erase(hq.building_id)
+	depot.queue_free()
+	hq.queue_free()
+	GameManager.population = previous_population
+	EconomyManager.simoleons = previous_simoleons
+	StorageManager.from_save_dict(previous_storage)
+	TradeManager.from_save_dict(previous_trade)
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_mobile_haptics_contract()
+	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
 	await _test_build_menu_visibility()
 	_test_wind_turbine_rotor_animation()
