@@ -402,6 +402,46 @@ for contract in [
     if contract not in gameplay_smoke_source:
         errors.append(f"Region snapshot regression test is missing: {contract}")
 
+regional_catalog = [
+    ("sunny_isles", "island_cottage", "coconut_grove", "coconut", 25),
+    ("frosty_fjords", "fjord_chalet", "snowberry_farm", "snowberry", 30),
+    ("cactus_canyon", "desert_hacienda", "cactus_farm", "cactus_fruit", 35),
+    ("green_valley", "valley_eco_home", "herb_garden", "herbs", 40),
+    ("limestone_cliffs", "cliffside_villa", "olive_grove", "olives", 45),
+]
+production_manager_source = (ROOT / "scripts/autoload/ProductionManager.gd").read_text(encoding="utf-8")
+level_progression_source = (ROOT / "scripts/autoload/LevelProgression.gd").read_text(encoding="utf-8")
+icons_source = (ROOT / "scripts/ui/Icons.gd").read_text(encoding="utf-8")
+for region_id, home_id, factory_id, material_id, level in regional_catalog:
+    if f'"{home_id}": {{"name"' not in build_manager or f'"{factory_id}": {{"name"' not in build_manager:
+        errors.append(f"Regional home/resource factory definitions are missing for {region_id}")
+    if f'"{material_id}": {{"name"' not in production_manager_source:
+        errors.append(f"Regional material definition is missing: {material_id}")
+    if f'"{factory_id}":["{material_id}"]' not in production_manager_source:
+        errors.append(f"Regional factory must produce its matching material: {factory_id}")
+    if f'{level}: {{"materials": ["{material_id}"]' not in level_progression_source:
+        if not (level == 30 and '30: {"factories": 9, "materials": ["snowberry"]' in level_progression_source):
+            errors.append(f"Regional material unlock level is missing: {material_id}")
+    if f'"{home_id}"' not in icons_source or f'"{factory_id}"' not in icons_source or f'"{material_id}"' not in icons_source:
+        errors.append(f"Regional building/material icon identity is missing: {region_id}")
+for contract in [
+    "func get_region_build_lock_reason(type_id: String) -> String:",
+    'if get_region_build_lock_reason(type_id) != "":',
+    'if get_region_build_lock_reason(chosen) != "":',
+    "counts_toward_factory_limit",
+]:
+    if contract not in build_manager:
+        errors.append(f"Regional building placement contract is missing: {contract}")
+if "ProductionManager.get_factory_material_ids(factory_type).has(item_id)" not in production_component_source:
+    errors.append("Regional factory production must use the factory-specific material catalog")
+for contract in [
+    "func _test_regional_building_and_material_gates() -> void:",
+    "Regional resource factory must produce only its matching local material",
+    "Regional home must be locked outside its own region",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Regional building/material regression test is missing: {contract}")
+
 if "EpicProjectManager.to_save_dict()" not in save_manager_source or "EpicProjectManager.from_save_dict(epic_data)" not in save_manager_source:
     errors.append("Epic Project state must be saved and restored per region")
 for contract in [
@@ -757,7 +797,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 51"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 61"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 

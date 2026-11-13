@@ -5,7 +5,7 @@ signal region_state_changed
 
 const REGION_DEFINITIONS := [
 	{"id":"capital", "name":"Capital City", "unlock_level":1, "climate":"temperate", "description":"Your original coastal city.", "signature_material":"—", "signature_building":"—"},
-	{"id":"sunny_isles", "name":"Sunny Isles", "unlock_level":25, "climate":"tropical", "description":"Warm islands and bright coastal weather.", "signature_material":"Coconut", "signature_building":"Island Residence"},
+	{"id":"sunny_isles", "name":"Sunny Isles", "unlock_level":25, "climate":"tropical", "description":"Warm islands and bright coastal weather.", "signature_material":"Coconut", "signature_building":"Island Cottage"},
 	{"id":"frosty_fjords", "name":"Frosty Fjords", "unlock_level":30, "climate":"arctic", "description":"Cold fjords, snow and evergreen forests.", "signature_material":"Snowberry", "signature_building":"Fjord Chalet"},
 	{"id":"cactus_canyon", "name":"Cactus Canyon", "unlock_level":35, "climate":"desert", "description":"Dry canyons and sun-baked neighborhoods.", "signature_material":"Cactus Fruit", "signature_building":"Desert Hacienda"},
 	{"id":"green_valley", "name":"Green Valley", "unlock_level":40, "climate":"lush", "description":"A green inland valley with rich vegetation.", "signature_material":"Herbs", "signature_building":"Valley Eco Home"},

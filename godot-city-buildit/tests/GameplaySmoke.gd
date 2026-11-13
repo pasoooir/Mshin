@@ -1242,6 +1242,49 @@ func _test_building_model_loader_contract() -> void:
 	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
 	villa_visual_probe.free()
 
+func _test_regional_building_and_material_gates() -> void:
+	var previous_region := RegionManager.active_region_id
+	var previous_level := GameManager.level
+	var previous_factory_count := BuildManager.factory_count
+	var previous_simoleons := EconomyManager.simoleons
+	GameManager.level = 45
+	BuildManager.factory_count = LevelProgression.get_factory_limit_for_level(45)
+	EconomyManager.simoleons = 100000000
+	var regional_catalog := [
+		{"region":"sunny_isles", "home":"island_cottage", "factory":"coconut_grove", "material":"coconut", "level":25},
+		{"region":"frosty_fjords", "home":"fjord_chalet", "factory":"snowberry_farm", "material":"snowberry", "level":30},
+		{"region":"cactus_canyon", "home":"desert_hacienda", "factory":"cactus_farm", "material":"cactus_fruit", "level":35},
+		{"region":"green_valley", "home":"valley_eco_home", "factory":"herb_garden", "material":"herbs", "level":40},
+		{"region":"limestone_cliffs", "home":"cliffside_villa", "factory":"olive_grove", "material":"olives", "level":45}
+	]
+	for entry in regional_catalog:
+		var region_id := str(entry.get("region", ""))
+		var home_id := str(entry.get("home", ""))
+		var factory_id := str(entry.get("factory", ""))
+		var material_id := str(entry.get("material", ""))
+		var required_level := int(entry.get("level", 1))
+		RegionManager.active_region_id = region_id
+		_check(BuildManager.get_region_build_lock_reason(home_id).is_empty(), "Regional home must be buildable in its own region: %s" % home_id)
+		_check(BuildManager.get_region_build_lock_reason(factory_id).is_empty(), "Regional resource factory must be buildable in its own region: %s" % factory_id)
+		_check(ProductionManager.raw_materials.has(material_id), "Regional production material must exist: %s" % material_id)
+		_check(ProductionManager.get_factory_material_ids(factory_id) == [material_id], "Regional resource factory must produce only its matching local material: %s" % factory_id)
+		_check(int(ProductionManager.raw_materials[material_id].get("level", 0)) == required_level, "Regional material must unlock at its region level: %s" % material_id)
+		_check(not BuildManager.get_factory_build_lock_reason(factory_id).contains("quota"), "Regional resource factories must not consume the standard factory quota.")
+		_check(BuildManager.MOVABLE_BUILDING_TYPES.has(home_id) and BuildManager.MOVABLE_BUILDING_TYPES.has(factory_id), "Regional buildings must be movable and persistable.")
+		var unlock_data: Dictionary = LevelProgression.unlocks.get(required_level, {})
+		_check(home_id in unlock_data.get("buildings", []) and factory_id in unlock_data.get("buildings", []), "Regional home and resource factory must unlock together at their region level.")
+		for other_region in ["sunny_isles", "frosty_fjords", "cactus_canyon", "green_valley", "limestone_cliffs"]:
+			if other_region == region_id:
+				continue
+			RegionManager.active_region_id = other_region
+			_check(not BuildManager.get_region_build_lock_reason(home_id).is_empty(), "Regional home must be locked outside its own region: %s" % home_id)
+			_check(not BuildManager.get_region_build_lock_reason(factory_id).is_empty(), "Regional factory must be locked outside its own region: %s" % factory_id)
+	RegionManager.active_region_id = previous_region
+	GameManager.level = previous_level
+	BuildManager.factory_count = previous_factory_count
+	EconomyManager.simoleons = previous_simoleons
+	GameManager.level_changed.emit(GameManager.level)
+
 func _test_region_city_snapshots() -> void:
 	var previous_regions: Dictionary = RegionManager.to_save_dict()
 	var previous_level := GameManager.level
@@ -1585,6 +1628,7 @@ func _run_gameplay_test() -> void:
 	_test_epic_project_core()
 	_test_achievements()
 	_test_region_city_snapshots()
+	_test_regional_building_and_material_gates()
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
@@ -2018,7 +2062,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 51, "Move whitelist must include all 51 supported building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 61, "Move whitelist must include all 61 supported building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 
