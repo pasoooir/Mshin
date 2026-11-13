@@ -24,6 +24,8 @@ var current_product: String = ""
 var is_producing: bool = false
 var has_ready_product: bool = false
 var upgrade_stage: int = 1
+var epic_tier: int = 0
+var _epic_visual_root: Node3D
 var max_stage: int = 6
 var current_population: int = 0
 var upgrade_ready: bool = false
@@ -1837,10 +1839,57 @@ func _update_stage_label() -> void:
 		stage_label.visible = false
 		stage_label.text = ""
 
+func set_epic_tier(value: int) -> void:
+	epic_tier = clampi(value, 0, 3)
+	if is_instance_valid(_epic_visual_root):
+		_epic_visual_root.queue_free()
+	_epic_visual_root = null
+	if epic_tier <= 0 or DisplayServer.get_name() == "headless" or not is_instance_valid(mesh_root):
+		return
+	_epic_visual_root = Node3D.new()
+	_epic_visual_root.name = "EpicBuildingVisual"
+	mesh_root.add_child(_epic_visual_root)
+	var footprint: Vector2i = definition.get("size", Vector2i(2, 2))
+	var width := maxf(2.4, float(footprint.x) * 1.45)
+	var depth := maxf(2.4, float(footprint.y) * 1.45)
+	var roof_y := 8.2 + float(upgrade_stage) * 0.28
+	var gold := Color("#F4C64E")
+	_add_epic_trim_box(Vector3(0.0, roof_y, depth * 0.5), Vector3(width, 0.16, 0.12), gold)
+	_add_epic_trim_box(Vector3(0.0, roof_y, -depth * 0.5), Vector3(width, 0.16, 0.12), gold)
+	_add_epic_trim_box(Vector3(width * 0.5, roof_y, 0.0), Vector3(0.12, 0.16, depth), gold)
+	_add_epic_trim_box(Vector3(-width * 0.5, roof_y, 0.0), Vector3(0.12, 0.16, depth), gold)
+	_add_epic_trim_box(Vector3(0.0, roof_y + 0.42, 0.0), Vector3(0.24, 0.82, 0.24), gold)
+	var badge := Label3D.new()
+	badge.name = "EpicBuildingBadge"
+	badge.text = "EPIC ★"
+	badge.position = Vector3(0.0, roof_y + 1.05, 0.0)
+	badge.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	badge.pixel_size = 0.025
+	badge.font_size = 48
+	badge.modulate = Color("#FFE18A")
+	badge.outline_size = 8
+	badge.outline_modulate = Color("#6D4A12")
+	_epic_visual_root.add_child(badge)
+
+func _add_epic_trim_box(local_position: Vector3, dimensions: Vector3, color: Color) -> void:
+	var instance := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	instance.mesh = mesh
+	instance.position = local_position
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.metallic = 0.62
+	material.roughness = 0.28
+	instance.material_override = material
+	_epic_visual_root.add_child(instance)
+
 func get_info() -> String:
 	var info = definition.get("name", "Building")
 	if definition.get("category") == "residential":
 		info += " [Lv%d/6] Population:%d" % [upgrade_stage, current_population]
+		if epic_tier > 0:
+			info += " [EPIC TIER %d]" % epic_tier
 		if upgrade_in_progress:
 			info += " — UPGRADING %ds" % get_upgrade_remaining_seconds()
 		var requirements: Array = ProductionManager.get_upgrade_requirements(upgrade_stage)
