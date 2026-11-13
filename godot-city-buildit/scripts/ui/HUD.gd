@@ -260,6 +260,18 @@ func _apply_responsive_layout() -> void:
 		catalog_advisor.offset_right = 0.0
 		catalog_advisor.offset_top = -282.0 * scale_factor
 		catalog_advisor.offset_bottom = -2.0 * scale_factor
+	var info_panel := get_node_or_null("BuildingInfoPanel") as Control
+	if info_panel:
+		var compact_profile := _responsive_profile_for_size(viewport_size) == "compact"
+		var info_right := 0.63 if compact_profile else (0.49 if viewport_size.x < 1440.0 else 0.39)
+		info_panel.anchor_left = 0.15
+		info_panel.anchor_right = info_right
+		info_panel.anchor_top = 1.0
+		info_panel.anchor_bottom = 1.0
+		info_panel.offset_left = 8.0 * scale_factor
+		info_panel.offset_right = -8.0 * scale_factor
+		info_panel.offset_top = -460.0 * scale_factor
+		info_panel.offset_bottom = -140.0 * scale_factor
 	var catalog_close := get_node_or_null("CatalogCloseButton") as Control
 	if catalog_close:
 		catalog_close.anchor_left = 0.95
@@ -506,6 +518,8 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	var value := _make_hud_value(initial_text, int(23 * _ui_scale))
 	value.name = currency_node_prefix + "CurrencyValue"
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	value.add_theme_font_size_override("font_size", maxi(12, int(12 * _ui_scale)))
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(value)
 	if show_plus:
@@ -1151,6 +1165,7 @@ func _add_info_line(parent: VBoxContainer, key_text: String, value_text: String)
 	var key := Label.new()
 	key.text = key_text
 	key.custom_minimum_size.x = 88 * _ui_scale
+	key.add_theme_font_size_override("font_size", maxi(12, int(12 * _ui_scale)))
 	key.add_theme_color_override("font_color", Color("#78909E"))
 	row.add_child(key)
 	var value := Label.new()
