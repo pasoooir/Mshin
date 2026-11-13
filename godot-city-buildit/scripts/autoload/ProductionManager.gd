@@ -154,7 +154,7 @@ var upgrade_requirements := {
 	4: [{"item":"bricks","amount":1},{"item":"cement","amount":1}],
 	5: [{"item":"paint","amount":1},{"item":"planks","amount":2},{"item":"glass","amount":1}]
 }
-var residential_population := {1:15,2:30,3:50,4:90,5:160,6:280}
+var residential_population := {1:52,2:104,3:154,4:313,5:752,6:1836}
 
 func _ready() -> void:
 	# ProductionManager is the authoritative item catalogue. Storage's display
