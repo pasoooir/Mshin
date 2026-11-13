@@ -1187,7 +1187,8 @@ func _test_building_model_loader_contract() -> void:
 		"res://assets/models/residential/villa_house.gltf",
 		"res://assets/models/residential/apartment_tower.gltf",
 		"res://assets/models/commercial/neighborhood_shop.gltf",
-		"res://assets/models/industrial/small_factory.gltf"
+		"res://assets/models/industrial/small_factory.gltf",
+		"res://assets/models/residential/residential_tower_75m.gltf"
 	]
 	for model_path in model_paths:
 		var packed_scene := BuildingModelLoader.load_model_scene(model_path)
@@ -1206,7 +1207,8 @@ func _test_building_model_loader_contract() -> void:
 			_check(surfaces_found > 0, "Imported building model must contain valid mesh surfaces: " + model_path)
 		instance.free()
 	_check(str(BuildManager.building_types["residential_villa"].get("model_path", "")) == model_paths[0], "Villa definitions must select the local villa model.")
-	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local tower model.")
+	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local mid-rise model.")
+	_check(not str(BuildManager.building_types["residential_apartment"].get("model_path", "")).ends_with("residential_tower_75m.gltf"), "The 75m tower must remain unwired until a compatible large footprint is implemented.")
 	_check(str(BuildManager.building_types["hardware_store"].get("model_path", "")) == model_paths[2], "Generic commercial definitions must select the local shop model.")
 	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[3], "Industrial definitions must select the local factory model.")
 	_check(not BuildManager.building_types["building_supplies"].has("model_path"), "Building Supplies must retain its bespoke showcase visual.")
