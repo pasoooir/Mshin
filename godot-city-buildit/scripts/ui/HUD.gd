@@ -391,6 +391,8 @@ func _build_context_header(parent: Control) -> void:
 	context_header_subtitle.name = "ContextSubtitle"
 	context_header_subtitle.text = "Choose a category to explore your city"
 	context_header_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	context_header_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	context_header_subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	context_header_subtitle.add_theme_color_override("font_color", Color("#DCEAF3"))
 	context_header_subtitle.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	stack.add_child(context_header_subtitle)
