@@ -28,6 +28,7 @@ TradeManager="*res://scripts/autoload/TradeManager.gd"
 ServiceManager="*res://scripts/autoload/ServiceManager.gd"
 TrafficManager="*res://scripts/autoload/TrafficManager.gd"
 HappinessManager="*res://scripts/autoload/HappinessManager.gd"
+HapticsManager="*res://scripts/autoload/HapticsManager.gd"
 LevelProgression="*res://scripts/autoload/LevelProgression.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
 
