@@ -976,6 +976,16 @@ for contract in [
     if contract not in ghost_preview_source:
         errors.append(f"Sewage/Waste city-wide network preview contract is missing: {contract}")
 for contract in [
+    "ServiceManager.served_fire_homes, ServiceManager.demand_fire_homes",
+    "ServiceManager.served_police_homes, ServiceManager.demand_police_homes",
+    "ServiceManager.served_health_homes, ServiceManager.demand_health_homes",
+    'context_header_subtitle.text.contains("Fire")',
+    "Emergency service HUD metrics must report covered homes against all completed homes",
+]:
+    if contract not in gameplay_smoke_source and contract not in hud:
+        errors.append(f"Emergency service coverage UI contract is missing: {contract}")
+
+for contract in [
     "var sewage_preview: Dictionary",
     "var waste_preview: Dictionary",
     "Sewage placement must communicate city-wide road-network service",
