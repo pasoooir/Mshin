@@ -70,6 +70,37 @@ func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
 func _test_storage_and_production_chain() -> void:
+	# Regression coverage for newly enabled recipes. Values use the current
+	# 2024 commercial-store variant where the reference documents a variant.
+	var backpack_recipe := ProductionManager.get_recipe("backpack")
+	_check(not backpack_recipe.is_empty() and backpack_recipe.get("requires", {}) == {"textiles":2,"plastic":2,"measuring_tape":1}, "Backpack must use the verified Fashion Store inputs.")
+	_check(int(backpack_recipe.get("time_sec", 0)) == 7200 and int(backpack_recipe.get("level", 0)) == 34, "Backpack must retain its verified level and 2-hour base time.")
+	var tennis_recipe := ProductionManager.get_recipe("tennis_racket")
+	_check(not tennis_recipe.is_empty() and tennis_recipe.get("requires", {}) == {"minerals":4,"hammer":2}, "2024 Tennis Racket recipe inputs must be exact.")
+	_check(int(tennis_recipe.get("time_sec", 0)) == 2700 and int(tennis_recipe.get("level", 0)) == 35, "Tennis Racket must use the 45-minute 2024 base time and level 35.")
+	var sports_drink_recipe := ProductionManager.get_recipe("sports_drink")
+	_check(not sports_drink_recipe.is_empty() and sports_drink_recipe.get("requires", {}) == {"fruit_berries":2,"sugar_spices":4}, "2024 Sports Drink recipe inputs must be exact.")
+	_check(int(sports_drink_recipe.get("time_sec", 0)) == 2100 and int(sports_drink_recipe.get("level", 0)) == 39, "Sports Drink must use its verified 35-minute time and level 39.")
+	var protein_bar_recipe := ProductionManager.get_recipe("protein_bar")
+	_check(not protein_bar_recipe.is_empty() and protein_bar_recipe.get("requires", {}) == {"cherry_cheesecake":1,"sugar_spices":2}, "2024 Protein Bar recipe inputs must be exact.")
+	_check(int(protein_bar_recipe.get("time_sec", 0)) == 2700 and int(protein_bar_recipe.get("level", 0)) == 35, "Protein Bar must use the documented 45-minute base time and level 35.")
+	var stone_recipe := ProductionManager.get_recipe("cut_stone")
+	_check(not stone_recipe.is_empty() and stone_recipe.get("requires", {}) == {"hammer":2,"minerals":6,"drill":2}, "2024 Chiseled Stone recipe inputs must be exact.")
+	_check(int(stone_recipe.get("time_sec", 0)) == 9000 and int(stone_recipe.get("level", 0)) == 59, "Chiseled Stone must use its verified 150-minute base time and level 59.")
+	_check(ProductionManager.get_recipe("tapestries").is_empty(), "Tapestry must remain disabled while current community references disagree on its material quantities.")
+	var stained_glass_recipe := ProductionManager.get_recipe("stained_glass")
+	_check(not stained_glass_recipe.is_empty() and stained_glass_recipe.get("requires", {}) == {"metal":5,"glass":6,"glue":2}, "2024 Stained Glass recipe inputs must be exact.")
+	_check(int(stained_glass_recipe.get("time_sec", 0)) == 14400 and int(stained_glass_recipe.get("required_stars", 0)) == 1, "Stained Glass must remain unavailable until the first store star and use the 4-hour base for its 3h36m one-star time.")
+	_check(ProductionManager.get_store_recipe_ids("fashion_store").has("backpack"), "Fashion Store must expose Backpack as a real recipe.")
+	for item_id in ["tennis_racket","sports_drink","protein_bar"]:
+		_check(ProductionManager.get_store_recipe_ids("sports_shop").has(item_id), "Sports Shop must expose verified 2024 recipe %s." % item_id)
+	_check(ProductionManager.get_store_recipe_ids("restoration_office").has("cut_stone") and ProductionManager.get_store_recipe_ids("restoration_office").has("stained_glass"), "Bureau of Restoration must expose the verified Chiseled Stone and Stained Glass recipes.")
+	_check(ProductionManager.get_recipe("soccer_shoes").is_empty(), "Football Shoes must remain disabled while its item unlock level is unresolved.")
+	_check(ProductionManager.get_recipe("kite").is_empty() and ProductionManager.get_recipe("teddy_bear").is_empty(), "Toy Shop products with unresolved item unlock/time evidence must remain disabled.")
+	_check(ProductionManager.get_recipe("tapestries").is_empty(), "Tapestry must not be enabled from conflicting ingredient tables.")
+	_check(is_equal_approx(ProductionManager.get_production_time("tennis_racket", 3), 2160.0), "Tennis Racket three-star production time must reduce to 36 minutes.")
+	_check(is_equal_approx(ProductionManager.get_production_time("sports_drink", 3), 1680.0), "Sports Drink three-star production time must reduce to 28 minutes.")
+	_check(is_equal_approx(ProductionManager.get_production_time("stained_glass", 1), 12960.0), "Stained Glass one-star production time must be 3 hours 36 minutes.")
 	var expected_residential_population := {1:52,2:104,3:154,4:313,5:752,6:1836}
 	for stage in expected_residential_population:
 		_check(ProductionManager.get_population_for_stage(stage) == expected_residential_population[stage], "Residential stage %d must use the approved Mshin population target." % stage)
@@ -153,7 +184,7 @@ func _test_storage_and_production_chain() -> void:
 	_check(shortage_fruit_chain.contains("Seeds — required 2 | stock 1 | missing 1") and shortage_fruit_chain.contains("Shovel"), "Dependency tree must calculate missing quantities and recursively expose intermediate ingredients.")
 	StorageManager.items = {}
 	_check(is_equal_approx(ProductionManager.get_estimated_chain_seconds("nails"), 360.0), "Nails chain estimate must show parallel Metal production plus five-minute store production.")
-	_check(ProductionManager.get_estimated_chain_seconds("backpack") < 0.0, "Unverified catalog-only recipes must not receive a fabricated chain-time estimate.")
+	_check(is_equal_approx(ProductionManager.get_estimated_chain_seconds("backpack"), 18000.0), "Backpack chain estimate must include parallel raw inputs and its verified 120-minute Fashion Store production.")
 	StorageManager.items = {}
 	for catalog_id in ["ice_cream_sandwich","pizza","burger","cheese_fries","lemonade_bottle","popcorn","bread_roll","bbq_grill","microwave_oven","fruit_berries","tree_sapling","donuts","green_smoothie","cherry_cheesecake","frozen_yogurt","coffee","refrigerator","lighting_system","tv","grass","garden_furniture","lawn_mower","fire_pit","garden_gnome","cap","shoes","watch","business_suit","backpack","tennis_racket","sports_drink","soccer_shoes","protein_bar","ping_pong_table","block_letters","kite","teddy_bear","game_console","forged_iron","carved_wood","cut_stone","tapestries","stained_glass","wool_shirt","picnic_basket","apple_jam","tiramisu","churros","profiterole","mochi","pavlova"]:
 		_check(Icons.CRAFTED_IDS.has(catalog_id), "%s must have a local product icon." % catalog_id)

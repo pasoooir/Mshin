@@ -105,52 +105,28 @@ var crafted_items := {
 	"churros": {"name":"Churros", "time":2100.0, "time_sec":2100, "value":1750, "requires":{"cooking_utensils":1,"flour_bag":2}, "level":63, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"profiterole": {"name":"Profiterole", "time":2100.0, "time_sec":2100, "value":6550, "requires":{"donuts":2,"bread_roll":2,"cream":1}, "level":71, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"mochi": {"name":"Mochi", "time":2700.0, "time_sec":2700, "value":3950, "requires":{"frozen_yogurt":1,"green_smoothie":1}, "level":79, "store":"dessert_shop", "source":"Fandom;Japanese"},
-	"pavlova": {"name":"Pavlova", "time":5400.0, "time_sec":5400, "value":3470, "requires":{"cooking_utensils":1,"fruit_berries":2,"cream":2}, "level":87, "required_stars":1, "store":"dessert_shop", "source":"Fandom;Japanese"}
+	"pavlova": {"name":"Pavlova", "time":5400.0, "time_sec":5400, "value":3470, "requires":{"cooking_utensils":1,"fruit_berries":2,"cream":2}, "level":87, "required_stars":1, "store":"dessert_shop", "source":"Fandom;Japanese"},
+	"backpack": {"name":"Backpack", "time":7200.0, "time_sec":7200, "value":430, "requires":{"textiles":2,"plastic":2,"measuring_tape":1}, "level":34, "store":"fashion_store", "source":"Fandom"},
+	"tennis_racket": {"name":"Tennis Racket", "time":2700.0, "time_sec":2700, "value":780, "requires":{"minerals":4,"hammer":2}, "level":35, "store":"sports_shop", "source":"Fandom 2024"},
+	"sports_drink": {"name":"Sports Drink", "time":2100.0, "time_sec":2100, "value":270, "requires":{"fruit_berries":2,"sugar_spices":4}, "level":39, "store":"sports_shop", "source":"Fandom 2024"},
+	"protein_bar": {"name":"Protein Bar", "time":2700.0, "time_sec":2700, "value":1045, "requires":{"cherry_cheesecake":1,"sugar_spices":2}, "level":35, "store":"sports_shop", "source":"Fandom 2024"},
+	"cut_stone": {"name":"Chiseled Stone", "time":9000.0, "time_sec":9000, "value":2300, "requires":{"hammer":2,"minerals":6,"drill":2}, "level":59, "store":"restoration_office", "source":"Fandom 2024"},
+	"stained_glass": {"name":"Stained Glass", "time":14400.0, "time_sec":14400, "value":2300, "requires":{"metal":5,"glass":6,"glue":2}, "level":76, "required_stars":1, "store":"restoration_office", "source":"Fandom 2024"}
+
 }
 
 # Products with a verified store identity but unresolved input recipes remain
 # visible and disabled; never invent ingredient quantities or production times.
 var store_catalog := {
-	"fast_food": [],
-	"donut_shop": [
-	],
-	"home_appliances": [
-	],
-	"gardening_supplies": [],
-	"fashion_store": [
-		{"id":"backpack","name":"Backpack","level":43,"source":"Community-reference; recipe needs verification"}
-	],
 	"sports_shop": [
-		{"id":"tennis_racket","name":"Tennis Racket","source":"Community-reference; recipe needs verification"},
-		{"id":"sports_drink","name":"Sports Drink","source":"Community-reference; recipe needs verification"},
-		{"id":"soccer_shoes","name":"Football Shoes","source":"Community-reference; recipe needs verification"},
-		{"id":"protein_bar","name":"Protein Bar","source":"Community-reference; recipe needs verification"},
-		{"id":"ping_pong_table","name":"Ping-Pong Table","level":31,"source":"Community-reference; recipe needs verification"}
+		{"id":"soccer_shoes","name":"Football Shoes","source":"Community-reference; item unlock level unresolved"}
 	],
 	"toy_store": [
-		{"id":"block_letters","name":"Block Letters","level":40,"source":"Community-reference; recipe needs verification"},
-		{"id":"kite","name":"Kite","source":"Community-reference; recipe needs verification"},
-		{"id":"teddy_bear","name":"Teddy Bear","source":"Community-reference; recipe needs verification"},
-		{"id":"game_console","name":"Game Console","level":58,"source":"Community-reference; recipe needs verification"}
+		{"id":"kite","name":"Kite","source":"Community-reference; item unlock level unresolved"},
+		{"id":"teddy_bear","name":"Teddy Bear","source":"Community-reference; item unlock level and production time unresolved"}
 	],
 	"restoration_office": [
-		{"id":"forged_iron","name":"Forged Iron","level":45,"source":"Community-reference; recipe needs verification"},
-		{"id":"carved_wood","name":"Carved Wood","level":54,"source":"Community-reference; recipe needs verification"},
-		{"id":"cut_stone","name":"Cut Stone","level":59,"source":"Community-reference; recipe needs verification"},
-		{"id":"tapestries","name":"Tapestries","level":67,"source":"Community-reference; recipe needs verification"},
-		{"id":"stained_glass","name":"Stained Glass","level":76,"source":"Community-reference; recipe needs verification"}
-	],
-	"farmers_store": [
-		{"id":"wool_shirt","name":"Wool Shirt","level":50,"source":"Community-reference; recipe needs verification"},
-		{"id":"picnic_basket","name":"Picnic Basket","level":59,"source":"Community-reference; recipe needs verification"},
-		{"id":"apple_jam","name":"Apple Jam","level":73,"source":"Community-reference; recipe needs verification"}
-	],
-	"dessert_shop": [
-		{"id":"tiramisu","name":"Tiramisu","level":55,"source":"Community-reference; recipe needs verification"},
-		{"id":"churros","name":"Churros","level":63,"source":"Community-reference; recipe needs verification"},
-		{"id":"profiterole","name":"Profiterole","level":71,"source":"Community-reference; recipe needs verification"},
-		{"id":"mochi","name":"Mochi","level":79,"source":"Community-reference; recipe needs verification"},
-		{"id":"pavlova","name":"Pavlova","level":87,"source":"Community-reference; recipe needs verification"}
+		{"id":"tapestries","name":"Tapestry","source":"Community-reference; ingredient quantities conflict (Textiles x3 vs x4)"}
 	]
 }
 
