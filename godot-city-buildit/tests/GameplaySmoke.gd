@@ -1938,6 +1938,17 @@ func _test_settings_panel_contract() -> void:
 		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must expose an independent settings enable switch." % node_name)
 	var benchmark_button := hud.find_child("RunDeviceBenchmarkButton", true, false) as Button
 	_check(benchmark_button != null and benchmark_button.text.contains("30-second"), "Settings must expose the on-device 30-second performance test.")
+	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
+	_check(graphics_select != null and graphics_select.item_count == 3, "Settings must expose Low, Balanced and High 3D quality presets.")
+	var original_quality := GraphicsSettingsManager.quality
+	if graphics_select != null:
+		graphics_select.select(0)
+		graphics_select.item_selected.emit(0)
+		_check(GraphicsSettingsManager.quality == "low", "Selecting Low must update the graphics settings manager.")
+		_check(is_equal_approx(get_tree().root.scaling_3d_scale, 0.70) and get_tree().root.msaa_3d == Viewport.MSAA_DISABLED, "Low quality must reduce 3D render scale and disable MSAA.")
+		var graphics_config := ConfigFile.new()
+		_check(graphics_config.load("user://graphics_settings.cfg") == OK and str(graphics_config.get_value("graphics", "quality", "")) == "low", "Graphics quality must persist locally.")
+	GraphicsSettingsManager.set_quality(original_quality)
 	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
 	if master_slider != null:
 		master_slider.value = 55.0

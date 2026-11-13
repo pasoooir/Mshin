@@ -406,3 +406,12 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - محدودیت: این تغییر حباب‌های UI و متن‌های کوتاه را زنده‌تر می‌کند؛ NPC سه‌بعدی متحرک، مسیر‌یابی شهروندان و مکالمه چندمرحله‌ای هنوز پیاده‌سازی نشده‌اند.
 
 - PR #445 با merge commit `1aa24b3c5a7dc31593e3a33f8110052b073309a9` وارد main شد؛ Godot Validation run `43503219800`، Web/Chromium + game deploy run `43503219845` و Pages build/deploy run `43503218235` همگی موفق شدند.
+
+
+## تنظیم کیفیت رندر سه‌بعدی موبایل — PR در حال آماده‌سازی
+
+- `GraphicsSettingsManager` سه preset ذخیره‌شونده Low/Balanced/High دارد؛ فقط رزولوشن بافر 3D و MSAA تغییر می‌کنند و UI در رزولوشن اصلی باقی می‌ماند.
+- Low: scale=0.70 و MSAA خاموش؛ Balanced: scale=0.85 و MSAA 2x؛ High: scale=1.0 و MSAA 4x. مقدار انتخابی در `user://graphics_settings.cfg` ذخیره و در شروع بازی اعمال می‌شود.
+- OptionButton در Settings کیفیت را بدون بارگذاری مجدد صحنه تغییر می‌دهد؛ Restore defaults کیفیت Balanced را بازمی‌گرداند.
+- `GameplaySmoke.gd::_test_settings_panel_contract` وجود سه گزینه، تغییر Viewport، خاموش شدن MSAA در Low و persistence را بررسی می‌کند.
+- محدودیت پذیرش: این presetها کنترل پایه resolution scale و MSAA هستند، نه تنظیمات جامع کیفیت؛ هیچ benchmark فیزیکی برای انتخاب بهترین preset روی دستگاه هدف انجام نشده است.

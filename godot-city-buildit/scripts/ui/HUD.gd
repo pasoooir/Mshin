@@ -3719,6 +3719,29 @@ func _show_settings_panel() -> void:
 	_add_audio_setting_slider(sliders, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
 	_add_audio_setting_slider(sliders, "AmbientVolumeSlider", "City ambience volume", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
 	_add_audio_setting_slider(sliders, "SfxVolumeSlider", "Sound effects volume", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
+	var graphics_section := Label.new()
+	graphics_section.text = "3D GRAPHICS"
+	graphics_section.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	graphics_section.add_theme_color_override("font_color", Color("#28799C"))
+	sliders.add_child(graphics_section)
+	var graphics_row := HBoxContainer.new()
+	graphics_row.name = "GraphicsQualityRow"
+	sliders.add_child(graphics_row)
+	var graphics_label := Label.new()
+	graphics_label.text = "3D render quality"
+	graphics_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	graphics_label.add_theme_color_override("font_color", Color("#243C4B"))
+	graphics_row.add_child(graphics_label)
+	var graphics_select := OptionButton.new()
+	graphics_select.name = "GraphicsQualitySelect"
+	graphics_select.custom_minimum_size = Vector2(150, 42) * _ui_scale
+	var quality_names := GraphicsSettingsManager.get_quality_names()
+	for quality_name in quality_names:
+		var preset: Dictionary = GraphicsSettingsManager.get_quality_preset(quality_name)
+		graphics_select.add_item(str(preset.get("label", quality_name.capitalize())))
+	graphics_select.select(quality_names.find(GraphicsSettingsManager.quality))
+	graphics_select.item_selected.connect(_on_graphics_quality_selected)
+	graphics_row.add_child(graphics_select)
 	var performance_section := Label.new()
 	performance_section.text = "DEVICE PERFORMANCE"
 	performance_section.add_theme_font_size_override("font_size", int(14 * _ui_scale))
@@ -3800,8 +3823,16 @@ func _reset_audio_settings() -> void:
 	AudioManager.set_ambient_enabled(true)
 	AudioManager.set_sfx_enabled(true)
 	HapticsManager.set_enabled(true)
+	GraphicsSettingsManager.set_quality("balanced")
 	_show_settings_panel()
 
+
+func _on_graphics_quality_selected(index: int) -> void:
+	var quality_names := GraphicsSettingsManager.get_quality_names()
+	if index < 0 or index >= quality_names.size():
+		return
+	GraphicsSettingsManager.set_quality(quality_names[index])
+	status_label.text = "3D graphics quality set to %s." % str(GraphicsSettingsManager.get_quality_preset(quality_names[index]).get("label", quality_names[index]))
 
 func _start_performance_benchmark() -> void:
 	_close_settings_panel()
