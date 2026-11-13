@@ -25,6 +25,12 @@ var waste_served_ids: Dictionary = {}
 var fire_served_ids: Dictionary = {}
 var police_served_ids: Dictionary = {}
 var health_served_ids: Dictionary = {}
+var demand_fire_homes: int = 0
+var served_fire_homes: int = 0
+var demand_police_homes: int = 0
+var served_police_homes: int = 0
+var demand_health_homes: int = 0
+var served_health_homes: int = 0
 
 const DEFAULT_EMERGENCY_COVERAGE_TILES := 15.0
 
@@ -83,6 +89,14 @@ func is_home_served_by_group(home: Node3D, service_group: String) -> bool:
 	if not is_instance_valid(home):
 		return false
 	match service_group:
+		"power":
+			return power_served_ids.has(home.building_id)
+		"water":
+			return water_served_ids.has(home.building_id)
+		"sewage":
+			return sewage_served_ids.has(home.building_id)
+		"waste":
+			return waste_served_ids.has(home.building_id)
 		"fire":
 			return fire_served_ids.has(home.building_id)
 		"police":
@@ -133,6 +147,12 @@ func recalculate_from_buildings() -> void:
 	fire_served_ids.clear()
 	police_served_ids.clear()
 	health_served_ids.clear()
+	demand_fire_homes = 0
+	served_fire_homes = 0
+	demand_police_homes = 0
+	served_police_homes = 0
+	demand_health_homes = 0
+	served_health_homes = 0
 
 	var homes: Array = []
 	for building in BuildManager.buildings.values():
@@ -198,6 +218,15 @@ func recalculate_from_buildings() -> void:
 			police_served_ids[home.building_id] = true
 		if _has_nearby_emergency_facility(home, "health"):
 			health_served_ids[home.building_id] = true
+
+	# These three services are area-coverage systems, not numerical capacity
+	# pools. Expose covered-home counts so the HUD reports measurable coverage.
+	demand_fire_homes = homes.size()
+	served_fire_homes = fire_served_ids.size()
+	demand_police_homes = homes.size()
+	served_police_homes = police_served_ids.size()
+	demand_health_homes = homes.size()
+	served_health_homes = health_served_ids.size()
 
 	power_changed.emit(total_power, demand_power)
 	water_changed.emit(total_water, demand_water)
