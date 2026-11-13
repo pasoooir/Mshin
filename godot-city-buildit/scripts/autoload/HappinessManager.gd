@@ -349,7 +349,7 @@ func get_city_service_warnings() -> Dictionary:
 		if _service_group_is_unlocked("health") and not _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 			counts["health"] += 1
 
-	var warning_parts: Array[String] = []
+	var warning_parts := PackedStringArray()
 	var labels := {
 		"road": "road access",
 		"power": "power",
