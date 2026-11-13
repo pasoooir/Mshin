@@ -1354,6 +1354,14 @@ func _test_citizen_feedback_bubbles() -> void:
 	_check(str(feedback.get("kind", "")) == "road", "A residential home without connected road access must produce a road feedback bubble.")
 	_check(str(feedback.get("message", "")).contains("Road"), "Citizen feedback must explain the missing road access in readable text.")
 	_check(str(feedback.get("icon", "")) == "road", "Road feedback must use the local road icon.")
+	var rotation_candidates: Array[Dictionary] = []
+	for index in range(4):
+		rotation_candidates.append({"test_id": index, "feedback": {"priority": 0}})
+	var first_rotation: Array[Dictionary] = feedback_manager._select_feedback_candidates(rotation_candidates)
+	var second_rotation: Array[Dictionary] = feedback_manager._select_feedback_candidates(rotation_candidates)
+	_check(first_rotation.size() == 3 and second_rotation.size() == 3, "Citizen feedback must respect the three-bubble display limit.")
+	_check(int(first_rotation[0].get("test_id", -1)) == 0 and int(second_rotation[0].get("test_id", -1)) == 3, "Citizen feedback bubbles must rotate fairly across homes with equal priority.")
+	_check(int(first_rotation[0].get("test_id", -1)) != int(first_rotation[1].get("test_id", -1)), "A feedback cycle must not display the same home twice.")
 	var invalid_feedback: Dictionary = feedback_manager.get_feedback_for_home(null) if feedback_manager else {}
 	_check(invalid_feedback.is_empty(), "Citizen feedback must ignore invalid building references.")
 	BuildManager.buildings.erase(home.building_id)
