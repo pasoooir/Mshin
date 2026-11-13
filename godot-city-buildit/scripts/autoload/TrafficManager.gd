@@ -114,6 +114,7 @@ func clear_active_vehicle() -> void:
 	if is_instance_valid(_active_vehicle):
 		_active_vehicle.queue_free()
 	_active_vehicle = null
+	_spawn_elapsed = 0.0
 
 func get_happiness_penalty() -> float:
 	if congestion_ratio >= 1.5:
