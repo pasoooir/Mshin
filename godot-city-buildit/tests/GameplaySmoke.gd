@@ -1244,6 +1244,7 @@ func _test_mobile_haptics_contract() -> void:
 func _test_trade_depot_and_global_market() -> void:
 	var previous_population := GameManager.population
 	var previous_simoleons := EconomyManager.simoleons
+	var previous_keys := EconomyManager.golden_keys
 	var previous_storage: Dictionary = StorageManager.to_save_dict()
 	var previous_trade: Dictionary = TradeManager.to_save_dict()
 	var depot := FireHazardTestBuilding.new()
@@ -1258,6 +1259,13 @@ func _test_trade_depot_and_global_market() -> void:
 	hq.status = "completed"
 	add_child(hq)
 	BuildManager.buildings[hq.building_id] = hq
+
+	var port := FireHazardTestBuilding.new()
+	port.building_id = "smoke_cargo_port"
+	port.building_type = "cargo_port"
+	port.status = "completed"
+	add_child(port)
+	BuildManager.buildings[port.building_id] = port
 
 	GameManager.population = 7999
 	_check(BuildManager.get_population_build_lock_reason("trade_depot") != "", "Trade Depot must remain locked below 8,000 population.")
@@ -1293,12 +1301,40 @@ func _test_trade_depot_and_global_market() -> void:
 	TradeManager.from_save_dict(saved_trade)
 	_check(TradeManager.market_offers.size() == 1 and bool(TradeManager.market_offers[0].get("sold", false)), "Trade save data must preserve sold market offers.")
 	_check(TradeManager.to_save_dict().has("sell_slots"), "Trade save data must include depot listings.")
+
+	GameManager.population = 19999
+	_check(BuildManager.get_population_build_lock_reason("cargo_port") != "", "Cargo Port must remain locked below 20,000 population.")
+	GameManager.population = 20000
+	_check(BuildManager.get_population_build_lock_reason("cargo_port").is_empty(), "Cargo Port must unlock at exactly 20,000 population.")
+	_check(TradeManager.is_cargo_ship_operational(), "A completed Cargo Port at 20,000+ population must activate the cargo ship.")
+	StorageManager.items = {"metal": 3}
+	TradeManager.ship_crates = [
+		{"item_id":"metal", "amount":1, "delivered":false},
+		{"item_id":"metal", "amount":1, "delivered":false},
+		{"item_id":"metal", "amount":1, "delivered":false}
+	]
+	TradeManager.ship_departed = false
+	TradeManager.ship_return_time_left = 0.0
+	var keys_before_ship := EconomyManager.golden_keys
+	_check(TradeManager.deliver_ship_crate(0), "Cargo Ship must accept a crate when its required items are in storage.")
+	_check(StorageManager.get_count("metal") == 2, "Loading a ship crate must consume the exact requested cargo.")
+	_check(not TradeManager.deliver_ship_crate(0), "A cargo crate must not be loaded twice.")
+	_check(TradeManager.deliver_ship_crate(1) and TradeManager.deliver_ship_crate(2), "Cargo Ship must accept the remaining manifest crates.")
+	_check(TradeManager.ship_departed and TradeManager.ship_departures == 1, "Completing all three crates must send the ship away exactly once.")
+	_check(EconomyManager.golden_keys == keys_before_ship + 1, "A completed cargo ship manifest must grant one Golden Key.")
+	TradeManager.ship_return_time_left = 0.0
+	TradeManager._process(0.1)
+	_check(not TradeManager.ship_departed and TradeManager.ship_crates.size() == TradeManager.SHIP_CRATE_COUNT, "A returned cargo ship must receive a fresh three-crate manifest.")
+	_check(TradeManager.to_save_dict().has("ship_crates") and TradeManager.to_save_dict().has("ship_departed"), "Trade save data must preserve cargo ship manifest and departure state.")
 	BuildManager.buildings.erase(depot.building_id)
 	BuildManager.buildings.erase(hq.building_id)
+	BuildManager.buildings.erase(port.building_id)
 	depot.queue_free()
 	hq.queue_free()
+	port.queue_free()
 	GameManager.population = previous_population
 	EconomyManager.simoleons = previous_simoleons
+	EconomyManager.golden_keys = previous_keys
 	StorageManager.from_save_dict(previous_storage)
 	TradeManager.from_save_dict(previous_trade)
 
