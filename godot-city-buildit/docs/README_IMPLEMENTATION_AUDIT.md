@@ -279,3 +279,10 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - Godot City BuildIt Validation برای commit `ca709dcf01ed80d2eb89d799cbaa6db94f90f9a6` با run `43464009803` موفق شد؛ شامل Static Validation، Import/Parse، Headless Startup و End-to-end GameplaySmoke.
 - Mshin Playable Web برای همان commit با run `43464009799` موفق شد؛ شامل Web export و Chromium desktop/mobile smoke. این اجرای PR، Pages deploy جدید انجام نداد.
 - نتیجه: منطق هفت خدمت حیاتی در پروژه پیاده‌سازی و با CI تأیید شده است؛ آزمون فیزیکی Android/iOS و سنجش نهایی توازن خدمات همچنان خارج از این تأیید هستند.
+## اصلاح خوانایی خلاصه خدمات در موبایل — PR #436
+
+- PR #436 با commit ادغام `9fa8e18255f8e79b8be7fca92cc176f0386a538c` در `main` ادغام شد.
+- `HUD.gd` برای `ContextSubtitle` از word-wrap و horizontal expand استفاده می‌کند تا خلاصه طولانی خدمات از عرض سربرگ موبایل بیرون نزند.
+- GameplaySmoke قرارداد autowrap و اندازه‌گیری فضای افقی Label را بررسی می‌کند؛ Static Validation نیز این قرارداد را اجباری کرده است.
+- Godot City BuildIt Validation برای head commit شاخه PR با run `43465117078` موفق شد؛ Mshin Playable Web با run `43465117136` موفق شد و مراحل Web export، Chromium desktop/mobile و deploy به GitHub Pages را گذراند.
+- محدودیت باقی‌مانده: تأیید چشمی روی دستگاه فیزیکی Android/iOS هنوز انجام نشده است؛ موفقیت Chromium mobile viewport معادل آزمون فیزیکی نیست.
