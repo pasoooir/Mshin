@@ -147,17 +147,28 @@ func _process(_delta: float) -> void:
 	if changed:
 		trade_state_changed.emit()
 
+func is_trade_eligible_item(item_id: String) -> bool:
+	if ProductionManager.raw_materials.has(item_id):
+		var raw_definition: Dictionary = ProductionManager.raw_materials[item_id]
+		return int(raw_definition.get("level", 1)) <= GameManager.level and ProductionManager.get_item_value(item_id) > 0
+	if ProductionManager.crafted_items.has(item_id):
+		var recipe: Dictionary = ProductionManager.crafted_items[item_id]
+		return bool(recipe.get("unlock_level_verified", true)) and int(recipe.get("level", 1)) <= GameManager.level and ProductionManager.get_item_value(item_id) > 0
+	return false
+
+func get_trade_eligible_item_ids() -> Array[String]:
+	var result: Array[String] = []
+	for item_id in ProductionManager.raw_materials:
+		if is_trade_eligible_item(str(item_id)):
+			result.append(str(item_id))
+	for item_id in ProductionManager.crafted_items:
+		if is_trade_eligible_item(str(item_id)):
+			result.append(str(item_id))
+	return result
+
 func _generate_ship_manifest() -> void:
 	ship_crates.clear()
-	var pool: Array[String] = []
-	for item_id in ProductionManager.raw_materials.keys():
-		var definition: Dictionary = ProductionManager.raw_materials[item_id]
-		if int(definition.get("level", 1)) <= GameManager.level:
-			pool.append(str(item_id))
-	for item_id in ProductionManager.crafted_items.keys():
-		var definition: Dictionary = ProductionManager.crafted_items[item_id]
-		if bool(definition.get("unlock_level_verified", true)) and int(definition.get("level", 1)) <= GameManager.level and ProductionManager.get_item_value(str(item_id)) > 0:
-			pool.append(str(item_id))
+	var pool: Array[String] = get_trade_eligible_item_ids()
 	pool.shuffle()
 	if pool.is_empty():
 		pool.append("metal")
@@ -216,15 +227,7 @@ func _item_exists(item_id: String) -> bool:
 
 func _generate_market_offers() -> void:
 	market_offers.clear()
-	var pool: Array[String] = []
-	for item_id in ProductionManager.raw_materials.keys():
-		var definition: Dictionary = ProductionManager.raw_materials[item_id]
-		if int(definition.get("level", 1)) <= GameManager.level:
-			pool.append(str(item_id))
-	for item_id in ProductionManager.crafted_items.keys():
-		var definition: Dictionary = ProductionManager.crafted_items[item_id]
-		if bool(definition.get("unlock_level_verified", true)) and int(definition.get("level", 1)) <= GameManager.level and ProductionManager.get_item_value(str(item_id)) > 0:
-			pool.append(str(item_id))
+	var pool: Array[String] = get_trade_eligible_item_ids()
 	pool.shuffle()
 	for index in range(mini(MARKET_OFFER_COUNT, pool.size())):
 		var item_id := pool[index]
