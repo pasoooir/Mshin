@@ -1013,7 +1013,7 @@ for contract in [
 for contract in [
     "func _test_power_water_gateway_access() -> void:",
     "ServiceManager.total_power == 0 and ServiceManager.total_water == 0",
-    "A connected local utility coverage must serve a connected nearby home.",
+    "Connected local utility coverage must serve a connected nearby home.",
     "_test_power_water_gateway_access()",
 ]:
     if contract not in gameplay_smoke_source:
