@@ -88,6 +88,7 @@ Wind power and water towers each provide 12 units of capacity within a 28 m cove
 - **Trade Depot** unlocks at 8,000 population and must be placed/completed in Services → Trade. It provides four timed sale slots; goods are removed when listed and Simoleons are collected manually when a listing is ready.
 - **Global Trade HQ** unlocks at 10,000 population and must be placed/completed in Services → Trade. Its purchase board is currently an offline local simulation, not a live player-to-player marketplace. Trade listings, market offers, ship manifest, departure state and return timer are included in save version 3.
 - **Cargo Port** unlocks at 20,000 population and opens the Cargo Ship tab. Load all three manifest crates from City Storage; each crate consumes its exact requested quantity. Completing the manifest grants one Golden Key, sends the visible 3D ship into open water, and returns it after 180 seconds with a new manifest. The manifest, departure state and return timer are saved.
+- Citizen feedback bubbles appear above completed residential buildings in short rotating groups. They identify road, utility, sewage, waste and emergency-service gaps; tapping a bubble opens the corresponding home's residential panel. The bubbles are contextual UI feedback, not animated citizen/NPC characters.
 
 ## Validation and automated gameplay test
 
