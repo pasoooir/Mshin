@@ -1783,6 +1783,35 @@ func _run_gameplay_test() -> void:
 	_check(home != null and home.try_upgrade(), "Second residential upgrade could not start with Planks and Wood.")
 	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
 	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) + 3600
+
+	# Verify the four supported road tiers, their real unlock levels and the
+	# researched upper-end per-tile upgrade costs before persisting the city.
+	var road_upgrade_cell := Vector2i(0, 0)
+	var saved_level_before_road_test := GameManager.level
+	var saved_money_before_road_test := EconomyManager.simoleons
+	GameManager.level = 8
+	EconomyManager.simoleons = 5000
+	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 9"), "Four-lane roads must remain locked before City Level 9.")
+	GameManager.level = 9
+	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 300, "Four-lane road upgrade must use the sourced 300-Simoleon upper-range per-tile cost.")
+	_check(road_system.upgrade_road(road_upgrade_cell), "A road must upgrade to four lanes at City Level 9.")
+	_check(road_system.get_road_level(road_upgrade_cell) == 2, "Four-lane upgrade did not persist its road tier.")
+	GameManager.level = 14
+	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 15"), "Six-lane roads must remain locked before City Level 15.")
+	GameManager.level = 15
+	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 1200, "Six-lane road upgrade must use the sourced 1200-Simoleon upper-range per-tile cost.")
+	_check(road_system.upgrade_road(road_upgrade_cell), "A four-lane road must upgrade to six lanes at City Level 15.")
+	GameManager.level = 19
+	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 20"), "Avenues must remain locked before City Level 20.")
+	GameManager.level = 20
+	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 1500, "Avenue upgrade must use the sourced 1500-Simoleon upper-range per-tile cost.")
+	_check(road_system.upgrade_road(road_upgrade_cell), "A six-lane road must upgrade to an Avenue at City Level 20.")
+	_check(road_system.get_road_level(road_upgrade_cell) == 4, "Avenue upgrade did not reach road tier four.")
+	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("already an Avenue"), "An Avenue must reject further upgrades.")
+	GameManager.level = saved_level_before_road_test
+	EconomyManager.simoleons = saved_money_before_road_test
+	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
+
 	var saved_population_expected := GameManager.population
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 
@@ -1801,6 +1830,7 @@ func _run_gameplay_test() -> void:
 	var restored_home = _find_building("residential_1")
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
 	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "Save/load must restore the permanent highway gateway before other road tiles.")
+	_check(road_system.get_road_level(Vector2i(0, 0)) == 4, "Save/load must preserve the upgraded Avenue road tier.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
 	_check(restored_home != null and restored_home.upgrade_in_progress and restored_home.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Residential upgrade finish timestamp was not restored from save.")
