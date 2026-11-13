@@ -85,7 +85,7 @@ var crafted_items := {
 	"tv": {"name":"TV", "time":9000.0, "time_sec":9000, "value":1280, "requires":{"plastic":2,"glass":2,"electrical":2}, "level":38, "store":"home_appliances", "source":"HubsInfo"},
 	"ping_pong_table": {"name":"Ping-Pong Table", "time":5400.0, "time_sec":5400, "value":1245, "requires":{"table":1,"minerals":4,"wood":4}, "level":55, "required_stars":1, "store":"sports_shop", "source":"Fandom;Japanese"},
 	"block_letters": {"name":"Letter Blocks", "time":3600.0, "time_sec":3600, "value":360, "requires":{"wood":4,"measuring_tape":1}, "level":40, "store":"toy_store", "source":"Fandom;Japanese"},
-	"game_console": {"name":"Game Console", "time":4500.0, "time_sec":4500, "value":2240, "requires":{"lighting_system":1,"glass":3,"electrical":3}, "level":58, "required_stars":1, "store":"toy_store", "source":"Fandom;Japanese"},
+	"game_console": {"name":"Game Console", "time":4500.0, "time_sec":4500, "value":2240, "requires":{"lighting_system":1,"glass":3,"electrical":3}, "level":58, "store":"toy_store", "source":"Fandom;Japanese"},
 	"forged_iron": {"name":"Wrought Iron", "time":1800.0, "time_sec":1800, "value":560, "requires":{"metal":4,"hammer":2,"chemicals":2}, "level":45, "store":"restoration_office", "source":"Fandom;Japanese"},
 	"carved_wood": {"name":"Carved Wood", "time":3600.0, "time_sec":3600, "value":2800, "requires":{"planks":5,"measuring_tape":2,"drill":2}, "level":54, "store":"restoration_office", "source":"Fandom;Japanese"},
 	"wool_shirt": {"name":"Wool Shirt", "time":4500.0, "time_sec":4500, "value":1700, "requires":{"textiles":4,"measuring_tape":2,"paint":2}, "level":50, "store":"farmers_store", "source":"Fandom;Japanese"},
@@ -95,53 +95,33 @@ var crafted_items := {
 	"churros": {"name":"Churros", "time":2100.0, "time_sec":2100, "value":1750, "requires":{"cooking_utensils":1,"flour_bag":2}, "level":63, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"profiterole": {"name":"Profiterole", "time":2100.0, "time_sec":2100, "value":6550, "requires":{"donuts":2,"bread_roll":2,"cream":1}, "level":71, "store":"dessert_shop", "source":"Fandom;Japanese"},
 	"mochi": {"name":"Mochi", "time":2700.0, "time_sec":2700, "value":3950, "requires":{"frozen_yogurt":1,"green_smoothie":1}, "level":79, "store":"dessert_shop", "source":"Fandom;Japanese"},
-	"pavlova": {"name":"Pavlova", "time":5400.0, "time_sec":5400, "value":3470, "requires":{"cooking_utensils":1,"fruit_berries":2,"cream":2}, "level":87, "required_stars":1, "store":"dessert_shop", "source":"Fandom;Japanese"}
+	"pavlova": {"name":"Pavlova", "time":5400.0, "time_sec":5400, "value":3470, "requires":{"cooking_utensils":1,"fruit_berries":2,"cream":2}, "level":87, "required_stars":1, "store":"dessert_shop", "source":"Fandom;Japanese"},
+	"backpack": {"name":"Backpack", "time":7200.0, "time_sec":7200, "value":430, "requires":{"textiles":2,"plastic":2,"measuring_tape":1}, "level":34, "store":"fashion_store", "source":"Fandom item page; Fashion Store table", "source_url":"https://simcity-buildit.fandom.com/wiki/Backpack", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Fashion_Store"},
+	"tennis_racket": {"name":"Tennis Racket", "time":2700.0, "time_sec":2700, "value":780, "requires":{"minerals":4,"hammer":2}, "level":35, "store":"sports_shop", "source":"Fandom item page; Sports Shop table", "source_url":"https://simcity-buildit.fandom.com/wiki/Tennis_Racket", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Sports_Shop"},
+	"sports_drink": {"name":"Sports Drink", "time":2100.0, "time_sec":2100, "value":270, "requires":{"fruit_berries":2,"sugar_spices":4}, "level":39, "store":"sports_shop", "source":"Fandom item page; Sports Shop table", "source_url":"https://simcity-buildit.fandom.com/wiki/Sports_Drink", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Sports_Shop"},
+	"soccer_shoes": {"name":"Football Shoes", "time":2100.0, "time_sec":2100, "value":920, "requires":{"shoes":1,"chemicals":3}, "level_verified":false, "unlock_level_note":"The item-specific Mayor Level is not listed in the available source; Sports Shop building unlock level is not substituted.", "store":"sports_shop", "source":"Fandom item page; Sports Shop table", "source_url":"https://simcity-buildit.fandom.com/wiki/Football_Shoes", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Sports_Shop"},
+	"protein_bar": {"name":"Protein Bar", "time":2700.0, "time_sec":2700, "value":1045, "requires":{"cherry_cheesecake":1,"sugar_spices":2}, "level":35, "store":"sports_shop", "source":"Fandom item page; Sports Shop table", "source_url":"https://simcity-buildit.fandom.com/wiki/Protein_Bar", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Sports_Shop"},
+	"kite": {"name":"Kite", "time":4500.0, "time_sec":4500, "value":1000, "requires":{"home_textiles":2,"planks":2,"paint":2}, "level_verified":false, "unlock_level_note":"The item-specific Mayor Level is not listed in the available source; Toy Shop building unlock level is not substituted.", "store":"toy_store", "source":"Fandom item page; Toy Shop table", "source_url":"https://simcity-buildit.fandom.com/wiki/Kite", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Toy_Shop"},
+	"teddy_bear": {"name":"Teddy Bear", "time":3600.0, "time_sec":3600, "value":600, "requires":{"home_textiles":4,"plastic":2}, "level_verified":false, "unlock_level_note":"The item-specific Mayor Level is not listed in the available source; Toy Shop building unlock level is not substituted.", "store":"toy_store", "source":"Fandom item page; Toy Shop table", "source_url":"https://simcity-buildit.fandom.com/wiki/Teddy_Bear", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Toy_Shop"},
+	"cut_stone": {"name":"Chiseled Stone", "time":9000.0, "time_sec":9000, "value":2300, "requires":{"hammer":2,"minerals":6,"drill":2}, "level":59, "store":"restoration_office", "source":"Fandom Bureau of Restoration table", "source_url":"https://simcity-buildit.fandom.com/wiki/Bureau_of_Restoration"},
+	"tapestries": {"name":"Tapestry", "time":12600.0, "time_sec":12600, "value":2560, "requires":{"textiles":4,"paint":2,"glue":2}, "level_verified":false, "unlock_level_note":"The item-specific Mayor Level is not listed in the available source; Bureau of Restoration building unlock level is not substituted.", "store":"restoration_office", "source":"Fandom item page; Bureau of Restoration table", "source_url":"https://simcity-buildit.fandom.com/wiki/Tapestry", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Bureau_of_Restoration"},
+	"stained_glass": {"name":"Stained Glass", "time":14400.0, "time_sec":14400, "value":2300, "requires":{"metal":5,"glass":6,"glue":2}, "level":76, "required_stars":1, "store":"restoration_office", "source":"Fandom item page; Bureau of Restoration table", "source_url":"https://simcity-buildit.fandom.com/wiki/Stained_Glass", "time_source_url":"https://simcity-buildit.fandom.com/wiki/Bureau_of_Restoration"}
 }
 
-# Products with a verified store identity but unresolved input recipes remain
-# visible and disabled; never invent ingredient quantities or production times.
+# Catalog-only identities are retained only when no reliable recipe row exists.
+# Every currently listed commercial product now has a sourced recipe record;
+# this empty fallback remains for future products with unknown ingredients/times.
 var store_catalog := {
 	"fast_food": [],
-	"donut_shop": [
-	],
-	"home_appliances": [
-	],
+	"donut_shop": [],
+	"home_appliances": [],
 	"gardening_supplies": [],
-	"fashion_store": [
-		{"id":"backpack","name":"Backpack","level":43,"source":"Community-reference; recipe needs verification"}
-	],
-	"sports_shop": [
-		{"id":"tennis_racket","name":"Tennis Racket","source":"Community-reference; recipe needs verification"},
-		{"id":"sports_drink","name":"Sports Drink","source":"Community-reference; recipe needs verification"},
-		{"id":"soccer_shoes","name":"Football Shoes","source":"Community-reference; recipe needs verification"},
-		{"id":"protein_bar","name":"Protein Bar","source":"Community-reference; recipe needs verification"},
-		{"id":"ping_pong_table","name":"Ping-Pong Table","level":31,"source":"Community-reference; recipe needs verification"}
-	],
-	"toy_store": [
-		{"id":"block_letters","name":"Block Letters","level":40,"source":"Community-reference; recipe needs verification"},
-		{"id":"kite","name":"Kite","source":"Community-reference; recipe needs verification"},
-		{"id":"teddy_bear","name":"Teddy Bear","source":"Community-reference; recipe needs verification"},
-		{"id":"game_console","name":"Game Console","level":58,"source":"Community-reference; recipe needs verification"}
-	],
-	"restoration_office": [
-		{"id":"forged_iron","name":"Forged Iron","level":45,"source":"Community-reference; recipe needs verification"},
-		{"id":"carved_wood","name":"Carved Wood","level":54,"source":"Community-reference; recipe needs verification"},
-		{"id":"cut_stone","name":"Cut Stone","level":59,"source":"Community-reference; recipe needs verification"},
-		{"id":"tapestries","name":"Tapestries","level":67,"source":"Community-reference; recipe needs verification"},
-		{"id":"stained_glass","name":"Stained Glass","level":76,"source":"Community-reference; recipe needs verification"}
-	],
-	"farmers_store": [
-		{"id":"wool_shirt","name":"Wool Shirt","level":50,"source":"Community-reference; recipe needs verification"},
-		{"id":"picnic_basket","name":"Picnic Basket","level":59,"source":"Community-reference; recipe needs verification"},
-		{"id":"apple_jam","name":"Apple Jam","level":73,"source":"Community-reference; recipe needs verification"}
-	],
-	"dessert_shop": [
-		{"id":"tiramisu","name":"Tiramisu","level":55,"source":"Community-reference; recipe needs verification"},
-		{"id":"churros","name":"Churros","level":63,"source":"Community-reference; recipe needs verification"},
-		{"id":"profiterole","name":"Profiterole","level":71,"source":"Community-reference; recipe needs verification"},
-		{"id":"mochi","name":"Mochi","level":79,"source":"Community-reference; recipe needs verification"},
-		{"id":"pavlova","name":"Pavlova","level":87,"source":"Community-reference; recipe needs verification"}
-	]
+	"fashion_store": [],
+	"sports_shop": [],
+	"toy_store": [],
+	"restoration_office": [],
+	"farmers_store": [],
+	"dessert_shop": []
 }
 
 # Residential material plans below are Mshin fallback templates, not an exact
@@ -202,6 +182,8 @@ func get_recipe_lock_reason(item_id: String, store_star_level: int = 0) -> Strin
 	var source_text := str(recipe.get("source", "")).to_lower()
 	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
 		return "Recipe data unresolved — production disabled until verified"
+	if recipe.has("level_verified") and not bool(recipe.get("level_verified", true)):
+		return str(recipe.get("unlock_level_note", "Item unlock level is not verified — production disabled."))
 	if int(recipe.get("level", 1)) > GameManager.level:
 		return "Unlocks at Level %d" % int(recipe.level)
 	var required_stars := int(recipe.get("required_stars", 0))
@@ -253,6 +235,8 @@ func get_store_recipe_ids(store_id: String) -> Array:
 	return result
 
 func get_catalog_supplier_id(item_id: String) -> String:
+	if crafted_items.has(item_id):
+		return str(crafted_items[item_id].get("store", ""))
 	for store_id in store_catalog:
 		for product in store_catalog[store_id]:
 			if str(product.get("id", "")) == item_id:
@@ -281,7 +265,12 @@ func get_default_factory_product() -> String:
 func get_default_recipe_for_building(building_type: String) -> String:
 	var recipe_store := "building_supplies" if building_type in ["shop_chain","building_supplies"] else building_type
 	for item_id in crafted_items:
-		if str(crafted_items[item_id].get("store","")) == recipe_store and int(crafted_items[item_id].level) <= GameManager.level:
+		var recipe: Dictionary = crafted_items[item_id]
+		if str(recipe.get("store", "")) != recipe_store:
+			continue
+		if recipe.has("level_verified") and not bool(recipe.get("level_verified", true)):
+			continue
+		if int(recipe.get("level", 1)) <= GameManager.level:
 			return item_id
 	return ""
 
