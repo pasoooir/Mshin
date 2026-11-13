@@ -1750,6 +1750,13 @@ func _test_mobile_haptics_contract() -> void:
 	_check(HapticsManager.get_backend_for_features(PackedStringArray(["ios"])) == "ios_native", "iOS must use Godot's native handheld vibration backend.")
 	_check(HapticsManager.get_backend_for_features(PackedStringArray(["web"])) == "web", "Web must keep its browser vibration backend.")
 	_check(HapticsManager.get_backend_for_features(PackedStringArray()) == "unsupported", "Unsupported platforms must remain a safe no-op.")
+	var preset_text := FileAccess.get_file_as_string("res://export_presets.cfg")
+	_check(preset_text.contains("permissions/vibrate=true"), "Android export preset must request the VIBRATE permission required by Godot.")
+	var previous_haptics_enabled := HapticsManager.enabled
+	HapticsManager.set_enabled(false)
+	var haptics_config := ConfigFile.new()
+	_check(haptics_config.load("user://haptics_settings.cfg") == OK and not bool(haptics_config.get_value("haptics", "enabled", true)), "Haptic preference must persist in the user settings file.")
+	HapticsManager.set_enabled(previous_haptics_enabled)
 	_check(not HapticsManager.pulse(0), "A zero-duration haptic request must be rejected safely on unsupported platforms.")
 
 func _test_trade_depot_and_global_market() -> void:
