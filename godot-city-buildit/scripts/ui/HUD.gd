@@ -1635,7 +1635,7 @@ func _build_placement_controls() -> void:
 	placement_controls.anchor_top = 1.0
 	placement_controls.anchor_bottom = 1.0
 	placement_controls.offset_left = 12.0 * _ui_scale
-	placement_controls.offset_right = 254.0 * _ui_scale
+	placement_controls.offset_right = 272.0 * _ui_scale
 	placement_controls.offset_top = -82.0 * _ui_scale
 	placement_controls.offset_bottom = -12.0 * _ui_scale
 	placement_controls.z_index = 120
