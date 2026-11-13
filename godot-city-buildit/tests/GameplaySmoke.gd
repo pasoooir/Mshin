@@ -27,17 +27,6 @@ func _check(condition: bool, message: String) -> void:
 		push_error("[GameplaySmoke] " + message)
 
 
-func _debug_ui_tree(root: Node, depth: int = 0) -> void:
-	if root is Control:
-		var control := root as Control
-		var detail := ""
-		if root is Label:
-			detail = " text=%s wrap=%s" % [(root as Label).text, str((root as Label).autowrap_mode)]
-		print("[GameplaySmoke] UI tree %s%s class=%s min=%s size=%s%s" % ["  ".repeat(depth), root.name, root.get_class(), str(control.get_combined_minimum_size()), str(control.size), detail])
-	for child in root.get_children():
-		_debug_ui_tree(child, depth + 1)
-
-
 func _assert_panel_fits_target(panel: Control, target_size: Vector2, panel_name: String, width_ratio: float, height_ratio: float) -> void:
 	_check(panel != null, "%s panel is missing for responsive target sizing." % panel_name)
 	if panel == null:
@@ -53,16 +42,6 @@ func _assert_panel_inside_viewport(panel: Control, panel_name: String) -> void:
 		return
 	var panel_rect := panel.get_global_rect()
 	var viewport_rect := get_viewport().get_visible_rect()
-	print("[GameplaySmoke] %s rect=%s viewport=%s min=%s" % [panel_name, str(panel_rect), str(viewport_rect), str(panel.get_combined_minimum_size())])
-	if panel_name == "Factory Production":
-		var production_layout := panel.find_child("ProductionLayout", true, false) as VBoxContainer
-		if production_layout:
-			var header_debug := production_layout.find_child("ProductionHeaderCenter", true, false)
-			if header_debug:
-				_debug_ui_tree(header_debug)
-			for child in production_layout.get_children():
-				if child is Control:
-					print("[GameplaySmoke] Production child %s min=%s rect=%s" % [child.name, str((child as Control).get_combined_minimum_size()), str((child as Control).get_rect())])
 	_check(panel_rect.position.x >= -1.0 and panel_rect.position.y >= -1.0, "%s panel begins outside the viewport." % panel_name)
 	_check(panel_rect.position.x + panel_rect.size.x <= viewport_rect.size.x + 1.0, "%s panel extends beyond the viewport width." % panel_name)
 	_check(panel_rect.position.y + panel_rect.size.y <= viewport_rect.size.y + 1.0, "%s panel extends beyond the viewport height." % panel_name)
