@@ -365,7 +365,7 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - PR #441 با merge commit `e8ce602f2c73e280d5588e2e9f5a9962bf6505fe` وارد main شد؛ Godot Validation run `43499325570`، Web/Chromium + Pages deploy run `43499325445` و Pages build/deploy run `43499324239` همگی موفق شدند.
 
 
-## کنترل چرخش و لغو جانمایی ساختمان در موبایل — PR در حال آماده‌سازی
+## کنترل چرخش و لغو جانمایی ساختمان در موبایل — PR #442 ادغام‌شده
 
 - `BuildManager.rotate_placement()` و `GhostPreview.show_at(..., rotation_y)` از قبل پشتیبانی چرخش ۹۰ درجه را داشتند؛ مسیر قبلی برای موبایل به لمس طولانی متکی بود و آشکار نبود.
 - HUD اکنون هنگام ورود به placement mode یک پنل شناور با دکمه‌های بزرگ `Rotate` و `Cancel` نشان می‌دهد؛ Rotate اندازه footprint، اعتبار جانمایی و زاویه GhostPreview را با rotation جدید دوباره محاسبه می‌کند.
@@ -374,10 +374,21 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - محدودیت پذیرش: تست خودکار منطق و اتصال UI است؛ لمس واقعی، خوانایی و نمایش footprint چرخیده روی دستگاه Android/iOS فیزیکی هنوز تأیید نشده است، پس ردیف README در `[~]` باقی می‌ماند.
 
 
-## بازخورد لمسی Native و تنظیمات آن — PR در حال آماده‌سازی
+## بازخورد لمسی Native و تنظیمات آن — PR #443 ادغام‌شده
 
 - `HapticsManager` برای Web مسیر Vibration API هم‌زمان با gesture را حفظ می‌کند و برای Android/iOS از `Input.vibrate_handheld(duration_ms)` استفاده می‌کند؛ درخواست‌ها به ۴۰ms محدود می‌شوند.
 - وضعیت فعال/غیرفعال haptics در `user://haptics_settings.cfg` ذخیره می‌شود و کلید `Haptic feedback` به Settings اضافه شده است.
 - Android Debug preset در `export_presets.cfg` با `permissions/vibrate=true` ثبت شده است؛ preset صرفاً پیکربندی export است و وجود آن به معنی تولید یا تست APK نیست.
 - `GameplaySmoke.gd::_test_mobile_haptics_contract` backendهای Web/Android/iOS، محدودیت مدت پالس و پلتفرم unsupported را بررسی می‌کند؛ تست Settings وجود کلید haptics را نیز می‌سنجد.
 - محدودیت پذیرش: تست خودکار فقط مسیر API و پیکربندی را ثابت می‌کند؛ لرزش واقعی، شدت و رفتار تنظیمات دستگاه روی Android/iOS فیزیکی هنوز تست نشده است.
+
+- PR #442 با merge commit `1375118ec07dc76d931c584e7ca6dba5d5a149a0` ادغام شد؛ PR Godot Validation run `43500220137` و Web/Chromium run `43500220082` موفق بودند.
+- PR #443 با merge commit `5d503f3d0443fecb18d1e0c513fb051f15cad9e9` ادغام شد؛ PR Godot Validation run `43500720088` و Web/Chromium run `43500720101` موفق بودند.
+
+
+## بنچمارک واقعی روی دستگاه — PR در حال آماده‌سازی
+
+- `scripts/autoload/PerformanceMonitor.gd` در زمان اجرای foreground بازی، delta هر فریم را برای ۳۰ ثانیه ثبت می‌کند و میانگین FPS، میانگین/P95/بیشینه frame time، درصد فریم‌های زیر ۱۶٫۶۷ms و معیارهای render را جمع‌آوری می‌کند.
+- گزارش JSON شامل پلتفرم، CPU، نسخه Godot، ابعاد viewport و scope اندازه‌گیری در `user://performance_benchmark_latest.json` ذخیره می‌شود. دکمه اجرای تست در Settings اضافه شده و نتیجه ۶۰fps در HUD نمایش داده می‌شود.
+- `GameplaySmoke.gd::_test_performance_benchmark_contract` محاسبات روی داده نمونه معلوم، رد کردن نتیجه ناموفق، حداقل مدت آزمون و لغو آزمون را بررسی می‌کند.
+- محدودیت پذیرش: این تغییر ابزار اندازه‌گیری را فراهم می‌کند، اما هیچ بنچمارک واقعی از گوشی هدف به مخزن ارسال نشده است؛ پس ۶۰fps هنوز تأیید نشده و ردیف README `[~]` است.
