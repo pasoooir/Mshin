@@ -92,7 +92,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 > **راهنمای وضعیت:** `[x]` پیاده‌سازی موجود و قابل ردیابی در کد؛ `[~]` پیاده‌سازی ناقص/محدود یا صرفاً ثبت داده و قفل؛ `[ ]` انجام‌نشده یا نیازمند اعتبارسنجی مستقل. تیک به معنی شباهت کامل به SimCity BuildIt یا تأیید روی دستگاه واقعی نیست.
 >
-> این وضعیت‌ها با کد شاخه `main` بازبینی می‌شوند و پس از هر قابلیت تأییدشده به‌روزرسانی خواهند شد. جزئیات شواهد و شکاف‌ها در [گزارش ممیزی README](godot-city-buildit/docs/README_IMPLEMENTATION_AUDIT.md) ثبت شده است. تغییرات PRهای Mergeنشده جزو وضعیت main محسوب نمی‌شوند.
+> این وضعیت‌ها بر اساس کد شاخه جاری و شواهد CI ثبت می‌شوند. تغییرات PRهای باز باید جدا از قابلیت‌های Mergeشده در main خوانده شوند؛ وجود کد در شاخه PR به‌معنی تحویل به main نیست. جزئیات شواهد و شکاف‌ها در [گزارش ممیزی README](godot-city-buildit/docs/README_IMPLEMENTATION_AUDIT.md) ثبت شده است.
 
 ### آخرین تغییرات ادغام‌شده و راستی‌آزمایی CI در main
 
@@ -110,9 +110,8 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#435](https://github.com/pasoooir/Mshin/pull/435) | تخصیص مرکزی پوشش Fire/Police/Health با شرط تکمیل ساختمان و اتصال Gateway؛ همگام‌سازی هشدارها و خطر آتش‌سوزی | Godot Validation و Web موفق |
 | [#436](https://github.com/pasoooir/Mshin/pull/436) | اصلاح wrap و گسترش افقی خلاصه خدمات شهری در HUD موبایل | Godot Validation و Web desktop/mobile Chromium موفق |
 | [#437](https://github.com/pasoooir/Mshin/pull/437) | افزایش کاتالوگ به ۷۰ Recipe قابل تولید؛ داده‌های نامعلوم عمداً حدس زده نشدند | Godot Validation، Web export، Chromium desktop/mobile و Pages موفق |
-| [#438](https://github.com/pasoooir/Mshin/pull/438) | افزودن داده Recipe برای Football Shoes، Kite و Teddy Bear با قفل سطح نامعلوم؛ ثبت تعارض Tapestry؛ ممیزی قیمت/زمان/مواد، حذف fallback ساختگی، فیلتر Trade، تست صف آفلاین و اصلاح اسکرول کاتالوگ موبایل | Godot Validation و Web/Chromium دسکتاپ+موبایل موفق |
 
-PR #438 در شاخه کاری `feat/production-economy-final-acceptance` با head `676fc03c9ba8a450d303b41f936a6731f17ffae8` قرار دارد؛ Godot Validation و Web/Chromium هر دو روی همین head موفق شده‌اند. این تغییر هنوز تا Merge وارد main نشده و اعتبارسنجی فیزیکی Android نیز مستقل باقی است.
+PR #437 آخرین تغییر ادغام‌شده اقتصاد تولید در main است. PR #438 در شاخه کاری `feat/production-economy-final-acceptance` باز است؛ Godot Validation و Web/Chromium روی head اولیه آن موفق شده‌اند. جزئیات PR باز را با جدول تغییرات Mergeشده main اشتباه نگیرید. پس از Merge، وضعیت نهایی و CI شاخه main به‌روزرسانی می‌شود. اعتبارسنجی فیزیکی Android همچنان مستقل است.
 
 # نقشه راه کامل توسعه (Roadmap)
 
