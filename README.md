@@ -118,6 +118,8 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#443](https://github.com/pasoooir/Mshin/pull/443) | Haptics Native Android/iOS با `Input.vibrate_handheld`، حفظ Web Vibration API، کلید ذخیره‌شونده و Android VIBRATE permission | Godot Validation و Web/Chromium PR موفق؛ لرزش فیزیکی هنوز تأیید نشده |
 | [#444](https://github.com/pasoooir/Mshin/pull/444) | PerformanceMonitor با آزمون ۳۰ ثانیه‌ای foreground، میانگین FPS، P95/max frame time، درصد بودجه ۱۶٫۶۷ms، render metrics و گزارش JSON محلی؛ اجرای آزمون از Settings | PR Godot Validation و Web/Chromium موفق؛ پس از Merge، Godot Validation، Web/Chromium و Pages deploy روی main موفق؛ نتیجه واقعی گوشی هنوز ثبت نشده |
 | [#445](https://github.com/pasoooir/Mshin/pull/445) | حباب‌های شهروندی با pop/fade، شناوری ظریف و متن‌های متنوع برای ده حالت بازخورد؛ سقف سه حباب، اولویت و چرخش منصفانه حفظ شده است؛ NPC سه‌بعدی و گفت‌وگوی چندمرحله‌ای هنوز باقی است | PR Godot Validation و Web/Chromium موفق؛ پس از Merge، Godot Validation، Web/Chromium + game deploy و Pages build/deploy روی main موفق |
+| [#446](https://github.com/pasoooir/Mshin/pull/446) | سه preset ذخیره‌شونده کیفیت 3D Low/Balanced/High؛ تغییر runtime render scale و MSAA بدون کاهش رزولوشن HUD | PR Godot Validation و Web/Chromium موفق؛ main validation، Web/Chromium + game deploy و Pages پس از merge #447 موفق |
+| [#447](https://github.com/pasoooir/Mshin/pull/447) | بستن مسیر legacy `Building.collect_production()` هنگام قطع اتصال Gateway و افزودن رگرسیون Building واقعی | PR Godot Validation و Web/Chromium موفق؛ main validation، Web/Chromium + game deploy و Pages deploy موفق |
 
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
 
@@ -386,3 +388,6 @@ PR #444 با merge commit `de71a375c93c1323e44b11a9bc31b01c343438e6` وارد ma
 
 
 PR #445 با merge commit `1aa24b3c5a7dc31593e3a33f8110052b073309a9` وارد main شد. Godot Validation run `43503219800`، Web/Chromium + game deploy run `43503219845` و Pages build/deploy run `43503218235` همگی موفق شدند.
+
+
+PR #446 با merge commit `bbcd6be14b87a18b9f701e7b7f2796fb000d551a` و PR #447 با merge commit `fd16d11ce7c4d535aa2780666a5309dc798a23d4` وارد main شدند. پس از هر دو، Godot Validation run `43504807542`، Web/Chromium + game deploy run `43504807516` و Pages build/deploy run `43504805774` همگی موفق شدند.
