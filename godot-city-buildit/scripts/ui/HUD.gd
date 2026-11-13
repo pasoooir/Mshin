@@ -124,6 +124,7 @@ var context_header_icons: HBoxContainer
 var service_warning_panel: PanelContainer
 var trade_overlay: Control
 var trade_panel: PanelContainer
+var settings_overlay: Control
 var _trade_active_tab := "depot"
 var service_warning_label: Label
 var _catalog_selected_type := ""
@@ -244,7 +245,7 @@ func _apply_responsive_layout() -> void:
 		context_header.offset_bottom = 230.0 * scale_factor
 	var actions := get_node_or_null("BottomActions") as Control
 	if actions:
-		var half_actions := minf(viewport_size.x * 0.34, 300.0 * scale_factor)
+		var half_actions := minf(viewport_size.x * 0.42, 360.0 * scale_factor)
 		actions.offset_left = -half_actions
 		actions.offset_right = half_actions
 		actions.offset_top = -112.0 * scale_factor
@@ -645,6 +646,10 @@ func _build_toolbars() -> void:
 			"achievements": button.pressed.connect(_on_achievements_pressed)
 			"regions": button.pressed.connect(_on_regions_pressed)
 			"save": button.pressed.connect(_on_save_pressed)
+	var settings_button := _make_icon_button("settings", "Settings", Vector2(70, 76) * _ui_scale)
+	settings_button.name = "SettingsAction"
+	settings_button.pressed.connect(_on_settings_pressed)
+	bottom_actions.add_child(settings_button)
 	catalog_base_bar = PanelContainer.new()
 	catalog_base_bar.name = "CatalogBaseBar"
 	catalog_base_bar.anchor_left = 0.15
@@ -3535,6 +3540,173 @@ func _on_trade_buy_offer(offer_index: int) -> void:
 	if not TradeManager.buy_global_offer(offer_index):
 		status_label.text = "Could not buy this offer. Check Simoleons and storage capacity."
 	_show_trade_panel("market")
+
+
+func _on_settings_pressed() -> void:
+	_show_settings_panel()
+
+func _close_settings_panel() -> void:
+	if is_instance_valid(settings_overlay):
+		settings_overlay.queue_free()
+	settings_overlay = null
+
+func _show_settings_panel() -> void:
+	_close_settings_panel()
+	var viewport_size := get_viewport().get_visible_rect().size
+	settings_overlay = Control.new()
+	settings_overlay.name = "SettingsOverlay"
+	settings_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	settings_overlay.z_index = 130
+	settings_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(settings_overlay)
+
+	var backdrop := ColorRect.new()
+	backdrop.name = "SettingsBackdrop"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.015, 0.025, 0.035, 0.76)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	settings_overlay.add_child(backdrop)
+
+	var panel_width := minf(540.0 * _ui_scale, viewport_size.x * 0.92)
+	var panel_height := minf(590.0 * _ui_scale, viewport_size.y * 0.90)
+	var panel := PanelContainer.new()
+	panel.name = "SettingsPanel"
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -panel_width * 0.5
+	panel.offset_right = panel_width * 0.5
+	panel.offset_top = -panel_height * 0.5
+	panel.offset_bottom = panel_height * 0.5
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#F1F8FE")
+	panel_style.border_color = Color("#D7EAF7")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(20)
+	panel_style.content_margin_left = 18
+	panel_style.content_margin_right = 18
+	panel_style.content_margin_top = 12
+	panel_style.content_margin_bottom = 12
+	panel.add_theme_stylebox_override("panel", panel_style)
+	settings_overlay.add_child(panel)
+
+	var layout := VBoxContainer.new()
+	layout.name = "SettingsLayout"
+	layout.add_theme_constant_override("separation", 8)
+	panel.add_child(layout)
+
+	var heading := HBoxContainer.new()
+	layout.add_child(heading)
+	var title := Label.new()
+	title.text = "Settings"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", int(28 * _ui_scale))
+	title.add_theme_color_override("font_color", Color("#172330"))
+	heading.add_child(title)
+	var close := Button.new()
+	close.name = "SettingsClose"
+	close.text = "×"
+	close.custom_minimum_size = Vector2(46, 44) * _ui_scale
+	close.add_theme_font_size_override("font_size", int(32 * _ui_scale))
+	close.add_theme_color_override("font_color", Color("#123B59"))
+	close.pressed.connect(_close_settings_panel)
+	heading.add_child(close)
+
+	var section := Label.new()
+	section.text = "AUDIO"
+	section.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	section.add_theme_color_override("font_color", Color("#28799C"))
+	layout.add_child(section)
+
+	var toggles := GridContainer.new()
+	toggles.name = "AudioToggles"
+	toggles.columns = 3
+	toggles.add_theme_constant_override("h_separation", 10)
+	toggles.add_theme_constant_override("v_separation", 4)
+	layout.add_child(toggles)
+	_add_audio_setting_toggle(toggles, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
+	_add_audio_setting_toggle(toggles, "AmbientToggle", "City ambience", AudioManager.ambient_enabled, AudioManager.set_ambient_enabled)
+	_add_audio_setting_toggle(toggles, "SfxToggle", "Sound effects", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
+
+	var scroll := ScrollContainer.new()
+	scroll.name = "SettingsScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(scroll)
+	var sliders := VBoxContainer.new()
+	sliders.add_theme_constant_override("separation", 10)
+	sliders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(sliders)
+	_add_audio_setting_slider(sliders, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
+	_add_audio_setting_slider(sliders, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
+	_add_audio_setting_slider(sliders, "AmbientVolumeSlider", "City ambience volume", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
+	_add_audio_setting_slider(sliders, "SfxVolumeSlider", "Sound effects volume", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
+
+	var footer := HBoxContainer.new()
+	footer.alignment = BoxContainer.ALIGNMENT_END
+	layout.add_child(footer)
+	var reset := Button.new()
+	reset.name = "ResetAudioSettings"
+	reset.text = "Restore defaults"
+	reset.custom_minimum_size = Vector2(150, 42) * _ui_scale
+	reset.pressed.connect(_reset_audio_settings)
+	footer.add_child(reset)
+
+func _add_audio_setting_toggle(parent: GridContainer, node_name: String, label_text: String, initial_value: bool, setter: Callable) -> void:
+	var toggle := CheckButton.new()
+	toggle.name = node_name
+	toggle.text = label_text
+	toggle.button_pressed = initial_value
+	toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toggle.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	toggle.toggled.connect(func(enabled: bool) -> void: setter.call(enabled))
+	parent.add_child(toggle)
+
+func _add_audio_setting_slider(parent: VBoxContainer, node_name: String, label_text: String, initial_value: float, setter: Callable) -> void:
+	var row := VBoxContainer.new()
+	row.name = node_name + "Row"
+	row.add_theme_constant_override("separation", 3)
+	parent.add_child(row)
+	var header := HBoxContainer.new()
+	row.add_child(header)
+	var label := Label.new()
+	label.text = label_text
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_color_override("font_color", Color("#243C4B"))
+	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	header.add_child(label)
+	var value_label := Label.new()
+	value_label.name = node_name + "Value"
+	value_label.text = "%d%%" % int(round(initial_value * 100.0))
+	value_label.custom_minimum_size.x = 48 * _ui_scale
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	value_label.add_theme_color_override("font_color", Color("#28799C"))
+	header.add_child(value_label)
+	var slider := HSlider.new()
+	slider.name = node_name
+	slider.min_value = 0
+	slider.max_value = 100
+	slider.step = 1
+	slider.value = initial_value * 100.0
+	slider.custom_minimum_size.y = 28 * _ui_scale
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.value_changed.connect(func(next_value: float) -> void:
+		setter.call(next_value / 100.0)
+		value_label.text = "%d%%" % int(round(next_value))
+	)
+	row.add_child(slider)
+
+func _reset_audio_settings() -> void:
+	AudioManager.set_master_volume(0.8)
+	AudioManager.set_music_volume(0.42)
+	AudioManager.set_ambient_volume(0.24)
+	AudioManager.set_sfx_volume(0.72)
+	AudioManager.set_music_enabled(true)
+	AudioManager.set_ambient_enabled(true)
+	AudioManager.set_sfx_enabled(true)
+	_show_settings_panel()
 
 func _on_trade_pressed() -> void:
 	BuildManager.cancel_placement()

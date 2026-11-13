@@ -1880,6 +1880,37 @@ func _test_citizen_feedback_bubbles() -> void:
 	BuildManager.buildings.erase(home.building_id)
 	home.queue_free()
 
+
+func _test_settings_panel_contract() -> void:
+	var hud = get_node_or_null("HUD")
+	_check(hud != null, "Settings acceptance requires the main HUD.")
+	if hud == null:
+		return
+	var settings_action := hud.find_child("SettingsAction", true, false) as Button
+	_check(settings_action != null and settings_action.tooltip_text == "Settings", "The mobile action bar must expose an accessible Settings shortcut.")
+	var original_master := AudioManager.master_volume
+	var original_music := AudioManager.music_volume
+	var original_ambient := AudioManager.ambient_volume
+	var original_sfx := AudioManager.sfx_volume
+	hud._show_settings_panel()
+	await get_tree().process_frame
+	var overlay := hud.find_child("SettingsOverlay", true, false) as Control
+	_check(overlay != null and overlay.visible, "Settings shortcut must open a visible modal panel.")
+	for node_name in ["MasterVolumeSlider", "MusicVolumeSlider", "AmbientVolumeSlider", "SfxVolumeSlider"]:
+		var slider := hud.find_child(node_name, true, false) as HSlider
+		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must provide a usable 0–100 volume control." % node_name)
+	for node_name in ["MusicToggle", "AmbientToggle", "SfxToggle"]:
+		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must expose an independent audio enable switch." % node_name)
+	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
+	if master_slider != null:
+		master_slider.value = 55.0
+		_check(is_equal_approx(AudioManager.master_volume, 0.55), "Master volume slider must update the AudioManager immediately.")
+	AudioManager.set_master_volume(original_master)
+	AudioManager.set_music_volume(original_music)
+	AudioManager.set_ambient_volume(original_ambient)
+	AudioManager.set_sfx_volume(original_sfx)
+	hud._close_settings_panel()
+
 func _test_audio_manager_contract() -> void:
 	_check(AudioManager.is_audio_ready(), "AudioManager must initialize local music, ambience and all sound-effect streams.")
 	var audio_status: Dictionary = AudioManager.get_audio_status()
@@ -1924,6 +1955,7 @@ func _run_gameplay_test() -> void:
 	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
 	await _test_build_menu_visibility()
+	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
 	_test_storage_and_production_chain()
 	_test_production_queue_stress()
