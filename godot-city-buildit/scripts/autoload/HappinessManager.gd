@@ -283,15 +283,10 @@ func _nearby_bonus(home: Node3D, category: String, radius: float, bonus: float) 
 			return bonus
 	return 0.0
 
-func _nearby_service_group(home: Node3D, service_group: String, radius: float) -> bool:
-	for candidate in BuildManager.buildings.values():
-		if not is_instance_valid(candidate) or candidate.status != "completed":
-			continue
-		if str(candidate.definition.get("service_group", "")) != service_group:
-			continue
-		if candidate.global_position.distance_to(home.global_position) <= radius:
-			return true
-	return false
+func _nearby_service_group(home: Node3D, service_group: String, _radius: float) -> bool:
+	# Emergency-service happiness must use the same road-connected coverage
+	# allocation as hazards and the persistent HUD warning banner.
+	return ServiceManager.is_home_served_by_group(home, service_group)
 
 func _nearby_service(home: Node3D, type_id: String, radius: float) -> bool:
 	for candidate in BuildManager.buildings.values():
@@ -345,11 +340,11 @@ func get_city_service_warnings() -> Dictionary:
 			counts["sewage"] += 1
 		if _service_group_is_unlocked("waste") and not ServiceManager.waste_served_ids.has(home.building_id):
 			counts["waste"] += 1
-		if _service_group_is_unlocked("fire") and not _nearby_service_group(home, FIRE_SERVICE_GROUP, 38.0):
+		if _service_group_is_unlocked("fire") and not ServiceManager.fire_served_ids.has(home.building_id):
 			counts["fire"] += 1
-		if _service_group_is_unlocked("police") and not _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
+		if _service_group_is_unlocked("police") and not ServiceManager.police_served_ids.has(home.building_id):
 			counts["police"] += 1
-		if _service_group_is_unlocked("health") and not _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
+		if _service_group_is_unlocked("health") and not ServiceManager.health_served_ids.has(home.building_id):
 			counts["health"] += 1
 
 	var warning_parts := PackedStringArray()
