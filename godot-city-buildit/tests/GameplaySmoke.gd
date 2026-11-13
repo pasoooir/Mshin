@@ -318,9 +318,41 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "Restoring the bridge must reconnect the far road segment.")
 	_check(BuildManager.is_building_operational(disconnected_building), "Restoring the gateway connection must reactivate the building.")
 	_check(disconnected_factory.start_factory("metal", 0), "A reconnected factory must be able to resume production.")
+
+	# A running factory must freeze its deadline while the road gateway is cut,
+	# then add the disconnected interval back when access is restored.
+	var active_slot: Dictionary = disconnected_factory.get_slot(0)
+	var pause_test_now := int(Time.get_unix_time_from_system())
+	active_slot["finish_unix"] = pause_test_now + 120
+	disconnected_factory.slots[0] = active_slot
+	_check(road_system.remove_road(Vector2i(0, -1)), "The first gateway tile must disconnect the factory for its timer-pause test.")
+	_check(road_system.remove_road(Vector2i(0, 0)), "The second gateway tile must complete the factory timer-pause disconnection.")
+	disconnected_factory.refresh_slots()
+	var paused_slot: Dictionary = disconnected_factory.get_slot(0)
+	_check(int(paused_slot.get("paused_at_unix", 0)) > 0, "A running factory slot must record when road access is lost.")
+	# Move the pause timestamp back in a controlled way to test time compensation
+	# without sleeping in the gameplay smoke test.
+	paused_slot["paused_at_unix"] = pause_test_now - 15
+	disconnected_factory.slots[0] = paused_slot
+	_check(road_system.place_road(Vector2i(0, -1)), "The first gateway tile must reconnect the factory timer test.")
+	_check(road_system.place_road(Vector2i(0, 0)), "The second gateway tile must reconnect the factory timer test.")
+	disconnected_factory.refresh_slots()
+	var resumed_slot: Dictionary = disconnected_factory.get_slot(0)
+	_check(int(resumed_slot.get("finish_unix", 0)) >= pause_test_now + 135, "A factory must preserve its remaining production time across a 15-second road outage.")
+	_check(not resumed_slot.has("paused_at_unix"), "A reconnected factory slot must clear its paused timestamp.")
+
+	# Ready goods remain on the building while it is disconnected and cannot be
+	# collected until the road connection is restored.
+	resumed_slot["ready"] = true
+	disconnected_factory.slots[0] = resumed_slot
+	_check(road_system.remove_road(Vector2i(0, -1)), "The first gateway tile must disconnect the ready-product collection test.")
+	_check(road_system.remove_road(Vector2i(0, 0)), "The second gateway tile must disconnect the ready-product collection test.")
+	_check(not disconnected_factory.collect(0), "A disconnected factory must not allow collection of a ready product.")
+	_check(road_system.place_road(Vector2i(0, -1)), "The first gateway tile must restore ready-product access.")
+	_check(road_system.place_road(Vector2i(0, 0)), "The second gateway tile must restore ready-product access.")
 	disconnected_factory.queue_free()
 	disconnected_building.queue_free()
-	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 2)
+	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 6)
 
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
