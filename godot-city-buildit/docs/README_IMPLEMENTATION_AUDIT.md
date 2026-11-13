@@ -153,7 +153,8 @@
 README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده اصلاح شده است. موارد ناقص عمداً تیک کامل نگرفته‌اند. این ممیزی ادعای تکمیل کل بازی یا تأیید کیفیت بصری روی دستگاه فیزیکی نیست.
 
 
-## مدل‌های معماری GLTF محلی — PR #417
+## مدل‌های معماری GLTF محلی — PR #417 ادغام‌شده
+- PR #417 با commit `299f263c866c505cb609786d2fc1fbbeeedad4e5` در `main` ادغام شد؛ Godot Validation، Web export و Chromium desktop/mobile موفق و GitHub Pages build/deploy نیز موفق شدند.
 - پنج فایل مستقل در `assets/models/` وجود دارد؛ چهار مدل دسته‌ای به ساختمان‌های قابل‌بازی متصل‌اند و مدل برج ۷۴٫۵۷۵ متری تا زمان پشتیبانی footprint بزرگ به تعریف ۲×۲ آپارتمان متصل نشده است: `residential/villa_house.gltf`، `residential/apartment_tower.gltf`، `residential/residential_tower_75m.gltf`، `commercial/neighborhood_shop.gltf` و `industrial/small_factory.gltf`.
 - هندسه‌ها به‌صورت original procedural mesh برای پروژه ساخته شده‌اند؛ هر GLTF با buffer داخلی Base64، چند primitive/material، نرمال و UV، index buffer، و textureهای PNG تعبیه‌شده برای Base Color، Normal و Metallic-Roughness self-contained است؛ فایل بیرونی یا CDN لازم نیست.
 - `BuildManager._ready()` مسیر مدل محلی را بر اساس دسته و subtype به تعریف ساختمان اضافه می‌کند: ویلا/خانه قدیمی (پس از مرحله اول)، آپارتمان میان‌مرتبه، فروشگاه‌های تجاری عمومی و کارخانه‌های صنعتی؛ برج ۷۴٫۵۷۵ متری به‌صورت asset مستقل نگهداری می‌شود و تا پیاده‌سازی footprint بزرگ فعال نیست. Farm همچنان از visual رویه‌ای استفاده می‌کند؛ Building Supplies، Art Supplies و ویلای مرحله اول برای حفظ showcase اختصاصی خودشان مدل GLTF عمومی را override نمی‌کنند. تعریف‌های Gameplay، اندازه/هزینه/قفل‌ها و سیستم تولید تغییر نکرده‌اند.

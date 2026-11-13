@@ -102,8 +102,9 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#414](https://github.com/pasoooir/Mshin/pull/414) | ظرفیت سراسری Sewage/Waste بر پایه تقاضای خانه‌ها و اتصال Gateway | Godot Validation، Web و Pages موفق |
 | [#415](https://github.com/pasoooir/Mshin/pull/415) | محاسبه ظرفیت و ازدحام ترافیک بر اساس Tier جاده | Godot Validation، Web و Pages موفق |
 | [#416](https://github.com/pasoooir/Mshin/pull/416) | حرکت رفت‌وبرگشت خودروی سه‌بعدی سبک از Gateway روی شبکه متصل | Godot Validation، Web و Pages موفق |
+| [#417](https://github.com/pasoooir/Mshin/pull/417) | چهار مدل GLTF قابل‌بازی با PBR texture map داخلی + asset مستقل برج ۷۴٫۵۷۵ متری؛ حفظ showcaseهای اختصاصی و آزمون import/mesh/texture | Godot Validation، Web desktop/mobile Chromium و Pages build/deploy موفق |
 
-آخرین commit ادغام‌شده‌ای که این بخش بر اساس آن بازبینی شده است: `a662e62888ffbbe4565f425b77c2777f193779de` (ادغام PR #416). این فهرست به معنی تکمیل محدودیت‌های باقیمانده ذکرشده در بخش‌های پایین نیست.
+آخرین commit ادغام‌شده‌ای که این بخش بر اساس آن بازبینی شده است: `299f263c866c505cb609786d2fc1fbbeeedad4e5` (ادغام PR #417). این فهرست به معنی تکمیل محدودیت‌های باقیمانده ذکرشده در بخش‌های پایین نیست.
 
 # نقشه راه کامل توسعه (Roadmap)
 
