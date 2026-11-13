@@ -104,11 +104,20 @@ jobs:
           const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
+          page.on('console', message => console.log('[desktop console:' + message.type() + '] ' + message.text()));
+          page.on('requestfailed', request => console.log('[desktop request failed] ' + request.url() + ' ' + (request.failure()?.errorText ?? 'unknown')));
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
           await page.getByRole('button', { name: /PLAY MSHIN/i }).click();
           const gameFrame = page.locator('#game-frame');
           await gameFrame.waitFor({ state: 'attached', timeout: 10000 });
-          await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 10000 });
+          try {
+            await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
+          } catch (error) {
+            console.log('[desktop diagnostics] iframe=' + await gameFrame.getAttribute('src'));
+            console.log('[desktop diagnostics] frames=' + page.frames().map(frame => frame.url()).join(' | '));
+            console.log('[desktop diagnostics] page errors=' + errors.join(' | '));
+            throw error;
+          }
           await page.waitForTimeout(2000);
           // Release the desktop WebGL context before starting the mobile viewport.
           await page.close();
@@ -121,6 +130,8 @@ jobs:
           });
           const mobileErrors = [];
           mobilePage.on('pageerror', error => mobileErrors.push(error.message));
+          mobilePage.on('console', message => console.log('[mobile console:' + message.type() + '] ' + message.text()));
+          mobilePage.on('requestfailed', request => console.log('[mobile request failed] ' + request.url() + ' ' + (request.failure()?.errorText ?? 'unknown')));
           await mobilePage.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
           await mobilePage.getByRole('button', { name: /PLAY MSHIN/i }).click();
           const mobileFrame = mobilePage.locator('#game-frame');
