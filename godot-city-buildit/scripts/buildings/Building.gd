@@ -1843,6 +1843,12 @@ func get_upgrade_remaining_seconds() -> int:
 func collect_production() -> bool:
 	if not has_ready_product:
 		return false
+	# Legacy Building-level production collection follows the same operational
+	# road boundary as ProductionComponent factory and commercial queues.
+	if not BuildManager.is_building_operational(self):
+		if production_icon:
+			production_icon.text = "🚫"
+		return false
 	if not StorageManager.add_item(current_product, 1):
 		if production_icon:
 			production_icon.text = "📦!"
