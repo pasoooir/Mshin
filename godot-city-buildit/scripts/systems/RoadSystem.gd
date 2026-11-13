@@ -48,8 +48,8 @@ func _ready() -> void:
 
 func set_road_mode(active: bool) -> void:
 	is_road_mode = active
+	is_road_upgrade_mode = false
 	if active:
-		is_road_upgrade_mode = false
 		BuildManager.cancel_placement()
 
 func set_road_upgrade_mode(active: bool) -> void:
@@ -151,6 +151,8 @@ func is_road_connected_to_gateway(grid_pos: Vector2i) -> bool:
 	return get_gateway_connected_roads().has(grid_pos)
 
 func clear_roads() -> void:
+	is_road_mode = false
+	is_road_upgrade_mode = false
 	for road_mesh in roads.values():
 		if is_instance_valid(road_mesh):
 			road_mesh.queue_free()
