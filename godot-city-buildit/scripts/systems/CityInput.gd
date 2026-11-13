@@ -453,6 +453,7 @@ func _handle_tap(screen_position: Vector2) -> void:
 		if ghost:
 			ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid), BuildManager.building_types.get(BuildManager.selected_building_type, {}), float(BuildManager.placement_rotation_quarters) * PI * 0.5)
 		if BuildManager.place_building_at_world(world_position):
+			HapticsManager.pulse_for("place")
 			_set_status("Construction started. Tap another green plot to build again.")
 			if ghost:
 				ghost.hide_ghost()
