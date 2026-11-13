@@ -184,6 +184,7 @@ for script in re.findall(r'="[*]res://([^"]+)"', project):
 
 build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
+city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
 traffic_manager_source = (ROOT / "scripts/autoload/TrafficManager.gd").read_text(encoding="utf-8")
 traffic_vehicle_source = (ROOT / "scripts/systems/TrafficVehicle.gd").read_text(encoding="utf-8")
