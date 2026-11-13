@@ -60,3 +60,4 @@ jobs:
           if grep -q "SCRIPT ERROR" /tmp/godot-gameplay.log; then exit 1; fi
           if grep -q "ERROR: [GameplaySmoke]" /tmp/godot-gameplay.log; then exit 1; fi
           grep -F "[GameplaySmoke] PASS" /tmp/godot-gameplay.log
+

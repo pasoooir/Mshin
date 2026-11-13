@@ -11,6 +11,9 @@ var _elapsed := 0.0
 var _particles: Array[Dictionary] = []
 var _reward_simoleons: Label
 var _reward_keys: Label
+var _center_card: PanelContainer
+var _rewards_grid: GridContainer
+var _card_style: StyleBoxFlat
 var _rng := RandomNumberGenerator.new()
 var _completed := false
 
@@ -23,6 +26,8 @@ func _ready() -> void:
 	_rng.randomize()
 	_create_particles()
 	_create_message_card()
+	get_viewport().size_changed.connect(_apply_responsive_layout)
+	_apply_responsive_layout()
 	set_process(false)
 
 func play(new_level: int, simoleons: int, keys: int) -> void:
@@ -60,12 +65,13 @@ func _create_particles() -> void:
 
 func _create_message_card() -> void:
 	var card := PanelContainer.new()
+	_center_card = card
 	card.name = "CenterCard"
 	card.anchor_left = 0.5
 	card.anchor_right = 0.5
 	card.anchor_top = 0.5
 	card.anchor_bottom = 0.5
-	var card_width := clampf(get_viewport_rect().size.x * 0.68, 340.0, 560.0)
+	var card_width := minf(get_viewport_rect().size.x * 0.92, 560.0)
 	card.offset_left = -card_width * 0.5
 	card.offset_right = card_width * 0.5
 	card.offset_top = -132.0
@@ -74,6 +80,7 @@ func _create_message_card() -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var style := StyleBoxFlat.new()
+	_card_style = style
 	style.bg_color = Color(0.035, 0.075, 0.12, 0.94)
 	style.border_color = Color(1.0, 0.78, 0.28, 0.95)
 	style.set_border_width_all(3)
@@ -114,14 +121,18 @@ func _create_message_card() -> void:
 	var divider := HSeparator.new()
 	layout.add_child(divider)
 
-	var rewards := HBoxContainer.new()
-	rewards.alignment = BoxContainer.ALIGNMENT_CENTER
-	rewards.add_theme_constant_override("separation", 28)
+	var rewards := GridContainer.new()
+	rewards.name = "LevelUpRewardsGrid"
+	_rewards_grid = rewards
+	rewards.columns = 2
+	rewards.add_theme_constant_override("h_separation", 20)
+	rewards.add_theme_constant_override("v_separation", 8)
 	layout.add_child(rewards)
 
 	_reward_simoleons = Label.new()
 	_reward_simoleons.name = "SimoleonReward"
 	_reward_simoleons.text = "+0 Simoleons"
+	_reward_simoleons.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_reward_simoleons.add_theme_font_size_override("font_size", 20)
 	_reward_simoleons.add_theme_color_override("font_color", Color("#FFD34F"))
 	rewards.add_child(_reward_simoleons)
@@ -129,9 +140,43 @@ func _create_message_card() -> void:
 	_reward_keys = Label.new()
 	_reward_keys.name = "GoldenKeyReward"
 	_reward_keys.text = "+0 Golden Keys"
+	_reward_keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_reward_keys.add_theme_font_size_override("font_size", 20)
 	_reward_keys.add_theme_color_override("font_color", Color("#FFE7A0"))
 	rewards.add_child(_reward_keys)
+
+func _apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
+	if not is_instance_valid(_center_card):
+		return
+	if viewport_size == Vector2.ZERO:
+		viewport_size = get_viewport_rect().size
+	var compact := viewport_size.x < 900.0
+	var card_width := minf(viewport_size.x * 0.92, 560.0)
+	var card_height := 240.0 if compact else 264.0
+	_center_card.offset_left = -card_width * 0.5
+	_center_card.offset_right = card_width * 0.5
+	_center_card.offset_top = -card_height * 0.5
+	_center_card.offset_bottom = card_height * 0.5
+	_center_card.pivot_offset = Vector2(card_width * 0.5, card_height * 0.5)
+	if _card_style:
+		var inset := 14.0 if compact else 22.0
+		_card_style.content_margin_left = inset
+		_card_style.content_margin_right = inset
+		_card_style.content_margin_top = 14.0 if compact else 18.0
+		_card_style.content_margin_bottom = 14.0 if compact else 18.0
+	if _rewards_grid:
+		_rewards_grid.columns = 1 if compact else 2
+	var title := find_child("LevelUpTitle", true, false) as Label
+	if title:
+		title.add_theme_font_size_override("font_size", 30 if compact else 48)
+	var subtitle := find_child("MayorCongratulations", true, false) as Label
+	if subtitle:
+		subtitle.add_theme_font_size_override("font_size", 18 if compact else 24)
+	if _reward_simoleons:
+		_reward_simoleons.add_theme_font_size_override("font_size", 16 if compact else 20)
+	if _reward_keys:
+		_reward_keys.add_theme_font_size_override("font_size", 16 if compact else 20)
+
 
 func _set_simoleon_reward(value: float) -> void:
 	if is_instance_valid(_reward_simoleons):
