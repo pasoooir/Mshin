@@ -193,6 +193,8 @@ happiness_manager_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_
 gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
 haptics_manager_source = (ROOT / "scripts/autoload/HapticsManager.gd").read_text(encoding="utf-8")
 production_component_source = (ROOT / "scripts/production/ProductionComponent.gd").read_text(encoding="utf-8")
+trade_manager_source = (ROOT / "scripts/autoload/TradeManager.gd").read_text(encoding="utf-8")
+save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
 
 for contract in [
     "func pulse_for(event_name: String) -> bool:",
@@ -218,6 +220,55 @@ for contract in [
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Mobile haptics regression test is missing: {contract}")
+for contract in [
+    "func is_depot_operational() -> bool:",
+    "func is_global_trade_operational() -> bool:",
+    "func list_for_sale(item_id: String, amount: int = 1) -> bool:",
+    "func collect_sale(slot_index: int) -> bool:",
+    "func buy_global_offer(offer_index: int) -> bool:",
+    "func to_save_dict() -> Dictionary:",
+    "func from_save_dict(data: Dictionary) -> void:",
+    '"ready": false',
+    '"sold": false',
+]:
+    if contract not in trade_manager_source:
+        errors.append(f"Trade system core contract is missing: {contract}")
+if '"trade_depot":' not in build_manager or '"global_trade_hq":' not in build_manager:
+    errors.append("Trade Depot and Global Trade HQ building definitions are required")
+for contract in [
+    "func get_population_build_lock_reason(type_id: String) -> String:",
+    '"population_required":8000',
+    '"population_required":10000',
+]:
+    if contract not in build_manager:
+        errors.append(f"Trade building population gate is missing: {contract}")
+if 'HapticsManager="*res://scripts/autoload/HapticsManager.gd"' not in project:
+    errors.append("HapticsManager autoload is missing")
+if 'TradeManager="*res://scripts/autoload/TradeManager.gd"' not in project:
+    errors.append("TradeManager autoload is missing")
+for contract in [
+    "func open_trade_panel(tab: String = \"depot\") -> void:",
+    "func _build_trade_depot_content(parent: VBoxContainer) -> void:",
+    "func _build_global_trade_content(parent: VBoxContainer) -> void:",
+    "live player-to-player trading is not connected",
+]:
+    if contract not in hud:
+        errors.append(f"Trade HUD contract is missing: {contract}")
+if 'open_trade_panel(trade_role)' not in city_input_source:
+    errors.append("Trade buildings must open their matching trade panel")
+if "TradeManager.to_save_dict()" not in save_manager_source or 'TradeManager.from_save_dict(parsed.get("trade", {}))' not in save_manager_source:
+    errors.append("Trade Depot and Global Trade state must be persisted and restored")
+if "const SAVE_VERSION: int = 3" not in save_manager_source:
+    errors.append("Save format must be version 3 for persisted trade state")
+for contract in [
+    "func _test_trade_depot_and_global_market()",
+    "must accept a valid item listing",
+    "must not pay out before its sale timer completes",
+    "must complete an affordable market purchase",
+    "must preserve sold market offers",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Trade gameplay regression test is missing: {contract}")
 building_ids = set(re.findall(r'^[ \t]*"([a-z0-9_]+)"[ \t]*:[ \t]*[{]"name"', build_manager, re.M))
 for selected in re.findall(r'BuildManager[.]select_building[(]"([a-z0-9_]+)"[)]', hud):
     if selected not in building_ids:
