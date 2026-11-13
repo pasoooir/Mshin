@@ -12,6 +12,7 @@ const SIDEWALK_WIDTH: float = 0.24
 const ROAD_SURFACE_Y: float = 0.04
 const ROAD_SURFACE_HEIGHT: float = 0.08
 const ROAD_TEXTURE_WORLD_SCALE: float = 8.0
+const GATEWAY_ROAD_CELL := Vector2i(-23, -1)
 
 const DIR_UP := Vector2i(0, -1)
 const DIR_DOWN := Vector2i(0, 1)
@@ -28,6 +29,8 @@ const TILE_CROSS: String = "cross"
 var roads: Dictionary = {}
 var road_refresh_counts: Dictionary = {}
 var is_road_mode: bool = false
+var _road_connectivity_dirty := true
+var _gateway_connected_roads: Dictionary = {}
 
 static var _shared_asphalt_material: StandardMaterial3D
 static var _shared_sidewalk_material: StandardMaterial3D
@@ -51,6 +54,34 @@ func seed_starter_access() -> void:
 			roads[Vector2i(x, z)] = null
 	for cell in roads.keys():
 		_refresh_road_mesh(cell)
+	invalidate_road_connectivity_cache()
+
+func invalidate_road_connectivity_cache() -> void:
+	_road_connectivity_dirty = true
+
+func get_gateway_connected_roads() -> Dictionary:
+	if not _road_connectivity_dirty:
+		return _gateway_connected_roads
+	_gateway_connected_roads.clear()
+	_road_connectivity_dirty = false
+	if not roads.has(GATEWAY_ROAD_CELL):
+		return _gateway_connected_roads
+	var pending: Array[Vector2i] = [GATEWAY_ROAD_CELL]
+	var cursor := 0
+	while cursor < pending.size():
+		var current := pending[cursor]
+		cursor += 1
+		if _gateway_connected_roads.has(current) or not roads.has(current):
+			continue
+		_gateway_connected_roads[current] = true
+		for direction in CARDINAL_DIRECTIONS:
+			var neighbour: Vector2i = current + direction
+			if roads.has(neighbour) and not _gateway_connected_roads.has(neighbour):
+				pending.append(neighbour)
+	return _gateway_connected_roads
+
+func is_road_connected_to_gateway(grid_pos: Vector2i) -> bool:
+	return get_gateway_connected_roads().has(grid_pos)
 
 func has_road(grid_pos: Vector2i) -> bool:
 	return roads.has(grid_pos)
@@ -88,8 +119,9 @@ func _get_tile_arms(grid_pos: Vector2i) -> Array[Vector2i]:
 func _has_adjacent_road(grid_pos: Vector2i) -> bool:
 	if roads.is_empty():
 		return true
+	var connected_roads := get_gateway_connected_roads()
 	for direction in CARDINAL_DIRECTIONS:
-		if roads.has(grid_pos + direction):
+		if connected_roads.has(grid_pos + direction):
 			return true
 	return false
 
@@ -99,7 +131,7 @@ func get_road_placement_error(grid_pos: Vector2i) -> String:
 	if not BuildManager.is_inside_world(grid_pos):
 		return "This tile is outside the buildable city area."
 	if not _has_adjacent_road(grid_pos):
-		return "Start beside the existing highway or road; roads must connect."
+		return "Road must connect to the active highway network."
 	if not BuildManager.is_cell_free(grid_pos, Vector2i.ONE):
 		return "This tile is occupied by a building."
 	if not EconomyManager.can_afford(ROAD_COST):
@@ -112,6 +144,7 @@ func place_road(grid_pos: Vector2i) -> bool:
 	if not EconomyManager.spend_simoleons(ROAD_COST):
 		return false
 	roads[grid_pos] = null
+	invalidate_road_connectivity_cache()
 	_refresh_road_neighborhood(grid_pos)
 	road_placed.emit(grid_pos)
 	return true
@@ -124,6 +157,7 @@ func remove_road(grid_pos: Vector2i) -> bool:
 		return false
 	var road_mesh = roads[grid_pos]
 	roads.erase(grid_pos)
+	invalidate_road_connectivity_cache()
 	if is_instance_valid(road_mesh):
 		road_mesh.queue_free()
 	_refresh_road_neighborhood(grid_pos)
