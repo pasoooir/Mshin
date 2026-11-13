@@ -810,6 +810,11 @@ func _run_gameplay_test() -> void:
 			var subtitle = celebration.find_child("MayorCongratulations", true, false)
 			_check(title is Label and title.text == "LEVEL UP!", "Level Up title is missing.")
 			_check(subtitle is Label and subtitle.text == "Congratulations Mayor!", "Mayor congratulations message is missing.")
+			var reward_grid := celebration.find_child("LevelUpRewardsGrid", true, false) as GridContainer
+			_check(reward_grid != null and reward_grid.columns == 2, "Desktop/tablet level-up rewards must use a two-column layout.")
+			celebration._apply_responsive_layout(Vector2(854, 480))
+			_check(reward_grid != null and reward_grid.columns == 1, "Compact level-up rewards must stack vertically without clipping.")
+			celebration._apply_responsive_layout(get_viewport().get_visible_rect().size)
 			await _wait_seconds(1.3)
 			var simoleon_reward = celebration.find_child("SimoleonReward", true, false)
 			var key_reward = celebration.find_child("GoldenKeyReward", true, false)
