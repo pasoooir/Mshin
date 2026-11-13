@@ -197,6 +197,7 @@ trade_manager_source = (ROOT / "scripts/autoload/TradeManager.gd").read_text(enc
 world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
 cargo_ship_visual_source = (ROOT / "scripts/world/CargoShipVisual.gd").read_text(encoding="utf-8")
 citizen_feedback_source = (ROOT / "scripts/ui/CitizenFeedbackBubbles.gd").read_text(encoding="utf-8")
+epic_project_manager_source = (ROOT / "scripts/autoload/EpicProjectManager.gd").read_text(encoding="utf-8")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
 
 for contract in [
@@ -284,6 +285,56 @@ if '20000: "cargo_ship"' not in (ROOT / "scripts/autoload/LevelProgression.gd").
     errors.append("Cargo Ship 20,000 population milestone is missing")
 if "CargoShipVisualScript" not in world_presentation_source or "CargoShipVisual" not in world_presentation_source:
     errors.append("WorldPresentation must include the visible cargo ship")
+if 'EpicProjectManager="*res://scripts/autoload/EpicProjectManager.gd"' not in project:
+    errors.append("EpicProjectManager must be registered as an autoload")
+for contract in [
+    "PROJECT_UNLOCK_LEVEL := 24",
+    "PROJECT_DURATION_SECONDS := 86400",
+    "TOKEN_PART_INTERVAL_SECONDS := 86400",
+    "EPIC_POPULATION_MULTIPLIER := 1.31",
+    "TIER_THRESHOLDS := {\\"bronze\\": 40, \\"silver\\": 100, \\"gold\\": 200}",
+    "func start_project(building_id: String) -> bool:",
+    "func contribute_to_task(task_id: String) -> bool:",
+    "func claim_project() -> bool:",
+    "func collect_token_part(building_id: String) -> bool:",
+    "func to_save_dict() -> Dictionary:",
+    "func from_save_dict(data: Dictionary) -> void:",
+]:
+    if contract not in epic_project_manager_source:
+        errors.append(f"Epic Project manager contract is missing: {contract}")
+if '"epic_projects_department": {"name":"Department of Epic Projects"' not in build_manager:
+    errors.append("Department of Epic Projects building definition is missing")
+if '16: {"materials": ["paint", "table"], "services": ["health"], "buildings": ["epic_projects_department"]}' not in (ROOT / "scripts/autoload/LevelProgression.gd").read_text(encoding="utf-8"):
+    errors.append("Department of Epic Projects must unlock at Level 16")
+if '24: {"factories": 8, "other": ["epic_projects"]}' not in (ROOT / "scripts/autoload/LevelProgression.gd").read_text(encoding="utf-8"):
+    errors.append("Epic Projects must unlock at Level 24")
+if "func set_epic_tier(tier: int) -> void:" not in building_source:
+    errors.append("Building must persist and render its Epic tier")
+if "EpicProjectManager.EPIC_POPULATION_MULTIPLIER" not in happiness_manager_source:
+    errors.append("Epic Buildings must increase residential capacity by the Epic multiplier")
+if "EpicProjectManager.to_save_dict()" not in save_manager_source or 'EpicProjectManager.from_save_dict(parsed.get("epic_projects", {}))' not in save_manager_source:
+    errors.append("Epic Project state must be saved and restored")
+for contract in [
+    "func _open_epic_project_panel(building: Building) -> void:",
+    "EpicProjectManager.start_project(building.building_id)",
+    "EpicProjectManager.contribute_to_task(task_id)",
+    "EpicProjectManager.claim_project()",
+    "EpicProjectManager.collect_token_part(building.building_id)",
+]:
+    if contract not in hud:
+        errors.append(f"Epic Project HUD contract is missing: {contract}")
+for contract in [
+    "func _test_epic_project_core()",
+    "must remain locked below Mayor Level 24",
+    "must receive its full 24-hour deadline",
+    "must finish the project at Gold tier",
+    "must convert the home into an Epic Building",
+    "must grant one Gold token part",
+    "must survive save/load",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Epic Project gameplay regression test is missing: {contract}")
+
 if "CitizenFeedbackBubbles.gd" not in (ROOT / "scenes/main.tscn").read_text(encoding="utf-8"):
     errors.append("Main scene must instantiate the citizen feedback bubble layer")
 for contract in [
