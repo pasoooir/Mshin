@@ -110,8 +110,9 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#435](https://github.com/pasoooir/Mshin/pull/435) | تخصیص مرکزی پوشش Fire/Police/Health با شرط تکمیل ساختمان و اتصال Gateway؛ همگام‌سازی هشدارها و خطر آتش‌سوزی | Godot Validation و Web موفق |
 | [#436](https://github.com/pasoooir/Mshin/pull/436) | اصلاح wrap و گسترش افقی خلاصه خدمات شهری در HUD موبایل | Godot Validation و Web desktop/mobile Chromium موفق |
 | [#437](https://github.com/pasoooir/Mshin/pull/437) | افزایش کاتالوگ به ۷۰ Recipe قابل تولید؛ داده‌های نامعلوم عمداً حدس زده نشدند | Godot Validation، Web export، Chromium desktop/mobile و Pages موفق |
+| [#438](https://github.com/pasoooir/Mshin/pull/438) | ۷۳ تعریف Recipe از ۷۴ محصول؛ ۷۰ قابل تولید، سه محصول قفل‌شده به‌دلیل سطح نامعلوم، Tapestry با تعارض شفاف؛ ممیزی اقتصاد، تست صف آفلاین و اصلاح کاتالوگ موبایل | Godot Validation، Web/Chromium desktop+mobile و Pages deploy روی main موفق |
 
-PR #437 آخرین تغییر ادغام‌شده اقتصاد تولید در main است. PR #438 در شاخه کاری `feat/production-economy-final-acceptance` باز است؛ Godot Validation و Web/Chromium روی head اولیه آن موفق شده‌اند. جزئیات PR باز را با جدول تغییرات Mergeشده main اشتباه نگیرید. پس از Merge، وضعیت نهایی و CI شاخه main به‌روزرسانی می‌شود. اعتبارسنجی فیزیکی Android همچنان مستقل است.
+PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
 
 # نقشه راه کامل توسعه (Roadmap)
 
