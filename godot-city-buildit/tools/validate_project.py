@@ -416,6 +416,34 @@ for contract in [
     if contract not in gameplay_smoke_source:
         errors.append(f"Sewage gameplay regression test is missing: {contract}")
 
+# Every Fire, Police and Health catalog tier must feed the same service-group
+# happiness lookup; checking only a single legacy building ID misses valid tiers.
+for service_group, service_ids in {
+    "fire": ["fire_station_small", "fire_station", "fire_station_deluxe"],
+    "police": ["police_station", "police_small", "police_basic", "police_precinct"],
+    "health": ["clinic_small", "clinic", "hospital"],
+}.items():
+    for service_id in service_ids:
+        match = re.search(r'"' + service_id + r'": \\{([^\\n]+)\\}', build_manager)
+        if match is None or f'"service_group":"{service_group}"' not in match.group(1):
+            errors.append(f"{service_group} service tier is missing its catalog group: {service_id}")
+for contract in [
+    "func _nearby_service_group(",
+    '_nearby_service_group(home, FIRE_SERVICE_GROUP, 38.0)',
+    '_nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0)',
+    '_nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0)',
+]:
+    if contract not in happiness_manager_source:
+        errors.append(f"Emergency service-group happiness contract is missing: {contract}")
+for contract in [
+    "func _test_emergency_service_tier_happiness()",
+    "Every completed emergency service tier must provide its existing happiness bonus",
+    "outside its service radius",
+    "under construction",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Emergency service-tier regression test is missing: {contract}")
+
 # Solid-waste facilities remain distinct from sewage and expose generic numeric capacity.
 for waste_id, expected_capacity, expected_level, expected_size, expected_pollution, expected_radius in [
     ("waste_dump_small", 15, 14, "Vector2i(2,2)", 1, "10.0"),
