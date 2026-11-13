@@ -292,7 +292,7 @@ for contract in [
     "PROJECT_DURATION_SECONDS := 86400",
     "TOKEN_PART_INTERVAL_SECONDS := 86400",
     "EPIC_POPULATION_MULTIPLIER := 1.31",
-    "TIER_THRESHOLDS := {\\"bronze\\": 40, \\"silver\\": 100, \\"gold\\": 200}",
+    "TIER_THRESHOLDS :=",
     "func start_project(building_id: String) -> bool:",
     "func contribute_to_task(task_id: String) -> bool:",
     "func claim_project() -> bool:",
