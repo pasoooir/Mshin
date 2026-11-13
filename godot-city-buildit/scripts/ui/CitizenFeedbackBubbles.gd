@@ -25,6 +25,7 @@ var _active_bubbles: Array[Dictionary] = []
 var _showing := false
 var _elapsed := 0.0
 var _priority_offsets: Dictionary = {}
+var _dialogue_cycle := 0
 
 func _ready() -> void:
 	layer = 90
@@ -127,6 +128,7 @@ func _spawn_feedback_bubbles() -> void:
 	if candidates.is_empty():
 		return
 	var selected := _select_feedback_candidates(candidates)
+	_dialogue_cycle += 1
 	for entry in selected:
 		var building: Node3D = entry.building
 		var feedback: Dictionary = entry.feedback
@@ -166,7 +168,7 @@ func _create_bubble(building: Node3D, feedback: Dictionary) -> Button:
 	var icon_id := str(feedback.get("icon", "happiness"))
 	row.add_child(Icons.make_icon(icon_id, Vector2(30, 30)))
 	var label := Label.new()
-	label.text = get_citizen_line(str(feedback.get("kind", "happiness")), str(building.get("building_id")), int(_elapsed / (BUBBLE_SHOW_SECONDS + BUBBLE_HIDE_SECONDS)))
+	label.text = get_citizen_line(str(feedback.get("kind", "happiness")), str(building.get("building_id")), _dialogue_cycle)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
