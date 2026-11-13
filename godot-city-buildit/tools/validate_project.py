@@ -198,6 +198,7 @@ world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_t
 cargo_ship_visual_source = (ROOT / "scripts/world/CargoShipVisual.gd").read_text(encoding="utf-8")
 citizen_feedback_source = (ROOT / "scripts/ui/CitizenFeedbackBubbles.gd").read_text(encoding="utf-8")
 epic_project_manager_source = (ROOT / "scripts/autoload/EpicProjectManager.gd").read_text(encoding="utf-8")
+achievement_manager_source = (ROOT / "scripts/autoload/AchievementManager.gd").read_text(encoding="utf-8")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
 
 for contract in [
@@ -312,6 +313,49 @@ if "func set_epic_tier(tier: int) -> void:" not in (ROOT / "scripts/buildings/Bu
     errors.append("Building must persist and render its Epic tier")
 if "EpicProjectManager.EPIC_POPULATION_MULTIPLIER" not in happiness_manager_source:
     errors.append("Epic Buildings must increase residential capacity by the Epic multiplier")
+if 'AchievementManager="*res://scripts/autoload/AchievementManager.gd"' not in project:
+    errors.append("AchievementManager must be registered as an autoload")
+for contract in [
+    "signal achievement_unlocked(id: String, title: String, simoleons_reward: int, xp_reward: int)",
+    "func _collect_metrics() -> Dictionary:",
+    "func _check_achievements() -> void:",
+    "func get_entries() -> Array[Dictionary]:",
+    "func to_save_dict() -> Dictionary:",
+    "func from_save_dict(data: Dictionary) -> void:",
+    '"id":"cargo_captain"',
+    '"id":"epic_master"',
+]:
+    if contract not in achievement_manager_source:
+        errors.append(f"Achievement manager contract is missing: {contract}")
+if "AchievementManager.to_save_dict()" not in save_manager_source or 'AchievementManager.from_save_dict(parsed.get("achievements", {}))' not in save_manager_source:
+    errors.append("Achievement progress must be saved and restored")
+for contract in [
+    "AchievementManager.achievement_unlocked.connect(_on_achievement_unlocked)",
+    "AchievementManager.state_changed.connect(_on_achievement_state_changed)",
+    "func open_achievements_panel() -> void:",
+    "func _on_achievements_pressed() -> void:",
+    "AchievementManager.get_entries()",
+]:
+    if contract not in hud:
+        errors.append(f"Achievement HUD contract is missing: {contract}")
+for contract in [
+    "var completed_sales: int = 0",
+    "var market_purchases: int = 0",
+    "completed_sales += 1",
+    "market_purchases += 1",
+]:
+    if contract not in trade_manager_source:
+        errors.append(f"Trade achievement counter contract is missing: {contract}")
+for contract in [
+    "func _test_achievements() -> void:",
+    "Achievement should unlock from its real city metric",
+    "Achievement unlocks must survive save/load",
+    "A collected sale must increment the persistent trade achievement counter",
+    "A completed Global Trade purchase must increment its achievement counter",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Achievement regression test is missing: {contract}")
+
 if "EpicProjectManager.to_save_dict()" not in save_manager_source or 'EpicProjectManager.from_save_dict(parsed.get("epic_projects", {}))' not in save_manager_source:
     errors.append("Epic Project state must be saved and restored")
 for contract in [

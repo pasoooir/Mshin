@@ -73,6 +73,7 @@ func save_game() -> bool:
 		"storage": StorageManager.to_save_dict(),
 		"trade": TradeManager.to_save_dict(),
 		"epic_projects": EpicProjectManager.to_save_dict(),
+		"achievements": AchievementManager.to_save_dict(),
 		"roads": road_data,
 		"buildings": building_data
 	}
@@ -231,6 +232,7 @@ func load_game() -> bool:
 			restored_population += int(restored_building.definition.get("population", 0))
 	GameManager.population = maxi(0, restored_population)
 	GameManager.happiness = float(game_data.get("happiness", 100.0))
+	AchievementManager.from_save_dict(parsed.get("achievements", {}))
 	GameManager.level_changed.emit(GameManager.level)
 	GameManager.population_changed.emit(GameManager.population)
 	GameManager.happiness_changed.emit(GameManager.happiness)

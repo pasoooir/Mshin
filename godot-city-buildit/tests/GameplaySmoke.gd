@@ -1242,6 +1242,77 @@ func _test_building_model_loader_contract() -> void:
 	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
 	villa_visual_probe.free()
 
+func _test_achievements() -> void:
+	var previous_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var previous_achievements: Dictionary = AchievementManager.to_save_dict()
+	var previous_level := GameManager.level
+	var previous_experience := GameManager.experience
+	var previous_population := GameManager.population
+	var previous_simoleons := EconomyManager.simoleons
+	var previous_sales := TradeManager.completed_sales
+	var previous_market_purchases := TradeManager.market_purchases
+	var previous_ship_departures := TradeManager.ship_departures
+	AchievementManager.from_save_dict({})
+	BuildManager.buildings = {}
+	GameManager.level = 10
+	GameManager.population = 10000
+	TradeManager.completed_sales = 1
+	TradeManager.market_purchases = 1
+	TradeManager.ship_departures = 1
+	var temporary_nodes: Array[Node] = []
+	for index in range(5):
+		var home := FireHazardTestBuilding.new()
+		home.building_id = "smoke_achievement_home_%d" % index
+		home.building_type = "residential_villa"
+		home.status = "completed"
+		home.definition = {"category":"residential"}
+		if index == 0:
+			home.is_epic_building = true
+			home.epic_tier = 1
+		BuildManager.buildings[home.building_id] = home
+		add_child(home)
+		temporary_nodes.append(home)
+	for index in range(3):
+		var factory := FireHazardTestBuilding.new()
+		factory.building_id = "smoke_achievement_factory_%d" % index
+		factory.building_type = "factory_small"
+		factory.status = "completed"
+		factory.definition = {"category":"industrial"}
+		BuildManager.buildings[factory.building_id] = factory
+		add_child(factory)
+		temporary_nodes.append(factory)
+		var park := FireHazardTestBuilding.new()
+		park.building_id = "smoke_achievement_park_%d" % index
+		park.building_type = "park_small"
+		park.status = "completed"
+		park.definition = {"category":"park"}
+		BuildManager.buildings[park.building_id] = park
+		add_child(park)
+		temporary_nodes.append(park)
+
+	AchievementManager._check_achievements()
+	for achievement_id in ["first_home", "home_builder", "city_of_1000", "metropolis", "mayor_level_5", "mayor_level_10", "industrialist", "green_city", "trade_seller", "global_buyer", "cargo_captain", "epic_master"]:
+		_check(bool(AchievementManager.unlocked.get(achievement_id, false)), "Achievement should unlock from its real city metric: %s" % achievement_id)
+	_check(AchievementManager.get_unlocked_count() >= 12, "Achievement manager must unlock every satisfied milestone.")
+	var saved_achievements: Dictionary = AchievementManager.to_save_dict()
+	AchievementManager.from_save_dict(saved_achievements)
+	_check(bool(AchievementManager.unlocked.get("epic_master", false)) and AchievementManager.get_unlocked_count() >= 12, "Achievement unlocks must survive save/load.")
+
+	BuildManager.buildings = previous_buildings
+	GameManager.level = previous_level
+	GameManager.experience = previous_experience
+	GameManager.population = previous_population
+	GameManager.xp_changed.emit(GameManager.experience, GameManager.get_xp_needed())
+	GameManager.level_changed.emit(GameManager.level)
+	GameManager.population_changed.emit(GameManager.population)
+	EconomyManager.simoleons = previous_simoleons
+	TradeManager.completed_sales = previous_sales
+	TradeManager.market_purchases = previous_market_purchases
+	TradeManager.ship_departures = previous_ship_departures
+	AchievementManager.from_save_dict(previous_achievements)
+	for node in temporary_nodes:
+		node.queue_free()
+
 func _test_epic_project_core() -> void:
 	var previous_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var previous_level := GameManager.level
@@ -1372,20 +1443,24 @@ func _test_trade_depot_and_global_market() -> void:
 	TradeManager._process(0.1)
 	_check(bool(TradeManager.sell_slots[0].get("ready", false)), "A finished sale listing must become ready for manual collection.")
 	var coins_before_collection := EconomyManager.simoleons
+	var sales_before_collection := TradeManager.completed_sales
 	_check(TradeManager.collect_sale(0), "A ready Trade Depot listing must collect successfully.")
+	_check(TradeManager.completed_sales == sales_before_collection + 1, "A collected sale must increment the persistent trade achievement counter.")
 	_check(EconomyManager.simoleons == coins_before_collection + ProductionManager.get_item_value("metal"), "Collecting a sale must pay its exact listed price.")
 	_check(TradeManager.sell_slots.is_empty(), "Collected listings must release their depot slot.")
 
 	TradeManager.market_offers = [{"item_id":"metal", "amount":1, "price":15, "sold":false}]
 	var coins_before_purchase := EconomyManager.simoleons
+	var purchases_before := TradeManager.market_purchases
 	_check(TradeManager.buy_global_offer(0), "Global Trade HQ must complete an affordable market purchase.")
+	_check(TradeManager.market_purchases == purchases_before + 1, "A completed Global Trade purchase must increment its achievement counter.")
 	_check(StorageManager.get_count("metal") == 2, "Global market purchase must add the offered goods to storage.")
 	_check(EconomyManager.simoleons == coins_before_purchase - 15, "Global market purchase must deduct the exact offer price.")
 	_check(bool(TradeManager.market_offers[0].get("sold", false)), "Purchased market offers must not be purchasable twice.")
 	var saved_trade := TradeManager.to_save_dict()
 	TradeManager.from_save_dict(saved_trade)
 	_check(TradeManager.market_offers.size() == 1 and bool(TradeManager.market_offers[0].get("sold", false)), "Trade save data must preserve sold market offers.")
-	_check(TradeManager.to_save_dict().has("sell_slots") and TradeManager.to_save_dict().has("market_refresh_unix"), "Trade save data must include depot listings and absolute market refresh time.")
+	_check(TradeManager.to_save_dict().has("sell_slots") and TradeManager.to_save_dict().has("market_refresh_unix") and TradeManager.to_save_dict().has("completed_sales") and TradeManager.to_save_dict().has("market_purchases"), "Trade save data must include depot listings and absolute market refresh time.")
 	TradeManager.market_refresh_unix = int(Time.get_unix_time_from_system()) - 1
 	TradeManager._process(0.1)
 	_check(TradeManager.market_refresh_unix > int(Time.get_unix_time_from_system()) and not TradeManager.market_offers.is_empty() and not bool(TradeManager.market_offers[0].get("sold", false)), "Expired market offers must refresh from their persisted wall-clock deadline.")
@@ -1473,6 +1548,7 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_mobile_haptics_contract()
 	_test_epic_project_core()
+	_test_achievements()
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()

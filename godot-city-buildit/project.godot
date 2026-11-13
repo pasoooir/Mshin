@@ -31,6 +31,7 @@ HappinessManager="*res://scripts/autoload/HappinessManager.gd"
 HapticsManager="*res://scripts/autoload/HapticsManager.gd"
 LevelProgression="*res://scripts/autoload/LevelProgression.gd"
 EpicProjectManager="*res://scripts/autoload/EpicProjectManager.gd"
+AchievementManager="*res://scripts/autoload/AchievementManager.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
 
 [display]
