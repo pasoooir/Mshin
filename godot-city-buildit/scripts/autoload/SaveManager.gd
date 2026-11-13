@@ -167,6 +167,7 @@ func load_game() -> bool:
 			restored_population += int(restored_building.definition.get("population", 0))
 	GameManager.population = maxi(0, restored_population)
 	GameManager.happiness = float(region_snapshot.get("happiness", game_data.get("happiness", 100.0)))
+	RegionManager.store_active_region_snapshot(capture_region_snapshot())
 	AchievementManager.from_save_dict(parsed.get("achievements", {}))
 	GameManager.level_changed.emit(GameManager.level)
 	GameManager.population_changed.emit(GameManager.population)
@@ -187,6 +188,9 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 	var road_system = scene.get_node_or_null("World/RoadSystem")
 	if road_system == null:
 		return false
+	BuildManager.cancel_placement()
+	if BuildManager.is_moving:
+		BuildManager.cancel_move()
 	for building in BuildManager.buildings.values():
 		if is_instance_valid(building):
 			building.queue_free()
