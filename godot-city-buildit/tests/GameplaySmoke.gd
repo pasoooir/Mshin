@@ -34,6 +34,12 @@ func _assert_panel_inside_viewport(panel: Control, panel_name: String) -> void:
 	var panel_rect := panel.get_global_rect()
 	var viewport_rect := get_viewport().get_visible_rect()
 	print("[GameplaySmoke] %s rect=%s viewport=%s min=%s" % [panel_name, str(panel_rect), str(viewport_rect), str(panel.get_combined_minimum_size())])
+	if panel_name == "Factory Production":
+		var production_layout := panel.find_child("ProductionLayout", true, false) as VBoxContainer
+		if production_layout:
+			for child in production_layout.get_children():
+				if child is Control:
+					print("[GameplaySmoke] Production child %s min=%s rect=%s" % [child.name, str((child as Control).get_combined_minimum_size()), str((child as Control).get_rect())])
 	_check(panel_rect.position.x >= -1.0 and panel_rect.position.y >= -1.0, "%s panel begins outside the viewport." % panel_name)
 	_check(panel_rect.position.x + panel_rect.size.x <= viewport_rect.size.x + 1.0, "%s panel extends beyond the viewport width." % panel_name)
 	_check(panel_rect.position.y + panel_rect.size.y <= viewport_rect.size.y + 1.0, "%s panel extends beyond the viewport height." % panel_name)
