@@ -1432,6 +1432,22 @@ func _test_placement_rotation_contract() -> void:
 	BuildManager.rotate_placement()
 	BuildManager.rotate_placement()
 	_check(BuildManager.placement_rotation_quarters == 0, "Placement rotation must wrap after four quarter-turns.")
+	var hud = get_node_or_null("HUD")
+	_check(hud != null, "Placement rotation controls require the main HUD.")
+	if hud != null:
+		hud._on_placement_mode(true)
+		var placement_controls := hud.find_child("PlacementControls", true, false) as Control
+		var rotate_button := hud.find_child("RotatePlacementButton", true, false) as Button
+		var cancel_button := hud.find_child("CancelPlacementButton", true, false) as Button
+		_check(placement_controls != null and placement_controls.visible, "Placement mode must reveal dedicated mobile placement controls.")
+		_check(rotate_button != null and rotate_button.custom_minimum_size.x >= 100.0 and rotate_button.tooltip_text.contains("90"), "The rotate action must be an obvious, thumb-sized 90-degree control.")
+		_check(cancel_button != null and cancel_button.custom_minimum_size.y >= 48.0, "Placement must expose a touch-sized Cancel control, not rely on a keyboard.")
+		hud._on_rotate_placement_pressed()
+		_check(BuildManager.placement_rotation_quarters == 1, "The on-screen rotate action must advance the selected building by 90 degrees.")
+		hud._on_cancel_pressed()
+		_check(placement_controls != null and not placement_controls.visible, "Placement controls must disappear when placement is cancelled.")
+	else:
+		BuildManager.cancel_placement()
 	BuildManager.cancel_placement()
 
 func _test_building_model_loader_contract() -> void:
