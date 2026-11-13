@@ -872,6 +872,10 @@ func _show_submenu(category: String) -> void:
 				if lock_reason != "":
 					detail += " · " + lock_reason
 					locked = true
+			var region_lock_reason := BuildManager.get_region_build_lock_reason(str(type_id))
+			if region_lock_reason != "":
+				detail += " · " + region_lock_reason
+				locked = true
 			_add_submenu_button(str(type_id), title, str(type_id), detail, locked, category, int(definition.get("level", 1)), locked)
 	_finish_submenu_row()
 
