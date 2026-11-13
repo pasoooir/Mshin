@@ -1,6 +1,6 @@
 # Mshin local building models
 
-All four GLTF files in this directory are original procedural architectural meshes authored for Pasoo City BuildIt. They are self-contained (embedded geometry buffers; no external textures, URLs, or runtime downloads) and dedicated to **CC0 1.0**. No third-party model files are included.
+All five GLTF files in this directory are original procedural architectural meshes authored for Pasoo City BuildIt. They are self-contained (embedded geometry buffers; no external textures, URLs, or runtime downloads) and dedicated to **CC0 1.0**. No third-party model files are included.
 
 | Model | Runtime path | Declared dimensions (m) | Use |
 |---|---|---:|---|
