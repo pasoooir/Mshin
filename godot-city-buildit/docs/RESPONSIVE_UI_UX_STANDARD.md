@@ -72,8 +72,10 @@ Profile selection is based on the live viewport, not device name or user-agent. 
 
 ## Acceptance matrix
 
-Run the actual Godot UI at minimum:
-- Compact landscape: 854×480 and 960×540
+Automated GameplaySmoke exercises compact, tablet and desktop breakpoints by passing representative logical sizes into the responsive layout functions, then checks grid reflow, modal dimensions, text floors and touch-target floors. The project viewport in headless mode is not a reliable physical-window emulator; it does not claim to replace actual display testing.
+
+Manual visual acceptance is required at minimum:
+- Compact landscape phone: 854×480 and 960×540
 - Tablet: 1024×768 and 1280×800
 - Desktop: 1366×768, 1536×864 and 1920×1080
 - Mobile portrait resize and return to landscape (modal/overlay behavior)
