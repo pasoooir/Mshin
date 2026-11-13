@@ -417,6 +417,7 @@ func get_recipe_economy_profile(item_id: String) -> Dictionary:
 func get_economy_catalog_audit() -> Dictionary:
 	var errors: Array[String] = []
 	var warnings: Array[String] = []
+	var negative_reference_spread_items: Array[String] = []
 	for item_id in raw_materials:
 		var raw: Dictionary = raw_materials[item_id]
 		if int(raw.get("value", 0)) <= 0 or int(raw.get("time_sec", 0)) <= 0:
@@ -441,6 +442,10 @@ func get_economy_catalog_audit() -> Dictionary:
 				errors.append("Recipe %s references input %s without a reference value." % [str(item_id), input_key])
 		if not bool(recipe.get("unlock_level_verified", true)):
 			warnings.append("Recipe %s has verified inputs/time/value but an unresolved Mayor Level gate; it remains locked." % str(item_id))
+		var economy_profile := get_recipe_economy_profile(str(item_id))
+		if not economy_profile.is_empty() and int(economy_profile.get("gross_reference_spread", 0)) < 0:
+			negative_reference_spread_items.append(str(item_id))
+			warnings.append("Recipe %s has a negative ingredient-to-output reference-value spread; do not treat its max trade value as production profit." % str(item_id))
 	for store_id in store_catalog:
 		for product in store_catalog[store_id]:
 			var product_id := str(product.get("id", ""))
@@ -451,6 +456,7 @@ func get_economy_catalog_audit() -> Dictionary:
 	return {
 		"recipe_count": crafted_items.size(),
 		"catalog_only_count": store_catalog.values().reduce(func(total: int, products: Array) -> int: return total + products.size(), 0),
+		"negative_reference_spread_items": negative_reference_spread_items,
 		"errors": errors,
 		"warnings": warnings
 	}
