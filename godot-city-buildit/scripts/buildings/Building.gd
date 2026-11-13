@@ -32,6 +32,7 @@ var current_population: int = 0
 var upgrade_ready: bool = false
 var upgrade_in_progress: bool = false
 var upgrade_finish_unix: int = 0
+var upgrade_paused_remaining_seconds: int = -1
 var residential_plan_selected: bool = false
 var _upgrade_tween: Tween
 var demolition_highlight_active: bool = false
@@ -1760,10 +1761,25 @@ func _process(delta: float) -> void:
 			if production_icon:
 				production_icon.text = "✅"
 			production_ready.emit(current_product)
-	if upgrade_in_progress and upgrade_finish_unix > 0 and int(Time.get_unix_time_from_system()) >= upgrade_finish_unix:
-		_finish_residential_upgrade()
+	if upgrade_in_progress:
+		update_upgrade_access_state()
 	if definition.get("category") == "residential" and status == "completed" and upgrade_stage < max_stage:
 		_check_upgrade_ready()
+
+func update_upgrade_access_state(now_unix: int = -1) -> void:
+	if not upgrade_in_progress:
+		return
+	var now := now_unix if now_unix >= 0 else int(Time.get_unix_time_from_system())
+	if not BuildManager.is_building_operational(self):
+		if upgrade_paused_remaining_seconds < 0:
+			upgrade_paused_remaining_seconds = maxi(0, upgrade_finish_unix - now)
+			upgrade_finish_unix = 0
+		return
+	if upgrade_paused_remaining_seconds >= 0:
+		upgrade_finish_unix = now + upgrade_paused_remaining_seconds
+		upgrade_paused_remaining_seconds = -1
+	if upgrade_finish_unix > 0 and now >= upgrade_finish_unix:
+		_finish_residential_upgrade()
 
 func _check_upgrade_ready() -> void:
 	if not BuildManager.is_building_operational(self):
@@ -1795,6 +1811,7 @@ func try_upgrade() -> bool:
 	if not ProductionManager.consume_upgrade_materials(upgrade_stage):
 		return false
 	upgrade_in_progress = true
+	upgrade_paused_remaining_seconds = -1
 	upgrade_finish_unix = int(Time.get_unix_time_from_system()) + RESIDENTIAL_UPGRADE_DURATION_SECONDS
 	upgrade_ready = false
 	if hard_hat: hard_hat.visible = false
@@ -1822,6 +1839,7 @@ func _finish_residential_upgrade() -> void:
 	var gained := current_population - old_population
 	upgrade_in_progress = false
 	upgrade_finish_unix = 0
+	upgrade_paused_remaining_seconds = -1
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
@@ -1838,6 +1856,8 @@ func _finish_residential_upgrade() -> void:
 func get_upgrade_remaining_seconds() -> int:
 	if not upgrade_in_progress:
 		return 0
+	if upgrade_paused_remaining_seconds >= 0:
+		return upgrade_paused_remaining_seconds
 	return maxi(0, upgrade_finish_unix - int(Time.get_unix_time_from_system()))
 
 func collect_production() -> bool:
@@ -1912,7 +1932,10 @@ func restore_production_state(saved: Dictionary) -> void:
 			production_component.from_save_array(saved.get("slots", []))
 	upgrade_in_progress = bool(saved.get("upgrade_in_progress", false))
 	upgrade_finish_unix = int(saved.get("upgrade_finish_unix", 0))
-	if upgrade_in_progress:
+	upgrade_paused_remaining_seconds = int(saved.get("upgrade_paused_remaining_seconds", -1))
+	if upgrade_in_progress and upgrade_paused_remaining_seconds >= 0:
+		upgrade_finish_unix = 0
+	elif upgrade_in_progress:
 		# Let SaveManager restore the saved resident count before _process()
 		# completes an expired upgrade on the next frame.
 		if upgrade_finish_unix <= int(Time.get_unix_time_from_system()):
