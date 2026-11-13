@@ -2811,7 +2811,8 @@ func _open_epic_project_panel(building: Building) -> void:
 	layout.add_child(subtitle)
 
 	if building.is_epic_building:
-		var tier_name := ["", "BRONZE · TURTLE", "SILVER · LLAMA", "GOLD · CHEETAH"][clampi(building.epic_tier, 1, 3)]
+		var tier_names: Array[String] = ["", "BRONZE · TURTLE", "SILVER · LLAMA", "GOLD · CHEETAH"]
+		var tier_name: String = tier_names[clampi(building.epic_tier, 1, 3)]
 		var tier_label := Label.new()
 		tier_label.text = "EPIC BUILDING  ·  " + tier_name
 		tier_label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
