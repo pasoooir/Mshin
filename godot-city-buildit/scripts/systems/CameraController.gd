@@ -5,6 +5,8 @@ extends Node3D
 @export var max_zoom: float = 55.0
 @export var world_limit: float = 55.0
 @export var camera_pitch_degrees: float = 48.0
+@export var pan_inertia_damping: float = 8.0
+@export var orbit_inertia_damping: float = 10.0
 
 @onready var camera: Camera3D = $Camera3D
 
@@ -14,12 +16,43 @@ var last_mouse_position: Vector2 = Vector2.ZERO
 var touch_points: Dictionary = {}
 var last_pinch_distance: float = 0.0
 var last_pinch_angle: float = 0.0
+var pan_velocity: Vector2 = Vector2.ZERO
+var orbit_velocity: float = 0.0
+
+const PAN_INERTIA_STOP_SPEED := 6.0
+const ORBIT_INERTIA_STOP_SPEED := 0.01
 
 func _ready() -> void:
 	rotation_degrees = Vector3(0.0, 45.0, 0.0)
 	# Frame the starter highway and first adjacent build plots on entry.
 	global_position = Vector3(-9.0, 0.0, 2.5)
 	_update_camera_transform()
+
+func _process(delta: float) -> void:
+	if delta <= 0.0:
+		return
+	if _is_road_mode() or BuildManager.is_moving:
+		pan_velocity = Vector2.ZERO
+		orbit_velocity = 0.0
+		return
+	if not touch_points.is_empty() or is_mouse_panning:
+		return
+	if pan_velocity.length() > PAN_INERTIA_STOP_SPEED:
+		_pan(pan_velocity * delta)
+		pan_velocity = decay_pan_velocity(pan_velocity, delta, pan_inertia_damping)
+	else:
+		pan_velocity = Vector2.ZERO
+	if absf(orbit_velocity) > ORBIT_INERTIA_STOP_SPEED:
+		rotation_degrees.y += rad_to_deg(orbit_velocity * delta)
+		orbit_velocity = decay_orbit_velocity(orbit_velocity, delta, orbit_inertia_damping)
+	else:
+		orbit_velocity = 0.0
+
+static func decay_pan_velocity(velocity: Vector2, delta: float, damping: float) -> Vector2:
+	return velocity * exp(-maxf(0.0, damping) * maxf(0.0, delta))
+
+static func decay_orbit_velocity(velocity: float, delta: float, damping: float) -> float:
+	return velocity * exp(-maxf(0.0, damping) * maxf(0.0, delta))
 
 func _is_road_mode() -> bool:
 	var scene = get_tree().current_scene
@@ -30,6 +63,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			is_mouse_panning = event.pressed and not _is_road_mode() and not _is_building_press_pending(-1)
+			if event.pressed:
+				pan_velocity = Vector2.ZERO
+				orbit_velocity = 0.0
 			last_mouse_position = event.position
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			_zoom(-2.0)
@@ -38,9 +74,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and is_mouse_panning:
 		if not _is_building_press_pending(-1):
 			_pan(event.position - last_mouse_position)
+			pan_velocity = event.velocity
 		last_mouse_position = event.position
 	elif event is InputEventScreenTouch:
 		if event.pressed:
+			pan_velocity = Vector2.ZERO
+			orbit_velocity = 0.0
 			touch_points[event.index] = event.position
 			if touch_points.size() >= 2:
 				_update_pinch_baseline()
@@ -57,6 +96,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			# Do not move the camera underneath the drag preview.
 			if not _is_road_mode() and not BuildManager.is_moving and not _is_building_press_pending(event.index):
 				_pan(event.relative)
+				orbit_velocity = 0.0
+				var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
+				pan_velocity = event.screen_velocity if event.screen_velocity.length_squared() > 0.0 else event.relative / frame_delta
 		elif touch_points.size() >= 2:
 			_update_pinch(event.relative)
 
@@ -82,6 +124,8 @@ func _update_pinch(_relative: Vector2) -> void:
 		_zoom((last_pinch_distance - distance) * zoom_speed * 0.06)
 		var angle_delta: float = wrapf(angle - last_pinch_angle, -PI, PI)
 		rotation_degrees.y += rad_to_deg(angle_delta)
+		var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
+		orbit_velocity = angle_delta / frame_delta
 	last_pinch_distance = distance
 	last_pinch_angle = angle
 
