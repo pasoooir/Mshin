@@ -459,6 +459,10 @@ func _try_interact(world_position: Vector3) -> void:
 	var building = BuildManager.building_at_cell(grid)
 	if building == null or not is_instance_valid(building):
 		return
+	var scene := get_tree().current_scene
+	var camera_rig = scene.get_node_or_null("CameraRig") if scene else null
+	if camera_rig != null and camera_rig.has_method("focus_on"):
+		camera_rig.focus_on(building.global_position)
 	if building.status != "completed":
 		_set_status("Still under construction…")
 		return
