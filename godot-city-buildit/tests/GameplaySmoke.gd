@@ -1895,8 +1895,8 @@ func _test_citizen_feedback_bubbles() -> void:
 	_check(str(feedback.get("kind", "")) == "road", "A residential home without connected road access must produce a road feedback bubble.")
 	_check(str(feedback.get("message", "")).contains("Road"), "Citizen feedback must explain the missing road access in readable text.")
 	_check(str(feedback.get("icon", "")) == "road", "Road feedback must use the local road icon.")
-	var first_citizen_line := feedback_manager.get_citizen_line("road", home.building_id, 0) if feedback_manager else ""
-	var next_citizen_line := feedback_manager.get_citizen_line("road", home.building_id, 1) if feedback_manager else ""
+	var first_citizen_line: String = feedback_manager.get_citizen_line("road", home.building_id, 0) if feedback_manager else ""
+	var next_citizen_line: String = feedback_manager.get_citizen_line("road", home.building_id, 1) if feedback_manager else ""
 	_check(not first_citizen_line.is_empty() and not next_citizen_line.is_empty() and first_citizen_line != next_citizen_line, "Citizens must rotate between distinct short dialogue lines across feedback cycles.")
 	_check(feedback_manager.get_citizen_line("happy", home.building_id, 0).contains("love") or feedback_manager.get_citizen_line("happy", home.building_id, 1).contains("good"), "Satisfied residents must use positive citizen dialogue.")
 	_check(CitizenFeedbackBubblesScript.BUBBLE_POP_DURATION > 0.0 and CitizenFeedbackBubblesScript.BUBBLE_FADE_DURATION > 0.0 and CitizenFeedbackBubblesScript.BUBBLE_BOB_AMPLITUDE > 0.0, "Citizen bubbles must define non-zero pop, fade and floating animation timing.")
