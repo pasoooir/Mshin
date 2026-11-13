@@ -28,7 +28,7 @@ func save_game() -> bool:
 	var road_system = scene.get_node("World/RoadSystem")
 	var road_data: Array = []
 	for cell in road_system.roads.keys():
-		road_data.append([int(cell.x), int(cell.y)])
+		road_data.append([int(cell.x), int(cell.y), road_system.get_road_level(cell)])
 
 	var building_data: Array = []
 	for building in BuildManager.buildings.values():
@@ -122,7 +122,7 @@ func load_game() -> bool:
 	var gateway_index := -1
 	for index in range(pending_roads.size()):
 		var road: Variant = pending_roads[index]
-		if road is Array and road.size() == 2 and Vector2i(int(road[0]), int(road[1])) == gateway_position:
+		if road is Array and road.size() >= 2 and Vector2i(int(road[0]), int(road[1])) == gateway_position:
 			gateway_index = index
 			break
 	if gateway_index < 0:
@@ -143,7 +143,7 @@ func load_game() -> bool:
 		var placed_road_this_pass: bool = false
 		for index in range(pending_roads.size() - 1, -1, -1):
 			var road: Variant = pending_roads[index]
-			if not (road is Array) or road.size() != 2:
+			if not (road is Array) or road.size() < 2:
 				pending_roads.remove_at(index)
 				continue
 			var road_position := Vector2i(int(road[0]), int(road[1]))
@@ -157,6 +157,8 @@ func load_game() -> bool:
 					connected = true
 					break
 			if connected and road_system.place_road(road_position):
+				var saved_road_level := int(road[2]) if road.size() >= 3 else 1
+				road_system.restore_road_level(road_position, saved_road_level)
 				pending_roads.remove_at(index)
 				placed_road_this_pass = true
 		if not placed_road_this_pass:

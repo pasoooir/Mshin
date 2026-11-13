@@ -298,6 +298,7 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.remove_road(Vector2i(0, 0)), "The second gateway bridge tile must be removable for the connectivity test.")
 	_check(not road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "Removing both bridge tiles must disconnect the far road segment from the highway gateway.")
 	_check(not BuildManager.has_road_access(Vector2i(1, 1), Vector2i.ONE), "A building beside a disconnected road segment must lose valid road access.")
+	_check(road_system.get_road_upgrade_error(Vector2i(1, 0)).contains("connected to the highway Gateway"), "A disconnected road tile must not be upgraded.")
 	var disconnected_building := FireHazardTestBuilding.new()
 	disconnected_building.status = "completed"
 	disconnected_building.grid_pos = Vector2i(1, 1)
@@ -521,6 +522,15 @@ func _test_build_menu_visibility() -> void:
 	var viewport_rect := get_viewport().get_visible_rect()
 	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category PNG rail is outside the visible screen.")
 	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.12, "Transparent category rail covers too much of the mobile play area.")
+	# The road category must expose an active upgrade action, not a disabled placeholder.
+	hud._show_submenu("road")
+	var road_upgrade_button := hud.find_child("road_upgrade", true, false) as Button
+	_check(road_upgrade_button != null and not road_upgrade_button.disabled, "Road upgrade must be selectable from the road catalog.")
+	var road_system_for_menu = get_node_or_null("World/RoadSystem")
+	hud._on_submenu_option("road", "road_upgrade")
+	_check(road_system_for_menu != null and road_system_for_menu.is_road_upgrade_mode, "Selecting Upgrade Road must activate tap-to-upgrade mode.")
+	hud._on_cancel_pressed()
+	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
 	var category_scroll := toolbar.get_node_or_null("CategoryScroll") as ScrollContainer
 	_check(category_scroll != null and category_scroll.scroll_deadzone <= 4, "Right category rail must use a minimal vertical swipe deadzone.")
 	_check(category_scroll != null and category_scroll.mouse_filter == Control.MOUSE_FILTER_PASS, "Right category scroller must capture touch drags.")
@@ -1783,6 +1793,45 @@ func _run_gameplay_test() -> void:
 	_check(home != null and home.try_upgrade(), "Second residential upgrade could not start with Planks and Wood.")
 	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
 	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) + 3600
+
+	# Verify the four supported road tiers, their real unlock levels and the
+	# researched upper-end per-tile upgrade costs before persisting the city.
+	var road_upgrade_cell := Vector2i(0, 0)
+	var saved_level_before_road_test := GameManager.level
+	var saved_money_before_road_test := EconomyManager.simoleons
+	GameManager.level = 8
+	EconomyManager.simoleons = 5000
+	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 9"), "Four-lane roads must remain locked before City Level 9.")
+	GameManager.level = 9
+	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 300, "Four-lane road upgrade must use the sourced 300-Simoleon upper-range per-tile cost.")
+	_check(road_system.upgrade_road(road_upgrade_cell), "A road must upgrade to four lanes at City Level 9.")
+	_check(road_system.get_road_level(road_upgrade_cell) == 2, "Four-lane upgrade did not persist its road tier.")
+	GameManager.level = 14
+	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 15"), "Six-lane roads must remain locked before City Level 15.")
+	GameManager.level = 15
+	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 1200, "Six-lane road upgrade must use the sourced 1200-Simoleon upper-range per-tile cost.")
+	_check(road_system.upgrade_road(road_upgrade_cell), "A four-lane road must upgrade to six lanes at City Level 15.")
+	GameManager.level = 19
+	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("City Level 20"), "Avenues must remain locked before City Level 20.")
+	GameManager.level = 20
+	_check(road_system.get_road_upgrade_cost(road_upgrade_cell) == 1500, "Avenue upgrade must use the sourced 1500-Simoleon upper-range per-tile cost.")
+	_check(road_system.upgrade_road(road_upgrade_cell), "A six-lane road must upgrade to an Avenue at City Level 20.")
+	_check(road_system.get_road_level(road_upgrade_cell) == 4, "Avenue upgrade did not reach road tier four.")
+	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("already an Avenue"), "An Avenue must reject further upgrades.")
+	_check(road_system.get_road_upgrade_error(RoadSystemScript.GATEWAY_ROAD_CELL).contains("Gateway"), "The permanent highway Gateway must not be upgraded.")
+
+	# Bulldozing an upgraded tile refunds half of its most recent upgrade only.
+	GameManager.level = 9
+	var refund_test_cell := Vector2i(18, 0)
+	_check(road_system.place_road(refund_test_cell), "Could not create the isolated road tile for the upgrade-refund test.")
+	_check(road_system.upgrade_road(refund_test_cell), "Refund test road could not be upgraded to four lanes.")
+	var money_before_refund := EconomyManager.simoleons
+	_check(road_system.remove_road(refund_test_cell), "Could not bulldoze the upgraded refund-test road.")
+	_check(EconomyManager.simoleons == money_before_refund + 150, "Bulldozing a four-lane road must refund 50% of its latest 300-Simoleon upgrade.")
+	GameManager.level = saved_level_before_road_test
+	EconomyManager.simoleons = saved_money_before_road_test
+	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
+
 	var saved_population_expected := GameManager.population
 	_check(SaveManager.save_game(), "SaveManager could not write the city save.")
 
@@ -1801,6 +1850,7 @@ func _run_gameplay_test() -> void:
 	var restored_home = _find_building("residential_1")
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
 	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "Save/load must restore the permanent highway gateway before other road tiles.")
+	_check(road_system.get_road_level(Vector2i(0, 0)) == 4, "Save/load must preserve the upgraded Avenue road tier.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
 	_check(restored_home != null and restored_home.upgrade_in_progress and restored_home.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Residential upgrade finish timestamp was not restored from save.")

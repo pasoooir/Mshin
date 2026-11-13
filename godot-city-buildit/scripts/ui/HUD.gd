@@ -823,7 +823,7 @@ func _show_submenu(category: String) -> void:
 	_update_context_header(category)
 	if category == "road":
 		_add_submenu_button("road_build", "Build Road", "road_build", "50 / tile", false, "road")
-		_add_submenu_button("road_upgrade", "Upgrade Road", "road_upgrade", "Coming later", true, "road")
+		_add_submenu_button("road_upgrade", "Upgrade Road", "road_upgrade", "2 → 4 → 6 lanes → Avenue", false, "road")
 		_add_submenu_button("bulldoze_road", "Bulldoze Road", "road_bulldoze", "Remove road", false, "road")
 	elif category == "services":
 		_show_group_options(SERVICE_GROUPS, "services")
@@ -1198,6 +1198,7 @@ func _set_tool_modes_off() -> void:
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	if road_system:
 		road_system.set_road_mode(false)
+		road_system.set_road_upgrade_mode(false)
 
 func _set_bulldozer_indicator(active: bool) -> void:
 	var indicator := get_node_or_null("BulldozerModeIndicator")
@@ -1244,6 +1245,17 @@ func _start_bulldoze_mode() -> void:
 	_finish_submenu_row()
 	status_label.text = "Bulldozer active. Tap a building or road; press Cancel to exit."
 
+func _start_road_upgrade_mode() -> void:
+	_set_tool_modes_off()
+	BuildManager.cancel_placement()
+	var scene := get_tree().current_scene
+	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
+	if road_system:
+		road_system.set_road_upgrade_mode(true)
+		status_label.text = "Road upgrade mode — tap a road tile. Unlocks: 4 lanes Lv 9, 6 lanes Lv 15, Avenue Lv 20. Costs: 300 / 1200 / 1500 per tile."
+	else:
+		status_label.text = "Road system is unavailable."
+
 func _start_bulldoze_road_mode() -> void:
 	_set_tool_modes_off()
 	BuildManager.cancel_placement()
@@ -1288,7 +1300,7 @@ func _on_submenu_option(category: String, option_id: String) -> void:
 			else:
 				status_label.text = "Road system is unavailable."
 		elif option_id == "road_upgrade":
-			status_label.text = "Road upgrades will be available in a later update."
+			_start_road_upgrade_mode()
 		elif option_id == "bulldoze_road":
 			_start_bulldoze_road_mode()
 	else:

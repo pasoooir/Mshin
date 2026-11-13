@@ -142,7 +142,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_status("Move cancelled. Building returned to its original location.")
 			get_viewport().set_input_as_handled()
 			return
-		if bulldoze_mode or bulldoze_road_mode or BuildManager.is_placing or _is_road_mode():
+		if bulldoze_mode or bulldoze_road_mode or BuildManager.is_placing or _is_road_mode() or _is_road_upgrade_mode():
 			var hud = get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
 			if hud and hud.has_method("_on_cancel_pressed"):
 				hud._on_cancel_pressed()
@@ -151,7 +151,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				set_bulldoze_road_mode(false)
 				BuildManager.cancel_placement()
 				var roads = _road_system()
-				if roads: roads.set_road_mode(false)
+				if roads:
+					roads.set_road_mode(false)
+					roads.set_road_upgrade_mode(false)
 				_set_status("Tool cancelled.")
 			get_viewport().set_input_as_handled()
 			return
@@ -258,6 +260,10 @@ func _is_road_mode() -> bool:
 	var scene = get_tree().current_scene
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	return road_system != null and road_system.is_road_mode
+
+func _is_road_upgrade_mode() -> bool:
+	var road_system = _road_system()
+	return road_system != null and road_system.is_road_upgrade_mode
 
 func set_bulldoze_mode(active: bool) -> void:
 	_clear_bulldoze_highlight()
@@ -403,6 +409,12 @@ func _handle_tap(screen_position: Vector2) -> void:
 	var cell: Vector2i = BuildManager.world_to_grid(world_position)
 	if bulldoze_mode or bulldoze_road_mode:
 		_handle_bulldoze_cell(cell, road_system)
+		return
+	if road_system and road_system.is_road_upgrade_mode:
+		if road_system.upgrade_road(cell):
+			_set_status("Road upgraded to %s." % road_system.get_road_level_name(road_system.get_road_level(cell)))
+		else:
+			_set_status(road_system.get_road_upgrade_error(cell))
 		return
 	if road_system and road_system.is_road_mode:
 		if road_system.place_road(cell):
