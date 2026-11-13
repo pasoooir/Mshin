@@ -1951,7 +1951,8 @@ func _test_performance_benchmark_contract() -> void:
 	_check(float(summary.get("p95_frame_ms", 0.0)) >= 33.3, "P95 frame time must expose slow-frame spikes.")
 	_check(is_equal_approx(float(summary.get("frames_under_60fps_percent", 0.0)), 66.7), "60 FPS budget percentage must use the 16.67 ms frame budget.")
 	_check(not bool(summary.get("target_60fps_pass", true)), "A sample with 30 FPS frames must not pass the 60 FPS target.")
-	_check(not bool(PerformanceMonitor.summarize_frame_times([]).get("target_60fps_pass", true)), "An empty benchmark must never pass the target.")
+	var empty_samples: Array[float] = []
+	_check(not bool(PerformanceMonitor.summarize_frame_times(empty_samples).get("target_60fps_pass", true)), "An empty benchmark must never pass the target.")
 	_check(PerformanceMonitor.start_benchmark(1.0), "Performance benchmark must start when idle.")
 	_check(PerformanceMonitor.benchmark_running and is_equal_approx(PerformanceMonitor.benchmark_duration_seconds, 5.0), "Benchmark duration must be clamped to a meaningful minimum.")
 	PerformanceMonitor.cancel_benchmark()
