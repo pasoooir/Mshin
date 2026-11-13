@@ -2922,25 +2922,21 @@ func _open_epic_project_panel(building: Building) -> void:
 		task_row.add_child(contribute)
 
 func _start_epic_project_from_panel(building: Building) -> void:
-	if is_instance_valid(building) and EpicProjectManager.start_project(building.building_id):
-		_open_epic_project_panel(building)
+	if is_instance_valid(building):
+		EpicProjectManager.start_project(building.building_id)
 
-func _contribute_epic_task_from_panel(task_id: String, building: Building) -> void:
-	if EpicProjectManager.contribute_to_task(task_id):
-		_open_epic_project_panel(building)
+func _contribute_epic_task_from_panel(task_id: String, _building: Building) -> void:
+	EpicProjectManager.contribute_to_task(task_id)
 
-func _claim_epic_project_from_panel(building: Building) -> void:
-	if EpicProjectManager.claim_project():
-		_open_epic_project_panel(building)
+func _claim_epic_project_from_panel(_building: Building) -> void:
+	EpicProjectManager.claim_project()
 
-func _dismiss_epic_project_from_panel(building: Building) -> void:
-	if EpicProjectManager.dismiss_finished_project():
-		_open_epic_project_panel(building)
+func _dismiss_epic_project_from_panel(_building: Building) -> void:
+	EpicProjectManager.dismiss_finished_project()
 
 func _collect_epic_token_part(building: Building) -> void:
 	if is_instance_valid(building):
 		EpicProjectManager.collect_token_part(building.building_id)
-		_open_epic_project_panel(building)
 
 func _on_epic_project_state_changed() -> void:
 	if is_instance_valid(epic_project_overlay) and is_instance_valid(_epic_panel_building):
