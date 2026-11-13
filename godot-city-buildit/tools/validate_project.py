@@ -1003,6 +1003,22 @@ for water_id, expected_water, expected_level, expected_size in [("water_tower", 
 if 'definition.get("water", 0)' not in service_manager_source:
     errors.append("ServiceManager must identify water providers by positive definition.water, not by building name")
 
+for contract in [
+    "if not _has_gateway_road_access(candidate):",
+    "if _has_gateway_road_access(building):",
+    "if not _has_gateway_road_access(home):",
+]:
+    if contract not in service_manager_source:
+        errors.append(f"Power/water Gateway connectivity contract is missing: {contract}")
+for contract in [
+    "func _test_power_water_gateway_access() -> void:",
+    "ServiceManager.total_power == 0 and ServiceManager.total_water == 0",
+    "A connected local utility coverage must serve a connected nearby home.",
+    "_test_power_water_gateway_access()",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Power/water Gateway regression test is missing: {contract}")
+
 # Sewage facilities are separate catalog entries with generic numeric capacity metadata.
 for sewage_id, expected_capacity, expected_level, expected_size, expected_pollution, expected_radius in [
     ("sewage_small", 7, 8, "Vector2i(1,1)", 1, "10.0"),
