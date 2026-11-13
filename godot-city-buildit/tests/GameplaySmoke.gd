@@ -126,6 +126,7 @@ func _test_storage_and_production_chain() -> void:
 	var economy_audit := ProductionManager.get_economy_catalog_audit()
 	_check(economy_audit.get("errors", []).is_empty(), "Economy catalog audit found invalid source values, times, stores or ingredient references: %s" % str(economy_audit.get("errors", [])))
 	_check(int(economy_audit.get("recipe_count", 0)) == 73 and int(economy_audit.get("catalog_only_count", 0)) == 1, "Economy audit must account for 73 recipe definitions plus one conflict-only catalog product.")
+	_check(economy_audit.get("negative_reference_spread_items", []).has("sports_drink") and economy_audit.get("negative_reference_spread_items", []).has("protein_bar"), "Economy audit must surface negative ingredient-to-output reference spreads instead of presenting those products as guaranteed profit.")
 	var backpack_economy := ProductionManager.get_recipe_economy_profile("backpack")
 	_check(int(backpack_economy.get("output_reference_value", 0)) == 430 and int(backpack_economy.get("production_seconds", 0)) == 7200 and backpack_economy.has("gross_reference_spread"), "Backpack economy profile must expose reference value, production duration and ingredient-value spread without claiming net profit.")
 	_check(is_equal_approx(ProductionManager.get_production_time("tennis_racket", 3), 2160.0), "Tennis Racket three-star production time must reduce to 36 minutes.")
