@@ -116,6 +116,27 @@ func load_game() -> bool:
 
 	var road_system = scene.get_node("World/RoadSystem")
 	var pending_roads: Array = parsed.get("roads", []).duplicate(true)
+	var gateway_position: Vector2i = RoadSystem.GATEWAY_ROAD_CELL
+	var gateway_index := -1
+	for index in range(pending_roads.size()):
+		var road: Variant = pending_roads[index]
+		if road is Array and road.size() == 2 and Vector2i(int(road[0]), int(road[1])) == gateway_position:
+			gateway_index = index
+			break
+	if gateway_index < 0:
+		push_error("Saved road network is missing its permanent highway gateway tile.")
+		is_loading = false
+		load_completed.emit(false)
+		return false
+
+	road_system.clear_roads()
+	if not road_system.place_road(gateway_position):
+		push_error("Saved road network highway gateway could not be restored.")
+		is_loading = false
+		load_completed.emit(false)
+		return false
+	pending_roads.remove_at(gateway_index)
+
 	while not pending_roads.is_empty():
 		var placed_road_this_pass: bool = false
 		for index in range(pending_roads.size() - 1, -1, -1):
@@ -124,9 +145,13 @@ func load_game() -> bool:
 				pending_roads.remove_at(index)
 				continue
 			var road_position := Vector2i(int(road[0]), int(road[1]))
-			var connected: bool = road_system.roads.is_empty()
+			if road_system.has_road(road_position):
+				pending_roads.remove_at(index)
+				placed_road_this_pass = true
+				continue
+			var connected := false
 			for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-				if road_system.has_road(road_position + direction):
+				if road_system.is_road_connected_to_gateway(road_position + direction):
 					connected = true
 					break
 			if connected and road_system.place_road(road_position):
