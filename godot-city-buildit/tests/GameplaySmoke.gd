@@ -1929,6 +1929,8 @@ func _test_settings_panel_contract() -> void:
 		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must provide a usable 0–100 volume control." % node_name)
 	for node_name in ["MusicToggle", "AmbientToggle", "SfxToggle", "HapticsToggle"]:
 		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must expose an independent settings enable switch." % node_name)
+	var benchmark_button := hud.find_child("RunDeviceBenchmarkButton", true, false) as Button
+	_check(benchmark_button != null and benchmark_button.text.contains("30-second"), "Settings must expose the on-device 30-second performance test.")
 	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
 	if master_slider != null:
 		master_slider.value = 55.0
@@ -1938,6 +1940,25 @@ func _test_settings_panel_contract() -> void:
 	AudioManager.set_ambient_volume(original_ambient)
 	AudioManager.set_sfx_volume(original_sfx)
 	hud._close_settings_panel()
+
+
+func _test_performance_benchmark_contract() -> void:
+	var samples: Array[float] = [1.0 / 60.0, 1.0 / 60.0, 1.0 / 30.0]
+	var summary: Dictionary = PerformanceMonitor.summarize_frame_times(samples)
+	_check(int(summary.get("frame_count", 0)) == 3, "Performance benchmark must count every sampled frame.")
+	_check(is_equal_approx(float(summary.get("average_fps", 0.0)), 45.0), "Average FPS must be calculated from total frames and elapsed frame time.")
+	_check(is_equal_approx(float(summary.get("average_frame_ms", 0.0)), 22.22), "Average frame time must be reported in milliseconds.")
+	_check(float(summary.get("p95_frame_ms", 0.0)) >= 33.3, "P95 frame time must expose slow-frame spikes.")
+	_check(is_equal_approx(float(summary.get("frames_within_60fps_budget_percent", 0.0)), 66.7), "60 FPS budget percentage must use the 16.67 ms frame budget.")
+	_check(not bool(summary.get("target_60fps_pass", true)), "A sample with 30 FPS frames must not pass the 60 FPS target.")
+	var stable_samples: Array[float] = [1.0 / 60.0, 1.0 / 60.0, 1.0 / 60.0]
+	_check(bool(PerformanceMonitor.summarize_frame_times(stable_samples).get("target_60fps_pass", false)), "A stable 60 FPS sample must pass without rounding the P95 threshold upward.")
+	var empty_samples: Array[float] = []
+	_check(not bool(PerformanceMonitor.summarize_frame_times(empty_samples).get("target_60fps_pass", true)), "An empty benchmark must never pass the target.")
+	_check(PerformanceMonitor.start_benchmark(1.0), "Performance benchmark must start when idle.")
+	_check(PerformanceMonitor.benchmark_running and is_equal_approx(PerformanceMonitor.benchmark_duration_seconds, 5.0), "Benchmark duration must be clamped to a meaningful minimum.")
+	PerformanceMonitor.cancel_benchmark()
+	_check(not PerformanceMonitor.benchmark_running, "Performance benchmark must be cancellable.")
 
 func _test_audio_manager_contract() -> void:
 	_check(AudioManager.is_audio_ready(), "AudioManager must initialize local music, ambience and all sound-effect streams.")
@@ -1975,6 +1996,7 @@ func _run_gameplay_test() -> void:
 	_test_audio_manager_contract()
 	_test_tutorial_guide_contract()
 	_test_mobile_haptics_contract()
+	_test_performance_benchmark_contract()
 	_test_epic_project_core()
 	_test_achievements()
 	_test_region_city_snapshots()

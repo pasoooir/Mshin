@@ -114,6 +114,8 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#439](https://github.com/pasoooir/Mshin/pull/439) | AudioManager محلی با موسیقی/صدای محیط WAV رویه‌ای، شش افکت، اتصال رویدادهای گیم‌پلی و ذخیره کنترل‌های صوتی | Godot Validation و Web موفق؛ اجرای صوتی فیزیکی هنوز تأیید نشده |
 | [#440](https://github.com/pasoooir/Mshin/pull/440) | راهنمای شش‌مرحله‌ای رویدادمحور اولین شهر، ذخیره پیشرفت، رد/تعویق و بازگشایی؛ GameplaySmoke قرارداد مراحل را پوشش می‌دهد | Godot Validation، Web/Chromium و Pages build/deploy روی main موفق؛ تأیید تعاملی فیزیکی هنوز باقی است |
 | [#441](https://github.com/pasoooir/Mshin/pull/441) | منوی Settings موبایلی با سه کلید صوتی و چهار اسلایدر حجم، بازنشانی تنظیمات و آزمون GameplaySmoke؛ گرافیک/کنترل/زبان و آزمون صوتی فیزیکی همچنان ناقص‌اند | PR Godot Validation و Web/Chromium موفق؛ پس از Merge، Godot Validation، Web/Chromium و Pages deploy روی main موفق |
+| [#442](https://github.com/pasoooir/Mshin/pull/442) | دکمه‌های لمسی مستقل Rotate و Cancel در زمان جانمایی؛ چرخش ۹۰ درجه GhostPreview و اعتبار footprint به‌روزرسانی می‌شوند | Godot Validation و Web/Chromium PR موفق؛ بررسی لمسی فیزیکی باقی است |
+| [#443](https://github.com/pasoooir/Mshin/pull/443) | Haptics Native Android/iOS با `Input.vibrate_handheld`، حفظ Web Vibration API، کلید ذخیره‌شونده و Android VIBRATE permission | Godot Validation و Web/Chromium PR موفق؛ لرزش فیزیکی هنوز تأیید نشده |
 
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
 
@@ -295,7 +297,7 @@ PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد ma
 
 ## فاز ۶ — پولیش و انتشار
 
-- [ ] هدف ۶۰fps بدون بنچمارک روی دستگاه هدف تأیید نشده است.
+- [~] ابزار بنچمارک ۳۰ ثانیه‌ای داخل Settings اضافه شده است؛ frame-time واقعی را در حین بازی ثبت می‌کند و میانگین FPS، میانگین/P95/بیشینه frame time، درصد فریم‌های زیر بودجه ۱۶٫۶۷ms، draw calls و اطلاعات دستگاه را در `user://performance_benchmark_latest.json` ذخیره می‌کند. GameplaySmoke محاسبات و چرخه شروع/لغو را آزمون می‌کند؛ هنوز هیچ نتیجه‌ای از گوشی هدف ثبت نشده و رسیدن به ۶۰fps تأیید نشده است.
 - [~] AudioManager مرکزی اضافه شده است: موسیقی پس‌زمینه و صدای محیط به‌صورت WAV رویه‌ای و کاملاً محلی تولید می‌شوند؛ شش افکت برای کلیک، شروع/پایان ساخت، جمع‌آوری، پاداش و خطا وجود دارد. رویدادهای ساخت، تولید/جمع‌آوری، درآمد، Level Up و Achievement به افکت‌ها متصل‌اند؛ API کنترل حجم/قطع موسیقی، محیط و افکت‌ها و ذخیره تنظیمات در ConfigFile اضافه شده و GameplaySmoke قرارداد منابع و اتصال سیگنال‌ها را بررسی می‌کند. شنیدن و تنظیم واقعی صدا در مرورگر و دستگاه فیزیکی هنوز اعتبارسنجی نشده است.
 - [~] منوی Settings داخل HUD اضافه شده و کنترل مستقل روشن/خاموش موسیقی، صدای محیط و افکت‌ها به‌همراه چهار اسلایدر Master/Music/Ambience/SFX با ذخیره فوری تنظیمات در AudioManager دارد؛ GameplaySmoke بازشدن پنل، وجود کنترل‌ها و اثر اسلایدر Master را بررسی می‌کند. تنظیمات کامل گرافیک، کنترل دوربین، زبان و اعتبارسنجی شنیداری روی دستگاه واقعی هنوز باقی است.
 - [ ] خروجی نصب‌شدنی Android/iOS و تست دستگاه واقعی ثبت نشده است.
