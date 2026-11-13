@@ -289,6 +289,24 @@ for visual_contract in [
     if visual_contract not in building_source:
         errors.append(f"Level-one residential villa visual contract is missing: {visual_contract}")
 
+# Residential levels must have separate authored architectural silhouettes. A generic
+# category GLTF must not replace these level-specific procedural forms.
+for level_contract in [
+    'func _build_residential_level_architecture(',
+    'if str(definition.get("category", "")) == "residential":',
+    'match stage:',
+    '# Stage 2: expanded suburban home with attached garage and new roof wing.',
+    '# Stage 3: true two-storey redesign with offset upper floor and balcony.',
+    '# Stage 4: contemporary glass sunroom, cantilevered terrace and pergola.',
+    '# Stage 5: modernist split-level villa with roof garden and solar canopy.',
+    '# Stage 6: premium contemporary residence;',
+    'if is_farm:',
+    'if is_apartment:',
+    'CylinderMesh.new()',
+]:
+    if level_contract not in building_source:
+        errors.append(f"Residential level architecture contract is missing: {level_contract}")
+
 # Art Supplies is a separate gallery-style commercial hero, not the generic shop mesh.
 for visual_contract in [
     'if building_type == "art_supplies" or subtype == "art":',
