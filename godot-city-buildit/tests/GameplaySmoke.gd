@@ -2509,7 +2509,7 @@ func _run_gameplay_test() -> void:
 			_check(ProductionManager.get_recipe_lock_reason(item_id, 1).is_empty(), "%s must unlock at its sourced store star." % item_id)
 		else:
 			_check(ProductionManager.get_recipe_lock_reason(item_id, 0).is_empty(), "%s must be craftable at its sourced Mayor Level." % item_id)
-	_check(ProductionManager.get_recipe("kite").is_empty() and ProductionManager.get_recipe("teddy_bear").is_empty(), "Products with unverified unlock levels or missing recipe verification must remain disabled.")
+	_check(not ProductionManager.get_recipe("kite").is_empty() and not ProductionManager.get_recipe("teddy_bear").is_empty() and not ProductionManager.can_craft("kite") and not ProductionManager.can_craft("teddy_bear"), "Kite and Teddy Bear must expose sourced recipe data but remain uncraftable until their exact unlock levels are verified.")
 	_check(ProductionManager.get_store_recipe_ids("dessert_shop").has("pavlova"), "Dessert Shop's verified product must appear in its production catalog.")
 	var donut_third_star_offer := ProductionManager.get_store_star_offer("donut_shop", 2)
 	_check(int(donut_third_star_offer.get("level", 0)) == 50 and int(donut_third_star_offer.get("cost", 0)) == 49000, "Donut Shop third star must use the 49,000 Simoleon value corroborated by the Japanese table and Planning Guide.")
