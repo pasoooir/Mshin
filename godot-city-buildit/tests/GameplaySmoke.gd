@@ -1817,6 +1817,16 @@ func _run_gameplay_test() -> void:
 	_check(road_system.upgrade_road(road_upgrade_cell), "A six-lane road must upgrade to an Avenue at City Level 20.")
 	_check(road_system.get_road_level(road_upgrade_cell) == 4, "Avenue upgrade did not reach road tier four.")
 	_check(road_system.get_road_upgrade_error(road_upgrade_cell).contains("already an Avenue"), "An Avenue must reject further upgrades.")
+	_check(road_system.get_road_upgrade_error(RoadSystemScript.GATEWAY_ROAD_CELL).contains("Gateway"), "The permanent highway Gateway must not be upgraded.")
+
+	# Bulldozing an upgraded tile refunds half of its most recent upgrade only.
+	GameManager.level = 9
+	var refund_test_cell := Vector2i(18, 0)
+	_check(road_system.place_road(refund_test_cell), "Could not create the isolated road tile for the upgrade-refund test.")
+	_check(road_system.upgrade_road(refund_test_cell), "Refund test road could not be upgraded to four lanes.")
+	var money_before_refund := EconomyManager.simoleons
+	_check(road_system.remove_road(refund_test_cell), "Could not bulldoze the upgraded refund-test road.")
+	_check(EconomyManager.simoleons == money_before_refund + 150, "Bulldozing a four-lane road must refund 50% of its latest 300-Simoleon upgrade.")
 	GameManager.level = saved_level_before_road_test
 	EconomyManager.simoleons = saved_money_before_road_test
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
