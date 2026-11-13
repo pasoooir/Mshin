@@ -62,11 +62,12 @@ func _build_coverage_preview() -> void:
 	coverage_ring.material_override = ring_material
 	coverage_preview_root.add_child(coverage_ring)
 
-func show_at(world_pos: Vector3, size: Vector2i = Vector2i(2, 2), valid: bool = true, definition: Dictionary = {}) -> void:
+func show_at(world_pos: Vector3, size: Vector2i = Vector2i(2, 2), valid: bool = true, definition: Dictionary = {}, rotation_y: float = 0.0) -> void:
 	if not is_instance_valid(ghost_mesh):
 		return
 	visible = true
 	global_position = world_pos + Vector3((size.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.95, (size.y - 1) * BuildManager.GRID_SIZE * 0.5)
+	rotation.y = rotation_y
 	var box := ghost_mesh.mesh as BoxMesh
 	box.size = Vector3(size.x * BuildManager.GRID_SIZE * 0.88, 1.8, size.y * BuildManager.GRID_SIZE * 0.88)
 	is_valid = valid
