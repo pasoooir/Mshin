@@ -49,6 +49,10 @@ func _has_nearby_utility(building: Node3D, utility_key: String) -> bool:
 			continue
 		if int(candidate.definition.get(utility_key, 0)) <= 0:
 			continue
+		# A disconnected facility must not provide a service merely because it
+		# happens to be within the geometric coverage radius.
+		if not _has_gateway_road_access(candidate):
+			continue
 		if candidate.global_position.distance_to(building.global_position) <= coverage_radius:
 			return true
 	return false
@@ -110,6 +114,10 @@ func recalculate_from_buildings() -> void:
 	# Power and water keep their local-radius service model, but demand is
 	# derived from each home's explicit low/medium/high service-demand value.
 	for home in homes:
+		# Every household service requires a continuous road connection to the
+		# permanent Gateway; otherwise capacity remains available but unserved.
+		if not _has_gateway_road_access(home):
+			continue
 		var demand := get_home_service_demand(home)
 		if used_power + demand <= total_power and _has_nearby_utility(home, "power"):
 			used_power += demand
