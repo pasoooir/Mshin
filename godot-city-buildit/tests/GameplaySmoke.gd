@@ -5,6 +5,7 @@ const Icons = preload("res://scripts/ui/Icons.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 const BuildingScene = preload("res://scenes/buildings/Building.tscn")
+const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -727,6 +728,16 @@ func _test_sewage_service_happiness() -> void:
 	ServiceManager.power_served_ids = saved_power_served
 	ServiceManager.water_served_ids = saved_water_served
 
+func _test_power_water_coverage_preview() -> void:
+	var power_preview: Dictionary = GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["power_wind"])
+	var water_preview: Dictionary = GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["water_tower"])
+	_check(bool(power_preview.get("visible", false)), "Power placement must show a coverage preview.")
+	_check(bool(water_preview.get("visible", false)), "Water placement must show a coverage preview.")
+	_check(is_equal_approx(float(power_preview.get("radius", -1.0)), ServiceManager.coverage_radius), "Power preview radius must match the live ServiceManager coverage radius.")
+	_check(is_equal_approx(float(water_preview.get("radius", -1.0)), ServiceManager.coverage_radius), "Water preview radius must match the live ServiceManager coverage radius.")
+	_check(power_preview.get("disc_color", Color.WHITE) != water_preview.get("disc_color", Color.WHITE), "Power and Water coverage previews must use distinct colors.")
+	_check(not bool(GhostPreviewScript.get_coverage_preview_data(BuildManager.building_types["factory_small"]).get("visible", false)), "Non-service buildings must not show a coverage preview.")
+
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_timers: Dictionary = FireHazardManager.unprotected_time.duplicate()
@@ -805,6 +816,7 @@ func _run_gameplay_test() -> void:
 	_test_storage_and_production_chain()
 	_test_fire_hazard_state_machine()
 	_test_sewage_service_happiness()
+	_test_power_water_coverage_preview()
 	_test_immigration_coefficients()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
