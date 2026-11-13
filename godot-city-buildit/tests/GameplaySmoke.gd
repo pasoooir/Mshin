@@ -1197,7 +1197,13 @@ func _test_building_model_loader_contract() -> void:
 		var instance := packed_scene.instantiate()
 		_check(instance is Node3D, "Imported building model root must be Node3D: " + model_path)
 		if instance is Node3D:
-			_check(instance.find_children("*", "MeshInstance3D", true, false).size() > 0, "Imported building model must contain renderable mesh instances: " + model_path)
+			var mesh_nodes := instance.find_children("*", "MeshInstance3D", true, false)
+			_check(mesh_nodes.size() > 0, "Imported building model must contain renderable mesh instances: " + model_path)
+			var surfaces_found := 0
+			for mesh_node in mesh_nodes:
+				if mesh_node is MeshInstance3D and mesh_node.mesh != null:
+					surfaces_found += mesh_node.mesh.get_surface_count()
+			_check(surfaces_found > 0, "Imported building model must contain valid mesh surfaces: " + model_path)
 		instance.free()
 	_check(str(BuildManager.building_types["residential_villa"].get("model_path", "")) == model_paths[0], "Villa definitions must select the local villa model.")
 	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local tower model.")
