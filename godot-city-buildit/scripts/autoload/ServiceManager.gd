@@ -22,6 +22,11 @@ var power_served_ids: Dictionary = {}
 var water_served_ids: Dictionary = {}
 var sewage_served_ids: Dictionary = {}
 var waste_served_ids: Dictionary = {}
+var fire_served_ids: Dictionary = {}
+var police_served_ids: Dictionary = {}
+var health_served_ids: Dictionary = {}
+
+const DEFAULT_EMERGENCY_COVERAGE_TILES := 15.0
 
 func _ready() -> void:
 	print("[ServiceManager] Power/water/sewage/waste capacity network online")
@@ -74,6 +79,40 @@ func is_sewage_served(building: Node3D) -> bool:
 func is_waste_served(building: Node3D) -> bool:
 	return is_instance_valid(building) and waste_served_ids.has(building.building_id)
 
+func is_home_served_by_group(home: Node3D, service_group: String) -> bool:
+	if not is_instance_valid(home):
+		return false
+	match service_group:
+		"fire":
+			return fire_served_ids.has(home.building_id)
+		"police":
+			return police_served_ids.has(home.building_id)
+		"health":
+			return health_served_ids.has(home.building_id)
+		_:
+			return false
+
+func _has_nearby_emergency_facility(home: Node3D, service_group: String) -> bool:
+	if not _has_gateway_road_access(home):
+		return false
+	var home_flat := Vector2(home.global_position.x, home.global_position.z)
+	for candidate in BuildManager.buildings.values():
+		if not is_instance_valid(candidate) or candidate.status != "completed":
+			continue
+		var definition: Dictionary = candidate.definition
+		if str(definition.get("service_group", "")) != service_group:
+			continue
+		# Emergency coverage is only operational when the station is connected
+		# to the permanent Gateway road network.
+		if not _has_gateway_road_access(candidate):
+			continue
+		var coverage_tiles := maxf(0.0, float(definition.get("coverage_tiles", DEFAULT_EMERGENCY_COVERAGE_TILES)))
+		var radius := coverage_tiles * float(BuildManager.GRID_SIZE)
+		var facility_flat := Vector2(candidate.global_position.x, candidate.global_position.z)
+		if home_flat.distance_to(facility_flat) <= radius:
+			return true
+	return false
+
 func recalculate_from_buildings() -> void:
 	total_power = 0
 	demand_power = 0
@@ -91,6 +130,9 @@ func recalculate_from_buildings() -> void:
 	water_served_ids.clear()
 	sewage_served_ids.clear()
 	waste_served_ids.clear()
+	fire_served_ids.clear()
+	police_served_ids.clear()
+	health_served_ids.clear()
 
 	var homes: Array = []
 	for building in BuildManager.buildings.values():
@@ -146,9 +188,22 @@ func recalculate_from_buildings() -> void:
 			used_waste += demand
 			waste_served_ids[home.building_id] = true
 
+	# Fire, Police and Health are local coverage services rather than city-wide
+	# capacity pools. A home and its provider must both be Gateway-connected.
+	# Coverage distance is read from each catalog tier's coverage_tiles metadata.
+	for home in homes:
+		if _has_nearby_emergency_facility(home, "fire"):
+			fire_served_ids[home.building_id] = true
+		if _has_nearby_emergency_facility(home, "police"):
+			police_served_ids[home.building_id] = true
+		if _has_nearby_emergency_facility(home, "health"):
+			health_served_ids[home.building_id] = true
+
 	power_changed.emit(total_power, demand_power)
 	water_changed.emit(total_water, demand_water)
 	sewage_changed.emit(total_sewage, demand_sewage)
 	waste_changed.emit(total_waste, demand_waste)
+	if has_node("/root/FireHazardManager"):
+		FireHazardManager.on_city_changed()
 	if has_node("/root/HappinessManager"):
 		HappinessManager.recalculate_city()
