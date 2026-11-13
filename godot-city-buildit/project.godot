@@ -33,6 +33,7 @@ LevelProgression="*res://scripts/autoload/LevelProgression.gd"
 EpicProjectManager="*res://scripts/autoload/EpicProjectManager.gd"
 RegionManager="*res://scripts/autoload/RegionManager.gd"
 AchievementManager="*res://scripts/autoload/AchievementManager.gd"
+AudioManager="*res://scripts/autoload/AudioManager.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
 
 [display]
