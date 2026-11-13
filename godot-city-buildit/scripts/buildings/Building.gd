@@ -1952,7 +1952,11 @@ func restore_production_state(saved: Dictionary) -> void:
 	if status == "constructing":
 		construction_paused_remaining_seconds = int(saved.get("construction_paused_remaining_seconds", -1))
 		var saved_construction_finish := int(saved.get("construction_finish_unix", 0))
+		var saved_building_size: Vector2i = definition.get("size", Vector2i(2, 2))
 		if construction_paused_remaining_seconds >= 0:
+			construction_finish_unix = 0
+		elif saved_construction_finish > 0 and not BuildManager.has_road_access(grid_pos, saved_building_size):
+			construction_paused_remaining_seconds = maxi(0, saved_construction_finish - int(Time.get_unix_time_from_system()))
 			construction_finish_unix = 0
 		elif saved_construction_finish > 0:
 			_start_construction(saved_construction_finish)
