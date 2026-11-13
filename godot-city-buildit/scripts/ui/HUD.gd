@@ -60,7 +60,58 @@ class LevelBadgeVisual extends Control:
 		draw_arc(center, radius - 4.0, PI * 1.08, PI * 1.90, 48, Color(1.0, 0.86, 1.0, 0.18), 1.2, true)
 
 class LockGlyph extends Control:
-	func _ready() -> void:
+	func _responsive_profile_for_size(viewport_size: Vector2) -> String:
+	if viewport_size.x < 900.0:
+		return "compact"
+	if viewport_size.x < 1440.0:
+		return "tablet"
+	return "desktop"
+
+
+func _responsive_scale_for_size(viewport_size: Vector2) -> float:
+	return clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.72, 1.20)
+
+
+func _apply_minimum_readable_text(root: Node) -> void:
+	if root is Label:
+		var label := root as Label
+		label.add_theme_font_size_override("font_size", maxi(12, label.get_theme_font_size("font_size")))
+		label.clip_text = false
+		if label.autowrap_mode == TextServer.AUTOWRAP_OFF:
+			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	elif root is Button:
+		var button := root as Button
+		button.add_theme_font_size_override("font_size", maxi(13, button.get_theme_font_size("font_size")))
+		button.custom_minimum_size.x = maxf(button.custom_minimum_size.x, 48.0)
+		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 44.0)
+	for child in root.get_children():
+		_apply_minimum_readable_text(child)
+
+
+func _layout_centered_panel(panel: Control, viewport_size: Vector2, width_ratio: float, height_ratio: float, max_width: float, max_height: float) -> void:
+	if not is_instance_valid(panel):
+		return
+	var width := minf(viewport_size.x * width_ratio, max_width * _ui_scale)
+	var height := minf(viewport_size.y * height_ratio, max_height * _ui_scale)
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -width * 0.5
+	panel.offset_right = width * 0.5
+	panel.offset_top = -height * 0.5
+	panel.offset_bottom = height * 0.5
+
+
+func _apply_overlay_responsive_layout(viewport_size: Vector2) -> void:
+	var compact := _responsive_profile_for_size(viewport_size) == "compact"
+	_layout_centered_panel(find_child("BuildingProductionPanel", true, false) as Control, viewport_size, 0.98 if compact else 0.96, 0.96, 1040.0, 650.0)
+	_layout_centered_panel(find_child("CityNeedsPanel", true, false) as Control, viewport_size, 0.98 if compact else 0.94, 0.95, 900.0, 760.0)
+	_layout_centered_panel(find_child("ResidentialUpgradePanel", true, false) as Control, viewport_size, 0.98 if compact else 0.94, 0.95, 680.0, 720.0)
+	_layout_centered_panel(find_child("CityStoragePanel", true, false) as Control, viewport_size, 0.96 if compact else 0.88, 0.94, 560.0, 720.0)
+
+
+func _ready() -> void:
 		name = "LockGlyph"
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 	func _draw() -> void:
@@ -133,7 +184,7 @@ func _ready() -> void:
 	ServiceManager.water_changed.connect(_on_water_changed)
 
 	var viewport_size := get_viewport().get_visible_rect().size
-	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
+	_ui_scale = _responsive_scale_for_size(viewport_size)
 	_build_top_hud()
 	_build_toolbars()
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
@@ -148,7 +199,9 @@ func _apply_responsive_layout() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
 		return
-	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
+	_ui_scale = _responsive_scale_for_size(viewport_size)
+	var scale_factor := _ui_scale
+	_apply_overlay_responsive_layout(viewport_size)
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
 		# Keep the transparent PNG shortcuts on the right at every viewport size.
@@ -680,7 +733,7 @@ func _build_toolbars() -> void:
 
 func _make_category_button(icon_name: String, label_text: String, button_size: Vector2) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = button_size
+	button.custom_minimum_size = Vector2(button_size.x, maxf(64.0, button_size.y))
 	button.tooltip_text = label_text
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _toolbar_style(Color(0.055, 0.075, 0.09, 0.78), Color(1.0, 1.0, 1.0, 0.12)))
@@ -704,7 +757,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.30))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
-	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	label.add_theme_font_size_override("font_size", maxi(14, int(14 * _ui_scale)))
 	content.add_child(label)
 	return button
 
@@ -1514,8 +1567,9 @@ func open_production_panel(building: Building) -> void:
 	production_panel = PanelContainer.new()
 	production_panel.name = "BuildingProductionPanel"
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(1040.0 * _ui_scale, viewport_size.x * 0.94)
-	var panel_height := minf(610.0 * _ui_scale, viewport_size.y * 0.90)
+	var profile := _responsive_profile_for_size(viewport_size)
+	var panel_width := minf(1040.0 * _ui_scale, viewport_size.x * (0.98 if profile == "compact" else 0.96))
+	var panel_height := minf(650.0 * _ui_scale, viewport_size.y * 0.96)
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
 	production_panel.anchor_top = 0.5
@@ -1621,16 +1675,17 @@ func open_production_panel(building: Building) -> void:
 
 	var product_scroll := ScrollContainer.new()
 	product_scroll.name = "ProductionProductsScroll"
-	product_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	product_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	product_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	product_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	product_scroll.custom_minimum_size.y = 150.0 * _ui_scale
+	product_scroll.custom_minimum_size.y = (104.0 if profile == "compact" else 132.0) * _ui_scale
 	layout.add_child(product_scroll)
 
 	var product_grid := GridContainer.new()
 	product_grid.name = "ProductionProductCards"
-	product_grid.columns = 6
+	product_grid.columns = 3 if profile == "compact" else (4 if profile == "tablet" else 6)
+	product_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	product_grid.add_theme_constant_override("h_separation", 8)
 	product_grid.add_theme_constant_override("v_separation", 4)
 	product_scroll.add_child(product_grid)
@@ -1738,7 +1793,7 @@ func open_production_panel(building: Building) -> void:
 
 	var details_host := Control.new()
 	details_host.name = "ProductionDetailsHost"
-	details_host.custom_minimum_size.y = 164.0 * _ui_scale
+	details_host.custom_minimum_size.y = (112.0 if profile == "compact" else 144.0) * _ui_scale
 	layout.add_child(details_host)
 
 	var queue_heading := HBoxContainer.new()
@@ -1771,7 +1826,7 @@ func open_production_panel(building: Building) -> void:
 	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = 96.0 * _ui_scale
+	queue_scroll.custom_minimum_size.y = (76.0 if profile == "compact" else 92.0) * _ui_scale
 	layout.add_child(queue_scroll)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
@@ -1876,6 +1931,8 @@ func open_production_panel(building: Building) -> void:
 	footer.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 	footer.add_theme_color_override("font_color", Color("#587487"))
 	layout.add_child(footer)
+	_apply_minimum_readable_text(production_panel)
+	_apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 
 
 func _purchase_store_queue_slot(building: Building) -> void:
@@ -2157,8 +2214,9 @@ func open_city_needs_panel() -> void:
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	city_needs_overlay.add_child(shade)
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(820.0 * _ui_scale, viewport_size.x * 0.92)
-	var panel_height := minf(650.0 * _ui_scale, viewport_size.y * 0.90)
+	var profile := _responsive_profile_for_size(viewport_size)
+	var panel_width := minf(900.0 * _ui_scale, viewport_size.x * (0.98 if profile == "compact" else 0.94))
+	var panel_height := minf(760.0 * _ui_scale, viewport_size.y * 0.95)
 	var panel := PanelContainer.new()
 	panel.name = "CityNeedsPanel"
 	panel.anchor_left = 0.5
@@ -2194,9 +2252,11 @@ func open_city_needs_panel() -> void:
 	summary_label.add_theme_font_size_override("font_size", int(11 * _ui_scale))
 	summary_label.add_theme_color_override("font_color", Color("#31566B"))
 	layout.add_child(summary_label)
-	var tabs := HBoxContainer.new()
+	var tabs := GridContainer.new()
 	tabs.name = "CityNeedsResourceSummary"
-	tabs.add_theme_constant_override("separation", 8)
+	tabs.columns = 2 if profile == "compact" else 4
+	tabs.add_theme_constant_override("h_separation", 8)
+	tabs.add_theme_constant_override("v_separation", 6)
 	layout.add_child(tabs)
 	for metric in [
 		["SIMOLEONS", str(int(snapshot.get("economy", {}).get("simoleons", 0)))],
@@ -2231,7 +2291,7 @@ func open_city_needs_panel() -> void:
 	content.add_child(inventory_title)
 	var inventory_grid := GridContainer.new()
 	inventory_grid.name = "CityStorageInventory"
-	inventory_grid.columns = 5
+	inventory_grid.columns = 3 if profile == "compact" else (4 if profile == "tablet" else 5)
 	inventory_grid.add_theme_constant_override("h_separation", 6)
 	inventory_grid.add_theme_constant_override("v_separation", 6)
 	content.add_child(inventory_grid)
@@ -2384,6 +2444,7 @@ func open_city_needs_panel() -> void:
 		home_layout.add_child(home_header)
 		var home_title := Label.new()
 		home_title.text = "%s  ·  LEVEL %d → %d" % [str(home.get("name", "Home")), int(home.get("stage", 1)), int(home.get("next_stage", 6))]
+		home_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		home_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		home_title.add_theme_font_size_override("font_size", int(11 * _ui_scale))
 		home_title.add_theme_color_override("font_color", Color("#24485B"))
@@ -2486,8 +2547,9 @@ func open_residential_panel(building: Building) -> void:
 	shade.color = Color(0.015, 0.025, 0.035, 0.62)
 	residential_overlay.add_child(shade)
 	var viewport_size := get_viewport().get_visible_rect().size
-	var width := minf(600.0 * _ui_scale, viewport_size.x * 0.90)
-	var height := minf(520.0 * _ui_scale, viewport_size.y * 0.88)
+	var profile := _responsive_profile_for_size(viewport_size)
+	var width := minf(680.0 * _ui_scale, viewport_size.x * (0.98 if profile == "compact" else 0.94))
+	var height := minf(720.0 * _ui_scale, viewport_size.y * 0.95)
 	var panel := PanelContainer.new()
 	panel.name = "ResidentialUpgradePanel"
 	panel.anchor_left = 0.5
@@ -2500,9 +2562,18 @@ func open_residential_panel(building: Building) -> void:
 	panel.offset_bottom = height * 0.5
 	panel.add_theme_stylebox_override("panel", _city_panel_style())
 	residential_overlay.add_child(panel)
+	var residential_scroll := ScrollContainer.new()
+	residential_scroll.name = "ResidentialUpgradeScroll"
+	residential_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	residential_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	residential_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	residential_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	panel.add_child(residential_scroll)
 	var layout := VBoxContainer.new()
+	layout.name = "ResidentialUpgradeContent"
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 8)
-	panel.add_child(layout)
+	residential_scroll.add_child(layout)
 	_city_panel_heading(layout, "RESIDENTIAL UPGRADE PLAN", _close_residential_panel)
 	var plan_icon := Icons.make_icon("hard_hat", Vector2(38, 38) * _ui_scale)
 	plan_icon.name = "ResidentialPlanHardHat"
@@ -2627,6 +2698,8 @@ func open_residential_panel(building: Building) -> void:
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 	upgrade.pressed.connect(_upgrade_residential_from_panel.bind(building))
 	layout.add_child(upgrade)
+	_apply_minimum_readable_text(residential_overlay)
+	_apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 
 func _upgrade_residential_from_panel(building: Building) -> void:
 	if is_instance_valid(building) and building.try_upgrade():
@@ -2661,8 +2734,9 @@ func _show_storage_panel() -> void:
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	storage_overlay.add_child(shade)
 
-	var panel_width := minf(440.0 * _ui_scale, viewport_size.x * 0.82)
-	var panel_height := minf(570.0 * _ui_scale, viewport_size.y * 0.88)
+	var profile := _responsive_profile_for_size(viewport_size)
+	var panel_width := minf(560.0 * _ui_scale, viewport_size.x * (0.96 if profile == "compact" else 0.88))
+	var panel_height := minf(720.0 * _ui_scale, viewport_size.y * 0.94)
 	storage_panel = PanelContainer.new()
 	storage_panel.name = "CityStoragePanel"
 	storage_panel.anchor_left = 0.5
@@ -2763,7 +2837,7 @@ func _show_storage_panel() -> void:
 	layout.add_child(scroll)
 	var grid := GridContainer.new()
 	grid.name = "StorageItemsGrid"
-	grid.columns = 2
+	grid.columns = 1 if viewport_size.x < 520.0 else 2
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 12)
@@ -2785,6 +2859,8 @@ func _show_storage_panel() -> void:
 	upgrade.tooltip_text = "Capacity expansion purchase is not configured yet."
 	layout.add_child(upgrade)
 	_refresh_storage_panel()
+	_apply_minimum_readable_text(storage_panel)
+	_apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 
 
 func _refresh_storage_panel() -> void:
