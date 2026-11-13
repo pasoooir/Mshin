@@ -95,7 +95,7 @@ func collect_sale(slot_index: int) -> bool:
 	trade_state_changed.emit()
 	return true
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var changed := false
 	var now := int(Time.get_unix_time_from_system())
 	if is_depot_operational():
