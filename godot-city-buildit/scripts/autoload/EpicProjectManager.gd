@@ -55,7 +55,8 @@ func get_nearby_specialization_points(home: Node3D) -> int:
 func can_start_project(home: Node) -> bool:
 	if not is_instance_valid(home) or GameManager.level < PROJECT_LEVEL or not has_department():
 		return false
-	if str(home.get("status")) != "completed" or str(home.get("definition").get("category", "")) != "residential":
+	var home_definition: Dictionary = home.get("definition")
+	if str(home.get("status")) != "completed" or str(home_definition.get("category", "")) != "residential":
 		return false
 	if int(home.get("upgrade_stage")) < 6 or is_epic_building(home) or active_projects.has(str(home.get("building_id"))):
 		return false
@@ -70,6 +71,9 @@ func get_start_block_reason(home: Node) -> String:
 		return "Epic Projects unlock at Level 24."
 	if not is_instance_valid(home) or str(home.get("status")) != "completed":
 		return "Select a completed residential building."
+	var home_definition: Dictionary = home.get("definition")
+	if str(home_definition.get("category", "")) != "residential":
+		return "Epic Projects apply to residential buildings only."
 	if int(home.get("upgrade_stage")) < 6:
 		return "Upgrade this home to Residential Level 6 first."
 	if is_epic_building(home):
@@ -99,7 +103,8 @@ func claim_specialization_points(source_building_id: String) -> int:
 	var source = BuildManager.buildings.get(source_building_id)
 	if not is_instance_valid(source) or str(source.get("status")) != "completed":
 		return 0
-	var points := int(source.get("definition").get("epic_points", 0))
+	var source_definition: Dictionary = source.get("definition")
+	var points := int(source_definition.get("epic_points", 0))
 	if points <= 0:
 		return 0
 	var gained := 0
@@ -132,8 +137,8 @@ func claim_project(building_id: String) -> bool:
 	var home = BuildManager.buildings.get(building_id)
 	if not is_instance_valid(home) or not home.has_method("set_epic_tier"):
 		return false
-	home.set_epic_tier(1)
-	home.current_population = roundi(float(home.current_population) * EPIC_POPULATION_BONUS)
+	home.call("set_epic_tier", 1)
+	home.set("current_population", roundi(float(home.get("current_population")) * EPIC_POPULATION_BONUS))
 	epic_tokens["turtle"] = int(epic_tokens.get("turtle", 0)) + 1
 	EconomyManager.add_experience(200)
 	EconomyManager.add_simoleons(5000)
