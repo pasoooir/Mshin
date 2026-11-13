@@ -1081,7 +1081,7 @@ func _test_power_water_gateway_access() -> void:
 	_check(not ServiceManager.power_served_ids.has(disconnected_home.building_id) and not ServiceManager.water_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive power or water.")
 
 	power_plant.grid_pos = Vector2i(1, -3)
-	water_plant.grid_pos = Vector2i(1, -4)
+	water_plant.grid_pos = Vector2i(1, -3)
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.total_power == int(BuildManager.building_types["power_wind"].get("power", 0)), "A Gateway-connected power plant must contribute its catalog capacity.")
 	_check(ServiceManager.total_water == int(BuildManager.building_types["water_tower"].get("water", 0)), "A Gateway-connected water facility must contribute its catalog capacity.")
