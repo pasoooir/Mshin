@@ -27,6 +27,29 @@ func _check(condition: bool, message: String) -> void:
 		push_error("[GameplaySmoke] " + message)
 
 
+func _assert_panel_inside_viewport(panel: Control, panel_name: String) -> void:
+	_check(panel != null, "%s panel is missing." % panel_name)
+	if panel == null:
+		return
+	var panel_rect := panel.get_global_rect()
+	var viewport_rect := get_viewport().get_visible_rect()
+	_check(panel_rect.position.x >= -1.0 and panel_rect.position.y >= -1.0, "%s panel begins outside the viewport." % panel_name)
+	_check(panel_rect.position.x + panel_rect.size.x <= viewport_rect.size.x + 1.0, "%s panel extends beyond the viewport width." % panel_name)
+	_check(panel_rect.position.y + panel_rect.size.y <= viewport_rect.size.y + 1.0, "%s panel extends beyond the viewport height." % panel_name)
+
+
+func _assert_readable_control_tree(root: Node, screen_name: String) -> void:
+	if root is Label:
+		var label := root as Label
+		_check(label.get_theme_font_size("font_size") >= 12, "%s contains a label below the 12 px readability floor: %s" % [screen_name, label.name])
+	elif root is Button:
+		var button := root as Button
+		_check(button.get_theme_font_size("font_size") >= 13, "%s contains a button label below the 13 px readability floor: %s" % [screen_name, button.name])
+		_check(button.custom_minimum_size.x >= 48.0 and button.custom_minimum_size.y >= 44.0, "%s contains a touch target below 48x44 px: %s" % [screen_name, button.name])
+	for child in root.get_children():
+		_assert_readable_control_tree(child, screen_name)
+
+
 func _test_responsive_profile_contract(hud: Node) -> void:
 	_check(hud._responsive_profile_for_size(Vector2(854, 480)) == "compact", "854x480 phone landscape must use the compact touch-first profile.")
 	_check(hud._responsive_profile_for_size(Vector2(1024, 768)) == "tablet", "1024x768 tablet must use the tablet profile.")
@@ -969,6 +992,9 @@ func _run_gameplay_test() -> void:
 		_check(is_instance_valid(hud.storage_overlay), "Opening City Storage must create a full-screen modal overlay.")
 		_check(hud.storage_overlay.find_child("StorageBackdrop", true, false) is ColorRect, "City Storage must dim the city behind its light inventory card.")
 		_check(hud.storage_panel != null, "City Storage modal panel was not created.")
+		await get_tree().process_frame
+		_assert_panel_inside_viewport(hud.storage_panel, "City Storage")
+		_assert_readable_control_tree(hud.storage_panel, "City Storage")
 		_check(hud.storage_panel.find_child("StorageHeaderIcon", true, false) is TextureRect, "City Storage header must show the local blue storage icon.")
 		_check(hud.storage_panel.find_child("StorageCapacityBar", true, false) is ProgressBar, "City Storage must show the orange/blue capacity bar.")
 		var storage_grid := hud.storage_panel.find_child("StorageItemsGrid", true, false) as GridContainer
@@ -1027,6 +1053,10 @@ func _run_gameplay_test() -> void:
 	_check(nails_need_found, "City Needs must expose the first residential plan's Nails requirement without opening the house.")
 	var needs_hud = get_node("HUD")
 	needs_hud.open_city_needs_panel()
+	await get_tree().process_frame
+	var city_needs_panel := needs_hud.find_child("CityNeedsPanel", true, false) as Control
+	_assert_panel_inside_viewport(city_needs_panel, "City Needs")
+	_assert_readable_control_tree(city_needs_panel, "City Needs")
 	_check(needs_hud.find_child("CityNeedsPanel", true, false) != null, "HUD must expose a city-wide needs dashboard.")
 	_check(needs_hud.find_child("CityNeed_nails", true, false) != null, "City Needs dashboard must show aggregated item shortage rows.")
 	var needs_metrics := needs_hud.find_child("CityNeedsResourceSummary", true, false) as GridContainer
@@ -1041,6 +1071,10 @@ func _run_gameplay_test() -> void:
 	needs_hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 	needs_hud._close_city_needs_panel()
 	needs_hud.open_residential_panel(home)
+	await get_tree().process_frame
+	var residential_panel := needs_hud.find_child("ResidentialUpgradePanel", true, false) as Control
+	_assert_panel_inside_viewport(residential_panel, "Residential Upgrade")
+	_assert_readable_control_tree(residential_panel, "Residential Upgrade")
 	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
 	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
 	_check(needs_hud.find_child("ResidentialUpgradeScroll", true, false) is ScrollContainer, "Residential upgrade details must scroll vertically instead of clipping on short screens.")
@@ -1153,6 +1187,9 @@ func _run_gameplay_test() -> void:
 	var factory_component = factory.production_component
 	_check(factory_component != null and factory_component.get_slot_count() == 2, "Small Factory must expose two independent production slots.")
 	production_hud.open_production_panel(factory)
+	await get_tree().process_frame
+	_assert_panel_inside_viewport(production_hud.production_panel, "Factory Production")
+	_assert_readable_control_tree(production_hud.production_panel, "Factory Production")
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
 	var product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
