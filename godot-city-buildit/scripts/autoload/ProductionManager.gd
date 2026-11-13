@@ -15,7 +15,12 @@ var raw_materials := {
 	"sugar_spices": {"name":"Sugar and Spices", "time":14400.0, "time_sec":14400, "value":110, "level":17, "source":"Fandom"},
 	"glass": {"name":"Glass", "time":18000.0, "time_sec":18000, "value":120, "level":19, "source":"Fandom"},
 	"animal_feed": {"name":"Animal Feed", "time":21600.0, "time_sec":21600, "value":140, "level":23, "source":"Fandom"},
-	"electrical": {"name":"Electrical Components", "time":25200.0, "time_sec":25200, "value":160, "level":29, "source":"Fandom"}
+	"electrical": {"name":"Electrical Components", "time":25200.0, "time_sec":25200, "value":160, "level":29, "source":"Fandom"},
+	"coconut": {"name":"Coconut", "time":7200.0, "time_sec":7200, "value":80, "level":25, "source":"Mshin Regional"},
+	"snowberry": {"name":"Snowberry", "time":10800.0, "time_sec":10800, "value":95, "level":30, "source":"Mshin Regional"},
+	"cactus_fruit": {"name":"Cactus Fruit", "time":14400.0, "time_sec":14400, "value":110, "level":35, "source":"Mshin Regional"},
+	"herbs": {"name":"Herbs", "time":18000.0, "time_sec":18000, "value":125, "level":40, "source":"Mshin Regional"},
+	"olives": {"name":"Olives", "time":21600.0, "time_sec":21600, "value":140, "level":45, "source":"Mshin Regional"}
 }
 
 # Recipes are stored as "requires" for compatibility with Building.gd and as
@@ -28,7 +33,12 @@ var factory_materials := {
 	"factory_nano":["metal","wood","plastic","seeds","minerals","chemicals","textiles","sugar_spices","glass","animal_feed","electrical"],
 	"industrial_1":["metal","wood"],
 	"industrial_2":["metal","wood"],
-	"industrial_3":["metal","wood","plastic"]
+	"industrial_3":["metal","wood","plastic"],
+	"coconut_grove":["coconut"],
+	"snowberry_farm":["snowberry"],
+	"cactus_farm":["cactus_fruit"],
+	"herb_garden":["herbs"],
+	"olive_grove":["olives"]
 }
 
 var crafted_items := {
