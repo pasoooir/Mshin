@@ -85,6 +85,14 @@
 - GameplaySmoke تمام Tierها، واحدهای تقاضای ۱/۲/۵، کمبود ظرفیت، خانه/تأسیسات جدا از Gateway، وضعیت ساخت، تغییر رضایت و حذف شعاع محلی نادرست را آزمون می‌کند.
 - منابع: [Residential Buildings / demand units](https://simcity-buildit.fandom.com/wiki/Residential_Buildings)، [Services](https://simcity-buildit.fandom.com/wiki/Services)، [Efficiency List / service capacities](https://scbuildit.hubsinfo.net/simcity-buildIt-efficiency-list/)، [EA Services 2.0 feedback thread](https://forums.ea.com/discussions/simcity-buildit-en/%E2%9C%A8service-2-0-update---feedback-thread%E2%9C%A8/12987164/replies/13166414)، [EA Roads guide](https://help.ea.com/hu/articles/simcity/simcity-buildit/beginner-guide/).
 - محدودیت باقی‌مانده: ظرفیت عددی و تخصیص سراسری Fire/Police/Health هنوز پیاده‌سازی نشده است.
+### خودروی سه‌بعدی Gateway — PR #416
+- `TrafficVehicle.gd` یک خودروی سه‌بعدی سبک و اصلی Mshin با بدنه، کابین، چهار چرخ و چراغ جلو می‌سازد و بین مرکز خانه‌های جاده حرکت می‌کند.
+- `TrafficManager.build_gateway_round_trip_route()` با BFS فقط روی قطعاتی مسیر می‌سازد که به `GATEWAY_ROAD_CELL` متصل‌اند؛ مقصد، دورترین خانه جاده در گراف متصل است و مسیر برگشت تا همان Gateway به route اضافه می‌شود.
+- خودرو پس از ورود از Gateway حرکت می‌کند، مسیر شهر را طی می‌کند، برمی‌گردد و در Gateway حذف می‌شود؛ خودرو فعال اگر با تخریب جاده یکی از خانه‌های مسیرش از گراف متصل خارج شود، لغو می‌شود.
+- `TrafficManager` یک خودرو در هر لحظه و با فاصله زمانی کنترل‌شده ایجاد می‌کند؛ مدل سبک برای موبایل است و از مدل/تصویر خارجی استفاده نمی‌کند.
+- GameplaySmoke اتصال تمام خانه‌های مسیر به Gateway، ابتدا/انتهای مسیر، وجود بدنه/کابین و تغییر موقعیت خودرو پس از حرکت را بررسی می‌کند.
+- محدودیت باقی‌مانده: Gateway فعلی هنوز گره شهر است، نه گره مستقل بزرگراه/رمپ؛ مسیر یک‌طرفه، lane/turn restrictions، هزینه ازدحام در مسیریابی، ازدحام قطعه‌ای و خودروهای باری/امدادی باقی مانده‌اند.
+
 ### ظرفیت ترافیک وابسته به Tier جاده — PR #415
 - `TrafficManager.gd` به‌عنوان Autoload اضافه شد و ظرفیت را فقط از قطعات متصل به Gateway جمع می‌زند.
 - ظرفیت هر خانه جاده برابر تعداد لاین آن است: Tierهای ۲/۴/۶/Avenue به‌ترتیب ۲/۴/۶/۸ واحد ظرفیت. این‌ها واحدهای شبیه‌سازی Mshin هستند، نه شمار رسمی خودرو در SimCity BuildIt.
