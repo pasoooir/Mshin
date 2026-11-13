@@ -1566,6 +1566,17 @@ func _run_gameplay_test() -> void:
 	_check(GameManager.happiness > 0.0 and GameManager.happiness <= 100.0, "First completed house happiness must remain in the valid non-zero range.")
 	_check(ServiceManager.total_power >= 12 and ServiceManager.total_water >= 12, "Power/water capacity was not registered.")
 	_check(home != null and ServiceManager.is_building_served(home), "House was not served by nearby power and water.")
+	var saved_power_service_ids: Dictionary = ServiceManager.power_served_ids.duplicate()
+	ServiceManager.power_served_ids.erase(home.building_id)
+	var service_warning_snapshot: Dictionary = HappinessManager.get_city_service_warnings()
+	_check(int(service_warning_snapshot.get("counts", {}).get("power", 0)) >= 1, "Persistent city service warnings must count completed homes missing available power coverage.")
+	_check(str(service_warning_snapshot.get("summary", "")).contains("power"), "Persistent city service warnings must explain the missing service.")
+	ServiceManager.power_served_ids = saved_power_service_ids
+	var restored_service_warning_snapshot: Dictionary = HappinessManager.get_city_service_warnings()
+	_check(not str(restored_service_warning_snapshot.get("summary", "")).contains("power"), "Restoring power coverage must clear the corresponding service warning.")
+	var service_warning_hud = get_node("HUD")
+	service_warning_hud._update_service_warning_banner()
+	_check(not service_warning_hud.service_warning_panel.visible, "The persistent service warning banner must hide when all currently unlocked services are covered.")
 
 	# Exercise the actual touch long-press, drag and release event path while the build palette is still active.
 	BuildManager.select_building("residential_1")

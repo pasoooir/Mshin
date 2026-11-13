@@ -315,3 +315,66 @@ func _nearest_category_distance(home: Node3D, category: String) -> float:
 
 func get_home_happiness(building_id: String) -> float:
 	return float(home_scores.get(building_id, BASE_HAPPINESS))
+func get_city_service_warnings() -> Dictionary:
+	var counts := {
+		"road": 0,
+		"power": 0,
+		"water": 0,
+		"sewage": 0,
+		"waste": 0,
+		"fire": 0,
+		"police": 0,
+		"health": 0
+	}
+	for home in BuildManager.buildings.values():
+		if not is_instance_valid(home) or home.status != "completed":
+			continue
+		if str(home.definition.get("category", "")) != "residential":
+			continue
+		var size: Vector2i = home.definition.get("size", Vector2i(2, 2))
+		if not BuildManager.has_road_access(home.grid_pos, size):
+			counts["road"] += 1
+		if _service_group_is_unlocked("power") and not ServiceManager.power_served_ids.has(home.building_id):
+			counts["power"] += 1
+		if _service_group_is_unlocked("water") and not ServiceManager.water_served_ids.has(home.building_id):
+			counts["water"] += 1
+		if _service_group_is_unlocked("sewage") and not ServiceManager.sewage_served_ids.has(home.building_id):
+			counts["sewage"] += 1
+		if _service_group_is_unlocked("waste") and not ServiceManager.waste_served_ids.has(home.building_id):
+			counts["waste"] += 1
+		if _service_group_is_unlocked("fire") and not _nearby_service_group(home, FIRE_SERVICE_GROUP, 38.0):
+			counts["fire"] += 1
+		if _service_group_is_unlocked("police") and not _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
+			counts["police"] += 1
+		if _service_group_is_unlocked("health") and not _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
+			counts["health"] += 1
+
+	var warning_parts := PackedStringArray()
+	var labels := {
+		"road": "road access",
+		"power": "power",
+		"water": "water",
+		"sewage": "sewage",
+		"waste": "waste collection",
+		"fire": "fire coverage",
+		"police": "police coverage",
+		"health": "health coverage"
+	}
+	for service_id in ["road", "power", "water", "sewage", "waste", "fire", "police", "health"]:
+		var affected := int(counts[service_id])
+		if affected > 0:
+			warning_parts.append("%d homes lack %s" % [affected, labels[service_id]])
+	return {
+		"counts": counts,
+		"summary": "City service alerts: " + " · ".join(warning_parts) if not warning_parts.is_empty() else ""
+	}
+
+func _service_group_is_unlocked(service_group: String) -> bool:
+	var first_unlock := 2147483647
+	for definition in BuildManager.building_types.values():
+		if str(definition.get("service_group", "")) == service_group:
+			first_unlock = mini(first_unlock, int(definition.get("level", 1)))
+	if first_unlock == 2147483647:
+		return false
+	return GameManager.level >= first_unlock
+
