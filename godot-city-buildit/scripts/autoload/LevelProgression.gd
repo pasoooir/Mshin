@@ -35,7 +35,6 @@ var unlocks := {
 	24: {"factories": 8, "other": ["epic_projects"]},
 	25: {"materials": ["coconut"], "buildings": ["island_cottage", "coconut_grove"], "other": ["sunny_isles"]},
 	29: {"materials": ["electrical"]},
-	30: {"materials": ["snowberry"], "buildings": ["fjord_chalet", "snowberry_farm"], "other": ["frosty_fjords"]},
 	30: {"factories": 9, "materials": ["snowberry"], "buildings": ["fjord_chalet", "snowberry_farm"], "other": ["frosty_fjords"]},
 	35: {"materials": ["cactus_fruit"], "buildings": ["desert_hacienda", "cactus_farm"], "other": ["cactus_canyon"]},
 	40: {"materials": ["herbs"], "buildings": ["valley_eco_home", "herb_garden"], "other": ["green_valley"]},
