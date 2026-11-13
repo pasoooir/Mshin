@@ -592,6 +592,31 @@ for contract in [
 ]:
     if contract not in camera_controller_source:
         errors.append(f"Camera inertia implementation contract is missing: {contract}")
+for contract in [
+    "func rotate_placement() -> bool:",
+    "func get_building_size(type_id: String, rotation_quarters: int = 0) -> Vector2i:",
+    '"rotation_y": float(applied_rotation) * PI * 0.5',
+]:
+    if contract not in build_manager:
+        errors.append(f"Building placement rotation contract is missing: {contract}")
+for contract in [
+    "event.keycode == KEY_R and BuildManager.is_placing",
+    "BuildManager.rotate_placement()",
+    "placement_rotate_pointer",
+    "LONG_PRESS_SECONDS",
+]:
+    if contract not in city_input_source:
+        errors.append(f"CityInput placement rotation contract is missing: {contract}")
+if "rotation.y = rotation_y" not in ghost_preview_source:
+    errors.append("GhostPreview must rotate with the selected building orientation.")
+save_manager_rotation_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
+for contract in [
+    '"rotation_quarters": posmod(roundi(building.rotation.y / (PI * 0.5)), 4)',
+    'int(saved_building.get("rotation_quarters", 0))',
+]:
+    if contract not in save_manager_rotation_source:
+        errors.append(f"SaveManager rotation persistence contract is missing: {contract}")
+
 if "camera_rig.focus_on(building.global_position)" not in city_input_source:
     errors.append("Selecting a building must smoothly focus the city camera on its world position.")
 for contract in [
