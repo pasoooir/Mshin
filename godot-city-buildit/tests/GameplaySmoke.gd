@@ -1689,6 +1689,7 @@ func _run_gameplay_test() -> void:
 	_check(SaveManager.load_game(), "SaveManager could not restore the saved city.")
 	var restored_home = _find_building("residential_1")
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
+	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "Save/load must restore the permanent highway gateway before other road tiles.")
 	_check(BuildManager.buildings.size() == 5, "All five buildings were not restored from save.")
 	_check(restored_home != null and restored_home.upgrade_stage == 2, "House upgrade stage was not restored.")
 	_check(restored_home != null and restored_home.upgrade_in_progress and restored_home.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Residential upgrade finish timestamp was not restored from save.")
