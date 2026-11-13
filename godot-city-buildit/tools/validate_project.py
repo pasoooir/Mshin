@@ -289,6 +289,56 @@ for visual_contract in [
     if visual_contract not in building_source:
         errors.append(f"Level-one residential villa visual contract is missing: {visual_contract}")
 
+# Residential levels must have separate authored architectural silhouettes. A generic
+# category GLTF must not replace these level-specific procedural forms.
+for level_contract in [
+    'func _build_residential_level_architecture(',
+    'if str(definition.get("category", "")) == "residential":',
+    'match stage:',
+    '# Stage 2: expanded suburban home with attached garage and new roof wing.',
+    '# Stage 3: true two-storey redesign with offset upper floor and balcony.',
+    '# Stage 4: contemporary glass sunroom, cantilevered terrace and pergola.',
+    '# Stage 5: modernist split-level villa with roof garden and solar canopy.',
+    '# Stage 6: premium contemporary residence;',
+    'if is_farm:',
+    'if is_apartment:',
+    'CylinderMesh.new()',
+]:
+    if level_contract not in building_source:
+        errors.append(f"Residential level architecture contract is missing: {level_contract}")
+
+# Every non-residential category also has a type-specific identity path.
+for identity_contract in [
+    'func _build_commercial_identity(',
+    '"restaurant_traditional":',
+    '"fast_food":',
+    '"hardware_store":',
+    '"farmers_market":',
+    '"furniture_store":',
+    '"gardening_supplies":',
+    '"donut_shop":',
+    '"home_appliances":',
+    '"fashion_store":',
+    '"sports_shop":',
+    '"toy_store":',
+    '"restoration_office":',
+    '"farmers_store":',
+    '"dessert_shop":',
+    'func _build_industrial_identity(',
+    '"hightech", "factory_hightech":',
+    '"nano", "factory_nano":',
+    'func _build_service_identity(',
+    '"fire_station_small", "fire_station", "fire_station_deluxe":',
+    '"police_small", "police_station", "police_basic", "police_precinct":',
+    '"clinic_small", "clinic", "hospital":',
+    '"sewage_small", "sewage_basic", "sewage_deluxe":',
+    '"waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling":',
+    'func _build_park(w: float, d: float, color: Color) -> void:',
+    'a paved entry, crossing path, planted beds, seating and',
+]:
+    if identity_contract not in building_source:
+        errors.append(f"Building identity visual contract is missing: {identity_contract}")
+
 # Art Supplies is a separate gallery-style commercial hero, not the generic shop mesh.
 for visual_contract in [
     'if building_type == "art_supplies" or subtype == "art":',

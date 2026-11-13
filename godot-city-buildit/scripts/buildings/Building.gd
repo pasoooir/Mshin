@@ -273,9 +273,14 @@ func _create_visual() -> void:
 func _should_use_external_model(model_path: String) -> bool:
 	if model_path.is_empty():
 		return false
-	# Keep the custom level-one villa and bespoke shop showcases intact.
-	var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1
-	return not is_starter_villa
+	# Residential growth is stage-authored geometry. A category-wide GLTF must
+	# never mask the actual architectural change when a home is upgraded.
+	var category := str(definition.get("category", ""))
+	if category == "residential" or category == "commercial" or category == "industrial":
+		# Current category GLTFs are shared placeholders. Use the authored
+		# type-specific Godot architecture until a verified bespoke GLB exists.
+		return false
+	return true
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
 	var residential_subtype := str(definition.get("subtype", "villa"))
@@ -407,6 +412,135 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 				_add_box(Vector3(0.36, 0.18, 0.08), crop_pos + Vector3(0, 0.12, 0), Color(0.34, 0.55, 0.25))
 		for x_pos in [-w * 0.42, w * 0.42]:
 			_add_box(Vector3(0.07, 0.42, 0.07), Vector3(x_pos, 0.40, -d * 0.48), wood)
+
+	# Each residential upgrade is a new architectural generation, not a tint or
+	# a small height adjustment. The additions below change the silhouette,
+	# usable massing and facade language at every stage after the starter home.
+	if not is_farm or upgrade_stage > 1:
+		_build_residential_level_architecture(
+			w, d, body_h, plaster, plaster_light, stone_cap, roof_tile,
+			frame, glass, is_apartment, is_farm
+		)
+
+
+func _build_residential_level_architecture(
+	w: float, d: float, body_h: float, wall: Color, trim: Color,
+	stone: Color, roof: Color, frame: Color, glass: Color,
+	is_apartment: bool, is_farm: bool
+) -> void:
+	var stage := clampi(upgrade_stage, 1, 6)
+	var front := d * 0.46
+	var side := w * 0.46
+	var modern_white := Color(0.91, 0.93, 0.90)
+	var graphite := Color(0.16, 0.21, 0.25)
+	var warm_wood := Color(0.48, 0.29, 0.17)
+	var accent := Color(0.12, 0.62, 0.66)
+	var glass_blue := Color(0.16, 0.42, 0.58)
+
+	if is_farm:
+		# Rural homes evolve into working farmsteads: barn, silo, greenhouse and
+		# expanded cultivated plots, rather than becoming urban apartment blocks.
+		if stage >= 2:
+			_add_box(Vector3(w * 0.48, body_h * 0.78, d * 0.42),
+				Vector3(side * 0.48, body_h * 0.39 + 0.34, -d * 0.20), Color(0.67, 0.28, 0.18))
+			_add_gabled_roof(w * 0.54, d * 0.48, body_h * 0.78 + 0.34, 0.42,
+				Color(0.34, 0.19, 0.13), Color(0.77, 0.67, 0.48))
+			_add_box(Vector3(0.12, 1.10, 0.12), Vector3(-side * 0.55, 0.89, -d * 0.38), warm_wood)
+		if stage >= 3:
+			var silo := CylinderMesh.new()
+			silo.top_radius = 0.28
+			silo.bottom_radius = 0.34
+			silo.height = 1.55
+			var silo_node := MeshInstance3D.new()
+			silo_node.mesh = silo
+			silo_node.position = Vector3(side * 0.48, 1.12, -d * 0.40)
+			var silo_mat := StandardMaterial3D.new()
+			silo_mat.albedo_color = Color(0.70, 0.72, 0.67)
+			silo_mat.metallic = 0.28
+			silo_node.material_override = silo_mat
+			mesh_root.add_child(silo_node)
+		if stage >= 4:
+			_add_box(Vector3(w * 0.42, 1.05, d * 0.34), Vector3(-side * 0.48, 0.88, -d * 0.24), Color(0.42, 0.66, 0.54))
+			for row in range(3):
+				_add_box(Vector3(w * 0.38, 0.035, 0.035), Vector3(-side * 0.48, 0.42 + float(row) * 0.30, -d * 0.05), glass_blue)
+		if stage >= 5:
+			_add_box(Vector3(w * 0.54, 0.18, d * 0.48), Vector3(0, body_h + 0.82, -d * 0.12), Color(0.78, 0.58, 0.24))
+			for row in range(2):
+				for col in range(3):
+					_add_box(Vector3(0.22, 0.12, 0.18), Vector3(-w * 0.20 + float(col) * 0.42, 0.96, -d * 0.42 + float(row) * 0.34), Color(0.26, 0.55, 0.22))
+		if stage >= 6:
+			_add_box(Vector3(w * 0.78, 0.26, d * 0.58), Vector3(0, body_h + 1.02, 0), Color(0.34, 0.47, 0.30))
+			_add_box(Vector3(0.16, 1.85, 0.16), Vector3(side * 0.62, 1.28, -d * 0.42), Color(0.72, 0.74, 0.68))
+		return
+
+	if is_apartment:
+		# Apartment tiers add visibly different massing: podium, offset wings,
+		# glass corner core, then a stepped contemporary tower crown.
+		if stage >= 2:
+			_add_box(Vector3(w * 1.02, 0.34, d * 0.98), Vector3(0, 0.52, 0), accent)
+			for floor in range(3):
+				var y := 0.90 + float(floor) * 1.18
+				_add_box(Vector3(0.11, 0.78, 0.13), Vector3(-side * 0.86, y, front), frame)
+				_add_box(Vector3(0.11, 0.78, 0.13), Vector3(side * 0.86, y, front), frame)
+		if stage >= 3:
+			_add_box(Vector3(w * 0.34, 1.35, d * 0.70), Vector3(-w * 0.31, body_h + 0.68, 0), modern_white)
+			_add_box(Vector3(w * 0.38, 0.12, d * 0.74), Vector3(-w * 0.31, body_h + 1.38, 0), accent)
+		if stage >= 4:
+			_add_box(Vector3(0.34, body_h * 0.72, 0.30), Vector3(side * 0.66, body_h * 0.52 + 0.34, front + 0.06), glass_blue)
+			_add_box(Vector3(w * 1.08, 0.16, d * 0.20), Vector3(0, body_h + 0.84, -d * 0.34), warm_wood)
+		if stage >= 5:
+			_add_box(Vector3(w * 0.52, 1.45, d * 0.70), Vector3(w * 0.22, body_h + 1.08, -d * 0.06), modern_white)
+			_add_box(Vector3(w * 0.56, 0.18, d * 0.76), Vector3(w * 0.22, body_h + 1.82, -d * 0.06), graphite)
+		if stage >= 6:
+			_add_box(Vector3(w * 0.34, 2.10, d * 0.48), Vector3(-w * 0.22, body_h + 2.10, 0), glass_blue)
+			_add_box(Vector3(w * 0.40, 0.20, d * 0.56), Vector3(-w * 0.22, body_h + 3.18, 0), accent)
+		return
+
+	match stage:
+		2:
+			# Stage 2: expanded suburban home with attached garage and new roof wing.
+			_add_box(Vector3(w * 0.42, 1.30, d * 0.62), Vector3(side * 0.53, 0.99, -d * 0.10), modern_white)
+			_add_box(Vector3(w * 0.46, 0.12, d * 0.68), Vector3(side * 0.53, 1.68, -d * 0.10), graphite)
+			_add_box(Vector3(w * 0.34, 0.86, 0.055), Vector3(side * 0.53, 0.88, front + 0.04), graphite)
+			for rib in range(5):
+				_add_box(Vector3(0.025, 0.72, 0.025), Vector3(side * 0.53 - w * 0.15 + float(rib) * 0.075, 0.88, front + 0.08), trim)
+			_add_box(Vector3(w * 0.48, 0.13, d * 0.18), Vector3(-side * 0.40, body_h + 0.60, -d * 0.22), roof)
+		3:
+			# Stage 3: true two-storey redesign with offset upper floor and balcony.
+			_add_box(Vector3(w * 0.72, 1.18, d * 0.66), Vector3(-w * 0.10, body_h + 0.60, -d * 0.04), modern_white)
+			_add_box(Vector3(w * 0.78, 0.16, d * 0.72), Vector3(-w * 0.10, body_h + 1.22, -d * 0.04), graphite)
+			_add_box(Vector3(w * 0.74, 0.10, 0.52), Vector3(0, body_h + 0.30, front + 0.16), warm_wood)
+			_add_box(Vector3(w * 0.68, 0.08, 0.055), Vector3(0, body_h + 0.88, front + 0.42), frame)
+			for post in [-1.0, 1.0]:
+				_add_box(Vector3(0.055, 0.58, 0.055), Vector3(post * w * 0.32, body_h + 0.58, front + 0.42), frame)
+		4:
+			# Stage 4: contemporary glass sunroom, cantilevered terrace and pergola.
+			_add_box(Vector3(w * 0.48, 1.55, d * 0.48), Vector3(side * 0.42, body_h * 0.50 + 0.62, -d * 0.08), glass_blue)
+			for mullion in range(4):
+				var mx := side * 0.42 - w * 0.19 + float(mullion) * 0.125
+				_add_box(Vector3(0.045, 1.48, 0.07), Vector3(mx, body_h * 0.50 + 0.62, front + 0.10), frame)
+			_add_box(Vector3(w * 0.82, 0.16, d * 0.40), Vector3(-w * 0.08, body_h + 0.48, -d * 0.30), warm_wood)
+			for beam in range(5):
+				_add_box(Vector3(0.09, 0.12, d * 0.38), Vector3(-w * 0.42 + float(beam) * 0.22, body_h + 0.72, -d * 0.30), roof)
+		5:
+			# Stage 5: modernist split-level villa with roof garden and solar canopy.
+			_add_box(Vector3(w * 0.76, 1.62, d * 0.66), Vector3(-w * 0.10, body_h + 0.82, -d * 0.06), modern_white)
+			_add_box(Vector3(w * 0.82, 0.18, d * 0.72), Vector3(-w * 0.10, body_h + 1.68, -d * 0.06), graphite)
+			_add_box(Vector3(w * 0.44, 0.14, d * 0.56), Vector3(side * 0.48, body_h + 0.30, -d * 0.05), accent)
+			for panel in range(3):
+				_add_box(Vector3(0.42, 0.055, 0.30), Vector3(-w * 0.27 + float(panel) * 0.48, body_h + 1.80, -d * 0.12), Color(0.08, 0.20, 0.34))
+			for planter in range(3):
+				_add_box(Vector3(0.34, 0.28, 0.30), Vector3(-w * 0.30 + float(planter) * 0.52, body_h + 0.54, front + 0.08), Color(0.28, 0.54, 0.30))
+		6:
+			# Stage 6: premium contemporary residence; a new penthouse volume,
+			# full-height glazing and a distinctive rooftop pavilion replace the old roofline.
+			_add_box(Vector3(w * 0.72, 1.92, d * 0.62), Vector3(0, body_h + 1.02, -d * 0.05), modern_white)
+			_add_box(Vector3(w * 0.76, 0.18, d * 0.68), Vector3(0, body_h + 2.02, -d * 0.05), graphite)
+			_add_box(Vector3(w * 0.56, 1.46, 0.10), Vector3(0, body_h + 1.05, front + 0.08), glass_blue)
+			_add_box(Vector3(w * 0.46, 0.16, d * 0.46), Vector3(0, body_h + 2.16, -d * 0.05), accent)
+			for column in [-1.0, 1.0]:
+				_add_box(Vector3(0.10, 1.88, 0.10), Vector3(column * w * 0.34, body_h + 1.00, front + 0.12), frame)
+
 
 # Level 1 starter home: a compact, colourful Sims-like villa with distinct facade,
 # roof, trim, garden and warm emissive windows. Emissive meshes avoid per-house lights.
@@ -609,6 +743,99 @@ func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 		_add_box(Vector3(w * 0.98, 0.16, d * 0.94), Vector3(0, body_h + 0.52, 0), roof)
 	else:
 		_add_box(Vector3(w * 0.98, 0.12, d * 0.94), Vector3(0, body_h + 0.49, 0), roof)
+
+	_build_commercial_identity(w, d, body_h, d * 0.5, stage)
+
+
+func _build_commercial_identity(w: float, d: float, body_h: float, front: float, stage: int) -> void:
+	# Trade-specific rooflines and street props make each shop readable before
+	# the player opens its production panel. These are distinct meshes, not tints.
+	var id := building_type
+	var roof_y := body_h + 0.78
+	var white := Color(0.94, 0.91, 0.82)
+	var dark := Color(0.15, 0.20, 0.25)
+	var green := Color(0.20, 0.52, 0.30)
+	var accent := Color(0.96, 0.62, 0.16)
+	match id:
+		"restaurant_traditional":
+			_add_box(Vector3(w * 0.74, 0.12, d * 0.38), Vector3(0, 1.95, front + 0.28), Color(0.56, 0.16, 0.10))
+			_add_cylinder(0.13, 0.17, 1.25, Vector3(w * 0.32, roof_y, -d * 0.28), dark)
+			for table in [-1.0, 1.0]:
+				_add_cylinder(0.20, 0.20, 0.08, Vector3(table * w * 0.34, 0.40, front + 0.62), white)
+				_add_cylinder(0.045, 0.045, 0.46, Vector3(table * w * 0.34, 0.18, front + 0.62), dark)
+		"fast_food":
+			_add_box(Vector3(0.20, 1.35, 0.20), Vector3(w * 0.40, 1.10, front + 0.38), accent)
+			_add_box(Vector3(0.72, 0.52, 0.12), Vector3(w * 0.40, 1.82, front + 0.38), Color(0.88, 0.18, 0.10))
+			_add_box(Vector3(w * 0.76, 0.12, d * 0.30), Vector3(0, 1.58, -d * 0.30), dark)
+		"hardware_store":
+			for stack in range(3):
+				_add_box(Vector3(w * 0.22, 0.24, d * 0.20), Vector3(-w * 0.28 + float(stack) * w * 0.28, 0.48, front + 0.38), Color(0.65, 0.39, 0.16))
+			_add_box(Vector3(w * 0.78, 0.14, d * 0.28), Vector3(0, roof_y, 0), accent)
+		"farmers_market":
+			_add_box(Vector3(w * 0.94, 0.10, d * 0.54), Vector3(0, 1.66, front + 0.22), green)
+			for stall in range(4):
+				var x := -w * 0.36 + float(stall) * w * 0.24
+				_add_box(Vector3(0.42, 0.30, 0.34), Vector3(x, 0.48, front + 0.52), [Color(0.82,0.20,0.12), Color(0.92,0.68,0.12), green, Color(0.88,0.42,0.16)][stall])
+		"furniture_store":
+			_add_box(Vector3(w * 0.52, 0.48, 0.30), Vector3(-w * 0.20, 0.72, front + 0.32), Color(0.55, 0.24, 0.15))
+			_add_box(Vector3(w * 0.52, 0.20, 0.26), Vector3(-w * 0.20, 1.04, front + 0.32), Color(0.80, 0.58, 0.34))
+			_add_box(Vector3(0.22, 0.78, 0.22), Vector3(w * 0.28, 0.82, front + 0.34), dark)
+		"gardening_supplies":
+			_add_box(Vector3(w * 0.48, 1.05, d * 0.38), Vector3(0, 0.90, -d * 0.26), Color(0.30, 0.58, 0.42))
+			for pot in range(4):
+				var x := -w * 0.36 + float(pot) * w * 0.24
+				_add_cylinder(0.12, 0.16, 0.22, Vector3(x, 0.43, front + 0.38), Color(0.62, 0.28, 0.15))
+				_add_cylinder(0.025, 0.09, 0.36, Vector3(x, 0.70, front + 0.38), green)
+		"donut_shop":
+			var ring := TorusMesh.new()
+			ring.inner_radius = 0.22
+			ring.outer_radius = 0.42
+			var ring_node := MeshInstance3D.new()
+			ring_node.mesh = ring
+			ring_node.position = Vector3(0, roof_y + 0.24, 0)
+			var ring_mat := StandardMaterial3D.new()
+			ring_mat.albedo_color = Color(0.92, 0.48, 0.55)
+			ring_node.material_override = ring_mat
+			mesh_root.add_child(ring_node)
+			_add_box(Vector3(w * 0.72, 0.12, d * 0.34), Vector3(0, 1.62, front + 0.20), Color(0.98, 0.76, 0.68))
+		"home_appliances":
+			for unit in range(3):
+				var x := -w * 0.28 + float(unit) * w * 0.28
+				_add_box(Vector3(0.34, 0.62, 0.32), Vector3(x, roof_y, -d * 0.18), [white, Color(0.65,0.72,0.76), dark][unit])
+				_add_box(Vector3(0.22, 0.12, 0.035), Vector3(x, roof_y + 0.12, -d * 0.01), accent)
+		"fashion_store":
+			_add_box(Vector3(w * 0.72, 0.14, d * 0.30), Vector3(0, 1.72, front + 0.20), Color(0.68, 0.22, 0.46))
+			for display in [-1.0, 1.0]:
+				_add_cylinder(0.09, 0.12, 0.42, Vector3(display * w * 0.30, 0.74, front + 0.38), Color(0.82, 0.58, 0.42))
+				_add_box(Vector3(0.26, 0.38, 0.10), Vector3(display * w * 0.30, 1.10, front + 0.38), [Color(0.18,0.42,0.72), Color(0.78,0.22,0.38)][0 if display < 0 else 1])
+		"sports_shop":
+			_add_cylinder(0.34, 0.34, 0.10, Vector3(-w * 0.26, roof_y, 0), Color(0.92, 0.38, 0.12))
+			_add_box(Vector3(0.07, 0.88, 0.07), Vector3(w * 0.28, 0.92, front + 0.34), dark)
+			_add_box(Vector3(0.62, 0.06, 0.06), Vector3(w * 0.28, 1.30, front + 0.34), accent)
+		"toy_store":
+			for block in range(4):
+				var x := -w * 0.30 + float(block) * w * 0.20
+				_add_box(Vector3(0.34, 0.34, 0.34), Vector3(x, roof_y + 0.18, 0), [Color(0.92,0.18,0.18), Color(0.15,0.55,0.88), Color(0.96,0.72,0.12), green][block])
+		"restoration_office":
+			for column in range(3):
+				var x := -w * 0.32 + float(column) * w * 0.32
+				_add_box(Vector3(0.10, 1.15, 0.10), Vector3(x, 0.94, front + 0.32), Color(0.62, 0.60, 0.53))
+				_add_box(Vector3(0.32, 0.10, 0.10), Vector3(x, 1.52, front + 0.32), accent)
+		"farmers_store":
+			_add_gabled_roof(w * 0.62, d * 0.46, body_h + 0.48, 0.52, Color(0.52,0.24,0.15), Color(0.82,0.68,0.44))
+			_add_box(Vector3(w * 0.42, 0.52, d * 0.28), Vector3(0, 0.72, front + 0.30), Color(0.58,0.34,0.16))
+		"dessert_shop":
+			_add_box(Vector3(w * 0.96, 0.12, d * 0.42), Vector3(0, 1.65, front + 0.22), Color(0.98,0.72,0.78))
+			for accent_index in range(5):
+				var x := -w * 0.40 + float(accent_index) * w * 0.20
+				_add_cylinder(0.08, 0.08, 0.22, Vector3(x, 1.86, front + 0.24), [Color(0.90,0.22,0.28), Color(1.0,0.72,0.20), Color(0.36,0.65,0.42)][accent_index % 3])
+		_:
+			pass
+	if stage >= 4:
+		# Later shop levels gain a new upper-floor volume and larger roof plant.
+		_add_box(Vector3(w * 0.54, 0.26, d * 0.52), Vector3(0, body_h + 0.90, -d * 0.12), dark)
+		_add_box(Vector3(w * 0.48, 0.18, d * 0.44), Vector3(0, body_h + 1.08, -d * 0.12), accent)
+
 
 
 # Signature commercial hero asset: a vivid, readable construction-supplies shop.
@@ -870,6 +1097,48 @@ func _build_industrial(w: float, d: float, height: float, color: Color) -> void:
 			_add_cylinder(0.045, 0.055, d * 0.70, Vector3(w * (0.08 + float(pipe_index) * 0.12), body_h + 0.62, 0), safety if pipe_index == 0 else metal_light)
 		_add_box(Vector3(w * 0.96, 0.18, d * 0.94), Vector3(0, body_h + 0.62, 0), wall_shadow)
 
+	_build_industrial_identity(w, d, body_h, stage)
+
+
+func _build_industrial_identity(w: float, d: float, body_h: float, stage: int) -> void:
+	var tier := str(definition.get("factory_tier", building_type))
+	var steel := Color(0.38, 0.47, 0.52)
+	var cyan := Color(0.12, 0.66, 0.72)
+	var yellow := Color(0.96, 0.62, 0.12)
+	match tier:
+		"small", "factory_small":
+			_add_box(Vector3(w * 0.24, 0.74, d * 0.24), Vector3(w * 0.34, body_h + 0.48, -d * 0.24), steel)
+			_add_cylinder(0.16, 0.22, 1.25, Vector3(-w * 0.30, body_h + 0.70, -d * 0.25), yellow)
+		"basic", "factory_basic":
+			for stack in range(2):
+				_add_cylinder(0.13, 0.19, 1.8, Vector3(-w * 0.30 + float(stack) * w * 0.55, body_h + 0.96, -d * 0.30), steel)
+			_add_box(Vector3(w * 0.76, 0.22, d * 0.16), Vector3(0, body_h + 0.58, d * 0.36), yellow)
+		"mass", "factory_mass":
+			_add_box(Vector3(w * 0.42, 1.05, d * 0.30), Vector3(-w * 0.30, body_h + 0.80, -d * 0.18), steel)
+			_add_box(Vector3(0.12, 2.0, 0.12), Vector3(w * 0.34, body_h + 1.20, d * 0.20), yellow)
+			_add_box(Vector3(w * 0.72, 0.14, 0.14), Vector3(w * 0.02, body_h + 2.08, d * 0.20), yellow)
+			for pipe in range(3):
+				_add_cylinder(0.06, 0.07, d * 0.70, Vector3(-w * 0.20 + float(pipe) * 0.20, body_h + 0.70, 0), steel)
+		"hightech", "factory_hightech":
+			_add_box(Vector3(w * 0.58, 1.10, d * 0.54), Vector3(0, body_h + 0.72, 0), Color(0.74,0.86,0.88))
+			for bay in range(4):
+				var x := -w * 0.30 + float(bay) * w * 0.20
+				_add_box(Vector3(0.08, 0.92, d * 0.58), Vector3(x, body_h + 0.74, d * 0.04), cyan)
+			_add_cylinder(0.24, 0.28, 0.32, Vector3(w * 0.32, body_h + 1.20, -d * 0.28), steel)
+		"nano", "factory_nano":
+			_add_box(Vector3(w * 0.72, 1.55, d * 0.70), Vector3(0, body_h + 0.92, 0), Color(0.78,0.88,0.91))
+			_add_box(Vector3(w * 0.78, 0.16, d * 0.76), Vector3(0, body_h + 1.76, 0), cyan)
+			for corner in [-1.0, 1.0]:
+				_add_box(Vector3(0.10, 1.38, 0.10), Vector3(corner * w * 0.34, body_h + 0.90, d * 0.34), steel)
+			_add_cylinder(0.30, 0.30, 0.24, Vector3(0, body_h + 1.94, -d * 0.20), cyan)
+		_:
+			_add_box(Vector3(w * 0.28, 0.72, d * 0.28), Vector3(0, body_h + 0.45, 0), steel)
+	if stage >= 4:
+		_add_box(Vector3(w * 0.86, 0.16, d * 0.72), Vector3(0, body_h + 0.56, -d * 0.08), Color(0.24,0.31,0.36))
+		for skylight in range(3):
+			_add_box(Vector3(0.42, 0.08, d * 0.28), Vector3(-w * 0.28 + float(skylight) * w * 0.28, body_h + 0.68, -d * 0.08), Color(0.25,0.58,0.68))
+
+
 func _build_service(w: float, d: float, height: float, color: Color) -> void:
 	var power = definition.get("power", 0)
 	var water = definition.get("water", 0)
@@ -883,6 +1152,64 @@ func _build_service(w: float, d: float, height: float, color: Color) -> void:
 		_add_box(Vector3(w * 0.9, height, d * 0.9), Vector3(0, height * 0.5 + 0.25, 0), color)
 		_add_box(Vector3(w * 0.95, 0.2, d * 0.95), Vector3(0, height + 0.35, 0), color.darkened(0.15))
 		_add_box(Vector3(0.5, 0.9, 0.1), Vector3(0, 0.7, d * 0.45), color.darkened(0.35))
+
+	_build_service_identity(w, d, height)
+
+
+func _build_service_identity(w: float, d: float, height: float) -> void:
+	var id := building_type
+	var red := Color(0.82, 0.16, 0.12)
+	var blue := Color(0.12, 0.30, 0.62)
+	var white := Color(0.92, 0.94, 0.91)
+	var front := d * 0.48
+	match id:
+		"fire_station_small", "fire_station", "fire_station_deluxe":
+			_add_box(Vector3(w * 0.94, 0.18, d * 0.92), Vector3(0, height + 0.38, 0), red)
+			for bay in range(2 if w < 4.0 else 4):
+				var x := -w * 0.30 + float(bay) * w * 0.20
+				_add_box(Vector3(0.54, 1.12, 0.08), Vector3(x, 0.94, front + 0.08), white)
+				_add_box(Vector3(0.46, 0.92, 0.05), Vector3(x, 0.90, front + 0.13), red.darkened(0.30))
+			_add_box(Vector3(0.34, 0.44, 0.34), Vector3(w * 0.36, height + 0.62, 0), white)
+		"police_small", "police_station", "police_basic", "police_precinct":
+			_add_box(Vector3(w * 0.96, 0.16, d * 0.94), Vector3(0, height + 0.36, 0), blue)
+			_add_box(Vector3(w * 0.30, 0.72, 0.24), Vector3(0, height + 0.80, -d * 0.18), white)
+			_add_box(Vector3(0.12, 1.15, 0.12), Vector3(0, height + 1.26, -d * 0.18), blue)
+		"clinic_small", "clinic", "hospital":
+			_add_box(Vector3(w * 0.98, 0.18, d * 0.94), Vector3(0, height + 0.38, 0), white)
+			_add_box(Vector3(w * 0.36, 0.14, 0.10), Vector3(0, height + 0.72, front + 0.08), red)
+			_add_box(Vector3(0.14, 0.42, 0.10), Vector3(0, height + 0.72, front + 0.09), red)
+			if id == "hospital":
+				_add_box(Vector3(w * 0.28, 1.15, d * 0.30), Vector3(-w * 0.32, height + 0.82, -d * 0.22), Color(0.76,0.86,0.88))
+		"water_tower", "water_pump":
+			_add_cylinder(0.42, 0.52, 0.20, Vector3(0, height + 0.30, 0), Color(0.20,0.52,0.78))
+			for leg in [-1.0, 1.0]:
+				_add_box(Vector3(0.08, 0.82, 0.08), Vector3(leg * 0.32, height - 0.20, 0), Color(0.50,0.58,0.62))
+		"sewage_small", "sewage_basic", "sewage_deluxe":
+			for tank in range(2 if id == "sewage_small" else 3):
+				_add_cylinder(0.42, 0.48, 0.72, Vector3(-w * 0.28 + float(tank) * w * 0.28, 0.72, -d * 0.16), Color(0.48,0.62,0.60))
+			_add_box(Vector3(w * 0.88, 0.12, d * 0.16), Vector3(0, 1.18, front * 0.30), Color(0.30,0.44,0.42))
+		"waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling":
+			_add_box(Vector3(w * 0.88, 0.52, d * 0.62), Vector3(0, 0.60, -d * 0.10), Color(0.38,0.48,0.36))
+			if id == "waste_incinerator":
+				_add_cylinder(0.18, 0.24, 1.55, Vector3(w * 0.30, 1.30, -d * 0.28), Color(0.48,0.50,0.50))
+			if id == "waste_recycling":
+				_add_box(Vector3(w * 0.70, 0.18, 0.12), Vector3(0, 1.02, front), Color(0.12,0.58,0.34))
+		"power_coal", "power_oil", "power_solar", "power_nuclear", "power_wind_deluxe":
+			_add_box(Vector3(w * 0.88, 0.22, d * 0.84), Vector3(0, height + 0.38, 0), Color(0.36,0.48,0.52))
+			if id == "power_solar":
+				for row in range(2):
+					for panel in range(3):
+						_add_box_rotated(Vector3(0.48, 0.06, 0.34), Vector3(-w * 0.28 + float(panel) * 0.48, 0.72 + float(row) * 0.38, -d * 0.20), Color(0.08,0.22,0.40), Vector3(deg_to_rad(-18.0),0,0))
+			elif id == "power_nuclear":
+				for tower in [-1.0, 1.0]:
+					_add_cylinder(0.34, 0.48, 1.90, Vector3(tower * w * 0.28, 1.30, -d * 0.20), white)
+		"town_hall":
+			_add_box(Vector3(w * 0.94, 0.22, d * 0.92), Vector3(0, height + 0.42, 0), Color(0.78,0.70,0.52))
+			_add_box(Vector3(w * 0.28, 0.85, d * 0.24), Vector3(0, height + 0.92, -d * 0.12), Color(0.72,0.26,0.16))
+			_add_box(Vector3(0.08, 1.15, 0.08), Vector3(0, height + 1.70, -d * 0.12), Color(0.88,0.78,0.42))
+		_:
+			pass
+
 
 func _build_wind_turbine() -> void:
 	# A tapered tubular mast and layered nacelle give the generator a readable
@@ -961,9 +1288,20 @@ func _build_wind_turbine() -> void:
 
 
 func _build_park(w: float, d: float, color: Color) -> void:
-	_add_box(Vector3(w * 0.9, 0.15, d * 0.9), Vector3(0, 0.1, 0), color)
-	_add_cylinder(0.3, 0.35, 1.2, Vector3(0, 0.8, 0), Color(0.25, 0.55, 0.25))
-	_add_box(Vector3(0.8, 0.5, 0.8), Vector3(0, 1.5, 0), Color(0.3, 0.7, 0.3))
+	# A pocket park has a paved entry, crossing path, planted beds, seating and
+	# a small fountain; it is a miniature public space rather than a green cube.
+	_add_box(Vector3(w * 0.98, 0.15, d * 0.98), Vector3(0, 0.10, 0), Color(0.26,0.48,0.30))
+	_add_box(Vector3(w * 0.86, 0.06, 0.48), Vector3(0, 0.20, 0), Color(0.72,0.68,0.58))
+	_add_box(Vector3(0.42, 0.065, d * 0.84), Vector3(0, 0.22, 0), Color(0.72,0.68,0.58))
+	_add_cylinder(0.30, 0.36, 0.18, Vector3(0, 0.34, 0), Color(0.34,0.58,0.72))
+	_add_cylinder(0.08, 0.10, 0.48, Vector3(0, 0.62, 0), Color(0.78,0.88,0.92))
+	for bed in [-1.0, 1.0]:
+		_add_box(Vector3(0.34, 0.16, 0.30), Vector3(bed * w * 0.34, 0.28, -d * 0.30), Color(0.36,0.25,0.16))
+		_add_cylinder(0.13, 0.17, 0.48, Vector3(bed * w * 0.34, 0.58, -d * 0.30), Color(0.22,0.52,0.28))
+		_add_cylinder(0.035, 0.035, 0.42, Vector3(bed * w * 0.34, 0.88, -d * 0.30), Color(0.42,0.28,0.16))
+	for seat in [-1.0, 1.0]:
+		_add_box(Vector3(0.62, 0.12, 0.20), Vector3(seat * w * 0.30, 0.44, d * 0.30), Color(0.48,0.27,0.14))
+		_add_box(Vector3(0.62, 0.38, 0.08), Vector3(seat * w * 0.30, 0.66, d * 0.39), Color(0.48,0.27,0.14))
 
 func _get_surface_variation_texture() -> Texture2D:
 	# Shared subtle grayscale grain modulates every architectural surface, avoiding
