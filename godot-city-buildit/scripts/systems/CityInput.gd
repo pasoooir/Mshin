@@ -57,6 +57,7 @@ func _process(delta: float) -> void:
 			if BuildManager.rotate_placement():
 				placement_rotate_pointer[pointer_id] = true
 				pointer_moved[pointer_id] = true
+				pointer_hold_elapsed[pointer_id] = 0.0
 				_update_ghost(last_position)
 				_set_status("Building rotated 90 degrees. Keep holding to rotate again, or tap a plot to place.")
 		else:
@@ -143,7 +144,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if BuildManager.rotate_placement():
 			var ghost = get_tree().current_scene.get_node_or_null("GhostPreview") if get_tree().current_scene else null
 			if ghost and ghost.visible:
-				ghost.rotation.y = float(BuildManager.placement_rotation_quarters) * PI * 0.5
+				var previous_size: Vector2i = BuildManager.get_building_size(BuildManager.selected_building_type, posmod(BuildManager.placement_rotation_quarters - 1, 4))
+				var anchor_world: Vector3 = ghost.global_position - Vector3((previous_size.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.95, (previous_size.y - 1) * BuildManager.GRID_SIZE * 0.5)
+				var grid: Vector2i = BuildManager.world_to_grid(anchor_world)
+				ghost.show_at(BuildManager.grid_to_world(grid), BuildManager.get_selected_size(), BuildManager.can_place_at(grid, BuildManager.selected_building_type, BuildManager.placement_rotation_quarters), BuildManager.building_types.get(BuildManager.selected_building_type, {}), float(BuildManager.placement_rotation_quarters) * PI * 0.5)
 			_set_status("Building rotated 90 degrees.")
 		get_viewport().set_input_as_handled()
 		return
