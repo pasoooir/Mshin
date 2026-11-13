@@ -82,6 +82,7 @@ Wind power and water towers each provide 12 units of capacity within a 28 m cove
 - **Mobile:** landscape orientation; one-finger drag pans; two-finger pinch zooms and twist rotates the camera; while a building is selected for placement, hold on the map for 0.55 seconds to rotate its preview by 90° (repeat to continue), then tap a valid plot to place.
 - **Desktop:** left-drag pans; mouse wheel zooms; press `R` to rotate a selected building preview by 90°; left-click places or interacts.
 - The placement preview is green on a valid plot and red on an invalid plot.
+- Successful building placement and successful product collection request short optional vibration pulses through the browser Vibration API in Web builds. Browsers/devices without API support continue silently; native Android/iOS haptics and physical-device behavior are not yet verified.
 - The right-side vertical toolbar uses locally drawn vector icons (no emoji glyphs, external textures or CDN): roads, residential, commercial, industrial, services, specializations and bulldoze. Selecting a category opens a compact icon-only submenu. Storage, trade, save and cancel remain in the bottom action row. Specialization options beyond parks and destructive bulldozing are currently UI entry points; their full gameplay behavior is not yet implemented.
 - The **save** icon writes the city immediately. The game also autosaves every 30 seconds and on window close.
 
