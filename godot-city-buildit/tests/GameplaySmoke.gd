@@ -26,6 +26,14 @@ func _check(condition: bool, message: String) -> void:
 		failures.append(message)
 		push_error("[GameplaySmoke] " + message)
 
+
+func _test_responsive_profile_contract(hud: Node) -> void:
+	_check(hud._responsive_profile_for_size(Vector2(854, 480)) == "compact", "854x480 phone landscape must use the compact touch-first profile.")
+	_check(hud._responsive_profile_for_size(Vector2(1024, 768)) == "tablet", "1024x768 tablet must use the tablet profile.")
+	_check(hud._responsive_profile_for_size(Vector2(1920, 1080)) == "desktop", "1920x1080 desktop must use the desktop profile.")
+	_check(hud._responsive_scale_for_size(Vector2(390, 844)) >= 0.72, "Portrait overlays must retain a safe minimum UI scale.")
+	_check(hud._responsive_scale_for_size(Vector2(854, 480)) < 0.90, "Compact landscape must not be forced to the former 0.90 minimum scale.")
+
 func _confirm_catalog_build(hud) -> void:
 	var action := hud.catalog_info_panel.find_child("CatalogBuildButton", true, false) as Button
 	_check(action != null, "Building info panel must expose its BUILD action.")
@@ -359,6 +367,7 @@ func _test_build_menu_visibility() -> void:
 	_check(hud != null, "Main scene HUD is missing.")
 	if hud == null:
 		return
+	_test_responsive_profile_contract(hud)
 	# The Mayor Level badge must be procedural, glossy and geometrically centered.
 	var level_badge := hud.find_child("LevelBadge", true, false) as Control
 	var level_value := hud.find_child("LevelValue", true, false) as Label
@@ -957,7 +966,10 @@ func _run_gameplay_test() -> void:
 		_check(hud.storage_panel.find_child("StorageHeaderIcon", true, false) is TextureRect, "City Storage header must show the local blue storage icon.")
 		_check(hud.storage_panel.find_child("StorageCapacityBar", true, false) is ProgressBar, "City Storage must show the orange/blue capacity bar.")
 		var storage_grid := hud.storage_panel.find_child("StorageItemsGrid", true, false) as GridContainer
-		_check(storage_grid != null and storage_grid.columns == 2, "City Storage products must be displayed in a two-column icon grid.")
+		_check(storage_grid != null and storage_grid.columns == 2, "City Storage products must use the tablet/desktop two-column inventory grid.")
+		hud._apply_overlay_responsive_layout(Vector2(390, 844))
+		_check(storage_grid != null and storage_grid.columns == 1, "Narrow portrait storage must reflow to one readable column.")
+		hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 		_check(storage_grid != null and storage_grid.find_child("StorageItem_metal", true, false) != null, "City Storage grid must show stored product icons.")
 		_check(hud.storage_panel.find_child("StorageIncreaseCapacity", true, false) is Button, "City Storage must show its green Increase Capacity action.")
 		hud._close_storage_panel()
@@ -1009,10 +1021,19 @@ func _run_gameplay_test() -> void:
 	needs_hud.open_city_needs_panel()
 	_check(needs_hud.find_child("CityNeedsPanel", true, false) != null, "HUD must expose a city-wide needs dashboard.")
 	_check(needs_hud.find_child("CityNeed_nails", true, false) != null, "City Needs dashboard must show aggregated item shortage rows.")
+	var needs_metrics := needs_hud.find_child("CityNeedsResourceSummary", true, false) as GridContainer
+	var needs_inventory := needs_hud.find_child("CityStorageInventory", true, false) as GridContainer
+	_check(needs_metrics != null and needs_metrics.columns == 4, "City Needs resource metrics must use four columns at the current tablet viewport.")
+	_check(needs_inventory != null and needs_inventory.columns == 4, "City Needs inventory must use four columns at the current tablet viewport.")
+	needs_hud._apply_overlay_responsive_layout(Vector2(854, 480))
+	_check(needs_metrics != null and needs_metrics.columns == 2, "City Needs resource metrics must reflow to two columns on mobile.")
+	_check(needs_inventory != null and needs_inventory.columns == 3, "City Needs inventory must reflow to three columns on mobile.")
+	needs_hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 	needs_hud._close_city_needs_panel()
 	needs_hud.open_residential_panel(home)
 	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
 	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
+	_check(needs_hud.find_child("ResidentialUpgradeScroll", true, false) is ScrollContainer, "Residential upgrade details must scroll vertically instead of clipping on short screens.")
 	_check(needs_hud.find_child("ResidentialPlanStatus", true, false) is Label, "Residential plan must clearly show whether materials are missing or the home is ready.")
 	needs_hud._close_residential_panel()
 	var factory = _find_building("industrial_1")
@@ -1124,7 +1145,15 @@ func _run_gameplay_test() -> void:
 	production_hud.open_production_panel(factory)
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
-	_check(production_hud.production_panel.find_child("ProductionProductsScroll", true, false) != null, "Factory panel must show a horizontally browsable product-card row.")
+	var product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
+	var product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
+	_check(product_scroll != null and product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Production catalog must scroll vertically when reflowed for narrow screens.")
+	_check(product_grid != null and product_grid.columns == 4, "Production catalog must use four columns at the current tablet viewport.")
+	production_hud._apply_overlay_responsive_layout(Vector2(854, 480))
+	_check(product_grid != null and product_grid.columns == 3, "Production product cards must reflow to three columns on compact mobile.")
+	production_hud._apply_overlay_responsive_layout(Vector2(1920, 1080))
+	_check(product_grid != null and product_grid.columns == 6, "Production product cards must use six columns on desktop.")
+	production_hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
 	var metal_button := production_hud.production_panel.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
