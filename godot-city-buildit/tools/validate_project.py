@@ -308,7 +308,7 @@ if '16: {"materials": ["paint", "table"], "services": ["health"], "buildings": [
     errors.append("Department of Epic Projects must unlock at Level 16")
 if '24: {"factories": 8, "other": ["epic_projects"]}' not in (ROOT / "scripts/autoload/LevelProgression.gd").read_text(encoding="utf-8"):
     errors.append("Epic Projects must unlock at Level 24")
-if "func set_epic_tier(tier: int) -> void:" not in building_source:
+if "func set_epic_tier(tier: int) -> void:" not in (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8"):
     errors.append("Building must persist and render its Epic tier")
 if "EpicProjectManager.EPIC_POPULATION_MULTIPLIER" not in happiness_manager_source:
     errors.append("Epic Buildings must increase residential capacity by the Epic multiplier")
