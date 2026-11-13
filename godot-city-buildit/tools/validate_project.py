@@ -295,7 +295,7 @@ for contract in [
     "must not pay out before its sale timer completes",
     "must complete an affordable market purchase",
     "must preserve sold market offers",
-    "func deliver_ship_crate(crate_index: int) -> bool",
+    "TradeManager.deliver_ship_crate(0)",
     "must accept a crate when its required items are in storage",
     "must send the ship away exactly once",
     "must grant one Golden Key",
