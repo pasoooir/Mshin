@@ -60,7 +60,17 @@ class LevelBadgeVisual extends Control:
 		draw_arc(center, radius - 4.0, PI * 1.08, PI * 1.90, 48, Color(1.0, 0.86, 1.0, 0.18), 1.2, true)
 
 class LockGlyph extends Control:
-	func _responsive_profile_for_size(viewport_size: Vector2) -> String:
+	func _ready() -> void:
+		name = "LockGlyph"
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	func _draw() -> void:
+		var lock_color := Color("#FFD98A")
+		var body := Rect2(Vector2(size.x * 0.18, size.y * 0.48), Vector2(size.x * 0.64, size.y * 0.42))
+		draw_rect(body, lock_color, true)
+		draw_arc(Vector2(size.x * 0.5, size.y * 0.49), size.x * 0.22, PI, TAU, 16, lock_color, maxf(1.5, size.x * 0.09))
+
+
+func _responsive_profile_for_size(viewport_size: Vector2) -> String:
 	if viewport_size.x < 900.0:
 		return "compact"
 	if viewport_size.x < 1440.0:
@@ -123,15 +133,6 @@ func _apply_overlay_responsive_layout(viewport_size: Vector2) -> void:
 	if storage_grid:
 		storage_grid.columns = 1 if viewport_size.x < 520.0 else 2
 
-
-func _ready() -> void:
-		name = "LockGlyph"
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-	func _draw() -> void:
-		var lock_color := Color("#FFD98A")
-		var body := Rect2(Vector2(size.x * 0.18, size.y * 0.48), Vector2(size.x * 0.64, size.y * 0.42))
-		draw_rect(body, lock_color, true)
-		draw_arc(Vector2(size.x * 0.5, size.y * 0.49), size.x * 0.22, PI, TAU, 16, lock_color, maxf(1.5, size.x * 0.09))
 
 @onready var status_label: Label = $StatusLabel
 
