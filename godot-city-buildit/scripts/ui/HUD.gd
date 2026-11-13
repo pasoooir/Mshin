@@ -95,6 +95,8 @@ var production_panel: PanelContainer
 var production_overlay: Control
 var city_needs_overlay: Control
 var residential_overlay: Control
+var epic_project_overlay: Control
+var _epic_panel_building: Building = null
 var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
@@ -145,6 +147,7 @@ func _ready() -> void:
 	ServiceManager.waste_changed.connect(_on_waste_changed)
 	TrafficManager.traffic_changed.connect(_on_traffic_changed)
 	TradeManager.trade_state_changed.connect(_on_trade_state_changed)
+	EpicProjectManager.epic_state_changed.connect(_on_epic_project_state_changed)
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
@@ -2743,10 +2746,211 @@ func open_residential_panel(building: Building) -> void:
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 	upgrade.pressed.connect(_upgrade_residential_from_panel.bind(building))
 	layout.add_child(upgrade)
+	if stage >= 6:
+		var epic_action := Button.new()
+		epic_action.name = "EpicProjectAction"
+		epic_action.custom_minimum_size.y = 42 * _ui_scale
+		if building.is_epic_building:
+			epic_action.text = "EPIC BUILDING · TOKEN PARTS"
+		elif str(EpicProjectManager.active_project.get("building_id", "")) == building.building_id:
+			epic_action.text = "VIEW ACTIVE EPIC PROJECT"
+		else:
+			var epic_reason := EpicProjectManager.get_start_block_reason(building)
+			epic_action.text = "START EPIC PROJECT" if epic_reason.is_empty() else "EPIC PROJECT LOCKED"
+			epic_action.disabled = not epic_reason.is_empty()
+			epic_action.tooltip_text = epic_reason
+		epic_action.add_theme_stylebox_override("normal", _toolbar_style(Color("#B68A35"), Color("#F2D27B")))
+		epic_action.add_theme_color_override("font_color", Color("#34280B"))
+		epic_action.pressed.connect(_open_epic_project_panel.bind(building))
+		layout.add_child(epic_action)
 
 func _upgrade_residential_from_panel(building: Building) -> void:
 	if is_instance_valid(building) and building.try_upgrade():
 		_close_residential_panel()
+
+
+func _open_epic_project_panel(building: Building) -> void:
+	if not is_instance_valid(building):
+		return
+	_close_residential_panel()
+	_close_epic_project_panel()
+	_epic_panel_building = building
+	epic_project_overlay = Control.new()
+	epic_project_overlay.name = "EpicProjectOverlay"
+	epic_project_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	epic_project_overlay.z_index = 130
+	epic_project_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(epic_project_overlay)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.025, 0.035, 0.68)
+	epic_project_overlay.add_child(shade)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var width := minf(620.0 * _ui_scale, viewport_size.x * 0.92)
+	var height := minf(590.0 * _ui_scale, viewport_size.y * 0.90)
+	var panel := PanelContainer.new()
+	panel.name = "EpicProjectPanel"
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -width * 0.5
+	panel.offset_right = width * 0.5
+	panel.offset_top = -height * 0.5
+	panel.offset_bottom = height * 0.5
+	panel.add_theme_stylebox_override("panel", _city_panel_style())
+	epic_project_overlay.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 9)
+	panel.add_child(layout)
+	_city_panel_heading(layout, "EPIC PROJECTS", _close_epic_project_panel)
+	var subtitle := Label.new()
+	subtitle.text = str(building.definition.get("name", "Residential Building"))
+	subtitle.add_theme_font_size_override("font_size", int(15 * _ui_scale))
+	subtitle.add_theme_color_override("font_color", Color("#24485B"))
+	layout.add_child(subtitle)
+
+	if building.is_epic_building:
+		var tier_name := ["", "BRONZE · TURTLE", "SILVER · LLAMA", "GOLD · CHEETAH"][clampi(building.epic_tier, 1, 3)]
+		var tier_label := Label.new()
+		tier_label.text = "EPIC BUILDING  ·  " + tier_name
+		tier_label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+		tier_label.add_theme_color_override("font_color", Color("#A87522"))
+		layout.add_child(tier_label)
+		var parts := Label.new()
+		parts.text = "TOKEN PARTS  ·  %d" % EpicProjectManager.get_token_part_count(["", "bronze", "silver", "gold"][clampi(building.epic_tier, 1, 3)])
+		layout.add_child(parts)
+		var entry: Dictionary = EpicProjectManager.epic_buildings.get(building.building_id, {})
+		var next_collect := int(entry.get("next_token_part_unix", 0))
+		var remaining := maxi(0, next_collect - int(Time.get_unix_time_from_system()))
+		var collect_status := Label.new()
+		collect_status.text = "NEXT TOKEN PART  ·  READY" if remaining <= 0 else "NEXT TOKEN PART  ·  %s" % _format_clock_duration(remaining)
+		layout.add_child(collect_status)
+		var collect := Button.new()
+		collect.name = "CollectEpicTokenPart"
+		collect.text = "COLLECT TOKEN PART"
+		collect.disabled = remaining > 0
+		collect.custom_minimum_size.y = 44 * _ui_scale
+		collect.pressed.connect(_collect_epic_token_part.bind(building))
+		layout.add_child(collect)
+		return
+
+	var active: Dictionary = EpicProjectManager.active_project
+	if active.is_empty():
+		var reason := EpicProjectManager.get_start_block_reason(building)
+		var explanation := Label.new()
+		explanation.text = reason if not reason.is_empty() else "A 24-hour community project converts this fully upgraded home into an Epic Building. Contribute items through specialization tasks to earn project points."
+		explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		layout.add_child(explanation)
+		var start := Button.new()
+		start.name = "StartEpicProject"
+		start.text = "START 24-HOUR EPIC PROJECT"
+		start.disabled = not reason.is_empty()
+		start.custom_minimum_size.y = 46 * _ui_scale
+		start.pressed.connect(_start_epic_project_from_panel.bind(building))
+		layout.add_child(start)
+		return
+
+	if str(active.get("building_id", "")) != building.building_id:
+		var busy := Label.new()
+		busy.text = "Another Epic Project is already active. Only one project can run at a time."
+		busy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		layout.add_child(busy)
+		return
+
+	var points := int(active.get("points", 0))
+	var tier := str(active.get("tier", "none")).to_upper()
+	var project_status := Label.new()
+	project_status.text = "EPIC POINTS  ·  %d / 200  ·  %s" % [points, tier]
+	project_status.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	project_status.add_theme_color_override("font_color", Color("#A87522"))
+	layout.add_child(project_status)
+	var progress := ProgressBar.new()
+	progress.name = "EpicProjectProgress"
+	progress.min_value = 0
+	progress.max_value = 200
+	progress.value = clampi(points, 0, 200)
+	progress.show_percentage = false
+	progress.custom_minimum_size.y = 12 * _ui_scale
+	layout.add_child(progress)
+	var finished := bool(active.get("finished", false))
+	if finished:
+		var finish_label := Label.new()
+		finish_label.text = "PROJECT COMPLETE · " + tier
+		finish_label.add_theme_color_override("font_color", Color("#34734D") if tier != "NONE" else Color("#A13F35"))
+		layout.add_child(finish_label)
+		var finish_button := Button.new()
+		finish_button.name = "FinishEpicProject"
+		finish_button.custom_minimum_size.y = 46 * _ui_scale
+		if tier == "NONE":
+			finish_button.text = "CLOSE · NO EPIC TIER EARNED"
+			finish_button.pressed.connect(_dismiss_epic_project_from_panel.bind(building))
+		else:
+			finish_button.text = "UPGRADE TO EPIC BUILDING"
+			finish_button.pressed.connect(_claim_epic_project_from_panel.bind(building))
+		layout.add_child(finish_button)
+		return
+
+	var remaining_label := Label.new()
+	remaining_label.text = "TIME REMAINING  ·  %s" % _format_clock_duration(EpicProjectManager.get_project_remaining_seconds())
+	layout.add_child(remaining_label)
+	var task_scroll := ScrollContainer.new()
+	task_scroll.name = "EpicTaskScroll"
+	task_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	task_scroll.custom_minimum_size.y = 220 * _ui_scale
+	layout.add_child(task_scroll)
+	var task_list := VBoxContainer.new()
+	task_list.add_theme_constant_override("separation", 6)
+	task_scroll.add_child(task_list)
+	for task in active.get("tasks", []):
+		var task_row := HBoxContainer.new()
+		task_row.add_theme_constant_override("separation", 8)
+		task_list.add_child(task_row)
+		var item_id := str(task.get("item_id", ""))
+		var amount := int(task.get("amount", 0))
+		var points_value := int(task.get("points", 0))
+		task_row.add_child(Icons.make_item_icon("raw" if ProductionManager.raw_materials.has(item_id) else "crafted", item_id, Vector2(38, 38) * _ui_scale))
+		var task_label := Label.new()
+		task_label.text = "%s × %d  ·  +%d EPIC POINTS" % [CityDemandManager.get_item_name(item_id), amount, points_value]
+		task_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		task_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		task_row.add_child(task_label)
+		var contribute := Button.new()
+		contribute.text = "CONTRIBUTE"
+		contribute.disabled = StorageManager.get_count(item_id) < amount
+		contribute.pressed.connect(_contribute_epic_task_from_panel.bind(str(task.get("id", "")), building))
+		task_row.add_child(contribute)
+
+func _start_epic_project_from_panel(building: Building) -> void:
+	if is_instance_valid(building) and EpicProjectManager.start_project(building.building_id):
+		_open_epic_project_panel(building)
+
+func _contribute_epic_task_from_panel(task_id: String, building: Building) -> void:
+	if EpicProjectManager.contribute_to_task(task_id):
+		_open_epic_project_panel(building)
+
+func _claim_epic_project_from_panel(building: Building) -> void:
+	if EpicProjectManager.claim_project():
+		_open_epic_project_panel(building)
+
+func _dismiss_epic_project_from_panel(building: Building) -> void:
+	if EpicProjectManager.dismiss_finished_project():
+		_open_epic_project_panel(building)
+
+func _collect_epic_token_part(building: Building) -> void:
+	if is_instance_valid(building):
+		EpicProjectManager.collect_token_part(building.building_id)
+		_open_epic_project_panel(building)
+
+func _on_epic_project_state_changed() -> void:
+	if is_instance_valid(epic_project_overlay) and is_instance_valid(_epic_panel_building):
+		_open_epic_project_panel(_epic_panel_building)
+
+func _close_epic_project_panel() -> void:
+	if is_instance_valid(epic_project_overlay):
+		epic_project_overlay.queue_free()
+	epic_project_overlay = null
+	_epic_panel_building = null
 
 func _close_residential_panel() -> void:
 	for city_building in BuildManager.buildings.values():
