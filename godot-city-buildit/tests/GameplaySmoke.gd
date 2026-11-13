@@ -298,11 +298,28 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.remove_road(Vector2i(0, 0)), "The second gateway bridge tile must be removable for the connectivity test.")
 	_check(not road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "Removing both bridge tiles must disconnect the far road segment from the highway gateway.")
 	_check(not BuildManager.has_road_access(Vector2i(1, 1), Vector2i.ONE), "A building beside a disconnected road segment must lose valid road access.")
+	var disconnected_building := FireHazardTestBuilding.new()
+	disconnected_building.status = "completed"
+	disconnected_building.grid_pos = Vector2i(1, 1)
+	disconnected_building.definition = {"size": Vector2i.ONE, "category": "industrial"}
+	add_child(disconnected_building)
+	_check(not BuildManager.is_building_operational(disconnected_building), "A completed building beside a disconnected road must become non-operational.")
+	var disconnected_factory = ProductionComponentScript.new()
+	disconnected_factory.is_factory = true
+	disconnected_factory.slot_count = 1
+	disconnected_factory.factory_type = "factory_small"
+	disconnected_factory.owner_building = disconnected_building
+	add_child(disconnected_factory)
+	_check(not disconnected_factory.start_factory("metal", 0), "A disconnected factory must not start production.")
 	_check(road_system.get_road_placement_error(Vector2i(2, 0)).contains("highway network"), "New roads must not extend a disconnected road segment.")
 
 	_check(road_system.place_road(Vector2i(0, -1)), "The first bridge tile must reconnect to the gateway.")
 	_check(road_system.place_road(Vector2i(0, 0)), "The second bridge tile must reconnect the far segment.")
 	_check(road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "Restoring the bridge must reconnect the far road segment.")
+	_check(BuildManager.is_building_operational(disconnected_building), "Restoring the gateway connection must reactivate the building.")
+	_check(disconnected_factory.start_factory("metal", 0), "A reconnected factory must be able to resume production.")
+	disconnected_factory.queue_free()
+	disconnected_building.queue_free()
 	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 2)
 
 func _test_road_painting_drag(road_system) -> void:
