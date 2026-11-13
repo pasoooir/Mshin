@@ -48,7 +48,8 @@ func _collect_metrics() -> Dictionary:
 	for building in BuildManager.buildings.values():
 		if not is_instance_valid(building) or str(building.get("status")) != "completed":
 			continue
-		var category := str(building.get("definition", {}).get("category", ""))
+		var definition: Dictionary = building.get("definition")
+		var category := str(definition.get("category", ""))
 		if category == "residential":
 			metrics["homes"] = int(metrics["homes"]) + 1
 		elif category == "industrial":
@@ -129,9 +130,4 @@ func from_save_dict(data: Dictionary) -> void:
 			unlocked[id] = false
 		if not progress.has(id):
 			progress[id] = 0
-	epic_state_changed_placeholder()
 	state_changed.emit()
-
-func epic_state_changed_placeholder() -> void:
-	# Kept as a tiny no-op so save migration remains explicit and side-effect free.
-	pass
