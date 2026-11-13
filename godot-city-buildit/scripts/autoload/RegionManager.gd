@@ -48,7 +48,7 @@ func get_region_list() -> Array[Dictionary]:
 		var entry: Dictionary = region.duplicate(true)
 		entry["unlocked"] = str(region.get("id", "")) in unlocked_regions
 		entry["active"] = str(region.get("id", "")) == active_region_id
-		entry["population"] = _population_from_snapshot(region_states.get(str(region.get("id", "")), {}))
+		entry["population"] = GameManager.population if str(region.get("id", "")) == active_region_id else _population_from_snapshot(region_states.get(str(region.get("id", "")), {}))
 		result.append(entry)
 	return result
 
