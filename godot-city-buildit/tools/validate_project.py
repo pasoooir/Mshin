@@ -196,6 +196,7 @@ production_component_source = (ROOT / "scripts/production/ProductionComponent.gd
 trade_manager_source = (ROOT / "scripts/autoload/TradeManager.gd").read_text(encoding="utf-8")
 world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
 cargo_ship_visual_source = (ROOT / "scripts/world/CargoShipVisual.gd").read_text(encoding="utf-8")
+citizen_feedback_source = (ROOT / "scripts/ui/CitizenFeedbackBubbles.gd").read_text(encoding="utf-8")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
 
 for contract in [
@@ -278,6 +279,21 @@ if '20000: "cargo_ship"' not in (ROOT / "scripts/autoload/LevelProgression.gd").
     errors.append("Cargo Ship 20,000 population milestone is missing")
 if "CargoShipVisualScript" not in world_presentation_source or "CargoShipVisual" not in world_presentation_source:
     errors.append("WorldPresentation must include the visible cargo ship")
+if "CitizenFeedbackBubbles.gd" not in (ROOT / "scenes/main.tscn").read_text(encoding="utf-8"):
+    errors.append("Main scene must instantiate the citizen feedback bubble layer")
+for contract in [
+    "func get_feedback_for_home(home: Node3D) -> Dictionary:",
+    "MAX_VISIBLE_BUBBLES := 3",
+    "BUBBLE_SHOW_SECONDS := 5.5",
+    "BUBBLE_HIDE_SECONDS := 2.5",
+    "BuildManager.has_road_access(grid_pos, size)",
+    "ServiceManager.power_served_ids.has(home_id)",
+    "ServiceManager.water_served_ids.has(home_id)",
+    "func _on_bubble_pressed(building_id: String) -> void:",
+    "open_residential_panel(building)",
+]:
+    if contract not in citizen_feedback_source:
+        errors.append(f"Citizen feedback bubble contract is missing: {contract}")
 for contract in [
     "func set_departed(value: bool) -> void:",
     "const OPEN_WATER_X := 142.0",
@@ -301,6 +317,9 @@ for contract in [
     "must grant one Golden Key",
     "must receive a fresh three-crate manifest",
     "CargoShipVisual",
+    "func _test_citizen_feedback_bubbles()",
+    "must produce a road feedback bubble",
+    "must explain the missing road access",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Trade gameplay regression test is missing: {contract}")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://c8mainscene001"]
+[gd_scene load_steps=9 format=3 uid="uid://c8mainscene001"]
 
 [ext_resource type="Script" path="res://scripts/systems/CameraController.gd" id="1_camera"]
 [ext_resource type="Script" path="res://scripts/ui/HUD.gd" id="2_hud"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/systems/RoadSystem.gd" id="5_road"]
 [ext_resource type="Script" path="res://scripts/GameBootstrap.gd" id="6_bootstrap"]
 [ext_resource type="Script" path="res://scripts/world/WorldPresentation.gd" id="7_world"]
+[ext_resource type="Script" path="res://scripts/ui/CitizenFeedbackBubbles.gd" id="8_citizen_feedback"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("6_bootstrap")
@@ -50,6 +51,9 @@ script = ExtResource("4_ghost")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("2_hud")
+
+[node name="CitizenFeedback" type="CanvasLayer" parent="."]
+script = ExtResource("8_citizen_feedback")
 
 [node name="TopLeft" type="HBoxContainer" parent="HUD"]
 offset_left = 14.0

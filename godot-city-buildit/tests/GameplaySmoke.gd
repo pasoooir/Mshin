@@ -6,6 +6,7 @@ const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 const BuildingScene = preload("res://scenes/buildings/Building.tscn")
 const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
+const CitizenFeedbackBubblesScript = preload("res://scripts/ui/CitizenFeedbackBubbles.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 
@@ -1338,9 +1339,30 @@ func _test_trade_depot_and_global_market() -> void:
 	StorageManager.from_save_dict(previous_storage)
 	TradeManager.from_save_dict(previous_trade)
 
+func _test_citizen_feedback_bubbles() -> void:
+	var feedback_manager = get_node_or_null("CitizenFeedback")
+	_check(feedback_manager != null and feedback_manager.has_method("get_feedback_for_home"), "Citizen feedback bubble layer must be present in the main city scene.")
+	var home := FireHazardTestBuilding.new()
+	home.building_id = "smoke_citizen_feedback_home"
+	home.building_type = "residential_villa"
+	home.status = "completed"
+	home.grid_pos = Vector2i(99, 99)
+	home.definition = {"category":"residential", "size":Vector2i(2, 2)}
+	add_child(home)
+	BuildManager.buildings[home.building_id] = home
+	var feedback: Dictionary = feedback_manager.get_feedback_for_home(home) if feedback_manager else {}
+	_check(str(feedback.get("kind", "")) == "road", "A residential home without connected road access must produce a road feedback bubble.")
+	_check(str(feedback.get("message", "")).contains("Road"), "Citizen feedback must explain the missing road access in readable text.")
+	_check(str(feedback.get("icon", "")) == "road", "Road feedback must use the local road icon.")
+	var invalid_feedback: Dictionary = feedback_manager.get_feedback_for_home(null) if feedback_manager else {}
+	_check(invalid_feedback.is_empty(), "Citizen feedback must ignore invalid building references.")
+	BuildManager.buildings.erase(home.building_id)
+	home.queue_free()
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_mobile_haptics_contract()
+	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
 	await _test_build_menu_visibility()
