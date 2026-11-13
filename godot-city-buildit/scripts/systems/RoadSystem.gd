@@ -61,6 +61,13 @@ func set_road_upgrade_mode(active: bool) -> void:
 func get_road_level(grid_pos: Vector2i) -> int:
 	return clampi(int(road_levels.get(grid_pos, 1)), 1, 4)
 
+func get_road_level_name(level: int) -> String:
+	match clampi(level, 1, 4):
+		1: return "2-lane road"
+		2: return "4-lane road"
+		3: return "6-lane road"
+		_: return "Avenue"
+
 func get_road_upgrade_cost(grid_pos: Vector2i) -> int:
 	if not roads.has(grid_pos):
 		return 0
@@ -98,7 +105,7 @@ func upgrade_road(grid_pos: Vector2i) -> bool:
 func restore_road_level(grid_pos: Vector2i, level: int) -> void:
 	if not roads.has(grid_pos):
 		return
-	var restored_level := clampi(level, 1, 4)
+	var restored_level := 1 if grid_pos == GATEWAY_ROAD_CELL else clampi(level, 1, 4)
 	if restored_level <= 1:
 		road_levels.erase(grid_pos)
 	else:
