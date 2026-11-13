@@ -1242,6 +1242,41 @@ func _test_building_model_loader_contract() -> void:
 	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
 	villa_visual_probe.free()
 
+func _test_region_city_snapshots() -> void:
+	var previous_regions: Dictionary = RegionManager.to_save_dict()
+	var previous_level := GameManager.level
+	var previous_simoleons := EconomyManager.simoleons
+	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem")
+	_check(road_system != null, "Region snapshot test requires the active RoadSystem.")
+	if road_system == null:
+		return
+	var original_snapshot: Dictionary = SaveManager.capture_region_snapshot()
+	var gateway: Vector2i = RoadSystemScript.GATEWAY_ROAD_CELL
+	var marker_road := gateway + Vector2i.UP
+	if not road_system.has_road(marker_road):
+		_check(road_system.place_road(marker_road), "Region snapshot test must add a connected marker road.")
+	var capital_snapshot: Dictionary = SaveManager.capture_region_snapshot()
+	_check(capital_snapshot.has("roads") and capital_snapshot.has("buildings") and capital_snapshot.has("epic_projects"), "Each region snapshot must include roads, buildings and Epic Project state.")
+	GameManager.level = 25
+	RegionManager._refresh_unlocks()
+	_check("sunny_isles" in RegionManager.unlocked_regions, "Sunny Isles must unlock at Mayor Level 25.")
+	RegionManager.region_states["sunny_isles"] = {
+		"roads": [[gateway.x, gateway.y, 1]],
+		"buildings": [],
+		"epic_projects": {},
+		"happiness": 100.0
+	}
+	_check(RegionManager.switch_region("sunny_isles", false), "Unlocked Sunny Isles must open as an independent region.")
+	_check(RegionManager.active_region_id == "sunny_isles" and road_system.get_road_count() == 1, "A new region must load its own gateway-only road map.")
+	_check(RegionManager.switch_region("capital", false), "The saved Capital City must be reachable again.")
+	_check(road_system.has_road(marker_road) and road_system.get_road_count() == capital_snapshot.get("roads", []).size(), "Returning to Capital City must restore its independent road layout.")
+	_check(RegionManager.region_states.get("capital", {}).has("epic_projects"), "Switching regions must preserve region-specific Epic Project state.")
+	SaveManager.load_region_snapshot(original_snapshot)
+	GameManager.level = previous_level
+	EconomyManager.simoleons = previous_simoleons
+	RegionManager.from_save_dict(previous_regions)
+	GameManager.level_changed.emit(GameManager.level)
+
 func _test_achievements() -> void:
 	var previous_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var previous_achievements: Dictionary = AchievementManager.to_save_dict()
@@ -1549,6 +1584,7 @@ func _run_gameplay_test() -> void:
 	_test_mobile_haptics_contract()
 	_test_epic_project_core()
 	_test_achievements()
+	_test_region_city_snapshots()
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
