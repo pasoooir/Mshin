@@ -49,11 +49,11 @@ var building_types: Dictionary = {
 	"farmers_store": {"name":"Country Store", "category":"commercial", "subtype":"farmers_store", "cost":300000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.68,0.54,0.34), "level":50, "production_slots":1, "shop_id":"farmers_store"},
 	"dessert_shop": {"name":"Dessert Shop", "category":"commercial", "subtype":"dessert_shop", "cost":350000, "size":Vector2i(2,2), "population":0, "build_time":5.0, "color":Color(0.90,0.58,0.68), "level":55, "production_slots":1, "shop_id":"dessert_shop"},
 
-	"coconut_grove": {"name":"Coconut Grove", "category":"industrial", "factory_tier":"small", "region":"sunny_isles", "cost":15000, "size":Vector2i(3,3), "population":0, "build_time":7.0, "color":Color("#4BAE9A"), "level":25, "production_slots":2},
-	"snowberry_farm": {"name":"Snowberry Farm", "category":"industrial", "factory_tier":"small", "region":"frosty_fjords", "cost":18000, "size":Vector2i(3,3), "population":0, "build_time":8.0, "color":Color("#91B7D1"), "level":30, "production_slots":2},
-	"cactus_farm": {"name":"Cactus Farm", "category":"industrial", "factory_tier":"small", "region":"cactus_canyon", "cost":22000, "size":Vector2i(3,3), "population":0, "build_time":8.0, "color":Color("#B88B4E"), "level":35, "production_slots":2},
-	"herb_garden": {"name":"Herb Garden", "category":"industrial", "factory_tier":"small", "region":"green_valley", "cost":26000, "size":Vector2i(3,3), "population":0, "build_time":9.0, "color":Color("#5D9D57"), "level":40, "production_slots":2},
-	"olive_grove": {"name":"Olive Grove", "category":"industrial", "factory_tier":"small", "region":"limestone_cliffs", "cost":30000, "size":Vector2i(3,3), "population":0, "build_time":9.0, "color":Color("#87965B"), "level":45, "production_slots":2},
+	"coconut_grove": {"name":"Coconut Grove", "category":"industrial", "factory_tier":"small", "region":"sunny_isles", "cost":15000, "size":Vector2i(3,3), "population":0, "build_time":7.0, "color":Color("#4BAE9A"), "level":25, "production_slots":2, "regional_factory":true, "counts_toward_factory_limit":false},
+	"snowberry_farm": {"name":"Snowberry Farm", "category":"industrial", "factory_tier":"small", "region":"frosty_fjords", "cost":18000, "size":Vector2i(3,3), "population":0, "build_time":8.0, "color":Color("#91B7D1"), "level":30, "production_slots":2, "regional_factory":true, "counts_toward_factory_limit":false},
+	"cactus_farm": {"name":"Cactus Farm", "category":"industrial", "factory_tier":"small", "region":"cactus_canyon", "cost":22000, "size":Vector2i(3,3), "population":0, "build_time":8.0, "color":Color("#B88B4E"), "level":35, "production_slots":2, "regional_factory":true, "counts_toward_factory_limit":false},
+	"herb_garden": {"name":"Herb Garden", "category":"industrial", "factory_tier":"small", "region":"green_valley", "cost":26000, "size":Vector2i(3,3), "population":0, "build_time":9.0, "color":Color("#5D9D57"), "level":40, "production_slots":2, "regional_factory":true, "counts_toward_factory_limit":false},
+	"olive_grove": {"name":"Olive Grove", "category":"industrial", "factory_tier":"small", "region":"limestone_cliffs", "cost":30000, "size":Vector2i(3,3), "population":0, "build_time":9.0, "color":Color("#87965B"), "level":45, "production_slots":2, "regional_factory":true, "counts_toward_factory_limit":false},
 	"factory_small": {"name":"Small Factory", "category":"industrial", "factory_tier":"small", "cost":0, "size":Vector2i(2,2), "population":0, "build_time":4.0, "color":Color(0.55,0.55,0.6), "produces":"metal", "level":1, "production_slots":2, "pollution":1, "pollution_radius":12.0},
 	"factory_basic": {"name":"Basic Factory", "category":"industrial", "factory_tier":"basic", "cost":500, "size":Vector2i(2,2), "population":0, "population_required":4000, "build_time":5.0, "color":Color(0.48,0.50,0.56), "level":1, "production_slots":3, "pollution":1, "pollution_radius":10.0},
 	"factory_mass": {"name":"Mass Production Factory", "category":"industrial", "factory_tier":"mass", "cost":7000, "size":Vector2i(2,2), "population":0, "population_required":27000, "build_time":6.0, "color":Color(0.43,0.47,0.53), "level":1, "production_slots":4, "pollution":1, "pollution_radius":8.0},
@@ -174,7 +174,7 @@ func get_factory_build_lock_reason(type_id: String) -> String:
 	var definition: Dictionary = building_types[type_id]
 	if str(definition.get("category", "")) != "industrial":
 		return ""
-	if not can_build_another_factory():
+	if bool(definition.get("counts_toward_factory_limit", true)) and not can_build_another_factory():
 		return "Factory quota full. Reach the next Mayor Level."
 	var required_population := int(definition.get("population_required", 0))
 	if GameManager.population < required_population:
@@ -440,7 +440,7 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 	for occupied_cell in get_footprint_cells(grid_pos, size):
 		building_cells[occupied_cell] = building_node
 	building_node.setup(data)
-	if definition.get("category", "") == "industrial":
+	if definition.get("category", "") == "industrial" and bool(definition.get("counts_toward_factory_limit", true)):
 		factory_count += 1
 	construction_started.emit(building_id)
 	building_placed.emit(data)
@@ -497,7 +497,7 @@ func unregister_building(building_id: String) -> void:
 		if building_cells.get(cell) == building:
 			building_cells.erase(cell)
 	buildings.erase(building_id)
-	if definition.get("category", "") == "industrial":
+	if definition.get("category", "") == "industrial" and bool(definition.get("counts_toward_factory_limit", true)):
 		factory_count = maxi(0, factory_count - 1)
 	# Remove population contributed by completed residential or populated buildings.
 	var removed_population := int(building.current_population)
