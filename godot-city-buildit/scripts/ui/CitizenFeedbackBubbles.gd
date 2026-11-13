@@ -42,15 +42,17 @@ func get_feedback_for_home(home: Node3D) -> Dictionary:
 	if str(definition.get("category", "")) != "residential":
 		return {}
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
-	if not BuildManager.has_road_access(home.get("grid_pos"), size):
+	var grid_pos: Vector2i = home.get("grid_pos")
+	var home_id := str(home.get("building_id"))
+	if not BuildManager.has_road_access(grid_pos, size):
 		return _feedback("road", "Road access needed", "road", 0)
-	if HappinessManager._service_group_is_unlocked("power") and not ServiceManager.power_served_ids.has(str(home.get("building_id"))):
+	if HappinessManager._service_group_is_unlocked("power") and not ServiceManager.power_served_ids.has(home_id):
 		return _feedback("power", "We need power", "power", 1)
-	if HappinessManager._service_group_is_unlocked("water") and not ServiceManager.water_served_ids.has(str(home.get("building_id"))):
+	if HappinessManager._service_group_is_unlocked("water") and not ServiceManager.water_served_ids.has(home_id):
 		return _feedback("water", "We need water", "water", 2)
-	if HappinessManager._service_group_is_unlocked("sewage") and not ServiceManager.sewage_served_ids.has(str(home.get("building_id"))):
+	if HappinessManager._service_group_is_unlocked("sewage") and not ServiceManager.sewage_served_ids.has(home_id):
 		return _feedback("sewage", "Sewage service needed", "sewage", 3)
-	if HappinessManager._service_group_is_unlocked("waste") and not ServiceManager.waste_served_ids.has(str(home.get("building_id"))):
+	if HappinessManager._service_group_is_unlocked("waste") and not ServiceManager.waste_served_ids.has(home_id):
 		return _feedback("waste", "Please collect waste", "waste", 4)
 	if HappinessManager._service_group_is_unlocked("fire") and not HappinessManager._nearby_service_group(home, "fire", 38.0):
 		return _feedback("fire", "We need fire cover", "fire", 5)
@@ -58,7 +60,7 @@ func get_feedback_for_home(home: Node3D) -> Dictionary:
 		return _feedback("police", "We need police cover", "police", 6)
 	if HappinessManager._service_group_is_unlocked("health") and not HappinessManager._nearby_service_group(home, "health", 42.0):
 		return _feedback("health", "We need healthcare", "health", 7)
-	var happiness := HappinessManager.get_home_happiness(str(home.get("building_id")))
+	var happiness := HappinessManager.get_home_happiness(home_id)
 	if happiness < 75.0:
 		return _feedback("happiness", "Please improve our city", "happiness", 8)
 	return _feedback("happy", "We're happy here!", "happiness", 20)
