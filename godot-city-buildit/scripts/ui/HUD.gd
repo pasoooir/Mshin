@@ -245,7 +245,7 @@ func _apply_responsive_layout() -> void:
 		context_header.offset_bottom = 230.0 * scale_factor
 	var actions := get_node_or_null("BottomActions") as Control
 	if actions:
-		var half_actions := minf(viewport_size.x * 0.34, 300.0 * scale_factor)
+		var half_actions := minf(viewport_size.x * 0.42, 360.0 * scale_factor)
 		actions.offset_left = -half_actions
 		actions.offset_right = half_actions
 		actions.offset_top = -112.0 * scale_factor
