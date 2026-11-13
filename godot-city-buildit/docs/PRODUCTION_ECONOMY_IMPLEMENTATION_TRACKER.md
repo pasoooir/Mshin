@@ -2,24 +2,34 @@
 
 **Snapshot:** 2026-11-13  
 **Project:** godot-city-buildit  
-**Branch:** main  
-**Status:** Production-economy foundation from PR #394 and verified-recipe expansion PR #437 are merged. Godot validation, Web build/Chromium desktop+mobile, and GitHub Pages deployment passed on the post-merge main commit. Physical Android side-by-side visual acceptance remains open; do not claim pixel-identical SCBI UI until that review is complete.
+**Working branch:** `feat/production-economy-final-acceptance`  
+**PR:** [#438 — Complete production economy validation and recipe coverage](https://github.com/pasoooir/Mshin/pull/438)  
+**Baseline:** PR #394 — `06c3e2bd87435ddc3dce5df0d2c73ff37bff8fa8`  
+**Previous expansion:** PR #437 — `c9ea5e7b6ed61a2b3afa2a92e33406522da528ff`
 
-**Baseline PR:** #394 — merge commit `06c3e2bd87435ddc3dce5df0d2c73ff37bff8fa8`.  
-**Recipe expansion PR:** [#437](https://git## Six implementation slices
+**Current evidence:** Godot Validation run `43488845705` and Mshin Playable Web run `43488845632` both passed on PR #438 head `676fc03c9ba8a450d303b41f936a6731f17ffae8`. The Web workflow passed Godot import, startup, GameplaySmoke, Web export and Chromium desktop/mobile launch checks. These checks do not constitute physical Android handset acceptance.
+
+**Acceptance boundary:** production code, recipe integrity, economy diagnostics, long-session/offline regression tests and mobile-viewport UI behavior are automated and passing. A real Android device screenshot comparison and physical touch test remain unverified. Do not mark this domain fully closed or claim pixel-identical SimCity BuildIt UI until that physical check is performed.
+
+## Six implementation slices
 
 | Slice | Deliverable | Evidence | Status |
 |---|---|---|---|
-| 1 | Single authoritative product/factory/store catalog | `scripts/autoload/ProductionManager.gd`; 70 craftable recipes plus four unresolved catalog-only identities | 🟢 70/74 products; four intentionally disabled |
-| 2 | Correct per-slot production and warehouse transfer | `scripts/production/ProductionComponent.gd`; `scripts/autoload/StorageManager.gd`; `scripts/buildings/Building.gd` | 🟢 Core |
-| 3 | Residential upgrade plan and supplier details | `scripts/ui/HUD.gd`; `scripts/buildings/Building.gd`; ProductionManager upgrade requirements | 🟢 Core |
-| 4 | City-wide needs dashboard and no-double-count allocation | `scripts/autoload/CityDemandManager.gd`; HUD City Needs shortcut | 🟢 Core |
-| 5 | SCBI-inspired mobile production/residential panels | `scripts/ui/HUD.gd`; `scripts/ui/Icons.gd`; local crafted SVG icons | 🟡 Android screenshot comparison pending |
-| 6 | Economy, construction timers, save/load and scores | `scripts/autoload/EconomyManager.gd`; `SaveManager.gd`; `BuildManager.gd`; `Building.gd` | 🟢 Code and CI passed; physical-device review remains separate |
+| 1 | One authoritative raw/crafted/store catalog | `scripts/autoload/ProductionManager.gd`; 73 recipe definitions plus one conflict-only catalog identity | 🟢 73/74 identities have recipe definitions; 70 currently craftable |
+| 2 | Per-slot production and warehouse transfer | `scripts/production/ProductionComponent.gd`; `scripts/autoload/StorageManager.gd`; `scripts/buildings/Building.gd` | 🟢 Core + stress regression |
+| 3 | Residential upgrade requirements and supplier visibility | `scripts/ui/HUD.gd`; `scripts/buildings/Building.gd`; ProductionManager upgrade requirements | 🟢 Core |
+| 4 | City-wide needs and no-double-count allocation | `scripts/autoload/CityDemandManager.gd`; HUD City Needs shortcut | 🟢 Core |
+| 5 | SCBI-inspired mobile production/residential panels | `scripts/ui/HUD.gd`; `scripts/ui/Icons.gd`; local crafted SVG icons | 🟡 Chromium mobile passes; physical Android comparison pending |
+| 6 | Economy, construction timers, save/load and scores | `EconomyManager.gd`; `SaveManager.gd`; `BuildManager.gd`; `Building.gd` | 🟢 Code/CI regression passes; device review separate |
 
-## Current production catalog coverage
+## Product and recipe coverage
 
-- Raw materials: 11; craftable commercial products: 70; unresolved catalog-only product identities: 4 (74 standard product identities across the 14 commercial store families).
+- Raw material catalog: 16 entries total — 11 standard SCBI materials plus 5 Mshin regional materials.
+- Standard commercial catalog: 74 product identities across 14 store families.
+- Authoritative `crafted_items`: 73 recipe definitions.
+- Currently craftable: 70 recipes.
+- Recipe definitions with known inputs, base time and reference value but unknown exact Mayor Level: 3. These remain locked.
+- Catalog-only conflict identity: 1 (Tapestry). It remains visible but not craftable.
 - Building Supplies: 6 recipes.
 - Hardware Store: 6 recipes.
 - Farmer's Market: 7 recipes.
@@ -29,68 +39,93 @@
 - Home Appliances: 5 recipes.
 - Gardening Supplies: 6 recipes.
 - Fashion Store: 5 recipes.
-- Sports Shop: 4 recipes.
-- Toy Shop: 2 recipes.
-- Bureau of Restoration: 4 recipes.
-- Country Store / Farmer's Store: 3 recipes.
+- Sports Shop: 5 identities (4 craftable; Football Shoes has an unverified Mayor Level gate).
+- Toy Shop: 4 identities (2 craftable; Kite and Teddy Bear have unverified Mayor Level gates).
+- Bureau of Restoration: 5 identities (4 craftable; Tapestry has conflicting input evidence).
+- Farmer's Store: 3 recipes.
 - Dessert Shop: 5 recipes.
-- The four unresolved products remain visible but disabled: Football Shoes (item unlock level unknown), Kite (item unlock level unknown), Teddy Bear (item unlock level and production time unresolved), and Tapestry (community references disagree on Textiles ×3 vs ×4).
-- PR #437 added verified recipes for Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone and Stained Glass. Stained Glass requires the first store star; the recipe and production-time gate are tested.
-- `store_catalog` now contains only unresolved product identities. Verified recipes remain in the authoritative `crafted_items` catalog and are not duplicated as unresolved placeholders.
-- Traditional Restaurant and Art Supplies: Mshin-specific production panels open with an explicit empty/verification message.
-- All recipe data from community-reference sources remains community-derived, not EA-confirmed. Do not silently turn disputed quantities into official balancing facts.
 
-## Required invariants
+### New source-backed product records in PR #438
+
+- Football Shoes: Shoes ×1 + Chemicals ×3; 35-minute base time; reference value 920. The exact item Mayor Level is unknown, so it cannot be produced or selected for generated Global Trade/Cargo Ship offers.
+- Kite: Home Textiles ×2 + Planks ×2 + Paint ×2; 75-minute base time; reference value 1,000. Exact item Mayor Level remains unknown and is not guessed.
+- Teddy Bear: Home Textiles ×4 + Plastic ×2; 60-minute base time; reference value 600. Exact item Mayor Level remains unknown and is not guessed.
+- Tapestry: reference time 210 minutes and reference value 2,560 are recorded. Current Bureau of Restoration 2024 table reports Textiles ×4 + Paint ×2 + Glue ×2; its product page reports Textiles ×3 + Paint ×2 + Glue ×2. Both candidate ingredient sets are exposed in the detail panel; production remains disabled until the conflict is resolved.
+- Sources are community-reference pages, not official EA documentation. A missing Mayor Level is represented as unverified metadata, not replaced with a guessed level.
+
+### Previous recipe expansion
+
+PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone and Stained Glass. Stained Glass requires one Store Star. Recipe inputs, base times, level gates and star gates are covered by GameplaySmoke.
+
+## Economy integrity and balancing evidence
+
+- `get_recipe_economy_profile()` reports output reference value, summed input reference value, gross reference-value spread, production duration and spread per minute.
+- This profile is explicitly a comparison of reference max-selling values. It is not net profit: it excludes time opportunity cost, taxes, trade fees, bonuses and player-specific effects.
+- `get_economy_catalog_audit()` checks raw/crafted reference values and times, supplier IDs, non-empty input definitions, positive quantities, valid ingredient references, catalog-only duplication and unresolved gates.
+- Negative reference-value spreads are warnings, not silently rebalanced prices. The current reference data flags Sports Drink, Protein Bar, Football Shoes, Kite and Teddy Bear. These warnings must not be interpreted as proof of negative cash profit or as a reason to override source-backed values without in-game evidence.
+- Unknown item IDs return zero reference value and zero production time. They no longer receive invented fallback values.
+- Trade eligibility is centralized. Generated Global Trade and Cargo Ship pools exclude products whose Mayor Level gate is unverified or whose reference value is missing.
+- No source-backed price, ingredient quantity or Mayor Level was changed solely to force a positive spread.
+
+## Production, inventory and offline invariants
 
 1. First residential upgrade remains 1 Nail + 1 Metal.
-2. Product inputs are checked as a complete set before any storage mutation.
+2. Product inputs are checked as a complete set before inventory mutation.
 3. A failed order never partially consumes inventory.
-4. Collect adds exactly one output to City Storage.
-5. A full warehouse leaves a ready output on its production slot.
-6. Production and construction use persisted Unix finish timestamps.
-7. Shared warehouse units are allocated to at most one home plan in a dashboard snapshot.
-8. Per-home upgrade buttons require the full amount physically stored; in-production and ready-to-collect quantities are shown separately.
-9. City Needs refreshes after inventory, production, construction, upgrade, XP, population, happiness and currency changes.
-10. A recipe with unresolved source conflicts is visibly warned; an unverified recipe cannot start.
+4. Commercial queue inputs are reserved exactly once when the order is accepted.
+5. Commercial stores process one active order at a time; the next queued order starts after the previous one completes.
+6. Factory slots run independently in parallel.
+7. Collect adds exactly one output to City Storage.
+8. A full warehouse leaves a ready output on its production slot.
+9. Production and construction use persisted Unix finish timestamps.
+10. Restoring a queue does not charge reserved inputs again.
+11. Offline elapsed timers restore to ready and advance the next sequential commercial order without skipping a batch.
+12. A recipe with unresolved source conflicts or an unverified unlock level cannot start.
+13. Trade generation does not offer products whose item unlock level is unverified.
+
+## Mobile production panel
+
+- The store catalog is laid out as one horizontal row inside a horizontally scrollable container; products cannot wrap into a clipped second row.
+- Ingredient and candidate-input labels wrap within narrow detail panels.
+- Product details expose known reference time/value and clearly disclose disputed ingredients or unknown Mayor Level gates.
+- GameplaySmoke checks the complete catalog row, child count and horizontal-scroll contract.
+- Chromium CI launches the actual Web game in a touch-enabled 844×390 landscape viewport.
+- This is mobile viewport/browser evidence, not a physical Android screenshot or touch-acceptance result.
 
 ## Source-conflict register
 
-The following community-reference inputs differ between available tables and must be checked against a current live-game capture before final balancing:
+- Tapestry: Textiles ×3 vs ×4 conflict remains unresolved; do not choose one silently.
+- Football Shoes, Kite and Teddy Bear: exact product Mayor Level gates remain unknown; recipes stay locked.
+- Other source-derived values such as ingredient quantities and trade values remain community-reference. Re-check them against current in-game captures before making balance changes.
+- Mshin-specific residential upgrade fallback plans are not represented as exact SimCity BuildIt randomized material rolls.
 
-- Glue and Paint ingredient quantities.
-- Cooking Utensils ingredient quantities.
-- Flour Bag ingredient quantities.
-- Corn seed quantity.
-- Tapestry ingredient quantities: the product page and store-family tables differ on Textiles ×3 vs ×4. Tapestry remains catalog-only and cannot be produced.
-- Football Shoes and Kite have unresolved item unlock levels; Teddy Bear has unresolved unlock level and production time. These remain disabled rather than receiving guessed values.
+## Automated test coverage
 
-Do not convert these values into EA-confirmed facts.
-
-## Automated test coverage added
-
-- Raw material level and time catalogue.
-- Factory-tier material permissions.
-- Hardware product base times.
-- Farmer's Market and Furniture Store recipe inputs/times.
-- Central store catalog ownership.
-- Storage multi-item atomic add/remove and rejection of negative inputs.
-- City Needs aggregation and first-home Nails requirement.
-- City Needs HUD shortcut and residential plan panel.
-- Complete City Storage inventory display and live per-slot production queue with one-second ETA refresh.
-- Local product icon catalog coverage.
-- Construction finish timestamp creation.
-- Fast Food catalog visibility, five enabled recipes and one disabled store-star recipe.
-- All 14 SCBI commercial store types and product-family catalog counts.
-- Existing gameplay smoke continues to cover production, collection, first home upgrade, save and load.
+- All existing raw-material level/time and factory-tier permissions.
+- Existing 70 craftable recipes, their supplier ownership, material inputs, production times and Store Star gates.
+- Football Shoes, Kite and Teddy Bear source inputs, reference values/times and explicit unknown-level lock.
+- Tapestry's two candidate ingredient sets, known reference time/value and explicit conflict lock.
+- Economy catalog audit has no structural errors and surfaces negative reference-value spreads.
+- Unknown product IDs do not receive fabricated prices or production times.
+- Global Trade and Cargo Ship eligibility excludes unverified unlock-level products.
+- Three sequential commercial orders survive serialization/restoration; ingredients are not deducted twice.
+- Offline completion advances the commercial queue one order at a time.
+- Full storage blocks collection without losing ready output; collection succeeds after storage space is freed.
+- Five factory slots run and collect independently in parallel.
+- Production panel catalog remains one horizontally scrollable row and ingredient text wraps.
+- Existing GameplaySmoke continues to cover construction, services, residential upgrades, save/load and general city gameplay.
 
 ## Final acceptance
 
-- [x] PR #394 production-economy foundation merged to main.
-- [x] PR #437 verified commercial-recipe expansion merged to main.
-- [x] Godot 4.3 import, startup and end-to-end GameplaySmoke passed on post-merge main (run 43486114412).
-- [x] Web export and Chromium desktop/mobile launch checks passed on post-merge main (run 43486114191).
-- [x] GitHub Pages build and deployment completed successfully (run 43486112974).
-- [x] 70 of 74 standard commercial product identities have enabled, source-backed recipes; four unresolved identities remain visible but disabled.
-- [ ] Android landscape screenshots still need side-by-side comparison with current SimCity BuildIt production and residential panels.
-- [ ] Touch scroll, tap, collect, close and upgrade actions still need a final check on a physical Android device.
-- Do not call the UI pixel-identical until the Android comparison is completed.
+- [x] PR #394 production-economy foundation exists and is merged.
+- [x] PR #437 verified recipe expansion exists and is merged.
+- [x] PR #438 source-backed product metadata, economy audit, trade filtering, queue stress tests and mobile panel robustness are implemented on the PR branch.
+- [x] Godot Validation run `43488845705` passed on PR #438 head `676fc03c9ba8a450d303b41f936a6731f17ffae8`.
+- [x] Mshin Playable Web run `43488845632` passed, including GameplaySmoke, Web export and Chromium desktop/mobile launch.
+- [x] 73/74 product identities have recipe definitions; 70 are currently craftable, three are safely locked by unknown Mayor Level, and one Tapestry record remains disabled due to conflicting inputs.
+- [x] Long-session/offline queue, parallel factory, save/restore and full-storage collection regression tests pass in CI.
+- [x] Mobile Chromium landscape launch and production catalog scroll contract pass in CI.
+- [ ] Physical Android screenshot comparison against current SimCity BuildIt production/residential panels.
+- [ ] Physical Android touch acceptance: horizontal catalog scroll, select product, start, collect, close, queue expansion and upgrade.
+- [ ] Merge PR #438 and re-run main-branch validation/deployment before calling the branch delivered.
+- Do not claim this domain fully closed until the two physical-device checks above are evidenced.
