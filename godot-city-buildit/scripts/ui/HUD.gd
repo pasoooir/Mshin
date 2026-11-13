@@ -87,6 +87,7 @@ func _apply_minimum_readable_text(root: Node) -> void:
 		var label := root as Label
 		label.add_theme_font_size_override("font_size", maxi(12, label.get_theme_font_size("font_size")))
 		label.clip_text = false
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if label.autowrap_mode == TextServer.AUTOWRAP_OFF:
 			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	elif root is Button:
