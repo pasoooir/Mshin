@@ -15,6 +15,7 @@ var buildings: Dictionary = {}
 var building_cells: Dictionary = {}
 var selected_building_type: String = ""
 var is_placing: bool = false
+var placement_rotation_quarters: int = 0
 var factory_count: int = 0
 
 var building_types: Dictionary = {
@@ -176,6 +177,7 @@ func select_building(type_id: String) -> void:
 	if definition.get("category", "") == "industrial" and get_factory_build_lock_reason(type_id) != "":
 		return
 	selected_building_type = type_id
+	placement_rotation_quarters = 0
 	is_placing = true
 	var road_system = get_tree().current_scene.get_node_or_null("World/RoadSystem") if get_tree().current_scene else null
 	if road_system:
@@ -245,7 +247,7 @@ func is_building_operational(building: Node) -> bool:
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	return has_road_access(anchor, size)
 
-func can_place_at(grid_pos: Vector2i, type_id: String = "") -> bool:
+func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: int = -1) -> bool:
 	var chosen: String = type_id if type_id != "" else selected_building_type
 	if chosen == "" or not building_types.has(chosen):
 		return false
@@ -257,7 +259,7 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "") -> bool:
 		return false
 	if not EconomyManager.can_afford(int(definition.get("cost", 0))):
 		return false
-	var size: Vector2i = definition.get("size", Vector2i(2,2))
+	var size: Vector2i = get_building_size(chosen, rotation_quarters)
 	if not is_cell_free(grid_pos, size) or not has_road_access(grid_pos, size):
 		return false
 	return true
@@ -354,9 +356,10 @@ func place_building_at_world(world_pos: Vector3) -> bool:
 		return false
 	return place_building(world_to_grid(world_pos))
 
-func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int = 1, saved_status: String = "constructing") -> bool:
+func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int = 1, saved_status: String = "constructing", saved_rotation_quarters: int = -1) -> bool:
 	var chosen: String = type_id if type_id != "" else selected_building_type
-	if not can_place_at(grid_pos, chosen):
+	var applied_rotation := posmod(placement_rotation_quarters if saved_rotation_quarters < 0 else saved_rotation_quarters, 4)
+	if not can_place_at(grid_pos, chosen, applied_rotation):
 		return false
 	var definition: Dictionary = building_types[chosen]
 	var cost: int = int(definition.get("cost", 0))
@@ -378,13 +381,14 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 		"id": building_id,
 		"type": chosen,
 		"grid_pos": grid_pos,
-		"definition": definition.duplicate(true),
+		"definition": _definition_for_rotation(definition, applied_rotation),
+		"rotation_y": float(applied_rotation) * PI * 0.5,
 		"status": saved_status,
 		"build_time": float(definition.get("build_time", 4.0)),
 		"upgrade_stage": clampi(saved_stage, 1, 6)
 	}
 	world.add_child(building_node)
-	var size: Vector2i = definition.get("size", Vector2i(2,2))
+	var size: Vector2i = _definition_for_rotation(definition, applied_rotation).get("size", Vector2i(2,2))
 	building_node.global_position = grid_to_world(grid_pos) + Vector3((size.x - 1) * GRID_SIZE * 0.5, 0.0, (size.y - 1) * GRID_SIZE * 0.5)
 	# Register the node and its complete footprint before setup() can emit
 	# construction-complete/service events. This keeps population and happiness
@@ -407,9 +411,25 @@ func grid_to_world(grid_pos: Vector2i) -> Vector3:
 	return Vector3(grid_pos.x * GRID_SIZE + GRID_SIZE * 0.5, 0.0, grid_pos.y * GRID_SIZE + GRID_SIZE * 0.5)
 
 func get_selected_size() -> Vector2i:
-	if selected_building_type != "" and building_types.has(selected_building_type):
-		return building_types[selected_building_type].get("size", Vector2i(2,2))
-	return Vector2i(2,2)
+	return get_building_size(selected_building_type, placement_rotation_quarters)
+
+func get_building_size(type_id: String, rotation_quarters: int = 0) -> Vector2i:
+	if not building_types.has(type_id):
+		return Vector2i(2, 2)
+	var size: Vector2i = building_types[type_id].get("size", Vector2i(2, 2))
+	return Vector2i(size.y, size.x) if posmod(rotation_quarters, 2) == 1 else size
+
+func _definition_for_rotation(definition: Dictionary, rotation_quarters: int) -> Dictionary:
+	var rotated: Dictionary = definition.duplicate(true)
+	var size: Vector2i = definition.get("size", Vector2i(2, 2))
+	rotated["size"] = Vector2i(size.y, size.x) if posmod(rotation_quarters, 2) == 1 else size
+	return rotated
+
+func rotate_placement() -> bool:
+	if not is_placing or selected_building_type == "":
+		return false
+	placement_rotation_quarters = posmod(placement_rotation_quarters + 1, 4)
+	return true
 
 func notify_construction_finished(building_id: String) -> void:
 	construction_finished.emit(building_id)
