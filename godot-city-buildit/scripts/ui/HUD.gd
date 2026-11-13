@@ -88,7 +88,8 @@ func _apply_minimum_readable_text(root: Node) -> void:
 		label.add_theme_font_size_override("font_size", maxi(12, label.get_theme_font_size("font_size")))
 		label.clip_text = false
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		if label.autowrap_mode == TextServer.AUTOWRAP_OFF:
+		var parent_is_product_card := label.get_parent() is VBoxContainer and label.get_parent().get_parent() is Button
+		if label.text.length() > 14 or parent_is_product_card:
 			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	elif root is Button:
 		var button := root as Button
@@ -1675,7 +1676,7 @@ func open_production_panel(building: Building) -> void:
 	var title := Label.new()
 	title.text = str(building.definition.get("name", "Production")).to_upper()
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	title.add_theme_color_override("font_color", Color.WHITE)
 	header_row.add_child(title)
