@@ -273,9 +273,11 @@ func _create_visual() -> void:
 func _should_use_external_model(model_path: String) -> bool:
 	if model_path.is_empty():
 		return false
-	# Keep the custom level-one villa and bespoke shop showcases intact.
-	var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1
-	return not is_starter_villa
+	# Residential growth is stage-authored geometry. A category-wide GLTF must
+	# never mask the actual architectural change when a home is upgraded.
+	if str(definition.get("category", "")) == "residential":
+		return false
+	return true
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
 	var residential_subtype := str(definition.get("subtype", "villa"))
@@ -407,6 +409,135 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 				_add_box(Vector3(0.36, 0.18, 0.08), crop_pos + Vector3(0, 0.12, 0), Color(0.34, 0.55, 0.25))
 		for x_pos in [-w * 0.42, w * 0.42]:
 			_add_box(Vector3(0.07, 0.42, 0.07), Vector3(x_pos, 0.40, -d * 0.48), wood)
+
+	# Each residential upgrade is a new architectural generation, not a tint or
+	# a small height adjustment. The additions below change the silhouette,
+	# usable massing and facade language at every stage after the starter home.
+	if not is_farm or upgrade_stage > 1:
+		_build_residential_level_architecture(
+			w, d, body_h, plaster, plaster_light, stone_cap, roof_tile,
+			frame, glass, is_apartment, is_farm
+		)
+
+
+func _build_residential_level_architecture(
+	w: float, d: float, body_h: float, wall: Color, trim: Color,
+	stone: Color, roof: Color, frame: Color, glass: Color,
+	is_apartment: bool, is_farm: bool
+) -> void:
+	var stage := clampi(upgrade_stage, 1, 6)
+	var front := d * 0.46
+	var side := w * 0.46
+	var modern_white := Color(0.91, 0.93, 0.90)
+	var graphite := Color(0.16, 0.21, 0.25)
+	var warm_wood := Color(0.48, 0.29, 0.17)
+	var accent := Color(0.12, 0.62, 0.66)
+	var glass_blue := Color(0.16, 0.42, 0.58)
+
+	if is_farm:
+		# Rural homes evolve into working farmsteads: barn, silo, greenhouse and
+		# expanded cultivated plots, rather than becoming urban apartment blocks.
+		if stage >= 2:
+			_add_box(Vector3(w * 0.48, body_h * 0.78, d * 0.42),
+				Vector3(side * 0.48, body_h * 0.39 + 0.34, -d * 0.20), Color(0.67, 0.28, 0.18))
+			_add_gabled_roof(w * 0.54, d * 0.48, body_h * 0.78 + 0.34, 0.42,
+				Color(0.34, 0.19, 0.13), Color(0.77, 0.67, 0.48))
+			_add_box(Vector3(0.12, 1.10, 0.12), Vector3(-side * 0.55, 0.89, -d * 0.38), warm_wood)
+		if stage >= 3:
+			var silo := CylinderMesh.new()
+			silo.top_radius = 0.28
+			silo.bottom_radius = 0.34
+			silo.height = 1.55
+			var silo_node := MeshInstance3D.new()
+			silo_node.mesh = silo
+			silo_node.position = Vector3(side * 0.48, 1.12, -d * 0.40)
+			var silo_mat := StandardMaterial3D.new()
+			silo_mat.albedo_color = Color(0.70, 0.72, 0.67)
+			silo_mat.metallic = 0.28
+			silo_node.material_override = silo_mat
+			mesh_root.add_child(silo_node)
+		if stage >= 4:
+			_add_box(Vector3(w * 0.42, 1.05, d * 0.34), Vector3(-side * 0.48, 0.88, -d * 0.24), Color(0.42, 0.66, 0.54))
+			for row in range(3):
+				_add_box(Vector3(w * 0.38, 0.035, 0.035), Vector3(-side * 0.48, 0.42 + float(row) * 0.30, -d * 0.05), glass_blue)
+		if stage >= 5:
+			_add_box(Vector3(w * 0.54, 0.18, d * 0.48), Vector3(0, body_h + 0.82, -d * 0.12), Color(0.78, 0.58, 0.24))
+			for row in range(2):
+				for col in range(3):
+					_add_box(Vector3(0.22, 0.12, 0.18), Vector3(-w * 0.20 + float(col) * 0.42, 0.96, -d * 0.42 + float(row) * 0.34), Color(0.26, 0.55, 0.22))
+		if stage >= 6:
+			_add_box(Vector3(w * 0.78, 0.26, d * 0.58), Vector3(0, body_h + 1.02, 0), Color(0.34, 0.47, 0.30))
+			_add_box(Vector3(0.16, 1.85, 0.16), Vector3(side * 0.62, 1.28, -d * 0.42), Color(0.72, 0.74, 0.68))
+		return
+
+	if is_apartment:
+		# Apartment tiers add visibly different massing: podium, offset wings,
+		# glass corner core, then a stepped contemporary tower crown.
+		if stage >= 2:
+			_add_box(Vector3(w * 1.02, 0.34, d * 0.98), Vector3(0, 0.52, 0), accent)
+			for floor in range(3):
+				var y := 0.90 + float(floor) * 1.18
+				_add_box(Vector3(0.11, 0.78, 0.13), Vector3(-side * 0.86, y, front), frame)
+				_add_box(Vector3(0.11, 0.78, 0.13), Vector3(side * 0.86, y, front), frame)
+		if stage >= 3:
+			_add_box(Vector3(w * 0.34, 1.35, d * 0.70), Vector3(-w * 0.31, body_h + 0.68, 0), modern_white)
+			_add_box(Vector3(w * 0.38, 0.12, d * 0.74), Vector3(-w * 0.31, body_h + 1.38, 0), accent)
+		if stage >= 4:
+			_add_box(Vector3(0.34, body_h * 0.72, 0.30), Vector3(side * 0.66, body_h * 0.52 + 0.34, front + 0.06), glass_blue)
+			_add_box(Vector3(w * 1.08, 0.16, d * 0.20), Vector3(0, body_h + 0.84, -d * 0.34), warm_wood)
+		if stage >= 5:
+			_add_box(Vector3(w * 0.52, 1.45, d * 0.70), Vector3(w * 0.22, body_h + 1.08, -d * 0.06), modern_white)
+			_add_box(Vector3(w * 0.56, 0.18, d * 0.76), Vector3(w * 0.22, body_h + 1.82, -d * 0.06), graphite)
+		if stage >= 6:
+			_add_box(Vector3(w * 0.34, 2.10, d * 0.48), Vector3(-w * 0.22, body_h + 2.10, 0), glass_blue)
+			_add_box(Vector3(w * 0.40, 0.20, d * 0.56), Vector3(-w * 0.22, body_h + 3.18, 0), accent)
+		return
+
+	match stage:
+		2:
+			# Stage 2: expanded suburban home with attached garage and new roof wing.
+			_add_box(Vector3(w * 0.42, 1.30, d * 0.62), Vector3(side * 0.53, 0.99, -d * 0.10), modern_white)
+			_add_box(Vector3(w * 0.46, 0.12, d * 0.68), Vector3(side * 0.53, 1.68, -d * 0.10), graphite)
+			_add_box(Vector3(w * 0.34, 0.86, 0.055), Vector3(side * 0.53, 0.88, front + 0.04), graphite)
+			for rib in range(5):
+				_add_box(Vector3(0.025, 0.72, 0.025), Vector3(side * 0.53 - w * 0.15 + float(rib) * 0.075, 0.88, front + 0.08), trim)
+			_add_box(Vector3(w * 0.48, 0.13, d * 0.18), Vector3(-side * 0.40, body_h + 0.60, -d * 0.22), roof)
+		3:
+			# Stage 3: true two-storey redesign with offset upper floor and balcony.
+			_add_box(Vector3(w * 0.72, 1.18, d * 0.66), Vector3(-w * 0.10, body_h + 0.60, -d * 0.04), modern_white)
+			_add_box(Vector3(w * 0.78, 0.16, d * 0.72), Vector3(-w * 0.10, body_h + 1.22, -d * 0.04), graphite)
+			_add_box(Vector3(w * 0.74, 0.10, 0.52), Vector3(0, body_h + 0.30, front + 0.16), warm_wood)
+			_add_box(Vector3(w * 0.68, 0.08, 0.055), Vector3(0, body_h + 0.88, front + 0.42), frame)
+			for post in [-1.0, 1.0]:
+				_add_box(Vector3(0.055, 0.58, 0.055), Vector3(post * w * 0.32, body_h + 0.58, front + 0.42), frame)
+		4:
+			# Stage 4: contemporary glass sunroom, cantilevered terrace and pergola.
+			_add_box(Vector3(w * 0.48, 1.55, d * 0.48), Vector3(side * 0.42, body_h * 0.50 + 0.62, -d * 0.08), glass_blue)
+			for mullion in range(4):
+				var mx := side * 0.42 - w * 0.19 + float(mullion) * 0.125
+				_add_box(Vector3(0.045, 1.48, 0.07), Vector3(mx, body_h * 0.50 + 0.62, front + 0.10), frame)
+			_add_box(Vector3(w * 0.82, 0.16, d * 0.40), Vector3(-w * 0.08, body_h + 0.48, -d * 0.30), warm_wood)
+			for beam in range(5):
+				_add_box(Vector3(0.09, 0.12, d * 0.38), Vector3(-w * 0.42 + float(beam) * 0.22, body_h + 0.72, -d * 0.30), roof)
+		5:
+			# Stage 5: modernist split-level villa with roof garden and solar canopy.
+			_add_box(Vector3(w * 0.76, 1.62, d * 0.66), Vector3(-w * 0.10, body_h + 0.82, -d * 0.06), modern_white)
+			_add_box(Vector3(w * 0.82, 0.18, d * 0.72), Vector3(-w * 0.10, body_h + 1.68, -d * 0.06), graphite)
+			_add_box(Vector3(w * 0.44, 0.14, d * 0.56), Vector3(side * 0.48, body_h + 0.30, -d * 0.05), accent)
+			for panel in range(3):
+				_add_box(Vector3(0.42, 0.055, 0.30), Vector3(-w * 0.27 + float(panel) * 0.48, body_h + 1.80, -d * 0.12), Color(0.08, 0.20, 0.34))
+			for planter in range(3):
+				_add_box(Vector3(0.34, 0.28, 0.30), Vector3(-w * 0.30 + float(planter) * 0.52, body_h + 0.54, front + 0.08), Color(0.28, 0.54, 0.30))
+		6:
+			# Stage 6: premium contemporary residence; a new penthouse volume,
+			# full-height glazing and a distinctive rooftop pavilion replace the old roofline.
+			_add_box(Vector3(w * 0.72, 1.92, d * 0.62), Vector3(0, body_h + 1.02, -d * 0.05), modern_white)
+			_add_box(Vector3(w * 0.76, 0.18, d * 0.68), Vector3(0, body_h + 2.02, -d * 0.05), graphite)
+			_add_box(Vector3(w * 0.56, 1.46, 0.10), Vector3(0, body_h + 1.05, front + 0.08), glass_blue)
+			_add_box(Vector3(w * 0.46, 0.16, d * 0.46), Vector3(0, body_h + 2.16, -d * 0.05), accent)
+			for column in [-1.0, 1.0]:
+				_add_box(Vector3(0.10, 1.88, 0.10), Vector3(column * w * 0.34, body_h + 1.00, front + 0.12), frame)
+
 
 # Level 1 starter home: a compact, colourful Sims-like villa with distinct facade,
 # roof, trim, garden and warm emissive windows. Emissive meshes avoid per-house lights.
