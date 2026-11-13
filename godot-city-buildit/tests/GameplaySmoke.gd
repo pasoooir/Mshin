@@ -1044,6 +1044,59 @@ func _test_waste_service_happiness() -> void:
 	ServiceManager.recalculate_from_buildings()
 
 
+func _test_power_water_gateway_access() -> void:
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_level := GameManager.level
+	BuildManager.buildings.clear()
+	GameManager.level = 15
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
+
+	var connected_home := _create_service_test_home("utility_connected_home", 1, Vector2i(1, 1))
+	var disconnected_home := _create_service_test_home("utility_disconnected_home", 1, Vector2i(35, 35))
+	var power_plant := FireHazardTestBuilding.new()
+	add_child(power_plant)
+	power_plant.building_id = "utility_test_power"
+	power_plant.building_type = "power_wind"
+	power_plant.definition = BuildManager.building_types["power_wind"]
+	power_plant.status = "completed"
+	power_plant.grid_pos = Vector2i(35, 35)
+	power_plant.global_position = Vector3.ZERO
+	BuildManager.buildings[power_plant.building_id] = power_plant
+
+	var water_plant := FireHazardTestBuilding.new()
+	add_child(water_plant)
+	water_plant.building_id = "utility_test_water"
+	water_plant.building_type = "water_tower"
+	water_plant.definition = BuildManager.building_types["water_tower"]
+	water_plant.status = "completed"
+	water_plant.grid_pos = Vector2i(35, 35)
+	water_plant.global_position = Vector3.ZERO
+	BuildManager.buildings[water_plant.building_id] = water_plant
+
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.total_power == 0 and ServiceManager.total_water == 0, "Disconnected power and water facilities must not contribute operational city capacity.")
+	_check(not ServiceManager.power_served_ids.has(connected_home.building_id) and not ServiceManager.water_served_ids.has(connected_home.building_id), "Nearby disconnected utilities must not serve a connected home.")
+	_check(not ServiceManager.power_served_ids.has(disconnected_home.building_id) and not ServiceManager.water_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive power or water.")
+
+	power_plant.grid_pos = Vector2i(1, -3)
+	water_plant.grid_pos = Vector2i(1, -4)
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.total_power == int(BuildManager.building_types["power_wind"].get("power", 0)), "A Gateway-connected power plant must contribute its catalog capacity.")
+	_check(ServiceManager.total_water == int(BuildManager.building_types["water_tower"].get("water", 0)), "A Gateway-connected water facility must contribute its catalog capacity.")
+	_check(ServiceManager.power_served_ids.has(connected_home.building_id) and ServiceManager.water_served_ids.has(connected_home.building_id), "Connected local utility coverage must serve a connected nearby home.")
+	_check(not ServiceManager.power_served_ids.has(disconnected_home.building_id) and not ServiceManager.water_served_ids.has(disconnected_home.building_id), "Connected utilities must not serve a home isolated from the Gateway.")
+
+	for test_building in [power_plant, water_plant, connected_home, disconnected_home]:
+		BuildManager.buildings.erase(test_building.building_id)
+		remove_child(test_building)
+		test_building.free()
+	BuildManager.buildings = saved_buildings
+	GameManager.level = saved_level
+	ServiceManager.recalculate_from_buildings()
+
+
 func _test_emergency_service_tier_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_total_power := ServiceManager.total_power
@@ -1657,6 +1710,7 @@ func _run_gameplay_test() -> void:
 	_test_fire_hazard_state_machine()
 	_test_sewage_service_happiness()
 	_test_waste_service_happiness()
+	_test_power_water_gateway_access()
 	_test_emergency_service_tier_happiness()
 	_test_power_water_coverage_preview()
 	_test_immigration_coefficients()
