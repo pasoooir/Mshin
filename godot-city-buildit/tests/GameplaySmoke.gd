@@ -58,6 +58,10 @@ func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
 func _test_storage_and_production_chain() -> void:
+	var expected_residential_population := {1:52,2:104,3:154,4:313,5:752,6:1836}
+	for stage in expected_residential_population:
+		_check(ProductionManager.get_population_for_stage(stage) == expected_residential_population[stage], "Residential stage %d must use the approved Mshin population target." % stage)
+	_check(ProductionManager.get_population_for_stage(0) == 52 and ProductionManager.get_population_for_stage(7) == 1836, "Residential population lookup must clamp to the supported stage range.")
 	var saved_storage: Dictionary = StorageManager.to_save_dict()
 	StorageManager.capacity = 50
 	StorageManager.items = {}
