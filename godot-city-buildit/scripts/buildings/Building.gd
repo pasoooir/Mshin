@@ -248,18 +248,28 @@ func _create_visual() -> void:
 			if category == "residential" and upgrade_stage > 1:
 				var is_apartment := subtype == "apartment"
 				var is_farm := subtype == "farm"
-				var body_h := height
+				var residential_body_h := height
 				if is_apartment:
-					var floors := 3 if upgrade_stage < 5 else 4
-					body_h = maxf(height, float(floors) * 1.35)
+					var residential_floors := 3 if upgrade_stage < 5 else 4
+					residential_body_h = maxf(height, float(residential_floors) * 1.35)
 				elif is_farm:
-					body_h = minf(height, 1.85)
+					residential_body_h = minf(height, 1.85)
 				_build_residential_level_architecture(
-					w, d, body_h, color, color.lightened(0.14),
+					w, d, residential_body_h, color, color.lightened(0.14),
 					Color(0.66, 0.59, 0.48), Color(0.48, 0.22, 0.16),
 					Color(0.88, 0.82, 0.69), Color(0.24, 0.43, 0.54),
 					is_apartment, is_farm
 				)
+			elif category == "commercial":
+				var commercial_floors := 1 if upgrade_stage < 3 else (2 if upgrade_stage < 5 else 3)
+				var commercial_body_h := height if commercial_floors == 1 else maxf(height, 2.0 + float(commercial_floors - 1) * 1.25)
+				_build_commercial_identity(w, d, commercial_body_h, d * 0.5, upgrade_stage)
+			elif category == "industrial":
+				_build_industrial_identity(w, d, height, upgrade_stage)
+			elif category == "service":
+				_build_service_identity(w, d, height)
+			elif category == "park":
+				_build_park(w, d, color)
 			return
 
 	match category:
