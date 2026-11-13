@@ -1,7 +1,10 @@
 from pathlib import Path
+import base64
+import json
 import re
 import sys
 import struct
+import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 errors = []
@@ -28,6 +31,132 @@ def _test_resource_path_scanner() -> None:
 
 
 _test_resource_path_scanner()
+
+
+def _validate_embedded_gltf(path: Path) -> None:
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        errors.append(f"Invalid GLTF JSON {path.relative_to(ROOT)}: {error}")
+        return
+
+    buffers = document.get("buffers", [])
+    if len(buffers) != 1:
+        errors.append(f"GLTF must use one self-contained buffer: {path.relative_to(ROOT)}")
+        return
+    uri = buffers[0].get("uri", "")
+    if not uri.startswith("data:application/octet-stream;base64,"):
+        errors.append(f"GLTF buffer must be embedded Base64: {path.relative_to(ROOT)}")
+        return
+    try:
+        binary = base64.b64decode(uri.split(",", 1)[1], validate=True)
+    except (ValueError, base64.binascii.Error) as error:
+        errors.append(f"Invalid embedded GLTF buffer {path.relative_to(ROOT)}: {error}")
+        return
+    if len(binary) != int(buffers[0].get("byteLength", -1)):
+        errors.append(f"GLTF buffer length mismatch: {path.relative_to(ROOT)}")
+
+    for view in document.get("bufferViews", []):
+        start = int(view.get("byteOffset", 0))
+        length = int(view.get("byteLength", -1))
+        if view.get("buffer") != 0 or start < 0 or length < 0 or start + length > len(binary):
+            errors.append(f"Invalid GLTF bufferView: {path.relative_to(ROOT)}")
+            break
+
+    for accessor in document.get("accessors", []):
+        view_index = int(accessor.get("bufferView", -1))
+        if view_index < 0 or view_index >= len(document.get("bufferViews", [])):
+            errors.append(f"Invalid GLTF accessor bufferView: {path.relative_to(ROOT)}")
+            break
+
+    textures = document.get("textures", [])
+    images = document.get("images", [])
+    for image in images:
+        image_uri = image.get("uri", "")
+        if not image_uri.startswith("data:image/png;base64,"):
+            errors.append(f"GLTF image must be embedded PNG: {path.relative_to(ROOT)}")
+            continue
+        try:
+            png = base64.b64decode(image_uri.split(",", 1)[1], validate=True)
+        except (ValueError, base64.binascii.Error) as error:
+            errors.append(f"Invalid embedded PNG {path.relative_to(ROOT)}: {error}")
+            continue
+        if not png.startswith(b"\x89PNG\r\n\x1a\n"):
+            errors.append(f"Invalid PNG signature in {path.relative_to(ROOT)}")
+            continue
+        offset = 8
+        saw_iend = False
+        while offset + 12 <= len(png):
+            chunk_length = struct.unpack(">I", png[offset:offset + 4])[0]
+            chunk_type = png[offset + 4:offset + 8]
+            chunk_end = offset + 12 + chunk_length
+            if chunk_end > len(png):
+                errors.append(f"Truncated PNG chunk in {path.relative_to(ROOT)}")
+                break
+            chunk_data = png[offset + 8:offset + 8 + chunk_length]
+            expected_crc = struct.unpack(">I", png[offset + 8 + chunk_length:chunk_end])[0]
+            if zlib.crc32(chunk_type + chunk_data) & 0xFFFFFFFF != expected_crc:
+                errors.append(f"PNG CRC mismatch in {path.relative_to(ROOT)}")
+                break
+            offset = chunk_end
+            if chunk_type == b"IEND":
+                saw_iend = True
+                break
+        if not saw_iend:
+            errors.append(f"PNG IEND chunk missing in {path.relative_to(ROOT)}")
+
+    for material in document.get("materials", []):
+        pbr = material.get("pbrMetallicRoughness", {})
+        for texture_info in [pbr.get("baseColorTexture"), pbr.get("metallicRoughnessTexture"), material.get("normalTexture")]:
+            if texture_info is None or int(texture_info.get("index", -1)) not in range(len(textures)):
+                errors.append(f"GLTF material is missing a valid PBR texture reference: {path.relative_to(ROOT)}")
+                break
+    for texture in textures:
+        source = int(texture.get("source", -1))
+        if source not in range(len(images)):
+            errors.append(f"GLTF texture source is invalid: {path.relative_to(ROOT)}")
+
+    for mesh in document.get("meshes", []):
+        for primitive in mesh.get("primitives", []):
+            attributes = primitive.get("attributes", {})
+            required = ["POSITION", "NORMAL", "TEXCOORD_0"]
+            if any(key not in attributes for key in required):
+                errors.append(f"GLTF primitive is missing position/normal/UV data: {path.relative_to(ROOT)}")
+                continue
+            for key in required:
+                index = int(attributes[key])
+                if index < 0 or index >= len(document.get("accessors", [])):
+                    errors.append(f"GLTF primitive accessor is invalid ({key}): {path.relative_to(ROOT)}")
+                    break
+            if int(primitive.get("material", -1)) not in range(len(document.get("materials", []))):
+                errors.append(f"GLTF primitive material is invalid: {path.relative_to(ROOT)}")
+
+    # Keep the recorded physical dimensions tied to the actual position accessor bounds.
+    position_accessors = []
+    for mesh in document.get("meshes", []):
+        for primitive in mesh.get("primitives", []):
+            position_index = primitive.get("attributes", {}).get("POSITION")
+            if position_index is not None and int(position_index) in range(len(document.get("accessors", []))):
+                position_accessors.append(document["accessors"][int(position_index)])
+    extras = document.get("asset", {}).get("extras", {})
+    recorded = extras.get("dimensions_m", {})
+    if position_accessors:
+        measured_min = [min(float(item["min"][axis]) for item in position_accessors) for axis in range(3)]
+        measured_max = [max(float(item["max"][axis]) for item in position_accessors) for axis in range(3)]
+        measured = {
+            "width": measured_max[0] - measured_min[0],
+            "height": measured_max[1] - measured_min[1],
+            "depth": measured_max[2] - measured_min[2],
+        }
+        for dimension, value in measured.items():
+            if dimension not in recorded or abs(float(recorded[dimension]) - value) > 0.01:
+                errors.append(f"GLTF measured {dimension} does not match asset metadata: {path.relative_to(ROOT)}")
+    if extras.get("license") != "CC0-1.0":
+        errors.append(f"GLTF asset license metadata is missing or incorrect: {path.relative_to(ROOT)}")
+
+
+for gltf_path in (ROOT / "assets/models").rglob("*.gltf"):
+    _validate_embedded_gltf(gltf_path)
 
 for path in ROOT.rglob("*.gd"):
     source = path.read_text(encoding="utf-8")

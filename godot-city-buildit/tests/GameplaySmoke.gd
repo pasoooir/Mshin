@@ -1176,13 +1176,51 @@ func _test_fire_hazard_state_machine() -> void:
 	FireHazardManager.on_city_changed()
 
 func _test_building_model_loader_contract() -> void:
-	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa.glb"), "Local GLB model paths under assets/models must be accepted.")
-	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/shop.gltf"), "Local glTF model paths under assets/models must be accepted.")
+	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa_house.gltf"), "Local villa GLTF model paths must be accepted.")
+	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/neighborhood_shop.gltf"), "Local commercial GLTF model paths must be accepted.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/vehicle.obj"), "Unsupported model formats must be rejected.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://outside/villa.glb"), "Model loading must be restricted to the local models directory.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/../outside/villa.glb"), "Model paths must reject parent-directory traversal.")
 	_check(not BuildingModelLoader.is_supported_model_path("https://example.com/villa.glb"), "Remote model URLs must not be accepted.")
 	_check(BuildingModelLoader.load_model_scene("res://assets/models/not-installed.glb") == null, "A missing optional model must return null so the procedural fallback can render.")
+	var model_paths := [
+		"res://assets/models/residential/villa_house.gltf",
+		"res://assets/models/residential/apartment_tower.gltf",
+		"res://assets/models/commercial/neighborhood_shop.gltf",
+		"res://assets/models/industrial/small_factory.gltf",
+		"res://assets/models/residential/residential_tower_75m.gltf"
+	]
+	for model_path in model_paths:
+		var packed_scene := BuildingModelLoader.load_model_scene(model_path)
+		_check(packed_scene != null, "Required local building model must import and load: " + model_path)
+		if packed_scene == null:
+			continue
+		var instance := packed_scene.instantiate()
+		_check(instance is Node3D, "Imported building model root must be Node3D: " + model_path)
+		if instance is Node3D:
+			var mesh_nodes := instance.find_children("*", "MeshInstance3D", true, false)
+			_check(mesh_nodes.size() > 0, "Imported building model must contain renderable mesh instances: " + model_path)
+			var surfaces_found := 0
+			for mesh_node in mesh_nodes:
+				if mesh_node is MeshInstance3D and mesh_node.mesh != null:
+					surfaces_found += mesh_node.mesh.get_surface_count()
+			_check(surfaces_found > 0, "Imported building model must contain valid mesh surfaces: " + model_path)
+		instance.free()
+	_check(str(BuildManager.building_types["residential_villa"].get("model_path", "")) == model_paths[0], "Villa definitions must select the local villa model.")
+	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local mid-rise model.")
+	_check(not str(BuildManager.building_types["residential_apartment"].get("model_path", "")).ends_with("residential_tower_75m.gltf"), "The 75m tower must remain unwired until a compatible large footprint is implemented.")
+	_check(str(BuildManager.building_types["hardware_store"].get("model_path", "")) == model_paths[2], "Generic commercial definitions must select the local shop model.")
+	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[3], "Industrial definitions must select the local factory model.")
+	_check(not BuildManager.building_types["building_supplies"].has("model_path"), "Building Supplies must retain its bespoke showcase visual.")
+	_check(not BuildManager.building_types["art_supplies"].has("model_path"), "Art Supplies must retain its bespoke gallery visual.")
+	var villa_visual_probe := Building.new()
+	villa_visual_probe.building_type = "residential_villa"
+	villa_visual_probe.definition = {"category": "residential", "subtype": "villa"}
+	villa_visual_probe.upgrade_stage = 1
+	_check(not villa_visual_probe._should_use_external_model(model_paths[0]), "Level-one starter villa must retain its bespoke hero visual.")
+	villa_visual_probe.upgrade_stage = 2
+	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
+	villa_visual_probe.free()
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
