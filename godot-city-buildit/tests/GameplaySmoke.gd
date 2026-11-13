@@ -1176,13 +1176,33 @@ func _test_fire_hazard_state_machine() -> void:
 	FireHazardManager.on_city_changed()
 
 func _test_building_model_loader_contract() -> void:
-	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa.glb"), "Local GLB model paths under assets/models must be accepted.")
-	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/shop.gltf"), "Local glTF model paths under assets/models must be accepted.")
+	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa_house.gltf"), "Local villa GLTF model paths must be accepted.")
+	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/neighborhood_shop.gltf"), "Local commercial GLTF model paths must be accepted.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/vehicle.obj"), "Unsupported model formats must be rejected.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://outside/villa.glb"), "Model loading must be restricted to the local models directory.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/../outside/villa.glb"), "Model paths must reject parent-directory traversal.")
 	_check(not BuildingModelLoader.is_supported_model_path("https://example.com/villa.glb"), "Remote model URLs must not be accepted.")
 	_check(BuildingModelLoader.load_model_scene("res://assets/models/not-installed.glb") == null, "A missing optional model must return null so the procedural fallback can render.")
+	var model_paths := [
+		"res://assets/models/residential/villa_house.gltf",
+		"res://assets/models/residential/apartment_tower.gltf",
+		"res://assets/models/commercial/neighborhood_shop.gltf",
+		"res://assets/models/industrial/small_factory.gltf"
+	]
+	for model_path in model_paths:
+		var packed_scene := BuildingModelLoader.load_model_scene(model_path)
+		_check(packed_scene != null, "Required local building model must import and load: " + model_path)
+		if packed_scene == null:
+			continue
+		var instance := packed_scene.instantiate()
+		_check(instance is Node3D, "Imported building model root must be Node3D: " + model_path)
+		if instance is Node3D:
+			_check(instance.find_children("*", "MeshInstance3D", true, false).size() > 0, "Imported building model must contain renderable mesh instances: " + model_path)
+		instance.free()
+	_check(str(BuildManager.building_types["residential_villa"].get("model_path", "")) == model_paths[0], "Villa definitions must select the local villa model.")
+	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local tower model.")
+	_check(str(BuildManager.building_types["building_supplies"].get("model_path", "")) == model_paths[2], "Commercial definitions must select the local shop model.")
+	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[3], "Industrial definitions must select the local factory model.")
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame

@@ -151,3 +151,12 @@
 
 ## جمع‌بندی
 README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده اصلاح شده است. موارد ناقص عمداً تیک کامل نگرفته‌اند. این ممیزی ادعای تکمیل کل بازی یا تأیید کیفیت بصری روی دستگاه فیزیکی نیست.
+
+
+## مدل‌های معماری GLTF محلی — PR در حال آماده‌سازی
+- چهار فایل مستقل در `assets/models/` اضافه شده‌اند: `residential/villa_house.gltf`، `residential/apartment_tower.gltf`، `commercial/neighborhood_shop.gltf` و `industrial/small_factory.gltf`.
+- هندسه‌ها به‌صورت original procedural mesh برای پروژه ساخته شده‌اند؛ هر GLTF با buffer داخلی Base64، چند primitive/material، نرمال‌های هندسی، index buffer و PBR `baseColorFactor`/`metallicFactor`/`roughnessFactor` self-contained است؛ فایل بیرونی یا CDN لازم نیست.
+- `BuildManager._ready()` مسیر مدل محلی را بر اساس دسته و subtype به تعریف ساختمان اضافه می‌کند: ویلا/خانه قدیمی، آپارتمان، فروشگاه‌های تجاری، و کارخانه‌های صنعتی. Farm همچنان از visual رویه‌ای استفاده می‌کند. تعریف‌های Gameplay، اندازه/هزینه/قفل‌ها و سیستم تولید تغییر نکرده‌اند.
+- `GameplaySmoke._test_building_model_loader_contract()` وجود، import، instantiate و وجود MeshInstance3D در هر چهار مدل را بررسی می‌کند و اتصال مسیر مدل به نوع‌های representative را کنترل می‌کند.
+- محدودیت صریح: مدل‌ها هندسه اصلی جزئیات‌دار با مواد PBR پایه‌رنگ/فلز/زبری‌اند؛ texture map تصویری BaseColor/Normal/Roughness/AO، مدل اختصاصی هر نوع فروشگاه/کارخانه، مقیاس بزرگ‌تر مطابق اهداف نهایی و تأیید بصری روی دستگاه موبایل هنوز انجام‌نشده‌اند. بنابراین آیتم کیفیت واقع‌گرایانه نهایی در README همچنان `[~]` باقی می‌ماند.
+- مجوز: مدل‌های ساخته‌شده برای این پروژه تحت CC0 1.0 منتشر می‌شوند؛ هیچ مدل شخص ثالثی در این چهار فایل استفاده نشده است.

@@ -1,0 +1,20 @@
+# Mshin local building models
+
+All four GLTF files in this directory are original procedural architectural meshes authored for Pasoo City BuildIt. They are self-contained (embedded geometry buffers; no external textures, URLs, or runtime downloads) and dedicated to **CC0 1.0**. No third-party model files are included.
+
+| Model | Runtime path | Declared dimensions (m) | Use |
+|---|---|---:|---|
+| Villa house | `residential/villa_house.gltf` | 3.5 × 3.5 × 5.9 | Residential villa and legacy small house |
+| Apartment tower | `residential/apartment_tower.gltf` | 3.5 × 3.5 × 18.0 | Apartment residential |
+| Neighborhood shop | `commercial/neighborhood_shop.gltf` | 3.5 × 3.5 × 5.3 | Generic commercial building visual |
+| Small factory | `industrial/small_factory.gltf` | 3.5 × 3.5 × 7.7 | Generic industrial building visual |
+
+Materials use glTF 2.0 metallic-roughness PBR factors (base color, metallic, roughness). The current assets do **not** contain photographic texture maps. Their geometry includes facade openings/frames, glass, entry features, roof structures, balconies, signage, loading door and industrial equipment details as appropriate.
+
+## Validation
+
+The Godot GameplaySmoke test loads each local model through `BuildingModelLoader`, instantiates the imported PackedScene, and checks that it contains MeshInstance3D nodes. CI Import/Parse also validates Godot's glTF importer. These checks do not claim a real-device visual/performance review.
+
+## License
+
+CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/
