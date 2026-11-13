@@ -1641,7 +1641,7 @@ func open_production_panel(building: Building) -> void:
 	var layout := VBoxContainer.new()
 	layout.name = "ProductionLayout"
 	layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	layout.add_theme_constant_override("separation", 7)
+	layout.add_theme_constant_override("separation", 4 if profile == "compact" else 7)
 	layout.add_theme_constant_override("margin_left", int(18 * _ui_scale))
 	layout.add_theme_constant_override("margin_right", int(18 * _ui_scale))
 	layout.add_theme_constant_override("margin_top", int(14 * _ui_scale))
@@ -1851,7 +1851,7 @@ func open_production_panel(building: Building) -> void:
 	var details_host := _add_fixed_height_scroll(
 		layout,
 		"ProductionDetailsHost",
-		(112.0 if profile == "compact" else 144.0) * maxf(_ui_scale, 0.90),
+		(92.0 if profile == "compact" else 144.0) * maxf(_ui_scale, 0.90),
 		ScrollContainer.SCROLL_MODE_DISABLED,
 		ScrollContainer.SCROLL_MODE_AUTO
 	)
