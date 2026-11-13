@@ -135,7 +135,7 @@ func _layout_centered_panel(panel: Control, viewport_size: Vector2, width_ratio:
 func _apply_overlay_responsive_layout(viewport_size: Vector2) -> void:
 	var profile := _responsive_profile_for_size(viewport_size)
 	var compact := profile == "compact"
-	_layout_centered_panel(find_child("BuildingProductionPanel", true, false) as Control, viewport_size, 0.98 if compact else 0.96, 0.96, 1040.0, 650.0)
+	_layout_centered_panel(find_child("BuildingProductionPanel", true, false) as Control, viewport_size, 0.98 if compact else 0.96, 0.99 if compact else 0.96, 1040.0, 700.0 if compact else 650.0)
 	_layout_centered_panel(find_child("CityNeedsPanel", true, false) as Control, viewport_size, 0.98 if compact else 0.94, 0.95, 900.0, 760.0)
 	_layout_centered_panel(find_child("ResidentialUpgradePanel", true, false) as Control, viewport_size, 0.98 if compact else 0.94, 0.95, 680.0, 720.0)
 	_layout_centered_panel(find_child("CityStoragePanel", true, false) as Control, viewport_size, 0.96 if compact else 0.88, 0.94, 560.0, 720.0)
@@ -1626,7 +1626,7 @@ func open_production_panel(building: Building) -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var profile := _responsive_profile_for_size(viewport_size)
 	var panel_width := minf(1040.0 * _ui_scale, viewport_size.x * (0.98 if profile == "compact" else 0.96))
-	var panel_height := minf(650.0 * _ui_scale, viewport_size.y * 0.96)
+	var panel_height := minf((700.0 if profile == "compact" else 650.0) * _ui_scale, viewport_size.y * (0.99 if profile == "compact" else 0.96))
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
 	production_panel.anchor_top = 0.5
