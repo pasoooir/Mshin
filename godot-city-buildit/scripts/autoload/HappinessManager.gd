@@ -13,13 +13,9 @@ const IMMIGRATION_INTERVAL := 10.0
 const IMMIGRATION_MIN_HAPPINESS := 60.0
 const PARK_RADIUS := 24.0
 const INDUSTRIAL_POLLUTION_RADIUS := 42.0
-const SEWAGE_SERVICE_IDS := ["sewage_small", "sewage_basic", "sewage_deluxe"]
-const WASTE_SERVICE_GROUP := "waste"
 const FIRE_SERVICE_GROUP := "fire"
 const POLICE_SERVICE_GROUP := "police"
 const HEALTH_SERVICE_GROUP := "health"
-const SEWAGE_COVERAGE_RADIUS := 30.0
-const WASTE_COVERAGE_RADIUS := 30.0
 
 var home_scores: Dictionary = {}
 var low_happiness_time: Dictionary = {}
@@ -238,10 +234,19 @@ func calculate_home_happiness(home: Node3D) -> float:
 		score += 8.0
 	if _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
 		score += 8.0
-	if _nearby_sewage_service(home, SEWAGE_COVERAGE_RADIUS):
-		score += 6.0
-	if _nearby_waste_service(home, WASTE_COVERAGE_RADIUS):
-		score += 6.0
+	# Sewage demand begins at City Level 8; Waste Management begins at Level 14.
+	# A served home keeps the existing +6 Mshin service bonus; an unmet demand
+	# applies the corresponding -6 shortage penalty.
+	if GameManager.level >= 8 and ServiceManager.demand_sewage > 0:
+		if ServiceManager.sewage_served_ids.has(home.building_id):
+			score += 6.0
+		else:
+			score -= 6.0
+	if GameManager.level >= 14 and ServiceManager.demand_waste > 0:
+		if ServiceManager.waste_served_ids.has(home.building_id):
+			score += 6.0
+		else:
+			score -= 6.0
 	if _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 		score += 8.0
 	return clampf(score, 0.0, 100.0)
@@ -284,25 +289,11 @@ func _nearby_service(home: Node3D, type_id: String, radius: float) -> bool:
 			return true
 	return false
 
-func _nearby_sewage_service(home: Node3D, radius: float) -> bool:
-	for candidate in BuildManager.buildings.values():
-		if not is_instance_valid(candidate) or candidate.status != "completed":
-			continue
-		if not SEWAGE_SERVICE_IDS.has(candidate.building_type):
-			continue
-		if candidate.global_position.distance_to(home.global_position) <= radius:
-			return true
-	return false
+func _nearby_sewage_service(home: Node3D, _radius: float = 0.0) -> bool:
+	return is_instance_valid(home) and ServiceManager.sewage_served_ids.has(home.building_id)
 
-func _nearby_waste_service(home: Node3D, radius: float) -> bool:
-	for candidate in BuildManager.buildings.values():
-		if not is_instance_valid(candidate) or candidate.status != "completed":
-			continue
-		if str(candidate.definition.get("service_group", "")) != WASTE_SERVICE_GROUP:
-			continue
-		if candidate.global_position.distance_to(home.global_position) <= radius:
-			return true
-	return false
+func _nearby_waste_service(home: Node3D, _radius: float = 0.0) -> bool:
+	return is_instance_valid(home) and ServiceManager.waste_served_ids.has(home.building_id)
 
 func _nearest_category_distance(home: Node3D, category: String) -> float:
 	var nearest := INF
