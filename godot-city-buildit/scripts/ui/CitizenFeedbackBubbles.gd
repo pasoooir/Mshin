@@ -4,6 +4,21 @@ const Icons = preload("res://scripts/ui/Icons.gd")
 const MAX_VISIBLE_BUBBLES := 3
 const BUBBLE_SHOW_SECONDS := 5.5
 const BUBBLE_HIDE_SECONDS := 2.5
+const BUBBLE_POP_DURATION := 0.24
+const BUBBLE_FADE_DURATION := 0.18
+const BUBBLE_BOB_AMPLITUDE := 3.0
+const CITIZEN_DIALOGUE := {
+	"road": ["We need a road!", "Road access, please!"],
+	"power": ["Our lights are out!", "Please connect power!"],
+	"water": ["We need clean water!", "No water at home!"],
+	"sewage": ["Please fix our drains!", "Sewage service needed!"],
+	"waste": ["Our bins are full!", "Please collect waste!"],
+	"fire": ["We need fire cover!", "A fire station nearby?"],
+	"police": ["We need police nearby!", "Safety needs a boost!"],
+	"health": ["A clinic would help!", "We need healthcare!"],
+	"happiness": ["Make our city happier!", "We need more city services!"],
+	"happy": ["We love this neighborhood!", "Life is good here!"]
+}
 
 var _overlay: Control
 var _active_bubbles: Array[Dictionary] = []
@@ -117,6 +132,7 @@ func _spawn_feedback_bubbles() -> void:
 		var feedback: Dictionary = entry.feedback
 		var bubble := _create_bubble(building, feedback)
 		_overlay.add_child(bubble)
+		_animate_bubble_in(bubble)
 		_active_bubbles.append({"building": building, "control": bubble})
 
 func _create_bubble(building: Node3D, feedback: Dictionary) -> Button:
@@ -150,7 +166,7 @@ func _create_bubble(building: Node3D, feedback: Dictionary) -> Button:
 	var icon_id := str(feedback.get("icon", "happiness"))
 	row.add_child(Icons.make_icon(icon_id, Vector2(30, 30)))
 	var label := Label.new()
-	label.text = str(feedback.get("message", "Citizens have feedback"))
+	label.text = get_citizen_line(str(feedback.get("kind", "happiness")), str(building.get("building_id")), int(_elapsed / (BUBBLE_SHOW_SECONDS + BUBBLE_HIDE_SECONDS)))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -181,7 +197,8 @@ func _update_bubble_positions() -> void:
 		var screen_position := camera.unproject_position(world_position)
 		var bubble_size := bubble.custom_minimum_size
 		var x := clampf(screen_position.x - bubble_size.x * 0.5, 8.0, maxf(8.0, viewport_size.x - bubble_size.x - 8.0))
-		var y := clampf(screen_position.y - bubble_size.y - float(index) * 9.0, 8.0, maxf(8.0, viewport_size.y - bubble_size.y - 8.0))
+		var bob := sin(_elapsed * 3.0 + float(index) * 0.85) * BUBBLE_BOB_AMPLITUDE
+		var y := clampf(screen_position.y - bubble_size.y - float(index) * 9.0 + bob, 8.0, maxf(8.0, viewport_size.y - bubble_size.y - 8.0))
 		bubble.position = Vector2(x, y)
 		bubble.size = bubble_size
 		bubble.show()
@@ -197,9 +214,34 @@ func _on_bubble_pressed(building_id: String) -> void:
 	_showing = false
 	_elapsed = 0.0
 
+func get_citizen_line(kind: String, building_id: String, cycle_index: int = 0) -> String:
+	var lines: Array = CITIZEN_DIALOGUE.get(kind, CITIZEN_DIALOGUE["happiness"])
+	if lines.is_empty():
+		return "Citizens have feedback"
+	var line_index := posmod(absi(hash(building_id)) + maxi(cycle_index, 0), lines.size())
+	return str(lines[line_index])
+
+func _animate_bubble_in(bubble: Control) -> void:
+	bubble.pivot_offset = bubble.custom_minimum_size * 0.5
+	bubble.scale = Vector2(0.84, 0.84)
+	bubble.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	var tween := bubble.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(bubble, "modulate:a", 1.0, BUBBLE_POP_DURATION).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(bubble, "scale", Vector2.ONE, BUBBLE_POP_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _animate_bubble_out(bubble: Control) -> void:
+	if bubble.is_queued_for_deletion() or bubble.has_meta("fading_out"):
+		return
+	bubble.set_meta("fading_out", true)
+	var tween := bubble.create_tween()
+	tween.tween_property(bubble, "modulate:a", 0.0, BUBBLE_FADE_DURATION)
+	tween.parallel().tween_property(bubble, "scale", Vector2(0.92, 0.92), BUBBLE_FADE_DURATION)
+	tween.tween_callback(Callable(bubble, "queue_free"))
+
 func _clear_bubbles() -> void:
 	for entry in _active_bubbles:
 		var bubble = entry.get("control")
 		if is_instance_valid(bubble):
-			bubble.queue_free()
+			_animate_bubble_out(bubble)
 	_active_bubbles.clear()
