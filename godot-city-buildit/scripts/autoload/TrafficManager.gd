@@ -23,7 +23,8 @@ func recalculate_from_roads() -> void:
 	if road_system:
 		var connected_roads: Dictionary = road_system.get_gateway_connected_roads()
 		for cell in connected_roads.keys():
-			var lane_count := road_system.get_road_level(cell) * 2
+			var road_cell: Vector2i = cell
+			var lane_count: int = road_system.get_road_level(road_cell) * 2
 			road_capacity += lane_count * TRAFFIC_UNITS_PER_LANE
 	if traffic_demand <= 0:
 		congestion_ratio = 0.0
