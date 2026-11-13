@@ -1235,8 +1235,15 @@ func _test_building_model_loader_contract() -> void:
 	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
 	villa_visual_probe.free()
 
+func _test_mobile_haptics_contract() -> void:
+	_check(HapticsManager.get_pulse_duration_ms("place") == 18, "Successful building placement must use the short 18 ms haptic pulse.")
+	_check(HapticsManager.get_pulse_duration_ms("collect") == 26, "Successful product collection must use the 26 ms haptic pulse.")
+	_check(HapticsManager.get_pulse_duration_ms("unsupported") == 0, "Unknown haptic events must not request vibration.")
+	_check(not HapticsManager.pulse(0), "A zero-duration haptic request must be rejected safely on unsupported platforms.")
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	_test_mobile_haptics_contract()
 	_test_building_model_loader_contract()
 	await _test_build_menu_visibility()
 	_test_wind_turbine_rotor_animation()

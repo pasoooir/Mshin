@@ -223,6 +223,7 @@ func collect(slot_index: int) -> bool:
 	# If the warehouse is full, keep the completed product on the building.
 	if not StorageManager.add_item(item_id, 1):
 		return false
+	HapticsManager.pulse_for("collect")
 	slots[slot_index] = {}
 	item_collected.emit(item_id)
 	slots_changed.emit()

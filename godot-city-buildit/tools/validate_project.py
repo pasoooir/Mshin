@@ -184,12 +184,40 @@ for script in re.findall(r'="[*]res://([^"]+)"', project):
 
 build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
+city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
 traffic_manager_source = (ROOT / "scripts/autoload/TrafficManager.gd").read_text(encoding="utf-8")
 traffic_vehicle_source = (ROOT / "scripts/systems/TrafficVehicle.gd").read_text(encoding="utf-8")
 road_system_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")
 happiness_manager_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_text(encoding="utf-8")
 gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
+haptics_manager_source = (ROOT / "scripts/autoload/HapticsManager.gd").read_text(encoding="utf-8")
+production_component_source = (ROOT / "scripts/production/ProductionComponent.gd").read_text(encoding="utf-8")
+
+for contract in [
+    "func pulse_for(event_name: String) -> bool:",
+    "JavaScriptBridge.eval",
+    "navigator.vibrate",
+    "PLACE_DURATION_MS := 18",
+    "COLLECT_DURATION_MS := 26",
+    "duration_ms <= 0",
+]:
+    if contract not in haptics_manager_source:
+        errors.append(f"Mobile Web haptics contract is missing: {contract}")
+if 'HapticsManager="*res://scripts/autoload/HapticsManager.gd"' not in project:
+    errors.append("HapticsManager is not registered as an autoload")
+if 'HapticsManager.pulse_for("place")' not in city_input_source:
+    errors.append("Successful building placement must trigger optional haptic feedback")
+if 'HapticsManager.pulse_for("collect")' not in production_component_source:
+    errors.append("Successful product collection must trigger optional haptic feedback")
+for contract in [
+    "func _test_mobile_haptics_contract()",
+    "must use the short 18 ms haptic pulse",
+    "must use the 26 ms haptic pulse",
+    "zero-duration haptic request must be rejected safely",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Mobile haptics regression test is missing: {contract}")
 building_ids = set(re.findall(r'^[ \t]*"([a-z0-9_]+)"[ \t]*:[ \t]*[{]"name"', build_manager, re.M))
 for selected in re.findall(r'BuildManager[.]select_building[(]"([a-z0-9_]+)"[)]', hud):
     if selected not in building_ids:
