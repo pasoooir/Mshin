@@ -431,6 +431,29 @@ func _test_road_traffic_capacity(road_system) -> void:
 	EconomyManager.simoleons = saved_money
 	TrafficManager.recalculate_from_roads()
 
+func _test_gateway_vehicle_route(road_system) -> void:
+	var previous_enabled := TrafficManager.vehicle_simulation_enabled
+	TrafficManager.vehicle_simulation_enabled = false
+	TrafficManager.clear_active_vehicle()
+	road_system.clear_roads()
+	road_system.seed_starter_access()
+	var connected_roads: Dictionary = road_system.get_gateway_connected_roads()
+	var route: Array[Vector2i] = TrafficManager.build_gateway_round_trip_route()
+	_check(route.size() >= 3, "A connected Gateway road network must produce an outbound-and-return vehicle route.")
+	_check(route.front() == road_system.GATEWAY_ROAD_CELL and route.back() == road_system.GATEWAY_ROAD_CELL, "The simulated vehicle route must start and finish at the permanent Gateway.")
+	for cell in route:
+		_check(connected_roads.has(cell), "Every vehicle route cell must belong to the Gateway-connected road graph.")
+	var vehicle := TrafficManager.spawn_vehicle_now()
+	_check(is_instance_valid(vehicle), "TrafficManager must spawn a vehicle on the Gateway route.")
+	if is_instance_valid(vehicle):
+		_check(vehicle.get_node_or_null("Body") != null and vehicle.get_node_or_null("Cabin") != null, "The simulated vehicle must have visible original 3D body and cabin geometry.")
+		var start_position := vehicle.global_position
+		vehicle._process(0.25)
+		_check(vehicle.global_position.distance_to(start_position) > 0.1, "The simulated vehicle must advance along its road route.")
+	TrafficManager.clear_active_vehicle()
+	TrafficManager.vehicle_simulation_enabled = previous_enabled
+	TrafficManager.recalculate_from_roads()
+
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
 	var active_camera: Camera3D = get_viewport().get_camera_3d()
@@ -1194,6 +1217,7 @@ func _run_gameplay_test() -> void:
 	road_system.seed_starter_access()
 	_test_road_gateway_connectivity(road_system)
 	_test_road_traffic_capacity(road_system)
+	_test_gateway_vehicle_route(road_system)
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 

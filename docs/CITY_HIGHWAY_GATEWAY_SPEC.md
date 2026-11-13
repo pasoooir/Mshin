@@ -3,6 +3,12 @@
 **Status:** implementation requirements for the first playable city map  
 **Reference:** EA's SimCity BuildIt beginner guide, especially its road, zoning, service, and city-growth rules. The highway gateway is an explicit Mshin world-layout requirement.
 
+## Current implementation status (PR #416)
+
+- [x] One original lightweight 3D car is spawned at the permanent city Gateway, routed by BFS through Gateway-connected road tiles to the farthest reachable tile, then returned to and removed at the Gateway.
+- [x] The active route is cancelled if a road change disconnects any route tile from the Gateway graph.
+- [ ] The current Gateway is still the city-side root, not a separate highway source/sink with physical ramps. One-way edges, lane direction, turn restrictions, congestion-weighted routing, segment-level traffic, and delivery/construction/emergency vehicle classes remain open.
+
 ## World layout
 
 - The new city begins as an **empty, buildable terrain grid**. Do not pre-place residential, commercial, industrial, or service buildings.

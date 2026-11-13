@@ -57,6 +57,7 @@ build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
 traffic_manager_source = (ROOT / "scripts/autoload/TrafficManager.gd").read_text(encoding="utf-8")
+traffic_vehicle_source = (ROOT / "scripts/systems/TrafficVehicle.gd").read_text(encoding="utf-8")
 road_system_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")
 happiness_manager_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_text(encoding="utf-8")
 gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
@@ -570,6 +571,34 @@ for contract in [
 ]:
     if contract not in service_manager_source:
         errors.append(f"City-wide service capacity/demand contract is missing: {contract}")
+
+# A real 3D vehicle must traverse the connected Gateway graph and return.
+for contract in [
+    "func build_gateway_round_trip_route() -> Array[Vector2i]",
+    "var start: Vector2i = road_system.GATEWAY_ROAD_CELL",
+    "func spawn_vehicle_now() -> TrafficVehicle:",
+    "vehicle.route_completed.connect(_on_vehicle_route_completed)",
+    "func _validate_active_vehicle_route(connected_roads: Dictionary)",
+]:
+    if contract not in traffic_manager_source:
+        errors.append(f"Gateway vehicle route contract is missing: {contract}")
+for contract in [
+    "class_name TrafficVehicle",
+    "extends Node3D",
+    "signal route_completed",
+    "func _process(delta: float) -> void:",
+    "global_position = from_position.lerp(to_position, progress)",
+    'instance.name = node_name',
+]:
+    if contract not in traffic_vehicle_source:
+        errors.append(f"3D traffic vehicle movement contract is missing: {contract}")
+for contract in [
+    "func _test_gateway_vehicle_route(",
+    "The simulated vehicle route must start and finish at the permanent Gateway",
+    "The simulated vehicle must advance along its road route",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Gateway vehicle route regression test is missing: {contract}")
 
 # Road tier changes must alter the network's traffic capacity and city happiness.
 for contract in [
