@@ -492,7 +492,7 @@ func _add_stat_bar(parent: Container, icon_name: String, initial_text: String, t
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(54, 54) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(54, 54) * maxf(_ui_scale, 48.0 / 54.0))
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(22 * _ui_scale))
@@ -520,7 +520,7 @@ func _add_currency_bar(parent: Container, icon_name: String, initial_text: Strin
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(content)
-	var icon := Icons.make_icon(icon_name, Vector2(48, 48) * _ui_scale)
+	var icon := Icons.make_icon(icon_name, Vector2(48, 48) * maxf(_ui_scale, 1.0))
 	icon.modulate = tint
 	content.add_child(icon)
 	var value := _make_hud_value(initial_text, int(23 * _ui_scale))
@@ -566,7 +566,7 @@ func _make_currency_plus_button(hint: String) -> Button:
 	hover.bg_color = Color("#F0FBFF")
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", normal)
-	var plus_icon := Icons.make_icon("plus", Vector2(43, 43) * _ui_scale)
+	var plus_icon := Icons.make_icon("plus", Vector2(48, 48) * maxf(_ui_scale, 1.0))
 	plus_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	plus_icon.offset_left = 4
 	plus_icon.offset_top = 4
@@ -807,7 +807,8 @@ func _make_icon_button(kind: String, hint: String, requested_size: Vector2 = Vec
 	button.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.95, 0.72, 0.28, 0.22), Color(0.98, 0.82, 0.48, 0.68)))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
-	var icon := Icons.make_icon(kind, button_size - Vector2(12, 12))
+	var icon_size := Vector2(maxf(48.0, button_size.x - 12.0), maxf(48.0, button_size.y - 12.0))
+	var icon := Icons.make_icon(kind, icon_size)
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 3
 	icon.offset_top = 3
