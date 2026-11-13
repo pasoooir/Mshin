@@ -15,6 +15,9 @@ const PARK_RADIUS := 24.0
 const INDUSTRIAL_POLLUTION_RADIUS := 42.0
 const SEWAGE_SERVICE_IDS := ["sewage_small", "sewage_basic", "sewage_deluxe"]
 const WASTE_SERVICE_GROUP := "waste"
+const FIRE_SERVICE_GROUP := "fire"
+const POLICE_SERVICE_GROUP := "police"
+const HEALTH_SERVICE_GROUP := "health"
 
 var home_scores: Dictionary = {}
 var low_happiness_time: Dictionary = {}
@@ -174,15 +177,15 @@ func _immigration_service_factor(has_power: bool, has_water: bool, has_extra: bo
 func _home_has_extra_service(home: Node3D) -> bool:
 	if _nearby_bonus(home, "park", PARK_RADIUS, 1.0) > 0.0:
 		return true
-	if _nearby_service(home, "fire_station", 38.0):
+	if _nearby_service_group(home, FIRE_SERVICE_GROUP, 38.0):
 		return true
-	if _nearby_service(home, "police_station", 38.0):
+	if _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
 		return true
 	if _nearby_sewage_service(home, 30.0):
 		return true
 	if _nearby_waste_service(home, 30.0):
 		return true
-	if _nearby_service(home, "hospital", 42.0):
+	if _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 		return true
 	return false
 
@@ -229,15 +232,15 @@ func calculate_home_happiness(home: Node3D) -> float:
 	if industrial_distance < INDUSTRIAL_POLLUTION_RADIUS:
 		score -= lerpf(30.0, 15.0, clampf(industrial_distance / INDUSTRIAL_POLLUTION_RADIUS, 0.0, 1.0))
 
-	if _nearby_service(home, "fire_station", 38.0):
+	if _nearby_service_group(home, FIRE_SERVICE_GROUP, 38.0):
 		score += 8.0
-	if _nearby_service(home, "police_station", 38.0):
+	if _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
 		score += 8.0
 	if _nearby_sewage_service(home, 30.0):
 		score += 6.0
 	if _nearby_waste_service(home, 30.0):
 		score += 6.0
-	if _nearby_service(home, "hospital", 42.0):
+	if _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 		score += 8.0
 	return clampf(score, 0.0, 100.0)
 
@@ -260,6 +263,16 @@ func _nearby_bonus(home: Node3D, category: String, radius: float, bonus: float) 
 		if str(candidate.definition.get("category", "")) == category and candidate.global_position.distance_to(home.global_position) <= radius:
 			return bonus
 	return 0.0
+
+func _nearby_service_group(home: Node3D, service_group: String, radius: float) -> bool:
+	for candidate in BuildManager.buildings.values():
+		if not is_instance_valid(candidate) or candidate.status != "completed":
+			continue
+		if str(candidate.definition.get("service_group", "")) != service_group:
+			continue
+		if candidate.global_position.distance_to(home.global_position) <= radius:
+			return true
+	return false
 
 func _nearby_service(home: Node3D, type_id: String, radius: float) -> bool:
 	for candidate in BuildManager.buildings.values():
