@@ -350,9 +350,51 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	_check(not disconnected_factory.collect(0), "A disconnected factory must not allow collection of a ready product.")
 	_check(road_system.place_road(Vector2i(0, -1)), "The first gateway tile must restore ready-product access.")
 	_check(road_system.place_road(Vector2i(0, 0)), "The second gateway tile must restore ready-product access.")
+
+	# Store queues obey the same road-operational boundary as factories.
+	var disconnected_store := ProductionComponentScript.new()
+	disconnected_store.is_factory = false
+	disconnected_store.slot_count = 2
+	disconnected_store.shop_id = "building_supplies"
+	disconnected_store.owner_building = disconnected_building
+	add_child(disconnected_store)
+	var disconnected_home := load("res://scenes/buildings/Building.tscn").instantiate() as Building
+	disconnected_home.building_id = "road_access_test_home"
+	disconnected_home.building_type = "residential_villa"
+	disconnected_home.grid_pos = Vector2i(1, 1)
+	disconnected_home.definition = {"size": Vector2i.ONE, "category": "residential"}
+	disconnected_home.status = "completed"
+	add_child(disconnected_home)
+
+	var store_pause_now := int(Time.get_unix_time_from_system())
+	disconnected_store.slots[0] = {
+		"item_id": "nails",
+		"start_unix": store_pause_now,
+		"finish_unix": store_pause_now + 120,
+		"ready": false,
+		"queued": false
+	}
+	_check(road_system.remove_road(Vector2i(0, -1)), "The first gateway tile must disconnect store and residential operation tests.")
+	_check(road_system.remove_road(Vector2i(0, 0)), "The second gateway tile must disconnect store and residential operation tests.")
+	_check(not disconnected_store.start_craft("nails", 1), "A disconnected commercial building must not accept a new store order.")
+	disconnected_store.refresh_slots()
+	var paused_store_slot: Dictionary = disconnected_store.get_slot(0)
+	_check(int(paused_store_slot.get("paused_at_unix", 0)) > 0, "A running store order must record its pause when road access is lost.")
+	_check(not disconnected_home.try_upgrade(), "A residential building disconnected from the gateway must reject an upgrade.")
+	paused_store_slot["paused_at_unix"] = store_pause_now - 15
+	disconnected_store.slots[0] = paused_store_slot
+	_check(road_system.place_road(Vector2i(0, -1)), "The first gateway tile must reconnect store and residential operation tests.")
+	_check(road_system.place_road(Vector2i(0, 0)), "The second gateway tile must reconnect store and residential operation tests.")
+	disconnected_store.refresh_slots()
+	var resumed_store_slot: Dictionary = disconnected_store.get_slot(0)
+	_check(int(resumed_store_slot.get("finish_unix", 0)) >= store_pause_now + 135, "A store must preserve its remaining order time across a 15-second road outage.")
+	_check(not resumed_store_slot.has("paused_at_unix"), "A reconnected store order must clear its paused timestamp.")
+
+	disconnected_store.queue_free()
+	disconnected_home.queue_free()
 	disconnected_factory.queue_free()
 	disconnected_building.queue_free()
-	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 6)
+	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 8)
 
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
