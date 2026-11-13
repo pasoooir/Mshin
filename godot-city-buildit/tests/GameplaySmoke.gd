@@ -6,6 +6,7 @@ const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 const BuildingScene = preload("res://scenes/buildings/Building.tscn")
 const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
+const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -268,6 +269,16 @@ func _test_immigration_coefficients() -> void:
 	_check(is_equal_approx(HappinessManager._immigration_service_factor(true, false, false), 0.7), "Single-utility immigration factor must be 0.7.")
 	_check(is_equal_approx(HappinessManager._immigration_service_factor(true, true, false), 1.0), "Dual-utility immigration factor must be 1.0.")
 	_check(is_equal_approx(HappinessManager._immigration_service_factor(true, true, true), 1.15), "Full-service immigration factor must be 1.15.")
+
+func _test_camera_inertia_math() -> void:
+	var initial_pan := Vector2(120.0, -60.0)
+	var damped_pan := CameraControllerScript.decay_pan_velocity(initial_pan, 0.1, 8.0)
+	_check(damped_pan.length() < initial_pan.length(), "Camera pan inertia must decay over time.")
+	_check(damped_pan.dot(initial_pan) > 0.0, "Camera pan inertia must preserve the drag direction while decaying.")
+	var initial_orbit := 2.0
+	var damped_orbit := CameraControllerScript.decay_orbit_velocity(initial_orbit, 0.1, 10.0)
+	_check(absf(damped_orbit) < absf(initial_orbit), "Camera orbit inertia must decay over time.")
+	_check(damped_orbit > 0.0, "Camera orbit inertia must preserve the rotation direction while decaying.")
 
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
@@ -951,6 +962,7 @@ func _run_gameplay_test() -> void:
 	_test_emergency_service_tier_happiness()
 	_test_power_water_coverage_preview()
 	_test_immigration_coefficients()
+	_test_camera_inertia_math()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
 	_check(IconAtlas.validate_required_build_icons(), "A required Build icon is missing, invalid or lacks transparent corners.")
