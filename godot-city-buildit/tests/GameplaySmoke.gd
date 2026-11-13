@@ -282,6 +282,7 @@ func _test_camera_inertia_math() -> void:
 
 func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "The seeded highway gateway tile must belong to the connected road network.")
+	_check(not road_system.remove_road(RoadSystemScript.GATEWAY_ROAD_CELL), "The permanent highway gateway tile must not be removable.")
 	_check(road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "The far end of the seeded starter connector must be connected to the gateway.")
 
 	_check(road_system.remove_road(Vector2i(0, -1)), "The first gateway bridge tile must be removable for the connectivity test.")
