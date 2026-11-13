@@ -15,7 +15,7 @@ const SERVICE_GROUPS := [
 	{"id":"police", "label":"Police", "buildings":["police_small", "police_basic", "police_precinct"]},
 	{"id":"health", "label":"Health", "buildings":["clinic_small", "clinic", "hospital"]},
 	{"id":"government", "label":"Government", "buildings":["town_hall"]},
-	{"id":"trade", "label":"Trade", "buildings":["trade_depot", "global_trade_hq"]}
+	{"id":"trade", "label":"Trade", "buildings":["trade_depot", "global_trade_hq", "cargo_port"]}
 ]
 const SPECIALIZATION_GROUPS := [
 	{"id":"parks", "label":"Parks", "buildings":["park_small"]},
@@ -3073,6 +3073,12 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	market_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	market_tab.pressed.connect(_show_trade_panel.bind("market"))
 	tabs.add_child(market_tab)
+	var ship_tab := Button.new()
+	ship_tab.name = "CargoShipTab"
+	ship_tab.text = "CARGO SHIP"
+	ship_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ship_tab.pressed.connect(_show_trade_panel.bind("ship"))
+	tabs.add_child(ship_tab)
 
 	var scroll := ScrollContainer.new()
 	scroll.name = "TradeContentScroll"
@@ -3085,9 +3091,11 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	body.add_theme_constant_override("separation", 8)
 	scroll.add_child(body)
 
-	_trade_active_tab = "market" if tab == "market" else "depot"
+	_trade_active_tab = tab if tab in ["depot", "market", "ship"] else "depot"
 	if _trade_active_tab == "market":
 		market_tab.add_theme_stylebox_override("normal", _catalog_action_style())
+	elif _trade_active_tab == "ship":
+		ship_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	else:
 		depot_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	_refresh_trade_panel_content()
@@ -3103,6 +3111,8 @@ func _refresh_trade_panel_content() -> void:
 		child.queue_free()
 	if _trade_active_tab == "market":
 		_build_global_trade_content(body)
+	elif _trade_active_tab == "ship":
+		_build_cargo_ship_content(body)
 	else:
 		_build_trade_depot_content(body)
 
@@ -3218,6 +3228,46 @@ func _build_global_trade_content(parent: VBoxContainer) -> void:
 		buy.disabled = bool(offer.get("sold", false)) or StorageManager.get_free() < amount or not EconomyManager.can_afford(price)
 		buy.pressed.connect(_on_trade_buy_offer.bind(index))
 		row.add_child(buy)
+
+func _build_cargo_ship_content(parent: VBoxContainer) -> void:
+	if GameManager.population < TradeManager.CARGO_SHIP_UNLOCK_POPULATION:
+		_trade_message(parent, "Cargo Ship unlocks at 20,000 city population.")
+		return
+	if not TradeManager.has_trade_building("cargo_port"):
+		_trade_message(parent, "Place and complete the Cargo Port from Services → Trade to open the harbor.")
+		return
+	if TradeManager.ship_departed:
+		_trade_message(parent, "Your cargo ship is sailing. It will return in %d seconds with a fresh manifest." % ceili(TradeManager.ship_return_time_left))
+		return
+	_trade_message(parent, "Load all three crates. Completing the manifest earns 1 Golden Key and sends the ship out; a new ship returns after 3 minutes.")
+	var crates := TradeManager.get_ship_crates()
+	for index in range(crates.size()):
+		var crate: Dictionary = crates[index]
+		var item_id := str(crate.get("item_id", ""))
+		var amount := int(crate.get("amount", 0))
+		var delivered := bool(crate.get("delivered", false))
+		var row := HBoxContainer.new()
+		row.name = "CargoCrate_%d" % index
+		row.custom_minimum_size.y = 56 * _ui_scale
+		parent.add_child(row)
+		var item_name := str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id.capitalize()))
+		var label := Label.new()
+		label.text = "%s ×%d · %s" % [item_name, amount, "LOADED" if delivered else "NEEDED"]
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color", Color("#263746"))
+		row.add_child(label)
+		var load_button := Button.new()
+		load_button.name = "CargoLoad_%d" % index
+		load_button.text = "LOADED" if delivered else "LOAD"
+		load_button.disabled = delivered or StorageManager.get_count(item_id) < amount
+		load_button.pressed.connect(_on_trade_deliver_ship_crate.bind(index))
+		row.add_child(load_button)
+
+func _on_trade_deliver_ship_crate(crate_index: int) -> void:
+	if not TradeManager.deliver_ship_crate(crate_index):
+		status_label.text = "Cargo crate needs the listed items in City Storage."
+	_show_trade_panel("ship")
 
 func _on_trade_list_item(item_id: String) -> void:
 	if not TradeManager.list_for_sale(item_id, 1):
