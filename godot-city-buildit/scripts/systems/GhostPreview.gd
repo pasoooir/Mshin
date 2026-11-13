@@ -22,7 +22,7 @@ func _ready() -> void:
 
 func _build_coverage_preview() -> void:
 	coverage_preview_root = Node3D.new()
-	coverage_preview_root.name = "ServiceCoveragePreview"
+	coverage_preview_root.name = "EmergencyCoveragePreview"
 	coverage_preview_root.visible = false
 	add_child(coverage_preview_root)
 
