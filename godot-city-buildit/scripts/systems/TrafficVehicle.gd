@@ -27,8 +27,9 @@ func _process(delta: float) -> void:
 		return
 	var from_cell: Vector2i = route[_segment_index]
 	var to_cell: Vector2i = route[_segment_index + 1]
-	var from_position := _lane_position(from_cell, to_cell)
-	var to_position := _lane_position(to_cell, from_cell)
+	var travel_direction: Vector2i = to_cell - from_cell
+	var from_position := _lane_position(from_cell, travel_direction)
+	var to_position := _lane_position(to_cell, travel_direction)
 	var segment_length := from_position.distance_to(to_position)
 	if segment_length <= 0.001:
 		_segment_index += 1
@@ -46,8 +47,8 @@ func _process(delta: float) -> void:
 func _cell_center(cell: Vector2i) -> Vector3:
 	return Vector3(float(cell.x) * 2.0 + 1.0, 0.05, float(cell.y) * 2.0 + 1.0)
 
-func _lane_position(cell: Vector2i, next_cell: Vector2i) -> Vector3:
-	var direction := Vector2(float(next_cell.x - cell.x), float(next_cell.y - cell.y)).normalized()
+func _lane_position(cell: Vector2i, travel_direction: Vector2i) -> Vector3:
+	var direction := Vector2(float(travel_direction.x), float(travel_direction.y)).normalized()
 	var right := Vector2(-direction.y, direction.x)
 	var center := _cell_center(cell)
 	return center + Vector3(right.x * 0.32, 0.0, right.y * 0.32)
