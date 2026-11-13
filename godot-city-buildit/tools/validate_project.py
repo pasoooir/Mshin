@@ -293,7 +293,7 @@ for visual_contract in [
 # category GLTF must not replace these level-specific procedural forms.
 for level_contract in [
     'func _build_residential_level_architecture(',
-    'if str(definition.get("category", "")) == "residential":',
+    'if category == "residential" or category == "commercial" or category == "industrial":',
     'match stage:',
     '# Stage 2: expanded suburban home with attached garage and new roof wing.',
     '# Stage 3: true two-storey redesign with offset upper floor and balcony.',
