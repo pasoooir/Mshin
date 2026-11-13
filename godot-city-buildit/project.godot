@@ -35,6 +35,7 @@ RegionManager="*res://scripts/autoload/RegionManager.gd"
 AchievementManager="*res://scripts/autoload/AchievementManager.gd"
 AudioManager="*res://scripts/autoload/AudioManager.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
+PerformanceMonitor="*res://scripts/autoload/PerformanceMonitor.gd"
 
 [display]
 
