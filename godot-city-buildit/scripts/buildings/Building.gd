@@ -744,7 +744,7 @@ func _build_commercial(w: float, d: float, height: float, color: Color) -> void:
 	else:
 		_add_box(Vector3(w * 0.98, 0.12, d * 0.94), Vector3(0, body_h + 0.49, 0), roof)
 
-	_build_commercial_identity(w, d, body_h, front if false else d * 0.5, stage)
+	_build_commercial_identity(w, d, body_h, d * 0.5, stage)
 
 
 func _build_commercial_identity(w: float, d: float, body_h: float, front: float, stage: int) -> void:
