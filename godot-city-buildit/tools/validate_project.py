@@ -359,6 +359,25 @@ for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_ti
 for contract in ["EmergencyCoveragePreview", "CoverageArea", "CoverageBoundary", "FireHazardManager.get_coverage_radius_world(definition)", 'int(definition.get("police", 0)) > 0', 'int(definition.get("health", 0)) > 0', "Color(0.18, 0.38, 0.98, 0.95)", "Color(0.20, 0.96, 0.62, 0.96)"]:
     if contract not in ghost_preview_source:
         errors.append(f"Fire placement coverage preview contract is missing: {contract}")
+
+for contract in [
+    'service_group == "sewage"',
+    'service_group == "waste"',
+    "HappinessManager.SEWAGE_COVERAGE_RADIUS",
+    "HappinessManager.WASTE_COVERAGE_RADIUS",
+    "Color(0.68, 0.76, 0.36, 0.96)",
+    "Color(1.0, 0.58, 0.16, 0.96)",
+]:
+    if contract not in ghost_preview_source:
+        errors.append(f"Sewage/Waste placement coverage preview contract is missing: {contract}")
+for contract in [
+    "var sewage_preview: Dictionary",
+    "var waste_preview: Dictionary",
+    "Sewage preview radius must match its happiness coverage radius",
+    "Waste preview radius must match its happiness coverage radius",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Sewage/Waste coverage preview regression test is missing: {contract}")
 if city_input_source.count("BuildManager.building_types.get(BuildManager.selected_building_type, {})") < 2:
     errors.append("CityInput must pass selected building metadata to both placement preview paths")
 
@@ -403,7 +422,7 @@ if '"sewage_pipe":' in build_manager or '"sewage_pipe"' in hud or '"sewage_pipe"
 for contract in [
     'const SEWAGE_SERVICE_IDS := ["sewage_small", "sewage_basic", "sewage_deluxe"]',
     "func _nearby_sewage_service(",
-    "_nearby_sewage_service(home, 30.0)",
+    "_nearby_sewage_service(home, SEWAGE_COVERAGE_RADIUS)",
 ]:
     if contract not in happiness_manager_source:
         errors.append(f"Sewage happiness coverage contract is missing: {contract}")
@@ -471,7 +490,7 @@ if '"waste_omega":' in build_manager:
 for contract in [
     'const WASTE_SERVICE_GROUP := "waste"',
     "func _nearby_waste_service(",
-    "_nearby_waste_service(home, 30.0)",
+    "_nearby_waste_service(home, WASTE_COVERAGE_RADIUS)",
 ]:
     if contract not in happiness_manager_source:
         errors.append(f"Waste happiness coverage contract is missing: {contract}")

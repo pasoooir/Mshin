@@ -18,6 +18,8 @@ const WASTE_SERVICE_GROUP := "waste"
 const FIRE_SERVICE_GROUP := "fire"
 const POLICE_SERVICE_GROUP := "police"
 const HEALTH_SERVICE_GROUP := "health"
+const SEWAGE_COVERAGE_RADIUS := 30.0
+const WASTE_COVERAGE_RADIUS := 30.0
 
 var home_scores: Dictionary = {}
 var low_happiness_time: Dictionary = {}
@@ -181,9 +183,9 @@ func _home_has_extra_service(home: Node3D) -> bool:
 		return true
 	if _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
 		return true
-	if _nearby_sewage_service(home, 30.0):
+	if _nearby_sewage_service(home, SEWAGE_COVERAGE_RADIUS):
 		return true
-	if _nearby_waste_service(home, 30.0):
+	if _nearby_waste_service(home, WASTE_COVERAGE_RADIUS):
 		return true
 	if _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 		return true
@@ -236,9 +238,9 @@ func calculate_home_happiness(home: Node3D) -> float:
 		score += 8.0
 	if _nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0):
 		score += 8.0
-	if _nearby_sewage_service(home, 30.0):
+	if _nearby_sewage_service(home, SEWAGE_COVERAGE_RADIUS):
 		score += 6.0
-	if _nearby_waste_service(home, 30.0):
+	if _nearby_waste_service(home, WASTE_COVERAGE_RADIUS):
 		score += 6.0
 	if _nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0):
 		score += 8.0
