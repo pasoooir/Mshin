@@ -24,6 +24,9 @@ var current_product: String = ""
 var is_producing: bool = false
 var has_ready_product: bool = false
 var upgrade_stage: int = 1
+var is_epic_building: bool = false
+var epic_tier: int = 0
+var epic_badge: Label3D = null
 var max_stage: int = 6
 var current_population: int = 0
 var upgrade_ready: bool = false
@@ -143,9 +146,10 @@ func set_epic_tier(tier: int) -> void:
 		epic_badge.outline_size = 8
 		epic_badge.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		add_child(epic_badge)
-	var tier_name := ["", "BRONZE", "SILVER", "GOLD"][epic_tier]
-	epic_badge.text = "★ EPIC · " + tier_name
-	epic_badge.modulate = [Color.WHITE, Color("#C78B4B"), Color("#C7D5E0"), Color("#FFD75E")][epic_tier]
+	var tier_names: Array[String] = ["", "BRONZE", "SILVER", "GOLD"]
+	var tier_colors: Array[Color] = [Color.WHITE, Color("#C78B4B"), Color("#C7D5E0"), Color("#FFD75E")]
+	epic_badge.text = "★ EPIC · " + tier_names[epic_tier]
+	epic_badge.modulate = tier_colors[epic_tier]
 	epic_badge.visible = true
 
 func _apply_move_transparency(node: Node, active: bool) -> void:
