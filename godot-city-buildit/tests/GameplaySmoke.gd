@@ -19,6 +19,18 @@ class FireHazardTestBuilding extends Node3D:
 var failures: Array[String] = []
 
 func _ready() -> void:
+	var requested_viewport := OS.get_environment("MSHIN_TEST_VIEWPORT")
+	if not requested_viewport.is_empty():
+		var dimensions := requested_viewport.split("x")
+		if dimensions.size() == 2:
+			var requested_size := Vector2i(int(dimensions[0]), int(dimensions[1]))
+			get_viewport().size = requested_size
+			await get_tree().process_frame
+			get_viewport().size = requested_size
+			await get_tree().process_frame
+			var actual_size := get_viewport().get_visible_rect().size
+			print("[GameplaySmoke] Requested viewport=%s actual=%s" % [str(requested_size), str(actual_size)])
+			_check(actual_size.is_equal_approx(Vector2(requested_size)), "Headless viewport did not accept requested test dimensions: %s" % requested_viewport)
 	call_deferred("_run_gameplay_test")
 
 func _check(condition: bool, message: String) -> void:
