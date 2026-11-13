@@ -1795,6 +1795,9 @@ func open_production_panel(building: Building) -> void:
 		empty_catalog.add_theme_color_override("font_color", Color("#F5DFA0"))
 		product_grid.add_child(empty_catalog)
 
+	# Keep the complete store catalog on one horizontally scrollable row.
+	# A fixed six-column grid could wrap larger catalogs below the clipped viewport.
+	product_grid.columns = maxi(1, item_ids.size())
 	for item_id in item_ids:
 		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
 		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
@@ -2092,6 +2095,8 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	var selected_recipe: Dictionary = {} if is_factory else ProductionManager.get_recipe(item_id)
 	if is_factory:
 		production_time.text = "PRODUCTION TIME  " + _format_duration(int(data.get("time_sec", 60)))
+	elif selected_recipe.is_empty() and int(data.get("time_sec", 0)) > 0:
+		production_time.text = "REFERENCE TIME  " + _format_duration(int(data.get("time_sec", 0))) + " · INPUTS DISPUTED"
 	elif selected_recipe.is_empty():
 		production_time.text = "PRODUCTION TIME  NOT VERIFIED"
 	else:
@@ -2100,10 +2105,10 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	production_time.add_theme_color_override("font_color", Color("#315C70"))
 	text_stack.add_child(production_time)
 	var provenance := str(data.get("source", ""))
-	if provenance.to_lower().contains("conflict") or provenance.to_lower().contains("verify"):
+	if provenance.to_lower().contains("conflict") or provenance.to_lower().contains("verify") or not bool(data.get("unlock_level_verified", true)):
 		var provenance_warning := Label.new()
 		provenance_warning.name = "RecipeDataWarning"
-		provenance_warning.text = "REFERENCE DATA DISAGREES · VERIFY RECIPE BEFORE FINAL BALANCE"
+		provenance_warning.text = "REFERENCE DATA DISAGREES · VERIFY RECIPE BEFORE FINAL BALANCE" if provenance.to_lower().contains("conflict") else "MAYOR LEVEL GATE NOT VERIFIED · PRODUCTION LOCKED"
 		provenance_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		provenance_warning.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 		provenance_warning.add_theme_color_override("font_color", Color("#A13F35"))
@@ -2115,8 +2120,10 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		storage_label.add_theme_color_override("font_color", Color("#315C70"))
 		text_stack.add_child(storage_label)
 	else:
-		var ingredients_label := Label.new()
+			var ingredients_label := Label.new()
 		ingredients_label.name = "IngredientsLabel"
+		ingredients_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ingredients_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var ingredient_lines: Array[String] = []
 		for input_id in inputs:
 			var input_data: Dictionary = ProductionManager.get_item_definition(str(input_id))
@@ -2125,10 +2132,30 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			ingredient_lines.append("%s  %d/%d" % [str(input_data.get("name", str(input_id).capitalize())), owned, required])
 			if owned < required:
 				can_start = false
-		ingredients_label.text = ("REQUIRED ITEMS  " + "   •   ".join(ingredient_lines)) if not inputs.is_empty() else "RECIPE INPUTS NOT VERIFIED — PRODUCTION DISABLED"
+		var candidate_inputs: Array = data.get("candidate_inputs", [])
+		if inputs.is_empty() and not candidate_inputs.is_empty():
+			var candidate_lines: Array[String] = []
+			for candidate_index in range(candidate_inputs.size()):
+				var candidate: Dictionary = candidate_inputs[candidate_index]
+				var candidate_parts: Array[String] = []
+				for candidate_id in candidate:
+					var candidate_definition := ProductionManager.get_item_definition(str(candidate_id))
+					candidate_parts.append("%s ×%d" % [str(candidate_definition.get("name", str(candidate_id).capitalize())), int(candidate[candidate_id])])
+				candidate_lines.append("Option %d: %s" % [candidate_index + 1, ", ".join(candidate_parts)])
+			ingredients_label.text = "CONFLICTING REFERENCE INPUTS — NOT CRAFTABLE\n" + "\n".join(candidate_lines)
+		else:
+			ingredients_label.text = ("REQUIRED ITEMS  " + "   •   ".join(ingredient_lines)) if not inputs.is_empty() else "RECIPE INPUTS NOT VERIFIED — PRODUCTION DISABLED"
 		ingredients_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		ingredients_label.add_theme_color_override("font_color", Color("#315C70") if can_start else Color("#A33A36"))
 		text_stack.add_child(ingredients_label)
+		if int(data.get("value", 0)) > 0:
+			var reference_value := Label.new()
+			reference_value.name = "ReferenceTradeValue"
+			reference_value.text = "REFERENCE MAX TRADE VALUE  %s SIMOLEONS" % _format_count(int(data.value))
+			reference_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			reference_value.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			reference_value.add_theme_color_override("font_color", Color("#587487"))
+			text_stack.add_child(reference_value)
 		if not inputs.is_empty():
 			var chain_label := Label.new()
 			chain_label.name = "RecipeSupplyChain"
