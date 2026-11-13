@@ -9,6 +9,7 @@ const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
 const CitizenFeedbackBubblesScript = preload("res://scripts/ui/CitizenFeedbackBubbles.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
+const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -1896,9 +1897,24 @@ func _test_audio_manager_contract() -> void:
 	_check(audio_test_button.is_connected("pressed", Callable(AudioManager, "play_ui_click")), "New UI buttons must automatically receive the click sound handler.")
 	audio_test_button.queue_free()
 
+
+func _test_tutorial_guide_contract() -> void:
+	_check(TutorialGuideScript.get_step_count() == 6, "First-session tutorial must cover the six core city-building milestones.")
+	var expected_ids := ["home", "factory", "raw", "store", "crafted", "upgrade"]
+	var seen_ids: Dictionary = {}
+	for index in range(TutorialGuideScript.get_step_count()):
+		var step: Dictionary = TutorialGuideScript.get_step_definition(index)
+		var step_id := str(step.get("id", ""))
+		_check(step_id == expected_ids[index], "Tutorial milestone order must follow the real city-building core loop.")
+		_check(not str(step.get("title", "")).is_empty() and not str(step.get("description", "")).is_empty() and not str(step.get("hint", "")).is_empty(), "Every tutorial step must provide a title, actionable explanation and UI hint.")
+		_check(not seen_ids.has(step_id), "Tutorial milestone identifiers must be unique.")
+		seen_ids[step_id] = true
+	_check(TutorialGuideScript.get_step_definition(-1).is_empty() and TutorialGuideScript.get_step_definition(6).is_empty(), "Tutorial step lookup must reject indexes outside the guide.")
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_audio_manager_contract()
+	_test_tutorial_guide_contract()
 	_test_mobile_haptics_contract()
 	_test_epic_project_core()
 	_test_achievements()
