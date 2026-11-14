@@ -704,7 +704,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	police_station.grid_pos = Vector2i(0, 1)
 	police_station.definition = {"service_group": "police", "size": Vector2i(2, 2)}
 	police_station.status = "completed"
-	police_station.global_position = BuildManager.grid_to_world(police_station.grid_pos)
+	police_station.global_position = BuildManager.grid_to_world(police_station.grid_pos) + Vector3(1.0, 0.0, 1.0)
 	world.add_child(police_station)
 	_check(BuildManager.is_building_operational(police_station), "A completed police station with Gateway-connected road access must be operational.")
 	var police_route := TrafficManager.build_station_patrol_route(police_station)
@@ -718,7 +718,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_instance_valid(police_vehicle) and police_vehicle.vehicle_kind == "police", "An operational police station must automatically dispatch a police vehicle.")
 	if is_instance_valid(police_vehicle):
 		_check(police_vehicle.station_building_id == police_station.building_id, "Police patrol vehicle must retain its originating station identity.")
-		_check(police_vehicle.global_position.distance_to(police_station.global_position) > 1.0 and police_vehicle.global_position.distance_to(police_station.global_position) < 2.0, "Police vehicle must spawn at the station exit before entering its patrol route.")
+		_check(police_vehicle.global_position.distance_to(police_station.global_position) > 2.0 and police_vehicle.global_position.distance_to(police_station.global_position) < 3.0, "Police vehicle must spawn at the station exit before entering its patrol route.")
 		_check(police_vehicle.get_node_or_null("EmergencyLightbar") != null, "Police vehicle must visibly carry an emergency lightbar.")
 
 	var fire_station := FireHazardTestBuilding.new()
