@@ -654,7 +654,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "City vehicles must use the required 4x speed multiplier.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)) * 3.6, TrafficManager.CITY_SPEED_LIMIT_KMH), "City traffic must stay within the calibrated 30 km/h urban speed ceiling.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "Negative city grid coordinates must not be misclassified as motorway lanes.")
-	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1)), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway"), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1)) * 3.6, TrafficManager.HIGHWAY_SPEED_LIMIT_KMH), "Motorway traffic must stay within the calibrated 120 km/h speed ceiling.")
 	var northbound_route := TrafficManager.build_highway_route(true)
 	var southbound_route := TrafficManager.build_highway_route(false)
@@ -694,6 +694,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	if is_instance_valid(highway_vehicle):
 		_check(highway_vehicle.route_key.begins_with("coastal-highway-"), "Motorway vehicles must use the separate external highway route, not the city road graph.")
 		_check(TrafficManager.HIGHWAY_LANE_OFFSETS.has(highway_vehicle.lane_offset), "Motorway traffic must be assigned to one of its three legal directional lanes.")
+		_check(is_equal_approx(highway_vehicle.global_position.x, TrafficManager.HIGHWAY_WORLD_X + TrafficManager.HIGHWAY_LANE_OFFSETS[highway_vehicle.lane_index]), "Motorway vehicles must physically travel on the external divided highway, not the city road grid.")
 	TrafficManager.clear_active_vehicle()
 	var world := get_node("World") as Node3D
 	var police_station := FireHazardTestBuilding.new()
