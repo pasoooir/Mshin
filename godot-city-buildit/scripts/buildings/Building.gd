@@ -1946,6 +1946,14 @@ func get_info() -> String:
 			info += needed_text
 		if upgrade_ready:
 			info += " — READY TO UPGRADE"
+	if status == "completed":
+		var operational_requirements := BuildManager.get_operational_requirements(building_type)
+		if not operational_requirements.is_empty():
+			var operational_blockers := ServiceManager.get_operational_blockers(self)
+			if operational_blockers.is_empty():
+				info += " — OPERATIONAL"
+			else:
+				info += " — STOPPED: " + "; ".join(operational_blockers)
 	if is_producing:
 		if has_ready_product:
 			info += " - Ready: " + str(ProductionManager.raw_materials.get(current_product, ProductionManager.crafted_items.get(current_product, {})).get("name", current_product))

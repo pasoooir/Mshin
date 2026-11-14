@@ -1149,7 +1149,7 @@ if 'definition.get("water", 0)' not in service_manager_source:
 
 for contract in [
     "if not _has_gateway_road_access(candidate):",
-    "if _has_gateway_road_access(building):",
+    "if not _has_gateway_road_access(building):",
     "if not _has_gateway_road_access(home):",
     "func _has_nearby_emergency_facility(",
     "var fire_served_ids: Dictionary = {}",

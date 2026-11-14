@@ -31,8 +31,13 @@ var demand_police_homes: int = 0
 var served_police_homes: int = 0
 var demand_health_homes: int = 0
 var served_health_homes: int = 0
+var workforce_available: int = 0
+var workforce_assigned: int = 0
+var workforce_assigned_by_id: Dictionary = {}
+var operational_blockers_by_id: Dictionary = {}
 
 const DEFAULT_EMERGENCY_COVERAGE_TILES := 15.0
+const MSHIN_WORKFORCE_SUPPLY_RATIO: float = 0.40
 
 func _ready() -> void:
 	print("[ServiceManager] Power/water/sewage/waste capacity network online")
@@ -60,6 +65,8 @@ func _has_nearby_utility(building: Node3D, utility_key: String) -> bool:
 			continue
 		if int(candidate.definition.get(utility_key, 0)) <= 0:
 			continue
+		if not _has_workforce_for_provider(candidate):
+			continue
 		# A disconnected facility must not provide a service merely because it
 		# happens to be within the geometric coverage radius.
 		if not _has_gateway_road_access(candidate):
@@ -73,6 +80,30 @@ func _has_gateway_road_access(building: Node3D) -> bool:
 		return false
 	var size: Vector2i = building.definition.get("size", Vector2i(2, 2))
 	return BuildManager.has_road_access(building.grid_pos, size)
+
+func get_operational_blockers(building: Node3D) -> Array[String]:
+	if not is_instance_valid(building):
+		return ["Building is unavailable"]
+	var requirements := BuildManager.get_operational_requirements(str(building.building_type))
+	if requirements.is_empty():
+		return []
+	var stored: Array = operational_blockers_by_id.get(str(building.building_id), [])
+	var result: Array[String] = []
+	for reason in stored:
+		result.append(str(reason))
+	if result.is_empty() and not operational_blockers_by_id.has(str(building.building_id)):
+		result.append("Operational services have not been recalculated")
+	return result
+
+func is_building_operational(building: Node3D) -> bool:
+	return is_instance_valid(building) and get_operational_blockers(building).is_empty()
+
+func _has_workforce_for_provider(building: Node3D) -> bool:
+	if not is_instance_valid(building):
+		return false
+	var requirements := BuildManager.get_operational_requirements(str(building.building_type))
+	var workforce_needed := int(requirements.get("workforce", 0))
+	return workforce_needed <= 0 or workforce_assigned_by_id.has(str(building.building_id))
 
 func is_building_served(building: Node3D) -> bool:
 	if not is_instance_valid(building):
@@ -116,6 +147,8 @@ func _has_nearby_emergency_facility(home: Node3D, service_group: String) -> bool
 		var definition: Dictionary = candidate.definition
 		if str(definition.get("service_group", "")) != service_group:
 			continue
+		if not _has_workforce_for_provider(candidate):
+			continue
 		# Emergency coverage is only operational when the station is connected
 		# to the permanent Gateway road network.
 		if not _has_gateway_road_access(candidate):
@@ -126,6 +159,16 @@ func _has_nearby_emergency_facility(home: Node3D, service_group: String) -> bool
 		if home_flat.distance_to(facility_flat) <= radius:
 			return true
 	return false
+
+func _workforce_priority(building: Node3D) -> int:
+	var category := str(building.definition.get("category", ""))
+	if category == "service":
+		return 0
+	if category == "industrial":
+		return 1
+	if category == "commercial":
+		return 2
+	return 3
 
 func recalculate_from_buildings() -> void:
 	total_power = 0
@@ -153,11 +196,19 @@ func recalculate_from_buildings() -> void:
 	served_police_homes = 0
 	demand_health_homes = 0
 	served_health_homes = 0
+	workforce_available = maxi(0, int(floor(float(GameManager.population) * MSHIN_WORKFORCE_SUPPLY_RATIO)))
+	workforce_assigned = 0
+	workforce_assigned_by_id.clear()
+	operational_blockers_by_id.clear()
 
-	var homes: Array = []
-	for building in BuildManager.buildings.values():
-		if not is_instance_valid(building) or building.status != "completed":
+	var homes: Array[Node3D] = []
+	var operating_buildings: Array[Node3D] = []
+	var completed_buildings: Array[Node3D] = []
+	for building_variant in BuildManager.buildings.values():
+		if not is_instance_valid(building_variant) or building_variant.status != "completed":
 			continue
+		var building := building_variant as Node3D
+		completed_buildings.append(building)
 		var definition: Dictionary = building.definition
 		var category := str(definition.get("category", ""))
 		if category == "residential":
@@ -166,21 +217,55 @@ func recalculate_from_buildings() -> void:
 			demand_water += get_home_service_demand(building)
 			demand_sewage += get_home_service_demand(building)
 			demand_waste += get_home_service_demand(building)
-		elif str(definition.get("service_group", "")) == "sewage" and _has_gateway_road_access(building):
-			total_sewage += int(definition.get("sewage", 0))
-		elif str(definition.get("service_group", "")) == "waste" and _has_gateway_road_access(building):
-			total_waste += int(definition.get("waste", 0))
-		# Capacity is operational only while the facility itself is connected
-		# to the Gateway. Disconnected plants must not inflate city totals.
-		if _has_gateway_road_access(building):
-			total_power += int(definition.get("power", 0))
-			total_water += int(definition.get("water", 0))
+		else:
+			var requirements := BuildManager.get_operational_requirements(str(building.building_type))
+			if not requirements.is_empty():
+				operating_buildings.append(building)
 
-	# Power and water keep their local-radius service model, but demand is
-	# derived from each home's explicit low/medium/high service-demand value.
+	# Allocate workforce deterministically: service providers first, then
+	# industrial production, then commercial shops. Mshin uses 40% of residents
+	# as its available workforce pool; this is a game-design rule, not SCBI data.
+	operating_buildings.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+		var a_priority := int(a.definition.get("workforce_priority", _workforce_priority(a)))
+		var b_priority := int(b.definition.get("workforce_priority", _workforce_priority(b)))
+		if a_priority == b_priority:
+			return str(a.building_id) < str(b.building_id)
+		return a_priority < b_priority
+	)
+	for building in operating_buildings:
+		var requirements := BuildManager.get_operational_requirements(str(building.building_type))
+		var required_workforce := maxi(0, int(requirements.get("workforce", 0)))
+		var blockers: Array[String] = []
+		if not _has_gateway_road_access(building):
+			blockers.append("Road access: building is disconnected from the Gateway")
+			operational_blockers_by_id[str(building.building_id)] = blockers
+			continue
+		if required_workforce > 0:
+			var remaining_workforce := workforce_available - workforce_assigned
+			if remaining_workforce >= required_workforce:
+				workforce_assigned += required_workforce
+				workforce_assigned_by_id[str(building.building_id)] = required_workforce
+			else:
+				blockers.append("Workforce: requires %d, only %d unassigned" % [required_workforce, maxi(0, remaining_workforce)])
+		operational_blockers_by_id[str(building.building_id)] = blockers
+
+	# Only staffed, road-connected utility buildings contribute capacity.
+	for building in completed_buildings:
+		var definition: Dictionary = building.definition
+		if not _has_gateway_road_access(building):
+			continue
+		var requirements := BuildManager.get_operational_requirements(str(building.building_type))
+		if int(requirements.get("workforce", 0)) > 0 and not workforce_assigned_by_id.has(str(building.building_id)):
+			continue
+		if str(definition.get("service_group", "")) == "sewage":
+			total_sewage += int(definition.get("sewage", 0))
+		elif str(definition.get("service_group", "")) == "waste":
+			total_waste += int(definition.get("waste", 0))
+		total_power += int(definition.get("power", 0))
+		total_water += int(definition.get("water", 0))
+
+	# Household allocation retains its existing priority and local utility model.
 	for home in homes:
-		# Every household service requires a continuous road connection to the
-		# permanent Gateway; otherwise capacity remains available but unserved.
 		if not _has_gateway_road_access(home):
 			continue
 		var demand := get_home_service_demand(home)
@@ -191,8 +276,6 @@ func recalculate_from_buildings() -> void:
 			used_water += demand
 			water_served_ids[home.building_id] = true
 
-	# Sewage and waste are city-wide capacity services: facilities and homes
-	# must both be connected to the Gateway road network; no local radius applies.
 	var sewage_remaining := total_sewage
 	var waste_remaining := total_waste
 	for home in homes:
@@ -208,9 +291,66 @@ func recalculate_from_buildings() -> void:
 			used_waste += demand
 			waste_served_ids[home.building_id] = true
 
-	# Fire, Police and Health are local coverage services rather than city-wide
-	# capacity pools. A home and its provider must both be Gateway-connected.
-	# Coverage distance is read from each catalog tier's coverage_tiles metadata.
+	# Allocate remaining utility capacity to commercial/industrial buildings.
+	# Each requirement is independent and every shortage is retained as a
+	# player-readable blocker instead of silently stopping production.
+	for building in operating_buildings:
+		var building_id := str(building.building_id)
+		var blockers: Array[String] = operational_blockers_by_id.get(building_id, [])
+		var requirements := BuildManager.get_operational_requirements(str(building.building_type))
+		if not _has_gateway_road_access(building):
+			operational_blockers_by_id[building_id] = blockers
+			continue
+		if int(requirements.get("workforce", 0)) > 0 and not workforce_assigned_by_id.has(building_id):
+			operational_blockers_by_id[building_id] = blockers
+			continue
+		var power_need := maxi(0, int(requirements.get("power", 0)))
+		if power_need > 0:
+			demand_power += power_need
+			if used_power + power_need <= total_power and _has_nearby_utility(building, "power"):
+				used_power += power_need
+				power_served_ids[building_id] = true
+			else:
+				blockers.append("Power: requires %d capacity and a connected nearby utility" % power_need)
+		var water_need := maxi(0, int(requirements.get("water", 0)))
+		if water_need > 0:
+			demand_water += water_need
+			if used_water + water_need <= total_water and _has_nearby_utility(building, "water"):
+				used_water += water_need
+				water_served_ids[building_id] = true
+			else:
+				blockers.append("Water: requires %d capacity and a connected nearby utility" % water_need)
+		var sewage_need := maxi(0, int(requirements.get("sewage", 0)))
+		if sewage_need > 0:
+			demand_sewage += sewage_need
+			if sewage_remaining >= sewage_need:
+				sewage_remaining -= sewage_need
+				used_sewage += sewage_need
+				sewage_served_ids[building_id] = true
+			else:
+				blockers.append("Sewage: requires %d unassigned capacity" % sewage_need)
+		var waste_need := maxi(0, int(requirements.get("waste", 0)))
+		if waste_need > 0:
+			demand_waste += waste_need
+			if waste_remaining >= waste_need:
+				waste_remaining -= waste_need
+				used_waste += waste_need
+				waste_served_ids[building_id] = true
+			else:
+				blockers.append("Waste: requires %d unassigned capacity" % waste_need)
+		for emergency_group in ["fire", "police", "health"]:
+			if int(requirements.get(emergency_group, 0)) <= 0:
+				continue
+			if _has_nearby_emergency_facility(building, emergency_group):
+				match emergency_group:
+					"fire": fire_served_ids[building_id] = true
+					"police": police_served_ids[building_id] = true
+					"health": health_served_ids[building_id] = true
+			else:
+				blockers.append("%s coverage is unavailable" % emergency_group.capitalize())
+		operational_blockers_by_id[building_id] = blockers
+
+	# Residential emergency-service coverage remains a local, non-capacity system.
 	for home in homes:
 		if _has_nearby_emergency_facility(home, "fire"):
 			fire_served_ids[home.building_id] = true
@@ -219,14 +359,12 @@ func recalculate_from_buildings() -> void:
 		if _has_nearby_emergency_facility(home, "health"):
 			health_served_ids[home.building_id] = true
 
-	# These three services are area-coverage systems, not numerical capacity
-	# pools. Expose covered-home counts so the HUD reports measurable coverage.
 	demand_fire_homes = homes.size()
-	served_fire_homes = fire_served_ids.size()
+	served_fire_homes = homes.filter(func(home: Node3D) -> bool: return fire_served_ids.has(str(home.building_id))).size()
 	demand_police_homes = homes.size()
-	served_police_homes = police_served_ids.size()
+	served_police_homes = homes.filter(func(home: Node3D) -> bool: return police_served_ids.has(str(home.building_id))).size()
 	demand_health_homes = homes.size()
-	served_health_homes = health_served_ids.size()
+	served_health_homes = homes.filter(func(home: Node3D) -> bool: return health_served_ids.has(str(home.building_id))).size()
 
 	power_changed.emit(total_power, demand_power)
 	water_changed.emit(total_water, demand_water)
