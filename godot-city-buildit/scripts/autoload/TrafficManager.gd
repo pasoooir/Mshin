@@ -88,7 +88,11 @@ func _prune_vehicle_list() -> void:
 	for vehicle in _active_vehicles:
 		active_ids[vehicle.get_instance_id()] = true
 	for junction_cell in _junction_reservations.keys():
-		if not active_ids.has(int(_junction_reservations[junction_cell])):
+		var movements: Dictionary = _junction_reservations[junction_cell]
+		for vehicle_id in movements.keys():
+			if not active_ids.has(int(vehicle_id)):
+				movements.erase(vehicle_id)
+		if movements.is_empty():
 			_junction_reservations.erase(junction_cell)
 	_active_vehicle = null
 	for vehicle in _active_vehicles:
@@ -227,6 +231,91 @@ func _update_junction_controllers(delta: float) -> void:
 		if not junctions.has(junction_cell):
 			_junction_signal_states.erase(junction_cell)
 
+func _movement_segment(from_cell: Vector2i, junction_cell: Vector2i, to_cell: Vector2i) -> Array[Vector2]:
+	var incoming := junction_cell - from_cell
+	var outgoing := to_cell - junction_cell
+	var incoming_right := Vector2(-float(incoming.y), float(incoming.x)).normalized()
+	var outgoing_right := Vector2(-float(outgoing.y), float(outgoing.x)).normalized()
+	var start := -Vector2(float(incoming.x), float(incoming.y)) * 0.9 + incoming_right * LANE_CENTER_OFFSET
+	var finish := Vector2(float(outgoing.x), float(outgoing.y)) * 0.9 + outgoing_right * LANE_CENTER_OFFSET
+	return [start, finish]
+
+func _cross_2d(a: Vector2, b: Vector2) -> float:
+	return a.x * b.y - a.y * b.x
+
+func _segments_intersect(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> bool:
+	var ab := b - a
+	var cd := d - c
+	var denominator := _cross_2d(ab, cd)
+	if absf(denominator) <= 0.0001:
+		return false
+	var offset := c - a
+	var t := _cross_2d(offset, cd) / denominator
+	var u := _cross_2d(offset, ab) / denominator
+	return t >= 0.0 and t <= 1.0 and u >= 0.0 and u <= 1.0
+
+func _junction_movements_conflict(from_a: Vector2i, to_a: Vector2i, from_b: Vector2i, to_b: Vector2i, junction_cell: Vector2i) -> bool:
+	if from_a == from_b or to_a == to_b:
+		return true
+	var path_a := _movement_segment(from_a, junction_cell, to_a)
+	var path_b := _movement_segment(from_b, junction_cell, to_b)
+	return _segments_intersect(path_a[0], path_a[1], path_b[0], path_b[1])
+
+func _is_junction_exit_clear(vehicle: TrafficVehicle, junction_cell: Vector2i, exit_cell: Vector2i) -> bool:
+	var road_system = _get_road_system()
+	if not road_system or not road_system.get_gateway_connected_roads().has(exit_cell):
+		return false
+	for other in _active_vehicles:
+		if not is_instance_valid(other) or other == vehicle or other.route.is_empty():
+			continue
+		var other_index := clampi(other._segment_index, 0, other.route.size() - 1)
+		var occupied_cell: Vector2i = other.route[other_index]
+		if occupied_cell == exit_cell:
+			return false
+		if other_index + 1 < other.route.size() and other.route[other_index + 1] == exit_cell and other._segment_progress >= 0.5:
+			return false
+	return true
+
+func _approach_has_right_of_way(approach: Vector2i, counts: Dictionary) -> bool:
+	# Right-hand traffic: an approach yields when a queued vehicle is entering
+	# from its right. The maximum-wait override below prevents starvation.
+	var right_approach := Vector2i(approach.y, -approach.x)
+	return counts.has(right_approach) and int(counts[right_approach]) > 0
+
+func _select_junction_approach(counts: Dictionary, waiting: Dictionary) -> Vector2i:
+	var selected := Vector2i.ZERO
+	var best_wait := -1.0
+	var best_queue := -1
+	var found_non_yielding := false
+	for approach in counts.keys():
+		var wait_time := float(waiting.get(approach, 0.0))
+		var may_proceed := not _approach_has_right_of_way(approach, counts) or wait_time >= 8.0
+		if not may_proceed:
+			continue
+		found_non_yielding = true
+		var queue_size := int(counts[approach])
+		if wait_time > best_wait or (is_equal_approx(wait_time, best_wait) and queue_size > best_queue):
+			selected = approach
+			best_wait = wait_time
+			best_queue = queue_size
+	if found_non_yielding:
+		return selected
+	# A fully occupied circular priority set must still make progress.
+	return _select_junction_approach_without_yield(counts, waiting)
+
+func _select_junction_approach_without_yield(counts: Dictionary, waiting: Dictionary) -> Vector2i:
+	var selected := Vector2i.ZERO
+	var best_wait := -1.0
+	var best_queue := -1
+	for approach in counts.keys():
+		var wait_time := float(waiting.get(approach, 0.0))
+		var queue_size := int(counts[approach])
+		if wait_time > best_wait or (is_equal_approx(wait_time, best_wait) and queue_size > best_queue):
+			selected = approach
+			best_wait = wait_time
+			best_queue = queue_size
+	return selected
+
 func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, from_cell: Vector2i = Vector2i.ZERO) -> bool:
 	if not is_instance_valid(vehicle):
 		return false
@@ -239,26 +328,53 @@ func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, fr
 		_junction_signal_states[junction_cell] = state
 	if str(state.get("stage", "green")) != "green" or state.get("approach", Vector2i.ZERO) != approach:
 		return false
-	var owner_id := int(_junction_reservations.get(junction_cell, 0))
+
+	var outgoing_cell := junction_cell + Vector2i(1, 0)
+	if not vehicle.route.is_empty():
+		var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
+		if segment_index + 2 < vehicle.route.size():
+			outgoing_cell = vehicle.route[segment_index + 2]
+	elif from_cell == Vector2i.ZERO:
+		# Preserve safe behavior for legacy callers that do not supply a route.
+		from_cell = junction_cell + Vector2i(-1, 0)
+		outgoing_cell = junction_cell + Vector2i(1, 0)
+		approach = junction_cell - from_cell
+
+	if not _is_junction_exit_clear(vehicle, junction_cell, outgoing_cell):
+		return false
 	var vehicle_id := vehicle.get_instance_id()
-	if owner_id == 0 or owner_id == vehicle_id:
-		_junction_reservations[junction_cell] = vehicle_id
-		return true
-	return false
+	var movements: Dictionary = _junction_reservations.get(junction_cell, {})
+	for reserved_id in movements.keys():
+		if int(reserved_id) == vehicle_id:
+			continue
+		var reservation: Dictionary = movements[reserved_id]
+		if _junction_movements_conflict(from_cell, outgoing_cell, reservation["from"], reservation["to"], junction_cell):
+			return false
+	movements[vehicle_id] = {"from": from_cell, "to": outgoing_cell}
+	_junction_reservations[junction_cell] = movements
+	return true
 
 func release_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i) -> void:
 	if not is_instance_valid(vehicle):
 		return
-	if int(_junction_reservations.get(junction_cell, 0)) == vehicle.get_instance_id():
+	var movements: Dictionary = _junction_reservations.get(junction_cell, {})
+	movements.erase(vehicle.get_instance_id())
+	if movements.is_empty():
 		_junction_reservations.erase(junction_cell)
+	else:
+		_junction_reservations[junction_cell] = movements
 
 func release_all_junction_entries(vehicle: TrafficVehicle) -> void:
 	if not is_instance_valid(vehicle):
 		return
 	var vehicle_id := vehicle.get_instance_id()
 	for junction_cell in _junction_reservations.keys():
-		if int(_junction_reservations[junction_cell]) == vehicle_id:
+		var movements: Dictionary = _junction_reservations[junction_cell]
+		movements.erase(vehicle_id)
+		if movements.is_empty():
 			_junction_reservations.erase(junction_cell)
+		else:
+			_junction_reservations[junction_cell] = movements
 
 func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> float:
 	if not is_instance_valid(vehicle):
@@ -658,16 +774,47 @@ func _get_world_parent() -> Node3D:
 		return null
 	return scene.get_node_or_null("World") as Node3D
 
+func _nearest_connected_road(target: Vector2i, connected_roads: Dictionary) -> Vector2i:
+	var nearest := Vector2i(2147483647, 2147483647)
+	var best_distance := 2147483647
+	for cell_value in connected_roads.keys():
+		var cell: Vector2i = cell_value
+		var distance := absi(cell.x - target.x) + absi(cell.y - target.y)
+		if distance < best_distance:
+			best_distance = distance
+			nearest = cell
+	return nearest
+
 func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:
 	_prune_vehicle_list()
 	for vehicle in _active_vehicles.duplicate():
-		if vehicle.vehicle_kind == "highway":
+		if vehicle.vehicle_kind == "highway" or vehicle.route.size() < 2:
 			continue
+		var route_is_valid := true
 		for cell in vehicle.route:
 			if not connected_roads.has(cell):
-				vehicle.queue_free()
-				_active_vehicles.erase(vehicle)
+				route_is_valid = false
 				break
+		if route_is_valid:
+			continue
+		var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
+		var start := vehicle.route[segment_index]
+		if not connected_roads.has(start):
+			start = _nearest_connected_road(start, connected_roads)
+		var goal := vehicle.route.back()
+		if not connected_roads.has(goal):
+			goal = _nearest_connected_road(goal, connected_roads)
+		if start.x == 2147483647 or goal.x == 2147483647:
+			vehicle.queue_free()
+			_active_vehicles.erase(vehicle)
+			continue
+		var replacement := _build_low_cost_route(start, goal, connected_roads)
+		if replacement.size() >= 2:
+			vehicle.replace_route(replacement)
+		else:
+			# No connected path remains. Retire only this unreachable trip.
+			vehicle.queue_free()
+			_active_vehicles.erase(vehicle)
 	_prune_vehicle_list()
 
 func _on_vehicle_route_completed() -> void:
