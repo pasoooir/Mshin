@@ -3304,7 +3304,7 @@ func _run_gameplay_test() -> void:
 	var previous_storage_items: Dictionary = StorageManager.items.duplicate(true)
 	var previous_storage_capacity := StorageManager.capacity
 	var previous_mayor_level := GameManager.level
-	var expansion_test_tile := Vector2i(3, 0)
+	var expansion_test_tile := Vector2i(0, 3)
 	var expansion_cost: Dictionary = LandExpansionManager.get_tile_cost(expansion_test_tile)
 	GameManager.level = 10
 	StorageManager.capacity = 100
@@ -3314,11 +3314,12 @@ func _run_gameplay_test() -> void:
 	_check(not BuildManager.is_cell_free(Vector2i(35, 0), Vector2i.ONE), "Building footprints must not be placeable on unopened land.")
 	_check(road_system.get_road_placement_error(Vector2i(35, 0)).contains("locked"), "Road placement must reject unopened land with a clear expansion message.")
 	_check(LandExpansionManager.get_available_expansion_tiles().has(expansion_test_tile), "A plot directly adjacent to owned land must be available for expansion.")
+	_check(not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(-4, 0)) and not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(3, 0)), "Expansion choices must exclude the motorway asphalt corridor and ocean coastline.")
 	_check(not LandExpansionManager.expand_tile(expansion_test_tile), "Land expansion must reject a purchase when any required Dozer item is missing.")
 	_check(StorageManager.add_items(expansion_cost), "Could not seed the isolated expansion-item inventory test.")
 	_check(LandExpansionManager.can_expand_tile(expansion_test_tile), "The adjacent plot must become purchasable when all three expansion items are present.")
 	_check(LandExpansionManager.expand_tile(expansion_test_tile), "A fully funded adjacent plot must be claimable.")
-	_check(LandExpansionManager.is_cell_unlocked(Vector2i(24, 0)), "Claiming a plot must unlock its complete eight-by-eight-cell footprint.")
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 24)), "Claiming a plot must unlock its complete eight-by-eight-cell footprint.")
 	_check(StorageManager.get_count("dozer_wheel") == 0 and StorageManager.get_count("dozer_blade") == 0 and StorageManager.get_count("dozer_exhaust") == 0, "A land claim must atomically consume all three required Dozer items.")
 
 	var bubble_gift_probe := CitizenFeedbackBubblesScript.new()
@@ -3339,7 +3340,7 @@ func _run_gameplay_test() -> void:
 	TradeManager.market_offers = saved_market_offers
 	var saved_expansion_state: Dictionary = LandExpansionManager.to_save_dict()
 	LandExpansionManager.from_save_dict(saved_expansion_state)
-	_check(LandExpansionManager.is_cell_unlocked(Vector2i(24, 0)), "Claimed land must survive LandExpansionManager save/load serialization.")
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 24)), "Claimed land must survive LandExpansionManager save/load serialization.")
 	LandExpansionManager.from_save_dict(previous_land_state)
 	var legacy_land_state: Dictionary = {"owned_tiles": [[-3, -3]]}
 	LandExpansionManager.from_save_dict(legacy_land_state)
