@@ -3,12 +3,13 @@ import re
 import struct
 import sys
 import zlib
-import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 ICON_ROOT = ROOT / "assets" / "icons"
 errors = []
 required = set()
+if list(ICON_ROOT.rglob("*.svg")):
+    errors.append("SVG files are not allowed under assets/icons; convert every icon to PNG.")
 
 def require(category: str, icon_id: str) -> None:
     required.add((category, icon_id))
@@ -61,10 +62,15 @@ build_menu settings info plus money population happiness level warning check
 arrow_left arrow_right services commercial industrial road residential parks
 hard_hat simoleons golden_key fire power water park police health sewage waste
 government education transportation entertainment gambling beach mountain
-landmark global_trade epic regions fallback
+landmark global_trade epic regions fallback trade_depot
 """.split()
 for icon_id in ui_ids:
     require("ui", icon_id)
+
+# Root-level category and context icons are used by the build toolbar and fallback paths.
+for icon_id in ["bulldozer", "commercial", "fallback", "fire", "hard_hat", "industrial", "park", "parks", "power", "residential", "road", "services"]:
+    require("root", icon_id)
+require("ui_vector", "regions")
 
 for icon_id in ["road", "road_build", "road_upgrade", "road_bulldoze"]:
     require("roads", icon_id)
@@ -73,19 +79,10 @@ for icon_id in ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_fu
 
 # PNG-32 requirements: valid PNG, 8-bit RGBA, >=128px, transparent canvas corners.
 for category, icon_id in sorted(required):
-    path = ICON_ROOT / category / f"{icon_id}.png"
+    path = (ICON_ROOT / f"{icon_id}.png" if category == "root" else
+            ICON_ROOT / "ui" / f"{icon_id}_from_svg.png" if category == "ui_vector" else
+            ICON_ROOT / category / f"{icon_id}.png")
     if not path.is_file():
-        # New product and service-building art may use original transparent SVG.
-        # Required build icons and toolbar controls remain strict PNG-32 assets.
-        svg_path = ICON_ROOT / category / f"{icon_id}.svg"
-        if category in ("crafted", "commercial", "services", "ui") and svg_path.is_file():
-            try:
-                svg_root = ET.parse(svg_path).getroot()
-                if not svg_root.tag.endswith("svg") or svg_root.attrib.get("viewBox") != "0 0 128 128":
-                    errors.append(f"Invalid product SVG viewBox/root: {category}/{icon_id}.svg")
-            except Exception as exc:
-                errors.append(f"Invalid product SVG: {category}/{icon_id}.svg ({exc})")
-            continue
         errors.append(f"Missing icon: {category}/{icon_id}.png")
         continue
     data = path.read_bytes()
@@ -145,4 +142,4 @@ if errors:
         print(" - " + error)
     sys.exit(1)
 
-print(f"Local icon validation passed: {len(required)} catalog/UI/status assets checked (PNG-32 plus approved product SVGs).")
+print(f"Local icon validation passed: {len(required)} catalog/UI/status assets checked (PNG-32 only).")
