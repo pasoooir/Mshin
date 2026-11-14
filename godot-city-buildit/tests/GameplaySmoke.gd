@@ -660,6 +660,9 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	var southbound_route := TrafficManager.build_highway_route(false)
 	_check(northbound_route.front().y == TrafficManager.HIGHWAY_MAX_GRID_Z and northbound_route.back().y == TrafficManager.HIGHWAY_MIN_GRID_Z, "Northbound motorway traffic must run only toward the north exit.")
 	_check(southbound_route.front().y == TrafficManager.HIGHWAY_MIN_GRID_Z and southbound_route.back().y == TrafficManager.HIGHWAY_MAX_GRID_Z, "Southbound motorway traffic must run only toward the south exit.")
+	var city_bound_highway_route := TrafficManager.build_highway_city_round_trip_route(true)
+	_check(city_bound_highway_route.size() > northbound_route.size(), "A motorway vehicle must continue from the external highway into the city instead of leaving on an isolated highway-only loop.")
+	_check(city_bound_highway_route.has(road_system.GATEWAY_ROAD_CELL), "The motorway-to-city route must include the permanent road Gateway.")
 
 	for service_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
 		_check(str(BuildManager.building_types[service_id].get("service_group", "")) == "fire", "Every fire station tier must be included in emergency fleet dispatch: " + service_id)
@@ -686,6 +689,9 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager._active_vehicles.append(follower)
 	TrafficManager._active_vehicles.append(leader)
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A vehicle must stop when the same-lane vehicle ahead is inside the minimum safe gap.")
+	follower.congestion_release_active = true
+	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), TrafficManager.CONGESTION_CRAWL_SPEED), "A vehicle held by same-lane congestion must resume controlled crawl after the four-second stop limit.")
+	_check(is_equal_approx(TrafficManager.MAX_TRAFFIC_STOP_SECONDS, 4.0), "The maximum same-lane traffic stop duration must be exactly four seconds.")
 	TrafficManager._active_vehicles.clear()
 	for previous_vehicle in previous_fleet:
 		TrafficManager._active_vehicles.append(previous_vehicle)
@@ -697,9 +703,10 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_instance_valid(highway_vehicle) and highway_vehicle.vehicle_kind == "highway", "The visible external six-lane motorway must spawn its own traffic fleet.")
 	if is_instance_valid(highway_vehicle):
 		_check(highway_vehicle.route_key.begins_with("coastal-highway-"), "Motorway vehicles must use the separate external highway route, not the city road graph.")
-		_check(TrafficManager.HIGHWAY_LANE_OFFSETS.has(highway_vehicle.lane_offset), "Motorway traffic must be assigned to one of its three legal directional lanes.")
-		var highway_side := 1.0 if highway_vehicle.route[1].y < highway_vehicle.route[0].y else -1.0
-		_check(is_equal_approx(highway_vehicle.global_position.x, TrafficManager.HIGHWAY_WORLD_X + highway_side * TrafficManager.HIGHWAY_LANE_OFFSETS[highway_vehicle.lane_index]), "Motorway vehicles must physically travel on the external divided highway, not the city road grid.")
+		_check(is_equal_approx(highway_vehicle.lane_offset, TrafficManager.LANE_CENTER_OFFSET), "Motorway vehicles must transition onto the city's legal right-hand lane geometry at the Gateway.")
+		_check(highway_vehicle.route.has(road_system.GATEWAY_ROAD_CELL), "Motorway vehicle routes must enter the city through the permanent Gateway.")
+		_check(highway_vehicle.route.any(func(cell): return cell.x > TrafficManager.HIGHWAY_GRID_X), "Motorway vehicle routes must continue beyond the highway boundary into the city road network.")
+		_check(is_equal_approx(highway_vehicle.global_position.x, TrafficManager.HIGHWAY_WORLD_X + TrafficManager.LANE_CENTER_OFFSET), "Motorway vehicles must start on the physical external motorway and use the city connector lane.")
 	TrafficManager.clear_active_vehicle()
 	var world := get_node("World") as Node3D
 	var police_station := FireHazardTestBuilding.new()
