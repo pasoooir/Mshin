@@ -1,0 +1,26 @@
+# Land expansion and desert livestock
+
+## Land expansion behavior
+
+- The playable land grid is divided into 8×8-cell plots.
+- A 6×6 block of plots is owned at the start; the remaining grid is shaded darker and outlined when directly adjacent to owned land.
+- Expansion follows the SimCity BuildIt interaction pattern: select a connected adjacent plot, inspect its item requirements, then confirm the claim.
+- The three special items are Dozer Wheel, Dozer Blade and Dozer Exhaust. A claim checks all requirements first and removes them atomically from City Storage.
+- Mayor Level 10 is required to claim land. Requirement counts vary by plot distance and a deterministic plot variation; this is Mshin balancing, not a claim that EA uses these exact numbers.
+- Happy citizen opinion bubbles can award one expansion item from Mayor Level 8. Global Trade market refreshes surface all three expansion item types from Mayor Level 10.
+- A claimed plot immediately becomes buildable for buildings and roads. Ownership is stored per region in the existing region snapshot and survives save/load.
+
+## Livestock boundaries
+
+- The existing sheep and cattle MultiMeshes are retained; they are no longer static.
+- Animals wander within two sandy pasture strips at the far north and south map edges.
+- Every movement step validates pasture bounds, asphalt exclusion, unlocked land exclusion and nearby road cells. Invalid steps are rejected and the animal turns back.
+- Sheep and cattle parts are moved as linked MultiMesh instances, avoiding one scene node per body part/animal.
+
+## Reference
+
+The interaction model is based on EA's official SimCity BuildIt beginner guide: expansion plots must connect to current city limits, each plot displays its required bulldozer special items, and the player confirms after collecting them.
+
+https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/
+
+The special-item set (Dozer Wheel, Dozer Blade, Dozer Exhaust) follows the established SimCity BuildIt land-expansion mechanic. Plot size, initial ownership, level gate and exact Mshin item counts are implementation choices for this project.
