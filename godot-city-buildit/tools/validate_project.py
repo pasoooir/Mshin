@@ -1556,6 +1556,7 @@ else:
         "func get_tile_cost(tile: Vector2i) -> Dictionary",
         "func get_expansion_item_definition(item_id: String) -> Dictionary",
         "func migrate_legacy_land(road_data: Array, building_data: Array) -> void:",
+        "func is_cell_buildable(cell: Vector2i) -> bool:",
         "func is_cell_road_buildable(cell: Vector2i) -> bool:",
         "func expand_tile(tile: Vector2i) -> bool",
         "StorageManager.has_items(cost)",
@@ -1584,7 +1585,7 @@ for contract in [
     if contract not in project and contract not in hud:
         errors.append(f"Land expansion UI/autoload integration is missing: {contract}")
 for contract in [
-    "not LandExpansionManager.is_cell_unlocked(cell)",
+    "not LandExpansionManager.is_cell_buildable(cell)",
     '"land_expansion": LandExpansionManager.to_save_dict()',
     'LandExpansionManager.from_save_dict(land_expansion_data)',
     'color = color.lerp(Color("#302B24"), 0.34)',
