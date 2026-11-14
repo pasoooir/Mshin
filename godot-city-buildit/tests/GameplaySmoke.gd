@@ -738,6 +738,9 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(TrafficManager._approach_has_right_of_way(Vector2i(1, 0), {Vector2i(0, -1): 1}), "A vehicle must yield to queued traffic approaching from its right.")
 	_check(TrafficManager._select_junction_approach({Vector2i(1, 0): 1, Vector2i(0, -1): 1}, {Vector2i(1, 0): 0.0, Vector2i(0, -1): 0.0}) == Vector2i(0, -1), "Right-hand priority must select the approach that has right of way.")
 	_check(is_equal_approx(TrafficManager._select_junction_approach({Vector2i(1, 0): 1, Vector2i(0, -1): 1}, {Vector2i(1, 0): 9.0, Vector2i(0, -1): 0.0}).x, 1.0), "The eight-second fairness override must prevent permanent starvation under right-hand yielding.")
+	var four_way_queue := {Vector2i(1, 0): 1, Vector2i(0, -1): 1, Vector2i(-1, 0): 1, Vector2i(0, 1): 1}
+	_check(TrafficManager._select_junction_approach(four_way_queue, {}) == Vector2i.ZERO, "A fully yielding four-way queue must remain all-red until the eight-second fairness override.")
+	_check(TrafficManager._select_junction_approach(four_way_queue, {Vector2i(1, 0): 8.1, Vector2i(0, -1): 0.0, Vector2i(-1, 0): 0.0, Vector2i(0, 1): 0.0}) == Vector2i(1, 0), "A fully yielding four-way queue must resume after one approach reaches the eight-second fairness override.")
 	_check(not TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(99, 99)), "An exit without Gateway-connected road space must be rejected.")
 	var exit_blocker := TrafficVehicle.new()
 	exit_blocker.route = [Vector2i(0, 0), Vector2i(1, 0)]
