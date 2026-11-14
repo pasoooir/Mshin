@@ -277,7 +277,8 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 			type_id,
 			int(saved_building.get("stage", 1)),
 			str(saved_building.get("status", "constructing")),
-			int(saved_building.get("rotation_quarters", 0))
+			int(saved_building.get("rotation_quarters", 0)),
+			true
 		)
 		if not restored:
 			push_error("Could not restore region building: " + type_id)
