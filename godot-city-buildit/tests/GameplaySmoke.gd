@@ -10,6 +10,7 @@ const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
 const CitizenFeedbackBubblesScript = preload("res://scripts/ui/CitizenFeedbackBubbles.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
+const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
 
 class FireHazardTestBuilding extends Node3D:
@@ -1508,8 +1509,29 @@ func _test_placement_rotation_contract() -> void:
 	BuildManager.cancel_placement()
 
 func _test_building_model_loader_contract() -> void:
+	var surface_types := ["plaster", "brick", "wood", "glass", "metal", "roof", "concrete"]
+	var generated_surface_bytes: Dictionary = {}
+	for surface_type in surface_types:
+		var maps: Dictionary = BuildingSurfaceLibrary.get_maps(surface_type)
+		_check(maps.get("albedo") is Texture2D, "Every architectural surface must provide an albedo texture: " + surface_type)
+		_check(maps.get("normal") is Texture2D, "Every architectural surface must provide a normal map: " + surface_type)
+		_check(maps.get("roughness") is Texture2D, "Every architectural surface must provide a roughness map: " + surface_type)
+		_check(maps.get("metallic") is Texture2D, "Every architectural surface must provide a metallic map: " + surface_type)
+		if maps.get("albedo") is Texture2D:
+			var surface_image: Image = maps["albedo"].get_image()
+			_check(surface_image.get_width() == 128 and surface_image.get_height() == 128, "Architectural texture maps must use the 128px shared mobile atlas size.")
+			generated_surface_bytes[surface_type] = surface_image.get_data()
+	_check(BuildingSurfaceLibrary.surface_for_color(Color(0.18, 0.37, 0.46)) == "glass", "Blue glazing must resolve to a glass surface profile.")
+	_check(BuildingSurfaceLibrary.surface_for_color(Color(0.56, 0.22, 0.15)) == "brick", "Warm masonry must resolve to a brick surface profile.")
+	_check(BuildingSurfaceLibrary.surface_for_color(Color(0.30, 0.18, 0.12)) == "wood", "Timber colors must resolve to a wood surface profile.")
+	_check(generated_surface_bytes["brick"] != generated_surface_bytes["wood"] and generated_surface_bytes["glass"] != generated_surface_bytes["metal"], "Architectural surface families must use visibly distinct texture maps.")
+	var surface_probe := Building.new()
+	var glass_material := surface_probe._make_surface_material(Color(0.18, 0.37, 0.46), "glass")
+	_check(glass_material.albedo_texture != null and glass_material.normal_texture != null and glass_material.roughness_texture != null and glass_material.metallic_texture != null, "Window material must bind complete PBR texture channels.")
+	surface_probe.free()
 	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa_house.gltf"), "Local villa GLTF model paths must be accepted.")
 	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/neighborhood_shop.gltf"), "Local commercial GLTF model paths must be accepted.")
+	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/restaurant_traditional.tscn"), "Local dedicated commercial scene paths must be accepted.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/vehicle.obj"), "Unsupported model formats must be rejected.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://outside/villa.glb"), "Model loading must be restricted to the local models directory.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/../outside/villa.glb"), "Model paths must reject parent-directory traversal.")
@@ -1519,6 +1541,11 @@ func _test_building_model_loader_contract() -> void:
 		"res://assets/models/residential/villa_house.gltf",
 		"res://assets/models/residential/apartment_tower.gltf",
 		"res://assets/models/commercial/neighborhood_shop.gltf",
+		"res://assets/models/commercial/restaurant_traditional.tscn",
+		"res://assets/models/commercial/fast_food.tscn",
+		"res://assets/models/commercial/hardware_store.tscn",
+		"res://assets/models/commercial/farmers_market.tscn",
+		"res://assets/models/commercial/furniture_store.tscn",
 		"res://assets/models/industrial/small_factory.gltf",
 		"res://assets/models/residential/residential_tower_75m.gltf"
 	]
@@ -1528,24 +1555,35 @@ func _test_building_model_loader_contract() -> void:
 		if packed_scene == null:
 			continue
 		var instance := packed_scene.instantiate()
+		if model_path.ends_with(".tscn"):
+			add_child(instance)
 		_check(instance is Node3D, "Imported building model root must be Node3D: " + model_path)
 		if instance is Node3D:
 			var mesh_nodes := instance.find_children("*", "MeshInstance3D", true, false)
 			_check(mesh_nodes.size() > 0, "Imported building model must contain renderable mesh instances: " + model_path)
+			if model_path.ends_with(".tscn"):
+				_check(mesh_nodes.size() >= 10, "Dedicated commercial scene must contain enough architectural and trade-specific mesh details: " + model_path)
 			var surfaces_found := 0
 			for mesh_node in mesh_nodes:
 				if mesh_node is MeshInstance3D and mesh_node.mesh != null:
 					surfaces_found += mesh_node.mesh.get_surface_count()
+					if model_path.ends_with(".tscn"):
+						var surface_material := mesh_node.material_override as StandardMaterial3D
+						_check(surface_material != null and surface_material.albedo_texture != null and surface_material.normal_texture != null and surface_material.roughness_texture != null and surface_material.metallic_texture != null, "Dedicated commercial meshes must use complete local PBR texture channels: " + model_path)
 			_check(surfaces_found > 0, "Imported building model must contain valid mesh surfaces: " + model_path)
+		if instance.get_parent() == self:
+			remove_child(instance)
 		instance.free()
 	_check(str(BuildManager.building_types["residential_villa"].get("model_path", "")) == model_paths[0], "Villa definitions must select the local villa model.")
 	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local mid-rise model.")
 	_check(not str(BuildManager.building_types["residential_apartment"].get("model_path", "")).ends_with("residential_tower_75m.gltf"), "The 75m tower must remain unwired until a compatible large footprint is implemented.")
 	_check(str(BuildManager.building_types["shop_chain"].get("model_path", "")) == model_paths[2], "The chain-store archetype must select the local neighborhood shop model.")
-	_check(not BuildManager.building_types["hardware_store"].has("model_path"), "Hardware Store must keep its trade-specific procedural architecture instead of a generic shop GLTF.")
-	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[3], "The small-factory archetype must select the local factory model.")
+	for dedicated_index in range(5):
+		var dedicated_id: String = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"][dedicated_index]
+		_check(str(BuildManager.building_types[dedicated_id].get("model_path", "")) == model_paths[3 + dedicated_index], "Commercial type must select its own dedicated local model scene: " + dedicated_id)
+	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[8], "The small-factory archetype must select the local factory model.")
 	_check(not BuildManager.building_types["factory_basic"].has("model_path") and not BuildManager.building_types["factory_mass"].has("model_path") and not BuildManager.building_types["factory_hightech"].has("model_path") and not BuildManager.building_types["factory_nano"].has("model_path"), "Larger factory tiers must retain their distinct procedural facilities instead of sharing the small-factory GLTF.")
-	for commercial_id in ["restaurant_traditional", "fast_food", "art_supplies", "hardware_store", "farmers_market", "furniture_store", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]:
+	for commercial_id in ["art_supplies", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]:
 		_check(not BuildManager.building_types[commercial_id].has("model_path"), "Commercial type %s must not inherit a category-wide generic GLTF." % commercial_id)
 	for type_id in BuildManager.BUILDING_MODEL_REGISTRY:
 		_check(BuildManager.building_types.has(type_id), "Explicit model registry must reference a known building type: " + type_id)
