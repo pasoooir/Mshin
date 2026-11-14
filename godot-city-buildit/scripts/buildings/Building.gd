@@ -14,6 +14,7 @@ var definition: Dictionary = {}
 var status: String = "constructing"
 var build_time: float = 10.0
 var construction_finish_unix: int = 0
+var construction_paused_remaining_seconds: int = -1
 var _construction_initialized := false
 var _construction_tween: Tween
 var production_timer: float = 0.0
@@ -1532,6 +1533,7 @@ func _add_scaffold_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstanc
 func _start_construction(saved_finish_unix: int = 0) -> void:
 	if is_instance_valid(_construction_tween) and _construction_tween.is_running():
 		_construction_tween.kill()
+	construction_paused_remaining_seconds = -1
 	var now := int(Time.get_unix_time_from_system())
 	construction_finish_unix = saved_finish_unix if saved_finish_unix > 0 else now + maxi(1, int(ceil(build_time)))
 	var remaining := maxi(0, construction_finish_unix - now)
@@ -1560,12 +1562,37 @@ func _start_construction(saved_finish_unix: int = 0) -> void:
 	_construction_tween.tween_property(scaffold_root, "scale:y", 0.01, dismantle_time) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 
+func update_construction_access_state(now_unix: int = -1) -> void:
+	if status != "constructing":
+		return
+	var now := now_unix if now_unix >= 0 else int(Time.get_unix_time_from_system())
+	var building_size: Vector2i = definition.get("size", Vector2i(2, 2))
+	var has_gateway_access := BuildManager.has_road_access(grid_pos, building_size)
+	if not has_gateway_access:
+		if construction_paused_remaining_seconds < 0 and construction_finish_unix > 0:
+			construction_paused_remaining_seconds = maxi(0, construction_finish_unix - now)
+			construction_finish_unix = 0
+			if is_instance_valid(_construction_tween) and _construction_tween.is_valid():
+				_construction_tween.pause()
+		return
+	if construction_paused_remaining_seconds >= 0:
+		var remaining := construction_paused_remaining_seconds
+		construction_finish_unix = now + remaining
+		construction_paused_remaining_seconds = -1
+		if is_instance_valid(_construction_tween) and _construction_tween.is_valid():
+			_construction_tween.play()
+		elif remaining > 0:
+			_start_construction(construction_finish_unix)
+	if construction_finish_unix > 0 and now >= construction_finish_unix:
+		_on_construction_finished()
+
 func _on_construction_finished() -> void:
 	if _construction_initialized:
 		return
 	_construction_initialized = true
 	status = "completed"
 	construction_finish_unix = 0
+	construction_paused_remaining_seconds = -1
 	setup_production_from_definition()
 	if hard_hat: hard_hat.visible = false
 	if scaffold_root:
@@ -1745,8 +1772,8 @@ func _create_fire_smoke_particles() -> CPUParticles3D:
 	return particles
 
 func _process(delta: float) -> void:
-	if status == "constructing" and construction_finish_unix > 0 and int(Time.get_unix_time_from_system()) >= construction_finish_unix:
-		_on_construction_finished()
+	if status == "constructing" and (construction_finish_unix > 0 or construction_paused_remaining_seconds >= 0):
+		update_construction_access_state()
 	if status == "completed" and is_instance_valid(_wind_turbine_rotor):
 		_wind_turbine_rotor.rotation.z = wrapf(
 			_wind_turbine_rotor.rotation.z + WIND_TURBINE_SPIN_RADIANS_PER_SECOND * delta,
@@ -1923,8 +1950,15 @@ func get_info() -> String:
 
 func restore_production_state(saved: Dictionary) -> void:
 	if status == "constructing":
+		construction_paused_remaining_seconds = int(saved.get("construction_paused_remaining_seconds", -1))
 		var saved_construction_finish := int(saved.get("construction_finish_unix", 0))
-		if saved_construction_finish > 0:
+		var saved_building_size: Vector2i = definition.get("size", Vector2i(2, 2))
+		if construction_paused_remaining_seconds >= 0:
+			construction_finish_unix = 0
+		elif saved_construction_finish > 0 and not BuildManager.has_road_access(grid_pos, saved_building_size):
+			construction_paused_remaining_seconds = maxi(0, saved_construction_finish - int(Time.get_unix_time_from_system()))
+			construction_finish_unix = 0
+		elif saved_construction_finish > 0:
 			_start_construction(saved_construction_finish)
 	if is_instance_valid(production_component):
 		production_component.store_star_level = clampi(int(saved.get("store_star_level", 0)), 0, 3)

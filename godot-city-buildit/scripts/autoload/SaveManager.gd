@@ -40,6 +40,8 @@ func capture_region_snapshot() -> Dictionary:
 	for building in BuildManager.buildings.values():
 		if not is_instance_valid(building):
 			continue
+		if building.status == "constructing":
+			building.update_construction_access_state()
 		if building.upgrade_in_progress:
 			building.update_upgrade_access_state()
 		building_data.append({
@@ -53,6 +55,7 @@ func capture_region_snapshot() -> Dictionary:
 			"epic_tier": int(building.epic_tier),
 			"production": {
 				"construction_finish_unix": building.construction_finish_unix,
+				"construction_paused_remaining_seconds": building.construction_paused_remaining_seconds,
 				"current_product": building.current_product,
 				"is_producing": building.is_producing,
 				"has_ready_product": building.has_ready_product,

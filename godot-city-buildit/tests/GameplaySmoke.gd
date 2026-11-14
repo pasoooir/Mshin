@@ -506,6 +506,13 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	disconnected_home.definition = {"size": Vector2i.ONE, "category": "residential"}
 	disconnected_home.status = "completed"
 	add_child(disconnected_home)
+	var disconnected_construction := load("res://scenes/buildings/Building.tscn").instantiate() as Building
+	disconnected_construction.building_id = "road_access_test_construction"
+	disconnected_construction.building_type = "road_access_test_construction"
+	disconnected_construction.grid_pos = Vector2i(1, 1)
+	disconnected_construction.definition = {"size": Vector2i.ONE, "category": "residential"}
+	disconnected_construction.status = "constructing"
+	add_child(disconnected_construction)
 
 	var store_pause_now := int(Time.get_unix_time_from_system())
 	disconnected_store.slots[0] = {
@@ -520,6 +527,12 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	disconnected_home.current_product = "nails"
 	disconnected_home.has_ready_product = true
 	_check(not disconnected_home.collect_production(), "A disconnected Building must not collect a ready product through the legacy Building-level collection path.")
+	disconnected_construction.construction_finish_unix = store_pause_now + 3
+	disconnected_construction.construction_paused_remaining_seconds = -1
+	disconnected_construction.update_construction_access_state(store_pause_now + 1)
+	_check(disconnected_construction.construction_paused_remaining_seconds == 2 and disconnected_construction.construction_finish_unix == 0, "An in-progress construction must freeze with its exact remaining seconds when Gateway access is lost.")
+	disconnected_construction.update_construction_access_state(store_pause_now + 100)
+	_check(disconnected_construction.construction_paused_remaining_seconds == 2, "A long road outage must not consume paused construction time.")
 	_check(not disconnected_store.start_craft("nails", 1), "A disconnected commercial building must not accept a new store order.")
 	disconnected_store.refresh_slots()
 	var paused_store_slot: Dictionary = disconnected_store.get_slot(0)
@@ -533,18 +546,30 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	disconnected_home.update_upgrade_access_state(store_pause_now + 100)
 	_check(disconnected_home.upgrade_paused_remaining_seconds == 2, "A long road outage must not consume the paused residential upgrade time.")
 	var previous_registered_home = BuildManager.buildings.get(disconnected_home.building_id)
+	var previous_registered_construction = BuildManager.buildings.get(disconnected_construction.building_id)
 	BuildManager.buildings[disconnected_home.building_id] = disconnected_home
+	BuildManager.buildings[disconnected_construction.building_id] = disconnected_construction
 	var paused_snapshot := SaveManager.capture_region_snapshot()
 	var paused_state_saved := false
 	for saved_building in paused_snapshot.get("buildings", []):
-		if saved_building.get("grid", []) == [1, 1]:
+		if str(saved_building.get("type", "")) == "residential_villa" and saved_building.get("grid", []) == [1, 1]:
 			var saved_production: Dictionary = saved_building.get("production", {})
 			paused_state_saved = int(saved_production.get("upgrade_paused_remaining_seconds", -1)) == 2
 	_check(paused_state_saved, "SaveManager must persist the remaining time of a road-paused residential upgrade.")
+	var construction_state_saved := false
+	for saved_building in paused_snapshot.get("buildings", []):
+		if str(saved_building.get("type", "")) == "road_access_test_construction":
+			var saved_production: Dictionary = saved_building.get("production", {})
+			construction_state_saved = int(saved_production.get("construction_paused_remaining_seconds", -1)) == 2
+	_check(construction_state_saved, "SaveManager must persist the remaining time of road-paused construction.")
 	if previous_registered_home == null:
 		BuildManager.buildings.erase(disconnected_home.building_id)
 	else:
 		BuildManager.buildings[disconnected_home.building_id] = previous_registered_home
+	if previous_registered_construction == null:
+		BuildManager.buildings.erase(disconnected_construction.building_id)
+	else:
+		BuildManager.buildings[disconnected_construction.building_id] = previous_registered_construction
 	paused_store_slot["paused_at_unix"] = store_pause_now - 15
 	disconnected_store.slots[0] = paused_store_slot
 	_check(road_system.place_road(Vector2i(0, -1)), "The first gateway tile must reconnect store and residential operation tests.")
@@ -555,12 +580,15 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	_check(not resumed_store_slot.has("paused_at_unix"), "A reconnected store order must clear its paused timestamp.")
 	disconnected_home.update_upgrade_access_state(store_pause_now + 100)
 	_check(disconnected_home.upgrade_in_progress and disconnected_home.upgrade_paused_remaining_seconds == -1 and disconnected_home.upgrade_finish_unix == store_pause_now + 102, "A residential upgrade must resume with its preserved two seconds after Gateway reconnection.")
+	disconnected_construction.update_construction_access_state(store_pause_now + 100)
+	_check(disconnected_construction.status == "constructing" and disconnected_construction.construction_paused_remaining_seconds == -1 and disconnected_construction.construction_finish_unix == store_pause_now + 102, "Construction must resume with its preserved two seconds after Gateway reconnection.")
 	disconnected_home.upgrade_in_progress = false
 	disconnected_home.upgrade_finish_unix = 0
 	disconnected_home.upgrade_paused_remaining_seconds = -1
 
 	disconnected_store.queue_free()
 	disconnected_home.queue_free()
+	disconnected_construction.queue_free()
 	disconnected_factory.queue_free()
 	disconnected_building.queue_free()
 	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 8)
