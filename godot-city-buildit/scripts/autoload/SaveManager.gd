@@ -182,6 +182,7 @@ func load_game() -> bool:
 	GameManager.population = maxi(0, restored_population)
 	GameManager.happiness = float(region_snapshot.get("happiness", game_data.get("happiness", 100.0)))
 	RegionManager.store_active_region_snapshot(capture_region_snapshot())
+	HappinessManager.reset_transient_city_state()
 	AchievementManager.from_save_dict(parsed.get("achievements", {}))
 	GameManager.level_changed.emit(GameManager.level)
 	# Loading a save changes XP without calling add_experience(); notify the HUD
@@ -192,6 +193,9 @@ func load_game() -> bool:
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
 	EconomyManager.keys_changed.emit(EconomyManager.golden_keys)
 	is_loading = false
+	# Recalculate from restored buildings and current service/traffic coverage;
+	# the serialized happiness value is only a fallback, never the live authority.
+	HappinessManager.recalculate_city()
 	if has_node("/root/FireHazardManager"):
 		FireHazardManager.reset_for_city_load()
 	load_completed.emit(true)
@@ -319,9 +323,12 @@ func load_region_snapshot(snapshot: Dictionary) -> bool:
 			restored_population += int(building.definition.get("population", 0))
 	GameManager.population = maxi(0, restored_population)
 	GameManager.happiness = float(snapshot.get("happiness", 100.0))
+	HappinessManager.reset_transient_city_state()
 	GameManager.population_changed.emit(GameManager.population)
 	GameManager.happiness_changed.emit(GameManager.happiness)
 	is_loading = false
+	# Re-score this region now; do not show stale cached happiness from another region.
+	HappinessManager.recalculate_city()
 	return true
 
 
