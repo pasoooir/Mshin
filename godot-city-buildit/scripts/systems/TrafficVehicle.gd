@@ -9,6 +9,7 @@ var vehicle_kind: String = "civilian"
 var station_building_id: String = ""
 var route_key: String = ""
 var lane_index: int = 0
+var lane_offset: float = 0.18
 var lane_direction: Vector2i = Vector2i.ZERO
 var route_distance: float = 0.0
 var initial_position: Vector3 = Vector3.ZERO
@@ -90,7 +91,7 @@ func _lane_position(cell: Vector2i, travel_direction: Vector2i) -> Vector3:
 	var direction := Vector2(float(travel_direction.x), float(travel_direction.y)).normalized()
 	var right := Vector2(-direction.y, direction.x)
 	var center := _cell_center(cell)
-	return center + Vector3(right.x * TrafficManager.LANE_CENTER_OFFSET, 0.0, right.y * TrafficManager.LANE_CENTER_OFFSET)
+	return center + Vector3(right.x * lane_offset, 0.0, right.y * lane_offset)
 
 func _build_vehicle_mesh() -> void:
 	var body_color := Color("#D94A3A")
@@ -123,7 +124,7 @@ func _build_vehicle_mesh() -> void:
 	_add_box("RearBumper", Vector3(0.88, 0.10, 0.10), Vector3(0.0, 0.20, 0.84), tire_material)
 	_add_box("LeftHeadlight", Vector3(0.16, 0.09, 0.04), Vector3(-0.30, 0.34, -0.83), light_material)
 	_add_box("RightHeadlight", Vector3(0.16, 0.09, 0.04), Vector3(0.30, 0.34, -0.83), light_material)
-	if vehicle_kind != "civilian":
+	if vehicle_kind == "police" or vehicle_kind == "fire":
 		_add_box("EmergencyLightbar", Vector3(0.56, 0.09, 0.16), Vector3(0.0, 0.86, 0.02), beacon_material)
 		if vehicle_kind == "fire":
 			_add_box("FireEquipment", Vector3(0.82, 0.16, 0.72), Vector3(0.0, 0.86, 0.43), body_material)
