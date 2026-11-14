@@ -2178,12 +2178,14 @@ func open_production_panel(building: Building) -> void:
 		slot_card.add_child(slot_content)
 		if slot.is_empty():
 			var empty_icon := Label.new()
+			empty_icon.name = "EmptyQueuePlus"
 			empty_icon.text = "+"
 			empty_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			empty_icon.add_theme_color_override("font_color", Color("#8AA5B2"))
 			empty_icon.add_theme_font_size_override("font_size", int(25 * _ui_scale))
 			slot_content.add_child(empty_icon)
 			var empty_label := Label.new()
+			empty_label.name = "EmptyQueueLabel"
 			empty_label.text = "EMPTY"
 			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			empty_label.add_theme_color_override("font_color", Color("#587487"))
