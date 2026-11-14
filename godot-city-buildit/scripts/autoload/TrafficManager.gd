@@ -49,6 +49,7 @@ var _active_vehicles: Array[TrafficVehicle] = []
 var _junction_reservations: Dictionary = {}
 var _active_vehicle: TrafficVehicle
 var _station_dispatch_elapsed: Dictionary = {}
+var _route_destination_cursor: int = 0
 
 func _ready() -> void:
 	print("[TrafficManager] Right-hand traffic, multi-vehicle flow and emergency fleets online")
@@ -224,6 +225,81 @@ func build_gateway_round_trip_route() -> Array[Vector2i]:
 		return []
 	return _build_round_trip_route_from(road_system.GATEWAY_ROAD_CELL)
 
+func get_road_cell_vehicle_load(grid_cell: Vector2i) -> int:
+	var load := 0
+	for vehicle in _active_vehicles:
+		if not is_instance_valid(vehicle) or vehicle.vehicle_kind == "highway":
+			continue
+		if vehicle.route.is_empty():
+			continue
+		var segment_index := clampi(int(vehicle.get("_segment_index")), 0, vehicle.route.size() - 1)
+		if vehicle.route[segment_index] == grid_cell:
+			load += 1
+		elif segment_index + 1 < vehicle.route.size() and vehicle.route[segment_index + 1] == grid_cell:
+			load += 1
+	return load
+
+func get_road_cell_travel_cost(grid_cell: Vector2i) -> float:
+	var road_system = _get_road_system()
+	if not road_system or not road_system.has_road(grid_cell):
+		return INF
+	var road_level := road_system.get_road_level(grid_cell)
+	var capacity_discount := 1.0 / (1.0 + 0.18 * float(maxi(0, road_level - 1)))
+	var congestion_penalty := float(get_road_cell_vehicle_load(grid_cell)) * 2.0
+	var junction_penalty := 0.25 if is_junction_cell(grid_cell) else 0.0
+	return capacity_discount + congestion_penalty + junction_penalty
+
+func build_route_between(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
+	var road_system = _get_road_system()
+	if not road_system:
+		return []
+	var connected_roads: Dictionary = road_system.get_gateway_connected_roads()
+	return _build_low_cost_route(start, goal, connected_roads)
+
+func _build_low_cost_route(start: Vector2i, goal: Vector2i, connected_roads: Dictionary) -> Array[Vector2i]:
+	if not connected_roads.has(start) or not connected_roads.has(goal):
+		return []
+	var distances: Dictionary = {start: 0.0}
+	var parents: Dictionary = {start: start}
+	var open_cells: Array[Vector2i] = [start]
+	var visited: Dictionary = {}
+	while not open_cells.is_empty():
+		var best_index := 0
+		var best_cost := INF
+		for index in range(open_cells.size()):
+			var candidate: Vector2i = open_cells[index]
+			var candidate_cost := float(distances.get(candidate, INF))
+			if candidate_cost < best_cost:
+				best_cost = candidate_cost
+				best_index = index
+		var current: Vector2i = open_cells.pop_at(best_index)
+		if visited.has(current):
+			continue
+		visited[current] = true
+		if current == goal:
+			break
+		for direction in CARDINAL_DIRECTIONS:
+			var neighbour: Vector2i = current + direction
+			if not connected_roads.has(neighbour) or visited.has(neighbour):
+				continue
+			var next_cost := best_cost + get_road_cell_travel_cost(neighbour)
+			if next_cost < float(distances.get(neighbour, INF)):
+				distances[neighbour] = next_cost
+				parents[neighbour] = current
+				if not open_cells.has(neighbour):
+					open_cells.append(neighbour)
+	if not parents.has(goal):
+		return []
+	var route: Array[Vector2i] = []
+	var cursor := goal
+	while cursor != start:
+		route.push_front(cursor)
+		if not parents.has(cursor):
+			return []
+		cursor = parents[cursor]
+	route.push_front(start)
+	return route
+
 func _build_round_trip_route_from(start: Vector2i) -> Array[Vector2i]:
 	var road_system = _get_road_system()
 	if not road_system:
@@ -232,33 +308,36 @@ func _build_round_trip_route_from(start: Vector2i) -> Array[Vector2i]:
 	if not connected_roads.has(start):
 		return []
 	var queue: Array[Vector2i] = [start]
-	var parents: Dictionary = {start: start}
-	var farthest: Vector2i = start
+	var hop_distances: Dictionary = {start: 0}
 	var cursor_index := 0
+	var farthest_hops := 0
+	var farthest_cells: Array[Vector2i] = []
 	while cursor_index < queue.size():
 		var current: Vector2i = queue[cursor_index]
 		cursor_index += 1
-		farthest = current
+		var current_hops := int(hop_distances[current])
+		if current_hops > farthest_hops:
+			farthest_hops = current_hops
+			farthest_cells.clear()
+		if current_hops == farthest_hops and current != start:
+			farthest_cells.append(current)
 		for direction in CARDINAL_DIRECTIONS:
-			var neighbor: Vector2i = current + direction
-			if connected_roads.has(neighbor) and not parents.has(neighbor):
-				parents[neighbor] = current
-				queue.append(neighbor)
-	var outbound: Array[Vector2i] = []
-	var cursor: Vector2i = farthest
-	while cursor != start:
-		outbound.push_front(cursor)
-		if not parents.has(cursor):
-			return []
-		cursor = parents[cursor]
-	outbound.push_front(start)
+			var neighbour: Vector2i = current + direction
+			if connected_roads.has(neighbour) and not hop_distances.has(neighbour):
+				hop_distances[neighbour] = current_hops + 1
+				queue.append(neighbour)
+	if farthest_cells.is_empty():
+		return []
+	var destination_index := posmod(_route_destination_cursor, farthest_cells.size())
+	_route_destination_cursor += 1
+	var destination: Vector2i = farthest_cells[destination_index]
+	var outbound := _build_low_cost_route(start, destination, connected_roads)
 	if outbound.size() < 2:
 		return []
-	var route: Array[Vector2i] = outbound.duplicate()
+	var round_trip: Array[Vector2i] = outbound.duplicate()
 	for index in range(outbound.size() - 2, -1, -1):
-		route.append(outbound[index])
-	return route
-
+		round_trip.append(outbound[index])
+	return round_trip
 func _get_station_access_road(station: Node3D) -> Vector2i:
 	var road_system = _get_road_system()
 	if not road_system or not is_instance_valid(station):
