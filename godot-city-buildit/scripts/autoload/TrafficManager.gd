@@ -779,7 +779,7 @@ func _get_world_parent() -> Node3D:
 
 func set_road_cell_blocked(grid_cell: Vector2i, blocked: bool) -> bool:
 	var road_system = _get_road_system()
-	if not road_system or not road_system.has_road(grid_cell):
+	if not road_system or not road_system.has_road(grid_cell) or grid_cell == road_system.GATEWAY_ROAD_CELL:
 		return false
 	if blocked:
 		_blocked_road_cells[grid_cell] = true
