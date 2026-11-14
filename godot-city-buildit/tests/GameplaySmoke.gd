@@ -2134,8 +2134,46 @@ func _test_tutorial_guide_contract() -> void:
 		seen_ids[step_id] = true
 	_check(TutorialGuideScript.get_step_definition(-1).is_empty() and TutorialGuideScript.get_step_definition(6).is_empty(), "Tutorial step lookup must reject indexes outside the guide.")
 
+func _test_mayor_xp_progression() -> void:
+	var previous_level := GameManager.level
+	var previous_experience := GameManager.experience
+	var previous_simoleons := EconomyManager.simoleons
+	var previous_keys := EconomyManager.golden_keys
+	var previous_materials: Array = LevelProgression.unlocked_materials.duplicate(true)
+	var previous_commercial: Array = LevelProgression.unlocked_commercial.duplicate(true)
+	var previous_services: Array = LevelProgression.unlocked_services.duplicate(true)
+	var previous_features: Array = LevelProgression.unlocked_features.duplicate(true)
+	var previous_factory_limit := LevelProgression.max_factories
+
+	GameManager.level = 4
+	GameManager.experience = 0
+	_check(GameManager.get_xp_needed() == 150, "Mayor Level 4 must require 150 XP to reach Level 5.")
+	GameManager.add_experience(149)
+	_check(GameManager.level == 4 and GameManager.experience == 149, "Mayor Level must not increase before the full next-level XP threshold is reached.")
+	GameManager.add_experience(1)
+	_check(GameManager.level == 5 and GameManager.experience == 0, "Reaching exactly 150 XP at Mayor Level 4 must advance to Level 5 and carry zero excess XP.")
+	_check(GameManager.get_xp_needed() == 210, "Mayor Level 5 must require 210 XP to reach Level 6.")
+	GameManager.add_experience(215)
+	_check(GameManager.level == 6 and GameManager.experience == 5, "Excess XP must carry forward after a level-up rather than being discarded.")
+
+	GameManager.level = previous_level
+	GameManager.experience = previous_experience
+	GameManager.population = GameManager.population
+	LevelProgression.unlocked_materials = previous_materials
+	LevelProgression.unlocked_commercial = previous_commercial
+	LevelProgression.unlocked_services = previous_services
+	LevelProgression.unlocked_features = previous_features
+	LevelProgression.max_factories = previous_factory_limit
+	EconomyManager.simoleons = previous_simoleons
+	EconomyManager.golden_keys = previous_keys
+	GameManager.level_changed.emit(GameManager.level)
+	GameManager.xp_changed.emit(GameManager.experience, GameManager.get_xp_needed())
+	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
+	EconomyManager.keys_changed.emit(EconomyManager.golden_keys)
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	_test_mayor_xp_progression()
 	_test_audio_manager_contract()
 	_test_tutorial_guide_contract()
 	_test_mobile_haptics_contract()
