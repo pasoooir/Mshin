@@ -3,15 +3,17 @@ extends Node
 signal traffic_changed(demand: int, capacity: int, congestion_ratio: float)
 signal fleet_changed(public_count: int, emergency_count: int)
 
-# Vehicle speeds are world-units/second. Multipliers are explicit road-class
-# rules: 4x inside the city and 16x on the external highway connector.
+# World scale is 1 unit = 1 metre. A calibrated base of 2.083333 m/s yields
+# conservative 30 km/h city (4x) and 120 km/h motorway (16x) speed ceilings.
 const RESIDENTS_PER_TRAFFIC_UNIT: int = 50
 const TRAFFIC_UNITS_PER_LANE: int = 1
-const VEHICLE_BASE_SPEED: float = 10.0
+const VEHICLE_BASE_SPEED: float = 2.083333
 const CITY_SPEED_MULTIPLIER: float = 4.0
+const CITY_SPEED_LIMIT_KMH: float = 30.0
 const HIGHWAY_SPEED_MULTIPLIER: float = 16.0
+const HIGHWAY_SPEED_LIMIT_KMH: float = 120.0
 const PUBLIC_SPAWN_INTERVAL: float = 2.0
-const HIGHWAY_SPAWN_INTERVAL: float = 2.5
+const HIGHWAY_SPAWN_INTERVAL: float = 1.5
 const HIGHWAY_GRID_X: int = -28
 const HIGHWAY_MIN_GRID_Z: int = -44
 const HIGHWAY_MAX_GRID_Z: int = 44
