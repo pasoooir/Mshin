@@ -1330,6 +1330,9 @@ for contract in [
         errors.append(f"City-wide service capacity/demand contract is missing: {contract}")
 
 # A real 3D vehicle must traverse the connected Gateway graph and return.
+if traffic_manager_source.count("func _select_junction_approach(") != 1:
+    errors.append("TrafficManager must declare exactly one junction approach selector")
+
 for contract in [
     "func build_gateway_round_trip_route() -> Array[Vector2i]",
     "func _build_round_trip_route_from(start: Vector2i) -> Array[Vector2i]",
