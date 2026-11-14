@@ -9,7 +9,7 @@ var vehicle_kind: String = "civilian"
 var station_building_id: String = ""
 var route_key: String = ""
 var lane_index: int = 0
-var lane_offset: float = 0.30
+var lane_offset: float = 0.32
 var ground_height: float = 0.05
 var lane_direction: Vector2i = Vector2i.ZERO
 var route_distance: float = 0.0
@@ -123,16 +123,16 @@ func _build_vehicle_mesh() -> void:
 	beacon_material.emission_enabled = true
 	beacon_material.emission = beacon_material.albedo_color * 1.8
 
-	_add_box("Body", Vector3(0.62, 0.34, 1.50), Vector3(0.0, 0.30, 0.0), body_material)
-	_add_box("Cabin", Vector3(0.52, 0.36, 0.78), Vector3(0.0, 0.63, 0.04), glass_material)
-	_add_box("FrontBumper", Vector3(0.60, 0.10, 0.10), Vector3(0.0, 0.20, -0.84), tire_material)
+	_add_box("Body", Vector3(0.56, 0.34, 1.50), Vector3(0.0, 0.30, 0.0), body_material)
+	_add_box("Cabin", Vector3(0.46, 0.36, 0.78), Vector3(0.0, 0.63, 0.04), glass_material)
+	_add_box("FrontBumper", Vector3(0.54, 0.10, 0.10), Vector3(0.0, 0.20, -0.84), tire_material)
 	_add_box("RearBumper", Vector3(0.88, 0.10, 0.10), Vector3(0.0, 0.20, 0.84), tire_material)
 	_add_box("LeftHeadlight", Vector3(0.16, 0.09, 0.04), Vector3(-0.18, 0.34, -0.77), light_material)
 	_add_box("RightHeadlight", Vector3(0.16, 0.09, 0.04), Vector3(0.18, 0.34, -0.77), light_material)
 	if vehicle_kind == "police" or vehicle_kind == "fire":
 		_add_box("EmergencyLightbar", Vector3(0.56, 0.09, 0.16), Vector3(0.0, 0.86, 0.02), beacon_material)
 		if vehicle_kind == "fire":
-			_add_box("FireEquipment", Vector3(0.82, 0.16, 0.72), Vector3(0.0, 0.86, 0.43), body_material)
+			_add_box("FireEquipment", Vector3(0.54, 0.16, 0.72), Vector3(0.0, 0.86, 0.43), body_material)
 
 	var wheel_mesh := CylinderMesh.new()
 	wheel_mesh.top_radius = 0.17
@@ -145,7 +145,7 @@ func _build_vehicle_mesh() -> void:
 			wheel.mesh = wheel_mesh
 			wheel.material_override = tire_material
 			wheel.rotation.z = PI * 0.5
-			wheel.position = Vector3(x_sign * 0.30, 0.17, z_sign * 0.48)
+			wheel.position = Vector3(x_sign * 0.25, 0.17, z_sign * 0.48)
 			add_child(wheel)
 
 func _add_box(node_name: String, box_size: Vector3, local_position: Vector3, material: Material) -> void:
