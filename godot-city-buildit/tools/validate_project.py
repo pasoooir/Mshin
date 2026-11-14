@@ -1339,6 +1339,7 @@ for contract in [
     "func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> float:",
     "CITY_SPEED_MULTIPLIER: float = 4.0",
     "HIGHWAY_SPEED_MULTIPLIER: float = 16.0",
+    "LANE_CENTER_OFFSET: float = 0.32",
     "HIGHWAY_GRID_X: int = -28",
     "HIGHWAY_WORLD_X: float = -55.0",
     "func build_highway_route(northbound: bool) -> Array[Vector2i]",
@@ -1355,7 +1356,6 @@ for contract in [
     "func _process(delta: float) -> void:",
     "route_distance += step",
     "TrafficManager.get_safe_vehicle_speed(self, desired_speed)",
-    "TrafficManager.LANE_CENTER_OFFSET",
     "TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)",
     "var lane_offset: float = 0.32",
     "var ground_height: float = 0.05",
@@ -1375,8 +1375,8 @@ for contract in [
     "visible external six-lane motorway must spawn its own traffic fleet",
     "Motorway vehicles must physically travel on the external divided highway",
     "same-lane vehicle ahead is inside the minimum safe gap",
-    "An operational police station must dispatch a police vehicle",
-    "An operational fire station must dispatch a fire engine",
+    "An operational police station must automatically dispatch a police vehicle",
+    "An operational fire station must automatically dispatch a fire engine",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Road traffic/emergency fleet regression test is missing: {contract}")
