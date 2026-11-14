@@ -1339,6 +1339,10 @@ for contract in [
     "func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> float:",
     "CITY_SPEED_MULTIPLIER: float = 4.0",
     "HIGHWAY_SPEED_MULTIPLIER: float = 16.0",
+    "HIGHWAY_GRID_X: int = -28",
+    "func build_highway_route(northbound: bool) -> Array[Vector2i]",
+    "func spawn_highway_vehicle_now() -> TrafficVehicle:",
+    "func _update_emergency_dispatch(delta: float) -> void:",
     "func _validate_active_vehicle_routes(connected_roads: Dictionary)",
 ]:
     if contract not in traffic_manager_source:
@@ -1351,6 +1355,8 @@ for contract in [
     "route_distance += step",
     "TrafficManager.get_safe_vehicle_speed(self, desired_speed)",
     "TrafficManager.LANE_CENTER_OFFSET",
+    "var lane_offset: float = 0.30",
+    "var ground_height: float = 0.05",
     '"EmergencyLightbar"',
 ]:
     if contract not in traffic_vehicle_source:
@@ -1362,6 +1368,9 @@ for contract in [
     "func _test_traffic_lane_rules_and_emergency_fleet(",
     "City vehicles must use the required 4x speed multiplier",
     "External highway vehicles must use the required 16x speed multiplier",
+    "Northbound motorway traffic must run only toward the north exit",
+    "Southbound motorway traffic must run only toward the south exit",
+    "visible external six-lane motorway must spawn its own traffic fleet",
     "same-lane vehicle ahead is inside the minimum safe gap",
     "An operational police station must dispatch a police vehicle",
     "An operational fire station must dispatch a fire engine",
