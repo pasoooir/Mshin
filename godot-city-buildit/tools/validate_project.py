@@ -1604,6 +1604,7 @@ for contract in [
     "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.",
     "Claimed land must survive LandExpansionManager save/load serialization.",
     "A version 3 save must migrate legacy road/building plots to owned land before restoring the city.",
+    "New building placement must reject the permanent highway asphalt corridor.",
     "Legacy saved buildings on the reserved highway edge must remain restorable after their old plots are migrated.",
     "Livestock must never enter the external highway asphalt corridor.",
     "Livestock must never enter unlocked city plots.",
