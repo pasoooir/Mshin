@@ -127,7 +127,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 | PR | تغییر پیشنهادی | وضعیت |
 |---|---|---|
-| [#455](https://github.com/pasoooir/Mshin/pull/455) | کتابخانه مشترک PBR برای هندسه‌های رویه‌ای: نقشه‌های Base Color/Normal/Roughness/Metallic برای آجر، چوب، شیشه، فلز، سفال سقف، بتن و گچ؛ اعمال متریال معنایی به پنجره‌ها و قاب‌ها | باز؛ Godot Validation + GameplaySmoke و Android Debug APK در run `43567832763` موفق؛ Web export + Chromium desktop/mobile در run `43567832762` موفق؛ Deploy به‌دلیل PR بودن اجرا نشد. بازبینی بصری روی دستگاه واقعی باقی است. این PR مدل‌های اختصاصی GLTF باقی‌مانده را تکمیل نمی‌کند. |
+| [#455](https://github.com/pasoooir/Mshin/pull/455) | کتابخانه PBR و پنج صحنه اختصاصی سه‌بعدی برای رستوران سنتی، فست‌فود، ابزارفروشی، بازار کشاورزان و فروشگاه مبلمان؛ رجیستری دقیق نوع و آزمون متریال/مش | باز؛ Godot Validation + GameplaySmoke و Android Debug APK در run `43568623404` موفق؛ Web export + Chromium desktop/mobile در run `43568623381` موفق؛ Deploy به‌دلیل PR بودن اجرا نشد. بازبینی بصری روی دستگاه واقعی و تکمیل سایر انواع ساختمان باز است. |
 
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
 
