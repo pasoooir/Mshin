@@ -14,28 +14,29 @@
 
 ## Movement conflict, right-of-way and exit clearance — PR #467
 
-- **Movement conflict detection:** each entering vehicle registers its incoming and outgoing road cells. Lane-offset movement segments are compared; intersecting paths are rejected, while opposing straight-through movements on separated right-hand lanes are classified as compatible. The current signal scheduler still grants one approach green at a time, so compatibility is not yet used to run two approaches simultaneously.
+- **Movement conflict detection:** each entering vehicle registers its incoming and outgoing road cells. Lane-offset quadratic Bezier centre-lines are sampled into eight segments; every segment pair is checked for intersection, so curved turn paths are considered instead of comparing only one straight chord. Conflicting movements are rejected; opposing straight-through movements on separated right-hand lanes remain compatible. The current signal scheduler still grants one approach green at a time, so compatibility is not yet used to run two approaches simultaneously.
 - **Right-of-way:** under right-hand traffic, an approach yields when a queued vehicle is present on its right. A waiting approach receives a fairness override after `JUNCTION_RIGHT_OF_WAY_MAX_WAIT_SECONDS = 8.0` seconds so circular priority cannot starve it indefinitely.
-- **Downstream clearance:** a vehicle cannot reserve a junction movement unless its exit cell is part of the Gateway-connected road network and is not currently occupied or being entered by another vehicle.
+- **Downstream clearance:** a vehicle cannot reserve a junction movement unless up to two downstream route cells are Gateway-connected, unblocked, and neither occupied nor being entered by another active vehicle. The check uses the vehicle's actual route and allows a shorter remaining route at trip completion.
 - **Reservation lifecycle:** movement reservations are per vehicle and are removed when the vehicle leaves the junction, completes its route, is deleted, or is pruned from the active fleet.
 
 ## Road closure and incident rerouting — PR #467
 
 - When the road graph changes, active city vehicles with invalid routes attempt a new weighted route from their current/nearest connected road cell to their original/nearest surviving destination.
-- An incident system can call `TrafficManager.set_road_cell_blocked(cell, true)` to temporarily close a road tile. Active vehicles are rerouted, route planning avoids the blocked tile, and effective road capacity is reduced. Calling the API with `false` restores the tile to route planning and capacity.
+- An incident system can call `TrafficManager.set_road_cell_blocked(cell, true)` to temporarily close a road tile. Active city vehicles are rerouted, new round trips and weighted route planning avoid blocked cells, and effective road capacity is reduced. Calling the API with `false` restores the tile to route planning and capacity.
+- `TrafficManager.set_road_cell_blocked_by_source(cell, source_id, blocked)` tracks independent closure owners. A collision and roadwork incident can both block the same tile; clearing one source cannot reopen the tile while another source still owns a closure. The legacy `set_road_cell_blocked` API is retained as the `manual` source.
 - Only trips with no remaining connected path are retired.
 
 ## Safety boundaries
 
-- Movement geometry is a lane-offset segment approximation on the road grid, not a full swept-volume physics model.
+- Movement geometry is a sampled lane-offset quadratic Bezier centre-line approximation on the road grid, not full swept-volume vehicle-body physics.
 - Right-of-way is an approach-level yield rule with an 8-second fairness override, not a claim of complete jurisdiction-specific legal compliance.
-- Exit clearance checks the immediate downstream cell, not a multi-cell storage bay.
-- The block API is available to incident systems, but automatic wiring from collision/wreck incidents is not yet implemented in this slice.
+- Exit clearance checks up to two downstream route cells; it is still a finite look-ahead rather than a complete downstream queue/storage simulation.
+- The source-aware block API is ready for incident systems, but this repository does not yet contain an implemented collision/wreck incident producer that automatically calls it.
 - Highway vehicles remain outside city-road closure rerouting.
 - Pedestrian phases, emergency pre-emption, protected turn phases, and rendered traffic-light props are not implemented here.
 
 ## Regression coverage
 
-GameplaySmoke checks initial green admission, competing approach rejection, yellow/all-red clearance, fair handoff, opposing straight-through compatibility, crossing conflict, left-turn versus opposing straight conflict, right-hand yielding, bounded starvation override, disconnected and occupied downstream exits, active-vehicle rerouting around a removed road cell, temporary blockage rerouting, and effective capacity reduction/restoration.
+GameplaySmoke checks initial green admission, competing approach rejection, yellow/all-red clearance, fair handoff, opposing straight-through compatibility, crossing conflict, left-turn versus opposing straight conflict, curved movement sampling, right-hand yielding, bounded starvation override, disconnected/occupied first and second downstream exit cells, active-vehicle rerouting around a removed road cell, blocked-cell avoidance for new trips, temporary blockage rerouting, independent overlapping incident ownership, and effective capacity reduction/restoration.
 
 Static validation checks the controller, movement, exit-clearance, right-of-way, blocked-road and route-recovery APIs. CI results must be reported from actual workflow runs, not inferred from this specification.
