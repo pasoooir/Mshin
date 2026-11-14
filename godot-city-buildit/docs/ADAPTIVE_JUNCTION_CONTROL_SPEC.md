@@ -2,7 +2,7 @@
 
 ## Implemented in this slice
 
-- **Movement conflict detection:** each entering vehicle registers its incoming and outgoing road cells. Lane-offset movement segments are compared; intersecting paths are rejected, while opposing straight-through movements on separated right-hand lanes can proceed together.
+- **Movement conflict detection:** each entering vehicle registers its incoming and outgoing road cells. Lane-offset movement segments are compared; intersecting paths are rejected, while opposing straight-through movements on separated right-hand lanes are classified as compatible. The current signal scheduler still grants one approach green at a time.
 - **Right-of-way:** under right-hand traffic, an approach yields when a queued vehicle is present on its right. A waiting approach receives a fairness override after 8 seconds so circular priority cannot starve it indefinitely.
 - **Downstream clearance:** a vehicle cannot reserve a junction movement unless its exit cell is part of the Gateway-connected road network and is not currently occupied or being entered by another vehicle.
 - **Reservation lifecycle:** movement reservations are per vehicle and are removed when the vehicle leaves the junction, completes its route, is deleted, or is pruned from the active fleet.
