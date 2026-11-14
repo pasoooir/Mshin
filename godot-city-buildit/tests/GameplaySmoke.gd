@@ -117,11 +117,24 @@ func _test_recipe_dependency_graph_validation() -> void:
 		"name":"Test Cycle B", "time_sec":1, "level":1,
 		"store":"building_supplies", "requires":{"__test_cycle_a":1}
 	}
+	ProductionManager.crafted_items["__test_missing_input"] = {
+		"name":"Test Missing Input", "time_sec":1, "level":1,
+		"store":"building_supplies", "requires":{"__undefined_test_material":1}
+	}
+	ProductionManager.crafted_items["__test_bad_quantity"] = {
+		"name":"Test Bad Quantity", "time_sec":1, "level":1,
+		"store":"building_supplies", "requires":{"metal":0}
+	}
 	var cycle_report := ProductionManager.get_recipe_validation_report()
 	var invalid_ids: Array = cycle_report.get("invalid_recipe_ids", [])
 	_check(invalid_ids.has("__test_cycle_a") and invalid_ids.has("__test_cycle_b"), "Recipe graph validator must reject every node participating in a dependency cycle.")
+	_check(invalid_ids.has("__test_missing_input"), "Recipe graph validator must reject references to undefined raw or crafted inputs.")
+	_check(invalid_ids.has("__test_bad_quantity"), "Recipe graph validator must reject zero or negative recipe quantities.")
+	_check(not ProductionManager.get_recipe_lock_reason("__test_missing_input").is_empty(), "A structurally invalid recipe must be blocked from the production API.")
 	ProductionManager.crafted_items.erase("__test_cycle_a")
 	ProductionManager.crafted_items.erase("__test_cycle_b")
+	ProductionManager.crafted_items.erase("__test_missing_input")
+	ProductionManager.crafted_items.erase("__test_bad_quantity")
 	if saved_a is Dictionary:
 		ProductionManager.crafted_items["__test_cycle_a"] = saved_a
 	if saved_b is Dictionary:
