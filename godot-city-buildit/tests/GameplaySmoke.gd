@@ -688,10 +688,14 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager._active_vehicles.clear()
 	TrafficManager._active_vehicles.append(follower)
 	TrafficManager._active_vehicles.append(leader)
-	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A vehicle must stop when the same-lane vehicle ahead is inside the minimum safe gap.")
+	_check(not TrafficManager.is_frontmost_vehicle_in_lane(follower), "A vehicle with another vehicle ahead in its lane must not be treated as the frontmost stopped vehicle.")
+	_check(TrafficManager.is_frontmost_vehicle_in_lane(leader), "The leading vehicle with no vehicle ahead in its lane must be eligible for the four-second release.")
+	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A follower must stop when the same-lane vehicle ahead is inside the minimum safe gap.")
 	follower.congestion_release_active = true
-	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), TrafficManager.CONGESTION_CRAWL_SPEED), "A vehicle held by same-lane congestion must resume controlled crawl after the four-second stop limit.")
-	_check(is_equal_approx(TrafficManager.MAX_TRAFFIC_STOP_SECONDS, 4.0), "The maximum same-lane traffic stop duration must be exactly four seconds.")
+	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A follower must never bypass its stopped leader, even if its release flag is set.")
+	leader.congestion_release_active = true
+	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(leader, 40.0), TrafficManager.CONGESTION_CRAWL_SPEED), "Only the frontmost stopped vehicle may resume controlled crawl after four seconds.")
+	_check(is_equal_approx(TrafficManager.MAX_TRAFFIC_STOP_SECONDS, 4.0), "The maximum frontmost stopped-vehicle wait must be exactly four seconds.")
 	TrafficManager._active_vehicles.clear()
 	for previous_vehicle in previous_fleet:
 		TrafficManager._active_vehicles.append(previous_vehicle)

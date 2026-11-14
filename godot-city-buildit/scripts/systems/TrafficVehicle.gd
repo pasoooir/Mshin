@@ -70,10 +70,16 @@ func _process(delta: float) -> void:
 	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
 	var safe_speed := TrafficManager.get_safe_vehicle_speed(self, desired_speed)
 	if safe_speed <= 0.001:
-		_traffic_stop_elapsed += delta
-		if _traffic_stop_elapsed >= TrafficManager.MAX_TRAFFIC_STOP_SECONDS:
-			congestion_release_active = true
-			safe_speed = TrafficManager.get_safe_vehicle_speed(self, desired_speed)
+		if TrafficManager.is_frontmost_vehicle_in_lane(self):
+			_traffic_stop_elapsed += delta
+			if _traffic_stop_elapsed >= TrafficManager.MAX_TRAFFIC_STOP_SECONDS:
+				congestion_release_active = true
+				safe_speed = TrafficManager.get_safe_vehicle_speed(self, desired_speed)
+		else:
+			# A follower is not allowed to start its own release timer or push
+			# into the vehicle ahead; it waits for the leader to move.
+			_traffic_stop_elapsed = 0.0
+			congestion_release_active = false
 		if safe_speed <= 0.001:
 			return
 	else:
