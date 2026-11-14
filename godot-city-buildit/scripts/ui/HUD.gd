@@ -3808,8 +3808,10 @@ func _on_regional_trade_item_selected(index: int, option: OptionButton) -> void:
 	_regional_trade_item_id = str(option.get_item_metadata(index))
 	_refresh_trade_panel_content()
 
-func _on_regional_trade_amount_changed(value: float) -> void:
+func _on_regional_trade_amount_changed(value: float, source_id: String, target_id: String, item_id: String, transfer_button: Button) -> void:
 	_regional_trade_amount = maxi(1, int(value))
+	if is_instance_valid(transfer_button):
+		transfer_button.disabled = not TradeManager.can_transfer_between_regions(source_id, target_id, item_id, _regional_trade_amount)
 
 func _on_regional_trade_transfer_pressed(source_id: String, target_id: String, item_id: String, amount_control: SpinBox) -> void:
 	var amount := maxi(1, int(amount_control.value))
@@ -3916,7 +3918,6 @@ func _build_regional_trade_content(parent: VBoxContainer) -> void:
 	amount_control.max_value = maxi(1, source_count)
 	amount_control.value = clampi(_regional_trade_amount, 1, maxi(1, source_count))
 	amount_control.custom_minimum_size.x = 140 * _ui_scale
-	amount_control.value_changed.connect(_on_regional_trade_amount_changed)
 	amount_row.add_child(amount_control)
 
 	var capacity_label := Label.new()
@@ -3929,6 +3930,7 @@ func _build_regional_trade_content(parent: VBoxContainer) -> void:
 	transfer_button.text = "TRANSFER GOODS"
 	transfer_button.custom_minimum_size.y = 48 * _ui_scale
 	transfer_button.disabled = not TradeManager.can_transfer_between_regions(_regional_trade_source_id, _regional_trade_target_id, _regional_trade_item_id, int(amount_control.value))
+	amount_control.value_changed.connect(_on_regional_trade_amount_changed.bind(_regional_trade_source_id, _regional_trade_target_id, _regional_trade_item_id, transfer_button))
 	transfer_button.pressed.connect(_on_regional_trade_transfer_pressed.bind(_regional_trade_source_id, _regional_trade_target_id, _regional_trade_item_id, amount_control))
 	parent.add_child(transfer_button)
 
