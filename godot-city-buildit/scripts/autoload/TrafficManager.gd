@@ -307,7 +307,8 @@ func build_highway_city_round_trip_route(northbound: bool) -> Array[Vector2i]:
 		route.append(city_route[index])
 	for x in range(gateway.x - 1, HIGHWAY_GRID_X - 1, -1):
 		route.append(Vector2i(x, entry_z))
-	for z in range(entry_z + step, outer_z + step, step):
+	var return_step := 1 if northbound else -1
+	for z in range(entry_z + return_step, outer_z + return_step, return_step):
 		route.append(Vector2i(HIGHWAY_GRID_X, z))
 	return route
 
