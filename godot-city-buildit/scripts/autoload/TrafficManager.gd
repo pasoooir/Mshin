@@ -416,6 +416,8 @@ func recalculate_from_roads() -> void:
 		connected_roads = road_system.get_gateway_connected_roads()
 		for cell in connected_roads.keys():
 			var road_cell: Vector2i = cell
+			if _blocked_road_cells.has(road_cell):
+				continue
 			var lane_count: int = road_system.get_road_level(road_cell) * 2
 			road_capacity += lane_count * TRAFFIC_UNITS_PER_LANE
 	_validate_active_vehicle_routes(connected_roads)
@@ -783,7 +785,7 @@ func set_road_cell_blocked(grid_cell: Vector2i, blocked: bool) -> bool:
 		_blocked_road_cells[grid_cell] = true
 	else:
 		_blocked_road_cells.erase(grid_cell)
-	_validate_active_vehicle_routes(road_system.get_gateway_connected_roads())
+	recalculate_from_roads()
 	return true
 
 func _nearest_connected_road(target: Vector2i, connected_roads: Dictionary) -> Vector2i:
