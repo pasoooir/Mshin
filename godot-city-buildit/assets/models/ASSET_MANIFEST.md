@@ -12,6 +12,14 @@ All five GLTF files in this directory are original procedural architectural mesh
 
 Materials use glTF 2.0 metallic-roughness PBR factors plus embedded procedural PNG texture maps for Base Color, tangent-space Normal and Metallic-Roughness. The texture maps are generated patterns, not photographic scans or high-resolution photogrammetry textures. Their geometry includes facade openings/frames, glass, entry features, roof structures, balconies, signage, loading door and industrial equipment details as appropriate.
 
+| Traditional restaurant | `commercial/restaurant_traditional.tscn` | 3.4 × 3.4 plot target | `restaurant_traditional`; bespoke warm masonry, pitched roof, dining terrace and kitchen flue |
+| Fast-food outlet | `commercial/fast_food.tscn` | 3.4 × 3.4 plot target | `fast_food`; low modern volume, glazed counter, branded canopy and drive-through marker |
+| Hardware store | `commercial/hardware_store.tscn` | 3.4 × 3.4 plot target | `hardware_store`; warehouse roof, loading shutter, lumber racks and steel display frames |
+| Farmers market | `commercial/farmers_market.tscn` | 3.4 × 3.4 plot target | `farmers_market`; open pavilion, timber posts, stall counters, awnings and produce crates |
+| Furniture store | `commercial/furniture_store.tscn` | 3.4 × 3.4 plot target | `furniture_store`; glazed showroom, interior furniture displays and delivery dock |
+
+These five authored scene assets are original local Godot 3D scenes driven by `scripts/buildings/BuildingAssetModel.gd`; their mesh geometry and PBR materials are created from local primitives and the shared surface library. They are separate exact-type scene assets, not GLTF binaries. Their scene/import/runtime and camera-scale checks are covered by GameplaySmoke; visual review on physical mobile hardware remains separate.
+
 ## Procedural building surface library
 
 The procedural building mesh path also uses `scripts/buildings/BuildingSurfaceLibrary.gd`. It creates and caches local 128×128 maps for Base Color, tangent-space Normal, Roughness and Metallic. Surface families include plaster, brick courses, timber grain, reflective glass, brushed metal, roof tiles and concrete aggregate. The window helpers explicitly request glass and painted-metal frame profiles; the library is deterministic and has no CDN/runtime dependency.
