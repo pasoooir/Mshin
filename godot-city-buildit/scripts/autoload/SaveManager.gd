@@ -6,7 +6,7 @@ signal load_completed(success: bool)
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 
 const SAVE_PATH: String = "user://pasoo_city_buildit_save.json"
-const SAVE_VERSION: int = 4
+const SAVE_VERSION: int = 5
 const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
@@ -68,6 +68,7 @@ func capture_region_snapshot() -> Dictionary:
 			}
 		})
 	return {
+		"storage": StorageManager.to_save_dict(),
 		"roads": road_data,
 		"buildings": building_data,
 		"epic_projects": EpicProjectManager.to_save_dict(),
@@ -143,6 +144,10 @@ func load_game() -> bool:
 	LevelProgression._apply_level(GameManager.level)
 	RegionManager.from_save_dict(parsed.get("regions", {}))
 	var region_snapshot: Dictionary = RegionManager.get_active_snapshot()
+	# Version 5 stores inventory per region. Older saves migrate their single
+	# global inventory into the currently active region without losing items.
+	if region_snapshot.has("storage"):
+		StorageManager.from_save_dict(region_snapshot.get("storage", {}))
 	var region_roads: Array = region_snapshot.get("roads", parsed.get("roads", []))
 	var region_buildings: Array = region_snapshot.get("buildings", parsed.get("buildings", []))
 	var region_epic_projects: Dictionary = region_snapshot.get("epic_projects", parsed.get("epic_projects", {}))
@@ -316,6 +321,13 @@ func load_region_snapshot(snapshot: Dictionary) -> bool:
 	if not success:
 		is_loading = false
 		return false
+	# Every region owns an independent warehouse. A never-visited region starts
+	# with an empty default-capacity warehouse; older snapshots migrate empty.
+	var regional_storage: Dictionary = snapshot.get("storage", {
+		"capacity": StorageManager.DEFAULT_CAPACITY,
+		"items": {}
+	})
+	StorageManager.from_save_dict(regional_storage)
 	StorageManager.storage_changed.emit()
 	StorageManager.capacity_changed.emit(StorageManager.max_capacity)
 	ServiceManager.recalculate_from_buildings()
