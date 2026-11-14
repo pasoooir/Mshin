@@ -4,6 +4,7 @@ signal power_changed(total: int, demand: int)
 signal water_changed(total: int, demand: int)
 signal sewage_changed(total: int, demand: int)
 signal waste_changed(total: int, demand: int)
+signal workforce_changed(available: int, demand: int, employed: int)
 
 var total_power: int = 0
 var demand_power: int = 0
@@ -17,6 +18,10 @@ var used_sewage: int = 0
 var total_waste: int = 0
 var demand_waste: int = 0
 var used_waste: int = 0
+var available_workers: int = 0
+var demand_workers: int = 0
+var employed_workers: int = 0
+var workforce_served_ids: Dictionary = {}
 var coverage_radius: float = 28.0
 var power_served_ids: Dictionary = {}
 var water_served_ids: Dictionary = {}
@@ -38,9 +43,12 @@ const DEFAULT_EMERGENCY_COVERAGE_TILES := 15.0
 # unit each of power/water; industrial producers require two power and one
 # water. Per-building operating_*_demand values override these design defaults.
 const NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES := {
-	"commercial": {"power": 1, "water": 1},
-	"industrial": {"power": 2, "water": 1}
+	"commercial": {"power": 1, "water": 1, "workers": 1},
+	"industrial": {"power": 2, "water": 1, "workers": 2}
 }
+# Mshin design assumption: 45% of residents are available for city employment.
+# This is a transparent balancing parameter, not an EA-published demographic.
+const WORKFORCE_SHARE := 0.45
 
 func get_building_utility_demand(building: Node3D, utility_key: String) -> int:
 	if not is_instance_valid(building):
@@ -60,6 +68,49 @@ func requires_operational_utilities(building: Node3D) -> bool:
 	if not NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.has(category):
 		return false
 	return get_building_utility_demand(building, "power") > 0 or get_building_utility_demand(building, "water") > 0
+
+func get_building_worker_demand(building: Node3D) -> int:
+	if not is_instance_valid(building):
+		return 0
+	var definition: Dictionary = building.definition
+	if definition.has("operating_workers_required"):
+		return maxi(0, int(definition.get("operating_workers_required", 0)))
+	var category := str(definition.get("category", ""))
+	var profile: Dictionary = NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.get(category, {})
+	return maxi(0, int(profile.get("workers", 0)))
+
+func requires_operational_workforce(building: Node3D) -> bool:
+	if not is_instance_valid(building):
+		return false
+	var category := str(building.definition.get("category", ""))
+	return NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.has(category) and get_building_worker_demand(building) > 0
+
+func is_workforce_served(building: Node3D) -> bool:
+	if not is_instance_valid(building):
+		return false
+	if not requires_operational_workforce(building):
+		return true
+	return workforce_served_ids.has(building.building_id)
+
+func _recalculate_workforce(consumers: Array) -> void:
+	available_workers = maxi(0, floori(float(GameManager.population) * WORKFORCE_SHARE))
+	demand_workers = 0
+	employed_workers = 0
+	workforce_served_ids.clear()
+	for consumer in consumers:
+		demand_workers += get_building_worker_demand(consumer)
+	# Only producers with road, power and water access may reserve workers.
+	# Household population is the sole workforce source; employment never
+	# creates citizens or changes residential population.
+	for consumer in consumers:
+		if not _has_gateway_road_access(consumer) or not is_building_served(consumer):
+			continue
+		var required := get_building_worker_demand(consumer)
+		if required <= 0 or employed_workers + required > available_workers:
+			continue
+		employed_workers += required
+		workforce_served_ids[consumer.building_id] = true
+	workforce_changed.emit(available_workers, demand_workers, employed_workers)
 
 func _ready() -> void:
 	print("[ServiceManager] Power/water/sewage/waste capacity network online")
@@ -292,3 +343,6 @@ func recalculate_from_buildings() -> void:
 		FireHazardManager.on_city_changed()
 	if has_node("/root/HappinessManager"):
 		HappinessManager.recalculate_city()
+	# Recalculate after household scoring updates GameManager.population so
+	# workforce availability always uses the latest occupied residential count.
+	_recalculate_workforce(non_residential_consumers)

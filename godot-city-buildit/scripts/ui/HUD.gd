@@ -152,6 +152,7 @@ func _ready() -> void:
 	ServiceManager.water_changed.connect(_on_water_changed)
 	ServiceManager.sewage_changed.connect(_on_sewage_changed)
 	ServiceManager.waste_changed.connect(_on_waste_changed)
+	ServiceManager.workforce_changed.connect(_on_workforce_changed)
 	TrafficManager.traffic_changed.connect(_on_traffic_changed)
 	TradeManager.trade_state_changed.connect(_on_trade_state_changed)
 	EpicProjectManager.epic_state_changed.connect(_on_epic_project_state_changed)
@@ -1744,15 +1745,19 @@ func _on_sewage_changed(_total: int, _demand: int) -> void:
 func _on_waste_changed(_total: int, _demand: int) -> void:
 	_update_service_summary()
 
+func _on_workforce_changed(_available: int, _demand: int, _employed: int) -> void:
+	_update_service_summary()
+
 func _on_traffic_changed(_demand: int, _capacity: int, _ratio: float) -> void:
 	_update_service_summary()
 
 func _service_summary_text() -> String:
-	return "Demand / capacity — Power %d/%d · Water %d/%d · Sewage %d/%d · Waste %d/%d · Fire %d/%d homes · Police %d/%d homes · Health %d/%d homes · Traffic %d/%d (%d%%)" % [
+	return "Demand / capacity — Power %d/%d · Water %d/%d · Sewage %d/%d · Waste %d/%d · Workers %d/%d employed (%d available) · Fire %d/%d homes · Police %d/%d homes · Health %d/%d homes · Traffic %d/%d (%d%%)" % [
 		ServiceManager.demand_power, ServiceManager.total_power,
 		ServiceManager.demand_water, ServiceManager.total_water,
 		ServiceManager.demand_sewage, ServiceManager.total_sewage,
 		ServiceManager.demand_waste, ServiceManager.total_waste,
+		ServiceManager.employed_workers, ServiceManager.demand_workers, ServiceManager.available_workers,
 		ServiceManager.served_fire_homes, ServiceManager.demand_fire_homes,
 		ServiceManager.served_police_homes, ServiceManager.demand_police_homes,
 		ServiceManager.served_health_homes, ServiceManager.demand_health_homes,
