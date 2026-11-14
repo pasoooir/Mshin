@@ -9,7 +9,7 @@ static func is_supported_model_path(model_path: String) -> bool:
 	if model_path.contains("..") or model_path.contains("\\"):
 		return false
 	var extension := model_path.get_extension().to_lower()
-	return extension == "glb" or extension == "gltf"
+	return extension == "glb" or extension == "gltf" or extension == "tscn"
 
 static func load_model_scene(model_path: String) -> PackedScene:
 	if not is_supported_model_path(model_path):
