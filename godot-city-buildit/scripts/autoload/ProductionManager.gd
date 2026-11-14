@@ -166,7 +166,7 @@ func _ready() -> void:
 	print("[ProductionManager] SCBI catalog: %d raw, %d crafted" % [raw_materials.size(), crafted_items.size()])
 	_recipe_validation_report = get_recipe_validation_report()
 	for validation_error in _recipe_validation_report.get("errors", []):
-		push_error("[ProductionManager] Invalid recipe catalog: " + str(validation_error))
+		push_warning("[ProductionManager] Invalid recipe catalog: " + str(validation_error))
 
 func get_recipe_validation_report() -> Dictionary:
 	# Validate the complete enabled recipe graph before any item can enter a
@@ -179,8 +179,11 @@ func get_recipe_validation_report() -> Dictionary:
 		var recipe: Dictionary = crafted_items[item_variant]
 		var item_errors: Array[String] = []
 		var store_id := str(recipe.get("store", ""))
-		if store_id.is_empty() or not store_catalog.has(store_id):
-			item_errors.append("missing or unknown supplier store")
+		# store_catalog is only the exceptional/unresolved-product registry; it is
+		# not the supplier registry. Supplier buildings are declared centrally by
+		# BuildManager.building_types.
+		if store_id.is_empty() or not BuildManager.building_types.has(store_id):
+			item_errors.append("missing or unknown supplier building")
 		if float(recipe.get("time_sec", 0)) <= 0.0:
 			item_errors.append("production duration must be positive")
 		var inputs: Dictionary = recipe.get("requires", {})
