@@ -2992,10 +2992,10 @@ func _run_gameplay_test() -> void:
 	_check(SaveManager.load_game(), "SaveManager could not restore the saved city.")
 	_check(GameManager.level == saved_level_expected and GameManager.experience == saved_experience_expected, "Save/load must restore the exact Mayor Level and XP values.")
 	_check(not xp_restore_events.is_empty() and int(xp_restore_events.back()[0]) == saved_experience_expected and int(xp_restore_events.back()[1]) == GameManager.get_xp_needed(), "Loading a city must emit xp_changed with the restored XP and next-level requirement.")
-	var hud = get_node_or_null("HUD")
-	if is_instance_valid(hud):
-		var restored_xp_text := hud.get("xp_text") as Label
-		var restored_xp_progress := hud.get("xp_progress") as ProgressBar
+	var restored_hud = get_node_or_null("HUD")
+	if is_instance_valid(restored_hud):
+		var restored_xp_text := restored_hud.get("xp_text") as Label
+		var restored_xp_progress := restored_hud.get("xp_progress") as ProgressBar
 		_check(restored_xp_text != null and restored_xp_text.text == "%d / %d XP" % [saved_experience_expected, GameManager.get_xp_needed()], "HUD XP label must refresh immediately after loading a saved city.")
 		_check(restored_xp_progress != null and int(restored_xp_progress.value) == saved_experience_expected, "HUD XP progress bar must refresh immediately after loading a saved city.")
 	GameManager.xp_changed.disconnect(xp_restore_listener)
