@@ -34,6 +34,18 @@ var is_placing: bool = false
 var placement_rotation_quarters: int = 0
 var factory_count: int = 0
 
+# Mshin construction BOM profiles. These are explicit game-design defaults,
+# not claimed SimCity BuildIt recipes. A per-building construction_bom override
+# takes precedence. Bootstrap buildings keep the first production loop reachable.
+const CONSTRUCTION_BOM_PROFILES := {
+	"residential": {"nails": 1, "metal": 1},
+	"commercial": {"nails": 2, "metal": 1},
+	"industrial": {"nails": 2, "metal": 2},
+	"service": {"nails": 1, "metal": 1},
+	"park": {"nails": 1, "wood": 1}
+}
+const CONSTRUCTION_BOM_BOOTSTRAP_TYPES := ["residential_1", "residential_villa", "factory_small", "building_supplies", "shop_chain"]
+
 var building_types: Dictionary = {
 	"residential_1": {"name":"Small House", "category":"residential", "service_demand":1, "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
 	"residential_2": {"name":"Apartment", "category":"residential", "service_demand":2, "cost":0, "size":Vector2i(2,2), "population":28, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
@@ -291,6 +303,41 @@ func is_building_operational(building: Node) -> bool:
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	return has_road_access(anchor, size)
 
+func get_construction_bom(type_id: String) -> Dictionary:
+	if not building_types.has(type_id):
+		return {}
+	var definition: Dictionary = building_types[type_id]
+	if definition.has("construction_bom"):
+		return definition.get("construction_bom", {}).duplicate(true)
+	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
+		return {}
+	var category := str(definition.get("category", ""))
+	return CONSTRUCTION_BOM_PROFILES.get(category, {}).duplicate(true)
+
+func get_construction_bom_source(type_id: String) -> String:
+	if not building_types.has(type_id):
+		return ""
+	var definition: Dictionary = building_types[type_id]
+	if definition.has("construction_bom"):
+		return str(definition.get("construction_bom_source", "Mshin building-specific design"))
+	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
+		return "Mshin bootstrap exception — no material charge"
+	return "Mshin category profile — design/balance value, not an EA recipe"
+
+func get_construction_bom_lock_reason(type_id: String) -> String:
+	var requirements := get_construction_bom(type_id)
+	if requirements.is_empty():
+		return ""
+	var missing: Array[String] = []
+	for item_id in requirements:
+		var required := int(requirements[item_id])
+		if required <= 0:
+			return "Invalid construction BOM for " + type_id
+		var available := StorageManager.get_count(str(item_id))
+		if available < required:
+			missing.append("%s ×%d" % [str(item_id), required - available])
+	return "" if missing.is_empty() else "Missing construction materials: " + ", ".join(missing)
+
 func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: int = -1, allow_reserved_restore: bool = false) -> bool:
 	var chosen: String = type_id if type_id != "" else selected_building_type
 	if chosen == "" or not building_types.has(chosen):
@@ -306,6 +353,8 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: i
 	if definition.get("category", "") == "industrial" and get_factory_build_lock_reason(chosen) != "":
 		return false
 	if not EconomyManager.can_afford(int(definition.get("cost", 0))):
+		return false
+	if not allow_reserved_restore and not get_construction_bom_lock_reason(chosen).is_empty():
 		return false
 	var applied_rotation := rotation_quarters
 	if applied_rotation < 0:
@@ -424,7 +473,13 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 	var building_node = BuildingScene.instantiate()
 	if building_node == null:
 		return false
+	var construction_bom := {} if allow_reserved_restore else get_construction_bom(chosen)
+	if not construction_bom.is_empty() and not StorageManager.remove_items(construction_bom):
+		building_node.free()
+		return false
 	if cost > 0 and not EconomyManager.spend_simoleons(cost):
+		if not construction_bom.is_empty():
+			StorageManager.add_items(construction_bom)
 		building_node.free()
 		return false
 	var building_id: String = "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
