@@ -714,17 +714,24 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager._active_vehicles.append(leader)
 	var load_probe_a := TrafficVehicle.new()
 	var load_probe_b := TrafficVehicle.new()
+	var highway_load_probe := TrafficVehicle.new()
 	load_probe_a.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
 	load_probe_b.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
+	highway_load_probe.vehicle_kind = "highway"
+	highway_load_probe.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
 	TrafficManager._active_vehicles.append(load_probe_a)
 	TrafficManager._active_vehicles.append(load_probe_b)
-	_check(TrafficManager.get_road_cell_vehicle_load(Vector2i(-22, -1)) == 2, "The city traffic network must count vehicles currently occupying a road segment.")
+	TrafficManager._active_vehicles.append(highway_load_probe)
+	_check(TrafficManager.get_road_cell_vehicle_load(Vector2i(-22, -1)) == 3, "The city traffic network must count vehicles currently occupying a road segment.")
+	_check(TrafficManager.get_road_cell_vehicle_load(Vector2i(-22, -1)) == 3, "Motorway vehicles must contribute to city road occupancy after entering the city.")
 	var congestion_aware_route: Array[Vector2i] = TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
 	_check(not congestion_aware_route.has(Vector2i(-22, -1)), "Route planning must divert around a heavily occupied road when a connected alternative has lower travel cost.")
 	TrafficManager._active_vehicles.erase(load_probe_a)
 	TrafficManager._active_vehicles.erase(load_probe_b)
+	TrafficManager._active_vehicles.erase(highway_load_probe)
 	load_probe_a.free()
 	load_probe_b.free()
+	highway_load_probe.free()
 	_check(not TrafficManager.is_frontmost_vehicle_in_lane(follower), "A vehicle with another vehicle ahead in its lane must not be treated as the frontmost stopped vehicle.")
 	_check(TrafficManager.is_frontmost_vehicle_in_lane(leader), "The leading vehicle with no vehicle ahead in its lane must be eligible for the four-second release.")
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A follower must stop when the same-lane vehicle ahead is inside the minimum safe gap.")
@@ -732,6 +739,25 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A follower must never bypass its stopped leader, even if its release flag is set.")
 	leader.congestion_release_active = true
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(leader, 40.0), TrafficManager.CONGESTION_CRAWL_SPEED), "Only the frontmost stopped vehicle may resume controlled crawl after four seconds.")
+	var highway_city_follower := TrafficVehicle.new()
+	var highway_city_leader := TrafficVehicle.new()
+	for highway_city_vehicle in [highway_city_follower, highway_city_leader]:
+		highway_city_vehicle.vehicle_kind = "highway"
+		highway_city_vehicle.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
+		highway_city_vehicle.route_key = "highway-city-shared-lane-test"
+		highway_city_vehicle.lane_direction = Vector2i(1, 0)
+	highway_city_follower.lane_index = 0
+	highway_city_leader.lane_index = 2
+	highway_city_follower.route_distance = 8.0
+	highway_city_leader.route_distance = 9.5
+	TrafficManager._active_vehicles.append(highway_city_follower)
+	TrafficManager._active_vehicles.append(highway_city_leader)
+	_check(not TrafficManager.is_frontmost_vehicle_in_lane(highway_city_follower), "Highway vehicles with different motorway lane indices must still follow the same city lane safely.")
+	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(highway_city_follower, 40.0), 0.0), "Merged highway traffic must obey the city-road minimum following gap.")
+	TrafficManager._active_vehicles.erase(highway_city_follower)
+	TrafficManager._active_vehicles.erase(highway_city_leader)
+	highway_city_follower.free()
+	highway_city_leader.free()
 	_check(is_equal_approx(TrafficManager.MAX_TRAFFIC_STOP_SECONDS, 4.0), "The maximum frontmost stopped-vehicle wait must be exactly four seconds.")
 
 	# Every T/cross junction is an exclusive conflict zone: only one vehicle may enter.
