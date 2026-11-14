@@ -317,9 +317,10 @@ func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, fr
 		var existing: Dictionary = movements[vehicle_id]
 		return existing.get("from") == from_cell and existing.get("to") == outgoing_cell
 	var state: Dictionary = _junction_signal_states.get(junction_cell, {})
+	# The controller is the only authority that can grant a new green phase.
+	# Missing state is not permission to enter.
 	if state.is_empty():
-		state = {"approach": approach, "stage": "green", "elapsed": 0.0, "green_duration": JUNCTION_MIN_GREEN_SECONDS, "waiting": {}}
-		_junction_signal_states[junction_cell] = state
+		return false
 	if str(state.get("stage", "green")) != "green" or state.get("approach", Vector2i.ZERO) != approach:
 		return false
 	if not _is_junction_exit_clear(vehicle, junction_cell, outgoing_cell):
