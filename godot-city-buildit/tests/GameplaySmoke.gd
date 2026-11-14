@@ -2145,6 +2145,10 @@ func _test_mayor_xp_progression() -> void:
 	var previous_features: Array = LevelProgression.unlocked_features.duplicate(true)
 	var previous_factory_limit := LevelProgression.max_factories
 	var previous_achievements: Dictionary = AchievementManager.unlocked.duplicate(true)
+	var hud = get_node_or_null("HUD")
+	var reward_handler_connected := is_instance_valid(hud) and GameManager.level_up_rewarded.is_connected(hud._on_level_up_rewarded)
+	if reward_handler_connected:
+		GameManager.level_up_rewarded.disconnect(hud._on_level_up_rewarded)
 	AchievementManager.unlocked["mayor_level_5"] = true
 
 	GameManager.level = 4
@@ -2172,6 +2176,8 @@ func _test_mayor_xp_progression() -> void:
 	GameManager.xp_changed.emit(GameManager.experience, GameManager.get_xp_needed())
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
 	EconomyManager.keys_changed.emit(EconomyManager.golden_keys)
+	if reward_handler_connected:
+		GameManager.level_up_rewarded.connect(hud._on_level_up_rewarded)
 
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
