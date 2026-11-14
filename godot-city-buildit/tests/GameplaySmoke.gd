@@ -3351,6 +3351,7 @@ func _run_gameplay_test() -> void:
 	LandExpansionManager.from_save_dict(legacy_land_state)
 	LandExpansionManager.migrate_legacy_land([[35, 0, 1]], [{"type":"residential_1", "grid":[34, 0], "rotation_quarters":0}, {"type":"residential_1", "grid":[-25, -2], "rotation_quarters":0}])
 	_check(LandExpansionManager.is_cell_unlocked(Vector2i(35, 0)), "A version 3 save must migrate legacy road/building plots to owned land before restoring the city.")
+	_check(not BuildManager.can_place_at(Vector2i(-25, -2), "residential_1", 0), "New building placement must reject the permanent highway asphalt corridor.")
 	_check(BuildManager.can_place_at(Vector2i(-25, -2), "residential_1", 0, true), "Legacy saved buildings on the reserved highway edge must remain restorable after their old plots are migrated.")
 	LandExpansionManager.from_save_dict(previous_land_state)
 	StorageManager.items = previous_storage_items
