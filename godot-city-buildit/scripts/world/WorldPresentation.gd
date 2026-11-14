@@ -29,8 +29,10 @@ func _ready() -> void:
 	_build_terrain()
 	_build_city_grid()
 	_build_coastal_highway()
+	_build_highway_lighting()
 	_build_tree_belts()
 	_build_grass_detail()
+	_build_meadow_livestock()
 	_build_shoreline_details()
 	_build_cargo_ship_visual()
 	_build_sunlight()
@@ -362,7 +364,79 @@ func _build_coastal_highway() -> void:
 	connector_asphalt.uv1_scale = Vector3(14.0, 3.0, 1.0)
 	access_road.material_override = connector_asphalt
 	access_road.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+
 	add_child(access_road)
+
+
+func _build_highway_lighting() -> void:
+	# Twelve full-size motorway luminaires, batched by geometry to keep the
+	# permanent landmark inexpensive on mobile GPUs.
+	var pole_positions: Array[Vector3] = []
+	var arm_positions: Array[Vector3] = []
+	var head_positions: Array[Vector3] = []
+	var emitter_positions: Array[Vector3] = []
+	for side in [-1.0, 1.0]:
+		var pole_x := HIGHWAY_CENTER_X + side * 14.8
+		var inward := -side
+		for z in [-70.0, -42.0, -14.0, 14.0, 42.0, 70.0]:
+			pole_positions.append(Vector3(pole_x, 4.2, z))
+			arm_positions.append(Vector3(pole_x + inward * 1.35, 7.95, z))
+			head_positions.append(Vector3(pole_x + inward * 2.55, 7.88, z))
+			emitter_positions.append(Vector3(pole_x + inward * 2.55, 7.77, z))
+
+	var pole_mesh := CylinderMesh.new()
+	pole_mesh.top_radius = 0.075
+	pole_mesh.bottom_radius = 0.14
+	pole_mesh.height = 8.4
+	var pole_material := StandardMaterial3D.new()
+	pole_material.albedo_color = Color("#59636A")
+	pole_material.metallic = 0.72
+	pole_material.roughness = 0.42
+	var poles := _make_world_multimesh("MotorwayLightPoles", pole_mesh, pole_positions, pole_material)
+	poles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	var arm_mesh := BoxMesh.new()
+	arm_mesh.size = Vector3(2.8, 0.13, 0.13)
+	var arm_material := StandardMaterial3D.new()
+	arm_material.albedo_color = Color("#69747A")
+	arm_material.metallic = 0.68
+	arm_material.roughness = 0.44
+	var arms := _make_world_multimesh("MotorwayLightArms", arm_mesh, arm_positions, arm_material)
+	var head_mesh := BoxMesh.new()
+	head_mesh.size = Vector3(0.95, 0.18, 0.52)
+	var head_material := StandardMaterial3D.new()
+	head_material.albedo_color = Color("#343D42")
+	head_material.metallic = 0.38
+	head_material.roughness = 0.5
+	var heads := _make_world_multimesh("MotorwayLuminaireHousings", head_mesh, head_positions, head_material)
+	var emitter_mesh := BoxMesh.new()
+	emitter_mesh.size = Vector3(0.70, 0.035, 0.34)
+	var emitter_material := StandardMaterial3D.new()
+	emitter_material.albedo_color = Color("#F7E9B7")
+	emitter_material.emission_enabled = true
+	emitter_material.emission = Color("#F4DFA2")
+	emitter_material.emission_energy_multiplier = 0.35
+	var emitters := _make_world_multimesh("MotorwayLuminairePanels", emitter_mesh, emitter_positions, emitter_material)
+
+	var lighting_root := Node3D.new()
+	lighting_root.name = "HighwayLighting"
+	add_child(lighting_root)
+	for component in [poles, arms, heads, emitters]:
+		remove_child(component)
+		lighting_root.add_child(component)
+
+
+func _make_world_multimesh(node_name: String, mesh: Mesh, positions: Array[Vector3], material: Material) -> MultiMeshInstance3D:
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = mesh
+	multimesh.instance_count = positions.size()
+	for index in range(positions.size()):
+		multimesh.set_instance_transform(index, Transform3D(Basis.IDENTITY, positions[index]))
+	var instance := MultiMeshInstance3D.new()
+	instance.name = node_name
+	instance.multimesh = multimesh
+	instance.material_override = material
+	return instance
 
 
 func _add_highway_lane_dashes() -> void:
@@ -615,9 +689,9 @@ func _create_asphalt_material() -> StandardMaterial3D:
 			var fine_grain := sin(angle_x * 83.0 + angle_y * 71.0) * 0.5 + cos(angle_x * 97.0 - angle_y * 89.0) * 0.5
 			var aggregate_signal := sin(angle_x * 61.0 + cos(angle_y * 73.0)) * cos(angle_y * 67.0 - sin(angle_x * 59.0))
 			var aggregate := 0.018 if aggregate_signal > 0.985 else (-0.018 if aggregate_signal < -0.985 else 0.0)
-			var height_value := clampf(0.29 + broad * 0.035 + medium * 0.020 + grain * 0.012 + fine_grain * 0.006 + aggregate, 0.19, 0.40)
+			var height_value := clampf(0.235 + broad * 0.032 + medium * 0.018 + grain * 0.009 + fine_grain * 0.004 + aggregate, 0.12, 0.34)
 			heights[y * TEXTURE_SIZE + x] = height_value
-			image.set_pixel(x, y, Color(height_value * 0.96, height_value * 0.99, height_value * 1.03, 1.0))
+			image.set_pixel(x, y, Color(height_value * 0.92, height_value * 0.96, height_value * 1.02, 1.0))
 	var normal_image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
 	for y in range(TEXTURE_SIZE):
 		for x in range(TEXTURE_SIZE):
@@ -634,7 +708,7 @@ func _create_asphalt_material() -> StandardMaterial3D:
 	material.albedo_texture = ImageTexture.create_from_image(image)
 	material.normal_enabled = true
 	material.normal_texture = ImageTexture.create_from_image(normal_image)
-	material.normal_scale = 0.18
+	material.normal_scale = 0.24
 	material.roughness = 0.97
 	material.metallic = 0.0
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -725,6 +799,121 @@ func _build_grass_detail() -> void:
 	grass.multimesh = multimesh
 	add_child(grass)
 
+func _build_meadow_livestock() -> void:
+	# Small flocks graze along the green undeveloped fringe of the starter plots.
+	# Each body part is instanced in batches; no per-animal scene-node forest.
+	var sheep_positions: Array[Vector3] = []
+	for point in [
+		Vector2(-29.0, -46.0), Vector2(-20.0, -48.0), Vector2(-10.0, -45.0),
+		Vector2(2.0, -47.0), Vector2(14.0, -46.0), Vector2(26.0, -48.0),
+		Vector2(-27.0, 46.0), Vector2(-16.0, 48.0), Vector2(-4.0, 45.0),
+		Vector2(9.0, 47.0), Vector2(21.0, 45.0), Vector2(31.0, 48.0)
+	]:
+		sheep_positions.append(Vector3(point.x, 0.0, point.y))
+	var cattle_positions: Array[Vector3] = [
+		Vector3(-33.0, 0.0, -54.0), Vector3(-1.0, 0.0, -54.0),
+		Vector3(29.0, 0.0, 54.0)
+	]
+
+	var flock := Node3D.new()
+	flock.name = "MeadowLivestock"
+	add_child(flock)
+
+	var wool_mesh := SphereMesh.new()
+	wool_mesh.radius = 0.76
+	wool_mesh.height = 1.35
+	var wool_material := StandardMaterial3D.new()
+	wool_material.albedo_color = Color("#F0EBDD")
+	wool_material.roughness = 0.98
+	var sheep_bodies := _make_world_multimesh("SheepWoolBodies", wool_mesh, _animal_body_positions(sheep_positions, 0.88), wool_material)
+	flock.add_child(sheep_bodies)
+
+	var tuft_mesh := SphereMesh.new()
+	tuft_mesh.radius = 0.31
+	tuft_mesh.height = 0.58
+	var tuft_positions: Array[Vector3] = []
+	for origin in sheep_positions:
+		for offset in [Vector3(-0.28, 1.15, -0.34), Vector3(0.20, 1.18, -0.32), Vector3(-0.28, 1.16, 0.34), Vector3(0.22, 1.18, 0.34)]:
+			tuft_positions.append(origin + offset)
+	var tufts := _make_world_multimesh("SheepWoolTufts", tuft_mesh, tuft_positions, wool_material)
+	flock.add_child(tufts)
+
+	var sheep_head_mesh := SphereMesh.new()
+	sheep_head_mesh.radius = 0.30
+	sheep_head_mesh.height = 0.66
+	var sheep_head_material := StandardMaterial3D.new()
+	sheep_head_material.albedo_color = Color("#514A40")
+	sheep_head_material.roughness = 0.92
+	var sheep_heads := _make_world_multimesh("SheepHeads", sheep_head_mesh, _animal_head_positions(sheep_positions, 0.92), sheep_head_material)
+	flock.add_child(sheep_heads)
+
+	var sheep_leg_mesh := CylinderMesh.new()
+	sheep_leg_mesh.top_radius = 0.055
+	sheep_leg_mesh.bottom_radius = 0.075
+	sheep_leg_mesh.height = 0.62
+	var leg_material := StandardMaterial3D.new()
+	leg_material.albedo_color = Color("#4A4037")
+	leg_material.roughness = 0.95
+	var sheep_legs := _make_world_multimesh("SheepLegs", sheep_leg_mesh, _animal_leg_positions(sheep_positions, 0.32), leg_material)
+	flock.add_child(sheep_legs)
+
+	var cow_body_mesh := SphereMesh.new()
+	cow_body_mesh.radius = 0.95
+	cow_body_mesh.height = 1.55
+	var cow_material := StandardMaterial3D.new()
+	cow_material.albedo_color = Color("#E8E2D5")
+	cow_material.roughness = 0.98
+	var cow_bodies := _make_world_multimesh("CattleBodies", cow_body_mesh, _animal_body_positions(cattle_positions, 1.02), cow_material)
+	flock.add_child(cow_bodies)
+
+	var patch_mesh := SphereMesh.new()
+	patch_mesh.radius = 0.43
+	patch_mesh.height = 0.18
+	var patch_material := StandardMaterial3D.new()
+	patch_material.albedo_color = Color("#574333")
+	patch_material.roughness = 1.0
+	var patch_positions: Array[Vector3] = []
+	for origin in cattle_positions:
+		patch_positions.append(origin + Vector3(0.10, 1.16, -0.56))
+		patch_positions.append(origin + Vector3(-0.34, 1.15, 0.48))
+	var patches := _make_world_multimesh("CattleCoatPatches", patch_mesh, patch_positions, patch_material)
+	flock.add_child(patches)
+
+	var cow_head_mesh := SphereMesh.new()
+	cow_head_mesh.radius = 0.38
+	cow_head_mesh.height = 0.72
+	var cow_head_material := StandardMaterial3D.new()
+	cow_head_material.albedo_color = Color("#6B5140")
+	cow_head_material.roughness = 0.96
+	var cow_heads := _make_world_multimesh("CattleHeads", cow_head_mesh, _animal_head_positions(cattle_positions, 1.02), cow_head_material)
+	flock.add_child(cow_heads)
+
+	var cow_legs := _make_world_multimesh("CattleLegs", sheep_leg_mesh, _animal_leg_positions(cattle_positions, 0.36), leg_material)
+	flock.add_child(cow_legs)
+
+
+func _animal_body_positions(origins: Array[Vector3], height: float) -> Array[Vector3]:
+	var result: Array[Vector3] = []
+	for origin in origins:
+		result.append(origin + Vector3(0.0, height, 0.0))
+	return result
+
+
+func _animal_head_positions(origins: Array[Vector3], height: float) -> Array[Vector3]:
+	var result: Array[Vector3] = []
+	for origin in origins:
+		result.append(origin + Vector3(0.68, height, 0.0))
+	return result
+
+
+func _animal_leg_positions(origins: Array[Vector3], body_height: float) -> Array[Vector3]:
+	var result: Array[Vector3] = []
+	for origin in origins:
+		for offset in [Vector3(-0.42, 0.32, -0.42), Vector3(-0.42, 0.32, 0.42), Vector3(0.42, 0.32, -0.42), Vector3(0.42, 0.32, 0.42)]:
+			result.append(origin + offset)
+	return result
+
+
 func _build_shoreline_details() -> void:
 	# A pale wet-sand band and scattered shoreline rocks soften the land-to-water transition.
 	for index in range(38):
@@ -767,7 +956,7 @@ func _build_sunlight() -> void:
 func _add_headless_test_markers() -> void:
 	# These names are part of the smoke-test scene contract; they intentionally
 	# contain no MeshInstance3D nodes and therefore allocate no render meshes.
-	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "CoastalHighway", "CargoShipVisual"]:
+	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "CoastalHighway", "HighwayLighting", "MeadowLivestock", "CargoShipVisual"]:
 		var marker := Node3D.new()
 		marker.name = marker_name
 		add_child(marker)
