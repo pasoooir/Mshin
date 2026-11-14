@@ -116,6 +116,18 @@ func get_speed_for_segment(from_cell: Vector2i, to_cell: Vector2i, vehicle_kind:
 		return VEHICLE_BASE_SPEED * HIGHWAY_SPEED_MULTIPLIER
 	return VEHICLE_BASE_SPEED * CITY_SPEED_MULTIPLIER
 
+func is_frontmost_vehicle_in_lane(vehicle: TrafficVehicle) -> bool:
+	if not is_instance_valid(vehicle):
+		return false
+	for other in _active_vehicles:
+		if not is_instance_valid(other) or other == vehicle:
+			continue
+		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or other.lane_index != vehicle.lane_index:
+			continue
+		if other.route_distance - vehicle.route_distance > 0.0:
+			return false
+	return true
+
 func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> float:
 	if not is_instance_valid(vehicle):
 		return 0.0
@@ -129,9 +141,13 @@ func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> fl
 		if gap > 0.0 and gap < nearest_gap:
 			nearest_gap = gap
 	if nearest_gap <= MIN_FOLLOWING_GAP:
-		return CONGESTION_CRAWL_SPEED if vehicle.congestion_release_active else 0.0
+		return 0.0
 	if nearest_gap < SAFE_FOLLOWING_GAP:
 		return desired_speed * clampf((nearest_gap - MIN_FOLLOWING_GAP) / (SAFE_FOLLOWING_GAP - MIN_FOLLOWING_GAP), 0.0, 1.0)
+	# A frontmost vehicle that has waited four seconds may claim the blocked
+	# movement at crawl speed; following vehicles never bypass their leader.
+	if vehicle.congestion_release_active:
+		return CONGESTION_CRAWL_SPEED
 	# Also protect junctions and intersecting routes from overlapping vehicle bodies.
 	var forward := Vector3(float(vehicle.lane_direction.x), 0.0, float(vehicle.lane_direction.y))
 	for other in _active_vehicles:
