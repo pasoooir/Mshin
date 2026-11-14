@@ -103,7 +103,7 @@ As new park, recreation, entertainment, education, transport, beach, mountain, o
 
 ## Current verified gap
 
-The current runtime mapping in `BuildManager._ready()` assigns shared category-level models to residential, commercial, and industrial definitions. The commercial entries therefore share one generic shop model and the industrial entries share one generic factory model; the service and park categories are not covered by that mapping. Some showcase entries are explicitly skipped and Farm uses a procedural visual. The five GLTF files in the current manifest are not evidence that every listed type has its own model.
+`BuildManager.BUILDING_MODEL_REGISTRY` now maps available GLTF assets by exact gameplay type ID instead of applying one model to every entry in a category. The villa and apartment archetypes, `shop_chain`, and `factory_small` (plus their explicit legacy save IDs) are the only mapped families. Other commercial types retain their own type-specific procedural identity geometry; larger factory tiers retain distinct industrial procedural designs; Farm, regional homes, services and parks also remain procedural. This prevents an unrelated shop or factory from silently inheriting a generic model, but it does **not** complete the asset matrix: most player-placeable types still need their own dedicated GLB/GLTF assets, documented scale, materials, import checks and visual review.
 
 ## Asset production and integration rules
 
