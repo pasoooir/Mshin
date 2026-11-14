@@ -31,6 +31,7 @@ const JUNCTION_YELLOW_SECONDS: float = 1.0
 const JUNCTION_ALL_RED_SECONDS: float = 0.5
 const JUNCTION_MIN_GREEN_SECONDS: float = 2.0
 const JUNCTION_MAX_GREEN_SECONDS: float = 7.0
+const JUNCTION_RIGHT_OF_WAY_MAX_WAIT_SECONDS: float = 8.0
 const LANE_CENTER_OFFSET: float = 0.32
 const CARDINAL_DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1),
@@ -290,7 +291,7 @@ func _select_junction_approach(counts: Dictionary, waiting: Dictionary) -> Vecto
 	var found_non_yielding := false
 	for approach in counts.keys():
 		var wait_time := float(waiting.get(approach, 0.0))
-		var may_proceed := not _approach_has_right_of_way(approach, counts) or wait_time >= 8.0
+		var may_proceed := not _approach_has_right_of_way(approach, counts) or wait_time >= JUNCTION_RIGHT_OF_WAY_MAX_WAIT_SECONDS
 		if not may_proceed:
 			continue
 		found_non_yielding = true
