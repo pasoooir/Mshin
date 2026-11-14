@@ -22,7 +22,7 @@ const MAX_PUBLIC_VEHICLES: int = 18
 const MAX_EMERGENCY_VEHICLES: int = 8
 const MIN_FOLLOWING_GAP: float = 2.25
 const SAFE_FOLLOWING_GAP: float = 5.5
-const LANE_CENTER_OFFSET: float = 0.18
+const LANE_CENTER_OFFSET: float = 0.30
 const CARDINAL_DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1),
 	Vector2i(1, 0),
@@ -283,6 +283,7 @@ func spawn_highway_vehicle_now() -> TrafficVehicle:
 	var vehicle := TrafficVehicle.new()
 	vehicle.route = route
 	vehicle.vehicle_kind = "highway"
+	vehicle.ground_height = 0.15
 	vehicle.speed = VEHICLE_BASE_SPEED
 	vehicle.route_key = "coastal-highway-northbound" if northbound else "coastal-highway-southbound"
 	vehicle.lane_index = _highway_lane_cursor % HIGHWAY_LANE_OFFSETS.size()
