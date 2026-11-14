@@ -1268,6 +1268,11 @@ func _test_power_water_gateway_access() -> void:
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.total_power == 0 and ServiceManager.total_water == 0, "Disconnected power and water facilities must not contribute operational city capacity.")
 	_check(not ServiceManager.power_served_ids.has(connected_home.building_id) and not ServiceManager.water_served_ids.has(connected_home.building_id), "Nearby disconnected utilities must not serve a connected home.")
+	# At Level 4, Power and Water are unlocked. Zero operational capacity must
+	# still lower happiness exactly as the city service warnings report.
+	GameManager.level = 4
+	_check(is_equal_approx(HappinessManager.calculate_home_happiness(connected_home), 55.0), "Unlocked but unavailable Power and Water must apply both residential happiness penalties even when total capacity is zero.")
+	_check(is_equal_approx(HappinessManager.calculate_home_happiness(disconnected_home), 15.0), "A road-isolated home with unavailable unlocked utilities must receive road, power and water penalties.")
 	_check(not ServiceManager.power_served_ids.has(disconnected_home.building_id) and not ServiceManager.water_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive power or water.")
 
 	power_plant.grid_pos = Vector2i(1, -2)
