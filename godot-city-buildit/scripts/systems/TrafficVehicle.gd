@@ -69,8 +69,8 @@ func _process(delta: float) -> void:
 		_segment_progress = 0.0
 		return
 
-	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
-	var safe_speed := TrafficManager.get_safe_vehicle_speed(self, desired_speed)
+	var desired_speed: float = TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
+	var safe_speed: float = TrafficManager.get_safe_vehicle_speed(self, desired_speed)
 	var junction_entry_denied := false
 	# Junction admission is phase-controlled and remains a hard stop. The
 	# four-second congestion recovery must never override a red/yellow phase.
@@ -98,9 +98,9 @@ func _process(delta: float) -> void:
 	else:
 		_traffic_stop_elapsed = 0.0
 		congestion_release_active = false
-	var movement := safe_speed * delta
-	var remaining := segment_length * (1.0 - _segment_progress)
-	var step := minf(movement, remaining)
+	var movement: float = safe_speed * delta
+	var remaining: float = segment_length * (1.0 - _segment_progress)
+	var step: float = minf(movement, remaining)
 	_segment_progress = minf(1.0, _segment_progress + step / segment_length)
 	route_distance += step
 	global_position = from_position.lerp(to_position, _segment_progress)
