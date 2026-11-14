@@ -6,7 +6,7 @@ The android-debug-export job in .github/workflows/godot-city-buildit-validation.
 
 godot-city-buildit/build/android/PasooCityBuildIt.apk
 
-The job uses Godot 4.3 export templates, Java 17 and Android SDK 34. It creates an ephemeral debug keystore inside the GitHub Actions runner, verifies the APK signature with apksigner, checks the package ID (com.pasoo.citybuildit) and application label, then uploads the APK as a 14-day workflow artifact.
+The job uses Godot 4.3 export templates, Java 17 and Android SDK 34. The project explicitly enables `rendering/textures/vram_compression/import_etc2_astc` because Godot's Android exporter rejects presets when ETC2/ASTC texture import is disabled; the normal editor import step must run after this setting is applied. It creates an ephemeral debug keystore inside the GitHub Actions runner, verifies the APK signature with apksigner, checks the package ID (com.pasoo.citybuildit) and application label, then uploads the APK as a 14-day workflow artifact.
 
 ## Downloading the CI APK
 
