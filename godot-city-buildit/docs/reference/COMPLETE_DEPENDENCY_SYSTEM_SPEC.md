@@ -265,6 +265,9 @@ This section records code facts, not desired future behaviour:
 - The dependency audit already notes approximate ETA limitations: shared sibling queues are not fully scheduled and store-star reductions are not applied to the displayed chain estimate.
 - The recipe catalog has 73 recipe definitions and one conflicting Tapestry catalog identity in the inspected snapshot. This is not proof that every possible current SCBI item is covered.
 - Regional raw materials in Mshin are custom entries and need their own validated region chains.
+- The current implementation slice adds runtime structural recipe validation against `BuildManager.building_types`, positive input/time checks, dangling-input detection and dependency-cycle blocking. This validates data shape and graph integrity; it does not certify community numeric values as official EA recipes.
+- `ProductionComponent` instances expose live store queue delay and are registered in a shared runtime group. `ProductionManager` incorporates active factory-slot availability and the least-loaded matching commercial queue into its displayed chain estimate. A deterministic scheduler across all shared sibling queues and recursive parallel dependency branches is still outstanding.
+- Save schema version 5 stores a warehouse snapshot with each region. Switching regions restores that region's inventory; legacy saves without region inventory retain their top-level inventory for the active region and initialize unvisited legacy regions empty.
 
 ## 16. Implementation sequence (do not skip gates)
 
