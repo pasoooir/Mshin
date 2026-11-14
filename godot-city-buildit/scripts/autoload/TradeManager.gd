@@ -148,6 +148,8 @@ func _process(_delta: float) -> void:
 		trade_state_changed.emit()
 
 func is_trade_eligible_item(item_id: String) -> bool:
+	if LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id):
+		return GameManager.level >= LandExpansionManager.MIN_EXPANSION_LEVEL
 	if ProductionManager.raw_materials.has(item_id):
 		var raw_definition: Dictionary = ProductionManager.raw_materials[item_id]
 		return int(raw_definition.get("level", 1)) <= GameManager.level and ProductionManager.get_item_value(item_id) > 0
@@ -223,7 +225,7 @@ func _set_ship_visual_departed(departed: bool) -> void:
 		visual.set_departed(departed)
 
 func _item_exists(item_id: String) -> bool:
-	return ProductionManager.raw_materials.has(item_id) or ProductionManager.crafted_items.has(item_id)
+	return ProductionManager.raw_materials.has(item_id) or ProductionManager.crafted_items.has(item_id) or LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id)
 
 func _generate_market_offers() -> void:
 	market_offers.clear()
@@ -233,8 +235,6 @@ func _generate_market_offers() -> void:
 	# refresh after Mayor Level 10 instead of relying on a lucky random roll.
 	if GameManager.level >= 10:
 		for item_id in ["dozer_wheel", "dozer_blade", "dozer_exhaust"]:
-			if not pool.has(item_id):
-				continue
 			var amount := 1
 			market_offers.append({
 				"item_id": item_id,
