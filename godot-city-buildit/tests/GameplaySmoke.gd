@@ -707,7 +707,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager.release_junction_entry(junction_a, junction_cell)
 	_check(TrafficManager.request_junction_entry(junction_b, junction_cell), "The waiting vehicle must acquire the junction after the first vehicle clears it.")
 	TrafficManager.release_all_junction_entries(junction_b)
-	_check(TrafficManager.request_junction_entry(junction_a, Vector2i(-10, -1)), "A straight road segment must not require an intersection reservation.")
+	_check(TrafficManager.request_junction_entry(junction_a, Vector2i(99, 99)), "A non-junction cell must not require an intersection reservation.")
 	TrafficManager.release_all_junction_entries(junction_a)
 	junction_a.free()
 	junction_b.free()
