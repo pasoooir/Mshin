@@ -65,6 +65,21 @@ func _confirm_catalog_build(hud) -> void:
 			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 				_check(child.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Pressing BUILD must keep every submenu item background transparent.")
 
+func _test_construction_bom_contract() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	for type_id in BuildManager.building_types:
+		var bom := BuildManager.get_construction_bom(str(type_id))
+		if BuildManager.CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(str(type_id)):
+			_check(bom.is_empty(), "Bootstrap building must not create a circular material prerequisite: " + str(type_id))
+		else:
+			_check(not bom.is_empty(), "Every non-bootstrap building type must resolve a construction BOM: " + str(type_id))
+			_check(BuildManager.get_construction_bom_source(str(type_id)).contains("Mshin"), "Construction BOM provenance must identify Mshin design values: " + str(type_id))
+	StorageManager.items = {}
+	_check(not BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction must be blocked when its BOM materials are missing.")
+	StorageManager.items = {"nails":1, "metal":1}
+	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction BOM must become affordable when all required materials are present.")
+	StorageManager.from_save_dict(previous_storage)
+
 func _grant_construction_bom_for_test(type_id: String) -> void:
 	var requirements := BuildManager.get_construction_bom(type_id)
 	var additions: Dictionary = {}
@@ -2652,6 +2667,7 @@ func _run_gameplay_test() -> void:
 	_test_epic_project_core()
 	_test_achievements()
 	_test_region_city_snapshots()
+	_test_construction_bom_contract()
 	_test_regional_building_and_material_gates()
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
@@ -2969,7 +2985,10 @@ func _run_gameplay_test() -> void:
 	_check(BuildManager.place_building(Vector2i(4, 1)), "Could not place Building Supplies shop.")
 	BuildManager.select_building("power_wind")
 	_grant_construction_bom_for_test("power_wind")
+	var wind_bom_before := StorageManager.get_all_items()
 	_check(BuildManager.place_building(Vector2i(6, 1)), "Could not place wind power utility.")
+	for item_id in BuildManager.get_construction_bom("power_wind"):
+		_check(StorageManager.get_count(str(item_id)) == int(wind_bom_before.get(item_id, 0)) - int(BuildManager.get_construction_bom("power_wind")[item_id]), "Successful construction must consume its BOM exactly once: " + str(item_id))
 	BuildManager.select_building("water_tower")
 	_grant_construction_bom_for_test("water_tower")
 	_check(BuildManager.place_building(Vector2i(7, 1)), "Could not place water tower.")
