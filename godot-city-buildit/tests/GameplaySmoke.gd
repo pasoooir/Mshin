@@ -127,6 +127,7 @@ func _test_recipe_dependency_graph_validation() -> void:
 	}
 	var cycle_report := ProductionManager.get_recipe_validation_report()
 	var invalid_ids: Array = cycle_report.get("invalid_recipe_ids", [])
+	ProductionManager._recipe_validation_report = cycle_report
 	_check(invalid_ids.has("__test_cycle_a") and invalid_ids.has("__test_cycle_b"), "Recipe graph validator must reject every node participating in a dependency cycle.")
 	_check(invalid_ids.has("__test_missing_input"), "Recipe graph validator must reject references to undefined raw or crafted inputs.")
 	_check(invalid_ids.has("__test_bad_quantity"), "Recipe graph validator must reject zero or negative recipe quantities.")
