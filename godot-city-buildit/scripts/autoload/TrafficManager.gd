@@ -248,7 +248,9 @@ func _station_exit_position(station: Node3D, road_cell: Vector2i) -> Vector3:
 	var size: Vector2i = definition.get("size", Vector2i.ONE)
 	var half_width := float(size.x) * BuildManager.GRID_SIZE * 0.5
 	var half_depth := float(size.y) * BuildManager.GRID_SIZE * 0.5
-	var edge_distance := half_width / absf(direction.x) if absf(direction.x) > 0.5 else half_depth / maxf(0.001, absf(direction.z))
+	var x_edge_distance := half_width / absf(direction.x) if absf(direction.x) > 0.001 else INF
+	var z_edge_distance := half_depth / absf(direction.z) if absf(direction.z) > 0.001 else INF
+	var edge_distance := minf(x_edge_distance, z_edge_distance)
 	return station.global_position + direction * (edge_distance + 0.15) + Vector3.UP * 0.05
 
 func spawn_vehicle_now() -> TrafficVehicle:
