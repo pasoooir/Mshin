@@ -90,12 +90,14 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 
 ## Mobile production panel
 
-- The store catalog is laid out as one horizontal row inside a horizontally scrollable container; products cannot wrap into a clipped second row.
-- Ingredient and candidate-input labels wrap within narrow detail panels.
-- Product details expose known reference time/value and clearly disclose disputed ingredients or unknown Mayor Level gates.
-- GameplaySmoke checks the complete catalog row, child count and horizontal-scroll contract.
-- Chromium CI launches the actual Web game in a touch-enabled 844×390 landscape viewport.
-- This is mobile viewport/browser evidence, not a physical Android screenshot or touch-acceptance result.
+- The production studio uses a darker city backdrop, a warm metallic frame and a high-contrast building nameplate so the selected factory/store is immediately recognizable.
+- Product artwork and labels are larger; product tiles show current raw stock or the number of missing recipe materials without replacing the full selected-product detail view.
+- The catalog reflows into 3 compact / 4 tablet / 6 desktop columns with vertical scrolling; recipe and ingredient details have their own vertical scroll area; the production queue remains horizontally scrollable.
+- Empty queue slots display a visible plus/empty affordance. Active, queued, producing, ready-to-collect and storage-blocked states still come from the existing ProductionComponent state machine.
+- Ingredient and candidate-input labels wrap within narrow detail panels. Product details continue to expose known reference time/value and disclose disputed ingredients or unknown Mayor Level gates.
+- Resizing the viewport while the studio is open rebuilds the panel using the new responsive profile.
+- GameplaySmoke checks responsive catalog columns, scroll behavior, building nameplate, queue affordance, product selection, start, timer, collect and storage blocking.
+- Chromium CI launches the actual Web game in a touch-enabled landscape viewport. This is browser evidence, not a physical Android screenshot or touch-acceptance result.
 
 ## Source-conflict register
 
