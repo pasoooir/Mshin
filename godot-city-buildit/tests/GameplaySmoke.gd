@@ -3311,6 +3311,8 @@ func _run_gameplay_test() -> void:
 	StorageManager.items = {}
 	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 0)), "The initial central city plots must be owned and buildable.")
 	_check(not LandExpansionManager.is_cell_unlocked(Vector2i(35, 0)), "Unopened outer plots must remain locked.")
+	_check(not BuildManager.is_cell_free(Vector2i(35, 0), Vector2i.ONE), "Building footprints must not be placeable on unopened land.")
+	_check(road_system.get_road_placement_error(Vector2i(35, 0)).contains("locked"), "Road placement must reject unopened land with a clear expansion message.")
 	_check(LandExpansionManager.get_available_expansion_tiles().has(expansion_test_tile), "A plot directly adjacent to owned land must be available for expansion.")
 	_check(not LandExpansionManager.expand_tile(expansion_test_tile), "Land expansion must reject a purchase when any required Dozer item is missing.")
 	_check(StorageManager.add_items(expansion_cost), "Could not seed the isolated expansion-item inventory test.")
@@ -3318,6 +3320,22 @@ func _run_gameplay_test() -> void:
 	_check(LandExpansionManager.expand_tile(expansion_test_tile), "A fully funded adjacent plot must be claimable.")
 	_check(LandExpansionManager.is_cell_unlocked(Vector2i(24, 0)), "Claiming a plot must unlock its complete eight-by-eight-cell footprint.")
 	_check(StorageManager.get_count("dozer_wheel") == 0 and StorageManager.get_count("dozer_blade") == 0 and StorageManager.get_count("dozer_exhaust") == 0, "A land claim must atomically consume all three required Dozer items.")
+
+	var bubble_gift_probe := CitizenFeedbackBubblesScript.new()
+	add_child(bubble_gift_probe)
+	_check(bubble_gift_probe._grant_expansion_gift("dozer_wheel"), "A happy citizen opinion bubble must be able to award a Dozer expansion item from Mayor Level 8.")
+	_check(StorageManager.get_count("dozer_wheel") == 1, "A citizen expansion gift must enter the shared City Storage inventory.")
+	StorageManager.items = previous_storage_items
+	StorageManager.storage_changed.emit()
+	bubble_gift_probe.queue_free()
+
+	var saved_market_offers: Array[Dictionary] = TradeManager.market_offers.duplicate(true)
+	TradeManager._generate_market_offers()
+	var market_item_ids: Array[String] = []
+	for offer in TradeManager.market_offers:
+		market_item_ids.append(str(offer.get("item_id", "")))
+	_check(market_item_ids.has("dozer_wheel") and market_item_ids.has("dozer_blade") and market_item_ids.has("dozer_exhaust"), "Global Trade must surface all three land expansion parts after Mayor Level 10.")
+	TradeManager.market_offers = saved_market_offers
 	var saved_expansion_state: Dictionary = LandExpansionManager.to_save_dict()
 	LandExpansionManager.from_save_dict(saved_expansion_state)
 	_check(LandExpansionManager.is_cell_unlocked(Vector2i(24, 0)), "Claimed land must survive LandExpansionManager save/load serialization.")
