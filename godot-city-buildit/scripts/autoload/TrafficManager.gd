@@ -258,6 +258,7 @@ func spawn_vehicle_now() -> TrafficVehicle:
 	var vehicle := TrafficVehicle.new()
 	vehicle.route = route
 	vehicle.vehicle_kind = "civilian"
+	vehicle.lane_offset = LANE_CENTER_OFFSET
 	vehicle.speed = VEHICLE_BASE_SPEED
 	vehicle.route_key = _route_key(route)
 	vehicle.lane_index = 0
@@ -320,6 +321,7 @@ func spawn_emergency_vehicle(station: Node3D) -> TrafficVehicle:
 	vehicle.route = route
 	vehicle.vehicle_kind = vehicle_kind
 	vehicle.station_building_id = str(station.get("building_id"))
+	vehicle.lane_offset = LANE_CENTER_OFFSET
 	vehicle.initial_position = _station_exit_position(station, start)
 	vehicle.use_initial_position = true
 	vehicle.speed = VEHICLE_BASE_SPEED
