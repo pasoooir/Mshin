@@ -1051,6 +1051,8 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		capped_vehicle.free()
 	GameManager.population = saved_traffic_population
 	var world := traffic_test_world
+	var saved_emergency_population := GameManager.population
+	GameManager.population = 1000
 	var police_station := FireHazardTestBuilding.new()
 	police_station.building_id = "traffic-smoke-police"
 	police_station.building_type = "police_station"
@@ -1105,6 +1107,8 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	await get_tree().process_frame
 	BuildManager.buildings.erase(police_station.building_id)
 	BuildManager.buildings.erase(fire_station.building_id)
+	GameManager.population = saved_emergency_population
+	ServiceManager.recalculate_from_buildings()
 	police_station.queue_free()
 	fire_station.queue_free()
 	await get_tree().process_frame
@@ -2013,10 +2017,11 @@ func _test_building_operational_service_and_workforce_gates() -> void:
 	water.building_type = "water_tower"
 	water.definition = BuildManager.building_types["water_tower"]
 	water.status = "completed"
-	water.grid_pos = Vector2i(2, -2)
+	water.grid_pos = Vector2i(1, -2)
 	water.global_position = Vector3.ZERO
 	BuildManager.buildings[water.building_id] = water
 	ServiceManager.recalculate_from_buildings()
+	print("[GameplaySmoke] operational gate diagnostics: blockers=%s workforce=%d/%d power=%d/%d water=%d/%d shop_road=%s power_road=%s water_road=%s" % [str(ServiceManager.get_operational_blockers(shop)), ServiceManager.workforce_assigned, ServiceManager.workforce_available, ServiceManager.total_power, ServiceManager.used_power, ServiceManager.total_water, ServiceManager.used_water, str(BuildManager.has_road_access(shop.grid_pos, shop.definition.get("size", Vector2i.ONE))), str(BuildManager.has_road_access(power.grid_pos, power.definition.get("size", Vector2i.ONE))), str(BuildManager.has_road_access(water.grid_pos, water.definition.get("size", Vector2i.ONE)))])
 	_check(ServiceManager.get_operational_blockers(shop).is_empty(), "A commercial building must become operational when road, workforce, power and water requirements are met.")
 	_check(BuildManager.is_building_operational(shop), "BuildManager operational state must enforce the shared service gate.")
 	GameManager.population = 0
