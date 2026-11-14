@@ -1048,6 +1048,7 @@ for contract in [
     "pan_inertia_damping",
     "orbit_inertia_damping",
     "func focus_on(target_position: Vector3) -> void:",
+    "@export var world_limit: float = 90.0",
     "static func interpolate_focus(",
 ]:
     if contract not in camera_controller_source:
