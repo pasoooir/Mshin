@@ -1,41 +1,86 @@
-# City traffic rulebook
+# Mshin citywide intelligent traffic system
 
-## Purpose and scope
+## Mission
 
-This document defines the deterministic traffic policy used by Mshin's city-road simulation. It is a game-simulation standard, not a claim that the game implements every rule of a particular country's road code. The policy prioritizes predictable movement, collision avoidance, clear road access and preventing one vehicle from blocking an entire neighborhood.
+The traffic system is a city-wide network simulation, not a collection of unrelated vehicle timers. Its priorities are, in order:
 
-## Road side, lanes and speed
+1. Prevent collisions, unsafe following and junction conflicts.
+2. Keep vehicles moving and prevent gridlock.
+3. Distribute traffic across viable roads instead of concentrating every vehicle on one route.
+4. Respect road class, lane direction and vehicle purpose.
+5. Preserve access for emergency services without allowing unsafe movement.
+6. Expose measurable network health so road upgrades and city planning have visible effects.
 
-- Traffic keeps to the right. Each direction uses its own lane offset; opposing vehicles must never share the same lane center.
+This is a game traffic policy. It is not a claim that every clause of a particular country's legal traffic code has been implemented.
+
+## System architecture
+
+### 1. Road network
+
+- RoadSystem is the source of truth for road tiles, connectivity, road levels and Gateway reachability.
+- Vehicles may use only roads in the connected city network.
+- The traffic manager reads the road graph and must not invent links across empty or disconnected cells.
+- Road placement, removal and upgrades invalidate/recalculate network-derived state.
+
+### 2. Citywide traffic intelligence
+
+- TrafficManager owns the active fleet, network load observations, route selection and junction reservations.
+- Road-cell load is measured from the current and next route segment of active city/emergency vehicles.
+- Route cost combines road capacity (road level), live vehicle load and a junction traversal penalty.
+- build_route_between uses a weighted shortest-path search over Gateway-connected roads. A longer alternative may be selected when the shortest road is materially more congested.
+- Round-trip traffic destinations are rotated among farthest reachable cells so all vehicles do not repeatedly target one identical endpoint.
+- Route planning must be deterministic for identical network/fleet state and must never return a disconnected road cell.
+
+### 3. Road side, lanes and speed
+
+- Traffic keeps to the right. Opposing directions use separate lane offsets.
 - City-road speed is capped at 30 km/h (the existing 4x calibrated simulation speed).
-- The external motorway is capped at 120 km/h (the existing 16x calibrated simulation speed).
-- Vehicles follow their assigned route. Overtaking and lane changes are not permitted until a lane-change model with swept-path collision checks exists.
-- Vehicles may move only on roads connected to the permanent Gateway network.
+- The external divided motorway is capped at 120 km/h (the existing 16x calibrated simulation speed).
+- Vehicles follow assigned routes. Overtaking and lane changes remain disabled until swept-path collision checks and safe merge logic exist.
+- Road upgrades influence route cost through their increased capacity; they do not authorize unsafe speed or following behavior.
 
-## Following distance and queues
+### 4. Following distance and queues
 
 - A vehicle must stop when the same-lane gap reaches the hard minimum of 2.25 m.
-- Below the preferred 5.5 m following gap, speed is reduced proportionally rather than allowing the vehicle to close at full speed.
-- A follower never inherits the leader's four-second release. The four-second recovery is limited to the frontmost stopped vehicle and must never override a hard following gap or a junction reservation.
-- A stopped queue advances from front to back as each leader creates safe space. Vehicles may not push through a queue, overlap, or pass a stopped leader.
-- No vehicle may retain a stale junction reservation after it exits, is removed, or completes its route.
+- Below the preferred 5.5 m following gap, speed is reduced proportionally.
+- A follower never inherits the four-second recovery. That recovery applies only to the frontmost stopped vehicle and never overrides a hard following gap or denied junction reservation.
+- Queues must advance from front to back as safe space opens. Vehicles may not push through, overlap or pass a stopped leader.
+- A vehicle removed from the fleet must no longer contribute to traffic load, following checks or junction ownership.
 
-## Junction control
+### 5. Junction conflict control
 
 - Every T-junction and crossroad is a conflict zone.
-- A vehicle must obtain that junction's exclusive reservation before entering. While a reservation is held, all other approaches wait; this prevents two route segments from occupying the same junction simultaneously.
-- The reservation is released only after the vehicle has traversed the junction and is leaving its cell.
-- The initial policy is conservative first-come reservation, not a simulated traffic-light system. Signal phases, explicit stop lines, right-of-way-by-approach, pedestrian crossings and multi-conflict concurrent turns are later extensions and must not be represented as implemented until they have working code and tests.
+- A vehicle must acquire an exclusive reservation before entering a controlled junction cell.
+- Other vehicles must wait while that conflict zone is occupied.
+- The reservation is released after the vehicle leaves the junction cell, or when the vehicle is removed/completes its route.
+- A denied reservation is a hard stop, including after the four-second frontmost recovery.
+- The current implementation is conservative exclusive reservation, not a complete traffic-light controller. It does not yet implement signal phases, turn-specific conflict matrices, stop/yield signs or jurisdiction-specific right-of-way.
 
-## Emergency vehicles
+### 6. Emergency vehicles
 
-- Police and fire vehicles use the same collision and junction reservation protections as civilian traffic in this phase.
-- Sirens or visual emergency equipment do not grant permission to overlap another vehicle or enter an occupied junction. Emergency priority/traffic pre-emption requires a separate tested policy.
+- Police and fire vehicles use the same collision and junction safety rules as civilian traffic.
+- Emergency appearance or sirens never permit overlap or entry into an occupied conflict zone.
+- Priority dispatch, route pre-emption and safe signal switching are future work and must be implemented and tested before being described as operational.
+
+## Roadmap: remaining intelligent traffic capabilities
+
+1. **Adaptive junction controller:** per-approach queues, starvation prevention, protected turn phases, all-red clearance and demand-responsive green times.
+2. **Right-of-way model:** explicit stop/yield behavior, turn priority and conflict-aware crossing movements.
+3. **Dynamic rerouting:** periodically re-evaluate route costs and safely reroute vehicles around incidents, road closures and sustained congestion without teleporting or reversing through traffic.
+4. **Lane discipline:** lane selection by intended turn, safe lane changes, merge zones, overtaking only where permitted and no crossing of solid/unsafe boundaries.
+5. **Emergency priority:** dispatch to incident coordinates, route selection, safe signal pre-emption and automatic restoration of normal phases.
+6. **Pedestrian safety:** crosswalk occupancy, pedestrian phases and vehicle stop lines.
+7. **Incident response:** stalled vehicles, blocked roads, crash clearance and temporary capacity reduction.
+8. **Citywide monitoring:** per-road speed/load, queue length, junction delay, throughput, travel time and gridlock detection with actionable city feedback.
 
 ## Verification requirements
 
-- Test right-hand lane geometry in all four cardinal directions.
-- Test hard-stop and proportional following behavior, including the four-second frontmost-only recovery.
-- Test exclusive junction acquisition, denial while occupied, and release after clearance.
-- Test cleanup of reservations after route completion or vehicle deletion.
-- Keep Godot project validation, gameplay smoke, Android export and playable web build green before merging.
+- Validate route endpoints and every intermediate cell against Gateway-connected roads.
+- Prove that route cost rises with live occupancy and that a lower-cost alternative is selected when available.
+- Test road-level capacity influence without violating speed ceilings.
+- Test all four cardinal right-hand lane geometries.
+- Test hard-stop/proportional following and frontmost-only four-second recovery.
+- Test exclusive junction acquisition, denial, release and cleanup after vehicle deletion.
+- Test route distribution and repeatability with a fixed network/fleet state.
+- Keep Godot validation, gameplay smoke, Android export and playable web build green before merging.
+- Never mark a roadmap capability complete from a static string check alone; require behavior-level tests.
