@@ -773,7 +773,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, true), "A connected road cell must accept a temporary traffic blockage.")
 	_check(TrafficManager.road_capacity == capacity_before_block - 2, "A blocked two-lane road tile must be removed from effective traffic capacity.")
 	var new_trip_while_blocked := TrafficManager.build_gateway_round_trip_route()
-	_check(not new_trip_while_blocked.has(dynamic_block_cell), "New city trips must not be planned through a temporarily blocked road cell.")
+	_check(new_trip_while_blocked.size() >= 2 and not new_trip_while_blocked.has(dynamic_block_cell), "New city trips must remain buildable while avoiding a temporarily blocked road cell.")
 	_check(not block_test_vehicle.route.has(dynamic_block_cell) and block_test_vehicle.route.has(Vector2i(-22, 0)), "Vehicles must recalculate their route when an incident marks a road cell blocked.")
 	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, false), "A road cell must become routable again after its blockage clears.")
 	_check(TrafficManager.road_capacity == capacity_before_block, "Clearing a temporary blockage must restore the road tile's traffic capacity.")
