@@ -331,6 +331,7 @@ func spawn_emergency_vehicle(station: Node3D) -> TrafficVehicle:
 	vehicle.lane_offset = LANE_CENTER_OFFSET
 	vehicle.initial_position = _station_exit_position(station, start)
 	vehicle.use_initial_position = true
+	vehicle.route_distance = -vehicle.initial_position.distance_to(vehicle._lane_position(route[0], route[1] - route[0]))
 	vehicle.speed = VEHICLE_BASE_SPEED
 	vehicle.route_key = _route_key(route)
 	vehicle.route_completed.connect(_on_vehicle_route_completed)
