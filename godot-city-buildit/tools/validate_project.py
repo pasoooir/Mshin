@@ -1586,6 +1586,7 @@ for contract in [
         errors.append(f"Land expansion UI/autoload integration is missing: {contract}")
 for contract in [
     "not LandExpansionManager.is_cell_buildable(cell)",
+    "allow_reserved_restore: bool = false",,
     '"land_expansion": LandExpansionManager.to_save_dict()',
     'LandExpansionManager.from_save_dict(land_expansion_data)',
     'color = color.lerp(Color("#302B24"), 0.34)',
