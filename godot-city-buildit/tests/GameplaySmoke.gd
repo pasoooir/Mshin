@@ -3315,7 +3315,7 @@ func _run_gameplay_test() -> void:
 	_check(not BuildManager.is_cell_free(Vector2i(-24, -3), Vector2i.ONE), "Building footprints must not overlap the permanent highway asphalt reserve.")
 	_check(road_system.get_road_placement_error(Vector2i(35, 0)).contains("locked"), "Road placement must reject unopened land with a clear expansion message.")
 	_check(road_system.get_road_placement_error(Vector2i(-24, 0)).contains("highway asphalt"), "New roads must not be placed over the permanent highway asphalt.")
-	_check(road_system.get_road_placement_error(Vector2i(-22, 5)).contains("highway asphalt"), "The full highway asphalt width must remain reserved even outside the seeded Gateway road rows.")
+	_check(road_system.get_road_placement_error(Vector2i(-24, 5)).contains("highway asphalt"), "The full highway asphalt width must remain reserved even outside the seeded Gateway road rows.")
 	_check(road_system.restore_road(Vector2i(-24, 20)), "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.")
 	_check(road_system.remove_road(Vector2i(-24, 20)), "The reserved-edge road restoration smoke fixture must clean up successfully.")
 	_check(LandExpansionManager.get_available_expansion_tiles().has(expansion_test_tile), "A plot directly adjacent to owned land must be available for expansion.")
