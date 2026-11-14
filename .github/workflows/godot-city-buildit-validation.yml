@@ -75,13 +75,43 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK components
+      - name: Locate preinstalled Android SDK command-line tools
+        shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          if [[ ! -d "$SDK_ROOT" ]]; then
+            echo "::error::Android SDK directory not found: $SDK_ROOT"
+            exit 1
+          fi
+
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager -perm -u+x 2>/dev/null | sort -V | tail -n 1)"
+          if [[ -z "$SDKMANAGER" ]]; then
+            echo "::error::No executable sdkmanager found under $SDK_ROOT/cmdline-tools"
+            find "$SDK_ROOT" -maxdepth 4 -type f -name sdkmanager -print || true
+            exit 1
+          fi
+
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+          echo "Using Android SDK: $SDK_ROOT"
+          echo "Using sdkmanager: $SDKMANAGER"
+
+      - name: Install required Android SDK components
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Accept licenses without invoking the deprecated "tools" package.
+          { yes || true; } | "$ANDROID_SDKMANAGER" --licenses >/dev/null
+          "$ANDROID_SDKMANAGER" --install \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
+          test -x "$ANDROID_HOME/platform-tools/adb"
+          test -x "$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          test -x "$ANDROID_HOME/build-tools/34.0.0/aapt"
 
       - name: Install Godot 4.3 and Android export templates
         uses: chickensoft-games/setup-godot@v2
@@ -137,7 +167,7 @@ jobs:
           APK="godot-city-buildit/build/android/PasooCityBuildIt.apk"
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
           BADGING="$("$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK")"
-          printf '%s\\n' "$BADGING"
+          printf '%s\n' "$BADGING"
           grep -Fq "package: name='com.pasoo.citybuildit'" <<< "$BADGING"
           grep -Fq "application-label:'Pasoo City BuildIt'" <<< "$BADGING"
           sha256sum "$APK"
