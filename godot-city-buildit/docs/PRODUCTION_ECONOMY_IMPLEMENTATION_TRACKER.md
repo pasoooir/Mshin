@@ -21,6 +21,12 @@
 - [SCBI Item & Recipe Reference](reference/SCBI_ITEM_RECIPE_REFERENCE.md) — standalone, source-traceable index of 16 raw materials and all 73 current `ProductionManager.gd` recipe definitions across 14 store families, with direct ingredients, base times, unlock gates, provenance, and unresolved conflicts.
 - The catalogue is a documentation snapshot of current Mshin data; community recipe tables are secondary sources, not official EA confirmation. No gameplay data was changed in this documentation-only branch.
 
+## Complete dependency-system specification
+
+- [Production Dependency System](reference/PRODUCTION_DEPENDENCY_SYSTEM.md) — complete direct and recursively expanded input chains for all 73 crafted recipes; 16 factory raw-material roots; player-facing dependency explorer requirements; storage/reservation transparency; planning/scheduling guidance; CI integrity gates and source hierarchy.
+- Snapshot audit: 0 missing ingredient IDs, 0 dependency cycles, 51 recipes consume at least one crafted intermediate, and 43 crafted products are valid leaf/final outputs. All 73 crafted recipes have non-empty ingredient lists.
+- The specification is generated from the canonical main-branch `ProductionManager.gd`; it does not change live recipe data. Community-derived recipe/time/unlock values remain secondary evidence pending in-game confirmation where disputed.
+
 ## Six implementation slices
 
 | Slice | Deliverable | Evidence | Status |
