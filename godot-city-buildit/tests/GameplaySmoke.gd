@@ -777,6 +777,10 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(not block_test_vehicle.route.has(dynamic_block_cell) and block_test_vehicle.route.has(Vector2i(-22, 0)), "Vehicles must recalculate their route when an incident marks a road cell blocked.")
 	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, false), "A road cell must become routable again after its blockage clears.")
 	_check(TrafficManager.road_capacity == capacity_before_block, "Clearing a temporary blockage must restore the road tile's traffic capacity.")
+	_check(TrafficManager.set_road_cell_blocked_by_source(dynamic_block_cell, "collision:vehicle-1", true), "A collision incident must be able to register its own road-closure source.")
+	_check(TrafficManager.set_road_cell_blocked_by_source(dynamic_block_cell, "roadwork:site-2", true), "A second independent incident must be able to share the same road closure.")
+	_check(TrafficManager.set_road_cell_blocked_by_source(dynamic_block_cell, "collision:vehicle-1", false) and TrafficManager._blocked_road_cells.has(dynamic_block_cell), "Clearing one incident must not reopen a road that remains blocked by another incident.")
+	_check(TrafficManager.set_road_cell_blocked_by_source(dynamic_block_cell, "roadwork:site-2", false) and not TrafficManager._blocked_road_cells.has(dynamic_block_cell), "The road must reopen only after every incident source clears its closure.")
 	TrafficManager._active_vehicles.clear()
 	for block_previous_vehicle in block_test_fleet:
 		TrafficManager._active_vehicles.append(block_previous_vehicle)
