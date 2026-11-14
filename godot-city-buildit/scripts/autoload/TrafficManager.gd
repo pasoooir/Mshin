@@ -14,6 +14,7 @@ const HIGHWAY_SPEED_MULTIPLIER: float = 16.0
 const HIGHWAY_SPEED_LIMIT_KMH: float = 120.0
 const PUBLIC_SPAWN_INTERVAL: float = 2.0
 const HIGHWAY_SPAWN_INTERVAL: float = 1.5
+const HIGHWAY_WORLD_X: float = -55.0
 const HIGHWAY_GRID_X: int = -28
 const HIGHWAY_MIN_GRID_Z: int = -44
 const HIGHWAY_MAX_GRID_Z: int = 44
@@ -105,12 +106,13 @@ func _active_emergency_vehicle_count() -> int:
 func _get_public_vehicle_limit() -> int:
 	return clampi(4 + int(road_capacity / 10), 4, MAX_PUBLIC_VEHICLES)
 
-func get_speed_multiplier_for_cell(cell: Vector2i) -> float:
-	return HIGHWAY_SPEED_MULTIPLIER if cell.x == HIGHWAY_GRID_X else CITY_SPEED_MULTIPLIER
+func get_speed_multiplier_for_cell(_cell: Vector2i, vehicle_kind: String = "civilian") -> float:
+	return HIGHWAY_SPEED_MULTIPLIER if vehicle_kind == "highway" else CITY_SPEED_MULTIPLIER
 
-func get_speed_for_segment(from_cell: Vector2i, to_cell: Vector2i) -> float:
-	var highway := from_cell.x == HIGHWAY_GRID_X and to_cell.x == HIGHWAY_GRID_X
-	return VEHICLE_BASE_SPEED * (HIGHWAY_SPEED_MULTIPLIER if highway else CITY_SPEED_MULTIPLIER)
+func get_speed_for_segment(from_cell: Vector2i, to_cell: Vector2i, vehicle_kind: String = "civilian") -> float:
+	if vehicle_kind == "highway" and from_cell.x == HIGHWAY_GRID_X and to_cell.x == HIGHWAY_GRID_X:
+		return VEHICLE_BASE_SPEED * HIGHWAY_SPEED_MULTIPLIER
+	return VEHICLE_BASE_SPEED * CITY_SPEED_MULTIPLIER
 
 func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> float:
 	if not is_instance_valid(vehicle):
