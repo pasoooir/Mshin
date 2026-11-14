@@ -1581,13 +1581,15 @@ for contract in [
 for contract in [
     "not LandExpansionManager.is_cell_unlocked(cell)",
     '"land_expansion": LandExpansionManager.to_save_dict()',
-    'LandExpansionManager.from_save_dict(snapshot.get("land_expansion", {}))',
+    'LandExpansionManager.from_save_dict(land_expansion_data)',
     'color = color.lerp(Color("#302B24"), 0.34)',
 ]:
     if contract not in build_manager and contract not in save_manager_source and contract not in world_source:
         errors.append(f"Land ownership persistence/visual contract is missing: {contract}")
 for contract in [
     "The initial central city plots must be owned and buildable.",
+    "A happy citizen opinion bubble must be able to award a Dozer expansion item from Mayor Level 8.",
+    "Global Trade must surface all three land expansion parts after Mayor Level 10.",
     "A fully funded adjacent plot must be claimable.",
     "Claimed land must survive LandExpansionManager save/load serialization.",
     "Livestock must never enter the external highway asphalt corridor.",
