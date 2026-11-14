@@ -308,17 +308,22 @@ func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, fr
 	if vehicle.route[segment_index] != from_cell or vehicle.route[segment_index + 1] != junction_cell:
 		return false
 	var approach := junction_cell - from_cell
+	var outgoing_cell: Vector2i = vehicle.route[segment_index + 2]
+	var vehicle_id := vehicle.get_instance_id()
+	var movements: Dictionary = _junction_reservations.get(junction_cell, {})
+	# Once admitted, a vehicle must be allowed to clear the junction even if
+	# the signal changes to yellow/all-red while it is traversing the conflict area.
+	if movements.has(vehicle_id):
+		var existing: Dictionary = movements[vehicle_id]
+		return existing.get("from") == from_cell and existing.get("to") == outgoing_cell
 	var state: Dictionary = _junction_signal_states.get(junction_cell, {})
 	if state.is_empty():
 		state = {"approach": approach, "stage": "green", "elapsed": 0.0, "green_duration": JUNCTION_MIN_GREEN_SECONDS, "waiting": {}}
 		_junction_signal_states[junction_cell] = state
 	if str(state.get("stage", "green")) != "green" or state.get("approach", Vector2i.ZERO) != approach:
 		return false
-	var outgoing_cell: Vector2i = vehicle.route[segment_index + 2]
 	if not _is_junction_exit_clear(vehicle, junction_cell, outgoing_cell):
 		return false
-	var vehicle_id := vehicle.get_instance_id()
-	var movements: Dictionary = _junction_reservations.get(junction_cell, {})
 	for reserved_id in movements.keys():
 		if int(reserved_id) == vehicle_id:
 			continue
