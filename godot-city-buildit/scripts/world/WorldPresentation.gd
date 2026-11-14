@@ -233,7 +233,9 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 			color = color.lerp(Color("#3E783C"), 0.42)
 		"mediterranean":
 			color = color.lerp(Color("#8C875B"), 0.38)
-	if absf(point.z) >= 80.0 and absf(point.z) <= 90.0 and point.x >= -42.0 and point.x <= 44.0:
+	var in_east_pasture := point.x >= -42.0 and point.x <= 44.0
+	var in_west_pasture := point.x >= -90.0 and point.x <= -69.0
+	if absf(point.z) >= 80.0 and absf(point.z) <= 90.0 and (in_east_pasture or in_west_pasture):
 		color = color.lerp(Color("#B99A68"), 0.52)
 	if not LandExpansionManager.is_world_position_unlocked(point):
 		color = color.lerp(Color("#302B24"), 0.34)
@@ -852,10 +854,12 @@ func _build_meadow_livestock() -> void:
 		var column := index % 6
 		var north := index < 6
 		var x := -34.0 + float(column) * 13.2
+		if index < 3:
+			x = -84.0 + float(index) * 5.0
 		var z := -85.0 if north else 85.0
 		sheep_positions.append(Vector3(x, 0.0, z))
 	var cattle_positions: Array[Vector3] = [
-		Vector3(-25.0, 0.0, -85.0), Vector3(1.0, 0.0, 85.0), Vector3(27.0, 0.0, -85.0)
+		Vector3(-80.0, 0.0, -85.0), Vector3(1.0, 0.0, 85.0), Vector3(27.0, 0.0, -85.0)
 	]
 
 	var flock := MeadowLivestockScript.new()
