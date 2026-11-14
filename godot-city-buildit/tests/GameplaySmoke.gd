@@ -741,6 +741,19 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(not TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(1, 0)), "A downstream exit cell already being occupied by another vehicle must be rejected.")
 	TrafficManager._active_vehicles.erase(exit_blocker)
 	exit_blocker.free()
+	var dynamic_block_cell := Vector2i(-22, -1)
+	var block_test_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
+	TrafficManager._active_vehicles.clear()
+	var block_test_vehicle := TrafficVehicle.new()
+	block_test_vehicle.route = [road_system.GATEWAY_ROAD_CELL, dynamic_block_cell, Vector2i(-21, -1), Vector2i(-20, -1)]
+	TrafficManager._active_vehicles.append(block_test_vehicle)
+	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, true), "A connected road cell must accept a temporary traffic blockage.")
+	_check(not block_test_vehicle.route.has(dynamic_block_cell) and block_test_vehicle.route.has(Vector2i(-22, 0)), "Vehicles must recalculate their route when an incident marks a road cell blocked.")
+	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, false), "A road cell must become routable again after its blockage clears.")
+	TrafficManager._active_vehicles.clear()
+	for block_previous_vehicle in block_test_fleet:
+		TrafficManager._active_vehicles.append(block_previous_vehicle)
+	block_test_vehicle.free()
 	var closure_cell := Vector2i(-22, -1)
 	var saved_closure_road = road_system.roads[closure_cell]
 	var reroute_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
