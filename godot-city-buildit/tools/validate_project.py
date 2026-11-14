@@ -1419,6 +1419,8 @@ for contract in [
     "A highway trip must finish back at its motorway exit after completing the city loop",
     "Highway entry and exit must use opposite directions on adjacent carriageways",
     "Highway entry and exit must occupy physically separate adjacent carriageways",
+    "Each motorway lane index must map to its own physical lane position",
+    "All three motorway lanes per carriageway must remain physically separated",
     "An empty city must cap the complete public traffic loop at four vehicles",
     "Public traffic capacity must grow gradually with real city population",
     "Highway entry must stop spawning when the shared empty-city fleet reaches four vehicles",
