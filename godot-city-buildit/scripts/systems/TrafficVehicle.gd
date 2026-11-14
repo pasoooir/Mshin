@@ -4,7 +4,7 @@ extends Node3D
 signal route_completed
 
 var route: Array[Vector2i] = []
-var speed: float = 2.083333
+var speed: float = 2.0833333333
 var vehicle_kind: String = "civilian"
 var station_building_id: String = ""
 var route_key: String = ""
