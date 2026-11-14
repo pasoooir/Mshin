@@ -260,10 +260,13 @@ func _build_coastal_highway() -> void:
 	highway.name = "CoastalHighway"
 	var highway_mesh := BoxMesh.new()
 	highway_mesh.size = Vector3(HIGHWAY_ASPHALT_WIDTH, 0.16, HIGHWAY_LENGTH)
-	highway_mesh.uv1_scale = Vector3(12.0, 1.0, 96.0)
+	highway_mesh.subdivide_width = 2
+	highway_mesh.subdivide_depth = 32
 	highway.mesh = highway_mesh
 	highway.position = Vector3(HIGHWAY_CENTER_X, 0.075, 0.0)
-	highway.material_override = _create_asphalt_material()
+	var highway_asphalt := _create_asphalt_material()
+	highway_asphalt.uv1_scale = Vector3(12.0, 96.0, 1.0)
+	highway.material_override = highway_asphalt
 	highway.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(highway)
 
@@ -351,10 +354,13 @@ func _build_coastal_highway() -> void:
 	access_road.name = "HighwayCityConnector"
 	var access_mesh := BoxMesh.new()
 	access_mesh.size = Vector3(27.5, 0.16, 4.6)
-	access_mesh.uv1_scale = Vector3(14.0, 1.0, 3.0)
+	access_mesh.subdivide_width = 4
+	access_mesh.subdivide_depth = 2
 	access_road.mesh = access_mesh
 	access_road.position = Vector3(-30.25, 0.095, 0.0)
-	access_road.material_override = highway.material_override
+	var connector_asphalt := highway_asphalt.duplicate() as StandardMaterial3D
+	connector_asphalt.uv1_scale = Vector3(14.0, 3.0, 1.0)
+	access_road.material_override = connector_asphalt
 	access_road.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(access_road)
 
