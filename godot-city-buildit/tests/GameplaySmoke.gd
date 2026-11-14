@@ -1977,6 +1977,61 @@ func _test_fire_hazard_state_machine() -> void:
 	ServiceManager.recalculate_from_buildings()
 	FireHazardManager.on_city_changed()
 
+func _test_building_operational_service_and_workforce_gates() -> void:
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_population := GameManager.population
+	BuildManager.buildings.clear()
+	GameManager.population = 1000
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
+	var shop := FireHazardTestBuilding.new()
+	add_child(shop)
+	shop.building_id = "operational_gate_test_shop"
+	shop.building_type = "hardware_store"
+	shop.definition = BuildManager.building_types["hardware_store"]
+	shop.status = "completed"
+	shop.grid_pos = Vector2i(1, 1)
+	shop.global_position = Vector3.ZERO
+	BuildManager.buildings[shop.building_id] = shop
+	ServiceManager.recalculate_from_buildings()
+	var initial_blockers := ServiceManager.get_operational_blockers(shop)
+	_check(initial_blockers.any(func(reason: String) -> bool: return reason.begins_with("Power:")), "A commercial building must report a power shortage with a specific reason.")
+	_check(initial_blockers.any(func(reason: String) -> bool: return reason.begins_with("Water:")), "A commercial building must report a water shortage with a specific reason.")
+	var power := FireHazardTestBuilding.new()
+	add_child(power)
+	power.building_id = "operational_gate_test_power"
+	power.building_type = "power_wind"
+	power.definition = BuildManager.building_types["power_wind"]
+	power.status = "completed"
+	power.grid_pos = Vector2i(1, -2)
+	power.global_position = Vector3.ZERO
+	BuildManager.buildings[power.building_id] = power
+	var water := FireHazardTestBuilding.new()
+	add_child(water)
+	water.building_id = "operational_gate_test_water"
+	water.building_type = "water_tower"
+	water.definition = BuildManager.building_types["water_tower"]
+	water.status = "completed"
+	water.grid_pos = Vector2i(2, -2)
+	water.global_position = Vector3.ZERO
+	BuildManager.buildings[water.building_id] = water
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.get_operational_blockers(shop).is_empty(), "A commercial building must become operational when road, workforce, power and water requirements are met.")
+	_check(BuildManager.is_building_operational(shop), "BuildManager operational state must enforce the shared service gate.")
+	GameManager.population = 0
+	ServiceManager.recalculate_from_buildings()
+	var workforce_blockers := ServiceManager.get_operational_blockers(shop)
+	_check(workforce_blockers.any(func(reason: String) -> bool: return reason.begins_with("Workforce:")), "A commercial building must stop when its workforce allocation is unavailable.")
+	_check(not BuildManager.is_building_operational(shop), "A building without assigned workforce must not remain operational.")
+	for test_building in [shop, power, water]:
+		BuildManager.buildings.erase(test_building.building_id)
+		remove_child(test_building)
+		test_building.free()
+	BuildManager.buildings = saved_buildings
+	GameManager.population = saved_population
+	ServiceManager.recalculate_from_buildings()
+
 func _test_placement_rotation_contract() -> void:
 	var rectangular_definition := {"size": Vector2i(2, 3)}
 	var rotated_definition: Dictionary = BuildManager._definition_for_rotation(rectangular_definition, 1)
@@ -2695,6 +2750,7 @@ func _run_gameplay_test() -> void:
 	_test_storage_and_production_chain()
 	_test_production_queue_stress()
 	_test_fire_hazard_state_machine()
+	_test_building_operational_service_and_workforce_gates()
 	_test_sewage_service_happiness()
 	_test_waste_service_happiness()
 	_test_power_water_gateway_access()
