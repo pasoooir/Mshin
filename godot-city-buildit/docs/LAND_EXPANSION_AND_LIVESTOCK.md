@@ -33,3 +33,8 @@ The special-item set (Dozer Wheel, Dozer Blade, Dozer Exhaust) follows the estab
 
 
 Expansion items are special inventory goods, not factory raw materials. They are collectible from eligible happy-citizen bubbles and tradeable through the existing Global Trade system; factories do not manufacture them.
+
+
+## Map geography guard
+
+- Expansion plots are generated only in the connected north/south land corridor. The western motorway asphalt reserve and eastern ocean/coastline tiles are excluded from purchase, so no expansion offer places buildable land over the highway or sea.
