@@ -130,7 +130,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 | PR | تغییر پیشنهادی | وضعیت |
 |---|---|---|
-| [#456](https://github.com/pasoooir/Mshin/pull/456) | ترافیک چندخودرویی با سرعت 4x شهر و 16x بزرگراه، سرعت کالیبره ۳۰/۱۲۰ کیلومتر بر ساعت، لاین راست‌دست، فاصله ایمن و اعزام خودکار ناوگان پلیس/آتش‌نشانی | باز؛ Godot Validation + GameplaySmoke و Android Debug APK در run `43572246431` موفق؛ Web/Chromium run `43572246501` پس از لغو runner در حال تلاش مجدد است. بازبینی بصری دستگاه واقعی باقی است. |
+| [#456](https://github.com/pasoooir/Mshin/pull/456) | ترافیک چندخودرویی با سرعت 4x شهر و 16x بزرگراه، سرعت کالیبره ۳۰/۱۲۰ کیلومتر بر ساعت، لاین راست‌دست، فاصله ایمن و اعزام خودکار ناوگان پلیس/آتش‌نشانی | باز؛ Godot Validation + GameplaySmoke و Android Debug APK در run `43572395515` موفق؛ Web export + Chromium desktop/mobile در run `43572395470` موفق؛ Deploy به‌دلیل PR بودن اجرا نشد. بازبینی بصری دستگاه واقعی باقی است. |
 
 
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
