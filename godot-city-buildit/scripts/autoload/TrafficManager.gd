@@ -7,7 +7,7 @@ signal fleet_changed(public_count: int, emergency_count: int)
 # conservative 30 km/h city (4x) and 120 km/h motorway (16x) speed ceilings.
 const RESIDENTS_PER_TRAFFIC_UNIT: int = 50
 const TRAFFIC_UNITS_PER_LANE: int = 1
-const VEHICLE_BASE_SPEED: float = 2.083333
+const VEHICLE_BASE_SPEED: float = 2.0833333333
 const CITY_SPEED_MULTIPLIER: float = 4.0
 const CITY_SPEED_LIMIT_KMH: float = 30.0
 const HIGHWAY_SPEED_MULTIPLIER: float = 16.0
