@@ -796,10 +796,10 @@ func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:
 		if route_is_valid:
 			continue
 		var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
-		var start := vehicle.route[segment_index]
+		var start: Vector2i = vehicle.route[segment_index]
 		if not connected_roads.has(start) or _blocked_road_cells.has(start):
 			start = _nearest_connected_road(start, connected_roads)
-		var goal := vehicle.route.back()
+		var goal: Vector2i = vehicle.route.back()
 		if not connected_roads.has(goal) or _blocked_road_cells.has(goal):
 			goal = _nearest_connected_road(goal, connected_roads)
 		if start.x == 2147483647 or goal.x == 2147483647:
