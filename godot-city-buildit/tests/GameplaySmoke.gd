@@ -721,6 +721,8 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	junction_a.route = [Vector2i(-1, 0), junction_cell, Vector2i(1, 0)]
 	junction_b.route = [Vector2i(-1, 0), junction_cell, Vector2i(1, 0)]
 	_check(TrafficManager.is_junction_cell(junction_cell), "The starter road T-junction must be recognized as a controlled junction.")
+	TrafficManager._junction_signal_states.erase(junction_cell)
+	_check(not TrafficManager.request_junction_entry(junction_a, junction_cell, Vector2i(-1, 0)), "A missing junction controller phase must never be treated as implicit green permission.")
 	TrafficManager._junction_signal_states[junction_cell] = {"approach": Vector2i(1, 0), "stage": "green", "elapsed": 0.0, "green_duration": TrafficManager.JUNCTION_MIN_GREEN_SECONDS, "waiting": {}}
 	_check(TrafficManager.request_junction_entry(junction_a, junction_cell, Vector2i(-1, 0)), "The first vehicle must acquire an unoccupied junction.")
 	TrafficManager._junction_signal_states[junction_cell]["stage"] = "yellow"
