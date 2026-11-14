@@ -1554,6 +1554,7 @@ else:
         "MIN_EXPANSION_LEVEL := 10",
         "TILE_CELLS := 8",
         "func get_available_expansion_tiles()",
+        "func get_owned_tiles() -> Array[Vector2i]",
         "func get_tile_cost(tile: Vector2i) -> Dictionary",
         "func get_expansion_item_definition(item_id: String) -> Dictionary",
         "func migrate_legacy_land(road_data: Array, building_data: Array) -> void:",
@@ -1592,6 +1593,8 @@ for contract in [
     "allow_reserved_restore: bool = false",
     '"land_expansion": LandExpansionManager.to_save_dict()',
     'LandExpansionManager.from_save_dict(land_expansion_data)',
+    'LandExpansionManager.get_owned_tiles()',
+    '_build_city_grid()',
     'color = color.lerp(Color("#302B24"), 0.34)',
 ]:
     if contract not in build_manager and contract not in save_manager_source and contract not in world_source:
@@ -1606,6 +1609,7 @@ for contract in [
     "New roads must not be placed over the permanent highway asphalt.",
     "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.",
     "Claimed land must survive LandExpansionManager save/load serialization.",
+    "Claimed land must be included in the rendered owned-plot grid source.",
     "A version 3 save must migrate legacy road/building plots to owned land before restoring the city.",
     "New building placement must reject the permanent highway asphalt corridor.",
     "Legacy saved buildings on the reserved highway edge must remain restorable after their old plots are migrated.",
