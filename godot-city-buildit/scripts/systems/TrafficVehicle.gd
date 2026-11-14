@@ -9,7 +9,8 @@ var vehicle_kind: String = "civilian"
 var station_building_id: String = ""
 var route_key: String = ""
 var lane_index: int = 0
-var lane_offset: float = 0.18
+var lane_offset: float = 0.30
+var ground_height: float = 0.05
 var lane_direction: Vector2i = Vector2i.ZERO
 var route_distance: float = 0.0
 var initial_position: Vector3 = Vector3.ZERO
@@ -82,7 +83,7 @@ func _process(delta: float) -> void:
 		_segment_progress = 0.0
 
 func _cell_center(cell: Vector2i) -> Vector3:
-	return Vector3(float(cell.x) * 2.0 + 1.0, 0.05, float(cell.y) * 2.0 + 1.0)
+	return Vector3(float(cell.x) * 2.0 + 1.0, ground_height, float(cell.y) * 2.0 + 1.0)
 
 func _lane_position(cell: Vector2i, travel_direction: Vector2i) -> Vector3:
 	# Right-hand traffic: the vehicle occupies the lane to the driver's right.
@@ -118,12 +119,12 @@ func _build_vehicle_mesh() -> void:
 	beacon_material.emission_enabled = true
 	beacon_material.emission = beacon_material.albedo_color * 1.8
 
-	_add_box("Body", Vector3(0.94, 0.34, 1.62), Vector3(0.0, 0.30, 0.0), body_material)
-	_add_box("Cabin", Vector3(0.76, 0.36, 0.82), Vector3(0.0, 0.63, 0.04), glass_material)
-	_add_box("FrontBumper", Vector3(0.88, 0.10, 0.10), Vector3(0.0, 0.20, -0.84), tire_material)
+	_add_box("Body", Vector3(0.62, 0.34, 1.50), Vector3(0.0, 0.30, 0.0), body_material)
+	_add_box("Cabin", Vector3(0.52, 0.36, 0.78), Vector3(0.0, 0.63, 0.04), glass_material)
+	_add_box("FrontBumper", Vector3(0.60, 0.10, 0.10), Vector3(0.0, 0.20, -0.84), tire_material)
 	_add_box("RearBumper", Vector3(0.88, 0.10, 0.10), Vector3(0.0, 0.20, 0.84), tire_material)
-	_add_box("LeftHeadlight", Vector3(0.16, 0.09, 0.04), Vector3(-0.30, 0.34, -0.83), light_material)
-	_add_box("RightHeadlight", Vector3(0.16, 0.09, 0.04), Vector3(0.30, 0.34, -0.83), light_material)
+	_add_box("LeftHeadlight", Vector3(0.16, 0.09, 0.04), Vector3(-0.18, 0.34, -0.77), light_material)
+	_add_box("RightHeadlight", Vector3(0.16, 0.09, 0.04), Vector3(0.18, 0.34, -0.77), light_material)
 	if vehicle_kind == "police" or vehicle_kind == "fire":
 		_add_box("EmergencyLightbar", Vector3(0.56, 0.09, 0.16), Vector3(0.0, 0.86, 0.02), beacon_material)
 		if vehicle_kind == "fire":
@@ -140,7 +141,7 @@ func _build_vehicle_mesh() -> void:
 			wheel.mesh = wheel_mesh
 			wheel.material_override = tire_material
 			wheel.rotation.z = PI * 0.5
-			wheel.position = Vector3(x_sign * 0.48, 0.17, z_sign * 0.52)
+			wheel.position = Vector3(x_sign * 0.30, 0.17, z_sign * 0.48)
 			add_child(wheel)
 
 func _add_box(node_name: String, box_size: Vector3, local_position: Vector3, material: Material) -> void:
