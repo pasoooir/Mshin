@@ -1609,6 +1609,7 @@ for contract in [
     "New roads must not be placed over the permanent highway asphalt.",
     "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.",
     "Claimed land must survive LandExpansionManager save/load serialization.",
+    "The real region save snapshot must include newly claimed land ownership.",
     "Claimed land must be included in the rendered owned-plot grid source.",
     "A version 3 save must migrate legacy road/building plots to owned land before restoring the city.",
     "New building placement must reject the permanent highway asphalt corridor.",
