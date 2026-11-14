@@ -64,18 +64,12 @@ func is_cell_buildable(cell: Vector2i) -> bool:
 		return false
 	# Reserve the western highway asphalt cells, including the Gateway-adjacent rows.
 	# Existing saved Gateway roads use restore_road(); new buildings/roads cannot overlap asphalt.
-	return not (cell.x >= -34 and cell.x <= -22)
+	return not (cell.x >= -34 and cell.x <= -24)
 
 func is_cell_road_buildable(cell: Vector2i) -> bool:
 	if not is_cell_unlocked(cell):
 		return false
-	if cell.x >= -34 and cell.x <= -24:
-		return false
-	# The two seeded Gateway connector rows can be rebuilt if the player removes
-	# a non-gateway segment; no other tile inside the asphalt reserve is allowed.
-	if cell.x >= -23 and cell.x <= -22:
-		return cell.y == -1 or cell.y == 0
-	return true
+	return not (cell.x >= -34 and cell.x <= -24)
 
 func are_cells_unlocked(cells: Array[Vector2i]) -> bool:
 	if cells.is_empty():
