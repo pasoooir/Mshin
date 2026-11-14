@@ -46,6 +46,7 @@ var _highway_lane_cursor: int = 0
 var _highway_direction_cursor: int = 0
 var _emergency_elapsed: float = 0.0
 var _active_vehicles: Array[TrafficVehicle] = []
+var _junction_reservations: Dictionary = {}
 var _active_vehicle: TrafficVehicle
 var _station_dispatch_elapsed: Dictionary = {}
 
@@ -75,6 +76,12 @@ func _prune_vehicle_list() -> void:
 		if is_instance_valid(vehicle) and not vehicle.is_queued_for_deletion():
 			valid.append(vehicle)
 	_active_vehicles = valid
+	var active_ids: Dictionary = {}
+	for vehicle in _active_vehicles:
+		active_ids[vehicle.get_instance_id()] = true
+	for junction_cell in _junction_reservations.keys():
+		if not active_ids.has(int(_junction_reservations[junction_cell])):
+			_junction_reservations.erase(junction_cell)
 	_active_vehicle = null
 	for vehicle in _active_vehicles:
 		if vehicle.vehicle_kind == "civilian":
@@ -127,6 +134,38 @@ func is_frontmost_vehicle_in_lane(vehicle: TrafficVehicle) -> bool:
 		if other.route_distance - vehicle.route_distance > 0.0:
 			return false
 	return true
+
+func is_junction_cell(grid_cell: Vector2i) -> bool:
+	var road_system = _get_road_system()
+	if not road_system or not road_system.has_road(grid_cell):
+		return false
+	return road_system.get_road_connections(grid_cell).size() >= 3
+
+func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i) -> bool:
+	if not is_instance_valid(vehicle):
+		return false
+	if not is_junction_cell(junction_cell):
+		return true
+	var owner_id := int(_junction_reservations.get(junction_cell, 0))
+	var vehicle_id := vehicle.get_instance_id()
+	if owner_id == 0 or owner_id == vehicle_id:
+		_junction_reservations[junction_cell] = vehicle_id
+		return true
+	return false
+
+func release_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i) -> void:
+	if not is_instance_valid(vehicle):
+		return
+	if int(_junction_reservations.get(junction_cell, 0)) == vehicle.get_instance_id():
+		_junction_reservations.erase(junction_cell)
+
+func release_all_junction_entries(vehicle: TrafficVehicle) -> void:
+	if not is_instance_valid(vehicle):
+		return
+	var vehicle_id := vehicle.get_instance_id()
+	for junction_cell in _junction_reservations.keys():
+		if int(_junction_reservations[junction_cell]) == vehicle_id:
+			_junction_reservations.erase(junction_cell)
 
 func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> float:
 	if not is_instance_valid(vehicle):
@@ -420,6 +459,7 @@ func clear_active_vehicle() -> void:
 		if is_instance_valid(vehicle):
 			vehicle.queue_free()
 	_active_vehicles.clear()
+	_junction_reservations.clear()
 	_active_vehicle = null
 	_spawn_elapsed = 0.0
 	_highway_spawn_elapsed = 0.0
