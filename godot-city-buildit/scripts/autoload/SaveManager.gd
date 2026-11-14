@@ -6,7 +6,7 @@ signal load_completed(success: bool)
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 
 const SAVE_PATH: String = "user://pasoo_city_buildit_save.json"
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4
 const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
@@ -71,6 +71,7 @@ func capture_region_snapshot() -> Dictionary:
 		"roads": road_data,
 		"buildings": building_data,
 		"epic_projects": EpicProjectManager.to_save_dict(),
+		"land_expansion": LandExpansionManager.to_save_dict(),
 		"happiness": GameManager.happiness
 	}
 
@@ -209,6 +210,7 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 	var road_system = scene.get_node_or_null("World/RoadSystem")
 	if road_system == null:
 		return false
+	LandExpansionManager.from_save_dict(snapshot.get("land_expansion", {}))
 	BuildManager.cancel_placement()
 	if BuildManager.is_moving:
 		BuildManager.cancel_move()
