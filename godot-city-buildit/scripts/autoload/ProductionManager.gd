@@ -537,8 +537,11 @@ func _get_eta_factory_lanes(material_id: String, schedule_state: Dictionary) -> 
 				var paused_at := int(slot.get("paused_at_unix", 0))
 				var remaining := maxi(0, finish_unix - now) if paused_at <= 0 else maxi(0, finish_unix - paused_at)
 				lanes.append(float(remaining))
-	# Retain dependency-only ETA when the city has not built a supplier yet.
+	# Before a factory is placed, the dependency-only preview retains the
+	# starter factory's two parallel production slots as a virtual baseline.
+	# Once real factories exist, only their actual slot count is used.
 	if lanes.is_empty():
+		lanes.append(0.0)
 		lanes.append(0.0)
 	lane_map[material_id] = lanes
 	schedule_state["factory_lanes"] = lane_map
