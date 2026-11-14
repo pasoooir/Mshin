@@ -130,6 +130,10 @@ var trade_panel: PanelContainer
 var settings_overlay: Control
 var placement_controls: PanelContainer
 var _trade_active_tab := "depot"
+var _regional_trade_source_id := ""
+var _regional_trade_target_id := ""
+var _regional_trade_item_id := ""
+var _regional_trade_amount := 1
 var service_warning_label: Label
 var _catalog_selected_type := ""
 
@@ -3604,6 +3608,12 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	ship_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ship_tab.pressed.connect(_show_trade_panel.bind("ship"))
 	tabs.add_child(ship_tab)
+	var regional_tab := Button.new()
+	regional_tab.name = "RegionalTradeTab"
+	regional_tab.text = "REGIONAL"
+	regional_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	regional_tab.pressed.connect(_show_trade_panel.bind("regional"))
+	tabs.add_child(regional_tab)
 
 	var scroll := ScrollContainer.new()
 	scroll.name = "TradeContentScroll"
@@ -3616,11 +3626,13 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	body.add_theme_constant_override("separation", 8)
 	scroll.add_child(body)
 
-	_trade_active_tab = tab if tab in ["depot", "market", "ship"] else "depot"
+	_trade_active_tab = tab if tab in ["depot", "market", "ship", "regional"] else "depot"
 	if _trade_active_tab == "market":
 		market_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	elif _trade_active_tab == "ship":
 		ship_tab.add_theme_stylebox_override("normal", _catalog_action_style())
+	elif _trade_active_tab == "regional":
+		regional_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	else:
 		depot_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	_refresh_trade_panel_content()
@@ -3638,6 +3650,8 @@ func _refresh_trade_panel_content() -> void:
 		_build_global_trade_content(body)
 	elif _trade_active_tab == "ship":
 		_build_cargo_ship_content(body)
+	elif _trade_active_tab == "regional":
+		_build_regional_trade_content(body)
 	else:
 		_build_trade_depot_content(body)
 
@@ -3756,6 +3770,169 @@ func _build_global_trade_content(parent: VBoxContainer) -> void:
 		buy.disabled = bool(offer.get("sold", false)) or StorageManager.get_free() < amount or not EconomyManager.can_afford(price)
 		buy.pressed.connect(_on_trade_buy_offer.bind(index))
 		row.add_child(buy)
+
+func _ensure_regional_trade_selection() -> void:
+	var unlocked: Array[String] = RegionManager.unlocked_regions.duplicate()
+	if unlocked.is_empty():
+		return
+	if _regional_trade_source_id not in unlocked:
+		_regional_trade_source_id = RegionManager.active_region_id
+	if _regional_trade_source_id not in unlocked:
+		_regional_trade_source_id = unlocked[0]
+	if _regional_trade_target_id not in unlocked or _regional_trade_target_id == _regional_trade_source_id:
+		_regional_trade_target_id = ""
+		for region_id in unlocked:
+			if region_id != _regional_trade_source_id:
+				_regional_trade_target_id = region_id
+				break
+	var eligible_items := TradeManager.get_trade_eligible_item_ids()
+	eligible_items.sort()
+	if _regional_trade_item_id not in eligible_items and not eligible_items.is_empty():
+		_regional_trade_item_id = eligible_items[0]
+
+func _on_regional_trade_source_selected(index: int, option: OptionButton) -> void:
+	_regional_trade_source_id = str(option.get_item_metadata(index))
+	if _regional_trade_source_id == _regional_trade_target_id:
+		_regional_trade_target_id = ""
+	_ensure_regional_trade_selection()
+	_refresh_trade_panel_content()
+
+func _on_regional_trade_target_selected(index: int, option: OptionButton) -> void:
+	_regional_trade_target_id = str(option.get_item_metadata(index))
+	if _regional_trade_target_id == _regional_trade_source_id:
+		_regional_trade_target_id = ""
+	_ensure_regional_trade_selection()
+	_refresh_trade_panel_content()
+
+func _on_regional_trade_item_selected(index: int, option: OptionButton) -> void:
+	_regional_trade_item_id = str(option.get_item_metadata(index))
+	_refresh_trade_panel_content()
+
+func _on_regional_trade_amount_changed(value: float, source_id: String, target_id: String, item_id: String, transfer_button: Button) -> void:
+	_regional_trade_amount = maxi(1, int(value))
+	if is_instance_valid(transfer_button):
+		transfer_button.disabled = not TradeManager.can_transfer_between_regions(source_id, target_id, item_id, _regional_trade_amount)
+
+func _on_regional_trade_transfer_pressed(source_id: String, target_id: String, item_id: String, amount_control: SpinBox) -> void:
+	var amount := maxi(1, int(amount_control.value))
+	if not TradeManager.transfer_between_regions(source_id, target_id, item_id, amount):
+		if is_instance_valid(status_label):
+			status_label.text = "Transfer failed: check unlocked regions, Global Trade HQ, source stock and target warehouse capacity."
+		return
+	if is_instance_valid(status_label):
+		status_label.text = "Transferred %s ×%d from %s to %s." % [item_id.capitalize(), amount, source_id, target_id]
+	_show_trade_panel("regional")
+
+func _build_regional_trade_content(parent: VBoxContainer) -> void:
+	if GameManager.population < TradeManager.GLOBAL_TRADE_UNLOCK_POPULATION:
+		_trade_message(parent, "Regional trade unlocks with Global Trade HQ at 10,000 city population.")
+		return
+	if not TradeManager.is_global_trade_operational():
+		_trade_message(parent, "Complete Global Trade HQ in the active region to initiate regional warehouse transfers.")
+		return
+	_ensure_regional_trade_selection()
+	var unlocked: Array[String] = RegionManager.unlocked_regions.duplicate()
+	if unlocked.size() < 2 or _regional_trade_target_id.is_empty():
+		_trade_message(parent, "Unlock a second region before transferring warehouse items between regions.")
+		return
+	_trade_message(parent, "Move goods between independent regional warehouses. Transfers are validated atomically and saved immediately.")
+	var source_row := HBoxContainer.new()
+	parent.add_child(source_row)
+	var source_label := Label.new()
+	source_label.text = "FROM"
+	source_label.custom_minimum_size.x = 74 * _ui_scale
+	source_row.add_child(source_label)
+	var source_option := OptionButton.new()
+	source_option.name = "RegionalTradeSource"
+	source_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for region_id in unlocked:
+		var definition := RegionManager.get_region_definition(region_id)
+		source_option.add_item(str(definition.get("name", region_id)))
+		source_option.set_item_metadata(source_option.item_count - 1, region_id)
+		if region_id == _regional_trade_source_id:
+			source_option.select(source_option.item_count - 1)
+	source_option.item_selected.connect(_on_regional_trade_source_selected.bind(source_option))
+	source_row.add_child(source_option)
+
+	var target_row := HBoxContainer.new()
+	parent.add_child(target_row)
+	var target_label := Label.new()
+	target_label.text = "TO"
+	target_label.custom_minimum_size.x = 74 * _ui_scale
+	target_row.add_child(target_label)
+	var target_option := OptionButton.new()
+	target_option.name = "RegionalTradeTarget"
+	target_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for region_id in unlocked:
+		if region_id == _regional_trade_source_id:
+			continue
+		var definition := RegionManager.get_region_definition(region_id)
+		target_option.add_item(str(definition.get("name", region_id)))
+		target_option.set_item_metadata(target_option.item_count - 1, region_id)
+		if region_id == _regional_trade_target_id:
+			target_option.select(target_option.item_count - 1)
+	target_option.item_selected.connect(_on_regional_trade_target_selected.bind(target_option))
+	target_row.add_child(target_option)
+
+	var eligible_items := TradeManager.get_trade_eligible_item_ids()
+	eligible_items.sort()
+	if eligible_items.is_empty():
+		_trade_message(parent, "No unlocked trade-eligible products are available yet.")
+		return
+	var item_row := HBoxContainer.new()
+	parent.add_child(item_row)
+	var item_label := Label.new()
+	item_label.text = "ITEM"
+	item_label.custom_minimum_size.x = 74 * _ui_scale
+	item_row.add_child(item_label)
+	var item_option := OptionButton.new()
+	item_option.name = "RegionalTradeItem"
+	item_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for item_id in eligible_items:
+		var item_name := str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id.capitalize()))
+		item_option.add_item(item_name)
+		item_option.set_item_metadata(item_option.item_count - 1, item_id)
+		if item_id == _regional_trade_item_id:
+			item_option.select(item_option.item_count - 1)
+	item_option.item_selected.connect(_on_regional_trade_item_selected.bind(item_option))
+	item_row.add_child(item_option)
+
+	var source_storage := TradeManager.get_region_storage_snapshot(_regional_trade_source_id)
+	var target_storage := TradeManager.get_region_storage_snapshot(_regional_trade_target_id)
+	var source_items: Dictionary = source_storage.get("items", {})
+	var target_items: Dictionary = target_storage.get("items", {})
+	var source_count := int(source_items.get(_regional_trade_item_id, 0))
+	var target_used := 0
+	for count in target_items.values():
+		target_used += maxi(0, int(count))
+	var target_capacity := maxi(1, int(target_storage.get("capacity", StorageManager.DEFAULT_CAPACITY)))
+	var amount_row := HBoxContainer.new()
+	parent.add_child(amount_row)
+	var amount_label := Label.new()
+	amount_label.text = "AMOUNT"
+	amount_label.custom_minimum_size.x = 74 * _ui_scale
+	amount_row.add_child(amount_label)
+	var amount_control := SpinBox.new()
+	amount_control.name = "RegionalTradeAmount"
+	amount_control.min_value = 1
+	amount_control.max_value = maxi(1, source_count)
+	amount_control.value = clampi(_regional_trade_amount, 1, maxi(1, source_count))
+	amount_control.custom_minimum_size.x = 140 * _ui_scale
+	amount_row.add_child(amount_control)
+
+	var capacity_label := Label.new()
+	capacity_label.name = "RegionalTradeCapacity"
+	capacity_label.text = "Source stock: %d · Target free: %d/%d" % [source_count, maxi(0, target_capacity - target_used), target_capacity]
+	capacity_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	parent.add_child(capacity_label)
+	var transfer_button := Button.new()
+	transfer_button.name = "RegionalTradeTransfer"
+	transfer_button.text = "TRANSFER GOODS"
+	transfer_button.custom_minimum_size.y = 48 * _ui_scale
+	transfer_button.disabled = not TradeManager.can_transfer_between_regions(_regional_trade_source_id, _regional_trade_target_id, _regional_trade_item_id, int(amount_control.value))
+	amount_control.value_changed.connect(_on_regional_trade_amount_changed.bind(_regional_trade_source_id, _regional_trade_target_id, _regional_trade_item_id, transfer_button))
+	transfer_button.pressed.connect(_on_regional_trade_transfer_pressed.bind(_regional_trade_source_id, _regional_trade_target_id, _regional_trade_item_id, amount_control))
+	parent.add_child(transfer_button)
 
 func _build_cargo_ship_content(parent: VBoxContainer) -> void:
 	if GameManager.population < TradeManager.CARGO_SHIP_UNLOCK_POPULATION:
