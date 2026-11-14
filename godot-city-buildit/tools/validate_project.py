@@ -1364,7 +1364,7 @@ for contract in [
     "func build_highway_route(northbound: bool) -> Array[Vector2i]",
     "func spawn_highway_vehicle_now() -> TrafficVehicle:",
     "func _update_emergency_dispatch(delta: float) -> void:",
-    "func _validate_active_vehicle_routes(connected_roads: Dictionary)",
+    "func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:",
 ]:
     if contract not in traffic_manager_source:
         errors.append(f"Road traffic and emergency fleet contract is missing: {contract}")
