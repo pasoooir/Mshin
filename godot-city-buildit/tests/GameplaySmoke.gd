@@ -763,6 +763,23 @@ func _test_build_menu_visibility() -> void:
 	_check(level_badge != null and level_badge.get_child_count() == 2, "Old level PNG must be removed; only the procedural circle and number may remain.")
 	_check(level_value != null and level_value.anchor_left == 0.0 and level_value.anchor_top == 0.0 and level_value.anchor_right == 1.0 and level_value.anchor_bottom == 1.0, "Level number must fill the badge bounds for exact geometric centering.")
 	_check(level_value != null and level_value.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER and level_value.vertical_alignment == VERTICAL_ALIGNMENT_CENTER, "Level number must be centered horizontally and vertically inside the circular badge.")
+	var xp_info_button := hud.find_child("MayorLevelInfoButton", true, false) as Button
+	var xp_info_panel := hud.find_child("MayorLevelInfoPanel", true, false) as PanelContainer
+	var xp_info_label := hud.find_child("MayorLevelInfoText", true, false) as Label
+	_check(xp_info_button != null and xp_info_panel != null and xp_info_label != null, "Mayor Level must expose a touch-accessible explanation panel.")
+	if xp_info_button != null and xp_info_panel != null and xp_info_label != null:
+		_check(not xp_info_panel.visible, "Mayor Level explanation must start closed.")
+		xp_info_button.pressed.emit()
+		_check(xp_info_panel.visible and xp_info_label.text.contains("Mayor Level") and xp_info_label.text.contains("XP remaining"), "Tapping the Mayor Level help button must explain the next level and remaining XP.")
+		var close_button := hud.find_child("MayorLevelInfoClose", true, false) as Button
+		_check(close_button != null, "Mayor Level explanation must provide a visible close action.")
+		if close_button != null:
+			close_button.pressed.emit()
+			_check(not xp_info_panel.visible, "Mayor Level explanation close action must hide the panel.")
+	var happiness_value := hud.get("happiness_label") as Label
+	if happiness_value != null:
+		hud._on_city_happiness_recalculated(72.0, {})
+		_check(happiness_value.text == "72%", "HUD Happiness must update from the authoritative city recalculation event.")
 	if level_visual != null:
 		var expected_xp_fraction := float(GameManager.experience) / float(maxi(1, GameManager.get_xp_needed()))
 		_check(absf(float(level_visual.get("progress_fraction")) - expected_xp_fraction) < 0.001, "Circular XP ring must reflect the live Mayor XP progress.")
