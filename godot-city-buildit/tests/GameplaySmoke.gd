@@ -2219,8 +2219,51 @@ func _test_region_storage_save_precedence() -> void:
 	StorageManager.from_save_dict(previous_storage)
 
 
+func _test_inter_region_trade_transaction() -> void:
+	var previous_level := GameManager.level
+	var previous_population := GameManager.population
+	var previous_active := RegionManager.active_region_id
+	var previous_unlocked := RegionManager.unlocked_regions.duplicate()
+	var previous_states: Dictionary = RegionManager.region_states.duplicate(true)
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var trade_hq := FireHazardTestBuilding.new()
+	add_child(trade_hq)
+	trade_hq.building_id = "test_global_trade_hq"
+	trade_hq.building_type = "global_trade_hq"
+	trade_hq.definition = {"category": "service", "size": Vector2i.ONE}
+	trade_hq.status = "completed"
+	BuildManager.buildings[trade_hq.building_id] = trade_hq
+	GameManager.level = 45
+	GameManager.set_population(10000)
+	RegionManager.active_region_id = "capital"
+	RegionManager.unlocked_regions = ["capital", "sunny_isles", "frosty_fjords"]
+	RegionManager.region_states = {
+		"sunny_isles": {"storage": {"capacity": 50, "items": {"wood": 1}}},
+		"frosty_fjords": {"storage": {"capacity": 50, "items": {}}}
+	}
+	StorageManager.from_save_dict({"capacity": 50, "items": {"metal": 10}})
+	_check(TradeManager.can_transfer_between_regions("capital", "sunny_isles", "metal", 3), "Global Trade HQ must permit a valid transfer from the active region to another unlocked region.")
+	_check(TradeManager.transfer_between_regions("capital", "sunny_isles", "metal", 3, false), "A regional transfer must commit both warehouse inventories atomically.")
+	_check(StorageManager.get_count("metal") == 7 and int(TradeManager.get_region_storage_snapshot("sunny_isles").get("items", {}).get("metal", 0)) == 3, "Active source stock and inactive target snapshot must both reflect the transfer.")
+	_check(TradeManager.transfer_between_regions("sunny_isles", "capital", "wood", 1, false), "A transfer from an inactive region into the active warehouse must work.")
+	_check(StorageManager.get_count("wood") == 1 and int(TradeManager.get_region_storage_snapshot("sunny_isles").get("items", {}).get("wood", 0)) == 0, "Inactive source and active target inventories must both update.")
+	var before_failed_transfer := StorageManager.to_save_dict()
+	_check(not TradeManager.transfer_between_regions("capital", "frosty_fjords", "metal", 100, false), "A transfer larger than available source stock must be rejected.")
+	_check(StorageManager.to_save_dict() == before_failed_transfer, "A rejected regional transfer must leave the active warehouse unchanged.")
+	BuildManager.buildings.erase(trade_hq.building_id)
+	remove_child(trade_hq)
+	trade_hq.free()
+	GameManager.level = previous_level
+	GameManager.set_population(previous_population)
+	RegionManager.active_region_id = previous_active
+	RegionManager.unlocked_regions = previous_unlocked
+	RegionManager.region_states = previous_states
+	StorageManager.from_save_dict(previous_storage)
+
+
 func _test_region_city_snapshots() -> void:
 	_test_region_storage_save_precedence()
+	_test_inter_region_trade_transaction()
 	var previous_regions: Dictionary = RegionManager.to_save_dict()
 	var previous_level := GameManager.level
 	var previous_simoleons := EconomyManager.simoleons
