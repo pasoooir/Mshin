@@ -126,6 +126,21 @@ func _test_live_production_queue_eta() -> void:
 	add_child(factory_probe)
 	var factory_delay := ProductionManager.get_live_factory_queue_delay_seconds("snowberry")
 	_check(factory_delay >= 25.0 and factory_delay <= 26.0, "Raw-material ETA must use the earliest available parallel factory slot.")
+
+	# Flour Bag and Cream both come from Farmer's Market. Their production
+	# must serialize on that shared supplier, while Bread Roll then runs at the
+	# independent Donut Shop. Two Flour Bags (2 × 30 min), one Cream (75 min)
+	# and one Bread Roll (60 min) therefore total 195 minutes.
+	var previous_storage := StorageManager.to_save_dict()
+	StorageManager.items = {"seeds":4, "textiles":4, "animal_feed":1}
+	var bread_roll_eta := ProductionManager.get_estimated_chain_seconds("bread_roll")
+	_check(is_equal_approx(bread_roll_eta, 11700.0), "Recursive ETA must serialize two Farmer's Market Flour Bag batches and Cream before the independent Bread Roll store batch.")
+	# Cream is shared by the direct Ice Cream Sandwich input and the nested
+	# Bread Roll recipe. The scheduler must plan it once, not duplicate it.
+	var shared_ingredient_eta := ProductionManager.get_estimated_chain_seconds("ice_cream_sandwich")
+	_check(is_equal_approx(shared_ingredient_eta, 12540.0), "Recursive ETA must reuse a planned Cream output shared by sibling dependency branches.")
+	StorageManager.from_save_dict(previous_storage)
+
 	factory_probe.queue_free()
 	queue_probe.queue_free()
 	await get_tree().process_frame
