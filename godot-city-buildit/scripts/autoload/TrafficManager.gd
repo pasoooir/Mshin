@@ -167,19 +167,6 @@ func _junction_queue_counts(junction_cell: Vector2i) -> Dictionary:
 		counts[approach] = int(counts.get(approach, 0)) + 1
 	return counts
 
-func _select_junction_approach(counts: Dictionary, waiting: Dictionary) -> Vector2i:
-	var selected := Vector2i.ZERO
-	var best_wait := -1.0
-	var best_queue := -1
-	for approach in counts.keys():
-		var queue_size := int(counts[approach])
-		var wait_time := float(waiting.get(approach, 0.0))
-		if wait_time > best_wait or (is_equal_approx(wait_time, best_wait) and queue_size > best_queue):
-			selected = approach
-			best_wait = wait_time
-			best_queue = queue_size
-	return selected
-
 func _update_junction_controllers(delta: float) -> void:
 	var junctions: Dictionary = {}
 	for vehicle in _active_vehicles:
