@@ -65,7 +65,7 @@ func _process(delta: float) -> void:
 		_segment_progress = 0.0
 		return
 
-	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell)
+	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
 	var safe_speed := TrafficManager.get_safe_vehicle_speed(self, desired_speed)
 	if safe_speed <= 0.001:
 		return
@@ -86,7 +86,8 @@ func _process(delta: float) -> void:
 		_segment_progress = 0.0
 
 func _cell_center(cell: Vector2i) -> Vector3:
-	return Vector3(float(cell.x) * 2.0 + 1.0, ground_height, float(cell.y) * 2.0 + 1.0)
+	var world_x := TrafficManager.HIGHWAY_WORLD_X if vehicle_kind == "highway" else float(cell.x) * 2.0 + 1.0
+	return Vector3(world_x, ground_height, float(cell.y) * 2.0 + 1.0)
 
 func _lane_position(cell: Vector2i, travel_direction: Vector2i) -> Vector3:
 	# Right-hand traffic: the vehicle occupies the lane to the driver's right.
