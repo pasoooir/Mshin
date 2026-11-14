@@ -3312,6 +3312,7 @@ func _run_gameplay_test() -> void:
 	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 0)), "The initial central city plots must be owned and buildable.")
 	_check(not LandExpansionManager.is_cell_unlocked(Vector2i(35, 0)), "Unopened outer plots must remain locked.")
 	_check(not BuildManager.is_cell_free(Vector2i(35, 0), Vector2i.ONE), "Building footprints must not be placeable on unopened land.")
+	_check(not BuildManager.is_cell_free(Vector2i(-24, -3), Vector2i.ONE), "Building footprints must not overlap the permanent highway asphalt reserve.")
 	_check(road_system.get_road_placement_error(Vector2i(35, 0)).contains("locked"), "Road placement must reject unopened land with a clear expansion message.")
 	_check(road_system.get_road_placement_error(Vector2i(-24, 0)).contains("highway asphalt"), "New roads must not be placed over the permanent highway asphalt.")
 	_check(road_system.get_road_placement_error(Vector2i(-22, 5)).contains("highway asphalt"), "The full highway asphalt width must remain reserved even outside the seeded Gateway road rows.")
