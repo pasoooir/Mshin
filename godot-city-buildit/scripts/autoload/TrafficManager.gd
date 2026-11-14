@@ -56,6 +56,7 @@ var _active_vehicles: Array[TrafficVehicle] = []
 var _junction_reservations: Dictionary = {}
 var _junction_signal_states: Dictionary = {}
 var _blocked_road_cells: Dictionary = {}
+var _road_block_sources: Dictionary = {}
 var _active_vehicle: TrafficVehicle
 var _station_dispatch_elapsed: Dictionary = {}
 var _route_destination_cursor: int = 0
@@ -763,6 +764,7 @@ func clear_active_vehicle() -> void:
 	_active_vehicles.clear()
 	_junction_reservations.clear()
 	_blocked_road_cells.clear()
+	_road_block_sources.clear()
 	_active_vehicle = null
 	_spawn_elapsed = 0.0
 	_highway_spawn_elapsed = 0.0
@@ -791,14 +793,26 @@ func _get_world_parent() -> Node3D:
 	return scene.get_node_or_null("World") as Node3D
 
 func set_road_cell_blocked(grid_cell: Vector2i, blocked: bool) -> bool:
+	return set_road_cell_blocked_by_source(grid_cell, "manual", blocked)
+
+func set_road_cell_blocked_by_source(grid_cell: Vector2i, source_id: String, blocked: bool) -> bool:
 	var road_system = _get_road_system()
-	if not road_system or not road_system.has_road(grid_cell) or grid_cell == road_system.GATEWAY_ROAD_CELL:
+	if not road_system or not road_system.has_road(grid_cell) or grid_cell == road_system.GATEWAY_ROAD_CELL or source_id.strip_edges().is_empty():
 		return false
+	var was_blocked := _blocked_road_cells.has(grid_cell)
+	var sources: Dictionary = _road_block_sources.get(grid_cell, {})
 	if blocked:
-		_blocked_road_cells[grid_cell] = true
+		sources[source_id] = true
 	else:
+		sources.erase(source_id)
+	if sources.is_empty():
+		_road_block_sources.erase(grid_cell)
 		_blocked_road_cells.erase(grid_cell)
-	recalculate_from_roads()
+	else:
+		_road_block_sources[grid_cell] = sources
+		_blocked_road_cells[grid_cell] = true
+	if was_blocked != _blocked_road_cells.has(grid_cell):
+		recalculate_from_roads()
 	return true
 
 func _nearest_connected_road(target: Vector2i, connected_roads: Dictionary) -> Vector2i:
