@@ -628,7 +628,7 @@ func _test_road_traffic_capacity(road_system) -> void:
 	TrafficManager.recalculate_from_roads()
 
 func _test_gateway_vehicle_route(road_system) -> void:
-	var previous_enabled := TrafficManager.vehicle_simulation_enabled
+	var previous_enabled: bool = TrafficManager.vehicle_simulation_enabled
 	TrafficManager.vehicle_simulation_enabled = false
 	TrafficManager.clear_active_vehicle()
 	road_system.clear_roads()
@@ -639,15 +639,15 @@ func _test_gateway_vehicle_route(road_system) -> void:
 	_check(route.front() == road_system.GATEWAY_ROAD_CELL and route.back() == road_system.GATEWAY_ROAD_CELL, "The simulated vehicle route must start and finish at the permanent Gateway.")
 	for cell in route:
 		_check(connected_roads.has(cell), "Every vehicle route cell must belong to the Gateway-connected road graph.")
-	var adaptive_route := TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
+	var adaptive_route: Array[Vector2i] = TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
 	_check(adaptive_route.size() >= 2 and adaptive_route.front() == road_system.GATEWAY_ROAD_CELL and adaptive_route.back() == Vector2i(1, -1), "The city route planner must find a valid path between connected road destinations.")
 	for cell in adaptive_route:
 		_check(connected_roads.has(cell), "Adaptive route planning must never leave the Gateway-connected road graph.")
-	var vehicle := TrafficManager.spawn_vehicle_now()
+	var vehicle: TrafficVehicle = TrafficManager.spawn_vehicle_now()
 	_check(is_instance_valid(vehicle), "TrafficManager must spawn a vehicle on the Gateway route.")
 	if is_instance_valid(vehicle):
 		_check(vehicle.get_node_or_null("Body") != null and vehicle.get_node_or_null("Cabin") != null, "The simulated vehicle must have visible original 3D body and cabin geometry.")
-		var start_position := vehicle.global_position
+		var start_position: Vector3 = vehicle.global_position
 		vehicle._process(0.25)
 		_check(vehicle.global_position.distance_to(start_position) > 0.1, "The simulated vehicle must advance along its road route.")
 	TrafficManager.clear_active_vehicle()
@@ -660,11 +660,11 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "Negative city grid coordinates must not be misclassified as motorway lanes.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway"), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway") * 3.6, TrafficManager.HIGHWAY_SPEED_LIMIT_KMH), "Motorway traffic must stay within the calibrated 120 km/h speed ceiling.")
-	var northbound_route := TrafficManager.build_highway_route(true)
-	var southbound_route := TrafficManager.build_highway_route(false)
+	var northbound_route: Array[Vector2i] = TrafficManager.build_highway_route(true)
+	var southbound_route: Array[Vector2i] = TrafficManager.build_highway_route(false)
 	_check(northbound_route.front().y == TrafficManager.HIGHWAY_MAX_GRID_Z and northbound_route.back().y == TrafficManager.HIGHWAY_MIN_GRID_Z, "Northbound motorway traffic must run only toward the north exit.")
 	_check(southbound_route.front().y == TrafficManager.HIGHWAY_MIN_GRID_Z and southbound_route.back().y == TrafficManager.HIGHWAY_MAX_GRID_Z, "Southbound motorway traffic must run only toward the south exit.")
-	var city_bound_highway_route := TrafficManager.build_highway_city_round_trip_route(true)
+	var city_bound_highway_route: Array[Vector2i] = TrafficManager.build_highway_city_round_trip_route(true)
 	_check(city_bound_highway_route.size() > northbound_route.size(), "A motorway vehicle must continue from the external highway into the city instead of leaving on an isolated highway-only loop.")
 	_check(city_bound_highway_route.has(road_system.GATEWAY_ROAD_CELL), "The motorway-to-city route must include the permanent road Gateway.")
 
@@ -699,7 +699,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager._active_vehicles.append(load_probe_a)
 	TrafficManager._active_vehicles.append(load_probe_b)
 	_check(TrafficManager.get_road_cell_vehicle_load(Vector2i(-22, -1)) == 2, "The city traffic network must count vehicles currently occupying a road segment.")
-	var congestion_aware_route := TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
+	var congestion_aware_route: Array[Vector2i] = TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
 	_check(not congestion_aware_route.has(Vector2i(-22, -1)), "Route planning must divert around a heavily occupied road when a connected alternative has lower travel cost.")
 	TrafficManager._active_vehicles.erase(load_probe_a)
 	TrafficManager._active_vehicles.erase(load_probe_b)
@@ -753,7 +753,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	block_test_vehicle.route = [road_system.GATEWAY_ROAD_CELL, dynamic_block_cell, Vector2i(-21, -1), Vector2i(-20, -1)]
 	TrafficManager._active_vehicles.append(block_test_vehicle)
 	_check(not TrafficManager.set_road_cell_blocked(road_system.GATEWAY_ROAD_CELL, true), "The permanent highway Gateway must never be marked as blocked.")
-	var capacity_before_block := TrafficManager.road_capacity
+	var capacity_before_block: int = TrafficManager.road_capacity
 	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, true), "A connected road cell must accept a temporary traffic blockage.")
 	_check(TrafficManager.road_capacity == capacity_before_block - 2, "A blocked two-lane road tile must be removed from effective traffic capacity.")
 	_check(not block_test_vehicle.route.has(dynamic_block_cell) and block_test_vehicle.route.has(Vector2i(-22, 0)), "Vehicles must recalculate their route when an incident marks a road cell blocked.")
@@ -835,7 +835,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	leader.free()
 
 	TrafficManager.clear_active_vehicle()
-	var highway_vehicle := TrafficManager.spawn_highway_vehicle_now()
+	var highway_vehicle: TrafficVehicle = TrafficManager.spawn_highway_vehicle_now()
 	_check(is_instance_valid(highway_vehicle) and highway_vehicle.vehicle_kind == "highway", "The visible external six-lane motorway must spawn its own traffic fleet.")
 	if is_instance_valid(highway_vehicle):
 		_check(highway_vehicle.route_key.begins_with("coastal-highway-"), "Motorway vehicles must start on the external motorway and follow a connected route through the city Gateway.")
@@ -854,7 +854,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	police_station.global_position = BuildManager.grid_to_world(police_station.grid_pos) + Vector3(1.0, 0.0, 1.0)
 	world.add_child(police_station)
 	_check(BuildManager.is_building_operational(police_station), "A completed police station with Gateway-connected road access must be operational.")
-	var police_route := TrafficManager.build_station_patrol_route(police_station)
+	var police_route: Array[Vector2i] = TrafficManager.build_station_patrol_route(police_station)
 	_check(police_route.size() >= 3 and road_system.get_gateway_connected_roads().has(police_route.front()), "Police patrol route must start from the station's connected road exit.")
 	BuildManager.buildings[police_station.building_id] = police_station
 	TrafficManager._update_emergency_dispatch(TrafficManager.EMERGENCY_SPAWN_INTERVAL)
