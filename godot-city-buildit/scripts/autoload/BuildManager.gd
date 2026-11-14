@@ -307,7 +307,11 @@ func is_building_operational(building: Node) -> bool:
 	# service as well as a Gateway-connected road. Homes retain their existing
 	# happiness-penalty model instead of being hard-stopped here.
 	if has_node("/root/ServiceManager") and ServiceManager.requires_operational_utilities(building):
-		return ServiceManager.is_building_served(building)
+		if not ServiceManager.is_building_served(building):
+			return false
+	if has_node("/root/ServiceManager") and ServiceManager.requires_operational_workforce(building):
+		if not ServiceManager.is_workforce_served(building):
+			return false
 	return true
 
 func get_construction_bom(type_id: String) -> Dictionary:
