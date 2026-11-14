@@ -74,6 +74,23 @@ func _find_building(type_id: String):
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
+func _test_live_production_queue_eta() -> void:
+	var queue_probe = ProductionComponentScript.new()
+	queue_probe.shop_id = "building_supplies"
+	queue_probe.slot_count = 3
+	var now := int(Time.get_unix_time_from_system())
+	queue_probe.slots = [
+		{"item_id":"nails", "finish_unix":now + 30, "ready":false},
+		{"item_id":"planks", "finish_unix":0, "ready":false, "queued":true},
+		{}
+	]
+	add_child(queue_probe)
+	var delay := ProductionManager.get_live_store_queue_delay_seconds("building_supplies")
+	_check(delay >= 30.0, "Live ETA must include the remaining time of an active store order.")
+	_check(delay >= queue_probe.get_queue_delay_seconds(), "ProductionManager must read the real ProductionComponent queue, not a detached estimate.")
+	queue_probe.queue_free()
+	await get_tree().process_frame
+
 func _test_recipe_dependency_graph_validation() -> void:
 	var baseline := ProductionManager.get_recipe_validation_report()
 	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
@@ -2595,6 +2612,7 @@ func _run_gameplay_test() -> void:
 	await _test_build_menu_visibility()
 	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
+	await _test_live_production_queue_eta()
 	_test_recipe_dependency_graph_validation()
 	_test_storage_and_production_chain()
 	_test_production_queue_stress()
