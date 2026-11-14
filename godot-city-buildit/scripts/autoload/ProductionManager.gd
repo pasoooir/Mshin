@@ -435,6 +435,23 @@ func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, l
 			remaining_stock
 		)
 
+func get_live_store_queue_delay_seconds(store_id: String) -> float:
+	# Query live production components, not UI estimates or duplicated queue state.
+	if store_id.is_empty() or not is_inside_tree():
+		return 0.0
+	var best_delay := -1.0
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		if bool(component.is_factory) or str(component.shop_id) != store_id:
+			continue
+		var delay := float(component.get_queue_delay_seconds())
+		if best_delay < 0.0 or delay < best_delay:
+			best_delay = delay
+	# A missing store instance means the product cannot start now; represent
+	# this as unknown rather than pretending a factory/store exists.
+	return best_delay
+
 func get_estimated_chain_seconds(item_id: String) -> float:
 	# Display-only estimate: raw inputs are treated as parallel and each
 	# commercial output batch is sequential. This value is never stored in a recipe.
@@ -473,8 +490,16 @@ func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock:
 		if dependency_seconds < 0.0:
 			return -1.0
 		dependency_max = maxf(dependency_max, dependency_seconds)
-	# Repeated outputs from one commercial store are sequential jobs.
-	return dependency_max + float(missing_amount * int(recipe.get("time_sec", 0)))
+	# Add the least-loaded live supplier queue. If no supplier building exists,
+	# keep the dependency-only estimate but report the missing supplier separately
+	# through get_live_store_queue_delay_seconds callers; never invent a queue.
+	var store_id := str(recipe.get("store", ""))
+	var queue_delay := get_live_store_queue_delay_seconds(store_id)
+	if queue_delay < 0.0:
+		return -1.0
+	# This output is one batch; multiple requested units serialize on the same
+	# store's production lane after its current queued work.
+	return dependency_max + queue_delay + float(missing_amount * int(recipe.get("time_sec", 0)))
 
  
 func get_recipe_economy_profile(item_id: String) -> Dictionary:
