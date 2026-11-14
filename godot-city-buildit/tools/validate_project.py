@@ -1417,7 +1417,7 @@ for contract in [
     "visible external six-lane motorway must spawn its own traffic fleet",
     "Motorway vehicles must start in their assigned physical motorway lane before merging onto the city connector",
     "A highway trip must finish back at its motorway exit after completing the city loop",
-    "Highway entry and exit must use opposite directions on adjacent carriageways",
+    "Highway entry and city exit must use opposite directions on adjacent carriageways",
     "Highway entry and exit must occupy physically separate adjacent carriageways",
     "Each motorway lane index must map to its own physical lane position",
     "All three motorway lanes per carriageway must remain physically separated",
