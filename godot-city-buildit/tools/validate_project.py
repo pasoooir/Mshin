@@ -217,6 +217,7 @@ if 'or extension == "tscn"' not in model_loader_source:
     errors.append("Local authored building scenes must be accepted by BuildingModelLoader")
 
 commercial_asset_ids = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"]
+build_manager_for_assets = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 for asset_id in commercial_asset_ids:
     scene_path = ROOT / "assets/models/commercial" / f"{asset_id}.tscn"
     if not scene_path.is_file():
@@ -225,7 +226,7 @@ for asset_id in commercial_asset_ids:
     scene_source = scene_path.read_text(encoding="utf-8")
     if f'asset_type = "{asset_id}"' not in scene_source:
         errors.append(f"Dedicated commercial scene has the wrong asset type: {asset_id}")
-    if f'"{asset_id}": "res://assets/models/commercial/{asset_id}.tscn"' not in build_manager:
+    if f'"{asset_id}": "res://assets/models/commercial/{asset_id}.tscn"' not in build_manager_for_assets:
         errors.append(f"Exact building model registry entry is missing: {asset_id}")
 
 for path in ROOT.rglob("*.gd"):
