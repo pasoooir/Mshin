@@ -178,7 +178,7 @@ for path in ROOT.rglob("*.tscn"):
             errors.append(f"Missing scene resource {resource} in {path.relative_to(ROOT)}")
 
 project = (ROOT / "project.godot").read_text(encoding="utf-8")
-if not re.search(r"(?m)^textures/vram_compression/import_etc2_astc=true\\s*$", project):
+if not re.search(r"(?m)^textures/vram_compression/import_etc2_astc=true\s*$", project):
     errors.append("Android export requires ETC2/ASTC texture import to be enabled in project.godot")
 for script in re.findall(r'="[*]res://([^"]+)"', project):
     if not (ROOT / script).is_file():
