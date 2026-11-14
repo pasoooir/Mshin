@@ -78,7 +78,7 @@ for icon_id in ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_fu
 
 # PNG-32 requirements: valid PNG, 8-bit RGBA, >=128px, transparent canvas corners.
 for category, icon_id in sorted(required):
-    path = ICON_ROOT / category / f"{icon_id}.png"
+    path = ICON_ROOT / f"{icon_id}.png" if category == "root" else ICON_ROOT / category / f"{icon_id}.png"
     if not path.is_file():
         errors.append(f"Missing icon: {category}/{icon_id}.png")
         continue
