@@ -152,13 +152,15 @@ jobs:
         run: godot --headless --editor --path godot-city-buildit --quit
 
       - name: Export Android Debug APK
+        shell: bash
         run: |
           set -euo pipefail
-          mkdir -p godot-city-buildit/build/android
+          APK_PATH="$GITHUB_WORKSPACE/godot-city-buildit/build/android/PasooCityBuildIt.apk"
+          mkdir -p "$(dirname "$APK_PATH")"
           godot --headless --path godot-city-buildit \
             --export-debug "Android Debug" \
-            godot-city-buildit/build/android/PasooCityBuildIt.apk
-          test -s godot-city-buildit/build/android/PasooCityBuildIt.apk
+            "$APK_PATH"
+          test -s "$APK_PATH"
 
       - name: Verify APK signature and package identity
         shell: bash
