@@ -62,8 +62,8 @@ func is_cell_unlocked(cell: Vector2i) -> bool:
 func is_cell_road_buildable(cell: Vector2i) -> bool:
 	if not is_cell_unlocked(cell):
 		return false
-	# Reserve the western highway asphalt cells; the permanent Gateway begins
-	# at x=-23 and remains restorable, while new city roads cannot overlap it.
+	# Reserve the western highway asphalt cells, including the Gateway-adjacent rows.
+	# Existing saved Gateway roads use restore_road(); new city roads cannot overlap asphalt.
 	return not (cell.x >= -34 and cell.x <= -22)
 
 func are_cells_unlocked(cells: Array[Vector2i]) -> bool:
