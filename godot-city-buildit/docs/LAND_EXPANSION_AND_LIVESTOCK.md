@@ -41,3 +41,6 @@ Expansion items are special inventory goods, not factory raw materials. They are
 
 
 The camera pan boundary now reaches the map edge (90 world units), so players can actually view the newly expanded plots and both desert grazing strips.
+
+
+The visible build grid is generated from owned plots rather than a fixed starter rectangle. When a plot is purchased, its build grid appears immediately; locked plots remain shaded and do not receive build-grid lines.
