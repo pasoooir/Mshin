@@ -183,7 +183,8 @@ func _update_junction_controllers(delta: float) -> void:
 		var state: Dictionary = _junction_signal_states.get(junction_cell, {})
 		if state.is_empty():
 			var initial_approach := _select_junction_approach(counts, {})
-			state = {"approach": initial_approach, "stage": "green", "elapsed": 0.0, "green_duration": clampf(JUNCTION_MIN_GREEN_SECONDS + float(counts.get(initial_approach, 0)), JUNCTION_MIN_GREEN_SECONDS, JUNCTION_MAX_GREEN_SECONDS), "waiting": {}}
+			var initial_stage := "green" if initial_approach != Vector2i.ZERO else "all_red"
+			state = {"approach": initial_approach, "stage": initial_stage, "elapsed": 0.0, "green_duration": clampf(JUNCTION_MIN_GREEN_SECONDS + float(counts.get(initial_approach, 0)), JUNCTION_MIN_GREEN_SECONDS, JUNCTION_MAX_GREEN_SECONDS), "waiting": {}}
 		var waiting: Dictionary = state.get("waiting", {})
 		for approach in counts.keys():
 			waiting[approach] = float(waiting.get(approach, 0.0)) + delta
@@ -209,7 +210,7 @@ func _update_junction_controllers(delta: float) -> void:
 		elif stage == "all_red" and float(state["elapsed"]) >= JUNCTION_ALL_RED_SECONDS:
 			var next_approach := _select_junction_approach(counts, waiting)
 			state["approach"] = next_approach
-			state["stage"] = "green"
+			state["stage"] = "green" if next_approach != Vector2i.ZERO else "all_red"
 			state["elapsed"] = 0.0
 			state["green_duration"] = clampf(JUNCTION_MIN_GREEN_SECONDS + float(counts.get(next_approach, 0)), JUNCTION_MIN_GREEN_SECONDS, JUNCTION_MAX_GREEN_SECONDS)
 			if next_approach != Vector2i.ZERO:
@@ -290,23 +291,9 @@ func _select_junction_approach(counts: Dictionary, waiting: Dictionary) -> Vecto
 			selected = approach
 			best_wait = wait_time
 			best_queue = queue_size
-	if found_non_yielding:
-		return selected
-	# A fully occupied circular priority set must still make progress.
-	return _select_junction_approach_without_yield(counts, waiting)
-
-func _select_junction_approach_without_yield(counts: Dictionary, waiting: Dictionary) -> Vector2i:
-	var selected := Vector2i.ZERO
-	var best_wait := -1.0
-	var best_queue := -1
-	for approach in counts.keys():
-		var wait_time := float(waiting.get(approach, 0.0))
-		var queue_size := int(counts[approach])
-		if wait_time > best_wait or (is_equal_approx(wait_time, best_wait) and queue_size > best_queue):
-			selected = approach
-			best_wait = wait_time
-			best_queue = queue_size
-	return selected
+	# If every queued approach must yield, keep the junction all-red until
+	# at least one approach reaches the bounded-wait override.
+	return selected if found_non_yielding else Vector2i.ZERO
 
 func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, from_cell: Vector2i = Vector2i.ZERO) -> bool:
 	if not is_instance_valid(vehicle):
