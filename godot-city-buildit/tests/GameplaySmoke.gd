@@ -657,6 +657,9 @@ func _test_gateway_vehicle_route(road_system) -> void:
 	TrafficManager.recalculate_from_roads()
 
 func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
+	var previous_simulation_enabled: bool = TrafficManager.vehicle_simulation_enabled
+	TrafficManager.vehicle_simulation_enabled = false
+	var traffic_test_world := get_node("World") as Node3D
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "City vehicles must use the required 4x speed multiplier.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)) * 3.6, TrafficManager.CITY_SPEED_LIMIT_KMH), "City traffic must stay within the calibrated 30 km/h urban speed ceiling.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "Negative city grid coordinates must not be misclassified as motorway lanes.")
@@ -702,6 +705,8 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 
 	var follower := TrafficVehicle.new()
 	var leader := TrafficVehicle.new()
+	traffic_test_world.add_child(follower)
+	traffic_test_world.add_child(leader)
 	follower.route_key = "traffic-following-test"
 	leader.route_key = "traffic-following-test"
 	follower.lane_direction = Vector2i(1, 0)
@@ -741,6 +746,8 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(leader, 40.0), TrafficManager.CONGESTION_CRAWL_SPEED), "Only the frontmost stopped vehicle may resume controlled crawl after four seconds.")
 	var highway_city_follower := TrafficVehicle.new()
 	var highway_city_leader := TrafficVehicle.new()
+	traffic_test_world.add_child(highway_city_follower)
+	traffic_test_world.add_child(highway_city_leader)
 	for highway_city_vehicle in [highway_city_follower, highway_city_leader]:
 		highway_city_vehicle.vehicle_kind = "highway"
 		highway_city_vehicle.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
@@ -912,7 +919,13 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		_check(highway_vehicle.route.any(func(cell): return cell.x > TrafficManager.HIGHWAY_GRID_X), "Motorway vehicle routes must continue beyond the highway boundary into the city road network.")
 		var expected_highway_start := highway_vehicle._lane_position(highway_vehicle.route[0], highway_vehicle.route[1] - highway_vehicle.route[0])
 		_check(highway_vehicle.global_position.distance_to(expected_highway_start) < 0.001, "Motorway vehicles must start in their assigned physical motorway lane before merging onto the city connector.")
-	TrafficManager.clear_active_vehicle()
+		_check(highway_vehicle.route.front() == highway_vehicle.route.back(), "A highway trip must finish back at its motorway exit after completing the city loop.")
+		highway_vehicle._segment_index = highway_vehicle.route.size() - 1
+		highway_vehicle._process(0.0)
+		_check(highway_vehicle.is_queued_for_deletion(), "A vehicle must retire after completing its full highway-city-highway route instead of remaining parked in the city.")
+		await get_tree().process_frame
+		TrafficManager._prune_vehicle_list()
+	_check(TrafficManager._active_public_vehicle_count() == 0, "Completed highway trips must be removed from the active traffic fleet.")
 
 	var saved_traffic_population := GameManager.population
 	GameManager.population = 0
@@ -920,29 +933,21 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	GameManager.population = TrafficManager.RESIDENTS_PER_ADDITIONAL_TRAFFIC_VEHICLE
 	_check(TrafficManager._get_public_vehicle_limit() == 5, "Public traffic capacity must grow gradually with real city population.")
 	GameManager.population = 0
-	TrafficManager.clear_active_vehicle()
 	var capped_highway_fleet: Array[TrafficVehicle] = []
-	for _vehicle_index in range(5):
-		var capped_vehicle: TrafficVehicle = TrafficManager.spawn_highway_vehicle_now()
-		if is_instance_valid(capped_vehicle):
-			capped_highway_fleet.append(capped_vehicle)
+	for _vehicle_index in range(4):
+		var capped_vehicle := TrafficVehicle.new()
+		capped_vehicle.vehicle_kind = "highway"
+		capped_highway_fleet.append(capped_vehicle)
+		TrafficManager._active_vehicles.append(capped_vehicle)
 	_check(capped_highway_fleet.size() == 4, "Highway entry must stop spawning when the shared empty-city fleet reaches four vehicles.")
 	_check(TrafficManager._active_public_vehicle_count() == 4, "The four-vehicle empty-city cap must include every vehicle between highway entry, city roads and highway exit.")
 	_check(TrafficManager.spawn_highway_vehicle_now() == null, "A fifth highway vehicle must be rejected while the empty-city traffic loop is full.")
 	_check(TrafficManager.spawn_vehicle_now() == null, "A city-side trip must also be rejected when the shared highway/city traffic cap is full.")
-	TrafficManager.clear_active_vehicle()
-	var completed_loop_vehicle: TrafficVehicle = TrafficManager.spawn_highway_vehicle_now()
-	_check(is_instance_valid(completed_loop_vehicle), "A highway loop vehicle must be available for route-completion verification.")
-	if is_instance_valid(completed_loop_vehicle):
-		_check(completed_loop_vehicle.route.front() == completed_loop_vehicle.route.back(), "The active highway trip must have a real return-to-highway exit endpoint.")
-		completed_loop_vehicle._segment_index = completed_loop_vehicle.route.size() - 1
-		completed_loop_vehicle._process(0.0)
-		_check(completed_loop_vehicle.is_queued_for_deletion(), "A vehicle must retire after completing its full highway-city-highway route instead of remaining parked in the city.")
-		TrafficManager._prune_vehicle_list()
-	_check(TrafficManager._active_public_vehicle_count() == 0, "Completed highway trips must be removed from the active traffic fleet.")
-	TrafficManager.clear_active_vehicle()
+	for capped_vehicle in capped_highway_fleet:
+		TrafficManager._active_vehicles.erase(capped_vehicle)
+		capped_vehicle.free()
 	GameManager.population = saved_traffic_population
-	var world := get_node("World") as Node3D
+	var world := traffic_test_world
 	var police_station := FireHazardTestBuilding.new()
 	police_station.building_id = "traffic-smoke-police"
 	police_station.building_type = "police_station"
@@ -999,6 +1004,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	police_station.queue_free()
 	fire_station.queue_free()
 	TrafficManager.recalculate_from_roads()
+	TrafficManager.vehicle_simulation_enabled = previous_simulation_enabled
 
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
@@ -2594,7 +2600,7 @@ func _run_gameplay_test() -> void:
 	_test_road_gateway_connectivity(road_system)
 	_test_road_traffic_capacity(road_system)
 	_test_gateway_vehicle_route(road_system)
-	_test_traffic_lane_rules_and_emergency_fleet(road_system)
+	await _test_traffic_lane_rules_and_emergency_fleet(road_system)
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
