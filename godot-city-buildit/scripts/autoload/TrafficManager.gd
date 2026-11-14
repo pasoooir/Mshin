@@ -322,6 +322,13 @@ func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, fr
 		return false
 	if not is_junction_cell(junction_cell):
 		return true
+	if vehicle.route.is_empty():
+		return false
+	var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
+	if segment_index + 2 >= vehicle.route.size():
+		return false
+	if vehicle.route[segment_index] != from_cell or vehicle.route[segment_index + 1] != junction_cell:
+		return false
 	var approach := junction_cell - from_cell
 	var state: Dictionary = _junction_signal_states.get(junction_cell, {})
 	if state.is_empty():
@@ -329,20 +336,7 @@ func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, fr
 		_junction_signal_states[junction_cell] = state
 	if str(state.get("stage", "green")) != "green" or state.get("approach", Vector2i.ZERO) != approach:
 		return false
-
-	var outgoing_cell := junction_cell + Vector2i(1, 0)
-	if not vehicle.route.is_empty():
-		var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
-		if segment_index + 2 < vehicle.route.size():
-			outgoing_cell = vehicle.route[segment_index + 2]
-		else:
-			return false
-	elif from_cell == Vector2i.ZERO:
-		# Preserve safe behavior for legacy callers that do not supply a route.
-		from_cell = junction_cell + Vector2i(-1, 0)
-		outgoing_cell = junction_cell + Vector2i(1, 0)
-		approach = junction_cell - from_cell
-
+	var outgoing_cell: Vector2i = vehicle.route[segment_index + 2]
 	if not _is_junction_exit_clear(vehicle, junction_cell, outgoing_cell):
 		return false
 	var vehicle_id := vehicle.get_instance_id()
