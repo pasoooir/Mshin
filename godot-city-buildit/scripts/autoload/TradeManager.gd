@@ -360,7 +360,18 @@ func from_save_dict(data: Dictionary) -> void:
 	_set_ship_visual_departed(ship_departed)
 	if current_orders.is_empty():
 		_generate_orders()
-	if market_offers.is_empty():
+	var expansion_market_complete := true
+	if GameManager.level >= 10:
+		for expansion_item in ["dozer_wheel", "dozer_blade", "dozer_exhaust"]:
+			var found := false
+			for offer in market_offers:
+				if str(offer.get("item_id", "")) == expansion_item:
+					found = true
+					break
+			if not found:
+				expansion_market_complete = false
+				break
+	if market_offers.is_empty() or not expansion_market_complete:
 		_generate_market_offers()
 	trade_state_changed.emit()
 
