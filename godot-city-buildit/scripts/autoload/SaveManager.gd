@@ -211,6 +211,8 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 	if road_system == null:
 		return false
 	LandExpansionManager.from_save_dict(land_expansion_data)
+	if land_expansion_data.is_empty():
+		LandExpansionManager.migrate_legacy_land(road_data, building_data)
 	BuildManager.cancel_placement()
 	if BuildManager.is_moving:
 		BuildManager.cancel_move()
