@@ -1,5 +1,7 @@
 extends Node3D
 
+const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
+
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const Icons = preload("res://scripts/ui/Icons.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
@@ -3295,6 +3297,46 @@ func _run_gameplay_test() -> void:
 		restored_home._process(0.0)
 		_check(not restored_home.upgrade_in_progress and restored_home.upgrade_stage == 3, "Restored residential upgrade did not finish from its saved timestamp.")
 	_check(GameManager.population > saved_population_expected, "Completing the restored upgrade must add residents without subtracting the previous population.")
+
+
+	# Land expansion: adjacency, three-item atomic payment, ownership and save persistence.
+	var previous_land_state: Dictionary = LandExpansionManager.to_save_dict()
+	var previous_storage_items: Dictionary = StorageManager.items.duplicate(true)
+	var previous_storage_capacity := StorageManager.capacity
+	var previous_mayor_level := GameManager.level
+	var expansion_test_tile := Vector2i(3, 0)
+	var expansion_cost: Dictionary = LandExpansionManager.get_tile_cost(expansion_test_tile)
+	GameManager.level = 10
+	StorageManager.capacity = 100
+	StorageManager.items = {}
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 0)), "The initial central city plots must be owned and buildable.")
+	_check(not LandExpansionManager.is_cell_unlocked(Vector2i(35, 0)), "Unopened outer plots must remain locked.")
+	_check(LandExpansionManager.get_available_expansion_tiles().has(expansion_test_tile), "A plot directly adjacent to owned land must be available for expansion.")
+	_check(not LandExpansionManager.expand_tile(expansion_test_tile), "Land expansion must reject a purchase when any required Dozer item is missing.")
+	_check(StorageManager.add_items(expansion_cost), "Could not seed the isolated expansion-item inventory test.")
+	_check(LandExpansionManager.can_expand_tile(expansion_test_tile), "The adjacent plot must become purchasable when all three expansion items are present.")
+	_check(LandExpansionManager.expand_tile(expansion_test_tile), "A fully funded adjacent plot must be claimable.")
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(24, 0)), "Claiming a plot must unlock its complete eight-by-eight-cell footprint.")
+	_check(StorageManager.get_count("dozer_wheel") == 0 and StorageManager.get_count("dozer_blade") == 0 and StorageManager.get_count("dozer_exhaust") == 0, "A land claim must atomically consume all three required Dozer items.")
+	var saved_expansion_state: Dictionary = LandExpansionManager.to_save_dict()
+	LandExpansionManager.from_save_dict(saved_expansion_state)
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(24, 0)), "Claimed land must survive LandExpansionManager save/load serialization.")
+	LandExpansionManager.from_save_dict(previous_land_state)
+	StorageManager.items = previous_storage_items
+	StorageManager.capacity = previous_storage_capacity
+	StorageManager.storage_changed.emit()
+	StorageManager.capacity_changed.emit(StorageManager.capacity)
+	GameManager.level = previous_mayor_level
+
+	# Livestock may graze only on the two desert fringe strips, never on asphalt,
+	# connected roads or player-owned/buildable city plots.
+	var livestock_probe := MeadowLivestockScript.new()
+	add_child(livestock_probe)
+	_check(livestock_probe.is_valid_grazing_position(Vector3(-30.0, 0.0, 85.0)), "Livestock must be allowed to graze on the designated northern desert pasture.")
+	_check(livestock_probe.is_valid_grazing_position(Vector3(25.0, 0.0, -85.0)), "Livestock must be allowed to graze on the designated southern desert pasture.")
+	_check(not livestock_probe.is_valid_grazing_position(Vector3(-55.0, 0.0, 85.0)), "Livestock must never enter the external highway asphalt corridor.")
+	_check(not livestock_probe.is_valid_grazing_position(Vector3(0.0, 0.0, 0.0)), "Livestock must never enter unlocked city plots.")
+	livestock_probe.queue_free()
 
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
