@@ -734,6 +734,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	var east_to_west_to := Vector2i(-1, 0)
 	_check(not TrafficManager._junction_movements_conflict(west_to_east_from, west_to_east_to, east_to_west_from, east_to_west_to, junction_cell), "Opposing straight-through movements on separated right-hand lanes must be compatible.")
 	_check(TrafficManager._junction_movements_conflict(west_to_east_from, west_to_east_to, Vector2i(0, -1), Vector2i(0, 1), junction_cell), "Crossing straight-through movements must be classified as conflicting.")
+	_check(TrafficManager._junction_movements_conflict(Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0), junction_cell), "A left turn must conflict with an opposing straight-through movement.")
 	_check(TrafficManager._approach_has_right_of_way(Vector2i(1, 0), {Vector2i(0, -1): 1}), "A vehicle must yield to queued traffic approaching from its right.")
 	_check(TrafficManager._select_junction_approach({Vector2i(1, 0): 1, Vector2i(0, -1): 1}, {Vector2i(1, 0): 0.0, Vector2i(0, -1): 0.0}) == Vector2i(0, -1), "Right-hand priority must select the approach that has right of way.")
 	_check(is_equal_approx(TrafficManager._select_junction_approach({Vector2i(1, 0): 1, Vector2i(0, -1): 1}, {Vector2i(1, 0): 9.0, Vector2i(0, -1): 0.0}).x, 1.0), "The eight-second fairness override must prevent permanent starvation under right-hand yielding.")
