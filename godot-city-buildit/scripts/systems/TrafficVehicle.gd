@@ -114,6 +114,22 @@ func _process(delta: float) -> void:
 			_segment_index += 1
 		_segment_progress = 0.0
 
+func replace_route(new_route: Array[Vector2i]) -> void:
+	if new_route.size() < 2:
+		return
+	route = new_route.duplicate()
+	_segment_index = 0
+	_segment_progress = 0.0
+	_initial_leg_complete = true
+	_last_segment_direction = Vector2i.ZERO
+	_traffic_stop_elapsed = 0.0
+	congestion_release_active = false
+	route_distance = 0.0
+	route_key = TrafficManager._route_key(route)
+	lane_direction = route[1] - route[0]
+	_started = true
+	TrafficManager.release_all_junction_entries(self)
+
 func _cell_center(cell: Vector2i) -> Vector3:
 	var world_x := float(cell.x) * 2.0 + 1.0
 	return Vector3(world_x, ground_height, float(cell.y) * 2.0 + 1.0)
