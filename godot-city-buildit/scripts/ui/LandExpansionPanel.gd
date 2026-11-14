@@ -30,14 +30,14 @@ func _rebuild_panel() -> void:
 
 	var panel := PanelContainer.new()
 	panel.name = "LandExpansionDialog"
-	panel.anchor_left = 0.5
-	panel.anchor_right = 0.5
-	panel.anchor_top = 0.5
-	panel.anchor_bottom = 0.5
-	panel.offset_left = -350
-	panel.offset_right = 350
-	panel.offset_top = -250
-	panel.offset_bottom = 250
+	panel.anchor_left = 0.05
+	panel.anchor_right = 0.95
+	panel.anchor_top = 0.05
+	panel.anchor_bottom = 0.95
+	panel.offset_left = 0.0
+	panel.offset_right = 0.0
+	panel.offset_top = 0.0
+	panel.offset_bottom = 0.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#142C3A")
@@ -80,7 +80,7 @@ func _rebuild_panel() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	layout.add_child(scroll)
 	tile_grid = GridContainer.new()
-	tile_grid.columns = 4
+	tile_grid.columns = 3
 	tile_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile_grid.add_theme_constant_override("h_separation", 8)
 	tile_grid.add_theme_constant_override("v_separation", 8)
