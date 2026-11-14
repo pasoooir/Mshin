@@ -639,6 +639,10 @@ func _test_gateway_vehicle_route(road_system) -> void:
 	_check(route.front() == road_system.GATEWAY_ROAD_CELL and route.back() == road_system.GATEWAY_ROAD_CELL, "The simulated vehicle route must start and finish at the permanent Gateway.")
 	for cell in route:
 		_check(connected_roads.has(cell), "Every vehicle route cell must belong to the Gateway-connected road graph.")
+	var adaptive_route := TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
+	_check(adaptive_route.size() >= 2 and adaptive_route.front() == road_system.GATEWAY_ROAD_CELL and adaptive_route.back() == Vector2i(1, -1), "The city route planner must find a valid path between connected road destinations.")
+	for cell in adaptive_route:
+		_check(connected_roads.has(cell), "Adaptive route planning must never leave the Gateway-connected road graph.")
 	var vehicle := TrafficManager.spawn_vehicle_now()
 	_check(is_instance_valid(vehicle), "TrafficManager must spawn a vehicle on the Gateway route.")
 	if is_instance_valid(vehicle):
@@ -688,6 +692,19 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager._active_vehicles.clear()
 	TrafficManager._active_vehicles.append(follower)
 	TrafficManager._active_vehicles.append(leader)
+	var load_probe_a := TrafficVehicle.new()
+	var load_probe_b := TrafficVehicle.new()
+	load_probe_a.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
+	load_probe_b.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
+	TrafficManager._active_vehicles.append(load_probe_a)
+	TrafficManager._active_vehicles.append(load_probe_b)
+	_check(TrafficManager.get_road_cell_vehicle_load(Vector2i(-22, -1)) == 2, "The city traffic network must count vehicles currently occupying a road segment.")
+	var congestion_aware_route := TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
+	_check(not congestion_aware_route.has(Vector2i(-22, -1)), "Route planning must divert around a heavily occupied road when a connected alternative has lower travel cost.")
+	TrafficManager._active_vehicles.erase(load_probe_a)
+	TrafficManager._active_vehicles.erase(load_probe_b)
+	load_probe_a.free()
+	load_probe_b.free()
 	_check(not TrafficManager.is_frontmost_vehicle_in_lane(follower), "A vehicle with another vehicle ahead in its lane must not be treated as the frontmost stopped vehicle.")
 	_check(TrafficManager.is_frontmost_vehicle_in_lane(leader), "The leading vehicle with no vehicle ahead in its lane must be eligible for the four-second release.")
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A follower must stop when the same-lane vehicle ahead is inside the minimum safe gap.")
