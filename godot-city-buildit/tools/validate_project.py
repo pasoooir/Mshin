@@ -1356,6 +1356,7 @@ for contract in [
     "func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, from_cell: Vector2i = Vector2i.ZERO) -> bool:",
     "JUNCTION_YELLOW_SECONDS: float = 1.0",
     "JUNCTION_ALL_RED_SECONDS: float = 0.5",
+    "JUNCTION_RIGHT_OF_WAY_MAX_WAIT_SECONDS: float = 8.0",
     "func release_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i) -> void:",
     "CITY_SPEED_MULTIPLIER: float = 4.0",
     "HIGHWAY_SPEED_MULTIPLIER: float = 16.0",
