@@ -718,12 +718,16 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	var junction_a := TrafficVehicle.new()
 	var junction_b := TrafficVehicle.new()
 	var junction_cell := Vector2i(0, 0)
+	junction_a.route = [Vector2i(-1, 0), junction_cell, Vector2i(1, 0)]
+	junction_b.route = [Vector2i(-1, 0), junction_cell, Vector2i(1, 0)]
 	_check(TrafficManager.is_junction_cell(junction_cell), "The starter road T-junction must be recognized as a controlled junction.")
-	_check(TrafficManager.request_junction_entry(junction_a, junction_cell), "The first vehicle must acquire an unoccupied junction.")
-	_check(not TrafficManager.request_junction_entry(junction_b, junction_cell), "A second vehicle must wait while the same movement occupies the junction conflict zone.")
+	TrafficManager._junction_signal_states[junction_cell] = {"approach": Vector2i(1, 0), "stage": "green", "elapsed": 0.0, "green_duration": TrafficManager.JUNCTION_MIN_GREEN_SECONDS, "waiting": {}}
+	_check(TrafficManager.request_junction_entry(junction_a, junction_cell, Vector2i(-1, 0)), "The first vehicle must acquire an unoccupied junction.")
+	_check(not TrafficManager.request_junction_entry(junction_b, junction_cell, Vector2i(-1, 0)), "A second vehicle must wait while the same movement occupies the junction conflict zone.")
 	TrafficManager.release_junction_entry(junction_a, junction_cell)
-	_check(TrafficManager.request_junction_entry(junction_b, junction_cell), "The waiting vehicle must acquire the junction after the first vehicle clears it.")
+	_check(TrafficManager.request_junction_entry(junction_b, junction_cell, Vector2i(-1, 0)), "The waiting vehicle must acquire the junction after the first vehicle clears it.")
 	TrafficManager.release_all_junction_entries(junction_b)
+	TrafficManager._junction_signal_states.erase(junction_cell)
 	var west_to_east_from := Vector2i(-1, 0)
 	var west_to_east_to := Vector2i(1, 0)
 	var east_to_west_from := Vector2i(1, 0)
