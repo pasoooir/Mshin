@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Convert every icon SVG to a transparent, 512x512 RGBA PNG and migrate references."""
 from pathlib import Path
-import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,8 +28,7 @@ for source in svg_files:
         raise SystemExit(f"Output is not a valid PNG: {destination}")
     converted.append((source, destination))
 
-# Migrate only references under assets/icons; leave unrelated project SVGs intact.
-pattern = re.compile(r'((?:res://)?[^"\\s<>]*assets/icons/[^"\\s<>]*?)\\.svg')
+# Replace exact asset paths, preserving unrelated SVG resources elsewhere.
 updated_files = []
 for path in ROOT.rglob("*"):
     if not path.is_file() or path.suffix.lower() in {".svg", ".png", ".jpg", ".jpeg", ".webp", ".glb", ".gltf", ".zip", ".apk"}:
@@ -41,7 +39,10 @@ for path in ROOT.rglob("*"):
         original = path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, OSError):
         continue
-    updated = pattern.sub(r"\\1.png", original)
+    updated = original
+    for source, _ in converted:
+        old_path = "assets/icons/" + source.relative_to(ICON_ROOT).as_posix()
+        updated = updated.replace(old_path, old_path[:-4] + ".png")
     if updated != original:
         path.write_text(updated, encoding="utf-8")
         updated_files.append(path.relative_to(ROOT).as_posix())
