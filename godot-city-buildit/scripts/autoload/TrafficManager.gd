@@ -119,6 +119,20 @@ func _active_highway_vehicle_count() -> int:
 			count += 1
 	return count
 
+func _get_active_lane_index(vehicle: TrafficVehicle) -> int:
+	if not is_instance_valid(vehicle) or vehicle.vehicle_kind != "highway" or vehicle.route.is_empty():
+		return 0
+	var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
+	if segment_index + 1 >= vehicle.route.size():
+		return 0
+	var from_cell: Vector2i = vehicle.route[segment_index]
+	var to_cell: Vector2i = vehicle.route[segment_index + 1]
+	# The three motorway lane indices cease to exist at the merge. Once a
+	# vehicle is on the city connector/roads, every public car uses city lane 0.
+	if from_cell.x == HIGHWAY_GRID_X and to_cell.x == HIGHWAY_GRID_X and from_cell.y != to_cell.y:
+		return clampi(vehicle.lane_index, 0, HIGHWAY_LANE_OFFSETS.size() - 1)
+	return 0
+
 func _active_emergency_vehicle_count() -> int:
 	var count := 0
 	for vehicle in _active_vehicles:
@@ -148,7 +162,7 @@ func is_frontmost_vehicle_in_lane(vehicle: TrafficVehicle) -> bool:
 	for other in _active_vehicles:
 		if not is_instance_valid(other) or other == vehicle:
 			continue
-		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or other.lane_index != vehicle.lane_index:
+		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or _get_active_lane_index(other) != _get_active_lane_index(vehicle):
 			continue
 		if other.route_distance - vehicle.route_distance > 0.0:
 			return false
@@ -399,7 +413,7 @@ func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> fl
 	for other in _active_vehicles:
 		if not is_instance_valid(other) or other == vehicle:
 			continue
-		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or other.lane_index != vehicle.lane_index:
+		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or _get_active_lane_index(other) != _get_active_lane_index(vehicle):
 			continue
 		var gap := other.route_distance - vehicle.route_distance
 		if gap > 0.0 and gap < nearest_gap:
@@ -454,7 +468,7 @@ func build_gateway_round_trip_route() -> Array[Vector2i]:
 func get_road_cell_vehicle_load(grid_cell: Vector2i) -> int:
 	var load := 0
 	for vehicle in _active_vehicles:
-		if not is_instance_valid(vehicle) or vehicle.vehicle_kind == "highway":
+		if not is_instance_valid(vehicle):
 			continue
 		if vehicle.route.is_empty():
 			continue
