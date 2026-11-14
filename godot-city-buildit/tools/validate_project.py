@@ -748,7 +748,7 @@ if highway_body is None or "HIGHWAY_LANE_COUNT" not in world_source or "HighwayC
     errors.append("The six-lane permanent highway must retain its city connector")
 lane_body = re.search(r"func _add_highway_lane_dashes\(\).*?(?=\nfunc |\Z)", world_source, re.S)
 lighting_body = re.search(r"func _build_highway_lighting\(\).*?(?=\nfunc |\Z)", world_source, re.S)
-if lighting_body is None or "range(2)" not in lighting_body.group(0) or "MotorwayLightPoles" not in lighting_body.group(0):
+if lighting_body is None or "for side in [-1.0, 1.0]" not in lighting_body.group(0) or "MotorwayLightPoles" not in lighting_body.group(0):
     errors.append("Motorway light poles must be instanced on both sides of the permanent highway")
 livestock_body = re.search(r"func _build_meadow_livestock\(\).*?(?=\nfunc |\Z)", world_source, re.S)
 if livestock_body is None or "SheepWoolBodies" not in livestock_body.group(0) or "CattleBodies" not in livestock_body.group(0):
