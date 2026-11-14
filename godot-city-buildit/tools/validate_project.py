@@ -1434,7 +1434,7 @@ for contract in [
     "A left turn must conflict with an opposing straight-through movement",
     "Turning paths must be sampled as curved swept centre-lines rather than a single straight chord",
     "A junction entry must be denied when the second downstream storage cell is occupied",
-    "New city trips must not be planned through a temporarily blocked road cell",
+    "New city trips must remain buildable while avoiding a temporarily blocked road cell",
     "Clearing one incident must not reopen a road that remains blocked by another incident",
     "The road must reopen only after every incident source clears its closure",
     "A vehicle must yield to queued traffic approaching from its right",
