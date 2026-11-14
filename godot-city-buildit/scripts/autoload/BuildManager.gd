@@ -44,7 +44,7 @@ const CONSTRUCTION_BOM_PROFILES := {
 	"service": {"nails": 1, "metal": 1},
 	"park": {"nails": 1, "wood": 1}
 }
-const CONSTRUCTION_BOM_BOOTSTRAP_TYPES := ["residential_1", "residential_villa", "factory_small", "building_supplies", "shop_chain"]
+const CONSTRUCTION_BOM_BOOTSTRAP_TYPES := ["residential_1", "residential_villa", "factory_small", "industrial_1", "building_supplies", "shop_chain"]
 
 var building_types: Dictionary = {
 	"residential_1": {"name":"Small House", "category":"residential", "service_demand":1, "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
