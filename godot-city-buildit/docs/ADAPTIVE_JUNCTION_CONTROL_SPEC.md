@@ -1,29 +1,24 @@
-# Adaptive junction controller
+# Junction movement safety, right-of-way and rerouting
 
-## Implemented behavior
+## Implemented in this slice
 
-- TrafficManager measures the number of active vehicles queued for each incoming approach of a controlled T/cross junction.
-- A junction selects one incoming approach for green. Green duration grows with the observed queue and is bounded by configured minimum/maximum values.
-- A competing queue causes the current green to end when its approach empties; otherwise the maximum green duration bounds how long one approach can retain service.
-- Phase transitions use a 1.0-second yellow interval followed by a 0.5-second all-red clearance interval.
-- The next approach is selected by accumulated waiting time, with queue size as a tie-breaker. Waiting time resets for the approach that receives green, preventing a continuously queued approach from monopolizing service.
-- The existing exclusive junction-cell reservation remains an additional physical occupancy guard. It is deliberately conservative: only one vehicle may occupy the junction conflict zone at a time.
-- A denied signal admission remains a hard stop. The four-second frontmost congestion recovery cannot override a red/yellow/all-red phase.
+- **Movement conflict detection:** each entering vehicle registers its incoming and outgoing road cells. The controller compares lane-offset movement segments, rejects intersecting paths, and permits opposing straight-through movements when their right-hand lanes remain separated.
+- **Right-of-way:** under right-hand traffic, an approach yields when a queued vehicle is present on its right. A waiting approach receives a fairness override after 8 seconds so a circular priority pattern cannot starve it indefinitely.
+- **Downstream clearance:** a vehicle cannot reserve a junction movement unless its exit cell is part of the Gateway-connected road network and is not currently occupied or being entered by another vehicle.
+- **Reservation lifecycle:** movement reservations are per vehicle and are removed when the vehicle leaves the junction, completes its route, is deleted, or is pruned from the active fleet.
+- **Closure rerouting:** when the road graph changes, active city vehicles with invalid routes attempt a new weighted route from their current/nearest connected road cell to their original/nearest surviving destination. Only trips with no remaining connected path are retired.
+- The adaptive green/yellow/all-red phase controller remains a separate admission gate. The four-second frontmost congestion crawl cannot bypass a denied junction phase.
 
-## Explicit boundaries
+## Safety boundaries
 
-This slice is an adaptive approach-phase controller, not a complete turn-movement signal model. It does not yet permit compatible opposing movements to proceed simultaneously, distinguish protected left/right turns, model pedestrian phases, or perform emergency pre-emption. It also does not claim country-specific traffic-law compliance or rendered traffic-light props.
+The movement geometry is a lane-offset segment approximation on the road grid, not a full vehicle swept-volume physics model. The right-hand rule is implemented as an approach-level yield rule and an 8-second fairness override; it is not a claim of complete jurisdiction-specific legal compliance. Exit clearance currently checks the immediate downstream cell, not a multi-cell storage bay. Highway vehicles remain outside city-road closure rerouting.
 
-The existing exclusive reservation is retained until a tested turn-conflict matrix and swept-path/exit-clearance model can safely replace it.
+## Regression coverage
 
-## Verification
+GameplaySmoke checks:
+- opposing straight-through compatibility and crossing-movement conflict;
+- yield to traffic from the right and bounded starvation override;
+- rejection when downstream exit space is disconnected;
+- existing signal clearance, route connectivity and four-second stop recovery contracts.
 
-GameplaySmoke exercises:
-- initial green selection and approach-specific admission;
-- rejection of a competing approach during green;
-- rejection during yellow and all-red;
-- transition through the configured clearance intervals;
-- longest-waiting approach handoff and renewed admission;
-- the existing exclusive reservation and four-second frontmost-only recovery.
-
-Static project validation checks the controller API and the behavior-test contracts. CI/runtime success must be taken from actual workflow results, not inferred from this specification.
+Static validation checks the new controller, exit-clearance, right-of-way and rerouting APIs. CI results must be reported from actual workflow runs.
