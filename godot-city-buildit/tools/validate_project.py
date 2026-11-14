@@ -1357,7 +1357,7 @@ for contract in [
     "TrafficManager.get_safe_vehicle_speed(self, desired_speed)",
     "TrafficManager.LANE_CENTER_OFFSET",
     "TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)",
-    "var lane_offset: float = 0.30",
+    "var lane_offset: float = 0.32",
     "var ground_height: float = 0.05",
     '"EmergencyLightbar"',
 ]:
