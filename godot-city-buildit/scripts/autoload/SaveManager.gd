@@ -184,6 +184,9 @@ func load_game() -> bool:
 	RegionManager.store_active_region_snapshot(capture_region_snapshot())
 	AchievementManager.from_save_dict(parsed.get("achievements", {}))
 	GameManager.level_changed.emit(GameManager.level)
+	# Loading a save changes XP without calling add_experience(); notify the HUD
+	# explicitly so its numeric label, progress bar and level ring cannot stay stale.
+	GameManager.xp_changed.emit(GameManager.experience, GameManager.get_xp_needed())
 	GameManager.population_changed.emit(GameManager.population)
 	GameManager.happiness_changed.emit(GameManager.happiness)
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
