@@ -20,6 +20,7 @@ var _segment_index: int = 0
 var _segment_progress: float = 0.0
 var _started: bool = false
 var _initial_leg_complete: bool = false
+var _last_segment_direction: Vector2i = Vector2i.ZERO
 
 func _ready() -> void:
 	_build_vehicle_mesh()
@@ -51,7 +52,7 @@ func _process(delta: float) -> void:
 		from_position = initial_position
 		to_position = _lane_position(from_cell, travel_direction)
 	else:
-		from_position = _lane_position(from_cell, travel_direction)
+		from_position = global_position if _last_segment_direction != Vector2i.ZERO and _last_segment_direction != travel_direction else _lane_position(from_cell, travel_direction)
 		to_position = _lane_position(to_cell, travel_direction)
 
 	var segment_length := from_position.distance_to(to_position)
@@ -59,6 +60,7 @@ func _process(delta: float) -> void:
 		if not _initial_leg_complete:
 			_initial_leg_complete = true
 		else:
+			_last_segment_direction = travel_direction
 			_segment_index += 1
 		_segment_progress = 0.0
 		return
