@@ -16,6 +16,11 @@
 
 **Acceptance boundary:** production code, recipe integrity, economy diagnostics, long-session/offline regression tests and mobile-viewport UI behavior are automated and passing. A real Android device screenshot comparison and physical touch test remain unverified. Do not claim pixel-identical SimCity BuildIt UI until that physical check is performed.
 
+## Research documentation
+
+- [SCBI Item & Recipe Reference](reference/SCBI_ITEM_RECIPE_REFERENCE.md) — standalone, source-traceable index of 16 raw materials and all 73 current `ProductionManager.gd` recipe definitions across 14 store families, with direct ingredients, base times, unlock gates, provenance, and unresolved conflicts.
+- The catalogue is a documentation snapshot of current Mshin data; community recipe tables are secondary sources, not official EA confirmation. No gameplay data was changed in this documentation-only branch.
+
 ## Six implementation slices
 
 | Slice | Deliverable | Evidence | Status |
