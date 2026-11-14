@@ -1411,6 +1411,7 @@ for contract in [
     "The longest-waiting competing approach must receive the next green phase to prevent starvation",
     "A downstream exit cell already being occupied by another vehicle must be rejected",
     "A connected road cell must accept a temporary traffic blockage",
+    "The permanent highway Gateway must never be marked as blocked",
     "A blocked two-lane road tile must be removed from effective traffic capacity",
     "Clearing a temporary blockage must restore the road tile's traffic capacity",
     "Vehicles must recalculate their route when an incident marks a road cell blocked",
