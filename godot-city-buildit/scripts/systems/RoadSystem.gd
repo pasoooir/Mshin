@@ -219,7 +219,7 @@ func get_road_placement_error(grid_pos: Vector2i) -> String:
 		return "This tile is reserved for the permanent highway asphalt corridor."
 	if not _has_adjacent_road(grid_pos):
 		return "Road must connect to the active highway network."
-	if not BuildManager.is_cell_free(grid_pos, Vector2i.ONE):
+	if not BuildManager.is_cell_free(grid_pos, Vector2i.ONE, true):
 		return "This tile is occupied by a building."
 	if not EconomyManager.can_afford(ROAD_COST):
 		return "Not enough Simoleons. Each road tile costs 50."
