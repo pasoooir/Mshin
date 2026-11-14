@@ -21,7 +21,9 @@ converted = []
 for source in svg_files:
     destination = source.with_suffix(".png")
     if destination.exists():
-        raise SystemExit(f"Refusing to overwrite existing PNG without review: {destination.relative_to(ROOT)}")
+        destination = source.with_name(source.stem + "_from_svg.png")
+    if destination.exists():
+        raise SystemExit(f"Refusing to overwrite an existing converted asset: {destination.relative_to(ROOT)}")
     cairosvg.svg2png(bytestring=source.read_bytes(), write_to=str(destination), output_width=512, output_height=512)
     data = destination.read_bytes()
     if len(data) < 64 or data[:8] != bytes((137, 80, 78, 71, 13, 10, 26, 10)):
@@ -40,9 +42,10 @@ for path in ROOT.rglob("*"):
     except (UnicodeDecodeError, OSError):
         continue
     updated = original
-    for source, _ in converted:
+    for source, destination in converted:
         old_path = "assets/icons/" + source.relative_to(ICON_ROOT).as_posix()
-        updated = updated.replace(old_path, old_path[:-4] + ".png")
+        new_path = "assets/icons/" + destination.relative_to(ICON_ROOT).as_posix()
+        updated = updated.replace(old_path, new_path)
     if updated != original:
         path.write_text(updated, encoding="utf-8")
         updated_files.append(path.relative_to(ROOT).as_posix())
