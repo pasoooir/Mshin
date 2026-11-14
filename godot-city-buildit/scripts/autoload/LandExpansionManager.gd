@@ -120,8 +120,9 @@ func get_tile_error(tile: Vector2i) -> String:
 			var needed := int(cost[item_id])
 			var have := StorageManager.get_count(item_id)
 			if have < needed:
-				missing.append("%s %d/%d" % [str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id)), have, needed])
-		return "Missing expansion items: " + " · ".join(missing)
+				var item_definition: Dictionary = StorageManager.item_definitions.get(item_id, {})
+				missing.append("%s %d/%d" % [str(item_definition.get("name", item_id)), have, needed])
+		return "Missing expansion items: " + " · ".join(PackedStringArray(missing))
 	return ""
 
 func can_expand_tile(tile: Vector2i) -> bool:
