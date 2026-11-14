@@ -1332,20 +1332,34 @@ for contract in [
 # A real 3D vehicle must traverse the connected Gateway graph and return.
 for contract in [
     "func build_gateway_round_trip_route() -> Array[Vector2i]",
-    "var start: Vector2i = road_system.GATEWAY_ROAD_CELL",
+    "func _build_round_trip_route_from(start: Vector2i) -> Array[Vector2i]",
     "func spawn_vehicle_now() -> TrafficVehicle:",
-    "vehicle.route_completed.connect(_on_vehicle_route_completed)",
-    "func _validate_active_vehicle_route(connected_roads: Dictionary)",
+    "func spawn_emergency_vehicle(station: Node3D) -> TrafficVehicle:",
+    "func build_station_patrol_route(station: Node3D) -> Array[Vector2i]",
+    "func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> float:",
+    "CITY_SPEED_MULTIPLIER: float = 4.0",
+    "HIGHWAY_SPEED_MULTIPLIER: float = 16.0",
+    "LANE_CENTER_OFFSET: float = 0.32",
+    "HIGHWAY_GRID_X: int = -28",
+    "HIGHWAY_WORLD_X: float = -55.0",
+    "func build_highway_route(northbound: bool) -> Array[Vector2i]",
+    "func spawn_highway_vehicle_now() -> TrafficVehicle:",
+    "func _update_emergency_dispatch(delta: float) -> void:",
+    "func _validate_active_vehicle_routes(connected_roads: Dictionary)",
 ]:
     if contract not in traffic_manager_source:
-        errors.append(f"Gateway vehicle route contract is missing: {contract}")
+        errors.append(f"Road traffic and emergency fleet contract is missing: {contract}")
 for contract in [
     "class_name TrafficVehicle",
     "extends Node3D",
     "signal route_completed",
     "func _process(delta: float) -> void:",
-    "global_position = from_position.lerp(to_position, progress)",
-    'instance.name = node_name',
+    "route_distance += step",
+    "TrafficManager.get_safe_vehicle_speed(self, desired_speed)",
+    "TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)",
+    "var lane_offset: float = 0.32",
+    "var ground_height: float = 0.05",
+    '"EmergencyLightbar"',
 ]:
     if contract not in traffic_vehicle_source:
         errors.append(f"3D traffic vehicle movement contract is missing: {contract}")
@@ -1353,9 +1367,19 @@ for contract in [
     "func _test_gateway_vehicle_route(",
     "The simulated vehicle route must start and finish at the permanent Gateway",
     "The simulated vehicle must advance along its road route",
+    "func _test_traffic_lane_rules_and_emergency_fleet(",
+    "City vehicles must use the required 4x speed multiplier",
+    "External highway vehicles must use the required 16x speed multiplier",
+    "Northbound motorway traffic must run only toward the north exit",
+    "Southbound motorway traffic must run only toward the south exit",
+    "visible external six-lane motorway must spawn its own traffic fleet",
+    "Motorway vehicles must physically travel on the external divided highway",
+    "same-lane vehicle ahead is inside the minimum safe gap",
+    "An operational police station must automatically dispatch a police vehicle",
+    "An operational fire station must automatically dispatch a fire engine",
 ]:
     if contract not in gameplay_smoke_source:
-        errors.append(f"Gateway vehicle route regression test is missing: {contract}")
+        errors.append(f"Road traffic/emergency fleet regression test is missing: {contract}")
 
 # Road tier changes must alter the network's traffic capacity and city happiness.
 for contract in [

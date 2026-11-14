@@ -650,6 +650,113 @@ func _test_gateway_vehicle_route(road_system) -> void:
 	TrafficManager.vehicle_simulation_enabled = previous_enabled
 	TrafficManager.recalculate_from_roads()
 
+func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "City vehicles must use the required 4x speed multiplier.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)) * 3.6, TrafficManager.CITY_SPEED_LIMIT_KMH), "City traffic must stay within the calibrated 30 km/h urban speed ceiling.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "Negative city grid coordinates must not be misclassified as motorway lanes.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway"), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway") * 3.6, TrafficManager.HIGHWAY_SPEED_LIMIT_KMH), "Motorway traffic must stay within the calibrated 120 km/h speed ceiling.")
+	var northbound_route := TrafficManager.build_highway_route(true)
+	var southbound_route := TrafficManager.build_highway_route(false)
+	_check(northbound_route.front().y == TrafficManager.HIGHWAY_MAX_GRID_Z and northbound_route.back().y == TrafficManager.HIGHWAY_MIN_GRID_Z, "Northbound motorway traffic must run only toward the north exit.")
+	_check(southbound_route.front().y == TrafficManager.HIGHWAY_MIN_GRID_Z and southbound_route.back().y == TrafficManager.HIGHWAY_MAX_GRID_Z, "Southbound motorway traffic must run only toward the south exit.")
+
+	for service_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
+		_check(str(BuildManager.building_types[service_id].get("service_group", "")) == "fire", "Every fire station tier must be included in emergency fleet dispatch: " + service_id)
+	for service_id in ["police_station", "police_small", "police_basic", "police_precinct"]:
+		_check(str(BuildManager.building_types[service_id].get("service_group", "")) == "police", "Every police station tier must be included in emergency fleet dispatch: " + service_id)
+
+	var lane_probe := TrafficVehicle.new()
+	var east_center := lane_probe._cell_center(Vector2i.ZERO)
+	var east_lane := lane_probe._lane_position(Vector2i.ZERO, Vector2i(1, 0))
+	var west_lane := lane_probe._lane_position(Vector2i.ZERO, Vector2i(-1, 0))
+	_check(east_lane.z > east_center.z and west_lane.z < east_center.z, "Opposing traffic must occupy opposite right-hand lanes, never drive head-on in one lane.")
+	lane_probe.free()
+
+	var follower := TrafficVehicle.new()
+	var leader := TrafficVehicle.new()
+	follower.route_key = "traffic-following-test"
+	leader.route_key = "traffic-following-test"
+	follower.lane_direction = Vector2i(1, 0)
+	leader.lane_direction = Vector2i(1, 0)
+	follower.route_distance = 8.0
+	leader.route_distance = 9.5
+	var previous_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
+	TrafficManager._active_vehicles.clear()
+	TrafficManager._active_vehicles.append(follower)
+	TrafficManager._active_vehicles.append(leader)
+	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A vehicle must stop when the same-lane vehicle ahead is inside the minimum safe gap.")
+	TrafficManager._active_vehicles.clear()
+	for previous_vehicle in previous_fleet:
+		TrafficManager._active_vehicles.append(previous_vehicle)
+	follower.free()
+	leader.free()
+
+	TrafficManager.clear_active_vehicle()
+	var highway_vehicle := TrafficManager.spawn_highway_vehicle_now()
+	_check(is_instance_valid(highway_vehicle) and highway_vehicle.vehicle_kind == "highway", "The visible external six-lane motorway must spawn its own traffic fleet.")
+	if is_instance_valid(highway_vehicle):
+		_check(highway_vehicle.route_key.begins_with("coastal-highway-"), "Motorway vehicles must use the separate external highway route, not the city road graph.")
+		_check(TrafficManager.HIGHWAY_LANE_OFFSETS.has(highway_vehicle.lane_offset), "Motorway traffic must be assigned to one of its three legal directional lanes.")
+		var highway_side := 1.0 if highway_vehicle.route[1].y < highway_vehicle.route[0].y else -1.0
+		_check(is_equal_approx(highway_vehicle.global_position.x, TrafficManager.HIGHWAY_WORLD_X + highway_side * TrafficManager.HIGHWAY_LANE_OFFSETS[highway_vehicle.lane_index]), "Motorway vehicles must physically travel on the external divided highway, not the city road grid.")
+	TrafficManager.clear_active_vehicle()
+	var world := get_node("World") as Node3D
+	var police_station := FireHazardTestBuilding.new()
+	police_station.building_id = "traffic-smoke-police"
+	police_station.building_type = "police_station"
+	police_station.grid_pos = Vector2i(0, 1)
+	police_station.definition = {"service_group": "police", "size": Vector2i(2, 2)}
+	police_station.status = "completed"
+	police_station.global_position = BuildManager.grid_to_world(police_station.grid_pos) + Vector3(1.0, 0.0, 1.0)
+	world.add_child(police_station)
+	_check(BuildManager.is_building_operational(police_station), "A completed police station with Gateway-connected road access must be operational.")
+	var police_route := TrafficManager.build_station_patrol_route(police_station)
+	_check(police_route.size() >= 3 and road_system.get_gateway_connected_roads().has(police_route.front()), "Police patrol route must start from the station's connected road exit.")
+	BuildManager.buildings[police_station.building_id] = police_station
+	TrafficManager._update_emergency_dispatch(TrafficManager.EMERGENCY_SPAWN_INTERVAL)
+	var police_vehicle: TrafficVehicle
+	for active_vehicle in TrafficManager._active_vehicles:
+		if active_vehicle.station_building_id == police_station.building_id:
+			police_vehicle = active_vehicle
+	_check(is_instance_valid(police_vehicle) and police_vehicle.vehicle_kind == "police", "An operational police station must automatically dispatch a police vehicle.")
+	if is_instance_valid(police_vehicle):
+		_check(police_vehicle.station_building_id == police_station.building_id, "Police patrol vehicle must retain its originating station identity.")
+		_check(police_vehicle.global_position.distance_to(police_station.global_position) > 2.0 and police_vehicle.global_position.distance_to(police_station.global_position) < 3.0, "Police vehicle must spawn at the station exit before entering its patrol route.")
+		_check(police_vehicle.get_node_or_null("EmergencyLightbar") != null, "Police vehicle must visibly carry an emergency lightbar.")
+		var police_exit_position := police_vehicle.global_position
+		police_vehicle._process(0.2)
+		_check(police_vehicle.global_position.distance_to(police_exit_position) > 0.1, "Police vehicle must leave its station exit and advance onto the patrol route.")
+
+	var fire_station := FireHazardTestBuilding.new()
+	fire_station.building_id = "traffic-smoke-fire"
+	fire_station.building_type = "fire_station_small"
+	fire_station.grid_pos = Vector2i(1, 1)
+	fire_station.definition = {"service_group": "fire", "size": Vector2i.ONE}
+	fire_station.status = "completed"
+	fire_station.global_position = BuildManager.grid_to_world(fire_station.grid_pos)
+	world.add_child(fire_station)
+	BuildManager.buildings[fire_station.building_id] = fire_station
+	TrafficManager._update_emergency_dispatch(TrafficManager.EMERGENCY_SPAWN_INTERVAL)
+	var fire_vehicle: TrafficVehicle
+	for active_vehicle in TrafficManager._active_vehicles:
+		if active_vehicle.station_building_id == fire_station.building_id:
+			fire_vehicle = active_vehicle
+	_check(is_instance_valid(fire_vehicle) and fire_vehicle.vehicle_kind == "fire", "An operational fire station must automatically dispatch a fire engine.")
+	if is_instance_valid(fire_vehicle):
+		_check(fire_vehicle.get_node_or_null("EmergencyLightbar") != null and fire_vehicle.get_node_or_null("FireEquipment") != null, "Fire engine must show its emergency lights and fire-service equipment.")
+		_check(fire_vehicle.global_position.distance_to(fire_station.global_position) > 1.0 and fire_vehicle.global_position.distance_to(fire_station.global_position) < 2.0, "Fire engine must spawn at the fire station exit before entering its route.")
+		var fire_exit_position := fire_vehicle.global_position
+		fire_vehicle._process(0.2)
+		_check(fire_vehicle.global_position.distance_to(fire_exit_position) > 0.1, "Fire engine must leave its station exit and advance onto the response route.")
+
+	TrafficManager.clear_active_vehicle()
+	BuildManager.buildings.erase(police_station.building_id)
+	BuildManager.buildings.erase(fire_station.building_id)
+	police_station.queue_free()
+	fire_station.queue_free()
+	TrafficManager.recalculate_from_roads()
+
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
 	var active_camera: Camera3D = get_viewport().get_camera_3d()
@@ -2236,6 +2343,7 @@ func _run_gameplay_test() -> void:
 	_test_road_gateway_connectivity(road_system)
 	_test_road_traffic_capacity(road_system)
 	_test_gateway_vehicle_route(road_system)
+	_test_traffic_lane_rules_and_emergency_fleet(road_system)
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
