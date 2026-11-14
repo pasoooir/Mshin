@@ -1041,7 +1041,6 @@ for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_ti
         errors.append(f"FireHazardManager dynamic coverage contract is missing: {contract}")
 for contract in [
     "func _process(delta: float) -> void:",
-    "func replace_route(new_route: Array[Vector2i]) -> void:",
     "pan_velocity * delta",
     "rotation_degrees.y += rad_to_deg(orbit_velocity * delta)",
     "static func decay_pan_velocity(",
@@ -1373,6 +1372,7 @@ for contract in [
 for contract in [
     "class_name TrafficVehicle",
     "extends Node3D",
+    "func replace_route(new_route: Array[Vector2i]) -> void:",
     "signal route_completed",
     "func _process(delta: float) -> void:",
     "route_distance += step",
