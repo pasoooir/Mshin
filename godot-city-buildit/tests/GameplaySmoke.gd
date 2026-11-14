@@ -655,7 +655,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)) * 3.6, TrafficManager.CITY_SPEED_LIMIT_KMH), "City traffic must stay within the calibrated 30 km/h urban speed ceiling.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "Negative city grid coordinates must not be misclassified as motorway lanes.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway"), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
-	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1)) * 3.6, TrafficManager.HIGHWAY_SPEED_LIMIT_KMH), "Motorway traffic must stay within the calibrated 120 km/h speed ceiling.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway") * 3.6, TrafficManager.HIGHWAY_SPEED_LIMIT_KMH), "Motorway traffic must stay within the calibrated 120 km/h speed ceiling.")
 	var northbound_route := TrafficManager.build_highway_route(true)
 	var southbound_route := TrafficManager.build_highway_route(false)
 	_check(northbound_route.front().y == TrafficManager.HIGHWAY_MAX_GRID_Z and northbound_route.back().y == TrafficManager.HIGHWAY_MIN_GRID_Z, "Northbound motorway traffic must run only toward the north exit.")
