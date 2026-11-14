@@ -3340,6 +3340,11 @@ func _run_gameplay_test() -> void:
 	LandExpansionManager.from_save_dict(saved_expansion_state)
 	_check(LandExpansionManager.is_cell_unlocked(Vector2i(24, 0)), "Claimed land must survive LandExpansionManager save/load serialization.")
 	LandExpansionManager.from_save_dict(previous_land_state)
+	var legacy_land_state: Dictionary = {"owned_tiles": [[-3, -3]]}
+	LandExpansionManager.from_save_dict(legacy_land_state)
+	LandExpansionManager.migrate_legacy_land([[35, 0, 1]], [{"type":"residential_1", "grid":[34, 0], "rotation_quarters":0}])
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(35, 0)), "A version 3 save must migrate legacy road/building plots to owned land before restoring the city.")
+	LandExpansionManager.from_save_dict(previous_land_state)
 	StorageManager.items = previous_storage_items
 	StorageManager.capacity = previous_storage_capacity
 	StorageManager.storage_changed.emit()
