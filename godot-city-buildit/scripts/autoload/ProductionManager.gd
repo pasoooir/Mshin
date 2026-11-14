@@ -484,24 +484,120 @@ func get_live_store_queue_delay_seconds(store_id: String) -> float:
 	return maxf(0.0, best_delay)
 
 func get_estimated_chain_seconds(item_id: String) -> float:
-	# Display-only estimate: raw inputs are treated as parallel and each
-	# commercial output batch is sequential. This value is never stored in a recipe.
+	# Display-only, inventory-aware schedule. Independent suppliers run in
+	# parallel; work sharing a store/factory lane is serialized. This estimate
+	# is never persisted as recipe data or used to start a production order.
 	if crafted_items.has(item_id) and not bool(crafted_items[item_id].get("unlock_level_verified", true)):
 		return -1.0
-	return _estimate_item_chain_seconds(item_id, 1, {}, {})
+	var schedule_state := {
+		"store_lanes": {},
+		"factory_lanes": {},
+		"planned_outputs": {}
+	}
+	return _estimate_item_chain_seconds(item_id, 1, {}, {}, schedule_state)
 
-func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock: Dictionary, ancestry: Dictionary) -> float:
+func _get_eta_store_lanes(store_id: String, schedule_state: Dictionary) -> Array:
+	var lane_map: Dictionary = schedule_state.get("store_lanes", {})
+	if lane_map.has(store_id):
+		return lane_map[store_id]
+	var lanes: Array = []
+	if is_inside_tree():
+		for component in get_tree().get_nodes_in_group("production_components"):
+			if not is_instance_valid(component) or not component is ProductionComponent:
+				continue
+			if bool(component.is_factory) or str(component.shop_id) != store_id:
+				continue
+			lanes.append(maxf(0.0, float(component.get_queue_delay_seconds())))
+		# Multiple constructed suppliers of the same type are independent lanes.
+	# No built supplier: preserve the existing theoretical dependency-only
+	# estimate using one virtual lane; this does not claim the building exists.
+	if lanes.is_empty():
+		lanes.append(0.0)
+	lane_map[store_id] = lanes
+	schedule_state["store_lanes"] = lane_map
+	return lanes
+
+func _get_eta_factory_lanes(material_id: String, schedule_state: Dictionary) -> Array:
+	var lane_map: Dictionary = schedule_state.get("factory_lanes", {})
+	if lane_map.has(material_id):
+		return lane_map[material_id]
+	var lanes: Array = []
+	if is_inside_tree():
+		var now := int(Time.get_unix_time_from_system())
+		for component in get_tree().get_nodes_in_group("production_components"):
+			if not is_instance_valid(component) or not component is ProductionComponent:
+				continue
+			if not bool(component.is_factory) or not get_factory_material_ids(str(component.factory_type)).has(material_id):
+				continue
+			for slot in component.slots:
+				if slot.is_empty() or bool(slot.get("ready", false)):
+					lanes.append(0.0)
+					continue
+				var finish_unix := int(slot.get("finish_unix", 0))
+				var paused_at := int(slot.get("paused_at_unix", 0))
+				var remaining := maxi(0, finish_unix - now) if paused_at <= 0 else maxi(0, finish_unix - paused_at)
+				lanes.append(float(remaining))
+	# Retain dependency-only ETA when the city has not built a supplier yet.
+	if lanes.is_empty():
+		lanes.append(0.0)
+	lane_map[material_id] = lanes
+	schedule_state["factory_lanes"] = lane_map
+	return lanes
+
+func _schedule_eta_batches(lanes: Array, batch_count: int, start_after: float, duration: float) -> Array:
+	var finishes: Array = []
+	for _batch_index in range(batch_count):
+		var selected_lane := 0
+		for lane_index in range(1, lanes.size()):
+			if float(lanes[lane_index]) < float(lanes[selected_lane]):
+				selected_lane = lane_index
+		var finish_at := maxf(float(lanes[selected_lane]), start_after) + maxf(1.0, duration)
+		lanes[selected_lane] = finish_at
+		finishes.append(finish_at)
+	return finishes
+
+func _estimate_item_chain_seconds(
+		item_id: String, amount: int, remaining_stock: Dictionary,
+		ancestry: Dictionary, schedule_state: Dictionary
+	) -> float:
+	if amount <= 0:
+		return 0.0
+	if ancestry.has(item_id):
+		return -1.0
 	var stock_available := int(remaining_stock.get(item_id, StorageManager.get_count(item_id)))
 	var used_from_stock := mini(amount, stock_available)
 	var missing_amount := maxi(0, amount - used_from_stock)
 	remaining_stock[item_id] = maxi(0, stock_available - used_from_stock)
+	var latest_finish := 0.0
 	if missing_amount <= 0:
-		return 0.0
+		return latest_finish
+
+	# Reuse outputs already scheduled by another branch of this same dependency
+	# graph before planning more production. This avoids double-counting shared
+	# ingredients such as Cream used directly and inside Bread Roll.
+	var planned_outputs: Dictionary = schedule_state.get("planned_outputs", {})
+	var planned_units: Array = planned_outputs.get(item_id, [])
+	while missing_amount > 0 and not planned_units.is_empty():
+		latest_finish = maxf(latest_finish, float(planned_units.pop_front()))
+		missing_amount -= 1
+	planned_outputs[item_id] = planned_units
+	schedule_state["planned_outputs"] = planned_outputs
+	if missing_amount <= 0:
+		return latest_finish
+
 	if raw_materials.has(item_id):
 		var raw_duration := float(raw_materials[item_id].get("time_sec", 0))
-		var factory_wait := get_live_factory_queue_delay_seconds(item_id)
-		return factory_wait + raw_duration
-	if not crafted_items.has(item_id) or ancestry.has(item_id):
+		if raw_duration <= 0.0:
+			return -1.0
+		var raw_lanes := _get_eta_factory_lanes(item_id, schedule_state)
+		var raw_finishes := _schedule_eta_batches(raw_lanes, missing_amount, 0.0, raw_duration)
+		for finish_at in raw_finishes:
+			planned_units.append(float(finish_at))
+		planned_outputs[item_id] = planned_units
+		schedule_state["planned_outputs"] = planned_outputs
+		return maxf(latest_finish, float(raw_finishes.max()))
+
+	if not crafted_items.has(item_id):
 		return -1.0
 	var recipe: Dictionary = crafted_items[item_id]
 	if not bool(recipe.get("unlock_level_verified", true)):
@@ -509,30 +605,36 @@ func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock:
 	var source_text := str(recipe.get("source", "")).to_lower()
 	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
 		return -1.0
-	var dependency_max := 0.0
+	var store_id := str(recipe.get("store", ""))
+	var duration := float(recipe.get("time_sec", 0))
+	var requirements: Dictionary = recipe.get("requires", {})
+	if store_id.is_empty() or duration <= 0.0 or requirements.is_empty():
+		return -1.0
+
+	# Ingredient branches are scheduled independently where they have separate
+	# suppliers. The shared lane state serializes branches using the same store.
+	var dependency_finish := 0.0
 	var next_ancestry := ancestry.duplicate(true)
 	next_ancestry[item_id] = true
-	var requirements: Dictionary = recipe.get("requires", {})
 	for input_id in requirements:
-		var dependency_seconds := _estimate_item_chain_seconds(
-			str(input_id),
-			missing_amount * int(requirements[input_id]),
-			remaining_stock,
-			next_ancestry
-		)
-		if dependency_seconds < 0.0:
+		var quantity := int(requirements[input_id])
+		if quantity <= 0:
 			return -1.0
-		dependency_max = maxf(dependency_max, dependency_seconds)
-	# Add the least-loaded live supplier queue. If no supplier building exists,
-	# keep the dependency-only estimate but report the missing supplier separately
-	# through get_live_store_queue_delay_seconds callers; never invent a queue.
-	var store_id := str(recipe.get("store", ""))
-	var queue_delay := get_live_store_queue_delay_seconds(store_id)
-	if queue_delay < 0.0:
-		return -1.0
-	# This output is one batch; multiple requested units serialize on the same
-	# store's production lane after its current queued work.
-	return dependency_max + queue_delay + float(missing_amount * int(recipe.get("time_sec", 0)))
+		var dependency_finish_at := _estimate_item_chain_seconds(
+			str(input_id), missing_amount * quantity, remaining_stock,
+			next_ancestry, schedule_state
+		)
+		if dependency_finish_at < 0.0:
+			return -1.0
+		dependency_finish = maxf(dependency_finish, dependency_finish_at)
+
+	var store_lanes := _get_eta_store_lanes(store_id, schedule_state)
+	var output_finishes := _schedule_eta_batches(store_lanes, missing_amount, dependency_finish, duration)
+	for finish_at in output_finishes:
+		planned_units.append(float(finish_at))
+	planned_outputs[item_id] = planned_units
+	schedule_state["planned_outputs"] = planned_outputs
+	return maxf(latest_finish, float(output_finishes.max()))
 
  
 func get_recipe_economy_profile(item_id: String) -> Dictionary:
