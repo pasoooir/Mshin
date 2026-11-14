@@ -755,9 +755,9 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(not TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(1, 0)), "A downstream exit cell already being occupied by another vehicle must be rejected.")
 	TrafficManager._active_vehicles.erase(exit_blocker)
 	exit_blocker.free()
-	junction_a.route.append(Vector2i(2, 0))
+	junction_a.route.append(Vector2i(1, -1))
 	var second_exit_blocker := TrafficVehicle.new()
-	second_exit_blocker.route = [Vector2i(2, 0), Vector2i(3, 0)]
+	second_exit_blocker.route = [Vector2i(1, -1), Vector2i(0, -1)]
 	TrafficManager._active_vehicles.append(second_exit_blocker)
 	_check(not TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(1, 0)), "A junction entry must be denied when the second downstream storage cell is occupied.")
 	TrafficManager._active_vehicles.erase(second_exit_blocker)
