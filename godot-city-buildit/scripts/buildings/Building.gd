@@ -297,7 +297,7 @@ func _create_visual() -> void:
 					Color(0.88, 0.82, 0.69), Color(0.24, 0.43, 0.54),
 					is_apartment, is_farm
 				)
-			elif category == "commercial":
+			elif category == "commercial" and not model_path.ends_with(".tscn"):
 				var commercial_floors := 1 if upgrade_stage < 3 else (2 if upgrade_stage < 5 else 3)
 				var commercial_body_h := height if commercial_floors == 1 else maxf(height, 2.0 + float(commercial_floors - 1) * 1.25)
 				_build_commercial_identity(w, d, commercial_body_h, d * 0.5, upgrade_stage)
