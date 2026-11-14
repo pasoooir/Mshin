@@ -122,6 +122,13 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | [#447](https://github.com/pasoooir/Mshin/pull/447) | بستن مسیر legacy `Building.collect_production()` هنگام قطع اتصال Gateway و افزودن رگرسیون Building واقعی | PR Godot Validation و Web/Chromium موفق؛ main validation، Web/Chromium + game deploy و Pages deploy موفق |
 | [#448](https://github.com/pasoooir/Mshin/pull/448) | توقف تایمر ارتقای مسکونی هنگام قطع Gateway، ذخیره ثانیه‌های باقی‌مانده در SaveManager و ادامه دقیق پس از اتصال مجدد | Godot Validation و Web/Chromium PR موفق؛ Pages build/deploy روی main موفق؛ ساخت اولیه هنوز پوشش داده نشده |
 
+
+### تغییرات در حال بررسی — هنوز وارد main نشده‌اند
+
+| PR | تغییر پیشنهادی | وضعیت |
+|---|---|---|
+| [#455](https://github.com/pasoooir/Mshin/pull/455) | کتابخانه مشترک PBR برای هندسه‌های رویه‌ای: نقشه‌های Base Color/Normal/Roughness/Metallic برای آجر، چوب، شیشه، فلز، سفال سقف، بتن و گچ؛ اعمال متریال معنایی به پنجره‌ها و قاب‌ها | باز؛ نتیجه CI و تأیید بصری هنوز ثبت نشده است. این PR مدل‌های اختصاصی GLTF باقی‌مانده را تکمیل نمی‌کند. |
+
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
 
 # نقشه راه کامل توسعه (Roadmap)
