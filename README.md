@@ -406,3 +406,12 @@ PR #448 با merge commit `899971802b48180df7c0bf944f62e8e2866c31bc` وارد ma
 - [x] PR #452 با squash merge commit `11679ea724a6a3cd5164739fa58136214f0228c3` وارد `main` شد. پس از merge، Godot Validation run `43564564967` موفق شد (static validation، import/parse، headless startup، GameplaySmoke و Android Debug APK export/signature/upload)؛ Mshin Playable Web run `43564564955` نیز با Web export، اجرای Chromium دسکتاپ و موبایل افقی، Pages artifact و deploy موفق شد؛ Pages build/deployment run `43564564312` هم موفق شد. Android Debug APK artifact: `PasooCityBuildIt-android-debug-11679ea724a6a3cd5164739fa58136214f0228c3`.
 
 - [~] بررسی چشمی، خوانایی خط‌کشی و لمس/عملکرد روی Android فیزیکی هنوز انجام نشده است؛ CI دسکتاپ/Chromium جایگزین آزمون روی گوشی واقعی نیست.
+
+## هماهنگ‌سازی آسفالت بزرگراه، روشنایی و دامداری چمنزار — در حال اعتبارسنجی
+
+- [~] بافت آسفالت بزرگراه ورودی با همان فرمول رنگ/دانه‌بندی آسفالت خیابان‌های شهری هماهنگ شد؛ تیرگی پایه، کنتراست دانه‌ها و Normal Scale با RoadSystem یکسان شده‌اند.
+- [~] دوازده پایه چراغ بزرگراه با بازوی خمیده/کنسولی و چراغ LED در دو طرف مسیر، به‌صورت MultiMesh و کم‌هزینه برای موبایل اضافه شدند.
+- [~] سطح سبز چمنزار در پیرامون شبکه قطعه‌های قابل ساخت حفظ شد و ۱۲ گوسفند و ۳ رأس گاو به‌صورت مدل‌های رویه‌ای instanced در حاشیه سبز زمین اضافه شدند؛ بدون دانلود یا وابستگی خارجی.
+- [~] GameplaySmoke و اعتبارسنجی ایستا برای حضور روشنایی، گوسفند و گاو و هماهنگی بافت آسفالت اضافه شدند.
+- [ ] پذیرش نهایی منوط به CI موفق Godot/Web/Chromium و بررسی بصری روی Android واقعی است.
+
