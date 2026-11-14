@@ -38,3 +38,6 @@ Expansion items are special inventory goods, not factory raw materials. They are
 ## Map geography guard
 
 - Expansion plots are generated only in the connected north/south land corridor. The western motorway asphalt reserve and eastern ocean/coastline tiles are excluded from purchase, so no expansion offer places buildable land over the highway or sea.
+
+
+The camera pan boundary now reaches the map edge (90 world units), so players can actually view the newly expanded plots and both desert grazing strips.
