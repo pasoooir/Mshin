@@ -11,7 +11,6 @@ const CitizenFeedbackBubblesScript = preload("res://scripts/ui/CitizenFeedbackBu
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
-const BuildingAssetModel = preload("res://scripts/buildings/BuildingAssetModel.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
 
 class FireHazardTestBuilding extends Node3D:
