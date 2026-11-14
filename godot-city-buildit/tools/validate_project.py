@@ -1407,6 +1407,8 @@ for contract in [
     "No new vehicle may enter during yellow clearance",
     "Yellow must be followed by an all-red clearance interval",
     "The longest-waiting competing approach must receive the next green phase to prevent starvation",
+    "A downstream exit cell already being occupied by another vehicle must be rejected",
+    "An active vehicle must reroute through the surviving parallel road after its planned road cell is closed",
     "The maximum frontmost stopped-vehicle wait must be exactly four seconds",
     "A follower must never bypass its stopped leader",
     "same-lane vehicle ahead is inside the minimum safe gap",
