@@ -4,7 +4,17 @@ const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -90.0
+const TERRAIN_DIVISIONS := 48
 const CITY_HALF_EXTENT := 40
+
+# Permanent six-lane divided motorway at the city entrance. Keep the access
+# opening aligned with the seeded Gateway connector and outside the build grid.
+const HIGHWAY_CENTER_X := -55.0
+const HIGHWAY_ASPHALT_WIDTH := 24.0
+const HIGHWAY_SHOULDER_WIDTH := 26.8
+const HIGHWAY_LENGTH := 190.0
+const HIGHWAY_LANE_COUNT := 6
+const HIGHWAY_MEDIAN_WIDTH := 0.8
 
 func _ready() -> void:
 	# Headless CI validates simulation and placement logic, not GPU geometry.
@@ -111,7 +121,7 @@ func refresh_region_appearance() -> void:
 func _build_terrain() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var divisions := 40
+	var divisions := TERRAIN_DIVISIONS
 	for z_index in range(divisions):
 		var z0 := -TERRAIN_HALF_DEPTH + (float(z_index) / divisions) * TERRAIN_HALF_DEPTH * 2.0
 		var z1 := -TERRAIN_HALF_DEPTH + (float(z_index + 1) / divisions) * TERRAIN_HALF_DEPTH * 2.0
@@ -174,13 +184,25 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	var blend := clampf((broad_noise * 0.72 + fine_noise * 0.28 + 1.0) * 0.5, 0.0, 1.0)
 	var color: Color
 	if point.x > coast - 7.0:
-		color = Color(0.62, 0.48, 0.31).lerp(Color(0.91, 0.82, 0.62), blend)
+		# Keep a natural wet-sand transition at the shoreline.
+		color = Color("#9A8057").lerp(Color("#D5C18E"), blend)
 	elif point.x > coast - 13.0:
-		color = Color(0.34, 0.43, 0.24).lerp(Color(0.67, 0.61, 0.38), blend)
+		# Sparse coastal scrub blends the grass into the beach instead of a hard edge.
+		color = Color("#587744").lerp(Color("#A49A61"), blend * 0.58)
 	else:
-		var grass_palette: Array[Color] = [Color(0.12, 0.29, 0.15), Color(0.19, 0.39, 0.18), Color(0.31, 0.48, 0.22), Color(0.43, 0.50, 0.25)]
+		# A brighter temperate meadow: several green families with restrained
+		# olive and dry-grass variation, never a flat monochrome green carpet.
+		var grass_palette: Array[Color] = [
+			Color("#397B36"), Color("#47883A"),
+			Color("#559443"), Color("#679A49"),
+			Color("#4A873F"), Color("#739B4D")
+		]
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % grass_palette.size()
-		color = grass_palette[palette_index].lerp(Color(0.52, 0.55, 0.29), blend * 0.35)
+		color = grass_palette[palette_index].lerp(Color("#A0A15B"), blend * 0.20)
+		if fine_noise > 0.58:
+			color = color.lerp(Color("#315F31"), 0.13)
+		elif fine_noise < -0.62:
+			color = color.lerp(Color("#8E9C50"), 0.10)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
@@ -220,57 +242,148 @@ func _build_city_grid() -> void:
 	add_child(grid_instance)
 
 func _build_coastal_highway() -> void:
-	var highway := MeshInstance3D.new()
-	highway.name = "CoastalHighway"
-	var highway_mesh := BoxMesh.new()
-	highway_mesh.size = Vector3(8.0, 0.16, 190.0)
-	highway.mesh = highway_mesh
-	highway.position = Vector3(-48.0, 0.06, 0.0)
-	var asphalt := _create_asphalt_material()
-	highway.material_override = asphalt
-	add_child(highway)
-	_add_road_marking(Vector3(-48.0, 0.15, 0.0), Vector3(0.13, 0.015, 188.0), Color(1.0, 0.76, 0.18))
-	for lane_x in [-50.0, -46.0]:
-		for segment in range(-15, 16):
-			_add_road_marking(Vector3(lane_x, 0.151, float(segment) * 6.0), Vector3(0.075, 0.012, 3.0), Color(0.88, 0.91, 0.89))
-	for edge_x in [-52.0, -44.0]:
-		_add_road_marking(Vector3(edge_x, 0.15, 0.0), Vector3(0.12, 0.012, 188.0), Color(0.82, 0.84, 0.80))
+	# The highway is a permanent landmark, not a buildable city road. Its
+	# carriageways, shoulders, median and connector are deliberately separate.
 	var shoulder := MeshInstance3D.new()
 	shoulder.name = "HighwayShoulder"
 	var shoulder_mesh := BoxMesh.new()
-	shoulder_mesh.size = Vector3(9.2, 0.08, 190.0)
+	shoulder_mesh.size = Vector3(HIGHWAY_SHOULDER_WIDTH, 0.08, HIGHWAY_LENGTH)
 	shoulder.mesh = shoulder_mesh
-	shoulder.position = Vector3(-48.0, 0.015, 0.0)
+	shoulder.position = Vector3(HIGHWAY_CENTER_X, 0.015, 0.0)
 	var shoulder_material := StandardMaterial3D.new()
-	shoulder_material.albedo_color = Color(0.40, 0.41, 0.36)
+	shoulder_material.albedo_color = Color("#777D79")
 	shoulder_material.roughness = 1.0
 	shoulder.material_override = shoulder_material
 	add_child(shoulder)
-	# Keep the asphalt on top of the shoulder while retaining a visible verge.
-	highway.position.y = 0.075
+
+	var highway := MeshInstance3D.new()
+	highway.name = "CoastalHighway"
+	var highway_mesh := BoxMesh.new()
+	highway_mesh.size = Vector3(HIGHWAY_ASPHALT_WIDTH, 0.16, HIGHWAY_LENGTH)
+	highway_mesh.uv1_scale = Vector3(12.0, 1.0, 96.0)
+	highway.mesh = highway_mesh
+	highway.position = Vector3(HIGHWAY_CENTER_X, 0.075, 0.0)
+	highway.material_override = _create_asphalt_material()
+	highway.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	add_child(highway)
+
+	# Contrasting shoulder strips sit just inside the asphalt edge and are
+	# batched into one draw call for mobile rendering.
+	var shoulder_strip_mesh := BoxMesh.new()
+	shoulder_strip_mesh.size = Vector3(1.45, 0.012, HIGHWAY_LENGTH - 2.0)
+	var shoulder_strips := MultiMesh.new()
+	shoulder_strips.transform_format = MultiMesh.TRANSFORM_3D
+	shoulder_strips.mesh = shoulder_strip_mesh
+	shoulder_strips.instance_count = 2
+	for index in range(2):
+		var side := -1.0 if index == 0 else 1.0
+		shoulder_strips.set_instance_transform(index, Transform3D(Basis.IDENTITY, Vector3(HIGHWAY_CENTER_X + side * 10.25, 0.163, 0.0)))
+	var shoulder_strip_instance := MultiMeshInstance3D.new()
+	shoulder_strip_instance.name = "HighwayShoulderStrips"
+	shoulder_strip_instance.multimesh = shoulder_strips
+	var shoulder_strip_material := StandardMaterial3D.new()
+	shoulder_strip_material.albedo_color = Color("#A0A4A0")
+	shoulder_strip_material.roughness = 1.0
+	shoulder_strip_instance.material_override = shoulder_strip_material
+	add_child(shoulder_strip_instance)
+
+	# Three lanes in each direction. Four dashed separators are one MultiMesh,
+	# not 124 individual MeshInstance3D nodes.
+	_add_highway_lane_dashes()
+	for edge_x in [HIGHWAY_CENTER_X - 11.35, HIGHWAY_CENTER_X + 11.35]:
+		_add_road_marking(Vector3(edge_x, 0.164, 0.0), Vector3(0.12, 0.012, HIGHWAY_LENGTH - 2.0), Color("#E8ECE8"))
+	for shoulder_line_x in [HIGHWAY_CENTER_X - 9.7, HIGHWAY_CENTER_X + 9.7]:
+		_add_road_marking(Vector3(shoulder_line_x, 0.164, 0.0), Vector3(0.10, 0.012, HIGHWAY_LENGTH - 2.0), Color("#DDE2DE"))
+	for median_line_x in [HIGHWAY_CENTER_X - 0.52, HIGHWAY_CENTER_X + 0.52]:
+		_add_road_marking(Vector3(median_line_x, 0.164, 0.0), Vector3(0.085, 0.012, HIGHWAY_LENGTH - 2.0), Color("#F2C84B"))
+
+	# Concrete median is interrupted only at the city access crossing.
+	var median_mesh := BoxMesh.new()
+	median_mesh.size = Vector3(HIGHWAY_MEDIAN_WIDTH, 0.56, HIGHWAY_LENGTH)
+	var median_multimesh := MultiMesh.new()
+	median_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	median_multimesh.mesh = median_mesh
+	median_multimesh.instance_count = 2
+	for index in range(2):
+		var side := -1.0 if index == 0 else 1.0
+		var basis := Basis.IDENTITY.scaled(Vector3(1.0, 1.0, 0.48))
+		median_multimesh.set_instance_transform(index, Transform3D(basis, Vector3(HIGHWAY_CENTER_X, 0.435, side * 49.5)))
+	var median := MultiMeshInstance3D.new()
+	median.name = "HighwayConcreteMedian"
+	median.multimesh = median_multimesh
+	var median_material := StandardMaterial3D.new()
+	median_material.albedo_color = Color("#AEB3AF")
+	median_material.roughness = 0.94
+	median.material_override = median_material
+	median.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	add_child(median)
+
+	# One batched guardrail mesh: continuous on the outer edge and opened on
+	# the city-facing side so the connector and sidewalks remain unobstructed.
+	var rail_mesh := BoxMesh.new()
+	rail_mesh.size = Vector3(0.14, 0.58, HIGHWAY_LENGTH)
+	var rails := MultiMesh.new()
+	rails.transform_format = MultiMesh.TRANSFORM_3D
+	rails.mesh = rail_mesh
+	rails.instance_count = 3
+	rails.set_instance_transform(0, Transform3D(Basis.IDENTITY, Vector3(HIGHWAY_CENTER_X - 13.35, 0.46, 0.0)))
+	for index in range(2):
+		var side := -1.0 if index == 0 else 1.0
+		var basis := Basis.IDENTITY.scaled(Vector3(1.0, 1.0, 0.48))
+		rails.set_instance_transform(index + 1, Transform3D(basis, Vector3(HIGHWAY_CENTER_X + 13.35, 0.46, side * 49.5)))
+	var guardrails := MultiMeshInstance3D.new()
+	guardrails.name = "HighwayGuardrails"
+	guardrails.multimesh = rails
 	var guardrail_material := StandardMaterial3D.new()
-	guardrail_material.albedo_color = Color(0.62, 0.66, 0.67)
-	for side in [-1.0, 1.0]:
-		var rail := MeshInstance3D.new()
-		var rail_mesh := BoxMesh.new()
-		rail_mesh.size = Vector3(0.12, 0.55, 190.0)
-		rail.mesh = rail_mesh
-		rail.position = Vector3(-48.0 + side * 4.75, 0.46, 0.0)
-		rail.material_override = guardrail_material
-		add_child(rail)
-	# Narrow sidewalk and raised curb on the city-facing side. Leave a gap for
-	# the highway connector so the pedestrian strip never floats over asphalt.
+	guardrail_material.albedo_color = Color("#C0C6C8")
+	guardrail_material.metallic = 0.62
+	guardrail_material.roughness = 0.48
+	guardrails.material_override = guardrail_material
+	guardrails.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	add_child(guardrails)
+
+	# The existing sidewalks stop at the access opening, preserving the city
+	# pedestrian edge while avoiding a floating strip across the carriageway.
 	_add_sidewalk_segment(-49.5, 91.0)
 	_add_sidewalk_segment(49.5, 91.0)
 
 	var access_road := MeshInstance3D.new()
 	access_road.name = "HighwayCityConnector"
 	var access_mesh := BoxMesh.new()
-	access_mesh.size = Vector3(30.0, 0.10, 4.2)
+	access_mesh.size = Vector3(27.5, 0.16, 4.6)
+	access_mesh.uv1_scale = Vector3(14.0, 1.0, 3.0)
 	access_road.mesh = access_mesh
-	access_road.position = Vector3(-32.0, 0.13, 0.0)
-	access_road.material_override = asphalt
+	access_road.position = Vector3(-30.25, 0.095, 0.0)
+	access_road.material_override = highway.material_override
+	access_road.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(access_road)
+
+
+func _add_highway_lane_dashes() -> void:
+	var dash_mesh := BoxMesh.new()
+	dash_mesh.size = Vector3(0.09, 0.012, 3.0)
+	var lane_positions: Array[Vector3] = []
+	for lane_x in [
+		HIGHWAY_CENTER_X - 6.6, HIGHWAY_CENTER_X - 3.3,
+		HIGHWAY_CENTER_X + 3.3, HIGHWAY_CENTER_X + 6.6
+	]:
+		for segment in range(-15, 16):
+			lane_positions.append(Vector3(lane_x, 0.164, float(segment) * 6.0))
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = dash_mesh
+	multimesh.instance_count = lane_positions.size()
+	for index in range(lane_positions.size()):
+		multimesh.set_instance_transform(index, Transform3D(Basis.IDENTITY, lane_positions[index]))
+	var markings := MultiMeshInstance3D.new()
+	markings.name = "HighwayLaneDashes"
+	markings.multimesh = multimesh
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color("#E9ECE8")
+	markings.material_override = material
+	add_child(markings)
+
 
 func _add_sidewalk_segment(center_z: float, length_z: float) -> void:
 	var sidewalk := MeshInstance3D.new()
@@ -311,7 +424,7 @@ func _add_road_marking(position: Vector3, size: Vector3, color: Color) -> void:
 
 func _build_tree_belts() -> void:
 	var positions: Array[Vector3] = []
-	for x in [-76.0, -64.0, -30.0, -14.0, 12.0, 28.0, 42.0]:
+	for x in [-82.0, -74.0, -30.0, -14.0, 12.0, 28.0, 42.0]:
 		positions.append(Vector3(x, 0.0, -68.0 + sin(x * 0.1) * 4.0))
 		positions.append(Vector3(x + 4.0, 0.0, 68.0 + cos(x * 0.12) * 4.0))
 	for z in [-52.0, -28.0, 26.0, 48.0]:
@@ -457,30 +570,67 @@ func _create_foliage_texture() -> Texture2D:
 
 # Procedural textures are generated locally at startup: no CDN, external asset or runtime download.
 func _create_grass_texture() -> Texture2D:
-	# A tiny neutral tile modulates terrain vertex colors; it adds grain without
-	# another mesh, shader pass, or large texture allocation.
-	var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
-	for y in range(128):
-		for x in range(128):
-			var noise_value := sin(float(x) * 127.1 + float(y) * 311.7) * 43758.5453
-			var grain := fposmod(noise_value, 1.0)
-			var value := 0.94 + grain * 0.06
-			image.set_pixel(x, y, Color(value, value, value, 1.0))
-	var texture := ImageTexture.create_from_image(image)
-	return texture
+	# Subtle green/olive mottling and sparse dry-grass flecks modulate the
+	# vertex palette. This is a small local tile, not a flat green overlay.
+	const TEXTURE_SIZE := 128
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
+		for x in range(TEXTURE_SIZE):
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			var broad := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * cos(angle_y * 2.0 - sin(angle_x * 3.0))
+			var fine := sin(angle_x * 31.0 + angle_y * 23.0) * 0.5 + cos(angle_x * 43.0 - angle_y * 37.0) * 0.5
+			var speckle := sin(angle_x * 79.0 + cos(angle_y * 67.0)) * cos(angle_y * 71.0 - sin(angle_x * 83.0))
+			var value := clampf(0.93 + broad * 0.025 + fine * 0.018, 0.86, 1.0)
+			var green := clampf(value + 0.025, 0.0, 1.0)
+			var blue := clampf(value - 0.055, 0.0, 1.0)
+			var texel := Color(value, green, blue, 1.0)
+			if speckle > 0.992:
+				texel = texel.lerp(Color("#C0B276"), 0.30)
+			image.set_pixel(x, y, texel)
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
 
 func _create_asphalt_material() -> StandardMaterial3D:
-	var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
-	for y in range(128):
-		for x in range(128):
-			var n := sin(float(x) * 12.9898 + float(y) * 78.233) * 43758.5453
-			var grain := fposmod(n, 1.0)
-			var shade := 0.17 + grain * 0.12
-			image.set_pixel(x, y, Color(shade, shade * 1.02, shade * 1.04, 1.0))
-	var texture := ImageTexture.create_from_image(image)
+	# Medium charcoal-gray asphalt with several scales of aggregate grain.
+	# Periodic noise layers keep the texture seamless across the long motorway.
+	const TEXTURE_SIZE := 256
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	var heights := PackedFloat32Array()
+	heights.resize(TEXTURE_SIZE * TEXTURE_SIZE)
+	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
+		for x in range(TEXTURE_SIZE):
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			var broad := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * 0.55 + cos(angle_y * 2.0 - sin(angle_x * 3.0)) * 0.45
+			var medium := sin(angle_x * 7.0 + angle_y * 5.0) * 0.5 + cos(angle_x * 11.0 - angle_y * 9.0) * 0.5
+			var grain := sin(angle_x * 37.0 + angle_y * 29.0) * 0.5 + cos(angle_x * 53.0 - angle_y * 47.0) * 0.5
+			var fine_grain := sin(angle_x * 83.0 + angle_y * 71.0) * 0.5 + cos(angle_x * 97.0 - angle_y * 89.0) * 0.5
+			var aggregate_signal := sin(angle_x * 61.0 + cos(angle_y * 73.0)) * cos(angle_y * 67.0 - sin(angle_x * 59.0))
+			var aggregate := 0.018 if aggregate_signal > 0.985 else (-0.018 if aggregate_signal < -0.985 else 0.0)
+			var height_value := clampf(0.29 + broad * 0.035 + medium * 0.020 + grain * 0.012 + fine_grain * 0.006 + aggregate, 0.19, 0.40)
+			heights[y * TEXTURE_SIZE + x] = height_value
+			image.set_pixel(x, y, Color(height_value * 0.96, height_value * 0.99, height_value * 1.03, 1.0))
+	var normal_image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	for y in range(TEXTURE_SIZE):
+		for x in range(TEXTURE_SIZE):
+			var left := heights[y * TEXTURE_SIZE + posmod(x - 1, TEXTURE_SIZE)]
+			var right := heights[y * TEXTURE_SIZE + posmod(x + 1, TEXTURE_SIZE)]
+			var up := heights[posmod(y - 1, TEXTURE_SIZE) * TEXTURE_SIZE + x]
+			var down := heights[posmod(y + 1, TEXTURE_SIZE) * TEXTURE_SIZE + x]
+			var dx := (right - left) * 4.0
+			var dy := (down - up) * 4.0
+			normal_image.set_pixel(x, y, Color(0.5 - dx, 0.5 - dy, 1.0, 1.0))
+	image.generate_mipmaps()
+	normal_image.generate_mipmaps()
 	var material := StandardMaterial3D.new()
-	material.albedo_texture = texture
-	material.roughness = 0.98
+	material.albedo_texture = ImageTexture.create_from_image(image)
+	material.normal_enabled = true
+	material.normal_texture = ImageTexture.create_from_image(normal_image)
+	material.normal_scale = 0.18
+	material.roughness = 0.97
+	material.metallic = 0.0
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	return material
 
