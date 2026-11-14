@@ -21,6 +21,12 @@
 - [SCBI Item & Recipe Reference](reference/SCBI_ITEM_RECIPE_REFERENCE.md) — standalone, source-traceable index of 16 raw materials and all 73 current `ProductionManager.gd` recipe definitions across 14 store families, with direct ingredients, base times, unlock gates, provenance, and unresolved conflicts.
 - The catalogue is a documentation snapshot of current Mshin data; community recipe tables are secondary sources, not official EA confirmation. No gameplay data was changed in this documentation-only branch.
 
+## Complete dependency-system specification
+
+- [Complete Dependency & Prerequisite System](reference/COMPLETE_DEPENDENCY_SYSTEM_SPEC.md) — binding rules for item recipes, factory sources, unlock gates, building construction BOMs, residential stages, utilities, roads, services, workforce, regions, trade, inventory allocation, transparency and regression gates.
+- This specification separates verified current behaviour from future requirements. It explicitly records that universal building construction material BOMs and universal operational utility/workforce gates are not yet implemented in the inspected baseline.
+- The implementation sequence starts with catalog integrity and a unified dependency planner; no recipe or building cost is changed by this documentation-only change.
+
 ## Six implementation slices
 
 | Slice | Deliverable | Evidence | Status |
