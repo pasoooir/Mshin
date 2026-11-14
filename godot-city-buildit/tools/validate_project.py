@@ -158,6 +158,40 @@ def _validate_embedded_gltf(path: Path) -> None:
 for gltf_path in (ROOT / "assets/models").rglob("*.gltf"):
     _validate_embedded_gltf(gltf_path)
 
+surface_library_path = ROOT / "scripts/buildings/BuildingSurfaceLibrary.gd"
+if not surface_library_path.is_file():
+    errors.append("Building surface PBR library is missing")
+else:
+    surface_library_source = surface_library_path.read_text(encoding="utf-8")
+    for contract in [
+        "static func surface_for_color(color: Color, hint: String = \"\") -> String:",
+        "static func get_maps(surface: String) -> Dictionary:",
+        '"albedo": ImageTexture.create_from_image(base)',
+        '"normal": ImageTexture.create_from_image(normal)',
+        '"roughness": ImageTexture.create_from_image(roughness)',
+        '"metallic": ImageTexture.create_from_image(metallic)',
+        '"brick"',
+        '"glass"',
+        '"wood"',
+        '"metal"',
+        '"roof"',
+        '"concrete"',
+    ]:
+        if contract not in surface_library_source:
+            errors.append(f"Building PBR surface contract is missing: {contract}")
+building_source_for_surfaces = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")
+for contract in [
+    "const BuildingSurfaceLibrary = preload(\"res://scripts/buildings/BuildingSurfaceLibrary.gd\")",
+    "func _make_surface_material(color: Color, surface_hint: String = \"\") -> StandardMaterial3D:",
+    'material.albedo_texture = maps["albedo"]',
+    'material.normal_texture = maps["normal"]',
+    'material.roughness_texture = maps["roughness"]',
+    'material.metallic_texture = maps["metallic"]',
+    '_add_box(glass_size, pos + glass_offset, glass_col, "glass")',
+]:
+    if contract not in building_source_for_surfaces:
+        errors.append(f"Building procedural PBR integration is missing: {contract}")
+
 for path in ROOT.rglob("*.gd"):
     source = path.read_text(encoding="utf-8")
     if source.rstrip().endswith(("extends Node3D", "extends Node", "mat = mate")):
