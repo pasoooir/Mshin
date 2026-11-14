@@ -119,7 +119,7 @@ func refresh_region_appearance() -> void:
 		var sky_material := world_environment.environment.sky.sky_material as ProceduralSkyMaterial
 		if is_instance_valid(sky_material):
 			_apply_region_climate(sky_material, world_environment.environment)
-	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater"]:
+	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater", "LandExpansionMarkers"]:
 		var old_node := get_node_or_null(node_name)
 		if is_instance_valid(old_node):
 			old_node.free()
@@ -952,7 +952,7 @@ func _register_livestock_part(flock: Node3D, instance: MultiMeshInstance3D, anim
 		for local_offset in local_offsets:
 			owners.append(owner_offset + animal_index)
 			offsets.append(local_offset)
-	flock.register_part(instance, owners, offsets)
+	flock.call("register_part", instance, owners, offsets)
 
 
 func _animal_body_positions(origins: Array[Vector3], height: float) -> Array[Vector3]:
