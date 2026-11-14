@@ -248,6 +248,8 @@ func is_cell_free(grid_pos: Vector2i, size: Vector2i = Vector2i.ONE) -> bool:
 	var scene = get_tree().current_scene
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	for cell in get_footprint_cells(grid_pos, size):
+		if not LandExpansionManager.is_cell_unlocked(cell):
+			return false
 		if road_system and road_system.has_road(cell):
 			return false
 		if building_cells.has(cell):
