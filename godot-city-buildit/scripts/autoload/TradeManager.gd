@@ -229,8 +229,23 @@ func _generate_market_offers() -> void:
 	market_offers.clear()
 	var pool: Array[String] = get_trade_eligible_item_ids()
 	pool.shuffle()
-	for index in range(mini(MARKET_OFFER_COUNT, pool.size())):
-		var item_id := pool[index]
+	# Keep all three SCBI-style expansion parts discoverable in every market
+	# refresh after Mayor Level 10 instead of relying on a lucky random roll.
+	if GameManager.level >= 10:
+		for item_id in ["dozer_wheel", "dozer_blade", "dozer_exhaust"]:
+			if not pool.has(item_id):
+				continue
+			var amount := 1
+			market_offers.append({
+				"item_id": item_id,
+				"amount": amount,
+				"price": maxi(1, ProductionManager.get_item_value(item_id) * amount * 2),
+				"sold": false
+			})
+			pool.erase(item_id)
+	for item_id in pool:
+		if market_offers.size() >= MARKET_OFFER_COUNT:
+			break
 		var amount := randi_range(1, 3)
 		market_offers.append({
 			"item_id": item_id,
