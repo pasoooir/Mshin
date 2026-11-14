@@ -723,6 +723,9 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(TrafficManager.is_junction_cell(junction_cell), "The starter road T-junction must be recognized as a controlled junction.")
 	TrafficManager._junction_signal_states[junction_cell] = {"approach": Vector2i(1, 0), "stage": "green", "elapsed": 0.0, "green_duration": TrafficManager.JUNCTION_MIN_GREEN_SECONDS, "waiting": {}}
 	_check(TrafficManager.request_junction_entry(junction_a, junction_cell, Vector2i(-1, 0)), "The first vehicle must acquire an unoccupied junction.")
+	TrafficManager._junction_signal_states[junction_cell]["stage"] = "yellow"
+	_check(TrafficManager.request_junction_entry(junction_a, junction_cell, Vector2i(-1, 0)), "A vehicle already admitted to a junction must retain permission to clear after yellow begins.")
+	TrafficManager._junction_signal_states[junction_cell]["stage"] = "green"
 	_check(not TrafficManager.request_junction_entry(junction_b, junction_cell, Vector2i(-1, 0)), "A second vehicle must wait while the same movement occupies the junction conflict zone.")
 	TrafficManager.release_junction_entry(junction_a, junction_cell)
 	_check(TrafficManager.request_junction_entry(junction_b, junction_cell, Vector2i(-1, 0)), "The waiting vehicle must acquire the junction after the first vehicle clears it.")
