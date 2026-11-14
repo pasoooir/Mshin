@@ -3021,6 +3021,12 @@ func _run_gameplay_test() -> void:
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
 	_check(production_hud.production_panel.find_child("ProductionProductsScroll", true, false) != null, "Factory panel must show a horizontally browsable product-card row.")
+	var production_product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
+	var production_product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
+	var compact_production_layout := get_viewport().get_visible_rect().size.x <= 900.0 or get_viewport().get_visible_rect().size.y <= 520.0
+	_check(production_product_scroll != null and production_product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Production catalog must scroll vertically instead of clipping product rows on compact screens.")
+	_check(production_product_grid != null and production_product_grid.columns == (3 if compact_production_layout else (4 if get_viewport().get_visible_rect().size.x <= 1280.0 else 6)), "Production catalog must use responsive three/four/six-column layouts.")
+	_check(production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) is ScrollContainer, "Recipe and ingredient details must remain scrollable on compact screens.")
 	_check(production_hud.production_panel.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must have a distinct high-contrast building nameplate.")
 	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must clearly separate the lower production queue from the product catalog.")
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
