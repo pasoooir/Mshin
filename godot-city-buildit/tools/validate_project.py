@@ -1568,6 +1568,7 @@ else:
             errors.append(f"Land expansion manager contract is missing: {contract}")
     for contract in [
         "func is_valid_grazing_position(position: Vector3) -> bool",
+        "PASTURE_MIN_X := -88.0",
         "PASTURE_MIN_ABS_Z := 82.0",
         "ASPHALT_MIN_X := -68.5",
         "LandExpansionManager.is_world_position_unlocked(position)",
