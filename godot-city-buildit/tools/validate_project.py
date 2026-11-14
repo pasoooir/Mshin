@@ -1553,6 +1553,7 @@ else:
         "TILE_CELLS := 8",
         "func get_available_expansion_tiles()",
         "func get_tile_cost(tile: Vector2i) -> Dictionary",
+        "func migrate_legacy_land(road_data: Array, building_data: Array) -> void:",
         "func expand_tile(tile: Vector2i) -> bool",
         "StorageManager.has_items(cost)",
         "StorageManager.remove_items(cost)",
@@ -1592,6 +1593,7 @@ for contract in [
     "Global Trade must surface all three land expansion parts after Mayor Level 10.",
     "A fully funded adjacent plot must be claimable.",
     "Claimed land must survive LandExpansionManager save/load serialization.",
+    "A version 3 save must migrate legacy road/building plots to owned land before restoring the city.",
     "Livestock must never enter the external highway asphalt corridor.",
     "Livestock must never enter unlocked city plots.",
 ]:
