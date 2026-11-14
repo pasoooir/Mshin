@@ -81,6 +81,7 @@ func _process(delta: float) -> void:
 		if not _initial_leg_complete:
 			_initial_leg_complete = true
 		else:
+			_last_segment_direction = travel_direction
 			_segment_index += 1
 		_segment_progress = 0.0
 
