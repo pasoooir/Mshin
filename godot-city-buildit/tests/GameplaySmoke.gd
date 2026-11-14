@@ -2984,6 +2984,13 @@ func _run_gameplay_test() -> void:
 	BuildManager.select_building("building_supplies")
 	_check(BuildManager.place_building(Vector2i(4, 1)), "Could not place Building Supplies shop.")
 	BuildManager.select_building("power_wind")
+	var storage_before_missing_wind: Dictionary = StorageManager.to_save_dict()
+	var money_before_missing_wind := EconomyManager.simoleons
+	StorageManager.items = {}
+	_check(not BuildManager.can_place_at(Vector2i(6, 1), "power_wind"), "A service building must not be placeable when its construction BOM is missing.")
+	_check(not BuildManager.place_building(Vector2i(6, 1), "power_wind"), "Placement API must reject construction without the full BOM.")
+	_check(EconomyManager.simoleons == money_before_missing_wind and StorageManager.items.is_empty(), "Failed construction must not consume money or partially mutate inventory.")
+	StorageManager.from_save_dict(storage_before_missing_wind)
 	_grant_construction_bom_for_test("power_wind")
 	var wind_bom_before := StorageManager.get_all_items()
 	_check(BuildManager.place_building(Vector2i(6, 1)), "Could not place wind power utility.")
