@@ -60,3 +60,92 @@ jobs:
           if grep -q "SCRIPT ERROR" /tmp/godot-gameplay.log; then exit 1; fi
           if grep -q "ERROR: [GameplaySmoke]" /tmp/godot-gameplay.log; then exit 1; fi
           grep -F "[GameplaySmoke] PASS" /tmp/godot-gameplay.log
+
+  android-debug-export:
+    name: Export and verify Android Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Install Godot 4.3 and Android export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-dotnet: false
+          include-templates: true
+
+      - name: Configure Godot Android export environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android" "$HOME/.config/godot"
+          keytool -genkeypair -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+          test -x "$JAVA_HOME/bin/java"
+          test -x "$ANDROID_HOME/platform-tools/adb"
+
+      - name: Import and parse project
+        run: godot --headless --editor --path godot-city-buildit --quit
+
+      - name: Export Android Debug APK
+        run: |
+          set -euo pipefail
+          mkdir -p godot-city-buildit/build/android
+          godot --headless --path godot-city-buildit \
+            --export-debug "Android Debug" \
+            godot-city-buildit/build/android/PasooCityBuildIt.apk
+          test -s godot-city-buildit/build/android/PasooCityBuildIt.apk
+
+      - name: Verify APK signature and package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="godot-city-buildit/build/android/PasooCityBuildIt.apk"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
+          BADGING="$("$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK")"
+          printf '%s\\n' "$BADGING"
+          grep -Fq "package: name='com.pasoo.citybuildit'" <<< "$BADGING"
+          grep -Fq "application-label:'Pasoo City BuildIt'" <<< "$BADGING"
+          sha256sum "$APK"
+
+      - name: Upload Android Debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PasooCityBuildIt-android-debug-${{ github.sha }}
+          path: godot-city-buildit/build/android/PasooCityBuildIt.apk
+          if-no-files-found: error
+          retention-days: 14
