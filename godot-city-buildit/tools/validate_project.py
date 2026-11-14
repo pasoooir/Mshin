@@ -1359,7 +1359,7 @@ for contract in [
 
     "func set_road_cell_blocked(grid_cell: Vector2i, blocked: bool) -> bool:",
     "func set_road_cell_blocked_by_source(grid_cell: Vector2i, source_id: String, blocked: bool) -> bool:",
-    "var _road_block_sources: Dictionary = {}"
+    "var _road_block_sources: Dictionary = {}",
     "func _nearest_connected_road(target: Vector2i, connected_roads: Dictionary) -> Vector2i:",
     "func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:",
     "func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, from_cell: Vector2i = Vector2i.ZERO) -> bool:",
@@ -1436,7 +1436,7 @@ for contract in [
     "A junction entry must be denied when the second downstream storage cell is occupied",
     "New city trips must not be planned through a temporarily blocked road cell",
     "Clearing one incident must not reopen a road that remains blocked by another incident",
-    "The road must reopen only after every incident source clears its closure"
+    "The road must reopen only after every incident source clears its closure",
     "A vehicle must yield to queued traffic approaching from its right",
     "Right-hand priority must select the approach that has right of way",
     "The eight-second fairness override must prevent permanent starvation under right-hand yielding",
