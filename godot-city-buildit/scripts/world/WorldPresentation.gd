@@ -119,21 +119,23 @@ func refresh_region_appearance() -> void:
 		var sky_material := world_environment.environment.sky.sky_material as ProceduralSkyMaterial
 		if is_instance_valid(sky_material):
 			_apply_region_climate(sky_material, world_environment.environment)
-	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater", "LandExpansionMarkers"]:
+	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater", "LandExpansionMarkers", "BuildablePlotGrid"]:
 		var old_node := get_node_or_null(node_name)
 		if is_instance_valid(old_node):
 			old_node.free()
 	_build_terrain()
 	_build_land_expansion_markers()
+	_build_city_grid()
 
 
 func _on_land_expansion_changed() -> void:
-	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater", "LandExpansionMarkers"]:
+	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater", "LandExpansionMarkers", "BuildablePlotGrid"]:
 		var old_node := get_node_or_null(node_name)
 		if is_instance_valid(old_node):
 			old_node.free()
 	_build_terrain()
 	_build_land_expansion_markers()
+	_build_city_grid()
 
 
 func _build_terrain() -> void:
@@ -274,12 +276,19 @@ func _build_land_expansion_markers() -> void:
 func _build_city_grid() -> void:
 	var lines := SurfaceTool.new()
 	lines.begin(Mesh.PRIMITIVE_LINES)
-	for coordinate in range(-CITY_HALF_EXTENT, CITY_HALF_EXTENT + 1, 8):
-		lines.set_color(Color(0.72, 0.82, 0.68, 0.30))
-		lines.add_vertex(Vector3(float(coordinate), 0.035, -CITY_HALF_EXTENT))
-		lines.add_vertex(Vector3(float(coordinate), 0.035, CITY_HALF_EXTENT))
-		lines.add_vertex(Vector3(-CITY_HALF_EXTENT, 0.035, float(coordinate)))
-		lines.add_vertex(Vector3(CITY_HALF_EXTENT, 0.035, float(coordinate)))
+	for tile in LandExpansionManager.get_owned_tiles():
+		var x0 := float(tile.x * LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+		var z0 := float(tile.y * LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+		var x1 := x0 + float(LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+		var z1 := z0 + float(LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+		for cell_step in range(0, LandExpansionManager.TILE_CELLS + 1, 4):
+			var x := x0 + float(cell_step) * BuildManager.GRID_SIZE
+			var z := z0 + float(cell_step) * BuildManager.GRID_SIZE
+			lines.set_color(Color(0.72, 0.82, 0.68, 0.30))
+			lines.add_vertex(Vector3(x, 0.035, z0))
+			lines.add_vertex(Vector3(x, 0.035, z1))
+			lines.add_vertex(Vector3(x0, 0.035, z))
+			lines.add_vertex(Vector3(x1, 0.035, z))
 	var grid_instance := MeshInstance3D.new()
 	grid_instance.name = "BuildablePlotGrid"
 	grid_instance.mesh = lines.commit()
@@ -290,6 +299,7 @@ func _build_city_grid() -> void:
 	grid_material.no_depth_test = false
 	grid_instance.material_override = grid_material
 	add_child(grid_instance)
+
 
 func _build_coastal_highway() -> void:
 	# The highway is a permanent landmark, not a buildable city road. Its
