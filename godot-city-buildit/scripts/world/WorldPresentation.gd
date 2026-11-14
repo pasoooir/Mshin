@@ -15,6 +15,9 @@ const HIGHWAY_SHOULDER_WIDTH := 26.8
 const HIGHWAY_LENGTH := 190.0
 const HIGHWAY_LANE_COUNT := 6
 const HIGHWAY_MEDIAN_WIDTH := 0.8
+const HIGHWAY_LAMP_COUNT := 12
+const MEADOW_SHEEP_COUNT := 12
+const MEADOW_CATTLE_COUNT := 3
 
 func _ready() -> void:
 	# Headless CI validates simulation and placement logic, not GPU geometry.
@@ -421,7 +424,6 @@ func _build_highway_lighting() -> void:
 	lighting_root.name = "HighwayLighting"
 	add_child(lighting_root)
 	for component in [poles, arms, heads, emitters]:
-		remove_child(component)
 		lighting_root.add_child(component)
 
 
