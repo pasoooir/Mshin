@@ -1351,7 +1351,7 @@ for contract in [
     "func _junction_movements_conflict(from_a: Vector2i, to_a: Vector2i, from_b: Vector2i, to_b: Vector2i, junction_cell: Vector2i) -> bool:",
     "func _is_junction_exit_clear(vehicle: TrafficVehicle, junction_cell: Vector2i, exit_cell: Vector2i) -> bool:",
     "func _approach_has_right_of_way(approach: Vector2i, counts: Dictionary) -> bool:",
-    "func _select_junction_approach_without_yield(counts: Dictionary, waiting: Dictionary) -> Vector2i:",
+
     "func set_road_cell_blocked(grid_cell: Vector2i, blocked: bool) -> bool:",
     "func _nearest_connected_road(target: Vector2i, connected_roads: Dictionary) -> Vector2i:",
     "func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:",
@@ -1425,6 +1425,7 @@ for contract in [
     "A vehicle must yield to queued traffic approaching from its right",
     "Right-hand priority must select the approach that has right of way",
     "The eight-second fairness override must prevent permanent starvation under right-hand yielding",
+    "A fully yielding four-way queue must remain all-red until the eight-second fairness override",
     "An exit without Gateway-connected road space must be rejected",
     "The maximum frontmost stopped-vehicle wait must be exactly four seconds",
     "A follower must never bypass its stopped leader",
