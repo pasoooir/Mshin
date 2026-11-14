@@ -30,3 +30,6 @@ The special-item set (Dozer Wheel, Dozer Blade, Dozer Exhaust) follows the estab
 
 - Save version 3 predates land ownership. During load, every plot containing an already-saved road or building footprint is migrated to owned land before restoration. This prevents existing cities from losing placed objects or failing to load.
 - New version 4 saves store the complete owned-plot set per region.
+
+
+Expansion items are special inventory goods, not factory raw materials. They are collectible from eligible happy-citizen bubbles and tradeable through the existing Global Trade system; factories do not manufacture them.
