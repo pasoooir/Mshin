@@ -876,6 +876,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		_check(police_vehicle.global_position.distance_to(police_station.global_position) > 2.0 and police_vehicle.global_position.distance_to(police_station.global_position) < 3.0, "Police vehicle must spawn at the station exit before entering its patrol route.")
 		_check(police_vehicle.get_node_or_null("EmergencyLightbar") != null, "Police vehicle must visibly carry an emergency lightbar.")
 		var police_exit_position := police_vehicle.global_position
+		TrafficManager._update_junction_controllers(0.1)
 		police_vehicle._process(0.2)
 		_check(police_vehicle.global_position.distance_to(police_exit_position) > 0.1, "Police vehicle must leave its station exit and advance onto the patrol route.")
 
@@ -898,6 +899,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		_check(fire_vehicle.get_node_or_null("EmergencyLightbar") != null and fire_vehicle.get_node_or_null("FireEquipment") != null, "Fire engine must show its emergency lights and fire-service equipment.")
 		_check(fire_vehicle.global_position.distance_to(fire_station.global_position) > 1.0 and fire_vehicle.global_position.distance_to(fire_station.global_position) < 2.0, "Fire engine must spawn at the fire station exit before entering its route.")
 		var fire_exit_position := fire_vehicle.global_position
+		TrafficManager._update_junction_controllers(0.1)
 		fire_vehicle._process(0.2)
 		_check(fire_vehicle.global_position.distance_to(fire_exit_position) > 0.1, "Fire engine must leave its station exit and advance onto the response route.")
 
