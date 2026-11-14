@@ -27,6 +27,10 @@ const MIN_FOLLOWING_GAP: float = 2.25
 const SAFE_FOLLOWING_GAP: float = 5.5
 const MAX_TRAFFIC_STOP_SECONDS: float = 4.0
 const CONGESTION_CRAWL_SPEED: float = 1.0
+const JUNCTION_YELLOW_SECONDS: float = 1.0
+const JUNCTION_ALL_RED_SECONDS: float = 0.5
+const JUNCTION_MIN_GREEN_SECONDS: float = 2.0
+const JUNCTION_MAX_GREEN_SECONDS: float = 7.0
 const LANE_CENTER_OFFSET: float = 0.32
 const CARDINAL_DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1),
@@ -47,6 +51,7 @@ var _highway_direction_cursor: int = 0
 var _emergency_elapsed: float = 0.0
 var _active_vehicles: Array[TrafficVehicle] = []
 var _junction_reservations: Dictionary = {}
+var _junction_signal_states: Dictionary = {}
 var _active_vehicle: TrafficVehicle
 var _station_dispatch_elapsed: Dictionary = {}
 var _route_destination_cursor: int = 0
@@ -56,6 +61,8 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_prune_vehicle_list()
+	if vehicle_simulation_enabled:
+		_update_junction_controllers(delta)
 	if not vehicle_simulation_enabled:
 		return
 	_spawn_elapsed += delta
@@ -142,11 +149,96 @@ func is_junction_cell(grid_cell: Vector2i) -> bool:
 		return false
 	return road_system.get_road_connections(grid_cell).size() >= 3
 
-func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i) -> bool:
+func _junction_queue_counts(junction_cell: Vector2i) -> Dictionary:
+	var counts: Dictionary = {}
+	for vehicle in _active_vehicles:
+		if not is_instance_valid(vehicle) or vehicle.route.is_empty():
+			continue
+		var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
+		if segment_index + 1 >= vehicle.route.size() or vehicle.route[segment_index + 1] != junction_cell:
+			continue
+		var approach: Vector2i = junction_cell - vehicle.route[segment_index]
+		counts[approach] = int(counts.get(approach, 0)) + 1
+	return counts
+
+func _select_junction_approach(counts: Dictionary, waiting: Dictionary) -> Vector2i:
+	var selected := Vector2i.ZERO
+	var best_wait := -1.0
+	var best_queue := -1
+	for approach in counts.keys():
+		var queue_size := int(counts[approach])
+		var wait_time := float(waiting.get(approach, 0.0))
+		if wait_time > best_wait or (is_equal_approx(wait_time, best_wait) and queue_size > best_queue):
+			selected = approach
+			best_wait = wait_time
+			best_queue = queue_size
+	return selected
+
+func _update_junction_controllers(delta: float) -> void:
+	var junctions: Dictionary = {}
+	for vehicle in _active_vehicles:
+		if not is_instance_valid(vehicle) or vehicle.route.is_empty():
+			continue
+		var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
+		if segment_index + 1 >= vehicle.route.size():
+			continue
+		var target: Vector2i = vehicle.route[segment_index + 1]
+		if is_junction_cell(target):
+			junctions[target] = true
+	for junction_cell in junctions.keys():
+		var counts := _junction_queue_counts(junction_cell)
+		var state: Dictionary = _junction_signal_states.get(junction_cell, {})
+		if state.is_empty():
+			var initial_approach := _select_junction_approach(counts, {})
+			state = {"approach": initial_approach, "stage": "green", "elapsed": 0.0, "green_duration": clampf(JUNCTION_MIN_GREEN_SECONDS + float(counts.get(initial_approach, 0)), JUNCTION_MIN_GREEN_SECONDS, JUNCTION_MAX_GREEN_SECONDS), "waiting": {}}
+		var waiting: Dictionary = state.get("waiting", {})
+		for approach in counts.keys():
+			waiting[approach] = float(waiting.get(approach, 0.0)) + delta
+		for approach in waiting.keys():
+			if not counts.has(approach):
+				waiting[approach] = 0.0
+		state["waiting"] = waiting
+		state["elapsed"] = float(state.get("elapsed", 0.0)) + delta
+		var stage := str(state.get("stage", "green"))
+		if stage == "green":
+			var active_approach: Vector2i = state.get("approach", Vector2i.ZERO)
+			var competing_queue := false
+			for approach in counts.keys():
+				if approach != active_approach and int(counts[approach]) > 0:
+					competing_queue = true
+					break
+			if (int(counts.get(active_approach, 0)) == 0 and competing_queue) or float(state["elapsed"]) >= float(state["green_duration"]):
+				state["stage"] = "yellow"
+				state["elapsed"] = 0.0
+		elif stage == "yellow" and float(state["elapsed"]) >= JUNCTION_YELLOW_SECONDS:
+			state["stage"] = "all_red"
+			state["elapsed"] = 0.0
+		elif stage == "all_red" and float(state["elapsed"]) >= JUNCTION_ALL_RED_SECONDS:
+			var next_approach := _select_junction_approach(counts, waiting)
+			state["approach"] = next_approach
+			state["stage"] = "green"
+			state["elapsed"] = 0.0
+			state["green_duration"] = clampf(JUNCTION_MIN_GREEN_SECONDS + float(counts.get(next_approach, 0)), JUNCTION_MIN_GREEN_SECONDS, JUNCTION_MAX_GREEN_SECONDS)
+			if next_approach != Vector2i.ZERO:
+				waiting[next_approach] = 0.0
+			state["waiting"] = waiting
+		_junction_signal_states[junction_cell] = state
+	for junction_cell in _junction_signal_states.keys():
+		if not junctions.has(junction_cell):
+			_junction_signal_states.erase(junction_cell)
+
+func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, from_cell: Vector2i = Vector2i.ZERO) -> bool:
 	if not is_instance_valid(vehicle):
 		return false
 	if not is_junction_cell(junction_cell):
 		return true
+	var approach := junction_cell - from_cell
+	var state: Dictionary = _junction_signal_states.get(junction_cell, {})
+	if state.is_empty():
+		state = {"approach": approach, "stage": "green", "elapsed": 0.0, "green_duration": JUNCTION_MIN_GREEN_SECONDS, "waiting": {}}
+		_junction_signal_states[junction_cell] = state
+	if str(state.get("stage", "green")) != "green" or state.get("approach", Vector2i.ZERO) != approach:
+		return false
 	var owner_id := int(_junction_reservations.get(junction_cell, 0))
 	var vehicle_id := vehicle.get_instance_id()
 	if owner_id == 0 or owner_id == vehicle_id:

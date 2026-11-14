@@ -728,6 +728,50 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager.release_all_junction_entries(junction_a)
 	junction_a.free()
 	junction_b.free()
+
+	# Adaptive signal phases admit only the selected approach, then clear the
+	# junction through yellow/all-red before serving a waiting competing queue.
+	var signal_a := TrafficVehicle.new()
+	var signal_b := TrafficVehicle.new()
+	signal_a.route = [Vector2i(-1, 0), junction_cell, Vector2i(0, -1)]
+	signal_b.route = [Vector2i(0, 1), junction_cell, Vector2i(1, 0)]
+	var signal_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
+	TrafficManager._active_vehicles.clear()
+	TrafficManager._active_vehicles.append(signal_a)
+	TrafficManager._active_vehicles.append(signal_b)
+	TrafficManager._junction_signal_states.clear()
+	TrafficManager._junction_reservations.clear()
+	TrafficManager._update_junction_controllers(0.1)
+	var initial_signal_state: Dictionary = TrafficManager._junction_signal_states.get(junction_cell, {})
+	_check(initial_signal_state.get("stage", "") == "green", "A queued junction approach must receive an initial green phase.")
+	# Seed a deterministic older wait on the north approach so the test proves
+	# the scheduler changes phases rather than relying on dictionary order.
+	initial_signal_state["approach"] = Vector2i(1, 0)
+	initial_signal_state["waiting"] = {Vector2i(1, 0): 0.0, Vector2i(0, -1): 5.0}
+	TrafficManager._junction_signal_states[junction_cell] = initial_signal_state
+	_check(TrafficManager.request_junction_entry(signal_a, junction_cell, Vector2i(-1, 0)), "The selected green approach must be admitted.")
+	_check(not TrafficManager.request_junction_entry(signal_b, junction_cell, Vector2i(0, 1)), "A conflicting approach must not enter during another approach's green phase.")
+	TrafficManager._update_junction_controllers(10.0)
+	var yellow_state: Dictionary = TrafficManager._junction_signal_states.get(junction_cell, {})
+	_check(yellow_state.get("stage", "") == "yellow", "Demand-responsive green must transition to yellow when its maximum phase expires.")
+	_check(not TrafficManager.request_junction_entry(signal_b, junction_cell, Vector2i(0, 1)), "No new vehicle may enter during yellow clearance.")
+	TrafficManager._update_junction_controllers(TrafficManager.JUNCTION_YELLOW_SECONDS + 0.1)
+	var all_red_state: Dictionary = TrafficManager._junction_signal_states.get(junction_cell, {})
+	_check(all_red_state.get("stage", "") == "all_red", "Yellow must be followed by an all-red clearance interval.")
+	_check(not TrafficManager.request_junction_entry(signal_b, junction_cell, Vector2i(0, 1)), "No approach may enter during all-red clearance.")
+	TrafficManager.release_all_junction_entries(signal_a)
+	TrafficManager._update_junction_controllers(TrafficManager.JUNCTION_ALL_RED_SECONDS + 0.1)
+	var next_signal_state: Dictionary = TrafficManager._junction_signal_states.get(junction_cell, {})
+	_check(next_signal_state.get("stage", "") == "green" and next_signal_state.get("approach", Vector2i.ZERO) == Vector2i(0, -1), "The longest-waiting competing approach must receive the next green phase to prevent starvation.")
+	_check(TrafficManager.request_junction_entry(signal_b, junction_cell, Vector2i(0, 1)), "The newly selected green approach must be admitted after clearance.")
+	TrafficManager.release_all_junction_entries(signal_a)
+	TrafficManager.release_all_junction_entries(signal_b)
+	TrafficManager._junction_signal_states.clear()
+	TrafficManager._active_vehicles.clear()
+	for signal_previous_vehicle in signal_fleet:
+		TrafficManager._active_vehicles.append(signal_previous_vehicle)
+	signal_a.free()
+	signal_b.free()
 	TrafficManager._active_vehicles.clear()
 	for previous_vehicle in previous_fleet:
 		TrafficManager._active_vehicles.append(previous_vehicle)

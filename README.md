@@ -35,6 +35,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 - **[ماتریس مدل‌های اختصاصی و واقع‌گرایانه ساختمان‌ها](godot-city-buildit/docs/UNIQUE_REALISTIC_BUILDING_ASSET_MATRIX.md)** — فهرست انواع مسکونی، فروشگاهی، کارخانه‌ای، خدمات شهری و پارک‌های موجود در کد، مدل بصری مستقل موردنیاز هرکدام، قواعد منبع/مجوز، آزمون و معیار پذیرش. این سند فعلاً برنامه و موجودی نیازهاست؛ هیچ مدل جدیدی را انجام‌شده اعلام نمی‌کند.
 - **[استاندارد ترافیک، مسیرهای لاین و ناوگان امدادی](godot-city-buildit/docs/TRAFFIC_LANE_AND_EMERGENCY_FLEET_SPEC.md)** — سرعت 4x شهر و 16x بزرگراه، حرکت راست‌دست، فاصله ایمن، مسیرهای جداگانه بزرگراه و خروج خودکار خودروهای پلیس/آتش‌نشانی.
+- **[کنترل تطبیقی تقاطع‌ها](godot-city-buildit/docs/ADAPTIVE_JUNCTION_CONTROL_SPEC.md)** — چرخه سبز/زرد/تمام‌قرمز مبتنی بر صف و زمان انتظار، با حفظ توقف ایمن و رزرو انحصاری تا تکمیل مدل تعارض گردش‌ها.
 
 ### منابع مرجع اصلی (حتماً مطالعه شود)
 - [EA Official Beginner Guide](https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/)
@@ -131,6 +132,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 | PR | تغییر پیشنهادی | وضعیت |
 |---|---|---|
 | [#456](https://github.com/pasoooir/Mshin/pull/456) | ترافیک چندخودرویی با سرعت 4x شهر و 16x بزرگراه، سرعت کالیبره ۳۰/۱۲۰ کیلومتر بر ساعت، لاین راست‌دست، فاصله ایمن و اعزام خودکار ناوگان پلیس/آتش‌نشانی | باز؛ Godot Validation + GameplaySmoke و Android Debug APK در run `43572395515` موفق؛ Web export + Chromium desktop/mobile در run `43572395470` موفق؛ Deploy به‌دلیل PR بودن اجرا نشد. بازبینی بصری دستگاه واقعی باقی است. |
+| [#466](https://github.com/pasoooir/Mshin/pull/466) | کنترل تطبیقی تقاطع‌ها بر اساس صف ورودی، زمان انتظار، چرخه زرد/تمام‌قرمز و جلوگیری از دور زدن چراغ با قانون توقف چهارثانیه‌ای | باز؛ Godot Validation + GameplaySmoke، Android Debug APK و Web/Chromium دسکتاپ/موبایل در runهای `43581555663` و `43581555673` موفق؛ Pages deploy به‌دلیل PR بودن skip شد. مدل تعارض گردش‌ها و عبور هم‌زمان حرکات سازگار هنوز باقی است. |
 
 
 PR #438 با merge commit `4e886a01b6d4f05d4d2d36235373113f3e415d93` وارد main شد. پس از Merge، Godot Validation run `43489826154`، Web/Chromium و Pages deploy run `43489826228` و Pages build/deploy run `43489825540` همگی موفق شدند. مقایسه چشمی و تست لمس روی Android فیزیکی همچنان انجام‌نشده است و تست Chromium جایگزین آن نیست.
