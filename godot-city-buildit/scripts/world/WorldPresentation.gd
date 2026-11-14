@@ -908,7 +908,7 @@ func _build_meadow_livestock() -> void:
 	var leg_offsets: Array[Vector3] = [Vector3(-0.42, 0.32, -0.42), Vector3(-0.42, 0.32, 0.42), Vector3(0.42, 0.32, -0.42), Vector3(0.42, 0.32, 0.42)]
 	var sheep_legs := _make_world_multimesh("SheepLegs", sheep_leg_mesh, _animal_leg_positions(sheep_positions, 0.32), leg_material)
 	flock.add_child(sheep_legs)
-	_register_livestock_part(flock, sheep_legs, sheep_positions.size(), 0, leg_offsets)
+	_register_livestock_part(flock, sheep_legs, sheep_positions.size(), 0, leg_offsets, true)
 
 	var cow_body_mesh := SphereMesh.new()
 	cow_body_mesh.radius = 0.95
@@ -946,17 +946,17 @@ func _build_meadow_livestock() -> void:
 
 	var cow_legs := _make_world_multimesh("CattleLegs", sheep_leg_mesh, _animal_leg_positions(cattle_positions, 0.36), leg_material)
 	flock.add_child(cow_legs)
-	_register_livestock_part(flock, cow_legs, cattle_positions.size(), sheep_positions.size(), leg_offsets)
+	_register_livestock_part(flock, cow_legs, cattle_positions.size(), sheep_positions.size(), leg_offsets, true)
 
 
-func _register_livestock_part(flock: Node3D, instance: MultiMeshInstance3D, animal_count: int, owner_offset: int, local_offsets: Array[Vector3]) -> void:
+func _register_livestock_part(flock: Node3D, instance: MultiMeshInstance3D, animal_count: int, owner_offset: int, local_offsets: Array[Vector3], animate_legs: bool = false) -> void:
 	var owners: Array[int] = []
 	var offsets: Array[Vector3] = []
 	for animal_index in range(animal_count):
 		for local_offset in local_offsets:
 			owners.append(owner_offset + animal_index)
 			offsets.append(local_offset)
-	flock.call("register_part", instance, owners, offsets)
+	flock.call("register_part", instance, owners, offsets, animate_legs)
 
 
 func _animal_body_positions(origins: Array[Vector3], height: float) -> Array[Vector3]:
