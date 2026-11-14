@@ -2127,11 +2127,13 @@ func _test_region_city_snapshots() -> void:
 	if road_system == null:
 		return
 	var original_snapshot: Dictionary = SaveManager.capture_region_snapshot()
+	StorageManager.items = {"metal":7}
 	var gateway: Vector2i = RoadSystemScript.GATEWAY_ROAD_CELL
 	var marker_road := gateway + Vector2i.UP
 	if not road_system.has_road(marker_road):
 		_check(road_system.place_road(marker_road), "Region snapshot test must add a connected marker road.")
 	var capital_snapshot: Dictionary = SaveManager.capture_region_snapshot()
+	_check(capital_snapshot.has("storage") and capital_snapshot.storage.get("items", {}) == {"metal":7}, "A region snapshot must include its own warehouse inventory.")
 	_check(capital_snapshot.has("roads") and capital_snapshot.has("buildings") and capital_snapshot.has("epic_projects"), "Each region snapshot must include roads, buildings and Epic Project state.")
 	GameManager.level = 25
 	RegionManager._refresh_unlocks()
@@ -2140,6 +2142,7 @@ func _test_region_city_snapshots() -> void:
 		"roads": [[gateway.x, gateway.y, 1]],
 		"buildings": [],
 		"epic_projects": {},
+		"storage": {"capacity":StorageManager.DEFAULT_CAPACITY, "items":{"coconut":3}},
 		"happiness": 100.0
 	}
 	# A city's 80% Happiness streak and household penalties must never leak
@@ -2149,11 +2152,17 @@ func _test_region_city_snapshots() -> void:
 	HappinessManager.home_scores["old_region_home"] = 12.0
 	_check(RegionManager.switch_region("sunny_isles", false), "Unlocked Sunny Isles must open as an independent region.")
 	_check(RegionManager.active_region_id == "sunny_isles" and road_system.get_road_count() == 1, "A new region must load its own gateway-only road map.")
+	_check(StorageManager.get_count("coconut") == 3 and StorageManager.get_count("metal") == 0, "Switching regions must load the target region warehouse without leaking the capital inventory.")
+	_check(StorageManager.add_item("coconut", 2), "Regional warehouse must accept local production while the region is active.")
 	_check(is_zero_approx(HappinessManager._high_happiness_elapsed), "Switching regions must reset the previous city's high-Happiness XP streak.")
 	_check(HappinessManager.low_happiness_time.is_empty() and HappinessManager.home_scores.is_empty(), "Switching regions must clear cached household Happiness and abandonment timers.")
 	_check(is_equal_approx(GameManager.happiness, 100.0), "An empty new region must calculate its own default Happiness instead of retaining the previous city's score.")
 	_check(RegionManager.switch_region("capital", false), "The saved Capital City must be reachable again.")
 	_check(road_system.has_road(marker_road) and road_system.get_road_count() == capital_snapshot.get("roads", []).size(), "Returning to Capital City must restore its independent road layout.")
+	_check(StorageManager.get_count("metal") == 7 and StorageManager.get_count("coconut") == 0, "Returning to the capital must restore its independent warehouse inventory.")
+	_check(RegionManager.switch_region("sunny_isles", false), "Sunny Isles must be switchable after saving its regional inventory.")
+	_check(StorageManager.get_count("coconut") == 5 and StorageManager.get_count("metal") == 0, "Returning to a region must restore its saved regional warehouse inventory.")
+	_check(RegionManager.switch_region("capital", false), "The capital must remain reachable after regional inventory persistence is verified.")
 	_check(RegionManager.region_states.get("capital", {}).has("epic_projects"), "Switching regions must preserve region-specific Epic Project state.")
 	SaveManager.load_region_snapshot(original_snapshot)
 	GameManager.level = previous_level
