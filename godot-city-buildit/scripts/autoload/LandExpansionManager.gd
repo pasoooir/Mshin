@@ -127,6 +127,37 @@ func expand_tile(tile: Vector2i) -> bool:
 	land_changed.emit()
 	return true
 
+func _own_legacy_cell(cell: Vector2i) -> bool:
+	if cell.x < -40 or cell.x >= 40 or cell.y < -40 or cell.y >= 40:
+		return false
+	var tile := get_tile_for_cell(cell)
+	if not _is_tile_in_bounds(tile) or is_tile_owned(tile):
+		return false
+	owned_tiles[_tile_key(tile)] = true
+	return true
+
+func migrate_legacy_land(road_data: Array, building_data: Array) -> void:
+	# Version 3 saves predate land ownership. Preserve every plot already used
+	# by a saved road/building so older cities cannot lose or fail to restore work.
+	var changed := false
+	for road in road_data:
+		if road is Array and road.size() >= 2:
+			changed = _own_legacy_cell(Vector2i(int(road[0]), int(road[1]))) or changed
+	for saved_building in building_data:
+		if not (saved_building is Dictionary):
+			continue
+		var grid_data: Variant = saved_building.get("grid", [])
+		var type_id := str(saved_building.get("type", ""))
+		if not (grid_data is Array) or grid_data.size() < 2 or not BuildManager.building_types.has(type_id):
+			continue
+		var anchor := Vector2i(int(grid_data[0]), int(grid_data[1]))
+		var rotation := int(saved_building.get("rotation_quarters", 0))
+		var footprint := BuildManager.get_footprint_cells(anchor, BuildManager.get_building_size(type_id, rotation))
+		for cell in footprint:
+			changed = _own_legacy_cell(cell) or changed
+	if changed:
+		land_changed.emit()
+
 func get_owned_tile_count() -> int:
 	return owned_tiles.size()
 
