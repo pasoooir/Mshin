@@ -209,12 +209,26 @@ func _on_bubble_pressed(building_id: String) -> void:
 	var building = BuildManager.buildings.get(building_id)
 	if not is_instance_valid(building):
 		return
+	var gift_message := ""
+	var feedback := get_feedback_for_home(building)
+	if str(feedback.get("kind", "")) == "happy" and GameManager.level >= 8 and randi_range(0, 3) == 0:
+		var expansion_items := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
+		var item_id: String = expansion_items[randi_range(0, expansion_items.size() - 1)]
+		if _grant_expansion_gift(item_id):
+			gift_message = "Citizen gift collected: +1 %s" % str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id))
 	var hud := get_tree().current_scene.get_node_or_null("HUD")
 	if hud and hud.has_method("open_residential_panel"):
 		hud.open_residential_panel(building)
+		if not gift_message.is_empty() and is_instance_valid(hud.get("status_label")):
+			hud.status_label.text = gift_message
 	_clear_bubbles()
 	_showing = false
 	_elapsed = 0.0
+
+func _grant_expansion_gift(item_id: String) -> bool:
+	if GameManager.level < 8 or item_id not in ["dozer_wheel", "dozer_blade", "dozer_exhaust"]:
+		return false
+	return StorageManager.add_item(item_id, 1)
 
 func get_citizen_line(kind: String, building_id: String, cycle_index: int = 0) -> String:
 	var lines: Array = CITIZEN_DIALOGUE.get(kind, CITIZEN_DIALOGUE["happiness"])
