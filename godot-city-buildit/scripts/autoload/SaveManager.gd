@@ -153,7 +153,7 @@ func load_game() -> bool:
 	StorageManager.from_save_dict(storage_data)
 	TradeManager.from_save_dict(parsed.get("trade", {}))
 
-	if not _restore_region_world(region_roads, region_buildings, region_epic_projects, false):
+	if not _restore_region_world(region_roads, region_buildings, region_epic_projects, false, region_snapshot.get("land_expansion", {})):
 		is_loading = false
 		load_completed.emit(false)
 		return false
@@ -203,14 +203,14 @@ func load_game() -> bool:
 	return true
 
 
-func _restore_region_world(road_data: Array, building_data: Array, epic_data: Dictionary, _allow_empty_region: bool) -> bool:
+func _restore_region_world(road_data: Array, building_data: Array, epic_data: Dictionary, _allow_empty_region: bool, land_expansion_data: Dictionary = {}) -> bool:
 	var scene = get_tree().current_scene
 	if scene == null:
 		return false
 	var road_system = scene.get_node_or_null("World/RoadSystem")
 	if road_system == null:
 		return false
-	LandExpansionManager.from_save_dict(snapshot.get("land_expansion", {}))
+	LandExpansionManager.from_save_dict(land_expansion_data)
 	BuildManager.cancel_placement()
 	if BuildManager.is_moving:
 		BuildManager.cancel_move()
@@ -306,7 +306,8 @@ func load_region_snapshot(snapshot: Dictionary) -> bool:
 		snapshot.get("roads", []),
 		snapshot.get("buildings", []),
 		snapshot.get("epic_projects", {}),
-		true
+		true,
+		snapshot.get("land_expansion", {})
 	)
 	EconomyManager.simoleons = previous_simoleons
 	if not success:
