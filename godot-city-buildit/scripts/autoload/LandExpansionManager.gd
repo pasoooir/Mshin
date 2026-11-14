@@ -8,6 +8,10 @@ const MAX_TILE := 4
 const MIN_EXPANSION_LEVEL := 10
 const INITIAL_TILE_MIN := -3
 const INITIAL_TILE_MAX := 2
+const EXPANSION_MIN_TILE_X := -3
+const EXPANSION_MAX_TILE_X := 2
+const EXPANSION_MIN_TILE_Y := -5
+const EXPANSION_MAX_TILE_Y := 4
 const EXPANSION_ITEM_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
 
 var owned_tiles: Dictionary = {}
@@ -75,8 +79,8 @@ func _is_adjacent_to_owned(tile: Vector2i) -> bool:
 
 func get_available_expansion_tiles() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	for x in range(MIN_TILE, MAX_TILE + 1):
-		for y in range(MIN_TILE, MAX_TILE + 1):
+	for x in range(EXPANSION_MIN_TILE_X, EXPANSION_MAX_TILE_X + 1):
+		for y in range(EXPANSION_MIN_TILE_Y, EXPANSION_MAX_TILE_Y + 1):
 			var tile := Vector2i(x, y)
 			if not is_tile_owned(tile) and _is_adjacent_to_owned(tile):
 				result.append(tile)
@@ -107,6 +111,8 @@ func get_tile_cost(tile: Vector2i) -> Dictionary:
 func get_tile_error(tile: Vector2i) -> String:
 	if not _is_tile_in_bounds(tile):
 		return "This land is outside the expansion boundary."
+	if tile.x < EXPANSION_MIN_TILE_X or tile.x > EXPANSION_MAX_TILE_X or tile.y < EXPANSION_MIN_TILE_Y or tile.y > EXPANSION_MAX_TILE_Y:
+		return "This plot is reserved for the highway corridor or coastline."
 	if is_tile_owned(tile):
 		return "This land is already part of your city."
 	if not _is_adjacent_to_owned(tile):
