@@ -12,6 +12,12 @@ All five GLTF files in this directory are original procedural architectural mesh
 
 Materials use glTF 2.0 metallic-roughness PBR factors plus embedded procedural PNG texture maps for Base Color, tangent-space Normal and Metallic-Roughness. The texture maps are generated patterns, not photographic scans or high-resolution photogrammetry textures. Their geometry includes facade openings/frames, glass, entry features, roof structures, balconies, signage, loading door and industrial equipment details as appropriate.
 
+## Procedural building surface library
+
+The procedural building mesh path also uses `scripts/buildings/BuildingSurfaceLibrary.gd`. It creates and caches local 128×128 maps for Base Color, tangent-space Normal, Roughness and Metallic. Surface families include plaster, brick courses, timber grain, reflective glass, brushed metal, roof tiles and concrete aggregate. The window helpers explicitly request glass and painted-metal frame profiles; the library is deterministic and has no CDN/runtime dependency.
+
+These generated maps are procedural texture patterns, not photographic scans or third-party texture downloads. They improve material response and visual breakup, but they do not count as high-resolution photogrammetry textures or as a replacement for the dedicated per-building GLTF models still listed in the asset matrix.
+
 ## Validation
 
 `BuildManager.BUILDING_MODEL_REGISTRY` assigns each available GLTF to exact building type IDs; it does not infer a model from a broad category. The Godot GameplaySmoke test loads each local model through `BuildingModelLoader`, instantiates the imported PackedScene, checks renderable MeshInstance3D surfaces, and verifies that unrelated commercial/factory types do not inherit generic GLTF paths. CI Import/Parse also validates Godot's glTF importer. These checks do not claim a real-device visual/performance review.
