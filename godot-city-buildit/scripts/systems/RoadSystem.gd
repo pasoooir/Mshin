@@ -237,6 +237,20 @@ func place_road(grid_pos: Vector2i) -> bool:
 	_queue_service_recalculation()
 	return true
 
+func restore_road(grid_pos: Vector2i) -> bool:
+	# Save restoration bypasses new-placement restrictions (e.g. reserved asphalt),
+	# but still requires the saved tile to belong to the restored city land.
+	if not BuildManager.is_inside_world(grid_pos) or not LandExpansionManager.is_cell_unlocked(grid_pos):
+		return false
+	if roads.has(grid_pos):
+		return true
+	roads[grid_pos] = null
+	invalidate_road_connectivity_cache()
+	_refresh_road_neighborhood(grid_pos)
+	road_placed.emit(grid_pos)
+	_queue_service_recalculation()
+	return true
+
 func place_road_at_world(world_pos: Vector3) -> bool:
 	return place_road(BuildManager.world_to_grid(world_pos))
 
