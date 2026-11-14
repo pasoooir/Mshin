@@ -11,12 +11,15 @@ static func surface_for_color(color: Color, hint: String = "") -> String:
 		return hint
 	var saturation := color.s
 	var luminance := color.get_luminance()
+	var hue := color.h
 	if color.b > color.r * 1.16 and color.b > color.g * 0.96 and saturation > 0.18:
 		return "glass"
+	# Timber browns are more orange/yellow than red masonry; hue separates
+	# them because both materials can have similar RGB channel ordering.
+	if hue > 0.045 and hue < 0.13 and color.r > color.g * 1.10 and color.g > color.b * 1.08 and luminance < 0.68:
+		return "wood"
 	if color.r > color.g * 1.20 and color.r > color.b * 1.28 and saturation > 0.22:
 		return "brick"
-	if color.r > color.g * 1.10 and color.g > color.b * 1.08 and luminance < 0.62:
-		return "wood"
 	if saturation < 0.12 and luminance < 0.58:
 		return "metal"
 	if saturation < 0.14:
