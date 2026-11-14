@@ -696,6 +696,21 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	leader.congestion_release_active = true
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(leader, 40.0), TrafficManager.CONGESTION_CRAWL_SPEED), "Only the frontmost stopped vehicle may resume controlled crawl after four seconds.")
 	_check(is_equal_approx(TrafficManager.MAX_TRAFFIC_STOP_SECONDS, 4.0), "The maximum frontmost stopped-vehicle wait must be exactly four seconds.")
+
+	# Every T/cross junction is an exclusive conflict zone: only one vehicle may enter.
+	var junction_a := TrafficVehicle.new()
+	var junction_b := TrafficVehicle.new()
+	var junction_cell := Vector2i(0, 0)
+	_check(TrafficManager.is_junction_cell(junction_cell), "The starter road T-junction must be recognized as a controlled junction.")
+	_check(TrafficManager.request_junction_entry(junction_a, junction_cell), "The first vehicle must acquire an unoccupied junction.")
+	_check(not TrafficManager.request_junction_entry(junction_b, junction_cell), "A second vehicle must wait while the junction conflict zone is occupied.")
+	TrafficManager.release_junction_entry(junction_a, junction_cell)
+	_check(TrafficManager.request_junction_entry(junction_b, junction_cell), "The waiting vehicle must acquire the junction after the first vehicle clears it.")
+	TrafficManager.release_all_junction_entries(junction_b)
+	_check(TrafficManager.request_junction_entry(junction_a, Vector2i(-10, -1)), "A straight road segment must not require an intersection reservation.")
+	TrafficManager.release_all_junction_entries(junction_a)
+	junction_a.free()
+	junction_b.free()
 	TrafficManager._active_vehicles.clear()
 	for previous_vehicle in previous_fleet:
 		TrafficManager._active_vehicles.append(previous_vehicle)
