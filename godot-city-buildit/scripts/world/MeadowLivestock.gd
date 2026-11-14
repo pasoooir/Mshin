@@ -1,6 +1,6 @@
 extends Node3D
 
-const PASTURE_MIN_X := -40.0
+const PASTURE_MIN_X := -88.0
 const PASTURE_MAX_X := 42.0
 const PASTURE_MIN_ABS_Z := 82.0
 const PASTURE_MAX_ABS_Z := 88.5
