@@ -3313,6 +3313,7 @@ func _run_gameplay_test() -> void:
 	_check(not LandExpansionManager.is_cell_unlocked(Vector2i(35, 0)), "Unopened outer plots must remain locked.")
 	_check(not BuildManager.is_cell_free(Vector2i(35, 0), Vector2i.ONE), "Building footprints must not be placeable on unopened land.")
 	_check(road_system.get_road_placement_error(Vector2i(35, 0)).contains("locked"), "Road placement must reject unopened land with a clear expansion message.")
+	_check(road_system.get_road_placement_error(Vector2i(-24, 0)).contains("highway asphalt"), "New roads must not be placed over the permanent highway asphalt.")
 	_check(LandExpansionManager.get_available_expansion_tiles().has(expansion_test_tile), "A plot directly adjacent to owned land must be available for expansion.")
 	_check(not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(-4, 0)) and not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(3, 0)), "Expansion choices must exclude the motorway asphalt corridor and ocean coastline.")
 	_check(not LandExpansionManager.expand_tile(expansion_test_tile), "Land expansion must reject a purchase when any required Dozer item is missing.")
