@@ -147,15 +147,31 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 - [ ] Physical Android screenshot comparison against current SimCity BuildIt production/residential panels.
 - [ ] Physical Android touch acceptance: horizontal catalog scroll, select product, start, collect, close, queue expansion and upgrade.
 - Do not claim this domain fully closed until the two physical-device checks above are evidenced.
-## Active implementation PR #477 — 2026-11-14
+## Merged implementation PR #477 — 2026-11-14
 
-[PR #477](https://github.com/pasoooir/Mshin/pull/477) is an implementation slice, not a closure of all six remaining gates. Its current branch adds:
+[PR #477](https://github.com/pasoooir/Mshin/pull/477) is an implementation slice, not a closure of all six remaining gates. The merged branch adds:
 
 - Runtime recipe graph validation: supplier building identity is checked against `BuildManager.building_types`; recipe duration and input quantities must be positive; all raw/crafted input IDs must resolve; every node participating in a dependency cycle is blocked from production.
 - Live queue-aware ETA inputs: production components register in a shared runtime group; store estimates read active/queued work; raw-material estimates inspect parallel factory slots and use the earliest available matching slot.
 - Independent regional warehouses: region snapshots now include `StorageManager` state; switching regions saves/restores separate inventory; save schema advances to version 5, with legacy top-level inventory retained for the active region when no region-level inventory exists.
 - GameplaySmoke coverage for cycle/malformed recipe rejection, live store/factory queue ETA and regional warehouse isolation across switches.
 
-**Acceptance status:** PR remains open. A prior CI attempt exposed an incorrect assumption that `store_catalog` was the supplier registry and an untyped-array assignment in the new test; both were corrected. The Godot validation and Android APK export passed on commit `c683fe1ae1722a6ef030a69b49f8a0d2435000df`, but the subsequent save-version and documentation commits require their own final CI confirmation. No physical Android device test is claimed.
+**Acceptance status:** PR #477 was merged to `main` as merge commit `5aa4d7d06ec6cc0de3ea30fc000b8374a7e2bf91`. The final PR metadata reports 17 commits and seven changed files. No physical Android device test is claimed.
 
 **Still open:** full source/provenance adjudication of recipe numeric values; a deterministic global scheduler for recursive shared queues and parallel dependencies; complete construction/upgrade BOMs; explicit operational utility/workforce gates for non-residential buildings; complete regional production chains and trade; physical Android acceptance.
+
+
+## Follow-up audit — 2026-11-14
+
+- [PR #480](https://github.com/pasoooir/Mshin/pull/480) fixes a real version-5 save/load precedence defect: `load_game()` previously restored the active region warehouse and then overwrote it with the legacy top-level inventory. The loader now prefers the active region snapshot and uses the top-level inventory only when migrating a save without regional storage.
+- GameplaySmoke now covers both version-5 regional inventory precedence and legacy top-level inventory migration.
+- PR #480 merged to `main` as `fed82e2699638e95c6cdbe189e53c6771aee60ad`.
+- CI on PR head `b10e75f414806d2b0c14a51c95a1ed9676d8f3c4`: Godot City BuildIt Validation run `43637146435` passed, including headless startup, end-to-end GameplaySmoke, Android Debug APK export and APK signature/package verification. Mshin Playable Web run `43637146481` passed, including browser launch in desktop and touch-enabled mobile landscape Chromium and website artifact upload.
+- Android APK export is automated build evidence only. No physical Android device installation, visual comparison or touch test is claimed.
+
+**Remaining acceptance gates (not closed by PR #477 or #480):**
+- Deterministic global ETA/scheduling across recursive dependencies, shared store queues and parallel factory slots; current live ETA inputs are not yet a complete global scheduler.
+- Construction BOMs are connected to placement, material deduction, catalog preview and GameplaySmoke for all non-bootstrap building types using Mshin category profiles. More granular per-building BOMs and complete non-residential upgrade BOMs remain open; these Mshin balance values are not EA recipe claims.
+- Operational utility/service gates for non-residential production and a real workforce/employment allocation model remain open.
+- Full multi-stage production chains and player-initiated inter-region trade remain open; independent regional inventory switching and save persistence are implemented.
+- Physical Android install, screenshot comparison and touch acceptance remain open.
