@@ -1708,8 +1708,16 @@ func _test_region_city_snapshots() -> void:
 		"epic_projects": {},
 		"happiness": 100.0
 	}
+	# A city's 80% Happiness streak and household penalties must never leak
+	# into another region and award XP for time spent in a different city.
+	HappinessManager._high_happiness_elapsed = 35.0
+	HappinessManager.low_happiness_time["old_region_home"] = 45.0
+	HappinessManager.home_scores["old_region_home"] = 12.0
 	_check(RegionManager.switch_region("sunny_isles", false), "Unlocked Sunny Isles must open as an independent region.")
 	_check(RegionManager.active_region_id == "sunny_isles" and road_system.get_road_count() == 1, "A new region must load its own gateway-only road map.")
+	_check(is_zero_approx(HappinessManager._high_happiness_elapsed), "Switching regions must reset the previous city's high-Happiness XP streak.")
+	_check(HappinessManager.low_happiness_time.is_empty() and HappinessManager.home_scores.is_empty(), "Switching regions must clear cached household Happiness and abandonment timers.")
+	_check(is_equal_approx(GameManager.happiness, 100.0), "An empty new region must calculate its own default Happiness instead of retaining the previous city's score.")
 	_check(RegionManager.switch_region("capital", false), "The saved Capital City must be reachable again.")
 	_check(road_system.has_road(marker_road) and road_system.get_road_count() == capital_snapshot.get("roads", []).size(), "Returning to Capital City must restore its independent road layout.")
 	_check(RegionManager.region_states.get("capital", {}).has("epic_projects"), "Switching regions must preserve region-specific Epic Project state.")
