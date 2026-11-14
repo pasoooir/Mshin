@@ -176,6 +176,10 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 **Remaining acceptance gates (not closed by PR #477 or #480):**
 - [x] Deterministic recursive display ETA across shared store lanes, shared intermediate outputs, live queues and parallel factory slots; disconnected suppliers are excluded. This remains a planning estimate, not a reservation/commit scheduler for live production.
 - Construction BOMs are connected to placement, material deduction, catalog preview and GameplaySmoke for all non-bootstrap building types using Mshin category profiles. More granular per-building BOMs and complete non-residential upgrade BOMs remain open; these Mshin balance values are not EA recipe claims.
-- Operational utility/service gates for non-residential production and a real workforce/employment allocation model remain open.
+- [x] Power/water operating gates for commercial and industrial production are implemented. Mshin defaults: commercial 1 power + 1 water; industrial 2 power + 1 water, allocated after household demand; production pauses when either required utility or Gateway road access is lost. Sewage/waste/emergency-service operating gates and workforce remain separate open work.
 - Full multi-stage production chains and player-initiated inter-region trade remain open; independent regional inventory switching and save persistence are implemented.
+
+- [PR #484](https://github.com/pasoooir/Mshin/pull/484) merged non-residential power/water operating gates as `309298d52ac24bc99dd7ab83640435131e6014ae`.
+- GameplaySmoke verifies commercial and industrial utility demand, allocation, operation while served, shutdown after power loss and reactivation after power restoration. The pre-existing road-only factory outage tests remain isolated from the new utility requirement.
+- CI on PR head `c38f7e38dfc0eb111a57f875ff5bcebd4cc2e543`: Godot City BuildIt Validation run `43638352489` passed, including the full GameplaySmoke suite and Android Debug APK export/signature verification. Mshin Playable Web run `43638352498` passed, including desktop/mobile-landscape Chromium and web artifact upload.
 - Physical Android install, screenshot comparison and touch acceptance remain open.
