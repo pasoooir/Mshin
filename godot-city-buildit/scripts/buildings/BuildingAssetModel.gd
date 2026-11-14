@@ -10,7 +10,7 @@ func _ready() -> void:
 func _build_asset() -> void:
 	for child in get_children():
 		child.queue_free()
-	_box(Vector3(3.55, 0.22, 3.75), Vector3(0, 0.11, 0), Color("#77766E"), "concrete")
+	_box(Vector3(3.38, 0.22, 3.38), Vector3(0, 0.11, 0), Color("#77766E"), "concrete")
 	match asset_type:
 		"restaurant_traditional":
 			_build_traditional_restaurant()
@@ -77,17 +77,17 @@ func _window(pos: Vector3, width: float, height: float) -> void:
 func _build_traditional_restaurant() -> void:
 	_box(Vector3(3.18, 2.45, 2.95), Vector3(0, 1.34, -0.12), Color("#D8B98A"), "plaster")
 	_box(Vector3(3.32, 0.18, 3.08), Vector3(0, 2.58, -0.12), Color("#6A3829"), "wood")
-	_box(Vector3(3.42, 0.16, 1.12), Vector3(0, 2.95, 0.84), Color("#9A3F2F"), "roof", Vector3(deg_to_rad(25), 0, 0))
-	_box(Vector3(3.42, 0.16, 1.12), Vector3(0, 2.95, -1.08), Color("#9A3F2F"), "roof", Vector3(deg_to_rad(-25), 0, 0))
-	_box(Vector3(3.48, 0.13, 0.16), Vector3(0, 3.40, -0.12), Color("#6A3829"), "wood")
+	_box(Vector3(3.30, 0.16, 1.12), Vector3(0, 2.95, 0.84), Color("#9A3F2F"), "roof", Vector3(deg_to_rad(25), 0, 0))
+	_box(Vector3(3.30, 0.16, 1.12), Vector3(0, 2.95, -1.08), Color("#9A3F2F"), "roof", Vector3(deg_to_rad(-25), 0, 0))
+	_box(Vector3(3.34, 0.13, 0.16), Vector3(0, 3.40, -0.12), Color("#6A3829"), "wood")
 	_window(Vector3(-0.92, 1.62, 1.40), 0.88, 0.94)
 	_window(Vector3(0.90, 1.62, 1.40), 0.78, 0.94)
 	_box(Vector3(0.54, 1.58, 0.10), Vector3(0.05, 0.98, 1.43), Color("#59372B"), "wood")
 	_box(Vector3(3.30, 0.14, 0.42), Vector3(0, 2.46, 1.55), Color("#A34B35"), "roof")
 	_cylinder(0.10, 1.15, Vector3(-1.15, 3.24, -0.82), Color("#454A4C"), "metal")
 	for x in [-0.92, 0.92]:
-		_cylinder(0.22, 0.10, Vector3(x, 0.48, 2.02), Color("#E7D8B8"), "wood")
-		_cylinder(0.045, 0.48, Vector3(x, 0.24, 2.02), Color("#493A31"), "metal")
+		_cylinder(0.22, 0.10, Vector3(x, 0.48, 1.62), Color("#E7D8B8"), "wood")
+		_cylinder(0.045, 0.48, Vector3(x, 0.24, 1.62), Color("#493A31"), "metal")
 	_box(Vector3(0.85, 0.16, 0.12), Vector3(0, 2.05, 1.57), Color("#6E2D25"), "wood")
 
 func _build_fast_food() -> void:
@@ -101,7 +101,7 @@ func _build_fast_food() -> void:
 	_box(Vector3(0.72, 0.44, 0.12), Vector3(0.86, 2.52, 1.40), Color("#F5D25B"), "painted_metal")
 	_box(Vector3(0.18, 0.88, 0.18), Vector3(1.80, 0.48, -0.72), Color("#D5D7D5"), "metal")
 	_box(Vector3(0.58, 0.38, 0.10), Vector3(1.80, 0.98, -0.72), Color("#C52D24"), "painted_metal")
-	_box(Vector3(0.08, 0.06, 1.40), Vector3(1.78, 0.04, -1.18), Color("#E8D6A5"), "concrete")
+	_box(Vector3(0.08, 0.06, 0.72), Vector3(1.78, 0.04, -1.34), Color("#E8D6A5"), "concrete")
 
 func _build_hardware_store() -> void:
 	_box(Vector3(3.22, 2.55, 3.28), Vector3(0, 1.40, -0.12), Color("#C5B89C"), "concrete")
@@ -129,14 +129,14 @@ func _build_farmers_market() -> void:
 		_box(Vector3(0.76, 0.12, 1.18), Vector3(x, 2.18, 0.66), awning, "roof")
 		_box(Vector3(0.74, 0.66, 0.64), Vector3(x, 0.60, 0.72), Color("#8B6544"), "wood")
 		for crate in range(3):
-			var produce := [Color("#D94B35"), Color("#E7B93F"), Color("#65954C")][crate]
+			var produce: Color = [Color("#D94B35"), Color("#E7B93F"), Color("#65954C")][crate]
 			_box(Vector3(0.16, 0.16, 0.16), Vector3(x - 0.20 + float(crate) * 0.20, 1.05, 1.12), produce, "plaster")
 	_box(Vector3(3.52, 0.10, 0.18), Vector3(0, 2.74, 0), Color("#77583B"), "wood")
 	_box(Vector3(3.18, 0.08, 0.22), Vector3(0, 0.16, -1.70), Color("#C6BBA3"), "concrete")
 
 func _build_furniture_store() -> void:
 	_box(Vector3(3.30, 2.92, 3.10), Vector3(0, 1.58, -0.10), Color("#D5D7D1"), "concrete")
-	_box(Vector3(3.48, 0.20, 3.26), Vector3(0, 3.08, -0.10), Color("#313B43"), "metal")
+	_box(Vector3(3.34, 0.20, 3.26), Vector3(0, 3.08, -0.10), Color("#313B43"), "metal")
 	_box(Vector3(3.18, 2.02, 0.06), Vector3(0, 1.40, 1.51), Color("#244A5D"), "glass")
 	for x in [-1.10, -0.36, 0.36, 1.10]:
 		_box(Vector3(0.055, 1.92, 0.08), Vector3(x, 1.42, 1.58), Color("#D8D8CF"), "painted_metal")
