@@ -11,6 +11,7 @@ const CitizenFeedbackBubblesScript = preload("res://scripts/ui/CitizenFeedbackBu
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
+const BuildingAssetModel = preload("res://scripts/buildings/BuildingAssetModel.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
 
 class FireHazardTestBuilding extends Node3D:
@@ -1531,6 +1532,7 @@ func _test_building_model_loader_contract() -> void:
 	surface_probe.free()
 	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa_house.gltf"), "Local villa GLTF model paths must be accepted.")
 	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/neighborhood_shop.gltf"), "Local commercial GLTF model paths must be accepted.")
+	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/restaurant_traditional.tscn"), "Local dedicated commercial scene paths must be accepted.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/vehicle.obj"), "Unsupported model formats must be rejected.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://outside/villa.glb"), "Model loading must be restricted to the local models directory.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/../outside/villa.glb"), "Model paths must reject parent-directory traversal.")
@@ -1540,6 +1542,11 @@ func _test_building_model_loader_contract() -> void:
 		"res://assets/models/residential/villa_house.gltf",
 		"res://assets/models/residential/apartment_tower.gltf",
 		"res://assets/models/commercial/neighborhood_shop.gltf",
+		"res://assets/models/commercial/restaurant_traditional.tscn",
+		"res://assets/models/commercial/fast_food.tscn",
+		"res://assets/models/commercial/hardware_store.tscn",
+		"res://assets/models/commercial/farmers_market.tscn",
+		"res://assets/models/commercial/furniture_store.tscn",
 		"res://assets/models/industrial/small_factory.gltf",
 		"res://assets/models/residential/residential_tower_75m.gltf"
 	]
@@ -1549,6 +1556,8 @@ func _test_building_model_loader_contract() -> void:
 		if packed_scene == null:
 			continue
 		var instance := packed_scene.instantiate()
+		if model_path.ends_with(".tscn"):
+			add_child(instance)
 		_check(instance is Node3D, "Imported building model root must be Node3D: " + model_path)
 		if instance is Node3D:
 			var mesh_nodes := instance.find_children("*", "MeshInstance3D", true, false)
@@ -1558,15 +1567,20 @@ func _test_building_model_loader_contract() -> void:
 				if mesh_node is MeshInstance3D and mesh_node.mesh != null:
 					surfaces_found += mesh_node.mesh.get_surface_count()
 			_check(surfaces_found > 0, "Imported building model must contain valid mesh surfaces: " + model_path)
+		if instance.get_parent() == self:
+			remove_child(instance)
 		instance.free()
 	_check(str(BuildManager.building_types["residential_villa"].get("model_path", "")) == model_paths[0], "Villa definitions must select the local villa model.")
 	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local mid-rise model.")
 	_check(not str(BuildManager.building_types["residential_apartment"].get("model_path", "")).ends_with("residential_tower_75m.gltf"), "The 75m tower must remain unwired until a compatible large footprint is implemented.")
 	_check(str(BuildManager.building_types["shop_chain"].get("model_path", "")) == model_paths[2], "The chain-store archetype must select the local neighborhood shop model.")
+	for dedicated_index in range(5):
+		var dedicated_id := ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"][dedicated_index]
+		_check(str(BuildManager.building_types[dedicated_id].get("model_path", "")) == model_paths[3 + dedicated_index], "Commercial type must select its own dedicated local model scene: " + dedicated_id)
 	_check(not BuildManager.building_types["hardware_store"].has("model_path"), "Hardware Store must keep its trade-specific procedural architecture instead of a generic shop GLTF.")
 	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[3], "The small-factory archetype must select the local factory model.")
 	_check(not BuildManager.building_types["factory_basic"].has("model_path") and not BuildManager.building_types["factory_mass"].has("model_path") and not BuildManager.building_types["factory_hightech"].has("model_path") and not BuildManager.building_types["factory_nano"].has("model_path"), "Larger factory tiers must retain their distinct procedural facilities instead of sharing the small-factory GLTF.")
-	for commercial_id in ["restaurant_traditional", "fast_food", "art_supplies", "hardware_store", "farmers_market", "furniture_store", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]:
+	for commercial_id in ["art_supplies", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]:
 		_check(not BuildManager.building_types[commercial_id].has("model_path"), "Commercial type %s must not inherit a category-wide generic GLTF." % commercial_id)
 	for type_id in BuildManager.BUILDING_MODEL_REGISTRY:
 		_check(BuildManager.building_types.has(type_id), "Explicit model registry must reference a known building type: " + type_id)
