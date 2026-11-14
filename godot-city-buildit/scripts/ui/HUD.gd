@@ -1223,14 +1223,25 @@ func _show_building_info(type_id: String) -> void:
 	var population_lock := BuildManager.get_population_build_lock_reason(type_id)
 	var factory_lock := BuildManager.get_factory_build_lock_reason(type_id) if str(definition.get("category", "")) == "industrial" else ""
 	_add_info_line(layout, "Construction", _format_duration(int(definition.get("build_time", 0))))
+	var construction_bom := BuildManager.get_construction_bom(type_id)
+	var bom_lines: Array[String] = []
+	for item_id in construction_bom:
+		var item_definition := ProductionManager.get_item_definition(str(item_id))
+		var item_name := str(item_definition.get("name", item_id))
+		bom_lines.append("%s ×%d (stock %d)" % [item_name, int(construction_bom[item_id]), StorageManager.get_count(str(item_id))])
+	_add_info_line(layout, "Materials", "No material charge" if bom_lines.is_empty() else ", ".join(bom_lines))
+	_add_info_line(layout, "BOM source", BuildManager.get_construction_bom_source(type_id))
+	var bom_lock := BuildManager.get_construction_bom_lock_reason(type_id)
+	if not bom_lock.is_empty():
+		status_label.text = bom_lock
 	if GameManager.level < required_level:
 		status_label.text = "Unlocked at Level %d." % required_level
 	elif not region_lock.is_empty():
 		status_label.text = region_lock
-	var can_build := GameManager.level >= required_level and population_lock.is_empty() and factory_lock.is_empty() and region_lock.is_empty()
+	var can_build := GameManager.level >= required_level and population_lock.is_empty() and factory_lock.is_empty() and region_lock.is_empty() and bom_lock.is_empty()
 	var build := Button.new()
 	build.name = "CatalogBuildButton"
-	build.text = "BUILD" if can_build else ("LOCKED · " + region_lock if not region_lock.is_empty() else ("LOCKED · " + factory_lock if not factory_lock.is_empty() else ("LOCKED · POPULATION %s" % _format_count(required_population) if population_lock != "" else "LOCKED · LEVEL %d" % required_level)))
+	build.text = "BUILD" if can_build else ("NEEDS MATERIALS" if not bom_lock.is_empty() else ("LOCKED · " + region_lock if not region_lock.is_empty() else ("LOCKED · " + factory_lock if not factory_lock.is_empty() else ("LOCKED · POPULATION %s" % _format_count(required_population) if population_lock != "" else "LOCKED · LEVEL %d" % required_level))))
 	build.disabled = not can_build
 	build.custom_minimum_size.y = 34 * _ui_scale
 	build.add_theme_stylebox_override("normal", _catalog_action_style())
