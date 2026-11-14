@@ -40,6 +40,7 @@ func _process(delta: float) -> void:
 		return
 	if _segment_index >= route.size() - 1:
 		_started = false
+		TrafficManager.release_all_junction_entries(self)
 		route_completed.emit()
 		queue_free()
 		return
@@ -69,6 +70,9 @@ func _process(delta: float) -> void:
 
 	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
 	var safe_speed := TrafficManager.get_safe_vehicle_speed(self, desired_speed)
+	# Reserve a junction conflict zone before entering it; a denial is a hard stop.
+	if safe_speed > 0.001 and not TrafficManager.request_junction_entry(self, to_cell):
+		safe_speed = 0.0
 	if safe_speed <= 0.001:
 		if TrafficManager.is_frontmost_vehicle_in_lane(self):
 			_traffic_stop_elapsed += delta
@@ -98,6 +102,7 @@ func _process(delta: float) -> void:
 			_initial_leg_complete = true
 		else:
 			_last_segment_direction = travel_direction
+			TrafficManager.release_junction_entry(self, from_cell)
 			_segment_index += 1
 		_segment_progress = 0.0
 
