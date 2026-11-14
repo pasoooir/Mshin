@@ -1594,6 +1594,7 @@ for contract in [
     "Global Trade must surface all three land expansion parts after Mayor Level 10.",
     "Land expansion special items must not appear as factory-manufacturable raw materials.",
     "A fully funded adjacent plot must be claimable.",
+    "Expansion choices must exclude the motorway asphalt corridor and ocean coastline.",
     "Claimed land must survive LandExpansionManager save/load serialization.",
     "A version 3 save must migrate legacy road/building plots to owned land before restoring the city.",
     "Livestock must never enter the external highway asphalt corridor.",
