@@ -46,6 +46,7 @@ const WIND_TURBINE_SPIN_RADIANS_PER_SECOND: float = 0.92
 const RESIDENTIAL_UPGRADE_DURATION_SECONDS: int = 4
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
+const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
 var _wind_turbine_rotor: Node3D
 var _fire_smoke: CPUParticles3D = null
 
@@ -682,11 +683,11 @@ func _build_level_one_villa(w: float, d: float, height: float, base_color: Color
 func _add_natural_window(pos: Vector3, frame_col: Color, glass_col: Color, side: bool = false) -> void:
 	var fw := 0.36 if side else 0.44
 	var fh := 0.40 if side else 0.48
-	_add_box(Vector3(fw, fh, 0.05), pos, frame_col)
-	_add_box(Vector3(fw * 0.70, fh * 0.70, 0.03), pos + Vector3(0, 0, 0.025), glass_col)
-	_add_box(Vector3(0.03, fh * 0.70, 0.04), pos + Vector3(0, 0, 0.03), frame_col.darkened(0.2))
-	_add_box(Vector3(fw * 0.70, 0.03, 0.04), pos + Vector3(0, 0, 0.03), frame_col.darkened(0.2))
-	_add_box(Vector3(fw * 1.1, 0.05, 0.10), pos + Vector3(0, -fh * 0.52, 0.03), frame_col.lightened(0.05))
+	_add_box(Vector3(fw, fh, 0.05), pos, frame_col, "painted_metal")
+	_add_box(Vector3(fw * 0.70, fh * 0.70, 0.03), pos + Vector3(0, 0, 0.025), glass_col, "glass")
+	_add_box(Vector3(0.03, fh * 0.70, 0.04), pos + Vector3(0, 0, 0.03), frame_col.darkened(0.2), "painted_metal")
+	_add_box(Vector3(fw * 0.70, 0.03, 0.04), pos + Vector3(0, 0, 0.03), frame_col.darkened(0.2), "painted_metal")
+	_add_box(Vector3(fw * 1.1, 0.05, 0.10), pos + Vector3(0, -fh * 0.52, 0.03), frame_col.lightened(0.05), "painted_metal")
 
 func _add_gabled_roof(w: float, d: float, base_y: float, rise: float, roof_col: Color, ridge_col: Color) -> void:
 	# Each roof plane runs from the ridge to one eave; opposite X rotations form a true gable.
@@ -731,10 +732,10 @@ func _add_window(pos: Vector3, frame_col: Color, glass_col: Color, has_shutters:
 		glass_offset = Vector3(0, 0, 0.045)
 		cross_offset = Vector3(0, 0, 0.066)
 		sill_offset = Vector3(0, -window_h * 0.5 - 0.025, 0.075)
-	_add_box(frame_size, pos, frame_col)
-	_add_box(glass_size, pos + glass_offset, glass_col)
-	_add_box(cross_size, pos + cross_offset, frame_col.darkened(0.16))
-	_add_box(sill_size, pos + sill_offset, frame_col.lightened(0.06))
+	_add_box(frame_size, pos, frame_col, "painted_metal")
+	_add_box(glass_size, pos + glass_offset, glass_col, "glass")
+	_add_box(cross_size, pos + cross_offset, frame_col.darkened(0.16), "painted_metal")
+	_add_box(sill_size, pos + sill_offset, frame_col.lightened(0.06), "painted_metal")
 	if has_shutters:
 		var shutter_col := Color(0.48, 0.29, 0.19)
 		if side:
@@ -1385,63 +1386,68 @@ func _build_park(w: float, d: float, color: Color) -> void:
 		_add_box(Vector3(0.62, 0.12, 0.20), Vector3(seat * w * 0.30, 0.44, d * 0.30), Color(0.48,0.27,0.14))
 		_add_box(Vector3(0.62, 0.38, 0.08), Vector3(seat * w * 0.30, 0.66, d * 0.39), Color(0.48,0.27,0.14))
 
-func _get_surface_variation_texture() -> Texture2D:
-	# Shared subtle grayscale grain modulates every architectural surface, avoiding
-	# perfectly flat plastic colors without allocating a texture per mesh.
-	if _shared_surface_texture == null:
-		var image := Image.create(64, 64, false, Image.FORMAT_RGB8)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 731942
-		for y in range(64):
-			for x in range(64):
-				var shade := rng.randf_range(0.88, 1.0)
-				image.set_pixel(x, y, Color(shade, shade, shade))
-		_shared_surface_texture = ImageTexture.create_from_image(image)
-	return _shared_surface_texture
-
-func _add_box(size: Vector3, pos: Vector3, color: Color) -> void:
-	var mesh_instance = MeshInstance3D.new()
-	var box = BoxMesh.new()
-	box.size = size
-	mesh_instance.mesh = box
-	var material = StandardMaterial3D.new()
+func _make_surface_material(color: Color, surface_hint: String = "") -> StandardMaterial3D:
+	var surface_type := BuildingSurfaceLibrary.surface_for_color(color, surface_hint)
+	var maps := BuildingSurfaceLibrary.get_maps(surface_type)
+	var material := StandardMaterial3D.new()
 	material.albedo_color = color
-	material.albedo_texture = _get_surface_variation_texture()
+	material.albedo_texture = maps["albedo"]
+	material.normal_enabled = true
+	material.normal_texture = maps["normal"]
+	material.normal_scale = 0.24
+	material.roughness_texture = maps["roughness"]
+	material.metallic_texture = maps["metallic"]
 	material.uv1_triplanar = true
 	material.uv1_scale = Vector3(1.6, 1.6, 1.6)
-	material.roughness = 0.82
-	material.metallic = 0.04
-	mesh_instance.material_override = material
-	mesh_instance.position = pos
-	mesh_root.add_child(mesh_instance)
+	match surface_type:
+		"glass":
+			material.roughness = 0.20
+			material.metallic = 0.08
+		"metal":
+			material.roughness = 0.38
+			material.metallic = 0.72
+		"painted_metal":
+			material.roughness = 0.46
+			material.metallic = 0.34
+		"wood":
+			material.roughness = 0.70
+		"brick":
+			material.roughness = 0.90
+		"roof":
+			material.roughness = 0.78
+		"concrete":
+			material.roughness = 0.94
+		_:
+			material.roughness = 0.84
+	return material
 
-func _add_box_rotated(size: Vector3, pos: Vector3, color: Color, rotation: Vector3) -> void:
+func _add_box(size: Vector3, pos: Vector3, color: Color, surface_hint: String = "") -> void:
 	var mesh_instance := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = size
 	mesh_instance.mesh = box
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.albedo_texture = _get_surface_variation_texture()
-	material.uv1_triplanar = true
-	material.uv1_scale = Vector3(1.6, 1.6, 1.6)
-	material.roughness = 0.84
-	mesh_instance.material_override = material
+	mesh_instance.material_override = _make_surface_material(color, surface_hint)
+	mesh_instance.position = pos
+	mesh_root.add_child(mesh_instance)
+
+func _add_box_rotated(size: Vector3, pos: Vector3, color: Color, rotation: Vector3, surface_hint: String = "roof") -> void:
+	var mesh_instance := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mesh_instance.mesh = box
+	mesh_instance.material_override = _make_surface_material(color, surface_hint)
 	mesh_instance.position = pos
 	mesh_instance.rotation = rotation
 	mesh_root.add_child(mesh_instance)
 
-func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: Vector3, color: Color) -> void:
-	var mesh_instance = MeshInstance3D.new()
-	var cylinder = CylinderMesh.new()
+func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: Vector3, color: Color, surface_hint: String = "metal") -> void:
+	var mesh_instance := MeshInstance3D.new()
+	var cylinder := CylinderMesh.new()
 	cylinder.top_radius = top_radius
 	cylinder.bottom_radius = bottom_radius
 	cylinder.height = height
 	mesh_instance.mesh = cylinder
-	var material = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.7
-	mesh_instance.material_override = material
+	mesh_instance.material_override = _make_surface_material(color, surface_hint)
 	mesh_instance.position = pos
 	mesh_root.add_child(mesh_instance)
 
