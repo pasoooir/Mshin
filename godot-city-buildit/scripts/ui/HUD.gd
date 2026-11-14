@@ -634,7 +634,7 @@ func _build_toolbars() -> void:
 	toolbar.anchor_left = 1.0
 	toolbar.anchor_right = 1.0
 	toolbar.anchor_top = 0.30
-	toolbar.anchor_bottom = 0.985
+	toolbar.anchor_bottom = 0.82
 	toolbar.offset_left = -toolbar_width - 8.0 * _ui_scale
 	toolbar.offset_right = -6.0 * _ui_scale
 	toolbar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
@@ -691,11 +691,23 @@ func _build_toolbars() -> void:
 		button.add_child(icon)
 		toolbar_items.add_child(button)
 		button.pressed.connect(_on_category_pressed.bind(str(item[0])))
+
+	toolbar.show()
 	var land_button := Button.new()
 	land_button.name = "Tool_LandExpansion"
+	land_button.anchor_left = 1.0
+	land_button.anchor_right = 1.0
+	land_button.anchor_top = 0.835
+	land_button.anchor_bottom = 0.985
+	land_button.offset_left = -toolbar_width - 8.0 * _ui_scale
+	land_button.offset_right = -6.0 * _ui_scale
+	land_button.offset_top = 0.0
+	land_button.offset_bottom = 0.0
 	land_button.custom_minimum_size = Vector2(toolbar_width, 84.0 * _ui_scale)
 	land_button.tooltip_text = "Expand city land with Dozer Wheel, Dozer Blade and Dozer Exhaust."
 	land_button.focus_mode = Control.FOCUS_NONE
+	land_button.mouse_filter = Control.MOUSE_FILTER_PASS
+	land_button.z_index = 61
 	land_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	land_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
 	land_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
@@ -708,9 +720,8 @@ func _build_toolbars() -> void:
 	land_icon.offset_right = -4.0 * _ui_scale
 	land_icon.offset_bottom = -3.0 * _ui_scale
 	land_button.add_child(land_icon)
-	toolbar_items.add_child(land_button)
+	add_child(land_button)
 	land_button.pressed.connect(_on_land_expansion_pressed)
-	toolbar.show()
 	bottom_actions = HBoxContainer.new()
 	bottom_actions.name = "BottomActions"
 	bottom_actions.anchor_left = 0.5
