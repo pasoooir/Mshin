@@ -215,6 +215,8 @@ func get_road_placement_error(grid_pos: Vector2i) -> String:
 		return "This tile is outside the buildable city area."
 	if not LandExpansionManager.is_cell_unlocked(grid_pos):
 		return "This plot is locked. Expand city land before building roads."
+	if not LandExpansionManager.is_cell_road_buildable(grid_pos):
+		return "This tile is reserved for the permanent highway asphalt corridor."
 	if not _has_adjacent_road(grid_pos):
 		return "Road must connect to the active highway network."
 	if not BuildManager.is_cell_free(grid_pos, Vector2i.ONE):
