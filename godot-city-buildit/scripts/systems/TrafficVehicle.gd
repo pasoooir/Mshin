@@ -70,10 +70,12 @@ func _process(delta: float) -> void:
 
 	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
 	var safe_speed := TrafficManager.get_safe_vehicle_speed(self, desired_speed)
-	# Reserve a junction conflict zone only when the vehicle can actually advance.
-	# Drop a pending reservation if a same-lane queue blocks the approach.
+	var junction_entry_denied := false
+	# Junction admission is phase-controlled and remains a hard stop. The
+	# four-second congestion recovery must never override a red/yellow phase.
 	if safe_speed > 0.001:
-		if not TrafficManager.request_junction_entry(self, to_cell):
+		if not TrafficManager.request_junction_entry(self, to_cell, from_cell):
+			junction_entry_denied = true
 			safe_speed = 0.0
 	else:
 		TrafficManager.release_junction_entry(self, to_cell)
@@ -83,6 +85,8 @@ func _process(delta: float) -> void:
 			if _traffic_stop_elapsed >= TrafficManager.MAX_TRAFFIC_STOP_SECONDS:
 				congestion_release_active = true
 				safe_speed = TrafficManager.get_safe_vehicle_speed(self, desired_speed)
+				if junction_entry_denied:
+					safe_speed = 0.0
 		else:
 			# A follower is not allowed to start its own release timer or push
 			# into the vehicle ahead; it waits for the leader to move.
