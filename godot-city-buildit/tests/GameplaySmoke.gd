@@ -763,6 +763,23 @@ func _test_build_menu_visibility() -> void:
 	_check(level_badge != null and level_badge.get_child_count() == 2, "Old level PNG must be removed; only the procedural circle and number may remain.")
 	_check(level_value != null and level_value.anchor_left == 0.0 and level_value.anchor_top == 0.0 and level_value.anchor_right == 1.0 and level_value.anchor_bottom == 1.0, "Level number must fill the badge bounds for exact geometric centering.")
 	_check(level_value != null and level_value.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER and level_value.vertical_alignment == VERTICAL_ALIGNMENT_CENTER, "Level number must be centered horizontally and vertically inside the circular badge.")
+	var xp_info_button := hud.find_child("MayorLevelInfoButton", true, false) as Button
+	var xp_info_panel := hud.find_child("MayorLevelInfoPanel", true, false) as PanelContainer
+	var xp_info_label := hud.find_child("MayorLevelInfoText", true, false) as Label
+	_check(xp_info_button != null and xp_info_panel != null and xp_info_label != null, "Mayor Level must expose a touch-accessible explanation panel.")
+	if xp_info_button != null and xp_info_panel != null and xp_info_label != null:
+		_check(not xp_info_panel.visible, "Mayor Level explanation must start closed.")
+		xp_info_button.pressed.emit()
+		_check(xp_info_panel.visible and xp_info_label.text.contains("Mayor Level") and xp_info_label.text.contains("XP remaining"), "Tapping the Mayor Level help button must explain the next level and remaining XP.")
+		var close_button := hud.find_child("MayorLevelInfoClose", true, false) as Button
+		_check(close_button != null, "Mayor Level explanation must provide a visible close action.")
+		if close_button != null:
+			close_button.pressed.emit()
+			_check(not xp_info_panel.visible, "Mayor Level explanation close action must hide the panel.")
+	var happiness_value := hud.get("happiness_label") as Label
+	if happiness_value != null:
+		hud._on_city_happiness_recalculated(72.0, {})
+		_check(happiness_value.text == "72%", "HUD Happiness must update from the authoritative city recalculation event.")
 	if level_visual != null:
 		var expected_xp_fraction := float(GameManager.experience) / float(maxi(1, GameManager.get_xp_needed()))
 		_check(absf(float(level_visual.get("progress_fraction")) - expected_xp_fraction) < 0.001, "Circular XP ring must reflect the live Mayor XP progress.")
@@ -2117,8 +2134,54 @@ func _test_tutorial_guide_contract() -> void:
 		seen_ids[step_id] = true
 	_check(TutorialGuideScript.get_step_definition(-1).is_empty() and TutorialGuideScript.get_step_definition(6).is_empty(), "Tutorial step lookup must reject indexes outside the guide.")
 
+func _test_mayor_xp_progression() -> void:
+	var previous_level := GameManager.level
+	var previous_experience := GameManager.experience
+	var previous_simoleons := EconomyManager.simoleons
+	var previous_keys := EconomyManager.golden_keys
+	var previous_materials: Array = LevelProgression.unlocked_materials.duplicate(true)
+	var previous_commercial: Array = LevelProgression.unlocked_commercial.duplicate(true)
+	var previous_services: Array = LevelProgression.unlocked_services.duplicate(true)
+	var previous_features: Array = LevelProgression.unlocked_features.duplicate(true)
+	var previous_factory_limit := LevelProgression.max_factories
+	var previous_achievements: Dictionary = AchievementManager.unlocked.duplicate(true)
+	var hud = get_node_or_null("HUD")
+	var reward_handler_connected := is_instance_valid(hud) and GameManager.level_up_rewarded.is_connected(hud._on_level_up_rewarded)
+	if reward_handler_connected:
+		GameManager.level_up_rewarded.disconnect(hud._on_level_up_rewarded)
+	AchievementManager.unlocked["mayor_level_5"] = true
+
+	GameManager.level = 4
+	GameManager.experience = 0
+	_check(GameManager.get_xp_needed() == 150, "Mayor Level 4 must require 150 XP to reach Level 5.")
+	GameManager.add_experience(149)
+	_check(GameManager.level == 4 and GameManager.experience == 149, "Mayor Level must not increase before the full next-level XP threshold is reached.")
+	GameManager.add_experience(1)
+	_check(GameManager.level == 5 and GameManager.experience == 0, "Reaching exactly 150 XP at Mayor Level 4 must advance to Level 5 and carry zero excess XP.")
+	_check(GameManager.get_xp_needed() == 210, "Mayor Level 5 must require 210 XP to reach Level 6.")
+	GameManager.add_experience(215)
+	_check(GameManager.level == 6 and GameManager.experience == 5, "Excess XP must carry forward after a level-up rather than being discarded.")
+
+	GameManager.level = previous_level
+	GameManager.experience = previous_experience
+	AchievementManager.unlocked = previous_achievements
+	LevelProgression.unlocked_materials = previous_materials
+	LevelProgression.unlocked_commercial = previous_commercial
+	LevelProgression.unlocked_services = previous_services
+	LevelProgression.unlocked_features = previous_features
+	LevelProgression.max_factories = previous_factory_limit
+	EconomyManager.simoleons = previous_simoleons
+	EconomyManager.golden_keys = previous_keys
+	GameManager.level_changed.emit(GameManager.level)
+	GameManager.xp_changed.emit(GameManager.experience, GameManager.get_xp_needed())
+	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
+	EconomyManager.keys_changed.emit(EconomyManager.golden_keys)
+	if reward_handler_connected:
+		GameManager.level_up_rewarded.connect(hud._on_level_up_rewarded)
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	_test_mayor_xp_progression()
 	_test_audio_manager_contract()
 	_test_tutorial_guide_contract()
 	_test_mobile_haptics_contract()
