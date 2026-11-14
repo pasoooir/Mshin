@@ -24,3 +24,9 @@ The interaction model is based on EA's official SimCity BuildIt beginner guide: 
 https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/
 
 The special-item set (Dozer Wheel, Dozer Blade, Dozer Exhaust) follows the established SimCity BuildIt land-expansion mechanic. Plot size, initial ownership, level gate and exact Mshin item counts are implementation choices for this project.
+
+
+## Backward-compatible saves
+
+- Save version 3 predates land ownership. During load, every plot containing an already-saved road or building footprint is migrated to owned land before restoration. This prevents existing cities from losing placed objects or failing to load.
+- New version 4 saves store the complete owned-plot set per region.
