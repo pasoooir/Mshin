@@ -650,6 +650,69 @@ func _test_gateway_vehicle_route(road_system) -> void:
 	TrafficManager.vehicle_simulation_enabled = previous_enabled
 	TrafficManager.recalculate_from_roads()
 
+func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "City vehicles must use the required 4x speed multiplier.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
+
+	var lane_probe := TrafficVehicle.new()
+	var east_center := lane_probe._cell_center(Vector2i.ZERO)
+	var east_lane := lane_probe._lane_position(Vector2i.ZERO, Vector2i(1, 0))
+	var west_lane := lane_probe._lane_position(Vector2i.ZERO, Vector2i(-1, 0))
+	_check(east_lane.z > east_center.z and west_lane.z < east_center.z, "Opposing traffic must occupy opposite right-hand lanes, never drive head-on in one lane.")
+	lane_probe.free()
+
+	var follower := TrafficVehicle.new()
+	var leader := TrafficVehicle.new()
+	follower.route_key = "traffic-following-test"
+	leader.route_key = "traffic-following-test"
+	follower.lane_direction = Vector2i(1, 0)
+	leader.lane_direction = Vector2i(1, 0)
+	follower.route_distance = 8.0
+	leader.route_distance = 9.5
+	var previous_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
+	TrafficManager._active_vehicles = [follower, leader]
+	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A vehicle must stop when the same-lane vehicle ahead is inside the minimum safe gap.")
+	TrafficManager._active_vehicles = previous_fleet
+	follower.free()
+	leader.free()
+
+	TrafficManager.clear_active_vehicle()
+	var world := get_node("World") as Node3D
+	var police_station := FireHazardTestBuilding.new()
+	police_station.building_id = "traffic-smoke-police"
+	police_station.building_type = "police_station"
+	police_station.grid_pos = Vector2i(0, 1)
+	police_station.definition = {"service_group": "police", "size": Vector2i(2, 2)}
+	police_station.status = "completed"
+	police_station.global_position = BuildManager.grid_to_world(police_station.grid_pos)
+	world.add_child(police_station)
+	_check(BuildManager.is_building_operational(police_station), "A completed police station with Gateway-connected road access must be operational.")
+	var police_route := TrafficManager.build_station_patrol_route(police_station)
+	_check(police_route.size() >= 3 and road_system.get_gateway_connected_roads().has(police_route.front()), "Police patrol route must start from the station's connected road exit.")
+	var police_vehicle := TrafficManager.spawn_emergency_vehicle(police_station)
+	_check(is_instance_valid(police_vehicle) and police_vehicle.vehicle_kind == "police", "An operational police station must dispatch a police vehicle.")
+	if is_instance_valid(police_vehicle):
+		_check(police_vehicle.station_building_id == police_station.building_id, "Police patrol vehicle must retain its originating station identity.")
+		_check(police_vehicle.get_node_or_null("EmergencyLightbar") != null, "Police vehicle must visibly carry an emergency lightbar.")
+
+	var fire_station := FireHazardTestBuilding.new()
+	fire_station.building_id = "traffic-smoke-fire"
+	fire_station.building_type = "fire_station_small"
+	fire_station.grid_pos = Vector2i(1, 1)
+	fire_station.definition = {"service_group": "fire", "size": Vector2i.ONE}
+	fire_station.status = "completed"
+	fire_station.global_position = BuildManager.grid_to_world(fire_station.grid_pos)
+	world.add_child(fire_station)
+	var fire_vehicle := TrafficManager.spawn_emergency_vehicle(fire_station)
+	_check(is_instance_valid(fire_vehicle) and fire_vehicle.vehicle_kind == "fire", "An operational fire station must dispatch a fire engine.")
+	if is_instance_valid(fire_vehicle):
+		_check(fire_vehicle.get_node_or_null("EmergencyLightbar") != null and fire_vehicle.get_node_or_null("FireEquipment") != null, "Fire engine must show its emergency lights and fire-service equipment.")
+
+	TrafficManager.clear_active_vehicle()
+	police_station.queue_free()
+	fire_station.queue_free()
+	TrafficManager.recalculate_from_roads()
+
 func _test_road_painting_drag(road_system) -> void:
 	var input_node = get_node("CityInput")
 	var active_camera: Camera3D = get_viewport().get_camera_3d()
@@ -2168,6 +2231,7 @@ func _run_gameplay_test() -> void:
 	_test_road_gateway_connectivity(road_system)
 	_test_road_traffic_capacity(road_system)
 	_test_gateway_vehicle_route(road_system)
+	_test_traffic_lane_rules_and_emergency_fleet(road_system)
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
 
