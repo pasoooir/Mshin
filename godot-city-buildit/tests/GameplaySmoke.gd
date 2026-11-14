@@ -3468,10 +3468,12 @@ func _run_gameplay_test() -> void:
 
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
-		_finish(0)
 	else:
 		push_error("[GameplaySmoke] FAILURES: %d" % failures.size())
-		_finish(1)
+	TrafficManager.vehicle_simulation_enabled = false
+	TrafficManager.clear_active_vehicle()
+	await get_tree().process_frame
+	_finish(0 if failures.is_empty() else 1)
 
 func _finish(exit_code: int = 0) -> void:
 	get_tree().quit(exit_code)
