@@ -88,6 +88,18 @@ func _test_live_production_queue_eta() -> void:
 	var delay := ProductionManager.get_live_store_queue_delay_seconds("building_supplies")
 	_check(delay >= 30.0, "Live ETA must include the remaining time of an active store order.")
 	_check(delay >= queue_probe.get_queue_delay_seconds(), "ProductionManager must read the real ProductionComponent queue, not a detached estimate.")
+	var factory_probe = ProductionComponentScript.new()
+	factory_probe.is_factory = true
+	factory_probe.factory_type = "snowberry_farm"
+	factory_probe.slot_count = 2
+	factory_probe.slots = [
+		{"item_id":"snowberry", "finish_unix":now + 60, "ready":false},
+		{"item_id":"snowberry", "finish_unix":now + 25, "ready":false}
+	]
+	add_child(factory_probe)
+	var factory_delay := ProductionManager.get_live_factory_queue_delay_seconds("snowberry")
+	_check(factory_delay >= 25.0 and factory_delay <= 26.0, "Raw-material ETA must use the earliest available parallel factory slot.")
+	factory_probe.queue_free()
 	queue_probe.queue_free()
 	await get_tree().process_frame
 
