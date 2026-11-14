@@ -3021,7 +3021,11 @@ func _run_gameplay_test() -> void:
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
 	_check(production_hud.production_panel.find_child("ProductionProductsScroll", true, false) != null, "Factory panel must show a horizontally browsable product-card row.")
+	_check(production_hud.production_panel.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must have a distinct high-contrast building nameplate.")
+	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must clearly separate the lower production queue from the product catalog.")
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
+	var empty_factory_slot := production_hud.production_panel.find_child("QueueSlot0", true, false)
+	_check(empty_factory_slot.find_child("Label", true, false) != null, "An empty production slot must show a visible add/empty affordance.")
 	var metal_button := production_hud.production_panel.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
