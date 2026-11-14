@@ -79,11 +79,12 @@ func _test_live_production_queue_eta() -> void:
 	queue_probe.shop_id = "building_supplies"
 	queue_probe.slot_count = 3
 	var now := int(Time.get_unix_time_from_system())
-	queue_probe.slots = [
+	var store_slots: Array[Dictionary] = [
 		{"item_id":"nails", "finish_unix":now + 30, "ready":false},
 		{"item_id":"planks", "finish_unix":0, "ready":false, "queued":true},
 		{}
 	]
+	queue_probe.slots = store_slots
 	add_child(queue_probe)
 	var delay := ProductionManager.get_live_store_queue_delay_seconds("building_supplies")
 	_check(delay >= 30.0, "Live ETA must include the remaining time of an active store order.")
@@ -92,10 +93,11 @@ func _test_live_production_queue_eta() -> void:
 	factory_probe.is_factory = true
 	factory_probe.factory_type = "snowberry_farm"
 	factory_probe.slot_count = 2
-	factory_probe.slots = [
+	var factory_slots: Array[Dictionary] = [
 		{"item_id":"snowberry", "finish_unix":now + 60, "ready":false},
 		{"item_id":"snowberry", "finish_unix":now + 25, "ready":false}
 	]
+	factory_probe.slots = factory_slots
 	add_child(factory_probe)
 	var factory_delay := ProductionManager.get_live_factory_queue_delay_seconds("snowberry")
 	_check(factory_delay >= 25.0 and factory_delay <= 26.0, "Raw-material ETA must use the earliest available parallel factory slot.")
