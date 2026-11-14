@@ -51,6 +51,75 @@ func is_global_trade_operational() -> bool:
 func is_cargo_ship_operational() -> bool:
 	return GameManager.population >= CARGO_SHIP_UNLOCK_POPULATION and has_trade_building("cargo_port")
 
+func get_region_storage_snapshot(region_id: String) -> Dictionary:
+	if region_id == RegionManager.active_region_id:
+		return StorageManager.to_save_dict()
+	var snapshot: Dictionary = RegionManager.region_states.get(region_id, {})
+	var regional_storage: Variant = snapshot.get("storage", {})
+	if regional_storage is Dictionary and not regional_storage.is_empty():
+		return regional_storage.duplicate(true)
+	return {"capacity": StorageManager.DEFAULT_CAPACITY, "items": {}}
+
+func can_transfer_between_regions(source_region_id: String, target_region_id: String, item_id: String, amount: int = 1) -> bool:
+	if not is_global_trade_operational() or source_region_id == target_region_id or amount <= 0:
+		return false
+	if source_region_id not in RegionManager.unlocked_regions or target_region_id not in RegionManager.unlocked_regions:
+		return false
+	if not is_trade_eligible_item(item_id):
+		return false
+	var source_storage := get_region_storage_snapshot(source_region_id)
+	var target_storage := get_region_storage_snapshot(target_region_id)
+	var source_items: Dictionary = source_storage.get("items", {})
+	var target_items: Dictionary = target_storage.get("items", {})
+	if int(source_items.get(item_id, 0)) < amount:
+		return false
+	var target_used := 0
+	for count in target_items.values():
+		target_used += maxi(0, int(count))
+	var target_capacity := maxi(1, int(target_storage.get("capacity", StorageManager.DEFAULT_CAPACITY)))
+	return target_used + amount <= target_capacity
+
+func _store_region_storage_snapshot(region_id: String, storage_data: Dictionary) -> void:
+	if region_id == RegionManager.active_region_id:
+		StorageManager.from_save_dict(storage_data)
+		return
+	var snapshot: Dictionary = RegionManager.region_states.get(region_id, {}).duplicate(true)
+	snapshot["storage"] = storage_data.duplicate(true)
+	RegionManager.region_states[region_id] = snapshot
+
+func transfer_between_regions(
+		source_region_id: String, target_region_id: String,
+		item_id: String, amount: int = 1, persist: bool = true
+	) -> bool:
+	if not can_transfer_between_regions(source_region_id, target_region_id, item_id, amount):
+		return false
+	var previous_active_storage := StorageManager.to_save_dict()
+	var previous_region_states: Dictionary = RegionManager.region_states.duplicate(true)
+	var source_storage := get_region_storage_snapshot(source_region_id)
+	var target_storage := get_region_storage_snapshot(target_region_id)
+	var source_items: Dictionary = source_storage.get("items", {}).duplicate(true)
+	var target_items: Dictionary = target_storage.get("items", {}).duplicate(true)
+	var source_remaining := int(source_items.get(item_id, 0)) - amount
+	if source_remaining <= 0:
+		source_items.erase(item_id)
+	else:
+		source_items[item_id] = source_remaining
+	target_items[item_id] = int(target_items.get(item_id, 0)) + amount
+	source_storage["items"] = source_items
+	target_storage["items"] = target_items
+
+	# Commit both warehouses only after the complete source/target transaction
+	# has passed validation. The active warehouse remains in StorageManager;
+	# inactive warehouses are updated in their region snapshots.
+	_store_region_storage_snapshot(source_region_id, source_storage)
+	_store_region_storage_snapshot(target_region_id, target_storage)
+	if persist and not SaveManager.save_game():
+		RegionManager.region_states = previous_region_states
+		StorageManager.from_save_dict(previous_active_storage)
+		return false
+	trade_state_changed.emit()
+	return true
+
 func can_list_for_sale(item_id: String, amount: int = 1) -> bool:
 	if not is_depot_operational() or amount <= 0 or sell_slots.size() >= MAX_SELL_SLOTS:
 		return false
