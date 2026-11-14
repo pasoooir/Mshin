@@ -2144,6 +2144,8 @@ func _test_mayor_xp_progression() -> void:
 	var previous_services: Array = LevelProgression.unlocked_services.duplicate(true)
 	var previous_features: Array = LevelProgression.unlocked_features.duplicate(true)
 	var previous_factory_limit := LevelProgression.max_factories
+	var previous_achievements: Dictionary = AchievementManager.unlocked.duplicate(true)
+	AchievementManager.unlocked["mayor_level_5"] = true
 
 	GameManager.level = 4
 	GameManager.experience = 0
@@ -2158,7 +2160,7 @@ func _test_mayor_xp_progression() -> void:
 
 	GameManager.level = previous_level
 	GameManager.experience = previous_experience
-	GameManager.population = GameManager.population
+	AchievementManager.unlocked = previous_achievements
 	LevelProgression.unlocked_materials = previous_materials
 	LevelProgression.unlocked_commercial = previous_commercial
 	LevelProgression.unlocked_services = previous_services
