@@ -96,7 +96,7 @@ func _active_highway_vehicle_count() -> int:
 func _active_emergency_vehicle_count() -> int:
 	var count := 0
 	for vehicle in _active_vehicles:
-		if is_instance_valid(vehicle) and vehicle.vehicle_kind != "civilian":
+		if is_instance_valid(vehicle) and vehicle.vehicle_kind in ["police", "fire"]:
 			count += 1
 	return count
 
