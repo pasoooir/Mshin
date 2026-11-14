@@ -652,7 +652,12 @@ func _test_gateway_vehicle_route(road_system) -> void:
 
 func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(0, 0), Vector2i(1, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "City vehicles must use the required 4x speed multiplier.")
-	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "Negative city grid coordinates must not be misclassified as motorway lanes.")
+	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1)), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
+	var northbound_route := TrafficManager.build_highway_route(true)
+	var southbound_route := TrafficManager.build_highway_route(false)
+	_check(northbound_route.front().y == TrafficManager.HIGHWAY_MAX_GRID_Z and northbound_route.back().y == TrafficManager.HIGHWAY_MIN_GRID_Z, "Northbound motorway traffic must run only toward the north exit.")
+	_check(southbound_route.front().y == TrafficManager.HIGHWAY_MIN_GRID_Z and southbound_route.back().y == TrafficManager.HIGHWAY_MAX_GRID_Z, "Southbound motorway traffic must run only toward the south exit.")
 
 	var lane_probe := TrafficVehicle.new()
 	var east_center := lane_probe._cell_center(Vector2i.ZERO)
@@ -676,6 +681,12 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	follower.free()
 	leader.free()
 
+	TrafficManager.clear_active_vehicle()
+	var highway_vehicle := TrafficManager.spawn_highway_vehicle_now()
+	_check(is_instance_valid(highway_vehicle) and highway_vehicle.vehicle_kind == "highway", "The visible external six-lane motorway must spawn its own traffic fleet.")
+	if is_instance_valid(highway_vehicle):
+		_check(highway_vehicle.route_key.begins_with("coastal-highway-"), "Motorway vehicles must use the separate external highway route, not the city road graph.")
+		_check(TrafficManager.HIGHWAY_LANE_OFFSETS.has(highway_vehicle.lane_offset), "Motorway traffic must be assigned to one of its three legal directional lanes.")
 	TrafficManager.clear_active_vehicle()
 	var world := get_node("World") as Node3D
 	var police_station := FireHazardTestBuilding.new()
