@@ -3335,6 +3335,7 @@ func _run_gameplay_test() -> void:
 	for offer in TradeManager.market_offers:
 		market_item_ids.append(str(offer.get("item_id", "")))
 	_check(market_item_ids.has("dozer_wheel") and market_item_ids.has("dozer_blade") and market_item_ids.has("dozer_exhaust"), "Global Trade must surface all three land expansion parts after Mayor Level 10.")
+	_check(not ProductionManager.get_available_raw().has("dozer_wheel") and not ProductionManager.get_available_raw().has("dozer_blade") and not ProductionManager.get_available_raw().has("dozer_exhaust"), "Land expansion special items must not appear as factory-manufacturable raw materials.")
 	TradeManager.market_offers = saved_market_offers
 	var saved_expansion_state: Dictionary = LandExpansionManager.to_save_dict()
 	LandExpansionManager.from_save_dict(saved_expansion_state)
