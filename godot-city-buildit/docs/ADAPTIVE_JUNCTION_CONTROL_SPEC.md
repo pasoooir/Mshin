@@ -6,7 +6,7 @@
 - **Right-of-way:** under right-hand traffic, an approach yields when a queued vehicle is present on its right. A waiting approach receives a fairness override after 8 seconds so circular priority cannot starve it indefinitely.
 - **Downstream clearance:** a vehicle cannot reserve a junction movement unless its exit cell is part of the Gateway-connected road network and is not currently occupied or being entered by another vehicle.
 - **Reservation lifecycle:** movement reservations are per vehicle and are removed when the vehicle leaves the junction, completes its route, is deleted, or is pruned from the active fleet.
-- **Closure/incident rerouting:** when the road graph changes or an incident calls `set_road_cell_blocked(cell, true)`, active city vehicles with invalid routes attempt a new weighted route from their current/nearest connected road cell to their original/nearest surviving destination. Clearing the block makes the road available to future routes. Only trips with no remaining connected path are retired.
+- **Closure/incident rerouting:** when the road graph changes or an incident calls `set_road_cell_blocked(cell, true)`, active city vehicles with invalid routes attempt a new weighted route from their current/nearest connected road cell to their original/nearest surviving destination. Clearing the block makes the road available to future routes and restores its effective traffic capacity. Only trips with no remaining connected path are retired.
 - The adaptive green/yellow/all-red phase controller remains a separate admission gate. The four-second frontmost congestion crawl cannot bypass a denied junction phase.
 
 ## Safety boundaries
