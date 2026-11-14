@@ -1238,6 +1238,12 @@ func _show_building_info(type_id: String) -> void:
 		bom_lines.append("%s ×%d (stock %d)" % [item_name, int(construction_bom[item_id]), StorageManager.get_count(str(item_id))])
 	_add_info_line(layout, "Materials", "No material charge" if bom_lines.is_empty() else ", ".join(bom_lines))
 	_add_info_line(layout, "BOM source", BuildManager.get_construction_bom_source(type_id))
+	var operational_requirements := BuildManager.get_operational_requirements(type_id)
+	var operational_lines: Array[String] = []
+	for requirement_id in operational_requirements:
+		operational_lines.append("%s ×%d" % [str(requirement_id).capitalize(), int(operational_requirements[requirement_id])])
+	_add_info_line(layout, "Operation", "No operational gate" if operational_lines.is_empty() else ", ".join(operational_lines))
+	_add_info_line(layout, "Operation source", BuildManager.get_operational_requirement_source(type_id))
 	var bom_lock := BuildManager.get_construction_bom_lock_reason(type_id)
 	if not bom_lock.is_empty():
 		status_label.text = bom_lock
