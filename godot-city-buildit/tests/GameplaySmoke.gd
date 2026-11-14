@@ -897,6 +897,17 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(capped_highway_fleet.size() == 4, "Highway entry must stop spawning when the shared empty-city fleet reaches four vehicles.")
 	_check(TrafficManager._active_public_vehicle_count() == 4, "The four-vehicle empty-city cap must include every vehicle between highway entry, city roads and highway exit.")
 	_check(TrafficManager.spawn_highway_vehicle_now() == null, "A fifth highway vehicle must be rejected while the empty-city traffic loop is full.")
+	_check(TrafficManager.spawn_vehicle_now() == null, "A city-side trip must also be rejected when the shared highway/city traffic cap is full.")
+	TrafficManager.clear_active_vehicle()
+	var completed_loop_vehicle: TrafficVehicle = TrafficManager.spawn_highway_vehicle_now()
+	_check(is_instance_valid(completed_loop_vehicle), "A highway loop vehicle must be available for route-completion verification.")
+	if is_instance_valid(completed_loop_vehicle):
+		_check(completed_loop_vehicle.route.front() == completed_loop_vehicle.route.back(), "The active highway trip must have a real return-to-highway exit endpoint.")
+		completed_loop_vehicle._segment_index = completed_loop_vehicle.route.size() - 1
+		completed_loop_vehicle._process(0.0)
+		_check(completed_loop_vehicle.is_queued_for_deletion(), "A vehicle must retire after completing its full highway-city-highway route instead of remaining parked in the city.")
+		TrafficManager._prune_vehicle_list()
+	_check(TrafficManager._active_public_vehicle_count() == 0, "Completed highway trips must be removed from the active traffic fleet.")
 	TrafficManager.clear_active_vehicle()
 	GameManager.population = saved_traffic_population
 	var world := get_node("World") as Node3D
