@@ -25,7 +25,8 @@ This is a game traffic policy. It is not a claim that every clause of a particul
 ### 2. Citywide traffic intelligence
 
 - TrafficManager owns the active fleet, network load observations, route selection and junction reservations.
-- Road-cell load is measured from the current and next route segment of active city/emergency vehicles.
+- Road-cell load is measured from the current and next route segment of active city, highway and emergency vehicles whenever those segments occupy the connected city-road graph.
+- Highway lane indices apply only on the motorway. After merging into the city connector, highway vehicles use the same city-lane identity and following-gap checks as other city traffic.
 - Route cost combines road capacity (road level), live vehicle load and a junction traversal penalty.
 - build_route_between uses a weighted shortest-path search over Gateway-connected roads. A longer alternative may be selected when the shortest road is materially more congested.
 - Round-trip traffic destinations are rotated among farthest reachable cells so all vehicles do not repeatedly target one identical endpoint.
@@ -36,6 +37,10 @@ This is a game traffic policy. It is not a claim that every clause of a particul
 - Traffic keeps to the right. Opposing directions use separate lane offsets.
 - City-road speed is capped at 30 km/h (the existing 4x calibrated simulation speed).
 - The external divided motorway is capped at 120 km/h (the existing 16x calibrated simulation speed).
+- The six-lane motorway has three physical lanes per carriageway. Highway vehicles use their assigned lane index on the motorway, merge into the city connector, and return to the adjacent opposing carriageway when leaving the city.
+- Ordinary public traffic uses one shared fleet budget across the motorway and city. An empty city (zero residents) allows four active public vehicles; the budget grows by one vehicle per 5,000 residents, up to the existing maximum of 18. Highway and city-side spawn functions both enforce this same limit.
+- The autonomous public-traffic scheduler creates highway-to-city-to-highway trips. Each trip starts on the motorway, follows the connected Gateway and city-road network, and reaches a motorway exit on the adjacent carriageway. It must not park or remain resident inside the city; completed trips are retired from the active fleet.
+- Emergency vehicles remain a separately bounded service fleet and do not consume the ordinary public-traffic budget.
 - Vehicles follow assigned routes. Overtaking and lane changes remain disabled until swept-path collision checks and safe merge logic exist.
 - Road upgrades influence route cost through their increased capacity; they do not authorize unsafe speed or following behavior.
 

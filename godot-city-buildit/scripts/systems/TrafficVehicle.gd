@@ -143,7 +143,14 @@ func _lane_position(cell: Vector2i, travel_direction: Vector2i) -> Vector3:
 	var direction := Vector2(float(travel_direction.x), float(travel_direction.y)).normalized()
 	var right := Vector2(-direction.y, direction.x)
 	var center := _cell_center(cell)
-	return center + Vector3(right.x * lane_offset, 0.0, right.y * lane_offset)
+	var lateral_offset := lane_offset
+	# On the six-lane motorway, lane_index selects one of three physical
+	# lanes on the driver's right-hand carriageway. On the city connector and
+	# city roads, vehicles merge back to the standard city lane offset.
+	if vehicle_kind == "highway" and cell.x == TrafficManager.HIGHWAY_GRID_X and travel_direction.x == 0:
+		var highway_offsets: Array[float] = TrafficManager.HIGHWAY_LANE_OFFSETS
+		lateral_offset = highway_offsets[clampi(lane_index, 0, highway_offsets.size() - 1)]
+	return center + Vector3(right.x * lateral_offset, 0.0, right.y * lateral_offset)
 
 func _build_vehicle_mesh() -> void:
 	var body_color := Color("#D94A3A")

@@ -6,20 +6,20 @@ signal fleet_changed(public_count: int, emergency_count: int)
 # World scale is 1 unit = 1 metre. A calibrated base of 2.083333 m/s yields
 # conservative 30 km/h city (4x) and 120 km/h motorway (16x) speed ceilings.
 const RESIDENTS_PER_TRAFFIC_UNIT: int = 50
+const RESIDENTS_PER_ADDITIONAL_TRAFFIC_VEHICLE: int = 5000
 const TRAFFIC_UNITS_PER_LANE: int = 1
 const VEHICLE_BASE_SPEED: float = 2.0833333333
 const CITY_SPEED_MULTIPLIER: float = 4.0
 const CITY_SPEED_LIMIT_KMH: float = 30.0
 const HIGHWAY_SPEED_MULTIPLIER: float = 16.0
 const HIGHWAY_SPEED_LIMIT_KMH: float = 120.0
-const PUBLIC_SPAWN_INTERVAL: float = 2.0
 const HIGHWAY_SPAWN_INTERVAL: float = 1.5
 const HIGHWAY_WORLD_X: float = -55.0
 const HIGHWAY_GRID_X: int = -28
 const HIGHWAY_MIN_GRID_Z: int = -44
 const HIGHWAY_MAX_GRID_Z: int = 44
+# Three physical lanes per carriageway, measured from the highway centre line.
 const HIGHWAY_LANE_OFFSETS: Array[float] = [9.1, 5.8, 2.5]
-const MAX_HIGHWAY_VEHICLES: int = 12
 const EMERGENCY_SPAWN_INTERVAL: float = 12.0
 const MAX_PUBLIC_VEHICLES: int = 18
 const MAX_EMERGENCY_VEHICLES: int = 8
@@ -47,7 +47,6 @@ var road_capacity: int = 0
 var congestion_ratio: float = 0.0
 var vehicle_simulation_enabled: bool = true
 
-var _spawn_elapsed: float = 0.0
 var _highway_spawn_elapsed: float = 0.0
 var _highway_lane_cursor: int = 0
 var _highway_direction_cursor: int = 0
@@ -70,15 +69,13 @@ func _process(delta: float) -> void:
 		_update_junction_controllers(delta)
 	if not vehicle_simulation_enabled:
 		return
-	_spawn_elapsed += delta
-	if _spawn_elapsed >= PUBLIC_SPAWN_INTERVAL:
-		_spawn_elapsed = 0.0
-		if _active_city_vehicle_count() < _get_public_vehicle_limit():
-			spawn_vehicle_now()
+	# All ordinary public traffic now uses the highway -> city -> adjacent
+	# return carriageway loop. One scheduler and one global cap prevent a
+	# second city-only fleet from exceeding the empty-city traffic budget.
 	_highway_spawn_elapsed += delta
 	if _highway_spawn_elapsed >= HIGHWAY_SPAWN_INTERVAL:
-		_highway_spawn_elapsed = 0.0
-		if _active_highway_vehicle_count() < MAX_HIGHWAY_VEHICLES:
+		_highway_spawn_elapsed = fmod(_highway_spawn_elapsed, HIGHWAY_SPAWN_INTERVAL)
+		if _active_public_vehicle_count() < _get_public_vehicle_limit():
 			spawn_highway_vehicle_now()
 	_update_emergency_dispatch(delta)
 	fleet_changed.emit(_active_public_vehicle_count(), _active_emergency_vehicle_count())
@@ -122,6 +119,20 @@ func _active_highway_vehicle_count() -> int:
 			count += 1
 	return count
 
+func _get_active_lane_index(vehicle: TrafficVehicle) -> int:
+	if not is_instance_valid(vehicle) or vehicle.vehicle_kind != "highway" or vehicle.route.is_empty():
+		return 0
+	var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
+	if segment_index + 1 >= vehicle.route.size():
+		return 0
+	var from_cell: Vector2i = vehicle.route[segment_index]
+	var to_cell: Vector2i = vehicle.route[segment_index + 1]
+	# The three motorway lane indices cease to exist at the merge. Once a
+	# vehicle is on the city connector/roads, every public car uses city lane 0.
+	if from_cell.x == HIGHWAY_GRID_X and to_cell.x == HIGHWAY_GRID_X and from_cell.y != to_cell.y:
+		return clampi(vehicle.lane_index, 0, HIGHWAY_LANE_OFFSETS.size() - 1)
+	return 0
+
 func _active_emergency_vehicle_count() -> int:
 	var count := 0
 	for vehicle in _active_vehicles:
@@ -130,7 +141,12 @@ func _active_emergency_vehicle_count() -> int:
 	return count
 
 func _get_public_vehicle_limit() -> int:
-	return clampi(4 + int(road_capacity / 10), 4, MAX_PUBLIC_VEHICLES)
+	# A city with no residents starts with four circulating public vehicles.
+	# Capacity grows gradually with real population, not with the number of
+	# road tiles, so an empty road grid cannot attract an oversized fleet.
+	var population := maxi(0, GameManager.population)
+	var population_bonus := int(float(population) / float(RESIDENTS_PER_ADDITIONAL_TRAFFIC_VEHICLE))
+	return clampi(4 + population_bonus, 4, MAX_PUBLIC_VEHICLES)
 
 func get_speed_multiplier_for_cell(_cell: Vector2i, vehicle_kind: String = "civilian") -> float:
 	return HIGHWAY_SPEED_MULTIPLIER if vehicle_kind == "highway" else CITY_SPEED_MULTIPLIER
@@ -146,7 +162,7 @@ func is_frontmost_vehicle_in_lane(vehicle: TrafficVehicle) -> bool:
 	for other in _active_vehicles:
 		if not is_instance_valid(other) or other == vehicle:
 			continue
-		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or other.lane_index != vehicle.lane_index:
+		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or _get_active_lane_index(other) != _get_active_lane_index(vehicle):
 			continue
 		if other.route_distance - vehicle.route_distance > 0.0:
 			return false
@@ -397,7 +413,7 @@ func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> fl
 	for other in _active_vehicles:
 		if not is_instance_valid(other) or other == vehicle:
 			continue
-		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or other.lane_index != vehicle.lane_index:
+		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or _get_active_lane_index(other) != _get_active_lane_index(vehicle):
 			continue
 		var gap := other.route_distance - vehicle.route_distance
 		if gap > 0.0 and gap < nearest_gap:
@@ -452,7 +468,7 @@ func build_gateway_round_trip_route() -> Array[Vector2i]:
 func get_road_cell_vehicle_load(grid_cell: Vector2i) -> int:
 	var load := 0
 	for vehicle in _active_vehicles:
-		if not is_instance_valid(vehicle) or vehicle.vehicle_kind == "highway":
+		if not is_instance_valid(vehicle):
 			continue
 		if vehicle.route.is_empty():
 			continue
@@ -614,7 +630,7 @@ func _station_exit_position(station: Node3D, road_cell: Vector2i) -> Vector3:
 	return station.global_position + direction * (edge_distance + 0.15) + Vector3.UP * 0.05
 
 func spawn_vehicle_now() -> TrafficVehicle:
-	if _active_city_vehicle_count() >= _get_public_vehicle_limit():
+	if _active_public_vehicle_count() >= _get_public_vehicle_limit():
 		return null
 	var route := build_gateway_round_trip_route()
 	if route.size() < 2:
@@ -672,7 +688,7 @@ func build_highway_city_round_trip_route(northbound: bool) -> Array[Vector2i]:
 	return route
 
 func spawn_highway_vehicle_now() -> TrafficVehicle:
-	if _active_highway_vehicle_count() >= MAX_HIGHWAY_VEHICLES:
+	if _active_public_vehicle_count() >= _get_public_vehicle_limit():
 		return null
 	var world := _get_world_parent()
 	if not world:
@@ -766,8 +782,9 @@ func clear_active_vehicle() -> void:
 	_blocked_road_cells.clear()
 	_road_block_sources.clear()
 	_active_vehicle = null
-	_spawn_elapsed = 0.0
 	_highway_spawn_elapsed = 0.0
+	_highway_lane_cursor = 0
+	_highway_direction_cursor = 0
 	_emergency_elapsed = 0.0
 
 func get_happiness_penalty() -> float:
