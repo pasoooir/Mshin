@@ -169,8 +169,12 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 - CI on PR head `b10e75f414806d2b0c14a51c95a1ed9676d8f3c4`: Godot City BuildIt Validation run `43637146435` passed, including headless startup, end-to-end GameplaySmoke, Android Debug APK export and APK signature/package verification. Mshin Playable Web run `43637146481` passed, including browser launch in desktop and touch-enabled mobile landscape Chromium and website artifact upload.
 - Android APK export is automated build evidence only. No physical Android device installation, visual comparison or touch test is claimed.
 
+- [PR #482](https://github.com/pasoooir/Mshin/pull/482) merged the recursive ETA scheduler as `b79f843d64842feac9f6ae5bfc0be6e237853c02`.
+- GameplaySmoke now verifies shared-store serialization (Bread Roll ETA 11,700 seconds), reuse of a shared Cream dependency (Ice Cream Sandwich ETA 12,540 seconds), and retains the Nails/Backpack baseline plus live queue/factory-slot checks.
+- CI on PR head `f460a532372f8a2bb1f5c441ca650cbfa7368805`: Godot City BuildIt Validation run `43637770031` passed, including the complete GameplaySmoke suite and Android Debug APK export/signature verification. Mshin Playable Web run `43637768630` passed, including desktop and touch-enabled mobile-landscape Chromium launch and web artifact upload.
+
 **Remaining acceptance gates (not closed by PR #477 or #480):**
-- Deterministic global ETA/scheduling across recursive dependencies, shared store queues and parallel factory slots; current live ETA inputs are not yet a complete global scheduler.
+- [x] Deterministic recursive display ETA across shared store lanes, shared intermediate outputs, live queues and parallel factory slots; disconnected suppliers are excluded. This remains a planning estimate, not a reservation/commit scheduler for live production.
 - Construction BOMs are connected to placement, material deduction, catalog preview and GameplaySmoke for all non-bootstrap building types using Mshin category profiles. More granular per-building BOMs and complete non-residential upgrade BOMs remain open; these Mshin balance values are not EA recipe claims.
 - Operational utility/service gates for non-residential production and a real workforce/employment allocation model remain open.
 - Full multi-stage production chains and player-initiated inter-region trade remain open; independent regional inventory switching and save persistence are implemented.
