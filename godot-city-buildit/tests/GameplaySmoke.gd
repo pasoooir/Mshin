@@ -1800,6 +1800,18 @@ func _test_power_water_gateway_access() -> void:
 	_check(ServiceManager.power_served_ids.has(commercial_consumer.building_id) and ServiceManager.water_served_ids.has(commercial_consumer.building_id), "A connected commercial producer must receive both power and water when local capacity is available.")
 	_check(ServiceManager.power_served_ids.has(industrial_consumer.building_id) and ServiceManager.water_served_ids.has(industrial_consumer.building_id), "A connected industrial producer must receive its higher catalog-profile power demand and water.")
 	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Connected and utility-served commercial and industrial producers must be operational.")
+	_check(ServiceManager.demand_workers == 3 and ServiceManager.employed_workers == 3 and ServiceManager.workforce_served_ids.has(commercial_consumer.building_id) and ServiceManager.workforce_served_ids.has(industrial_consumer.building_id), "Commercial and industrial production must reserve their catalog-profile workforce from occupied residents.")
+	var saved_connected_population := connected_home.current_population
+	var saved_disconnected_population := disconnected_home.current_population
+	connected_home.current_population = 0
+	disconnected_home.current_population = 0
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.available_workers == 0 and ServiceManager.employed_workers == 0, "A city with no occupied residents must have no available workforce.")
+	_check(not BuildManager.is_building_operational(commercial_consumer) and not BuildManager.is_building_operational(industrial_consumer), "Commercial and industrial production must stop when workforce is exhausted.")
+	connected_home.current_population = saved_connected_population
+	disconnected_home.current_population = saved_disconnected_population
+	ServiceManager.recalculate_from_buildings()
+	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring occupied residents must restore the workforce supply.")
 	power_plant.status = "constructing"
 	ServiceManager.recalculate_from_buildings()
 	_check(not ServiceManager.power_served_ids.has(commercial_consumer.building_id) and not BuildManager.is_building_operational(commercial_consumer), "A commercial producer must stop operating when its required power service is lost.")
