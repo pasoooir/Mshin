@@ -22,7 +22,7 @@ func configure(sheep_positions: Array[Vector3], cattle_positions: Array[Vector3]
 		_animal_positions.append(position)
 		_animal_headings.append(float(_animal_positions.size()) * 2.13)
 
-func register_part(instance: MultiMeshInstance3D, owners: Array[int], offsets: Array[Vector3]) -> void:
+func register_part(instance: MultiMeshInstance3D, owners: Array[int], offsets: Array[Vector3], animate_legs: bool = false) -> void:
 	if not is_instance_valid(instance) or instance.multimesh == null:
 		return
 	if owners.size() != instance.multimesh.instance_count or offsets.size() != owners.size():
@@ -31,7 +31,7 @@ func register_part(instance: MultiMeshInstance3D, owners: Array[int], offsets: A
 	var bases: Array[Basis] = []
 	for index in range(instance.multimesh.instance_count):
 		bases.append(instance.multimesh.get_instance_transform(index).basis)
-	_parts.append({"multimesh": instance.multimesh, "owners": owners.duplicate(), "offsets": offsets.duplicate(), "bases": bases})
+	_parts.append({"multimesh": instance.multimesh, "owners": owners.duplicate(), "offsets": offsets.duplicate(), "bases": bases, "animate_legs": animate_legs})
 
 func is_valid_grazing_position(position: Vector3) -> bool:
 	if position.x < PASTURE_MIN_X or position.x > PASTURE_MAX_X:
@@ -85,6 +85,12 @@ func _update_multimesh_parts() -> void:
 				continue
 			var yaw := _animal_headings[owner_index]
 			var rotation_basis := Basis(Vector3.UP, yaw)
-			var basis: Basis = rotation_basis * bases[instance_index]
+			var local_basis: Basis = bases[instance_index]
+			if bool(part.get("animate_legs", false)):
+				var leg_index := instance_index % 4
+				var phase_offset := PI if leg_index == 1 or leg_index == 2 else 0.0
+				var leg_swing := sin(_elapsed * 6.5 + float(owner_index) * 1.3 + phase_offset) * 0.22
+				local_basis = Basis(Vector3.RIGHT, leg_swing) * local_basis
+			var basis: Basis = rotation_basis * local_basis
 			var origin: Vector3 = _animal_positions[owner_index] + rotation_basis * offsets[instance_index]
 			multimesh.set_instance_transform(instance_index, Transform3D(basis, origin))
