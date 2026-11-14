@@ -217,7 +217,10 @@ func _update_junction_controllers(delta: float) -> void:
 			state["waiting"] = waiting
 		_junction_signal_states[junction_cell] = state
 	for junction_cell in _junction_signal_states.keys():
-		if not junctions.has(junction_cell):
+		# Keep the active phase while a vehicle still owns a movement reservation.
+		# Otherwise a fresh queue could initialize a second green before the
+		# vehicle already inside the junction has cleared the conflict area.
+		if not junctions.has(junction_cell) and not _junction_reservations.has(junction_cell):
 			_junction_signal_states.erase(junction_cell)
 
 func _movement_segment(from_cell: Vector2i, junction_cell: Vector2i, to_cell: Vector2i) -> Array[Vector2]:
@@ -252,7 +255,7 @@ func _junction_movements_conflict(from_a: Vector2i, to_a: Vector2i, from_b: Vect
 
 func _is_junction_exit_clear(vehicle: TrafficVehicle, junction_cell: Vector2i, exit_cell: Vector2i) -> bool:
 	var road_system = _get_road_system()
-	if not road_system or not road_system.get_gateway_connected_roads().has(exit_cell):
+	if not road_system or _blocked_road_cells.has(exit_cell) or not road_system.get_gateway_connected_roads().has(exit_cell):
 		return false
 	for other in _active_vehicles:
 		if not is_instance_valid(other) or other == vehicle or other.route.is_empty():
