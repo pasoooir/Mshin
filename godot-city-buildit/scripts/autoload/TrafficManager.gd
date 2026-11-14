@@ -52,6 +52,7 @@ var _emergency_elapsed: float = 0.0
 var _active_vehicles: Array[TrafficVehicle] = []
 var _junction_reservations: Dictionary = {}
 var _junction_signal_states: Dictionary = {}
+var _blocked_road_cells: Dictionary = {}
 var _active_vehicle: TrafficVehicle
 var _station_dispatch_elapsed: Dictionary = {}
 var _route_destination_cursor: int = 0
@@ -334,6 +335,8 @@ func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, fr
 		var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
 		if segment_index + 2 < vehicle.route.size():
 			outgoing_cell = vehicle.route[segment_index + 2]
+		else:
+			return false
 	elif from_cell == Vector2i.ZERO:
 		# Preserve safe behavior for legacy callers that do not supply a route.
 		from_cell = junction_cell + Vector2i(-1, 0)
@@ -348,7 +351,9 @@ func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, fr
 		if int(reserved_id) == vehicle_id:
 			continue
 		var reservation: Dictionary = movements[reserved_id]
-		if _junction_movements_conflict(from_cell, outgoing_cell, reservation["from"], reservation["to"], junction_cell):
+		var reserved_from: Vector2i = reservation["from"]
+		var reserved_to: Vector2i = reservation["to"]
+		if _junction_movements_conflict(from_cell, outgoing_cell, reserved_from, reserved_to, junction_cell):
 			return false
 	movements[vehicle_id] = {"from": from_cell, "to": outgoing_cell}
 	_junction_reservations[junction_cell] = movements
@@ -449,7 +454,7 @@ func get_road_cell_vehicle_load(grid_cell: Vector2i) -> int:
 
 func get_road_cell_travel_cost(grid_cell: Vector2i) -> float:
 	var road_system = _get_road_system()
-	if not road_system or not road_system.has_road(grid_cell):
+	if not road_system or not road_system.has_road(grid_cell) or _blocked_road_cells.has(grid_cell):
 		return INF
 	var road_level: int = int(road_system.get_road_level(grid_cell))
 	var capacity_discount := 1.0 / (1.0 + 0.18 * float(maxi(0, road_level - 1)))
@@ -465,7 +470,7 @@ func build_route_between(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
 	return _build_low_cost_route(start, goal, connected_roads)
 
 func _build_low_cost_route(start: Vector2i, goal: Vector2i, connected_roads: Dictionary) -> Array[Vector2i]:
-	if not connected_roads.has(start) or not connected_roads.has(goal):
+	if not connected_roads.has(start) or not connected_roads.has(goal) or _blocked_road_cells.has(start) or _blocked_road_cells.has(goal):
 		return []
 	var distances: Dictionary = {start: 0.0}
 	var parents: Dictionary = {start: start}
@@ -488,7 +493,7 @@ func _build_low_cost_route(start: Vector2i, goal: Vector2i, connected_roads: Dic
 			break
 		for direction in CARDINAL_DIRECTIONS:
 			var neighbour: Vector2i = current + direction
-			if not connected_roads.has(neighbour) or visited.has(neighbour):
+			if not connected_roads.has(neighbour) or _blocked_road_cells.has(neighbour) or visited.has(neighbour):
 				continue
 			var next_cost := best_cost + get_road_cell_travel_cost(neighbour)
 			if next_cost < float(distances.get(neighbour, INF)):
@@ -747,6 +752,7 @@ func clear_active_vehicle() -> void:
 			vehicle.queue_free()
 	_active_vehicles.clear()
 	_junction_reservations.clear()
+	_blocked_road_cells.clear()
 	_active_vehicle = null
 	_spawn_elapsed = 0.0
 	_highway_spawn_elapsed = 0.0
@@ -774,11 +780,24 @@ func _get_world_parent() -> Node3D:
 		return null
 	return scene.get_node_or_null("World") as Node3D
 
+func set_road_cell_blocked(grid_cell: Vector2i, blocked: bool) -> bool:
+	var road_system = _get_road_system()
+	if not road_system or not road_system.has_road(grid_cell):
+		return false
+	if blocked:
+		_blocked_road_cells[grid_cell] = true
+	else:
+		_blocked_road_cells.erase(grid_cell)
+	_validate_active_vehicle_routes(road_system.get_gateway_connected_roads())
+	return true
+
 func _nearest_connected_road(target: Vector2i, connected_roads: Dictionary) -> Vector2i:
 	var nearest := Vector2i(2147483647, 2147483647)
 	var best_distance := 2147483647
 	for cell_value in connected_roads.keys():
 		var cell: Vector2i = cell_value
+		if _blocked_road_cells.has(cell):
+			continue
 		var distance := absi(cell.x - target.x) + absi(cell.y - target.y)
 		if distance < best_distance:
 			best_distance = distance
@@ -792,17 +811,17 @@ func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:
 			continue
 		var route_is_valid := true
 		for cell in vehicle.route:
-			if not connected_roads.has(cell):
+			if not connected_roads.has(cell) or _blocked_road_cells.has(cell):
 				route_is_valid = false
 				break
 		if route_is_valid:
 			continue
 		var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
 		var start := vehicle.route[segment_index]
-		if not connected_roads.has(start):
+		if not connected_roads.has(start) or _blocked_road_cells.has(start):
 			start = _nearest_connected_road(start, connected_roads)
 		var goal := vehicle.route.back()
-		if not connected_roads.has(goal):
+		if not connected_roads.has(goal) or _blocked_road_cells.has(goal):
 			goal = _nearest_connected_road(goal, connected_roads)
 		if start.x == 2147483647 or goal.x == 2147483647:
 			vehicle.queue_free()
