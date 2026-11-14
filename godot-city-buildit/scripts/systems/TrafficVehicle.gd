@@ -21,6 +21,7 @@ var _segment_progress: float = 0.0
 var _started: bool = false
 var _initial_leg_complete: bool = false
 var _last_segment_direction: Vector2i = Vector2i.ZERO
+var _route_recovery_pending: bool = false
 var _traffic_stop_elapsed: float = 0.0
 var congestion_release_active: bool = false
 
@@ -55,7 +56,7 @@ func _process(delta: float) -> void:
 		from_position = initial_position
 		to_position = _lane_position(from_cell, travel_direction)
 	else:
-		from_position = global_position if _last_segment_direction != Vector2i.ZERO and _last_segment_direction != travel_direction else _lane_position(from_cell, travel_direction)
+		from_position = global_position if _route_recovery_pending or (_last_segment_direction != Vector2i.ZERO and _last_segment_direction != travel_direction) else _lane_position(from_cell, travel_direction)
 		to_position = _lane_position(to_cell, travel_direction)
 
 	var segment_length := from_position.distance_to(to_position)
@@ -68,8 +69,8 @@ func _process(delta: float) -> void:
 		_segment_progress = 0.0
 		return
 
-	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
-	var safe_speed := TrafficManager.get_safe_vehicle_speed(self, desired_speed)
+	var desired_speed: float = TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
+	var safe_speed: float = TrafficManager.get_safe_vehicle_speed(self, desired_speed)
 	var junction_entry_denied := false
 	# Junction admission is phase-controlled and remains a hard stop. The
 	# four-second congestion recovery must never override a red/yellow phase.
@@ -97,9 +98,9 @@ func _process(delta: float) -> void:
 	else:
 		_traffic_stop_elapsed = 0.0
 		congestion_release_active = false
-	var movement := safe_speed * delta
-	var remaining := segment_length * (1.0 - _segment_progress)
-	var step := minf(movement, remaining)
+	var movement: float = safe_speed * delta
+	var remaining: float = segment_length * (1.0 - _segment_progress)
+	var step: float = minf(movement, remaining)
 	_segment_progress = minf(1.0, _segment_progress + step / segment_length)
 	route_distance += step
 	global_position = from_position.lerp(to_position, _segment_progress)
@@ -110,9 +111,26 @@ func _process(delta: float) -> void:
 			_initial_leg_complete = true
 		else:
 			_last_segment_direction = travel_direction
+			_route_recovery_pending = false
 			TrafficManager.release_junction_entry(self, from_cell)
 			_segment_index += 1
 		_segment_progress = 0.0
+
+func replace_route(new_route: Array[Vector2i]) -> void:
+	if new_route.size() < 2:
+		return
+	route = new_route.duplicate()
+	_segment_index = 0
+	_segment_progress = 0.0
+	_initial_leg_complete = true
+	_last_segment_direction = Vector2i.ZERO
+	_route_recovery_pending = true
+	_traffic_stop_elapsed = 0.0
+	congestion_release_active = false
+	route_key = TrafficManager._route_key(route)
+	lane_direction = route[1] - route[0]
+	_started = true
+	TrafficManager.release_all_junction_entries(self)
 
 func _cell_center(cell: Vector2i) -> Vector3:
 	var world_x := float(cell.x) * 2.0 + 1.0

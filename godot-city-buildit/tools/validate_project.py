@@ -1330,6 +1330,9 @@ for contract in [
         errors.append(f"City-wide service capacity/demand contract is missing: {contract}")
 
 # A real 3D vehicle must traverse the connected Gateway graph and return.
+if traffic_manager_source.count("func _select_junction_approach(") != 1:
+    errors.append("TrafficManager must declare exactly one junction approach selector")
+
 for contract in [
     "func build_gateway_round_trip_route() -> Array[Vector2i]",
     "func _build_round_trip_route_from(start: Vector2i) -> Array[Vector2i]",
@@ -1345,9 +1348,17 @@ for contract in [
     "func _junction_queue_counts(junction_cell: Vector2i) -> Dictionary:",
     "func _select_junction_approach(counts: Dictionary, waiting: Dictionary) -> Vector2i:",
     "func _update_junction_controllers(delta: float) -> void:",
+    "func _junction_movements_conflict(from_a: Vector2i, to_a: Vector2i, from_b: Vector2i, to_b: Vector2i, junction_cell: Vector2i) -> bool:",
+    "func _is_junction_exit_clear(vehicle: TrafficVehicle, junction_cell: Vector2i, exit_cell: Vector2i) -> bool:",
+    "func _approach_has_right_of_way(approach: Vector2i, counts: Dictionary) -> bool:",
+
+    "func set_road_cell_blocked(grid_cell: Vector2i, blocked: bool) -> bool:",
+    "func _nearest_connected_road(target: Vector2i, connected_roads: Dictionary) -> Vector2i:",
+    "func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:",
     "func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, from_cell: Vector2i = Vector2i.ZERO) -> bool:",
     "JUNCTION_YELLOW_SECONDS: float = 1.0",
     "JUNCTION_ALL_RED_SECONDS: float = 0.5",
+    "JUNCTION_RIGHT_OF_WAY_MAX_WAIT_SECONDS: float = 8.0",
     "func release_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i) -> void:",
     "CITY_SPEED_MULTIPLIER: float = 4.0",
     "HIGHWAY_SPEED_MULTIPLIER: float = 16.0",
@@ -1357,13 +1368,14 @@ for contract in [
     "func build_highway_route(northbound: bool) -> Array[Vector2i]",
     "func spawn_highway_vehicle_now() -> TrafficVehicle:",
     "func _update_emergency_dispatch(delta: float) -> void:",
-    "func _validate_active_vehicle_routes(connected_roads: Dictionary)",
+    "func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:",
 ]:
     if contract not in traffic_manager_source:
         errors.append(f"Road traffic and emergency fleet contract is missing: {contract}")
 for contract in [
     "class_name TrafficVehicle",
     "extends Node3D",
+    "func replace_route(new_route: Array[Vector2i]) -> void:",
     "signal route_completed",
     "func _process(delta: float) -> void:",
     "route_distance += step",
@@ -1396,10 +1408,28 @@ for contract in [
     "Motorway vehicle routes must enter the city through the permanent Gateway",
     "Only the frontmost stopped vehicle may resume controlled crawl after four seconds",
     "A queued junction approach must receive an initial green phase",
+    "A missing junction controller phase must never be treated as implicit green permission",
+    "A vehicle already admitted to a junction must retain permission to clear after yellow begins",
+    "A fully yielding four-way queue must resume after one approach reaches the eight-second fairness override",
     "A conflicting approach must not enter during another approach",
     "No new vehicle may enter during yellow clearance",
     "Yellow must be followed by an all-red clearance interval",
     "The longest-waiting competing approach must receive the next green phase to prevent starvation",
+    "A downstream exit cell already being occupied by another vehicle must be rejected",
+    "A connected road cell must accept a temporary traffic blockage",
+    "The permanent highway Gateway must never be marked as blocked",
+    "A blocked two-lane road tile must be removed from effective traffic capacity",
+    "Clearing a temporary blockage must restore the road tile's traffic capacity",
+    "Vehicles must recalculate their route when an incident marks a road cell blocked",
+    "An active vehicle must reroute through the surviving parallel road after its planned road cell is closed",
+    "Opposing straight-through movements on separated right-hand lanes must be compatible",
+    "Crossing straight-through movements must be classified as conflicting",
+    "A left turn must conflict with an opposing straight-through movement",
+    "A vehicle must yield to queued traffic approaching from its right",
+    "Right-hand priority must select the approach that has right of way",
+    "The eight-second fairness override must prevent permanent starvation under right-hand yielding",
+    "A fully yielding four-way queue must remain all-red until the eight-second fairness override",
+    "An exit without Gateway-connected road space must be rejected",
     "The maximum frontmost stopped-vehicle wait must be exactly four seconds",
     "A follower must never bypass its stopped leader",
     "same-lane vehicle ahead is inside the minimum safe gap",

@@ -628,7 +628,7 @@ func _test_road_traffic_capacity(road_system) -> void:
 	TrafficManager.recalculate_from_roads()
 
 func _test_gateway_vehicle_route(road_system) -> void:
-	var previous_enabled := TrafficManager.vehicle_simulation_enabled
+	var previous_enabled: bool = TrafficManager.vehicle_simulation_enabled
 	TrafficManager.vehicle_simulation_enabled = false
 	TrafficManager.clear_active_vehicle()
 	road_system.clear_roads()
@@ -639,15 +639,15 @@ func _test_gateway_vehicle_route(road_system) -> void:
 	_check(route.front() == road_system.GATEWAY_ROAD_CELL and route.back() == road_system.GATEWAY_ROAD_CELL, "The simulated vehicle route must start and finish at the permanent Gateway.")
 	for cell in route:
 		_check(connected_roads.has(cell), "Every vehicle route cell must belong to the Gateway-connected road graph.")
-	var adaptive_route := TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
+	var adaptive_route: Array[Vector2i] = TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
 	_check(adaptive_route.size() >= 2 and adaptive_route.front() == road_system.GATEWAY_ROAD_CELL and adaptive_route.back() == Vector2i(1, -1), "The city route planner must find a valid path between connected road destinations.")
 	for cell in adaptive_route:
 		_check(connected_roads.has(cell), "Adaptive route planning must never leave the Gateway-connected road graph.")
-	var vehicle := TrafficManager.spawn_vehicle_now()
+	var vehicle: TrafficVehicle = TrafficManager.spawn_vehicle_now()
 	_check(is_instance_valid(vehicle), "TrafficManager must spawn a vehicle on the Gateway route.")
 	if is_instance_valid(vehicle):
 		_check(vehicle.get_node_or_null("Body") != null and vehicle.get_node_or_null("Cabin") != null, "The simulated vehicle must have visible original 3D body and cabin geometry.")
-		var start_position := vehicle.global_position
+		var start_position: Vector3 = vehicle.global_position
 		vehicle._process(0.25)
 		_check(vehicle.global_position.distance_to(start_position) > 0.1, "The simulated vehicle must advance along its road route.")
 	TrafficManager.clear_active_vehicle()
@@ -660,11 +660,11 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(-1, 0), Vector2i(0, 0)), TrafficManager.VEHICLE_BASE_SPEED * 4.0), "Negative city grid coordinates must not be misclassified as motorway lanes.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway"), TrafficManager.VEHICLE_BASE_SPEED * 16.0), "External highway vehicles must use the required 16x speed multiplier.")
 	_check(is_equal_approx(TrafficManager.get_speed_for_segment(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(TrafficManager.HIGHWAY_GRID_X, -1), "highway") * 3.6, TrafficManager.HIGHWAY_SPEED_LIMIT_KMH), "Motorway traffic must stay within the calibrated 120 km/h speed ceiling.")
-	var northbound_route := TrafficManager.build_highway_route(true)
-	var southbound_route := TrafficManager.build_highway_route(false)
+	var northbound_route: Array[Vector2i] = TrafficManager.build_highway_route(true)
+	var southbound_route: Array[Vector2i] = TrafficManager.build_highway_route(false)
 	_check(northbound_route.front().y == TrafficManager.HIGHWAY_MAX_GRID_Z and northbound_route.back().y == TrafficManager.HIGHWAY_MIN_GRID_Z, "Northbound motorway traffic must run only toward the north exit.")
 	_check(southbound_route.front().y == TrafficManager.HIGHWAY_MIN_GRID_Z and southbound_route.back().y == TrafficManager.HIGHWAY_MAX_GRID_Z, "Southbound motorway traffic must run only toward the south exit.")
-	var city_bound_highway_route := TrafficManager.build_highway_city_round_trip_route(true)
+	var city_bound_highway_route: Array[Vector2i] = TrafficManager.build_highway_city_round_trip_route(true)
 	_check(city_bound_highway_route.size() > northbound_route.size(), "A motorway vehicle must continue from the external highway into the city instead of leaving on an isolated highway-only loop.")
 	_check(city_bound_highway_route.has(road_system.GATEWAY_ROAD_CELL), "The motorway-to-city route must include the permanent road Gateway.")
 
@@ -699,7 +699,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager._active_vehicles.append(load_probe_a)
 	TrafficManager._active_vehicles.append(load_probe_b)
 	_check(TrafficManager.get_road_cell_vehicle_load(Vector2i(-22, -1)) == 2, "The city traffic network must count vehicles currently occupying a road segment.")
-	var congestion_aware_route := TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
+	var congestion_aware_route: Array[Vector2i] = TrafficManager.build_route_between(road_system.GATEWAY_ROAD_CELL, Vector2i(1, -1))
 	_check(not congestion_aware_route.has(Vector2i(-22, -1)), "Route planning must divert around a heavily occupied road when a connected alternative has lower travel cost.")
 	TrafficManager._active_vehicles.erase(load_probe_a)
 	TrafficManager._active_vehicles.erase(load_probe_b)
@@ -718,12 +718,76 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	var junction_a := TrafficVehicle.new()
 	var junction_b := TrafficVehicle.new()
 	var junction_cell := Vector2i(0, 0)
+	junction_a.route = [Vector2i(-1, 0), junction_cell, Vector2i(1, 0)]
+	junction_b.route = [Vector2i(-1, 0), junction_cell, Vector2i(1, 0)]
 	_check(TrafficManager.is_junction_cell(junction_cell), "The starter road T-junction must be recognized as a controlled junction.")
-	_check(TrafficManager.request_junction_entry(junction_a, junction_cell), "The first vehicle must acquire an unoccupied junction.")
-	_check(not TrafficManager.request_junction_entry(junction_b, junction_cell), "A second vehicle must wait while the junction conflict zone is occupied.")
+	TrafficManager._junction_signal_states.erase(junction_cell)
+	_check(not TrafficManager.request_junction_entry(junction_a, junction_cell, Vector2i(-1, 0)), "A missing junction controller phase must never be treated as implicit green permission.")
+	TrafficManager._junction_signal_states[junction_cell] = {"approach": Vector2i(1, 0), "stage": "green", "elapsed": 0.0, "green_duration": TrafficManager.JUNCTION_MIN_GREEN_SECONDS, "waiting": {}}
+	_check(TrafficManager.request_junction_entry(junction_a, junction_cell, Vector2i(-1, 0)), "The first vehicle must acquire an unoccupied junction.")
+	TrafficManager._junction_signal_states[junction_cell]["stage"] = "yellow"
+	_check(TrafficManager.request_junction_entry(junction_a, junction_cell, Vector2i(-1, 0)), "A vehicle already admitted to a junction must retain permission to clear after yellow begins.")
+	TrafficManager._junction_signal_states[junction_cell]["stage"] = "green"
+	_check(not TrafficManager.request_junction_entry(junction_b, junction_cell, Vector2i(-1, 0)), "A second vehicle must wait while the same movement occupies the junction conflict zone.")
 	TrafficManager.release_junction_entry(junction_a, junction_cell)
-	_check(TrafficManager.request_junction_entry(junction_b, junction_cell), "The waiting vehicle must acquire the junction after the first vehicle clears it.")
+	_check(TrafficManager.request_junction_entry(junction_b, junction_cell, Vector2i(-1, 0)), "The waiting vehicle must acquire the junction after the first vehicle clears it.")
 	TrafficManager.release_all_junction_entries(junction_b)
+	TrafficManager._junction_signal_states.erase(junction_cell)
+	var west_to_east_from := Vector2i(-1, 0)
+	var west_to_east_to := Vector2i(1, 0)
+	var east_to_west_from := Vector2i(1, 0)
+	var east_to_west_to := Vector2i(-1, 0)
+	_check(not TrafficManager._junction_movements_conflict(west_to_east_from, west_to_east_to, east_to_west_from, east_to_west_to, junction_cell), "Opposing straight-through movements on separated right-hand lanes must be compatible.")
+	_check(TrafficManager._junction_movements_conflict(west_to_east_from, west_to_east_to, Vector2i(0, -1), Vector2i(0, 1), junction_cell), "Crossing straight-through movements must be classified as conflicting.")
+	_check(TrafficManager._junction_movements_conflict(Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0), junction_cell), "A left turn must conflict with an opposing straight-through movement.")
+	_check(TrafficManager._approach_has_right_of_way(Vector2i(1, 0), {Vector2i(0, -1): 1}), "A vehicle must yield to queued traffic approaching from its right.")
+	_check(TrafficManager._select_junction_approach({Vector2i(1, 0): 1, Vector2i(0, -1): 1}, {Vector2i(1, 0): 0.0, Vector2i(0, -1): 0.0}) == Vector2i(0, -1), "Right-hand priority must select the approach that has right of way.")
+	_check(is_equal_approx(TrafficManager._select_junction_approach({Vector2i(1, 0): 1, Vector2i(0, -1): 1}, {Vector2i(1, 0): 9.0, Vector2i(0, -1): 0.0}).x, 1.0), "The eight-second fairness override must prevent permanent starvation under right-hand yielding.")
+	var four_way_queue := {Vector2i(1, 0): 1, Vector2i(0, -1): 1, Vector2i(-1, 0): 1, Vector2i(0, 1): 1}
+	_check(TrafficManager._select_junction_approach(four_way_queue, {}) == Vector2i.ZERO, "A fully yielding four-way queue must remain all-red until the eight-second fairness override.")
+	_check(TrafficManager._select_junction_approach(four_way_queue, {Vector2i(1, 0): 8.1, Vector2i(0, -1): 0.0, Vector2i(-1, 0): 0.0, Vector2i(0, 1): 0.0}) == Vector2i(1, 0), "A fully yielding four-way queue must resume after one approach reaches the eight-second fairness override.")
+	_check(not TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(99, 99)), "An exit without Gateway-connected road space must be rejected.")
+	var exit_blocker := TrafficVehicle.new()
+	exit_blocker.route = [Vector2i(0, 0), Vector2i(1, 0)]
+	exit_blocker._segment_progress = 0.75
+	TrafficManager._active_vehicles.append(exit_blocker)
+	_check(not TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(1, 0)), "A downstream exit cell already being occupied by another vehicle must be rejected.")
+	TrafficManager._active_vehicles.erase(exit_blocker)
+	exit_blocker.free()
+	var dynamic_block_cell := Vector2i(-22, -1)
+	var block_test_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
+	TrafficManager._active_vehicles.clear()
+	var block_test_vehicle := TrafficVehicle.new()
+	block_test_vehicle.route = [road_system.GATEWAY_ROAD_CELL, dynamic_block_cell, Vector2i(-21, -1), Vector2i(-20, -1)]
+	TrafficManager._active_vehicles.append(block_test_vehicle)
+	_check(not TrafficManager.set_road_cell_blocked(road_system.GATEWAY_ROAD_CELL, true), "The permanent highway Gateway must never be marked as blocked.")
+	var capacity_before_block: int = TrafficManager.road_capacity
+	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, true), "A connected road cell must accept a temporary traffic blockage.")
+	_check(TrafficManager.road_capacity == capacity_before_block - 2, "A blocked two-lane road tile must be removed from effective traffic capacity.")
+	_check(not block_test_vehicle.route.has(dynamic_block_cell) and block_test_vehicle.route.has(Vector2i(-22, 0)), "Vehicles must recalculate their route when an incident marks a road cell blocked.")
+	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, false), "A road cell must become routable again after its blockage clears.")
+	_check(TrafficManager.road_capacity == capacity_before_block, "Clearing a temporary blockage must restore the road tile's traffic capacity.")
+	TrafficManager._active_vehicles.clear()
+	for block_previous_vehicle in block_test_fleet:
+		TrafficManager._active_vehicles.append(block_previous_vehicle)
+	block_test_vehicle.free()
+	var closure_cell := Vector2i(-22, -1)
+	var saved_closure_road = road_system.roads[closure_cell]
+	var reroute_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
+	TrafficManager._active_vehicles.clear()
+	var reroute_vehicle := TrafficVehicle.new()
+	reroute_vehicle.route = [road_system.GATEWAY_ROAD_CELL, closure_cell, Vector2i(-21, -1), Vector2i(-20, -1)]
+	TrafficManager._active_vehicles.append(reroute_vehicle)
+	road_system.roads.erase(closure_cell)
+	road_system.invalidate_road_connectivity_cache()
+	TrafficManager._validate_active_vehicle_routes(road_system.get_gateway_connected_roads())
+	_check(is_instance_valid(reroute_vehicle) and not reroute_vehicle.route.has(closure_cell) and reroute_vehicle.route.has(Vector2i(-22, 0)), "An active vehicle must reroute through the surviving parallel road after its planned road cell is closed.")
+	road_system.roads[closure_cell] = saved_closure_road
+	road_system.invalidate_road_connectivity_cache()
+	TrafficManager._active_vehicles.clear()
+	for reroute_previous_vehicle in reroute_fleet:
+		TrafficManager._active_vehicles.append(reroute_previous_vehicle)
+	reroute_vehicle.free()
 	_check(TrafficManager.request_junction_entry(junction_a, Vector2i(99, 99)), "A non-junction cell must not require an intersection reservation.")
 	TrafficManager.release_all_junction_entries(junction_a)
 	junction_a.free()
@@ -779,7 +843,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	leader.free()
 
 	TrafficManager.clear_active_vehicle()
-	var highway_vehicle := TrafficManager.spawn_highway_vehicle_now()
+	var highway_vehicle: TrafficVehicle = TrafficManager.spawn_highway_vehicle_now()
 	_check(is_instance_valid(highway_vehicle) and highway_vehicle.vehicle_kind == "highway", "The visible external six-lane motorway must spawn its own traffic fleet.")
 	if is_instance_valid(highway_vehicle):
 		_check(highway_vehicle.route_key.begins_with("coastal-highway-"), "Motorway vehicles must start on the external motorway and follow a connected route through the city Gateway.")
@@ -798,7 +862,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	police_station.global_position = BuildManager.grid_to_world(police_station.grid_pos) + Vector3(1.0, 0.0, 1.0)
 	world.add_child(police_station)
 	_check(BuildManager.is_building_operational(police_station), "A completed police station with Gateway-connected road access must be operational.")
-	var police_route := TrafficManager.build_station_patrol_route(police_station)
+	var police_route: Array[Vector2i] = TrafficManager.build_station_patrol_route(police_station)
 	_check(police_route.size() >= 3 and road_system.get_gateway_connected_roads().has(police_route.front()), "Police patrol route must start from the station's connected road exit.")
 	BuildManager.buildings[police_station.building_id] = police_station
 	TrafficManager._update_emergency_dispatch(TrafficManager.EMERGENCY_SPAWN_INTERVAL)
@@ -812,6 +876,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		_check(police_vehicle.global_position.distance_to(police_station.global_position) > 2.0 and police_vehicle.global_position.distance_to(police_station.global_position) < 3.0, "Police vehicle must spawn at the station exit before entering its patrol route.")
 		_check(police_vehicle.get_node_or_null("EmergencyLightbar") != null, "Police vehicle must visibly carry an emergency lightbar.")
 		var police_exit_position := police_vehicle.global_position
+		TrafficManager._update_junction_controllers(0.1)
 		police_vehicle._process(0.2)
 		_check(police_vehicle.global_position.distance_to(police_exit_position) > 0.1, "Police vehicle must leave its station exit and advance onto the patrol route.")
 
@@ -834,6 +899,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		_check(fire_vehicle.get_node_or_null("EmergencyLightbar") != null and fire_vehicle.get_node_or_null("FireEquipment") != null, "Fire engine must show its emergency lights and fire-service equipment.")
 		_check(fire_vehicle.global_position.distance_to(fire_station.global_position) > 1.0 and fire_vehicle.global_position.distance_to(fire_station.global_position) < 2.0, "Fire engine must spawn at the fire station exit before entering its route.")
 		var fire_exit_position := fire_vehicle.global_position
+		TrafficManager._update_junction_controllers(0.1)
 		fire_vehicle._process(0.2)
 		_check(fire_vehicle.global_position.distance_to(fire_exit_position) > 0.1, "Fire engine must leave its station exit and advance onto the response route.")
 
