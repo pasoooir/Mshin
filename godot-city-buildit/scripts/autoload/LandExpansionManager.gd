@@ -193,6 +193,14 @@ func migrate_legacy_land(road_data: Array, building_data: Array) -> void:
 	if changed:
 		land_changed.emit()
 
+func get_owned_tiles() -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for key in owned_tiles.keys():
+		var parts := str(key).split(":")
+		if parts.size() == 2:
+			result.append(Vector2i(int(parts[0]), int(parts[1])))
+	return result
+
 func get_owned_tile_count() -> int:
 	return owned_tiles.size()
 
