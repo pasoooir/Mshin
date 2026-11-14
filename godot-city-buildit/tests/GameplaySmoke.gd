@@ -743,9 +743,13 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager._junction_reservations.clear()
 	TrafficManager._update_junction_controllers(0.1)
 	var initial_signal_state: Dictionary = TrafficManager._junction_signal_states.get(junction_cell, {})
-	var initial_green: Vector2i = initial_signal_state.get("approach", Vector2i.ZERO)
 	_check(initial_signal_state.get("stage", "") == "green", "A queued junction approach must receive an initial green phase.")
-	_check(TrafficManager.request_junction_entry(signal_a, junction_cell, Vector2i(-1, 0)) == (initial_green == Vector2i(1, 0)), "The signal must admit the vehicle only when its approach owns green.")
+	# Seed a deterministic older wait on the north approach so the test proves
+	# the scheduler changes phases rather than relying on dictionary order.
+	initial_signal_state["approach"] = Vector2i(1, 0)
+	initial_signal_state["waiting"] = {Vector2i(1, 0): 0.0, Vector2i(0, -1): 5.0}
+	TrafficManager._junction_signal_states[junction_cell] = initial_signal_state
+	_check(TrafficManager.request_junction_entry(signal_a, junction_cell, Vector2i(-1, 0)), "The selected green approach must be admitted.")
 	_check(not TrafficManager.request_junction_entry(signal_b, junction_cell, Vector2i(0, 1)), "A conflicting approach must not enter during another approach's green phase.")
 	TrafficManager._update_junction_controllers(10.0)
 	var yellow_state: Dictionary = TrafficManager._junction_signal_states.get(junction_cell, {})
