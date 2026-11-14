@@ -1579,7 +1579,7 @@ func _test_building_model_loader_contract() -> void:
 	_check(not str(BuildManager.building_types["residential_apartment"].get("model_path", "")).ends_with("residential_tower_75m.gltf"), "The 75m tower must remain unwired until a compatible large footprint is implemented.")
 	_check(str(BuildManager.building_types["shop_chain"].get("model_path", "")) == model_paths[2], "The chain-store archetype must select the local neighborhood shop model.")
 	for dedicated_index in range(5):
-		var dedicated_id := ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"][dedicated_index]
+		var dedicated_id: String = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"][dedicated_index]
 		_check(str(BuildManager.building_types[dedicated_id].get("model_path", "")) == model_paths[3 + dedicated_index], "Commercial type must select its own dedicated local model scene: " + dedicated_id)
 	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[8], "The small-factory archetype must select the local factory model.")
 	_check(not BuildManager.building_types["factory_basic"].has("model_path") and not BuildManager.building_types["factory_mass"].has("model_path") and not BuildManager.building_types["factory_hightech"].has("model_path") and not BuildManager.building_types["factory_nano"].has("model_path"), "Larger factory tiers must retain their distinct procedural facilities instead of sharing the small-factory GLTF.")
