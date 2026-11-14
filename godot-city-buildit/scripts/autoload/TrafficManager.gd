@@ -126,7 +126,6 @@ func recalculate_from_roads() -> void:
 			var lane_count: int = road_system.get_road_level(road_cell) * 2
 			road_capacity += lane_count * TRAFFIC_UNITS_PER_LANE
 	_validate_active_vehicle_routes(connected_roads)
-	traffic_changed.emit(traffic_demand, road_capacity, congestion_ratio)
 	if traffic_demand <= 0:
 		congestion_ratio = 0.0
 	elif road_capacity <= 0:
