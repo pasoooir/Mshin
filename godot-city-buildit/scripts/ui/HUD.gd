@@ -182,6 +182,8 @@ func _on_land_expansion_pressed() -> void:
 
 func _on_viewport_size_changed() -> void:
 	_apply_responsive_layout()
+	if is_instance_valid(production_panel) and is_instance_valid(_production_building):
+		open_production_panel(_production_building)
 
 func _apply_responsive_layout() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
@@ -1989,7 +1991,7 @@ func open_production_panel(building: Building) -> void:
 	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	product_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	product_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	product_scroll.custom_minimum_size.y = (108.0 if compact_layout else (138.0 if tablet_layout else 158.0)) * _ui_scale
+	product_scroll.custom_minimum_size.y = (126.0 if compact_layout else (138.0 if tablet_layout else 158.0)) * _ui_scale
 	layout.add_child(product_scroll)
 
 	var product_grid := GridContainer.new()
@@ -2117,11 +2119,11 @@ func open_production_panel(building: Building) -> void:
 	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	details_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	details_scroll.custom_minimum_size.y = (92.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
+	details_scroll.custom_minimum_size.y = (108.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
 	layout.add_child(details_scroll)
 	var details_host := Control.new()
 	details_host.name = "ProductionDetailsHost"
-	details_host.custom_minimum_size.x = maxf(240.0, panel_width - 70.0 * _ui_scale)
+	details_host.custom_minimum_size = Vector2(maxf(240.0, panel_width - 70.0 * _ui_scale), (166.0 if compact_layout else 180.0) * _ui_scale)
 	details_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details_scroll.add_child(details_host)
 
