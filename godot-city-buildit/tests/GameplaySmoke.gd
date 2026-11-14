@@ -2145,7 +2145,19 @@ func _test_regional_building_and_material_gates() -> void:
 	EconomyManager.simoleons = previous_simoleons
 	GameManager.level_changed.emit(GameManager.level)
 
+func _test_region_storage_save_precedence() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var regional_storage := {"capacity": 75, "items": {"coconut": 4, "herbs": 2}}
+	var legacy_storage := {"capacity": 50, "items": {"metal": 9}}
+	SaveManager._apply_saved_region_storage({"storage": regional_storage}, legacy_storage)
+	_check(StorageManager.capacity == 75 and StorageManager.get_count("coconut") == 4 and StorageManager.get_count("herbs") == 2 and StorageManager.get_count("metal") == 0, "Loading a version 5 save must prefer the active region warehouse over the legacy top-level inventory.")
+	SaveManager._apply_saved_region_storage({}, legacy_storage)
+	_check(StorageManager.capacity == 50 and StorageManager.get_count("metal") == 9 and StorageManager.get_count("coconut") == 0, "Loading a legacy save without regional inventory must migrate its top-level warehouse.")
+	StorageManager.from_save_dict(previous_storage)
+
+
 func _test_region_city_snapshots() -> void:
+	_test_region_storage_save_precedence()
 	var previous_regions: Dictionary = RegionManager.to_save_dict()
 	var previous_level := GameManager.level
 	var previous_simoleons := EconomyManager.simoleons
