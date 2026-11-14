@@ -113,6 +113,13 @@ func save_game() -> bool:
 	save_completed.emit(SAVE_PATH)
 	return true
 
+func _apply_saved_region_storage(region_snapshot: Dictionary, legacy_storage: Dictionary) -> void:
+	if region_snapshot.has("storage") and region_snapshot.get("storage") is Dictionary:
+		StorageManager.from_save_dict(region_snapshot.get("storage", {}))
+	else:
+		StorageManager.from_save_dict(legacy_storage)
+
+
 func load_game() -> bool:
 	if not FileAccess.file_exists(SAVE_PATH):
 		load_completed.emit(false)
@@ -146,8 +153,6 @@ func load_game() -> bool:
 	var region_snapshot: Dictionary = RegionManager.get_active_snapshot()
 	# Version 5 stores inventory per region. Older saves migrate their single
 	# global inventory into the currently active region without losing items.
-	if region_snapshot.has("storage"):
-		StorageManager.from_save_dict(region_snapshot.get("storage", {}))
 	var region_roads: Array = region_snapshot.get("roads", parsed.get("roads", []))
 	var region_buildings: Array = region_snapshot.get("buildings", parsed.get("buildings", []))
 	var region_epic_projects: Dictionary = region_snapshot.get("epic_projects", parsed.get("epic_projects", {}))
@@ -155,7 +160,10 @@ func load_game() -> bool:
 	EconomyManager.golden_keys = int(economy_data.get("golden_keys", 5))
 	EconomyManager.sim_cash = int(economy_data.get("sim_cash", 0))
 
-	StorageManager.from_save_dict(storage_data)
+	# Prefer the active region's warehouse when present. The top-level storage
+	# field is retained only as a migration source for legacy saves; applying it
+	# unconditionally here would overwrite a valid regional inventory.
+	_apply_saved_region_storage(region_snapshot, storage_data)
 	TradeManager.from_save_dict(parsed.get("trade", {}))
 
 	if not _restore_region_world(region_roads, region_buildings, region_epic_projects, false, region_snapshot.get("land_expansion", {})):
