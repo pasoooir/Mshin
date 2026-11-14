@@ -62,7 +62,7 @@ build_menu settings info plus money population happiness level warning check
 arrow_left arrow_right services commercial industrial road residential parks
 hard_hat simoleons golden_key fire power water park police health sewage waste
 government education transportation entertainment gambling beach mountain
-landmark global_trade epic regions fallback
+landmark global_trade epic regions fallback trade_depot
 """.split()
 for icon_id in ui_ids:
     require("ui", icon_id)

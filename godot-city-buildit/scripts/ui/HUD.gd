@@ -3470,11 +3470,14 @@ func _build_trade_depot_content(parent: VBoxContainer) -> void:
 		_trade_message(parent, "Place and complete the Trade Depot from Services → Trade to start selling city products.")
 		return
 
+	var title_row := HBoxContainer.new()
+	title_row.add_child(Icons.make_item_icon("ui", "trade_depot", Vector2(36, 36) * _ui_scale))
+	parent.add_child(title_row)
 	var heading := Label.new()
 	heading.text = "LIST PRODUCTS · 4 MARKET SLOTS"
 	heading.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	heading.add_theme_color_override("font_color", Color("#24465A"))
-	parent.add_child(heading)
+	title_row.add_child(heading)
 	var items := StorageManager.get_all_items()
 	var item_ids: Array = items.keys()
 	item_ids.sort()
