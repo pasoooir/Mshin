@@ -70,6 +70,7 @@ for icon_id in ui_ids:
 # Root-level category and context icons are used by the build toolbar and fallback paths.
 for icon_id in ["bulldozer", "commercial", "fallback", "fire", "hard_hat", "industrial", "park", "parks", "power", "residential", "road", "services"]:
     require("root", icon_id)
+require("ui_vector", "regions")
 
 for icon_id in ["road", "road_build", "road_upgrade", "road_bulldoze"]:
     require("roads", icon_id)
@@ -78,7 +79,9 @@ for icon_id in ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_fu
 
 # PNG-32 requirements: valid PNG, 8-bit RGBA, >=128px, transparent canvas corners.
 for category, icon_id in sorted(required):
-    path = ICON_ROOT / f"{icon_id}.png" if category == "root" else ICON_ROOT / category / f"{icon_id}.png"
+    path = (ICON_ROOT / f"{icon_id}.png" if category == "root" else
+            ICON_ROOT / "ui" / f"{icon_id}_from_svg.png" if category == "ui_vector" else
+            ICON_ROOT / category / f"{icon_id}.png")
     if not path.is_file():
         errors.append(f"Missing icon: {category}/{icon_id}.png")
         continue

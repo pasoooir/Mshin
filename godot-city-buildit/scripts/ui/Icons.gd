@@ -3,6 +3,7 @@ extends RefCounted
 const ROOT := "res://assets/icons/"
 const FALLBACK := "res://assets/icons/ui/placeholder.png"
 const ROOT_IDS := ["bulldozer", "commercial", "fallback", "fire", "hard_hat", "industrial", "park", "parks", "power", "residential", "road", "services"]
+const UI_VECTOR_IDS := ["regions"]
 
 const RAW_IDS := ["metal", "wood", "plastic", "seeds", "minerals", "chemicals", "textiles", "sugar_spices", "glass", "animal_feed", "electrical", "coconut", "snowberry", "cactus_fruit", "herbs", "olives"]
 const CRAFTED_IDS := ["nails", "planks", "bricks", "cement", "glue", "paint", "hammer", "measuring_tape", "shovel", "cooking_utensils", "ladder", "drill", "chair", "table", "home_textiles", "cupboard", "couch", "vegetables", "flour_bag", "cream", "corn", "cheese", "beef", "ice_cream_sandwich", "pizza", "burger", "cheese_fries", "lemonade_bottle", "popcorn", "bread_roll", "bbq_grill", "microwave_oven", "fruit_berries", "tree_sapling", "donuts", "green_smoothie", "cherry_cheesecake", "frozen_yogurt", "coffee", "refrigerator", "lighting_system", "tv", "grass", "garden_furniture", "lawn_mower", "fire_pit", "garden_gnome", "cap", "shoes", "watch", "business_suit", "backpack", "tennis_racket", "sports_drink", "soccer_shoes", "protein_bar", "ping_pong_table", "block_letters", "kite", "teddy_bear", "game_console", "forged_iron", "carved_wood", "cut_stone", "tapestries", "stained_glass", "wool_shirt", "picnic_basket", "apple_jam", "tiramisu", "churros", "profiterole", "mochi", "pavlova"]
@@ -21,6 +22,8 @@ static var _texture_cache: Dictionary = {}
 static func path(category: String, id: String) -> String:
 	if category == "root":
 		return "%s%s.png" % [ROOT, id]
+	if category == "ui_vector":
+		return "%sui/%s_from_svg.png" % [ROOT, id]
 	return "%s%s/%s.png" % [ROOT, category, id]
 
 static func get_tex(category: String, id: String) -> Texture2D:
@@ -40,6 +43,8 @@ static func get_tex(category: String, id: String) -> Texture2D:
 	return null
 
 static func category_for_id(id: String) -> String:
+	if UI_VECTOR_IDS.has(id):
+		return "ui_vector"
 	if ROOT_IDS.has(id) or id == "bulldoze":
 		return "root"
 	if RAW_IDS.has(id):
