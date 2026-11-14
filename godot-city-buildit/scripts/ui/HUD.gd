@@ -88,6 +88,8 @@ var population_label: Label
 var happiness_label: Label
 var xp_progress: ProgressBar
 var xp_text: Label
+var xp_info_panel: PanelContainer
+var xp_info_label: Label
 var storage_label: Label
 var storage_panel: PanelContainer
 var storage_overlay: Control
@@ -341,6 +343,60 @@ func _build_top_hud() -> void:
 	xp_progress.tooltip_text = "Progress toward the next Mayor Level. The number shows current XP / XP required."
 	xp_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	xp_row.add_child(xp_progress)
+	var xp_info_button := Button.new()
+	xp_info_button.name = "MayorLevelInfoButton"
+	xp_info_button.text = "?"
+	xp_info_button.custom_minimum_size = Vector2(30, 28) * _ui_scale
+	xp_info_button.focus_mode = Control.FOCUS_NONE
+	xp_info_button.tooltip_text = "Tap to learn how Mayor Level and XP work."
+	xp_info_button.pressed.connect(_toggle_xp_info_panel)
+	_add_theme_color(xp_info_button, Color("#79C9F2"))
+	xp_row.add_child(xp_info_button)
+
+	xp_info_panel = PanelContainer.new()
+	xp_info_panel.name = "MayorLevelInfoPanel"
+	xp_info_panel.position = Vector2(14, 194) * _ui_scale
+	xp_info_panel.custom_minimum_size = Vector2(390, 154) * _ui_scale
+	xp_info_panel.size = xp_info_panel.custom_minimum_size
+	xp_info_panel.z_index = 45
+	xp_info_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var xp_panel_style := StyleBoxFlat.new()
+	xp_panel_style.bg_color = Color(0.055, 0.09, 0.14, 0.96)
+	xp_panel_style.border_color = Color("#79C9F2")
+	xp_panel_style.set_border_width_all(2)
+	xp_panel_style.set_corner_radius_all(12)
+	xp_panel_style.content_margin_left = 12
+	xp_panel_style.content_margin_right = 12
+	xp_panel_style.content_margin_top = 9
+	xp_panel_style.content_margin_bottom = 9
+	xp_info_panel.add_theme_stylebox_override("panel", xp_panel_style)
+	top_hud.add_child(xp_info_panel)
+	var xp_panel_content := VBoxContainer.new()
+	xp_panel_content.add_theme_constant_override("separation", 5)
+	xp_info_panel.add_child(xp_panel_content)
+	var xp_panel_header := HBoxContainer.new()
+	xp_panel_content.add_child(xp_panel_header)
+	var xp_panel_title := Label.new()
+	xp_panel_title.text = "MAYOR LEVEL PROGRESS"
+	xp_panel_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	xp_panel_title.add_theme_color_override("font_color", Color("#FFE28A"))
+	xp_panel_title.add_theme_font_size_override("font_size", int(15 * _ui_scale))
+	xp_panel_header.add_child(xp_panel_title)
+	var xp_panel_close := Button.new()
+	xp_panel_close.name = "MayorLevelInfoClose"
+	xp_panel_close.text = "×"
+	xp_panel_close.custom_minimum_size = Vector2(30, 26) * _ui_scale
+	xp_panel_close.focus_mode = Control.FOCUS_NONE
+	xp_panel_close.pressed.connect(func() -> void: xp_info_panel.hide())
+	xp_panel_header.add_child(xp_panel_close)
+	xp_info_label = Label.new()
+	xp_info_label.name = "MayorLevelInfoText"
+	xp_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	xp_info_label.add_theme_color_override("font_color", Color.WHITE)
+	xp_info_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	xp_panel_content.add_child(xp_info_label)
+	xp_info_panel.hide()
+	_refresh_xp_info_panel()
 
 	var right_stack := VBoxContainer.new()
 	right_stack.name = "TopRightCurrencies"
@@ -1478,6 +1534,22 @@ func _on_happiness_changed(value: float) -> void:
 	if happiness_label:
 		happiness_label.text = "%d%%" % roundi(value)
 
+func _toggle_xp_info_panel() -> void:
+	if not is_instance_valid(xp_info_panel):
+		return
+	_refresh_xp_info_panel()
+	xp_info_panel.visible = not xp_info_panel.visible
+
+func _refresh_xp_info_panel() -> void:
+	if not is_instance_valid(xp_info_label):
+		return
+	var needed := maxi(1, GameManager.get_xp_needed())
+	var remaining := maxi(0, needed - GameManager.experience)
+	if GameManager.level >= 60:
+		xp_info_label.text = "Mayor Level %d — maximum level reached.\\nXP is earned by building and completing buildings, collecting production, unlocking achievements, and maintaining average city Happiness of at least 80%% for each 60-second period." % GameManager.level
+	else:
+		xp_info_label.text = "Mayor Level %d → %d\\nProgress: %d / %d XP — %d XP remaining.\\nEarn XP by placing/completing buildings, collecting production, unlocking achievements, or keeping average city Happiness at 80%% or higher for 60 seconds." % [GameManager.level, GameManager.level + 1, GameManager.experience, needed, remaining]
+
 func _on_xp_changed(xp: int, needed: int) -> void:
 	var safe_needed := maxi(1, needed)
 	var remaining := maxi(0, safe_needed - xp)
@@ -1495,6 +1567,7 @@ func _on_xp_changed(xp: int, needed: int) -> void:
 		xp_progress.value = clampi(xp, 0, safe_needed)
 	if is_instance_valid(level_badge_visual):
 		level_badge_visual.set_progress(float(clampi(xp, 0, safe_needed)) / float(safe_needed))
+	_refresh_xp_info_panel()
 
 func _on_level_up_rewarded(new_level: int, reward: int, keys: int) -> void:
 	# level_changed updates the badge; reward signal is the single celebration trigger.
