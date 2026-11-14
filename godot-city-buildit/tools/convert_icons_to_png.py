@@ -23,18 +23,14 @@ for source in svg_files:
     destination = source.with_suffix(".png")
     if destination.exists():
         raise SystemExit(f"Refusing to overwrite existing PNG without review: {destination.relative_to(ROOT)}")
-    raw = source.read_bytes()
-    cairosvg.svg2png(bytestring=raw, write_to=str(destination), output_width=512, output_height=512)
-    if not destination.is_file() or destination.stat().st_size < 64:
-        raise SystemExit(f"PNG conversion failed or produced an empty file: {destination}")
+    cairosvg.svg2png(bytestring=source.read_bytes(), write_to=str(destination), output_width=512, output_height=512)
     data = destination.read_bytes()
-    if data[:8] != b"\\x89PNG\\r\\n\\x1a\\n":
-        raise SystemExit(f"Output is not a real PNG: {destination}")
+    if len(data) < 64 or data[:8] != bytes((137, 80, 78, 71, 13, 10, 26, 10)):
+        raise SystemExit(f"Output is not a valid PNG: {destination}")
     converted.append((source, destination))
 
-# Update every textual reference to assets inside this icon tree, not unrelated
-# project artwork such as the Godot application icon.
-pattern = re.compile(r'((?:res://)?(?:[^"\\s<>]*?/)?assets/icons/[^"\\s<>]*?)\\.svg')
+# Migrate only references under assets/icons; leave unrelated project SVGs intact.
+pattern = re.compile(r'((?:res://)?[^"\\s<>]*assets/icons/[^"\\s<>]*?)\\.svg')
 updated_files = []
 for path in ROOT.rglob("*"):
     if not path.is_file() or path.suffix.lower() in {".svg", ".png", ".jpg", ".jpeg", ".webp", ".glb", ".gltf", ".zip", ".apk"}:

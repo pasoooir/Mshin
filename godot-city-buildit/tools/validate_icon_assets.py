@@ -8,6 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ICON_ROOT = ROOT / "assets" / "icons"
 errors = []
 required = set()
+if list(ICON_ROOT.rglob("*.svg")):
+    errors.append("SVG files are not allowed under assets/icons; convert every icon to PNG.")
 
 def require(category: str, icon_id: str) -> None:
     required.add((category, icon_id))
