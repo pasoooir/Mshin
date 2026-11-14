@@ -192,6 +192,42 @@ for contract in [
     if contract not in building_source_for_surfaces:
         errors.append(f"Building procedural PBR integration is missing: {contract}")
 
+asset_model_script_path = ROOT / "scripts/buildings/BuildingAssetModel.gd"
+if not asset_model_script_path.is_file():
+    errors.append("Dedicated commercial building model script is missing")
+else:
+    asset_model_script = asset_model_script_path.read_text(encoding="utf-8")
+    for contract in [
+        "class_name BuildingAssetModel",
+        "const SurfaceLibrary = preload(\"res://scripts/buildings/BuildingSurfaceLibrary.gd\")",
+        "func _build_traditional_restaurant() -> void:",
+        "func _build_fast_food() -> void:",
+        "func _build_hardware_store() -> void:",
+        "func _build_farmers_market() -> void:",
+        "func _build_furniture_store() -> void:",
+        'material.normal_texture = maps["normal"]',
+        'material.roughness_texture = maps["roughness"]',
+        'material.metallic_texture = maps["metallic"]',
+    ]:
+        if contract not in asset_model_script:
+            errors.append(f"Dedicated commercial model contract is missing: {contract}")
+
+model_loader_source = (ROOT / "scripts/buildings/BuildingModelLoader.gd").read_text(encoding="utf-8")
+if 'or extension == "tscn"' not in model_loader_source:
+    errors.append("Local authored building scenes must be accepted by BuildingModelLoader")
+
+commercial_asset_ids = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"]
+for asset_id in commercial_asset_ids:
+    scene_path = ROOT / "assets/models/commercial" / f"{asset_id}.tscn"
+    if not scene_path.is_file():
+        errors.append(f"Dedicated commercial model scene is missing: {scene_path.relative_to(ROOT)}")
+        continue
+    scene_source = scene_path.read_text(encoding="utf-8")
+    if f'asset_type = "{asset_id}"' not in scene_source:
+        errors.append(f"Dedicated commercial scene has the wrong asset type: {asset_id}")
+    if f'"{asset_id}": "res://assets/models/commercial/{asset_id}.tscn"' not in build_manager:
+        errors.append(f"Exact building model registry entry is missing: {asset_id}")
+
 for path in ROOT.rglob("*.gd"):
     source = path.read_text(encoding="utf-8")
     if source.rstrip().endswith(("extends Node3D", "extends Node", "mat = mate")):
