@@ -220,13 +220,14 @@ func calculate_home_happiness(home: Node3D) -> float:
 	if not BuildManager.has_road_access(home.grid_pos, size):
 		score -= 40.0
 
-	# Do not punish a brand-new city before the player has unlocked/placed utility
-	# infrastructure. Once a utility network exists, uncovered homes incur penalties.
-	if ServiceManager.total_power > 0 and not ServiceManager.power_served_ids.has(home.building_id):
+	# Match the service-warning system: once a utility is unlocked, every
+	# uncovered completed home is affected even when the city has zero
+	# operational capacity (for example, no provider or a disconnected provider).
+	if _service_group_is_unlocked("power") and not ServiceManager.power_served_ids.has(home.building_id):
 		score -= 25.0
 	elif ServiceManager.power_served_ids.has(home.building_id):
 		score += 15.0
-	if ServiceManager.total_water > 0 and not ServiceManager.water_served_ids.has(home.building_id):
+	if _service_group_is_unlocked("water") and not ServiceManager.water_served_ids.has(home.building_id):
 		score -= 20.0
 	elif ServiceManager.water_served_ids.has(home.building_id):
 		score += 15.0
@@ -269,9 +270,9 @@ func _capacity_for_home(home: Node3D) -> int:
 
 func _service_capacity_factor(home: Node3D) -> float:
 	var factor := 1.0
-	if ServiceManager.total_power > 0 and not ServiceManager.power_served_ids.has(home.building_id):
+	if _service_group_is_unlocked("power") and not ServiceManager.power_served_ids.has(home.building_id):
 		factor *= 0.65
-	if ServiceManager.total_water > 0 and not ServiceManager.water_served_ids.has(home.building_id):
+	if _service_group_is_unlocked("water") and not ServiceManager.water_served_ids.has(home.building_id):
 		factor *= 0.70
 	return factor
 
