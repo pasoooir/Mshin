@@ -249,7 +249,7 @@ func _build_coastal_highway() -> void:
 	var shoulder_mesh := BoxMesh.new()
 	shoulder_mesh.size = Vector3(HIGHWAY_SHOULDER_WIDTH, 0.08, HIGHWAY_LENGTH)
 	shoulder.mesh = shoulder_mesh
-	shoulder.position = Vector3(HIGHWAY_CENTER_X, 0.015, 0.0)
+	shoulder.position = Vector3(HIGHWAY_CENTER_X, 0.11, 0.0)
 	var shoulder_material := StandardMaterial3D.new()
 	shoulder_material.albedo_color = Color("#777D79")
 	shoulder_material.roughness = 1.0
