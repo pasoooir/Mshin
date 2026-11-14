@@ -1440,7 +1440,7 @@ func _add_box_rotated(size: Vector3, pos: Vector3, color: Color, rotation: Vecto
 	mesh_instance.rotation = rotation
 	mesh_root.add_child(mesh_instance)
 
-func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: Vector3, color: Color, surface_hint: String = "metal") -> void:
+func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: Vector3, color: Color, surface_hint: String = "") -> void:
 	var mesh_instance := MeshInstance3D.new()
 	var cylinder := CylinderMesh.new()
 	cylinder.top_radius = top_radius
