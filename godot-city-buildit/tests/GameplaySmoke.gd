@@ -702,7 +702,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	var highway_vehicle := TrafficManager.spawn_highway_vehicle_now()
 	_check(is_instance_valid(highway_vehicle) and highway_vehicle.vehicle_kind == "highway", "The visible external six-lane motorway must spawn its own traffic fleet.")
 	if is_instance_valid(highway_vehicle):
-		_check(highway_vehicle.route_key.begins_with("coastal-highway-"), "Motorway vehicles must use the separate external highway route, not the city road graph.")
+		_check(highway_vehicle.route_key.begins_with("coastal-highway-"), "Motorway vehicles must start on the external motorway and follow a connected route through the city Gateway.")
 		_check(is_equal_approx(highway_vehicle.lane_offset, TrafficManager.LANE_CENTER_OFFSET), "Motorway vehicles must transition onto the city's legal right-hand lane geometry at the Gateway.")
 		_check(highway_vehicle.route.has(road_system.GATEWAY_ROAD_CELL), "Motorway vehicle routes must enter the city through the permanent Gateway.")
 		_check(highway_vehicle.route.any(func(cell): return cell.x > TrafficManager.HIGHWAY_GRID_X), "Motorway vehicle routes must continue beyond the highway boundary into the city road network.")
