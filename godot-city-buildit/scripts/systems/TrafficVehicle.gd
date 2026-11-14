@@ -21,6 +21,8 @@ var _segment_progress: float = 0.0
 var _started: bool = false
 var _initial_leg_complete: bool = false
 var _last_segment_direction: Vector2i = Vector2i.ZERO
+var _traffic_stop_elapsed: float = 0.0
+var congestion_release_active: bool = false
 
 func _ready() -> void:
 	_build_vehicle_mesh()
@@ -68,7 +70,15 @@ func _process(delta: float) -> void:
 	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
 	var safe_speed := TrafficManager.get_safe_vehicle_speed(self, desired_speed)
 	if safe_speed <= 0.001:
-		return
+		_traffic_stop_elapsed += delta
+		if _traffic_stop_elapsed >= TrafficManager.MAX_TRAFFIC_STOP_SECONDS:
+			congestion_release_active = true
+			safe_speed = TrafficManager.get_safe_vehicle_speed(self, desired_speed)
+		if safe_speed <= 0.001:
+			return
+	else:
+		_traffic_stop_elapsed = 0.0
+		congestion_release_active = false
 	var movement := safe_speed * delta
 	var remaining := segment_length * (1.0 - _segment_progress)
 	var step := minf(movement, remaining)
@@ -86,7 +96,7 @@ func _process(delta: float) -> void:
 		_segment_progress = 0.0
 
 func _cell_center(cell: Vector2i) -> Vector3:
-	var world_x := TrafficManager.HIGHWAY_WORLD_X if vehicle_kind == "highway" else float(cell.x) * 2.0 + 1.0
+	var world_x := float(cell.x) * 2.0 + 1.0
 	return Vector3(world_x, ground_height, float(cell.y) * 2.0 + 1.0)
 
 func _lane_position(cell: Vector2i, travel_direction: Vector2i) -> Vector3:

@@ -25,6 +25,8 @@ const MAX_PUBLIC_VEHICLES: int = 18
 const MAX_EMERGENCY_VEHICLES: int = 8
 const MIN_FOLLOWING_GAP: float = 2.25
 const SAFE_FOLLOWING_GAP: float = 5.5
+const MAX_TRAFFIC_STOP_SECONDS: float = 4.0
+const CONGESTION_CRAWL_SPEED: float = 1.0
 const LANE_CENTER_OFFSET: float = 0.32
 const CARDINAL_DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1),
@@ -110,7 +112,7 @@ func get_speed_multiplier_for_cell(_cell: Vector2i, vehicle_kind: String = "civi
 	return HIGHWAY_SPEED_MULTIPLIER if vehicle_kind == "highway" else CITY_SPEED_MULTIPLIER
 
 func get_speed_for_segment(from_cell: Vector2i, to_cell: Vector2i, vehicle_kind: String = "civilian") -> float:
-	if vehicle_kind == "highway" and from_cell.x == HIGHWAY_GRID_X and to_cell.x == HIGHWAY_GRID_X:
+	if vehicle_kind == "highway" and (from_cell.x == HIGHWAY_GRID_X or to_cell.x == HIGHWAY_GRID_X):
 		return VEHICLE_BASE_SPEED * HIGHWAY_SPEED_MULTIPLIER
 	return VEHICLE_BASE_SPEED * CITY_SPEED_MULTIPLIER
 
@@ -127,7 +129,7 @@ func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> fl
 		if gap > 0.0 and gap < nearest_gap:
 			nearest_gap = gap
 	if nearest_gap <= MIN_FOLLOWING_GAP:
-		return 0.0
+		return CONGESTION_CRAWL_SPEED if vehicle.congestion_release_active else 0.0
 	if nearest_gap < SAFE_FOLLOWING_GAP:
 		return desired_speed * clampf((nearest_gap - MIN_FOLLOWING_GAP) / (SAFE_FOLLOWING_GAP - MIN_FOLLOWING_GAP), 0.0, 1.0)
 	# Also protect junctions and intersecting routes from overlapping vehicle bodies.
@@ -284,6 +286,33 @@ func build_highway_route(northbound: bool) -> Array[Vector2i]:
 		route.append(Vector2i(HIGHWAY_GRID_X, z))
 	return route
 
+func build_highway_city_round_trip_route(northbound: bool) -> Array[Vector2i]:
+	var road_system = _get_road_system()
+	if not road_system:
+		return []
+	var city_route := build_gateway_round_trip_route()
+	if city_route.size() < 2:
+		return []
+	var entry_z: int = -1
+	# _get_road_system() is dynamically typed; explicitly type the constant
+	# before using it in Vector2i arithmetic and range bounds.
+	var gateway: Vector2i = Vector2i(road_system.GATEWAY_ROAD_CELL)
+	var route: Array[Vector2i] = []
+	var outer_z := HIGHWAY_MAX_GRID_Z if northbound else HIGHWAY_MIN_GRID_Z
+	var step := -1 if northbound else 1
+	for z in range(outer_z, entry_z + step, step):
+		route.append(Vector2i(HIGHWAY_GRID_X, z))
+	for x in range(HIGHWAY_GRID_X + 1, gateway.x + 1):
+		route.append(Vector2i(x, entry_z))
+	for index in range(1, city_route.size()):
+		route.append(city_route[index])
+	for x in range(gateway.x - 1, HIGHWAY_GRID_X - 1, -1):
+		route.append(Vector2i(x, entry_z))
+	var return_step := 1 if northbound else -1
+	for z in range(entry_z + return_step, outer_z + return_step, return_step):
+		route.append(Vector2i(HIGHWAY_GRID_X, z))
+	return route
+
 func spawn_highway_vehicle_now() -> TrafficVehicle:
 	if _active_highway_vehicle_count() >= MAX_HIGHWAY_VEHICLES:
 		return null
@@ -292,7 +321,7 @@ func spawn_highway_vehicle_now() -> TrafficVehicle:
 		return null
 	var northbound := posmod(_highway_direction_cursor, 2) == 0
 	_highway_direction_cursor += 1
-	var route := build_highway_route(northbound)
+	var route := build_highway_city_round_trip_route(northbound)
 	if route.size() < 2:
 		return null
 	var vehicle := TrafficVehicle.new()
@@ -300,9 +329,9 @@ func spawn_highway_vehicle_now() -> TrafficVehicle:
 	vehicle.vehicle_kind = "highway"
 	vehicle.ground_height = 0.15
 	vehicle.speed = VEHICLE_BASE_SPEED
-	vehicle.route_key = "coastal-highway-northbound" if northbound else "coastal-highway-southbound"
+	vehicle.route_key = "coastal-highway-city-northbound" if northbound else "coastal-highway-city-southbound"
 	vehicle.lane_index = _highway_lane_cursor % HIGHWAY_LANE_OFFSETS.size()
-	vehicle.lane_offset = HIGHWAY_LANE_OFFSETS[vehicle.lane_index]
+	vehicle.lane_offset = LANE_CENTER_OFFSET
 	_highway_lane_cursor += 1
 	vehicle.route_completed.connect(_on_vehicle_route_completed)
 	world.add_child(vehicle)
