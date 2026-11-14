@@ -1792,8 +1792,8 @@ func _test_power_water_gateway_access() -> void:
 	industrial_consumer.building_type = "factory_small"
 	industrial_consumer.definition = BuildManager.building_types["factory_small"]
 	industrial_consumer.status = "completed"
-	industrial_consumer.grid_pos = Vector2i(2, 1)
-	industrial_consumer.global_position = Vector3(2.0, 0.0, 0.0)
+	industrial_consumer.grid_pos = Vector2i(1, 1)
+	industrial_consumer.global_position = Vector3.ZERO
 	BuildManager.buildings[industrial_consumer.building_id] = industrial_consumer
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.demand_power >= 4 and ServiceManager.demand_water >= 3, "City utility demand must include household, commercial and industrial production consumers.")
