@@ -22,6 +22,16 @@ func _register_expansion_items() -> void:
 	StorageManager.register_item_definition("dozer_blade", "Dozer Blade", "special")
 	StorageManager.register_item_definition("dozer_exhaust", "Dozer Exhaust", "special")
 
+func get_expansion_item_definition(item_id: String) -> Dictionary:
+	var names := {
+		"dozer_wheel": "Dozer Wheel",
+		"dozer_blade": "Dozer Blade",
+		"dozer_exhaust": "Dozer Exhaust"
+	}
+	if not names.has(item_id):
+		return {}
+	return {"id": item_id, "name": str(names[item_id]), "value": 800, "level": MIN_EXPANSION_LEVEL, "time_sec": 0, "type": "special"}
+
 func _tile_key(tile: Vector2i) -> String:
 	return "%d:%d" % [tile.x, tile.y]
 
