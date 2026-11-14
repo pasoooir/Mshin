@@ -293,9 +293,10 @@ func build_highway_city_round_trip_route(northbound: bool) -> Array[Vector2i]:
 	var city_route := build_gateway_round_trip_route()
 	if city_route.size() < 2:
 		return []
-	var entry_z := -1
-	var highway_entry := Vector2i(HIGHWAY_GRID_X, entry_z)
-	var gateway := road_system.GATEWAY_ROAD_CELL
+	var entry_z: int = -1
+	# _get_road_system() is dynamically typed; explicitly type the constant
+	# before using it in Vector2i arithmetic and range bounds.
+	var gateway: Vector2i = Vector2i(road_system.GATEWAY_ROAD_CELL)
 	var route: Array[Vector2i] = []
 	var outer_z := HIGHWAY_MAX_GRID_Z if northbound else HIGHWAY_MIN_GRID_Z
 	var step := -1 if northbound else 1
