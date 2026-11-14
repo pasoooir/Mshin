@@ -15,9 +15,6 @@ var raw_materials := {
 	"sugar_spices": {"name":"Sugar and Spices", "time":14400.0, "time_sec":14400, "value":110, "level":17, "source":"Fandom"},
 	"glass": {"name":"Glass", "time":18000.0, "time_sec":18000, "value":120, "level":19, "source":"Fandom"},
 	"animal_feed": {"name":"Animal Feed", "time":21600.0, "time_sec":21600, "value":140, "level":23, "source":"Fandom"},
-	"dozer_wheel": {"name":"Dozer Wheel", "time":0.0, "time_sec":0, "value":800, "level":10, "source":"SimCity BuildIt Expansion Item"},
-	"dozer_blade": {"name":"Dozer Blade", "time":0.0, "time_sec":0, "value":800, "level":10, "source":"SimCity BuildIt Expansion Item"},
-	"dozer_exhaust": {"name":"Dozer Exhaust", "time":0.0, "time_sec":0, "value":800, "level":10, "source":"SimCity BuildIt Expansion Item"},
 	"electrical": {"name":"Electrical Components", "time":25200.0, "time_sec":25200, "value":160, "level":29, "source":"Fandom"},
 	"coconut": {"name":"Coconut", "time":7200.0, "time_sec":7200, "value":80, "level":25, "source":"Mshin Regional"},
 	"snowberry": {"name":"Snowberry", "time":10800.0, "time_sec":10800, "value":95, "level":30, "source":"Mshin Regional"},
@@ -293,6 +290,8 @@ func get_default_recipe_for_building(building_type: String) -> String:
 	return ""
 
 func get_item_definition(item_id: String) -> Dictionary:
+	if LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id):
+		return LandExpansionManager.get_expansion_item_definition(item_id)
 	if raw_materials.has(item_id):
 		return raw_materials[item_id].duplicate(true)
 	if crafted_items.has(item_id):
@@ -478,6 +477,8 @@ func get_missing_inputs_text(item_id: String) -> String:
 	return ", ".join(missing)
 
 func get_item_value(item_id: String) -> int:
+	if LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id):
+		return 800
 	if raw_materials.has(item_id): return int(raw_materials[item_id].value)
 	if crafted_items.has(item_id): return int(crafted_items[item_id].value)
 	var definition := get_item_definition(item_id)
