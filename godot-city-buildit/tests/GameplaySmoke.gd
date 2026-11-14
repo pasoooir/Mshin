@@ -3344,6 +3344,8 @@ func _run_gameplay_test() -> void:
 	_check(market_item_ids.has("dozer_wheel") and market_item_ids.has("dozer_blade") and market_item_ids.has("dozer_exhaust"), "Global Trade must surface all three land expansion parts after Mayor Level 10.")
 	_check(not ProductionManager.get_available_raw().has("dozer_wheel") and not ProductionManager.get_available_raw().has("dozer_blade") and not ProductionManager.get_available_raw().has("dozer_exhaust"), "Land expansion special items must not appear as factory-manufacturable raw materials.")
 	TradeManager.market_offers = saved_market_offers
+	var saved_region_snapshot_with_land: Dictionary = SaveManager.capture_region_snapshot()
+	_check(saved_region_snapshot_with_land.get("land_expansion", {}).get("owned_tiles", []).size() > previous_land_state.get("owned_tiles", []).size(), "The real region save snapshot must include newly claimed land ownership.")
 	var saved_expansion_state: Dictionary = LandExpansionManager.to_save_dict()
 	LandExpansionManager.from_save_dict(saved_expansion_state)
 	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 24)), "Claimed land must survive LandExpansionManager save/load serialization.")
