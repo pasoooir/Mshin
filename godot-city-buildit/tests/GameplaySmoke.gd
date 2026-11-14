@@ -1541,8 +1541,16 @@ func _test_building_model_loader_contract() -> void:
 	_check(str(BuildManager.building_types["residential_villa"].get("model_path", "")) == model_paths[0], "Villa definitions must select the local villa model.")
 	_check(str(BuildManager.building_types["residential_apartment"].get("model_path", "")) == model_paths[1], "Apartment definitions must select the local mid-rise model.")
 	_check(not str(BuildManager.building_types["residential_apartment"].get("model_path", "")).ends_with("residential_tower_75m.gltf"), "The 75m tower must remain unwired until a compatible large footprint is implemented.")
-	_check(str(BuildManager.building_types["hardware_store"].get("model_path", "")) == model_paths[2], "Generic commercial definitions must select the local shop model.")
-	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[3], "Industrial definitions must select the local factory model.")
+	_check(str(BuildManager.building_types["shop_chain"].get("model_path", "")) == model_paths[2], "The chain-store archetype must select the local neighborhood shop model.")
+	_check(not BuildManager.building_types["hardware_store"].has("model_path"), "Hardware Store must keep its trade-specific procedural architecture instead of a generic shop GLTF.")
+	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[3], "The small-factory archetype must select the local factory model.")
+	_check(not BuildManager.building_types["factory_basic"].has("model_path") and not BuildManager.building_types["factory_mass"].has("model_path") and not BuildManager.building_types["factory_hightech"].has("model_path") and not BuildManager.building_types["factory_nano"].has("model_path"), "Larger factory tiers must retain their distinct procedural facilities instead of sharing the small-factory GLTF.")
+	for commercial_id in ["restaurant_traditional", "fast_food", "art_supplies", "hardware_store", "farmers_market", "furniture_store", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]:
+		_check(not BuildManager.building_types[commercial_id].has("model_path"), "Commercial type %s must not inherit a category-wide generic GLTF." % commercial_id)
+	for type_id in BuildManager.BUILDING_MODEL_REGISTRY:
+		_check(BuildManager.building_types.has(type_id), "Explicit model registry must reference a known building type: " + type_id)
+		if BuildManager.building_types.has(type_id):
+			_check(str(BuildManager.building_types[type_id].get("model_path", "")) == str(BuildManager.BUILDING_MODEL_REGISTRY[type_id]), "Runtime model assignment must match the exact-type registry: " + type_id)
 	_check(not BuildManager.building_types["building_supplies"].has("model_path"), "Building Supplies must retain its bespoke showcase visual.")
 	_check(not BuildManager.building_types["art_supplies"].has("model_path"), "Art Supplies must retain its bespoke gallery visual.")
 	var villa_visual_probe := Building.new()

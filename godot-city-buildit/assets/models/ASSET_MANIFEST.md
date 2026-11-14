@@ -4,17 +4,17 @@ All five GLTF files in this directory are original procedural architectural mesh
 
 | Model | Runtime path | Declared dimensions (m) | Use |
 |---|---|---:|---|
-| Villa house | `residential/villa_house.gltf` | 3.715 × 4.205 × 5.91 | Residential villa and legacy small house |
-| Apartment mid-rise | `residential/apartment_tower.gltf` | 3.5 × 4.15 × 18.175 | Current residential apartment visual |
+| Villa house | `residential/villa_house.gltf` | 3.715 × 4.205 × 5.91 | `residential_villa` and legacy `residential_1` only; level-one starter hero remains procedural |
+| Apartment mid-rise | `residential/apartment_tower.gltf` | 3.5 × 4.15 × 18.175 | `residential_apartment` and legacy `residential_2` only |
 | Residential tower | `residential/residential_tower_75m.gltf` | 3.5 × 4.15 × 74.575 | Prepared asset; not assigned until large building footprints are supported |
-| Neighborhood shop | `commercial/neighborhood_shop.gltf` | 3.5 × 4.04 × 5.2 | Generic commercial building visual |
-| Small factory | `industrial/small_factory.gltf` | 3.5 × 3.53 × 7.68 | Generic industrial building visual |
+| Neighborhood shop | `commercial/neighborhood_shop.gltf` | 3.5 × 4.04 × 5.2 | `shop_chain` archetype only; other shops keep their own type-specific procedural architecture |
+| Small factory | `industrial/small_factory.gltf` | 3.5 × 3.53 × 7.68 | `factory_small` and legacy `industrial_1` only; larger factory tiers keep distinct procedural facilities |
 
 Materials use glTF 2.0 metallic-roughness PBR factors plus embedded procedural PNG texture maps for Base Color, tangent-space Normal and Metallic-Roughness. The texture maps are generated patterns, not photographic scans or high-resolution photogrammetry textures. Their geometry includes facade openings/frames, glass, entry features, roof structures, balconies, signage, loading door and industrial equipment details as appropriate.
 
 ## Validation
 
-The Godot GameplaySmoke test loads each local model through `BuildingModelLoader`, instantiates the imported PackedScene, and checks that it contains MeshInstance3D nodes. CI Import/Parse also validates Godot's glTF importer. These checks do not claim a real-device visual/performance review.
+`BuildManager.BUILDING_MODEL_REGISTRY` assigns each available GLTF to exact building type IDs; it does not infer a model from a broad category. The Godot GameplaySmoke test loads each local model through `BuildingModelLoader`, instantiates the imported PackedScene, checks renderable MeshInstance3D surfaces, and verifies that unrelated commercial/factory types do not inherit generic GLTF paths. CI Import/Parse also validates Godot's glTF importer. These checks do not claim a real-device visual/performance review.
 
 ## License
 

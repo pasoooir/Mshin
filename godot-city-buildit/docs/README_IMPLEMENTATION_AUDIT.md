@@ -24,11 +24,13 @@
 
 ## شواهد فنی
 
-### مدل‌های سه‌بعدی محلی
+### مدل‌های سه‌بعدی محلی و تخصیص مدل بر اساس نوع دقیق
 - `scripts/buildings/BuildingModelLoader.gd`: مسیر مدل را به `res://assets/models/` محدود می‌کند، فقط GLB/GLTF را می‌پذیرد، مسیرهای traversal/URL خارجی را رد می‌کند و PackedScene محلی را بارگذاری می‌کند.
-- `scripts/buildings/Building.gd::_create_visual`: اگر تعریف ساختمان `model_path` معتبر و قابل بارگذاری داشته باشد، مدل وارد `MeshRoot` می‌شود؛ در نبود یا شکست بارگذاری، ساخت رویه‌ای فعلی حفظ می‌شود.
-- `tests/GameplaySmoke.gd::_test_building_model_loader_contract`: پسوند، مسیر مجاز، traversal، URL خارجی و رفتار فایل غایب را بررسی می‌کند.
-- محدودیت مهم: در این commit هنوز فایل GLB/GLTF واقعی در Repository وجود ندارد؛ بنابراین کیفیت مدل معماری یا تطابق آن با BuildIt تأیید نشده است.
+- `BuildManager.BUILDING_MODEL_REGISTRY`: مسیرهای GLTF را با کلید exact type ID تعیین می‌کند؛ مدل محله‌ای فروشگاه فقط به `shop_chain` و مدل کارخانه کوچک فقط به `factory_small` و شناسه legacy متناظر وصل است. تخصیص category-wide حذف شده است.
+- مدل‌های مسکونی فقط به archetype ویلا/آپارتمان مربوط متصل‌اند؛ خانه شروع سطح ۱، فروشگاه‌های showcase، سایر فروشگاه‌ها و Tierهای بزرگ کارخانه هندسه رویه‌ای اختصاصی خود را حفظ می‌کنند.
+- `scripts/buildings/Building.gd::_create_visual`: مدل محلی را به `MeshRoot` متصل می‌کند؛ در نبود/شکست بارگذاری، مسیر رویه‌ای حفظ می‌شود.
+- `tests/GameplaySmoke.gd::_test_building_model_loader_contract`: بارگذاری و instantiate پنج GLTF، وجود MeshInstance3D و surface، تطبیق registry و عدم ارث‌بری مدل عمومی توسط انواع تجاری/کارخانه‌ای دیگر را بررسی می‌کند.
+- محدودیت: ماتریس کامل assetها هنوز اجرا نشده است؛ بیشتر انواع ساختمان هنوز GLB/GLTF اختصاصی ندارند و کیفیت نهایی روی دستگاه واقعی تأیید نشده است.
 
 ### HUD، کنترل و ظاهر
 - `godot-city-buildit/scripts/ui/HUD.gd::_build_top_hud`: HUD سطح، جمعیت، رضایت، XP، انبار و ارزها.

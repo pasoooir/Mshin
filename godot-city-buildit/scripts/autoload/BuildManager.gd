@@ -9,6 +9,17 @@ signal placement_mode_changed(active: bool)
 const GRID_SIZE: float = 2.0
 const WORLD_HALF_CELLS: int = 40
 const BuildingScene = preload("res://scenes/buildings/Building.tscn")
+const BUILDING_MODEL_REGISTRY := {
+	# Each entry is keyed by an exact gameplay type ID. A category-wide model
+	# silently made unrelated shops/factories look like the same building.
+	"residential_1": "res://assets/models/residential/villa_house.gltf",
+	"residential_villa": "res://assets/models/residential/villa_house.gltf",
+	"residential_2": "res://assets/models/residential/apartment_tower.gltf",
+	"residential_apartment": "res://assets/models/residential/apartment_tower.gltf",
+	"shop_chain": "res://assets/models/commercial/neighborhood_shop.gltf",
+	"factory_small": "res://assets/models/industrial/small_factory.gltf",
+	"industrial_1": "res://assets/models/industrial/small_factory.gltf"
+}
 
 var buildings: Dictionary = {}
 # Every occupied grid cell points directly to its building for O(1) interaction and placement checks.
@@ -109,32 +120,19 @@ const MOVABLE_BUILDING_TYPES := [
 ]
 
 func _ready() -> void:
-	# Local, offline GLTF visuals are selected by building category. The gameplay
-	# definitions remain authoritative; these paths only replace the visual mesh.
-	for type_id in building_types.keys():
+	# Local GLTF assignment is deliberately exact-type, never category-wide.
+	# Unmapped entries keep their own procedural identity geometry until a
+	# matching dedicated model is produced and validated.
+	for type_id in BUILDING_MODEL_REGISTRY:
+		if not building_types.has(type_id):
+			push_error("[BuildManager] Model registry references unknown building type: %s" % type_id)
+			continue
 		var definition: Dictionary = building_types[type_id]
 		if definition.has("model_path"):
 			continue
-		# Preserve hand-authored hero visuals for the starter villa and showcase shops.
-		if type_id == "building_supplies" or type_id == "art_supplies":
-			continue
-		var model_path := ""
-		match str(definition.get("category", "")):
-			"residential":
-				if str(definition.get("subtype", "")) == "farm":
-					continue
-				if str(definition.get("subtype", "")) == "apartment" or type_id == "residential_2":
-					model_path = "res://assets/models/residential/apartment_tower.gltf"
-				else:
-					model_path = "res://assets/models/residential/villa_house.gltf"
-			"commercial":
-				model_path = "res://assets/models/commercial/neighborhood_shop.gltf"
-			"industrial":
-				model_path = "res://assets/models/industrial/small_factory.gltf"
-		if not model_path.is_empty():
-			definition["model_path"] = model_path
-			definition["model_scale"] = Vector3.ONE
-			building_types[type_id] = definition
+		definition["model_path"] = str(BUILDING_MODEL_REGISTRY[type_id])
+		definition["model_scale"] = Vector3.ONE
+		building_types[type_id] = definition
 	print("[BuildManager] Ready: %d building types" % building_types.size())
 
 func get_region_build_lock_reason(type_id: String) -> String:

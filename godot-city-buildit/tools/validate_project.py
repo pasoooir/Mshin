@@ -608,6 +608,24 @@ for visual_contract in [
     if visual_contract not in building_source:
         errors.append(f"Building Supplies visual contract is missing: {visual_contract}")
 
+# GLTF assignment must be explicit per building type, never inferred from category.
+for registry_contract in [
+    "const BUILDING_MODEL_REGISTRY :=",
+    '"residential_villa": "res://assets/models/residential/villa_house.gltf"',
+    '"residential_apartment": "res://assets/models/residential/apartment_tower.gltf"',
+    '"shop_chain": "res://assets/models/commercial/neighborhood_shop.gltf"',
+    '"factory_small": "res://assets/models/industrial/small_factory.gltf"',
+    "for type_id in BUILDING_MODEL_REGISTRY:",
+]:
+    if registry_contract not in build_manager:
+        errors.append(f"Exact-type building model registry contract is missing: {registry_contract}")
+for forbidden_category_assignment in [
+    'model_path = "res://assets/models/commercial/neighborhood_shop.gltf"\n\t\t\t"industrial":',
+    'model_path = "res://assets/models/industrial/small_factory.gltf"\n\t\tif not model_path.is_empty():',
+]:
+    if forbidden_category_assignment in build_manager:
+        errors.append("Category-wide GLTF assignment must not overwrite trade-specific building architecture")
+
 # Level-one villa visual contract: saturated separated colours and warm emissive windows.
 for visual_contract in [
     'if upgrade_stage == 1 and residential_subtype == "villa":',
