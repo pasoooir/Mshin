@@ -33,6 +33,8 @@ const JUNCTION_MIN_GREEN_SECONDS: float = 2.0
 const JUNCTION_MAX_GREEN_SECONDS: float = 7.0
 const JUNCTION_RIGHT_OF_WAY_MAX_WAIT_SECONDS: float = 8.0
 const LANE_CENTER_OFFSET: float = 0.32
+const JUNCTION_EXIT_CLEARANCE_CELLS: int = 2
+const JUNCTION_MOVEMENT_CURVE_SAMPLES: int = 8
 const CARDINAL_DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1),
 	Vector2i(1, 0),
@@ -225,13 +227,21 @@ func _update_junction_controllers(delta: float) -> void:
 			_junction_signal_states.erase(junction_cell)
 
 func _movement_segment(from_cell: Vector2i, junction_cell: Vector2i, to_cell: Vector2i) -> Array[Vector2]:
+	# Approximate the swept centre-line of a vehicle using a sampled quadratic
+	# Bezier curve. A single straight chord misses the wider swept path of turns.
 	var incoming := junction_cell - from_cell
 	var outgoing := to_cell - junction_cell
 	var incoming_right := Vector2(-float(incoming.y), float(incoming.x)).normalized()
 	var outgoing_right := Vector2(-float(outgoing.y), float(outgoing.x)).normalized()
 	var start := -Vector2(float(incoming.x), float(incoming.y)) * 1.8 + incoming_right * LANE_CENTER_OFFSET
 	var finish := Vector2(float(outgoing.x), float(outgoing.y)) * 1.8 + outgoing_right * LANE_CENTER_OFFSET
-	return [start, finish]
+	var control := Vector2.ZERO
+	var points: Array[Vector2] = []
+	for sample_index in range(JUNCTION_MOVEMENT_CURVE_SAMPLES + 1):
+		var t := float(sample_index) / float(JUNCTION_MOVEMENT_CURVE_SAMPLES)
+		var inverse_t := 1.0 - t
+		points.append(inverse_t * inverse_t * start + 2.0 * inverse_t * t * control + t * t * finish)
+	return points
 
 func _cross_2d(a: Vector2, b: Vector2) -> float:
 	return a.x * b.y - a.y * b.x
@@ -252,21 +262,41 @@ func _junction_movements_conflict(from_a: Vector2i, to_a: Vector2i, from_b: Vect
 		return true
 	var path_a := _movement_segment(from_a, junction_cell, to_a)
 	var path_b := _movement_segment(from_b, junction_cell, to_b)
-	return _segments_intersect(path_a[0], path_a[1], path_b[0], path_b[1])
+	for index_a in range(path_a.size() - 1):
+		for index_b in range(path_b.size() - 1):
+			if _segments_intersect(path_a[index_a], path_a[index_a + 1], path_b[index_b], path_b[index_b + 1]):
+				return true
+	return false
 
 func _is_junction_exit_clear(vehicle: TrafficVehicle, junction_cell: Vector2i, exit_cell: Vector2i) -> bool:
 	var road_system = _get_road_system()
-	if not road_system or _blocked_road_cells.has(exit_cell) or not road_system.get_gateway_connected_roads().has(exit_cell):
+	if not road_system or vehicle.route.is_empty():
+		return false
+	var segment_index := clampi(vehicle._segment_index, 0, vehicle.route.size() - 1)
+	if segment_index + 2 >= vehicle.route.size() or vehicle.route[segment_index + 2] != exit_cell:
+		return false
+	var connected_roads: Dictionary = road_system.get_gateway_connected_roads()
+	var clearance_cells: Array[Vector2i] = []
+	for offset in range(JUNCTION_EXIT_CLEARANCE_CELLS):
+		var route_index := segment_index + 2 + offset
+		if route_index >= vehicle.route.size():
+			break
+		var cell: Vector2i = vehicle.route[route_index]
+		if _blocked_road_cells.has(cell) or not connected_roads.has(cell):
+			return false
+		clearance_cells.append(cell)
+	if clearance_cells.is_empty():
 		return false
 	for other in _active_vehicles:
 		if not is_instance_valid(other) or other == vehicle or other.route.is_empty():
 			continue
 		var other_index := clampi(other._segment_index, 0, other.route.size() - 1)
 		var occupied_cell: Vector2i = other.route[other_index]
-		if occupied_cell == exit_cell:
-			return false
-		if other_index + 1 < other.route.size() and other.route[other_index + 1] == exit_cell:
-			return false
+		for clearance_cell in clearance_cells:
+			if occupied_cell == clearance_cell:
+				return false
+			if other_index + 1 < other.route.size() and other.route[other_index + 1] == clearance_cell:
+				return false
 	return true
 
 func _approach_has_right_of_way(approach: Vector2i, counts: Dictionary) -> bool:
@@ -498,7 +528,7 @@ func _build_round_trip_route_from(start: Vector2i) -> Array[Vector2i]:
 	if not road_system:
 		return []
 	var connected_roads: Dictionary = road_system.get_gateway_connected_roads()
-	if not connected_roads.has(start):
+	if not connected_roads.has(start) or _blocked_road_cells.has(start):
 		return []
 	var queue: Array[Vector2i] = [start]
 	var hop_distances: Dictionary = {start: 0}
@@ -516,7 +546,7 @@ func _build_round_trip_route_from(start: Vector2i) -> Array[Vector2i]:
 			farthest_cells.append(current)
 		for direction in CARDINAL_DIRECTIONS:
 			var neighbour: Vector2i = current + direction
-			if connected_roads.has(neighbour) and not hop_distances.has(neighbour):
+			if connected_roads.has(neighbour) and not _blocked_road_cells.has(neighbour) and not hop_distances.has(neighbour):
 				hop_distances[neighbour] = current_hops + 1
 				queue.append(neighbour)
 	if farthest_cells.is_empty():
