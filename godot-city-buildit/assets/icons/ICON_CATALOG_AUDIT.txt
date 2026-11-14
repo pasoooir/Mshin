@@ -1,0 +1,322 @@
+ممیزی کاربرد و ارجاع آیکون‌ها — Pasoo City BuildIt
+مخزن: pasoooir/Mshin | شاخه بررسی‌شده: main
+مسیر: godot-city-buildit/assets/icons/
+تعداد فایل‌های تصویری موجود در زمان ممیزی: 264
+
+روش بررسی و معنی وضعیت‌ها
+- مسیر و نام تمام فایل‌ها از درخت Git شاخه main استخراج شده است؛ فهرست بر اساس فایل واقعی است، نه حدس از روی README.
+- مسیر بارگذاری در بازی از scripts/ui/Icons.gd تعیین می‌شود: res://assets/icons/{category}/{id}.png؛ آیکون‌های root از res://assets/icons/{id}.png بارگذاری می‌شوند.
+- آیکون‌های کالا و ساختمان از شناسه‌های کاتالوگ BuildManager.gd و ProductionManager.gd به‌صورت پویا به پنل‌ها/منوها می‌رسند؛ بنابراین نبودن نام فایل در فراخوانی مستقیم make_icon به معنی بلااستفاده بودن آن نیست.
+- برچسب «کاتالوگ/مسیر پویا» یعنی شناسه در کاتالوگ یا آرایه مسیریاب Icons.gd تعریف شده و مسیر بارگذاری‌اش مشخص است؛ برای هر حالت نمایشیِ ممکن، تست بصری تک‌تک پنل‌ها در این ممیزی اجرا نشده است.
+- برچسب «مشکوک/بدون ارجاع» یعنی فایل در پوشه وجود دارد اما نامش با شناسه/مسیر انتخاب‌شده توسط Icons.gd منطبق نیست یا شواهدی از بارگذاری runtime پیدا نشد.
+
+نکته مهم: وجود فایل یا پاس شدن validator به‌تنهایی اثبات نمی‌کند که تصویر در UI دیده می‌شود. Validator عمدتاً وجود و سلامت PNGهای موردنیاز را کنترل می‌کند؛ این سند بین اتصال کاتالوگی و استفاده مستقیم تمایز می‌گذارد.
+
+دسته‌بندی و فهرست فایل‌ها
+
+=== ROOT — آیکون‌های ریشه/نوار ابزار (15 فایل) ===
+Sheet1.png | دسته: root | مسیر برنامه: res://assets/icons/Sheet1.png | کاربرد: آیکون زمینه‌ای «Sheet1»؛ مورد مرتبط با دسته root در رابط شهرسازی | وضعیت: منبع/شیت؛ در مسیر runtime آیکون‌ها بارگذاری نمی‌شود
+Sheet2.png | دسته: root | مسیر برنامه: res://assets/icons/Sheet2.png | کاربرد: آیکون زمینه‌ای «Sheet2»؛ مورد مرتبط با دسته root در رابط شهرسازی | وضعیت: منبع/شیت؛ در مسیر runtime آیکون‌ها بارگذاری نمی‌شود
+Sheet3.png | دسته: root | مسیر برنامه: res://assets/icons/Sheet3.png | کاربرد: آیکون زمینه‌ای «Sheet3»؛ مورد مرتبط با دسته root در رابط شهرسازی | وضعیت: منبع/شیت؛ در مسیر runtime آیکون‌ها بارگذاری نمی‌شود
+bulldozer.png | دسته: root | مسیر برنامه: res://assets/icons/bulldozer.png | کاربرد: ابزار بولدوزر برای تخریب/پاک‌سازی ساختمان یا زمین | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+commercial.png | دسته: root | مسیر برنامه: res://assets/icons/commercial.png | کاربرد: دسته تجاری در نوار ساخت | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+fallback.png | دسته: root | مسیر برنامه: res://assets/icons/fallback.png | کاربرد: آیکون جایگزین عمومی | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+fire.png | دسته: root | مسیر برنامه: res://assets/icons/fire.png | کاربرد: خدمت آتش‌نشانی و پوشش حریق | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+hard_hat.png | دسته: root | مسیر برنامه: res://assets/icons/hard_hat.png | کاربرد: کلاه ایمنی؛ ساخت‌وساز/مشاور راهنما | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+industrial.png | دسته: root | مسیر برنامه: res://assets/icons/industrial.png | کاربرد: دسته صنعتی در نوار ساخت | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+park.png | دسته: root | مسیر برنامه: res://assets/icons/park.png | کاربرد: پارک و فضای سبز | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+parks.png | دسته: root | مسیر برنامه: res://assets/icons/parks.png | کاربرد: دسته پارک‌ها و فضای سبز | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+power.png | دسته: root | مسیر برنامه: res://assets/icons/power.png | کاربرد: برق و زیرساخت انرژی | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+residential.png | دسته: root | مسیر برنامه: res://assets/icons/residential.png | کاربرد: دسته ساختمان‌های مسکونی | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+road.png | دسته: root | مسیر برنامه: res://assets/icons/road.png | کاربرد: جاده و دسترسی شبکه‌ای | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+services.png | دسته: root | مسیر برنامه: res://assets/icons/services.png | کاربرد: دسته خدمات شهری | وضعیت: ارجاع‌شده از Icons.gd/نوار ابزار
+
+=== COMMERCIAL — ساختمان‌های تجاری و فروشگاه‌ها (18 فایل) ===
+art_supplies.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/art_supplies.png | کاربرد: ساختمان/فروشگاه تجاری «Art Supplies»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+building_supplies.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/building_supplies.png | کاربرد: ساختمان/فروشگاه تجاری «Building Supplies»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+dessert_shop.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/dessert_shop.png | کاربرد: ساختمان/فروشگاه تجاری «Dessert Shop»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+donut_shop.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/donut_shop.png | کاربرد: ساختمان/فروشگاه تجاری «Donut Shop»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+farmers_market.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/farmers_market.png | کاربرد: ساختمان/فروشگاه تجاری «Farmers Market»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+farmers_store.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/farmers_store.png | کاربرد: ساختمان/فروشگاه تجاری «Farmers Store»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+fashion_store.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/fashion_store.png | کاربرد: ساختمان/فروشگاه تجاری «Fashion Store»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+fast_food.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/fast_food.png | کاربرد: ساختمان/فروشگاه تجاری «Fast Food»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+furniture_store.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/furniture_store.png | کاربرد: ساختمان/فروشگاه تجاری «Furniture Store»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+gardening_supplies.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/gardening_supplies.png | کاربرد: ساختمان/فروشگاه تجاری «Gardening Supplies»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+hardware_store.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/hardware_store.png | کاربرد: ساختمان/فروشگاه تجاری «Hardware Store»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+home_appliances.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/home_appliances.png | کاربرد: ساختمان/فروشگاه تجاری «Home Appliances»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+rastaurant_traditional.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/rastaurant_traditional.png | کاربرد: ساختمان/فروشگاه تجاری «Rastaurant Traditional»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: مشکوک/بدون تطابق با مسیر runtime
+restaurant_traditional.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/restaurant_traditional.png | کاربرد: ساختمان/فروشگاه تجاری «Restaurant Traditional»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+restoration_office.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/restoration_office.png | کاربرد: ساختمان/فروشگاه تجاری «Restoration Office»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+shop_chain.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/shop_chain.png | کاربرد: ساختمان/فروشگاه تجاری «Shop Chain»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+sports_shop.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/sports_shop.png | کاربرد: ساختمان/فروشگاه تجاری «Sports Shop»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+toy_store.png | دسته: commercial | مسیر برنامه: res://assets/icons/commercial/toy_store.png | کاربرد: ساختمان/فروشگاه تجاری «Toy Store»؛ تصویر گزینه مربوط در فهرست ساخت یا پنل تجاری | وضعیت: کاتالوگ/مسیر پویا
+
+=== CRAFTED — کالاهای ساخته‌شده و محصولات قابل تولید/فروش (75 فایل) ===
+apple_jam.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/apple_jam.png | کاربرد: محصول «Apple Jam»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+backpack.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/backpack.png | کاربرد: محصول «Backpack»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+bbq_grill.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/bbq_grill.png | کاربرد: محصول «Bbq Grill»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+beef.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/beef.png | کاربرد: محصول «Beef»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+block_letters.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/block_letters.png | کاربرد: محصول «Block Letters»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+bread_roll.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/bread_roll.png | کاربرد: محصول «Bread Roll»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+bricks.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/bricks.png | کاربرد: محصول «Bricks»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+burger.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/burger.png | کاربرد: محصول «Burger»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+business_suit.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/business_suit.png | کاربرد: محصول «Business Suit»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cap.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cap.png | کاربرد: محصول «Cap»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+carved_wood.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/carved_wood.png | کاربرد: محصول «Carved Wood»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cement.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cement.png | کاربرد: محصول «Cement»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+chair.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/chair.png | کاربرد: محصول «Chair»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cheese.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cheese.png | کاربرد: محصول «Cheese»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cheese_fries.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cheese_fries.png | کاربرد: محصول «Cheese Fries»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cherry_cheesecake.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cherry_cheesecake.png | کاربرد: محصول «Cherry Cheesecake»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+churros.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/churros.png | کاربرد: محصول «Churros»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+coffee.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/coffee.png | کاربرد: محصول «Coffee»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cooking_utensils.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cooking_utensils.png | کاربرد: محصول «Cooking Utensils»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+corn.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/corn.png | کاربرد: محصول «Corn»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+couch.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/couch.png | کاربرد: محصول «Couch»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cream.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cream.png | کاربرد: محصول «Cream»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cupboard.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cupboard.png | کاربرد: محصول «Cupboard»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+cut_stone.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/cut_stone.png | کاربرد: محصول «Cut Stone»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+donuts.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/donuts.png | کاربرد: محصول «Donuts»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+drill.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/drill.png | کاربرد: محصول «Drill»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+fire_pit.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/fire_pit.png | کاربرد: محصول «Fire Pit»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+flour_bag.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/flour_bag.png | کاربرد: محصول «Flour Bag»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+forged_iron.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/forged_iron.png | کاربرد: محصول «Forged Iron»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+frozen_yogurt.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/frozen_yogurt.png | کاربرد: محصول «Frozen Yogurt»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+fruit_berries.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/fruit_berries.png | کاربرد: محصول «Fruit Berries»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+game_console.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/game_console.png | کاربرد: محصول «Game Console»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+garden_furniture.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/garden_furniture.png | کاربرد: محصول «Garden Furniture»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+garden_gnome.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/garden_gnome.png | کاربرد: محصول «Garden Gnome»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+glue.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/glue.png | کاربرد: محصول «Glue»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+grass.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/grass.png | کاربرد: محصول «Grass»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+green_smoothie.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/green_smoothie.png | کاربرد: محصول «Green Smoothie»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+hammer.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/hammer.png | کاربرد: محصول «Hammer»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+home_textiles.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/home_textiles.png | کاربرد: محصول «Home Textiles»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+ice_cream_sandwich.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/ice_cream_sandwich.png | کاربرد: محصول «Ice Cream Sandwich»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+kite.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/kite.png | کاربرد: محصول «Kite»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+ladder.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/ladder.png | کاربرد: محصول «Ladder»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+lawn_mower.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/lawn_mower.png | کاربرد: محصول «Lawn Mower»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+lemonade_bottle.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/lemonade_bottle.png | کاربرد: محصول «Lemonade Bottle»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+lighting_system.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/lighting_system.png | کاربرد: محصول «Lighting System»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+meassuring_tape.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/meassuring_tape.png | کاربرد: محصول «Meassuring Tape»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: مشکوک/بدون تطابق با مسیر runtime
+measuring_tape.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/measuring_tape.png | کاربرد: محصول «Measuring Tape»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+microwave_oven.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/microwave_oven.png | کاربرد: محصول «Microwave Oven»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+mochi.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/mochi.png | کاربرد: محصول «Mochi»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+nails.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/nails.png | کاربرد: محصول «Nails»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+paint.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/paint.png | کاربرد: محصول «Paint»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+pavlova.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/pavlova.png | کاربرد: محصول «Pavlova»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+picnic_basket.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/picnic_basket.png | کاربرد: محصول «Picnic Basket»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+ping_pong_table.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/ping_pong_table.png | کاربرد: محصول «Ping Pong Table»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+pizza.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/pizza.png | کاربرد: محصول «Pizza»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+planks.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/planks.png | کاربرد: محصول «Planks»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+popcorn.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/popcorn.png | کاربرد: محصول «Popcorn»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+profiterole.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/profiterole.png | کاربرد: محصول «Profiterole»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+protein_bar.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/protein_bar.png | کاربرد: محصول «Protein Bar»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+refrigerator.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/refrigerator.png | کاربرد: محصول «Refrigerator»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+shoes.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/shoes.png | کاربرد: محصول «Shoes»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+shovel.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/shovel.png | کاربرد: محصول «Shovel»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+soccer_shoes.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/soccer_shoes.png | کاربرد: محصول «Soccer Shoes»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+sports_drink.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/sports_drink.png | کاربرد: محصول «Sports Drink»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+stained_glass.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/stained_glass.png | کاربرد: محصول «Stained Glass»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+table.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/table.png | کاربرد: محصول «Table»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+tapestries.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/tapestries.png | کاربرد: محصول «Tapestries»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+teddy_bear.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/teddy_bear.png | کاربرد: محصول «Teddy Bear»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+tennis_racket.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/tennis_racket.png | کاربرد: محصول «Tennis Racket»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+tiramisu.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/tiramisu.png | کاربرد: محصول «Tiramisu»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+tree_sapling.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/tree_sapling.png | کاربرد: محصول «Tree Sapling»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+tv.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/tv.png | کاربرد: محصول «Tv»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+vegetables.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/vegetables.png | کاربرد: محصول «Vegetables»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+watch.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/watch.png | کاربرد: محصول «Watch»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+wool_shirt.png | دسته: crafted | مسیر برنامه: res://assets/icons/crafted/wool_shirt.png | کاربرد: محصول «Wool Shirt»؛ تصویر کالا در صف تولید، انبار، نیازمندی‌ها یا پنل فروشگاه | وضعیت: کاتالوگ/مسیر پویا
+
+=== INDUSTRIAL — کارخانه‌ها و تأسیسات تولید مواد منطقه‌ای (13 فایل) ===
+cactus_farm.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/cactus_farm.png | کاربرد: کارخانه/تأسیسات «Cactus Farm»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+coconut_grove.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/coconut_grove.png | کاربرد: کارخانه/تأسیسات «Coconut Grove»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+factory_basic.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/factory_basic.png | کاربرد: کارخانه/تأسیسات «Factory Basic»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+factory_hightech.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/factory_hightech.png | کاربرد: کارخانه/تأسیسات «Factory Hightech»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+factory_mass.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/factory_mass.png | کاربرد: کارخانه/تأسیسات «Factory Mass»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+factory_nano.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/factory_nano.png | کاربرد: کارخانه/تأسیسات «Factory Nano»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+factory_small.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/factory_small.png | کاربرد: کارخانه/تأسیسات «Factory Small»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+herb_garden.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/herb_garden.png | کاربرد: کارخانه/تأسیسات «Herb Garden»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+industrial_1.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/industrial_1.png | کاربرد: کارخانه/تأسیسات «Industrial 1»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+industrial_2.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/industrial_2.png | کاربرد: کارخانه/تأسیسات «Industrial 2»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+industrial_3.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/industrial_3.png | کاربرد: کارخانه/تأسیسات «Industrial 3»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+olive_grove.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/olive_grove.png | کاربرد: کارخانه/تأسیسات «Olive Grove»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+snowberry_farm.png | دسته: industrial | مسیر برنامه: res://assets/icons/industrial/snowberry_farm.png | کاربرد: کارخانه/تأسیسات «Snowberry Farm»؛ تصویر گزینه ساختمان صنعتی یا تولید منطقه‌ای | وضعیت: کاتالوگ/مسیر پویا
+
+=== RAW — مواد اولیه و منابع خام (16 فایل) ===
+animal_feed.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/animal_feed.png | کاربرد: ماده اولیه «Animal Feed»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+cactus_fruit.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/cactus_fruit.png | کاربرد: ماده اولیه «Cactus Fruit»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+chemicals.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/chemicals.png | کاربرد: ماده اولیه «Chemicals»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+coconut.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/coconut.png | کاربرد: ماده اولیه «Coconut»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+electrical.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/electrical.png | کاربرد: ماده اولیه «Electrical»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+glass.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/glass.png | کاربرد: ماده اولیه «Glass»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+herbs.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/herbs.png | کاربرد: ماده اولیه «Herbs»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+metal.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/metal.png | کاربرد: ماده اولیه «Metal»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+minerals.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/minerals.png | کاربرد: ماده اولیه «Minerals»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+olives.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/olives.png | کاربرد: ماده اولیه «Olives»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+plastic.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/plastic.png | کاربرد: ماده اولیه «Plastic»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+seeds.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/seeds.png | کاربرد: ماده اولیه «Seeds»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+snowberry.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/snowberry.png | کاربرد: ماده اولیه «Snowberry»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+sugar_spices.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/sugar_spices.png | کاربرد: ماده اولیه «Sugar Spices»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+textiles.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/textiles.png | کاربرد: ماده اولیه «Textiles»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+wood.png | دسته: raw | مسیر برنامه: res://assets/icons/raw/wood.png | کاربرد: ماده اولیه «Wood»؛ تصویر منبع در تولید کارخانه و موجودی انبار | وضعیت: کاتالوگ/مسیر پویا
+
+=== RESIDENTIAL — ساختمان‌های مسکونی و خانه‌های منطقه‌ای (11 فایل) ===
+cliffside_villa.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/cliffside_villa.png | کاربرد: ساختمان مسکونی «Cliffside Villa»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+desert_hacienda.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/desert_hacienda.png | کاربرد: ساختمان مسکونی «Desert Hacienda»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+fjord_chalet.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/fjord_chalet.png | کاربرد: ساختمان مسکونی «Fjord Chalet»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+island_cottage.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/island_cottage.png | کاربرد: ساختمان مسکونی «Island Cottage»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+residential1.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/residential1.png | کاربرد: ساختمان مسکونی «Residential1»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: مشکوک/بدون تطابق با مسیر runtime
+residential_1.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/residential_1.png | کاربرد: ساختمان مسکونی «Residential 1»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+residential_2.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/residential_2.png | کاربرد: ساختمان مسکونی «Residential 2»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+residential_apartment.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/residential_apartment.png | کاربرد: ساختمان مسکونی «Residential Apartment»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+residential_farm.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/residential_farm.png | کاربرد: ساختمان مسکونی «Residential Farm»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+residential_villa.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/residential_villa.png | کاربرد: ساختمان مسکونی «Residential Villa»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+valley_eco_home.png | دسته: residential | مسیر برنامه: res://assets/icons/residential/valley_eco_home.png | کاربرد: ساختمان مسکونی «Valley Eco Home»؛ تصویر گزینه خانه/ساختمان در منوی ساخت یا منطقه | وضعیت: کاتالوگ/مسیر پویا
+
+=== ROADS — ابزارها و حالت‌های ساخت/ارتقای/تخریب جاده (4 فایل) ===
+road.png | دسته: roads | مسیر برنامه: res://assets/icons/roads/road.png | کاربرد: جاده و دسترسی شبکه‌ای | وضعیت: کاتالوگ/مسیر پویا
+road_build.png | دسته: roads | مسیر برنامه: res://assets/icons/roads/road_build.png | کاربرد: کنش جاده «Road Build»؛ تصویر ابزار ساخت، ارتقا یا تخریب جاده | وضعیت: کاتالوگ/مسیر پویا
+road_bulldoze.png | دسته: roads | مسیر برنامه: res://assets/icons/roads/road_bulldoze.png | کاربرد: کنش جاده «Road Bulldoze»؛ تصویر ابزار ساخت، ارتقا یا تخریب جاده | وضعیت: کاتالوگ/مسیر پویا
+road_upgrade.png | دسته: roads | مسیر برنامه: res://assets/icons/roads/road_upgrade.png | کاربرد: کنش جاده «Road Upgrade»؛ تصویر ابزار ساخت، ارتقا یا تخریب جاده | وضعیت: کاتالوگ/مسیر پویا
+
+=== SERVICES — خدمات شهری، زیرساخت و گروه‌های خدمات (39 فایل) ===
+cargo_port.png | دسته: services | مسیر برنامه: res://assets/icons/services/cargo_port.png | کاربرد: خدمت شهری/زیرساخت «Cargo Port»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+clinic.png | دسته: services | مسیر برنامه: res://assets/icons/services/clinic.png | کاربرد: خدمت شهری/زیرساخت «Clinic»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+clinic_small.png | دسته: services | مسیر برنامه: res://assets/icons/services/clinic_small.png | کاربرد: خدمت شهری/زیرساخت «Clinic Small»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+epic_projects_department.png | دسته: services | مسیر برنامه: res://assets/icons/services/epic_projects_department.png | کاربرد: خدمت شهری/زیرساخت «Epic Projects Department»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+fire_station.png | دسته: services | مسیر برنامه: res://assets/icons/services/fire_station.png | کاربرد: خدمت شهری/زیرساخت «Fire Station»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+fire_station_deluxe.png | دسته: services | مسیر برنامه: res://assets/icons/services/fire_station_deluxe.png | کاربرد: خدمت شهری/زیرساخت «Fire Station Deluxe»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+fire_station_small.png | دسته: services | مسیر برنامه: res://assets/icons/services/fire_station_small.png | کاربرد: خدمت شهری/زیرساخت «Fire Station Small»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+global_trade_hq.png | دسته: services | مسیر برنامه: res://assets/icons/services/global_trade_hq.png | کاربرد: خدمت شهری/زیرساخت «Global Trade Hq»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_fire.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_fire.png | کاربرد: خدمت شهری/زیرساخت «Group Fire»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_government.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_government.png | کاربرد: خدمت شهری/زیرساخت «Group Government»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_health.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_health.png | کاربرد: خدمت شهری/زیرساخت «Group Health»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_police.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_police.png | کاربرد: خدمت شهری/زیرساخت «Group Police»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_power.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_power.png | کاربرد: خدمت شهری/زیرساخت «Group Power»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_sewage.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_sewage.png | کاربرد: خدمت شهری/زیرساخت «Group Sewage»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_trade.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_trade.png | کاربرد: خدمت شهری/زیرساخت «Group Trade»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_waste.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_waste.png | کاربرد: خدمت شهری/زیرساخت «Group Waste»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+group_water.png | دسته: services | مسیر برنامه: res://assets/icons/services/group_water.png | کاربرد: خدمت شهری/زیرساخت «Group Water»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+hospital.png | دسته: services | مسیر برنامه: res://assets/icons/services/hospital.png | کاربرد: خدمت شهری/زیرساخت «Hospital»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+police_basic.png | دسته: services | مسیر برنامه: res://assets/icons/services/police_basic.png | کاربرد: خدمت شهری/زیرساخت «Police Basic»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+police_precinct.png | دسته: services | مسیر برنامه: res://assets/icons/services/police_precinct.png | کاربرد: خدمت شهری/زیرساخت «Police Precinct»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+police_small.png | دسته: services | مسیر برنامه: res://assets/icons/services/police_small.png | کاربرد: خدمت شهری/زیرساخت «Police Small»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+police_station.png | دسته: services | مسیر برنامه: res://assets/icons/services/police_station.png | کاربرد: خدمت شهری/زیرساخت «Police Station»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+power_coal.png | دسته: services | مسیر برنامه: res://assets/icons/services/power_coal.png | کاربرد: خدمت شهری/زیرساخت «Power Coal»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+power_nuclear.png | دسته: services | مسیر برنامه: res://assets/icons/services/power_nuclear.png | کاربرد: خدمت شهری/زیرساخت «Power Nuclear»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+power_oil.png | دسته: services | مسیر برنامه: res://assets/icons/services/power_oil.png | کاربرد: خدمت شهری/زیرساخت «Power Oil»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+power_solar.png | دسته: services | مسیر برنامه: res://assets/icons/services/power_solar.png | کاربرد: خدمت شهری/زیرساخت «Power Solar»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+power_wind.png | دسته: services | مسیر برنامه: res://assets/icons/services/power_wind.png | کاربرد: خدمت شهری/زیرساخت «Power Wind»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+power_wind_deluxe.png | دسته: services | مسیر برنامه: res://assets/icons/services/power_wind_deluxe.png | کاربرد: خدمت شهری/زیرساخت «Power Wind Deluxe»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+sewage_basic.png | دسته: services | مسیر برنامه: res://assets/icons/services/sewage_basic.png | کاربرد: خدمت شهری/زیرساخت «Sewage Basic»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+sewage_deluxe.png | دسته: services | مسیر برنامه: res://assets/icons/services/sewage_deluxe.png | کاربرد: خدمت شهری/زیرساخت «Sewage Deluxe»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+sewage_small.png | دسته: services | مسیر برنامه: res://assets/icons/services/sewage_small.png | کاربرد: خدمت شهری/زیرساخت «Sewage Small»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+town_hall.png | دسته: services | مسیر برنامه: res://assets/icons/services/town_hall.png | کاربرد: خدمت شهری/زیرساخت «Town Hall»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+trade_depot.png | دسته: services | مسیر برنامه: res://assets/icons/services/trade_depot.png | کاربرد: مرکز مبادله کالا (Trade Depot) | وضعیت: کاتالوگ/مسیر پویا
+waste_dump.png | دسته: services | مسیر برنامه: res://assets/icons/services/waste_dump.png | کاربرد: خدمت شهری/زیرساخت «Waste Dump»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+waste_dump_small.png | دسته: services | مسیر برنامه: res://assets/icons/services/waste_dump_small.png | کاربرد: خدمت شهری/زیرساخت «Waste Dump Small»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+waste_incinerator.png | دسته: services | مسیر برنامه: res://assets/icons/services/waste_incinerator.png | کاربرد: خدمت شهری/زیرساخت «Waste Incinerator»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+waste_recycling.png | دسته: services | مسیر برنامه: res://assets/icons/services/waste_recycling.png | کاربرد: خدمت شهری/زیرساخت «Waste Recycling»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+water_pump.png | دسته: services | مسیر برنامه: res://assets/icons/services/water_pump.png | کاربرد: خدمت شهری/زیرساخت «Water Pump»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+water_tower.png | دسته: services | مسیر برنامه: res://assets/icons/services/water_tower.png | کاربرد: خدمت شهری/زیرساخت «Water Tower»؛ تصویر ساختمان خدماتی یا گروه خدمات در منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+
+=== SPECIALIZATIONS — تخصص‌های شهری و گروه‌های تخصصی (8 فایل) ===
+group_education.png | دسته: specializations | مسیر برنامه: res://assets/icons/specializations/group_education.png | کاربرد: تخصص شهری «Group Education»؛ تصویر گروه تخصصی/پارک در منوی تخصص‌ها | وضعیت: کاتالوگ/مسیر پویا
+group_entertainment.png | دسته: specializations | مسیر برنامه: res://assets/icons/specializations/group_entertainment.png | کاربرد: تخصص شهری «Group Entertainment»؛ تصویر گروه تخصصی/پارک در منوی تخصص‌ها | وضعیت: کاتالوگ/مسیر پویا
+group_gambling.png | دسته: specializations | مسیر برنامه: res://assets/icons/specializations/group_gambling.png | کاربرد: تخصص شهری «Group Gambling»؛ تصویر گروه تخصصی/پارک در منوی تخصص‌ها | وضعیت: کاتالوگ/مسیر پویا
+group_landmarks.png | دسته: specializations | مسیر برنامه: res://assets/icons/specializations/group_landmarks.png | کاربرد: تخصص شهری «Group Landmarks»؛ تصویر گروه تخصصی/پارک در منوی تخصص‌ها | وضعیت: کاتالوگ/مسیر پویا
+group_parks.png | دسته: specializations | مسیر برنامه: res://assets/icons/specializations/group_parks.png | کاربرد: تخصص شهری «Group Parks»؛ تصویر گروه تخصصی/پارک در منوی تخصص‌ها | وضعیت: کاتالوگ/مسیر پویا
+group_transportation.png | دسته: specializations | مسیر برنامه: res://assets/icons/specializations/group_transportation.png | کاربرد: تخصص شهری «Group Transportation»؛ تصویر گروه تخصصی/پارک در منوی تخصص‌ها | وضعیت: کاتالوگ/مسیر پویا
+group_worship.png | دسته: specializations | مسیر برنامه: res://assets/icons/specializations/group_worship.png | کاربرد: تخصص شهری «Group Worship»؛ تصویر گروه تخصصی/پارک در منوی تخصص‌ها | وضعیت: کاتالوگ/مسیر پویا
+park_small.png | دسته: specializations | مسیر برنامه: res://assets/icons/specializations/park_small.png | کاربرد: تخصص شهری «Park Small»؛ تصویر گروه تخصصی/پارک در منوی تخصص‌ها | وضعیت: کاتالوگ/مسیر پویا
+
+=== STATUS — وضعیت ساختمان‌ها و هشدارهای روی نقشه (8 فایل) ===
+abandoned.png | دسته: status | مسیر برنامه: res://assets/icons/status/abandoned.png | کاربرد: وضعیت «Abandoned»؛ نشان وضعیت یا هشدار متصل به ساختمان | وضعیت: کاتالوگ/مسیر پویا
+no_fire_coverage.png | دسته: status | مسیر برنامه: res://assets/icons/status/no_fire_coverage.png | کاربرد: وضعیت «No Fire Coverage»؛ نشان وضعیت یا هشدار متصل به ساختمان | وضعیت: کاتالوگ/مسیر پویا
+no_power.png | دسته: status | مسیر برنامه: res://assets/icons/status/no_power.png | کاربرد: وضعیت «No Power»؛ نشان وضعیت یا هشدار متصل به ساختمان | وضعیت: کاتالوگ/مسیر پویا
+no_water.png | دسته: status | مسیر برنامه: res://assets/icons/status/no_water.png | کاربرد: وضعیت «No Water»؛ نشان وضعیت یا هشدار متصل به ساختمان | وضعیت: کاتالوگ/مسیر پویا
+ready_collect.png | دسته: status | مسیر برنامه: res://assets/icons/status/ready_collect.png | کاربرد: وضعیت «Ready Collect»؛ نشان وضعیت یا هشدار متصل به ساختمان | وضعیت: کاتالوگ/مسیر پویا
+smoke.png | دسته: status | مسیر برنامه: res://assets/icons/status/smoke.png | کاربرد: وضعیت «Smoke»؛ نشان وضعیت یا هشدار متصل به ساختمان | وضعیت: کاتالوگ/مسیر پویا
+storage_full.png | دسته: status | مسیر برنامه: res://assets/icons/status/storage_full.png | کاربرد: وضعیت «Storage Full»؛ نشان وضعیت یا هشدار متصل به ساختمان | وضعیت: کاتالوگ/مسیر پویا
+upgrading.png | دسته: status | مسیر برنامه: res://assets/icons/status/upgrading.png | کاربرد: وضعیت «Upgrading»؛ نشان وضعیت یا هشدار متصل به ساختمان | وضعیت: کاتالوگ/مسیر پویا
+
+=== UI — رابط کاربری، منوها و کنترل‌های HUD (57 فایل) ===
+achievements.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/achievements.png | کاربرد: دستاوردها | وضعیت: کاتالوگ/مسیر پویا
+advisor.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/advisor.png | کاربرد: چهره/آیکون مشاور بازی | وضعیت: ارجاع مستقیم در get_advisor_tex()
+arrow_left.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/arrow_left.png | کاربرد: جهت/صفحه قبلی | وضعیت: کاتالوگ/مسیر پویا
+arrow_right.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/arrow_right.png | کاربرد: جهت/صفحه بعدی | وضعیت: کاتالوگ/مسیر پویا
+back.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/back.png | کاربرد: بازگشت | وضعیت: کاتالوگ/مسیر پویا
+beach.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/beach.png | کاربرد: منطقه ساحلی | وضعیت: کاتالوگ/مسیر پویا
+build_menu.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/build_menu.png | کاربرد: بازکردن منوی ساخت | وضعیت: کاتالوگ/مسیر پویا
+bulldoze.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/bulldoze.png | کاربرد: فرمان تخریب | وضعیت: کاتالوگ/مسیر پویا
+cancel.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/cancel.png | کاربرد: لغو عملیات | وضعیت: کاتالوگ/مسیر پویا
+check.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/check.png | کاربرد: تأیید/وضعیت موفق | وضعیت: کاتالوگ/مسیر پویا
+city_needs.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/city_needs.png | کاربرد: نیازهای شهر | وضعیت: کاتالوگ/مسیر پویا
+close.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/close.png | کاربرد: بستن پنجره | وضعیت: کاتالوگ/مسیر پویا
+collect.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/collect.png | کاربرد: جمع‌آوری محصول آماده | وضعیت: کاتالوگ/مسیر پویا
+commercial.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/commercial.png | کاربرد: دسته تجاری در نوار ساخت | وضعیت: کاتالوگ/مسیر پویا
+confirm.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/confirm.png | کاربرد: تأیید عملیات | وضعیت: کاتالوگ/مسیر پویا
+education.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/education.png | کاربرد: آموزش | وضعیت: کاتالوگ/مسیر پویا
+entertainment.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/entertainment.png | کاربرد: سرگرمی | وضعیت: کاتالوگ/مسیر پویا
+epic.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/epic.png | کاربرد: پروژه‌های حماسی | وضعیت: کاتالوگ/مسیر پویا
+fallback.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/fallback.png | کاربرد: آیکون جایگزین عمومی | وضعیت: کاتالوگ/مسیر پویا
+fire.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/fire.png | کاربرد: خدمت آتش‌نشانی و پوشش حریق | وضعیت: کاتالوگ/مسیر پویا
+gambling.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/gambling.png | کاربرد: تفریح/قمار | وضعیت: کاتالوگ/مسیر پویا
+global_trade.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/global_trade.png | کاربرد: تجارت جهانی | وضعیت: کاتالوگ/مسیر پویا
+golden_key.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/golden_key.png | کاربرد: کلید طلایی | وضعیت: کاتالوگ/مسیر پویا
+government.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/government.png | کاربرد: ساختمان‌ها و امور حکومتی | وضعیت: کاتالوگ/مسیر پویا
+happiness.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/happiness.png | کاربرد: رضایت و خوشحالی شهروندان | وضعیت: کاتالوگ/مسیر پویا
+hard_hat.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/hard_hat.png | کاربرد: کلاه ایمنی؛ ساخت‌وساز/مشاور راهنما | وضعیت: کاتالوگ/مسیر پویا
+health.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/health.png | کاربرد: سلامت و درمان | وضعیت: کاتالوگ/مسیر پویا
+industrial.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/industrial.png | کاربرد: دسته صنعتی در نوار ساخت | وضعیت: کاتالوگ/مسیر پویا
+info.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/info.png | کاربرد: اطلاعات و جزئیات | وضعیت: کاتالوگ/مسیر پویا
+landmark.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/landmark.png | کاربرد: نمادها و دیدنی‌های شهری | وضعیت: کاتالوگ/مسیر پویا
+level.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/level.png | کاربرد: سطح شهردار | وضعیت: کاتالوگ/مسیر پویا
+lock.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/lock.png | کاربرد: قفل/محتوای قفل‌شده | وضعیت: کاتالوگ/مسیر پویا
+money.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/money.png | کاربرد: موجودی پول | وضعیت: کاتالوگ/مسیر پویا
+mountain.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/mountain.png | کاربرد: منطقه کوهستانی | وضعیت: کاتالوگ/مسیر پویا
+park.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/park.png | کاربرد: پارک و فضای سبز | وضعیت: کاتالوگ/مسیر پویا
+parks.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/parks.png | کاربرد: دسته پارک‌ها و فضای سبز | وضعیت: کاتالوگ/مسیر پویا
+placeholder.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/placeholder.png | کاربرد: تصویر جایگزین برای آیکون ناموجود | وضعیت: کاتالوگ/مسیر پویا
+plus.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/plus.png | کاربرد: افزودن/افزایش | وضعیت: کاتالوگ/مسیر پویا
+police.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/police.png | کاربرد: پلیس و امنیت | وضعیت: کاتالوگ/مسیر پویا
+population.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/population.png | کاربرد: جمعیت شهر | وضعیت: کاتالوگ/مسیر پویا
+power.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/power.png | کاربرد: برق و زیرساخت انرژی | وضعیت: کاتالوگ/مسیر پویا
+regions.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/regions.png | کاربرد: انتخاب/مدیریت مناطق | وضعیت: مشکوک/بدون تطابق با مسیر runtime
+regions_from_svg.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/regions_from_svg.png | کاربرد: کنترل رابط «Regions»؛ آیکون منو، نوار ابزار یا پنل HUD | وضعیت: مسیر انتخاب‌شده توسط Icons.gd برای شناسه regions
+residential.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/residential.png | کاربرد: دسته ساختمان‌های مسکونی | وضعیت: کاتالوگ/مسیر پویا
+road.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/road.png | کاربرد: جاده و دسترسی شبکه‌ای | وضعیت: کاتالوگ/مسیر پویا
+save.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/save.png | کاربرد: ذخیره شهر | وضعیت: کاتالوگ/مسیر پویا
+services.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/services.png | کاربرد: دسته خدمات شهری | وضعیت: کاتالوگ/مسیر پویا
+settings.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/settings.png | کاربرد: تنظیمات بازی | وضعیت: کاتالوگ/مسیر پویا
+sewage.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/sewage.png | کاربرد: فاضلاب | وضعیت: کاتالوگ/مسیر پویا
+simoleons.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/simoleons.png | کاربرد: واحد پول Simoleons | وضعیت: کاتالوگ/مسیر پویا
+storage.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/storage.png | کاربرد: انبار و ظرفیت موجودی | وضعیت: کاتالوگ/مسیر پویا
+trade.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/trade.png | کاربرد: تجارت و تبادل کالا | وضعیت: کاتالوگ/مسیر پویا
+trade_depot.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/trade_depot.png | کاربرد: مرکز مبادله کالا (Trade Depot) | وضعیت: کاتالوگ/مسیر پویا
+transportation.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/transportation.png | کاربرد: حمل‌ونقل | وضعیت: کاتالوگ/مسیر پویا
+warning.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/warning.png | کاربرد: هشدار | وضعیت: کاتالوگ/مسیر پویا
+waste.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/waste.png | کاربرد: جمع‌آوری و دفع پسماند | وضعیت: کاتالوگ/مسیر پویا
+water.png | دسته: ui | مسیر برنامه: res://assets/icons/ui/water.png | کاربرد: آب‌رسانی | وضعیت: کاتالوگ/مسیر پویا
+
+یافته‌های مهم و موارد نیازمند اصلاح
+1) Sheet1.png، Sheet2.png و Sheet3.png فایل‌های شیت/منبع هستند؛ Icons.gd آن‌ها را از مسیر آیکون منفرد بارگذاری نمی‌کند. تا زمانی که ابزار برش یا مرجع دیگری آن‌ها را مصرف نکند، جزو منابع runtime محسوب نمی‌شوند.
+2) commercial/rastaurant_traditional.png با شناسه واقعی restaurant_traditional هم‌نام نیست؛ مسیر برنامه commercial/restaurant_traditional.png است. فایل دارای غلط املایی به‌صورت خودکار انتخاب نمی‌شود.
+3) crafted/meassuring_tape.png با شناسه measuring_tape هم‌نام نیست؛ مسیر برنامه crafted/measuring_tape.png است. فایل دارای غلط املایی مسیر runtime ندارد.
+4) residential/residential1.png با شناسه residential_1 هم‌نام نیست؛ مسیر برنامه residential/residential_1.png است.
+5) ui/regions.png مسیر runtime شناسه regions نیست؛ Icons.gd برای regions از ui/regions_from_svg.png استفاده می‌کند. فایل ui/regions.png باید جداگانه تعیین تکلیف شود.
+6) root-level category icons مانند road.png، residential.png، commercial.png، industrial.png، services.png و parks.png از طریق شناسه‌های toolbar به دسته root نگاشت می‌شوند؛ با فایل‌های هم‌نام در ui/ اشتباه نشوند.
+7) برخی گروه‌های تخصصی (education، transportation، entertainment، gambling، landmarks، worship) در HUD تعریف شده‌اند، اما فهرست ساختمان‌هایشان فعلاً خالی است. آیکون گروه می‌تواند در منو وجود داشته باشد، ولی این به معنی وجود ساختمان قابل ساخت در آن گروه نیست.
+8) fallback.png در ریشه و ui/fallback.png هر دو موجودند اما fallback عمومیِ بارگذاری شکست در Icons.gd برابر ui/placeholder.png است؛ بنابراین این دو فایل را نباید بدون ارجاع مستقل، fallback قطعی موتور فرض کرد.
+
+فایل‌های کد مرجع ممیزی
+- godot-city-buildit/scripts/ui/Icons.gd — دسته‌بندی شناسه، تعیین مسیر، fallback و cache
+- godot-city-buildit/scripts/ui/HUD.gd — گروه‌های ساخت/خدمات/تخصص‌ها و ساخت آیکون‌های رابط
+- godot-city-buildit/scripts/autoload/BuildManager.gd — شناسه و دسته ساختمان‌ها
+- godot-city-buildit/scripts/autoload/ProductionManager.gd — شناسه مواد اولیه و کالاهای ساخته‌شده
+- godot-city-buildit/scripts/ui/CitizenFeedbackBubbles.gd — استفاده از Icons.make_icon برای road/power/water/sewage/waste/fire/police/health/happiness
+- godot-city-buildit/tools/validate_icon_assets.py — بررسی وجود/ساختار PNGها و کاتالوگ
+
+محدودیت ممیزی
+این گزارش ممیزی استاتیک فایل‌ها و مسیرهای کد است. برای اثبات نهاییِ «واقعاً روی صفحه نمایش داده می‌شود» باید همه پنل‌ها و حالت‌های unlock در اجرای Godot/Chromium تصویربرداری و مقایسه شوند. هیچ‌جا صرفاً به‌دلیل وجود PNG ادعای نمایش قطعی نشده است.
