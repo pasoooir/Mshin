@@ -752,6 +752,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	var block_test_vehicle := TrafficVehicle.new()
 	block_test_vehicle.route = [road_system.GATEWAY_ROAD_CELL, dynamic_block_cell, Vector2i(-21, -1), Vector2i(-20, -1)]
 	TrafficManager._active_vehicles.append(block_test_vehicle)
+	_check(not TrafficManager.set_road_cell_blocked(road_system.GATEWAY_ROAD_CELL, true), "The permanent highway Gateway must never be marked as blocked.")
 	var capacity_before_block := TrafficManager.road_capacity
 	_check(TrafficManager.set_road_cell_blocked(dynamic_block_cell, true), "A connected road cell must accept a temporary traffic blockage.")
 	_check(TrafficManager.road_capacity == capacity_before_block - 2, "A blocked two-lane road tile must be removed from effective traffic capacity.")
