@@ -505,6 +505,8 @@ func _get_eta_store_lanes(store_id: String, schedule_state: Dictionary) -> Array
 		for component in get_tree().get_nodes_in_group("production_components"):
 			if not is_instance_valid(component) or not component is ProductionComponent:
 				continue
+			if component.has_method("_owner_has_road_access") and not component._owner_has_road_access():
+				continue
 			if bool(component.is_factory) or str(component.shop_id) != store_id:
 				continue
 			lanes.append(maxf(0.0, float(component.get_queue_delay_seconds())))
@@ -526,6 +528,8 @@ func _get_eta_factory_lanes(material_id: String, schedule_state: Dictionary) -> 
 		var now := int(Time.get_unix_time_from_system())
 		for component in get_tree().get_nodes_in_group("production_components"):
 			if not is_instance_valid(component) or not component is ProductionComponent:
+				continue
+			if component.has_method("_owner_has_road_access") and not component._owner_has_road_access():
 				continue
 			if not bool(component.is_factory) or not get_factory_material_ids(str(component.factory_type)).has(material_id):
 				continue
