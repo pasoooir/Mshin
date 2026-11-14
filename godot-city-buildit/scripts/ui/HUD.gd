@@ -1546,9 +1546,9 @@ func _refresh_xp_info_panel() -> void:
 	var needed := maxi(1, GameManager.get_xp_needed())
 	var remaining := maxi(0, needed - GameManager.experience)
 	if GameManager.level >= 60:
-		xp_info_label.text = "Mayor Level %d — maximum level reached.\\nXP is earned by building and completing buildings, collecting production, unlocking achievements, and maintaining average city Happiness of at least 80%% for each 60-second period." % GameManager.level
+		xp_info_label.text = "Mayor Level %d — maximum level reached.\nXP is earned by building and completing buildings, collecting production, unlocking achievements, and maintaining average city Happiness of at least 80%% for each 60-second period." % GameManager.level
 	else:
-		xp_info_label.text = "Mayor Level %d → %d\\nProgress: %d / %d XP — %d XP remaining.\\nEarn XP by placing/completing buildings, collecting production, unlocking achievements, or keeping average city Happiness at 80%% or higher for 60 seconds." % [GameManager.level, GameManager.level + 1, GameManager.experience, needed, remaining]
+		xp_info_label.text = "Mayor Level %d → %d\nProgress: %d / %d XP — %d XP remaining.\nEarn XP by placing/completing buildings, collecting production, unlocking achievements, or keeping average city Happiness at 80%% or higher for 60 seconds." % [GameManager.level, GameManager.level + 1, GameManager.experience, needed, remaining]
 
 func _on_xp_changed(xp: int, needed: int) -> void:
 	var safe_needed := maxi(1, needed)
