@@ -243,7 +243,7 @@ func get_road_cell_travel_cost(grid_cell: Vector2i) -> float:
 	var road_system = _get_road_system()
 	if not road_system or not road_system.has_road(grid_cell):
 		return INF
-	var road_level := road_system.get_road_level(grid_cell)
+	var road_level: int = int(road_system.get_road_level(grid_cell))
 	var capacity_discount := 1.0 / (1.0 + 0.18 * float(maxi(0, road_level - 1)))
 	var congestion_penalty := float(get_road_cell_vehicle_load(grid_cell)) * 2.0
 	var junction_penalty := 0.25 if is_junction_cell(grid_cell) else 0.0
