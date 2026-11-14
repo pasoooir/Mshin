@@ -74,6 +74,76 @@ func _find_building(type_id: String):
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
+func _test_live_production_queue_eta() -> void:
+	var queue_probe = ProductionComponentScript.new()
+	queue_probe.shop_id = "building_supplies"
+	queue_probe.slot_count = 3
+	var now := int(Time.get_unix_time_from_system())
+	var store_slots: Array[Dictionary] = [
+		{"item_id":"nails", "finish_unix":now + 30, "ready":false},
+		{"item_id":"planks", "finish_unix":0, "ready":false, "queued":true},
+		{}
+	]
+	queue_probe.slots = store_slots
+	add_child(queue_probe)
+	var delay := ProductionManager.get_live_store_queue_delay_seconds("building_supplies")
+	_check(delay >= 30.0, "Live ETA must include the remaining time of an active store order.")
+	_check(delay >= queue_probe.get_queue_delay_seconds(), "ProductionManager must read the real ProductionComponent queue, not a detached estimate.")
+	var factory_probe = ProductionComponentScript.new()
+	factory_probe.is_factory = true
+	factory_probe.factory_type = "snowberry_farm"
+	factory_probe.slot_count = 2
+	var factory_slots: Array[Dictionary] = [
+		{"item_id":"snowberry", "finish_unix":now + 60, "ready":false},
+		{"item_id":"snowberry", "finish_unix":now + 25, "ready":false}
+	]
+	factory_probe.slots = factory_slots
+	add_child(factory_probe)
+	var factory_delay := ProductionManager.get_live_factory_queue_delay_seconds("snowberry")
+	_check(factory_delay >= 25.0 and factory_delay <= 26.0, "Raw-material ETA must use the earliest available parallel factory slot.")
+	factory_probe.queue_free()
+	queue_probe.queue_free()
+	await get_tree().process_frame
+
+func _test_recipe_dependency_graph_validation() -> void:
+	var baseline := ProductionManager.get_recipe_validation_report()
+	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
+	_check(not baseline.get("invalid_recipe_ids", []).has("nails"), "Known Nails recipe must pass structural recipe validation.")
+	var saved_a: Variant = ProductionManager.crafted_items.get("__test_cycle_a")
+	var saved_b: Variant = ProductionManager.crafted_items.get("__test_cycle_b")
+	ProductionManager.crafted_items["__test_cycle_a"] = {
+		"name":"Test Cycle A", "time_sec":1, "level":1,
+		"store":"building_supplies", "requires":{"__test_cycle_b":1}
+	}
+	ProductionManager.crafted_items["__test_cycle_b"] = {
+		"name":"Test Cycle B", "time_sec":1, "level":1,
+		"store":"building_supplies", "requires":{"__test_cycle_a":1}
+	}
+	ProductionManager.crafted_items["__test_missing_input"] = {
+		"name":"Test Missing Input", "time_sec":1, "level":1,
+		"store":"building_supplies", "requires":{"__undefined_test_material":1}
+	}
+	ProductionManager.crafted_items["__test_bad_quantity"] = {
+		"name":"Test Bad Quantity", "time_sec":1, "level":1,
+		"store":"building_supplies", "requires":{"metal":0}
+	}
+	var cycle_report := ProductionManager.get_recipe_validation_report()
+	var invalid_ids: Array = cycle_report.get("invalid_recipe_ids", [])
+	ProductionManager._recipe_validation_report = cycle_report
+	_check(invalid_ids.has("__test_cycle_a") and invalid_ids.has("__test_cycle_b"), "Recipe graph validator must reject every node participating in a dependency cycle.")
+	_check(invalid_ids.has("__test_missing_input"), "Recipe graph validator must reject references to undefined raw or crafted inputs.")
+	_check(invalid_ids.has("__test_bad_quantity"), "Recipe graph validator must reject zero or negative recipe quantities.")
+	_check(not ProductionManager.get_recipe_lock_reason("__test_missing_input").is_empty(), "A structurally invalid recipe must be blocked from the production API.")
+	ProductionManager.crafted_items.erase("__test_cycle_a")
+	ProductionManager.crafted_items.erase("__test_cycle_b")
+	ProductionManager.crafted_items.erase("__test_missing_input")
+	ProductionManager.crafted_items.erase("__test_bad_quantity")
+	if saved_a is Dictionary:
+		ProductionManager.crafted_items["__test_cycle_a"] = saved_a
+	if saved_b is Dictionary:
+		ProductionManager.crafted_items["__test_cycle_b"] = saved_b
+	ProductionManager._recipe_validation_report = ProductionManager.get_recipe_validation_report()
+
 func _test_storage_and_production_chain() -> void:
 	# Regression coverage for newly enabled recipes. Values use the current
 	# 2024 commercial-store variant where the reference documents a variant.
@@ -2059,11 +2129,13 @@ func _test_region_city_snapshots() -> void:
 	if road_system == null:
 		return
 	var original_snapshot: Dictionary = SaveManager.capture_region_snapshot()
+	StorageManager.items = {"metal":7}
 	var gateway: Vector2i = RoadSystemScript.GATEWAY_ROAD_CELL
 	var marker_road := gateway + Vector2i.UP
 	if not road_system.has_road(marker_road):
 		_check(road_system.place_road(marker_road), "Region snapshot test must add a connected marker road.")
 	var capital_snapshot: Dictionary = SaveManager.capture_region_snapshot()
+	_check(capital_snapshot.has("storage") and capital_snapshot.storage.get("items", {}) == {"metal":7}, "A region snapshot must include its own warehouse inventory.")
 	_check(capital_snapshot.has("roads") and capital_snapshot.has("buildings") and capital_snapshot.has("epic_projects"), "Each region snapshot must include roads, buildings and Epic Project state.")
 	GameManager.level = 25
 	RegionManager._refresh_unlocks()
@@ -2072,6 +2144,7 @@ func _test_region_city_snapshots() -> void:
 		"roads": [[gateway.x, gateway.y, 1]],
 		"buildings": [],
 		"epic_projects": {},
+		"storage": {"capacity":StorageManager.DEFAULT_CAPACITY, "items":{"coconut":3}},
 		"happiness": 100.0
 	}
 	# A city's 80% Happiness streak and household penalties must never leak
@@ -2081,11 +2154,17 @@ func _test_region_city_snapshots() -> void:
 	HappinessManager.home_scores["old_region_home"] = 12.0
 	_check(RegionManager.switch_region("sunny_isles", false), "Unlocked Sunny Isles must open as an independent region.")
 	_check(RegionManager.active_region_id == "sunny_isles" and road_system.get_road_count() == 1, "A new region must load its own gateway-only road map.")
+	_check(StorageManager.get_count("coconut") == 3 and StorageManager.get_count("metal") == 0, "Switching regions must load the target region warehouse without leaking the capital inventory.")
+	_check(StorageManager.add_item("coconut", 2), "Regional warehouse must accept local production while the region is active.")
 	_check(is_zero_approx(HappinessManager._high_happiness_elapsed), "Switching regions must reset the previous city's high-Happiness XP streak.")
 	_check(HappinessManager.low_happiness_time.is_empty() and HappinessManager.home_scores.is_empty(), "Switching regions must clear cached household Happiness and abandonment timers.")
 	_check(is_equal_approx(GameManager.happiness, 100.0), "An empty new region must calculate its own default Happiness instead of retaining the previous city's score.")
 	_check(RegionManager.switch_region("capital", false), "The saved Capital City must be reachable again.")
 	_check(road_system.has_road(marker_road) and road_system.get_road_count() == capital_snapshot.get("roads", []).size(), "Returning to Capital City must restore its independent road layout.")
+	_check(StorageManager.get_count("metal") == 7 and StorageManager.get_count("coconut") == 0, "Returning to the capital must restore its independent warehouse inventory.")
+	_check(RegionManager.switch_region("sunny_isles", false), "Sunny Isles must be switchable after saving its regional inventory.")
+	_check(StorageManager.get_count("coconut") == 5 and StorageManager.get_count("metal") == 0, "Returning to a region must restore its saved regional warehouse inventory.")
+	_check(RegionManager.switch_region("capital", false), "The capital must remain reachable after regional inventory persistence is verified.")
 	_check(RegionManager.region_states.get("capital", {}).has("epic_projects"), "Switching regions must preserve region-specific Epic Project state.")
 	SaveManager.load_region_snapshot(original_snapshot)
 	GameManager.level = previous_level
@@ -2570,6 +2649,8 @@ func _run_gameplay_test() -> void:
 	await _test_build_menu_visibility()
 	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
+	await _test_live_production_queue_eta()
+	_test_recipe_dependency_graph_validation()
 	_test_storage_and_production_chain()
 	_test_production_queue_stress()
 	_test_fire_hazard_state_machine()

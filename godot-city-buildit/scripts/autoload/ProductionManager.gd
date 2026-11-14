@@ -2,6 +2,8 @@ extends Node
 
 signal item_produced(item_id: String, amount: int)
 
+var _recipe_validation_report: Dictionary = {}
+
 # SCBI Industrial Buildings timings are the canonical source for raw production.
 # Keep legacy keys (time/value/level) because existing gameplay and HUD code reads them.
 var raw_materials := {
@@ -162,6 +164,87 @@ func _ready() -> void:
 		for product in store_catalog[store_id]:
 			StorageManager.register_item_definition(str(product.get("id", "")), str(product.get("name", product.get("id", ""))), "crafted")
 	print("[ProductionManager] SCBI catalog: %d raw, %d crafted" % [raw_materials.size(), crafted_items.size()])
+	_recipe_validation_report = get_recipe_validation_report()
+	for validation_error in _recipe_validation_report.get("errors", []):
+		push_warning("[ProductionManager] Invalid recipe catalog: " + str(validation_error))
+
+func get_recipe_validation_report() -> Dictionary:
+	# Validate the complete enabled recipe graph before any item can enter a
+	# production queue. This is structural validation, not a claim that
+	# community-sourced numeric values are officially verified by EA.
+	var errors: Array[String] = []
+	var invalid_recipe_ids: Array[String] = []
+	for item_variant in crafted_items.keys():
+		var item_id := str(item_variant)
+		var recipe: Dictionary = crafted_items[item_variant]
+		var item_errors: Array[String] = []
+		var store_id := str(recipe.get("store", ""))
+		# store_catalog is only the exceptional/unresolved-product registry; it is
+		# not the supplier registry. Supplier buildings are declared centrally by
+		# BuildManager.building_types.
+		if store_id.is_empty() or not BuildManager.building_types.has(store_id):
+			item_errors.append("missing or unknown supplier building")
+		if float(recipe.get("time_sec", 0)) <= 0.0:
+			item_errors.append("production duration must be positive")
+		var inputs: Dictionary = recipe.get("requires", {})
+		if inputs.is_empty():
+			item_errors.append("recipe has no declared inputs")
+		for input_variant in inputs.keys():
+			var input_id := str(input_variant)
+			var quantity := int(inputs[input_variant])
+			if quantity <= 0:
+				item_errors.append("input %s has non-positive quantity" % input_id)
+			elif not raw_materials.has(input_id) and not crafted_items.has(input_id):
+				item_errors.append("input %s has no raw or crafted definition" % input_id)
+		if not bool(recipe.get("unlock_level_verified", true)):
+			# An unknown unlock is a deliberate gameplay lock, not a malformed recipe.
+			pass
+		if not item_errors.is_empty():
+			invalid_recipe_ids.append(item_id)
+			for detail in item_errors:
+				errors.append("%s: %s" % [item_id, detail])
+	var cycle_state: Dictionary = {}
+	var cycle_stack: Array[String] = []
+	var cycle_nodes: Dictionary = {}
+	for item_variant in crafted_items.keys():
+		_visit_recipe_graph(str(item_variant), cycle_state, cycle_stack, cycle_nodes)
+	for cycle_id in cycle_nodes.keys():
+		var id := str(cycle_id)
+		if not invalid_recipe_ids.has(id):
+			invalid_recipe_ids.append(id)
+		errors.append("%s: dependency cycle detected" % id)
+	invalid_recipe_ids.sort()
+	errors.sort()
+	return {
+		"valid": errors.is_empty(),
+		"errors": errors,
+		"invalid_recipe_ids": invalid_recipe_ids,
+		"recipe_count": crafted_items.size(),
+		"validated_at_unix": int(Time.get_unix_time_from_system())
+	}
+
+func _visit_recipe_graph(item_id: String, state: Dictionary, stack: Array[String], cycle_nodes: Dictionary) -> void:
+	var node_state := int(state.get(item_id, 0))
+	if node_state == 2:
+		return
+	if node_state == 1:
+		var cycle_start := stack.find(item_id)
+		if cycle_start >= 0:
+			for index in range(cycle_start, stack.size()):
+				cycle_nodes[stack[index]] = true
+			cycle_nodes[item_id] = true
+		return
+	if not crafted_items.has(item_id):
+		return
+	state[item_id] = 1
+	stack.append(item_id)
+	var requirements: Dictionary = crafted_items[item_id].get("requires", {})
+	for input_variant in requirements.keys():
+		var input_id := str(input_variant)
+		if crafted_items.has(input_id):
+			_visit_recipe_graph(input_id, state, stack, cycle_nodes)
+	stack.pop_back()
+	state[item_id] = 2
 
 func get_available_raw() -> Array:
 	var result: Array = []
@@ -192,6 +275,11 @@ func can_craft(item_id: String) -> bool:
 	return not recipe.is_empty() and get_recipe_lock_reason(item_id).is_empty() and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.get("inputs", {}))
 
 func get_recipe_lock_reason(item_id: String, store_star_level: int = 0) -> String:
+	if _recipe_validation_report.is_empty():
+		_recipe_validation_report = get_recipe_validation_report()
+	var invalid_ids: Array = _recipe_validation_report.get("invalid_recipe_ids", [])
+	if invalid_ids.has(item_id):
+		return "Recipe definition invalid — production disabled; see catalog validation report"
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
 		var catalog_definition := get_item_definition(item_id)
@@ -350,6 +438,51 @@ func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, l
 			remaining_stock
 		)
 
+func get_live_factory_queue_delay_seconds(material_id: String) -> float:
+	# Factory slots run independently. The next batch can begin immediately in
+	# any free slot; otherwise it waits for the earliest occupied slot.
+	if material_id.is_empty() or not is_inside_tree():
+		return 0.0
+	var best_delay := -1.0
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		if not bool(component.is_factory):
+			continue
+		if not get_factory_material_ids(str(component.factory_type)).has(material_id):
+			continue
+		var component_delay := -1.0
+		for slot in component.slots:
+			if slot.is_empty() or bool(slot.get("ready", false)):
+				component_delay = 0.0
+				break
+			var finish_unix := int(slot.get("finish_unix", 0))
+			var paused_at := int(slot.get("paused_at_unix", 0))
+			var now := int(Time.get_unix_time_from_system())
+			var remaining := maxi(0, finish_unix - now) if paused_at <= 0 else maxi(0, finish_unix - paused_at)
+			if component_delay < 0.0 or float(remaining) < component_delay:
+				component_delay = float(remaining)
+		if component_delay >= 0.0 and (best_delay < 0.0 or component_delay < best_delay):
+			best_delay = component_delay
+	return maxf(0.0, best_delay)
+
+func get_live_store_queue_delay_seconds(store_id: String) -> float:
+	# Query live production components, not UI estimates or duplicated queue state.
+	if store_id.is_empty() or not is_inside_tree():
+		return 0.0
+	var best_delay := -1.0
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		if bool(component.is_factory) or str(component.shop_id) != store_id:
+			continue
+		var delay := float(component.get_queue_delay_seconds())
+		if best_delay < 0.0 or delay < best_delay:
+			best_delay = delay
+	# No constructed supplier currently exists: retain the dependency-only
+	# estimate. A live supplier, when present, contributes its actual queue delay.
+	return maxf(0.0, best_delay)
+
 func get_estimated_chain_seconds(item_id: String) -> float:
 	# Display-only estimate: raw inputs are treated as parallel and each
 	# commercial output batch is sequential. This value is never stored in a recipe.
@@ -365,7 +498,9 @@ func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock:
 	if missing_amount <= 0:
 		return 0.0
 	if raw_materials.has(item_id):
-		return float(raw_materials[item_id].get("time_sec", 0))
+		var raw_duration := float(raw_materials[item_id].get("time_sec", 0))
+		var factory_wait := get_live_factory_queue_delay_seconds(item_id)
+		return factory_wait + raw_duration
 	if not crafted_items.has(item_id) or ancestry.has(item_id):
 		return -1.0
 	var recipe: Dictionary = crafted_items[item_id]
@@ -388,8 +523,16 @@ func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock:
 		if dependency_seconds < 0.0:
 			return -1.0
 		dependency_max = maxf(dependency_max, dependency_seconds)
-	# Repeated outputs from one commercial store are sequential jobs.
-	return dependency_max + float(missing_amount * int(recipe.get("time_sec", 0)))
+	# Add the least-loaded live supplier queue. If no supplier building exists,
+	# keep the dependency-only estimate but report the missing supplier separately
+	# through get_live_store_queue_delay_seconds callers; never invent a queue.
+	var store_id := str(recipe.get("store", ""))
+	var queue_delay := get_live_store_queue_delay_seconds(store_id)
+	if queue_delay < 0.0:
+		return -1.0
+	# This output is one batch; multiple requested units serialize on the same
+	# store's production lane after its current queued work.
+	return dependency_max + queue_delay + float(missing_amount * int(recipe.get("time_sec", 0)))
 
  
 func get_recipe_economy_profile(item_id: String) -> Dictionary:
