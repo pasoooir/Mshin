@@ -59,6 +59,13 @@ func is_cell_unlocked(cell: Vector2i) -> bool:
 		return false
 	return is_tile_owned(get_tile_for_cell(cell))
 
+func is_cell_road_buildable(cell: Vector2i) -> bool:
+	if not is_cell_unlocked(cell):
+		return false
+	# Reserve the western highway asphalt cells; the permanent Gateway begins
+	# at x=-23 and remains restorable, while new city roads cannot overlap it.
+	return not (cell.x >= -34 and cell.x <= -24)
+
 func are_cells_unlocked(cells: Array[Vector2i]) -> bool:
 	if cells.is_empty():
 		return false
