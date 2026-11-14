@@ -25,7 +25,7 @@ The motorway is represented by its own world-space-aligned route over the existi
 
 - City traffic uses the right-hand carriageway for its direction of travel.
 - Opposing city traffic uses the opposite side of the road centreline.
-- City vehicle body width is 0.62 m and lane-centre offset is 0.30 m, fitting two opposing vehicles inside the existing 1.32 m base-road surface.
+- City vehicle body width is 0.56 m and lane-centre offset is 0.32 m, fitting two opposing vehicles inside the existing 1.32 m base-road surface.
 - Motorway traffic uses three directional lane centres on each side of the median (offsets 9.1 m, 5.8 m and 2.5 m from the centreline).
 - Direction changes are connected through the junction path rather than snapping back across the road centre.
 - The same right-hand offset rule is applied to civilian, police and fire vehicles.
