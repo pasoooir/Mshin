@@ -70,9 +70,13 @@ func _process(delta: float) -> void:
 
 	var desired_speed := TrafficManager.get_speed_for_segment(from_cell, to_cell, vehicle_kind)
 	var safe_speed := TrafficManager.get_safe_vehicle_speed(self, desired_speed)
-	# Reserve a junction conflict zone before entering it; a denial is a hard stop.
-	if safe_speed > 0.001 and not TrafficManager.request_junction_entry(self, to_cell):
-		safe_speed = 0.0
+	# Reserve a junction conflict zone only when the vehicle can actually advance.
+	# Drop a pending reservation if a same-lane queue blocks the approach.
+	if safe_speed > 0.001:
+		if not TrafficManager.request_junction_entry(self, to_cell):
+			safe_speed = 0.0
+	else:
+		TrafficManager.release_junction_entry(self, to_cell)
 	if safe_speed <= 0.001:
 		if TrafficManager.is_frontmost_vehicle_in_lane(self):
 			_traffic_stop_elapsed += delta
