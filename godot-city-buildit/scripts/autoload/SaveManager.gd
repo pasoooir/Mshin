@@ -6,7 +6,7 @@ signal load_completed(success: bool)
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
 
 const SAVE_PATH: String = "user://pasoo_city_buildit_save.json"
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4
 const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
@@ -71,6 +71,7 @@ func capture_region_snapshot() -> Dictionary:
 		"roads": road_data,
 		"buildings": building_data,
 		"epic_projects": EpicProjectManager.to_save_dict(),
+		"land_expansion": LandExpansionManager.to_save_dict(),
 		"happiness": GameManager.happiness
 	}
 
@@ -152,7 +153,7 @@ func load_game() -> bool:
 	StorageManager.from_save_dict(storage_data)
 	TradeManager.from_save_dict(parsed.get("trade", {}))
 
-	if not _restore_region_world(region_roads, region_buildings, region_epic_projects, false):
+	if not _restore_region_world(region_roads, region_buildings, region_epic_projects, false, region_snapshot.get("land_expansion", {})):
 		is_loading = false
 		load_completed.emit(false)
 		return false
@@ -202,13 +203,16 @@ func load_game() -> bool:
 	return true
 
 
-func _restore_region_world(road_data: Array, building_data: Array, epic_data: Dictionary, _allow_empty_region: bool) -> bool:
+func _restore_region_world(road_data: Array, building_data: Array, epic_data: Dictionary, _allow_empty_region: bool, land_expansion_data: Dictionary = {}) -> bool:
 	var scene = get_tree().current_scene
 	if scene == null:
 		return false
 	var road_system = scene.get_node_or_null("World/RoadSystem")
 	if road_system == null:
 		return false
+	LandExpansionManager.from_save_dict(land_expansion_data)
+	if land_expansion_data.is_empty():
+		LandExpansionManager.migrate_legacy_land(road_data, building_data)
 	BuildManager.cancel_placement()
 	if BuildManager.is_moving:
 		BuildManager.cancel_move()
@@ -229,10 +233,10 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 		if not pending_roads.is_empty():
 			push_error("Saved region road network is missing its permanent highway gateway tile.")
 			return false
-		if not road_system.place_road(gateway_position):
+		if not road_system.restore_road(gateway_position):
 			return false
 	else:
-		if not road_system.place_road(gateway_position):
+		if not road_system.restore_road(gateway_position):
 			push_error("Saved region highway gateway could not be restored.")
 			return false
 		pending_roads.remove_at(gateway_index)
@@ -253,7 +257,7 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 				if road_system.is_road_connected_to_gateway(road_position + direction):
 					connected = true
 					break
-			if connected and road_system.place_road(road_position):
+			if connected and road_system.restore_road(road_position):
 				var saved_road_level := int(road[2]) if road.size() >= 3 else 1
 				road_system.restore_road_level(road_position, saved_road_level)
 				pending_roads.remove_at(index)
@@ -273,7 +277,8 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 			type_id,
 			int(saved_building.get("stage", 1)),
 			str(saved_building.get("status", "constructing")),
-			int(saved_building.get("rotation_quarters", 0))
+			int(saved_building.get("rotation_quarters", 0)),
+			true
 		)
 		if not restored:
 			push_error("Could not restore region building: " + type_id)
@@ -304,7 +309,8 @@ func load_region_snapshot(snapshot: Dictionary) -> bool:
 		snapshot.get("roads", []),
 		snapshot.get("buildings", []),
 		snapshot.get("epic_projects", {}),
-		true
+		true,
+		snapshot.get("land_expansion", {})
 	)
 	EconomyManager.simoleons = previous_simoleons
 	if not success:

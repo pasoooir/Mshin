@@ -213,9 +213,13 @@ func get_road_placement_error(grid_pos: Vector2i) -> String:
 		return "A road already exists on this tile."
 	if not BuildManager.is_inside_world(grid_pos):
 		return "This tile is outside the buildable city area."
+	if not LandExpansionManager.is_cell_unlocked(grid_pos):
+		return "This plot is locked. Expand city land before building roads."
+	if not LandExpansionManager.is_cell_road_buildable(grid_pos):
+		return "This tile is reserved for the permanent highway asphalt corridor."
 	if not _has_adjacent_road(grid_pos):
 		return "Road must connect to the active highway network."
-	if not BuildManager.is_cell_free(grid_pos, Vector2i.ONE):
+	if not BuildManager.is_cell_free(grid_pos, Vector2i.ONE, true):
 		return "This tile is occupied by a building."
 	if not EconomyManager.can_afford(ROAD_COST):
 		return "Not enough Simoleons. Each road tile costs 50."
@@ -226,6 +230,20 @@ func place_road(grid_pos: Vector2i) -> bool:
 		return false
 	if not EconomyManager.spend_simoleons(ROAD_COST):
 		return false
+	roads[grid_pos] = null
+	invalidate_road_connectivity_cache()
+	_refresh_road_neighborhood(grid_pos)
+	road_placed.emit(grid_pos)
+	_queue_service_recalculation()
+	return true
+
+func restore_road(grid_pos: Vector2i) -> bool:
+	# Save restoration bypasses new-placement restrictions (e.g. reserved asphalt),
+	# but still requires the saved tile to belong to the restored city land.
+	if not BuildManager.is_inside_world(grid_pos) or not LandExpansionManager.is_cell_unlocked(grid_pos):
+		return false
+	if roads.has(grid_pos):
+		return true
 	roads[grid_pos] = null
 	invalidate_road_connectivity_cache()
 	_refresh_road_neighborhood(grid_pos)

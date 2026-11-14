@@ -1,5 +1,7 @@
 extends Node3D
 
+const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
+
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const Icons = preload("res://scripts/ui/Icons.gd")
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
@@ -3295,6 +3297,84 @@ func _run_gameplay_test() -> void:
 		restored_home._process(0.0)
 		_check(not restored_home.upgrade_in_progress and restored_home.upgrade_stage == 3, "Restored residential upgrade did not finish from its saved timestamp.")
 	_check(GameManager.population > saved_population_expected, "Completing the restored upgrade must add residents without subtracting the previous population.")
+
+
+	# Land expansion: adjacency, three-item atomic payment, ownership and save persistence.
+	var previous_land_state: Dictionary = LandExpansionManager.to_save_dict()
+	var previous_storage_items: Dictionary = StorageManager.items.duplicate(true)
+	var previous_storage_capacity := StorageManager.capacity
+	var previous_mayor_level := GameManager.level
+	var expansion_test_tile := Vector2i(0, 3)
+	var expansion_cost: Dictionary = LandExpansionManager.get_tile_cost(expansion_test_tile)
+	GameManager.level = 10
+	StorageManager.capacity = 100
+	StorageManager.items = {}
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 0)), "The initial central city plots must be owned and buildable.")
+	_check(not LandExpansionManager.is_cell_unlocked(Vector2i(35, 0)), "Unopened outer plots must remain locked.")
+	_check(not BuildManager.is_cell_free(Vector2i(35, 0), Vector2i.ONE), "Building footprints must not be placeable on unopened land.")
+	_check(not BuildManager.is_cell_free(Vector2i(-24, -3), Vector2i.ONE), "Building footprints must not overlap the permanent highway asphalt reserve.")
+	_check(road_system.get_road_placement_error(Vector2i(35, 0)).contains("locked"), "Road placement must reject unopened land with a clear expansion message.")
+	_check(road_system.get_road_placement_error(Vector2i(-24, 0)).contains("highway asphalt"), "New roads must not be placed over the permanent highway asphalt.")
+	_check(road_system.get_road_placement_error(Vector2i(-24, 5)).contains("highway asphalt"), "The full highway asphalt width must remain reserved even outside the seeded Gateway road rows.")
+	_check(road_system.restore_road(Vector2i(-24, 20)), "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.")
+	_check(road_system.remove_road(Vector2i(-24, 20)), "The reserved-edge road restoration smoke fixture must clean up successfully.")
+	_check(LandExpansionManager.get_available_expansion_tiles().has(expansion_test_tile), "A plot directly adjacent to owned land must be available for expansion.")
+	_check(not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(-4, 0)) and not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(3, 0)), "Expansion choices must exclude the motorway asphalt corridor and ocean coastline.")
+	_check(not LandExpansionManager.expand_tile(expansion_test_tile), "Land expansion must reject a purchase when any required Dozer item is missing.")
+	_check(StorageManager.add_items(expansion_cost), "Could not seed the isolated expansion-item inventory test.")
+	_check(LandExpansionManager.can_expand_tile(expansion_test_tile), "The adjacent plot must become purchasable when all three expansion items are present.")
+	_check(LandExpansionManager.expand_tile(expansion_test_tile), "A fully funded adjacent plot must be claimable.")
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 24)), "Claiming a plot must unlock its complete eight-by-eight-cell footprint.")
+	_check(LandExpansionManager.get_owned_tiles().has(expansion_test_tile), "Claimed land must be included in the rendered owned-plot grid source.")
+	_check(StorageManager.get_count("dozer_wheel") == 0 and StorageManager.get_count("dozer_blade") == 0 and StorageManager.get_count("dozer_exhaust") == 0, "A land claim must atomically consume all three required Dozer items.")
+
+	var bubble_gift_probe := CitizenFeedbackBubblesScript.new()
+	add_child(bubble_gift_probe)
+	_check(bubble_gift_probe._grant_expansion_gift("dozer_wheel"), "A happy citizen opinion bubble must be able to award a Dozer expansion item from Mayor Level 8.")
+	_check(StorageManager.get_count("dozer_wheel") == 1, "A citizen expansion gift must enter the shared City Storage inventory.")
+	StorageManager.items = previous_storage_items
+	StorageManager.storage_changed.emit()
+	bubble_gift_probe.queue_free()
+
+	var saved_market_offers: Array[Dictionary] = TradeManager.market_offers.duplicate(true)
+	TradeManager._generate_market_offers()
+	var market_item_ids: Array[String] = []
+	for offer in TradeManager.market_offers:
+		market_item_ids.append(str(offer.get("item_id", "")))
+	_check(market_item_ids.has("dozer_wheel") and market_item_ids.has("dozer_blade") and market_item_ids.has("dozer_exhaust"), "Global Trade must surface all three land expansion parts after Mayor Level 10.")
+	_check(not ProductionManager.get_available_raw().has("dozer_wheel") and not ProductionManager.get_available_raw().has("dozer_blade") and not ProductionManager.get_available_raw().has("dozer_exhaust"), "Land expansion special items must not appear as factory-manufacturable raw materials.")
+	TradeManager.market_offers = saved_market_offers
+	var saved_region_snapshot_with_land: Dictionary = SaveManager.capture_region_snapshot()
+	_check(saved_region_snapshot_with_land.get("land_expansion", {}).get("owned_tiles", []).size() > previous_land_state.get("owned_tiles", []).size(), "The real region save snapshot must include newly claimed land ownership.")
+	var saved_expansion_state: Dictionary = saved_region_snapshot_with_land.get("land_expansion", {})
+	LandExpansionManager.from_save_dict(saved_expansion_state)
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 24)), "Claimed land must survive LandExpansionManager save/load serialization.")
+	LandExpansionManager.from_save_dict(previous_land_state)
+	var legacy_land_state: Dictionary = {"owned_tiles": [[-3, -3]]}
+	LandExpansionManager.from_save_dict(legacy_land_state)
+	LandExpansionManager.migrate_legacy_land([[35, 0, 1]], [{"type":"residential_1", "grid":[34, 0], "rotation_quarters":0}, {"type":"residential_1", "grid":[-25, -2], "rotation_quarters":0}])
+	_check(LandExpansionManager.is_cell_unlocked(Vector2i(35, 0)), "A version 3 save must migrate legacy road/building plots to owned land before restoring the city.")
+	var previous_test_simoleons := EconomyManager.simoleons
+	EconomyManager.simoleons = 100000000
+	_check(not BuildManager.can_place_at(Vector2i(-25, -2), "residential_1", 0), "New building placement must reject the permanent highway asphalt corridor.")
+	_check(BuildManager.can_place_at(Vector2i(-25, -2), "residential_1", 0, true), "Legacy saved buildings on the reserved highway edge must remain restorable after their old plots are migrated.")
+	EconomyManager.simoleons = previous_test_simoleons
+	LandExpansionManager.from_save_dict(previous_land_state)
+	StorageManager.items = previous_storage_items
+	StorageManager.capacity = previous_storage_capacity
+	StorageManager.storage_changed.emit()
+	StorageManager.capacity_changed.emit(StorageManager.capacity)
+	GameManager.level = previous_mayor_level
+
+	# Livestock may graze only on the two desert fringe strips, never on asphalt,
+	# connected roads or player-owned/buildable city plots.
+	var livestock_probe := MeadowLivestockScript.new()
+	add_child(livestock_probe)
+	_check(livestock_probe.is_valid_grazing_position(Vector3(-30.0, 0.0, 85.0)), "Livestock must be allowed to graze on the designated northern desert pasture.")
+	_check(livestock_probe.is_valid_grazing_position(Vector3(25.0, 0.0, -85.0)), "Livestock must be allowed to graze on the designated southern desert pasture.")
+	_check(not livestock_probe.is_valid_grazing_position(Vector3(-55.0, 0.0, 85.0)), "Livestock must never enter the external highway asphalt corridor.")
+	_check(not livestock_probe.is_valid_grazing_position(Vector3(0.0, 0.0, 0.0)), "Livestock must never enter unlocked city plots.")
+	livestock_probe.queue_free()
 
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")

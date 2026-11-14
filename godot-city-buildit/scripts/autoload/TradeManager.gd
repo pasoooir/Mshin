@@ -148,6 +148,8 @@ func _process(_delta: float) -> void:
 		trade_state_changed.emit()
 
 func is_trade_eligible_item(item_id: String) -> bool:
+	if LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id):
+		return GameManager.level >= LandExpansionManager.MIN_EXPANSION_LEVEL
 	if ProductionManager.raw_materials.has(item_id):
 		var raw_definition: Dictionary = ProductionManager.raw_materials[item_id]
 		return int(raw_definition.get("level", 1)) <= GameManager.level and ProductionManager.get_item_value(item_id) > 0
@@ -223,14 +225,27 @@ func _set_ship_visual_departed(departed: bool) -> void:
 		visual.set_departed(departed)
 
 func _item_exists(item_id: String) -> bool:
-	return ProductionManager.raw_materials.has(item_id) or ProductionManager.crafted_items.has(item_id)
+	return ProductionManager.raw_materials.has(item_id) or ProductionManager.crafted_items.has(item_id) or LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id)
 
 func _generate_market_offers() -> void:
 	market_offers.clear()
 	var pool: Array[String] = get_trade_eligible_item_ids()
 	pool.shuffle()
-	for index in range(mini(MARKET_OFFER_COUNT, pool.size())):
-		var item_id := pool[index]
+	# Keep all three SCBI-style expansion parts discoverable in every market
+	# refresh after Mayor Level 10 instead of relying on a lucky random roll.
+	if GameManager.level >= 10:
+		for item_id in ["dozer_wheel", "dozer_blade", "dozer_exhaust"]:
+			var amount := 1
+			market_offers.append({
+				"item_id": item_id,
+				"amount": amount,
+				"price": maxi(1, ProductionManager.get_item_value(item_id) * amount * 2),
+				"sold": false
+			})
+			pool.erase(item_id)
+	for item_id in pool:
+		if market_offers.size() >= MARKET_OFFER_COUNT:
+			break
 		var amount := randi_range(1, 3)
 		market_offers.append({
 			"item_id": item_id,
@@ -345,7 +360,18 @@ func from_save_dict(data: Dictionary) -> void:
 	_set_ship_visual_departed(ship_departed)
 	if current_orders.is_empty():
 		_generate_orders()
-	if market_offers.is_empty():
+	var expansion_market_complete := true
+	if GameManager.level >= 10:
+		for expansion_item in ["dozer_wheel", "dozer_blade", "dozer_exhaust"]:
+			var found := false
+			for offer in market_offers:
+				if str(offer.get("item_id", "")) == expansion_item:
+					found = true
+					break
+			if not found:
+				expansion_market_complete = false
+				break
+	if market_offers.is_empty() or not expansion_market_complete:
 		_generate_market_offers()
 	trade_state_changed.emit()
 

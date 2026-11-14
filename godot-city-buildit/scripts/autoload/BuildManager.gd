@@ -242,12 +242,17 @@ func get_footprint_cells(anchor: Vector2i, size: Vector2i) -> Array[Vector2i]:
 func is_inside_world(anchor: Vector2i, size: Vector2i = Vector2i.ONE) -> bool:
 	return anchor.x >= -WORLD_HALF_CELLS and anchor.y >= -WORLD_HALF_CELLS and anchor.x + size.x <= WORLD_HALF_CELLS and anchor.y + size.y <= WORLD_HALF_CELLS
 
-func is_cell_free(grid_pos: Vector2i, size: Vector2i = Vector2i.ONE) -> bool:
+func is_cell_free(grid_pos: Vector2i, size: Vector2i = Vector2i.ONE, allow_reserved_restore: bool = false) -> bool:
 	if not is_inside_world(grid_pos, size):
 		return false
 	var scene = get_tree().current_scene
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	for cell in get_footprint_cells(grid_pos, size):
+		if allow_reserved_restore:
+			if not LandExpansionManager.is_cell_unlocked(cell):
+				return false
+		elif not LandExpansionManager.is_cell_buildable(cell):
+			return false
 		if road_system and road_system.has_road(cell):
 			return false
 		if building_cells.has(cell):
@@ -286,7 +291,7 @@ func is_building_operational(building: Node) -> bool:
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	return has_road_access(anchor, size)
 
-func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: int = -1) -> bool:
+func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: int = -1, allow_reserved_restore: bool = false) -> bool:
 	var chosen: String = type_id if type_id != "" else selected_building_type
 	if chosen == "" or not building_types.has(chosen):
 		return false
@@ -306,7 +311,7 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: i
 	if applied_rotation < 0:
 		applied_rotation = placement_rotation_quarters if chosen == selected_building_type else 0
 	var size: Vector2i = get_building_size(chosen, applied_rotation)
-	if not is_cell_free(grid_pos, size) or not has_road_access(grid_pos, size):
+	if not is_cell_free(grid_pos, size, allow_reserved_restore) or not has_road_access(grid_pos, size):
 		return false
 	return true
 
@@ -402,10 +407,10 @@ func place_building_at_world(world_pos: Vector3) -> bool:
 		return false
 	return place_building(world_to_grid(world_pos))
 
-func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int = 1, saved_status: String = "constructing", saved_rotation_quarters: int = -1) -> bool:
+func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int = 1, saved_status: String = "constructing", saved_rotation_quarters: int = -1, allow_reserved_restore: bool = false) -> bool:
 	var chosen: String = type_id if type_id != "" else selected_building_type
 	var applied_rotation := posmod(placement_rotation_quarters if saved_rotation_quarters < 0 else saved_rotation_quarters, 4)
-	if not can_place_at(grid_pos, chosen, applied_rotation):
+	if not can_place_at(grid_pos, chosen, applied_rotation, allow_reserved_restore):
 		return false
 	var definition: Dictionary = building_types[chosen]
 	var cost: int = int(definition.get("cost", 0))

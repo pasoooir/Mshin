@@ -290,6 +290,8 @@ func get_default_recipe_for_building(building_type: String) -> String:
 	return ""
 
 func get_item_definition(item_id: String) -> Dictionary:
+	if LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id):
+		return LandExpansionManager.get_expansion_item_definition(item_id)
 	if raw_materials.has(item_id):
 		return raw_materials[item_id].duplicate(true)
 	if crafted_items.has(item_id):
@@ -475,6 +477,8 @@ func get_missing_inputs_text(item_id: String) -> String:
 	return ", ".join(missing)
 
 func get_item_value(item_id: String) -> int:
+	if LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id):
+		return 800
 	if raw_materials.has(item_id): return int(raw_materials[item_id].value)
 	if crafted_items.has(item_id): return int(crafted_items[item_id].value)
 	var definition := get_item_definition(item_id)
