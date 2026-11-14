@@ -36,6 +36,17 @@ func _process(delta: float) -> void:
 		_immigration_elapsed = 0.0
 		_process_immigration()
 
+func reset_transient_city_state() -> void:
+	# Happiness/XP streaks belong to the currently loaded city only.
+	# Never let time or household state leak between regions or across a save restore.
+	_elapsed = 0.0
+	_high_happiness_elapsed = 0.0
+	_immigration_elapsed = 0.0
+	_immigration_fractional_carry = 0.0
+	_immigration_advice_elapsed = 0.0
+	home_scores.clear()
+	low_happiness_time.clear()
+
 func recalculate_city() -> void:
 	var homes: Array = []
 	var scores: Dictionary = {}
