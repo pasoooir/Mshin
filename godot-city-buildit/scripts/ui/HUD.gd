@@ -330,7 +330,7 @@ func _build_top_hud() -> void:
 	left_stack.add_child(xp_row)
 	xp_text = _make_hud_value("0 / %d XP" % GameManager.get_xp_needed(), int(16 * _ui_scale))
 	xp_text.custom_minimum_size = Vector2(105, 24) * _ui_scale
-	xp_text.tooltip_text = "XP raises your Mayor Level. Earn it by placing/completing buildings, collecting production, unlocking achievements, and keeping average city happiness at 80% or higher for 60 seconds."
+	xp_text.tooltip_text = "XP raises your Mayor Level. Earn it by placing/completing buildings, collecting production, unlocking achievements, and keeping average city happiness at 80 percent or higher for 60 seconds."
 	xp_row.add_child(xp_text)
 	xp_progress = ProgressBar.new()
 	xp_progress.name = "ExperienceProgress"
@@ -1546,15 +1546,15 @@ func _refresh_xp_info_panel() -> void:
 	var needed := maxi(1, GameManager.get_xp_needed())
 	var remaining := maxi(0, needed - GameManager.experience)
 	if GameManager.level >= 60:
-		xp_info_label.text = "Mayor Level %d — maximum level reached.\nXP is earned by building and completing buildings, collecting production, unlocking achievements, and maintaining average city Happiness of at least 80%% for each 60-second period." % GameManager.level
+		xp_info_label.text = "Mayor Level %d — maximum level reached.\nXP is earned by building and completing buildings, collecting production, unlocking achievements, and maintaining average city Happiness of at least 80 percent for each 60-second period." % GameManager.level
 	else:
-		xp_info_label.text = "Mayor Level %d → %d\nProgress: %d / %d XP — %d XP remaining.\nEarn XP by placing/completing buildings, collecting production, unlocking achievements, or keeping average city Happiness at 80%% or higher for 60 seconds." % [GameManager.level, GameManager.level + 1, GameManager.experience, needed, remaining]
+		xp_info_label.text = "Mayor Level %d → %d\nProgress: %d / %d XP — %d XP remaining.\nEarn XP by placing/completing buildings, collecting production, unlocking achievements, or keeping average city Happiness at 80 percent or higher for 60 seconds." % [GameManager.level, GameManager.level + 1, GameManager.experience, needed, remaining]
 
 func _on_xp_changed(xp: int, needed: int) -> void:
 	var safe_needed := maxi(1, needed)
 	var remaining := maxi(0, safe_needed - xp)
 	var next_level := mini(60, GameManager.level + 1)
-	var progress_hint := "Level %d: %d XP remaining. XP comes from building, production collection, achievements and sustained happiness (80%+ for 60 seconds)." % [next_level, remaining]
+	var progress_hint := "Level %d: %d XP remaining. XP comes from building, production collection, achievements and sustained happiness (80 percent or higher for 60 seconds)." % [next_level, remaining]
 	if xp_text:
 		xp_text.text = "%d / %d XP" % [xp, safe_needed]
 		xp_text.tooltip_text = progress_hint
