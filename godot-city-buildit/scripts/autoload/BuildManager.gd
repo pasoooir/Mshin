@@ -51,7 +51,7 @@ const CONSTRUCTION_BOM_BOOTSTRAP_TYPES := ["residential_1", "residential_villa",
 # need utility capacity and local power/water coverage.
 const OPERATIONAL_REQUIREMENT_PROFILES := {
 	"residential": {},
-	"commercial": {"power": 1, "water": 1, "sewage": 1, "waste": 1, "workforce": 1},
+	"commercial": {"power": 1, "water": 1, "workforce": 1},
 	"industrial": {"power": 2, "water": 1, "sewage": 1, "waste": 1, "workforce": 2},
 	"service": {"workforce": 1},
 	"park": {}
