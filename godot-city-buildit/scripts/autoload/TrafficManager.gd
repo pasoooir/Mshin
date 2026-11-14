@@ -25,7 +25,7 @@ const MAX_PUBLIC_VEHICLES: int = 18
 const MAX_EMERGENCY_VEHICLES: int = 8
 const MIN_FOLLOWING_GAP: float = 2.25
 const SAFE_FOLLOWING_GAP: float = 5.5
-const LANE_CENTER_OFFSET: float = 0.30
+const LANE_CENTER_OFFSET: float = 0.32
 const CARDINAL_DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1),
 	Vector2i(1, 0),
