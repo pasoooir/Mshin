@@ -3325,6 +3325,7 @@ func _run_gameplay_test() -> void:
 	_check(LandExpansionManager.can_expand_tile(expansion_test_tile), "The adjacent plot must become purchasable when all three expansion items are present.")
 	_check(LandExpansionManager.expand_tile(expansion_test_tile), "A fully funded adjacent plot must be claimable.")
 	_check(LandExpansionManager.is_cell_unlocked(Vector2i(0, 24)), "Claiming a plot must unlock its complete eight-by-eight-cell footprint.")
+	_check(LandExpansionManager.get_owned_tiles().has(expansion_test_tile), "Claimed land must be included in the rendered owned-plot grid source.")
 	_check(StorageManager.get_count("dozer_wheel") == 0 and StorageManager.get_count("dozer_blade") == 0 and StorageManager.get_count("dozer_exhaust") == 0, "A land claim must atomically consume all three required Dozer items.")
 
 	var bubble_gift_probe := CitizenFeedbackBubblesScript.new()
