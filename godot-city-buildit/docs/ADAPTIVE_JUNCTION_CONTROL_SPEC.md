@@ -8,6 +8,9 @@
 - Phase transitions use a 1.0-second yellow interval followed by a 0.5-second all-red clearance interval.
 - The next approach is selected by accumulated waiting time, with queue size as a tie-breaker. The served approach's waiting time resets.
 - A denied signal admission remains a hard stop. The four-second frontmost congestion recovery cannot override a red/yellow/all-red phase.
+- New entry requires an explicit controller-owned green state; a missing/stale phase is never interpreted as implicit green.
+- A vehicle that already holds a movement reservation retains permission to clear the junction through yellow/all-red. The reservation is released only after the vehicle reaches the downstream cell or is removed/rerouted.
+- If every queued approach yields to traffic on its right, the controller stays all-red until an approach reaches the 8-second fairness threshold; it does not grant an immediate fallback green.
 
 ## Movement conflict, right-of-way and exit clearance — PR #467
 
