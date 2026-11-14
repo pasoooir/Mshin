@@ -1189,9 +1189,16 @@ func _show_building_info(type_id: String) -> void:
 	for child in catalog_info_panel.get_children():
 		catalog_info_panel.remove_child(child)
 		child.queue_free()
+	var scroll := ScrollContainer.new()
+	scroll.name = "BuildingInfoScroll"
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	catalog_info_panel.add_child(scroll)
 	var layout := VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 4)
-	catalog_info_panel.add_child(layout)
+	scroll.add_child(layout)
 	var heading := HBoxContainer.new()
 	layout.add_child(heading)
 	var title := Label.new()
@@ -1264,6 +1271,7 @@ func _add_info_line(parent: VBoxContainer, key_text: String, value_text: String)
 	var value := Label.new()
 	value.text = value_text
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	value.add_theme_color_override("font_color", Color("#263746"))
 	row.add_child(value)
 
