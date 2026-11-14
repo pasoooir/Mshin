@@ -233,10 +233,10 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 		if not pending_roads.is_empty():
 			push_error("Saved region road network is missing its permanent highway gateway tile.")
 			return false
-		if not road_system.place_road(gateway_position):
+		if not road_system.restore_road(gateway_position):
 			return false
 	else:
-		if not road_system.place_road(gateway_position):
+		if not road_system.restore_road(gateway_position):
 			push_error("Saved region highway gateway could not be restored.")
 			return false
 		pending_roads.remove_at(gateway_index)
@@ -257,7 +257,7 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 				if road_system.is_road_connected_to_gateway(road_position + direction):
 					connected = true
 					break
-			if connected and road_system.place_road(road_position):
+			if connected and road_system.restore_road(road_position):
 				var saved_road_level := int(road[2]) if road.size() >= 3 else 1
 				road_system.restore_road_level(road_position, saved_road_level)
 				pending_roads.remove_at(index)
