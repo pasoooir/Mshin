@@ -682,9 +682,13 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	follower.route_distance = 8.0
 	leader.route_distance = 9.5
 	var previous_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
-	TrafficManager._active_vehicles = [follower, leader]
+	TrafficManager._active_vehicles.clear()
+	TrafficManager._active_vehicles.append(follower)
+	TrafficManager._active_vehicles.append(leader)
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(follower, 40.0), 0.0), "A vehicle must stop when the same-lane vehicle ahead is inside the minimum safe gap.")
-	TrafficManager._active_vehicles = previous_fleet
+	TrafficManager._active_vehicles.clear()
+	for previous_vehicle in previous_fleet:
+		TrafficManager._active_vehicles.append(previous_vehicle)
 	follower.free()
 	leader.free()
 
