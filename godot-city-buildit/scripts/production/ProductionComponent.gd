@@ -19,6 +19,24 @@ func _ready() -> void:
 	if not is_factory:
 		slot_count = clampi(maxi(slot_count, MIN_STORE_QUEUE_SLOTS), MIN_STORE_QUEUE_SLOTS, MAX_STORE_QUEUE_SLOTS)
 	_ensure_slots()
+	add_to_group("production_components")
+
+func get_queue_delay_seconds() -> float:
+	# A store runs one active order at a time; queued orders ahead of a new
+	# request therefore add their full base durations. Ready orders do not block.
+	if is_factory:
+		return 0.0
+	var now := int(Time.get_unix_time_from_system())
+	var delay := 0.0
+	for slot in slots:
+		if slot.is_empty() or bool(slot.get("ready", false)):
+			continue
+		var finish_unix := int(slot.get("finish_unix", 0))
+		if finish_unix > now:
+			delay = maxf(delay, float(finish_unix - now))
+		elif bool(slot.get("queued", false)) or finish_unix <= 0:
+			delay += get_item_production_time(str(slot.get("item_id", "")))
+	return delay
 
 func _process(_delta: float) -> void:
 	refresh_slots()
