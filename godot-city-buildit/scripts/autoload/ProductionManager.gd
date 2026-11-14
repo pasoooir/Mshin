@@ -448,9 +448,9 @@ func get_live_store_queue_delay_seconds(store_id: String) -> float:
 		var delay := float(component.get_queue_delay_seconds())
 		if best_delay < 0.0 or delay < best_delay:
 			best_delay = delay
-	# A missing store instance means the product cannot start now; represent
-	# this as unknown rather than pretending a factory/store exists.
-	return best_delay
+	# No constructed supplier currently exists: retain the dependency-only
+	# estimate. A live supplier, when present, contributes its actual queue delay.
+	return maxf(0.0, best_delay)
 
 func get_estimated_chain_seconds(item_id: String) -> float:
 	# Display-only estimate: raw inputs are treated as parallel and each
