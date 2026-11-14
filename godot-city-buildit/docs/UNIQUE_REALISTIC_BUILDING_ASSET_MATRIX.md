@@ -105,6 +105,9 @@ As new park, recreation, entertainment, education, transport, beach, mountain, o
 
 `BuildManager.BUILDING_MODEL_REGISTRY` now maps available GLTF assets by exact gameplay type ID instead of applying one model to every entry in a category. The villa and apartment archetypes, `shop_chain`, and `factory_small` (plus their explicit legacy save IDs) are the only mapped families. Other commercial types retain their own type-specific procedural identity geometry; larger factory tiers retain distinct industrial procedural designs; Farm, regional homes, services and parks also remain procedural. This prevents an unrelated shop or factory from silently inheriting a generic model, but it does **not** complete the asset matrix: most player-placeable types still need their own dedicated GLB/GLTF assets, documented scale, materials, import checks and visual review.
 
+
+A shared procedural PBR surface library is now integrated into the procedural mesh primitives. It generates deterministic, cached 128×128 Base Color, Normal, Roughness and Metallic maps for plaster, brick, timber, glass, metal, roof tile and concrete; window glazing and frames receive explicit semantic material hints. These are procedural textures, not photographic scans. They improve surface response but do not turn the current procedural silhouettes into individually authored GLTF assets, and they do not close any per-type model requirement.
+
 ## Asset production and integration rules
 
 1. Create a per-type asset registry keyed by the exact `building_types` ID. Do not select a model solely from `category`.
