@@ -732,10 +732,10 @@ for visual_contract in [
 ]:
     if visual_contract not in world_source:
         errors.append(f"Highway/natural-terrain visual contract is missing: {visual_contract}")
-highway_body = re.search(r"func _build_coastal_highway\(\).*?(?=\nfunc |\\Z)", world_source, re.S)
+highway_body = re.search(r"func _build_coastal_highway\(\).*?(?=\nfunc |\Z)", world_source, re.S)
 if highway_body is None or "HIGHWAY_LANE_COUNT" not in world_source or "HighwayCityConnector" not in highway_body.group(0):
     errors.append("The six-lane permanent highway must retain its city connector")
-lane_body = re.search(r"func _add_highway_lane_dashes\(\).*?(?=\nfunc |\\Z)", world_source, re.S)
+lane_body = re.search(r"func _add_highway_lane_dashes\(\).*?(?=\nfunc |\Z)", world_source, re.S)
 if lane_body is None or "MultiMesh" not in lane_body.group(0) or "range(-15, 16)" not in lane_body.group(0):
     errors.append("Highway lane markings must be batched and repeated along the full road")
 
