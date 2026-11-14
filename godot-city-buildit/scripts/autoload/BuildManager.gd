@@ -313,7 +313,9 @@ func is_building_operational(building: Node) -> bool:
 	var definition: Dictionary = building.get("definition")
 	var anchor: Vector2i = building.get("grid_pos")
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
-	return has_road_access(anchor, size)
+	if not has_road_access(anchor, size):
+		return false
+	return ServiceManager.get_operational_blockers(building).is_empty()
 
 func get_operational_requirements(type_id: String) -> Dictionary:
 	if not building_types.has(type_id):
