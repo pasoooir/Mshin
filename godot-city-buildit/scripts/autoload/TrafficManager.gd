@@ -774,9 +774,12 @@ func _route_key(route: Array[Vector2i]) -> String:
 	return "|".join(parts)
 
 func clear_active_vehicle() -> void:
+	# This method is used by deterministic smoke-test/reset paths only.
+	# Free synchronously so headless runs do not leave deferred MeshInstance3D
+	# resources alive when the test scene exits.
 	for vehicle in _active_vehicles:
 		if is_instance_valid(vehicle):
-			vehicle.queue_free()
+			vehicle.free()
 	_active_vehicles.clear()
 	_junction_reservations.clear()
 	_blocked_road_cells.clear()
