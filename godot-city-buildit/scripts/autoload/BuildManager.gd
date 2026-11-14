@@ -46,6 +46,18 @@ const CONSTRUCTION_BOM_PROFILES := {
 }
 const CONSTRUCTION_BOM_BOOTSTRAP_TYPES := ["residential_1", "residential_villa", "factory_small", "industrial_1", "building_supplies", "shop_chain"]
 
+# Mshin operational profiles are explicit balancing rules, not EA claims.
+# Service buildings need staff; commercial/industrial businesses additionally
+# need utility capacity and local power/water coverage.
+const OPERATIONAL_REQUIREMENT_PROFILES := {
+	"residential": {},
+	"commercial": {"power": 1, "water": 1, "sewage": 1, "waste": 1, "workforce": 1},
+	"industrial": {"power": 2, "water": 1, "sewage": 1, "waste": 1, "workforce": 2},
+	"service": {"workforce": 1},
+	"park": {}
+}
+const OPERATIONAL_REQUIREMENT_BOOTSTRAP_TYPES := ["residential_1", "residential_villa", "factory_small", "industrial_1", "building_supplies", "shop_chain"]
+
 var building_types: Dictionary = {
 	"residential_1": {"name":"Small House", "category":"residential", "service_demand":1, "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
 	"residential_2": {"name":"Apartment", "category":"residential", "service_demand":2, "cost":0, "size":Vector2i(2,2), "population":28, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
@@ -302,6 +314,26 @@ func is_building_operational(building: Node) -> bool:
 	var anchor: Vector2i = building.get("grid_pos")
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	return has_road_access(anchor, size)
+
+func get_operational_requirements(type_id: String) -> Dictionary:
+	if not building_types.has(type_id):
+		return {}
+	var definition: Dictionary = building_types[type_id]
+	if definition.has("operational_requirements"):
+		return definition.get("operational_requirements", {}).duplicate(true)
+	if OPERATIONAL_REQUIREMENT_BOOTSTRAP_TYPES.has(type_id):
+		return {}
+	var category := str(definition.get("category", ""))
+	return OPERATIONAL_REQUIREMENT_PROFILES.get(category, {}).duplicate(true)
+
+func get_operational_requirement_source(type_id: String) -> String:
+	if not building_types.has(type_id):
+		return ""
+	if building_types[type_id].has("operational_requirements"):
+		return str(building_types[type_id].get("operational_requirements_source", "Mshin building-specific design"))
+	if OPERATIONAL_REQUIREMENT_BOOTSTRAP_TYPES.has(type_id):
+		return "Mshin bootstrap exception — no operational gate"
+	return "Mshin category profile — operational design rule"
 
 func get_construction_bom(type_id: String) -> Dictionary:
 	if not building_types.has(type_id):
