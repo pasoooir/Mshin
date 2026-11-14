@@ -1557,6 +1557,8 @@ func _create_service_test_home(building_id: String, service_demand: int, grid_po
 
 func _test_sewage_service_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_population := GameManager.population
+	GameManager.population = 1000
 	var saved_level := GameManager.level
 	BuildManager.buildings.clear()
 	GameManager.level = 8
@@ -1619,6 +1621,7 @@ func _test_sewage_service_happiness() -> void:
 		remove_child(home)
 		home.free()
 	BuildManager.buildings = saved_buildings
+	GameManager.population = saved_population
 	GameManager.level = saved_level
 	ServiceManager.recalculate_from_buildings()
 
@@ -1640,6 +1643,8 @@ func _test_power_water_coverage_preview() -> void:
 
 func _test_waste_service_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_population := GameManager.population
+	GameManager.population = 1000
 	var saved_level := GameManager.level
 	BuildManager.buildings.clear()
 	GameManager.level = 14
@@ -1708,12 +1713,15 @@ func _test_waste_service_happiness() -> void:
 		remove_child(home)
 		home.free()
 	BuildManager.buildings = saved_buildings
+	GameManager.population = saved_population
 	GameManager.level = saved_level
 	ServiceManager.recalculate_from_buildings()
 
 
 func _test_power_water_gateway_access() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_population := GameManager.population
+	GameManager.population = 1000
 	var saved_level := GameManager.level
 	BuildManager.buildings.clear()
 	GameManager.level = 15
@@ -1766,12 +1774,15 @@ func _test_power_water_gateway_access() -> void:
 		remove_child(test_building)
 		test_building.free()
 	BuildManager.buildings = saved_buildings
+	GameManager.population = saved_population
 	GameManager.level = saved_level
 	ServiceManager.recalculate_from_buildings()
 
 
 func _test_emergency_service_tier_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_population := GameManager.population
+	GameManager.population = 1000
 	var saved_level := GameManager.level
 	var saved_simoleons := EconomyManager.simoleons
 	BuildManager.buildings.clear()
@@ -1867,12 +1878,15 @@ func _test_emergency_service_tier_happiness() -> void:
 		remove_child(home_node)
 		home_node.free()
 	BuildManager.buildings = saved_buildings
+	GameManager.population = saved_population
 	GameManager.level = saved_level
 	EconomyManager.simoleons = saved_simoleons
 	ServiceManager.recalculate_from_buildings()
 
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_population := GameManager.population
+	GameManager.population = 1000
 	var saved_timers: Dictionary = FireHazardManager.unprotected_time.duplicate()
 	var saved_smoking: Dictionary = FireHazardManager.smoking_ids.duplicate()
 	BuildManager.buildings.clear()
@@ -1957,6 +1971,7 @@ func _test_fire_hazard_state_machine() -> void:
 	remove_child(station)
 	station.free()
 	BuildManager.buildings = saved_buildings
+	GameManager.population = saved_population
 	FireHazardManager.unprotected_time = saved_timers
 	FireHazardManager.smoking_ids = saved_smoking
 	ServiceManager.recalculate_from_buildings()
