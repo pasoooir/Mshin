@@ -147,3 +147,15 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 - [ ] Physical Android screenshot comparison against current SimCity BuildIt production/residential panels.
 - [ ] Physical Android touch acceptance: horizontal catalog scroll, select product, start, collect, close, queue expansion and upgrade.
 - Do not claim this domain fully closed until the two physical-device checks above are evidenced.
+## Active implementation PR #477 — 2026-11-14
+
+[PR #477](https://github.com/pasoooir/Mshin/pull/477) is an implementation slice, not a closure of all six remaining gates. Its current branch adds:
+
+- Runtime recipe graph validation: supplier building identity is checked against `BuildManager.building_types`; recipe duration and input quantities must be positive; all raw/crafted input IDs must resolve; every node participating in a dependency cycle is blocked from production.
+- Live queue-aware ETA inputs: production components register in a shared runtime group; store estimates read active/queued work; raw-material estimates inspect parallel factory slots and use the earliest available matching slot.
+- Independent regional warehouses: region snapshots now include `StorageManager` state; switching regions saves/restores separate inventory; save schema advances to version 5, with legacy top-level inventory retained for the active region when no region-level inventory exists.
+- GameplaySmoke coverage for cycle/malformed recipe rejection, live store/factory queue ETA and regional warehouse isolation across switches.
+
+**Acceptance status:** PR remains open. A prior CI attempt exposed an incorrect assumption that `store_catalog` was the supplier registry and an untyped-array assignment in the new test; both were corrected. The Godot validation and Android APK export passed on commit `c683fe1ae1722a6ef030a69b49f8a0d2435000df`, but the subsequent save-version and documentation commits require their own final CI confirmation. No physical Android device test is claimed.
+
+**Still open:** full source/provenance adjudication of recipe numeric values; a deterministic global scheduler for recursive shared queues and parallel dependencies; complete construction/upgrade BOMs; explicit operational utility/workforce gates for non-residential buildings; complete regional production chains and trade; physical Android acceptance.
