@@ -31,8 +31,13 @@ var demand_police_homes: int = 0
 var served_police_homes: int = 0
 var demand_health_homes: int = 0
 var served_health_homes: int = 0
+var workforce_available: int = 0
+var workforce_assigned: int = 0
+var workforce_assigned_by_id: Dictionary = {}
+var operational_blockers_by_id: Dictionary = {}
 
 const DEFAULT_EMERGENCY_COVERAGE_TILES := 15.0
+const MSHIN_WORKFORCE_SUPPLY_RATIO: float = 0.40
 
 func _ready() -> void:
 	print("[ServiceManager] Power/water/sewage/waste capacity network online")
@@ -60,6 +65,8 @@ func _has_nearby_utility(building: Node3D, utility_key: String) -> bool:
 			continue
 		if int(candidate.definition.get(utility_key, 0)) <= 0:
 			continue
+		if not _has_workforce_for_provider(candidate):
+			continue
 		# A disconnected facility must not provide a service merely because it
 		# happens to be within the geometric coverage radius.
 		if not _has_gateway_road_access(candidate):
@@ -73,6 +80,30 @@ func _has_gateway_road_access(building: Node3D) -> bool:
 		return false
 	var size: Vector2i = building.definition.get("size", Vector2i(2, 2))
 	return BuildManager.has_road_access(building.grid_pos, size)
+
+func get_operational_blockers(building: Node3D) -> Array[String]:
+	if not is_instance_valid(building):
+		return ["Building is unavailable"]
+	var requirements := BuildManager.get_operational_requirements(str(building.building_type))
+	if requirements.is_empty():
+		return []
+	var stored: Array = operational_blockers_by_id.get(str(building.building_id), [])
+	var result: Array[String] = []
+	for reason in stored:
+		result.append(str(reason))
+	if result.is_empty() and not operational_blockers_by_id.has(str(building.building_id)):
+		result.append("Operational services have not been recalculated")
+	return result
+
+func is_building_operational(building: Node3D) -> bool:
+	return is_instance_valid(building) and get_operational_blockers(building).is_empty()
+
+func _has_workforce_for_provider(building: Node3D) -> bool:
+	if not is_instance_valid(building):
+		return false
+	var requirements := BuildManager.get_operational_requirements(str(building.building_type))
+	var workforce_needed := int(requirements.get("workforce", 0))
+	return workforce_needed <= 0 or workforce_assigned_by_id.has(str(building.building_id))
 
 func is_building_served(building: Node3D) -> bool:
 	if not is_instance_valid(building):
@@ -115,6 +146,8 @@ func _has_nearby_emergency_facility(home: Node3D, service_group: String) -> bool
 			continue
 		var definition: Dictionary = candidate.definition
 		if str(definition.get("service_group", "")) != service_group:
+			continue
+		if not _has_workforce_for_provider(candidate):
 			continue
 		# Emergency coverage is only operational when the station is connected
 		# to the permanent Gateway road network.
