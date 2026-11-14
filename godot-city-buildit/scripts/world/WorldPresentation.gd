@@ -1,6 +1,7 @@
 extends Node3D
 
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
+const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -90.0
@@ -28,8 +29,10 @@ func _ready() -> void:
 		print("[WorldPresentation] Procedural visuals skipped in headless test mode")
 		return
 	RegionManager.region_changed.connect(_on_region_changed)
+	LandExpansionManager.land_changed.connect(_on_land_expansion_changed)
 	_build_environment()
 	_build_terrain()
+	_build_land_expansion_markers()
 	_build_city_grid()
 	_build_coastal_highway()
 	_build_highway_lighting()
@@ -121,6 +124,16 @@ func refresh_region_appearance() -> void:
 		if is_instance_valid(old_node):
 			old_node.free()
 	_build_terrain()
+	_build_land_expansion_markers()
+
+
+func _on_land_expansion_changed() -> void:
+	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater", "LandExpansionMarkers"]:
+		var old_node := get_node_or_null(node_name)
+		if is_instance_valid(old_node):
+			old_node.free()
+	_build_terrain()
+	_build_land_expansion_markers()
 
 
 func _build_terrain() -> void:
@@ -220,11 +233,41 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 			color = color.lerp(Color("#3E783C"), 0.42)
 		"mediterranean":
 			color = color.lerp(Color("#8C875B"), 0.38)
+	if absf(point.z) >= 80.0 and absf(point.z) <= 90.0 and point.x >= -42.0 and point.x <= 44.0:
+		color = color.lerp(Color("#B99A68"), 0.52)
+	if not LandExpansionManager.is_world_position_unlocked(point):
+		color = color.lerp(Color("#302B24"), 0.34)
 	surface.set_color(color)
 	surface.add_vertex(point)
 
 func _coastline(z: float) -> float:
 	return 51.0 + sin(z * 0.045) * 2.2 + cos(z * 0.021) * 1.1
+
+
+func _build_land_expansion_markers() -> void:
+	var tiles := LandExpansionManager.get_available_expansion_tiles()
+	var lines := SurfaceTool.new()
+	lines.begin(Mesh.PRIMITIVE_LINES)
+	for tile in tiles:
+		var x0 := float(tile.x * LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+		var z0 := float(tile.y * LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+		var x1 := x0 + float(LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+		var z1 := z0 + float(LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+		var corners := [Vector3(x0, 0.055, z0), Vector3(x1, 0.055, z0), Vector3(x1, 0.055, z1), Vector3(x0, 0.055, z1)]
+		for edge in range(4):
+			lines.set_color(Color(1.0, 0.76, 0.30, 0.86))
+			lines.add_vertex(corners[edge])
+			lines.add_vertex(corners[(edge + 1) % 4])
+	var marker := MeshInstance3D.new()
+	marker.name = "LandExpansionMarkers"
+	marker.mesh = lines.commit()
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.vertex_color_use_as_albedo = true
+	material.no_depth_test = false
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	marker.material_override = material
+	add_child(marker)
 
 func _build_city_grid() -> void:
 	var lines := SurfaceTool.new()
@@ -802,23 +845,22 @@ func _build_grass_detail() -> void:
 	add_child(grass)
 
 func _build_meadow_livestock() -> void:
-	# Small flocks graze along the green undeveloped fringe of the starter plots.
-	# Each body part is instanced in batches; no per-animal scene-node forest.
+	# Livestock stays in two sandy grazing strips beyond the playable city boundary.
+	# The controller refuses asphalt, connected roads and any land later unlocked by the player.
 	var sheep_positions: Array[Vector3] = []
-	for point in [
-		Vector2(-29.0, -46.0), Vector2(-20.0, -48.0), Vector2(-10.0, -45.0),
-		Vector2(2.0, -47.0), Vector2(14.0, -46.0), Vector2(26.0, -48.0),
-		Vector2(-27.0, 46.0), Vector2(-16.0, 48.0), Vector2(-4.0, 45.0),
-		Vector2(9.0, 47.0), Vector2(21.0, 45.0), Vector2(31.0, 48.0)
-	]:
-		sheep_positions.append(Vector3(point.x, 0.0, point.y))
+	for index in range(MEADOW_SHEEP_COUNT):
+		var column := index % 6
+		var north := index < 6
+		var x := -34.0 + float(column) * 13.2
+		var z := -85.0 if north else 85.0
+		sheep_positions.append(Vector3(x, 0.0, z))
 	var cattle_positions: Array[Vector3] = [
-		Vector3(-33.0, 0.0, -54.0), Vector3(-1.0, 0.0, -54.0),
-		Vector3(29.0, 0.0, 54.0)
+		Vector3(-25.0, 0.0, -85.0), Vector3(1.0, 0.0, 85.0), Vector3(27.0, 0.0, -85.0)
 	]
 
-	var flock := Node3D.new()
+	var flock := MeadowLivestockScript.new()
 	flock.name = "MeadowLivestock"
+	flock.configure(sheep_positions, cattle_positions)
 	add_child(flock)
 
 	var wool_mesh := SphereMesh.new()
@@ -829,6 +871,7 @@ func _build_meadow_livestock() -> void:
 	wool_material.roughness = 0.98
 	var sheep_bodies := _make_world_multimesh("SheepWoolBodies", wool_mesh, _animal_body_positions(sheep_positions, 0.88), wool_material)
 	flock.add_child(sheep_bodies)
+	_register_livestock_part(flock, sheep_bodies, sheep_positions.size(), 0, [Vector3(0.0, 0.88, 0.0)])
 
 	var tuft_mesh := SphereMesh.new()
 	tuft_mesh.radius = 0.31
@@ -839,6 +882,7 @@ func _build_meadow_livestock() -> void:
 			tuft_positions.append(origin + offset)
 	var tufts := _make_world_multimesh("SheepWoolTufts", tuft_mesh, tuft_positions, wool_material)
 	flock.add_child(tufts)
+	_register_livestock_part(flock, tufts, sheep_positions.size(), 0, [Vector3(-0.28, 1.15, -0.34), Vector3(0.20, 1.18, -0.32), Vector3(-0.28, 1.16, 0.34), Vector3(0.22, 1.18, 0.34)])
 
 	var sheep_head_mesh := SphereMesh.new()
 	sheep_head_mesh.radius = 0.30
@@ -848,6 +892,7 @@ func _build_meadow_livestock() -> void:
 	sheep_head_material.roughness = 0.92
 	var sheep_heads := _make_world_multimesh("SheepHeads", sheep_head_mesh, _animal_head_positions(sheep_positions, 0.92), sheep_head_material)
 	flock.add_child(sheep_heads)
+	_register_livestock_part(flock, sheep_heads, sheep_positions.size(), 0, [Vector3(0.68, 0.92, 0.0)])
 
 	var sheep_leg_mesh := CylinderMesh.new()
 	sheep_leg_mesh.top_radius = 0.055
@@ -856,8 +901,10 @@ func _build_meadow_livestock() -> void:
 	var leg_material := StandardMaterial3D.new()
 	leg_material.albedo_color = Color("#4A4037")
 	leg_material.roughness = 0.95
+	var leg_offsets: Array[Vector3] = [Vector3(-0.42, 0.32, -0.42), Vector3(-0.42, 0.32, 0.42), Vector3(0.42, 0.32, -0.42), Vector3(0.42, 0.32, 0.42)]
 	var sheep_legs := _make_world_multimesh("SheepLegs", sheep_leg_mesh, _animal_leg_positions(sheep_positions, 0.32), leg_material)
 	flock.add_child(sheep_legs)
+	_register_livestock_part(flock, sheep_legs, sheep_positions.size(), 0, leg_offsets)
 
 	var cow_body_mesh := SphereMesh.new()
 	cow_body_mesh.radius = 0.95
@@ -867,6 +914,7 @@ func _build_meadow_livestock() -> void:
 	cow_material.roughness = 0.98
 	var cow_bodies := _make_world_multimesh("CattleBodies", cow_body_mesh, _animal_body_positions(cattle_positions, 1.02), cow_material)
 	flock.add_child(cow_bodies)
+	_register_livestock_part(flock, cow_bodies, cattle_positions.size(), sheep_positions.size(), [Vector3(0.0, 1.02, 0.0)])
 
 	var patch_mesh := SphereMesh.new()
 	patch_mesh.radius = 0.43
@@ -880,6 +928,7 @@ func _build_meadow_livestock() -> void:
 		patch_positions.append(origin + Vector3(-0.34, 1.15, 0.48))
 	var patches := _make_world_multimesh("CattleCoatPatches", patch_mesh, patch_positions, patch_material)
 	flock.add_child(patches)
+	_register_livestock_part(flock, patches, cattle_positions.size(), sheep_positions.size(), [Vector3(0.10, 1.16, -0.56), Vector3(-0.34, 1.15, 0.48)])
 
 	var cow_head_mesh := SphereMesh.new()
 	cow_head_mesh.radius = 0.38
@@ -889,9 +938,21 @@ func _build_meadow_livestock() -> void:
 	cow_head_material.roughness = 0.96
 	var cow_heads := _make_world_multimesh("CattleHeads", cow_head_mesh, _animal_head_positions(cattle_positions, 1.02), cow_head_material)
 	flock.add_child(cow_heads)
+	_register_livestock_part(flock, cow_heads, cattle_positions.size(), sheep_positions.size(), [Vector3(0.68, 1.02, 0.0)])
 
 	var cow_legs := _make_world_multimesh("CattleLegs", sheep_leg_mesh, _animal_leg_positions(cattle_positions, 0.36), leg_material)
 	flock.add_child(cow_legs)
+	_register_livestock_part(flock, cow_legs, cattle_positions.size(), sheep_positions.size(), leg_offsets)
+
+
+func _register_livestock_part(flock: Node3D, instance: MultiMeshInstance3D, animal_count: int, owner_offset: int, local_offsets: Array[Vector3]) -> void:
+	var owners: Array[int] = []
+	var offsets: Array[Vector3] = []
+	for animal_index in range(animal_count):
+		for local_offset in local_offsets:
+			owners.append(owner_offset + animal_index)
+			offsets.append(local_offset)
+	flock.register_part(instance, owners, offsets)
 
 
 func _animal_body_positions(origins: Array[Vector3], height: float) -> Array[Vector3]:
@@ -958,7 +1019,7 @@ func _build_sunlight() -> void:
 func _add_headless_test_markers() -> void:
 	# These names are part of the smoke-test scene contract; they intentionally
 	# contain no MeshInstance3D nodes and therefore allocate no render meshes.
-	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "CoastalHighway", "HighwayLighting", "MeadowLivestock", "CargoShipVisual"]:
+	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "MeadowLivestock", "CargoShipVisual"]:
 		var marker := Node3D.new()
 		marker.name = marker_name
 		add_child(marker)
