@@ -2966,6 +2966,12 @@ func _run_gameplay_test() -> void:
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
 
 	var saved_population_expected := GameManager.population
+	var saved_level_expected := GameManager.level
+	var saved_experience_expected := GameManager.experience
+	var xp_restore_events: Array = []
+	var xp_restore_listener := func(xp: int, needed: int) -> void:
+		xp_restore_events.append([xp, needed])
+	GameManager.xp_changed.connect(xp_restore_listener)
 	var rotation_test_building = _find_building("residential_1")
 	if rotation_test_building != null:
 		rotation_test_building.rotation.y = PI * 0.5
@@ -2982,7 +2988,17 @@ func _run_gameplay_test() -> void:
 			road_mesh.queue_free()
 	road_system.roads.clear()
 	await get_tree().process_frame
+	GameManager.experience = 0
 	_check(SaveManager.load_game(), "SaveManager could not restore the saved city.")
+	_check(GameManager.level == saved_level_expected and GameManager.experience == saved_experience_expected, "Save/load must restore the exact Mayor Level and XP values.")
+	_check(not xp_restore_events.is_empty() and int(xp_restore_events.back()[0]) == saved_experience_expected and int(xp_restore_events.back()[1]) == GameManager.get_xp_needed(), "Loading a city must emit xp_changed with the restored XP and next-level requirement.")
+	var restored_hud = get_node_or_null("HUD")
+	if is_instance_valid(restored_hud):
+		var restored_xp_text := restored_hud.get("xp_text") as Label
+		var restored_xp_progress := restored_hud.get("xp_progress") as ProgressBar
+		_check(restored_xp_text != null and restored_xp_text.text == "%d / %d XP" % [saved_experience_expected, GameManager.get_xp_needed()], "HUD XP label must refresh immediately after loading a saved city.")
+		_check(restored_xp_progress != null and int(restored_xp_progress.value) == saved_experience_expected, "HUD XP progress bar must refresh immediately after loading a saved city.")
+	GameManager.xp_changed.disconnect(xp_restore_listener)
 	var restored_home = _find_building("residential_1")
 	_check(road_system.get_road_count() == starter_road_count + 16, "Road network was not restored from save.")
 	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "Save/load must restore the permanent highway gateway before other road tiles.")
