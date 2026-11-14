@@ -768,8 +768,9 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_equal_approx(TrafficManager.get_safe_vehicle_speed(highway_city_follower, 40.0), 0.0), "Merged highway traffic must obey the city-road minimum following gap.")
 	TrafficManager._active_vehicles.erase(highway_city_follower)
 	TrafficManager._active_vehicles.erase(highway_city_leader)
-	highway_city_follower.free()
-	highway_city_leader.free()
+	highway_city_follower.queue_free()
+	highway_city_leader.queue_free()
+	await get_tree().process_frame
 	_check(is_equal_approx(TrafficManager.MAX_TRAFFIC_STOP_SECONDS, 4.0), "The maximum frontmost stopped-vehicle wait must be exactly four seconds.")
 
 	# Every T/cross junction is an exclusive conflict zone: only one vehicle may enter.
@@ -911,8 +912,9 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	TrafficManager._active_vehicles.clear()
 	for previous_vehicle in previous_fleet:
 		TrafficManager._active_vehicles.append(previous_vehicle)
-	follower.free()
-	leader.free()
+	follower.queue_free()
+	leader.queue_free()
+	await get_tree().process_frame
 
 	TrafficManager.clear_active_vehicle()
 	await get_tree().process_frame
@@ -1010,6 +1012,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	BuildManager.buildings.erase(fire_station.building_id)
 	police_station.queue_free()
 	fire_station.queue_free()
+	await get_tree().process_frame
 	TrafficManager.recalculate_from_roads()
 	TrafficManager.vehicle_simulation_enabled = previous_simulation_enabled
 
