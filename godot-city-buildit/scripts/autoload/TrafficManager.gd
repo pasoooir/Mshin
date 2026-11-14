@@ -202,14 +202,16 @@ func _get_station_access_road(station: Node3D) -> Vector2i:
 	var road_system = _get_road_system()
 	if not road_system or not is_instance_valid(station):
 		return Vector2i(2147483647, 2147483647)
-	var size: Vector2i = station.definition.get("size", Vector2i.ONE)
+	var definition: Dictionary = station.get("definition")
+	var anchor: Vector2i = station.get("grid_pos")
+	var size: Vector2i = definition.get("size", Vector2i.ONE)
 	var candidates: Array[Vector2i] = []
 	for x in range(size.x):
-		candidates.append(station.grid_pos + Vector2i(x, -1))
-		candidates.append(station.grid_pos + Vector2i(x, size.y))
+		candidates.append(anchor + Vector2i(x, -1))
+		candidates.append(anchor + Vector2i(x, size.y))
 	for y in range(size.y):
-		candidates.append(station.grid_pos + Vector2i(-1, y))
-		candidates.append(station.grid_pos + Vector2i(size.x, y))
+		candidates.append(anchor + Vector2i(-1, y))
+		candidates.append(anchor + Vector2i(size.x, y))
 	var best := Vector2i(2147483647, 2147483647)
 	var best_distance := INF
 	for cell in candidates:
@@ -222,9 +224,10 @@ func _get_station_access_road(station: Node3D) -> Vector2i:
 	return best
 
 func build_station_patrol_route(station: Node3D) -> Array[Vector2i]:
-	if not is_instance_valid(station) or station.status != "completed":
+	if not is_instance_valid(station) or str(station.get("status")) != "completed":
 		return []
-	if str(station.definition.get("service_group", "")) not in ["police", "fire"]:
+	var definition: Dictionary = station.get("definition")
+	if str(definition.get("service_group", "")) not in ["police", "fire"]:
 		return []
 	var start := _get_station_access_road(station)
 	if start.x == 2147483647:
@@ -297,7 +300,8 @@ func spawn_highway_vehicle_now() -> TrafficVehicle:
 func spawn_emergency_vehicle(station: Node3D) -> TrafficVehicle:
 	if not is_instance_valid(station) or _active_emergency_vehicle_count() >= MAX_EMERGENCY_VEHICLES:
 		return null
-	var service_group := str(station.definition.get("service_group", ""))
+	var definition: Dictionary = station.get("definition")
+	var service_group := str(definition.get("service_group", ""))
 	var vehicle_kind := "police" if service_group == "police" else "fire"
 	var start := _get_station_access_road(station)
 	if start.x == 2147483647:
@@ -311,7 +315,7 @@ func spawn_emergency_vehicle(station: Node3D) -> TrafficVehicle:
 	var vehicle := TrafficVehicle.new()
 	vehicle.route = route
 	vehicle.vehicle_kind = vehicle_kind
-	vehicle.station_building_id = station.building_id
+	vehicle.station_building_id = str(station.get("building_id"))
 	vehicle.initial_position = _station_exit_position(station, start)
 	vehicle.use_initial_position = true
 	vehicle.speed = VEHICLE_BASE_SPEED
@@ -324,12 +328,13 @@ func spawn_emergency_vehicle(station: Node3D) -> TrafficVehicle:
 func _update_emergency_dispatch(delta: float) -> void:
 	for station_value in BuildManager.buildings.values():
 		var station = station_value as Node3D
-		if not is_instance_valid(station) or station.status != "completed":
+		if not is_instance_valid(station) or str(station.get("status")) != "completed":
 			continue
-		var service_group := str(station.definition.get("service_group", ""))
+		var definition: Dictionary = station.get("definition")
+		var service_group := str(definition.get("service_group", ""))
 		if service_group not in ["police", "fire"] or not BuildManager.is_building_operational(station):
 			continue
-		var station_id := str(station.building_id)
+		var station_id := str(station.get("building_id"))
 		var elapsed := float(_station_dispatch_elapsed.get(station_id, EMERGENCY_SPAWN_INTERVAL)) + delta
 		_station_dispatch_elapsed[station_id] = elapsed
 		if elapsed >= EMERGENCY_SPAWN_INTERVAL and not _has_active_station_vehicle(station_id):
