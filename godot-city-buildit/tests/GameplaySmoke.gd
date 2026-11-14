@@ -556,7 +556,7 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	var disconnected_building := FireHazardTestBuilding.new()
 	disconnected_building.status = "completed"
 	disconnected_building.grid_pos = Vector2i(1, 1)
-	disconnected_building.definition = {"size": Vector2i.ONE, "category": "industrial"}
+	disconnected_building.definition = {"size": Vector2i.ONE, "category": "service"}
 	add_child(disconnected_building)
 	_check(not BuildManager.is_building_operational(disconnected_building), "A completed building beside a disconnected road must become non-operational.")
 	var disconnected_factory = ProductionComponentScript.new()
