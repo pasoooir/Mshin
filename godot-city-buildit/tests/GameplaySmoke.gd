@@ -633,6 +633,7 @@ func _test_gateway_vehicle_route(road_system) -> void:
 	var previous_enabled: bool = TrafficManager.vehicle_simulation_enabled
 	TrafficManager.vehicle_simulation_enabled = false
 	TrafficManager.clear_active_vehicle()
+	await get_tree().process_frame
 	road_system.clear_roads()
 	road_system.seed_starter_access()
 	var connected_roads: Dictionary = road_system.get_gateway_connected_roads()
@@ -653,6 +654,7 @@ func _test_gateway_vehicle_route(road_system) -> void:
 		vehicle._process(0.25)
 		_check(vehicle.global_position.distance_to(start_position) > 0.1, "The simulated vehicle must advance along its road route.")
 	TrafficManager.clear_active_vehicle()
+	await get_tree().process_frame
 	TrafficManager.vehicle_simulation_enabled = previous_enabled
 	TrafficManager.recalculate_from_roads()
 
@@ -748,11 +750,14 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	var highway_city_leader := TrafficVehicle.new()
 	traffic_test_world.add_child(highway_city_follower)
 	traffic_test_world.add_child(highway_city_leader)
-	for highway_city_vehicle in [highway_city_follower, highway_city_leader]:
-		highway_city_vehicle.vehicle_kind = "highway"
-		highway_city_vehicle.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
-		highway_city_vehicle.route_key = "highway-city-shared-lane-test"
-		highway_city_vehicle.lane_direction = Vector2i(1, 0)
+	highway_city_follower.vehicle_kind = "highway"
+	highway_city_follower.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
+	highway_city_follower.route_key = "highway-city-shared-lane-test"
+	highway_city_follower.lane_direction = Vector2i(1, 0)
+	highway_city_leader.vehicle_kind = "highway"
+	highway_city_leader.route = [Vector2i(-22, -1), Vector2i(-21, -1)]
+	highway_city_leader.route_key = "highway-city-shared-lane-test"
+	highway_city_leader.lane_direction = Vector2i(1, 0)
 	highway_city_follower.lane_index = 0
 	highway_city_leader.lane_index = 2
 	highway_city_follower.route_distance = 8.0
@@ -910,6 +915,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	leader.free()
 
 	TrafficManager.clear_active_vehicle()
+	await get_tree().process_frame
 	var highway_vehicle: TrafficVehicle = TrafficManager.spawn_highway_vehicle_now()
 	_check(is_instance_valid(highway_vehicle) and highway_vehicle.vehicle_kind == "highway", "The visible external six-lane motorway must spawn its own traffic fleet.")
 	if is_instance_valid(highway_vehicle):
@@ -935,7 +941,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	GameManager.population = 0
 	var capped_highway_fleet: Array[TrafficVehicle] = []
 	for _vehicle_index in range(4):
-		var capped_vehicle := TrafficVehicle.new()
+		var capped_vehicle: TrafficVehicle = TrafficVehicle.new()
 		capped_vehicle.vehicle_kind = "highway"
 		capped_highway_fleet.append(capped_vehicle)
 		TrafficManager._active_vehicles.append(capped_vehicle)
@@ -999,6 +1005,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		_check(fire_vehicle.global_position.distance_to(fire_exit_position) > 0.1, "Fire engine must leave its station exit and advance onto the response route.")
 
 	TrafficManager.clear_active_vehicle()
+	await get_tree().process_frame
 	BuildManager.buildings.erase(police_station.building_id)
 	BuildManager.buildings.erase(fire_station.building_id)
 	police_station.queue_free()
@@ -2599,7 +2606,7 @@ func _run_gameplay_test() -> void:
 	road_system.seed_starter_access()
 	_test_road_gateway_connectivity(road_system)
 	_test_road_traffic_capacity(road_system)
-	_test_gateway_vehicle_route(road_system)
+	await _test_gateway_vehicle_route(road_system)
 	await _test_traffic_lane_rules_and_emergency_fleet(road_system)
 	var starter_road_count: int = road_system.get_road_count()
 	_check(starter_road_count == 50, "Starter highway connector should contain 50 connected free road tiles.")
