@@ -38,6 +38,7 @@ var vehicle_simulation_enabled: bool = true
 var _spawn_elapsed: float = 0.0
 var _highway_spawn_elapsed: float = 0.0
 var _highway_lane_cursor: int = 0
+var _highway_direction_cursor: int = 0
 var _emergency_elapsed: float = 0.0
 var _active_vehicles: Array[TrafficVehicle] = []
 var _active_vehicle: TrafficVehicle
@@ -259,11 +260,12 @@ func spawn_vehicle_now() -> TrafficVehicle:
 	_active_vehicle = vehicle
 	return vehicle
 
-func build_highway_round_trip_route() -> Array[Vector2i]:
+func build_highway_route(northbound: bool) -> Array[Vector2i]:
 	var route: Array[Vector2i] = []
-	for z in range(HIGHWAY_MAX_GRID_Z, HIGHWAY_MIN_GRID_Z - 1, -1):
-		route.append(Vector2i(HIGHWAY_GRID_X, z))
-	for z in range(HIGHWAY_MIN_GRID_Z + 1, HIGHWAY_MAX_GRID_Z + 1):
+	var first_z := HIGHWAY_MAX_GRID_Z if northbound else HIGHWAY_MIN_GRID_Z
+	var last_z := HIGHWAY_MIN_GRID_Z if northbound else HIGHWAY_MAX_GRID_Z
+	var step := -1 if northbound else 1
+	for z in range(first_z, last_z + step, step):
 		route.append(Vector2i(HIGHWAY_GRID_X, z))
 	return route
 
@@ -273,14 +275,16 @@ func spawn_highway_vehicle_now() -> TrafficVehicle:
 	var world := _get_world_parent()
 	if not world:
 		return null
-	var route := build_highway_round_trip_route()
+	var northbound := posmod(_highway_direction_cursor, 2) == 0
+	_highway_direction_cursor += 1
+	var route := build_highway_route(northbound)
 	if route.size() < 2:
 		return null
 	var vehicle := TrafficVehicle.new()
 	vehicle.route = route
 	vehicle.vehicle_kind = "highway"
 	vehicle.speed = VEHICLE_BASE_SPEED
-	vehicle.route_key = "coastal-highway-mainline"
+	vehicle.route_key = "coastal-highway-northbound" if northbound else "coastal-highway-southbound"
 	vehicle.lane_index = _highway_lane_cursor % HIGHWAY_LANE_OFFSETS.size()
 	vehicle.lane_offset = HIGHWAY_LANE_OFFSETS[vehicle.lane_index]
 	_highway_lane_cursor += 1
