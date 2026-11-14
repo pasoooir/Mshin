@@ -1562,10 +1562,15 @@ func _test_building_model_loader_contract() -> void:
 		if instance is Node3D:
 			var mesh_nodes := instance.find_children("*", "MeshInstance3D", true, false)
 			_check(mesh_nodes.size() > 0, "Imported building model must contain renderable mesh instances: " + model_path)
+			if model_path.ends_with(".tscn"):
+				_check(mesh_nodes.size() >= 10, "Dedicated commercial scene must contain enough architectural and trade-specific mesh details: " + model_path)
 			var surfaces_found := 0
 			for mesh_node in mesh_nodes:
 				if mesh_node is MeshInstance3D and mesh_node.mesh != null:
 					surfaces_found += mesh_node.mesh.get_surface_count()
+					if model_path.ends_with(".tscn"):
+						var surface_material := mesh_node.material_override as StandardMaterial3D
+						_check(surface_material != null and surface_material.albedo_texture != null and surface_material.normal_texture != null and surface_material.roughness_texture != null and surface_material.metallic_texture != null, "Dedicated commercial meshes must use complete local PBR texture channels: " + model_path)
 			_check(surfaces_found > 0, "Imported building model must contain valid mesh surfaces: " + model_path)
 		if instance.get_parent() == self:
 			remove_child(instance)
