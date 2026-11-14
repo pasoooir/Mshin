@@ -65,6 +65,31 @@ func _confirm_catalog_build(hud) -> void:
 			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 				_check(child.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Pressing BUILD must keep every submenu item background transparent.")
 
+func _test_construction_bom_contract() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	for type_id in BuildManager.building_types:
+		var bom := BuildManager.get_construction_bom(str(type_id))
+		if BuildManager.CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(str(type_id)):
+			_check(bom.is_empty(), "Bootstrap building must not create a circular material prerequisite: " + str(type_id))
+		else:
+			_check(not bom.is_empty(), "Every non-bootstrap building type must resolve a construction BOM: " + str(type_id))
+			_check(BuildManager.get_construction_bom_source(str(type_id)).contains("Mshin"), "Construction BOM provenance must identify Mshin design values: " + str(type_id))
+	StorageManager.items = {}
+	_check(not BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction must be blocked when its BOM materials are missing.")
+	StorageManager.items = {"nails":1, "metal":1}
+	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction BOM must become affordable when all required materials are present.")
+	StorageManager.from_save_dict(previous_storage)
+
+func _grant_construction_bom_for_test(type_id: String) -> void:
+	var requirements := BuildManager.get_construction_bom(type_id)
+	var additions: Dictionary = {}
+	for item_id in requirements:
+		var missing := maxi(0, int(requirements[item_id]) - StorageManager.get_count(str(item_id)))
+		if missing > 0:
+			additions[str(item_id)] = missing
+	if not additions.is_empty():
+		_check(StorageManager.add_items(additions), "Could not provision test materials for construction BOM: " + type_id)
+
 func _find_building(type_id: String):
 	for building in BuildManager.buildings.values():
 		if is_instance_valid(building) and building.building_type == type_id:
@@ -2642,6 +2667,7 @@ func _run_gameplay_test() -> void:
 	_test_epic_project_core()
 	_test_achievements()
 	_test_region_city_snapshots()
+	_test_construction_bom_contract()
 	_test_regional_building_and_material_gates()
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
@@ -2958,8 +2984,20 @@ func _run_gameplay_test() -> void:
 	BuildManager.select_building("building_supplies")
 	_check(BuildManager.place_building(Vector2i(4, 1)), "Could not place Building Supplies shop.")
 	BuildManager.select_building("power_wind")
+	var storage_before_missing_wind: Dictionary = StorageManager.to_save_dict()
+	var money_before_missing_wind := EconomyManager.simoleons
+	StorageManager.items = {}
+	_check(not BuildManager.can_place_at(Vector2i(6, 1), "power_wind"), "A service building must not be placeable when its construction BOM is missing.")
+	_check(not BuildManager.place_building(Vector2i(6, 1), "power_wind"), "Placement API must reject construction without the full BOM.")
+	_check(EconomyManager.simoleons == money_before_missing_wind and StorageManager.items.is_empty(), "Failed construction must not consume money or partially mutate inventory.")
+	StorageManager.from_save_dict(storage_before_missing_wind)
+	_grant_construction_bom_for_test("power_wind")
+	var wind_bom_before := StorageManager.get_all_items()
 	_check(BuildManager.place_building(Vector2i(6, 1)), "Could not place wind power utility.")
+	for item_id in BuildManager.get_construction_bom("power_wind"):
+		_check(StorageManager.get_count(str(item_id)) == int(wind_bom_before.get(item_id, 0)) - int(BuildManager.get_construction_bom("power_wind")[item_id]), "Successful construction must consume its BOM exactly once: " + str(item_id))
 	BuildManager.select_building("water_tower")
+	_grant_construction_bom_for_test("water_tower")
 	_check(BuildManager.place_building(Vector2i(7, 1)), "Could not place water tower.")
 
 	await _wait_seconds(4.5)
@@ -3337,6 +3375,7 @@ func _run_gameplay_test() -> void:
 	# Hardware Store remains compatible with the same component and consumes inputs at order time.
 	var previous_level := GameManager.level
 	GameManager.level = 4
+	_grant_construction_bom_for_test("hardware_store")
 	_check(BuildManager.place_building(Vector2i(9, 1), "hardware_store"), "Could not place Hardware Store for production acceptance.")
 	await _wait_seconds(5.5)
 	var hardware = _find_building("hardware_store")

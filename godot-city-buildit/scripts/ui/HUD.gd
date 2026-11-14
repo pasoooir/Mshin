@@ -1189,9 +1189,16 @@ func _show_building_info(type_id: String) -> void:
 	for child in catalog_info_panel.get_children():
 		catalog_info_panel.remove_child(child)
 		child.queue_free()
+	var scroll := ScrollContainer.new()
+	scroll.name = "BuildingInfoScroll"
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	catalog_info_panel.add_child(scroll)
 	var layout := VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 4)
-	catalog_info_panel.add_child(layout)
+	scroll.add_child(layout)
 	var heading := HBoxContainer.new()
 	layout.add_child(heading)
 	var title := Label.new()
@@ -1223,14 +1230,25 @@ func _show_building_info(type_id: String) -> void:
 	var population_lock := BuildManager.get_population_build_lock_reason(type_id)
 	var factory_lock := BuildManager.get_factory_build_lock_reason(type_id) if str(definition.get("category", "")) == "industrial" else ""
 	_add_info_line(layout, "Construction", _format_duration(int(definition.get("build_time", 0))))
+	var construction_bom := BuildManager.get_construction_bom(type_id)
+	var bom_lines: Array[String] = []
+	for item_id in construction_bom:
+		var item_definition := ProductionManager.get_item_definition(str(item_id))
+		var item_name := str(item_definition.get("name", item_id))
+		bom_lines.append("%s ×%d (stock %d)" % [item_name, int(construction_bom[item_id]), StorageManager.get_count(str(item_id))])
+	_add_info_line(layout, "Materials", "No material charge" if bom_lines.is_empty() else ", ".join(bom_lines))
+	_add_info_line(layout, "BOM source", BuildManager.get_construction_bom_source(type_id))
+	var bom_lock := BuildManager.get_construction_bom_lock_reason(type_id)
+	if not bom_lock.is_empty():
+		status_label.text = bom_lock
 	if GameManager.level < required_level:
 		status_label.text = "Unlocked at Level %d." % required_level
 	elif not region_lock.is_empty():
 		status_label.text = region_lock
-	var can_build := GameManager.level >= required_level and population_lock.is_empty() and factory_lock.is_empty() and region_lock.is_empty()
+	var can_build := GameManager.level >= required_level and population_lock.is_empty() and factory_lock.is_empty() and region_lock.is_empty() and bom_lock.is_empty()
 	var build := Button.new()
 	build.name = "CatalogBuildButton"
-	build.text = "BUILD" if can_build else ("LOCKED · " + region_lock if not region_lock.is_empty() else ("LOCKED · " + factory_lock if not factory_lock.is_empty() else ("LOCKED · POPULATION %s" % _format_count(required_population) if population_lock != "" else "LOCKED · LEVEL %d" % required_level)))
+	build.text = "BUILD" if can_build else ("NEEDS MATERIALS" if not bom_lock.is_empty() else ("LOCKED · " + region_lock if not region_lock.is_empty() else ("LOCKED · " + factory_lock if not factory_lock.is_empty() else ("LOCKED · POPULATION %s" % _format_count(required_population) if population_lock != "" else "LOCKED · LEVEL %d" % required_level))))
 	build.disabled = not can_build
 	build.custom_minimum_size.y = 34 * _ui_scale
 	build.add_theme_stylebox_override("normal", _catalog_action_style())
@@ -1253,6 +1271,7 @@ func _add_info_line(parent: VBoxContainer, key_text: String, value_text: String)
 	var value := Label.new()
 	value.text = value_text
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	value.add_theme_color_override("font_color", Color("#263746"))
 	row.add_child(value)
 
