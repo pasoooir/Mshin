@@ -379,8 +379,8 @@ func _build_highway_lighting() -> void:
 	var head_positions: Array[Vector3] = []
 	var emitter_positions: Array[Vector3] = []
 	for side in [-1.0, 1.0]:
-		var pole_x := HIGHWAY_CENTER_X + side * 14.8
-		var inward := -side
+		var pole_x: float = HIGHWAY_CENTER_X + float(side) * 14.8
+		var inward: float = -float(side)
 		for z in [-70.0, -42.0, -14.0, 14.0, 42.0, 70.0]:
 			pole_positions.append(Vector3(pole_x, 4.2, z))
 			arm_positions.append(Vector3(pole_x + inward * 1.35, 7.95, z))
