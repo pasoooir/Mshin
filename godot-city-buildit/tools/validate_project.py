@@ -1575,6 +1575,8 @@ else:
         "LandExpansionManager.is_world_position_unlocked(position)",
         "road_system.has_road(cell + Vector2i(x, y))",
         "multimesh.set_instance_transform(instance_index, Transform3D(basis, origin))",
+        "animate_legs: bool = false",
+        "sin(_elapsed * 6.5",
     ]:
         if contract not in livestock:
             errors.append(f"Livestock movement boundary contract is missing: {contract}")
