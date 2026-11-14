@@ -65,6 +65,16 @@ func _confirm_catalog_build(hud) -> void:
 			for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 				_check(child.get_theme_stylebox(state).get_class() == "StyleBoxEmpty", "Pressing BUILD must keep every submenu item background transparent.")
 
+func _grant_construction_bom_for_test(type_id: String) -> void:
+	var requirements := BuildManager.get_construction_bom(type_id)
+	var additions: Dictionary = {}
+	for item_id in requirements:
+		var missing := maxi(0, int(requirements[item_id]) - StorageManager.get_count(str(item_id)))
+		if missing > 0:
+			additions[str(item_id)] = missing
+	if not additions.is_empty():
+		_check(StorageManager.add_items(additions), "Could not provision test materials for construction BOM: " + type_id)
+
 func _find_building(type_id: String):
 	for building in BuildManager.buildings.values():
 		if is_instance_valid(building) and building.building_type == type_id:
@@ -2958,8 +2968,10 @@ func _run_gameplay_test() -> void:
 	BuildManager.select_building("building_supplies")
 	_check(BuildManager.place_building(Vector2i(4, 1)), "Could not place Building Supplies shop.")
 	BuildManager.select_building("power_wind")
+	_grant_construction_bom_for_test("power_wind")
 	_check(BuildManager.place_building(Vector2i(6, 1)), "Could not place wind power utility.")
 	BuildManager.select_building("water_tower")
+	_grant_construction_bom_for_test("water_tower")
 	_check(BuildManager.place_building(Vector2i(7, 1)), "Could not place water tower.")
 
 	await _wait_seconds(4.5)
@@ -3337,6 +3349,7 @@ func _run_gameplay_test() -> void:
 	# Hardware Store remains compatible with the same component and consumes inputs at order time.
 	var previous_level := GameManager.level
 	GameManager.level = 4
+	_grant_construction_bom_for_test("hardware_store")
 	_check(BuildManager.place_building(Vector2i(9, 1), "hardware_store"), "Could not place Hardware Store for production acceptance.")
 	await _wait_seconds(5.5)
 	var hardware = _find_building("hardware_store")
