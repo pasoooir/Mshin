@@ -1539,6 +1539,63 @@ for polluting_id in ["power_coal", "power_oil", "power_nuclear"]:
     if '"pollution":1' not in line or '"pollution_radius":' not in line:
         errors.append(f"Polluting power plant needs pollution and radius metadata: {polluting_id}")
 
+
+# Land ownership and livestock movement are gameplay contracts, not visual-only promises.
+land_expansion_path = ROOT / "scripts/autoload/LandExpansionManager.gd"
+livestock_path = ROOT / "scripts/world/MeadowLivestock.gd"
+if not land_expansion_path.is_file() or not livestock_path.is_file():
+    errors.append("Land expansion or meadow livestock controller script is missing")
+else:
+    land_expansion = land_expansion_path.read_text(encoding="utf-8")
+    livestock = livestock_path.read_text(encoding="utf-8")
+    for contract in [
+        "MIN_EXPANSION_LEVEL := 10",
+        "TILE_CELLS := 8",
+        "func get_available_expansion_tiles()",
+        "func get_tile_cost(tile: Vector2i) -> Dictionary",
+        "func expand_tile(tile: Vector2i) -> bool",
+        "StorageManager.has_items(cost)",
+        "StorageManager.remove_items(cost)",
+        "func to_save_dict() -> Dictionary",
+        "func from_save_dict(data: Dictionary) -> void",
+        "land_changed.emit()",
+    ]:
+        if contract not in land_expansion:
+            errors.append(f"Land expansion manager contract is missing: {contract}")
+    for contract in [
+        "func is_valid_grazing_position(position: Vector3) -> bool",
+        "PASTURE_MIN_ABS_Z := 82.0",
+        "ASPHALT_MIN_X := -68.5",
+        "LandExpansionManager.is_world_position_unlocked(position)",
+        "road_system.has_road(cell + Vector2i(x, y))",
+        "multimesh.set_instance_transform(instance_index, Transform3D(basis, origin))",
+    ]:
+        if contract not in livestock:
+            errors.append(f"Livestock movement boundary contract is missing: {contract}")
+for contract in [
+    'LandExpansionManager="*res://scripts/autoload/LandExpansionManager.gd"',
+    "LandExpansionPanelScript = preload",
+]:
+    if contract not in project and contract not in hud:
+        errors.append(f"Land expansion UI/autoload integration is missing: {contract}")
+for contract in [
+    "not LandExpansionManager.is_cell_unlocked(cell)",
+    '"land_expansion": LandExpansionManager.to_save_dict()',
+    'LandExpansionManager.from_save_dict(snapshot.get("land_expansion", {}))',
+    'color = color.lerp(Color("#302B24"), 0.34)',
+]:
+    if contract not in build_manager and contract not in save_manager_source and contract not in world_source:
+        errors.append(f"Land ownership persistence/visual contract is missing: {contract}")
+for contract in [
+    "The initial central city plots must be owned and buildable.",
+    "A fully funded adjacent plot must be claimable.",
+    "Claimed land must survive LandExpansionManager save/load serialization.",
+    "Livestock must never enter the external highway asphalt corridor.",
+    "Livestock must never enter unlocked city plots.",
+]:
+    if contract not in gameplay_smoke:
+        errors.append(f"Land expansion/livestock regression test is missing: {contract}")
+
 if errors:
     print("VALIDATION FAILED")
     for error in errors:
