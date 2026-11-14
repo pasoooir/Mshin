@@ -680,6 +680,12 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		var inbound_lane_position := highway_lane_probe._lane_position(city_bound_highway_route.front(), inbound_direction)
 		var outbound_lane_position := highway_lane_probe._lane_position(city_bound_highway_route.back(), outbound_direction)
 		_check(absf(inbound_lane_position.x - outbound_lane_position.x) > 1.0, "Highway entry and exit must occupy physically separate adjacent carriageways.")
+		highway_lane_probe.lane_index = 1
+		var second_inbound_lane_position := highway_lane_probe._lane_position(city_bound_highway_route.front(), inbound_direction)
+		_check(inbound_lane_position.distance_to(second_inbound_lane_position) > 1.0, "Each motorway lane index must map to its own physical lane position.")
+		highway_lane_probe.lane_index = 2
+		var third_inbound_lane_position := highway_lane_probe._lane_position(city_bound_highway_route.front(), inbound_direction)
+		_check(second_inbound_lane_position.distance_to(third_inbound_lane_position) > 1.0, "All three motorway lanes per carriageway must remain physically separated.")
 		highway_lane_probe.free()
 
 	for service_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
