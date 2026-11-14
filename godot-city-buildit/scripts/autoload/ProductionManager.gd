@@ -2,6 +2,8 @@ extends Node
 
 signal item_produced(item_id: String, amount: int)
 
+var _recipe_validation_report: Dictionary = {}
+
 # SCBI Industrial Buildings timings are the canonical source for raw production.
 # Keep legacy keys (time/value/level) because existing gameplay and HUD code reads them.
 var raw_materials := {
@@ -162,6 +164,84 @@ func _ready() -> void:
 		for product in store_catalog[store_id]:
 			StorageManager.register_item_definition(str(product.get("id", "")), str(product.get("name", product.get("id", ""))), "crafted")
 	print("[ProductionManager] SCBI catalog: %d raw, %d crafted" % [raw_materials.size(), crafted_items.size()])
+	_recipe_validation_report = get_recipe_validation_report()
+	for validation_error in _recipe_validation_report.get("errors", []):
+		push_error("[ProductionManager] Invalid recipe catalog: " + str(validation_error))
+
+func get_recipe_validation_report() -> Dictionary:
+	# Validate the complete enabled recipe graph before any item can enter a
+	# production queue. This is structural validation, not a claim that
+	# community-sourced numeric values are officially verified by EA.
+	var errors: Array[String] = []
+	var invalid_recipe_ids: Array[String] = []
+	for item_variant in crafted_items.keys():
+		var item_id := str(item_variant)
+		var recipe: Dictionary = crafted_items[item_variant]
+		var item_errors: Array[String] = []
+		var store_id := str(recipe.get("store", ""))
+		if store_id.is_empty() or not store_catalog.has(store_id):
+			item_errors.append("missing or unknown supplier store")
+		if float(recipe.get("time_sec", 0)) <= 0.0:
+			item_errors.append("production duration must be positive")
+		var inputs: Dictionary = recipe.get("requires", {})
+		if inputs.is_empty():
+			item_errors.append("recipe has no declared inputs")
+		for input_variant in inputs.keys():
+			var input_id := str(input_variant)
+			var quantity := int(inputs[input_variant])
+			if quantity <= 0:
+				item_errors.append("input %s has non-positive quantity" % input_id)
+			elif not raw_materials.has(input_id) and not crafted_items.has(input_id):
+				item_errors.append("input %s has no raw or crafted definition" % input_id)
+		if not bool(recipe.get("unlock_level_verified", true)):
+			# An unknown unlock is a deliberate gameplay lock, not a malformed recipe.
+			pass
+		if not item_errors.is_empty():
+			invalid_recipe_ids.append(item_id)
+			for detail in item_errors:
+				errors.append("%s: %s" % [item_id, detail])
+	var cycle_state: Dictionary = {}
+	var cycle_stack: Array[String] = []
+	var cycle_nodes: Dictionary = {}
+	for item_variant in crafted_items.keys():
+		_visit_recipe_graph(str(item_variant), cycle_state, cycle_stack, cycle_nodes)
+	for cycle_id in cycle_nodes.keys():
+		var id := str(cycle_id)
+		if not invalid_recipe_ids.has(id):
+			invalid_recipe_ids.append(id)
+		errors.append("%s: dependency cycle detected" % id)
+	invalid_recipe_ids.sort()
+	errors.sort()
+	return {
+		"valid": errors.is_empty(),
+		"errors": errors,
+		"invalid_recipe_ids": invalid_recipe_ids,
+		"recipe_count": crafted_items.size(),
+		"validated_at_unix": int(Time.get_unix_time_from_system())
+	}
+
+func _visit_recipe_graph(item_id: String, state: Dictionary, stack: Array[String], cycle_nodes: Dictionary) -> void:
+	var node_state := int(state.get(item_id, 0))
+	if node_state == 2:
+		return
+	if node_state == 1:
+		var cycle_start := stack.find(item_id)
+		if cycle_start >= 0:
+			for index in range(cycle_start, stack.size()):
+				cycle_nodes[stack[index]] = true
+			cycle_nodes[item_id] = true
+		return
+	if not crafted_items.has(item_id):
+		return
+	state[item_id] = 1
+	stack.append(item_id)
+	var requirements: Dictionary = crafted_items[item_id].get("requires", {})
+	for input_variant in requirements.keys():
+		var input_id := str(input_variant)
+		if crafted_items.has(input_id):
+			_visit_recipe_graph(input_id, state, stack, cycle_nodes)
+	stack.pop_back()
+	state[item_id] = 2
 
 func get_available_raw() -> Array:
 	var result: Array = []
@@ -192,6 +272,11 @@ func can_craft(item_id: String) -> bool:
 	return not recipe.is_empty() and get_recipe_lock_reason(item_id).is_empty() and are_recipe_inputs_unlocked(recipe) and StorageManager.has_items(recipe.get("inputs", {}))
 
 func get_recipe_lock_reason(item_id: String, store_star_level: int = 0) -> String:
+	if _recipe_validation_report.is_empty():
+		_recipe_validation_report = get_recipe_validation_report()
+	var invalid_ids: Array = _recipe_validation_report.get("invalid_recipe_ids", [])
+	if invalid_ids.has(item_id):
+		return "Recipe definition invalid — production disabled; see catalog validation report"
 	var recipe := get_recipe(item_id)
 	if recipe.is_empty():
 		var catalog_definition := get_item_definition(item_id)
