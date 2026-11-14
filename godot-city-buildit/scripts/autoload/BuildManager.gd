@@ -17,6 +17,11 @@ const BUILDING_MODEL_REGISTRY := {
 	"residential_2": "res://assets/models/residential/apartment_tower.gltf",
 	"residential_apartment": "res://assets/models/residential/apartment_tower.gltf",
 	"shop_chain": "res://assets/models/commercial/neighborhood_shop.gltf",
+	"restaurant_traditional": "res://assets/models/commercial/restaurant_traditional.tscn",
+	"fast_food": "res://assets/models/commercial/fast_food.tscn",
+	"hardware_store": "res://assets/models/commercial/hardware_store.tscn",
+	"farmers_market": "res://assets/models/commercial/farmers_market.tscn",
+	"furniture_store": "res://assets/models/commercial/furniture_store.tscn",
 	"factory_small": "res://assets/models/industrial/small_factory.gltf",
 	"industrial_1": "res://assets/models/industrial/small_factory.gltf"
 }
