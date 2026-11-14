@@ -273,7 +273,7 @@ func _is_junction_exit_clear(vehicle: TrafficVehicle, junction_cell: Vector2i, e
 		var occupied_cell: Vector2i = other.route[other_index]
 		if occupied_cell == exit_cell:
 			return false
-		if other_index + 1 < other.route.size() and other.route[other_index + 1] == exit_cell and other._segment_progress >= 0.5:
+		if other_index + 1 < other.route.size() and other.route[other_index + 1] == exit_cell:
 			return false
 	return true
 
