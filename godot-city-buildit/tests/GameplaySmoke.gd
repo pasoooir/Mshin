@@ -556,7 +556,7 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	var disconnected_building := FireHazardTestBuilding.new()
 	disconnected_building.status = "completed"
 	disconnected_building.grid_pos = Vector2i(1, 1)
-	disconnected_building.definition = {"size": Vector2i.ONE, "category": "industrial"}
+	disconnected_building.definition = {"size": Vector2i.ONE, "category": "service"}
 	add_child(disconnected_building)
 	_check(not BuildManager.is_building_operational(disconnected_building), "A completed building beside a disconnected road must become non-operational.")
 	var disconnected_factory = ProductionComponentScript.new()
@@ -1775,6 +1775,42 @@ func _test_power_water_gateway_access() -> void:
 	_check(ServiceManager.total_water == int(BuildManager.building_types["water_tower"].get("water", 0)), "A Gateway-connected water facility must contribute its catalog capacity.")
 	_check(ServiceManager.power_served_ids.has(connected_home.building_id) and ServiceManager.water_served_ids.has(connected_home.building_id), "Connected local utility coverage must serve a connected nearby home.")
 	_check(not ServiceManager.power_served_ids.has(disconnected_home.building_id) and not ServiceManager.water_served_ids.has(disconnected_home.building_id), "Connected utilities must not serve a home isolated from the Gateway.")
+
+	var commercial_consumer := FireHazardTestBuilding.new()
+	add_child(commercial_consumer)
+	commercial_consumer.building_id = "utility_test_commercial_consumer"
+	commercial_consumer.building_type = "building_supplies"
+	commercial_consumer.definition = BuildManager.building_types["building_supplies"]
+	commercial_consumer.status = "completed"
+	commercial_consumer.grid_pos = Vector2i(1, 1)
+	commercial_consumer.global_position = Vector3.ZERO
+	BuildManager.buildings[commercial_consumer.building_id] = commercial_consumer
+	ServiceManager.recalculate_from_buildings()
+	var industrial_consumer := FireHazardTestBuilding.new()
+	add_child(industrial_consumer)
+	industrial_consumer.building_id = "utility_test_industrial_consumer"
+	industrial_consumer.building_type = "factory_small"
+	industrial_consumer.definition = BuildManager.building_types["factory_small"]
+	industrial_consumer.status = "completed"
+	industrial_consumer.grid_pos = Vector2i(1, 1)
+	industrial_consumer.global_position = Vector3.ZERO
+	BuildManager.buildings[industrial_consumer.building_id] = industrial_consumer
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_power >= 4 and ServiceManager.demand_water >= 3, "City utility demand must include household, commercial and industrial production consumers.")
+	_check(ServiceManager.power_served_ids.has(commercial_consumer.building_id) and ServiceManager.water_served_ids.has(commercial_consumer.building_id), "A connected commercial producer must receive both power and water when local capacity is available.")
+	_check(ServiceManager.power_served_ids.has(industrial_consumer.building_id) and ServiceManager.water_served_ids.has(industrial_consumer.building_id), "A connected industrial producer must receive its higher catalog-profile power demand and water.")
+	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Connected and utility-served commercial and industrial producers must be operational.")
+	power_plant.status = "constructing"
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.power_served_ids.has(commercial_consumer.building_id) and not BuildManager.is_building_operational(commercial_consumer), "A commercial producer must stop operating when its required power service is lost.")
+	_check(not ServiceManager.power_served_ids.has(industrial_consumer.building_id) and not BuildManager.is_building_operational(industrial_consumer), "An industrial producer must stop operating when its required power service is lost.")
+	power_plant.status = "completed"
+	ServiceManager.recalculate_from_buildings()
+	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring connected power must reactivate commercial and industrial producers.")
+	for consumer in [commercial_consumer, industrial_consumer]:
+		BuildManager.buildings.erase(consumer.building_id)
+		remove_child(consumer)
+		consumer.free()
 
 	for test_building in [power_plant, water_plant, connected_home, disconnected_home]:
 		BuildManager.buildings.erase(test_building.building_id)

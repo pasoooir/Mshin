@@ -34,6 +34,33 @@ var served_health_homes: int = 0
 
 const DEFAULT_EMERGENCY_COVERAGE_TILES := 15.0
 
+# Mshin operating-cost profiles: commercial production buildings require one
+# unit each of power/water; industrial producers require two power and one
+# water. Per-building operating_*_demand values override these design defaults.
+const NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES := {
+	"commercial": {"power": 1, "water": 1},
+	"industrial": {"power": 2, "water": 1}
+}
+
+func get_building_utility_demand(building: Node3D, utility_key: String) -> int:
+	if not is_instance_valid(building):
+		return 0
+	var definition: Dictionary = building.definition
+	var override_key := "operating_%s_demand" % utility_key
+	if definition.has(override_key):
+		return maxi(0, int(definition.get(override_key, 0)))
+	var category := str(definition.get("category", ""))
+	var profile: Dictionary = NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.get(category, {})
+	return maxi(0, int(profile.get(utility_key, 0)))
+
+func requires_operational_utilities(building: Node3D) -> bool:
+	if not is_instance_valid(building):
+		return false
+	var category := str(building.definition.get("category", ""))
+	if not NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.has(category):
+		return false
+	return get_building_utility_demand(building, "power") > 0 or get_building_utility_demand(building, "water") > 0
+
 func _ready() -> void:
 	print("[ServiceManager] Power/water/sewage/waste capacity network online")
 
@@ -77,7 +104,13 @@ func _has_gateway_road_access(building: Node3D) -> bool:
 func is_building_served(building: Node3D) -> bool:
 	if not is_instance_valid(building):
 		return false
-	return power_served_ids.has(building.building_id) and water_served_ids.has(building.building_id)
+	if not requires_operational_utilities(building):
+		return true
+	var power_demand := get_building_utility_demand(building, "power")
+	var water_demand := get_building_utility_demand(building, "water")
+	var power_ok := power_demand <= 0 or power_served_ids.has(building.building_id)
+	var water_ok := water_demand <= 0 or water_served_ids.has(building.building_id)
+	return power_ok and water_ok
 
 func is_sewage_served(building: Node3D) -> bool:
 	return is_instance_valid(building) and sewage_served_ids.has(building.building_id)
@@ -155,6 +188,7 @@ func recalculate_from_buildings() -> void:
 	served_health_homes = 0
 
 	var homes: Array = []
+	var non_residential_consumers: Array = []
 	for building in BuildManager.buildings.values():
 		if not is_instance_valid(building) or building.status != "completed":
 			continue
@@ -166,6 +200,10 @@ func recalculate_from_buildings() -> void:
 			demand_water += get_home_service_demand(building)
 			demand_sewage += get_home_service_demand(building)
 			demand_waste += get_home_service_demand(building)
+		elif NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.has(category):
+			non_residential_consumers.append(building)
+			demand_power += get_building_utility_demand(building, "power")
+			demand_water += get_building_utility_demand(building, "water")
 		elif str(definition.get("service_group", "")) == "sewage" and _has_gateway_road_access(building):
 			total_sewage += int(definition.get("sewage", 0))
 		elif str(definition.get("service_group", "")) == "waste" and _has_gateway_road_access(building):
@@ -190,6 +228,24 @@ func recalculate_from_buildings() -> void:
 		if used_water + demand <= total_water and _has_nearby_utility(home, "water"):
 			used_water += demand
 			water_served_ids[home.building_id] = true
+
+	# Non-residential production is allocated after household demand so
+	# industrial/commercial buildings cannot silently consume the household
+	# utility reserve. A producer needs both a Gateway road and local utility
+	# coverage before its ProductionComponent may run.
+	for consumer in non_residential_consumers:
+		if not _has_gateway_road_access(consumer):
+			continue
+		var power_need := get_building_utility_demand(consumer, "power")
+		var water_need := get_building_utility_demand(consumer, "water")
+		if power_need <= 0 or (used_power + power_need <= total_power and _has_nearby_utility(consumer, "power")):
+			if power_need > 0:
+				used_power += power_need
+				power_served_ids[consumer.building_id] = true
+		if water_need <= 0 or (used_water + water_need <= total_water and _has_nearby_utility(consumer, "water")):
+			if water_need > 0:
+				used_water += water_need
+				water_served_ids[consumer.building_id] = true
 
 	# Sewage and waste are city-wide capacity services: facilities and homes
 	# must both be connected to the Gateway road network; no local radius applies.

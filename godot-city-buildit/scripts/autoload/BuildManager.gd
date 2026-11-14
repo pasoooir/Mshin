@@ -301,7 +301,14 @@ func is_building_operational(building: Node) -> bool:
 	var definition: Dictionary = building.get("definition")
 	var anchor: Vector2i = building.get("grid_pos")
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
-	return has_road_access(anchor, size)
+	if not has_road_access(anchor, size):
+		return false
+	# Production buildings need their catalog-defined local power and water
+	# service as well as a Gateway-connected road. Homes retain their existing
+	# happiness-penalty model instead of being hard-stopped here.
+	if has_node("/root/ServiceManager") and ServiceManager.requires_operational_utilities(building):
+		return ServiceManager.is_building_served(building)
+	return true
 
 func get_construction_bom(type_id: String) -> Dictionary:
 	if not building_types.has(type_id):
