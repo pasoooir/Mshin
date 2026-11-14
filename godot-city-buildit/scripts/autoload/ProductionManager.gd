@@ -435,6 +435,34 @@ func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, l
 			remaining_stock
 		)
 
+func get_live_factory_queue_delay_seconds(material_id: String) -> float:
+	# Factory slots run independently. The next batch can begin immediately in
+	# any free slot; otherwise it waits for the earliest occupied slot.
+	if material_id.is_empty() or not is_inside_tree():
+		return 0.0
+	var best_delay := -1.0
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		if not bool(component.is_factory):
+			continue
+		if not get_factory_material_ids(str(component.factory_type)).has(material_id):
+			continue
+		var component_delay := -1.0
+		for slot in component.slots:
+			if slot.is_empty() or bool(slot.get("ready", false)):
+				component_delay = 0.0
+				break
+			var finish_unix := int(slot.get("finish_unix", 0))
+			var paused_at := int(slot.get("paused_at_unix", 0))
+			var now := int(Time.get_unix_time_from_system())
+			var remaining := maxi(0, finish_unix - now) if paused_at <= 0 else maxi(0, finish_unix - paused_at)
+			if component_delay < 0.0 or float(remaining) < component_delay:
+				component_delay = float(remaining)
+		if component_delay >= 0.0 and (best_delay < 0.0 or component_delay < best_delay):
+			best_delay = component_delay
+	return maxf(0.0, best_delay)
+
 func get_live_store_queue_delay_seconds(store_id: String) -> float:
 	# Query live production components, not UI estimates or duplicated queue state.
 	if store_id.is_empty() or not is_inside_tree():
@@ -467,7 +495,9 @@ func _estimate_item_chain_seconds(item_id: String, amount: int, remaining_stock:
 	if missing_amount <= 0:
 		return 0.0
 	if raw_materials.has(item_id):
-		return float(raw_materials[item_id].get("time_sec", 0))
+		var raw_duration := float(raw_materials[item_id].get("time_sec", 0))
+		var factory_wait := get_live_factory_queue_delay_seconds(item_id)
+		return factory_wait + raw_duration
 	if not crafted_items.has(item_id) or ancestry.has(item_id):
 		return -1.0
 	var recipe: Dictionary = crafted_items[item_id]
