@@ -669,6 +669,18 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	var city_bound_highway_route: Array[Vector2i] = TrafficManager.build_highway_city_round_trip_route(true)
 	_check(city_bound_highway_route.size() > northbound_route.size(), "A motorway vehicle must continue from the external highway into the city instead of leaving on an isolated highway-only loop.")
 	_check(city_bound_highway_route.has(road_system.GATEWAY_ROAD_CELL), "The motorway-to-city route must include the permanent road Gateway.")
+	_check(city_bound_highway_route.front() == city_bound_highway_route.back(), "A highway trip must finish back at its motorway exit after completing the city loop.")
+	if city_bound_highway_route.size() >= 2:
+		var inbound_direction: Vector2i = city_bound_highway_route[1] - city_bound_highway_route[0]
+		var outbound_direction: Vector2i = city_bound_highway_route[city_bound_highway_route.size() - 1] - city_bound_highway_route[city_bound_highway_route.size() - 2]
+		_check(inbound_direction == -outbound_direction, "Highway entry and city exit must use opposite directions on adjacent carriageways.")
+		var highway_lane_probe := TrafficVehicle.new()
+		highway_lane_probe.vehicle_kind = "highway"
+		highway_lane_probe.lane_index = 0
+		var inbound_lane_position := highway_lane_probe._lane_position(city_bound_highway_route.front(), inbound_direction)
+		var outbound_lane_position := highway_lane_probe._lane_position(city_bound_highway_route.back(), outbound_direction)
+		_check(absf(inbound_lane_position.x - outbound_lane_position.x) > 1.0, "Highway entry and exit must occupy physically separate adjacent carriageways.")
+		highway_lane_probe.free()
 
 	for service_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
 		_check(str(BuildManager.building_types[service_id].get("service_group", "")) == "fire", "Every fire station tier must be included in emergency fleet dispatch: " + service_id)
@@ -866,8 +878,27 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		_check(is_equal_approx(highway_vehicle.lane_offset, TrafficManager.LANE_CENTER_OFFSET), "Motorway vehicles must transition onto the city's legal right-hand lane geometry at the Gateway.")
 		_check(highway_vehicle.route.has(road_system.GATEWAY_ROAD_CELL), "Motorway vehicle routes must enter the city through the permanent Gateway.")
 		_check(highway_vehicle.route.any(func(cell): return cell.x > TrafficManager.HIGHWAY_GRID_X), "Motorway vehicle routes must continue beyond the highway boundary into the city road network.")
-		_check(is_equal_approx(highway_vehicle.global_position.x, TrafficManager.HIGHWAY_WORLD_X + TrafficManager.LANE_CENTER_OFFSET), "Motorway vehicles must start on the physical external motorway and use the city connector lane.")
+		var expected_highway_start := highway_vehicle._lane_position(highway_vehicle.route[0], highway_vehicle.route[1] - highway_vehicle.route[0])
+		_check(highway_vehicle.global_position.distance_to(expected_highway_start) < 0.001, "Motorway vehicles must start in their assigned physical motorway lane before merging onto the city connector.")
 	TrafficManager.clear_active_vehicle()
+
+	var saved_traffic_population := GameManager.population
+	GameManager.population = 0
+	_check(TrafficManager._get_public_vehicle_limit() == 4, "An empty city must cap the complete public traffic loop at four vehicles.")
+	GameManager.population = TrafficManager.RESIDENTS_PER_ADDITIONAL_TRAFFIC_VEHICLE
+	_check(TrafficManager._get_public_vehicle_limit() == 5, "Public traffic capacity must grow gradually with real city population.")
+	GameManager.population = 0
+	TrafficManager.clear_active_vehicle()
+	var capped_highway_fleet: Array[TrafficVehicle] = []
+	for _vehicle_index in range(5):
+		var capped_vehicle: TrafficVehicle = TrafficManager.spawn_highway_vehicle_now()
+		if is_instance_valid(capped_vehicle):
+			capped_highway_fleet.append(capped_vehicle)
+	_check(capped_highway_fleet.size() == 4, "Highway entry must stop spawning when the shared empty-city fleet reaches four vehicles.")
+	_check(TrafficManager._active_public_vehicle_count() == 4, "The four-vehicle empty-city cap must include every vehicle between highway entry, city roads and highway exit.")
+	_check(TrafficManager.spawn_highway_vehicle_now() == null, "A fifth highway vehicle must be rejected while the empty-city traffic loop is full.")
+	TrafficManager.clear_active_vehicle()
+	GameManager.population = saved_traffic_population
 	var world := get_node("World") as Node3D
 	var police_station := FireHazardTestBuilding.new()
 	police_station.building_id = "traffic-smoke-police"
