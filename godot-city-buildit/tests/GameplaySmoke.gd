@@ -1222,6 +1222,8 @@ func _run_gameplay_test() -> void:
 	_assert_readable_control_tree(production_hud.production_panel, "Factory Production")
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
+	_check(production_hud.production_panel.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must have a distinct high-contrast building nameplate.")
+	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must separate the lower order queue from the product catalog.")
 	var product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
 	var product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
 	var production_profile: String = production_hud._responsive_profile_for_size(get_viewport().get_visible_rect().size)
@@ -1245,7 +1247,9 @@ func _run_gameplay_test() -> void:
 	_assert_panel_fits_target(production_hud.production_panel, Vector2(1920, 1080), "Factory Production desktop", 0.96, 0.96)
 	_check(product_grid != null and product_grid.columns == 6, "Production product cards must use six columns on desktop.")
 	production_hud._apply_overlay_responsive_layout(get_viewport().get_visible_rect().size)
-	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
+	var empty_factory_slot := production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
+	_check(empty_factory_slot != null, "Factory panel must show the production queue with empty slots.")
+	_check(empty_factory_slot != null and empty_factory_slot.find_child("Label", true, false) is Label, "Empty queue slots must display a visible plus/empty affordance.")
 	var metal_button := production_hud.production_panel.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
