@@ -238,6 +238,8 @@ func recalculate_from_buildings() -> void:
 		var blockers: Array[String] = []
 		if not _has_gateway_road_access(building):
 			blockers.append("Road access: building is disconnected from the Gateway")
+			operational_blockers_by_id[str(building.building_id)] = blockers
+			continue
 		if required_workforce > 0:
 			var remaining_workforce := workforce_available - workforce_assigned
 			if remaining_workforce >= required_workforce:
