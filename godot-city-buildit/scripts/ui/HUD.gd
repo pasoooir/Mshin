@@ -1864,8 +1864,10 @@ func open_production_panel(building: Building) -> void:
 	production_panel = PanelContainer.new()
 	production_panel.name = "BuildingProductionPanel"
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(1120.0 * _ui_scale, viewport_size.x * 0.96)
-	var panel_height := minf(700.0 * _ui_scale, viewport_size.y * 0.96)
+	var compact_layout := viewport_size.x <= 900.0 or viewport_size.y <= 520.0
+	var tablet_layout := not compact_layout and viewport_size.x <= 1280.0
+	var panel_width := minf(1120.0 * _ui_scale, viewport_size.x * (0.98 if compact_layout else 0.96))
+	var panel_height := minf((700.0 if compact_layout else 650.0) * _ui_scale, viewport_size.y * (0.99 if compact_layout else 0.96))
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
 	production_panel.anchor_top = 0.5
@@ -1893,11 +1895,11 @@ func open_production_panel(building: Building) -> void:
 	var layout := VBoxContainer.new()
 	layout.name = "ProductionLayout"
 	layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	layout.add_theme_constant_override("separation", 7)
-	layout.add_theme_constant_override("margin_left", int(18 * _ui_scale))
-	layout.add_theme_constant_override("margin_right", int(18 * _ui_scale))
-	layout.add_theme_constant_override("margin_top", int(14 * _ui_scale))
-	layout.add_theme_constant_override("margin_bottom", int(14 * _ui_scale))
+	layout.add_theme_constant_override("separation", 4 if compact_layout else 7)
+	layout.add_theme_constant_override("margin_left", int((10 if compact_layout else 18) * _ui_scale))
+	layout.add_theme_constant_override("margin_right", int((10 if compact_layout else 18) * _ui_scale))
+	layout.add_theme_constant_override("margin_top", int((8 if compact_layout else 14) * _ui_scale))
+	layout.add_theme_constant_override("margin_bottom", int((8 if compact_layout else 14) * _ui_scale))
 	production_panel.add_child(layout)
 
 	var component = building.production_component
@@ -1920,18 +1922,18 @@ func open_production_panel(building: Building) -> void:
 	header_row.add_theme_constant_override("separation", 9)
 	header.add_child(header_row)
 	var production_icon_id := building.building_type if Icons.COMMERCIAL_IDS.has(building.building_type) else "factory_basic"
-	var building_icon := Icons.make_icon(production_icon_id, Vector2(44, 44) * _ui_scale)
+	var building_icon := Icons.make_icon(production_icon_id, Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(34, 34) * _ui_scale)
 	building_icon.name = "ProductionBuildingIcon"
 	header_row.add_child(building_icon)
 	var title := Label.new()
 	title.text = str(building.definition.get("name", "Production")).to_upper()
-	title.add_theme_font_size_override("font_size", int(20 * _ui_scale))
+	title.add_theme_font_size_override("font_size", int((19 if not compact_layout else 16) * _ui_scale))
 	title.add_theme_color_override("font_color", Color.WHITE)
 	header_row.add_child(title)
 	var close := Button.new()
 	close.name = "ProductionClose"
 	close.text = "✕"
-	close.custom_minimum_size = Vector2(42, 42) * _ui_scale
+	close.custom_minimum_size = Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(36, 36) * _ui_scale
 	close.add_theme_font_size_override("font_size", int(20 * _ui_scale))
 	close.add_theme_color_override("font_color", Color("#17394D"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#DCECF5"), Color("#B7D4E3")))
@@ -1963,7 +1965,7 @@ func open_production_panel(building: Building) -> void:
 	var hint := Label.new()
 	hint.text = "SELECT A PRODUCT  ·  REVIEW MATERIALS AND STOCK  ·  START PRODUCTION"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	hint.add_theme_font_size_override("font_size", int((10 if not compact_layout else 8) * _ui_scale))
 	hint.add_theme_color_override("font_color", Color("#577487"))
 	layout.add_child(hint)
 
@@ -1983,16 +1985,17 @@ func open_production_panel(building: Building) -> void:
 
 	var product_scroll := ScrollContainer.new()
 	product_scroll.name = "ProductionProductsScroll"
-	product_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	product_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	product_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	product_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	product_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	product_scroll.custom_minimum_size.y = 158.0 * _ui_scale
+	product_scroll.custom_minimum_size.y = (108.0 if compact_layout else (138.0 if tablet_layout else 158.0)) * _ui_scale
 	layout.add_child(product_scroll)
 
 	var product_grid := GridContainer.new()
 	product_grid.name = "ProductionProductCards"
-	product_grid.columns = 6
+	product_grid.columns = 3 if compact_layout else (4 if tablet_layout else 6)
+	product_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	product_grid.add_theme_constant_override("h_separation", 8)
 	product_grid.add_theme_constant_override("v_separation", 4)
 	product_scroll.add_child(product_grid)
@@ -2014,9 +2017,9 @@ func open_production_panel(building: Building) -> void:
 		empty_catalog.add_theme_color_override("font_color", Color("#F5DFA0"))
 		product_grid.add_child(empty_catalog)
 
-	# Keep the complete store catalog on one horizontally scrollable row.
-	# A fixed six-column grid could wrap larger catalogs below the clipped viewport.
-	product_grid.columns = maxi(1, item_ids.size())
+	# Reflow verified products into touch-friendly columns; vertical scrolling
+	# exposes every product without clipping a second row on compact screens.
+	product_grid.columns = 3 if compact_layout else (4 if tablet_layout else 6)
 	for item_id in item_ids:
 		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
 		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
@@ -2109,10 +2112,18 @@ func open_production_panel(building: Building) -> void:
 		)
 		product_grid.add_child(item_button)
 
+	var details_scroll := ScrollContainer.new()
+	details_scroll.name = "ProductionDetailsScroll"
+	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	details_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details_scroll.custom_minimum_size.y = (92.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
+	layout.add_child(details_scroll)
 	var details_host := Control.new()
 	details_host.name = "ProductionDetailsHost"
-	details_host.custom_minimum_size.y = 150.0 * _ui_scale
-	layout.add_child(details_host)
+	details_host.custom_minimum_size.x = maxf(240.0, panel_width - 70.0 * _ui_scale)
+	details_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details_scroll.add_child(details_host)
 
 	var queue_heading := HBoxContainer.new()
 	queue_heading.name = "ProductionQueueHeading"
@@ -2144,7 +2155,7 @@ func open_production_panel(building: Building) -> void:
 	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = 104.0 * _ui_scale
+	queue_scroll.custom_minimum_size.y = (82.0 if compact_layout else 104.0) * _ui_scale
 	layout.add_child(queue_scroll)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
@@ -2251,6 +2262,7 @@ func open_production_panel(building: Building) -> void:
 
 	var footer := Label.new()
 	footer.text = "Completed goods are collected into City Storage."
+	footer.visible = not compact_layout
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.add_theme_font_size_override("font_size", int(9 * _ui_scale))
 	footer.add_theme_color_override("font_color", Color("#587487"))
