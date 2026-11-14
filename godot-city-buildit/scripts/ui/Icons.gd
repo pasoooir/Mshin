@@ -1,7 +1,7 @@
 extends RefCounted
 ## Single source of truth for local transparent PNG UI and catalog icons.
 const ROOT := "res://assets/icons/"
-const FALLBACK := "res://assets/icons/fallback.png"
+const FALLBACK := "res://assets/icons/ui/placeholder.png"
 const ROOT_IDS := ["bulldozer", "commercial", "fallback", "fire", "hard_hat", "industrial", "park", "parks", "power", "residential", "road", "services"]
 
 const RAW_IDS := ["metal", "wood", "plastic", "seeds", "minerals", "chemicals", "textiles", "sugar_spices", "glass", "animal_feed", "electrical", "coconut", "snowberry", "cactus_fruit", "herbs", "olives"]

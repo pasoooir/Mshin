@@ -67,6 +67,10 @@ landmark global_trade epic regions fallback trade_depot
 for icon_id in ui_ids:
     require("ui", icon_id)
 
+# Root-level category and context icons are used by the build toolbar and fallback paths.
+for icon_id in ["bulldozer", "commercial", "fallback", "fire", "hard_hat", "industrial", "park", "parks", "power", "residential", "road", "services"]:
+    require("root", icon_id)
+
 for icon_id in ["road", "road_build", "road_upgrade", "road_bulldoze"]:
     require("roads", icon_id)
 for icon_id in ["smoke", "no_power", "no_water", "no_fire_coverage", "storage_full", "ready_collect", "upgrading", "abandoned"]:
