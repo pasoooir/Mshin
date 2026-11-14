@@ -1273,6 +1273,7 @@ for contract in [
     "func is_road_connected_to_gateway(",
     "func invalidate_road_connectivity_cache()",
     "func clear_roads()",
+    "func restore_road(grid_pos: Vector2i) -> bool:",
     "Road must connect to the active highway network.",
     "if grid_pos == GATEWAY_ROAD_CELL or not roads.has(grid_pos):",
 ]:
@@ -1556,7 +1557,6 @@ else:
         "func get_expansion_item_definition(item_id: String) -> Dictionary",
         "func migrate_legacy_land(road_data: Array, building_data: Array) -> void:",
         "func is_cell_road_buildable(cell: Vector2i) -> bool:",
-        "func restore_road(grid_pos: Vector2i) -> bool:",
         "func expand_tile(tile: Vector2i) -> bool",
         "StorageManager.has_items(cost)",
         "StorageManager.remove_items(cost)",
