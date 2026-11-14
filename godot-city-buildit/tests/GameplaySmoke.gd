@@ -659,6 +659,11 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(northbound_route.front().y == TrafficManager.HIGHWAY_MAX_GRID_Z and northbound_route.back().y == TrafficManager.HIGHWAY_MIN_GRID_Z, "Northbound motorway traffic must run only toward the north exit.")
 	_check(southbound_route.front().y == TrafficManager.HIGHWAY_MIN_GRID_Z and southbound_route.back().y == TrafficManager.HIGHWAY_MAX_GRID_Z, "Southbound motorway traffic must run only toward the south exit.")
 
+	for service_id in ["fire_station_small", "fire_station", "fire_station_deluxe"]:
+		_check(str(BuildManager.building_types[service_id].get("service_group", "")) == "fire", "Every fire station tier must be included in emergency fleet dispatch: " + service_id)
+	for service_id in ["police_station", "police_small", "police_basic", "police_precinct"]:
+		_check(str(BuildManager.building_types[service_id].get("service_group", "")) == "police", "Every police station tier must be included in emergency fleet dispatch: " + service_id)
+
 	var lane_probe := TrafficVehicle.new()
 	var east_center := lane_probe._cell_center(Vector2i.ZERO)
 	var east_lane := lane_probe._lane_position(Vector2i.ZERO, Vector2i(1, 0))
@@ -704,6 +709,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_instance_valid(police_vehicle) and police_vehicle.vehicle_kind == "police", "An operational police station must dispatch a police vehicle.")
 	if is_instance_valid(police_vehicle):
 		_check(police_vehicle.station_building_id == police_station.building_id, "Police patrol vehicle must retain its originating station identity.")
+		_check(police_vehicle.global_position.distance_to(police_station.global_position) > 1.0 and police_vehicle.global_position.distance_to(police_station.global_position) < 2.0, "Police vehicle must spawn at the station exit before entering its patrol route.")
 		_check(police_vehicle.get_node_or_null("EmergencyLightbar") != null, "Police vehicle must visibly carry an emergency lightbar.")
 
 	var fire_station := FireHazardTestBuilding.new()
@@ -718,6 +724,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(is_instance_valid(fire_vehicle) and fire_vehicle.vehicle_kind == "fire", "An operational fire station must dispatch a fire engine.")
 	if is_instance_valid(fire_vehicle):
 		_check(fire_vehicle.get_node_or_null("EmergencyLightbar") != null and fire_vehicle.get_node_or_null("FireEquipment") != null, "Fire engine must show its emergency lights and fire-service equipment.")
+		_check(fire_vehicle.global_position.distance_to(fire_station.global_position) > 1.0 and fire_vehicle.global_position.distance_to(fire_station.global_position) < 2.0, "Fire engine must spawn at the fire station exit before entering its route.")
 
 	TrafficManager.clear_active_vehicle()
 	police_station.queue_free()
