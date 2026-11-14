@@ -566,8 +566,8 @@ for contract in [
 ]:
     if contract not in cargo_ship_visual_source:
         errors.append(f"Procedural cargo ship visual contract is missing: {contract}")
-if "const SAVE_VERSION: int = 4" not in save_manager_source:
-    errors.append("Save format must be version 4 for persisted land-expansion and trade state")
+if "const SAVE_VERSION: int = 5" not in save_manager_source:
+    errors.append("Save format must be version 5 for independent per-region warehouse inventories")
 for contract in [
     "func _test_trade_depot_and_global_market()",
     "must accept a valid item listing",
