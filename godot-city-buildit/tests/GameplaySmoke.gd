@@ -74,6 +74,31 @@ func _find_building(type_id: String):
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
+func _test_recipe_dependency_graph_validation() -> void:
+	var baseline := ProductionManager.get_recipe_validation_report()
+	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
+	_check(not baseline.get("invalid_recipe_ids", []).has("nails"), "Known Nails recipe must pass structural recipe validation.")
+	var saved_a: Variant = ProductionManager.crafted_items.get("__test_cycle_a")
+	var saved_b: Variant = ProductionManager.crafted_items.get("__test_cycle_b")
+	ProductionManager.crafted_items["__test_cycle_a"] = {
+		"name":"Test Cycle A", "time_sec":1, "level":1,
+		"store":"building_supplies", "requires":{"__test_cycle_b":1}
+	}
+	ProductionManager.crafted_items["__test_cycle_b"] = {
+		"name":"Test Cycle B", "time_sec":1, "level":1,
+		"store":"building_supplies", "requires":{"__test_cycle_a":1}
+	}
+	var cycle_report := ProductionManager.get_recipe_validation_report()
+	var invalid_ids: Array = cycle_report.get("invalid_recipe_ids", [])
+	_check(invalid_ids.has("__test_cycle_a") and invalid_ids.has("__test_cycle_b"), "Recipe graph validator must reject every node participating in a dependency cycle.")
+	ProductionManager.crafted_items.erase("__test_cycle_a")
+	ProductionManager.crafted_items.erase("__test_cycle_b")
+	if saved_a is Dictionary:
+		ProductionManager.crafted_items["__test_cycle_a"] = saved_a
+	if saved_b is Dictionary:
+		ProductionManager.crafted_items["__test_cycle_b"] = saved_b
+	ProductionManager._recipe_validation_report = ProductionManager.get_recipe_validation_report()
+
 func _test_storage_and_production_chain() -> void:
 	# Regression coverage for newly enabled recipes. Values use the current
 	# 2024 commercial-store variant where the reference documents a variant.
@@ -2570,6 +2595,7 @@ func _run_gameplay_test() -> void:
 	await _test_build_menu_visibility()
 	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
+	_test_recipe_dependency_graph_validation()
 	_test_storage_and_production_chain()
 	_test_production_queue_stress()
 	_test_fire_hazard_state_machine()
