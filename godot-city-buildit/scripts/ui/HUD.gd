@@ -287,7 +287,8 @@ func _build_top_hud() -> void:
 	var level_badge := Control.new()
 	level_badge.name = "LevelBadge"
 	level_badge.custom_minimum_size = Vector2(88, 88) * _ui_scale
-	level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	level_badge.mouse_filter = Control.MOUSE_FILTER_STOP
+	level_badge.tooltip_text = "Mayor Level. The ring shows progress toward the next level. Earn XP through building, production, achievements and sustained city happiness."
 	top_stats.add_child(level_badge)
 	level_badge_visual = LevelBadgeVisual.new()
 	level_badge_visual.name = "LevelBadgeVisual"
@@ -327,6 +328,7 @@ func _build_top_hud() -> void:
 	left_stack.add_child(xp_row)
 	xp_text = _make_hud_value("0 / %d XP" % GameManager.get_xp_needed(), int(16 * _ui_scale))
 	xp_text.custom_minimum_size = Vector2(105, 24) * _ui_scale
+	xp_text.tooltip_text = "XP raises your Mayor Level. Earn it by placing/completing buildings, collecting production, unlocking achievements, and keeping average city happiness at 80% or higher for 60 seconds."
 	xp_row.add_child(xp_text)
 	xp_progress = ProgressBar.new()
 	xp_progress.name = "ExperienceProgress"
@@ -336,6 +338,7 @@ func _build_top_hud() -> void:
 	xp_progress.max_value = GameManager.get_xp_needed()
 	xp_progress.value = GameManager.experience
 	xp_progress.show_percentage = false
+	xp_progress.tooltip_text = "Progress toward the next Mayor Level. The number shows current XP / XP required."
 	xp_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	xp_row.add_child(xp_progress)
 
@@ -1420,7 +1423,10 @@ func _build_service_warning_banner() -> void:
 	add_child(service_warning_panel)
 	_update_service_warning_banner()
 
-func _on_city_happiness_recalculated(_average: float, _scores: Dictionary) -> void:
+func _on_city_happiness_recalculated(average: float, _scores: Dictionary) -> void:
+	# Keep the visible percentage tied to the authoritative completed city
+	# calculation, not only to a secondary HUD update path.
+	_on_happiness_changed(average)
 	_update_service_warning_banner()
 
 func _update_service_warning_banner() -> void:
@@ -1473,13 +1479,22 @@ func _on_happiness_changed(value: float) -> void:
 		happiness_label.text = "%d%%" % roundi(value)
 
 func _on_xp_changed(xp: int, needed: int) -> void:
+	var safe_needed := maxi(1, needed)
+	var remaining := maxi(0, safe_needed - xp)
+	var next_level := mini(60, GameManager.level + 1)
+	var progress_hint := "Level %d: %d XP remaining. XP comes from building, production collection, achievements and sustained happiness (80%+ for 60 seconds)." % [next_level, remaining]
 	if xp_text:
-		xp_text.text = "%d / %d XP" % [xp, needed]
-	if xp_progress:
-		xp_progress.max_value = maxi(1, needed)
-		xp_progress.value = clampi(xp, 0, needed)
+		xp_text.text = "%d / %d XP" % [xp, safe_needed]
+		xp_text.tooltip_text = progress_hint
+	if is_instance_valid(xp_progress):
+		xp_progress.tooltip_text = progress_hint
 	if is_instance_valid(level_badge_visual):
-		level_badge_visual.set_progress(float(clampi(xp, 0, maxi(1, needed))) / float(maxi(1, needed)))
+		level_badge_visual.tooltip_text = progress_hint
+	if xp_progress:
+		xp_progress.max_value = safe_needed
+		xp_progress.value = clampi(xp, 0, safe_needed)
+	if is_instance_valid(level_badge_visual):
+		level_badge_visual.set_progress(float(clampi(xp, 0, safe_needed)) / float(safe_needed))
 
 func _on_level_up_rewarded(new_level: int, reward: int, keys: int) -> void:
 	# level_changed updates the badge; reward signal is the single celebration trigger.
