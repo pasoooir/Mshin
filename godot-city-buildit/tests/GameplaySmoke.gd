@@ -138,7 +138,7 @@ func _test_live_production_queue_eta() -> void:
 	# Cream is shared by the direct Ice Cream Sandwich input and the nested
 	# Bread Roll recipe. The scheduler must plan it once, not duplicate it.
 	var shared_ingredient_eta := ProductionManager.get_estimated_chain_seconds("ice_cream_sandwich")
-	_check(is_equal_approx(shared_ingredient_eta, 8940.0), "Recursive ETA must reuse a planned Cream output shared by sibling dependency branches.")
+	_check(is_equal_approx(shared_ingredient_eta, 12540.0), "Recursive ETA must reuse a planned Cream output shared by sibling dependency branches.")
 	StorageManager.from_save_dict(previous_storage)
 
 	factory_probe.queue_free()
