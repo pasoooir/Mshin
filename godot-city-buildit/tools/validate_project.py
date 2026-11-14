@@ -1041,6 +1041,7 @@ for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_ti
         errors.append(f"FireHazardManager dynamic coverage contract is missing: {contract}")
 for contract in [
     "func _process(delta: float) -> void:",
+    "func replace_route(new_route: Array[Vector2i]) -> void:",
     "pan_velocity * delta",
     "rotation_degrees.y += rad_to_deg(orbit_velocity * delta)",
     "static func decay_pan_velocity(",
@@ -1345,6 +1346,12 @@ for contract in [
     "func _junction_queue_counts(junction_cell: Vector2i) -> Dictionary:",
     "func _select_junction_approach(counts: Dictionary, waiting: Dictionary) -> Vector2i:",
     "func _update_junction_controllers(delta: float) -> void:",
+    "func _junction_movements_conflict(from_a: Vector2i, to_a: Vector2i, from_b: Vector2i, to_b: Vector2i, junction_cell: Vector2i) -> bool:",
+    "func _is_junction_exit_clear(vehicle: TrafficVehicle, junction_cell: Vector2i, exit_cell: Vector2i) -> bool:",
+    "func _approach_has_right_of_way(approach: Vector2i, counts: Dictionary) -> bool:",
+    "func _select_junction_approach_without_yield(counts: Dictionary, waiting: Dictionary) -> Vector2i:",
+    "func _nearest_connected_road(target: Vector2i, connected_roads: Dictionary) -> Vector2i:",
+    "func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:",
     "func request_junction_entry(vehicle: TrafficVehicle, junction_cell: Vector2i, from_cell: Vector2i = Vector2i.ZERO) -> bool:",
     "JUNCTION_YELLOW_SECONDS: float = 1.0",
     "JUNCTION_ALL_RED_SECONDS: float = 0.5",
