@@ -237,8 +237,8 @@ func _movement_segment(from_cell: Vector2i, junction_cell: Vector2i, to_cell: Ve
 	var outgoing := to_cell - junction_cell
 	var incoming_right := Vector2(-float(incoming.y), float(incoming.x)).normalized()
 	var outgoing_right := Vector2(-float(outgoing.y), float(outgoing.x)).normalized()
-	var start := -Vector2(float(incoming.x), float(incoming.y)) * 0.9 + incoming_right * LANE_CENTER_OFFSET
-	var finish := Vector2(float(outgoing.x), float(outgoing.y)) * 0.9 + outgoing_right * LANE_CENTER_OFFSET
+	var start := -Vector2(float(incoming.x), float(incoming.y)) * 1.8 + incoming_right * LANE_CENTER_OFFSET
+	var finish := Vector2(float(outgoing.x), float(outgoing.y)) * 1.8 + outgoing_right * LANE_CENTER_OFFSET
 	return [start, finish]
 
 func _cross_2d(a: Vector2, b: Vector2) -> float:
