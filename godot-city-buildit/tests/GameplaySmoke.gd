@@ -733,7 +733,31 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	_check(TrafficManager._approach_has_right_of_way(Vector2i(1, 0), {Vector2i(0, -1): 1}), "A vehicle must yield to queued traffic approaching from its right.")
 	_check(TrafficManager._select_junction_approach({Vector2i(1, 0): 1, Vector2i(0, -1): 1}, {Vector2i(1, 0): 0.0, Vector2i(0, -1): 0.0}) == Vector2i(0, -1), "Right-hand priority must select the approach that has right of way.")
 	_check(is_equal_approx(TrafficManager._select_junction_approach({Vector2i(1, 0): 1, Vector2i(0, -1): 1}, {Vector2i(1, 0): 9.0, Vector2i(0, -1): 0.0}).x, 1.0), "The eight-second fairness override must prevent permanent starvation under right-hand yielding.")
-	_check(TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(1, 0)) == false, "An exit without Gateway-connected road space must be rejected.")
+	_check(not TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(99, 99)), "An exit without Gateway-connected road space must be rejected.")
+	var exit_blocker := TrafficVehicle.new()
+	exit_blocker.route = [Vector2i(0, 0), Vector2i(1, 0)]
+	exit_blocker._segment_progress = 0.75
+	TrafficManager._active_vehicles.append(exit_blocker)
+	_check(not TrafficManager._is_junction_exit_clear(junction_a, junction_cell, Vector2i(1, 0)), "A downstream exit cell already being occupied by another vehicle must be rejected.")
+	TrafficManager._active_vehicles.erase(exit_blocker)
+	exit_blocker.free()
+	var closure_cell := Vector2i(-22, -1)
+	var saved_closure_road = road_system.roads[closure_cell]
+	var reroute_fleet: Array[TrafficVehicle] = TrafficManager._active_vehicles.duplicate()
+	TrafficManager._active_vehicles.clear()
+	var reroute_vehicle := TrafficVehicle.new()
+	reroute_vehicle.route = [road_system.GATEWAY_ROAD_CELL, closure_cell, Vector2i(-21, -1), Vector2i(-20, -1)]
+	TrafficManager._active_vehicles.append(reroute_vehicle)
+	road_system.roads.erase(closure_cell)
+	road_system.invalidate_road_connectivity_cache()
+	TrafficManager._validate_active_vehicle_routes(road_system.get_gateway_connected_roads())
+	_check(is_instance_valid(reroute_vehicle) and not reroute_vehicle.route.has(closure_cell) and reroute_vehicle.route.has(Vector2i(-22, 0)), "An active vehicle must reroute through the surviving parallel road after its planned road cell is closed.")
+	road_system.roads[closure_cell] = saved_closure_road
+	road_system.invalidate_road_connectivity_cache()
+	TrafficManager._active_vehicles.clear()
+	for reroute_previous_vehicle in reroute_fleet:
+		TrafficManager._active_vehicles.append(reroute_previous_vehicle)
+	reroute_vehicle.free()
 	_check(TrafficManager.request_junction_entry(junction_a, Vector2i(99, 99)), "A non-junction cell must not require an intersection reservation.")
 	TrafficManager.release_all_junction_entries(junction_a)
 	junction_a.free()
