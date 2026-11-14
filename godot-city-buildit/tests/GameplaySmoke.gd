@@ -10,6 +10,7 @@ const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
 const CitizenFeedbackBubblesScript = preload("res://scripts/ui/CitizenFeedbackBubbles.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
+const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
 
 class FireHazardTestBuilding extends Node3D:
@@ -1508,6 +1509,24 @@ func _test_placement_rotation_contract() -> void:
 	BuildManager.cancel_placement()
 
 func _test_building_model_loader_contract() -> void:
+	var surface_types := ["plaster", "brick", "wood", "glass", "metal", "roof", "concrete"]
+	var generated_surface_bytes: Dictionary = {}
+	for surface_type in surface_types:
+		var maps: Dictionary = BuildingSurfaceLibrary.get_maps(surface_type)
+		_check(maps.get("albedo") is Texture2D, "Every architectural surface must provide an albedo texture: " + surface_type)
+		_check(maps.get("normal") is Texture2D, "Every architectural surface must provide a normal map: " + surface_type)
+		_check(maps.get("roughness") is Texture2D, "Every architectural surface must provide a roughness map: " + surface_type)
+		_check(maps.get("metallic") is Texture2D, "Every architectural surface must provide a metallic map: " + surface_type)
+		if maps.get("albedo") is Texture2D:
+			var surface_image: Image = maps["albedo"].get_image()
+			_check(surface_image.get_width() == 128 and surface_image.get_height() == 128, "Architectural texture maps must use the 128px shared mobile atlas size.")
+			generated_surface_bytes[surface_type] = surface_image.get_data()
+	_check(BuildingSurfaceLibrary.surface_for_color(Color(0.18, 0.37, 0.46)) == "glass", "Blue glazing must resolve to a glass surface profile.")
+	_check(BuildingSurfaceLibrary.surface_for_color(Color(0.56, 0.22, 0.15)) == "brick", "Warm masonry must resolve to a brick surface profile.")
+	_check(BuildingSurfaceLibrary.surface_for_color(Color(0.30, 0.18, 0.12)) == "wood", "Timber colors must resolve to a wood surface profile.")
+	_check(generated_surface_bytes["brick"] != generated_surface_bytes["wood"] and generated_surface_bytes["glass"] != generated_surface_bytes["metal"], "Architectural surface families must use visibly distinct texture maps.")
+	var glass_material := Building.new()._make_surface_material(Color(0.18, 0.37, 0.46), "glass")
+	_check(glass_material.albedo_texture != null and glass_material.normal_texture != null and glass_material.roughness_texture != null and glass_material.metallic_texture != null, "Window material must bind complete PBR texture channels.")
 	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/residential/villa_house.gltf"), "Local villa GLTF model paths must be accepted.")
 	_check(BuildingModelLoader.is_supported_model_path("res://assets/models/commercial/neighborhood_shop.gltf"), "Local commercial GLTF model paths must be accepted.")
 	_check(not BuildingModelLoader.is_supported_model_path("res://assets/models/vehicle.obj"), "Unsupported model formats must be rejected.")
