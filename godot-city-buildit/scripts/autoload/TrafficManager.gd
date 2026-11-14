@@ -11,6 +11,12 @@ const VEHICLE_BASE_SPEED: float = 10.0
 const CITY_SPEED_MULTIPLIER: float = 4.0
 const HIGHWAY_SPEED_MULTIPLIER: float = 16.0
 const PUBLIC_SPAWN_INTERVAL: float = 2.0
+const HIGHWAY_SPAWN_INTERVAL: float = 2.5
+const HIGHWAY_GRID_X: int = -28
+const HIGHWAY_MIN_GRID_Z: int = -44
+const HIGHWAY_MAX_GRID_Z: int = 44
+const HIGHWAY_LANE_OFFSETS: Array[float] = [9.1, 5.8, 2.5]
+const MAX_HIGHWAY_VEHICLES: int = 12
 const EMERGENCY_SPAWN_INTERVAL: float = 12.0
 const MAX_PUBLIC_VEHICLES: int = 18
 const MAX_EMERGENCY_VEHICLES: int = 8
@@ -30,6 +36,8 @@ var congestion_ratio: float = 0.0
 var vehicle_simulation_enabled: bool = true
 
 var _spawn_elapsed: float = 0.0
+var _highway_spawn_elapsed: float = 0.0
+var _highway_lane_cursor: int = 0
 var _emergency_elapsed: float = 0.0
 var _active_vehicles: Array[TrafficVehicle] = []
 var _active_vehicle: TrafficVehicle
@@ -45,8 +53,13 @@ func _process(delta: float) -> void:
 	_spawn_elapsed += delta
 	if _spawn_elapsed >= PUBLIC_SPAWN_INTERVAL:
 		_spawn_elapsed = 0.0
-		if _active_public_vehicle_count() < _get_public_vehicle_limit():
+		if _active_city_vehicle_count() < _get_public_vehicle_limit():
 			spawn_vehicle_now()
+	_highway_spawn_elapsed += delta
+	if _highway_spawn_elapsed >= HIGHWAY_SPAWN_INTERVAL:
+		_highway_spawn_elapsed = 0.0
+		if _active_highway_vehicle_count() < MAX_HIGHWAY_VEHICLES:
+			spawn_highway_vehicle_now()
 	_update_emergency_dispatch(delta)
 	fleet_changed.emit(_active_public_vehicle_count(), _active_emergency_vehicle_count())
 
@@ -63,9 +76,19 @@ func _prune_vehicle_list() -> void:
 			break
 
 func _active_public_vehicle_count() -> int:
+	return _active_city_vehicle_count() + _active_highway_vehicle_count()
+
+func _active_city_vehicle_count() -> int:
 	var count := 0
 	for vehicle in _active_vehicles:
 		if is_instance_valid(vehicle) and vehicle.vehicle_kind == "civilian":
+			count += 1
+	return count
+
+func _active_highway_vehicle_count() -> int:
+	var count := 0
+	for vehicle in _active_vehicles:
+		if is_instance_valid(vehicle) and vehicle.vehicle_kind == "highway":
 			count += 1
 	return count
 
@@ -80,11 +103,10 @@ func _get_public_vehicle_limit() -> int:
 	return clampi(4 + int(road_capacity / 10), 4, MAX_PUBLIC_VEHICLES)
 
 func get_speed_multiplier_for_cell(cell: Vector2i) -> float:
-	# The permanent Gateway approach lies west of the city grid (negative X).
-	return HIGHWAY_SPEED_MULTIPLIER if cell.x < 0 else CITY_SPEED_MULTIPLIER
+	return HIGHWAY_SPEED_MULTIPLIER if cell.x == HIGHWAY_GRID_X else CITY_SPEED_MULTIPLIER
 
 func get_speed_for_segment(from_cell: Vector2i, to_cell: Vector2i) -> float:
-	var highway := from_cell.x < 0 or to_cell.x < 0
+	var highway := from_cell.x == HIGHWAY_GRID_X and to_cell.x == HIGHWAY_GRID_X
 	return VEHICLE_BASE_SPEED * (HIGHWAY_SPEED_MULTIPLIER if highway else CITY_SPEED_MULTIPLIER)
 
 func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> float:
@@ -94,7 +116,7 @@ func get_safe_vehicle_speed(vehicle: TrafficVehicle, desired_speed: float) -> fl
 	for other in _active_vehicles:
 		if not is_instance_valid(other) or other == vehicle:
 			continue
-		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction:
+		if other.route_key != vehicle.route_key or other.lane_direction != vehicle.lane_direction or other.lane_index != vehicle.lane_index:
 			continue
 		var gap := other.route_distance - vehicle.route_distance
 		if gap > 0.0 and gap < nearest_gap:
@@ -217,7 +239,7 @@ func _station_exit_position(station: Node3D, road_cell: Vector2i) -> Vector3:
 	return station.global_position + direction * 1.15 + Vector3.UP * 0.05
 
 func spawn_vehicle_now() -> TrafficVehicle:
-	if _active_public_vehicle_count() >= _get_public_vehicle_limit():
+	if _active_city_vehicle_count() >= _get_public_vehicle_limit():
 		return null
 	var route := build_gateway_round_trip_route()
 	if route.size() < 2:
@@ -235,6 +257,36 @@ func spawn_vehicle_now() -> TrafficVehicle:
 	world.add_child(vehicle)
 	_active_vehicles.append(vehicle)
 	_active_vehicle = vehicle
+	return vehicle
+
+func build_highway_round_trip_route() -> Array[Vector2i]:
+	var route: Array[Vector2i] = []
+	for z in range(HIGHWAY_MAX_GRID_Z, HIGHWAY_MIN_GRID_Z - 1, -1):
+		route.append(Vector2i(HIGHWAY_GRID_X, z))
+	for z in range(HIGHWAY_MIN_GRID_Z + 1, HIGHWAY_MAX_GRID_Z + 1):
+		route.append(Vector2i(HIGHWAY_GRID_X, z))
+	return route
+
+func spawn_highway_vehicle_now() -> TrafficVehicle:
+	if _active_highway_vehicle_count() >= MAX_HIGHWAY_VEHICLES:
+		return null
+	var world := _get_world_parent()
+	if not world:
+		return null
+	var route := build_highway_round_trip_route()
+	if route.size() < 2:
+		return null
+	var vehicle := TrafficVehicle.new()
+	vehicle.route = route
+	vehicle.vehicle_kind = "highway"
+	vehicle.speed = VEHICLE_BASE_SPEED
+	vehicle.route_key = "coastal-highway-mainline"
+	vehicle.lane_index = _highway_lane_cursor % HIGHWAY_LANE_OFFSETS.size()
+	vehicle.lane_offset = HIGHWAY_LANE_OFFSETS[vehicle.lane_index]
+	_highway_lane_cursor += 1
+	vehicle.route_completed.connect(_on_vehicle_route_completed)
+	world.add_child(vehicle)
+	_active_vehicles.append(vehicle)
 	return vehicle
 
 func spawn_emergency_vehicle(station: Node3D) -> TrafficVehicle:
@@ -301,6 +353,7 @@ func clear_active_vehicle() -> void:
 	_active_vehicles.clear()
 	_active_vehicle = null
 	_spawn_elapsed = 0.0
+	_highway_spawn_elapsed = 0.0
 	_emergency_elapsed = 0.0
 
 func get_happiness_penalty() -> float:
@@ -328,6 +381,8 @@ func _get_world_parent() -> Node3D:
 func _validate_active_vehicle_routes(connected_roads: Dictionary) -> void:
 	_prune_vehicle_list()
 	for vehicle in _active_vehicles.duplicate():
+		if vehicle.vehicle_kind == "highway":
+			continue
 		for cell in vehicle.route:
 			if not connected_roads.has(cell):
 				vehicle.queue_free()
