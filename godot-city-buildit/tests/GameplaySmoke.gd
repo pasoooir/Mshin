@@ -192,6 +192,87 @@ func _test_live_production_queue_eta() -> void:
 	queue_probe.queue_free()
 	await get_tree().process_frame
 
+func _test_automatic_production_chain() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_chains: Array[Dictionary] = ProductionManager.production_chain_orders.duplicate(true)
+	var previous_sequence := ProductionManager._next_chain_sequence
+	var previous_level := GameManager.level
+	var previous_loading := SaveManager.is_loading
+	var existing_components := get_tree().get_nodes_in_group("production_components")
+	for existing in existing_components:
+		if is_instance_valid(existing):
+			existing.remove_from_group("production_components")
+	GameManager.level = 10
+	SaveManager.is_loading = true
+	StorageManager.capacity = 1000
+	StorageManager.items = {}
+	ProductionManager.production_chain_orders.clear()
+	var factory := ProductionComponentScript.new()
+	factory.is_factory = true
+	factory.factory_type = "factory_small"
+	factory.slot_count = 8
+	add_child(factory)
+	var building_supplies := ProductionComponentScript.new()
+	building_supplies.shop_id = "building_supplies"
+	building_supplies.slot_count = 4
+	add_child(building_supplies)
+	var hardware_store := ProductionComponentScript.new()
+	hardware_store.shop_id = "hardware_store"
+	hardware_store.slot_count = 4
+	add_child(hardware_store)
+	var furniture_store := ProductionComponentScript.new()
+	furniture_store.shop_id = "furniture_store"
+	furniture_store.slot_count = 4
+	add_child(furniture_store)
+
+	var chain_id := ProductionManager.request_production_chain("chair", 1)
+	_check(not chain_id.is_empty(), "A valid multi-store recipe must accept an automatic production-chain request.")
+	_check(_count_test_chain_jobs([factory, building_supplies, hardware_store, furniture_store], chain_id) >= 6, "The automatic planner must schedule parallel raw inputs and both intermediate craft dependencies.")
+	var completed := false
+	for _iteration in range(24):
+		var now := int(Time.get_unix_time_from_system())
+		for component in [factory, building_supplies, hardware_store, furniture_store]:
+			for slot_index in range(component.get_slot_count()):
+				var slot := component.get_slot(slot_index)
+				if not slot.is_empty() and not bool(slot.get("ready", false)) and int(slot.get("finish_unix", 0)) > 0:
+					slot["finish_unix"] = now - 1
+					component.slots[slot_index] = slot
+			component.refresh_slots()
+		ProductionManager._pump_production_chains()
+		var state := ProductionManager.get_production_chain_status(chain_id)
+		if str(state.get("status", "")) == "complete":
+			completed = true
+			break
+	_check(completed, "The automatic scheduler must finish a multi-stage Chair chain without manual intervention.")
+	_check(StorageManager.get_count("chair") == 1, "The root product must be automatically collected into City Storage.")
+	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Raw materials must be consumed exactly once across shared dependency branches.")
+	_check(StorageManager.get_count("nails") == 0 and StorageManager.get_count("hammer") == 0, "Intermediate crafted materials must be consumed by the downstream order, not duplicated.")
+	var persisted := ProductionManager.to_save_dict()
+	ProductionManager.from_save_dict(persisted)
+	_check(str(ProductionManager.get_production_chain_status(chain_id).get("status", "")) == "complete", "Completed chain order state must survive serialization and restoration.")
+
+	for component in [factory, building_supplies, hardware_store, furniture_store]:
+		remove_child(component)
+		component.free()
+	for existing in existing_components:
+		if is_instance_valid(existing):
+			existing.add_to_group("production_components")
+	ProductionManager.production_chain_orders = previous_chains
+	ProductionManager._next_chain_sequence = previous_sequence
+	StorageManager.from_save_dict(previous_storage)
+	GameManager.level = previous_level
+	SaveManager.is_loading = previous_loading
+
+
+func _count_test_chain_jobs(components: Array, chain_id: String) -> int:
+	var total := 0
+	for component in components:
+		for slot in component.slots:
+			if not slot.is_empty() and bool(slot.get("auto_collect", false)) and str(slot.get("chain_id", "")) == chain_id:
+				total += 1
+	return total
+
+
 func _test_recipe_dependency_graph_validation() -> void:
 	var baseline := ProductionManager.get_recipe_validation_report()
 	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
@@ -2930,6 +3011,7 @@ func _run_gameplay_test() -> void:
 	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
 	await _test_live_production_queue_eta()
+	_test_automatic_production_chain()
 	_test_recipe_dependency_graph_validation()
 	_test_storage_and_production_chain()
 	_test_production_queue_stress()
