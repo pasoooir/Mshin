@@ -277,11 +277,12 @@ func _test_automatic_production_chain() -> void:
 	StorageManager.items = {"wood": 2, "hammer": 1}
 	var nails_chain_id := ProductionManager.request_production_chain("nails", 1)
 	var chair_chain_id := ProductionManager.request_production_chain("chair", 1)
-	var nails_jobs := 0
-	for candidate_slot in building_supplies.slots:
-		if not candidate_slot.is_empty() and str(candidate_slot.get("item_id", "")) == "nails":
-			nails_jobs += 1
-	_check(not nails_chain_id.is_empty() and not chair_chain_id.is_empty() and nails_jobs == 1, "Concurrent chains must share one in-flight Nails dependency rather than enqueue duplicate batches.")
+	var initial_metal_jobs := 0
+	for factory_slot in factory.slots:
+		if not factory_slot.is_empty() and str(factory_slot.get("item_id", "")) == "metal":
+			initial_metal_jobs += 1
+	_check(not nails_chain_id.is_empty() and not chair_chain_id.is_empty() and initial_metal_jobs == 2, "Concurrent chains must share the same two raw Metal dependency batches instead of scheduling duplicate factory work.")
+	var maximum_nails_jobs := 0
 	var concurrent_completed := false
 	for _iteration in range(18):
 		var now_concurrent := int(Time.get_unix_time_from_system())
@@ -293,10 +294,16 @@ func _test_automatic_production_chain() -> void:
 					component.slots[slot_index] = slot_concurrent
 			component.refresh_slots()
 		ProductionManager._pump_production_chains()
+		var current_nails_jobs := 0
+		for candidate_slot in building_supplies.slots:
+			if not candidate_slot.is_empty() and str(candidate_slot.get("item_id", "")) == "nails":
+				current_nails_jobs += 1
+		maximum_nails_jobs = maxi(maximum_nails_jobs, current_nails_jobs)
 		if str(ProductionManager.get_production_chain_status(nails_chain_id).get("status", "")) == "complete" and str(ProductionManager.get_production_chain_status(chair_chain_id).get("status", "")) == "complete":
 			concurrent_completed = true
 			break
 	_check(concurrent_completed, "Concurrent root and dependent chains must both complete using the shared collected intermediate.")
+	_check(maximum_nails_jobs == 1, "The shared Nails dependency must run in only one store slot across both active chains.")
 	_check(StorageManager.get_count("chair") == 1 and StorageManager.get_count("nails") == 0, "The shared Nails output must be consumed once by the Chair chain, with no duplicate surplus.")
 
 	for component in [factory, building_supplies, hardware_store, furniture_store]:
