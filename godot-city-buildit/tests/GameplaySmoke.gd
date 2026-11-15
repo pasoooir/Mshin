@@ -1066,6 +1066,34 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		capped_vehicle.free()
 	GameManager.population = saved_traffic_population
 	var world := traffic_test_world
+	# Emergency response now depends on a staffed, powered station. Give this
+	# isolated traffic test a real occupied household and connected utilities.
+	var emergency_home := FireHazardTestBuilding.new()
+	emergency_home.building_id = "traffic-smoke-emergency-home"
+	emergency_home.definition = {"category": "residential", "size": Vector2i(2, 2), "service_demand": 1}
+	emergency_home.status = "completed"
+	emergency_home.grid_pos = Vector2i(1, 1)
+	emergency_home.global_position = Vector3.ZERO
+	emergency_home.current_population = 100
+	emergency_home.set_meta("immigration_population_initialized", true)
+	world.add_child(emergency_home)
+	BuildManager.buildings[emergency_home.building_id] = emergency_home
+	var emergency_power := FireHazardTestBuilding.new()
+	emergency_power.building_id = "traffic-smoke-emergency-power"
+	emergency_power.definition = BuildManager.building_types["power_wind"]
+	emergency_power.status = "completed"
+	emergency_power.grid_pos = Vector2i(0, 1)
+	emergency_power.global_position = BuildManager.grid_to_world(Vector2i(0, 1))
+	world.add_child(emergency_power)
+	BuildManager.buildings[emergency_power.building_id] = emergency_power
+	var emergency_water := FireHazardTestBuilding.new()
+	emergency_water.building_id = "traffic-smoke-emergency-water"
+	emergency_water.definition = BuildManager.building_types["water_tower"]
+	emergency_water.status = "completed"
+	emergency_water.grid_pos = Vector2i(0, 1)
+	emergency_water.global_position = BuildManager.grid_to_world(Vector2i(0, 1))
+	world.add_child(emergency_water)
+	BuildManager.buildings[emergency_water.building_id] = emergency_water
 	var police_station := FireHazardTestBuilding.new()
 	police_station.building_id = "traffic-smoke-police"
 	police_station.building_type = "police_station"
@@ -1074,10 +1102,11 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	police_station.status = "completed"
 	police_station.global_position = BuildManager.grid_to_world(police_station.grid_pos) + Vector3(1.0, 0.0, 1.0)
 	world.add_child(police_station)
-	_check(BuildManager.is_building_operational(police_station), "A completed police station with Gateway-connected road access must be operational.")
+	BuildManager.buildings[police_station.building_id] = police_station
+	ServiceManager.recalculate_from_buildings()
+	_check(BuildManager.is_building_operational(police_station), "A completed, powered and staffed police station with Gateway-connected road access must be operational.")
 	var police_route: Array[Vector2i] = TrafficManager.build_station_patrol_route(police_station)
 	_check(police_route.size() >= 3 and road_system.get_gateway_connected_roads().has(police_route.front()), "Police patrol route must start from the station's connected road exit.")
-	BuildManager.buildings[police_station.building_id] = police_station
 	TrafficManager._update_emergency_dispatch(TrafficManager.EMERGENCY_SPAWN_INTERVAL)
 	var police_vehicle: TrafficVehicle
 	for active_vehicle in TrafficManager._active_vehicles:
@@ -1102,6 +1131,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	fire_station.global_position = BuildManager.grid_to_world(fire_station.grid_pos)
 	world.add_child(fire_station)
 	BuildManager.buildings[fire_station.building_id] = fire_station
+	ServiceManager.recalculate_from_buildings()
 	TrafficManager._update_emergency_dispatch(TrafficManager.EMERGENCY_SPAWN_INTERVAL)
 	var fire_vehicle: TrafficVehicle
 	for active_vehicle in TrafficManager._active_vehicles:
@@ -1120,9 +1150,16 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	await get_tree().process_frame
 	BuildManager.buildings.erase(police_station.building_id)
 	BuildManager.buildings.erase(fire_station.building_id)
+	BuildManager.buildings.erase(emergency_home.building_id)
+	BuildManager.buildings.erase(emergency_power.building_id)
+	BuildManager.buildings.erase(emergency_water.building_id)
 	police_station.queue_free()
 	fire_station.queue_free()
+	emergency_home.queue_free()
+	emergency_power.queue_free()
+	emergency_water.queue_free()
 	await get_tree().process_frame
+	ServiceManager.recalculate_from_buildings()
 	TrafficManager.recalculate_from_roads()
 	TrafficManager.vehicle_simulation_enabled = previous_simulation_enabled
 
