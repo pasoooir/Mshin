@@ -3782,6 +3782,8 @@ func _run_gameplay_test() -> void:
 	var production_product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	var production_product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	_check(production_product_orbit != null and production_product_grid != null, "Factory products must render in a floating radial orbit over the city.")
+	var factory_surface_drop := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Button
+	_check(factory_surface_drop != null and factory_surface_drop.text.contains("BUILDING"), "Factory must expose a visible drop target aligned to the selected building itself.")
 	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Radial factory catalogue must expose every registered material.")
 	_check(production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) is ScrollContainer, "Recipe and ingredient details must remain scrollable on compact screens.")
 	_check(production_hud.production_panel.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must have a distinct high-contrast building nameplate.")
@@ -3797,11 +3799,12 @@ func _run_gameplay_test() -> void:
 		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must keep the detail-card Start action available.")
 	var factory_drag_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
 	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
+	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_drag_payload, factory), "The selected factory surface must accept its own valid product when a production slot is free.")
 	production_hud._select_production_item_for_touch(factory, "metal")
 	_check(production_hud._touch_selected_production_item == "metal" and production_hud._touch_selected_production_building_id == factory.get_instance_id(), "Touch fallback must retain the selected product and source building until a queue tile is tapped.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
-	production_hud._accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0)
-	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into factory slot zero must start that exact production slot.")
+	production_hud._accept_building_drop(Vector2.ZERO, factory_drag_payload, factory)
+	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal onto the factory surface must start its first free production slot.")
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
