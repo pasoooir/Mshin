@@ -349,7 +349,8 @@ PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key
 - [x] Drop submits the order through existing factory start / store craft / automatic dependency-chain APIs; existing collection and warehouse rules remain authoritative.
 - [ ] Radial/floating product layout around the selected building.
 - [ ] Six compact queue tiles and touch-layout acceptance across mobile landscape profiles.
-- [ ] Product-specific 3D billboard thumbnail and city-wide pending-action notifications.
+- [x] Product-specific 3D billboard thumbnail for ready factory/store goods; multiple ready outputs show a count label.
+- [ ] City-wide pending-action notifications for construction, upgrades, services and non-production objects.
 - [ ] Automated drag/drop, ready-state, full-storage, persistence and panel-close regression tests.
 - [ ] CI and physical Android touch acceptance for this branch.
 
