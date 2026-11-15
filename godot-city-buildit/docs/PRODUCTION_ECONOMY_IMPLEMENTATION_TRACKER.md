@@ -290,15 +290,17 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 - [ ] Independent CI on merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` and the README update is not yet verified.
 
 
-## Delivery-order COGS and macro cashflow — implementation in progress
+## Delivery-order COGS and macro cashflow — PR #512 merged; PR CI passed
 
-- [ ] Live TradeManager rejects invalid/understocked orders atomically and records actual consumed FIFO COGS plus reward/gross margin.
-- [ ] Live macro snapshot includes `delivery_order_completed` alongside `trade_sale_collected` when summarizing realized cash revenue and COGS.
-- [ ] Production scenario action `delivery_order` consumes stock and its FIFO cost batches, then emits a cash event with the explicit reward.
-- [ ] MacroEconomySimulator books the explicit delivery-order reward under `delivery_orders` source bucket.
-- [ ] Unknown acquisition cost stays unknown and prevents complete gross-margin claims.
-- [ ] GameplaySmoke validates insufficient-stock rejection, live order cost metadata, ledger aggregation and completion state.
-- [ ] MacroEconomySmoke validates inventory consumption, reward cashflow, FIFO COGS and unknown-cost handling.
-- [ ] Godot Validation, Android Debug APK and Web/Chromium on the final PR SHA.
+- [x] Live TradeManager rejects invalid/understocked orders atomically and records actual consumed FIFO COGS plus reward/gross margin.
+- [x] Live macro snapshot includes `delivery_order_completed` alongside `trade_sale_collected` when summarizing realized cash revenue and COGS.
+- [x] Production scenario action `delivery_order` consumes stock and its FIFO cost batches, then emits a cash event with the explicit reward.
+- [x] MacroEconomySimulator books the explicit delivery-order reward under `delivery_orders` source bucket.
+- [x] Unknown acquisition cost stays unknown and prevents complete gross-margin claims.
+- [x] GameplaySmoke validates insufficient-stock rejection, live order cost metadata, ledger aggregation and completion state.
+- [x] MacroEconomySmoke validates inventory consumption, reward cashflow, FIFO COGS and unknown-cost handling.
+- [x] Godot Validation and Android Debug APK: [43710739261](https://github.com/pasoooir/Mshin/actions/runs/43710739261); Web/Chromium: [43710739262](https://github.com/pasoooir/Mshin/actions/runs/43710739262).
 
-**Open:** Cargo Ship crate consumption and Golden Key reward are not cash sales; they need separate non-cash contribution accounting before inclusion in wider economic profitability.
+**Open:** Cargo Ship crate consumption and Golden Key reward are not cash sales; they need separate non-cash contribution accounting before inclusion in wider economic profitability. PR #512 is merged as `2ed1cc42c8eb9e5a1eb1d6e85dc09600fd7ae09b`.
+
+- [ ] Independent CI on the PR #512 merge commit and README follow-up is not yet verified.
