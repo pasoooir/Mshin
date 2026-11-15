@@ -989,3 +989,16 @@ No recipe, production duration, storage accounting, queue-slot price, or Collect
 - [ ] Do not mark the interaction complete until CI and real-device touch checks pass.
 
 PR: https://github.com/pasoooir/Mshin/pull/518
+
+
+## Production modal interaction — PR pending
+
+- [x] Replace the decorative building button with a polygon hit target projected from the selected building's rotated ground footprint.
+- [x] Dim the city with a full-screen black overlay at 50% opacity.
+- [x] Block pointer input through the backdrop and explicitly guard city selection and camera gestures while the production modal is open.
+- [x] Preserve product drag/drop validation, touch select-then-tap fallback, and the existing production/automatic-chain APIs.
+- [x] Add Escape/Backspace dismissal alongside the close button.
+- [ ] Godot headless GameplaySmoke and project validation on this branch.
+- [ ] Android landscape visual and touch validation.
+
+PR #518 is merged; this follow-up corrects its remaining modal and building-hit-area behavior. The new slice is not marked complete until CI and device checks pass.
