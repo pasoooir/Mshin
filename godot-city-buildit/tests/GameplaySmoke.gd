@@ -1866,6 +1866,10 @@ func _test_power_water_gateway_access() -> void:
 	_check(is_equal_approx(HappinessManager.calculate_home_happiness(disconnected_home), 15.0), "A road-isolated home with unavailable unlocked utilities must receive road, power and water penalties.")
 	_check(not ServiceManager.power_served_ids.has(disconnected_home.building_id) and not ServiceManager.water_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive power or water.")
 
+	# The Level 4 happiness assertions above intentionally test only Power and
+	# Water. Restore Level 15 before validating the later-unlocked sewage and
+	# waste operating contracts; otherwise those demands are correctly gated off.
+	GameManager.level = 15
 	power_plant.grid_pos = Vector2i(1, -2)
 	water_plant.grid_pos = Vector2i(1, -2)
 	sewage_plant.grid_pos = Vector2i(1, -2)
@@ -1954,7 +1958,10 @@ func _test_emergency_service_tier_happiness() -> void:
 	var saved_coverage_radius := ServiceManager.coverage_radius
 	BuildManager.buildings.clear()
 	GameManager.level = 16
-	ServiceManager.coverage_radius = 40.0
+	# Keep the home outside the utility providers' local radius while placing
+	# each emergency station close enough to those providers to remain powered
+	# and staffed. This leaves headroom to measure the existing +8 happiness bonus.
+	ServiceManager.coverage_radius = 10.0
 	var road_system = get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.seed_starter_access()
@@ -1985,6 +1992,7 @@ func _test_emergency_service_tier_happiness() -> void:
 	BuildManager.buildings[water_provider.building_id] = water_provider
 	ServiceManager.recalculate_from_buildings()
 	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
+	_check(baseline_happiness <= 92.0, "Emergency happiness test baseline must leave room for the existing +8 service bonus.")
 	var service_cases := {
 		"fire": {"bonus": 8.0, "served_key": "fire_served_ids", "ids": ["fire_station_small", "fire_station", "fire_station_deluxe"]},
 		"police": {"bonus": 8.0, "served_key": "police_served_ids", "ids": ["police_station", "police_small", "police_basic", "police_precinct"]},
