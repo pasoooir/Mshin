@@ -4,6 +4,11 @@ signal item_produced(item_id: String, amount: int)
 
 var _recipe_validation_report: Dictionary = {}
 
+var production_chain_orders: Array[Dictionary] = []
+var _next_chain_sequence: int = 1
+
+signal production_chain_changed(chain_id: String)
+
 # SCBI Industrial Buildings timings are the canonical source for raw production.
 # Keep legacy keys (time/value/level) because existing gameplay and HUD code reads them.
 var raw_materials := {
@@ -167,10 +172,6 @@ func _ready() -> void:
 	_recipe_validation_report = get_recipe_validation_report()
 	for validation_error in _recipe_validation_report.get("errors", []):
 		push_warning("[ProductionManager] Invalid recipe catalog: " + str(validation_error))
-
-var production_chain_orders: Array[Dictionary] = []
-var _next_chain_sequence: int = 1
-signal production_chain_changed(chain_id: String)
 
 func _process(_delta: float) -> void:
 	_pump_production_chains()
