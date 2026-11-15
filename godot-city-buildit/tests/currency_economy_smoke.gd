@@ -8,6 +8,7 @@ func _ready() -> void:
 	var original_ledger := PaymentManager.to_save_dict()
 	var original_storage := StorageManager.to_save_dict()
 	var original_trade := TradeManager.to_save_dict()
+	var original_land := LandExpansionManager.to_save_dict()
 	var original_level := GameManager.level
 	var original_population := GameManager.population
 	var original_buildings := BuildManager.buildings.duplicate()
@@ -56,6 +57,28 @@ func _ready() -> void:
 	TradeManager.from_save_dict(original_trade)
 	EconomyManager.simoleons = 6000
 	StorageManager.from_save_dict({"capacity": 100, "items": {}})
+
+	# SimCash can buy the real expansion Special Items, but does not bypass
+	# the land tile's item requirements or Mayor Level gate.
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL
+	StorageManager.from_save_dict({"capacity": 100, "items": {}})
+	EconomyManager.sim_cash = 500
+	var expansion_tile := LandExpansionManager.get_available_expansion_tiles()[0]
+	var expansion_cost := LandExpansionManager.get_tile_cost(expansion_tile)
+	for item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
+		for _unit in range(int(expansion_cost[item_id])):
+			var bought_special := EconomyManager.buy_special_item_with_simcash(str(item_id), 24, LandExpansionManager.MIN_EXPANSION_LEVEL)
+			if not bool(bought_special.get("success", false)):
+				failures.append("SimCash could not buy the required expansion Special Item: " + str(item_id))
+	if not LandExpansionManager.expand_tile(expansion_tile):
+		failures.append("purchased dozer Special Items did not satisfy the normal land expansion transaction")
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL - 1
+	var locked_special := EconomyManager.buy_special_item_with_simcash("dozer_wheel", 24, LandExpansionManager.MIN_EXPANSION_LEVEL)
+	if bool(locked_special.get("success", true)):
+		failures.append("expansion Special Item purchase ignored the Mayor Level gate")
+	LandExpansionManager.from_save_dict(original_land)
+	GameManager.level = 1
+	EconomyManager.sim_cash = 10
 
 	# SimCash production acceleration uses remaining time, spends once and
 	# leaves the completed item on its production slot until collection.
@@ -132,6 +155,7 @@ func _ready() -> void:
 		if bool(cancelled_result.get("success", true)) or EconomyManager.sim_cash != before_cancel:
 			failures.append("cancelled payment granted SimCash")
 
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL
 	var popup_controller := preload("res://scripts/ui/CurrencyPanels.gd").new()
 	add_child(popup_controller)
 	popup_controller.open_conversion()
@@ -146,8 +170,11 @@ func _ready() -> void:
 		failures.append("SimCash plus did not open the dedicated store popup")
 	if popup_controller.find_child("CityProgressBoostsHeading", true, false) == null:
 		failures.append("SimCash popup did not expose city progress acceleration controls")
+	if popup_controller.find_child("BuyExpansionItem_dozer_wheel", true, false) == null:
+		failures.append("SimCash popup did not expose expansion Special Item purchases")
 	popup_controller.close_panel()
 	popup_controller.queue_free()
+	GameManager.level = original_level
 
 	var ledger_snapshot := PaymentManager.to_save_dict()
 	PaymentManager.from_save_dict(ledger_snapshot)
@@ -169,5 +196,5 @@ func _ready() -> void:
 			push_error("[CurrencyEconomySmoke] " + failure)
 		get_tree().quit(1)
 		return
-	print("[CurrencyEconomySmoke] PASS: atomic conversion, Global Trade HQ Simoleons offers, SimCash production acceleration, sandbox order success/failure/cancel, idempotency, ledger restore and dimensional icon imports")
+	print("[CurrencyEconomySmoke] PASS: atomic conversion, Global Trade HQ Simoleons offers, SimCash land expansion Special Items, SimCash production acceleration, sandbox order success/failure/cancel, idempotency, ledger restore and dimensional icon imports")
 	get_tree().quit(0)
