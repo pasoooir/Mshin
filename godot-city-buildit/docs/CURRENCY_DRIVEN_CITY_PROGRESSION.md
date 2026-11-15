@@ -100,3 +100,78 @@
 - Fandom Industrial Buildings: https://simcity-buildit.fandom.com/wiki/Industrial_Buildings
 - Fandom SimCash: https://simcity-buildit.fandom.com/wiki/Simcash
 - Fandom Simoleons: https://simcity-buildit.fandom.com/wiki/Simoleons
+## ممیزی تکمیلی اقتصاد، انبار و Trade Depot — ۱۵ نوامبر ۲۰۲۶
+
+### جدول نیاز Storage Special Items
+
+جدول زیر از جدول ظرفیت منتشرشده در City Storage Wiki استخراج شده است. EA اصل سازوکار «تعداد برابر از هر سه قطعه» و افزایش +5 را تأیید می‌کند؛ خود جدول عددی EA رسمی نیست. کد این آستانه‌ها را با برچسب Community Reference نگه می‌دارد.
+
+| ظرفیت فعلی پیش از ارتقا | تعداد هر قلم (Bar + Lock + Camera) |
+|---:|---:|
+| 40–54 | 1 |
+| 55–69 | 2 |
+| 70–84 | 3 |
+| 85–104 | 4 |
+| 105–124 | 5 |
+| 125–144 | 6 |
+| 145–164 | 7 |
+| 165–184 | 8 |
+| 185–204 | 9 |
+| 205–229 | 10 |
+| 230–254 | 11 |
+| 255–279 | 12 |
+| 280–304 | 13 |
+| 305–329 | 14 |
+| 330–354 | 15 |
+| 355–379 | 16 |
+| 380–404 | 17 |
+| 405–429 | 18 |
+| 430–454 | 19 |
+| 455–494 | 20 |
+| 495–519 | 21 |
+| 520–544 | 22 |
+| 545–569 | 23 |
+| 570–584 | 24 |
+| 585–999 | 25 |
+
+- [x] فرمول تخمینی قبلی حذف و جدول آستانه‌ای به StorageManager منتقل شد.
+- [x] تست‌های مرزی برای ظرفیت‌های 40، 50، 55، 70، 85، 105، 205، 230، 455، 495، 520، 545، 570، 585 و 995 اضافه شد.
+- [ ] snapshot از جدول داخل خود بازی EA در نسخه/منطقه مشخص برای تأیید مستقل لازم است؛ برچسب Community Reference باقی می‌ماند.
+- [ ] Mshin سقف استاندارد 1000 را اعمال می‌کند؛ ظرفیت موقت رویداد یا پاداش Region در این پیاده‌سازی لحاظ نشده است.
+
+### ثبت تراکنش و ممیزی موجودی
+
+- [x] EconomyManager دفتر تراکنش با شناسه ترتیبی، زمان Unix، نوع تراکنش، ارز، مبلغ، مانده قبل/بعد، موجودی انبار قبل/بعد و metadata را نگه می‌دارد.
+- [x] دفتر تا 300 رکورد آخر محدود و در SaveManager ذخیره/بازیابی می‌شود.
+- [x] خرید Special Item، رزرو کالا برای آگهی، لغو آگهی، جمع‌آوری درآمد فروش و خرید Global Trade HQ رکوردهای تفصیلی تولید می‌کنند.
+- [x] آزمون چرخه آگهی: رزرو دقیق کالا، رد لغو در انبار پر بدون mutation، لغو پس از آزادسازی ظرفیت، بازگشت مقدار دقیق کالا و دریافت وجه فروش.
+- [ ] دفتر فعلی محلی است؛ لاگ ضدتقلب سروری یا اقتصاد چندبازیکنه محسوب نمی‌شود.
+
+### ممیزی قیمت و حاشیه تولید
+
+قیمت‌های زیر حداکثر قیمت فروش جامعه‌محورند؛ قیمت تضمین‌شده EA یا قیمت ثابت خرید Global Trade HQ نیستند.
+
+| کالا | حداکثر قیمت مرجع | هزینه فرصت ورودی | حاشیه مرجع |
+|---|---:|---:|---:|
+| Nails | 80 | 20 | 60 |
+| Planks | 120 | 40 | 80 |
+| Bricks | 190 | 80 | 110 |
+| Cement | 440 | 140 | 300 |
+| Glue | 440 | 145 | 295 |
+| Paint | 320 | 180 | 140 |
+| Hammer | 90 | 30 | 60 |
+| Measuring Tape | 110 | 35 | 75 |
+| Shovel | 150 | 55 | 95 |
+
+- [x] قیمت‌های مرجع مواد خام و کالاهای پایه در تست خودکار مقایسه می‌شوند.
+- [x] حاشیه چند دستور تولید پایه بر مبنای قیمت حداکثر فروش ورودی‌ها محاسبه و کنترل می‌شود.
+- [ ] این جدول توازن کامل همه زنجیره‌ها را اثبات نمی‌کند؛ محصولات چندمرحله‌ای، زمان تولید، صف فروشگاه، تقاضا و زمان ماندن کالا در Depot هنوز باید در شبیه‌سازی گسترده‌تر سنجیده شوند.
+- [ ] Global Trade HQ فعلی Mshin قیمت را با قاعده داخلی 2 × catalog value × quantity می‌سازد. این ضریب قاعده Mshin است، نه قیمت رسمی EA؛ باید در شبیه‌سازی سود/زیان و تورم ارزیابی شود.
+
+### منابع
+
+- EA Beginner Guide: https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/
+- City Storage table (Community reference): https://simcity-buildit.fandom.com/wiki/City_Storage
+- Trade Depot maximum sale values (Community reference): https://simcity-buildit.fandom.com/wiki/Trade_Depot
+- Special Items price/unlock (Community reference): https://simcity-buildit.fandom.com/wiki/Special_Items
+- EA Forums player report (community testimony): https://forums.ea.com/discussions/simcity-buildit-en/municipal-deposit/10451073
