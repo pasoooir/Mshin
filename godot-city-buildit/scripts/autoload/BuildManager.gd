@@ -429,7 +429,7 @@ func get_non_residential_upgrade_lock_reason(type_id: String, current_stage: int
 		var required := int(requirements[item_id])
 		if required <= 0 or ProductionManager.get_item_definition(str(item_id)).is_empty():
 			return "Invalid upgrade BOM: " + str(item_id)
-		var available := StorageManager.get_count(str(item_id))
+		var available := StorageManager.get_available_count(str(item_id))
 		if available < required:
 			missing.append("%s ×%d" % [str(item_id), required - available])
 	return "" if missing.is_empty() else "Missing upgrade materials: " + ", ".join(missing)
