@@ -1240,7 +1240,7 @@ func _show_building_info(type_id: String) -> void:
 	for item_id in construction_bom:
 		var item_definition := ProductionManager.get_item_definition(str(item_id))
 		var item_name := str(item_definition.get("name", item_id))
-		bom_lines.append("%s ×%d (stock %d)" % [item_name, int(construction_bom[item_id]), StorageManager.get_count(str(item_id))])
+		bom_lines.append("%s ×%d (stock %d)" % [item_name, int(construction_bom[item_id]), StorageManager.get_available_count(str(item_id))])
 	_add_info_line(layout, "Materials", "No material charge" if bom_lines.is_empty() else ", ".join(bom_lines))
 	_add_info_line(layout, "BOM source", BuildManager.get_construction_bom_source(type_id))
 	var bom_lock := BuildManager.get_construction_bom_lock_reason(type_id)
@@ -2180,11 +2180,11 @@ func open_production_panel(building: Building) -> void:
 		var inventory_status := "READY" if component.is_factory or StorageManager.has_items(inputs) else "MATERIALS NEEDED"
 		var stock_summary := "READY TO MAKE"
 		if component.is_factory:
-			stock_summary = "STOCK %d" % StorageManager.get_count(item_id)
+			stock_summary = "AVAILABLE %d · RESERVED %d" % [StorageManager.get_available_count(item_id), StorageManager.get_reserved_count(item_id)]
 		elif not inputs.is_empty():
 			var missing_count := 0
 			for input_id in inputs:
-				missing_count += maxi(0, int(inputs[input_id]) - StorageManager.get_count(str(input_id)))
+				missing_count += maxi(0, int(inputs[input_id]) - StorageManager.get_available_count(str(input_id)))
 			stock_summary = "MATERIALS READY" if missing_count == 0 else "%d MATERIALS NEEDED" % missing_count
 		var status_label := Label.new()
 		status_label.text = lock_reason if not lock_reason.is_empty() else stock_summary
@@ -2449,7 +2449,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		text_stack.add_child(provenance_warning)
 	if is_factory:
 		var storage_label := Label.new()
-		storage_label.text = "IN CITY STORAGE  %d" % StorageManager.get_count(item_id)
+		storage_label.text = "IN CITY STORAGE  %d AVAILABLE · %d RESERVED" % [StorageManager.get_available_count(item_id), StorageManager.get_reserved_count(item_id)]
 		storage_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		storage_label.add_theme_color_override("font_color", Color("#315C70"))
 		text_stack.add_child(storage_label)
@@ -2462,7 +2462,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		for input_id in inputs:
 			var input_data: Dictionary = ProductionManager.get_item_definition(str(input_id))
 			var required := int(inputs[input_id])
-			var owned := StorageManager.get_count(str(input_id))
+			var owned := StorageManager.get_available_count(str(input_id))
 			ingredient_lines.append("%s  %d/%d" % [str(input_data.get("name", str(input_id).capitalize())), owned, required])
 			if owned < required:
 				can_start = false
@@ -3088,7 +3088,7 @@ func open_residential_panel(building: Building) -> void:
 			if str(home_need.get("item_id", "")) == item_id:
 				allocated_need = home_need
 				break
-		var owned := int(allocated_need.get("stored", StorageManager.get_count(item_id)))
+		var owned := int(allocated_need.get("stored", StorageManager.get_available_count(item_id)))
 		var ready_count := int(allocated_need.get("ready_to_collect", 0))
 		var producing_count := int(allocated_need.get("in_production", 0))
 		var shortage := int(allocated_need.get("shortage", maxi(0, amount - owned)))
@@ -3335,7 +3335,7 @@ func _open_epic_project_panel(building: Building) -> void:
 		task_row.add_child(task_label)
 		var contribute := Button.new()
 		contribute.text = "CONTRIBUTE"
-		contribute.disabled = StorageManager.get_count(item_id) < amount
+		contribute.disabled = StorageManager.get_available_count(item_id) < amount
 		contribute.pressed.connect(_contribute_epic_task_from_panel.bind(str(task.get("id", "")), building))
 		task_row.add_child(contribute)
 
@@ -4054,7 +4054,7 @@ func _build_cargo_ship_content(parent: VBoxContainer) -> void:
 		var load_button := Button.new()
 		load_button.name = "CargoLoad_%d" % index
 		load_button.text = "LOADED" if delivered else "LOAD"
-		load_button.disabled = delivered or StorageManager.get_count(item_id) < amount
+		load_button.disabled = delivered or StorageManager.get_available_count(item_id) < amount
 		load_button.pressed.connect(_on_trade_deliver_ship_crate.bind(index))
 		row.add_child(load_button)
 
