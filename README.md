@@ -1042,3 +1042,16 @@ Design references:
 - [ ] Android landscape physical drag/drop acceptance and screenshot review.
 
 The existing Figma production studio frame was updated to match the no-START, drag-to-queue interaction and building-centered honeycomb placement. Product Design's dedicated Work-mode workflow is not available in this standard chat; implementation and design-spec edits are being handled directly in GitHub and Figma.
+
+
+## Production touch interaction hardening — 2026-11-15
+
+- [x] Align every production prompt with the real primary drop target: an empty, unlocked queue slot; explicitly label the building footprint as an additional drop target.
+- [x] Track the initiating touch index so a second finger cannot hijack or release an active product drag.
+- [x] Make the full-screen transparent product-orbit containers ignore pointer events, allowing queue slots underneath to receive taps instead of being occluded by the catalog layer.
+- [x] Preserve tap-only product selection until the next tap on an empty queue slot/building, providing an accessible fallback when drag gestures are difficult.
+- [x] Extend GameplaySmoke with multi-touch ownership and tap-to-queue fallback cases.
+- [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy checks passed in run `43742618056`.
+- [x] Android Debug APK export, signature/package identity verification and artifact upload passed in run `43742618056`; artifact `PasooCityBuildIt-android-debug-56cd49836727e61d64a164c96e9c7f0e152ca12b` is available until 2026-11-29.
+- [ ] Web export and Chromium/Pages workflow `43742617966` is still running.
+- [ ] Physical Android landscape touch acceptance and screenshot review.
