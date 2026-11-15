@@ -271,3 +271,18 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 - [ ] Live inventory cost-batch persistence in StorageManager and save/load.
 - [ ] Live manual/automatic production input-cost propagation and Trade Depot realized gross-margin ledger.
 - [ ] Scenario simulator replay of complete AUTO CHAIN graphs, shared dependencies and critical-path timing.
+
+
+## Live FIFO cost ledger — implementation in progress
+
+- [ ] StorageManager stores per-item FIFO cost batches and keeps legacy inventory without a known acquisition cost marked unknown.
+- [ ] Manual ProductionComponent store jobs capture FIFO input cost at queue admission and transfer it to collected output.
+- [ ] Factory output carries known zero direct Simoleon input cost under current mechanics; no labor, capital depreciation or opportunity cost is inferred.
+- [ ] AUTO CHAIN store dependencies capture and transfer cost through recursive raw/store dependencies.
+- [ ] Global Trade HQ purchases add the actual paid Simoleon amount as inventory acquisition cost.
+- [ ] Trade Depot listing reservation stores FIFO cost; cancellation returns the same cost; sale collection records revenue, COGS and gross margin in EconomyManager's transaction ledger.
+- [ ] MacroEconomySimulator live snapshot summarizes realized sales from the transaction ledger and marks incomplete history when the 300-entry ledger has rolled over.
+- [ ] GameplaySmoke covers live production cost transfer, nested AUTO CHAIN, Depot cancel/collect, HQ purchase cost, Storage save/load and live ledger reporting.
+- [ ] Godot Validation, Android Debug APK export and Web/Chromium on the final PR SHA.
+
+**Acceptance boundary:** no unknown legacy cost is replaced with catalog value. No COGS is deducted from Simoleons a second time. Historical realized margin is only complete if both all sold batches have known costs and the transaction ledger has not truncated earlier events.
