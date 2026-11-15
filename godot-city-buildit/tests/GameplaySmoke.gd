@@ -397,12 +397,16 @@ func _test_live_macro_economy_snapshot() -> void:
 	var previous_ledger: Array[Dictionary] = EconomyManager.transaction_ledger.duplicate(true)
 	var previous_sequence := EconomyManager.transaction_sequence
 	EconomyManager.transaction_ledger.clear()
+	EconomyManager.transaction_sequence = 0
 	EconomyManager.record_transaction("trade_sale_collected", "simoleons", 80, balance_before, balance_before, {}, {}, {"source":"trade_depot", "quantity":1, "cost_known":true, "cost_basis":30, "gross_margin":50})
 	EconomyManager.record_transaction("trade_sale_collected", "simoleons", 40, balance_before, balance_before, {}, {}, {"source":"trade_depot", "quantity":1, "cost_known":false, "cost_basis":-1, "gross_margin":-1})
 	var ledger_snapshot: Dictionary = MacroEconomySimulatorScript.simulate_live_city({"horizon_seconds": 0, "events": []})
 	var realized: Dictionary = ledger_snapshot.get("realized_trade_accounting", {})
 	_check(int(realized.get("gross_revenue", -1)) == 120 and int(realized.get("known_cogs", -1)) == 30 and int(realized.get("known_gross_margin", -1)) == 50, "Live macro snapshot must aggregate actual realized trade ledger revenue, known COGS and margin.")
 	_check(int(realized.get("unknown_cost_sale_quantity", -1)) == 1 and not bool(realized.get("gross_margin_complete", true)), "Live macro snapshot must preserve incomplete historical cost data instead of claiming full profit.")
+	_check(bool(realized.get("history_complete", false)), "Live macro accounting must report when the full available transaction history is present.")
+	var truncated_history: Dictionary = MacroEconomySimulatorScript._summarize_realized_trade_ledger(EconomyManager.transaction_ledger, 500)
+	_check(not bool(truncated_history.get("history_complete", true)) and not bool(truncated_history.get("gross_margin_complete", true)), "A truncated 300-entry economy ledger must never be presented as lifetime-complete gross profit.")
 	EconomyManager.transaction_ledger = previous_ledger
 	EconomyManager.transaction_sequence = previous_sequence
 
