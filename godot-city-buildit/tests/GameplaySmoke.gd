@@ -476,6 +476,83 @@ func _test_storage_and_production_chain() -> void:
 	shop.queue_free()
 	StorageManager.from_save_dict(saved_storage)
 
+func _test_automatic_production_chain(factory: Building, supplies: Building) -> void:
+	var factory_component: ProductionComponent = factory.production_component if is_instance_valid(factory) else null
+	var store_component: ProductionComponent = supplies.production_component if is_instance_valid(supplies) else null
+	_check(is_instance_valid(factory_component) and is_instance_valid(store_component), "Automatic chain test requires live factory and Building Supplies production components.")
+	if not is_instance_valid(factory_component) or not is_instance_valid(store_component):
+		return
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_orders: Dictionary = ProductionManager.to_save_dict()
+	var previous_factory_slots := factory_component.to_save_array()
+	var previous_store_slots := store_component.to_save_array()
+	var previous_loading := SaveManager.is_loading
+	var free_factory_slots := 0
+	for slot in factory_component.slots:
+		if slot.is_empty():
+			free_factory_slots += 1
+	var free_store_slots := 0
+	for slot in store_component.slots:
+		if slot.is_empty():
+			free_store_slots += 1
+	_check(free_factory_slots >= 2 and free_store_slots >= 1, "Automatic chain test requires two free factory slots and one free store slot.")
+	if free_factory_slots < 2 or free_store_slots < 1:
+		return
+	SaveManager.is_loading = true
+	StorageManager.from_save_dict({"capacity": int(previous_storage.get("capacity", StorageManager.DEFAULT_CAPACITY)), "items": {}, "reservations": {}})
+	ProductionManager.from_save_dict({"next_order_id": 1, "orders": []})
+	var order_id := ProductionManager.start_automatic_chain("nails", 1)
+	_check(not order_id.is_empty(), "Player must be able to create an automatic Nails production chain.")
+	if order_id.is_empty():
+		StorageManager.from_save_dict(previous_storage)
+		ProductionManager.from_save_dict(previous_orders)
+		factory_component.from_save_array(previous_factory_slots)
+		store_component.from_save_array(previous_store_slots)
+		ProductionManager.resume_after_restore()
+		SaveManager.is_loading = previous_loading
+		return
+
+	ProductionManager._advance_automatic_chain_orders()
+	var raw_slots: Array[int] = []
+	for slot_index in range(factory_component.slots.size()):
+		var slot: Dictionary = factory_component.slots[slot_index]
+		if str(slot.get("auto_chain_order_id", "")) == order_id and str(slot.get("item_id", "")) == "metal":
+			raw_slots.append(slot_index)
+	_check(raw_slots.size() == 2, "The automatic chain must schedule both Metal inputs across the factory's parallel slots.")
+	var persisted_orders := ProductionManager.to_save_dict()
+	ProductionManager.from_save_dict(persisted_orders)
+	_check(ProductionManager.get_automatic_chain_order(order_id).get("status", "") == "running", "An in-progress automatic chain must survive ProductionManager save/load.")
+	for slot_index in raw_slots:
+		var raw_slot: Dictionary = factory_component.slots[slot_index]
+		raw_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		factory_component.slots[slot_index] = raw_slot
+	factory_component.refresh_slots()
+	ProductionManager._advance_automatic_chain_orders()
+	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("nails") == 0, "Intermediate Metal must be consumed by the automatically queued Nails recipe, not left as unprocessed stock.")
+	var final_slot_index := -1
+	for slot_index in range(store_component.slots.size()):
+		var slot: Dictionary = store_component.slots[slot_index]
+		if str(slot.get("auto_chain_order_id", "")) == order_id and str(slot.get("item_id", "")) == "nails":
+			final_slot_index = slot_index
+			_check(bool(slot.get("inputs_escrowed", false)), "The active automatic store order must have consumed its escrowed inputs exactly once.")
+	_check(final_slot_index >= 0, "The scheduler must automatically enqueue Nails after both Metal dependencies are collected.")
+	if final_slot_index >= 0:
+		var final_slot: Dictionary = store_component.slots[final_slot_index]
+		final_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		store_component.slots[final_slot_index] = final_slot
+		store_component.refresh_slots()
+		ProductionManager._advance_automatic_chain_orders()
+	var completed_order := ProductionManager.get_automatic_chain_order(order_id)
+	_check(completed_order.get("status", "") == "complete" and int(completed_order.get("completed_count", 0)) == 1, "The automatic chain must finish only after its final product is collected.")
+	_check(StorageManager.get_count("nails") == 1, "The automatic chain must place the completed Nails item into City Storage.")
+
+	StorageManager.from_save_dict(previous_storage)
+	factory_component.from_save_array(previous_factory_slots)
+	store_component.from_save_array(previous_store_slots)
+	ProductionManager.from_save_dict(previous_orders)
+	ProductionManager.resume_after_restore()
+	SaveManager.is_loading = previous_loading
+
 func _test_production_queue_stress() -> void:
 	var saved_storage: Dictionary = StorageManager.to_save_dict()
 	var saved_level := GameManager.level
@@ -3501,6 +3578,7 @@ func _run_gameplay_test() -> void:
 	var supplies = _find_building("building_supplies")
 	var shop_component = supplies.production_component
 	_check(shop_component != null and shop_component.get_slot_count() == 2, "Building Supplies must expose two craft queue slots.")
+	await _test_automatic_production_chain(factory, supplies)
 	StorageManager.items = {}
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
 	production_hud.open_production_panel(supplies)
