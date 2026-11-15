@@ -2271,7 +2271,7 @@ func open_production_panel(building: Building) -> void:
 		item_button.disabled = not lock_reason.is_empty()
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else inventory_status
 		# Dragging a product onto a queue tile submits that exact slot order.
-		item_button.set_drag_forwarding(_get_production_drag_data.bind(building, item_id), Callable(), Callable())
+		item_button.set_drag_forwarding(_get_production_drag_data.bind(building, item_id, item_button), Callable(), Callable())
 		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
 		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
@@ -2893,7 +2893,7 @@ func _on_production_slot_gui_input(event: InputEvent, building: Building, slot_i
 		get_viewport().set_input_as_handled()
 
 
-func _get_production_drag_data(_at_position: Vector2, building: Building, item_id: String) -> Variant:
+func _get_production_drag_data(_at_position: Vector2, building: Building, item_id: String, item_button: Button) -> Variant:
 	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
 		return null
 	var component: ProductionComponent = building.production_component
@@ -2901,6 +2901,10 @@ func _get_production_drag_data(_at_position: Vector2, building: Building, item_i
 	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 	if not lock_reason.is_empty():
 		return null
+	# Native desktop drag can also emit Button.pressed on release; suppress the
+	# click so a successful queue drop never opens the detail capsule afterward.
+	if is_instance_valid(item_button):
+		item_button.set_meta("touch_drag_consumed", true)
 	return {"kind": "production_item", "item_id": item_id, "building_id": building.get_instance_id()}
 
 
