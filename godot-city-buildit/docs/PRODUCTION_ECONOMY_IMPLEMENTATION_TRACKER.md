@@ -350,8 +350,28 @@ PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key
 - [ ] Radial/floating product layout around the selected building.
 - [ ] Six compact queue tiles and touch-layout acceptance across mobile landscape profiles.
 - [x] Product-specific 3D billboard thumbnail for ready factory/store goods; multiple ready outputs show a count label.
-- [ ] City-wide pending-action notifications for construction, upgrades, services and non-production objects.
-- [ ] Automated drag/drop, ready-state, full-storage, persistence and panel-close regression tests.
+- [x] World-space markers cover ready production, full-storage blocking and actionable residential upgrade readiness; auto-completed construction/non-residential upgrades do not show false claim badges.
+- [ ] Additional service/city-system markers where a genuine player action is pending.
+- [x] GameplaySmoke covers production start/ready/Collect, full-storage blocking without loss, and Save/Load restoration.
+- [ ] Automated pointer/touch drag gesture and production continuity after closing the panel.
 - [ ] CI and physical Android touch acceptance for this branch.
 
 No recipe, production duration, expansion price, or item provenance was added or inferred by this UI change.
+
+ 
+---
+
+## SimCity-style production interaction — compact radial UI phase
+
+- [x] Full-screen white modal replaced by compact bottom dock.
+- [x] Product catalogue moved to a floating orbit around the selected building's projected screen position.
+- [x] Compact queue cards preserve per-slot timer, ready and Collect states.
+- [x] Touch fallback: select product then tap an empty queue slot; native drag forwarding remains enabled.
+- [ ] Physical Android visual spacing review; CI confirms mobile landscape canvas launch, not a screenshot review of the production panel.
+- [x] World-space markers cover ready production, storage-full blocking and actionable residential upgrade readiness; no false badge is shown for auto-completed construction/non-residential upgrades.
+- [ ] Extend markers to any other activity only after confirming a real pending player action exists.
+- [x] Godot Validation + GameplaySmoke + storage-full Collect + save/load + visual presentation + Android Debug APK: [run 43722788626](https://github.com/pasoooir/Mshin/actions/runs/43722788626).
+- [x] Web export + gameplay integration + desktop/mobile landscape Chromium + Pages artifact: [run 43722788624](https://github.com/pasoooir/Mshin/actions/runs/43722788624).
+
+- [x] Unify actionable world-space markers: ready production shows the actual product thumbnail; blocked collection shows a warning marker; residential upgrades show an upgrade marker only while an upgrade can genuinely start.
+- [x] Avoid false completion/collect notifications for construction and non-residential upgrades because those state transitions complete automatically in the current game model.

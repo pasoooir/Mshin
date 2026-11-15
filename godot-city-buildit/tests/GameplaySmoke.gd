@@ -3778,20 +3778,18 @@ func _run_gameplay_test() -> void:
 	_check(factory_component != null and factory_component.get_slot_count() == 6, "Small Factory must expose six independent production queue slots.")
 	production_hud.open_production_panel(factory)
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
-	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
-	_check(production_hud.production_panel.find_child("ProductionProductsScroll", true, false) != null, "Factory panel must show a horizontally browsable product-card row.")
-	var production_product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
-	var production_product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
-	var compact_production_layout := get_viewport().get_visible_rect().size.x <= 900.0 or get_viewport().get_visible_rect().size.y <= 520.0
-	_check(production_product_scroll != null and production_product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Production catalog must scroll vertically instead of clipping product rows on compact screens.")
-	_check(production_product_grid != null and production_product_grid.columns == (3 if compact_production_layout else (4 if get_viewport().get_visible_rect().size.x <= 1280.0 else 6)), "Production catalog must use responsive three/four/six-column layouts.")
+	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Production overlay must retain a subtle transparent backdrop without hiding the city.")
+	var production_product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
+	var production_product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
+	_check(production_product_orbit != null and production_product_grid != null, "Factory products must render in a floating radial orbit over the city.")
+	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Radial factory catalogue must expose every registered material.")
 	_check(production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) is ScrollContainer, "Recipe and ingredient details must remain scrollable on compact screens.")
 	_check(production_hud.production_panel.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must have a distinct high-contrast building nameplate.")
 	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must clearly separate the lower production queue from the product catalog.")
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
 	var empty_factory_slot: PanelContainer = production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
 	_check(empty_factory_slot != null and empty_factory_slot.find_child("EmptyQueuePlus", true, false) is Label and empty_factory_slot.find_child("EmptyQueueLabel", true, false) is Label, "An empty production slot must show its plus affordance and EMPTY label.")
-	var metal_button := production_hud.production_panel.find_child("Slot0_metal", true, false) as Button
+	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
 		metal_button.emit_signal("pressed")
@@ -3799,13 +3797,15 @@ func _run_gameplay_test() -> void:
 		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must keep the detail-card Start action available.")
 	var factory_drag_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
 	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
+	production_hud._select_production_item_for_touch(factory, "metal")
+	_check(production_hud._touch_selected_production_item == "metal" and production_hud._touch_selected_production_building_id == factory.get_instance_id(), "Touch fallback must retain the selected product and source building until a queue tile is tapped.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
 	production_hud._accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0)
 	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into factory slot zero must start that exact production slot.")
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
-	var second_metal_button := production_hud.production_panel.find_child("Slot1_metal", true, false) as Button
+	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
 	if second_metal_button:
 		second_metal_button.emit_signal("pressed")
@@ -3839,7 +3839,10 @@ func _run_gameplay_test() -> void:
 	StorageManager.items = {}
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
 	production_hud.open_production_panel(supplies)
-	var nails_button_0 := production_hud.production_panel.find_child("Slot0_nails", true, false) as Button
+	var visible_store_queue := production_hud.production_panel.find_child("ProductionQueueSlots", true, false) as HBoxContainer
+	_check(visible_store_queue != null and visible_store_queue.get_child_count() >= 6, "Commercial production dock must always render six visible queue tiles, with unpurchased capacity clearly locked.")
+	_check(production_hud.production_panel.find_child("QueueSlot2", true, false) != null and production_hud.production_panel.find_child("QueueSlot2", true, false).find_child("LockedQueueLabel", true, false) is Label, "Store queue tiles beyond the paid capacity must be visibly locked, not silently usable or shown as free empty slots.")
+	var nails_button_0 := production_hud.production_overlay.find_child("Slot0_nails", true, false) as Button
 	_check(nails_button_0 != null and nails_button_0.find_child("HexagonBackground", true, false) is Polygon2D, "Production choices must use floating hexagonal item tiles like SimCity BuildIt.")
 	if nails_button_0:
 		nails_button_0.emit_signal("pressed")
@@ -3857,7 +3860,7 @@ func _run_gameplay_test() -> void:
 	else:
 		_check(false, "Building Supplies must offer Nails at level 1.")
 	production_hud.open_production_panel(supplies)
-	var nails_button_1 := production_hud.production_panel.find_child("Slot1_nails", true, false) as Button
+	var nails_button_1 := production_hud.production_overlay.find_child("Slot1_nails", true, false) as Button
 	if nails_button_1:
 		nails_button_1.emit_signal("pressed")
 		var second_shop_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
@@ -3885,11 +3888,11 @@ func _run_gameplay_test() -> void:
 	if collect_nails_1:
 		collect_nails_1.emit_signal("pressed")
 	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
-	var product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
-	var product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
-	var expected_store_columns := 3 if get_viewport().get_visible_rect().size.x <= 900.0 or get_viewport().get_visible_rect().size.y <= 520.0 else (4 if get_viewport().get_visible_rect().size.x <= 1280.0 else 6)
-	_check(product_grid != null and product_grid.columns == expected_store_columns and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The complete store catalog must expose every product in the responsive grid.")
-	_check(product_scroll != null and product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and product_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "The production catalog must support vertical touch scrolling through every responsive product row.")
+	var product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
+	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
+	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The radial store catalog must expose every registered product.")
+	_check(product_orbit != null and product_orbit.get_child_count() == 1, "Product selectors must use a floating orbit layer outside the compact queue dock.")
+	_check(production_hud.production_panel.size.y < get_viewport().get_visible_rect().size.y * 0.5, "Production interaction must use a compact bottom dock, not a full-screen modal.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level

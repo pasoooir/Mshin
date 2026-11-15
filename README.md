@@ -942,15 +942,38 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] تعریف شش اسلات تولید مستقل برای تمام کارخانه‌های استاندارد (Small / Basic / Mass / High-tech / Nano)؛ تست مشخصات کارخانه‌ها به شش اسلات به‌روزرسانی شد.
 - [x] افزودن مسیر Drag & Drop از کارت محصول به خانه مشخص صف؛ هر سفارش به همان `slot_index` تحویل داده می‌شود و برای کارخانه/فروشگاه از API فعلی ProductionComponent و AUTO CHAIN استفاده می‌کند.
 - [x] اعتبارسنجی نوع ساختمان، شناسه محصول، recipe متعلق به همان فروشگاه، قفل سطح و خالی بودن اسلات در مسیر Drop.
-- [ ] بازطراحی چیدمان محصول‌ها به‌صورت شعاعی/شناور دور ساختمان مطابق مرجع تصویری؛ نسخه فعلی هنوز پنل مرکزی و ردیف/شبکه محصولات دارد.
-- [ ] جایگزینی خانه‌های صف با شش کارت جمع‌وجور و لمس‌پذیر در تمام نسبت‌های تصویر موبایل؛ شش ظرفیت کارخانه اکنون در مدل داده تعریف شده، اما اندازه و چیدمان نهایی UI هنوز نیازمند بازطراحی است.
+- [x] بازطراحی چیدمان محصولات به‌صورت شعاعی/شناور اطراف موقعیت تصویری ساختمان انتخاب‌شده؛ تأیید نهایی فاصله‌ها روی دستگاه واقعی موبایل هنوز جداگانه لازم است.
+- [x] نمایش شش خانه بصری در نوار صف کارخانه و فروشگاه؛ خانه‌های فروشگاه که هنوز خریداری نشده‌اند به‌صورت قفل‌شده نمایش داده می‌شوند و ظرفیت واقعی/هزینه بازکردن آن‌ها بدون تغییر و تابع اقتصاد معتبر باقی می‌ماند. کارت‌های فعال تایمر، وضعیت آماده و Collect مستقل دارند.
 - [x] نمایش thumbnail تصویری محلی همان محصول آماده روی billboard ساختمان‌های تولیدی؛ تعداد محصولات آماده بیش از یک مورد نیز به‌صورت شمارنده نمایش داده می‌شود. آیکون از کاتالوگ PNG محلی خوانده می‌شود.
-- [ ] اعلان یکپارچه برای سایر اقدام‌های معوق ساختمان (ارتقا، ساخت‌وساز و خدمات) هنوز توسعه نیافته است.
-- [ ] اعلان آماده‌جمع‌آوری برای تمام فعالیت‌های ساختمان (تولید، ارتقا، ساخت‌وساز و سایر اقدام‌های معوق) با مدیریت شلوغی، زوم و خارج‌بودن از دید.
-- [ ] آزمون خودکار Drag & Drop واقعی، Collect دقیقاً یک‌بار، انبار پر، save/load و ادامه تولید پس از بستن پنل.
-- [ ] اجرای Godot Validation، GameplaySmoke، Web/Chromium موبایل و ثبت نتیجه CI روی commit نهایی این شاخه.
-- [ ] پذیرش لمس روی دستگاه Android واقعی؛ تست Chromium جایگزین دستگاه فیزیکی نیست.
+- [x] یکپارچه‌سازی اعلان‌های اقدام واقعی: محصول آماده با تصویر محصول، انبار پر با نشان هشدار، و ارتقای مسکونی قابل شروع با نشان ارتقا. اعلان جعلی برای ساخت‌وساز و ارتقای غیرمسکونی که خودکار تکمیل می‌شوند نمایش داده نمی‌شود.
+- [ ] گسترش اعلان‌های اقدام واقعی به سایر سیستم‌ها/خدماتی که واقعاً به اقدام بازیکن نیاز دارند؛ این مرحله هنوز کامل نیست.
+- [x] آزمون Collect مستقل، جلوگیری از Collect هنگام پر بودن انبار، حفظ کالای آماده و بازیابی Save/Load در GameplaySmoke و CI.
+- [ ] آزمون gesture واقعی Drag & Drop با pointer/touch و ادامه تولید پس از بستن پنل؛ تست فعلی انتخاب محصول و tap-to-place را پوشش می‌دهد، نه شبیه‌سازی کامل drag روی دستگاه.
+- [x] Godot Validation + GameplaySmoke + full-storage Collect + save/load + Visual Presentation + Android Debug APK موفق: [Godot CI 43722788626](https://github.com/pasoooir/Mshin/actions/runs/43722788626). [x] Web export + Gameplay Integration + desktop/mobile-landscape Chromium launch + Pages artifact موفق: [Web CI 43722788624](https://github.com/pasoooir/Mshin/actions/runs/43722788624). این تست Chromium اجرای canvas در viewport لمسی 844×390 را تأیید می‌کند، نه بازبینی چشمی پنل تولید روی گوشی فیزیکی.
+- [ ] پذیرش Drag & Drop و چیدمان بصری پنل تولید روی دستگاه Android واقعی؛ تست Chromium جایگزین گوشی فیزیکی نیست.
 
 **قواعد حفظ‌شده:** پایان تایمر به‌تنهایی کالا را وارد انبار نمی‌کند؛ Collect مستقل همان اسلات را خالی می‌کند؛ در صورت پر بودن انبار خروجی آماده در اسلات باقی می‌ماند؛ داده recipe/time/price فاقد منبع نباید حدس زده شود.
 
-**قاعده تیک:** موارد [x] فقط تغییرات اعمال‌شده در کد این شاخه‌اند؛ تا اجرای CI و تست‌های تعاملی، هیچ معیار پذیرش انتهابه‌انتها تکمیل‌شده محسوب نمی‌شود.
+**قاعده تیک:** موارد [x] فقط برای کد و آزمون‌هایی ثبت شده‌اند که واقعاً اجرا و با CI یا تست موجود تأیید شده‌اند. تست فیزیکی Android و gesture واقعی drag هنوز باز هستند.
+
+
+---
+
+## SimCity-style production interaction — compact radial UI phase
+
+**Branch:** `feat/simcity-production-interaction-polish`
+
+- [x] Replace the full-screen white production modal with a compact, dark translucent bottom dock; the live city remains visible.
+- [x] Move registered factory/store product controls into a floating orbit layer around the selected building's projected screen position.
+- [x] Reduce queue tiles to compact touch-friendly cards while preserving each slot's timer, ready and Collect behavior.
+- [x] Add tap-product-then-tap-slot fallback alongside native drag forwarding for touch devices.
+- [ ] Visual inspection of radial spacing for every catalog size on actual mobile landscape devices (Chromium mobile launch passed, but the production panel itself has not been visually inspected on a physical phone).
+- [ ] Extend actionable building notifications to construction, upgrade and other activities only where the underlying activity has a genuine pending player action.
+- [x] Godot GameplaySmoke, full-storage Collect, save/load, visual presentation and Android APK CI passed: [run 43722788626](https://github.com/pasoooir/Mshin/actions/runs/43722788626).
+- [x] Web export, gameplay integration, desktop/mobile landscape Chromium launch and Pages artifact passed: [run 43722788624](https://github.com/pasoooir/Mshin/actions/runs/43722788624).
+- [ ] Physical Android touch-device acceptance and visual review of the production panel.
+
+No recipe, production duration, storage accounting, queue-slot price, or Collect rule was changed or invented.
+
+- [x] Unify actionable world-space markers: ready production shows the actual product thumbnail; blocked collection shows a warning marker; residential upgrades show an upgrade marker only while an upgrade can genuinely start.
+- [x] Avoid false completion/collect notifications for construction and non-residential upgrades because those state transitions complete automatically in the current game model.

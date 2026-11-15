@@ -55,6 +55,7 @@ var _fire_smoke: CPUParticles3D = null
 @onready var hard_hat: Node3D = $HardHat
 @onready var production_icon: Label3D = get_node_or_null("ProductionIcon") as Label3D
 var ready_item_sprite: Sprite3D
+var action_notification_label: Label3D
 @onready var name_label: Label3D = get_node_or_null("NameLabel") as Label3D
 @onready var stage_label: Label3D = get_node_or_null("StageLabel") as Label3D
 
@@ -86,6 +87,17 @@ func _create_visual_labels() -> void:
 		ready_item_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		ready_item_sprite.visible = false
 		add_child(ready_item_sprite)
+	if action_notification_label == null:
+		action_notification_label = Label3D.new()
+		action_notification_label.name = "ActionNotification"
+		action_notification_label.position = Vector3(0.0, 6.05, 0.0)
+		action_notification_label.pixel_size = 0.035
+		action_notification_label.font_size = 38
+		action_notification_label.outline_size = 8
+		action_notification_label.text = "⬆"
+		action_notification_label.visible = false
+		action_notification_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		add_child(action_notification_label)
 	if name_label == null:
 		name_label = Label3D.new()
 		name_label.name = "NameLabel"
