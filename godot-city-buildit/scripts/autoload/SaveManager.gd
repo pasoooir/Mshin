@@ -73,6 +73,7 @@ func capture_region_snapshot() -> Dictionary:
 		"buildings": building_data,
 		"epic_projects": EpicProjectManager.to_save_dict(),
 		"land_expansion": LandExpansionManager.to_save_dict(),
+		"production_chains": ProductionManager.to_save_dict(),
 		"happiness": GameManager.happiness
 	}
 
@@ -170,6 +171,7 @@ func load_game() -> bool:
 		is_loading = false
 		load_completed.emit(false)
 		return false
+	ProductionManager.from_save_dict(region_snapshot.get("production_chains", {}))
 
 	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
 	# One-time welcome grant for cities created before the starter-economy update.
@@ -336,6 +338,7 @@ func load_region_snapshot(snapshot: Dictionary) -> bool:
 		"items": {}
 	})
 	StorageManager.from_save_dict(regional_storage)
+	ProductionManager.from_save_dict(snapshot.get("production_chains", {}))
 	StorageManager.storage_changed.emit()
 	StorageManager.capacity_changed.emit(StorageManager.max_capacity)
 	ServiceManager.recalculate_from_buildings()
