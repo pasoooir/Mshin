@@ -349,7 +349,7 @@ func _test_automatic_chain_dependency_replay() -> void:
 		"occupied_homes": 0,
 		"level": 1,
 		"experience": 0,
-		"horizon_seconds": 171,
+		"horizon_seconds": 172,
 		"item_values": {"hammer": 90},
 		"events": [],
 		"production": {
@@ -372,8 +372,8 @@ func _test_automatic_chain_dependency_replay() -> void:
 			],
 			"actions": [
 				{"type": "auto_chain", "facility_id": "hardware-auto", "item_id": "hammer", "chain_id": "hammer-root", "at_seconds": 0},
-				{"type": "depot_list", "listing_id": "hammer-sale", "item_id": "hammer", "quantity": 1, "at_seconds": 51},
-				{"type": "depot_collect", "listing_id": "hammer-sale", "at_seconds": 171}
+				{"type": "depot_list", "listing_id": "hammer-sale", "item_id": "hammer", "quantity": 1, "at_seconds": 52},
+				{"type": "depot_collect", "listing_id": "hammer-sale", "at_seconds": 172}
 			]
 		}
 	}
