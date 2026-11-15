@@ -829,7 +829,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] Web export، اجرای دسکتاپ و موبایل در Chromium و آپلود artifact موفق شدند: [run 43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318).
 - [ ] اجرای مستقل CI روی merge commit جدید `dd7967d` و ثبت شواهد main هنوز تأیید نشده است؛ اجرای موفق PR جایگزین این گیت نیست.
 
-موارد باز بدون تیک: AUTO CHAIN کامل و چندزنجیره‌ای، بهای تمام‌شده و سود خالص حسابداری، مصرف موجودی توسط سفارش تحویل، تقاضا و نرخ فروش بازار، و پذیرش فیزیکی روی Android.
+موارد باز بدون تیک: رزرو مشترک مواد میانی بین چند ریشه، critical path، تقاضا و نرخ فروش بازار، هزینه فرصت/استهلاک/دستمزد و پذیرش فیزیکی روی Android.
 
 
 ## حسابداری بهای تمام‌شده تولید — PR #510 (در انتظار CI)
@@ -860,7 +860,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 
 **ادغام:** PR #511 با merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` وارد `main` شد.
 
-**محدودیت‌های باز:** سفارش تحویل Cargo Ship/Delivery Orders هنوز به بهای موجودی و سود ناخالص متصل نشده است. دفتر تراکنش فقط ۳۰۰ رویداد آخر را نگه می‌دارد؛ در صورت حذف تاریخچه قدیمی، خروجی صریحاً lifetime-complete نیست. تقاضای بازار، احتمال فروش، هزینه فرصت، سرمایه ساختمان، دستمزد و هزینه‌های عملیاتی ثبت‌نشده نیز مدل‌سازی نشده‌اند.
+**محدودیت‌های باز:** دفتر تراکنش فقط ۳۰۰ رویداد آخر را نگه می‌دارد؛ در صورت حذف تاریخچه قدیمی، خروجی صریحاً lifetime-complete نیست. تقاضای بازار، احتمال فروش، هزینه فرصت، سرمایه ساختمان، دستمزد و هزینه‌های عملیاتی ثبت‌نشده نیز مدل‌سازی نشده‌اند.
 
 
 ## ادغام دفتر FIFO موجودی زنده — PR #511
@@ -869,7 +869,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] Godot Validation، GameplaySmoke، CurrencyEconomySmoke و MacroEconomySmoke: [run 43710111735 — success](https://github.com/pasoooir/Mshin/actions/runs/43710111735).
 - [x] Android Debug APK export/signature و artifact upload: [run 43710111735 — success](https://github.com/pasoooir/Mshin/actions/runs/43710111735).
 - [x] Web export و Chromium desktop/mobile: [run 43710111759 — success](https://github.com/pasoooir/Mshin/actions/runs/43710111759).
-- [ ] اجرای مستقل workflowها روی merge commit و آخرین README به‌روزشده؛ شواهد PR به‌تنهایی جایگزین CI شاخه main نیست.
+- [x] اجرای مستقل CI روی main پس از ادغام PRهای #511 تا #514: Godot + Android APK [43712594820](https://github.com/pasoooir/Mshin/actions/runs/43712594820)، Web/Chromium [43712594809](https://github.com/pasoooir/Mshin/actions/runs/43712594809)، Pages deploy [43712595064](https://github.com/pasoooir/Mshin/actions/runs/43712595064).
 
 
 ## اتصال سفارش‌های تحویل به موجودی و سود — PR #512 ادغام شد
@@ -885,10 +885,10 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 
 **ادغام:** PR #512 با merge commit `2ed1cc42c8eb9e5a1eb1d6e85dc09600fd7ae09b` وارد `main` شد.
 
-**محدودیت باز:** Cargo Ship crates هنوز COGS را در دفتر حسابداری وارد نمی‌کنند؛ پاداش Golden Key پول نقد نیست و در gross revenue سیمولئون جمع نمی‌شود. تقاضای بازار، sell-through و هزینه‌های عملیاتی خارج از مکانیزم‌های ثبت‌شده همچنان مدل نشده‌اند.
+**محدودیت باز:** COGS محموله‌های Cargo Ship اکنون ثبت می‌شود؛ پاداش Golden Key پول نقد نیست و ارزش Simoleon تأییدشده ندارد، پس در gross revenue جمع نمی‌شود. تقاضای بازار، sell-through و هزینه‌های عملیاتی خارج از مکانیزم‌های ثبت‌شده همچنان مدل نشده‌اند.
 
 
-- [ ] اجرای مستقل CI روی merge commit PR #512 و آخرین README هنوز باید تأیید شود.
+- [x] CI مستقل main پس از ادغام PR #512 و #514: [Godot + APK 43712594820](https://github.com/pasoooir/Mshin/actions/runs/43712594820)، [Web 43712594809](https://github.com/pasoooir/Mshin/actions/runs/43712594809).
 
 
 ## حسابداری غیرنقدی Cargo Ship — PR #513 ادغام شد
@@ -906,7 +906,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 **مرز حسابداری:** تا وقتی قیمت رسمی/مکانیزم تبدیل Golden Key به Simoleon در بازی وجود ندارد، نمی‌توان ارزش پولی یا سود اقتصادی خالص Cargo Ship را اعلام کرد؛ فقط هزینهٔ ورودی شناخته‌شده و پاداش غیرنقدی ثبت می‌شوند.
 
 
-- [ ] اجرای مستقل CI روی merge commit PR #513 و README به‌روزشده باید تأیید شود.
+- [x] CI مستقل main پس از ادغام PR #513: [Godot + APK 43712594820](https://github.com/pasoooir/Mshin/actions/runs/43712594820)، [Web 43712594809](https://github.com/pasoooir/Mshin/actions/runs/43712594809).
 
 
 ## بازپخش زنجیره خودکار تولید و snapshot FIFO زنده — PR #514 ادغام شد
@@ -927,4 +927,4 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 **محدودیت صریح:** این بازپخش، منطق per-chain موجود در ProductionManager را مدل می‌کند و موجودی مشترک را با مصرف اتمی محافظت می‌کند؛ چند ریشه می‌توانند کار میانی تکراری ایجاد کنند، همان‌طور که scheduler فعلی برای هر chain outstandingها را جداگانه می‌شمارد. رزرو/ادغام مشترک بین ریشه‌ها و محاسبه صریح critical path هنوز باز است. این مرحله هنوز demand generation، احتمال فروش، دستمزد، استهلاک و هزینه فرصت را مدل نمی‌کند.
 
 
-- [ ] اجرای مستقل CI روی merge commit PR #514 و آخرین README به‌روزشده باید تأیید شود.
+- [x] CI مستقل main روی commit `a6d1dcc867bb96972a546f82aa97b59a5ae3c536`: [Godot + APK 43712594820](https://github.com/pasoooir/Mshin/actions/runs/43712594820)، [Web 43712594809](https://github.com/pasoooir/Mshin/actions/runs/43712594809)، [Pages 43712595064](https://github.com/pasoooir/Mshin/actions/runs/43712595064).
