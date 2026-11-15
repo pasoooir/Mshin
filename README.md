@@ -1055,3 +1055,13 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Android Debug APK export, signature/package identity verification and artifact upload passed in run `43742618056`; artifact `PasooCityBuildIt-android-debug-56cd49836727e61d64a164c96e9c7f0e152ca12b` is available until 2026-11-29.
 - [ ] Web export and Chromium/Pages workflow `43742617966` is still running.
 - [ ] Physical Android landscape touch acceptance and screenshot review.
+
+
+## Mobile rendering optimization — shoreline batching — 2026-11-15
+
+- [x] Replace 38 independent shoreline pebble MeshInstance3D nodes and per-pebble materials with one low-poly MultiMeshInstance3D batch.
+- [x] Preserve the 38 pebble positions, three-color stone palette, varied radii, silhouette and natural rotation using per-instance transforms/colors.
+- [x] Disable shadow casting for tiny shoreline stones; their contact shadows are visually negligible and the batch no longer adds 38 shadow casters.
+- [x] Extend VisualPresentationSmoke to assert instance count, per-instance color support, shadow policy, coast distribution and color variation.
+- [ ] Godot import/parse, visual presentation smoke, gameplay smoke, Web/Chromium and Android APK CI.
+- [ ] Compare actual device frame-time and draw-call reports before claiming measured performance gains.

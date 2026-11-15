@@ -459,3 +459,16 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Physical Android landscape drag/drop acceptance and final screenshot review.
 
 **Do not mark this hardening complete until the new CI run passes.**
+
+
+## 2026-11-15 — Mobile shoreline rendering optimization
+
+- [x] Replace 38 standalone shoreline pebble MeshInstance3D nodes/materials with one low-poly MultiMeshInstance3D batch.
+- [x] Preserve per-stone transform and color variation, full shoreline distribution and the original pebble radius palette.
+- [x] Disable shadow casting on tiny shoreline stones to remove unnecessary shadow work.
+- [x] Add visual smoke assertions for the 38-instance batch, color support, shadow policy, distribution and variation.
+- [ ] Godot import/parse and VisualPresentationSmoke.
+- [ ] GameplaySmoke, Web/Chromium and Android APK CI.
+- [ ] Measure actual draw calls/frame times on Android before claiming measured gains.
+
+**Expected structural improvement:** 38 shoreline render nodes/material instances become one MultiMeshInstance3D and one shared material. This is a draw-submission/node-count reduction by construction; actual FPS impact remains unmeasured until device profiling.

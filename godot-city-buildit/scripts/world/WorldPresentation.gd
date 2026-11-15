@@ -1029,22 +1029,55 @@ func _animal_leg_positions(origins: Array[Vector3], body_height: float) -> Array
 
 
 func _build_shoreline_details() -> void:
-	# A pale wet-sand band and scattered shoreline rocks soften the land-to-water transition.
-	for index in range(38):
-		var z := -88.0 + float(index) * 4.6
-		var x := _coastline(z) - 1.8
-		var pebble := MeshInstance3D.new()
-		var pebble_mesh := SphereMesh.new()
-		pebble_mesh.radius = 0.28 + float(index % 3) * 0.09
-		pebble_mesh.height = 0.22
-		pebble.mesh = pebble_mesh
-		pebble.position = Vector3(x + sin(float(index) * 4.1) * 1.8, 0.05, z)
-		var pebble_material := StandardMaterial3D.new()
-		var stone_palette: Array[Color] = [Color(0.55, 0.53, 0.46), Color(0.69, 0.65, 0.55), Color(0.42, 0.46, 0.43)]
-		pebble_material.albedo_color = stone_palette[index % stone_palette.size()]
-		pebble_material.roughness = 0.95
-		pebble.material_override = pebble_material
-		add_child(pebble)
+	# One low-poly MultiMesh replaces 38 independent pebble nodes/materials.
+	# Per-instance scale, yaw and color preserve the varied natural shoreline.
+	var pebbles := _create_shoreline_pebble_multimesh()
+	add_child(pebbles)
+
+
+func _create_shoreline_pebble_multimesh() -> MultiMeshInstance3D:
+	const PEBBLE_COUNT := 38
+	var pebble_mesh := SphereMesh.new()
+	pebble_mesh.radius = 1.0
+	pebble_mesh.height = 2.0
+	pebble_mesh.radial_segments = 10
+	pebble_mesh.rings = 5
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_colors = true
+	multimesh.mesh = pebble_mesh
+	multimesh.instance_count = PEBBLE_COUNT
+	for index in range(PEBBLE_COUNT):
+		multimesh.set_instance_transform(index, _shoreline_pebble_transform(index))
+		multimesh.set_instance_color(index, _shoreline_pebble_color(index))
+	var pebble_material := StandardMaterial3D.new()
+	pebble_material.vertex_color_use_as_albedo = true
+	pebble_material.roughness = 0.95
+	var pebbles := MultiMeshInstance3D.new()
+	pebbles.name = "ShorelinePebbleBatch"
+	pebbles.multimesh = multimesh
+	pebbles.material_override = pebble_material
+	# Small ground stones add no useful cast shadows; disabling them saves mobile shadow work.
+	pebbles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return pebbles
+
+
+func _shoreline_pebble_transform(index: int) -> Transform3D:
+	var z := -88.0 + float(index) * 4.6
+	var x := _coastline(z) - 1.8 + sin(float(index) * 4.1) * 1.8
+	var radius := 0.28 + float(index % 3) * 0.09
+	var yaw := float((index * 41) % 360) * PI / 180.0
+	var basis := Basis(Vector3.UP, yaw).scaled(Vector3(radius, 0.11, radius * (0.82 + float(index % 4) * 0.06)))
+	return Transform3D(basis, Vector3(x, 0.05, z))
+
+
+func _shoreline_pebble_color(index: int) -> Color:
+	var stone_palette: Array[Color] = [
+		Color(0.55, 0.53, 0.46),
+		Color(0.69, 0.65, 0.55),
+		Color(0.42, 0.46, 0.43)
+	]
+	return stone_palette[index % stone_palette.size()]
 
 func _build_cargo_ship_visual() -> void:
 	var ship := CargoShipVisualScript.new()
