@@ -551,3 +551,21 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Physical Android touch test: drag a raw factory material onto the factory surface and drag a store product onto its store surface.
 
 **Acceptance rule:** a store order starts only when all declared recipe inputs are already present in City Storage. Automatic supply-chain production remains an explicit separate workflow, not an implicit side effect of dragging.
+
+
+## Tap-to-produce 3D building orbit — 2026-11-15
+
+This interaction replaces drag/drop as the primary production action. Earlier drag/drop notes above describe the previous interaction and are superseded for the live catalog by this section.
+
+- [x] Tapping a completed building focuses the camera on its world position and smoothly zooms from the current view to the production inspection distance.
+- [x] Factory materials and store products receive individual six-sided 3D hexagonal platforms in world space, with a white raised face and metallic rim, arranged around the selected building.
+- [x] Transparent touch targets are projected over the 3D platforms every frame, so their positions track the camera while it eases into focus.
+- [x] A single tap on an unlocked factory material or stocked store product immediately accepts it into the first available production slot; no drag gesture or second queue-slot tap is required.
+- [x] The existing ProductionComponent starts real Unix-timestamp countdowns; the queue dock immediately shows the timer/progress and keeps existing completion/Collect behavior.
+- [x] Tapping a store product with missing ingredients opens the existing detail capsule and reports the exact missing City Storage items; no inventory is consumed and no order is queued.
+- [x] Added GameplaySmoke coverage for smooth camera zoom, real 3D six-sided white hex meshes, immediate factory taps, immediate sequential store taps, and the missing-input rejection path.
+- [ ] Godot import/parse, GameplaySmoke, Android APK and Web/Chromium CI for this change.
+- [ ] Post-merge GitHub Pages deployment verification.
+- [ ] Physical Android landscape review of camera zoom, 3D orbit spacing, and tap targets.
+
+No recipe inputs, item durations, storage rules, queue capacity, or collection semantics were changed.
