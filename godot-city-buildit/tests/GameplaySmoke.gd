@@ -3814,7 +3814,14 @@ func _run_gameplay_test() -> void:
 	product_touch_down.pressed = true
 	product_touch_down.position = metal_button.get_global_rect().get_center()
 	production_hud._on_production_item_gui_input(product_touch_down, factory, "metal", 0, metal_button)
+	var second_finger_drag := InputEventScreenDrag.new()
+	second_finger_drag.index = 1
+	second_finger_drag.position = empty_factory_slot.get_global_rect().get_center()
+	second_finger_drag.relative = second_finger_drag.position - product_touch_down.position
+	production_hud._input(second_finger_drag)
+	_check(not production_hud._production_touch_dragged, "A second finger must not hijack an active product drag.")
 	var product_touch_drag := InputEventScreenDrag.new()
+	product_touch_drag.index = product_touch_down.index
 	product_touch_drag.position = empty_factory_slot.get_global_rect().get_center()
 	product_touch_drag.relative = product_touch_drag.position - product_touch_down.position
 	production_hud._input(product_touch_drag)
@@ -3830,8 +3837,23 @@ func _run_gameplay_test() -> void:
 	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
 	if second_metal_button:
-		production_hud._accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 1)
-	_check(not factory_component.get_slot(1).is_empty(), "Factory must run two parallel batches.")
+		var tap_select_down := InputEventScreenTouch.new()
+		tap_select_down.index = 3
+		tap_select_down.pressed = true
+		tap_select_down.position = second_metal_button.get_global_rect().get_center()
+		production_hud._on_production_item_gui_input(tap_select_down, factory, "metal", 1, second_metal_button)
+		var tap_select_up := InputEventScreenTouch.new()
+		tap_select_up.index = 3
+		tap_select_up.pressed = false
+		tap_select_up.position = tap_select_down.position
+		production_hud._input(tap_select_up)
+		_check(production_hud._touch_selected_production_item == "metal", "A tap without drag must preserve product selection for the accessible tap-to-queue fallback.")
+		var queue_slot_tap := InputEventScreenTouch.new()
+		queue_slot_tap.index = 4
+		queue_slot_tap.pressed = false
+		queue_slot_tap.position = (production_hud.production_panel.find_child("QueueSlot1", true, false) as Control).get_global_rect().get_center()
+		production_hud._on_production_slot_gui_input(queue_slot_tap, factory, 1)
+	_check(not factory_component.get_slot(1).is_empty(), "A tap-selected Metal product must enqueue when the user taps an empty factory queue slot.")
 	for slot_index in range(2):
 		var slot: Dictionary = factory_component.slots[slot_index]
 		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
