@@ -1651,8 +1651,10 @@ func _create_service_test_home(building_id: String, service_demand: int, grid_po
 func _test_sewage_service_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
+	var saved_population := GameManager.population
 	BuildManager.buildings.clear()
 	GameManager.level = 8
+	GameManager.population = 1000
 	var road_system = get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.seed_starter_access()
@@ -1682,6 +1684,7 @@ func _test_sewage_service_happiness() -> void:
 		ServiceManager.recalculate_from_buildings()
 		var expected_capacity: int = expected_capacities[sewage_id]
 		_check(ServiceManager.total_sewage == expected_capacity, "Sewage tier capacity must match its catalog data: " + sewage_id)
+		_check(ServiceManager.workforce_served_ids.has(facility.building_id), "Sewage treatment capacity must require a staffed, operational provider: " + sewage_id)
 		_check(ServiceManager.demand_sewage == 9, "Sewage demand must be independent of facility capacity.")
 		_check(not ServiceManager.sewage_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive sewage service.")
 		if expected_capacity == 7:
@@ -1713,6 +1716,7 @@ func _test_sewage_service_happiness() -> void:
 		home.free()
 	BuildManager.buildings = saved_buildings
 	GameManager.level = saved_level
+	GameManager.population = saved_population
 	ServiceManager.recalculate_from_buildings()
 
 func _test_power_water_coverage_preview() -> void:
@@ -1734,8 +1738,10 @@ func _test_power_water_coverage_preview() -> void:
 func _test_waste_service_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
+	var saved_population := GameManager.population
 	BuildManager.buildings.clear()
 	GameManager.level = 14
+	GameManager.population = 1000
 	var road_system = get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.seed_starter_access()
@@ -1767,6 +1773,7 @@ func _test_waste_service_happiness() -> void:
 		ServiceManager.recalculate_from_buildings()
 		var expected_capacity: int = expected_capacities[waste_id]
 		_check(ServiceManager.total_waste == expected_capacity, "Waste tier capacity must match its catalog data: " + waste_id)
+		_check(ServiceManager.workforce_served_ids.has(facility.building_id), "Waste processing capacity must require a staffed, operational provider: " + waste_id)
 		_check(ServiceManager.demand_waste == 19, "Waste demand must remain independent of capacity.")
 		_check(not ServiceManager.waste_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive waste service.")
 		if expected_capacity == 15:
@@ -1802,14 +1809,17 @@ func _test_waste_service_happiness() -> void:
 		home.free()
 	BuildManager.buildings = saved_buildings
 	GameManager.level = saved_level
+	GameManager.population = saved_population
 	ServiceManager.recalculate_from_buildings()
 
 
 func _test_power_water_gateway_access() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
+	var saved_population := GameManager.population
 	BuildManager.buildings.clear()
 	GameManager.level = 15
+	GameManager.population = 1000
 	var road_system = get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.seed_starter_access()
@@ -1912,12 +1922,18 @@ func _test_power_water_gateway_access() -> void:
 	var saved_disconnected_population := disconnected_home.current_population
 	connected_home.current_population = 0
 	disconnected_home.current_population = 0
+	var staffed_sewage_capacity_before := ServiceManager.total_sewage
+	var staffed_waste_capacity_before := ServiceManager.total_waste
+	GameManager.population = 0
 	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.total_sewage == 0 and ServiceManager.total_waste == 0, "Sewage and waste facilities must stop contributing capacity when their workforce is exhausted.")
 	_check(ServiceManager.available_workers == 0 and ServiceManager.employed_workers == 0, "A city with no occupied residents must have no available workforce.")
 	_check(not BuildManager.is_building_operational(commercial_consumer) and not BuildManager.is_building_operational(industrial_consumer), "Commercial and industrial production must stop when workforce is exhausted.")
 	connected_home.current_population = saved_connected_population
 	disconnected_home.current_population = saved_disconnected_population
+	GameManager.population = 1000
 	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.total_sewage >= staffed_sewage_capacity_before and ServiceManager.total_waste >= staffed_waste_capacity_before, "Restoring the workforce must restore sewage and waste treatment capacity.")
 	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring occupied residents must restore the workforce supply.")
 	power_plant.status = "constructing"
 	ServiceManager.recalculate_from_buildings()
@@ -1948,6 +1964,7 @@ func _test_power_water_gateway_access() -> void:
 		test_building.free()
 	BuildManager.buildings = saved_buildings
 	GameManager.level = saved_level
+	GameManager.population = saved_population
 	ServiceManager.recalculate_from_buildings()
 
 
