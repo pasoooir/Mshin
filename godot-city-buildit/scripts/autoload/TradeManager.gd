@@ -71,7 +71,12 @@ func can_transfer_between_regions(source_region_id: String, target_region_id: St
 	var target_storage := get_region_storage_snapshot(target_region_id)
 	var source_items: Dictionary = source_storage.get("items", {})
 	var target_items: Dictionary = target_storage.get("items", {})
-	if int(source_items.get(item_id, 0)) < amount:
+	var source_reserved := 0
+	var source_reservations: Dictionary = source_storage.get("reservations", {})
+	for reservation in source_reservations.values():
+		if reservation is Dictionary:
+			source_reserved += maxi(0, int(reservation.get(item_id, 0)))
+	if int(source_items.get(item_id, 0)) - source_reserved < amount:
 		return false
 	var target_used := 0
 	for count in target_items.values():
@@ -125,7 +130,7 @@ func can_list_for_sale(item_id: String, amount: int = 1) -> bool:
 		return false
 	if not _item_exists(item_id):
 		return false
-	return StorageManager.get_count(item_id) >= amount
+	return StorageManager.get_available_count(item_id) >= amount
 
 func can_sell(item_id: String, amount: int = 1) -> bool:
 	return can_list_for_sale(item_id, amount)
