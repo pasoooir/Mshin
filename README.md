@@ -1173,3 +1173,15 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] GitHub Pages build/deploy succeeded for the final main documentation/code state `88af9a125d9c569af40c7697208fb42636f2b480` (run `43751322394`).
 - [ ] Physical Android landscape inspection of house-material orbit placement and tap target reachability.
 
+
+
+## Production orbit touch-hitbox correction — 2026-11-15
+
+- [x] Allocate real non-zero GUI hitbox sizes for projected factory materials and store-product buttons.
+- [x] Apply the same hitbox allocation to residential material shortcut buttons.
+- [x] Explicitly route pointer input to these projected buttons.
+- [x] Add GameplaySmoke assertions for actual button dimensions and GUI input policy; earlier direct `pressed.emit()` checks alone did not prove screen hit-testing.
+- [ ] PR #531 CI validation and Web/mobile Chromium smoke.
+- [ ] Physical Android touch acceptance.
+
+**Root cause found:** the buttons were children of plain `Control` nodes and had only `custom_minimum_size`; because no Container laid them out, their actual `size`/hit rectangle could remain zero. The code fix is on PR #531; it is not considered delivered until CI and deployment are verified.

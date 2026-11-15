@@ -2215,6 +2215,10 @@ func open_production_panel(building: Building) -> void:
 		var item_button := Button.new()
 		item_button.name = "Slot%d_%s" % [available_slot, item_id]
 		item_button.custom_minimum_size = Vector2(selector_edge, selector_edge + 12.0) * _ui_scale
+		# product_grid is a plain Control, not a Container: minimum size alone
+		# does not allocate a hit rectangle for dynamically positioned children.
+		item_button.size = item_button.custom_minimum_size
+		item_button.mouse_filter = Control.MOUSE_FILTER_STOP
 		item_button.focus_mode = Control.FOCUS_NONE
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			item_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
@@ -3578,6 +3582,10 @@ func open_residential_panel(building: Building) -> void:
 		var material_button := Button.new()
 		material_button.name = "ResidentialNeed_%s" % item_id
 		material_button.custom_minimum_size = Vector2(82.0, 86.0) * _ui_scale
+		# Residential buttons are projected children of a plain Control as well;
+		# give them an explicit touch rectangle instead of only a minimum size.
+		material_button.size = material_button.custom_minimum_size
+		material_button.mouse_filter = Control.MOUSE_FILTER_STOP
 		material_button.flat = true
 		material_button.focus_mode = Control.FOCUS_NONE
 		material_button.z_index = 30

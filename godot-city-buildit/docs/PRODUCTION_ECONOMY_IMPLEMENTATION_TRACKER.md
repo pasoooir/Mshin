@@ -582,3 +582,17 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] GitHub Pages build/deploy succeeded for the final main documentation/code state `88af9a125d9c569af40c7697208fb42636f2b480` (run `43751322394`).
 - [ ] Physical Android landscape inspection of house-material orbit placement and tap target reachability.
 
+
+
+## Projected production touch hitbox regression — 2026-11-15 (PR #531)
+
+- [x] Root cause isolated: projected Button children of plain Control parents had `custom_minimum_size` but no actual allocated `size`, so their GUI hit rectangles could be empty.
+- [x] Allocate explicit non-zero sizes for factory material, store product, and residential material buttons.
+- [x] Explicitly set these projected touch targets to `MOUSE_FILTER_STOP`.
+- [x] Extend GameplaySmoke to assert real non-zero hitbox dimensions and pointer handling for all three target classes.
+- [ ] Godot validation + GameplaySmoke + Android Debug APK CI.
+- [ ] Web export + desktop/mobile Chromium smoke.
+- [ ] Merge and verify post-merge Pages deployment.
+- [ ] Physical Android touch validation (must not be inferred from CI).
+
+**Acceptance rule:** direct programmatic `pressed.emit()` is not evidence of a working screen tap. The projected target must have a non-zero global hit rectangle at its camera-projected screen position, and the production queue must change only after a valid user interaction.
