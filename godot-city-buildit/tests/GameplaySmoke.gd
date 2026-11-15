@@ -4306,5 +4306,6 @@ func _test_performance_monitor_aggregation() -> void:
 	_check(is_equal_approx(float(summary.get("p95", 0.0)), 40.0), "Render metrics must report the nearest-rank p95 across all frames.")
 	_check(is_equal_approx(float(summary.get("max", 0.0)), 40.0), "Render metrics must preserve the worst sampled frame.")
 	_check(is_equal_approx(float(summary.get("last", 0.0)), 40.0), "Render metrics must retain the last sample for backward compatibility.")
-	var empty_summary: Dictionary = PerformanceMonitorScript.summarize_numeric_samples([])
+	var empty_samples: Array[float] = []
+	var empty_summary: Dictionary = PerformanceMonitorScript.summarize_numeric_samples(empty_samples)
 	_check(int(empty_summary.get("sample_count", -1)) == 0 and is_equal_approx(float(empty_summary.get("p95", -1.0)), 0.0), "An empty render sample set must produce safe zero metrics.")
