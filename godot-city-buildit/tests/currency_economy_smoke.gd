@@ -58,6 +58,37 @@ func _ready() -> void:
 	EconomyManager.simoleons = 6000
 	StorageManager.from_save_dict({"capacity": 100, "items": {}})
 
+	# City Storage uses the three actual Special Items, with 18 SimCash
+	# purchase price and a five-slot upgrade consuming equal quantities.
+	GameManager.level = StorageManager.STORAGE_UNLOCK_LEVEL
+	StorageManager.from_save_dict({"capacity": 50, "items": {}})
+	EconomyManager.sim_cash = 100
+	for storage_item_id in StorageManager.STORAGE_ITEM_IDS:
+		var storage_purchase := EconomyManager.buy_special_item_with_simcash(str(storage_item_id), StorageManager.STORAGE_ITEM_SIMCASH_PRICE, StorageManager.STORAGE_UNLOCK_LEVEL)
+		if not bool(storage_purchase.get("success", false)):
+			failures.append("could not buy City Storage Special Item " + str(storage_item_id))
+		if StorageManager.get_count(str(storage_item_id)) != 1:
+			failures.append("purchased City Storage Special Item was not stored")
+	var capacity_before := StorageManager.capacity
+	var storage_upgrade := StorageManager.upgrade_storage_with_items()
+	if not bool(storage_upgrade.get("success", false)) or StorageManager.capacity != capacity_before + 5:
+		failures.append("City Storage upgrade did not consume the three parts and add exactly five slots")
+	for storage_item_id in StorageManager.STORAGE_ITEM_IDS:
+		if StorageManager.get_count(str(storage_item_id)) != 0:
+			failures.append("City Storage upgrade did not consume " + str(storage_item_id))
+	var no_parts_upgrade := StorageManager.upgrade_storage_with_items()
+	if bool(no_parts_upgrade.get("success", true)) or StorageManager.capacity != capacity_before + 5:
+		failures.append("City Storage upgraded without the full three-item requirement")
+	var legacy_bypass := StorageManager.try_upgrade_capacity(500, 10)
+	if legacy_bypass or StorageManager.capacity != capacity_before + 5:
+		failures.append("legacy Simoleons-only capacity bypass remains active")
+	GameManager.level = 3
+	var locked_storage_upgrade := StorageManager.upgrade_storage_with_items()
+	if bool(locked_storage_upgrade.get("success", true)):
+		failures.append("City Storage Special Item upgrade ignored level 4 unlock")
+	GameManager.level = 1
+	StorageManager.from_save_dict(original_storage)
+
 	# SimCash can buy the real expansion Special Items, but does not bypass
 	# the land tile's item requirements or Mayor Level gate.
 	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL
