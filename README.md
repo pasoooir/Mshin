@@ -995,8 +995,10 @@ No recipe, production duration, storage accounting, queue-slot price, or Collect
 - [x] GameplaySmoke validates radial tile containment and no dock overlap at 844×390, 915×412 and 1280×720 using the same layout function used by production UI.
 - [x] Godot Validation + GameplaySmoke + Visual Presentation + Android Debug APK export/signature: [run 43725912825](https://github.com/pasoooir/Mshin/actions/runs/43725912825).
 - [x] Web export + gameplay integration + desktop/mobile-landscape Chromium launch + Pages artifact: [run 43725912831](https://github.com/pasoooir/Mshin/actions/runs/43725912831). Pages deployment is skipped for pull requests; this branch is not deployed to the public site.
-- [ ] Inspect actual rendered production-panel screenshots on mobile landscape; geometric assertions do not replace visual review.
+- [ ] Inspect actual rendered production-panel and world-action marker screenshots on mobile landscape; geometric assertions do not replace visual review.
 - [ ] Accept drag/drop on a physical Android device; CI simulation is not physical-device acceptance.
-- [ ] Extend actionable notifications to other systems only after a real player-pending action and its collection/claim transition are identified.
+- [x] Extend the shared world-space action marker to Epic Project claim/dismiss, due Epic token-part collection, deliverable specialization tasks, ready Trade Depot sales, fulfilable Global Trade orders and cargo-port crates.
+- [x] Gate trade/cargo markers on the corresponding system's real unlock/operational state; no badge is shown for locked or non-actionable work.
+- [ ] Run GameplaySmoke notification assertions in CI and verify marker removal after each corresponding action is collected/claimed.
 
 **Evidence rule:** automated touch-gesture simulation, radial geometry assertions, Godot validation, Android APK export and Web/Chromium CI are verified. Actual rendered screenshot review and physical Android acceptance remain open.
