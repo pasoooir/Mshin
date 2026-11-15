@@ -1085,19 +1085,21 @@ func _build_cargo_ship_visual() -> void:
 	add_child(ship)
 
 func _build_sunlight() -> void:
+	add_child(_create_warm_fill_light())
+
+
+func _create_warm_fill_light() -> DirectionalLight3D:
 	var sun := DirectionalLight3D.new()
 	sun.name = "CoastalWarmSun"
 	sun.rotation_degrees = Vector3(-48.0, -32.0, 0.0)
 	sun.light_color = Color(1.0, 0.88, 0.70)
 	sun.light_energy = 0.34
-	# One directional shadow source keeps building and tree shadows coherent.
-	sun.shadow_enabled = true
-	sun.shadow_opacity = 0.40
-	sun.shadow_blur = 1.0
-	sun.shadow_bias = 0.045
-	sun.shadow_normal_bias = 0.85
-	sun.directional_shadow_max_distance = 88.0
-	add_child(sun)
+	# The main scene's key DirectionalLight3D owns the single shadow map.
+	# This warm secondary light remains as a soft fill, but must not allocate a
+	# second directional shadow map or create conflicting duplicate shadows.
+	sun.shadow_enabled = false
+	sun.light_specular = 0.35
+	return sun
 
 
 func _add_headless_test_markers() -> void:
