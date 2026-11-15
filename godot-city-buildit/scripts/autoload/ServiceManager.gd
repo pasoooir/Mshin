@@ -352,6 +352,10 @@ func recalculate_from_buildings() -> void:
 				used_waste += waste_need
 				waste_served_ids[consumer.building_id] = true
 
+	# Workforce is allocated only after utility and sewage/waste capacity is
+	# committed. Emergency coverage below reads this current allocation.
+	_recalculate_workforce(operating_consumers)
+
 	# Fire, Police and Health coverage is valid only while the provider itself
 	# capacity pools. A home and its provider must both be Gateway-connected.
 	# Coverage distance is read from each catalog tier's coverage_tiles metadata.
@@ -382,4 +386,3 @@ func recalculate_from_buildings() -> void:
 		HappinessManager.recalculate_city()
 	# Recalculate after household scoring updates GameManager.population so
 	# workforce availability always uses the latest occupied residential count.
-	_recalculate_workforce(operating_consumers)
