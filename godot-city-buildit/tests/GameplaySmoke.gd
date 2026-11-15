@@ -3786,7 +3786,7 @@ func _run_gameplay_test() -> void:
 	var production_product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	_check(production_product_orbit != null and production_product_grid != null, "Factory products must render in a floating, building-centered two-sided honeycomb.")
 	var factory_surface_drop := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
-	_check(factory_surface_drop != null and factory_surface_drop.mouse_filter == Control.MOUSE_FILTER_STOP and factory_surface_drop.size.x > 0.0 and factory_surface_drop.size.y > 0.0, "Factory must expose a real footprint-aligned drop hit area on the selected building.")
+	_check(factory_surface_drop != null and factory_surface_drop.mouse_filter == Control.MOUSE_FILTER_STOP and factory_surface_drop.size.x > 0.0 and factory_surface_drop.size.y > 0.0, "Factory must retain a real footprint-aligned drop hit area as an additional direct-drop target.")
 	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Honeycomb factory catalogue must expose every registered material.")
 	var production_details_scroll := production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) as ScrollContainer
 	_check(production_details_scroll != null and production_details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Selected-item details must remain a compact capsule, not a vertically expanding white sheet.")
@@ -3806,9 +3806,20 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_drag_payload, factory), "The selected factory surface must accept its own valid product when a production slot is free.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
-	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
-	production_hud._finish_production_touch_drag(empty_factory_slot.get_global_rect().get_center())
-	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal onto the factory surface must start its first free production slot.")
+	var product_touch_down := InputEventScreenTouch.new()
+	product_touch_down.pressed = true
+	product_touch_down.position = metal_button.get_global_rect().get_center()
+	production_hud._on_production_item_gui_input(product_touch_down, factory, "metal", 0, metal_button)
+	var product_touch_drag := InputEventScreenDrag.new()
+	product_touch_drag.position = empty_factory_slot.get_global_rect().get_center()
+	product_touch_drag.relative = product_touch_drag.position - product_touch_down.position
+	production_hud._on_production_item_gui_input(product_touch_drag, factory, "metal", 0, metal_button)
+	var product_touch_up := InputEventScreenTouch.new()
+	product_touch_up.pressed = false
+	product_touch_up.position = empty_factory_slot.get_global_rect().get_center()
+	production_hud._on_production_item_gui_input(product_touch_up, factory, "metal", 0, metal_button)
+	_check(not production_hud._production_touch_drag_active and not is_instance_valid(production_hud._production_touch_drag_ghost), "Touch drag must clean up its floating product ghost and pointer state after release.")
+	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into the first empty factory queue slot must immediately enqueue production without START.")
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
