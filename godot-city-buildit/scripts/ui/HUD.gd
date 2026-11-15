@@ -2023,8 +2023,8 @@ func open_production_panel(building: Building) -> void:
 	var building_upgrade := Button.new()
 	building_upgrade.name = "NonResidentialBuildingUpgrade"
 	building_upgrade.text = "UPGRADING · %ds" % building.get_upgrade_remaining_seconds() if building.upgrade_in_progress else ("UPGRADE TO LV %d" % (building.upgrade_stage + 1) if building.upgrade_stage < building.max_stage else "MAXIMUM LEVEL")
-	building_upgrade.disabled = building.upgrade_in_progress or building.upgrade_stage >= building.max_stage or not building_upgrade_lock.is_empty()
-	building_upgrade.tooltip_text = building_upgrade_lock if not building_upgrade_lock.is_empty() else "Mshin upgrade materials: " + str(building_upgrade_bom)
+	building_upgrade.disabled = building.upgrade_in_progress or building.upgrade_stage >= building.max_stage or not building_upgrade_lock.is_empty() or not operational_reason.is_empty()
+	building_upgrade.tooltip_text = operational_reason if not operational_reason.is_empty() else (building_upgrade_lock if not building_upgrade_lock.is_empty() else "Mshin upgrade materials: " + str(building_upgrade_bom))
 	building_upgrade.custom_minimum_size.y = 34 * _ui_scale
 	building_upgrade.pressed.connect(_upgrade_non_residential_from_panel.bind(building))
 	layout.add_child(building_upgrade)
@@ -3223,8 +3223,8 @@ func open_non_residential_upgrade_panel(building: Building) -> void:
 	layout.add_child(materials)
 	var upgrade := Button.new()
 	upgrade.name = "NonResidentialBuildingUpgrade"
-	upgrade.text = "UPGRADING" if building.upgrade_in_progress else ("UPGRADE" if missing.is_empty() else "MATERIALS MISSING")
-	upgrade.disabled = building.upgrade_in_progress or building.upgrade_stage >= building.max_stage or not missing.is_empty()
+	upgrade.text = "UPGRADING" if building.upgrade_in_progress else ("SERVICE GATE BLOCKED" if not operational_reason.is_empty() else ("UPGRADE" if missing.is_empty() else "MATERIALS MISSING"))
+	upgrade.disabled = building.upgrade_in_progress or building.upgrade_stage >= building.max_stage or not missing.is_empty() or not operational_reason.is_empty()
 	upgrade.custom_minimum_size.y = 44 * _ui_scale
 	upgrade.pressed.connect(func():
 		if building.try_upgrade():
