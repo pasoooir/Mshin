@@ -43,8 +43,8 @@ const DEFAULT_EMERGENCY_COVERAGE_TILES := 15.0
 # unit each of power/water; industrial producers require two power and one
 # water. Per-building operating_*_demand values override these design defaults.
 const NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES := {
-	"commercial": {"power": 1, "water": 1, "workers": 1},
-	"industrial": {"power": 2, "water": 1, "workers": 2}
+	"commercial": {"power": 1, "water": 1, "sewage": 1, "waste": 1, "workers": 1},
+	"industrial": {"power": 2, "water": 1, "sewage": 2, "waste": 2, "workers": 2}
 }
 # Mshin design assumption: 45% of residents are available for city employment.
 # This is a transparent balancing parameter, not an EA-published demographic.
@@ -163,11 +163,47 @@ func is_building_served(building: Node3D) -> bool:
 	var water_ok := water_demand <= 0 or water_served_ids.has(building.building_id)
 	return power_ok and water_ok
 
+func requires_operational_sanitation(building: Node3D) -> bool:
+	if not is_instance_valid(building):
+		return false
+	var category := str(building.definition.get("category", ""))
+	if not NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.has(category):
+		return false
+	return get_building_utility_demand(building, "sewage") > 0 or get_building_utility_demand(building, "waste") > 0
+
 func is_sewage_served(building: Node3D) -> bool:
 	return is_instance_valid(building) and sewage_served_ids.has(building.building_id)
 
 func is_waste_served(building: Node3D) -> bool:
 	return is_instance_valid(building) and waste_served_ids.has(building.building_id)
+
+func get_required_emergency_coverage(building: Node3D) -> Dictionary:
+	if not is_instance_valid(building):
+		return {}
+	var configured: Variant = building.definition.get("operating_emergency_services", {})
+	return configured.duplicate(true) if configured is Dictionary else {}
+
+func has_required_emergency_coverage(building: Node3D) -> bool:
+	if not is_instance_valid(building):
+		return false
+	var requirements := get_required_emergency_coverage(building)
+	for service_group in requirements:
+		if not bool(requirements[service_group]):
+			continue
+		if not ["fire", "police", "health"].has(str(service_group)):
+			return false
+		if not _has_nearby_emergency_facility(building, str(service_group)):
+			return false
+	return true
+
+func get_building_emergency_coverage(building: Node3D) -> Dictionary:
+	if not is_instance_valid(building):
+		return {"fire": false, "police": false, "health": false}
+	return {
+		"fire": _has_nearby_emergency_facility(building, "fire"),
+		"police": _has_nearby_emergency_facility(building, "police"),
+		"health": _has_nearby_emergency_facility(building, "health")
+	}
 
 func is_home_served_by_group(home: Node3D, service_group: String) -> bool:
 	if not is_instance_valid(home):
@@ -255,6 +291,8 @@ func recalculate_from_buildings() -> void:
 			non_residential_consumers.append(building)
 			demand_power += get_building_utility_demand(building, "power")
 			demand_water += get_building_utility_demand(building, "water")
+			demand_sewage += get_building_utility_demand(building, "sewage")
+			demand_waste += get_building_utility_demand(building, "waste")
 		elif str(definition.get("service_group", "")) == "sewage" and _has_gateway_road_access(building):
 			total_sewage += int(definition.get("sewage", 0))
 		elif str(definition.get("service_group", "")) == "waste" and _has_gateway_road_access(building):
@@ -314,6 +352,25 @@ func recalculate_from_buildings() -> void:
 			waste_remaining -= demand
 			used_waste += demand
 			waste_served_ids[home.building_id] = true
+
+	# Production buildings receive sanitation capacity only after household
+	# demand has been allocated. Their demands are explicit Mshin operating
+	# profiles (commercial 1/1; industrial 2/2), not EA-published figures.
+	for consumer in non_residential_consumers:
+		if not _has_gateway_road_access(consumer):
+			continue
+		var sewage_need := get_building_utility_demand(consumer, "sewage")
+		var waste_need := get_building_utility_demand(consumer, "waste")
+		if sewage_need <= 0 or sewage_remaining >= sewage_need:
+			if sewage_need > 0:
+				sewage_remaining -= sewage_need
+				used_sewage += sewage_need
+				sewage_served_ids[consumer.building_id] = true
+		if waste_need <= 0 or waste_remaining >= waste_need:
+			if waste_need > 0:
+				waste_remaining -= waste_need
+				used_waste += waste_need
+				waste_served_ids[consumer.building_id] = true
 
 	# Fire, Police and Health are local coverage services rather than city-wide
 	# capacity pools. A home and its provider must both be Gateway-connected.
