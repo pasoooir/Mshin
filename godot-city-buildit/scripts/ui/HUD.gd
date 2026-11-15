@@ -2309,8 +2309,9 @@ func open_production_panel(building: Building) -> void:
 	queue_row.name = "ProductionQueueSlots"
 	queue_row.add_theme_constant_override("separation", 5)
 	queue_scroll.add_child(queue_row)
-	for slot_index in range(component.get_slot_count()):
-		var slot: Dictionary = component.get_slot(slot_index)
+	var visible_queue_slots := maxi(6, component.get_slot_count())
+	for slot_index in range(visible_queue_slots):
+		var slot: Dictionary = component.get_slot(slot_index) if slot_index < component.get_slot_count() else {}
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
 		slot_card.custom_minimum_size = Vector2(82, 64) * _ui_scale
@@ -2326,7 +2327,16 @@ func open_production_panel(building: Building) -> void:
 		slot_content.alignment = BoxContainer.ALIGNMENT_CENTER
 		slot_content.add_theme_constant_override("separation", 1)
 		slot_card.add_child(slot_content)
-		if slot.is_empty():
+		if slot_index >= component.get_slot_count():
+			var locked_label := Label.new()
+			locked_label.name = "LockedQueueLabel"
+			locked_label.text = "🔒\nLOCKED"
+			locked_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			locked_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			locked_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			locked_label.add_theme_color_override("font_color", Color("#83949C"))
+			slot_content.add_child(locked_label)
+		elif slot.is_empty():
 			var empty_icon := Label.new()
 			empty_icon.name = "EmptyQueuePlus"
 			empty_icon.text = "+"
