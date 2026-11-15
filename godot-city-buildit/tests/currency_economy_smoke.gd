@@ -21,8 +21,8 @@ func _ready() -> void:
 		failures.append("valid conversion did not atomically update both balances")
 
 	var catalog := PaymentManager.get_catalog()
-	if catalog.size() != 4:
-		failures.append("SimCash catalog must contain four configurable packs")
+	if catalog.size() != 8:
+		failures.append("SimCash catalog must contain all eight configured store packs")
 	var success_order := PaymentManager.create_order("simcash_pocketful")
 	if not bool(success_order.get("success", false)):
 		failures.append("valid SimCash order could not be created")
