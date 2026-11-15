@@ -2584,10 +2584,6 @@ func _get_production_drag_data(_at_position: Vector2, building: Building, item_i
 	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 	if not lock_reason.is_empty():
 		return null
-	var preview := PanelContainer.new()
-	preview.custom_minimum_size = Vector2(72, 72)
-	preview.add_child(Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(60, 60)))
-	set_drag_preview(preview)
 	return {"kind": "production_item", "item_id": item_id, "building_id": building.get_instance_id()}
 
 
