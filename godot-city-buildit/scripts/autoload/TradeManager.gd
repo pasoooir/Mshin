@@ -266,7 +266,7 @@ func deliver_ship_crate(crate_index: int) -> bool:
 		return false
 	var item_id := str(crate.get("item_id", ""))
 	var amount := int(crate.get("amount", 0))
-	if not _item_exists(item_id) or amount <= 0 or StorageManager.get_count(item_id) < amount:
+	if not _item_exists(item_id) or amount <= 0 or StorageManager.get_available_count(item_id) < amount:
 		return false
 	var requested_items: Dictionary = {}
 	requested_items[item_id] = amount
@@ -365,7 +365,7 @@ func try_complete_order(order_index: int) -> bool:
 	var order: Dictionary = current_orders[order_index]
 	var item_id := str(order.get("item_id", ""))
 	var amount := int(order.get("amount", 0))
-	if bool(order.get("completed", false)) or amount <= 0 or StorageManager.get_count(item_id) < amount:
+	if bool(order.get("completed", false)) or amount <= 0 or StorageManager.get_available_count(item_id) < amount:
 		return false
 	var requested_items: Dictionary = {}
 	requested_items[item_id] = amount
