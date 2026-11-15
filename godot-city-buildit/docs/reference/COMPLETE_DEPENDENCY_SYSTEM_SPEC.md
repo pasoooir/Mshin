@@ -100,9 +100,9 @@ Every building definition must declare three independent contracts:
 - Operating costs, pollution and production capacity.
 - A building can be placed/unlocked but not operational; show these states separately.
 
-**Current code audit finding:** inspected `BuildManager.gd` building definitions primarily declare Simoleon `cost`, `build_time`, level/population and footprint; the general building placement path spends currency and checks road access. It does not expose a universal per-building construction material BOM. Residential upgrade goods are a separate, existing system. Therefore a universal material-based construction economy is a future implementation gap, not something already complete.
+**Current code audit finding (updated after PR #490):** `BuildManager.gd` now resolves a deterministic Mshin construction BOM per building type from footprint, cost tier, unlock level and service/building identity. Materials locked after the building itself are replaced with already-unlocked materials; explicit bootstrap exceptions preserve the first factory/store loop. `Building.gd` and HUD now support stage-scaled non-residential upgrade BOMs for commercial, industrial, service and park buildings. These quantities are Mshin balance values, not EA-published SimCity BuildIt recipes.
 
-## 6. Residential plans and all upgrade stages
+## 6. Residential plans and non-residential upgrade stages
 
 Residential progression must be modeled per building instance and per transition:
 - `from_stage`, `to_stage`, plan ID and plan generation/version.
@@ -113,6 +113,13 @@ Residential progression must be modeled per building instance and per transition
 - Materials are consumed atomically; a failed upgrade consumes nothing.
 - Each inventory unit is allocated at most once across all active residential plans and other accepted commitments.
 - A plan refresh/transfer mechanic must define eligibility, cost, cooldown, limits and persistence; no hidden rerolls.
+
+**Non-residential upgrade contract (Mshin):**
+- Completed commercial, industrial, service and park buildings have a stage-specific upgrade BOM resolved from the same per-building material formula.
+- The complete BOM is checked and deducted atomically before the upgrade timer starts; a failed check leaves inventory unchanged.
+- The upgrade timer pauses when the building loses a required operational prerequisite, resumes with the exact remaining time, and persists across save/load.
+- Completion advances one stage, refreshes the building visual/stage label, recalculates city services and persists the new state.
+- These are Mshin progression rules. Do not label their quantities or stage effects as EA recipes.
 
 **Reference boundary:** EA's public guide confirms the contractor-plan/drag-to-supply interaction, but does not publish one fixed universal material table for all residential stages. Mshin's current six-stage template is a Mshin rule, not exact SCBI data. Preserve it until a deliberate, tested design migration replaces it.
 
@@ -260,13 +267,16 @@ This section records code facts, not desired future behaviour:
 - `ProductionManager.gd` currently defines raw factory materials, commercial recipes, store catalog entries and a six-stage Mshin residential fallback plan.
 - The current recursive dependency text expands crafted ingredients, consumes a shared in-memory stock ledger and stops at raw materials, unverified recipes or cycles.
 - `CityDemandManager.gd` aggregates residential upgrade demand and allocates stored/ready/producing goods across homes so the same item is not shown as available to multiple homes.
-- `BuildManager.gd` definitions contain level/population/currency/footprint/build-time and service metadata; the general placement path checks currency and road access. A universal material BOM and universal operational utility/workforce gate are not yet present.
+- `BuildManager.gd` now provides unlock-safe per-building construction and stage-scaled upgrade BOMs; bootstrap types are explicitly exempt to avoid a starter dependency deadlock. Construction and upgrade material checks are atomic.
+- `BuildManager.is_building_operational()` now exposes an actionable lock reason and gates production on Gateway road access, power/water, available workforce, sewage/waste after each service unlock, and explicitly configured fire/police/health coverage.
+- `ServiceManager.gd` allocates household sewage/waste demand first, then commercial/industrial demand. Advanced industrial tiers require local fire coverage; advanced retail tiers require local police coverage. These profiles are Mshin balancing assumptions.
+- `ProductionComponent.gd` stores chain IDs, auto-collect flags and the exact reserved input bill in each queue slot. Inputs are deducted atomically when a crafted order is accepted; outputs auto-collect only when City Storage has room.
 - `StorageManager.gd` provides inventory counts and atomic has/remove helpers; any future reservation model must be integrated centrally, not duplicated in UI.
-- The dependency audit already notes approximate ETA limitations: shared sibling queues are not fully scheduled and store-star reductions are not applied to the displayed chain estimate.
+- Display ETA remains an estimate and may not represent every future queue change. Separately, `ProductionManager` now executes recursive production chains against real built suppliers: it schedules raw and crafted dependencies, shares in-flight intermediate batches across chains, respects factory parallel slots and store queues, auto-collects intermediate/root outputs, and resumes from per-region saved chain ledgers after service/population restoration.
 - The recipe catalog has 73 recipe definitions and one conflicting Tapestry catalog identity in the inspected snapshot. This is not proof that every possible current SCBI item is covered.
 - Regional raw materials in Mshin are custom entries and need their own validated region chains.
 - The current implementation slice adds runtime structural recipe validation against `BuildManager.building_types`, positive input/time checks, dangling-input detection and dependency-cycle blocking. This validates data shape and graph integrity; it does not certify community numeric values as official EA recipes.
-- `ProductionComponent` instances expose live store queue delay and are registered in a shared runtime group. `ProductionManager` incorporates active factory-slot availability and the least-loaded matching commercial queue into its displayed chain estimate. A deterministic scheduler across all shared sibling queues and recursive parallel dependency branches is still outstanding.
+- `ProductionComponent` instances expose live queue state and register in a shared runtime group. The live AUTO CHAIN scheduler uses constructed operational suppliers only, reserves inputs by atomic deduction at queue acceptance, shares intermediate jobs across active chains, auto-collects when storage permits, and persists the chain ledger and slot metadata per region. The displayed ETA is still a planning estimate, not a guarantee.
 - Save schema version 5 stores a warehouse snapshot with each region. Switching regions restores that region's inventory; legacy saves without region inventory retain their top-level inventory for the active region and initialize unvisited legacy regions empty.
 
 ## 16. Implementation sequence (do not skip gates)
@@ -274,8 +284,8 @@ This section records code facts, not desired future behaviour:
 1. **Catalog integrity:** validate every raw/crafted/catalog item, provenance, source and graph edge; produce a machine-readable audit.
 2. **Unified dependency planner:** one inventory-aware, cycle-safe planner for direct/recursive requirements and blockers.
 3. **All-level unlock rules:** centralize level, star, population, region, quest, building and technology gates.
-4. **Building BOM:** define sourced/approved material requirements for each building type and construction transition; migrate legacy cost-only definitions explicitly.
-5. **Operational dependencies:** connect roads, power, water, sewage, waste, workforce and service coverage to building operation where the selected design requires them.
+4. **Building BOM — implemented in PR #490:** per-building construction and non-residential upgrade BOMs are active; numeric quantities are Mshin design values and require ongoing balance review.
+5. **Operational dependencies — implemented in PR #490:** roads, utilities, sewage/waste after unlock, workforce and configured emergency coverage gate operations and upgrades; individual citizen job commutes remain a separate future feature.
 6. **City-wide demand:** aggregate residential, construction, service maintenance, trade and production commitments without double allocation.
 7. **UI transparency:** unify product, construction, residential, service and city overview dependency panels.
 8. **Progression simulation:** test a fresh empty city through every level boundary, all stores, every region and save/load.
