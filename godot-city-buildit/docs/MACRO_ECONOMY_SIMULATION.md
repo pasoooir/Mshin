@@ -131,7 +131,7 @@ Cargo Ship crates هنوز به دفتر COGS وصل نیستند؛ Golden Key �
 PR #512 با merge commit `2ed1cc42c8eb9e5a1eb1d6e85dc09600fd7ae09b` ادغام شد. Godot Validation و Android Debug APK در [run 43710739261](https://github.com/pasoooir/Mshin/actions/runs/43710739261) و Web/Chromium دسکتاپ و موبایل در [run 43710739262](https://github.com/pasoooir/Mshin/actions/runs/43710739262) موفق شدند. اجرای مستقل CI روی merge commit main هنوز یک گیت جداگانه است.
 
 
-## Cargo Ship: COGS و پاداش غیرنقدی — PR در انتظار CI
+## Cargo Ship: COGS و پاداش غیرنقدی — PR #513 ادغام شد
 
 تحویل هر crate اکنون بهای FIFO همان اقلام را پیش از مصرف می‌خواند، موجودی را اتمی کم می‌کند و تراکنش `cargo_ship_crate_delivered` را ثبت می‌کند. پس از تحویل همه crateها، `cargo_ship_manifest_completed` تعداد Golden Key اعطاشده و مجموع بهای شناخته‌شدهٔ manifest را ثبت می‌کند.
 
@@ -143,3 +143,6 @@ PR #512 با merge commit `2ed1cc42c8eb9e5a1eb1d6e85dc09600fd7ae09b` ادغام 
 - کامل بودن تاریخچهٔ هزینه
 
 Golden Key هیچ ارزش Simoleon فرضی ندارد و به gross revenue نقدی اضافه نمی‌شود. بنابراین این گزارش هزینه و پاداش غیرنقدی را نشان می‌دهد، نه سود پولی یا ROI کامل کشتی.
+
+
+PR #513 با merge commit `7bdfd777d22ff0f2eb415d713718801117ed395b` ادغام شد. Godot Validation و Android Debug APK در [run 43711118973](https://github.com/pasoooir/Mshin/actions/runs/43711118973) و Web/Chromium دسکتاپ/موبایل در [run 43711118954](https://github.com/pasoooir/Mshin/actions/runs/43711118954) موفق شدند. اجرای مستقل CI روی merge commit main یک گیت جداگانه است.
