@@ -72,14 +72,30 @@ static func _summarize_realized_trade_ledger(ledger: Array, total_sequence: int 
 	var known_gross_margin := 0
 	var unknown_cost_quantity := 0
 	var sale_count := 0
+	var cargo_crates_delivered := 0
+	var cargo_known_cogs := 0
+	var cargo_unknown_cost_quantity := 0
+	var golden_keys_earned := 0
 	var history_complete := total_sequence < 0 or total_sequence <= ledger.size()
 	for entry_variant in ledger:
 		if not entry_variant is Dictionary:
 			continue
 		var entry: Dictionary = entry_variant
-		if not ["trade_sale_collected", "delivery_order_completed"].has(str(entry.get("type", ""))):
-			continue
+		var entry_type := str(entry.get("type", ""))
 		var metadata: Dictionary = entry.get("metadata", {})
+		if entry_type == "cargo_ship_crate_delivered":
+			cargo_crates_delivered += 1
+			var cargo_quantity := maxi(0, int(metadata.get("quantity", 0)))
+			if bool(metadata.get("cost_known", false)) and int(metadata.get("cost_basis", -1)) >= 0:
+				cargo_known_cogs += int(metadata.get("cost_basis", 0))
+			else:
+				cargo_unknown_cost_quantity += cargo_quantity
+			continue
+		if entry_type == "cargo_ship_manifest_completed":
+			golden_keys_earned += maxi(0, int(entry.get("amount", 0)))
+			continue
+		if not ["trade_sale_collected", "delivery_order_completed"].has(entry_type):
+			continue
 		var sale_revenue := int(entry.get("amount", 0))
 		var quantity := maxi(0, int(metadata.get("quantity", 0)))
 		if sale_revenue <= 0 or quantity <= 0:
@@ -100,9 +116,16 @@ static func _summarize_realized_trade_ledger(ledger: Array, total_sequence: int 
 		"gross_margin_complete": unknown_cost_quantity == 0 and history_complete,
 		"history_complete": history_complete,
 		"ledger_entries": ledger.size(),
-		"sale_count": sale_count
+		"sale_count": sale_count,
+		"non_cash_contribution": {
+			"cargo_ship_crates_delivered": cargo_crates_delivered,
+			"cargo_ship_known_cogs": cargo_known_cogs,
+			"cargo_ship_unknown_cost_quantity": cargo_unknown_cost_quantity,
+			"cargo_ship_cost_complete": cargo_unknown_cost_quantity == 0 and history_complete,
+			"golden_keys_earned": golden_keys_earned,
+			"golden_key_simoleon_value_known": false
+		}
 	}
-
 static func simulate(config: Dictionary) -> Dictionary:
 	var errors: Array[String] = []
 	var horizon_seconds := maxi(0, int(config.get("horizon_seconds", 0)))
