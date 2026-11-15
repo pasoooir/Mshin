@@ -729,7 +729,7 @@ func get_missing_inputs_text(item_id: String) -> String:
 	var missing: Array[String] = []
 	for material in recipe.inputs:
 		var needed := int(recipe.inputs[material])
-		var available := StorageManager.get_count(str(material))
+		var available := StorageManager.get_available_count(str(material))
 		if available < needed:
 			var material_name := str(get_item_definition(str(material)).get("name", str(material).capitalize()))
 			missing.append("%d %s" % [needed - available, material_name])
