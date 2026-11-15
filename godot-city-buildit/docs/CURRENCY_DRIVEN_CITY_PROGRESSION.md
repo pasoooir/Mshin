@@ -1,6 +1,6 @@
 # اقتصاد پیشرفت شهر با Simoleons و SimCash
 
-**وضعیت:** PR #503 با commit `4c6b5be6a922b2a3a483f5af7f52db7c9690d5c5` در `main` ادغام شد. Godot Validation، Android Debug APK export/signature و Web/Chromium Desktop+Mobile CI موفق‌اند؛ آزمون فیزیکی Android و بالانس نهایی هنوز باز است.
+**وضعیت:** PR #503 با commit `4c6b5be6a922b2a3a483f5af7f52db7c9690d5c5` و اصلاح منبع‌محور PR #505 با commit `84329766109cab4760317d37c2f645337f0b616e` در `main` ادغام شدند. Godot Validation، Android Debug APK export/signature و Web/Chromium Desktop+Mobile CI موفق‌اند؛ آزمون فیزیکی Android و بالانس نهایی هنوز باز است. PR #505 مسیر خرید را از کاتالوگ مستقیم به پیشنهادهای چرخشی Global Trade HQ منتقل کرد تا قفل پیشرفت بازی دور زده نشود.
 **مرجع رسمی:** EA Beginner Guide — https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/
 **مرجع جامعه:** Building Materials — https://simcity-buildit.fandom.com/wiki/Building_Materials
 
