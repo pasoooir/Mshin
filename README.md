@@ -1048,6 +1048,7 @@ The existing Figma production studio frame was updated to match the no-START, dr
 
 - [x] Align every production prompt with the real primary drop target: an empty, unlocked queue slot; explicitly label the building footprint as an additional drop target.
 - [x] Track the initiating touch index so a second finger cannot hijack or release an active product drag.
+- [x] Make the full-screen transparent product-orbit containers ignore pointer events, allowing queue slots underneath to receive taps instead of being occluded by the catalog layer.
 - [x] Preserve tap-only product selection until the next tap on an empty queue slot/building, providing an accessible fallback when drag gestures are difficult.
 - [x] Extend GameplaySmoke with multi-touch ownership and tap-to-queue fallback cases.
 - [ ] Run Godot 4.3 import/parse and GameplaySmoke for this hardening change.
