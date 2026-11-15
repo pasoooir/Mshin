@@ -1570,6 +1570,72 @@ func _create_service_test_home(building_id: String, service_demand: int, grid_po
 	BuildManager.buildings[home.building_id] = home
 	return home
 
+func _test_producer_sanitation_and_emergency_gates() -> void:
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_level := GameManager.level
+	BuildManager.buildings.clear()
+	GameManager.level = 20
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
+	var producer := FireHazardTestBuilding.new()
+	add_child(producer)
+	producer.building_id = "producer_sanitation_gate"
+	producer.building_type = "factory_small"
+	producer.definition = BuildManager.building_types["factory_small"].duplicate(true)
+	producer.status = "completed"
+	producer.grid_pos = Vector2i(1, 1)
+	producer.global_position = Vector3.ZERO
+	BuildManager.buildings[producer.building_id] = producer
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_sewage == 2 and ServiceManager.demand_waste == 2, "Industrial operating sanitation demand must be included in city totals.")
+	_check(not BuildManager.is_building_operational(producer), "A producer must not operate without sewage and waste capacity.")
+	var sewage := FireHazardTestBuilding.new()
+	add_child(sewage)
+	sewage.building_id = "producer_gate_sewage"
+	sewage.building_type = "sewage_small"
+	sewage.definition = BuildManager.building_types["sewage_small"]
+	sewage.status = "completed"
+	sewage.grid_pos = Vector2i(1, -2)
+	sewage.global_position = Vector3.ZERO
+	BuildManager.buildings[sewage.building_id] = sewage
+	var waste := FireHazardTestBuilding.new()
+	add_child(waste)
+	waste.building_id = "producer_gate_waste"
+	waste.building_type = "waste_dump_small"
+	waste.definition = BuildManager.building_types["waste_dump_small"]
+	waste.status = "completed"
+	waste.grid_pos = Vector2i(1, -3)
+	waste.global_position = Vector3.ZERO
+	BuildManager.buildings[waste.building_id] = waste
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.is_sewage_served(producer) and ServiceManager.is_waste_served(producer), "Connected industrial production must receive both sanitation services when spare capacity exists.")
+	_check(BuildManager.is_building_operational(producer), "A producer with road, utilities, workforce and sanitation must operate.")
+	producer.definition["operating_emergency_services"] = {"fire": true}
+	_check(not BuildManager.is_building_operational(producer), "A building configured to require fire coverage must stop when outside operational fire coverage.")
+	var fire := FireHazardTestBuilding.new()
+	add_child(fire)
+	fire.building_id = "producer_gate_fire"
+	fire.building_type = "fire_station_small"
+	fire.definition = BuildManager.building_types["fire_station_small"]
+	fire.status = "completed"
+	fire.grid_pos = Vector2i(1, -4)
+	fire.global_position = Vector3.ZERO
+	BuildManager.buildings[fire.building_id] = fire
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.has_required_emergency_coverage(producer), "Configured fire coverage must become available from a connected operational fire station.")
+	_check(BuildManager.is_building_operational(producer), "A producer must resume once every configured operating-service gate is satisfied.")
+	producer.definition["operating_emergency_services"] = {"police": true}
+	_check(not BuildManager.is_building_operational(producer), "Unknown or missing police coverage must block only when explicitly configured.")
+	for fixture in [producer, sewage, waste, fire]:
+		BuildManager.buildings.erase(fixture.building_id)
+		remove_child(fixture)
+		fixture.free()
+	BuildManager.buildings = saved_buildings
+	GameManager.level = saved_level
+	ServiceManager.recalculate_from_buildings()
+
+
 func _test_sewage_service_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
