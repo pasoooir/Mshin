@@ -135,6 +135,12 @@ var _production_progress_bars: Array[ProgressBar] = []
 var _production_building: Building = null
 var _touch_selected_production_item := ""
 var _touch_selected_production_building_id := 0
+var _production_touch_drag_active := false
+var _production_touch_dragged := false
+var _production_touch_drag_origin := Vector2.ZERO
+var _production_touch_drag_item_id := ""
+var _production_touch_drag_building: Building = null
+var _production_touch_drag_ghost: Control = null
 var _production_tick_accum := 0.0
 var _factory_ready_scan_accum := 0.0
 var catalog_info_panel: PanelContainer
@@ -2265,11 +2271,9 @@ func open_production_panel(building: Building) -> void:
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else inventory_status
 		# Dragging a product onto a queue tile submits that exact slot order.
 		item_button.set_drag_forwarding(_get_production_drag_data.bind(building, item_id), Callable(), Callable())
-		item_button.pressed.connect(func():
-			_show_production_item_details(building, item_id, available_slot)
-		)
+		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
+		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
-		item_button.pressed.connect(_select_production_item_for_touch.bind(building, item_id))
 		item_button.set_meta("orbit_index", item_index)
 
 	# Place the catalog in an upper arc centered on the selected building.
@@ -2344,8 +2348,11 @@ func open_production_panel(building: Building) -> void:
 	var row_step := tile_height * (0.78 if viewport_size.y <= 520.0 else 0.88)
 	var column_step := tile_width * 0.92
 	var side_width := column_step * 2.0
-	var side_left_x := 10.0 * _ui_scale
-	var side_right_x := viewport_size.x - side_width - 10.0 * _ui_scale
+	var cluster_gap := maxf(24.0 * _ui_scale, tile_width * 0.48)
+	var combined_width := side_width * 2.0 + cluster_gap
+	var combined_left := clampf(orbit_center.x - combined_width * 0.5, 8.0 * _ui_scale, maxf(8.0 * _ui_scale, viewport_size.x - combined_width - 8.0 * _ui_scale))
+	var side_left_x := combined_left
+	var side_right_x := combined_left + side_width + cluster_gap
 	var available_top := 82.0 * _ui_scale
 	var available_bottom := maxf(available_top, viewport_size.y - panel_height - 18.0 * _ui_scale)
 	var cluster_height := maxf(tile_height, float(rows_per_side) * row_step)
@@ -2685,54 +2692,110 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		reason.add_theme_color_override("font_color", Color("#A33A36"))
 		text_stack.add_child(reason)
 
-	var start_button := Button.new()
-	start_button.name = "StartProduction"
-	start_button.text = "START" if is_factory or missing.is_empty() else "START CHAIN"
-	start_button.custom_minimum_size = Vector2(92, 44) * _ui_scale
-	start_button.disabled = not can_start
-	start_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E7BC43"), Color("#FFE18A")))
-	start_button.add_theme_stylebox_override("disabled", _toolbar_style(Color("#AAB7BE"), Color("#D1D9DE")))
-	start_button.add_theme_color_override("font_color", Color("#34280B"))
-	start_button.pressed.connect(func():
-		var started: bool = component.start_factory(item_id, slot_index) if is_factory else (component.start_craft(item_id, slot_index) if missing.is_empty() else ProductionManager.request_automatic_chain(component, item_id, slot_index))
-		if started:
-			status_label.text = "Automatic supply chain accepted: %s. Missing raw materials and intermediate goods will be produced and collected automatically." % str(data.get("name", item_id)) if not is_factory and not missing.is_empty() else "Production started: %s." % str(data.get("name", item_id))
-		else:
-			var latest_missing := ProductionManager.get_missing_inputs_text(item_id)
-			status_label.text = "Cannot start this production chain. Check recipe unlocks, supplier buildings, road access and production slots. Missing now: %s" % latest_missing
-		open_production_panel(building)
-	)
-	detail_row.add_child(start_button)
-	# Preserve the traditional one-click START queue when all ingredients are
-	# already stocked, while also making fully automatic collection available
-	# as an explicit player choice at every commercial store.
-	if not is_factory and missing.is_empty():
-		var auto_chain_button := Button.new()
-		auto_chain_button.name = "StartAutomaticChain"
-		auto_chain_button.text = "AUTO CHAIN"
-		auto_chain_button.custom_minimum_size = Vector2(92, 44) * _ui_scale
-		auto_chain_button.disabled = not can_start
-		auto_chain_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#4C9B83"), Color("#8ED2B6")))
-		auto_chain_button.add_theme_stylebox_override("disabled", _toolbar_style(Color("#AAB7BE"), Color("#D1D9DE")))
-		auto_chain_button.add_theme_color_override("font_color", Color("#FFFFFF"))
-		auto_chain_button.pressed.connect(func():
-			var started := ProductionManager.request_automatic_chain(component, item_id, slot_index)
-			if started:
-				status_label.text = "Automatic supply chain accepted: %s. Production, intermediate goods and collection will run automatically." % str(data.get("name", item_id))
-			else:
-				status_label.text = "Cannot start this automatic chain. Check recipe unlocks, supplier buildings, road access and production slots."
-			open_production_panel(building)
-		)
-		detail_row.add_child(auto_chain_button)
+	# Product selection is informational only. Orders are committed by dropping
+	# the product onto a real, unlocked queue slot; there is no START shortcut.
+	var drop_hint := Label.new()
+	drop_hint.name = "ProductionDropHint"
+	drop_hint.text = "DRAG THIS PRODUCT INTO AN EMPTY QUEUE SLOT"
+	drop_hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	drop_hint.add_theme_color_override("font_color", Color("#E7BC43"))
+	detail_row.add_child(drop_hint)
 
 
-func _select_production_item_for_touch(building: Building, item_id: String) -> void:
-	if not is_instance_valid(building):
+func _on_production_item_pressed(building: Building, item_id: String, slot_index: int, item_button: Button) -> void:
+	# A touch drag also generates Button.pressed on release. Suppress that click
+	# so releasing over a queue slot cannot open a second details interaction.
+	if item_button.has_meta("touch_drag_consumed") and bool(item_button.get_meta("touch_drag_consumed")):
+		item_button.set_meta("touch_drag_consumed", false)
 		return
-	_touch_selected_production_item = item_id
-	_touch_selected_production_building_id = building.get_instance_id()
+	_show_production_item_details(building, item_id, slot_index)
+
+
+func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_production_touch_drag_active = true
+			_production_touch_dragged = false
+			_production_touch_drag_origin = event.position
+			_production_touch_drag_item_id = item_id
+			_production_touch_drag_building = building
+			_touch_selected_production_item = item_id
+			_touch_selected_production_building_id = building.get_instance_id()
+			item_button.set_meta("touch_drag_consumed", false)
+		elif _production_touch_drag_active and _production_touch_drag_building == building:
+			if _production_touch_dragged:
+				_finish_production_touch_drag(event.position)
+				item_button.set_meta("touch_drag_consumed", true)
+			_clear_production_touch_drag()
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenDrag and _production_touch_drag_active and _production_touch_drag_building == building:
+		if not _production_touch_dragged and _production_touch_drag_origin.distance_to(event.position) >= 12.0 * _ui_scale:
+			_production_touch_dragged = true
+			_create_production_touch_drag_ghost(building, item_id)
+		if _production_touch_dragged:
+			_update_production_touch_drag_ghost(event.position)
+			get_viewport().set_input_as_handled()
+
+
+func _create_production_touch_drag_ghost(building: Building, item_id: String) -> void:
+	if not is_instance_valid(production_overlay):
+		return
+	if is_instance_valid(_production_touch_drag_ghost):
+		_production_touch_drag_ghost.queue_free()
+	var ghost := PanelContainer.new()
+	ghost.name = "ProductionTouchDragGhost"
+	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ghost.z_index = 120
+	ghost.custom_minimum_size = Vector2(76, 76) * _ui_scale
+	ghost.add_theme_stylebox_override("panel", _toolbar_style(Color("#EAF5FA"), Color("#E7BC43")))
+	var content := VBoxContainer.new()
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	ghost.add_child(content)
+	var icon := Icons.make_item_icon("raw" if building.production_component.is_factory else "crafted", item_id, Vector2(42, 42) * _ui_scale)
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(icon)
+	var name_label := Label.new()
+	name_label.text = str(ProductionManager.get_item_definition(item_id).get("name", item_id.capitalize()))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	name_label.add_theme_color_override("font_color", Color("#263F4B"))
+	content.add_child(name_label)
+	production_overlay.add_child(ghost)
+	_production_touch_drag_ghost = ghost
+
+
+func _update_production_touch_drag_ghost(screen_position: Vector2) -> void:
+	if is_instance_valid(_production_touch_drag_ghost):
+		_production_touch_drag_ghost.position = screen_position - _production_touch_drag_ghost.custom_minimum_size * 0.5
+
+
+func _finish_production_touch_drag(screen_position: Vector2) -> void:
+	var building := _production_touch_drag_building
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return
+	var component: ProductionComponent = building.production_component
+	var payload := {"kind": "production_item", "item_id": _production_touch_drag_item_id, "building_id": building.get_instance_id()}
+	for slot_index in range(component.get_slot_count()):
+		var slot_card := production_panel.find_child("QueueSlot%d" % slot_index, true, false) as Control if is_instance_valid(production_panel) else null
+		if is_instance_valid(slot_card) and slot_card.get_global_rect().has_point(screen_position):
+			if _can_accept_production_drop(Vector2.ZERO, payload, building, slot_index):
+				_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
+			elif is_instance_valid(status_label):
+				status_label.text = "This queue slot cannot accept that product. Choose an empty unlocked slot."
+			return
 	if is_instance_valid(status_label):
-		status_label.text = "Selected %s — drag it onto the building, or tap the glowing building target." % item_id.capitalize()
+		status_label.text = "Drop the product onto an empty queue slot to place the order."
+
+
+func _clear_production_touch_drag() -> void:
+	_production_touch_drag_active = false
+	_production_touch_dragged = false
+	_production_touch_drag_item_id = ""
+	_production_touch_drag_building = null
+	if is_instance_valid(_production_touch_drag_ghost):
+		_production_touch_drag_ghost.queue_free()
+	_production_touch_drag_ghost = null
 
 
 func _on_production_building_gui_input(event: InputEvent, building: Building) -> void:
