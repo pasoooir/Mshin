@@ -3891,7 +3891,8 @@ func _run_gameplay_test() -> void:
 			footprint_center /= float(direct_drop_target.hit_polygon.size())
 		production_hud._production_touch_drag_building = factory
 		production_hud._production_touch_drag_item_id = "metal"
-		production_hud._finish_production_touch_drag(direct_drop_target.to_global(footprint_center))
+		var footprint_screen_position: Vector2 = direct_drop_target.get_global_transform_with_canvas() * footprint_center
+		production_hud._finish_production_touch_drag(footprint_screen_position)
 		if not factory_component.get_slot(0).is_empty():
 			_check(true, "Releasing a dragged factory material on the building footprint must enqueue it without requiring a queue-slot drop.")
 			var direct_slot: Dictionary = factory_component.get_slot(0)
