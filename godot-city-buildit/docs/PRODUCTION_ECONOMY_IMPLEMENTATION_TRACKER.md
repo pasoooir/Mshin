@@ -273,16 +273,18 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 - [ ] Scenario simulator replay of complete AUTO CHAIN graphs, shared dependencies and critical-path timing.
 
 
-## Live FIFO cost ledger — implementation in progress
+## Live FIFO cost ledger — PR #511 merged; PR CI passed
 
-- [ ] StorageManager stores per-item FIFO cost batches and keeps legacy inventory without a known acquisition cost marked unknown.
-- [ ] Manual ProductionComponent store jobs capture FIFO input cost at queue admission and transfer it to collected output.
-- [ ] Factory output carries known zero direct Simoleon input cost under current mechanics; no labor, capital depreciation or opportunity cost is inferred.
-- [ ] AUTO CHAIN store dependencies capture and transfer cost through recursive raw/store dependencies.
-- [ ] Global Trade HQ purchases add the actual paid Simoleon amount as inventory acquisition cost.
-- [ ] Trade Depot listing reservation stores FIFO cost; cancellation returns the same cost; sale collection records revenue, COGS and gross margin in EconomyManager's transaction ledger.
-- [ ] MacroEconomySimulator live snapshot summarizes realized sales from the transaction ledger and marks incomplete history when the 300-entry ledger has rolled over.
-- [ ] GameplaySmoke covers live production cost transfer, nested AUTO CHAIN, Depot cancel/collect, HQ purchase cost, Storage save/load and live ledger reporting.
-- [ ] Godot Validation, Android Debug APK export and Web/Chromium on the final PR SHA.
+- [x] StorageManager stores per-item FIFO cost batches and keeps legacy inventory without a known acquisition cost marked unknown.
+- [x] Manual ProductionComponent store jobs capture FIFO input cost at queue admission and transfer it to collected output.
+- [x] Factory output carries known zero direct Simoleon input cost under current mechanics; no labor, capital depreciation or opportunity cost is inferred.
+- [x] AUTO CHAIN store dependencies capture and transfer cost through recursive raw/store dependencies.
+- [x] Global Trade HQ purchases add the actual paid Simoleon amount as inventory acquisition cost.
+- [x] Trade Depot listing reservation stores FIFO cost; cancellation returns the same cost; sale collection records revenue, COGS and gross margin in EconomyManager's transaction ledger.
+- [x] MacroEconomySimulator live snapshot summarizes realized sales from the transaction ledger and marks incomplete history when the 300-entry ledger has rolled over.
+- [x] GameplaySmoke covers live production cost transfer, nested AUTO CHAIN, Depot cancel/collect, HQ purchase cost, Storage save/load and live ledger reporting.
+- [x] Godot Validation, Android Debug APK export and Web/Chromium on the final PR SHA: [Godot + APK 43710111735](https://github.com/pasoooir/Mshin/actions/runs/43710111735), [Web 43710111759](https://github.com/pasoooir/Mshin/actions/runs/43710111759).
 
-**Acceptance boundary:** no unknown legacy cost is replaced with catalog value. No COGS is deducted from Simoleons a second time. Historical realized margin is only complete if both all sold batches have known costs and the transaction ledger has not truncated earlier events.
+**Acceptance boundary:** no unknown legacy cost is replaced with catalog value. No COGS is deducted from Simoleons a second time. Historical realized margin is only complete if both all sold batches have known costs and the transaction ledger has not truncated earlier events. PR #511 is merged to main as `72d54bd28741320a5376fc58fbd0c89e52d5326c`.
+
+- [ ] Independent CI on merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` and the README update is not yet verified.
