@@ -795,11 +795,29 @@ world_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding=
 for visual_contract in [
     "TreeContactShadows", "_create_tree_shadow_multimesh",
     "_create_bark_texture", "_create_foliage_texture",
-    "SHADOW_CASTING_SETTING_ON", "sun.shadow_enabled = true",
-    "sun.shadow_blur = 1.0"
+    "SHADOW_CASTING_SETTING_ON", "sun.shadow_enabled = false",
+    "sun.light_specular = 0.35"
 ]:
     if visual_contract not in world_source:
         errors.append(f"World visual contract is missing: {visual_contract}")
+
+# Keep a single shadow-map owner: the main scene key light. The secondary
+# warm sun in WorldPresentation is a non-shadowing fill, not a second sun.
+main_scene_source = (ROOT / "scenes/main.tscn").read_text(encoding="utf-8")
+key_light = re.search(r'\[node name="DirectionalLight3D" type="DirectionalLight3D" parent="World"\](.*?)(?=\n\[node |\Z)', main_scene_source, re.S)
+if key_light is None:
+    errors.append("Main scene key directional light is missing")
+else:
+    for visual_contract in [
+        "shadow_enabled = true",
+        "shadow_opacity = 0.4",
+        "shadow_blur = 1.0",
+        "shadow_bias = 0.045",
+        "shadow_normal_bias = 0.85",
+        "directional_shadow_max_distance = 88.0"
+    ]:
+        if visual_contract not in key_light.group(1):
+            errors.append(f"Main key-light shadow contract is missing: {visual_contract}")
 if "Vector3(0.0, 0.018, 0.0)" not in world_source:
     errors.append("Tree contact shadows are not anchored immediately above the terrain")
 if "multimesh.use_colors = true" not in world_source:
