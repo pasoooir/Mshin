@@ -1995,7 +1995,7 @@ func open_production_panel(building: Building) -> void:
 	var tablet_layout := not compact_layout and viewport_size.x <= 1280.0
 	var panel_width := viewport_size.x - 16.0 * _ui_scale
 	var panel_width := minf(viewport_size.x * 0.92, 1240.0 * _ui_scale)
-	var panel_height := minf((174.0 if compact_layout else 190.0) * _ui_scale, viewport_size.y * 0.32)
+	var panel_height := minf((174.0 if compact_layout else 190.0) * _ui_scale, viewport_size.y * 0.42)
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
 	production_panel.anchor_top = 1.0
