@@ -169,7 +169,9 @@ func requires_operational_sanitation(building: Node3D) -> bool:
 	var category := str(building.definition.get("category", ""))
 	if not NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.has(category):
 		return false
-	return get_building_utility_demand(building, "sewage") > 0 or get_building_utility_demand(building, "waste") > 0
+	var sewage_unlocked := HappinessManager._service_group_is_unlocked("sewage")
+	var waste_unlocked := HappinessManager._service_group_is_unlocked("waste")
+	return (sewage_unlocked and get_building_utility_demand(building, "sewage") > 0) or (waste_unlocked and get_building_utility_demand(building, "waste") > 0)
 
 func is_sewage_served(building: Node3D) -> bool:
 	return is_instance_valid(building) and sewage_served_ids.has(building.building_id)
