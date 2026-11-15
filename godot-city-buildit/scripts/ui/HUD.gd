@@ -2104,7 +2104,7 @@ func open_production_panel(building: Building) -> void:
 
 	var products_title := Label.new()
 	products_title.name = "AvailableProductsTitle"
-	products_title.text = "CHOOSE AN ITEM · DRAG TO A SLOT" if component.is_factory else "CHOOSE A PRODUCT · DRAG TO A SLOT"
+	products_title.text = "CHOOSE AN ITEM · DROP ON THE FACTORY" if component.is_factory else "CHOOSE A PRODUCT · DROP ON THE STORE"
 	products_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	products_title.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	products_title.add_theme_color_override("font_color", Color("#E8F4F9"))
@@ -2251,11 +2251,33 @@ func open_production_panel(building: Building) -> void:
 			orbit_center = projected
 	orbit_center.x = clampf(orbit_center.x, 100.0, viewport_size.x - 100.0)
 	orbit_center.y = clampf(orbit_center.y, 100.0, maxf(110.0, viewport_size.y - panel_height - 150.0))
+	# The selected building itself is the primary drop target. A dropped item
+	# is routed into its first free production slot, preserving the existing
+	# ProductionComponent and automatic-chain validation paths.
+	var building_drop_target := Button.new()
+	building_drop_target.name = "ProductionBuildingDropTarget"
+	building_drop_target.text = "DROP\nON BUILDING"
+	building_drop_target.custom_minimum_size = Vector2(104, 72) * _ui_scale
+	building_drop_target.position = orbit_center - building_drop_target.custom_minimum_size * 0.5
+	building_drop_target.z_index = 5
+	building_drop_target.focus_mode = Control.FOCUS_NONE
+	building_drop_target.tooltip_text = "Drop a product here to add it to this building's next free production slot."
+	building_drop_target.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	building_drop_target.add_theme_color_override("font_color", Color("#FFF8DC"))
+	building_drop_target.add_theme_stylebox_override("normal", _toolbar_style(Color(0.05, 0.20, 0.29, 0.88), Color("#F4C64E")))
+	building_drop_target.add_theme_stylebox_override("hover", _toolbar_style(Color(0.10, 0.34, 0.43, 0.96), Color("#FFE58A")))
+	building_drop_target.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.03, 0.14, 0.22, 0.96), Color("#FFE58A")))
+	building_drop_target.set_drag_forwarding(Callable(), _can_accept_building_drop.bind(building), _accept_building_drop.bind(building))
+	building_drop_target.gui_input.connect(_on_production_building_gui_input.bind(building))
+	product_orbit.add_child(building_drop_target)
+
+	# Product tiles now form a broad orbit around the selected building instead
+	# of a short lower arc. The bottom remains clear for the six-slot queue dock.
 	var orbit_radius := clampf(viewport_size.x * 0.22, 105.0, 190.0)
 	for product_node in product_grid.get_children():
 		var orbit_index := int(product_node.get_meta("orbit_index", 0))
 		var product_count := maxi(1, product_grid.get_child_count())
-		var angle := deg_to_rad(205.0 + 150.0 * float(orbit_index) / float(maxi(1, product_count - 1)))
+		var angle := deg_to_rad(150.0 + 240.0 * float(orbit_index) / float(maxi(1, product_count - 1)))
 		var point := orbit_center + Vector2(cos(angle), sin(angle)) * orbit_radius
 		var selector_half := 41.0 if product_grid.get_child_count() <= 6 else 33.0
 		product_node.position = Vector2(clampf(point.x - selector_half, 4.0, viewport_size.x - selector_half * 2.0 - 4.0), clampf(point.y - selector_half - 6.0, 4.0, maxf(4.0, viewport_size.y - panel_height - selector_half * 2.0 - 8.0)))
@@ -2632,7 +2654,49 @@ func _select_production_item_for_touch(building: Building, item_id: String) -> v
 	_touch_selected_production_item = item_id
 	_touch_selected_production_building_id = building.get_instance_id()
 	if is_instance_valid(status_label):
-		status_label.text = "Selected %s — tap an empty queue slot, or drag it there." % item_id.capitalize()
+		status_label.text = "Selected %s — drag it onto the building, or tap the glowing building target." % item_id.capitalize()
+
+
+func _on_production_building_gui_input(event: InputEvent, building: Building) -> void:
+	var activated := false
+	if event is InputEventScreenTouch and not event.pressed:
+		activated = true
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+		activated = true
+	if not activated or _touch_selected_production_item.is_empty():
+		return
+	if not is_instance_valid(building) or building.get_instance_id() != _touch_selected_production_building_id:
+		return
+	var payload := {"kind": "production_item", "item_id": _touch_selected_production_item, "building_id": building.get_instance_id()}
+	if _can_accept_building_drop(Vector2.ZERO, payload, building):
+		_accept_building_drop(Vector2.ZERO, payload, building)
+		_touch_selected_production_item = ""
+		_touch_selected_production_building_id = 0
+		get_viewport().set_input_as_handled()
+
+
+func _can_accept_building_drop(_at_position: Vector2, data: Variant, building: Building) -> bool:
+	if not (data is Dictionary) or str(data.get("kind", "")) != "production_item":
+		return false
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return false
+	if int(data.get("building_id", 0)) != building.get_instance_id():
+		return false
+	var component: ProductionComponent = building.production_component
+	for slot_index in range(component.get_slot_count()):
+		if component.get_slot(slot_index).is_empty():
+			return _can_accept_production_drop(Vector2.ZERO, data, building, slot_index)
+	return false
+
+
+func _accept_building_drop(_at_position: Vector2, data: Variant, building: Building) -> void:
+	if not _can_accept_building_drop(Vector2.ZERO, data, building):
+		return
+	var component: ProductionComponent = building.production_component
+	for slot_index in range(component.get_slot_count()):
+		if component.get_slot(slot_index).is_empty():
+			_accept_production_drop(Vector2.ZERO, data, building, slot_index)
+			return
 
 
 func _on_production_slot_gui_input(event: InputEvent, building: Building, slot_index: int) -> void:
