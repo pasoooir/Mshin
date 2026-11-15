@@ -510,7 +510,9 @@ func _try_interact(world_position: Vector3) -> void:
 	var trade_role := str(building.definition.get("trade_role", ""))
 	if trade_role != "":
 		var trade_hud := get_tree().current_scene.get_node_or_null("HUD")
-		if trade_hud and trade_hud.has_method("open_trade_panel"):
+		if trade_hud and trade_hud.has_method("open_non_residential_upgrade_panel"):
+			trade_hud.open_non_residential_upgrade_panel(building)
+		elif trade_hud and trade_hud.has_method("open_trade_panel"):
 			trade_hud.open_trade_panel(trade_role)
 		return
 
