@@ -70,6 +70,13 @@ func get_building_utility_demand(building: Node3D, utility_key: String) -> int:
 	if not is_instance_valid(building):
 		return 0
 	var definition: Dictionary = building.definition
+	# Sewage and solid-waste systems unlock later in the mayor progression.
+	# Before those systems are available, early-game production is not silently
+	# hard-locked by infrastructure the player cannot yet build.
+	if utility_key == "sewage" and GameManager.level < 8:
+		return 0
+	if utility_key == "waste" and GameManager.level < 14:
+		return 0
 	var override_key := "operating_%s_demand" % utility_key
 	if definition.has(override_key):
 		return maxi(0, int(definition.get(override_key, 0)))
