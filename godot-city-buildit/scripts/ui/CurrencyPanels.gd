@@ -146,9 +146,17 @@ func _build_conversion() -> void:
 	var market_heading := _label("CITY SUPPLY MARKET", 16, Color("#F7D77D"))
 	market_heading.name = "CitySupplyMarketHeading"
 	_content.add_child(market_heading)
-	_content.add_child(_notice("Buy unlocked resources with Simoleons", "Purchase raw materials and crafted goods directly into your warehouse. Prices are Mshin market prices, not official EA Global Trade HQ prices."))
-	for item_id in _get_market_item_ids():
-		_content.add_child(_market_item_row(item_id))
+	if not TradeManager.is_global_trade_operational():
+		var locked := _notice("GLOBAL TRADE HQ LOCKED", "The market follows the Global Trade HQ progression gate. In Mshin, unlock it at 10,000 population and complete a Global Trade HQ building.")
+		locked.name = "GlobalTradeMarketLocked"
+		_content.add_child(locked)
+	else:
+		_content.add_child(_notice("GLOBAL TRADE HQ OFFERS", "Buy the rotating materials and crafted-product offers with Simoleons. Prices and quantities come from the active trade offer list."))
+		for index in range(TradeManager.market_offers.size()):
+			var offer: Dictionary = TradeManager.market_offers[index]
+			if bool(offer.get("sold", false)):
+				continue
+			_content.add_child(_global_trade_offer_row(index, offer))
 	if EconomyManager.sim_cash < _selected_conversion:
 		_status.text = "Not enough SimCash for this exchange."
 
@@ -269,23 +277,15 @@ func _finish_order(outcome: String) -> void:
 	_add_store_return_button()
 
 
-func _get_market_item_ids() -> Array[String]:
-	var ids: Array[String] = []
-	for item_id in ProductionManager.raw_materials.keys():
-		if int(ProductionManager.raw_materials[item_id].get("level", 1)) <= GameManager.level:
-			ids.append(str(item_id))
-	for item_id in ProductionManager.crafted_items.keys():
-		var item: Dictionary = ProductionManager.crafted_items[item_id]
-		if int(item.get("level", 1)) <= GameManager.level and bool(item.get("unlock_level_verified", true)):
-			ids.append(str(item_id))
-	return ids
-
-func _market_item_row(item_id: String) -> Control:
+func _global_trade_offer_row(offer_index: int, offer: Dictionary) -> Control:
+	var item_id := str(offer.get("item_id", ""))
 	var definition := ProductionManager.get_item_definition(item_id)
-	var price := EconomyManager.get_market_buy_price(item_id)
-	if definition.is_empty() or price <= 0:
+	var amount := int(offer.get("amount", 0))
+	var price := int(offer.get("price", 0))
+	if definition.is_empty() or amount <= 0 or price <= 0:
 		return Control.new()
 	var panel := PanelContainer.new()
+	panel.name = "GlobalTradeOffer_%d" % offer_index
 	panel.add_theme_stylebox_override("panel", _inner_style())
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -293,31 +293,30 @@ func _market_item_row(item_id: String) -> Control:
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_child(_label(str(definition.get("name", item_id)), 14, Color.WHITE))
-	info.add_child(_label("%s Simoleons each · Warehouse %d/%d" % [_fmt(price), StorageManager.get_used(), StorageManager.capacity], 11, Color("#B8D5E5")))
+	info.add_child(_label("×%d · %s Simoleons · Warehouse %d/%d" % [amount, _fmt(price), StorageManager.get_used(), StorageManager.capacity], 11, Color("#B8D5E5")))
 	row.add_child(info)
-	for amount in [1, 5]:
-		var buy := Button.new()
-		buy.name = "MarketBuy_%s_%d" % [item_id, amount]
-		buy.text = "BUY %d\n%s" % [amount, _fmt(price * amount)]
-		buy.custom_minimum_size = Vector2(76, 48) * _scale
-		buy.add_theme_stylebox_override("normal", _button_style(Color("#2D8C70")))
-		buy.pressed.connect(_buy_market_item.bind(item_id, amount))
-		row.add_child(buy)
+	var buy := Button.new()
+	buy.name = "BuyGlobalTradeOffer_%d" % offer_index
+	buy.text = "BUY"
+	buy.custom_minimum_size = Vector2(76, 48) * _scale
+	buy.disabled = StorageManager.get_free() < amount or EconomyManager.simoleons < price
+	buy.add_theme_stylebox_override("normal", _button_style(Color("#2D8C70")))
+	buy.pressed.connect(_buy_global_trade_offer.bind(offer_index))
+	row.add_child(buy)
 	return panel
 
-func _buy_market_item(item_id: String, amount: int) -> void:
-	var result := EconomyManager.buy_market_item(item_id, amount)
-	if not bool(result.get("success", false)):
-		_status.text = "Purchase failed: %s" % str(result.get("reason", "unknown"))
+func _buy_global_trade_offer(offer_index: int) -> void:
+	if not TradeManager.buy_global_offer(offer_index):
+		_status.text = "Trade purchase failed. Check Simoleons, warehouse capacity and offer status."
 		return
-	_build_shell("MATERIALS PURCHASED", "Your warehouse has been updated.")
-	_content.add_child(_notice(str(ProductionManager.get_item_definition(item_id).get("name", item_id)), "%d added · %s Simoleons spent" % [amount, _fmt(int(result.total_cost))]))
+	if has_node("/root/SaveManager"):
+		SaveManager.save_game()
+	_build_shell("TRADE PURCHASE COMPLETE", "The purchased goods were added to your city warehouse.")
+	_content.add_child(_notice("Materials received", "Your Simoleons balance and inventory have been updated."))
 	var back := Button.new()
 	back.text = "BACK TO CITY FUNDS"
 	back.pressed.connect(open_conversion)
 	_content.add_child(back)
-	if has_node("/root/SaveManager"):
-		SaveManager.save_game()
 
 func _add_active_progress_boosts() -> void:
 	var found := false
