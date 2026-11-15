@@ -72,6 +72,7 @@ func _ready() -> void:
 				failures.append("SimCash could not buy the required expansion Special Item: " + str(item_id))
 	if not LandExpansionManager.expand_tile(expansion_tile):
 		failures.append("purchased dozer Special Items did not satisfy the normal land expansion transaction")
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL - 1
 	var locked_special := EconomyManager.buy_special_item_with_simcash("dozer_wheel", 24, LandExpansionManager.MIN_EXPANSION_LEVEL)
 	if bool(locked_special.get("success", true)):
 		failures.append("expansion Special Item purchase ignored the Mayor Level gate")
