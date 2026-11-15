@@ -2152,13 +2152,13 @@ func open_production_panel(building: Building) -> void:
 	var product_orbit := Control.new()
 	product_orbit.name = "ProductionProductOrbit"
 	product_orbit.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	product_orbit.mouse_filter = Control.MOUSE_FILTER_PASS
+	product_orbit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	product_orbit.z_index = 2
 	production_overlay.add_child(product_orbit)
 	var product_grid := Control.new()
 	product_grid.name = "ProductionProductCards"
 	product_grid.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	product_grid.mouse_filter = Control.MOUSE_FILTER_PASS
+	product_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	product_orbit.add_child(product_grid)
 
 	var item_ids: Array = []
