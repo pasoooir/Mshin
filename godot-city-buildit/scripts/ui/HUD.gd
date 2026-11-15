@@ -66,6 +66,8 @@ class LevelBadgeVisual extends Control:
 
 class LockGlyph extends Control:
 	func _ready() -> void:
+	if not ProductionManager.production_chain_changed.is_connected(_on_production_chain_changed):
+		ProductionManager.production_chain_changed.connect(_on_production_chain_changed)
 		name = "LockGlyph"
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 	func _draw() -> void:
@@ -2007,6 +2009,15 @@ func open_production_panel(building: Building) -> void:
 	operational_status.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	operational_status.add_theme_color_override("font_color", Color("#287449") if operational_reason.is_empty() else Color("#A33A36"))
 	layout.add_child(operational_status)
+	var automatic_chain_status := Label.new()
+	automatic_chain_status.name = "AutomaticChainStatus"
+	automatic_chain_status.text = _automatic_chain_status_text()
+	automatic_chain_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	automatic_chain_status.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	automatic_chain_status.add_theme_color_override("font_color", Color("#315C70"))
+	automatic_chain_status.visible = automatic_chain_status.text != "AUTO PRODUCTION CHAINS\n"
+	if automatic_chain_status.visible:
+		layout.add_child(automatic_chain_status)
 	var building_upgrade_bom := BuildManager.get_building_upgrade_bom(building)
 	var building_upgrade_lock := BuildManager.get_building_upgrade_bom_lock_reason(building)
 	var building_upgrade := Button.new()
@@ -3142,6 +3153,33 @@ func open_residential_panel(building: Building) -> void:
 func _upgrade_residential_from_panel(building: Building) -> void:
 	if is_instance_valid(building) and building.try_upgrade():
 		_close_residential_panel()
+
+func _automatic_chain_status_text() -> String:
+	var lines: Array[String] = []
+	for order in ProductionManager.production_chain_orders:
+		if str(order.get("status", "")) == "complete":
+			continue
+		var item_id := str(order.get("item_id", ""))
+		var item_definition := ProductionManager.get_item_definition(item_id)
+		var chain_id := str(order.get("id", ""))
+		var state := ProductionManager.get_production_chain_status(chain_id)
+		lines.append("%s · %d/%d collected · %d in production · %s" % [
+			str(item_definition.get("name", item_id)),
+			int(order.get("completed", 0)),
+			int(order.get("requested", 0)),
+			int(state.get("in_flight", 0)),
+			str(order.get("status", "waiting")).to_upper()
+		])
+	return "AUTO PRODUCTION CHAINS\n" + "\n".join(lines)
+
+func _on_production_chain_changed(_chain_id: String) -> void:
+	if not is_instance_valid(production_panel) or not production_panel.visible:
+		return
+	var status_label_node := production_panel.find_child("AutomaticChainStatus", true, false) as Label
+	if is_instance_valid(status_label_node):
+		var status_text := _automatic_chain_status_text()
+		status_label_node.text = status_text
+		status_label_node.visible = status_text != "AUTO PRODUCTION CHAINS\n"
 
 func _upgrade_non_residential_from_panel(building: Building) -> void:
 	if is_instance_valid(building) and building.try_upgrade():
