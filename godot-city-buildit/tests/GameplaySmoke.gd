@@ -1715,6 +1715,9 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	var road_system = get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.seed_starter_access()
+	var home := _create_service_test_home("producer_gate_home", 1, Vector2i(1, 1))
+	home.current_population = 100
+	home.definition["population"] = 100
 	var producer := FireHazardTestBuilding.new()
 	add_child(producer)
 	producer.building_id = "producer_sanitation_gate"
@@ -1725,7 +1728,7 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	producer.global_position = Vector3.ZERO
 	BuildManager.buildings[producer.building_id] = producer
 	ServiceManager.recalculate_from_buildings()
-	_check(ServiceManager.demand_sewage == 2 and ServiceManager.demand_waste == 2, "Industrial operating sanitation demand must be included in city totals.")
+	_check(ServiceManager.demand_sewage == 3 and ServiceManager.demand_waste == 3, "Industrial operating sanitation demand must be included in city totals alongside occupied homes.")
 	_check(not BuildManager.is_building_operational(producer), "A producer must not operate without sewage and waste capacity.")
 	var power := FireHazardTestBuilding.new()
 	add_child(power)
@@ -1782,7 +1785,7 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	_check(BuildManager.is_building_operational(producer), "A producer must resume once every configured operating-service gate is satisfied.")
 	producer.definition["operating_emergency_services"] = {"police": true}
 	_check(not BuildManager.is_building_operational(producer), "Unknown or missing police coverage must block only when explicitly configured.")
-	for fixture in [producer, power, water, sewage, waste, fire]:
+	for fixture in [home, producer, power, water, sewage, waste, fire]:
 		BuildManager.buildings.erase(fixture.building_id)
 		remove_child(fixture)
 		fixture.free()
