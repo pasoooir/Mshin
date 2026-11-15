@@ -244,6 +244,8 @@ func _test_automatic_production_chain() -> void:
 	store.refresh_slots()
 	ProductionManager._process_automatic_chains()
 	_check(StorageManager.get_count("nails") == 1, "The completed target product must be auto-collected into City Storage.")
+	var automatic_nails_cost: Dictionary = StorageManager.get_cost_basis({"nails": 1})
+	_check(bool(automatic_nails_cost.get("known", false)) and int(automatic_nails_cost.get("total_cost", -1)) == 0, "AUTO CHAIN must carry a known zero direct Simoleon cost from factory-produced Metal into Nails without marking it unknown.")
 	_check(store.slots[0].is_empty(), "The root queue slot must be released when the automatic chain finishes.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "A fully completed chain must no longer block the next automatic order.")
 
@@ -289,6 +291,8 @@ func _test_automatic_production_chain() -> void:
 		if not bool(ProductionManager.get_automatic_chain_status().get("active", false)):
 			break
 	_check(StorageManager.get_count("chair") == 1, "Nested automatic scheduling must produce the requested final item after both store branches complete.")
+	var automatic_chair_cost: Dictionary = StorageManager.get_cost_basis({"chair": 1})
+	_check(bool(automatic_chair_cost.get("known", false)) and int(automatic_chair_cost.get("total_cost", -1)) == 0, "Nested multi-store AUTO CHAIN must propagate known FIFO costs through both dependency branches into Chair.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "Nested multi-store dependency jobs must all release their slots when the root product is collected.")
 
 	# Two independent roots may reserve and execute the same raw dependency
