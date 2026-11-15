@@ -67,6 +67,23 @@ func spend_keys(amount: int) -> bool:
 	return true
 func set_tax_income(amount: int) -> void:
 	tax_income_per_minute = maxi(0, amount)
+func buy_special_item_with_simcash(item_id: String, unit_cost: int, unlock_level: int) -> Dictionary:
+	if item_id.is_empty() or unit_cost <= 0 or unlock_level < 1:
+		return {"success": false, "reason": "invalid_offer"}
+	if GameManager.level < unlock_level:
+		return {"success": false, "reason": "item_locked", "unlock_level": unlock_level}
+	if not StorageManager.item_definitions.has(item_id):
+		return {"success": false, "reason": "unknown_special_item"}
+	if StorageManager.get_free() < 1:
+		return {"success": false, "reason": "warehouse_capacity"}
+	if not spend_sim_cash(unit_cost):
+		return {"success": false, "reason": "insufficient_simcash", "cost": unit_cost}
+	if not StorageManager.add_item(item_id, 1):
+		add_sim_cash(unit_cost)
+		return {"success": false, "reason": "warehouse_capacity"}
+	transaction_completed.emit("simcash_special_item_purchase", unit_cost)
+	return {"success": true, "item_id": item_id, "amount": 1, "cost": unit_cost}
+
 func get_simcash_time_skip_cost(remaining_seconds: int) -> int:
 	if remaining_seconds <= 0:
 		return 0
