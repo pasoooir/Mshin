@@ -543,7 +543,11 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] Store products with missing ingredients cannot be dragged or accepted; automatic dependency-chain start is not invoked by a manual drop.
 - [x] Product hexes remain tappable for explanation while showing a red shortage state and exact missing ingredient quantities in their tooltip/detail panel.
 - [x] A rejected under-stocked order leaves the queue slot and inventory unchanged; GameplaySmoke regression coverage added for Nails requiring 2 Metal.
-- [ ] Godot static validation, import/parse, GameplaySmoke, Web/Chromium and Android APK CI.
+- [x] Godot static validation, import/parse, GameplaySmoke, Web/Chromium desktop+mobile launch and Android Debug APK export passed after the direct-drop fix: validation run `43747094170` (all jobs success; APK artifact uploaded) and Web run `43747094158` (build/Chromium success; Pages artifact built, deploy skipped for pull_request event).
+- [x] Regression tests exercise touch release on the projected building-footprint polygon, exact missing ingredient name/quantity, blocked drag/acceptance, unchanged inventory/queue, and successful production after stock is added.
+- [x] Root cause fixed: the touch handler searched inside `ProductionPanel`, while the projected `ProductionBuildingDropTarget` is a sibling under `ProductionOverlay`; it now resolves the target from the correct overlay and converts viewport coordinates through the full canvas transform.
+- [x] PR #526 merged at `45338f417033d4ad5222a2e0af4637121440147e`; PR #527 merged at `1934b564b31b1717b5fdb8a9c670b12840914468`.
+- [ ] Post-merge GitHub Pages push/deploy verification for the main-branch merge commit.
 - [ ] Physical Android touch test: drag a raw factory material onto the factory surface and drag a store product onto its store surface.
 
 **Acceptance rule:** a store order starts only when all declared recipe inputs are already present in City Storage. Automatic supply-chain production remains an explicit separate workflow, not an implicit side effect of dragging.
