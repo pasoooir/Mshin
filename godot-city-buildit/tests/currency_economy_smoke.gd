@@ -62,6 +62,31 @@ func _ready() -> void:
 	factory.queue_free()
 	await get_tree().process_frame
 
+	# Purchased commercial queue capacity must notify the HUD and persist.
+	EconomyManager.sim_cash = 10
+	var store := ProductionComponent.new()
+	store.is_factory = false
+	store.shop_id = "building_supplies"
+	store.slot_count = 2
+	add_child(store)
+	await get_tree().process_frame
+	var cash_before_slot := EconomyManager.sim_cash
+	var slot_added := store.purchase_store_queue_slot(4)
+	if not slot_added or store.get_slot_count() != 3 or EconomyManager.sim_cash != cash_before_slot - 4:
+		failures.append("SimCash queue-slot purchase did not atomically debit and add one slot")
+	var saved_slots := store.to_save_array()
+	var restored_store := ProductionComponent.new()
+	restored_store.is_factory = false
+	restored_store.shop_id = "building_supplies"
+	add_child(restored_store)
+	await get_tree().process_frame
+	restored_store.from_save_array(saved_slots)
+	if restored_store.get_slot_count() != 3:
+		failures.append("purchased commercial queue slot did not survive slot save-data restore")
+	store.queue_free()
+	restored_store.queue_free()
+	await get_tree().process_frame
+
 	var catalog := PaymentManager.get_catalog()
 	if catalog.size() != 8:
 		failures.append("SimCash catalog must contain all eight configured store packs")
