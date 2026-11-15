@@ -3799,6 +3799,8 @@ func _run_gameplay_test() -> void:
 		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must keep the detail-card Start action available.")
 	var factory_drag_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
 	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
+	production_hud._select_production_item_for_touch(factory, "metal")
+	_check(production_hud._touch_selected_production_item == "metal" and production_hud._touch_selected_production_building_id == factory.get_instance_id(), "Touch fallback must retain the selected product and source building until a queue tile is tapped.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
 	production_hud._accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0)
 	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into factory slot zero must start that exact production slot.")
@@ -3885,11 +3887,11 @@ func _run_gameplay_test() -> void:
 	if collect_nails_1:
 		collect_nails_1.emit_signal("pressed")
 	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
-	var product_grid := production_hud.production_panel.find_child("ProductionProductCards", true, false) as GridContainer
-	var product_scroll := production_hud.production_panel.find_child("ProductionProductsScroll", true, false) as ScrollContainer
-	var expected_store_columns := 3 if get_viewport().get_visible_rect().size.x <= 900.0 or get_viewport().get_visible_rect().size.y <= 520.0 else (4 if get_viewport().get_visible_rect().size.x <= 1280.0 else 6)
-	_check(product_grid != null and product_grid.columns == expected_store_columns and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The complete store catalog must expose every product in the responsive grid.")
-	_check(product_scroll != null and product_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and product_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "The production catalog must support vertical touch scrolling through every responsive product row.")
+	var product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
+	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
+	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The radial store catalog must expose every registered product.")
+	_check(product_orbit != null and product_orbit.get_child_count() == 1, "Product selectors must use a floating orbit layer outside the compact queue dock.")
+	_check(production_hud.production_panel.size.y < get_viewport().get_visible_rect().size.y * 0.5, "Production interaction must use a compact bottom dock, not a full-screen modal.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level
