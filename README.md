@@ -954,3 +954,21 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 **قواعد حفظ‌شده:** پایان تایمر به‌تنهایی کالا را وارد انبار نمی‌کند؛ Collect مستقل همان اسلات را خالی می‌کند؛ در صورت پر بودن انبار خروجی آماده در اسلات باقی می‌ماند؛ داده recipe/time/price فاقد منبع نباید حدس زده شود.
 
 **قاعده تیک:** موارد [x] فقط تغییرات اعمال‌شده در کد این شاخه‌اند؛ تا اجرای CI و تست‌های تعاملی، هیچ معیار پذیرش انتهابه‌انتها تکمیل‌شده محسوب نمی‌شود.
+
+
+---
+
+## SimCity-style production interaction — compact radial UI phase
+
+**Branch:** `feat/simcity-production-interaction-polish`
+
+- [x] Replace the full-screen white production modal with a compact, dark translucent bottom dock; the live city remains visible.
+- [x] Move registered factory/store product controls into a floating orbit layer around the selected building's projected screen position.
+- [x] Reduce queue tiles to compact touch-friendly cards while preserving each slot's timer, ready and Collect behavior.
+- [x] Add tap-product-then-tap-slot fallback alongside native drag forwarding for touch devices.
+- [ ] Validate radial spacing for every catalog size on mobile landscape and small viewport profiles.
+- [ ] Extend actionable building notifications to construction, upgrade and other activities only where the underlying activity has a genuine pending player action.
+- [ ] Run Godot GameplaySmoke, full-storage Collect, save/load and web/Chromium CI after UI changes.
+- [ ] Physical Android touch-device acceptance.
+
+No recipe, production duration, storage accounting, queue-slot price, or Collect rule was changed or invented.
