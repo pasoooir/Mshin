@@ -306,10 +306,13 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 - [ ] Independent CI on the PR #512 merge commit and README follow-up is not yet verified.
 
 
-## Cargo Ship non-cash contribution ledger — implementation in progress
+## Cargo Ship non-cash contribution ledger — PR #513 merged; PR CI passed
 
-- [ ] Each delivered crate records FIFO COGS and its item quantity in the EconomyManager transaction ledger.
+- [x] Each delivered crate records FIFO COGS and its item quantity in the EconomyManager transaction ledger.
 - [ ] Completed ship manifest records the Golden Key as a non-cash reward with no invented Simoleon value.
 - [ ] Live macro summary exposes Cargo Ship crates, known COGS, unknown-cost quantity, Golden Keys earned and cost-history completeness separately from cash gross margin.
-- [ ] GameplaySmoke validates three costed crates, manifest completion and separation of non-cash reward from Simoleon gross revenue.
-- [ ] Godot Validation, Android Debug APK and Web/Chromium on final PR SHA.
+- [x] GameplaySmoke validates three costed crates, manifest completion and separation of non-cash reward from Simoleon gross revenue.
+- [x] Godot Validation and Android Debug APK: [43711118973](https://github.com/pasoooir/Mshin/actions/runs/43711118973); Web/Chromium: [43711118954](https://github.com/pasoooir/Mshin/actions/runs/43711118954).
+
+PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key has no assigned Simoleon value; non-cash COGS is deliberately kept outside cash gross margin.
+- [ ] Independent CI on the PR #513 merge commit and README follow-up is not yet verified.
