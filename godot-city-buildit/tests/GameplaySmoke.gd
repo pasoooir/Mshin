@@ -1798,8 +1798,8 @@ func _test_power_water_gateway_access() -> void:
 	var sewage_plant := FireHazardTestBuilding.new()
 	add_child(sewage_plant)
 	sewage_plant.building_id = "utility_test_sewage"
-	sewage_plant.building_type = "sewage_deluxe"
-	sewage_plant.definition = BuildManager.building_types["sewage_deluxe"]
+	sewage_plant.building_type = "sewage_small"
+	sewage_plant.definition = BuildManager.building_types["sewage_small"]
 	sewage_plant.status = "completed"
 	sewage_plant.grid_pos = Vector2i(35, 35)
 	sewage_plant.global_position = Vector3.ZERO
@@ -1808,8 +1808,8 @@ func _test_power_water_gateway_access() -> void:
 	var waste_plant := FireHazardTestBuilding.new()
 	add_child(waste_plant)
 	waste_plant.building_id = "utility_test_waste"
-	waste_plant.building_type = "waste_recycling"
-	waste_plant.definition = BuildManager.building_types["waste_recycling"]
+	waste_plant.building_type = "waste_dump_small"
+	waste_plant.definition = BuildManager.building_types["waste_dump_small"]
 	waste_plant.status = "completed"
 	waste_plant.grid_pos = Vector2i(35, 35)
 	waste_plant.global_position = Vector3.ZERO
@@ -1966,6 +1966,7 @@ func _test_emergency_service_tier_happiness() -> void:
 			facility.global_position = Vector3(radius - 0.1, 0.0, 0.0)
 			BuildManager.buildings[facility.building_id] = facility
 			ServiceManager.recalculate_from_buildings()
+			print("[GameplaySmoke] emergency tier ", service_id, " operational=", BuildManager.is_building_operational(facility), " power=", ServiceManager.power_served_ids.has(facility.building_id), " water=", ServiceManager.water_served_ids.has(facility.building_id), " workers=", ServiceManager.workforce_served_ids.has(facility.building_id), " population=", GameManager.population, " available_workers=", ServiceManager.available_workers, " road=", BuildManager.has_road_access(facility.grid_pos, facility.definition.get("size", Vector2i.ONE)))
 			_check(str(facility.definition.get("service_group", "")) == service_group, "Emergency service catalog tier must belong to its declared service group: " + service_id)
 			_check(served_ids.has(home.building_id), "Every connected emergency service tier must serve a connected home inside its catalog radius: " + service_id)
 			var coverage_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
