@@ -890,13 +890,19 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [ ] اجرای مستقل CI روی merge commit PR #512 و آخرین README هنوز باید تأیید شود.
 
 
-## حسابداری غیرنقدی Cargo Ship — PR بعدی (در انتظار CI)
+## حسابداری غیرنقدی Cargo Ship — PR #513 ادغام شد
 
-- [ ] مصرف هر crate کشتی، بهای FIFO اقلام را ثبت می‌کند و در transaction ledger به‌عنوان `cargo_ship_crate_delivered` نگه می‌دارد.
-- [ ] تکمیل manifest، دریافت Golden Key را به‌صورت رویداد غیرنقدی `cargo_ship_manifest_completed` ثبت می‌کند.
-- [ ] MacroEconomySimulator، COGS محمولهٔ کشتی و تعداد Golden Key را در `non_cash_contribution` جدا از درآمد Simoleon گزارش می‌کند.
-- [ ] برای Golden Key هیچ ارزش Simoleon ساختگی تعریف نمی‌شود.
-- [ ] آزمون سه crate، مجموع COGS، تکمیل manifest و عدم افزایش gross revenue نقدی.
-- [ ] اجرای Godot Validation، Android Debug APK و Web/Chromium روی PR.
+- [x] مصرف هر crate کشتی، بهای FIFO اقلام را ثبت می‌کند و در transaction ledger به‌عنوان `cargo_ship_crate_delivered` نگه می‌دارد.
+- [x] تکمیل manifest، دریافت Golden Key را به‌صورت رویداد غیرنقدی `cargo_ship_manifest_completed` ثبت می‌کند.
+- [x] MacroEconomySimulator، COGS محمولهٔ کشتی و تعداد Golden Key را در `non_cash_contribution` جدا از درآمد Simoleon گزارش می‌کند.
+- [x] برای Golden Key هیچ ارزش Simoleon ساختگی تعریف نمی‌شود.
+- [x] آزمون سه crate، مجموع COGS، تکمیل manifest و عدم افزایش gross revenue نقدی.
+- [x] Godot Validation و Android Debug APK: [run 43711118973 — success](https://github.com/pasoooir/Mshin/actions/runs/43711118973).
+- [x] Web export و Chromium desktop/mobile: [run 43711118954 — success](https://github.com/pasoooir/Mshin/actions/runs/43711118954).
+
+**ادغام:** PR #513 با merge commit `7bdfd777d22ff0f2eb415d713718801117ed395b` وارد `main` شد.
 
 **مرز حسابداری:** تا وقتی قیمت رسمی/مکانیزم تبدیل Golden Key به Simoleon در بازی وجود ندارد، نمی‌توان ارزش پولی یا سود اقتصادی خالص Cargo Ship را اعلام کرد؛ فقط هزینهٔ ورودی شناخته‌شده و پاداش غیرنقدی ثبت می‌شوند.
+
+
+- [ ] اجرای مستقل CI روی merge commit PR #513 و README به‌روزشده باید تأیید شود.
