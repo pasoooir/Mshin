@@ -114,7 +114,7 @@ func _build_shell(title_text: String, subtitle_text: String) -> void:
 
 func _build_conversion() -> void:
 	_content.add_child(_balance_panel())
-	_content.add_child(_notice("Mshin exchange rate", "1 SimCash = %s Simoleons. This is a configurable Mshin gameplay rate, not an official EA conversion quote." % _fmt(EconomyManager.SIMCASH_TO_SIMOLEONS_RATE)))
+	_content.add_child(_notice("Mshin exchange rate", "1 SimCash = %s Simoleons. This is the current Mshin game rate, not an official EA conversion quote." % _fmt(EconomyManager.SIMCASH_TO_SIMOLEONS_RATE)))
 	var heading := _label("SELECT EXCHANGE AMOUNT", 15, Color("#F7D77D"))
 	_content.add_child(heading)
 	for amount in CONVERSION_OPTIONS:
