@@ -234,9 +234,20 @@ func _test_automatic_production_chain() -> void:
 	_check(store.slots[0].is_empty(), "The root queue slot must be released when the automatic chain finishes.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "A fully completed chain must no longer block the next automatic order.")
 
+	# A catalog-only item with no verified recipe or factory source must fail
+	# preflight instead of leaving a permanently stuck automatic chain.
+	var saved_level := GameManager.level
+	GameManager.level = 90
+	var fruit_store := ProductionComponentScript.new()
+	fruit_store.name = "AutomaticChainUnresolvableProbe"
+	fruit_store.shop_id = "farmers_market"
+	fruit_store.slot_count = 1
+	add_child(fruit_store)
+	_check(not ProductionManager.request_automatic_chain(fruit_store, "fruit_berries", 0) and fruit_store.slots[0].is_empty(), "Automatic chain preflight must reject an unresolved catalog-only dependency without reserving a production slot.")
+	fruit_store.queue_free()
+
 	# Exercise a true multi-store dependency graph: Chair requires both Nails
 	# (Building Supplies) and Hammer (Hardware Store), plus shared raw inputs.
-	var saved_level := GameManager.level
 	GameManager.level = 10
 	var hardware_store := ProductionComponentScript.new()
 	hardware_store.name = "AutomaticChainHardwareProbe"
