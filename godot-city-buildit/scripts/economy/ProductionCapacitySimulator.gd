@@ -67,9 +67,9 @@ static func simulate(config: Dictionary) -> Dictionary:
 			var facility: Dictionary = facilities[facility_id]
 			for slot_index in range(facility.slots.size()):
 				var slot: Dictionary = facility.slots[slot_index]
-				if slot.is_empty() or bool(slot.get("ready", false)):
+				if slot.is_empty() or bool(slot.get("ready", false)) or bool(slot.get("queued", false)):
 					continue
-				if int(slot.get("finish_seconds", 0)) <= second:
+				if int(slot.get("finish_seconds", 0)) > 0 and int(slot.get("finish_seconds", 0)) <= second:
 					slot["ready"] = true
 					facility.slots[slot_index] = slot
 					production_log.append({"at_seconds": second, "event": "ready", "facility_id": facility_id, "item_id": str(slot.get("item_id", "")), "slot_index": slot_index})
@@ -115,7 +115,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 				if facilities.has(facility_id):
 					var facility: Dictionary = facilities[facility_id]
 					var allowed: Array = factory_materials.get(str(facility.get("factory_type", "")), [])
-					if bool(facility.operational) and str(facility.kind) == "factory" and raw_catalog.has(item_id) and allowed.has(item_id):
+					if bool(facility.operational) and str(facility.kind) == "factory" and raw_catalog.has(item_id) and allowed.has(item_id) and int(raw_catalog[item_id].get("level", 1)) <= int(config.get("mayor_level", 1)):
 						var slot_index := _first_empty_slot(facility.slots)
 						if slot_index >= 0:
 							var duration := maxi(1, int(raw_catalog[item_id].get("time_sec", raw_catalog[item_id].get("time", 0))))
@@ -129,7 +129,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 					var recipe: Dictionary = recipes.get(item_id, {})
 					var inputs: Dictionary = recipe.get("requires", {})
 					var slot_index := _first_empty_slot(facility.slots)
-					if bool(facility.operational) and str(facility.kind) == "store" and str(recipe.get("store", "")) == str(facility.get("shop_id", "")) and not inputs.is_empty() and slot_index >= 0 and _has_inventory(inventory, inputs):
+					if bool(facility.operational) and str(facility.kind) == "store" and str(recipe.get("store", "")) == str(facility.get("shop_id", "")) and _recipe_unlocked(item_id, recipe, facility, raw_catalog, recipes, config) and not inputs.is_empty() and slot_index >= 0 and _has_inventory(inventory, inputs):
 						# Match ProductionComponent.start_craft: reserve the entire
 						# recipe at queue admission, not when its timer begins.
 						_remove_inventory(inventory, inputs)
@@ -154,7 +154,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 				var listing_id := str(action.get("listing_id", ""))
 				if depot_listings.has(listing_id):
 					var listing: Dictionary = depot_listings[listing_id]
-					if second - int(listing.get("listed_at_seconds", second)) >= 120:
+					if bool(config.get("depot_operational", false)) and second - int(listing.get("listed_at_seconds", second)) >= 120:
 						var proceeds := int(listing.get("unit_value", 0)) * int(listing.get("quantity", 0))
 						if proceeds > 0:
 							sales_total += proceeds
@@ -209,6 +209,28 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"cash_events": sale_events,
 		"production_log": production_log
 	}
+
+
+static func _recipe_unlocked(item_id: String, recipe: Dictionary, facility: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, config: Dictionary) -> bool:
+	var mayor_level := int(config.get("mayor_level", 1))
+	if item_id in config.get("invalid_recipe_ids", []):
+		return false
+	if not bool(recipe.get("unlock_level_verified", true)) or int(recipe.get("level", 1)) > mayor_level:
+		return false
+	if int(recipe.get("required_stars", 0)) > int(facility.get("store_star_level", 0)):
+		return false
+	var source_text := str(recipe.get("source", "")).to_lower()
+	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
+		return false
+	for input_variant in recipe.get("requires", {}).keys():
+		var input_id := str(input_variant)
+		if raw_catalog.has(input_id) and int(raw_catalog[input_id].get("level", 1)) > mayor_level:
+			return false
+		if recipes.has(input_id):
+			var input_recipe: Dictionary = recipes[input_id]
+			if not bool(input_recipe.get("unlock_level_verified", true)) or int(input_recipe.get("level", 1)) > mayor_level:
+				return false
+	return true
 
 static func _start_store_order(facility: Dictionary, facility_id: String, now: int, recipes: Dictionary, log: Array) -> void:
 	if not bool(facility.get("operational", true)) or str(facility.get("kind", "")) != "store":
@@ -342,6 +364,8 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 		"raw_materials": raw_catalog,
 		"crafted_items": crafted_catalog,
 		"factory_materials": ProductionManager.factory_materials.duplicate(true),
+		"mayor_level": int(GameManager.level),
+		"invalid_recipe_ids": ProductionManager.get_recipe_validation_report().get("invalid_recipe_ids", []),
 		"facilities": facilities,
 		"actions": actions.duplicate(true),
 		"depot_operational": TradeManager.is_depot_operational(),
