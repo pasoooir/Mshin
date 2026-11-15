@@ -237,10 +237,10 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 - [x] Ready output remains in its production slot until explicit collection; full warehouse rejects collection without discarding the item.
 - [x] Trade Depot listing removes stock at listing time; up to four active listings are modeled; cash is credited only by explicit collection after the real 120-second wait.
 - [x] Collected production sales are appended as `production_sale` events and flow into the macro `production_sales` source bucket.
-- [x] Live-city snapshot captures active ordinary production slots, remaining timers, current warehouse and Depot listings. It deliberately returns a capture error if AUTO CHAIN jobs are active because their recursive dependency graph is not yet modeled.
+- [x] Live-city snapshot captures ordinary and AUTO CHAIN production slots, remaining timers, exact FIFO cost batches, current warehouse and Depot listings; deterministic replay of the captured dependency graph is being validated in the follow-up PR.
 - [x] Smoke tests added for parallel factory slots, two queued store jobs, atomic material consumption, full-warehouse retention and production-to-cashflow integration.
 - [x] Godot Validation / Android APK export / Web Chromium CI on the final PR SHA.
-- [ ] Automatic-chain dependency replay, shared intermediate reservations and multiple concurrent roots.
+- [ ] Automatic-chain dependency replay, shared intermediate reservations and multiple concurrent roots (follow-up PR implementation is awaiting CI).
 - [x] Scenario-level FIFO inventory cost batches, COGS and gross-margin accounting with explicit acquisition costs; unknown costs remain unknown and catalog values are not substituted. Verified by MacroEconomySmoke.
 - [ ] Persisted live StorageManager cost-batch ledger, production cost propagation through live manual/AUTO CHAIN jobs, Depot realized-margin ledger and save/load integration.
 - [ ] Coupling delivery-order item consumption to production inventory and explicit market-demand modeling.
@@ -316,3 +316,18 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 
 PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key has no assigned Simoleon value; non-cash COGS is deliberately kept outside cash gross margin.
 - [ ] Independent CI on the PR #513 merge commit and README follow-up is not yet verified.
+
+
+## AUTO CHAIN scenario replay and exact live FIFO snapshot — implementation in progress
+
+- [ ] Explicit `auto_chain` scenario action reserves a root store slot only when the recursive supplier graph is resolvable.
+- [ ] Raw material dependencies are scheduled across independent factory slots and automatically collected when warehouse capacity permits.
+- [ ] Crafted intermediate dependencies are recursively queued in the matching stores; automatic jobs are excluded from the manual store queue starter.
+- [ ] Each store serializes its active production timer while retaining queued automatic dependencies.
+- [ ] The complete target BOM is consumed atomically only after all dependencies are in City Storage.
+- [ ] Active live AUTO CHAIN slots are preserved in the city snapshot with chain identity and remaining timer rather than rejecting capture.
+- [ ] Exact live FIFO batches (`quantity`, `total_cost`, `known`) are copied into scenario replay; proportional batch consumption mirrors StorageManager.
+- [ ] MacroEconomySmoke covers nested Hammer → Nails → Metal dependency replay, parallel raw-material production, exact input consumption, output collection and Depot-to-Simoleon cashflow.
+- [ ] MacroEconomySmoke covers exact per-batch FIFO cost inputs.
+- [ ] GameplaySmoke covers live snapshot preservation of AUTO CHAIN root slots and FIFO batch state.
+- [ ] Godot Validation, Android Debug APK and Web/Chromium on the final PR SHA.
