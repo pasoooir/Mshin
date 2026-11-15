@@ -2500,6 +2500,38 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			chain_label.add_theme_font_size_override("font_size", int(8 * _ui_scale))
 			chain_label.add_theme_color_override("font_color", Color("#587487"))
 			text_stack.add_child(chain_label)
+
+	var automatic_chain_button := Button.new()
+	automatic_chain_button.name = "AutomaticProductionChain"
+	automatic_chain_button.text = "AUTOMATIC CHAIN · PRODUCE 1"
+	var automatic_chain_available := lock_reason.is_empty() and (is_factory or (not recipe.is_empty() and not inputs.is_empty()))
+	automatic_chain_button.disabled = not automatic_chain_available
+	automatic_chain_button.tooltip_text = "Automatically produce and collect every missing dependency, then queue the selected item. Input materials are escrowed while store orders wait."
+	automatic_chain_button.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	automatic_chain_button.pressed.connect(func():
+		var order_id := ProductionManager.start_automatic_chain(item_id, 1)
+		if order_id.is_empty():
+			status_label.text = "Automatic chain could not start. Verify recipe, unlocks and supplier buildings."
+		else:
+			status_label.text = "Automatic production chain started for %s." % str(data.get("name", item_id))
+		open_production_panel(building)
+	)
+	text_stack.add_child(automatic_chain_button)
+	for automatic_order in ProductionManager.get_automatic_chain_orders():
+		if str(automatic_order.get("item_id", "")) != item_id or str(automatic_order.get("status", "")) != "running":
+			continue
+		var automatic_status := Label.new()
+		automatic_status.name = "AutomaticChainStatus"
+		automatic_status.text = "AUTO CHAIN %d/%d · %s" % [
+			int(automatic_order.get("completed_count", 0)),
+			int(automatic_order.get("quantity", 1)),
+			str(automatic_order.get("last_error", "RUNNING")).to_upper()
+		]
+		automatic_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		automatic_status.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		automatic_status.add_theme_color_override("font_color", Color("#A36B12"))
+		text_stack.add_child(automatic_status)
+
 	if not lock_reason.is_empty() or not missing.is_empty() or slot_index < 0:
 		var reason := Label.new()
 		reason.text = lock_reason if not lock_reason.is_empty() else ("NO FREE PRODUCTION SLOT" if slot_index < 0 else "NEED " + missing)
