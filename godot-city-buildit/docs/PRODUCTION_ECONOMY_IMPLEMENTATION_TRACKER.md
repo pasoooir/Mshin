@@ -288,3 +288,17 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 **Acceptance boundary:** no unknown legacy cost is replaced with catalog value. No COGS is deducted from Simoleons a second time. Historical realized margin is only complete if both all sold batches have known costs and the transaction ledger has not truncated earlier events. PR #511 is merged to main as `72d54bd28741320a5376fc58fbd0c89e52d5326c`.
 
 - [ ] Independent CI on merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` and the README update is not yet verified.
+
+
+## Delivery-order COGS and macro cashflow — implementation in progress
+
+- [ ] Live TradeManager rejects invalid/understocked orders atomically and records actual consumed FIFO COGS plus reward/gross margin.
+- [ ] Live macro snapshot includes `delivery_order_completed` alongside `trade_sale_collected` when summarizing realized cash revenue and COGS.
+- [ ] Production scenario action `delivery_order` consumes stock and its FIFO cost batches, then emits a cash event with the explicit reward.
+- [ ] MacroEconomySimulator books the explicit delivery-order reward under `delivery_orders` source bucket.
+- [ ] Unknown acquisition cost stays unknown and prevents complete gross-margin claims.
+- [ ] GameplaySmoke validates insufficient-stock rejection, live order cost metadata, ledger aggregation and completion state.
+- [ ] MacroEconomySmoke validates inventory consumption, reward cashflow, FIFO COGS and unknown-cost handling.
+- [ ] Godot Validation, Android Debug APK and Web/Chromium on the final PR SHA.
+
+**Open:** Cargo Ship crate consumption and Golden Key reward are not cash sales; they need separate non-cash contribution accounting before inclusion in wider economic profitability.
