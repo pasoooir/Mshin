@@ -51,7 +51,7 @@ const NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES := {
 const EMERGENCY_SERVICE_OPERATING_PROFILES := {
 	"fire": {"power": 1, "water": 1, "sewage": 0, "waste": 0, "workers": 1},
 	"police": {"power": 1, "water": 1, "sewage": 0, "waste": 0, "workers": 1},
-	"health": {"power": 2, "water": 2, "sewage": 1, "waste": 1, "workers": 2}
+	"health": {"power": 2, "water": 2, "sewage": 0, "waste": 0, "workers": 2}
 }
 # Mshin design assumption: 45% of residents are available for city employment.
 # This is a transparent balancing parameter, not an EA-published demographic.
