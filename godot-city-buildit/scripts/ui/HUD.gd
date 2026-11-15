@@ -133,6 +133,8 @@ var _level_up_shake_elapsed := 0.0
 var _production_timer_labels: Array[Label] = []
 var _production_progress_bars: Array[ProgressBar] = []
 var _production_building: Building = null
+var _production_world_orbit: Node3D = null
+var _production_orbit_buttons: Array[Button] = []
 var _touch_selected_production_item := ""
 var _touch_selected_production_building_id := 0
 var _production_touch_drag_active := false
@@ -1712,6 +1714,7 @@ func _process(delta: float) -> void:
 		if _production_tick_accum >= 0.25:
 			_production_tick_accum = 0.0
 			_update_production_timers()
+		_update_production_orbit_projection()
 
 	if not is_instance_valid(_level_up_effect) or not is_instance_valid(_level_up_camera):
 		return
@@ -1976,6 +1979,14 @@ func open_production_panel(building: Building) -> void:
 		return
 	_clear_production_timer_tracking()
 	_production_building = building
+	_production_orbit_buttons.clear()
+	if is_instance_valid(_production_world_orbit):
+		_production_world_orbit.queue_free()
+	_production_world_orbit = null
+	var scene_root := get_tree().current_scene
+	var camera_rig = scene_root.get_node_or_null("CameraRig") if scene_root else null
+	if camera_rig != null and camera_rig.has_method("focus_on"):
+		camera_rig.focus_on(building.global_position, 18.0)
 	if is_instance_valid(production_overlay):
 		production_overlay.queue_free()
 
@@ -2108,7 +2119,7 @@ func open_production_panel(building: Building) -> void:
 	header_center.offset_bottom = 62.0 * _ui_scale
 	header_center.z_index = 8
 	var hint := Label.new()
-	hint.text = "DRAG PRODUCTS INTO AN EMPTY QUEUE SLOT  ·  BUILDING SURFACE ALSO ACCEPTS DROPS"
+	hint.text = "TAP A PRODUCT TO START PRODUCTION  ·  NO DRAGGING REQUIRED"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.visible = false
 	hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
@@ -2141,7 +2152,7 @@ func open_production_panel(building: Building) -> void:
 
 	var products_title := Label.new()
 	products_title.name = "AvailableProductsTitle"
-	products_title.text = "DRAG A MATERIAL INTO AN EMPTY QUEUE SLOT" if component.is_factory else "DRAG A PRODUCT INTO AN EMPTY QUEUE SLOT"
+	products_title.text = "TAP A MATERIAL TO START PRODUCTION" if component.is_factory else "TAP A PRODUCT TO START PRODUCTION"
 	products_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	products_title.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	products_title.add_theme_color_override("font_color", Color("#E8F4F9"))
@@ -2160,6 +2171,12 @@ func open_production_panel(building: Building) -> void:
 	product_grid.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	product_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	product_orbit.add_child(product_grid)
+	# Actual 3D hexagonal platforms live in the city world; transparent buttons
+	# are projected over them so touch input stays reliable on mobile.
+	_production_world_orbit = Node3D.new()
+	_production_world_orbit.name = "ProductionWorldOrbit"
+	if scene_root:
+		scene_root.add_child(_production_world_orbit)
 
 	var item_ids: Array = []
 	if component.is_factory:
@@ -2199,37 +2216,18 @@ func open_production_panel(building: Building) -> void:
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			item_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 
-		# Six-sided white tile with a subtle blue rim, matching the reference's
-		# floating hexagonal item selectors rather than generic rectangular cards.
-		var hex_size := Vector2(selector_edge - 4.0, selector_edge + 2.0) * _ui_scale
-		var hex := Polygon2D.new()
-		hex.name = "HexagonBackground"
-		hex.position = Vector2(5, 4) * _ui_scale
-		hex.polygon = PackedVector2Array([
-			Vector2(hex_size.x * 0.5, 0),
-			Vector2(hex_size.x, hex_size.y * 0.25),
-			Vector2(hex_size.x, hex_size.y * 0.75),
-			Vector2(hex_size.x * 0.5, hex_size.y),
-			Vector2(0, hex_size.y * 0.75),
-			Vector2(0, hex_size.y * 0.25)
-		])
-		hex.color = Color("#EAF5FA") if lock_reason.is_empty() else Color("#9AAAB2")
-		item_button.add_child(hex)
-		var hex_outline := Line2D.new()
-		hex_outline.name = "HexagonOutline"
-		hex_outline.position = hex.position
-		hex_outline.points = PackedVector2Array([
-			Vector2(hex_size.x * 0.5, 0),
-			Vector2(hex_size.x, hex_size.y * 0.25),
-			Vector2(hex_size.x, hex_size.y * 0.75),
-			Vector2(hex_size.x * 0.5, hex_size.y),
-			Vector2(0, hex_size.y * 0.75),
-			Vector2(0, hex_size.y * 0.25)
-		])
-		hex_outline.closed = true
-		hex_outline.width = 2.0 * _ui_scale
-		hex_outline.default_color = Color("#FFFFFF")
-		item_button.add_child(hex_outline)
+		# The white six-sided base is a real 3D world mesh, not a flat UI polygon.
+		item_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+		item_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+		item_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+		item_button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
+		var orbit_angle := TAU * float(item_index) / float(maxi(1, item_ids.size()))
+		var footprint_size: Vector2i = building.definition.get("size", Vector2i(2, 2))
+		var orbit_radius := maxf(3.2, float(maxi(footprint_size.x, footprint_size.y)) * 1.2 + 1.6)
+		var orbit_world_position := building.global_position + Vector3(cos(orbit_angle) * orbit_radius, 2.0, sin(orbit_angle) * orbit_radius)
+		var world_hex := _create_production_orbit_hex(item_index, orbit_world_position)
+		item_button.set_meta("orbit_world_position", orbit_world_position)
+		item_button.set_meta("orbit_world_hex", world_hex)
 
 		var tile_content := VBoxContainer.new()
 		tile_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2273,103 +2271,13 @@ func open_production_panel(building: Building) -> void:
 		tile_content.add_child(status_label)
 		item_button.disabled = not lock_reason.is_empty()
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else (("MISSING: " + missing_detail) if not missing_detail.is_empty() else inventory_status)
-		# Dragging a product onto a queue tile submits that exact slot order.
-		item_button.set_drag_forwarding(_get_production_drag_data.bind(building, item_id, item_button), Callable(), Callable())
+		# One tap submits the order to the first available production slot.
 		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
-		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
 		item_button.set_meta("orbit_index", item_index)
+		_production_orbit_buttons.append(item_button)
 
-	# Place the catalog in an upper arc centered on the selected building.
-	var camera := get_viewport().get_camera_3d()
-	var orbit_center := Vector2(viewport_size.x * 0.5, viewport_size.y * 0.40)
-	if is_instance_valid(camera):
-		var projected := camera.unproject_position(building.global_position + Vector3(0.0, 2.0, 0.0))
-		if projected.is_finite():
-			orbit_center = projected
-	orbit_center.x = clampf(orbit_center.x, 100.0, viewport_size.x - 100.0)
-	orbit_center.y = clampf(orbit_center.y, 100.0, maxf(110.0, viewport_size.y - panel_height - 150.0))
-	# The drop hit-area follows the projected ground footprint of this exact
-	# building (including its rotation), rather than a decorative floating button.
-	var building_drop_target := ProductionBuildingDropTarget.new()
-	building_drop_target.name = "ProductionBuildingDropTarget"
-	building_drop_target.z_index = -1
-	building_drop_target.mouse_filter = Control.MOUSE_FILTER_STOP
-	building_drop_target.focus_mode = Control.FOCUS_NONE
-	building_drop_target.tooltip_text = "Drop the selected product on this building to order it."
-	var footprint: Vector2i = building.definition.get("size", Vector2i(2, 2))
-	var half_width := maxf(0.85, float(footprint.x) * 1.7 * 0.5)
-	var half_depth := maxf(0.85, float(footprint.y) * 1.7 * 0.5)
-	var footprint_corners := [
-		Vector3(-half_width, 0.12, -half_depth),
-		Vector3(half_width, 0.12, -half_depth),
-		Vector3(half_width, 0.12, half_depth),
-		Vector3(-half_width, 0.12, half_depth)
-	]
-	var projected_corners := PackedVector2Array()
-	if is_instance_valid(camera):
-		for local_corner in footprint_corners:
-			var world_corner: Vector3 = building.global_transform * local_corner
-			if not camera.is_position_behind(world_corner):
-				projected_corners.append(camera.unproject_position(world_corner))
-	if projected_corners.size() < 3:
-		var fallback_half := Vector2(maxf(48.0, half_width * 18.0), maxf(34.0, half_depth * 13.0)) * _ui_scale
-		projected_corners = PackedVector2Array([
-			orbit_center + Vector2(-fallback_half.x, -fallback_half.y),
-			orbit_center + Vector2(fallback_half.x, -fallback_half.y),
-			orbit_center + Vector2(fallback_half.x, fallback_half.y),
-			orbit_center + Vector2(-fallback_half.x, fallback_half.y)
-		])
-	var footprint_bounds := Rect2(projected_corners[0], Vector2.ZERO)
-	for projected_corner in projected_corners:
-		footprint_bounds = footprint_bounds.expand(projected_corner)
-	footprint_bounds = footprint_bounds.grow(5.0 * _ui_scale)
-	building_drop_target.position = footprint_bounds.position
-	building_drop_target.size = footprint_bounds.size
-	building_drop_target.hit_polygon = PackedVector2Array()
-	for projected_corner in projected_corners:
-		building_drop_target.hit_polygon.append(projected_corner - footprint_bounds.position)
-	building_drop_target.mouse_entered.connect(func():
-		building_drop_target.highlighted = true
-		building_drop_target.queue_redraw()
-	)
-	building_drop_target.mouse_exited.connect(func():
-		building_drop_target.highlighted = false
-		building_drop_target.queue_redraw()
-	)
-	building_drop_target.set_drag_forwarding(Callable(), _can_accept_building_drop.bind(building), _accept_building_drop.bind(building))
-	building_drop_target.gui_input.connect(_on_production_building_gui_input.bind(building))
-	product_orbit.add_child(building_drop_target)
-
-	# Stable honeycomb catalogue: six items form each side cluster, with
-	# additional materials continuing the same two-column lattice. The factory
-	# remains visually clear in the center; no random radial scatter.
-	var total_products := maxi(1, product_grid.get_child_count())
-	var products_per_side := int(ceil(float(total_products) / 2.0))
-	var rows_per_side := int(ceil(float(products_per_side) / 2.0))
-	var tile_width := (selector_edge + 6.0) * _ui_scale
-	var tile_height := (selector_edge + 18.0) * _ui_scale
-	var row_step := tile_height * (0.78 if viewport_size.y <= 520.0 else 0.88)
-	var column_step := tile_width * 0.92
-	var side_width := column_step * 2.0
-	var cluster_gap := maxf(24.0 * _ui_scale, tile_width * 0.48)
-	var combined_width := side_width * 2.0 + cluster_gap
-	var combined_left := clampf(orbit_center.x - combined_width * 0.5, 8.0 * _ui_scale, maxf(8.0 * _ui_scale, viewport_size.x - combined_width - 8.0 * _ui_scale))
-	var side_left_x := combined_left
-	var side_right_x := combined_left + side_width + cluster_gap
-	var available_top := 82.0 * _ui_scale
-	var available_bottom := maxf(available_top, viewport_size.y - panel_height - 18.0 * _ui_scale)
-	var cluster_height := maxf(tile_height, float(rows_per_side) * row_step)
-	var cluster_top := maxf(available_top, (available_top + available_bottom - cluster_height) * 0.5)
-	for product_node in product_grid.get_children():
-		var orbit_index := int(product_node.get_meta("orbit_index", 0))
-		var side_index := orbit_index if orbit_index < products_per_side else orbit_index - products_per_side
-		var side_x := side_left_x if orbit_index < products_per_side else side_right_x
-		var column := side_index % 2
-		var row := int(floor(float(side_index) / 2.0))
-		var stagger := (tile_width * 0.42) if row % 2 == 1 else 0.0
-		var x := side_x + float(column) * column_step + stagger
-		product_node.position = Vector2(clampf(x, 4.0, viewport_size.x - tile_width - 4.0), cluster_top + float(row) * row_step)
+	_update_production_orbit_projection()
 
 	var details_scroll := ScrollContainer.new()
 	details_scroll.name = "ProductionDetailsScroll"
@@ -2701,19 +2609,35 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	# the product onto a real, unlocked queue slot; there is no START shortcut.
 	var drop_hint := Label.new()
 	drop_hint.name = "ProductionDropHint"
-	drop_hint.text = "DRAG INTO AN EMPTY QUEUE SLOT  ·  TAP TO REVIEW DETAILS"
+	drop_hint.text = "TAP TO START  ·  MISSING INGREDIENTS ARE SHOWN HERE"
 	drop_hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	drop_hint.add_theme_color_override("font_color", Color("#E7BC43"))
 	detail_row.add_child(drop_hint)
 
 
 func _on_production_item_pressed(building: Building, item_id: String, slot_index: int, item_button: Button) -> void:
-	# A touch drag also generates Button.pressed on release. Suppress that click
-	# so releasing over a queue slot cannot open a second details interaction.
 	if item_button.has_meta("touch_drag_consumed") and bool(item_button.get_meta("touch_drag_consumed")):
 		item_button.set_meta("touch_drag_consumed", false)
 		return
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return
+	var payload := {"kind": "production_item", "item_id": item_id, "building_id": building.get_instance_id()}
+	if slot_index >= 0 and _can_accept_production_drop(Vector2.ZERO, payload, building, slot_index):
+		_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
+		return
+	# A tap on a blocked product still explains the exact shortage or lock;
+	# it never reserves inputs or creates a phantom queue entry.
 	_show_production_item_details(building, item_id, slot_index)
+	var component: ProductionComponent = building.production_component
+	if component.is_factory:
+		if slot_index < 0:
+			status_label.text = "All factory production slots are occupied."
+	else:
+		var missing := ProductionManager.get_missing_inputs_text(item_id)
+		if not missing.is_empty():
+			status_label.text = "Missing City Storage: " + missing
+		elif slot_index < 0:
+			status_label.text = "All store production slots are occupied."
 
 
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
@@ -3048,10 +2972,77 @@ func _close_production_panel() -> void:
 	_clear_production_timer_tracking()
 	_touch_selected_production_item = ""
 	_touch_selected_production_building_id = 0
+	_production_orbit_buttons.clear()
+	if is_instance_valid(_production_world_orbit):
+		_production_world_orbit.queue_free()
+	_production_world_orbit = null
 	if is_instance_valid(production_overlay):
 		production_overlay.queue_free()
 	production_overlay = null
 	production_panel = null
+
+
+func _create_production_orbit_hex(index: int, world_position: Vector3) -> Node3D:
+	var root := Node3D.new()
+	root.name = "ProductionHex_%d" % index
+	root.global_position = world_position
+	if not is_instance_valid(_production_world_orbit):
+		return root
+	var rim_mesh := CylinderMesh.new()
+	rim_mesh.top_radius = 0.98
+	rim_mesh.bottom_radius = 0.98
+	rim_mesh.height = 0.30
+	rim_mesh.radial_segments = 6
+	var rim_material := StandardMaterial3D.new()
+	rim_material.albedo_color = Color("#AFC6D4")
+	rim_material.metallic = 0.32
+	rim_material.roughness = 0.28
+	var rim := MeshInstance3D.new()
+	rim.name = "HexDepthAndRim"
+	rim.mesh = rim_mesh
+	rim.material_override = rim_material
+	root.add_child(rim)
+	var face_mesh := CylinderMesh.new()
+	face_mesh.top_radius = 0.88
+	face_mesh.bottom_radius = 0.88
+	face_mesh.height = 0.22
+	face_mesh.radial_segments = 6
+	var face_material := StandardMaterial3D.new()
+	face_material.albedo_color = Color("#F7FBFF")
+	face_material.roughness = 0.24
+	face_material.metallic = 0.08
+	face_material.emission_enabled = true
+	face_material.emission = Color(0.72, 0.84, 0.92, 1.0)
+	face_material.emission_energy_multiplier = 0.10
+	var face := MeshInstance3D.new()
+	face.name = "WhiteHexFace"
+	face.mesh = face_mesh
+	face.material_override = face_material
+	face.position.y = 0.17
+	root.add_child(face)
+	_production_world_orbit.add_child(root)
+	return root
+
+
+func _update_production_orbit_projection() -> void:
+	if _production_orbit_buttons.is_empty():
+		return
+	var camera := get_viewport().get_camera_3d()
+	if not is_instance_valid(camera):
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	for button in _production_orbit_buttons:
+		if not is_instance_valid(button):
+			continue
+		var world_position: Vector3 = button.get_meta("orbit_world_position", Vector3.ZERO)
+		var behind := camera.is_position_behind(world_position)
+		button.visible = not behind
+		if behind:
+			continue
+		var projected := camera.unproject_position(world_position + Vector3(0.0, 0.24, 0.0))
+		var button_size := button.custom_minimum_size
+		button.position = projected - button_size * 0.5
+		button.visible = button.visible and projected.x > -button_size.x and projected.x < viewport_size.x + button_size.x and projected.y > -button_size.y and projected.y < viewport_size.y + button_size.y
 
 
 func _on_city_needs_pressed() -> void:
