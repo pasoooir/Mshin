@@ -948,7 +948,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] یکپارچه‌سازی اعلان‌های اقدام واقعی: محصول آماده با تصویر محصول، انبار پر با نشان هشدار، و ارتقای مسکونی قابل شروع با نشان ارتقا. اعلان جعلی برای ساخت‌وساز و ارتقای غیرمسکونی که خودکار تکمیل می‌شوند نمایش داده نمی‌شود.
 - [ ] گسترش اعلان‌های اقدام واقعی به سایر سیستم‌ها/خدماتی که واقعاً به اقدام بازیکن نیاز دارند؛ این مرحله هنوز کامل نیست.
 - [ ] آزمون خودکار Drag & Drop واقعی، Collect دقیقاً یک‌بار، انبار پر، save/load و ادامه تولید پس از بستن پنل.
-- [x] Godot Validation + GameplaySmoke + full-storage Collect + save/load + Visual Presentation + Android Debug APK موفق: [Godot CI 43722489665](https://github.com/pasoooir/Mshin/actions/runs/43722489665). [x] Web export + Gameplay Integration + desktop/mobile-landscape Chromium launch + Pages artifact موفق: [Web CI 43722489657](https://github.com/pasoooir/Mshin/actions/runs/43722489657). این تست Chromium اجرای canvas در viewport لمسی 844×390 را تأیید می‌کند، نه بازبینی چشمی پنل تولید روی گوشی فیزیکی.
+- [x] Godot Validation + GameplaySmoke + full-storage Collect + save/load + Visual Presentation + Android Debug APK موفق: [Godot CI 43722788626](https://github.com/pasoooir/Mshin/actions/runs/43722788626). [x] Web export + Gameplay Integration + desktop/mobile-landscape Chromium launch + Pages artifact موفق: [Web CI 43722788624](https://github.com/pasoooir/Mshin/actions/runs/43722788624). این تست Chromium اجرای canvas در viewport لمسی 844×390 را تأیید می‌کند، نه بازبینی چشمی پنل تولید روی گوشی فیزیکی.
 - [ ] پذیرش Drag & Drop و چیدمان بصری پنل تولید روی دستگاه Android واقعی؛ تست Chromium جایگزین گوشی فیزیکی نیست.
 
 **قواعد حفظ‌شده:** پایان تایمر به‌تنهایی کالا را وارد انبار نمی‌کند؛ Collect مستقل همان اسلات را خالی می‌کند؛ در صورت پر بودن انبار خروجی آماده در اسلات باقی می‌ماند؛ داده recipe/time/price فاقد منبع نباید حدس زده شود.
@@ -968,8 +968,8 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] Add tap-product-then-tap-slot fallback alongside native drag forwarding for touch devices.
 - [ ] Visual inspection of radial spacing for every catalog size on actual mobile landscape devices (Chromium mobile launch passed, but the production panel itself has not been visually inspected on a physical phone).
 - [ ] Extend actionable building notifications to construction, upgrade and other activities only where the underlying activity has a genuine pending player action.
-- [x] Godot GameplaySmoke, full-storage Collect, save/load, visual presentation and Android APK CI passed: [run 43722489665](https://github.com/pasoooir/Mshin/actions/runs/43722489665).
-- [x] Web export, gameplay integration, desktop/mobile landscape Chromium launch and Pages artifact passed: [run 43722489657](https://github.com/pasoooir/Mshin/actions/runs/43722489657).
+- [x] Godot GameplaySmoke, full-storage Collect, save/load, visual presentation and Android APK CI passed: [run 43722788626](https://github.com/pasoooir/Mshin/actions/runs/43722788626).
+- [x] Web export, gameplay integration, desktop/mobile landscape Chromium launch and Pages artifact passed: [run 43722788624](https://github.com/pasoooir/Mshin/actions/runs/43722788624).
 - [ ] Physical Android touch-device acceptance and visual review of the production panel.
 
 No recipe, production duration, storage accounting, queue-slot price, or Collect rule was changed or invented.
