@@ -32,6 +32,13 @@ func _initialize() -> void:
 	if int(result_2x.get("source_breakdown", {}).get("depot_sales", 0)) != 30:
 		_fail("Trade Depot sale did not settle at catalog value after 120 seconds")
 		return
+
+	var too_early := base_config.duplicate(true)
+	too_early["horizon_seconds"] = 119
+	var early_result: Dictionary = Simulator.simulate(too_early)
+	if int(early_result.get("source_breakdown", {}).get("depot_sales", 0)) != 0:
+		_fail("Trade Depot sale settled before the 120-second listing timer")
+		return
 	if int(result_2x.get("source_breakdown", {}).get("delivery_orders", 0)) != 320:
 		_fail("delivery order reward does not match the live 2x catalog formula")
 		return
