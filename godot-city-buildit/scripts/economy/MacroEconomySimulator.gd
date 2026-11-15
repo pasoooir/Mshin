@@ -11,6 +11,26 @@ const HAPPINESS_XP_PER_TICK := 5
 const MAX_LEVEL := 60
 const ProductionSimulator = preload("res://scripts/economy/ProductionCapacitySimulator.gd")
 
+
+# Convenience entry point for a live city. The player-action schedule remains
+# explicit; this method only snapshots current facilities, timers and inventory.
+static func simulate_live_city(config: Dictionary) -> Dictionary:
+	var live_config: Dictionary = config.duplicate(true)
+	var horizon := maxi(0, int(live_config.get("horizon_seconds", 0)))
+	var actions: Array = live_config.get("production_actions", [])
+	var production_snapshot := ProductionSimulator.capture_live_city_config(horizon, actions)
+	if production_snapshot.has("capture_error"):
+		return {"valid": false, "errors": [str(production_snapshot.get("capture_error", "Production snapshot failed."))]}
+	live_config["production"] = production_snapshot
+	if not live_config.has("item_values"):
+		var values: Dictionary = {}
+		for item_id in ProductionManager.raw_materials:
+			values[str(item_id)] = ProductionManager.get_item_value(str(item_id))
+		for item_id in ProductionManager.crafted_items:
+			values[str(item_id)] = ProductionManager.get_item_value(str(item_id))
+		live_config["item_values"] = values
+	return simulate(live_config)
+
 static func simulate(config: Dictionary) -> Dictionary:
 	var errors: Array[String] = []
 	var horizon_seconds := maxi(0, int(config.get("horizon_seconds", 0)))
