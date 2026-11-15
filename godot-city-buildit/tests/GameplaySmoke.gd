@@ -1643,6 +1643,10 @@ func _create_service_test_home(building_id: String, service_demand: int, grid_po
 	home.building_type = "residential_1"
 	home.definition = {"category": "residential", "size": Vector2i(2, 2), "service_demand": service_demand}
 	home.status = "completed"
+	# Give isolated service fixtures real occupied residents. HappinessManager
+	# recomputes city workforce from completed household occupancy.
+	home.current_population = 100
+	home.set_meta("immigration_population_initialized", true)
 	home.grid_pos = grid_pos
 	home.global_position = Vector3.ZERO
 	BuildManager.buildings[home.building_id] = home
