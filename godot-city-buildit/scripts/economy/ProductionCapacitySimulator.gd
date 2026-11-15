@@ -156,7 +156,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 					var recipe: Dictionary = recipes.get(item_id, {})
 					var requested_slot := int(action.get("slot_index", -1))
 					var slot_index := requested_slot if requested_slot >= 0 else _first_empty_slot(facility.slots)
-					if quantity == 1 and str(facility.kind) == "store" and bool(facility.operational) and str(recipe.get("store", "")) == str(facility.get("shop_id", "")) and slot_index >= 0 and slot_index < facility.slots.size() and facility.slots[slot_index].is_empty() and _recipe_unlocked(item_id, recipe, facility, raw_catalog, recipes, config) and _can_resolve_auto_chain_item(item_id, facility_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, {}):
+					if quantity == 1 and str(facility.kind) == "store" and bool(facility.operational) and str(recipe.get("store", "")) == str(facility.get("shop_id", "")) and slot_index >= 0 and slot_index < facility.slots.size() and facility.slots[slot_index].is_empty() and _recipe_unlocked(item_id, recipe, facility, raw_catalog, recipes, config) and _can_resolve_auto_chain_item(item_id, 1, facility_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, {}):
 						var chain_id := str(action.get("chain_id", "scenario-chain-%d" % (action_index - 1)))
 						facility.slots[slot_index] = {"item_id": item_id, "start_seconds": 0, "finish_seconds": 0, "ready": false, "queued": true, "auto_chain_id": chain_id, "auto_chain_root": true, "auto_chain_started": false, "cost_known": false, "cost_total": 0}
 						success = true
@@ -276,8 +276,10 @@ static func simulate(config: Dictionary) -> Dictionary:
 	}
 
 
-static func _can_resolve_auto_chain_item(item_id: String, reserved_root_facility_id: String, facilities: Dictionary, inventory: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, factory_materials: Dictionary, config: Dictionary, ancestry: Dictionary) -> bool:
-	if int(inventory.get(item_id, 0)) > 0:
+static func _can_resolve_auto_chain_item(item_id: String, required_amount: int, reserved_root_facility_id: String, facilities: Dictionary, inventory: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, factory_materials: Dictionary, config: Dictionary, ancestry: Dictionary) -> bool:
+	if required_amount <= 0:
+		return false
+	if int(inventory.get(item_id, 0)) >= required_amount:
 		return true
 	if ancestry.has(item_id):
 		return false
@@ -326,7 +328,7 @@ static func _can_resolve_auto_chain_item(item_id: String, reserved_root_facility
 		if required <= 0:
 			return false
 		var missing := maxi(0, required - int(inventory.get(input_id, 0)))
-		if missing > 0 and not _can_resolve_auto_chain_item(input_id, reserved_root_facility_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, next_ancestry):
+		if missing > 0 and not _can_resolve_auto_chain_item(input_id, missing, reserved_root_facility_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, next_ancestry):
 			return false
 	return true
 
@@ -709,7 +711,6 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 		"horizon_seconds": maxi(0, horizon_seconds),
 		"storage_capacity": int(storage_manager.capacity),
 		"initial_inventory": storage_manager.get_all_items(),
-		"initial_cost_batches": storage_manager.item_cost_batches.duplicate(true),
 		"initial_cost_batches": storage_manager.item_cost_batches.duplicate(true),
 		"raw_materials": raw_catalog,
 		"crafted_items": crafted_catalog,
