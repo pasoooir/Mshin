@@ -1573,8 +1573,10 @@ func _create_service_test_home(building_id: String, service_demand: int, grid_po
 func _test_producer_sanitation_and_emergency_gates() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
+	var saved_population := GameManager.population
 	BuildManager.buildings.clear()
 	GameManager.level = 20
+	GameManager.population = 100
 	var road_system = get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.seed_starter_access()
@@ -1590,6 +1592,24 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.demand_sewage == 2 and ServiceManager.demand_waste == 2, "Industrial operating sanitation demand must be included in city totals.")
 	_check(not BuildManager.is_building_operational(producer), "A producer must not operate without sewage and waste capacity.")
+	var power := FireHazardTestBuilding.new()
+	add_child(power)
+	power.building_id = "producer_gate_power"
+	power.building_type = "power_wind"
+	power.definition = BuildManager.building_types["power_wind"]
+	power.status = "completed"
+	power.grid_pos = Vector2i(1, -2)
+	power.global_position = Vector3.ZERO
+	BuildManager.buildings[power.building_id] = power
+	var water := FireHazardTestBuilding.new()
+	add_child(water)
+	water.building_id = "producer_gate_water"
+	water.building_type = "water_tower"
+	water.definition = BuildManager.building_types["water_tower"]
+	water.status = "completed"
+	water.grid_pos = Vector2i(1, -2)
+	water.global_position = Vector3.ZERO
+	BuildManager.buildings[water.building_id] = water
 	var sewage := FireHazardTestBuilding.new()
 	add_child(sewage)
 	sewage.building_id = "producer_gate_sewage"
@@ -1627,12 +1647,13 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	_check(BuildManager.is_building_operational(producer), "A producer must resume once every configured operating-service gate is satisfied.")
 	producer.definition["operating_emergency_services"] = {"police": true}
 	_check(not BuildManager.is_building_operational(producer), "Unknown or missing police coverage must block only when explicitly configured.")
-	for fixture in [producer, sewage, waste, fire]:
+	for fixture in [producer, power, water, sewage, waste, fire]:
 		BuildManager.buildings.erase(fixture.building_id)
 		remove_child(fixture)
 		fixture.free()
 	BuildManager.buildings = saved_buildings
 	GameManager.level = saved_level
+	GameManager.population = saved_population
 	ServiceManager.recalculate_from_buildings()
 
 
