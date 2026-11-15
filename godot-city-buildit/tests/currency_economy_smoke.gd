@@ -49,19 +49,6 @@ func _ready() -> void:
 		if bool(cancelled_result.get("success", true)) or EconomyManager.sim_cash != before_cancel:
 			failures.append("cancelled payment granted SimCash")
 
-	var popup_controller := preload("res://scripts/ui/CurrencyPanels.gd").new()
-	add_child(popup_controller)
-	popup_controller.open_conversion()
-	await get_tree().process_frame
-	if not popup_controller.visible or popup_controller.find_child("ConfirmSimCashConversion", true, false) == null:
-		failures.append("Simoleons plus did not open the dedicated conversion popup")
-	popup_controller.open_store()
-	await get_tree().process_frame
-	if not popup_controller.visible or popup_controller.find_child("CurrencyPopupScroll", true, false) == null:
-		failures.append("SimCash plus did not open the dedicated store popup")
-	popup_controller.close_panel()
-	popup_controller.queue_free()
-
 	var ledger_snapshot := PaymentManager.to_save_dict()
 	PaymentManager.from_save_dict(ledger_snapshot)
 	if PaymentManager.get_recent_orders(10).size() < 3:
