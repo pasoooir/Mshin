@@ -2637,15 +2637,9 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 func _input(event: InputEvent) -> void:
 	# Keep receiving pointer motion/release after the finger leaves the source
 	# product tile. This is essential for a genuine drag gesture on touchscreens.
-	var pointer_id := -1
-	if event is InputEventScreenTouch or event is InputEventScreenDrag:
-		pointer_id = event.index
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		pointer_id = -1
-	elif event is InputEventMouseMotion:
-		pointer_id = -1
-	else:
+	if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
 		return
+	var pointer_id := event.index
 	if not _production_drag_gestures.has(pointer_id):
 		return
 	var gesture: Dictionary = _production_drag_gestures[pointer_id]
@@ -2669,13 +2663,6 @@ func _on_production_product_gui_input(event: InputEvent, _product_button: Button
 		released = not event.pressed
 	elif event is InputEventScreenDrag:
 		pointer_id = event.index
-		pointer_position = event.position
-		moved_event = true
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		pointer_position = event.position
-		pressed = event.pressed
-		released = not event.pressed
-	elif event is InputEventMouseMotion:
 		pointer_position = event.position
 		moved_event = true
 	else:
