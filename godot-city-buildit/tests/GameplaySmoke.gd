@@ -76,9 +76,56 @@ func _test_construction_bom_contract() -> void:
 			_check(BuildManager.get_construction_bom_source(str(type_id)).contains("Mshin"), "Construction BOM provenance must identify Mshin design values: " + str(type_id))
 	StorageManager.items = {}
 	_check(not BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction must be blocked when its BOM materials are missing.")
-	StorageManager.items = {"nails":1, "metal":1}
-	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction BOM must become affordable when all required materials are present.")
+	var power_bom := BuildManager.get_construction_bom("power_wind")
+	StorageManager.items = power_bom.duplicate(true)
+	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "A building-specific construction BOM must become affordable only when every listed material is present.")
+	_check(BuildManager.get_construction_bom("fire_station_small") != power_bom, "Distinct service types must not silently share one category-wide BOM.")
+	_check(BuildManager.get_construction_bom("factory_basic") != BuildManager.get_construction_bom("hardware_store"), "Industrial and commercial buildings must have distinct construction bills.")
+	for type_id in BuildManager.building_types:
+		var resolved := BuildManager.get_construction_bom(str(type_id))
+		for item_id in resolved:
+			_check(int(resolved[item_id]) > 0 and not ProductionManager.get_item_definition(str(item_id)).is_empty(), "Every per-building BOM line must reference a valid positive material: %s / %s" % [str(type_id), str(item_id)])
 	StorageManager.from_save_dict(previous_storage)
+
+func _test_non_residential_upgrade_bom() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_loading := SaveManager.is_loading
+	var previous_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var road_system = get_node_or_null("World/RoadSystem")
+	if road_system:
+		road_system.seed_starter_access()
+	BuildManager.buildings.clear()
+	StorageManager.items = {}
+	var probe := Building.new()
+	add_child(probe)
+	probe.building_id = "non_residential_upgrade_bom_probe"
+	probe.building_type = "power_wind"
+	probe.definition = BuildManager.building_types["power_wind"].duplicate(true)
+	probe.status = "completed"
+	probe.grid_pos = Vector2i(1, 1)
+	probe.upgrade_stage = 1
+	probe.max_stage = 6
+	BuildManager.buildings[probe.building_id] = probe
+	var upgrade_bom := BuildManager.get_building_upgrade_bom(probe)
+	_check(not upgrade_bom.is_empty(), "Every supported non-residential building must resolve a stage-specific upgrade BOM.")
+	_check(not probe.try_upgrade(), "A non-residential upgrade must be rejected when any required material is missing.")
+	var full_materials := upgrade_bom.duplicate(true)
+	StorageManager.items = full_materials
+	_check(probe.try_upgrade(), "A non-residential building must start upgrading after its complete BOM is available.")
+	_check(StorageManager.items.is_empty(), "Accepting a non-residential upgrade must consume its complete BOM exactly once.")
+	_check(probe.upgrade_in_progress and probe.upgrade_stage == 1, "Upgrade acceptance must start the timer without advancing the stage early.")
+	SaveManager.is_loading = true
+	probe._finish_non_residential_upgrade()
+	_check(probe.upgrade_stage == 2 and not probe.upgrade_in_progress, "Finishing a non-residential upgrade must advance exactly one stage.")
+	_check(BuildManager.get_building_upgrade_bom(probe) != upgrade_bom, "The next upgrade stage must have a different, higher material requirement.")
+	SaveManager.is_loading = previous_loading
+	BuildManager.buildings.erase(probe.building_id)
+	remove_child(probe)
+	probe.free()
+	BuildManager.buildings = previous_buildings
+	StorageManager.from_save_dict(previous_storage)
+	ServiceManager.recalculate_from_buildings()
+
 
 func _grant_construction_bom_for_test(type_id: String) -> void:
 	var requirements := BuildManager.get_construction_bom(type_id)
@@ -2873,6 +2920,8 @@ func _run_gameplay_test() -> void:
 	_test_achievements()
 	_test_region_city_snapshots()
 	_test_construction_bom_contract()
+	_test_non_residential_upgrade_bom()
+	_test_producer_sanitation_and_emergency_gates()
 	_test_regional_building_and_material_gates()
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
