@@ -1036,7 +1036,9 @@ Design references:
 - [x] Queue targets receive live hover highlighting during touch drag.
 - [x] Honeycomb clusters are positioned around the selected building rather than pinned to the far screen edges; product tiles and icons are enlarged.
 - [x] GameplaySmoke updated to exercise the global touch drag/release path and direct queue submission for factory and store orders.
-- [ ] Godot CI / GameplaySmoke on this correction branch.
+- [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy workflows passed (run `43741503047`).
+- [x] Android Debug APK export, signature/package identity verification and artifact upload passed in run `43741503047`.
+- [x] Godot Web export passed in run `43741503045`; Chromium desktop/mobile smoke is running.
 - [ ] Android landscape physical drag/drop acceptance and screenshot review.
 
 The existing Figma production studio frame was updated to match the no-START, drag-to-queue interaction and building-centered honeycomb placement. Product Design's dedicated Work-mode workflow is not available in this standard chat; implementation and design-spec edits are being handled directly in GitHub and Figma.
