@@ -3408,6 +3408,10 @@ func _run_gameplay_test() -> void:
 		var storage_before_panel: Dictionary = StorageManager.to_save_dict()
 		StorageManager.capacity = 60
 		StorageManager.items = {"metal": 1, "wood": 5, "bricks": 2}
+		GameManager.level = StorageManager.STORAGE_UNLOCK_LEVEL
+		var required_each := StorageManager.get_next_storage_upgrade_requirement()
+		for storage_item_id in StorageManager.STORAGE_ITEM_IDS:
+			_check(StorageManager.add_item(str(storage_item_id), required_each), "Test setup could not add required storage part " + str(storage_item_id))
 		hud._show_storage_panel()
 		_check(is_instance_valid(hud.storage_overlay), "Opening City Storage must create a full-screen modal overlay.")
 		_check(hud.storage_overlay.find_child("StorageBackdrop", true, false) is ColorRect, "City Storage must dim the city behind its light inventory card.")
@@ -3419,10 +3423,6 @@ func _run_gameplay_test() -> void:
 		_check(storage_grid != null and storage_grid.find_child("StorageItem_metal", true, false) != null, "City Storage grid must show stored product icons.")
 		# The current upgrade is a three-part Special Item transaction, not a
 		# Simoleons-only button. Supply the exact next requirement for this test.
-		GameManager.level = StorageManager.STORAGE_UNLOCK_LEVEL
-		var required_each := StorageManager.get_next_storage_upgrade_requirement()
-		for storage_item_id in StorageManager.STORAGE_ITEM_IDS:
-			_check(StorageManager.add_item(str(storage_item_id), required_each), "Test setup could not add required storage part " + str(storage_item_id))
 		var upgrade_button := hud.storage_panel.find_child("ConfirmStorageSpecialItemUpgrade", true, false) as Button
 		_check(upgrade_button != null, "City Storage must show the three-Special-Item capacity upgrade action.")
 		if upgrade_button != null:
