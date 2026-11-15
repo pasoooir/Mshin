@@ -393,4 +393,7 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Physical Android touch acceptance.
 - [x] Shared action marker logic covers Epic Project claim/dismiss, due Epic token parts, deliverable specialization tasks, ready Trade Depot sales, fulfilable Global Trade orders and deliverable cargo-port crates.
 - [x] Trade/cargo markers are gated by actual operational unlocks; construction and auto-completed upgrades do not show false claim badges.
-- [ ] CI verifies notification state and marker removal after successful action.
+- [x] GameplaySmoke verifies Epic claim, due token, deliverable specialization task, ready Trade Depot sale, fulfilable Global Trade order and deliverable cargo crate markers.
+- [x] GameplaySmoke verifies markers disappear when the corresponding state is completed or no longer actionable.
+- [x] Godot Validation, GameplaySmoke, Visual Presentation and Android Debug APK export/signature: [run 43726778004](https://github.com/pasoooir/Mshin/actions/runs/43726778004).
+- [x] Web export, gameplay integration and desktop/mobile Chromium launch: [run 43726778009](https://github.com/pasoooir/Mshin/actions/runs/43726778009). Pages deploy skipped for PR.
