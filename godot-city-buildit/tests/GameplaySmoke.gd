@@ -3778,12 +3778,15 @@ func _run_gameplay_test() -> void:
 	_check(factory_component != null and factory_component.get_slot_count() == 6, "Small Factory must expose six independent production queue slots.")
 	production_hud.open_production_panel(factory)
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
+	var production_backdrop := production_hud.production_overlay.find_child("ProductionBackdrop", true, false) as ColorRect
+	_check(production_backdrop != null and is_equal_approx(production_backdrop.color.a, 0.50), "Production modal must dim the city with exactly 50% black transparency.")
+	_check(production_backdrop != null and production_backdrop.mouse_filter == Control.MOUSE_FILTER_STOP and production_hud.production_overlay.mouse_filter == Control.MOUSE_FILTER_STOP, "Production modal must block pointer interaction with the city behind it.")
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Production overlay must retain a subtle transparent backdrop without hiding the city.")
 	var production_product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	var production_product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	_check(production_product_orbit != null and production_product_grid != null, "Factory products must render in a floating radial orbit over the city.")
-	var factory_surface_drop := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Button
-	_check(factory_surface_drop != null and factory_surface_drop.text.contains("BUILDING"), "Factory must expose a visible drop target aligned to the selected building itself.")
+	var factory_surface_drop := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
+	_check(factory_surface_drop != null and factory_surface_drop.mouse_filter == Control.MOUSE_FILTER_STOP and factory_surface_drop.size.x > 0.0 and factory_surface_drop.size.y > 0.0, "Factory must expose a real footprint-aligned drop hit area on the selected building.")
 	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Radial factory catalogue must expose every registered material.")
 	_check(production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) is ScrollContainer, "Recipe and ingredient details must remain scrollable on compact screens.")
 	_check(production_hud.production_panel.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must have a distinct high-contrast building nameplate.")
@@ -3894,7 +3897,7 @@ func _run_gameplay_test() -> void:
 	var product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The radial store catalog must expose every registered product.")
-	_check(product_orbit != null and product_orbit.find_child("ProductionBuildingDropTarget", true, false) is Button, "Product selectors and the building drop target must share the floating orbit layer outside the compact queue dock.")
+	_check(product_orbit != null and product_orbit.find_child("ProductionBuildingDropTarget", true, false) is Control, "Product selectors and the building drop target must share the floating orbit layer outside the compact queue dock.")
 	_check(production_hud.production_panel.size.y < get_viewport().get_visible_rect().size.y * 0.5, "Production interaction must use a compact bottom dock, not a full-screen modal.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.

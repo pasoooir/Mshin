@@ -74,6 +74,23 @@ class LockGlyph extends Control:
 		draw_rect(body, lock_color, true)
 		draw_arc(Vector2(size.x * 0.5, size.y * 0.49), size.x * 0.22, PI, TAU, 16, lock_color, maxf(1.5, size.x * 0.09))
 
+# A transparent, polygon-hit-tested GUI target projected onto the selected
+# building footprint. It accepts only the matching building's production item.
+class ProductionBuildingDropTarget extends Control:
+	var hit_polygon := PackedVector2Array()
+	var highlighted := false
+
+	func _has_point(point: Vector2) -> bool:
+		return hit_polygon.size() >= 3 and Geometry2D.is_point_in_polygon(point, hit_polygon)
+
+	func _draw() -> void:
+		if not highlighted or hit_polygon.size() < 3:
+			return
+		draw_colored_polygon(hit_polygon, Color(0.20, 0.78, 1.0, 0.12))
+		var outline := hit_polygon.duplicate()
+		outline.append(hit_polygon[0])
+		draw_polyline(outline, Color(0.45, 0.88, 1.0, 0.95), 3.0, true)
+
 @onready var status_label: Label = $StatusLabel
 
 var submenu: HBoxContainer
@@ -1511,6 +1528,10 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 		submenu_scroll.hide()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(production_overlay) and event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_BACKSPACE]:
+		_close_production_panel()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_X:
 		if submenu_scroll and submenu_scroll.visible:
 			_close_build_menu()
@@ -1950,20 +1971,21 @@ func open_production_panel(building: Building) -> void:
 	if is_instance_valid(production_overlay):
 		production_overlay.queue_free()
 
-	# SimCity BuildIt-inspired production studio: keep the city visible and
-	# arrange floating item hexagons above a compact production queue.
+	# Production is a true modal interaction state: retain the city as a
+	# visible 3D backdrop, dim it by exactly 50%, and consume pointer input so
+	# neither CityInput nor CameraController can interact with the world.
 	production_overlay = Control.new()
 	production_overlay.name = "ProductionOverlay"
 	production_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	production_overlay.z_index = 100
-	production_overlay.mouse_filter = Control.MOUSE_FILTER_PASS
+	production_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(production_overlay)
 
 	var shade := ColorRect.new()
 	shade.name = "ProductionBackdrop"
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.025, 0.055, 0.085, 0.08)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shade.color = Color(0.0, 0.0, 0.0, 0.50)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	production_overlay.add_child(shade)
 
 	production_panel = PanelContainer.new()
@@ -2251,22 +2273,54 @@ func open_production_panel(building: Building) -> void:
 			orbit_center = projected
 	orbit_center.x = clampf(orbit_center.x, 100.0, viewport_size.x - 100.0)
 	orbit_center.y = clampf(orbit_center.y, 100.0, maxf(110.0, viewport_size.y - panel_height - 150.0))
-	# The selected building itself is the primary drop target. A dropped item
-	# is routed into its first free production slot, preserving the existing
-	# ProductionComponent and automatic-chain validation paths.
-	var building_drop_target := Button.new()
+	# The drop hit-area follows the projected ground footprint of this exact
+	# building (including its rotation), rather than a decorative floating button.
+	var building_drop_target := ProductionBuildingDropTarget.new()
 	building_drop_target.name = "ProductionBuildingDropTarget"
-	building_drop_target.text = "DROP\nON BUILDING"
-	building_drop_target.custom_minimum_size = Vector2(104, 72) * _ui_scale
-	building_drop_target.position = orbit_center - building_drop_target.custom_minimum_size * 0.5
-	building_drop_target.z_index = 5
+	building_drop_target.z_index = -1
+	building_drop_target.mouse_filter = Control.MOUSE_FILTER_STOP
 	building_drop_target.focus_mode = Control.FOCUS_NONE
-	building_drop_target.tooltip_text = "Drop a product here to add it to this building's next free production slot."
-	building_drop_target.add_theme_font_size_override("font_size", int(11 * _ui_scale))
-	building_drop_target.add_theme_color_override("font_color", Color("#FFF8DC"))
-	building_drop_target.add_theme_stylebox_override("normal", _toolbar_style(Color(0.05, 0.20, 0.29, 0.88), Color("#F4C64E")))
-	building_drop_target.add_theme_stylebox_override("hover", _toolbar_style(Color(0.10, 0.34, 0.43, 0.96), Color("#FFE58A")))
-	building_drop_target.add_theme_stylebox_override("pressed", _toolbar_style(Color(0.03, 0.14, 0.22, 0.96), Color("#FFE58A")))
+	building_drop_target.tooltip_text = "Drop the selected product on this building to order it."
+	var footprint: Vector2i = building.definition.get("size", Vector2i(2, 2))
+	var half_width := maxf(0.85, float(footprint.x) * 1.7 * 0.5)
+	var half_depth := maxf(0.85, float(footprint.y) * 1.7 * 0.5)
+	var footprint_corners := [
+		Vector3(-half_width, 0.12, -half_depth),
+		Vector3(half_width, 0.12, -half_depth),
+		Vector3(half_width, 0.12, half_depth),
+		Vector3(-half_width, 0.12, half_depth)
+	]
+	var projected_corners := PackedVector2Array()
+	if is_instance_valid(camera):
+		for local_corner in footprint_corners:
+			var world_corner: Vector3 = building.global_transform * local_corner
+			if not camera.is_position_behind(world_corner):
+				projected_corners.append(camera.unproject_position(world_corner))
+	if projected_corners.size() < 3:
+		var fallback_half := Vector2(maxf(48.0, half_width * 18.0), maxf(34.0, half_depth * 13.0)) * _ui_scale
+		projected_corners = PackedVector2Array([
+			orbit_center + Vector2(-fallback_half.x, -fallback_half.y),
+			orbit_center + Vector2(fallback_half.x, -fallback_half.y),
+			orbit_center + Vector2(fallback_half.x, fallback_half.y),
+			orbit_center + Vector2(-fallback_half.x, fallback_half.y)
+		])
+	var footprint_bounds := Rect2(projected_corners[0], Vector2.ZERO)
+	for projected_corner in projected_corners:
+		footprint_bounds = footprint_bounds.expand(projected_corner)
+	footprint_bounds = footprint_bounds.grow(5.0 * _ui_scale)
+	building_drop_target.position = footprint_bounds.position
+	building_drop_target.size = footprint_bounds.size
+	building_drop_target.hit_polygon = PackedVector2Array()
+	for projected_corner in projected_corners:
+		building_drop_target.hit_polygon.append(projected_corner - footprint_bounds.position)
+	building_drop_target.mouse_entered.connect(func():
+		building_drop_target.highlighted = true
+		building_drop_target.queue_redraw()
+	)
+	building_drop_target.mouse_exited.connect(func():
+		building_drop_target.highlighted = false
+		building_drop_target.queue_redraw()
+	)
 	building_drop_target.set_drag_forwarding(Callable(), _can_accept_building_drop.bind(building), _accept_building_drop.bind(building))
 	building_drop_target.gui_input.connect(_on_production_building_gui_input.bind(building))
 	product_orbit.add_child(building_drop_target)
