@@ -224,3 +224,24 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 
 - [PR #506](https://github.com/pasoooir/Mshin/pull/506) merged to `main` as `8735b7b6f8491c0f385548ad2846d03ccaf29e09`: SimCash can buy Dozer Wheel, Dozer Blade and Dozer Exhaust for the Fandom reference price of 24 SimCash each. Items enter City Storage and the normal land expansion transaction still enforces Mayor Level 10, adjacency and the full three-item BOM. Godot Validation run [43701669455](https://github.com/pasoooir/Mshin/actions/runs/43701669455) and Web/Chromium run [43701669452](https://github.com/pasoooir/Mshin/actions/runs/43701669452) passed.
 - Remaining currency progression gap: SimCash purchase of Storage Bars/Locks/Cameras and the full escalating three-item City Storage capacity upgrade table are not implemented. Do not replace that item gate with direct SimCash capacity bypass.
+
+
+## Production capacity simulator and macro cashflow integration — PR pending CI
+
+Implementation branch: `feat/production-capacity-cashflow-model`
+
+- [ ] Deterministic production replay engine added in `scripts/economy/ProductionCapacitySimulator.gd`; CI has not yet validated the parser/runtime.
+- [ ] Factory slots execute independently using explicit facility slot counts; no hidden factory waiting queue is invented.
+- [ ] Commercial stores serialize one active order per building while retaining other slots as FIFO queue entries.
+- [ ] Manual store queue admission atomically consumes the full recipe input set, matching `ProductionComponent.start_craft`.
+- [ ] Ready output remains in its production slot until explicit collection; full warehouse rejects collection without discarding the item.
+- [ ] Trade Depot listing removes stock at listing time; up to four active listings are modeled; cash is credited only by explicit collection after the real 120-second wait.
+- [ ] Collected production sales are appended as `production_sale` events and flow into the macro `production_sales` source bucket.
+- [ ] Live-city snapshot captures active ordinary production slots, remaining timers, current warehouse and Depot listings. It deliberately returns a capture error if AUTO CHAIN jobs are active because their recursive dependency graph is not yet modeled.
+- [ ] Smoke tests added for parallel factory slots, two queued store jobs, atomic material consumption, full-warehouse retention and production-to-cashflow integration.
+- [ ] Godot Validation / Android APK export / Web Chromium CI on the final PR SHA.
+- [ ] Automatic-chain dependency replay, shared intermediate reservations and multiple concurrent roots.
+- [ ] Inventory cost-basis ledger and accounting-grade realized profit; catalog value is not silently treated as cash expenditure.
+- [ ] Coupling delivery-order item consumption to production inventory and explicit market-demand modeling.
+
+**Acceptance rule:** these boxes remain unchecked until code is on `main` and the corresponding CI evidence is recorded. Design documents and a successful file write alone are not runtime acceptance.
