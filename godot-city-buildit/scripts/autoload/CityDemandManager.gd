@@ -251,7 +251,7 @@ func get_city_snapshot() -> Dictionary:
 	var inventory_rows: Array = []
 	for inventory_item in StorageManager.get_all_items():
 		var inventory_id := str(inventory_item)
-		var inventory_count := StorageManager.get_count(inventory_id)
+		var inventory_count := StorageManager.get_available_count(inventory_id)
 		if inventory_count > 0:
 			inventory_rows.append({"item_id":inventory_id,"name":_item_name(inventory_id),"count":inventory_count})
 	inventory_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
@@ -261,7 +261,7 @@ func get_city_snapshot() -> Dictionary:
 	var critical_count := 0
 	for item_variant in required.keys():
 		var item_id := str(item_variant)
-		var stored := StorageManager.get_count(item_id)
+		var stored := StorageManager.get_available_count(item_id)
 		var demand := int(required[item_id])
 		var active: Dictionary = production.totals.get(item_id, {})
 		var producing := int(active.get("producing", 0))
