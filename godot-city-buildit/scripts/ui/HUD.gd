@@ -118,8 +118,9 @@ var _production_progress_bars: Array[ProgressBar] = []
 var _production_building: Building = null
 var _touch_selected_production_item := ""
 var _touch_selected_production_building_id := 0
+var _production_drag_gestures: Dictionary = {}
 var _production_tick_accum := 0.0
-var _factory_ready_scan_accum := 0.0
+var _building_action_scan_accum := 0.0
 var catalog_info_panel: PanelContainer
 var catalog_base_bar: PanelContainer
 var catalog_advisor: Control
@@ -1674,10 +1675,10 @@ func _start_next_level_up_effect() -> void:
 		_level_up_shake_elapsed = 0.0
 
 func _process(delta: float) -> void:
-	_factory_ready_scan_accum += delta
-	if _factory_ready_scan_accum >= 0.5:
-		_factory_ready_scan_accum = 0.0
-		_refresh_factory_ready_icons()
+	_building_action_scan_accum += delta
+	if _building_action_scan_accum >= 0.5:
+		_building_action_scan_accum = 0.0
+		_refresh_building_action_notifications()
 	if is_instance_valid(production_panel):
 		_production_tick_accum += delta
 		if _production_tick_accum >= 0.25:
@@ -1698,11 +1699,10 @@ func _process(delta: float) -> void:
 	_level_up_camera.position = _level_up_camera_origin + shake
 
 
-func _refresh_factory_ready_icons() -> void:
-	# One world-space action hint per building: product thumbnail for ready
-	# output, an upgrade marker when a residential upgrade can actually start.
-	# Construction and non-residential upgrades auto-complete; they must not
-	# display a fake "collect/claim" badge.
+func _refresh_building_action_notifications() -> void:
+	# One world-space action hint per building for real player-pending actions:
+	# ready production, upgrades, Epic Projects/tokens, trade sales/orders and
+	# cargo delivery. Auto-completed construction/upgrades never get fake claims.
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
@@ -1711,8 +1711,9 @@ func _refresh_factory_ready_icons() -> void:
 		if not is_instance_valid(building) or building.status != "completed":
 			continue
 		if is_instance_valid(building.action_notification_label):
-			building.action_notification_label.text = "⬆"
-			building.action_notification_label.visible = bool(building.upgrade_ready)
+			var action_text := _get_building_action_notification_text(building)
+			building.action_notification_label.text = action_text
+			building.action_notification_label.visible = not action_text.is_empty()
 		var component = building.production_component
 		var ready_item := ""
 		var ready_count := 0
@@ -1735,6 +1736,69 @@ func _refresh_factory_ready_icons() -> void:
 			building.production_icon.modulate = Color("#FF765E") if storage_full else Color("#FFE06B")
 			building.production_icon.outline_size = 12
 			building.production_icon.outline_modulate = Color(0.12, 0.08, 0.02, 0.95)
+
+func _get_building_action_notification_text(building: Building) -> String:
+	if not is_instance_valid(building) or building.status != "completed":
+		return ""
+	var building_id := str(building.building_id)
+	var now := int(Time.get_unix_time_from_system())
+
+	# Epic project completion is claimed on the residential target itself.
+	var project: Dictionary = EpicProjectManager.active_project
+	if not project.is_empty():
+		if bool(project.get("finished", false)) and str(project.get("building_id", "")) == building_id:
+			return "🏆" if str(project.get("tier", "none")) != "none" else "✓"
+		if not bool(project.get("finished", false)):
+			for task in project.get("tasks", []):
+				if str(task.get("building_id", "")) == building_id:
+					var task_item := str(task.get("item_id", ""))
+					var task_amount := int(task.get("amount", 0))
+					if not task_item.is_empty() and task_amount > 0 and StorageManager.get_count(task_item) >= task_amount:
+						return "📦"
+
+	# Epic buildings expose a collect action when their next token part is due.
+	if EpicProjectManager.epic_buildings.has(building_id):
+		var epic_entry: Dictionary = EpicProjectManager.epic_buildings[building_id]
+		if now >= int(epic_entry.get("next_token_part_unix", 0)):
+			return "🧩"
+
+	# Trade Depot sale slots require an explicit Collect after their timer ends.
+	if building.building_type == "trade_depot" and TradeManager.is_depot_operational():
+		var ready_sales := 0
+		for sale in TradeManager.sell_slots:
+			if bool(sale.get("ready", false)):
+				ready_sales += 1
+		if ready_sales > 0:
+			return "💰" if ready_sales == 1 else "💰×%d" % ready_sales
+
+	# Delivery orders are actionable only when the complete requested quantity
+	# is already in City Storage; incomplete orders do not get a false badge.
+	if building.building_type == "global_trade_hq" and TradeManager.is_global_trade_operational():
+		var ready_orders := 0
+		for order in TradeManager.current_orders:
+			var order_item := str(order.get("item_id", ""))
+			var order_amount := int(order.get("amount", 0))
+			if not bool(order.get("completed", false)) and not order_item.is_empty() and order_amount > 0 and StorageManager.get_count(order_item) >= order_amount:
+				ready_orders += 1
+		if ready_orders > 0:
+			return "📬" if ready_orders == 1 else "📬×%d" % ready_orders
+
+	# Cargo-port crates become actionable once their requested goods are present.
+	if building.building_type == "cargo_port" and TradeManager.is_cargo_ship_operational() and not TradeManager.ship_departed:
+		var ready_crates := 0
+		for crate in TradeManager.ship_crates:
+			var crate_item := str(crate.get("item_id", ""))
+			var crate_amount := int(crate.get("amount", 0))
+			if not bool(crate.get("delivered", false)) and not crate_item.is_empty() and crate_amount > 0 and StorageManager.get_count(crate_item) >= crate_amount:
+				ready_crates += 1
+		if ready_crates > 0:
+			return "🚢" if ready_crates == 1 else "🚢×%d" % ready_crates
+
+	# Residential upgrade is actionable only when the existing BOM gate passes.
+	if building.upgrade_ready:
+		return "⬆"
+	return ""
+
 
 func _on_level_up_effect_finished() -> void:
 	if is_instance_valid(_level_up_camera):
@@ -1991,8 +2055,8 @@ func open_production_panel(building: Building) -> void:
 	studio_style.shadow_offset = Vector2(0, 4)
 	studio_style.content_margin_left = 10
 	studio_style.content_margin_right = 10
-	studio_style.content_margin_top = 7
-	studio_style.content_margin_bottom = 7
+	studio_style.content_margin_top = 4 if compact_layout else 7
+	studio_style.content_margin_bottom = 4 if compact_layout else 7
 	production_panel.add_theme_stylebox_override("panel", studio_style)
 	production_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	production_overlay.add_child(production_panel)
@@ -2003,8 +2067,8 @@ func open_production_panel(building: Building) -> void:
 	layout.add_theme_constant_override("separation", 2)
 	layout.add_theme_constant_override("margin_left", 4)
 	layout.add_theme_constant_override("margin_right", 4)
-	layout.add_theme_constant_override("margin_top", 2)
-	layout.add_theme_constant_override("margin_bottom", 2)
+	layout.add_theme_constant_override("margin_top", 1 if compact_layout else 2)
+	layout.add_theme_constant_override("margin_bottom", 1 if compact_layout else 2)
 	production_panel.add_child(layout)
 
 	var component = building.production_component
@@ -2027,7 +2091,7 @@ func open_production_panel(building: Building) -> void:
 	header_row.add_theme_constant_override("separation", 9)
 	header.add_child(header_row)
 	var production_icon_id := building.building_type if Icons.COMMERCIAL_IDS.has(building.building_type) else "factory_basic"
-	var building_icon := Icons.make_icon(production_icon_id, Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(34, 34) * _ui_scale)
+	var building_icon := Icons.make_icon(production_icon_id, Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(32, 32) * _ui_scale)
 	building_icon.name = "ProductionBuildingIcon"
 	header_row.add_child(building_icon)
 	var title := Label.new()
@@ -2038,7 +2102,7 @@ func open_production_panel(building: Building) -> void:
 	var close := Button.new()
 	close.name = "ProductionClose"
 	close.text = "✕"
-	close.custom_minimum_size = Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(36, 36) * _ui_scale
+	close.custom_minimum_size = Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(32, 32) * _ui_scale
 	close.add_theme_font_size_override("font_size", int(20 * _ui_scale))
 	close.add_theme_color_override("font_color", Color("#17394D"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#DCECF5"), Color("#B7D4E3")))
@@ -2090,7 +2154,7 @@ func open_production_panel(building: Building) -> void:
 	building_upgrade_button.pressed.connect(_start_non_residential_upgrade.bind(building))
 	if compact_layout:
 		building_upgrade_button.text = "⬆"
-		building_upgrade_button.custom_minimum_size = Vector2(34, 34) * _ui_scale
+		building_upgrade_button.custom_minimum_size = Vector2(32, 32) * _ui_scale
 		building_upgrade_button.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 		header_row.add_child(building_upgrade_button)
 	else:
@@ -2235,6 +2299,7 @@ func open_production_panel(building: Building) -> void:
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else inventory_status
 		# Dragging a product onto a queue tile submits that exact slot order.
 		item_button.set_drag_forwarding(_get_production_drag_data.bind(building, item_id), Callable(), Callable())
+		item_button.gui_input.connect(_on_production_product_gui_input.bind(item_button, building, item_id))
 		item_button.pressed.connect(func():
 			_show_production_item_details(building, item_id, available_slot)
 		)
@@ -2257,19 +2322,19 @@ func open_production_panel(building: Building) -> void:
 		var product_count := maxi(1, product_grid.get_child_count())
 		var angle := deg_to_rad(205.0 + 150.0 * float(orbit_index) / float(maxi(1, product_count - 1)))
 		var point := orbit_center + Vector2(cos(angle), sin(angle)) * orbit_radius
-		var selector_half := 41.0 if product_grid.get_child_count() <= 6 else 33.0
-		product_node.position = Vector2(clampf(point.x - selector_half, 4.0, viewport_size.x - selector_half * 2.0 - 4.0), clampf(point.y - selector_half - 6.0, 4.0, maxf(4.0, viewport_size.y - panel_height - selector_half * 2.0 - 8.0)))
+		var selector_size: Vector2 = product_node.custom_minimum_size
+		product_node.position = _get_production_orbit_tile_position(point, selector_size, viewport_size, panel_height)
 
 	var details_scroll := ScrollContainer.new()
 	details_scroll.name = "ProductionDetailsScroll"
 	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	details_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	details_scroll.custom_minimum_size.y = (42.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
+	details_scroll.custom_minimum_size.y = (34.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
 	layout.add_child(details_scroll)
 	var details_host := Control.new()
 	details_host.name = "ProductionDetailsHost"
-	details_host.custom_minimum_size = Vector2(maxf(240.0, panel_width - 70.0 * _ui_scale), (54.0 if compact_layout else 180.0) * _ui_scale)
+	details_host.custom_minimum_size = Vector2(maxf(240.0, panel_width - 70.0 * _ui_scale), (34.0 if compact_layout else 180.0) * _ui_scale)
 	details_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details_scroll.add_child(details_host)
 
@@ -2279,12 +2344,12 @@ func open_production_panel(building: Building) -> void:
 	var queue_title := Label.new()
 	queue_title.text = "PRODUCTION QUEUE"
 	queue_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_title.add_theme_font_size_override("font_size", int(16 * _ui_scale))
+	queue_title.add_theme_font_size_override("font_size", int((14 if compact_layout else 16) * _ui_scale))
 	queue_title.add_theme_color_override("font_color", Color("#244B62"))
 	queue_heading.add_child(queue_title)
 	var queue_count := Label.new()
 	queue_count.text = "%d / %d" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
-	queue_count.add_theme_font_size_override("font_size", int(16 * _ui_scale))
+	queue_count.add_theme_font_size_override("font_size", int((14 if compact_layout else 16) * _ui_scale))
 	queue_count.add_theme_color_override("font_color", Color("#547286"))
 	queue_heading.add_child(queue_count)
 	if not component.is_factory:
@@ -2303,7 +2368,7 @@ func open_production_panel(building: Building) -> void:
 	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = (68.0 if compact_layout else 76.0) * _ui_scale
+	queue_scroll.custom_minimum_size.y = (58.0 if compact_layout else 76.0) * _ui_scale
 	layout.add_child(queue_scroll)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
@@ -2314,7 +2379,7 @@ func open_production_panel(building: Building) -> void:
 		var slot: Dictionary = component.get_slot(slot_index) if slot_index < component.get_slot_count() else {}
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
-		slot_card.custom_minimum_size = Vector2(82, 64) * _ui_scale
+		slot_card.custom_minimum_size = (Vector2(76, 58) if compact_layout else Vector2(82, 64)) * _ui_scale
 		var slot_fill := Color("#FFFFFF") if not slot.is_empty() else Color("#E7EEF2")
 		var slot_border := Color("#A9C0CC") if slot.is_empty() else Color("#D8AD4A")
 		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
@@ -2626,6 +2691,84 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		detail_row.add_child(auto_chain_button)
 
 
+func _input(event: InputEvent) -> void:
+	# Keep receiving pointer motion/release after the finger leaves the source
+	# product tile. This is essential for a genuine drag gesture on touchscreens.
+	if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
+		return
+	var pointer_id: int = int(event.index)
+	if not _production_drag_gestures.has(pointer_id):
+		return
+	var gesture: Dictionary = _production_drag_gestures[pointer_id]
+	var source_button := gesture.get("button") as Button
+	var source_building := gesture.get("building") as Building
+	_on_production_product_gui_input(event, source_button, source_building, str(gesture.get("item_id", "")))
+	# Prevent the city camera from interpreting the same finger movement as a
+	# pan/orbit while that pointer owns an active production drag.
+	get_viewport().set_input_as_handled()
+
+
+func _on_production_product_gui_input(event: InputEvent, product_button: Button, building: Building, item_id: String) -> void:
+	# Keep native mouse drag forwarding and provide an explicit touch pointer path
+	# for Android, where Control drag-and-drop may not receive touch drags.
+	var pointer_id := -1
+	var pointer_position := Vector2.ZERO
+	var pressed := false
+	var released := false
+	var moved_event := false
+	if event is InputEventScreenTouch:
+		pointer_id = event.index
+		pointer_position = event.position
+		pressed = event.pressed
+		released = not event.pressed
+	elif event is InputEventScreenDrag:
+		pointer_id = event.index
+		pointer_position = event.position
+		moved_event = true
+	else:
+		return
+
+	if pressed:
+		if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+			return
+		var payload: Variant = _get_production_drag_data(Vector2.ZERO, building, item_id)
+		if payload is Dictionary:
+			_production_drag_gestures[pointer_id] = {"payload": payload, "start": pointer_position, "moved": false, "button": product_button, "building": building, "item_id": item_id}
+		return
+	if not _production_drag_gestures.has(pointer_id):
+		return
+	var gesture: Dictionary = _production_drag_gestures[pointer_id]
+	if moved_event:
+		if pointer_position.distance_to(gesture.get("start", pointer_position)) >= 14.0 * _ui_scale:
+			gesture["moved"] = true
+		_production_drag_gestures[pointer_id] = gesture
+		return
+	if not released:
+		return
+
+	_production_drag_gestures.erase(pointer_id)
+	if not bool(gesture.get("moved", false)):
+		return
+	var payload: Variant = gesture.get("payload")
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		get_viewport().set_input_as_handled()
+		return
+	var queue_row := production_panel.find_child("ProductionQueueSlots", true, false) as HBoxContainer if is_instance_valid(production_panel) else null
+	if queue_row:
+		for slot_index in range(building.production_component.get_slot_count()):
+			var target := queue_row.find_child("QueueSlot%d" % slot_index, true, false) as Control
+			if target == null or not target.get_global_rect().has_point(pointer_position):
+				continue
+			if _can_accept_production_drop(Vector2.ZERO, payload, building, slot_index):
+				_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
+			else:
+				status_label.text = "This queue slot cannot accept that product."
+			get_viewport().set_input_as_handled()
+			return
+	# A drag ending outside the queue is a no-op, never an implicit order.
+	get_viewport().set_input_as_handled()
+
+
 func _select_production_item_for_touch(building: Building, item_id: String) -> void:
 	if not is_instance_valid(building):
 		return
@@ -2697,10 +2840,23 @@ func _accept_production_drop(_at_position: Vector2, data: Variant, building: Bui
 		var missing := ProductionManager.get_missing_inputs_text(item_id)
 		started = component.start_craft(item_id, slot_index) if missing.is_empty() else ProductionManager.request_automatic_chain(component, item_id, slot_index)
 	if started:
+		_touch_selected_production_item = ""
+		_touch_selected_production_building_id = 0
 		status_label.text = "Production order accepted: %s." % str(ProductionManager.get_item_definition(item_id).get("name", item_id))
 	else:
 		status_label.text = "Order not accepted. Check materials, supplier chain, building operation and slot availability."
 	open_production_panel(building)
+
+
+func _get_production_orbit_tile_position(point: Vector2, selector_size: Vector2, viewport_size: Vector2, panel_height: float) -> Vector2:
+	# Keep the complete tile above the dock and inside the horizontal viewport.
+	var selector_half := selector_size * 0.5
+	var max_selector_x := maxf(4.0, viewport_size.x - selector_size.x - 4.0 * _ui_scale)
+	var max_selector_y := maxf(4.0, viewport_size.y - panel_height - selector_size.y - 8.0 * _ui_scale)
+	return Vector2(
+		clampf(point.x - selector_half.x, 4.0, max_selector_x),
+		clampf(point.y - selector_half.y - 6.0 * _ui_scale, 4.0, max_selector_y)
+	)
 
 
 func _count_empty_production_slots(component: ProductionComponent) -> int:

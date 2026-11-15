@@ -3800,8 +3800,97 @@ func _run_gameplay_test() -> void:
 	production_hud._select_production_item_for_touch(factory, "metal")
 	_check(production_hud._touch_selected_production_item == "metal" and production_hud._touch_selected_production_building_id == factory.get_instance_id(), "Touch fallback must retain the selected product and source building until a queue tile is tapped.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
-	production_hud._accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0)
-	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into factory slot zero must start that exact production slot.")
+	var metal_drag_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
+	var factory_queue_slot := production_hud.production_panel.find_child("QueueSlot0", true, false) as Control
+	await get_tree().process_frame
+	if metal_drag_button and factory_queue_slot:
+		var production_touch_down := InputEventScreenTouch.new()
+		production_touch_down.index = 2
+		production_touch_down.position = metal_drag_button.get_global_rect().get_center()
+		production_touch_down.pressed = true
+		production_hud._on_production_product_gui_input(production_touch_down, metal_drag_button, factory, "metal")
+		var production_touch_move := InputEventScreenDrag.new()
+		production_touch_move.index = 2
+		production_touch_move.position = factory_queue_slot.get_global_rect().get_center()
+		production_hud._input(production_touch_move)
+		var production_touch_up := InputEventScreenTouch.new()
+		production_touch_up.index = 2
+		production_touch_up.position = factory_queue_slot.get_global_rect().get_center()
+		production_touch_up.pressed = false
+		production_hud._input(production_touch_up)
+	else:
+		_check(false, "Touch drag fixture must find both the Metal product tile and the first production queue tile.")
+	_check(not factory_component.get_slot(0).is_empty(), "A simulated Android touch drag from Metal to queue slot zero must start that exact production slot.")
+	_check(not production_hud._production_drag_gestures.has(2), "A completed touch drag must release its pointer tracking state.")
+
+	# World-space notification decisions must correspond to actual pending
+	# player actions, not merely timers or unavailable/locked systems.
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_population := GameManager.population
+	var saved_sell_slots: Array[Dictionary] = TradeManager.sell_slots.duplicate(true)
+	var saved_orders: Array[Dictionary] = TradeManager.current_orders.duplicate(true)
+	var saved_ship_crates: Array[Dictionary] = TradeManager.ship_crates.duplicate(true)
+	var saved_ship_departed := TradeManager.ship_departed
+	var saved_epic_project: Dictionary = EpicProjectManager.active_project.duplicate(true)
+	var saved_epic_buildings: Dictionary = EpicProjectManager.epic_buildings.duplicate(true)
+	var original_metal := StorageManager.get_count("metal")
+	var added_metal := 0
+	if original_metal < 1 and StorageManager.get_free() > 0 and StorageManager.add_item("metal", 1):
+		added_metal = 1
+	var action_probe := Building.new()
+	action_probe.building_id = "notification-probe"
+	action_probe.status = "completed"
+	BuildManager.buildings[action_probe.building_id] = action_probe
+	GameManager.population = maxi(GameManager.population, 20000)
+
+	TradeManager.sell_slots.clear()
+	TradeManager.sell_slots.append({"ready": true, "item_id": "metal", "amount": 1, "price": 1})
+	action_probe.building_type = "trade_depot"
+	_check(production_hud._get_building_action_notification_text(action_probe) == "💰", "A Trade Depot with a ready sale must show a Collect notification.")
+	TradeManager.sell_slots[0]["ready"] = false
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A Trade Depot marker must disappear when no sale remains ready.")
+
+	TradeManager.current_orders.clear()
+	TradeManager.current_orders.append({"order_id": "notification-order", "item_id": "metal", "amount": 1, "reward": 1, "completed": false})
+	action_probe.building_type = "global_trade_hq"
+	_check(production_hud._get_building_action_notification_text(action_probe) == "📬" if StorageManager.get_count("metal") >= 1 else true, "A fulfilable global delivery order must show a notification.")
+	TradeManager.current_orders[0]["completed"] = true
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A completed delivery order must no longer show an action marker.")
+
+	TradeManager.ship_crates.clear()
+	TradeManager.ship_crates.append({"item_id": "metal", "amount": 1, "delivered": false})
+	TradeManager.ship_departed = false
+	action_probe.building_type = "cargo_port"
+	_check(production_hud._get_building_action_notification_text(action_probe) == "🚢" if StorageManager.get_count("metal") >= 1 else true, "A deliverable cargo-ship crate must show a notification.")
+	TradeManager.ship_crates[0]["delivered"] = true
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A delivered cargo crate must no longer show an action marker.")
+
+	EpicProjectManager.active_project = {"building_id": action_probe.building_id, "finished": true, "tier": "gold"}
+	action_probe.building_type = "residential"
+	_check(production_hud._get_building_action_notification_text(action_probe) == "🏆", "A finished Epic Project must show its claim notification on the target home.")
+	EpicProjectManager.active_project.clear()
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A claimed/dismissed Epic Project must no longer show a pending marker.")
+	EpicProjectManager.active_project = {"finished": false, "tasks": [{"building_id": action_probe.building_id, "item_id": "metal", "amount": 1}]}
+	if StorageManager.get_count("metal") >= 1:
+		_check(production_hud._get_building_action_notification_text(action_probe) == "📦", "A specialization task with all required goods in storage must show a contribution marker.")
+	EpicProjectManager.active_project.clear()
+	EpicProjectManager.epic_buildings[action_probe.building_id] = {"tier": "bronze", "next_token_part_unix": 0}
+	_check(production_hud._get_building_action_notification_text(action_probe) == "🧩", "An Epic Building with a due token part must show a collect notification.")
+	EpicProjectManager.epic_buildings[action_probe.building_id]["next_token_part_unix"] = int(Time.get_unix_time_from_system()) + 3600
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A token part not yet due must not show a collect marker.")
+	EpicProjectManager.epic_buildings.erase(action_probe.building_id)
+
+	BuildManager.buildings = saved_buildings
+	GameManager.population = saved_population
+	TradeManager.sell_slots = saved_sell_slots
+	TradeManager.current_orders = saved_orders
+	TradeManager.ship_crates = saved_ship_crates
+	TradeManager.ship_departed = saved_ship_departed
+	EpicProjectManager.active_project = saved_epic_project
+	EpicProjectManager.epic_buildings = saved_epic_buildings
+	if added_metal > 0:
+		StorageManager.remove_items({"metal": added_metal})
+	action_probe.free()
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
@@ -3893,6 +3982,32 @@ func _run_gameplay_test() -> void:
 	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The radial store catalog must expose every registered product.")
 	_check(product_orbit != null and product_orbit.get_child_count() == 1, "Product selectors must use a floating orbit layer outside the compact queue dock.")
 	_check(production_hud.production_panel.size.y < get_viewport().get_visible_rect().size.y * 0.5, "Production interaction must use a compact bottom dock, not a full-screen modal.")
+
+	# Verify the exact production orbit positioning function for common Android
+	# landscape sizes without resizing the OS Window (headless Window ignores
+	# requested dimensions on some CI runners).
+	var live_viewport_bounds: Rect2 = get_viewport().get_visible_rect()
+	_check(live_viewport_bounds.encloses(production_hud.production_panel.get_global_rect()), "Production dock must remain inside the active viewport.")
+	var live_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
+	if live_grid:
+		for live_product in live_grid.get_children():
+			var live_product_rect: Rect2 = live_product.get_global_rect()
+			_check(live_viewport_bounds.encloses(live_product_rect), "Radial product tiles must remain visible in the active viewport.")
+			_check(not live_product_rect.intersects(production_hud.production_panel.get_global_rect()), "Radial product tiles must not overlap the active bottom dock.")
+	for mobile_size in [Vector2i(844, 390), Vector2i(915, 412), Vector2i(1280, 720)]:
+		var simulated_viewport := Vector2(mobile_size)
+		var compact_mobile: bool = mobile_size.x <= 900 or mobile_size.y <= 520
+		var simulated_panel_height := minf((220.0 if compact_mobile else 278.0) * production_hud._ui_scale, simulated_viewport.y * (0.48 if compact_mobile else 0.42))
+		var simulated_selector_size: Vector2 = Vector2(82.0, 94.0) * production_hud._ui_scale
+		var simulated_dock_rect := Rect2(Vector2(8.0 * production_hud._ui_scale, simulated_viewport.y - simulated_panel_height - 8.0 * production_hud._ui_scale), Vector2(simulated_viewport.x - 16.0 * production_hud._ui_scale, simulated_panel_height))
+		var simulated_bounds := Rect2(Vector2.ZERO, simulated_viewport)
+		for product_index in range(ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size()):
+			var simulated_angle := deg_to_rad(205.0 + 150.0 * float(product_index) / float(maxi(1, ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size() - 1)))
+			var simulated_center := Vector2(simulated_viewport.x * 0.5, simulated_viewport.y * 0.40) + Vector2(cos(simulated_angle), sin(simulated_angle)) * clampf(simulated_viewport.x * 0.22, 105.0, 190.0)
+			var simulated_position: Vector2 = production_hud._get_production_orbit_tile_position(simulated_center, simulated_selector_size, simulated_viewport, simulated_panel_height)
+			var simulated_tile_rect := Rect2(simulated_position, simulated_selector_size)
+			_check(simulated_bounds.encloses(simulated_tile_rect), "Radial product tile must fit %dx%d viewport; tile=%s." % [mobile_size.x, mobile_size.y, simulated_tile_rect])
+			_check(not simulated_tile_rect.intersects(simulated_dock_rect), "Radial product tile must not overlap the dock at %dx%d; tile=%s dock=%s." % [mobile_size.x, mobile_size.y, simulated_tile_rect, simulated_dock_rect])
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level

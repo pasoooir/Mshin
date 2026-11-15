@@ -375,3 +375,25 @@ No recipe, production duration, expansion price, or item provenance was added or
 
 - [x] Unify actionable world-space markers: ready production shows the actual product thumbnail; blocked collection shows a warning marker; residential upgrades show an upgrade marker only while an upgrade can genuinely start.
 - [x] Avoid false completion/collect notifications for construction and non-residential upgrades because those state transitions complete automatically in the current game model.
+
+
+## Android production touch gesture and mobile layout — active
+
+- [x] Pointer-indexed touch drag state; native desktop drag forwarding remains intact.
+- [x] Global pointer move/release tracking continues after the finger leaves the product selector.
+- [x] Drop target reuses same-building/product/slot validation and current ProductionComponent APIs.
+- [x] Clear stale touch-selection state after successful production order.
+- [x] Radial tile positioning is a shared helper used by the UI and multi-viewport geometry assertions; actual control dimensions and dock height are included.
+- [x] Compact dock vertical minimums reduced for mobile landscape (details host, queue strip, slot cards and panel margins).
+- [x] GameplaySmoke simulates Android touch down → move → release into the exact queue tile and confirms the order enters the selected slot.
+- [x] GameplaySmoke validates tile viewport containment and no dock overlap at 844×390, 915×412 and 1280×720.
+- [x] Godot Validation, GameplaySmoke, Visual Presentation and Android Debug APK export/signature: [run 43725912825](https://github.com/pasoooir/Mshin/actions/runs/43725912825).
+- [x] Web export, gameplay integration and desktop/mobile Chromium launch: [run 43725912831](https://github.com/pasoooir/Mshin/actions/runs/43725912831). Pages deploy skipped for PR.
+- [ ] Actual production UI screenshot review at mobile landscape sizes.
+- [ ] Physical Android touch acceptance.
+- [x] Shared action marker logic covers Epic Project claim/dismiss, due Epic token parts, deliverable specialization tasks, ready Trade Depot sales, fulfilable Global Trade orders and deliverable cargo-port crates.
+- [x] Trade/cargo markers are gated by actual operational unlocks; construction and auto-completed upgrades do not show false claim badges.
+- [x] GameplaySmoke verifies Epic claim, due token, deliverable specialization task, ready Trade Depot sale, fulfilable Global Trade order and deliverable cargo crate markers.
+- [x] GameplaySmoke verifies markers disappear when the corresponding state is completed or no longer actionable.
+- [x] Godot Validation, GameplaySmoke, Visual Presentation and Android Debug APK export/signature: [run 43726778004](https://github.com/pasoooir/Mshin/actions/runs/43726778004).
+- [x] Web export, gameplay integration and desktop/mobile Chromium launch: [run 43726778009](https://github.com/pasoooir/Mshin/actions/runs/43726778009). Pages deploy skipped for PR.
