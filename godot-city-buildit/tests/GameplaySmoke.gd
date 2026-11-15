@@ -3882,20 +3882,30 @@ func _run_gameplay_test() -> void:
 	var direct_drop_target := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
 	_check(direct_drop_target != null, "Direct touch drop must have a projected building-footprint target.")
 	if direct_drop_target:
+		# Use a point guaranteed to be inside the projected footprint polygon;
+		# the center of its axis-aligned bounding box can lie outside a diamond.
+		var footprint_center := Vector2.ZERO
+		for polygon_point in direct_drop_target.hit_polygon:
+			footprint_center += polygon_point
+		if direct_drop_target.hit_polygon.size() > 0:
+			footprint_center /= float(direct_drop_target.hit_polygon.size())
 		production_hud._production_touch_drag_building = factory
 		production_hud._production_touch_drag_item_id = "metal"
-		production_hud._finish_production_touch_drag(direct_drop_target.get_global_rect().get_center())
-		_check(not factory_component.get_slot(0).is_empty(), "Releasing a dragged factory material on the building footprint must enqueue it without requiring a queue-slot drop.")
-		var direct_slot: Dictionary = factory_component.get_slot(0)
-		direct_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-		factory_component.slots[0] = direct_slot
-		factory_component.refresh_slots()
-		production_hud.open_production_panel(factory)
-		var collect_direct_drop := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
-		if collect_direct_drop:
-			collect_direct_drop.emit_signal("pressed")
+		production_hud._finish_production_touch_drag(direct_drop_target.to_global(footprint_center))
+		if not factory_component.get_slot(0).is_empty():
+			_check(true, "Releasing a dragged factory material on the building footprint must enqueue it without requiring a queue-slot drop.")
+			var direct_slot: Dictionary = factory_component.get_slot(0)
+			direct_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+			factory_component.slots[0] = direct_slot
+			factory_component.refresh_slots()
+			production_hud.open_production_panel(factory)
+			var collect_direct_drop := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+			if collect_direct_drop:
+				collect_direct_drop.emit_signal("pressed")
+			else:
+				_check(false, "Direct building-drop factory order must expose a Collect action after completion.")
 		else:
-			_check(false, "Direct building-drop factory order must expose a Collect action after completion.")
+			_check(false, "Releasing a dragged factory material on the building footprint must enqueue it without requiring a queue-slot drop.")
 
 	var supplies = _find_building("building_supplies")
 	var shop_component = supplies.production_component
