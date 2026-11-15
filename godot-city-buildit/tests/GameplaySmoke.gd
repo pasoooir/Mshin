@@ -1730,6 +1730,7 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.demand_sewage == 3 and ServiceManager.demand_waste == 3, "Industrial operating sanitation demand must be included in city totals alongside occupied homes.")
 	_check(not BuildManager.is_building_operational(producer), "A producer must not operate without sewage and waste capacity.")
+	_check(not BuildManager.get_building_operational_lock_reason(producer).is_empty(), "The production panel must be able to explain the first unsatisfied operating prerequisite.")
 	var power := FireHazardTestBuilding.new()
 	add_child(power)
 	power.building_id = "producer_gate_power"
@@ -1769,8 +1770,10 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.is_sewage_served(producer) and ServiceManager.is_waste_served(producer), "Connected industrial production must receive both sanitation services when spare capacity exists.")
 	_check(BuildManager.is_building_operational(producer), "A producer with road, utilities, workforce and sanitation must operate.")
+	_check(BuildManager.get_building_operational_lock_reason(producer).is_empty(), "All satisfied service gates must clear the operational lock reason.")
 	producer.definition["operating_emergency_services"] = {"fire": true}
 	_check(not BuildManager.is_building_operational(producer), "A building configured to require fire coverage must stop when outside operational fire coverage.")
+	_check(BuildManager.get_building_operational_lock_reason(producer).contains("Fire"), "The lock reason must name the missing fire coverage.")
 	var fire := FireHazardTestBuilding.new()
 	add_child(fire)
 	fire.building_id = "producer_gate_fire"
@@ -1785,6 +1788,7 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	_check(BuildManager.is_building_operational(producer), "A producer must resume once every configured operating-service gate is satisfied.")
 	producer.definition["operating_emergency_services"] = {"police": true}
 	_check(not BuildManager.is_building_operational(producer), "Unknown or missing police coverage must block only when explicitly configured.")
+	_check(BuildManager.get_building_operational_lock_reason(producer).contains("Police"), "The lock reason must name missing police coverage.")
 	for fixture in [home, producer, power, water, sewage, waste, fire]:
 		BuildManager.buildings.erase(fixture.building_id)
 		remove_child(fixture)
