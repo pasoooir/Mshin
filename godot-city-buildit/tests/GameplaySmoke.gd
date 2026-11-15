@@ -1819,7 +1819,7 @@ func _test_power_water_gateway_access() -> void:
 	BuildManager.buildings[industrial_consumer.building_id] = industrial_consumer
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.demand_power >= 4 and ServiceManager.demand_water >= 3, "City utility demand must include household, commercial and industrial production consumers.")
-	_check(ServiceManager.demand_sewage == 4 and ServiceManager.demand_waste == 4, "Sewage and waste demand must include connected commercial and industrial operations in addition to homes.")
+	_check(ServiceManager.demand_sewage == 5 and ServiceManager.demand_waste == 5, "Sewage and waste demand must include connected commercial and industrial operations and disconnected household demand.")
 	_check(ServiceManager.sewage_served_ids.has(commercial_consumer.building_id) and ServiceManager.waste_served_ids.has(commercial_consumer.building_id), "Commercial operations must receive sewage and waste capacity when the city has available capacity.")
 	_check(ServiceManager.sewage_served_ids.has(industrial_consumer.building_id) and ServiceManager.waste_served_ids.has(industrial_consumer.building_id), "Industrial operations must receive sewage and waste capacity when the city has available capacity.")
 	_check(ServiceManager.power_served_ids.has(commercial_consumer.building_id) and ServiceManager.water_served_ids.has(commercial_consumer.building_id), "A connected commercial producer must receive both power and water when local capacity is available.")
@@ -1882,7 +1882,11 @@ func _test_emergency_service_tier_happiness() -> void:
 		road_system.seed_starter_access()
 
 	var home := _create_service_test_home("emergency_service_test_home", 1, Vector2i(1, 1))
+	home.current_population = 100
+	home.set_meta("immigration_population_initialized", true)
 	var disconnected_home := _create_service_test_home("emergency_service_disconnected_home", 1, Vector2i(35, 35))
+	disconnected_home.current_population = 0
+	disconnected_home.set_meta("immigration_population_initialized", true)
 	var power_provider := FireHazardTestBuilding.new()
 	add_child(power_provider)
 	power_provider.building_id = "emergency_test_power"
@@ -2027,6 +2031,8 @@ func _test_fire_hazard_state_machine() -> void:
 	home.status = "completed"
 	home.grid_pos = Vector2i(1, 1)
 	home.global_position = Vector3.ZERO
+	home.current_population = 100
+	home.set_meta("immigration_population_initialized", true)
 	BuildManager.buildings[home.building_id] = home
 
 	var station = FireHazardTestBuilding.new()
