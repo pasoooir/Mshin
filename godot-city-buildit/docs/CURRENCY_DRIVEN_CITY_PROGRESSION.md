@@ -55,7 +55,8 @@
 2. تکمیل فوری زمان ساخت ساختمان، فقط در صورت داشتن اتصال جاده‌ای معتبر.
 3. تکمیل فوری ارتقای ساختمان، فقط در صورت operational بودن ساختمان.
 4. خرید اسلات صف اضافه برای فروشگاه‌های پشتیبانی‌شده؛ ظرفیت و قیمت طبق کاتالوگ مشخص است.
-5. اعطای SimCash خریداری‌شده فقط پس از نتیجه موفق provider؛ در Sandbox فقط انتخاب نتیجه آزمایشی و برچسب عدم دریافت پول واقعی.
+5. خرید Special Itemهای توسعه زمین با SimCash: هر Dozer Wheel/Blade/Exhaust برابر ۲۴ SimCash؛ فقط پس از Mayor Level 10. خرید، موجودی را افزایش می‌دهد و بازکردن زمین همچنان از مسیر عادی `LandExpansionManager` و مصرف هر سه قلم انجام می‌شود.
+6. اعطای SimCash خریداری‌شده فقط پس از نتیجه موفق provider؛ در Sandbox فقط انتخاب نتیجه آزمایشی و برچسب عدم دریافت پول واقعی.
 
 ### قواعد اتمی و جلوگیری از سوءاستفاده
 - ابتدا شرایط سطح، ظرفیت، وضعیت زمان‌سنج و موجودی ارز بررسی می‌شوند.
@@ -70,14 +71,14 @@
 - `scripts/autoload/EconomyManager.gd`: quote هزینه تسریع؛ خرید بازار از TradeManager موجود انجام می‌شود.
 - `scripts/production/ProductionComponent.gd`: quote و اجرای تسریع اسلات کارخانه/فروشگاه.
 - `scripts/buildings/Building.gd`: تسریع ساخت، ارتقا و تولید legacy.
-- `scripts/ui/CurrencyPanels.gd`: بازار کالا در پنل Simoleons؛ پیشرفت سریع، اسلات فروشگاه و خرید Sandbox در پنل SimCash.
-- `tests/currency_economy_smoke.gd`: آزمون خرید بازار، ظرفیت انبار، قفل سطح، تسریع تولید، تبدیل، خرید Sandbox، یکتایی اعطا و حضور کنترل‌های UI.
+- `scripts/ui/CurrencyPanels.gd`: بازار کالا در پنل Simoleons؛ پیشرفت سریع، اسلات فروشگاه، خرید Dozer Special Item و خرید Sandbox در پنل SimCash.
+- `tests/currency_economy_smoke.gd`: آزمون Global Trade HQ، ظرفیت انبار، خرید Dozer Special Item و توسعه زمین، قفل سطح، تسریع تولید، تبدیل، خرید Sandbox، یکتایی اعطا و حضور کنترل‌های UI.
 
 ## ۵. شکاف‌های باقیمانده و گیت پذیرش
 
 - [x] اجرای Godot CI و رفع تمام خطاهای parser/runtime/test؛ run `43700782340` موفق شد.
 - [x] اجرای Web/Chromium در دسکتاپ و موبایل افقی؛ run `43700782353` موفق شد. [ ] آزمون لمس و نمایش روی Android فیزیکی.
-- [ ] بررسی توازن ضریب قیمت پیشنهادهای TradeManager، خرید Dozer Special Item و هزینه SimCash با داده‌های واقعی بازی؛ این اعداد فعلاً Mshin-proposed هستند.
+- [ ] بررسی توازن قیمت پیشنهادهای TradeManager و هزینه‌های SimCash با داده‌های واقعی بازی؛ هزینه ۲۴ SimCash برای Dozer Special Item از مرجع جامعه آمده است.
 - [ ] افزودن/تکمیل فروش کالا و Trade Depot واقعی در اقتصاد Simoleons؛ Global Trade چندبازیکنه و قیمت‌گذاری پویا هنوز وجود ندارد.
 - [ ] خرید Special Itemهای انبار با SimCash و اتصال کامل آن‌ها به فرمول ارتقای ظرفیت City Storage؛ خرید مستقیم نباید جایگزین نیاز سه‌قلمی شود.
 - [ ] درگاه واقعی: اعتبارسنجی سمت سرور و callback/webhook امضاشده پیش از اعطای ارز.
