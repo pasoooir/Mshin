@@ -305,6 +305,14 @@ func _test_storage_and_production_chain() -> void:
 	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_count("wood") == 1, "Atomic inventory addition lost an item.")
 	_check(StorageManager.remove_items({"metal":2,"wood":1}), "Storage must atomically remove a valid multi-item transaction.")
 	_check(StorageManager.get_used() == 0, "Atomic inventory removal must restore the original used capacity.")
+	_check(StorageManager.add_item("metal", 2), "Reservation regression must seed two Metal.")
+	_check(StorageManager.reserve_items("test_order_reservation", {"metal":2}), "Queued production must be able to reserve its complete input set.")
+	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_reserved_count("metal") == 2 and StorageManager.get_available_count("metal") == 0, "Reserved materials must remain in the warehouse but become unavailable to competing actions.")
+	_check(not StorageManager.has_items({"metal":1}) and not StorageManager.remove_items({"metal":1}), "Manual production, construction and trade must not spend another order's reserved materials.")
+	var saved_reservation_state: Dictionary = StorageManager.to_save_dict()
+	StorageManager.from_save_dict(saved_reservation_state)
+	_check(StorageManager.get_reserved_count("metal") == 2, "Storage save/load must preserve production reservations.")
+	_check(StorageManager.consume_reservation("test_order_reservation") and StorageManager.get_count("metal") == 0 and StorageManager.get_reserved_count("metal") == 0, "Starting a queued order must consume its escrowed input exactly once.")
 	_check(int(ProductionManager.raw_materials.metal.time_sec) == 60, "Metal production must take 60 seconds.")
 	_check(int(ProductionManager.raw_materials.wood.time_sec) == 180, "Wood production must take 180 seconds.")
 	_check(int(ProductionManager.raw_materials.chemicals.time_sec) == 7200, "Chemicals production must take 2 hours.")
@@ -480,7 +488,7 @@ func _test_production_queue_stress() -> void:
 	add_child(store)
 	for slot_index in range(3):
 		_check(store.start_craft("nails", slot_index), "Stress test must enqueue Nails order %d." % (slot_index + 1))
-	_check(StorageManager.get_count("metal") == 0, "All queued orders must reserve ingredients exactly once at enqueue time.")
+	_check(StorageManager.get_count("metal") == 4 and StorageManager.get_reserved_count("metal") == 4 and StorageManager.get_available_count("metal") == 0, "The active order must consume its inputs while queued orders escrow the remaining ingredients without exposing them as available.")
 	var queued_save := store.to_save_array()
 	var restored := ProductionComponentScript.new()
 	restored.shop_id = "building_supplies"
@@ -488,7 +496,7 @@ func _test_production_queue_stress() -> void:
 	add_child(restored)
 	restored.from_save_array(queued_save)
 	_check(restored.get_slot_count() == 3 and restored.get_slot(0).get("item_id", "") == "nails" and restored.get_slot(1).get("item_id", "") == "nails" and restored.get_slot(2).get("item_id", "") == "nails", "Save/load must preserve every queued commercial order and queue capacity.")
-	_check(StorageManager.get_count("metal") == 0, "Restoring a production queue must not deduct its reserved inputs a second time.")
+	_check(StorageManager.get_count("metal") == 4 and StorageManager.get_reserved_count("metal") == 4, "Restoring a production queue must preserve escrowed inputs without deducting them a second time.")
 	for slot_index in range(3):
 		var slot: Dictionary = restored.slots[slot_index]
 		if slot_index == 0:
@@ -3520,7 +3528,7 @@ func _run_gameplay_test() -> void:
 			second_shop_start.emit_signal("pressed")
 	else:
 		_check(false, "Building Supplies second slot must accept a Nails order.")
-	_check(StorageManager.get_count("metal") == 0, "Queuing two Nails orders must deduct their ingredients from City Storage.")
+	_check(StorageManager.get_count("metal") == 2 and StorageManager.get_reserved_count("metal") == 2 and StorageManager.get_available_count("metal") == 0, "Queuing two Nails orders must consume the active order inputs and escrow the queued order inputs.")
 	_check(int(shop_component.get_slot(0).get("finish_unix", 0)) > 0 and int(shop_component.get_slot(1).get("finish_unix", 0)) == 0, "Commercial store orders must run sequentially, with later orders waiting in the queue.")
 	var first_shop_slot: Dictionary = shop_component.slots[0]
 	first_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
