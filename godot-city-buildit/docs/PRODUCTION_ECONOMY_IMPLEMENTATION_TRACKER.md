@@ -310,7 +310,7 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 
 - [x] Each delivered crate records FIFO COGS and its item quantity in the EconomyManager transaction ledger.
 - [ ] Completed ship manifest records the Golden Key as a non-cash reward with no invented Simoleon value.
-- [ ] Live macro summary exposes Cargo Ship crates, known COGS, unknown-cost quantity, Golden Keys earned and cost-history completeness separately from cash gross margin.
+- [x] Live macro summary exposes Cargo Ship crates, known COGS, unknown-cost quantity, Golden Keys earned and cost-history completeness separately from cash gross margin.
 - [x] GameplaySmoke validates three costed crates, manifest completion and separation of non-cash reward from Simoleon gross revenue.
 - [x] Godot Validation and Android Debug APK: [43711118973](https://github.com/pasoooir/Mshin/actions/runs/43711118973); Web/Chromium: [43711118954](https://github.com/pasoooir/Mshin/actions/runs/43711118954).
 
@@ -318,16 +318,22 @@ PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key
 - [ ] Independent CI on the PR #513 merge commit and README follow-up is not yet verified.
 
 
-## AUTO CHAIN scenario replay and exact live FIFO snapshot — implementation in progress
+## AUTO CHAIN scenario replay and exact live FIFO snapshot — PR #514 merged
 
-- [ ] Explicit `auto_chain` scenario action reserves a root store slot only when the recursive supplier graph is resolvable.
-- [ ] Raw material dependencies are scheduled across independent factory slots and automatically collected when warehouse capacity permits.
-- [ ] Crafted intermediate dependencies are recursively queued in the matching stores; automatic jobs are excluded from the manual store queue starter.
-- [ ] Each store serializes its active production timer while retaining queued automatic dependencies.
-- [ ] The complete target BOM is consumed atomically only after all dependencies are in City Storage.
-- [ ] Active live AUTO CHAIN slots are preserved in the city snapshot with chain identity and remaining timer rather than rejecting capture.
-- [ ] Exact live FIFO batches (`quantity`, `total_cost`, `known`) are copied into scenario replay; proportional batch consumption mirrors StorageManager.
-- [ ] MacroEconomySmoke covers nested Hammer → Nails → Metal dependency replay, parallel raw-material production, exact input consumption, output collection and Depot-to-Simoleon cashflow.
-- [ ] MacroEconomySmoke covers exact per-batch FIFO cost inputs.
-- [ ] GameplaySmoke covers live snapshot preservation of AUTO CHAIN root slots and FIFO batch state.
-- [ ] Godot Validation, Android Debug APK and Web/Chromium on the final PR SHA.
+- [x] Explicit `auto_chain` scenario action reserves a root store slot only when the recursive supplier graph is resolvable.
+- [x] Raw material dependencies are scheduled across independent factory slots and automatically collected when warehouse capacity permits.
+- [x] Crafted intermediate dependencies are recursively queued in the matching stores; automatic jobs are excluded from the manual store queue starter.
+- [x] Each store serializes its active production timer while retaining queued automatic dependencies.
+- [x] The complete target BOM is consumed atomically only after all dependencies are in City Storage.
+- [x] Active live AUTO CHAIN slots are preserved in the city snapshot with chain identity and remaining timer rather than rejecting capture.
+- [x] Exact live FIFO batches (`quantity`, `total_cost`, `known`) are copied into scenario replay; proportional batch consumption mirrors StorageManager.
+- [x] MacroEconomySmoke covers nested Hammer → Nails → Metal dependency replay, parallel raw-material production, exact input use, output collection and Depot-to-Simoleon cashflow.
+- [x] MacroEconomySmoke covers exact per-batch FIFO cost inputs.
+- [x] GameplaySmoke covers live snapshot preservation of AUTO CHAIN root slots and FIFO batch state.
+- [x] Godot Validation and Android Debug APK: [43712308645](https://github.com/pasoooir/Mshin/actions/runs/43712308645); Web/Chromium: [43712308649](https://github.com/pasoooir/Mshin/actions/runs/43712308649).
+
+**Merged:** PR #514, commit `96d4dd806945929be8e57201aa4a11c1b2172517`.
+
+**Open:** cross-root shared intermediate reservation/merging and explicit critical-path analytics are not implemented. This replay follows the current per-chain live scheduler and can schedule duplicate intermediate work across independent roots.
+
+- [ ] Independent CI on merge commit PR #514 and the latest README/docs commits remains to be verified.
