@@ -155,6 +155,7 @@ func _ready() -> void:
 		if bool(cancelled_result.get("success", true)) or EconomyManager.sim_cash != before_cancel:
 			failures.append("cancelled payment granted SimCash")
 
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL
 	var popup_controller := preload("res://scripts/ui/CurrencyPanels.gd").new()
 	add_child(popup_controller)
 	popup_controller.open_conversion()
@@ -173,6 +174,7 @@ func _ready() -> void:
 		failures.append("SimCash popup did not expose expansion Special Item purchases")
 	popup_controller.close_panel()
 	popup_controller.queue_free()
+	GameManager.level = original_level
 
 	var ledger_snapshot := PaymentManager.to_save_dict()
 	PaymentManager.from_save_dict(ledger_snapshot)
