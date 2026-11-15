@@ -2824,12 +2824,18 @@ func _finish_production_touch_drag(screen_position: Vector2) -> void:
 	# the exact same polygon used by native drag-and-drop hit testing.
 	if is_instance_valid(production_panel):
 		var building_target := production_panel.find_child("ProductionBuildingDropTarget", true, false) as ProductionBuildingDropTarget
-		if is_instance_valid(building_target) and building_target.get_global_rect().has_point(screen_position) and building_target._has_point(building_target.to_local(screen_position)):
-			if _can_accept_building_drop(Vector2.ZERO, payload, building):
-				_accept_building_drop(Vector2.ZERO, payload, building)
-			else:
-				status_label.text = "Cannot start this order: check missing ingredients, unlocks and free queue slots."
-			return
+		if is_instance_valid(building_target):
+			# InputEventScreenTouch.position is in viewport coordinates. Convert
+			# through the full canvas transform and use the actual footprint
+			# polygon as the single source of truth (the axis-aligned rect is only
+			# a broad-phase bound and can disagree under CanvasLayer transforms).
+			var target_local_position: Vector2 = building_target.get_global_transform_with_canvas().affine_inverse() * screen_position
+			if building_target._has_point(target_local_position):
+				if _can_accept_building_drop(Vector2.ZERO, payload, building):
+					_accept_building_drop(Vector2.ZERO, payload, building)
+				else:
+					status_label.text = "Cannot start this order: check missing ingredients, unlocks and free queue slots."
+				return
 	for slot_index in range(component.get_slot_count()):
 		var slot_card: Control = null
 		if is_instance_valid(production_panel):
