@@ -3168,6 +3168,17 @@ func open_non_residential_upgrade_panel(building: Building) -> void:
 			overlay.queue_free()
 	)
 	layout.add_child(upgrade)
+	var trade_role := str(building.definition.get("trade_role", ""))
+	if not trade_role.is_empty():
+		var trade_button := Button.new()
+		trade_button.name = "OpenBuildingTradePanel"
+		trade_button.text = "OPEN TRADE PANEL"
+		trade_button.custom_minimum_size.y = 40 * _ui_scale
+		trade_button.pressed.connect(func():
+			overlay.queue_free()
+			open_trade_panel(trade_role)
+		)
+		layout.add_child(trade_button)
 
 
 func _open_epic_project_panel(building: Building) -> void:
