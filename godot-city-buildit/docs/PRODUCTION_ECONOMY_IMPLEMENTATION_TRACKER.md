@@ -449,6 +449,7 @@ No recipe, production duration, expansion price, or item provenance was added or
 ## 2026-11-15 — Production touch gesture hardening
 
 - [x] Product drag is bound to the originating touch index; unrelated fingers cannot move or release the active drag.
+- [x] Full-screen product-orbit containers ignore pointer events so they do not intercept taps intended for queue slots beneath them.
 - [x] Tap-only selection persists until a subsequent tap on an unlocked queue slot or the selected building, making the non-drag fallback operational.
 - [x] Production labels consistently identify the empty queue slot as the primary drop target and the building footprint as an additional target.
 - [x] GameplaySmoke now exercises multi-touch isolation and tap-to-queue fallback.
