@@ -68,6 +68,14 @@ jobs:
           if grep -q "SCRIPT ERROR" /tmp/godot-visual-presentation.log; then exit 1; fi
           grep -F "[VisualPresentationSmoke] PASS" /tmp/godot-visual-presentation.log
 
+      - name: Currency conversion and sandbox purchase smoke test
+        run: |
+          set -o pipefail
+          timeout 60s godot --headless --path godot-city-buildit res://tests/currency_economy_smoke.tscn 2>&1 | tee /tmp/godot-currency-economy.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-currency-economy.log; then exit 1; fi
+          if grep -Fq "[CurrencyEconomySmoke]" /tmp/godot-currency-economy.log && ! grep -Fq "[CurrencyEconomySmoke] PASS" /tmp/godot-currency-economy.log; then exit 1; fi
+          grep -F "[CurrencyEconomySmoke] PASS" /tmp/godot-currency-economy.log
+
   android-debug-export:
     name: Export and verify Android Debug APK
     runs-on: ubuntu-latest
