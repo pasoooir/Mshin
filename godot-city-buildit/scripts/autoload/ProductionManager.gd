@@ -219,7 +219,7 @@ func get_production_chain_status(chain_id: String) -> Dictionary:
 	for order in production_chain_orders:
 		if str(order.get("id", "")) == chain_id:
 			var result := order.duplicate(true)
-			result["in_flight"] = _get_chain_inflight_count(str(order.get("item_id", "")), chain_id, true)
+			result["in_flight"] = _count_chain_jobs(chain_id)
 			return result
 	return {}
 
@@ -283,7 +283,7 @@ func _pump_production_chains() -> void:
 		var scheduled := true
 		if remaining > 0:
 			scheduled = _schedule_chain_item(item_id, remaining, chain_id, true, {})
-		order["status"] = "running" if scheduled or in_flight > 0 else "waiting"
+		order["status"] = "running" if scheduled or _count_chain_jobs(chain_id) > 0 else "waiting"
 		if not scheduled and str(order.get("last_error", "")).is_empty():
 			order["last_error"] = "Waiting for an operational supplier, free production slot, materials or warehouse capacity."
 		elif scheduled:
