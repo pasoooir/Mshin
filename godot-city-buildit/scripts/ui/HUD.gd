@@ -1992,8 +1992,8 @@ func open_production_panel(building: Building) -> void:
 	studio_style.shadow_offset = Vector2(0, 4)
 	studio_style.content_margin_left = 10
 	studio_style.content_margin_right = 10
-	studio_style.content_margin_top = 7
-	studio_style.content_margin_bottom = 7
+	studio_style.content_margin_top = 4 if compact_layout else 7
+	studio_style.content_margin_bottom = 4 if compact_layout else 7
 	production_panel.add_theme_stylebox_override("panel", studio_style)
 	production_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	production_overlay.add_child(production_panel)
@@ -2004,8 +2004,8 @@ func open_production_panel(building: Building) -> void:
 	layout.add_theme_constant_override("separation", 2)
 	layout.add_theme_constant_override("margin_left", 4)
 	layout.add_theme_constant_override("margin_right", 4)
-	layout.add_theme_constant_override("margin_top", 2)
-	layout.add_theme_constant_override("margin_bottom", 2)
+	layout.add_theme_constant_override("margin_top", 1 if compact_layout else 2)
+	layout.add_theme_constant_override("margin_bottom", 1 if compact_layout else 2)
 	production_panel.add_child(layout)
 
 	var component = building.production_component
@@ -2028,7 +2028,7 @@ func open_production_panel(building: Building) -> void:
 	header_row.add_theme_constant_override("separation", 9)
 	header.add_child(header_row)
 	var production_icon_id := building.building_type if Icons.COMMERCIAL_IDS.has(building.building_type) else "factory_basic"
-	var building_icon := Icons.make_icon(production_icon_id, Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(34, 34) * _ui_scale)
+	var building_icon := Icons.make_icon(production_icon_id, Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(32, 32) * _ui_scale)
 	building_icon.name = "ProductionBuildingIcon"
 	header_row.add_child(building_icon)
 	var title := Label.new()
@@ -2039,7 +2039,7 @@ func open_production_panel(building: Building) -> void:
 	var close := Button.new()
 	close.name = "ProductionClose"
 	close.text = "✕"
-	close.custom_minimum_size = Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(36, 36) * _ui_scale
+	close.custom_minimum_size = Vector2(42, 42) * _ui_scale if not compact_layout else Vector2(32, 32) * _ui_scale
 	close.add_theme_font_size_override("font_size", int(20 * _ui_scale))
 	close.add_theme_color_override("font_color", Color("#17394D"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#DCECF5"), Color("#B7D4E3")))
@@ -2091,7 +2091,7 @@ func open_production_panel(building: Building) -> void:
 	building_upgrade_button.pressed.connect(_start_non_residential_upgrade.bind(building))
 	if compact_layout:
 		building_upgrade_button.text = "⬆"
-		building_upgrade_button.custom_minimum_size = Vector2(34, 34) * _ui_scale
+		building_upgrade_button.custom_minimum_size = Vector2(32, 32) * _ui_scale
 		building_upgrade_button.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 		header_row.add_child(building_upgrade_button)
 	else:
@@ -2267,11 +2267,11 @@ func open_production_panel(building: Building) -> void:
 	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	details_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	details_scroll.custom_minimum_size.y = (42.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
+	details_scroll.custom_minimum_size.y = (34.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
 	layout.add_child(details_scroll)
 	var details_host := Control.new()
 	details_host.name = "ProductionDetailsHost"
-	details_host.custom_minimum_size = Vector2(maxf(240.0, panel_width - 70.0 * _ui_scale), (54.0 if compact_layout else 180.0) * _ui_scale)
+	details_host.custom_minimum_size = Vector2(maxf(240.0, panel_width - 70.0 * _ui_scale), (34.0 if compact_layout else 180.0) * _ui_scale)
 	details_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details_scroll.add_child(details_host)
 
@@ -2281,12 +2281,12 @@ func open_production_panel(building: Building) -> void:
 	var queue_title := Label.new()
 	queue_title.text = "PRODUCTION QUEUE"
 	queue_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_title.add_theme_font_size_override("font_size", int(16 * _ui_scale))
+	queue_title.add_theme_font_size_override("font_size", int((14 if compact_layout else 16) * _ui_scale))
 	queue_title.add_theme_color_override("font_color", Color("#244B62"))
 	queue_heading.add_child(queue_title)
 	var queue_count := Label.new()
 	queue_count.text = "%d / %d" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
-	queue_count.add_theme_font_size_override("font_size", int(16 * _ui_scale))
+	queue_count.add_theme_font_size_override("font_size", int((14 if compact_layout else 16) * _ui_scale))
 	queue_count.add_theme_color_override("font_color", Color("#547286"))
 	queue_heading.add_child(queue_count)
 	if not component.is_factory:
@@ -2305,7 +2305,7 @@ func open_production_panel(building: Building) -> void:
 	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = (68.0 if compact_layout else 76.0) * _ui_scale
+	queue_scroll.custom_minimum_size.y = (58.0 if compact_layout else 76.0) * _ui_scale
 	layout.add_child(queue_scroll)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
@@ -2316,7 +2316,7 @@ func open_production_panel(building: Building) -> void:
 		var slot: Dictionary = component.get_slot(slot_index) if slot_index < component.get_slot_count() else {}
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
-		slot_card.custom_minimum_size = Vector2(82, 64) * _ui_scale
+		slot_card.custom_minimum_size = (Vector2(76, 58) if compact_layout else Vector2(82, 64)) * _ui_scale
 		var slot_fill := Color("#FFFFFF") if not slot.is_empty() else Color("#E7EEF2")
 		var slot_border := Color("#A9C0CC") if slot.is_empty() else Color("#D8AD4A")
 		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
