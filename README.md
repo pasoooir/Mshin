@@ -1082,3 +1082,12 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [ ] Physical Android landscape interaction and visual acceptance.
 
 **Structural result:** 38 shoreline render nodes and per-pebble materials are now one MultiMeshInstance3D and one shared material. The reduction is structural; FPS impact is not yet measured on hardware.
+
+
+## Mobile lighting optimization — single directional shadow source — 2026-11-15
+
+- [x] Keep the main scene directional key light as the only directional shadow-map owner.
+- [x] Retain the WorldPresentation warm secondary sun as a low-energy non-shadowing fill light; remove the duplicate shadow map and conflicting secondary shadow direction.
+- [x] Add VisualPresentationSmoke coverage for the warm fill light's non-shadowing policy and retained fill energy.
+- [ ] Godot import/parse, visual presentation smoke, gameplay smoke, Web/Chromium and Android APK CI.
+- [ ] Verify shadow quality and lighting appearance on Android hardware; FPS gain remains unmeasured until device profiling.
