@@ -77,7 +77,7 @@ static func _summarize_realized_trade_ledger(ledger: Array, total_sequence: int 
 		if not entry_variant is Dictionary:
 			continue
 		var entry: Dictionary = entry_variant
-		if str(entry.get("type", "")) != "trade_sale_collected":
+		if not ["trade_sale_collected", "delivery_order_completed"].has(str(entry.get("type", ""))):
 			continue
 		var metadata: Dictionary = entry.get("metadata", {})
 		var sale_revenue := int(entry.get("amount", 0))
@@ -190,6 +190,12 @@ static func simulate(config: Dictionary) -> Dictionary:
 						continue
 					flow = amount
 					source_bucket = "production_sales"
+				"delivery_order_reward":
+					if quantity <= 0 or amount <= 0:
+						errors.append("Invalid delivery_order_reward event for %s." % item_id)
+						continue
+					flow = amount
+					source_bucket = "delivery_orders"
 				"delivery_order":
 					if not item_values.has(item_id) or quantity <= 0:
 						errors.append("Invalid delivery_order event for %s." % item_id)
@@ -282,7 +288,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"realized_trade_accounting": config.get("realized_trade_accounting", {}),
 		"model_notes": [
 			"Tax formula and happiness XP cadence are read from the current Mshin game rules.",
-			"Delivery order reward uses the current 2x catalog-value formula.",
+			"Delivery order reward uses the current 2x catalog-value formula for reward-only events; production delivery_order actions also consume inventory and propagate FIFO COGS.",
 			"Global Trade HQ price multiplier is a scenario input; current game default is 2x.",
 			"Depot sales use catalog value and the current 120-second listing timer.",
 			"Production capacity, queue actions, input consumption and warehouse limits are replayed from explicit production configuration. Cash sales are explicit player actions; no market demand or sell-through is fabricated.",
