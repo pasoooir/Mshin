@@ -234,7 +234,7 @@ func _test_automatic_production_chain() -> void:
 		var now := int(Time.get_unix_time_from_system())
 		for component in [factory, building_supplies, hardware_store, furniture_store]:
 			for slot_index in range(component.get_slot_count()):
-				var slot := component.get_slot(slot_index)
+				var slot: Dictionary = component.get_slot(slot_index)
 				if not slot.is_empty() and not bool(slot.get("ready", false)) and int(slot.get("finish_unix", 0)) > 0:
 					slot["finish_unix"] = now - 1
 					component.slots[slot_index] = slot
