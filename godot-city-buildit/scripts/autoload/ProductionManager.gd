@@ -182,7 +182,18 @@ func request_production_chain(item_id: String, amount: int = 1) -> String:
 		if int(raw_materials[item_id].get("level", 1)) > GameManager.level:
 			return ""
 	elif crafted_items.has(item_id):
-		if not get_recipe_lock_reason(item_id).is_empty():
+		var recipe := get_recipe(item_id)
+		if recipe.is_empty() or not are_recipe_inputs_unlocked(recipe):
+			return ""
+		var eligible_supplier := false
+		if is_inside_tree():
+			for component in get_tree().get_nodes_in_group("production_components"):
+				if not is_instance_valid(component) or not component is ProductionComponent or component.is_factory:
+					continue
+				if str(component.shop_id) == str(recipe.get("store", "")) and component._owner_has_road_access() and get_recipe_lock_reason(item_id, component.store_star_level).is_empty():
+					eligible_supplier = true
+					break
+		if not eligible_supplier:
 			return ""
 	else:
 		return ""
