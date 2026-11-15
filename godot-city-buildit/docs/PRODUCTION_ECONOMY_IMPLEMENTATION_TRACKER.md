@@ -336,4 +336,4 @@ PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key
 
 **Open:** cross-root shared intermediate reservation/merging and explicit critical-path analytics are not implemented. This replay follows the current per-chain live scheduler and can schedule duplicate intermediate work across independent roots.
 
-- [ ] Independent CI on merge commit PR #514 and the latest README/docs commits remains to be verified.
+- [x] Independent main CI after PR #514 on commit `a6d1dcc867bb96972a546f82aa97b59a5ae3c536`: Godot + Android APK [43712594820](https://github.com/pasoooir/Mshin/actions/runs/43712594820), Web/Chromium [43712594809](https://github.com/pasoooir/Mshin/actions/runs/43712594809), Pages deploy [43712595064](https://github.com/pasoooir/Mshin/actions/runs/43712595064).
