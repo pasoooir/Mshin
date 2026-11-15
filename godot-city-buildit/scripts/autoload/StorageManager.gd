@@ -223,10 +223,23 @@ func _append_cost_batch(item_id: String, quantity: int, total_cost: int, known: 
 
 func _ensure_cost_batches_for_item(item_id: String) -> void:
 	var quantity := get_count(item_id)
-	var batches: Array = item_cost_batches.get(item_id, []).duplicate(true)
+	var raw_batches: Variant = item_cost_batches.get(item_id, [])
+	var batches: Array = raw_batches.duplicate(true) if raw_batches is Array else []
 	var tracked := 0
-	for batch in batches:
-		tracked += maxi(0, int(batch.get("quantity", 0)))
+	var sanitized: Array[Dictionary] = []
+	for batch_variant in batches:
+		if not batch_variant is Dictionary:
+			continue
+		var batch: Dictionary = batch_variant
+		var batch_quantity := maxi(0, int(batch.get("quantity", 0)))
+		if batch_quantity <= 0:
+			continue
+		batch["quantity"] = batch_quantity
+		batch["total_cost"] = maxi(0, int(batch.get("total_cost", 0)))
+		batch["known"] = bool(batch.get("known", false))
+		sanitized.append(batch)
+		tracked += batch_quantity
+	batches = sanitized
 	if tracked < quantity:
 		batches.append({"quantity": quantity - tracked, "total_cost": 0, "known": false})
 	elif tracked > quantity:
@@ -258,9 +271,13 @@ func _consume_cost_batches_from(source: Dictionary, requirements: Dictionary) ->
 	for item_variant in requirements.keys():
 		var item_id := str(item_variant)
 		var remaining := int(requirements[item_variant])
-		var batches: Array = source.get(item_id, []).duplicate(true)
+		var raw_batches: Variant = source.get(item_id, [])
+		var batches: Array = raw_batches.duplicate(true) if raw_batches is Array else []
 		var rebuilt: Array[Dictionary] = []
 		for batch_variant in batches:
+			if not batch_variant is Dictionary:
+				all_known = false
+				continue
 			var batch: Dictionary = batch_variant.duplicate(true)
 			if remaining <= 0:
 				rebuilt.append(batch)
@@ -295,7 +312,8 @@ func to_save_dict() -> Dictionary:
 func from_save_dict(data: Dictionary) -> void:
 	capacity = maxi(1, int(data.get("capacity", data.get("max_capacity", DEFAULT_CAPACITY))))
 	items = data.get("items", data.get("inventory", {})).duplicate(true)
-	item_cost_batches = data.get("item_cost_batches", {}).duplicate(true)
+	var saved_cost_batches: Variant = data.get("item_cost_batches", {})
+	item_cost_batches = saved_cost_batches.duplicate(true) if saved_cost_batches is Dictionary else {}
 	storage_upgrades_completed = maxi(0, int(data.get("storage_upgrades_completed", 0)))
 	# Discard malformed/negative entries and clamp legacy saves to the capacity.
 	for item_id in items.keys():
