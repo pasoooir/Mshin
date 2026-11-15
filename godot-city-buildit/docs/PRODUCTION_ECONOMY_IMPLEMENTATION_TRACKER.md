@@ -383,8 +383,12 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] Global pointer move/release tracking continues after the finger leaves the product selector.
 - [x] Drop target reuses same-building/product/slot validation and current ProductionComponent APIs.
 - [x] Clear stale touch-selection state after successful production order.
-- [x] Radial tile positions clamp using actual control dimensions and full dock height.
-- [ ] GameplaySmoke synthetic touch gesture and multi-viewport bounds/non-overlap assertions pass in CI.
+- [x] Radial tile positioning is a shared helper used by the UI and multi-viewport geometry assertions; actual control dimensions and dock height are included.
+- [x] Compact dock vertical minimums reduced for mobile landscape (details host, queue strip, slot cards and panel margins).
+- [x] GameplaySmoke simulates Android touch down → move → release into the exact queue tile and confirms the order enters the selected slot.
+- [x] GameplaySmoke validates tile viewport containment and no dock overlap at 844×390, 915×412 and 1280×720.
+- [x] Godot Validation, GameplaySmoke, Visual Presentation and Android Debug APK export/signature: [run 43725912825](https://github.com/pasoooir/Mshin/actions/runs/43725912825).
+- [x] Web export, gameplay integration and desktop/mobile Chromium launch: [run 43725912831](https://github.com/pasoooir/Mshin/actions/runs/43725912831). Pages deploy skipped for PR.
 - [ ] Actual production UI screenshot review at mobile landscape sizes.
 - [ ] Physical Android touch acceptance.
 - [ ] Other actionable building markers after mapping real pending-action states.
