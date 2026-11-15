@@ -590,8 +590,8 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Allocate explicit non-zero sizes for factory material, store product, and residential material buttons.
 - [x] Explicitly set these projected touch targets to `MOUSE_FILTER_STOP`.
 - [x] Extend GameplaySmoke to assert real non-zero hitbox dimensions and pointer handling for all three target classes.
-- [ ] Godot validation + GameplaySmoke + Android Debug APK CI.
-- [ ] Web export + desktop/mobile Chromium smoke.
+- [x] Godot validation + GameplaySmoke + Android Debug APK CI passed (run `43755633708`).
+- [x] Web export + desktop/mobile Chromium smoke passed (run `43755633706`).
 - [ ] Merge and verify post-merge Pages deployment.
 - [ ] Physical Android touch validation (must not be inferred from CI).
 
