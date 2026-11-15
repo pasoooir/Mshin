@@ -407,3 +407,19 @@ No recipe, production duration, expansion price, or item provenance was added or
 **Acceptance status:** implementation committed to feat/production-modal-building-drop; pending CI and real-device validation. No completion claim is made yet.
 
 - [ ] Web Chromium mobile/desktop smoke and Pages deployment — workflow still running at last check.
+
+
+## 2026-11-15 — Production Studio visual redesign
+
+- [x] Honeycomb catalogue now uses two stable side clusters rather than the previous radial scatter; more products extend the same two-column lattice.
+- [x] Responsive hex tile and icon sizing for landscape viewports.
+- [x] Top-centered factory/store nameplate is separated from the queue dock.
+- [x] Selected item details are constrained to a compact capsule; the oversized pale/white bottom sheet is removed.
+- [x] Bottom queue dock uses a dark translucent surface and high-contrast slots; existing production timers, collect actions, store queue capacity and drag/drop handlers remain in place.
+- [x] 50% dimmed city modal, modal input lock and building-footprint drop target are retained.
+- [x] GameplaySmoke covers compact panel height, nameplate placement, compact details and first honeycomb cluster.
+- [ ] Run Godot import/parse and GameplaySmoke on this redesign branch.
+- [ ] Validate 16:9 and Android landscape sizes; physically test touch select-then-tap and drag/drop.
+- [ ] Capture and review final Android gameplay screenshot before accepting visual completion.
+
+**Visual acceptance is not yet claimed.** Figma and Canva boards are design references; only the Godot build and device screenshots can prove the in-game result.
