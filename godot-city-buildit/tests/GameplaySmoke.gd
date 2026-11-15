@@ -204,20 +204,22 @@ func _test_automatic_production_chain() -> void:
 	_check(ProductionManager.request_automatic_chain(store, "nails", 0), "A valid Nails request must be accepted as an automatic dependency chain without pre-existing Metal.")
 	var chain_id := str(store.slots[0].get("auto_chain_id", ""))
 	_check(not chain_id.is_empty() and bool(store.slots[0].get("auto_chain_root", false)), "The target store slot must persist the root chain request.")
-	print("[AutoChainSmoke] manager_tree=", ProductionManager.is_inside_tree(), " group_components=", get_tree().get_nodes_in_group("production_components").size(), " factory=", factory.is_factory, "/", factory.factory_type, " slots=", factory.get_slot_count(), " compatible=", ProductionManager.get_factory_material_ids(factory.factory_type).has("metal"), " road=", factory._owner_has_road_access(), " root=", store.slots[0])
 	ProductionManager._process_automatic_chains()
+	var chain_components: Array = get_tree().get_nodes_in_group("production_components")
 	var raw_slots_started := 0
-	for slot in factory.slots:
-		if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == "metal":
-			raw_slots_started += 1
-	_check(raw_slots_started == 2, "The automatic chain must reserve two independent factory slots for the two Metal inputs. Started=%d factory_slots=%s chain=%s" % [raw_slots_started, str(factory.slots), str(ProductionManager.get_automatic_chain_status())])
+	for component in chain_components:
+		for slot in component.slots:
+			if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == "metal":
+				raw_slots_started += 1
+	_check(raw_slots_started == 2, "The automatic chain must reserve two independent factory slots for the two Metal inputs across the available factory pool.")
 	_check(StorageManager.get_count("metal") == 0, "Raw materials must not be fabricated into inventory before their factory jobs complete.")
 
 	var now := int(Time.get_unix_time_from_system())
-	for index in range(factory.slots.size()):
-		if str(factory.slots[index].get("auto_chain_id", "")) == chain_id:
-			factory.slots[index]["finish_unix"] = now - 1
-	factory.refresh_slots()
+	for component in chain_components:
+		for index in range(component.slots.size()):
+			if str(component.slots[index].get("auto_chain_id", "")) == chain_id:
+				component.slots[index]["finish_unix"] = now - 1
+		component.refresh_slots()
 	ProductionManager._process_automatic_chains()
 	_check(StorageManager.get_count("metal") == 2, "Completed raw factory jobs must be auto-collected into City Storage.")
 	_check(store.slots[0].get("auto_chain_started", false), "The target store order must start automatically after its complete input set is available.")
@@ -247,11 +249,10 @@ func _test_automatic_production_chain() -> void:
 	StorageManager.from_save_dict({"capacity": 50, "items": {}})
 	_check(ProductionManager.request_automatic_chain(furniture_store, "chair", 0), "A nested Chair order must be accepted when its recipe and all dependency unlocks are verified.")
 	var nested_chain_id := str(furniture_store.slots[0].get("auto_chain_id", ""))
-	var nested_stores: Array = [store, hardware_store, furniture_store]
-	for _step in range(24):
+	for _step in range(40):
 		ProductionManager._process_automatic_chains()
 		var fast_forward_now := int(Time.get_unix_time_from_system())
-		for component in [factory, store, hardware_store, furniture_store]:
+		for component in get_tree().get_nodes_in_group("production_components"):
 			for slot_index in range(component.slots.size()):
 				var queued: Dictionary = component.slots[slot_index]
 				if str(queued.get("auto_chain_id", "")) == nested_chain_id and int(queued.get("finish_unix", 0)) > 0 and not bool(queued.get("ready", false)):
