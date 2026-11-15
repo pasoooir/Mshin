@@ -1859,6 +1859,8 @@ func try_upgrade() -> bool:
 	upgrade_ready = false
 	if hard_hat: hard_hat.visible = false
 	_start_residential_upgrade_animation()
+	if has_node("/root/SaveManager") and not SaveManager.is_loading:
+		SaveManager.save_game()
 	return true
 
 func _start_residential_upgrade_animation() -> void:
@@ -1898,6 +1900,8 @@ func _finish_residential_upgrade() -> void:
 	_check_upgrade_ready()
 	upgraded.emit(upgrade_stage)
 	ServiceManager.recalculate_from_buildings()
+	if has_node("/root/SaveManager") and not SaveManager.is_loading:
+		SaveManager.save_game()
 
 func _finish_non_residential_upgrade() -> void:
 	if not upgrade_in_progress:
