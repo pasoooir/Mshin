@@ -499,3 +499,6 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Android hardware screenshot/lighting review and frame-time profiling.
 
 **Expected structural improvement:** one directional shadow source instead of two; no numeric FPS claim until on-device measurement.
+
+- [x] Preserve the original soft-shadow settings on the main scene key light and update static validation to assert the single-shadow-source architecture.
+- [ ] Rerun static validation and all Godot/Web/Android workflows after the validator correction.
