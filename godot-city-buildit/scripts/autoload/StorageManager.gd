@@ -123,9 +123,22 @@ func add_items(additions: Dictionary) -> bool:
 	storage_changed.emit()
 	return true
 
+# Community-reported City Storage thresholds, keyed by current capacity.
+# Each upgrade consumes this many of EACH of Bar, Lock and Camera.
+# EA confirms equal quantities and +5 capacity, but does not publish this table.
+const STORAGE_ITEM_REQUIREMENT_THRESHOLDS: Array[int] = [
+	40, 55, 70, 85, 105, 125, 145, 165, 185, 205,
+	230, 255, 280, 305, 330, 355, 380, 405, 430, 455,
+	495, 520, 545, 570, 585
+]
+
 func get_next_storage_upgrade_requirement() -> int:
-	# Data-driven community progression: equal quantities of all three parts.
-	return maxi(1, int(floor(float(maxi(0, capacity - 40)) / 20.0)) + 1)
+	var required := 1
+	for threshold in STORAGE_ITEM_REQUIREMENT_THRESHOLDS:
+		if capacity < threshold:
+			break
+		required += 1
+	return mini(required, 25)
 
 func can_upgrade_storage_with_items() -> bool:
 	if GameManager.level < STORAGE_UNLOCK_LEVEL or capacity >= STORAGE_MAX_CAPACITY:
