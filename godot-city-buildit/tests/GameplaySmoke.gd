@@ -97,7 +97,6 @@ func _test_non_residential_upgrade_bom() -> void:
 	BuildManager.buildings.clear()
 	StorageManager.items = {}
 	var probe := Building.new()
-	add_child(probe)
 	probe.building_id = "non_residential_upgrade_bom_probe"
 	probe.building_type = "power_wind"
 	probe.definition = BuildManager.building_types["power_wind"].duplicate(true)
@@ -105,6 +104,7 @@ func _test_non_residential_upgrade_bom() -> void:
 	probe.grid_pos = Vector2i(1, 1)
 	probe.upgrade_stage = 1
 	probe.max_stage = 6
+	add_child(probe)
 	BuildManager.buildings[probe.building_id] = probe
 	var upgrade_bom := BuildManager.get_building_upgrade_bom(probe)
 	_check(not upgrade_bom.is_empty(), "Every supported non-residential building must resolve a stage-specific upgrade BOM.")
