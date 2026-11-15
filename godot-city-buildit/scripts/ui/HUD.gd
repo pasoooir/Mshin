@@ -2259,8 +2259,14 @@ func open_production_panel(building: Building) -> void:
 		var product_count := maxi(1, product_grid.get_child_count())
 		var angle := deg_to_rad(205.0 + 150.0 * float(orbit_index) / float(maxi(1, product_count - 1)))
 		var point := orbit_center + Vector2(cos(angle), sin(angle)) * orbit_radius
-		var selector_half := 41.0 if product_grid.get_child_count() <= 6 else 33.0
-		product_node.position = Vector2(clampf(point.x - selector_half, 4.0, viewport_size.x - selector_half * 2.0 - 4.0), clampf(point.y - selector_half - 6.0, 4.0, maxf(4.0, viewport_size.y - panel_height - selector_half * 2.0 - 8.0)))
+		var selector_size: Vector2 = product_node.custom_minimum_size
+		var selector_half := selector_size * 0.5
+		var max_selector_x := maxf(4.0, viewport_size.x - selector_size.x - 4.0 * _ui_scale)
+		var max_selector_y := maxf(4.0, viewport_size.y - panel_height - selector_size.y - 8.0 * _ui_scale)
+		product_node.position = Vector2(
+			clampf(point.x - selector_half.x, 4.0, max_selector_x),
+			clampf(point.y - selector_half.y - 6.0 * _ui_scale, 4.0, max_selector_y)
+		)
 
 	var details_scroll := ScrollContainer.new()
 	details_scroll.name = "ProductionDetailsScroll"
