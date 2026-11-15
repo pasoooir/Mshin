@@ -3,6 +3,8 @@ extends SceneTree
 const Simulator = preload("res://scripts/economy/MacroEconomySimulator.gd")
 const ProductionSimulator = preload("res://scripts/economy/ProductionCapacitySimulator.gd")
 
+var failed := false
+
 func _initialize() -> void:
 	var values := {"metal": 10, "nails": 80}
 	var base_config := {
@@ -83,6 +85,10 @@ func _initialize() -> void:
 	_test_production_capacity_and_cashflow()
 	_test_delivery_order_inventory_and_costs()
 	_test_automatic_chain_dependency_replay()
+	if failed:
+		push_error("[MacroEconomySmoke] FAIL: one or more assertions failed.")
+		quit(1)
+		return
 	print("[MacroEconomySmoke] PASS")
 	quit(0)
 
@@ -137,8 +143,8 @@ func _test_delivery_order_inventory_and_costs() -> void:
 		return
 
 func _fail(message: String) -> void:
+	failed = true
 	push_error("[MacroEconomySmoke] " + message)
-	quit(1)
 
 func _test_production_capacity_and_cashflow() -> void:
 	var production_config := {
@@ -385,7 +391,7 @@ func _test_automatic_chain_dependency_replay() -> void:
 		_fail("Nested AUTO CHAIN must consume each BOM input exactly once.")
 		return
 	if int(result.get("source_breakdown", {}).get("production_sales", 0)) != 90 or int(result.get("ending_simoleons", 0)) != 190:
-		_fail("AUTO CHAIN output must flow through explicit Depot collection into macro Simoleon cashflow.")
+		_fail("AUTO CHAIN output must flow through explicit Depot collection into macro Simoleon cashflow. source=%s ending=%s production=%s" % [str(result.get("source_breakdown", {})), str(result.get("ending_simoleons", -1)), str(production)])
 		return
 	if not production.get("pending_jobs", []).is_empty() or not production.get("ready_uncollected_jobs", []).is_empty():
 		_fail("Completed AUTO CHAIN scenario must leave no pending or uncollected production slots.")
