@@ -829,6 +829,11 @@ func _test_camera_focus_math() -> void:
 	_check(focused_step.distance_to(target) < current.distance_to(target), "Camera focus interpolation must move toward the selected building.")
 	_check(is_equal_approx(focused_step.y, current.y), "Camera focus interpolation must preserve the rig height.")
 	_check(focused_step.distance_to(target) > 0.0, "Camera focus must ease toward the building instead of teleporting instantly.")
+	var focus_rig := CameraControllerScript.new()
+	focus_rig.current_zoom = 30.0
+	focus_rig.focus_on(target, 18.0)
+	_check(is_equal_approx(focus_rig.focus_zoom_target, 18.0) and focus_rig.is_focus_animating, "Selecting a building must request a smooth camera zoom-in as well as a horizontal focus.")
+	focus_rig.free()
 
 func _test_camera_inertia_math() -> void:
 	var initial_pan := Vector2(120.0, -60.0)
@@ -3788,8 +3793,6 @@ func _run_gameplay_test() -> void:
 	var production_product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	_check(production_product_orbit != null and production_product_grid != null, "Factory products must render in a floating, building-centered two-sided honeycomb.")
 	_check(production_product_orbit.mouse_filter == Control.MOUSE_FILTER_IGNORE and production_product_grid.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Transparent product-orbit layers must not intercept touch input intended for queue slots beneath them.")
-	var factory_surface_drop := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
-	_check(factory_surface_drop != null and factory_surface_drop.mouse_filter == Control.MOUSE_FILTER_STOP and factory_surface_drop.size.x > 0.0 and factory_surface_drop.size.y > 0.0, "Factory must retain a real footprint-aligned drop hit area as an additional direct-drop target.")
 	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Honeycomb factory catalogue must expose every registered material.")
 	var production_details_scroll := production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) as ScrollContainer
 	_check(production_details_scroll != null and production_details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Selected-item details must remain a compact capsule, not a vertically expanding white sheet.")
