@@ -13,13 +13,18 @@ var benchmark_running := false
 var benchmark_duration_seconds := 30.0
 var elapsed_seconds := 0.0
 var _frame_times: Array[float] = []
+var _draw_call_samples: Array[float] = []
+var _rendered_object_samples: Array[float] = []
+var _rendered_primitive_samples: Array[float] = []
+var _video_memory_samples: Array[float] = []
+var _node_count_samples: Array[float] = []
 
 func start_benchmark(duration_seconds: float = 30.0) -> bool:
 	if benchmark_running:
 		return false
 	benchmark_duration_seconds = clampf(duration_seconds, 5.0, 120.0)
 	elapsed_seconds = 0.0
-	_frame_times.clear()
+	_clear_samples()
 	benchmark_running = true
 	benchmark_started.emit(benchmark_duration_seconds)
 	return true
@@ -27,12 +32,30 @@ func start_benchmark(duration_seconds: float = 30.0) -> bool:
 func cancel_benchmark() -> void:
 	benchmark_running = false
 	elapsed_seconds = 0.0
+	_clear_samples()
+
+func _clear_samples() -> void:
 	_frame_times.clear()
+	_draw_call_samples.clear()
+	_rendered_object_samples.clear()
+	_rendered_primitive_samples.clear()
+	_video_memory_samples.clear()
+	_node_count_samples.clear()
+
+func _capture_render_metrics() -> void:
+	# Performance monitors expose the most recently rendered frame. Sampling
+	# them throughout the benchmark makes the report representative of the run.
+	_draw_call_samples.append(maxf(0.0, Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
+	_rendered_object_samples.append(maxf(0.0, Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)))
+	_rendered_primitive_samples.append(maxf(0.0, Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)))
+	_video_memory_samples.append(maxf(0.0, Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)))
+	_node_count_samples.append(maxf(0.0, Performance.get_monitor(Performance.OBJECT_NODE_COUNT)))
 
 func _process(delta: float) -> void:
 	if not benchmark_running or delta <= 0.0:
 		return
 	_frame_times.append(delta)
+	_capture_render_metrics()
 	var previous_second := int(elapsed_seconds)
 	elapsed_seconds += delta
 	if int(elapsed_seconds) > previous_second:
@@ -58,13 +81,9 @@ func _finish_benchmark() -> void:
 		"target_fps": 60,
 		"duration_seconds": benchmark_duration_seconds,
 		"summary": summary,
-		"render_metrics": {
-			"draw_calls_last_frame": int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
-			"rendered_objects_last_frame": int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)),
-			"rendered_primitives_last_frame": int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
-			"video_memory_bytes": int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)),
-			"node_count": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
-		},
+		"graphics_quality": GraphicsSettingsManager.quality,
+		"graphics_preset": GraphicsSettingsManager.get_quality_preset(GraphicsSettingsManager.quality),
+		"render_metrics": _build_render_metrics_report(),
 		"report_path": REPORT_PATH,
 		"scope": "Foreground gameplay frame loop on the device that ran this benchmark; not a CI or synthetic scene benchmark."
 	}
@@ -77,7 +96,45 @@ func _finish_benchmark() -> void:
 		report["save_error"] = error_string(FileAccess.get_open_error())
 		push_warning("[PerformanceMonitor] Could not save benchmark report: %s" % report["save_error"])
 	benchmark_finished.emit(report)
-	_frame_times.clear()
+	_clear_samples()
+
+func _build_render_metrics_report() -> Dictionary:
+	return {
+		"sample_count": _draw_call_samples.size(),
+		"sampling_scope": "Per-frame samples collected during the complete foreground benchmark interval.",
+		"draw_calls": summarize_numeric_samples(_draw_call_samples),
+		"rendered_objects": summarize_numeric_samples(_rendered_object_samples),
+		"rendered_primitives": summarize_numeric_samples(_rendered_primitive_samples),
+		"video_memory_bytes": summarize_numeric_samples(_video_memory_samples),
+		"node_count": summarize_numeric_samples(_node_count_samples),
+		# Retain legacy last-frame fields for consumers of older reports.
+		"draw_calls_last_frame": int(_last_sample(_draw_call_samples)),
+		"rendered_objects_last_frame": int(_last_sample(_rendered_object_samples)),
+		"rendered_primitives_last_frame": int(_last_sample(_rendered_primitive_samples))
+	}
+
+static func _last_sample(samples: Array[float]) -> float:
+	return samples.back() if not samples.is_empty() else 0.0
+
+static func summarize_numeric_samples(samples: Array[float]) -> Dictionary:
+	if samples.is_empty():
+		return {"sample_count": 0, "average": 0.0, "p95": 0.0, "max": 0.0, "last": 0.0}
+	var sorted_samples: Array[float] = samples.duplicate()
+	var total := 0.0
+	var maximum := 0.0
+	for sample in samples:
+		var safe_sample := maxf(sample, 0.0)
+		total += safe_sample
+		maximum = maxf(maximum, safe_sample)
+	sorted_samples.sort()
+	var p95_index := clampi(int(ceil(float(sorted_samples.size()) * 0.95)) - 1, 0, sorted_samples.size() - 1)
+	return {
+		"sample_count": samples.size(),
+		"average": snappedf(total / float(samples.size()), 0.01),
+		"p95": snappedf(sorted_samples[p95_index], 0.01),
+		"max": snappedf(maximum, 0.01),
+		"last": snappedf(maxf(samples.back(), 0.0), 0.01)
+	}
 
 static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 	if frame_times.is_empty():

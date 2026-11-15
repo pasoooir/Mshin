@@ -16,6 +16,7 @@ const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceL
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
 const MacroEconomySimulatorScript = preload("res://scripts/economy/MacroEconomySimulator.gd")
 const ProductionCapacitySimulatorScript = preload("res://scripts/economy/ProductionCapacitySimulator.gd")
+const PerformanceMonitorScript = preload("res://scripts/autoload/PerformanceMonitor.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -4282,6 +4283,8 @@ func _run_gameplay_test() -> void:
 	_check(not livestock_probe.is_valid_grazing_position(Vector3(0.0, 0.0, 0.0)), "Livestock must never enter unlocked city plots.")
 	livestock_probe.queue_free()
 
+	_test_performance_monitor_aggregation()
+
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
 	else:
@@ -4293,3 +4296,16 @@ func _run_gameplay_test() -> void:
 
 func _finish(exit_code: int = 0) -> void:
 	get_tree().quit(exit_code)
+
+
+func _test_performance_monitor_aggregation() -> void:
+	var samples: Array[float] = [10.0, 20.0, 30.0, 40.0]
+	var summary: Dictionary = PerformanceMonitorScript.summarize_numeric_samples(samples)
+	_check(int(summary.get("sample_count", 0)) == 4, "Render metrics must count every sampled frame.")
+	_check(is_equal_approx(float(summary.get("average", 0.0)), 25.0), "Render metrics must report the arithmetic mean across all frames.")
+	_check(is_equal_approx(float(summary.get("p95", 0.0)), 40.0), "Render metrics must report the nearest-rank p95 across all frames.")
+	_check(is_equal_approx(float(summary.get("max", 0.0)), 40.0), "Render metrics must preserve the worst sampled frame.")
+	_check(is_equal_approx(float(summary.get("last", 0.0)), 40.0), "Render metrics must retain the last sample for backward compatibility.")
+	var empty_samples: Array[float] = []
+	var empty_summary: Dictionary = PerformanceMonitorScript.summarize_numeric_samples(empty_samples)
+	_check(int(empty_summary.get("sample_count", -1)) == 0 and is_equal_approx(float(empty_summary.get("p95", -1.0)), 0.0), "An empty render sample set must produce safe zero metrics.")
