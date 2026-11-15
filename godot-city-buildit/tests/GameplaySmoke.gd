@@ -3870,6 +3870,9 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._get_building_action_notification_text(action_probe) == "🏆", "A finished Epic Project must show its claim notification on the target home.")
 	EpicProjectManager.active_project.clear()
 	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A claimed/dismissed Epic Project must no longer show a pending marker.")
+	EpicProjectManager.active_project = {"finished": false, "tasks": [{"building_id": action_probe.building_id, "item_id": "metal", "amount": 1}]}
+	if StorageManager.get_count("metal") >= 1:
+		_check(production_hud._get_building_action_notification_text(action_probe) == "📦", "A specialization task with all required goods in storage must show a contribution marker.")
 	EpicProjectManager.active_project.clear()
 	EpicProjectManager.epic_buildings[action_probe.building_id] = {"tier": "bronze", "next_token_part_unix": 0}
 	_check(production_hud._get_building_action_notification_text(action_probe) == "🧩", "An Epic Building with a due token part must show a collect notification.")
