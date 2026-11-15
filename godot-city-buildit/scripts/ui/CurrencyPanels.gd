@@ -185,7 +185,7 @@ func _product_card(product: Dictionary) -> Control:
 	icon.custom_minimum_size = Vector2(76, 76) * _scale
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var asset := "res://assets/icons/ui/currency/%s.svg" % str(product.id)
+	var asset := "res://assets/icons/ui/currency/%s.png" % str(product.id)
 	if not ResourceLoader.exists(asset): asset = "res://assets/icons/ui/currency/simcash_bundle.png"
 	icon.texture = load(asset) as Texture2D if ResourceLoader.exists(asset) else Icons.get_icon_tex("money")
 	row.add_child(icon)
@@ -279,8 +279,8 @@ func _balance_panel() -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 24)
 	panel.add_child(row)
-	row.add_child(_balance_item("simcash_bundle.svg", EconomyManager.sim_cash, "SimCash"))
-	row.add_child(_balance_item("simoleons_coins.svg", EconomyManager.simoleons, "Simoleons"))
+	row.add_child(_balance_item("simcash_bundle.png", EconomyManager.sim_cash, "SimCash"))
+	row.add_child(_balance_item("simoleons_coins.png", EconomyManager.simoleons, "Simoleons"))
 	return panel
 
 func _balance_item(asset_name: String, amount: int, currency_name: String) -> Control:
