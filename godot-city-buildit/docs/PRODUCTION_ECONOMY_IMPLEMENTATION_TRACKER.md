@@ -426,3 +426,19 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Capture and review final Android gameplay screenshot before accepting visual completion.
 
 **PR #520 merged into `main` at `5fbac0e3aaef34d4fb4aa96ce802c8d51a8afdd5`. CI acceptance is green, but visual acceptance is not yet claimed. Figma and Canva boards are design references; only the Godot build and device screenshots can prove the in-game result.
+
+
+## 2026-11-15 — Direct product drag into production queue
+
+- [x] Pointer-captured touch drag continues globally after the finger leaves a hexagon tile.
+- [x] Floating product ghost follows the touch point and queue slots highlight only when empty and unlocked.
+- [x] Release over an empty queue slot immediately submits the factory batch or store craft/automatic supply-chain order.
+- [x] Invalid, occupied and locked slots reject the drop without creating an order.
+- [x] Tap-only selection opens item details and no longer exposes a START or AUTO CHAIN action.
+- [x] Product clusters are centered around the selected building; larger tiles/icons improve touch precision and legibility.
+- [x] GameplaySmoke updated for direct touch drag/release and queue-based factory/store order acceptance.
+- [ ] Run Godot import/parse and GameplaySmoke on this correction branch.
+- [ ] Validate Android landscape touch drag/drop and review actual in-game screenshot.
+- [ ] Confirm production Pages deployment after merge.
+
+**No CI or device acceptance is claimed until those checks pass.**
