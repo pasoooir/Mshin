@@ -517,27 +517,27 @@ func _try_interact(world_position: Vector3) -> void:
 	# Residential buildings open a full upgrade-plan panel. The city-wide
 	# dashboard remains available so the player never needs to inspect homes one by one.
 	if category == "residential":
-		var hud := get_tree().current_scene.get_node_or_null("HUD")
-		if hud and hud.has_method("open_residential_panel"):
-			hud.open_residential_panel(building)
-		else:
-			if category in ["service", "park"]:
-		var hud := get_tree().current_scene.get_node_or_null("HUD")
-		if hud and hud.has_method("open_building_upgrade_panel"):
-			hud.open_building_upgrade_panel(building)
+		var residential_hud := get_tree().current_scene.get_node_or_null("HUD")
+		if residential_hud and residential_hud.has_method("open_residential_panel"):
+			residential_hud.open_residential_panel(building)
 		else:
 			_set_status(building.get_info())
 		return
 
-	_set_status(building.get_info())
+	# Production buildings open an explicit item/collect panel.
+	if category in ["industrial", "commercial"]:
+		var production_hud := get_tree().current_scene.get_node_or_null("HUD")
+		if production_hud and production_hud.has_method("open_production_panel"):
+			production_hud.open_production_panel(building)
+		else:
+			_set_status(building.get_info())
 		return
 
-	# Production buildings open an explicit item/collect panel rather than
-	# silently auto-ordering a product on every tap.
-	if category in ["industrial", "commercial"]:
-		var hud := get_tree().current_scene.get_node_or_null("HUD")
-		if hud and hud.has_method("open_production_panel"):
-			hud.open_production_panel(building)
+	# Service and park buildings expose the new non-residential upgrade flow.
+	if category in ["service", "park"]:
+		var upgrade_hud := get_tree().current_scene.get_node_or_null("HUD")
+		if upgrade_hud and upgrade_hud.has_method("open_building_upgrade_panel"):
+			upgrade_hud.open_building_upgrade_panel(building)
 		else:
 			_set_status(building.get_info())
 		return
