@@ -85,7 +85,7 @@ func _ready() -> void:
 	# Full Trade Depot lifecycle: reserve on listing, block unsafe cancellation
 	# when the warehouse has no room, return goods on cancel, and pay once on collect.
 	GameManager.population = 8000
-	var depot := load("res://scenes/buildings/Building.tscn").instantiate()
+	var depot: Variant = load("res://scenes/buildings/Building.tscn").instantiate()
 	depot.building_type = "trade_depot"
 	depot.status = "completed"
 	add_child(depot)
