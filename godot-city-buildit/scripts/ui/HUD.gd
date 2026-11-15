@@ -1998,6 +1998,16 @@ func open_production_panel(building: Building) -> void:
 	hint.add_theme_font_size_override("font_size", int((10 if not compact_layout else 8) * _ui_scale))
 	hint.add_theme_color_override("font_color", Color("#577487"))
 	layout.add_child(hint)
+	var building_upgrade_bom := BuildManager.get_building_upgrade_bom(building)
+	var building_upgrade_lock := BuildManager.get_building_upgrade_bom_lock_reason(building)
+	var building_upgrade := Button.new()
+	building_upgrade.name = "NonResidentialBuildingUpgrade"
+	building_upgrade.text = "UPGRADING · %ds" % building.get_upgrade_remaining_seconds() if building.upgrade_in_progress else ("UPGRADE TO LV %d" % (building.upgrade_stage + 1) if building.upgrade_stage < building.max_stage else "MAXIMUM LEVEL")
+	building_upgrade.disabled = building.upgrade_in_progress or building.upgrade_stage >= building.max_stage or not building_upgrade_lock.is_empty()
+	building_upgrade.tooltip_text = building_upgrade_lock if not building_upgrade_lock.is_empty() else "Mshin upgrade materials: " + str(building_upgrade_bom)
+	building_upgrade.custom_minimum_size.y = 34 * _ui_scale
+	building_upgrade.pressed.connect(_upgrade_non_residential_from_panel.bind(building))
+	layout.add_child(building_upgrade)
 
 	var available_slot := -1
 	for slot_index in range(component.get_slot_count()):
@@ -3095,6 +3105,52 @@ func open_residential_panel(building: Building) -> void:
 func _upgrade_residential_from_panel(building: Building) -> void:
 	if is_instance_valid(building) and building.try_upgrade():
 		_close_residential_panel()
+
+func _upgrade_non_residential_from_panel(building: Building) -> void:
+	if is_instance_valid(building) and building.try_upgrade():
+		_close_production_panel()
+
+func open_non_residential_upgrade_panel(building: Building) -> void:
+	if not is_instance_valid(building) or building.status != "completed":
+		return
+	_close_production_panel()
+	_close_residential_panel()
+	var overlay := Control.new()
+	overlay.name = "BuildingUpgradeOverlay"
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 132
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.025, 0.035, 0.68)
+	overlay.add_child(shade)
+	var panel := PanelContainer.new()
+	panel.name = "BuildingUpgradePanel"
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(390, 260) * _ui_scale
+	panel.add_theme_stylebox_override("panel", _city_panel_style())
+	overlay.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 10)
+	panel.add_child(layout)
+	_city_panel_heading(layout, str(building.definition.get("name", "Building")).to_upper(), func(): overlay.queue_free())
+	var bom := BuildManager.get_building_upgrade_bom(building)
+	var missing := BuildManager.get_building_upgrade_bom_lock_reason(building)
+	var materials := Label.new()
+	materials.text = "NEXT UPGRADE · LV %d\n%s\n\n%s" % [building.upgrade_stage + 1, str(bom), missing if not missing.is_empty() else "Materials available"]
+	materials.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(materials)
+	var upgrade := Button.new()
+	upgrade.name = "NonResidentialBuildingUpgrade"
+	upgrade.text = "UPGRADING" if building.upgrade_in_progress else ("UPGRADE" if missing.is_empty() else "MATERIALS MISSING")
+	upgrade.disabled = building.upgrade_in_progress or building.upgrade_stage >= building.max_stage or not missing.is_empty()
+	upgrade.custom_minimum_size.y = 44 * _ui_scale
+	upgrade.pressed.connect(func():
+		if building.try_upgrade():
+			overlay.queue_free()
+	)
+	layout.add_child(upgrade)
 
 
 func _open_epic_project_panel(building: Building) -> void:
