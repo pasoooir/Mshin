@@ -129,3 +129,17 @@ Cargo Ship crates هنوز به دفتر COGS وصل نیستند؛ Golden Key �
 
 
 PR #512 با merge commit `2ed1cc42c8eb9e5a1eb1d6e85dc09600fd7ae09b` ادغام شد. Godot Validation و Android Debug APK در [run 43710739261](https://github.com/pasoooir/Mshin/actions/runs/43710739261) و Web/Chromium دسکتاپ و موبایل در [run 43710739262](https://github.com/pasoooir/Mshin/actions/runs/43710739262) موفق شدند. اجرای مستقل CI روی merge commit main هنوز یک گیت جداگانه است.
+
+
+## Cargo Ship: COGS و پاداش غیرنقدی — PR در انتظار CI
+
+تحویل هر crate اکنون بهای FIFO همان اقلام را پیش از مصرف می‌خواند، موجودی را اتمی کم می‌کند و تراکنش `cargo_ship_crate_delivered` را ثبت می‌کند. پس از تحویل همه crateها، `cargo_ship_manifest_completed` تعداد Golden Key اعطاشده و مجموع بهای شناخته‌شدهٔ manifest را ثبت می‌کند.
+
+خلاصه‌ساز live، Cargo Ship را در `non_cash_contribution` جدا از درآمد/حاشیه سود Simoleon قرار می‌دهد:
+- تعداد crateهای تحویل‌شده
+- COGS شناخته‌شدهٔ crateها
+- مقدار کالا با بهای نامشخص
+- تعداد Golden Key دریافت‌شده
+- کامل بودن تاریخچهٔ هزینه
+
+Golden Key هیچ ارزش Simoleon فرضی ندارد و به gross revenue نقدی اضافه نمی‌شود. بنابراین این گزارش هزینه و پاداش غیرنقدی را نشان می‌دهد، نه سود پولی یا ROI کامل کشتی.
