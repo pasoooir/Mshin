@@ -368,8 +368,8 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Physical Android visual spacing review; CI confirms mobile landscape canvas launch, not a screenshot review of the production panel.
 - [x] World-space markers cover ready production, storage-full blocking and actionable residential upgrade readiness; no false badge is shown for auto-completed construction/non-residential upgrades.
 - [ ] Extend markers to any other activity only after confirming a real pending player action exists.
-- [x] Godot Validation + GameplaySmoke + storage-full Collect + save/load + visual presentation + Android Debug APK: [run 43722489665](https://github.com/pasoooir/Mshin/actions/runs/43722489665).
-- [x] Web export + gameplay integration + desktop/mobile landscape Chromium + Pages artifact: [run 43722489657](https://github.com/pasoooir/Mshin/actions/runs/43722489657).
+- [x] Godot Validation + GameplaySmoke + storage-full Collect + save/load + visual presentation + Android Debug APK: [run 43722788626](https://github.com/pasoooir/Mshin/actions/runs/43722788626).
+- [x] Web export + gameplay integration + desktop/mobile landscape Chromium + Pages artifact: [run 43722788624](https://github.com/pasoooir/Mshin/actions/runs/43722788624).
 
 - [x] Unify actionable world-space markers: ready production shows the actual product thumbnail; blocked collection shows a warning marker; residential upgrades show an upgrade marker only while an upgrade can genuinely start.
 - [x] Avoid false completion/collect notifications for construction and non-residential upgrades because those state transitions complete automatically in the current game model.
