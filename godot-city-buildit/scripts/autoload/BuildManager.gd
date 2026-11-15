@@ -314,6 +314,19 @@ func is_building_operational(building: Node) -> bool:
 			return false
 	return true
 
+func _get_building_material_complexity(type_id: String) -> int:
+	var definition: Dictionary = building_types.get(type_id, {})
+	if definition.is_empty():
+		return 0
+	var size: Vector2i = definition.get("size", Vector2i.ONE)
+	var area := maxi(1, size.x * size.y)
+	var build_time := maxf(1.0, float(definition.get("build_time", 4.0)))
+	var unlock_level := maxi(1, int(definition.get("level", 1)))
+	var area_band := maxi(0, int(ceil(float(area - 4) / 4.0)))
+	var time_band := maxi(0, int(ceil((build_time - 4.0) / 4.0)))
+	var level_band := maxi(0, int(floor(float(unlock_level - 1) / 20.0)))
+	return clampi(1 + area_band + time_band + level_band, 1, 8)
+
 func get_construction_bom(type_id: String) -> Dictionary:
 	if not building_types.has(type_id):
 		return {}
@@ -323,7 +336,25 @@ func get_construction_bom(type_id: String) -> Dictionary:
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return {}
 	var category := str(definition.get("category", ""))
-	return CONSTRUCTION_BOM_PROFILES.get(category, {}).duplicate(true)
+	var requirements: Dictionary = CONSTRUCTION_BOM_PROFILES.get(category, {}).duplicate(true)
+	if requirements.is_empty():
+		return {}
+	var complexity := _get_building_material_complexity(type_id)
+	for item_id in requirements.keys():
+		requirements[item_id] = maxi(1, int(requirements[item_id]) * complexity)
+	var unlock_level := maxi(1, int(definition.get("level", 1)))
+	# The BOM is now resolved per exact building type using footprint,
+	# construction duration and unlock tier. Material unlocks are never earlier
+	# than the corresponding product's catalog level.
+	if unlock_level >= 3 and not ProductionManager.get_item_definition("planks").is_empty():
+		requirements["planks"] = maxi(1, int(ceil(float(complexity) / 2.0)))
+	if unlock_level >= 13 and not ProductionManager.get_item_definition("bricks").is_empty():
+		requirements["bricks"] = maxi(1, int(ceil(float(complexity) / 3.0)))
+	if unlock_level >= 14 and not ProductionManager.get_item_definition("cement").is_empty():
+		requirements["cement"] = maxi(1, int(ceil(float(complexity) / 3.0)))
+	if unlock_level >= 19 and not ProductionManager.get_item_definition("glass").is_empty():
+		requirements["glass"] = maxi(1, int(ceil(float(complexity) / 4.0)))
+	return requirements
 
 func get_construction_bom_source(type_id: String) -> String:
 	if not building_types.has(type_id):
@@ -333,7 +364,7 @@ func get_construction_bom_source(type_id: String) -> String:
 		return str(definition.get("construction_bom_source", "Mshin building-specific design"))
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return "Mshin bootstrap exception — no material charge"
-	return "Mshin category profile — design/balance value, not an EA recipe"
+	return "Mshin per-building profile — footprint/build-time/unlock-tier formula; not an EA recipe"
 
 func get_construction_bom_lock_reason(type_id: String) -> String:
 	var requirements := get_construction_bom(type_id)
@@ -348,6 +379,60 @@ func get_construction_bom_lock_reason(type_id: String) -> String:
 		if available < required:
 			missing.append("%s ×%d" % [str(item_id), required - available])
 	return "" if missing.is_empty() else "Missing construction materials: " + ", ".join(missing)
+
+func get_non_residential_upgrade_bom(type_id: String, current_stage: int) -> Dictionary:
+	if not building_types.has(type_id) or current_stage < 1 or current_stage >= 6:
+		return {}
+	var definition: Dictionary = building_types[type_id]
+	var category := str(definition.get("category", ""))
+	if category == "residential" or not ["commercial", "industrial", "service", "park"].has(category):
+		return {}
+	var base := get_construction_bom(type_id)
+	if base.is_empty():
+		base = CONSTRUCTION_BOM_PROFILES.get(category, {}).duplicate(true)
+	if base.is_empty():
+		return {}
+	var requirements: Dictionary = {}
+	for item_id in base:
+		requirements[str(item_id)] = maxi(1, int(base[item_id]) * current_stage)
+	var unlock_level := maxi(1, int(definition.get("level", 1)))
+	if current_stage >= 2 and unlock_level >= 3 and not ProductionManager.get_item_definition("planks").is_empty():
+		requirements["planks"] = int(requirements.get("planks", 0)) + 1
+	if current_stage >= 3 and unlock_level >= 13 and not ProductionManager.get_item_definition("bricks").is_empty():
+		requirements["bricks"] = int(requirements.get("bricks", 0)) + 1
+	if current_stage >= 4 and unlock_level >= 14 and not ProductionManager.get_item_definition("cement").is_empty():
+		requirements["cement"] = int(requirements.get("cement", 0)) + 1
+	if current_stage >= 5 and unlock_level >= 19 and not ProductionManager.get_item_definition("glass").is_empty():
+		requirements["glass"] = int(requirements.get("glass", 0)) + 1
+	return requirements
+
+func get_non_residential_upgrade_cost(type_id: String, current_stage: int) -> int:
+	if not building_types.has(type_id) or current_stage < 1 or current_stage >= 6:
+		return 0
+	var base_cost := maxi(100, roundi(float(building_types[type_id].get("cost", 0)) * 0.08))
+	return base_cost * current_stage
+
+func get_non_residential_upgrade_duration_seconds(type_id: String, current_stage: int) -> int:
+	if not building_types.has(type_id) or current_stage < 1 or current_stage >= 6:
+		return 0
+	var build_time := maxf(1.0, float(building_types[type_id].get("build_time", 4.0)))
+	return maxi(20, roundi(build_time * 3.0) + current_stage * 15)
+
+func get_non_residential_upgrade_lock_reason(type_id: String, current_stage: int) -> String:
+	var requirements := get_non_residential_upgrade_bom(type_id, current_stage)
+	if requirements.is_empty():
+		return "This building cannot be upgraded further"
+	if EconomyManager.simoleons < get_non_residential_upgrade_cost(type_id, current_stage):
+		return "Not enough Simoleons"
+	var missing: Array[String] = []
+	for item_id in requirements:
+		var required := int(requirements[item_id])
+		if required <= 0 or ProductionManager.get_item_definition(str(item_id)).is_empty():
+			return "Invalid upgrade BOM: " + str(item_id)
+		var available := StorageManager.get_count(str(item_id))
+		if available < required:
+			missing.append("%s ×%d" % [str(item_id), required - available])
+	return "" if missing.is_empty() else "Missing upgrade materials: " + ", ".join(missing)
 
 func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: int = -1, allow_reserved_restore: bool = false) -> bool:
 	var chosen: String = type_id if type_id != "" else selected_building_type
