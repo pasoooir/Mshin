@@ -4,11 +4,22 @@ signal storage_changed
 signal capacity_changed(new_capacity: int)
 
 const DEFAULT_CAPACITY: int = 50
+const STORAGE_ITEM_IDS: Array[String] = ["storage_bar", "storage_lock", "storage_camera"]
+const STORAGE_ITEM_SIMCASH_PRICE := 18
+const STORAGE_UNLOCK_LEVEL := 4
+const STORAGE_UPGRADE_GAIN := 5
+const STORAGE_MAX_CAPACITY := 1000
 var capacity: int = DEFAULT_CAPACITY
 var items: Dictionary = {}
 
 # Display metadata is registered by ProductionManager from its authoritative catalog.
 var item_definitions: Dictionary = {}
+var storage_upgrades_completed: int = 0
+
+func _ready() -> void:
+	register_item_definition("storage_bar", "Storage Bar", "special")
+	register_item_definition("storage_lock", "Storage Lock", "special")
+	register_item_definition("storage_camera", "Storage Camera", "special")
 
 
 # Backwards-compatible aliases used by existing HUD, trade and save code.
@@ -112,20 +123,49 @@ func add_items(additions: Dictionary) -> bool:
 	storage_changed.emit()
 	return true
 
+func get_next_storage_upgrade_requirement() -> int:
+	# Data-driven community progression: equal quantities of all three parts.
+	return maxi(1, int(floor(float(maxi(0, capacity - 40)) / 20.0)) + 1)
+
+func can_upgrade_storage_with_items() -> bool:
+	if GameManager.level < STORAGE_UNLOCK_LEVEL or capacity >= STORAGE_MAX_CAPACITY:
+		return false
+	var required := get_next_storage_upgrade_requirement()
+	for item_id in STORAGE_ITEM_IDS:
+		if get_count(item_id) < required:
+			return false
+	return true
+
+func upgrade_storage_with_items() -> Dictionary:
+	if GameManager.level < STORAGE_UNLOCK_LEVEL:
+		return {"success": false, "reason": "storage_upgrade_locked", "unlock_level": STORAGE_UNLOCK_LEVEL}
+	if capacity >= STORAGE_MAX_CAPACITY:
+		return {"success": false, "reason": "storage_capacity_maximum"}
+	var required := get_next_storage_upgrade_requirement()
+	var requirements: Dictionary = {}
+	for item_id in STORAGE_ITEM_IDS:
+		requirements[item_id] = required
+	if not has_items(requirements):
+		return {"success": false, "reason": "missing_storage_special_items", "required_each": required, "items": requirements}
+	if not remove_items(requirements):
+		return {"success": false, "reason": "storage_item_transaction_failed"}
+	capacity = mini(STORAGE_MAX_CAPACITY, capacity + STORAGE_UPGRADE_GAIN)
+	storage_upgrades_completed += 1
+	capacity_changed.emit(capacity)
+	storage_changed.emit()
+	return {"success": true, "capacity": capacity, "items_consumed_each": required}
+
 func upgrade_capacity(extra: int = 10) -> void:
+	# Administrative/test helper only. Gameplay uses upgrade_storage_with_items().
 	if extra <= 0:
 		return
-	capacity += extra
+	capacity = mini(STORAGE_MAX_CAPACITY, capacity + extra)
 	capacity_changed.emit(capacity)
 	storage_changed.emit()
 
 func try_upgrade_capacity(cost_money: int, gain: int = 10) -> bool:
-	if cost_money < 0 or gain <= 0 or EconomyManager.simoleons < cost_money:
-		return false
-	if not EconomyManager.spend_simoleons(cost_money):
-		return false
-	upgrade_capacity(gain)
-	return true
+	# Retained only for compatibility; the old currency-only bypass is disabled.
+	return false
 
 func get_storage_ratio() -> String:
 	return "%d/%d" % [get_used(), capacity]
@@ -134,11 +174,12 @@ func get_all_items() -> Dictionary:
 	return items.duplicate(true)
 
 func to_save_dict() -> Dictionary:
-	return {"capacity": capacity, "items": items.duplicate(true)}
+	return {"capacity": capacity, "items": items.duplicate(true), "storage_upgrades_completed": storage_upgrades_completed}
 
 func from_save_dict(data: Dictionary) -> void:
 	capacity = maxi(1, int(data.get("capacity", data.get("max_capacity", DEFAULT_CAPACITY))))
 	items = data.get("items", data.get("inventory", {})).duplicate(true)
+	storage_upgrades_completed = maxi(0, int(data.get("storage_upgrades_completed", 0)))
 	# Discard malformed/negative entries and clamp legacy saves to the capacity.
 	for item_id in items.keys():
 		var count := int(items[item_id])
