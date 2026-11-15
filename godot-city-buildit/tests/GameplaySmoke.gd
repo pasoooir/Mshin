@@ -83,8 +83,11 @@ func _test_construction_bom_contract() -> void:
 	_check(BuildManager.get_construction_bom("factory_basic") != BuildManager.get_construction_bom("hardware_store"), "Industrial and commercial buildings must have distinct construction bills.")
 	for type_id in BuildManager.building_types:
 		var resolved := BuildManager.get_construction_bom(str(type_id))
+		var type_definition: Dictionary = BuildManager.building_types[type_id]
 		for item_id in resolved:
-			_check(int(resolved[item_id]) > 0 and not ProductionManager.get_item_definition(str(item_id)).is_empty(), "Every per-building BOM line must reference a valid positive material: %s / %s" % [str(type_id), str(item_id)])
+			var material_definition := ProductionManager.get_item_definition(str(item_id))
+			_check(int(resolved[item_id]) > 0 and not material_definition.is_empty(), "Every per-building BOM line must reference a valid positive material: %s / %s" % [str(type_id), str(item_id)])
+			_check(int(material_definition.get("level", 1)) <= int(type_definition.get("level", 1)), "A building BOM must never require a material locked after the building itself: %s / %s" % [str(type_id), str(item_id)])
 	StorageManager.from_save_dict(previous_storage)
 
 func _test_non_residential_upgrade_bom() -> void:
