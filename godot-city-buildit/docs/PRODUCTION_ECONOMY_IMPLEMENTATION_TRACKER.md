@@ -350,8 +350,10 @@ PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key
 - [ ] Radial/floating product layout around the selected building.
 - [ ] Six compact queue tiles and touch-layout acceptance across mobile landscape profiles.
 - [x] Product-specific 3D billboard thumbnail for ready factory/store goods; multiple ready outputs show a count label.
-- [ ] City-wide pending-action notifications for construction, upgrades, services and non-production objects.
-- [ ] Automated drag/drop, ready-state, full-storage, persistence and panel-close regression tests.
+- [x] World-space markers cover ready production, full-storage blocking and actionable residential upgrade readiness; auto-completed construction/non-residential upgrades do not show false claim badges.
+- [ ] Additional service/city-system markers where a genuine player action is pending.
+- [x] GameplaySmoke covers production start/ready/Collect, full-storage blocking without loss, and Save/Load restoration.
+- [ ] Automated pointer/touch drag gesture and production continuity after closing the panel.
 - [ ] CI and physical Android touch acceptance for this branch.
 
 No recipe, production duration, expansion price, or item provenance was added or inferred by this UI change.
