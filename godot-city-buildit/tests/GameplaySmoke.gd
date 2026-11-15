@@ -3788,8 +3788,10 @@ func _run_gameplay_test() -> void:
 	var factory_surface_drop := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
 	_check(factory_surface_drop != null and factory_surface_drop.mouse_filter == Control.MOUSE_FILTER_STOP and factory_surface_drop.size.x > 0.0 and factory_surface_drop.size.y > 0.0, "Factory must expose a real footprint-aligned drop hit area on the selected building.")
 	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Radial factory catalogue must expose every registered material.")
-	_check(production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) is ScrollContainer, "Recipe and ingredient details must remain scrollable on compact screens.")
-	_check(production_hud.production_panel.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must have a distinct high-contrast building nameplate.")
+	_check(metal_button == null or metal_button.position.x < get_viewport().get_visible_rect().size.x * 0.5, "The first factory materials must occupy the left honeycomb cluster rather than a scattered radial orbit.")
+	var production_details_scroll := production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) as ScrollContainer
+	_check(production_details_scroll != null and production_details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "Selected-item details must remain a compact capsule, not a vertically expanding white sheet.")
+	_check(production_hud.production_overlay.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must show a separate top-centered building nameplate outside the queue dock.")
 	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must clearly separate the lower production queue from the product catalog.")
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
 	var empty_factory_slot: PanelContainer = production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
@@ -3898,7 +3900,7 @@ func _run_gameplay_test() -> void:
 	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The radial store catalog must expose every registered product.")
 	_check(product_orbit != null and product_orbit.find_child("ProductionBuildingDropTarget", true, false) is Control, "Product selectors and the building drop target must share the floating orbit layer outside the compact queue dock.")
-	_check(production_hud.production_panel.size.y < get_viewport().get_visible_rect().size.y * 0.5, "Production interaction must use a compact bottom dock, not a full-screen modal.")
+	_check(production_hud.production_panel.size.y <= get_viewport().get_visible_rect().size.y * 0.32, "Production queue dock must stay compact and never cover half the city view.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level
