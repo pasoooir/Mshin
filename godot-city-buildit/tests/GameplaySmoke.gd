@@ -3800,8 +3800,28 @@ func _run_gameplay_test() -> void:
 	production_hud._select_production_item_for_touch(factory, "metal")
 	_check(production_hud._touch_selected_production_item == "metal" and production_hud._touch_selected_production_building_id == factory.get_instance_id(), "Touch fallback must retain the selected product and source building until a queue tile is tapped.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
-	production_hud._accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0)
-	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into factory slot zero must start that exact production slot.")
+	var metal_drag_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
+	var factory_queue_slot := production_hud.production_panel.find_child("QueueSlot0", true, false) as Control
+	await get_tree().process_frame
+	if metal_drag_button and factory_queue_slot:
+		var touch_down := InputEventScreenTouch.new()
+		touch_down.index = 2
+		touch_down.position = metal_drag_button.get_global_rect().get_center()
+		touch_down.pressed = true
+		production_hud._on_production_product_gui_input(touch_down, metal_drag_button, factory, "metal")
+		var touch_move := InputEventScreenDrag.new()
+		touch_move.index = 2
+		touch_move.position = factory_queue_slot.get_global_rect().get_center()
+		production_hud._on_production_product_gui_input(touch_move, metal_drag_button, factory, "metal")
+		var touch_up := InputEventScreenTouch.new()
+		touch_up.index = 2
+		touch_up.position = factory_queue_slot.get_global_rect().get_center()
+		touch_up.pressed = false
+		production_hud._on_production_product_gui_input(touch_up, metal_drag_button, factory, "metal")
+	else:
+		_check(false, "Touch drag fixture must find both the Metal product tile and the first production queue tile.")
+	_check(not factory_component.get_slot(0).is_empty(), "A simulated Android touch drag from Metal to queue slot zero must start that exact production slot.")
+	_check(not production_hud._production_drag_gestures.has(2), "A completed touch drag must release its pointer tracking state.")
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
