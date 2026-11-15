@@ -372,7 +372,7 @@ func _build_top_hud() -> void:
 	xp_info_panel = PanelContainer.new()
 	xp_info_panel.name = "MayorLevelInfoPanel"
 	xp_info_panel.position = Vector2(14, 194) * _ui_scale
-	xp_info_panel.custom_minimum_size = Vector2(390, 154) * _ui_scale
+	xp_info_panel.custom_minimum_size = Vector2(520, 220) * _ui_scale
 	xp_info_panel.size = xp_info_panel.custom_minimum_size
 	xp_info_panel.z_index = 45
 	xp_info_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -380,11 +380,11 @@ func _build_top_hud() -> void:
 	xp_panel_style.bg_color = Color(0.055, 0.09, 0.14, 0.96)
 	xp_panel_style.border_color = Color("#79C9F2")
 	xp_panel_style.set_border_width_all(2)
-	xp_panel_style.set_corner_radius_all(12)
-	xp_panel_style.content_margin_left = 12
-	xp_panel_style.content_margin_right = 12
-	xp_panel_style.content_margin_top = 9
-	xp_panel_style.content_margin_bottom = 9
+	xp_panel_style.set_corner_radius_all(20)
+	xp_panel_style.content_margin_left = 22
+	xp_panel_style.content_margin_right = 22
+	xp_panel_style.content_margin_top = 18
+	xp_panel_style.content_margin_bottom = 18
 	xp_info_panel.add_theme_stylebox_override("panel", xp_panel_style)
 	top_hud.add_child(xp_info_panel)
 	var xp_panel_content := VBoxContainer.new()
@@ -401,7 +401,8 @@ func _build_top_hud() -> void:
 	var xp_panel_close := Button.new()
 	xp_panel_close.name = "MayorLevelInfoClose"
 	xp_panel_close.text = "×"
-	xp_panel_close.custom_minimum_size = Vector2(30, 26) * _ui_scale
+	xp_panel_close.custom_minimum_size = Vector2(48, 44) * _ui_scale
+	xp_panel_close.add_theme_font_size_override("font_size", int(30 * _ui_scale))
 	xp_panel_close.focus_mode = Control.FOCUS_NONE
 	xp_panel_close.pressed.connect(func() -> void: xp_info_panel.hide())
 	xp_panel_header.add_child(xp_panel_close)
@@ -1176,11 +1177,11 @@ func _build_catalog_info_panel() -> void:
 	catalog_info_panel.anchor_top = 1.0
 	catalog_info_panel.anchor_bottom = 1.0
 	catalog_info_panel.anchor_left = 0.15
-	catalog_info_panel.anchor_right = 0.39
+	catalog_info_panel.anchor_right = 0.46
 	catalog_info_panel.offset_left = 10 * _ui_scale
 	catalog_info_panel.offset_right = -8 * _ui_scale
-	catalog_info_panel.offset_top = -430 * _ui_scale
-	catalog_info_panel.offset_bottom = -218 * _ui_scale
+	catalog_info_panel.offset_top = -500 * _ui_scale
+	catalog_info_panel.offset_bottom = -150 * _ui_scale
 	catalog_info_panel.z_index = 65
 	catalog_info_panel.add_theme_stylebox_override("panel", _catalog_bar_style())
 	add_child(catalog_info_panel)
@@ -1215,7 +1216,8 @@ func _show_building_info(type_id: String) -> void:
 	var close := Button.new()
 	close.name = "BuildingInfoClose"
 	close.text = "×"
-	close.custom_minimum_size = Vector2(30, 30) * _ui_scale
+	close.custom_minimum_size = Vector2(48, 44) * _ui_scale
+	close.add_theme_font_size_override("font_size", int(30 * _ui_scale))
 	close.pressed.connect(_hide_building_info)
 	heading.add_child(close)
 	var footprint: Vector2i = definition.get("size", Vector2i.ONE)
