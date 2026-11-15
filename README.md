@@ -1042,3 +1042,13 @@ Design references:
 - [ ] Android landscape physical drag/drop acceptance and screenshot review.
 
 The existing Figma production studio frame was updated to match the no-START, drag-to-queue interaction and building-centered honeycomb placement. Product Design's dedicated Work-mode workflow is not available in this standard chat; implementation and design-spec edits are being handled directly in GitHub and Figma.
+
+
+## Production touch interaction hardening — 2026-11-15
+
+- [x] Align every production prompt with the real primary drop target: an empty, unlocked queue slot; explicitly label the building footprint as an additional drop target.
+- [x] Track the initiating touch index so a second finger cannot hijack or release an active product drag.
+- [x] Preserve tap-only product selection until the next tap on an empty queue slot/building, providing an accessible fallback when drag gestures are difficult.
+- [x] Extend GameplaySmoke with multi-touch ownership and tap-to-queue fallback cases.
+- [ ] Run Godot 4.3 import/parse and GameplaySmoke for this hardening change.
+- [ ] Re-verify Android APK and Web/Chromium CI; physical Android touch acceptance and screenshot review remain required.
