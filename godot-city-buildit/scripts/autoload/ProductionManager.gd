@@ -369,7 +369,7 @@ func _schedule_chain_item(item_id: String, amount: int, chain_id: String, chain_
 		var input_available := StorageManager.get_count(input_key)
 		var input_in_flight := _get_chain_inflight_count(input_key, chain_id, false)
 		var input_missing := maxi(0, required_total - input_available - input_in_flight)
-		if input_missing > 0 and not _schedule_chain_item(input_key, input_missing, chain_id, false, next_ancestry):
+		if input_missing > 0 and not _schedule_chain_item(input_key, required_total, chain_id, false, next_ancestry):
 			# Continue through other inputs so independent dependency branches can
 			# start in parallel even when one supplier is temporarily unavailable.
 			pass
