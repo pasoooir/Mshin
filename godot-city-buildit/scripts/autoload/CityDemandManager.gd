@@ -175,6 +175,14 @@ func _production_totals() -> Dictionary:
 	_has_active_orders = not orders.is_empty()
 	return {"totals":totals,"orders":orders}
 
+func _has_object_property(object: Object, property_name: String) -> bool:
+	if not is_instance_valid(object):
+		return false
+	for property in object.get_property_list():
+		if str(property.get("name", "")) == property_name:
+			return true
+	return false
+
 func get_city_snapshot() -> Dictionary:
 	var production := _production_totals()
 	var required := {}
@@ -193,8 +201,10 @@ func get_city_snapshot() -> Dictionary:
 			continue
 		if str(building.definition.get("category", "")) != "residential":
 			continue
-		var stage := int(building.upgrade_stage)
-		var is_upgrading := bool(building.upgrade_in_progress)
+		# City snapshots may also be requested while isolated/test buildings are
+		# registered. Treat optional Building-only upgrade state defensively.
+		var stage := int(building.get("upgrade_stage")) if _has_object_property(building, "upgrade_stage") else 1
+		var is_upgrading := bool(building.get("upgrade_in_progress")) if _has_object_property(building, "upgrade_in_progress") else false
 		var requirements: Array = [] if is_upgrading else ProductionManager.get_upgrade_requirements(stage)
 		var home_needs: Array = []
 		var all_stored := true
@@ -245,7 +255,7 @@ func get_city_snapshot() -> Dictionary:
 			"population":int(building.current_population),
 			"ready":can_upgrade,
 			"upgrading":is_upgrading,
-			"upgrade_remaining_seconds":building.get_upgrade_remaining_seconds(),
+			"upgrade_remaining_seconds":int(building.call("get_upgrade_remaining_seconds")) if building.has_method("get_upgrade_remaining_seconds") else 0,
 			"needs":home_needs
 		})
 	var inventory_rows: Array = []

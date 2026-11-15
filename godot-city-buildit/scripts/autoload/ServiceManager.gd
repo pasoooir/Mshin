@@ -170,7 +170,13 @@ func _has_nearby_utility(building: Node3D, utility_key: String) -> bool:
 	for candidate in BuildManager.buildings.values():
 		if not is_instance_valid(candidate) or candidate.status != "completed":
 			continue
-		if int(candidate.definition.get(utility_key, 0)) <= 0:
+		var definition: Dictionary = candidate.definition
+		# Water suppliers are identified by their actual positive catalog
+		# capacity, never by display name or a hard-coded building ID.
+		if utility_key == "water":
+			if int(definition.get("water", 0)) <= 0:
+				continue
+		elif int(definition.get(utility_key, 0)) <= 0:
 			continue
 		# A disconnected facility must not provide a service merely because it
 		# happens to be within the geometric coverage radius.
