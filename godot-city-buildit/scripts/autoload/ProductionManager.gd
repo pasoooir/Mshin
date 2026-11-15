@@ -1,8 +1,12 @@
 extends Node
 
 signal item_produced(item_id: String, amount: int)
+signal automatic_chain_changed(chain_id: String, status: String)
 
 var _recipe_validation_report: Dictionary = {}
+var _automatic_chain_tick_elapsed: float = 0.0
+var _automatic_chain_sequence: int = 0
+const AUTOMATIC_CHAIN_TICK_SECONDS: float = 0.5
 
 # SCBI Industrial Buildings timings are the canonical source for raw production.
 # Keep legacy keys (time/value/level) because existing gameplay and HUD code reads them.
@@ -245,6 +249,222 @@ func _visit_recipe_graph(item_id: String, state: Dictionary, stack: Array[String
 			_visit_recipe_graph(input_id, state, stack, cycle_nodes)
 	stack.pop_back()
 	state[item_id] = 2
+
+func _process(delta: float) -> void:
+	_automatic_chain_tick_elapsed += delta
+	if _automatic_chain_tick_elapsed < AUTOMATIC_CHAIN_TICK_SECONDS:
+		return
+	_automatic_chain_tick_elapsed = 0.0
+	_process_automatic_chains()
+
+func _get_active_automatic_chain_id() -> String:
+	if not is_inside_tree():
+		return ""
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		for slot in component.slots:
+			if bool(slot.get("auto_chain_root", false)):
+				return str(slot.get("auto_chain_id", ""))
+	return ""
+
+func request_automatic_chain(component: ProductionComponent, recipe_id: String, slot_index: int) -> bool:
+	if not is_instance_valid(component) or component.is_factory:
+		return false
+	if not component._owner_has_road_access() or slot_index < 0 or slot_index >= component.get_slot_count():
+		return false
+	if not component.slots[slot_index].is_empty():
+		return false
+	var recipe := get_recipe(recipe_id)
+	if recipe.is_empty() or str(recipe.get("store", "")) != component.shop_id:
+		return false
+	if not get_recipe_lock_reason(recipe_id, component.store_star_level).is_empty():
+		return false
+	if not are_recipe_inputs_unlocked(recipe):
+		return false
+	# Keep a single top-level automatic order active at once. This makes the
+	# shared City Storage inventory a deterministic reservation pool while
+	# preserving manual production queues on every other slot/building.
+	if not _get_active_automatic_chain_id().is_empty():
+		return false
+	_automatic_chain_sequence += 1
+	var chain_id := "chain_%d_%d" % [int(Time.get_unix_time_from_system()), _automatic_chain_sequence]
+	component.slots[slot_index] = {
+		"item_id": recipe_id,
+		"start_unix": 0,
+		"finish_unix": 0,
+		"ready": false,
+		"queued": true,
+		"auto_chain_id": chain_id,
+		"auto_chain_root": true,
+		"auto_chain_started": false
+	}
+	component.slots_changed.emit()
+	automatic_chain_changed.emit(chain_id, "accepted")
+	return true
+
+func _process_automatic_chains() -> void:
+	if not is_inside_tree():
+		return
+	var components: Array = get_tree().get_nodes_in_group("production_components")
+	# Collect completed automatic outputs first. Their inventory becomes
+	# available to dependent jobs in this same scheduler pass.
+	for component in components:
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		for index in range(component.slots.size()):
+			var slot: Dictionary = component.slots[index]
+			if str(slot.get("auto_chain_id", "")).is_empty() or not bool(slot.get("ready", false)):
+				continue
+			component.collect(index)
+	# Advance store jobs after collection. Raw factory jobs are started directly
+	# by _schedule_automatic_chain_item and only need their ready outputs collected.
+	for component in components:
+		if not is_instance_valid(component) or not component is ProductionComponent or component.is_factory:
+			continue
+		for index in range(component.slots.size()):
+			var slot: Dictionary = component.slots[index]
+			if str(slot.get("auto_chain_id", "")).is_empty() or bool(slot.get("ready", false)):
+				continue
+			_advance_automatic_chain_store_job(component, index)
+
+func _advance_automatic_chain_store_job(component: ProductionComponent, slot_index: int) -> void:
+	if not component._owner_has_road_access() or slot_index < 0 or slot_index >= component.slots.size():
+		return
+	var slot: Dictionary = component.slots[slot_index]
+	if bool(slot.get("auto_chain_started", false)):
+		return
+	var recipe_id := str(slot.get("item_id", ""))
+	var chain_id := str(slot.get("auto_chain_id", ""))
+	var recipe := get_recipe(recipe_id)
+	if recipe.is_empty() or str(recipe.get("store", "")) != component.shop_id:
+		return
+	if not get_recipe_lock_reason(recipe_id, component.store_star_level).is_empty():
+		return
+	if not are_recipe_inputs_unlocked(recipe):
+		return
+	var requirements: Dictionary = recipe.get("inputs", {})
+	if requirements.is_empty():
+		return
+	var missing_inputs: Array[String] = []
+	for input_variant in requirements.keys():
+		var input_id := str(input_variant)
+		var required := int(requirements[input_variant])
+		if required <= 0:
+			return
+		var missing := maxi(0, required - StorageManager.get_count(input_id))
+		if missing > 0:
+			missing_inputs.append(input_id)
+			_schedule_automatic_chain_item(input_id, missing, chain_id, {recipe_id: true})
+	if not missing_inputs.is_empty():
+		return
+	# Store lanes are single-active-order: manual and automatic jobs share the
+	# same physical production component and may not overlap.
+	for other_index in range(component.slots.size()):
+		if other_index == slot_index:
+			continue
+		var other: Dictionary = component.slots[other_index]
+		if other.is_empty() or bool(other.get("ready", false)):
+			continue
+		if int(other.get("finish_unix", 0)) > 0:
+			return
+	if not StorageManager.remove_items(requirements):
+		return
+	var now := int(Time.get_unix_time_from_system())
+	var duration := maxi(1, int(ceil(component.get_item_production_time(recipe_id))))
+	slot["start_unix"] = now
+	slot["finish_unix"] = now + duration
+	slot["ready"] = false
+	slot["queued"] = false
+	slot["auto_chain_started"] = true
+	component.slots[slot_index] = slot
+	component.slots_changed.emit()
+	automatic_chain_changed.emit(chain_id, "producing:" + recipe_id)
+
+func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: String, ancestry: Dictionary) -> bool:
+	if amount <= 0:
+		return true
+	if chain_id.is_empty() or ancestry.has(item_id):
+		return false
+	var outstanding := 0
+	var components: Array = get_tree().get_nodes_in_group("production_components") if is_inside_tree() else []
+	for component in components:
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		for slot in component.slots:
+			if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == item_id:
+				outstanding += 1
+	var needed := maxi(0, amount - outstanding)
+	if needed <= 0:
+		return true
+	if raw_materials.has(item_id):
+		var started := 0
+		for component in components:
+			if started >= needed:
+				break
+			if not is_instance_valid(component) or not component is ProductionComponent or not component.is_factory:
+				continue
+			if not get_factory_material_ids(str(component.factory_type)).has(item_id) or not component._owner_has_road_access():
+				continue
+			for slot_index in range(component.get_slot_count()):
+				if started >= needed:
+					break
+				if component.slots[slot_index].is_empty() and component.start_factory(item_id, slot_index, chain_id):
+					started += 1
+		return started > 0
+	if not crafted_items.has(item_id):
+		return false
+	var recipe: Dictionary = crafted_items[item_id]
+	if not get_recipe_lock_reason(item_id).is_empty() or not are_recipe_inputs_unlocked(recipe):
+		return false
+	var store_id := str(recipe.get("store", ""))
+	var scheduled := 0
+	for component in components:
+		if scheduled >= needed:
+			break
+		if not is_instance_valid(component) or not component is ProductionComponent or component.is_factory:
+			continue
+		if str(component.shop_id) != store_id or not component._owner_has_road_access():
+			continue
+		for slot_index in range(component.get_slot_count()):
+			if scheduled >= needed:
+				break
+			if not component.slots[slot_index].is_empty():
+				continue
+			component.slots[slot_index] = {
+				"item_id": item_id,
+				"start_unix": 0,
+				"finish_unix": 0,
+				"ready": false,
+				"queued": true,
+				"auto_chain_id": chain_id,
+				"auto_chain_root": false,
+				"auto_chain_started": false
+			}
+			component.slots_changed.emit()
+			scheduled += 1
+	return scheduled > 0
+
+func get_automatic_chain_status() -> Dictionary:
+	var chain_id := _get_active_automatic_chain_id()
+	if chain_id.is_empty():
+		return {"active": false, "chain_id": "", "pending_jobs": 0, "ready_jobs": 0}
+	var pending := 0
+	var ready := 0
+	var root_item := ""
+	if is_inside_tree():
+		for component in get_tree().get_nodes_in_group("production_components"):
+			if not is_instance_valid(component) or not component is ProductionComponent:
+				continue
+			for slot in component.slots:
+				if str(slot.get("auto_chain_id", "")) != chain_id:
+					continue
+				pending += 1
+				if bool(slot.get("ready", false)):
+					ready += 1
+				if bool(slot.get("auto_chain_root", false)):
+					root_item = str(slot.get("item_id", ""))
+	return {"active": true, "chain_id": chain_id, "root_item": root_item, "pending_jobs": pending, "ready_jobs": ready}
 
 func get_available_raw() -> Array:
 	var result: Array = []
