@@ -3796,7 +3796,11 @@ func _run_gameplay_test() -> void:
 	var empty_factory_slot: PanelContainer = production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
 	_check(empty_factory_slot != null and empty_factory_slot.find_child("EmptyQueuePlus", true, false) is Label and empty_factory_slot.find_child("EmptyQueueLabel", true, false) is Label, "An empty production slot must show its plus affordance and EMPTY label.")
 	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
-	_check(metal_button == null or (metal_button.position.x > get_viewport().get_visible_rect().size.x * 0.1 and metal_button.position.x < get_viewport().get_visible_rect().size.x * 0.5), "The first factory honeycomb cluster must sit beside the building, not at the viewport edge.")
+	var projected_factory_center := Vector2(get_viewport().get_visible_rect().size.x * 0.5, get_viewport().get_visible_rect().size.y * 0.4)
+	var production_test_camera := get_viewport().get_camera_3d()
+	if is_instance_valid(production_test_camera):
+		projected_factory_center = production_test_camera.unproject_position(factory.global_position + Vector3(0.0, 2.0, 0.0))
+	_check(metal_button == null or absf(metal_button.position.x - projected_factory_center.x) < 460.0, "The factory honeycomb cluster must be positioned relative to the selected building, not at a fixed viewport edge.")
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
 		metal_button.emit_signal("pressed")
