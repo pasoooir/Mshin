@@ -64,7 +64,7 @@ jobs:
       - name: City visual presentation geometry smoke test
         run: |
           set -o pipefail
-          godot --headless --path godot-city-buildit --script res://tests/visual_presentation_smoke.gd 2>&1 | tee /tmp/godot-visual-presentation.log
+          timeout 60s godot --headless --path godot-city-buildit res://tests/visual_presentation_smoke.tscn 2>&1 | tee /tmp/godot-visual-presentation.log
           if grep -q "SCRIPT ERROR" /tmp/godot-visual-presentation.log; then exit 1; fi
           grep -F "[VisualPresentationSmoke] PASS" /tmp/godot-visual-presentation.log
 
