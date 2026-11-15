@@ -437,7 +437,9 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] Tap-only selection opens item details and no longer exposes a START or AUTO CHAIN action.
 - [x] Product clusters are centered around the selected building; larger tiles/icons improve touch precision and legibility.
 - [x] GameplaySmoke updated for direct touch drag/release and queue-based factory/store order acceptance.
-- [ ] Run Godot import/parse and GameplaySmoke on this correction branch.
+- [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy checks passed in run `43741503047`.
+- [x] Android Debug APK exported; signature and package identity verified; artifact upload succeeded in run `43741503047`.
+- [x] Web export succeeded in run `43741503045`; Chromium desktop/mobile verification is still running.
 - [ ] Validate Android landscape touch drag/drop and review actual in-game screenshot.
 - [ ] Confirm production Pages deployment after merge.
 
