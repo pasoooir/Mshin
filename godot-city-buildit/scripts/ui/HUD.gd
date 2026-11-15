@@ -2646,6 +2646,9 @@ func _input(event: InputEvent) -> void:
 	var source_button := gesture.get("button") as Button
 	var source_building := gesture.get("building") as Building
 	_on_production_product_gui_input(event, source_button, source_building, str(gesture.get("item_id", "")))
+	# Prevent the city camera from interpreting the same finger movement as a
+	# pan/orbit while that pointer owns an active production drag.
+	get_viewport().set_input_as_handled()
 
 
 func _on_production_product_gui_input(event: InputEvent, _product_button: Button, building: Building, item_id: String) -> void:
