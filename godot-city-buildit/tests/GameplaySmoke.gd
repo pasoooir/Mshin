@@ -3801,7 +3801,7 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_drag_payload, factory), "The selected factory surface must accept its own valid product when a production slot is free.")
 	production_hud._select_production_item_for_touch(factory, "metal")
-	_check(production_hud._touch_selected_production_item == "metal" and production_hud._touch_selected_production_building_id == factory.get_instance_id(), "Touch fallback must retain the selected product and source building until a queue tile is tapped.")
+	_check(production_hud._touch_selected_production_item == "metal" and production_hud._touch_selected_production_building_id == factory.get_instance_id(), "Touch fallback must retain the selected product and source building until the building target is tapped.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
 	production_hud._accept_building_drop(Vector2.ZERO, factory_drag_payload, factory)
 	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal onto the factory surface must start its first free production slot.")
@@ -3894,7 +3894,7 @@ func _run_gameplay_test() -> void:
 	var product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The radial store catalog must expose every registered product.")
-	_check(product_orbit != null and product_orbit.get_child_count() == 1, "Product selectors must use a floating orbit layer outside the compact queue dock.")
+	_check(product_orbit != null and product_orbit.find_child("ProductionBuildingDropTarget", true, false) is Button, "Product selectors and the building drop target must share the floating orbit layer outside the compact queue dock.")
 	_check(production_hud.production_panel.size.y < get_viewport().get_visible_rect().size.y * 0.5, "Production interaction must use a compact bottom dock, not a full-screen modal.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
