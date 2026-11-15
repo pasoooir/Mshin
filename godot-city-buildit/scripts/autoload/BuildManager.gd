@@ -306,9 +306,9 @@ func get_building_operational_lock_reason(building: Node) -> String:
 	if ServiceManager.requires_operational_workforce(building) and not ServiceManager.is_workforce_served(building):
 		return "Insufficient available city workforce."
 	if ServiceManager.requires_operational_sanitation(building):
-		if not ServiceManager.is_sewage_served(building):
+		if HappinessManager._service_group_is_unlocked("sewage") and not ServiceManager.is_sewage_served(building):
 			return "Insufficient connected sewage capacity."
-		if not ServiceManager.is_waste_served(building):
+		if HappinessManager._service_group_is_unlocked("waste") and not ServiceManager.is_waste_served(building):
 			return "Insufficient connected waste capacity."
 	var missing_emergency: Array[String] = []
 	var requirements := ServiceManager.get_required_emergency_coverage(building)
