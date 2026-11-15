@@ -488,3 +488,14 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Physical Android landscape visual/touch acceptance.
 
 **Structural expectation:** 38 render nodes/material instances are reduced to one batched render node and one shared material. Measured performance gain remains unverified until device profiling.
+
+
+## 2026-11-15 — Single directional shadow source
+
+- [x] Keep the main scene key DirectionalLight3D as the only shadow-map owner.
+- [x] Keep the WorldPresentation warm secondary sun as a non-shadowing fill light, removing duplicate directional shadow work and conflicting shadow direction.
+- [x] Add VisualPresentationSmoke coverage for the secondary fill light's shadow policy and retained light energy.
+- [ ] Godot import/parse, VisualPresentationSmoke, GameplaySmoke, Web/Chromium and Android APK CI.
+- [ ] Android hardware screenshot/lighting review and frame-time profiling.
+
+**Expected structural improvement:** one directional shadow source instead of two; no numeric FPS claim until on-device measurement.
