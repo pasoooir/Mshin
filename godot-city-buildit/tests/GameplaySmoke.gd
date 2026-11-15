@@ -186,6 +186,55 @@ func _test_live_production_queue_eta() -> void:
 	queue_probe.queue_free()
 	await get_tree().process_frame
 
+func _test_automatic_production_chain() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	StorageManager.from_save_dict({"capacity": 50, "items": {}})
+	var factory := ProductionComponentScript.new()
+	factory.name = "AutomaticChainFactoryProbe"
+	factory.is_factory = true
+	factory.factory_type = "factory_small"
+	factory.slot_count = 2
+	add_child(factory)
+	var store := ProductionComponentScript.new()
+	store.name = "AutomaticChainStoreProbe"
+	store.shop_id = "building_supplies"
+	store.slot_count = 2
+	add_child(store)
+
+	_check(ProductionManager.request_automatic_chain(store, "nails", 0), "A valid Nails request must be accepted as an automatic dependency chain without pre-existing Metal.")
+	var chain_id := str(store.slots[0].get("auto_chain_id", ""))
+	_check(not chain_id.is_empty() and bool(store.slots[0].get("auto_chain_root", false)), "The target store slot must persist the root chain request.")
+	ProductionManager._process_automatic_chains()
+	var raw_slots_started := 0
+	for slot in factory.slots:
+		if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == "metal":
+			raw_slots_started += 1
+	_check(raw_slots_started == 2, "The automatic chain must reserve two independent factory slots for the two Metal inputs.")
+	_check(StorageManager.get_count("metal") == 0, "Raw materials must not be fabricated into inventory before their factory jobs complete.")
+
+	var now := int(Time.get_unix_time_from_system())
+	for index in range(factory.slots.size()):
+		if str(factory.slots[index].get("auto_chain_id", "")) == chain_id:
+			factory.slots[index]["finish_unix"] = now - 1
+	factory.refresh_slots()
+	ProductionManager._process_automatic_chains()
+	_check(StorageManager.get_count("metal") == 2, "Completed raw factory jobs must be auto-collected into City Storage.")
+	_check(store.slots[0].get("auto_chain_started", false), "The target store order must start automatically after its complete input set is available.")
+	_check(StorageManager.get_count("metal") == 0, "The target craft must atomically reserve and consume its two Metal inputs when it starts.")
+
+	store.slots[0]["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	store.refresh_slots()
+	ProductionManager._process_automatic_chains()
+	_check(StorageManager.get_count("nails") == 1, "The completed target product must be auto-collected into City Storage.")
+	_check(store.slots[0].is_empty(), "The root queue slot must be released when the automatic chain finishes.")
+	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "A fully completed chain must no longer block the next automatic order.")
+
+	factory.queue_free()
+	store.queue_free()
+	StorageManager.from_save_dict(previous_storage)
+	await get_tree().process_frame
+
+
 func _test_recipe_dependency_graph_validation() -> void:
 	var baseline := ProductionManager.get_recipe_validation_report()
 	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
@@ -3905,6 +3954,7 @@ func _run_gameplay_test() -> void:
 	StorageManager.capacity_changed.emit(StorageManager.capacity)
 	GameManager.level = previous_mayor_level
 
+	_test_automatic_production_chain()
 	_test_non_residential_upgrade_execution()
 
 	# Livestock may graze only on the two desert fringe strips, never on asphalt,
