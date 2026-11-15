@@ -138,6 +138,7 @@ func list_for_sale(item_id: String, amount: int = 1) -> bool:
 	if price <= 0:
 		return false
 	var inventory_before := StorageManager.get_all_items()
+	var listing_cost: Dictionary = StorageManager.get_cost_basis(requested_items)
 	if not StorageManager.remove_items(requested_items):
 		return false
 	var listing_id := "listing-%d" % int(Time.get_unix_time_from_system())
@@ -150,7 +151,9 @@ func list_for_sale(item_id: String, amount: int = 1) -> bool:
 		"price": price,
 		"time_left": SELL_LISTING_SECONDS,
 		"finish_unix": int(Time.get_unix_time_from_system()) + int(SELL_LISTING_SECONDS),
-		"ready": false
+		"ready": false,
+		"cost_known": bool(listing_cost.get("known", false)),
+		"cost_total": int(listing_cost.get("total_cost", 0))
 	})
 	EconomyManager.record_transaction("trade_listing_reserved", "items", amount, EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": listing_id, "item_id": item_id, "unit_price": ProductionManager.get_item_value(item_id), "total_price": price})
 	trade_state_changed.emit()
@@ -168,7 +171,7 @@ func cancel_sale_listing(slot_index: int) -> bool:
 	if StorageManager.get_free() < amount:
 		return false
 	var inventory_before := StorageManager.get_all_items()
-	if not StorageManager.add_item(item_id, amount):
+	if not StorageManager.add_item_with_cost(item_id, amount, int(slot.get("cost_total", 0)), bool(slot.get("cost_known", false))):
 		return false
 	sell_slots.remove_at(slot_index)
 	EconomyManager.record_transaction("trade_listing_cancelled", "items", amount, EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": str(slot.get("listing_id", "")), "item_id": item_id})
@@ -191,7 +194,10 @@ func collect_sale(slot_index: int) -> bool:
 	EconomyManager.add_simoleons(price)
 	completed_sales += 1
 	sell_slots.remove_at(slot_index)
-	EconomyManager.record_transaction("trade_sale_collected", "simoleons", price, balance_before, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": str(slot.get("listing_id", "")), "item_id": item_id, "quantity": amount})
+	var cost_known := bool(slot.get("cost_known", false))
+	var cost_total := int(slot.get("cost_total", 0))
+	var sale_metadata := {"source": "trade_depot", "listing_id": str(slot.get("listing_id", "")), "item_id": item_id, "quantity": amount, "cost_known": cost_known, "cost_basis": cost_total if cost_known else -1, "gross_margin": price - cost_total if cost_known else -1}
+	EconomyManager.record_transaction("trade_sale_collected", "simoleons", price, balance_before, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), sale_metadata)
 	trade_completed.emit(item_id, amount, price)
 	trade_state_changed.emit()
 	return true
