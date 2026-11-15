@@ -127,8 +127,8 @@ var building_types: Dictionary = {
 # values are game-balance data, not SimCity BuildIt/EA recipes. Any type not in
 # this table still receives a deterministic footprint/build-time/unlock BOM.
 const CONSTRUCTION_BOM_TYPE_PROFILES := {
-	"power_wind": {"nails": 2, "metal": 1},
-	"power_coal": {"nails": 3, "metal": 2, "planks": 1},
+	"power_wind": {"nails": 1, "metal": 1},
+	"power_coal": {"nails": 3, "metal": 2},
 	"power_wind_deluxe": {"nails": 4, "metal": 3, "planks": 2},
 	"power_solar": {"nails": 5, "metal": 4, "planks": 2, "bricks": 1},
 	"power_oil": {"nails": 5, "metal": 5, "planks": 2, "bricks": 2},
