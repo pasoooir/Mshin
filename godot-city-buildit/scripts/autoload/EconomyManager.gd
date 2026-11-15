@@ -87,11 +87,14 @@ func buy_special_item_with_simcash(item_id: String, unit_cost: int, unlock_level
 		return {"success": false, "reason": "unknown_special_item"}
 	if StorageManager.get_free() < 1:
 		return {"success": false, "reason": "warehouse_capacity"}
+	var balance_before := sim_cash
+	var inventory_before := StorageManager.get_all_items()
 	if not spend_sim_cash(unit_cost):
 		return {"success": false, "reason": "insufficient_simcash", "cost": unit_cost}
 	if not StorageManager.add_item(item_id, 1):
 		add_sim_cash(unit_cost)
 		return {"success": false, "reason": "warehouse_capacity"}
+	record_transaction("special_item_purchase", "simcash", unit_cost, balance_before, sim_cash, inventory_before, StorageManager.get_all_items(), {"source": "special_item_store", "item_id": item_id, "quantity": 1, "unlock_level": unlock_level})
 	transaction_completed.emit("simcash_special_item_purchase", unit_cost)
 	return {"success": true, "item_id": item_id, "amount": 1, "cost": unit_cost}
 
