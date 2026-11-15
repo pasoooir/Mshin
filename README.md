@@ -846,15 +846,26 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 موارد باز همچنان بدون تیک: بازپخش AUTO CHAIN در موتور سناریو، رزرو اشتراکی و critical path چند زنجیره، اتصال هزینهٔ خرید واقعی از transaction ledger به موجودی زنده، مصرف موجودی توسط سفارش تحویل، تقاضای بازار و تست فیزیکی Android.
 
 
-## بهای تمام‌شدهٔ موجودی زنده — PR بعدی (در انتظار CI)
+## بهای تمام‌شدهٔ موجودی زنده — PR #511 ادغام شد
 
-- [ ] ذخیره FIFO cost batches در StorageManager و بازیابی سازگار با saveهای قدیمی؛ موجودی قدیمی بدون سند هزینه به‌صورت unknown می‌ماند.
-- [ ] انتقال بهای ورودی‌ها به اسلات تولید فروشگاه و انتقال آن به موجودی هنگام جمع‌آوری محصول.
-- [ ] انتقال هزینهٔ صفر نقدی مستقیم کارخانه به خروجی مواد خام، بدون فرض هزینه فرصت/استهلاک.
-- [ ] انتقال FIFO cost از آگهی Depot به تراکنش فروش، بازگردانی همان هزینه هنگام لغو آگهی و ثبت قیمت خرید واقعی Global Trade HQ در موجودی.
-- [ ] انتقال cost basis در AUTO CHAIN بازگشتی و چندفروشگاهی.
-- [ ] خلاصه‌سازی فروش‌های تحقق‌یافته از EconomyManager transaction ledger و اعلام ناقص بودن تاریخچه در صورت عبور از سقف ۳۰۰ تراکنش.
-- [ ] آزمون تولید زنده، لغو/جمع‌آوری Depot، خرید HQ، save/load، زنجیره‌های خودکار و گزارش سود شهر.
-- [ ] اجرای Godot Validation، Android Debug APK و Web/Chromium روی PR.
+- [x] ذخیره FIFO cost batches در StorageManager و بازیابی سازگار با saveهای قدیمی؛ موجودی قدیمی بدون سند هزینه به‌صورت unknown می‌ماند.
+- [x] انتقال بهای ورودی‌ها به اسلات تولید فروشگاه و انتقال آن به موجودی هنگام جمع‌آوری محصول.
+- [x] انتقال هزینهٔ صفر نقدی مستقیم کارخانه به خروجی مواد خام، بدون فرض هزینه فرصت/استهلاک.
+- [x] انتقال FIFO cost از آگهی Depot به تراکنش فروش، بازگردانی همان هزینه هنگام لغو آگهی و ثبت قیمت خرید واقعی Global Trade HQ در موجودی.
+- [x] انتقال cost basis در AUTO CHAIN بازگشتی و چندفروشگاهی.
+- [x] خلاصه‌سازی فروش‌های تحقق‌یافته از EconomyManager transaction ledger و اعلام ناقص بودن تاریخچه در صورت عبور از سقف ۳۰۰ تراکنش.
+- [x] آزمون تولید زنده، لغو/جمع‌آوری Depot، خرید HQ، save/load، زنجیره‌های خودکار و گزارش سود شهر.
+- [x] Godot Validation، Android Debug APK و Web/Chromium روی PR: [Godot + APK run 43710111735](https://github.com/pasoooir/Mshin/actions/runs/43710111735)؛ [Web/Chromium run 43710111759](https://github.com/pasoooir/Mshin/actions/runs/43710111759).
 
-**محدودیت آگاهانه:** سفارش تحویل Cargo Ship/Delivery Orders هنوز به بهای موجودی و سود ناخالص متصل نشده است. همچنین transaction ledger فقط ۳۰۰ رویداد آخر را نگه می‌دارد؛ در صورت حذف تاریخچه قدیمی، خروجی صریحاً lifetime-complete نیست. تقاضای بازار و احتمال فروش نیز مدل‌سازی نشده‌اند.
+**ادغام:** PR #511 با merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` وارد `main` شد.
+
+**محدودیت‌های باز:** سفارش تحویل Cargo Ship/Delivery Orders هنوز به بهای موجودی و سود ناخالص متصل نشده است. دفتر تراکنش فقط ۳۰۰ رویداد آخر را نگه می‌دارد؛ در صورت حذف تاریخچه قدیمی، خروجی صریحاً lifetime-complete نیست. تقاضای بازار، احتمال فروش، هزینه فرصت، سرمایه ساختمان، دستمزد و هزینه‌های عملیاتی ثبت‌نشده نیز مدل‌سازی نشده‌اند.
+
+
+## ادغام دفتر FIFO موجودی زنده — PR #511
+
+- [x] PR #511 در `main` ادغام شد؛ merge commit: `72d54bd28741320a5376fc58fbd0c89e52d5326c`.
+- [x] Godot Validation، GameplaySmoke، CurrencyEconomySmoke و MacroEconomySmoke: [run 43710111735 — success](https://github.com/pasoooir/Mshin/actions/runs/43710111735).
+- [x] Android Debug APK export/signature و artifact upload: [run 43710111735 — success](https://github.com/pasoooir/Mshin/actions/runs/43710111735).
+- [x] Web export و Chromium desktop/mobile: [run 43710111759 — success](https://github.com/pasoooir/Mshin/actions/runs/43710111759).
+- [ ] اجرای مستقل workflowها روی merge commit و آخرین README به‌روزشده؛ شواهد PR به‌تنهایی جایگزین CI شاخه main نیست.
