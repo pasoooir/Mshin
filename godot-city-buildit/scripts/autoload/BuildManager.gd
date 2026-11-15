@@ -460,11 +460,17 @@ func get_bom_catalog_audit() -> Dictionary:
 	var errors: Array[String] = []
 	var construction_count := 0
 	var upgrade_count := 0
+	var construction_boms: Dictionary = {}
+	var construction_sources: Dictionary = {}
+	var non_residential_upgrade_boms: Dictionary = {}
+	var upgrade_sources: Dictionary = {}
 	for type_variant in building_types.keys():
 		var type_id := str(type_variant)
 		var definition: Dictionary = building_types[type_id]
 		var category := str(definition.get("category", ""))
 		var construction := get_construction_bom(type_id)
+		construction_boms[type_id] = construction.duplicate(true)
+		construction_sources[type_id] = get_construction_bom_source(type_id)
 		if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 			if not construction.is_empty():
 				errors.append("%s: bootstrap BOM must remain empty" % type_id)
@@ -481,8 +487,10 @@ func get_bom_catalog_audit() -> Dictionary:
 					errors.append("%s: construction material %s unlocks after the building" % [type_id, item_id])
 			construction_count += 1
 		if category in ["commercial", "industrial", "service", "park"]:
+			var stages: Dictionary = {}
 			for stage in range(1, 6):
 				var upgrade := get_non_residential_upgrade_bom(type_id, stage)
+				stages[str(stage)] = upgrade.duplicate(true)
 				if upgrade.is_empty():
 					errors.append("%s: missing upgrade BOM at stage %d" % [type_id, stage])
 					continue
@@ -493,13 +501,25 @@ func get_bom_catalog_audit() -> Dictionary:
 					if int(upgrade[item_variant]) <= 0 or ProductionManager.get_item_definition(item_id).is_empty():
 						errors.append("%s: invalid upgrade material %s at stage %d" % [type_id, item_id, stage])
 				upgrade_count += 1
+			non_residential_upgrade_boms[type_id] = stages
+			upgrade_sources[type_id] = {
+				"1": get_non_residential_upgrade_bom_source(type_id, 1),
+				"2": get_non_residential_upgrade_bom_source(type_id, 2),
+				"3": get_non_residential_upgrade_bom_source(type_id, 3),
+				"4": get_non_residential_upgrade_bom_source(type_id, 4),
+				"5": get_non_residential_upgrade_bom_source(type_id, 5)
+			}
 	return {
 		"valid": errors.is_empty(),
 		"errors": errors,
 		"building_type_count": building_types.size(),
 		"construction_bom_count": construction_count,
 		"non_residential_upgrade_bom_count": upgrade_count,
-		"exact_type_profile_count": CONSTRUCTION_BOM_TYPE_PROFILES.size()
+		"exact_type_profile_count": CONSTRUCTION_BOM_TYPE_PROFILES.size(),
+		"construction_boms": construction_boms,
+		"construction_sources": construction_sources,
+		"non_residential_upgrade_boms": non_residential_upgrade_boms,
+		"upgrade_sources": upgrade_sources
 	}
 
 func get_non_residential_upgrade_cost(type_id: String, current_stage: int) -> int:
