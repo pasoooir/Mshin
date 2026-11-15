@@ -4,7 +4,7 @@ class_name ProductionCapacitySimulator
 # Deterministic replay of the production component contract:
 # - factory slots run independently and retain ready output until collection;
 # - each commercial building runs one active order, with additional slots
-#   acting as a FIFO queue;
+#   acting as a slot-order queue;
 # - commercial inputs are consumed atomically when an order is accepted;
 # - collection is blocked by warehouse capacity and never discards output;
 # - cash is generated only by explicit Trade Depot collection after its listing timer (never by crafting).
