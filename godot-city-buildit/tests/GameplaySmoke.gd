@@ -271,6 +271,34 @@ func _test_automatic_production_chain() -> void:
 	ProductionManager.from_save_dict(persisted)
 	_check(str(ProductionManager.get_production_chain_status(chain_id).get("status", "")) == "complete", "Completed chain order state must survive serialization and restoration.")
 
+	# A second chain must reuse an intermediate already being produced by the
+	# first chain instead of creating a duplicate batch in the same store.
+	ProductionManager.production_chain_orders.clear()
+	StorageManager.items = {"wood": 2, "hammer": 1}
+	var nails_chain_id := ProductionManager.request_production_chain("nails", 1)
+	var chair_chain_id := ProductionManager.request_production_chain("chair", 1)
+	var nails_jobs := 0
+	for slot in building_supplies.slots:
+		if not slot.is_empty() and str(slot.get("item_id", "")) == "nails":
+			nails_jobs += 1
+	_check(not nails_chain_id.is_empty() and not chair_chain_id.is_empty() and nails_jobs == 1, "Concurrent chains must share one in-flight Nails dependency rather than enqueue duplicate batches.")
+	var concurrent_completed := false
+	for _iteration in range(18):
+		var now := int(Time.get_unix_time_from_system())
+		for component in [factory, building_supplies, hardware_store, furniture_store]:
+			for slot_index in range(component.get_slot_count()):
+				var slot: Dictionary = component.get_slot(slot_index)
+				if not slot.is_empty() and not bool(slot.get("ready", false)) and int(slot.get("finish_unix", 0)) > 0:
+					slot["finish_unix"] = now - 1
+					component.slots[slot_index] = slot
+			component.refresh_slots()
+		ProductionManager._pump_production_chains()
+		if str(ProductionManager.get_production_chain_status(nails_chain_id).get("status", "")) == "complete" and str(ProductionManager.get_production_chain_status(chair_chain_id).get("status", "")) == "complete":
+			concurrent_completed = true
+			break
+	_check(concurrent_completed, "Concurrent root and dependent chains must both complete using the shared collected intermediate.")
+	_check(StorageManager.get_count("chair") == 1 and StorageManager.get_count("nails") == 0, "The shared Nails output must be consumed once by the Chair chain, with no duplicate surplus.")
+
 	for component in [factory, building_supplies, hardware_store, furniture_store]:
 		remove_child(component)
 		component.free()
