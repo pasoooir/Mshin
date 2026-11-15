@@ -3877,10 +3877,40 @@ func _run_gameplay_test() -> void:
 		_check(false, "Second ready Metal slot must expose a Collect button.")
 	_check(StorageManager.get_count("metal") == 2, "Two parallel factory collections must add two Metal to City Storage.")
 
+	# Exercise the complete touch-release path over the projected building
+	# footprint, independently of the queue-slot fallback above.
+	var direct_drop_target := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
+	_check(direct_drop_target != null, "Direct touch drop must have a projected building-footprint target.")	
+	if direct_drop_target:
+		production_hud._production_touch_drag_building = factory
+		production_hud._production_touch_drag_item_id = "metal"
+		production_hud._finish_production_touch_drag(direct_drop_target.get_global_rect().get_center())
+		_check(not factory_component.get_slot(0).is_empty(), "Releasing a dragged factory material on the building footprint must enqueue it without requiring a queue-slot drop.")
+		var direct_slot: Dictionary = factory_component.get_slot(0)
+		direct_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		factory_component.slots[0] = direct_slot
+		factory_component.refresh_slots()
+		production_hud.open_production_panel(factory)
+		var collect_direct_drop := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+		if collect_direct_drop:
+			collect_direct_drop.emit_signal("pressed")
+		else:
+			_check(false, "Direct building-drop factory order must expose a Collect action after completion.")
+
 	var supplies = _find_building("building_supplies")
 	var shop_component = supplies.production_component
 	_check(shop_component != null and shop_component.get_slot_count() == 2, "Building Supplies must expose two craft queue slots.")
 	StorageManager.items = {}
+	production_hud.open_production_panel(supplies)
+	var unavailable_nails_button := production_hud.production_overlay.find_child("Slot0_nails", true, false) as Button
+	_check(unavailable_nails_button != null and not unavailable_nails_button.disabled, "A recipe with missing ingredients must remain selectable so the player can inspect its shortage.")
+	if unavailable_nails_button:
+		unavailable_nails_button.emit_signal("pressed")
+		var missing_reason := production_hud.production_panel.find_child("ProductionBlockReason", true, false) as Label
+		_check(missing_reason != null and missing_reason.text.contains("Metal") and missing_reason.text.contains("2"), "The selected unavailable product must disclose the exact missing City Storage ingredient and quantity.")
+		_check(production_hud._get_production_drag_data(Vector2.ZERO, supplies, "nails", unavailable_nails_button) == null, "A store product with missing ingredients must not produce a drag payload.")
+		_check(not production_hud._can_accept_production_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"nails", "building_id":supplies.get_instance_id()}, supplies, 0), "A store order with missing City Storage ingredients must be rejected before acceptance.")
+	_check(shop_component.get_slot(0).is_empty() and StorageManager.get_count("metal") == 0, "Inspecting a blocked product must not queue an order or mutate inventory.")
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
 	production_hud.open_production_panel(supplies)
 	var visible_store_queue := production_hud.production_panel.find_child("ProductionQueueSlots", true, false) as HBoxContainer
