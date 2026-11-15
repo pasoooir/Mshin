@@ -999,6 +999,9 @@ No recipe, production duration, storage accounting, queue-slot price, or Collect
 - [ ] Accept drag/drop on a physical Android device; CI simulation is not physical-device acceptance.
 - [x] Extend the shared world-space action marker to Epic Project claim/dismiss, due Epic token-part collection, deliverable specialization tasks, ready Trade Depot sales, fulfilable Global Trade orders and cargo-port crates.
 - [x] Gate trade/cargo markers on the corresponding system's real unlock/operational state; no badge is shown for locked or non-actionable work.
-- [ ] Run GameplaySmoke notification assertions in CI and verify marker removal after each corresponding action is collected/claimed.
+- [x] GameplaySmoke verifies Epic claim, due token, deliverable specialization task, ready Trade Depot sale, fulfilable Global Trade order and deliverable cargo crate markers.
+- [x] GameplaySmoke verifies markers disappear when sale/order/crate is completed, Epic Project is claimed/dismissed, or token is not yet due.
+- [x] Latest Godot Validation + GameplaySmoke + Visual Presentation + Android Debug APK export/signature: [run 43726778004](https://github.com/pasoooir/Mshin/actions/runs/43726778004).
+- [x] Latest Web export + gameplay integration + desktop/mobile-landscape Chromium + Pages artifact: [run 43726778009](https://github.com/pasoooir/Mshin/actions/runs/43726778009). Pages deployment is skipped for pull requests.
 
-**Evidence rule:** automated touch-gesture simulation, radial geometry assertions, Godot validation, Android APK export and Web/Chromium CI are verified. Actual rendered screenshot review and physical Android acceptance remain open.
+**Evidence rule:** automated touch gesture, radial geometry, actionable notification state/removal, Godot validation, Android APK export and Web/Chromium CI are verified. Actual rendered screenshot review and physical Android acceptance remain open.
