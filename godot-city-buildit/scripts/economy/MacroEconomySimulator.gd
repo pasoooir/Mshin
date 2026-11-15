@@ -23,11 +23,17 @@ static func simulate_live_city(config: Dictionary) -> Dictionary:
 		return {"valid": false, "errors": [str(production_snapshot.get("capture_error", "Production snapshot failed."))]}
 	live_config["production"] = production_snapshot
 	if not live_config.has("item_values"):
+		var scene_tree := Engine.get_main_loop() as SceneTree
+		if scene_tree == null:
+			return {"valid": false, "errors": ["A live SceneTree is required to read the item catalog."]}
+		var production_manager = scene_tree.root.get_node_or_null("ProductionManager")
+		if production_manager == null:
+			return {"valid": false, "errors": ["ProductionManager autoload is unavailable."]}
 		var values: Dictionary = {}
-		for item_id in ProductionManager.raw_materials:
-			values[str(item_id)] = ProductionManager.get_item_value(str(item_id))
-		for item_id in ProductionManager.crafted_items:
-			values[str(item_id)] = ProductionManager.get_item_value(str(item_id))
+		for item_id in production_manager.raw_materials:
+			values[str(item_id)] = production_manager.get_item_value(str(item_id))
+		for item_id in production_manager.crafted_items:
+			values[str(item_id)] = production_manager.get_item_value(str(item_id))
 		live_config["item_values"] = values
 	return simulate(live_config)
 
