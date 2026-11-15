@@ -3788,7 +3788,6 @@ func _run_gameplay_test() -> void:
 	var factory_surface_drop := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
 	_check(factory_surface_drop != null and factory_surface_drop.mouse_filter == Control.MOUSE_FILTER_STOP and factory_surface_drop.size.x > 0.0 and factory_surface_drop.size.y > 0.0, "Factory must expose a real footprint-aligned drop hit area on the selected building.")
 	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Radial factory catalogue must expose every registered material.")
-	_check(metal_button == null or metal_button.position.x < get_viewport().get_visible_rect().size.x * 0.5, "The first factory materials must occupy the left honeycomb cluster rather than a scattered radial orbit.")
 	var production_details_scroll := production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) as ScrollContainer
 	_check(production_details_scroll != null and production_details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "Selected-item details must remain a compact capsule, not a vertically expanding white sheet.")
 	_check(production_hud.production_overlay.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must show a separate top-centered building nameplate outside the queue dock.")
@@ -3797,6 +3796,7 @@ func _run_gameplay_test() -> void:
 	var empty_factory_slot: PanelContainer = production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
 	_check(empty_factory_slot != null and empty_factory_slot.find_child("EmptyQueuePlus", true, false) is Label and empty_factory_slot.find_child("EmptyQueueLabel", true, false) is Label, "An empty production slot must show its plus affordance and EMPTY label.")
 	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
+	_check(metal_button == null or metal_button.position.x < get_viewport().get_visible_rect().size.x * 0.5, "The first factory materials must occupy the left honeycomb cluster rather than a scattered radial orbit.")
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
 		metal_button.emit_signal("pressed")
