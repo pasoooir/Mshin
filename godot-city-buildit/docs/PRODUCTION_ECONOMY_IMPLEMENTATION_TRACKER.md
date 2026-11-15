@@ -208,3 +208,10 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 - [ ] **Smoke coverage:** market purchases, storage-full rejection, level-lock rejection, production speed-up, collection exactly once and popup section visibility are covered by `currency_economy_smoke.gd`.
 - [ ] **Open by design:** direct SimCash purchase of land/storage Special Items is not implemented here; these remain tied to the item-based expansion/storage gates until their complete inventory workflows are in place. Real multiplayer Global Trade HQ and real payment-provider validation are also separate work.
 - Source separation: EA's beginner guide confirms currency roles, factory/store production and building plans. Fandom Building Materials supplies community recipe/value/unlock data. All new Mshin buy prices and per-minute speed-up pricing are labelled Mshin-proposed in `CURRENCY_DRIVEN_CITY_PROGRESSION.md`.
+
+
+- [PR #503](https://github.com/pasoooir/Mshin/pull/503) merged to `main` as `4c6b5be6a922b2a3a483f5af7f52db7c9690d5c5`.
+- Currency progression adds the Simoleons material market, SimCash time acceleration for active production/construction/upgrades, and SimCash commercial queue-slot expansion. New Mshin pricing rules are explicitly distinguished from EA-confirmed behavior and community reference data in `docs/CURRENCY_DRIVEN_CITY_PROGRESSION.md`.
+- Godot Validation run [43700782340](https://github.com/pasoooir/Mshin/actions/runs/43700782340) passed: static validation, icon validation, import/parse, headless startup, GameplaySmoke, VisualPresentationSmoke, CurrencyEconomySmoke and Android Debug APK export/signature verification.
+- Mshin Playable Web run [43700782353](https://github.com/pasoooir/Mshin/actions/runs/43700782353) passed: Web export, desktop and mobile-landscape Chromium launch and website artifact upload.
+- No physical Android install/touch acceptance or final economy balancing is claimed. Direct SimCash bypass of land/storage Special Item gates, live multiplayer trade and real payment-provider validation remain separate work.
