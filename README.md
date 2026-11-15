@@ -1065,3 +1065,20 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Extend VisualPresentationSmoke to assert instance count, per-instance color support, shadow policy, coast distribution and color variation.
 - [ ] Godot import/parse, visual presentation smoke, gameplay smoke, Web/Chromium and Android APK CI.
 - [ ] Compare actual device frame-time and draw-call reports before claiming measured performance gains.
+
+
+## Mobile rendering optimization — shoreline batching — 2026-11-15
+
+- [x] Replace 38 independent shoreline pebble MeshInstance3D nodes/materials with one low-poly MultiMeshInstance3D batch.
+- [x] Preserve 38 stone positions, varied radii/yaw, and the three-color palette with per-instance transforms/colors.
+- [x] Disable unnecessary shadow casting on the small shoreline stones.
+- [x] Add visual smoke coverage for batch count, instance color support, shadow policy, full coast distribution and color variation.
+- [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, VisualPresentationSmoke, geometry, currency/sandbox and macro-economy checks passed in PR workflow run `43743663936`.
+- [x] Android Debug APK export, signature/package identity verification and artifact upload passed in run `43743663936` (artifact expires 2026-11-29).
+- [x] Web export, GameplaySmoke, desktop/mobile Chromium launch, Pages configuration and website artifact upload passed in PR workflow run `43743663912`.
+- [x] PR #523 merged to `main` at `d997c695f9826039e9418998ae67d8d157880d63`.
+- [ ] Verify the post-merge GitHub Pages deployment from a push-triggered workflow; PR-triggered deploy jobs are intentionally skipped.
+- [ ] Measure draw calls and frame times on a physical Android device before claiming a quantified FPS gain.
+- [ ] Physical Android landscape interaction and visual acceptance.
+
+**Structural result:** 38 shoreline render nodes and per-pebble materials are now one MultiMeshInstance3D and one shared material. The reduction is structural; FPS impact is not yet measured on hardware.
