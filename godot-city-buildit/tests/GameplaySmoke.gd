@@ -3785,6 +3785,7 @@ func _run_gameplay_test() -> void:
 	var production_product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	var production_product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	_check(production_product_orbit != null and production_product_grid != null, "Factory products must render in a floating, building-centered two-sided honeycomb.")
+	_check(production_product_orbit.mouse_filter == Control.MOUSE_FILTER_IGNORE and production_product_grid.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Transparent product-orbit layers must not intercept touch input intended for queue slots beneath them.")
 	var factory_surface_drop := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
 	_check(factory_surface_drop != null and factory_surface_drop.mouse_filter == Control.MOUSE_FILTER_STOP and factory_surface_drop.size.x > 0.0 and factory_surface_drop.size.y > 0.0, "Factory must retain a real footprint-aligned drop hit area as an additional direct-drop target.")
 	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Honeycomb factory catalogue must expose every registered material.")
