@@ -337,3 +337,21 @@ PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key
 **Open:** cross-root shared intermediate reservation/merging and explicit critical-path analytics are not implemented. This replay follows the current per-chain live scheduler and can schedule duplicate intermediate work across independent roots.
 
 - [x] Independent main CI after PR #514 on commit `a6d1dcc867bb96972a546f82aa97b59a5ae3c536`: Godot + Android APK [43712594820](https://github.com/pasoooir/Mshin/actions/runs/43712594820), Web/Chromium [43712594809](https://github.com/pasoooir/Mshin/actions/runs/43712594809), Pages deploy [43712595064](https://github.com/pasoooir/Mshin/actions/runs/43712595064).
+
+
+---
+
+## SimCity-style production interaction — implementation branch
+
+- [x] Six independent production slots configured for every standard factory tier; GameplaySmoke tier assertions updated.
+- [x] Product controls now provide drag data scoped to the selected building and item.
+- [x] Queue slot controls validate same-building source, recipe ownership/material identity, unlock state and empty target slot before accepting a drop.
+- [x] Drop submits the order through existing factory start / store craft / automatic dependency-chain APIs; existing collection and warehouse rules remain authoritative.
+- [ ] Radial/floating product layout around the selected building.
+- [ ] Six compact queue tiles and touch-layout acceptance across mobile landscape profiles.
+- [x] Product-specific 3D billboard thumbnail for ready factory/store goods; multiple ready outputs show a count label.
+- [ ] City-wide pending-action notifications for construction, upgrades, services and non-production objects.
+- [ ] Automated drag/drop, ready-state, full-storage, persistence and panel-close regression tests.
+- [ ] CI and physical Android touch acceptance for this branch.
+
+No recipe, production duration, expansion price, or item provenance was added or inferred by this UI change.

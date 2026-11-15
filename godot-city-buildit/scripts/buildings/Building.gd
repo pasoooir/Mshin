@@ -54,6 +54,7 @@ var _fire_smoke: CPUParticles3D = null
 @onready var scaffold_root: Node3D = $ScaffoldRoot
 @onready var hard_hat: Node3D = $HardHat
 @onready var production_icon: Label3D = get_node_or_null("ProductionIcon") as Label3D
+var ready_item_sprite: Sprite3D
 @onready var name_label: Label3D = get_node_or_null("NameLabel") as Label3D
 @onready var stage_label: Label3D = get_node_or_null("StageLabel") as Label3D
 
@@ -77,6 +78,14 @@ func _create_visual_labels() -> void:
 		production_icon.font_size = 52
 		production_icon.outline_size = 10
 		add_child(production_icon)
+	if ready_item_sprite == null:
+		ready_item_sprite = Sprite3D.new()
+		ready_item_sprite.name = "ReadyItemThumbnail"
+		ready_item_sprite.position = Vector3(0.0, 5.25, 0.0)
+		ready_item_sprite.pixel_size = 0.012
+		ready_item_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		ready_item_sprite.visible = false
+		add_child(ready_item_sprite)
 	if name_label == null:
 		name_label = Label3D.new()
 		name_label.name = "NameLabel"

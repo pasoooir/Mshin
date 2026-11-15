@@ -588,11 +588,11 @@ func _test_storage_and_production_chain() -> void:
 	_check(not ProductionManager.get_store_recipe_ids("hardware_store").has("paint"), "Paint must not appear in Hardware Store; its supplier is Building Supplies.")
 	var nails: Dictionary = ProductionManager.get_recipe("nails")
 	_check(int(nails.get("time_sec",0)) == 300 and nails.get("inputs",{}) == {"metal":2}, "Nails must require 2 Metal and take 5 minutes.")
-	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 2, "Small Factory must expose two parallel production slots.")
-	_check(BuildManager.building_types.factory_basic.get("production_slots",0) == 3 and BuildManager.building_types.factory_basic.get("population_required",0) == 4000, "Basic Factory must have 3 slots and require 4,000 population.")
-	_check(BuildManager.building_types.factory_mass.get("production_slots",0) == 4 and BuildManager.building_types.factory_mass.get("population_required",0) == 27000, "Mass Production must have 4 slots and require 27,000 population.")
-	_check(BuildManager.building_types.factory_hightech.get("production_slots",0) == 5 and BuildManager.building_types.factory_hightech.get("population_required",0) == 80000, "High-tech Factory must have 5 slots and require 80,000 population.")
-	_check(BuildManager.building_types.factory_nano.get("production_slots",0) == 5 and BuildManager.building_types.factory_nano.get("pollution",1) == 0 and BuildManager.building_types.factory_nano.get("population_required",0) == 1500000, "Nano-tech Factory must have 5 slots, no pollution and require 1,500,000 population.")
+	_check(BuildManager.building_types.factory_small.get("production_slots",0) == 6, "Small Factory must expose six production queue slots.")
+	_check(BuildManager.building_types.factory_basic.get("production_slots",0) == 6 and BuildManager.building_types.factory_basic.get("population_required",0) == 4000, "Basic Factory must expose six slots and require 4,000 population.")
+	_check(BuildManager.building_types.factory_mass.get("production_slots",0) == 6 and BuildManager.building_types.factory_mass.get("population_required",0) == 27000, "Mass Production must expose six slots and require 27,000 population.")
+	_check(BuildManager.building_types.factory_hightech.get("production_slots",0) == 6 and BuildManager.building_types.factory_hightech.get("population_required",0) == 80000, "High-tech Factory must expose six slots and require 80,000 population.")
+	_check(BuildManager.building_types.factory_nano.get("production_slots",0) == 6 and BuildManager.building_types.factory_nano.get("pollution",1) == 0 and BuildManager.building_types.factory_nano.get("population_required",0) == 1500000, "Nano-tech Factory must expose six slots, no pollution and require 1,500,000 population.")
 	_check(ProductionManager.raw_materials.has("electrical"), "Small Factory must support all raw products, gated only by each material's Mayor Level.")
 	_check(BuildManager.building_types.building_supplies.get("production_slots",0) == 2, "Building Supplies must expose a two-order queue.")
 	_check(BuildManager.building_types.fast_food.get("production_slots",0) == 1 and int(BuildManager.building_types.fast_food.get("level", 0)) == 25, "Fast Food Restaurant must follow its SCBI unlock and open a production panel.")
@@ -3775,7 +3775,7 @@ func _run_gameplay_test() -> void:
 	# the test fixture rather than sleeping for minutes.
 	var production_hud = get_node("HUD")
 	var factory_component = factory.production_component
-	_check(factory_component != null and factory_component.get_slot_count() == 2, "Small Factory must expose two independent production slots.")
+	_check(factory_component != null and factory_component.get_slot_count() == 6, "Small Factory must expose six independent production queue slots.")
 	production_hud.open_production_panel(factory)
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
 	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Factory panel must dim the city behind the product selector.")
@@ -3796,10 +3796,12 @@ func _run_gameplay_test() -> void:
 	if metal_button:
 		metal_button.emit_signal("pressed")
 		var factory_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
-		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must open its detail card with an enabled Start action.")
-		if factory_start:
-			factory_start.emit_signal("pressed")
-	_check(not factory_component.get_slot(0).is_empty(), "Confirming Metal production must start the first factory slot.")
+		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must keep the detail-card Start action available.")
+	var factory_drag_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
+	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
+	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
+	production_hud._accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0)
+	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into factory slot zero must start that exact production slot.")
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
