@@ -1038,7 +1038,7 @@ Design references:
 - [x] GameplaySmoke updated to exercise the global touch drag/release path and direct queue submission for factory and store orders.
 - [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy workflows passed (run `43741503047`).
 - [x] Android Debug APK export, signature/package identity verification and artifact upload passed in run `43741503047`.
-- [x] Godot Web export, desktop/mobile Chromium smoke, Pages configuration and website artifact upload passed in run `43741621986`; production deployment still awaits merge to `main`.
+- [x] Godot Web export, desktop/mobile Chromium smoke, Pages configuration and website artifact upload passed in run `43741621986`; PR #521 merged to `main` at `fc603ee42468b60cfacb4144fed6b274e218b3d2`; the PR Web build and Chromium smoke passed, but the post-merge production Pages deployment is not yet independently verified.
 - [ ] Android landscape physical drag/drop acceptance and screenshot review.
 
 The existing Figma production studio frame was updated to match the no-START, drag-to-queue interaction and building-centered honeycomb placement. Product Design's dedicated Work-mode workflow is not available in this standard chat; implementation and design-spec edits are being handled directly in GitHub and Figma.
