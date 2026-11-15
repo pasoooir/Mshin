@@ -135,7 +135,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 						_start_store_order(facility, facility_id, second, recipes, production_log)
 					facilities[facility_id] = facility
 			elif action_type == "cash_sale":
-				var unit_value := int(action.get("unit_value", 0))
+				var unit_value := int(action.get("unit_value", config.get("item_values", {}).get(item_id, 0)))
 				if inventory.has(item_id) and int(inventory[item_id]) >= quantity and unit_value > 0:
 					_remove_inventory(inventory, {item_id: quantity})
 					var proceeds := unit_value * quantity
