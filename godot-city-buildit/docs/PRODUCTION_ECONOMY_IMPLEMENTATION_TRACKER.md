@@ -391,4 +391,6 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] Web export, gameplay integration and desktop/mobile Chromium launch: [run 43725912831](https://github.com/pasoooir/Mshin/actions/runs/43725912831). Pages deploy skipped for PR.
 - [ ] Actual production UI screenshot review at mobile landscape sizes.
 - [ ] Physical Android touch acceptance.
-- [ ] Other actionable building markers after mapping real pending-action states.
+- [x] Shared action marker logic covers Epic Project claim/dismiss, due Epic token parts, deliverable specialization tasks, ready Trade Depot sales, fulfilable Global Trade orders and deliverable cargo-port crates.
+- [x] Trade/cargo markers are gated by actual operational unlocks; construction and auto-completed upgrades do not show false claim badges.
+- [ ] CI verifies notification state and marker removal after successful action.
