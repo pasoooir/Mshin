@@ -244,6 +244,8 @@ func _test_automatic_production_chain() -> void:
 	store.refresh_slots()
 	ProductionManager._process_automatic_chains()
 	_check(StorageManager.get_count("nails") == 1, "The completed target product must be auto-collected into City Storage.")
+	var automatic_nails_cost: Dictionary = StorageManager.get_cost_basis({"nails": 1})
+	_check(bool(automatic_nails_cost.get("known", false)) and int(automatic_nails_cost.get("total_cost", -1)) == 0, "AUTO CHAIN must carry a known zero direct Simoleon cost from factory-produced Metal into Nails without marking it unknown.")
 	_check(store.slots[0].is_empty(), "The root queue slot must be released when the automatic chain finishes.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "A fully completed chain must no longer block the next automatic order.")
 
@@ -289,6 +291,8 @@ func _test_automatic_production_chain() -> void:
 		if not bool(ProductionManager.get_automatic_chain_status().get("active", false)):
 			break
 	_check(StorageManager.get_count("chair") == 1, "Nested automatic scheduling must produce the requested final item after both store branches complete.")
+	var automatic_chair_cost: Dictionary = StorageManager.get_cost_basis({"chair": 1})
+	_check(bool(automatic_chair_cost.get("known", false)) and int(automatic_chair_cost.get("total_cost", -1)) == 0, "Nested multi-store AUTO CHAIN must propagate known FIFO costs through both dependency branches into Chair.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "Nested multi-store dependency jobs must all release their slots when the root product is collected.")
 
 	# Two independent roots may reserve and execute the same raw dependency
@@ -341,6 +345,41 @@ func _test_automatic_production_chain() -> void:
 
 
 
+
+func _test_live_production_cost_propagation() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_level := GameManager.level
+	var previous_experience := GameManager.experience
+	GameManager.level = 1
+	StorageManager.from_save_dict({
+		"capacity": 50,
+		"items": {"metal": 2},
+		"item_cost_batches": {"metal": [{"quantity": 2, "total_cost": 30, "known": true}]}
+	})
+	var store := ProductionComponentScript.new()
+	store.name = "LiveCostBasisStoreProbe"
+	store.shop_id = "building_supplies"
+	store.slot_count = 2
+	add_child(store)
+	_check(store.start_craft("nails", 0), "Live store craft must accept a valid recipe with costed FIFO input stock.")
+	var active_slot: Dictionary = store.slots[0]
+	_check(bool(active_slot.get("cost_known", false)) and int(active_slot.get("cost_total", -1)) == 30, "Live production slot must capture the exact FIFO cost of consumed input materials.")
+	active_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	store.slots[0] = active_slot
+	store.refresh_slots()
+	_check(store.collect(0), "A completed live costed product must collect into City Storage.")
+	var product_cost: Dictionary = StorageManager.get_cost_basis({"nails": 1})
+	_check(bool(product_cost.get("known", false)) and int(product_cost.get("total_cost", -1)) == 30, "Live product collection must transfer the consumed input cost into its output inventory batch.")
+	var saved_inventory: Dictionary = StorageManager.to_save_dict()
+	StorageManager.from_save_dict(saved_inventory)
+	var restored_product_cost: Dictionary = StorageManager.get_cost_basis({"nails": 1})
+	_check(bool(restored_product_cost.get("known", false)) and int(restored_product_cost.get("total_cost", -1)) == 30, "Save/load must preserve the live crafted product's FIFO cost basis.")
+	store.queue_free()
+	StorageManager.from_save_dict(previous_storage)
+	GameManager.level = previous_level
+	GameManager.experience = previous_experience
+	await get_tree().process_frame
+
 func _test_live_macro_economy_snapshot() -> void:
 	var balance_before := EconomyManager.simoleons
 	var snapshot: Dictionary = MacroEconomySimulatorScript.simulate_live_city({
@@ -354,6 +393,23 @@ func _test_live_macro_economy_snapshot() -> void:
 	var production: Dictionary = snapshot.get("production", {})
 	_check(int(production.get("storage_capacity", -1)) == StorageManager.capacity, "Live production snapshot must use the active City's real warehouse capacity.")
 	_check(production.get("ending_inventory", {}) == StorageManager.get_all_items(), "Live production snapshot must preserve the exact current City Storage inventory.")
+
+	var previous_ledger: Array[Dictionary] = EconomyManager.transaction_ledger.duplicate(true)
+	var previous_sequence := EconomyManager.transaction_sequence
+	EconomyManager.transaction_ledger.clear()
+	EconomyManager.transaction_sequence = 0
+	EconomyManager.record_transaction("trade_sale_collected", "simoleons", 80, balance_before, balance_before, {}, {}, {"source":"trade_depot", "quantity":1, "cost_known":true, "cost_basis":30, "gross_margin":50})
+	EconomyManager.record_transaction("trade_sale_collected", "simoleons", 40, balance_before, balance_before, {}, {}, {"source":"trade_depot", "quantity":1, "cost_known":false, "cost_basis":-1, "gross_margin":-1})
+	var ledger_snapshot: Dictionary = MacroEconomySimulatorScript.simulate_live_city({"horizon_seconds": 0, "events": []})
+	var realized: Dictionary = ledger_snapshot.get("realized_trade_accounting", {})
+	_check(int(realized.get("gross_revenue", -1)) == 120 and int(realized.get("known_cogs", -1)) == 30 and int(realized.get("known_gross_margin", -1)) == 50, "Live macro snapshot must aggregate actual realized trade ledger revenue, known COGS and margin.")
+	_check(int(realized.get("unknown_cost_sale_quantity", -1)) == 1 and not bool(realized.get("gross_margin_complete", true)), "Live macro snapshot must preserve incomplete historical cost data instead of claiming full profit.")
+	_check(bool(realized.get("history_complete", false)), "Live macro accounting must report when the full available transaction history is present.")
+	var truncated_history: Dictionary = MacroEconomySimulatorScript._summarize_realized_trade_ledger(EconomyManager.transaction_ledger, 500)
+	_check(not bool(truncated_history.get("history_complete", true)) and not bool(truncated_history.get("gross_margin_complete", true)), "A truncated 300-entry economy ledger must never be presented as lifetime-complete gross profit.")
+	EconomyManager.transaction_ledger = previous_ledger
+	EconomyManager.transaction_sequence = previous_sequence
+
 
 func _test_recipe_dependency_graph_validation() -> void:
 	var baseline := ProductionManager.get_recipe_validation_report()
@@ -2876,6 +2932,9 @@ func _test_trade_depot_and_global_market() -> void:
 	var previous_keys := EconomyManager.golden_keys
 	var previous_storage: Dictionary = StorageManager.to_save_dict()
 	var previous_trade: Dictionary = TradeManager.to_save_dict()
+	var previous_ledger: Array[Dictionary] = EconomyManager.transaction_ledger.duplicate(true)
+	var previous_ledger_sequence := EconomyManager.transaction_sequence
+	EconomyManager.transaction_ledger.clear()
 	var depot := FireHazardTestBuilding.new()
 	depot.building_id = "smoke_trade_depot"
 	depot.building_type = "trade_depot"
@@ -2905,11 +2964,17 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(BuildManager.get_population_build_lock_reason("global_trade_hq").is_empty(), "Global Trade HQ must unlock at exactly 10,000 population.")
 	StorageManager.capacity = 50
 	StorageManager.items = {"metal": 2}
+	StorageManager.item_cost_batches = {"metal": [{"quantity": 2, "total_cost": 30, "known": true}]}
 	TradeManager.from_save_dict({})
 	_check(TradeManager.is_depot_operational(), "A completed Trade Depot at 8,000+ population must activate selling.")
 	_check(TradeManager.is_global_trade_operational(), "A completed Global Trade HQ at 10,000+ population must activate the market.")
 	_check(TradeManager.list_for_sale("metal", 1), "Trade Depot must accept a valid item listing.")
 	_check(StorageManager.get_count("metal") == 1, "Listing an item must remove it from City Storage exactly once.")
+	_check(bool(TradeManager.sell_slots[0].get("cost_known", false)) and int(TradeManager.sell_slots[0].get("cost_total", -1)) == 15, "Depot listing must reserve the FIFO acquisition cost of the exact Metal batch.")
+	_check(TradeManager.cancel_sale_listing(0), "Cancelling a Depot listing must return its reserved goods.")
+	var returned_cost: Dictionary = StorageManager.get_cost_basis({"metal": 2})
+	_check(StorageManager.get_count("metal") == 2 and bool(returned_cost.get("known", false)) and int(returned_cost.get("total_cost", -1)) == 30, "Cancelling a sale must restore the original FIFO cost basis without losing or duplicating cost.")
+	_check(TradeManager.list_for_sale("metal", 1), "Trade Depot must accept the restored item for a second listing.")
 	_check(not TradeManager.collect_sale(0), "A listing must not pay out before its sale timer completes.")
 	_check(int(TradeManager.sell_slots[0].get("finish_unix", 0)) > int(Time.get_unix_time_from_system()), "A sale listing must persist an absolute completion timestamp.")
 	TradeManager.sell_slots[0]["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
@@ -2923,6 +2988,11 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(TradeManager.completed_sales == sales_before_collection + 1, "A collected sale must increment the persistent trade achievement counter.")
 	_check(EconomyManager.simoleons == coins_before_collection + ProductionManager.get_item_value("metal"), "Collecting a sale must pay its exact listed price.")
 	_check(TradeManager.sell_slots.is_empty(), "Collected listings must release their depot slot.")
+	var sale_entry: Dictionary = EconomyManager.transaction_ledger.back()
+	var sale_metadata: Dictionary = sale_entry.get("metadata", {})
+	_check(bool(sale_metadata.get("cost_known", false)) and int(sale_metadata.get("cost_basis", -1)) == 15 and int(sale_metadata.get("gross_margin", -1)) == ProductionManager.get_item_value("metal") - 15, "Live sale transaction must persist its actual FIFO COGS and realized gross margin.")
+	var realized: Dictionary = MacroEconomySimulatorScript._summarize_realized_trade_ledger(EconomyManager.transaction_ledger)
+	_check(int(realized.get("gross_revenue", 0)) == ProductionManager.get_item_value("metal") and int(realized.get("known_cogs", -1)) == 15 and bool(realized.get("gross_margin_complete", false)), "Live macro accounting must summarize the actual Trade Depot transaction ledger.")
 
 	TradeManager.market_offers = [{"item_id":"metal", "amount":1, "price":15, "sold":false}]
 	var coins_before_purchase := EconomyManager.simoleons
@@ -2931,6 +3001,12 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(TradeManager.market_purchases == purchases_before + 1, "A completed Global Trade purchase must increment its achievement counter.")
 	_check(StorageManager.get_count("metal") == 2, "Global market purchase must add the offered goods to storage.")
 	_check(EconomyManager.simoleons == coins_before_purchase - 15, "Global market purchase must deduct the exact offer price.")
+	var purchased_cost: Dictionary = StorageManager.get_cost_basis({"metal": 2})
+	_check(bool(purchased_cost.get("known", false)) and int(purchased_cost.get("total_cost", -1)) == 30, "Global Trade HQ purchase must add the exact paid price to the acquired inventory cost basis.")
+	var saved_cost_storage: Dictionary = StorageManager.to_save_dict()
+	StorageManager.from_save_dict(saved_cost_storage)
+	var restored_cost: Dictionary = StorageManager.get_cost_basis({"metal": 2})
+	_check(bool(restored_cost.get("known", false)) and int(restored_cost.get("total_cost", -1)) == 30, "Storage save/load must preserve FIFO cost batches and their acquisition totals.")
 	_check(bool(TradeManager.market_offers[0].get("sold", false)), "Purchased market offers must not be purchasable twice.")
 	var saved_trade := TradeManager.to_save_dict()
 	TradeManager.from_save_dict(saved_trade)
@@ -2988,6 +3064,8 @@ func _test_trade_depot_and_global_market() -> void:
 	GameManager.population = previous_population
 	EconomyManager.simoleons = previous_simoleons
 	EconomyManager.golden_keys = previous_keys
+	EconomyManager.transaction_ledger = previous_ledger
+	EconomyManager.transaction_sequence = previous_ledger_sequence
 	StorageManager.from_save_dict(previous_storage)
 	TradeManager.from_save_dict(previous_trade)
 
@@ -3184,6 +3262,7 @@ func _run_gameplay_test() -> void:
 	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
 	await _test_live_production_queue_eta()
+	_test_live_production_cost_propagation()
 	_test_live_macro_economy_snapshot()
 	_test_recipe_dependency_graph_validation()
 	_test_storage_and_production_chain()

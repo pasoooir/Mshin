@@ -55,6 +55,7 @@ static func simulate_live_city(config: Dictionary) -> Dictionary:
 			if str(definition.get("category", "")) == "residential" and str(building.get("status")) == "completed" and int(building.get("current_population")) > 0:
 				occupied_homes += 1
 		live_config["occupied_homes"] = occupied_homes
+	live_config["realized_trade_accounting"] = _summarize_realized_trade_ledger(economy_manager.transaction_ledger, int(economy_manager.transaction_sequence))
 	if not live_config.has("item_values"):
 		var values: Dictionary = {}
 		for item_id in production_manager.raw_materials:
@@ -63,6 +64,44 @@ static func simulate_live_city(config: Dictionary) -> Dictionary:
 			values[str(item_id)] = production_manager.get_item_value(str(item_id))
 		live_config["item_values"] = values
 	return simulate(live_config)
+
+
+static func _summarize_realized_trade_ledger(ledger: Array, total_sequence: int = -1) -> Dictionary:
+	var revenue := 0
+	var known_cogs := 0
+	var known_gross_margin := 0
+	var unknown_cost_quantity := 0
+	var sale_count := 0
+	var history_complete := total_sequence < 0 or total_sequence <= ledger.size()
+	for entry_variant in ledger:
+		if not entry_variant is Dictionary:
+			continue
+		var entry: Dictionary = entry_variant
+		if str(entry.get("type", "")) != "trade_sale_collected":
+			continue
+		var metadata: Dictionary = entry.get("metadata", {})
+		var sale_revenue := int(entry.get("amount", 0))
+		var quantity := maxi(0, int(metadata.get("quantity", 0)))
+		if sale_revenue <= 0 or quantity <= 0:
+			continue
+		revenue += sale_revenue
+		sale_count += 1
+		if bool(metadata.get("cost_known", false)) and int(metadata.get("cost_basis", -1)) >= 0:
+			var cogs := int(metadata.get("cost_basis", 0))
+			known_cogs += cogs
+			known_gross_margin += sale_revenue - cogs
+		else:
+			unknown_cost_quantity += quantity
+	return {
+		"gross_revenue": revenue,
+		"known_cogs": known_cogs,
+		"known_gross_margin": known_gross_margin,
+		"unknown_cost_sale_quantity": unknown_cost_quantity,
+		"gross_margin_complete": unknown_cost_quantity == 0 and history_complete,
+		"history_complete": history_complete,
+		"ledger_entries": ledger.size(),
+		"sale_count": sale_count
+	}
 
 static func simulate(config: Dictionary) -> Dictionary:
 	var errors: Array[String] = []
@@ -240,6 +279,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"daily": daily,
 		"production": production_result,
 		"production_accounting": production_result.get("accounting", {}),
+		"realized_trade_accounting": config.get("realized_trade_accounting", {}),
 		"model_notes": [
 			"Tax formula and happiness XP cadence are read from the current Mshin game rules.",
 			"Delivery order reward uses the current 2x catalog-value formula.",

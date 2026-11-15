@@ -201,7 +201,9 @@ func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "")
 		"start_unix": now,
 		"finish_unix": now + int(definition.get("time_sec", 60)),
 		"ready": false,
-		"auto_chain_id": auto_chain_id
+		"auto_chain_id": auto_chain_id,
+		"cost_known": true,
+		"cost_total": 0
 	}
 	slots_changed.emit()
 	return true
@@ -220,14 +222,19 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 	var inputs: Dictionary = recipe.get("inputs", {})
 	# Validate and deduct the complete input set atomically when the order is
 	# accepted into the store queue. Queued jobs never consume materials twice.
-	if not StorageManager.has_items(inputs) or not StorageManager.remove_items(inputs):
+	if not StorageManager.has_items(inputs):
+		return false
+	var input_cost: Dictionary = StorageManager.get_cost_basis(inputs)
+	if not StorageManager.remove_items(inputs):
 		return false
 	slots[slot_index] = {
 		"item_id": recipe_id,
 		"start_unix": 0,
 		"finish_unix": 0,
 		"ready": false,
-		"queued": true
+		"queued": true,
+		"cost_known": bool(input_cost.get("known", false)),
+		"cost_total": int(input_cost.get("total_cost", 0))
 	}
 	_start_next_store_order()
 	slots_changed.emit()
@@ -269,7 +276,7 @@ func collect(slot_index: int) -> bool:
 		return false
 	var item_id := str(slot.get("item_id", ""))
 	# If the warehouse is full, keep the completed product on the building.
-	if not StorageManager.add_item(item_id, 1):
+	if not StorageManager.add_item_with_cost(item_id, 1, int(slot.get("cost_total", 0)), bool(slot.get("cost_known", false))):
 		return false
 	HapticsManager.pulse_for("collect")
 	slots[slot_index] = {}
@@ -291,5 +298,9 @@ func from_save_array(saved_slots: Array) -> void:
 	_ensure_slots()
 	for index in range(slots.size()):
 		slots[index] = saved_slots[index].duplicate(true) if index < saved_slots.size() and saved_slots[index] is Dictionary else {}
+		if not slots[index].is_empty() and not slots[index].has("cost_known"):
+			# Older saves have no traceable acquisition cost for in-flight jobs.
+			slots[index]["cost_known"] = false
+			slots[index]["cost_total"] = 0
 	refresh_slots()
 	slots_changed.emit()

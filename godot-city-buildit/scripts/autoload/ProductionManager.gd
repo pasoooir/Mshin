@@ -437,6 +437,7 @@ func _advance_automatic_chain_store_job(component: ProductionComponent, slot_ind
 			continue
 		if int(other.get("finish_unix", 0)) > 0:
 			return
+	var input_cost: Dictionary = StorageManager.get_cost_basis(requirements)
 	if not StorageManager.remove_items(requirements):
 		return
 	var now := int(Time.get_unix_time_from_system())
@@ -446,6 +447,8 @@ func _advance_automatic_chain_store_job(component: ProductionComponent, slot_ind
 	slot["ready"] = false
 	slot["queued"] = false
 	slot["auto_chain_started"] = true
+	slot["cost_known"] = bool(input_cost.get("known", false))
+	slot["cost_total"] = int(input_cost.get("total_cost", 0))
 	component.slots[slot_index] = slot
 	component.slots_changed.emit()
 	automatic_chain_changed.emit(chain_id, "producing:" + recipe_id)
