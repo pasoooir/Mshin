@@ -3880,7 +3880,7 @@ func _run_gameplay_test() -> void:
 	# Exercise the complete touch-release path over the projected building
 	# footprint, independently of the queue-slot fallback above.
 	var direct_drop_target := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
-	_check(direct_drop_target != null, "Direct touch drop must have a projected building-footprint target.")	
+	_check(direct_drop_target != null, "Direct touch drop must have a projected building-footprint target.")
 	if direct_drop_target:
 		production_hud._production_touch_drag_building = factory
 		production_hud._production_touch_drag_item_id = "metal"
