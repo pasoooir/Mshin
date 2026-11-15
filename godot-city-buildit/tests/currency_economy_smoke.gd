@@ -67,7 +67,7 @@ func _ready() -> void:
 	if PaymentManager.get_recent_orders(10).size() < 3:
 		failures.append("purchase ledger did not survive save-data round trip")
 	for asset in ["simcash_bundle.png", "simoleons_coins.png", "bonus_gift.png"]:
-		var path := "res://assets/icons/ui/currency/" + asset
+		var path: String = "res://assets/icons/ui/currency/" + asset
 		if not ResourceLoader.exists(path) or ResourceLoader.load(path) == null:
 			failures.append("3D currency icon failed to load: " + asset)
 
