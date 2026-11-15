@@ -89,6 +89,8 @@ func _test_construction_bom_contract() -> void:
 	var bom_audit := BuildManager.get_bom_catalog_audit()
 	_check(bool(bom_audit.get("valid", false)), "Every exact building type and each of its five non-residential upgrade stages must have a valid, unlock-compatible BOM: %s" % str(bom_audit.get("errors", [])))
 	_check(int(bom_audit.get("building_type_count", 0)) == BuildManager.building_types.size(), "BOM audit must inspect the complete live building catalog.")
+	_check(bom_audit.get("construction_boms", {}).size() == BuildManager.building_types.size(), "The BOM audit must expose an exact construction material dictionary for every building type.")
+	_check(bom_audit.get("non_residential_upgrade_boms", {}).get("sewage_deluxe", {}).size() == 5, "The BOM audit must expose all five exact upgrade-stage material dictionaries for each non-residential building.")
 	_check(int(bom_audit.get("non_residential_upgrade_bom_count", 0)) > 0, "BOM audit must inspect every supported non-residential upgrade stage.")
 	_check(BuildManager.get_construction_bom_source("sewage_deluxe").contains("exact infrastructure"), "Distinctive service buildings must identify their exact Mshin infrastructure BOM provenance.")
 	var factory_upgrade_bom := BuildManager.get_non_residential_upgrade_bom("factory_small", 1)
