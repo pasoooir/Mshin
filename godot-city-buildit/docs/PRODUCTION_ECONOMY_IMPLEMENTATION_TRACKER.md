@@ -244,8 +244,14 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 - [ ] Inventory cost-basis ledger and accounting-grade realized profit; catalog value is not silently treated as cash expenditure.
 - [ ] Coupling delivery-order item consumption to production inventory and explicit market-demand modeling.
 
-**Godot evidence:** [Godot City BuildIt Validation run 43708045317 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045317). It passed Import/Parse, headless startup, GameplaySmoke (including the live-city snapshot), VisualPresentationSmoke, CurrencyEconomySmoke, MacroEconomySmoke and Android Debug APK export/signature validation. Web/Chromium desktop and mobile launch plus artifact upload passed: [run 43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318). The later commits only updated README/docs, not runtime code. These boxes describe implementation + Godot evidence on PR #509; merge-to-main and Web/Chromium acceptance are tracked separately.
+**Godot evidence:** [Godot City BuildIt Validation run 43708045317 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045317). It passed Import/Parse, headless startup, GameplaySmoke (including the live-city snapshot), VisualPresentationSmoke, CurrencyEconomySmoke, MacroEconomySmoke and Android Debug APK export/signature validation. Web/Chromium desktop and mobile launch plus artifact upload passed: [run 43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318). The later commits only updated README/docs, not runtime code. PR #509 is merged to main as `dd7967dc10857b317386353d7366b42cb972569e`. Web/Chromium acceptance passed. The independent CI run on the squash merge commit remains a separate unchecked gate.
 
 
 - First PR CI exposed two real compile-time integration defects: static functions could not resolve autoload singleton identifiers, and a static type check pulled `ProductionComponent.gd` into standalone script compilation. Both were corrected by resolving autoload nodes through `SceneTree.root` and using the production group membership contract instead of a static class reference.
 - Final Godot Validation on PR SHA `bb24eb193804e38e8095b63409931095846572ed` passed: [run 43708045317](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
+
+
+- [x] PR #509 merged to `main`: `dd7967dc10857b317386353d7366b42cb972569e`.
+- [x] PR Godot Validation: [43708045317](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
+- [x] PR Web/Chromium desktop and mobile: [43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318).
+- [ ] Independent workflow evidence on the squash merge commit has not yet been verified.
