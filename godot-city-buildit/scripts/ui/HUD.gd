@@ -1700,10 +1700,9 @@ func _process(delta: float) -> void:
 
 
 func _refresh_building_action_notifications() -> void:
-	# One world-space action hint per building: product thumbnail for ready
-	# output, an upgrade marker when a residential upgrade can actually start.
-	# Construction and non-residential upgrades auto-complete; they must not
-	# display a fake "collect/claim" badge.
+	# One world-space action hint per building for real player-pending actions:
+	# ready production, upgrades, Epic Projects/tokens, trade sales/orders and
+	# cargo delivery. Auto-completed construction/upgrades never get fake claims.
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
