@@ -223,7 +223,12 @@ func _test_automatic_production_chain() -> void:
 				component.slots[index] = active_slot
 		component.refresh_slots()
 	ProductionManager._process_automatic_chains()
-	_check(StorageManager.get_count("metal") == 2, "Completed raw factory jobs must be auto-collected into City Storage.")
+	var remaining_raw_chain_slots := 0
+	for component in chain_components:
+		for slot in component.slots:
+			if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == "metal":
+				remaining_raw_chain_slots += 1
+	_check(remaining_raw_chain_slots == 0 and bool(store.slots[0].get("auto_chain_started", false)), "Completed raw factory outputs must auto-collect into City Storage and be consumed by the dependent target order in the same scheduler pass.")
 	_check(store.slots[0].get("auto_chain_started", false), "The target store order must start automatically after its complete input set is available.")
 	_check(StorageManager.get_count("metal") == 0, "The target craft must atomically reserve and consume its two Metal inputs when it starts.")
 
