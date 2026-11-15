@@ -389,3 +389,18 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Visual confirmation that the projected target aligns with the actual building on supported mobile aspect ratios.
 
 **Acceptance note:** code and regression assertions are committed on feat/building-surface-production-drop; PR #518 is open. The implementation is not yet declared complete because CI and physical Android verification remain pending.
+
+
+## 2026-11-15 — Production modal and true building drop surface
+
+- [x] Full-screen black backdrop at exactly 50% opacity.
+- [x] Backdrop and overlay consume pointer input so the city cannot be selected while ordering.
+- [x] CityInput and CameraController explicitly guard against city/camera gestures while the production modal is active.
+- [x] Replace the floating decorative drop button with a polygon hit area derived from the selected building's rotated world-space footprint projected into screen coordinates.
+- [x] Keep the existing recipe, level, queue-capacity, stock-reservation and automatic-chain validation path for accepted drops.
+- [x] Preserve touch fallback: select a honeycomb item, then tap the selected building's actual footprint.
+- [x] Support Escape/Backspace dismissal and the existing close button.
+- [ ] Godot headless validation and GameplaySmoke on the new branch.
+- [ ] Android landscape drag/drop and visual alignment acceptance.
+
+**Acceptance status:** implementation committed to feat/production-modal-building-drop; pending CI and real-device validation. No completion claim is made yet.
