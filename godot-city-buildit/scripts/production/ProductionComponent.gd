@@ -148,19 +148,28 @@ func refresh_slots() -> void:
 		resumed_slot.erase("paused_at_unix")
 		slots[index] = resumed_slot
 		changed = true
+	var auto_collect_indices: Array[int] = []
 	for index in range(slots.size()):
 		var slot: Dictionary = slots[index]
-		if slot.is_empty() or bool(slot.get("ready", false)):
+		if slot.is_empty():
 			continue
-		var finish_unix := int(slot.get("finish_unix", 0))
-		if finish_unix > 0 and now >= finish_unix:
-			slot["ready"] = true
-			slots[index] = slot
-			changed = true
+		if not bool(slot.get("ready", false)):
+			var finish_unix := int(slot.get("finish_unix", 0))
+			if finish_unix > 0 and now >= finish_unix:
+				slot["ready"] = true
+				slots[index] = slot
+				changed = true
+		if bool(slots[index].get("ready", false)) and bool(slots[index].get("auto_collect", false)):
+			auto_collect_indices.append(index)
 	if not is_factory and _start_next_store_order():
 		changed = true
 	if changed:
 		slots_changed.emit()
+	# Auto-collected chain outputs use the same capacity-safe collect path as
+	# player collection. A full warehouse leaves the ready output in its slot.
+	for auto_index in auto_collect_indices:
+		if auto_index < slots.size() and not slots[auto_index].is_empty() and bool(slots[auto_index].get("ready", false)):
+			collect(auto_index)
 
 func _start_next_store_order() -> bool:
 	if is_factory or not _owner_has_road_access():
@@ -183,7 +192,7 @@ func _start_next_store_order() -> bool:
 		return true
 	return false
 
-func start_factory(item_id: String, slot_index: int) -> bool:
+func start_factory(item_id: String, slot_index: int, chain_id: String = "", chain_output: bool = false) -> bool:
 	_ensure_slots()
 	if not is_factory or not _owner_has_road_access() or slot_index < 0 or slot_index >= slots.size() or not slots[slot_index].is_empty():
 		return false
@@ -198,12 +207,15 @@ func start_factory(item_id: String, slot_index: int) -> bool:
 		"item_id": item_id,
 		"start_unix": now,
 		"finish_unix": now + int(definition.get("time_sec", 60)),
-		"ready": false
+		"ready": false,
+		"auto_collect": not chain_id.is_empty(),
+		"chain_id": chain_id,
+		"chain_output": chain_output
 	}
 	slots_changed.emit()
 	return true
 
-func start_craft(recipe_id: String, slot_index: int) -> bool:
+func start_craft(recipe_id: String, slot_index: int, chain_id: String = "", chain_output: bool = false) -> bool:
 	_ensure_slots()
 	if is_factory or not _owner_has_road_access() or slot_index < 0 or slot_index >= slots.size() or not slots[slot_index].is_empty():
 		return false
@@ -224,7 +236,11 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 		"start_unix": 0,
 		"finish_unix": 0,
 		"ready": false,
-		"queued": true
+		"queued": true,
+		"auto_collect": not chain_id.is_empty(),
+		"chain_id": chain_id,
+		"chain_output": chain_output,
+		"reserved_inputs": inputs.duplicate(true)
 	}
 	_start_next_store_order()
 	slots_changed.emit()
@@ -238,6 +254,8 @@ func collect(slot_index: int) -> bool:
 	if slot.is_empty() or not bool(slot.get("ready", false)):
 		return false
 	var item_id := str(slot.get("item_id", ""))
+	var chain_id := str(slot.get("chain_id", ""))
+	var chain_output := bool(slot.get("chain_output", false))
 	# If the warehouse is full, keep the completed product on the building.
 	if not StorageManager.add_item(item_id, 1):
 		return false
@@ -246,6 +264,8 @@ func collect(slot_index: int) -> bool:
 	item_collected.emit(item_id)
 	slots_changed.emit()
 	ProductionManager.item_produced.emit(item_id, 1)
+	if chain_output and not chain_id.is_empty():
+		ProductionManager.notify_chain_output_collected(chain_id, item_id)
 	GameManager.add_experience(2)
 	return true
 
