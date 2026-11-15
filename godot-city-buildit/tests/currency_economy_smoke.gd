@@ -30,16 +30,20 @@ func _audit_all_production_chains(failures: Array[String]) -> void:
 		print("[EconomyChainAudit] ", JSON.stringify(row))
 	for missing in missing_inputs:
 		failures.append("Production-chain audit found unresolved ingredient: " + missing)
-	var loss_count := 0
-	var positive_count := 0
-	for row in rows:
-		if int(row.margin_after_hq_inputs) < 0:
-			loss_count += 1
-		elif int(row.margin_after_hq_inputs) > 0:
-			positive_count += 1
-	print("[EconomyChainAudit] HQ multiplier 2.0 scenario: loss_making_recipes=", loss_count, " profitable_recipes=", positive_count, " total=", rows.size())
 	if rows.size() != recipes.size():
 		failures.append("Production-chain audit did not cover every catalog recipe")
+	for multiplier in [1.0, 1.5, 2.0, 2.5, 3.0]:
+		var profitable_count := 0
+		var loss_count := 0
+		for row in rows:
+			var scenario_margin := float(row.sale_reference) - float(row.raw_input_opportunity_cost) * float(multiplier)
+			if scenario_margin > 0.0:
+				profitable_count += 1
+			elif scenario_margin < 0.0:
+				loss_count += 1
+		print("[EconomyChainAudit] input_cost_multiplier=", multiplier, " loss_making_recipes=", loss_count, " profitable_recipes=", profitable_count, " total=", rows.size())
+		if multiplier == 2.0 and loss_count != 12:
+			failures.append("Global Trade HQ 2x scenario changed: review all production chain prices before accepting economy balance")
 
 
 func _expand_recipe_cost(item_id: String, ancestry: Array[String], missing_inputs: Array[String]) -> Dictionary:
