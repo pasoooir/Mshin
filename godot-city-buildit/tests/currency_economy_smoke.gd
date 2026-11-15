@@ -158,6 +158,9 @@ func _ready() -> void:
 			failures.append("could not buy City Storage Special Item " + str(storage_item_id))
 		if StorageManager.get_count(str(storage_item_id)) != 1:
 			failures.append("purchased City Storage Special Item was not stored")
+	var purchase_audit := EconomyManager.get_recent_transactions(1)
+	if purchase_audit.is_empty() or str(purchase_audit[0].get("type", "")) != "special_item_purchase" or purchase_audit[0].get("inventory_after", {}).get("storage_camera", 0) != 1:
+		failures.append("Storage Special Item purchase audit is missing its inventory before/after snapshot")
 	var capacity_before := StorageManager.capacity
 	var storage_upgrade := StorageManager.upgrade_storage_with_items()
 	if not bool(storage_upgrade.get("success", false)) or StorageManager.capacity != capacity_before + 5:
@@ -165,6 +168,9 @@ func _ready() -> void:
 	for storage_item_id in StorageManager.STORAGE_ITEM_IDS:
 		if StorageManager.get_count(str(storage_item_id)) != 0:
 			failures.append("City Storage upgrade did not consume " + str(storage_item_id))
+	var upgrade_audit := EconomyManager.get_recent_transactions(1)
+	if upgrade_audit.is_empty() or str(upgrade_audit[0].get("type", "")) != "storage_capacity_upgrade" or upgrade_audit[0].get("inventory_before", {}).get("storage_bar", 0) != 1 or upgrade_audit[0].get("inventory_after", {}).get("storage_bar", 0) != 0:
+		failures.append("City Storage upgrade audit is missing exact consumed inventory snapshots")
 	# Regression-test the community-published capacity thresholds; values
 	# are quantities required of EACH of the three storage parts.
 	var expected_storage_requirements := {
