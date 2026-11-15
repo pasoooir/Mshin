@@ -3847,24 +3847,34 @@ func _run_gameplay_test() -> void:
 	TradeManager.sell_slots.append({"ready": true, "item_id": "metal", "amount": 1, "price": 1})
 	action_probe.building_type = "trade_depot"
 	_check(production_hud._get_building_action_notification_text(action_probe) == "💰", "A Trade Depot with a ready sale must show a Collect notification.")
+	TradeManager.sell_slots[0]["ready"] = false
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A Trade Depot marker must disappear when no sale remains ready.")
 
 	TradeManager.current_orders.clear()
 	TradeManager.current_orders.append({"order_id": "notification-order", "item_id": "metal", "amount": 1, "reward": 1, "completed": false})
 	action_probe.building_type = "global_trade_hq"
 	_check(production_hud._get_building_action_notification_text(action_probe) == "📬" if StorageManager.get_count("metal") >= 1 else true, "A fulfilable global delivery order must show a notification.")
+	TradeManager.current_orders[0]["completed"] = true
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A completed delivery order must no longer show an action marker.")
 
 	TradeManager.ship_crates.clear()
 	TradeManager.ship_crates.append({"item_id": "metal", "amount": 1, "delivered": false})
 	TradeManager.ship_departed = false
 	action_probe.building_type = "cargo_port"
 	_check(production_hud._get_building_action_notification_text(action_probe) == "🚢" if StorageManager.get_count("metal") >= 1 else true, "A deliverable cargo-ship crate must show a notification.")
+	TradeManager.ship_crates[0]["delivered"] = true
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A delivered cargo crate must no longer show an action marker.")
 
 	EpicProjectManager.active_project = {"building_id": action_probe.building_id, "finished": true, "tier": "gold"}
 	action_probe.building_type = "residential"
 	_check(production_hud._get_building_action_notification_text(action_probe) == "🏆", "A finished Epic Project must show its claim notification on the target home.")
 	EpicProjectManager.active_project.clear()
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A claimed/dismissed Epic Project must no longer show a pending marker.")
+	EpicProjectManager.active_project.clear()
 	EpicProjectManager.epic_buildings[action_probe.building_id] = {"tier": "bronze", "next_token_part_unix": 0}
 	_check(production_hud._get_building_action_notification_text(action_probe) == "🧩", "An Epic Building with a due token part must show a collect notification.")
+	EpicProjectManager.epic_buildings[action_probe.building_id]["next_token_part_unix"] = int(Time.get_unix_time_from_system()) + 3600
+	_check(production_hud._get_building_action_notification_text(action_probe).is_empty(), "A token part not yet due must not show a collect marker.")
 	EpicProjectManager.epic_buildings.erase(action_probe.building_id)
 
 	BuildManager.buildings = saved_buildings
