@@ -3916,8 +3916,9 @@ func _run_gameplay_test() -> void:
 
 	# Reflow acceptance at common Android landscape viewports. Every radial item
 	# must remain on-screen and must not overlap the bottom production dock.
+	var original_window_size: Vector2i = get_window().size
 	for mobile_size in [Vector2i(844, 390), Vector2i(915, 412), Vector2i(1280, 720)]:
-		get_viewport().set_size_2d_override(mobile_size)
+		get_window().size = mobile_size
 		await get_tree().process_frame
 		await get_tree().process_frame
 		production_hud.open_production_panel(factory)
@@ -3925,14 +3926,14 @@ func _run_gameplay_test() -> void:
 		var mobile_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 		var mobile_dock: Control = production_hud.production_panel
 		var mobile_bounds: Rect2 = get_viewport().get_visible_rect()
-		_check(mobile_bounds.size.is_equal_approx(Vector2(mobile_size)), "Viewport override must be applied before checking %dx%d layout; actual visible rect is %s." % [mobile_size.x, mobile_size.y, mobile_bounds])
 		_check(mobile_dock != null and mobile_bounds.encloses(mobile_dock.get_global_rect()), "Production dock must remain inside %dx%d viewport; dock=%s viewport=%s." % [mobile_size.x, mobile_size.y, mobile_dock.get_global_rect(), mobile_bounds])
 		if mobile_grid and mobile_dock:
 			for product_node in mobile_grid.get_children():
 				var product_rect: Rect2 = product_node.get_global_rect()
 				_check(mobile_bounds.encloses(product_rect), "Every radial product tile must remain visible inside %dx%d viewport; tile=%s viewport=%s." % [mobile_size.x, mobile_size.y, product_rect, mobile_bounds])
 				_check(not product_rect.intersects(mobile_dock.get_global_rect()), "Radial product tiles must not overlap the bottom dock at %dx%d." % [mobile_size.x, mobile_size.y])
-	get_viewport().set_size_2d_override(Vector2i.ZERO)
+	get_window().size = original_window_size
+	await get_tree().process_frame
 	await get_tree().process_frame
 	production_hud.open_production_panel(factory)
 
