@@ -3796,67 +3796,26 @@ func _run_gameplay_test() -> void:
 	_check(production_hud.production_overlay.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must show a separate top-centered building nameplate outside the queue dock.")
 	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must clearly separate the lower production queue from the product catalog.")
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
-	var empty_factory_slot: PanelContainer = production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
-	_check(empty_factory_slot != null and empty_factory_slot.find_child("EmptyQueuePlus", true, false) is Label and empty_factory_slot.find_child("EmptyQueueLabel", true, false) is Label, "An empty production slot must show its plus affordance and EMPTY label.")
 	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
-	var projected_factory_center := Vector2(get_viewport().get_visible_rect().size.x * 0.5, get_viewport().get_visible_rect().size.y * 0.4)
-	var production_test_camera := get_viewport().get_camera_3d()
-	if is_instance_valid(production_test_camera):
-		projected_factory_center = production_test_camera.unproject_position(factory.global_position + Vector3(0.0, 2.0, 0.0))
-	_check(metal_button == null or absf(metal_button.position.x - projected_factory_center.x) < 460.0, "The factory honeycomb cluster must be positioned relative to the selected building, not at a fixed viewport edge.")
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
+	_check(production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Every factory material must have a real 3D hex platform arranged around the selected building.")
+	var first_world_hex := production_hud._production_world_orbit.get_child(0) as Node3D if production_hud._production_world_orbit.get_child_count() > 0 else null
+	var first_hex_face := first_world_hex.get_node_or_null("WhiteHexFace") as MeshInstance3D if is_instance_valid(first_world_hex) else null
+	_check(first_hex_face != null and first_hex_face.mesh is CylinderMesh and (first_hex_face.mesh as CylinderMesh).radial_segments == 6, "The floating material platform must be a six-sided 3D white hex mesh, not a flat 2D polygon.")
+	var factory_click_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
+	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 0), "A valid tap order must pass the same factory queue acceptance gate.")
+	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_click_payload, factory), "The selected factory must accept a valid tap order when a production slot is free.")
+	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 6), "A production order must reject a queue slot outside factory capacity.")
 	if metal_button:
 		metal_button.emit_signal("pressed")
-		_check(production_hud.production_panel.find_child("ProductionItemDetails", true, false) != null, "Tapping a product must show its detail capsule.")
-		_check(production_hud.production_panel.find_child("StartProduction", true, false) == null, "Product selection must not expose a START button; the queue slot is the order action.")
-	var factory_drag_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
-	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
-	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_drag_payload, factory), "The selected factory surface must accept its own valid product when a production slot is free.")
-	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
-	var product_touch_down := InputEventScreenTouch.new()
-	product_touch_down.pressed = true
-	product_touch_down.position = metal_button.get_global_rect().get_center()
-	production_hud._on_production_item_gui_input(product_touch_down, factory, "metal", 0, metal_button)
-	var second_finger_drag := InputEventScreenDrag.new()
-	second_finger_drag.index = 1
-	second_finger_drag.position = empty_factory_slot.get_global_rect().get_center()
-	second_finger_drag.relative = second_finger_drag.position - product_touch_down.position
-	production_hud._input(second_finger_drag)
-	_check(not production_hud._production_touch_dragged, "A second finger must not hijack an active product drag.")
-	var product_touch_drag := InputEventScreenDrag.new()
-	product_touch_drag.index = product_touch_down.index
-	product_touch_drag.position = empty_factory_slot.get_global_rect().get_center()
-	product_touch_drag.relative = product_touch_drag.position - product_touch_down.position
-	production_hud._input(product_touch_drag)
-	var product_touch_up := InputEventScreenTouch.new()
-	product_touch_up.pressed = false
-	product_touch_up.position = empty_factory_slot.get_global_rect().get_center()
-	production_hud._input(product_touch_up)
-	_check(not production_hud._production_touch_drag_active and not is_instance_valid(production_hud._production_touch_drag_ghost), "Touch drag must clean up its floating product ghost and pointer state after release.")
-	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into the first empty factory queue slot must immediately enqueue production without START.")
-	production_hud.open_production_panel(factory)
-	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
-	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
+	_check(not factory_component.get_slot(0).is_empty(), "A single tap on Metal must immediately enqueue factory production without dragging or tapping a queue slot.")
+	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
+	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "A tap-started factory order must immediately show its progress bar.")
 	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
-	_check(second_metal_button != null, "Factory panel must allow a second parallel Metal batch.")
+	_check(second_metal_button != null, "Factory panel must offer the next available slot after the first tap order.")
 	if second_metal_button:
-		var tap_select_down := InputEventScreenTouch.new()
-		tap_select_down.index = 3
-		tap_select_down.pressed = true
-		tap_select_down.position = second_metal_button.get_global_rect().get_center()
-		production_hud._on_production_item_gui_input(tap_select_down, factory, "metal", 1, second_metal_button)
-		var tap_select_up := InputEventScreenTouch.new()
-		tap_select_up.index = 3
-		tap_select_up.pressed = false
-		tap_select_up.position = tap_select_down.position
-		production_hud._input(tap_select_up)
-		_check(production_hud._touch_selected_production_item == "metal", "A tap without drag must preserve product selection for the accessible tap-to-queue fallback.")
-		var queue_slot_tap := InputEventScreenTouch.new()
-		queue_slot_tap.index = 4
-		queue_slot_tap.pressed = false
-		queue_slot_tap.position = (production_hud.production_panel.find_child("QueueSlot1", true, false) as Control).get_global_rect().get_center()
-		production_hud._on_production_slot_gui_input(queue_slot_tap, factory, 1)
-	_check(not factory_component.get_slot(1).is_empty(), "A tap-selected Metal product must enqueue when the user taps an empty factory queue slot.")
+		second_metal_button.emit_signal("pressed")
+	_check(not factory_component.get_slot(1).is_empty(), "A second tap must enqueue another parallel factory batch directly.")
 	for slot_index in range(2):
 		var slot: Dictionary = factory_component.slots[slot_index]
 		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
@@ -3877,39 +3836,7 @@ func _run_gameplay_test() -> void:
 		_check(false, "Second ready Metal slot must expose a Collect button.")
 	_check(StorageManager.get_count("metal") == 2, "Two parallel factory collections must add two Metal to City Storage.")
 
-	# Exercise the complete touch-release path over the projected building
-	# footprint, independently of the queue-slot fallback above.
-	var direct_drop_target := production_hud.production_overlay.find_child("ProductionBuildingDropTarget", true, false) as Control
-	_check(direct_drop_target != null, "Direct touch drop must have a projected building-footprint target.")
-	if direct_drop_target:
-		# Use a point guaranteed to be inside the projected footprint polygon;
-		# the center of its axis-aligned bounding box can lie outside a diamond.
-		var footprint_center := Vector2.ZERO
-		for polygon_point in direct_drop_target.hit_polygon:
-			footprint_center += polygon_point
-		if direct_drop_target.hit_polygon.size() > 0:
-			footprint_center /= float(direct_drop_target.hit_polygon.size())
-		production_hud._production_touch_drag_building = factory
-		production_hud._production_touch_drag_item_id = "metal"
-		var footprint_screen_position: Vector2 = direct_drop_target.get_global_transform_with_canvas() * footprint_center
-		var footprint_local_check: Vector2 = direct_drop_target.get_global_transform_with_canvas().affine_inverse() * footprint_screen_position
-		_check(direct_drop_target.hit_polygon.size() >= 3 and direct_drop_target._has_point(footprint_local_check), "The projected footprint centroid must resolve inside the building drop polygon after canvas-coordinate conversion.")
-		_check(production_hud._can_accept_building_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"metal", "building_id":factory.get_instance_id()}, factory), "A valid factory order must pass the building-target acceptance gate before the touch release.")
-		production_hud._finish_production_touch_drag(footprint_screen_position)
-		if not factory_component.get_slot(0).is_empty():
-			_check(true, "Releasing a dragged factory material on the building footprint must enqueue it without requiring a queue-slot drop.")
-			var direct_slot: Dictionary = factory_component.get_slot(0)
-			direct_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-			factory_component.slots[0] = direct_slot
-			factory_component.refresh_slots()
-			production_hud.open_production_panel(factory)
-			var collect_direct_drop := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
-			if collect_direct_drop:
-				collect_direct_drop.emit_signal("pressed")
-			else:
-				_check(false, "Direct building-drop factory order must expose a Collect action after completion.")
-		else:
-			_check(false, "Releasing a dragged factory material on the building footprint must enqueue it without requiring a queue-slot drop.")
+	# Product taps are the sole UI order action; no drag target is required.
 
 	var supplies = _find_building("building_supplies")
 	var shop_component = supplies.production_component
@@ -3922,7 +3849,6 @@ func _run_gameplay_test() -> void:
 		unavailable_nails_button.emit_signal("pressed")
 		var missing_reason := production_hud.production_panel.find_child("ProductionBlockReason", true, false) as Label
 		_check(missing_reason != null and missing_reason.text.contains("Metal") and missing_reason.text.contains("2"), "The selected unavailable product must disclose the exact missing City Storage ingredient and quantity.")
-		_check(production_hud._get_production_drag_data(Vector2.ZERO, supplies, "nails", unavailable_nails_button) == null, "A store product with missing ingredients must not produce a drag payload.")
 		_check(not production_hud._can_accept_production_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"nails", "building_id":supplies.get_instance_id()}, supplies, 0), "A store order with missing City Storage ingredients must be rejected before acceptance.")
 	_check(shop_component.get_slot(0).is_empty() and StorageManager.get_count("metal") == 0, "Inspecting a blocked product must not queue an order or mutate inventory.")
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
@@ -3931,24 +3857,20 @@ func _run_gameplay_test() -> void:
 	_check(visible_store_queue != null and visible_store_queue.get_child_count() >= 6, "Commercial production dock must always render six visible queue tiles, with unpurchased capacity clearly locked.")
 	_check(production_hud.production_panel.find_child("QueueSlot2", true, false) != null and production_hud.production_panel.find_child("QueueSlot2", true, false).find_child("LockedQueueLabel", true, false) is Label, "Store queue tiles beyond the paid capacity must be visibly locked, not silently usable or shown as free empty slots.")
 	var nails_button_0 := production_hud.production_overlay.find_child("Slot0_nails", true, false) as Button
-	_check(nails_button_0 != null and nails_button_0.find_child("HexagonBackground", true, false) is Polygon2D, "Production choices must use floating hexagonal item tiles like SimCity BuildIt.")
+	_check(nails_button_0 != null, "Production catalog must offer the verified Nails recipe.")
+	_check(production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "Every store product must have its own projected 3D hex platform around the store.")
 	if nails_button_0:
 		nails_button_0.emit_signal("pressed")
-		var detail_card: Node = production_hud.production_panel.find_child("ProductionItemDetails", true, false)
-		var ingredient_label := production_hud.production_panel.find_child("IngredientsLabel", true, false) as Label
-		_check(detail_card != null and ingredient_label != null, "Selecting a shop product must open its compact dark recipe detail capsule.")
-		if ingredient_label:
-			_check(ingredient_label.text.contains("Metal") and ingredient_label.text.contains("2"), "Nails detail must clearly show its Metal x2 requirement.")
-		_check(production_hud.production_panel.find_child("StartProduction", true, false) == null and production_hud.production_panel.find_child("StartAutomaticChain", true, false) == null, "Store product details must not provide START actions; drag/drop into the queue is the sole order action.")
-		production_hud._accept_production_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"nails", "building_id":supplies.get_instance_id()}, supplies, 0)
 	else:
 		_check(false, "Building Supplies must offer Nails at level 1.")
+	_check(not shop_component.get_slot(0).is_empty(), "One tap on a stocked Nails tile must immediately enqueue production.")
 	production_hud.open_production_panel(supplies)
 	var nails_button_1 := production_hud.production_overlay.find_child("Slot1_nails", true, false) as Button
 	if nails_button_1:
-		production_hud._accept_production_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"nails", "building_id":supplies.get_instance_id()}, supplies, 1)
+		nails_button_1.emit_signal("pressed")
 	else:
-		_check(false, "Building Supplies second slot must accept a Nails order.")
+		_check(false, "Building Supplies second slot must offer Nails after the first tap order.")
+	_check(not shop_component.get_slot(1).is_empty(), "A second tap must add the next store order directly to the production queue.")
 	_check(StorageManager.get_count("metal") == 0, "Queuing two Nails orders must deduct their ingredients from City Storage.")
 	_check(int(shop_component.get_slot(0).get("finish_unix", 0)) > 0 and int(shop_component.get_slot(1).get("finish_unix", 0)) == 0, "Commercial store orders must run sequentially, with later orders waiting in the queue.")
 	var first_shop_slot: Dictionary = shop_component.slots[0]
@@ -3972,7 +3894,7 @@ func _run_gameplay_test() -> void:
 	var product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The two-sided honeycomb store catalog must expose every registered product.")
-	_check(product_orbit != null and product_orbit.find_child("ProductionBuildingDropTarget", true, false) is Control, "Product selectors and the building drop target must share the floating orbit layer outside the compact queue dock.")
+	_check(product_orbit != null and production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == product_grid.get_child_count(), "Store product selectors must be backed by matching 3D world-space hex platforms.")
 	_check(production_hud.production_panel.size.y <= get_viewport().get_visible_rect().size.y * 0.42, "Production queue dock must stay compact and never cover half the city view.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
