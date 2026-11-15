@@ -312,10 +312,11 @@ func get_building_operational_lock_reason(building: Node) -> String:
 			return "Insufficient connected waste capacity."
 	var missing_emergency: Array[String] = []
 	var requirements := ServiceManager.get_required_emergency_coverage(building)
-	var coverage := ServiceManager.get_building_emergency_coverage(building)
-	for service_group in requirements:
-		if bool(requirements[service_group]) and not bool(coverage.get(str(service_group), false)):
-			missing_emergency.append(str(service_group).capitalize())
+	if not requirements.is_empty():
+		var coverage := ServiceManager.get_building_emergency_coverage(building)
+		for service_group in requirements:
+			if bool(requirements[service_group]) and not bool(coverage.get(str(service_group), false)):
+				missing_emergency.append(str(service_group).capitalize())
 	if not missing_emergency.is_empty():
 		return "Missing emergency coverage: " + ", ".join(missing_emergency)
 	return ""
