@@ -114,3 +114,15 @@ StorageManager اکنون batchهای FIFO را در کنار تعداد موج�
 - سفارش‌های تحویل و Cargo Ship هنوز مصرف کالا و بهای تمام‌شده را در دفتر سود متصل نمی‌کنند.
 
 PR #511 با merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` در `main` ادغام شد. Godot Validation، GameplaySmoke، MacroEconomySmoke و Android Debug APK در [run 43710111735](https://github.com/pasoooir/Mshin/actions/runs/43710111735) موفق شدند؛ Web/Chromium دسکتاپ و موبایل در [run 43710111759](https://github.com/pasoooir/Mshin/actions/runs/43710111759) موفق شد. اجرای مستقل CI روی merge commit main همچنان یک گیت جداگانه است.
+
+
+## سفارش تحویل و مصرف موجودی — PR در انتظار CI
+
+دو مسیر از هم تفکیک شده‌اند:
+
+1. در بازی زنده، `TradeManager.try_complete_order` فقط در صورت موجودی کافی و reward مثبت اجرا می‌شود. پیش از مصرف، بهای FIFO ثبت و پس از کسر اتمی اقلام، reward واقعی Simoleon و metadata شامل `cost_basis` و `gross_margin` در transaction ledger ثبت می‌شود.
+2. در شبیه‌ساز سناریو، action صریح `delivery_order` شامل `item_id`، `quantity`، `reward` و زمان اجرا است. این action موجودی و cost batchها را مصرف و event نوع `delivery_order_reward` به cashflow اضافه می‌کند.
+
+خلاصه‌ساز live، هر دو نوع `trade_sale_collected` و `delivery_order_completed` را در درآمد/COGS محقق‌شده لحاظ می‌کند. سفارش تحویل بدون داده بهای خرید، margin نامشخص دارد. رویداد ساده `delivery_order` قدیمی در بخش macro-only همچنان فقط reward را مدل می‌کند؛ برای محاسبه COGS باید action موجودی در بخش `production.actions` استفاده شود.
+
+Cargo Ship crates هنوز به دفتر COGS وصل نیستند؛ Golden Key نیز به‌عنوان Simoleon درآمد محسوب نمی‌شود.
