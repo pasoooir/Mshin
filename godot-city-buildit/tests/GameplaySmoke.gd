@@ -3680,8 +3680,9 @@ func _run_gameplay_test() -> void:
 	var home_metal_token := needs_hud.residential_overlay.find_child("ResidentialNeed_metal", true, false) as Button
 	if home_metal_token:
 		needs_hud._update_residential_orbit_projection()
-		_check(home_metal_token.size.x > 0.0 and home_metal_token.size.y > 0.0, "Residential material tokens must have an allocated non-zero touch hitbox.")
-		_check(home_metal_token.mouse_filter == Control.MOUSE_FILTER_STOP, "Residential material tokens must receive touch input.")
+		_check(home_metal_token.size.x >= 97.0 and home_metal_token.size.y >= 104.0, "Residential material tokens must remain large enough for comfortable mobile touch.")
+		_check(home_metal_token.mouse_filter == Control.MOUSE_FILTER_STOP and home_metal_token.z_index >= 30, "Residential material tokens must receive touch input and render above the building/backdrop.")
+		_check(home_metal_token.get_theme_stylebox("normal") is StyleBoxFlat, "Residential material tokens must have an opaque white card surface so the building cannot visually cover their icons.")
 	var saved_home_supplier_slots: Array = residential_supplier_factory.production_component.to_save_array() if is_instance_valid(residential_supplier_factory) and is_instance_valid(residential_supplier_factory.production_component) else []
 	_check(home_metal_token != null and not home_metal_token.disabled, "The missing Metal requirement on the home must be an active supplier shortcut.")
 	if home_metal_token and not home_metal_token.disabled and is_instance_valid(residential_supplier_factory):
@@ -3832,7 +3833,10 @@ func _run_gameplay_test() -> void:
 		production_hud._update_production_orbit_projection()
 		_check(metal_button.size.x > 0.0 and metal_button.size.y > 0.0, "Projected factory material buttons must have a real non-zero touch hitbox; custom_minimum_size alone is insufficient.")
 		_check(metal_button.get_global_rect().has_point(metal_button.get_global_rect().get_center()), "The visible factory material button center must lie inside its actual GUI hit rectangle.")
-		_check(metal_button.mouse_filter == Control.MOUSE_FILTER_STOP, "Factory material tap targets must receive GUI input rather than pass it through.")
+		_check(metal_button.mouse_filter == Control.MOUSE_FILTER_STOP and metal_button.z_index >= 30, "Factory material tap targets must receive GUI input and render above the building/backdrop.")
+		_check(metal_button.size.x >= 90.0 and metal_button.size.y >= 100.0, "Factory material cards must remain large enough for comfortable mobile touch.")
+		_check(metal_button.get_theme_stylebox("normal") is StyleBoxFlat, "Factory material cards must have an opaque white surface, not transparent controls hidden against the building.")
+		_check(metal_button.visible, "Camera-facing factory material orbit must keep front-facing product cards visible.")
 	_check(production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Every factory material must have a real 3D hex platform arranged around the selected building.")
 	var first_world_hex := production_hud._production_world_orbit.get_child(0) as Node3D if production_hud._production_world_orbit.get_child_count() > 0 else null
 	var first_hex_face := first_world_hex.get_node_or_null("WhiteHexFace") as MeshInstance3D if is_instance_valid(first_world_hex) else null
@@ -3895,7 +3899,8 @@ func _run_gameplay_test() -> void:
 	_check(nails_button_0 != null, "Production catalog must offer the verified Nails recipe.")
 	if nails_button_0:
 		production_hud._update_production_orbit_projection()
-		_check(nails_button_0.size.x > 0.0 and nails_button_0.size.y > 0.0 and nails_button_0.mouse_filter == Control.MOUSE_FILTER_STOP, "Store product buttons must expose a real non-zero touch hitbox and stop pointer propagation.")
+		_check(nails_button_0.size.x >= 90.0 and nails_button_0.size.y >= 100.0 and nails_button_0.mouse_filter == Control.MOUSE_FILTER_STOP, "Store product cards must expose a large real touch hitbox.")
+		_check(nails_button_0.z_index >= 30 and nails_button_0.get_theme_stylebox("normal") is StyleBoxFlat, "Store product cards must render as opaque white tiles above the selected store.")
 	_check(production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "Every store product must have its own projected 3D hex platform around the store.")
 	if nails_button_0:
 		nails_button_0.emit_signal("pressed")

@@ -2167,12 +2167,14 @@ func open_production_panel(building: Building) -> void:
 	product_orbit.name = "ProductionProductOrbit"
 	product_orbit.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	product_orbit.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	product_orbit.z_index = 2
+	# Keep projected product cards above the 3D building, dimmer and bottom queue.
+	product_orbit.z_index = 20
 	production_overlay.add_child(product_orbit)
 	var product_grid := Control.new()
 	product_grid.name = "ProductionProductCards"
 	product_grid.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	product_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	product_grid.z_index = 20
 	product_orbit.add_child(product_grid)
 	# Actual 3D hexagonal platforms live in the city world; transparent buttons
 	# are projected over them so touch input stays reliable on mobile.
@@ -2200,7 +2202,8 @@ func open_production_panel(building: Building) -> void:
 
 	# Hex tiles use one responsive size per viewport, so the same honeycomb
 	# geometry is used by both the left and right material clusters.
-	var selector_edge := 88.0 if viewport_size.x > 1100.0 else 66.0
+	# Touch-first product cards remain comfortably readable on narrow landscape phones.
+	var selector_edge := 112.0 if viewport_size.x > 1100.0 else 100.0
 	# Reflow verified products into two symmetric honeycomb clusters.
 	for item_index in range(item_ids.size()):
 		var item_id: String = str(item_ids[item_index])
@@ -2220,18 +2223,27 @@ func open_production_panel(building: Building) -> void:
 		item_button.size = item_button.custom_minimum_size
 		item_button.mouse_filter = Control.MOUSE_FILTER_STOP
 		item_button.focus_mode = Control.FOCUS_NONE
-		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-			item_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-
-		# The white six-sided base is a real 3D world mesh, not a flat UI polygon.
-		item_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-		item_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-		item_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-		item_button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
-		var orbit_angle := TAU * float(item_index) / float(maxi(1, item_ids.size()))
+		item_button.z_index = 30
+		var tile_normal := _production_product_tile_style(Color("#FFFFFF"), Color("#C7D8E2"))
+		var tile_hover := _production_product_tile_style(Color("#F0FAFF"), Color("#4A9BC4"))
+		var tile_pressed := _production_product_tile_style(Color("#E1F2FA"), Color("#D8AD4A"))
+		var tile_disabled := _production_product_tile_style(Color("#EEF1F3"), Color("#C6CDD1"))
+		item_button.add_theme_stylebox_override("normal", tile_normal)
+		item_button.add_theme_stylebox_override("hover", tile_hover)
+		item_button.add_theme_stylebox_override("pressed", tile_pressed)
+		item_button.add_theme_stylebox_override("disabled", tile_disabled)
+		item_button.add_theme_color_override("font_color", Color("#243F4D"))
+		# Put every product on the camera-facing orbit plane, not on the far side
+		# of the building where its 3D hex and screen control can be occluded.
 		var footprint_size: Vector2i = building.definition.get("size", Vector2i(2, 2))
-		var orbit_radius := maxf(3.2, float(maxi(footprint_size.x, footprint_size.y)) * 1.2 + 1.6)
-		var orbit_world_position := building.global_position + Vector3(cos(orbit_angle) * orbit_radius, 2.0, sin(orbit_angle) * orbit_radius)
+		var orbit_camera := get_viewport().get_camera_3d()
+		var orbit_right := orbit_camera.global_transform.basis.x.normalized() if is_instance_valid(orbit_camera) else Vector3.RIGHT
+		var orbit_up := orbit_camera.global_transform.basis.y.normalized() if is_instance_valid(orbit_camera) else Vector3.UP
+		# A camera-facing row keeps every selectable tile in front of the building,
+		# rather than sending half the catalogue around its hidden far side.
+		var orbit_spacing := maxf(2.8, float(maxi(footprint_size.x, footprint_size.y)) * 0.85)
+		var orbit_horizontal_offset := (float(item_index) - float(item_ids.size() - 1) * 0.5) * orbit_spacing
+		var orbit_world_position := building.global_position + orbit_right * orbit_horizontal_offset + orbit_up * 3.0
 		var world_hex := _create_production_orbit_hex(item_index, orbit_world_position)
 		item_button.set_meta("orbit_world_position", orbit_world_position)
 		item_button.set_meta("orbit_world_hex", world_hex)
@@ -2242,14 +2254,14 @@ func open_production_panel(building: Building) -> void:
 		tile_content.add_theme_constant_override("separation", 0)
 		tile_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		item_button.add_child(tile_content)
-		var icon_edge := 50.0 if viewport_size.x > 1100.0 else 40.0
+		var icon_edge := 68.0 if viewport_size.x > 1100.0 else 60.0
 		var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(icon_edge, icon_edge) * _ui_scale)
 		item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile_content.add_child(item_icon)
 		var item_name := Label.new()
 		item_name.text = str(data.get("name", item_id.capitalize()))
 		item_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		item_name.add_theme_font_size_override("font_size", int((9 if viewport_size.x <= 900.0 else 10) * _ui_scale))
+		item_name.add_theme_font_size_override("font_size", int((12 if viewport_size.x <= 900.0 else 13) * _ui_scale))
 		item_name.add_theme_color_override("font_color", Color("#263F4B"))
 		tile_content.add_child(item_name)
 		if not lock_reason.is_empty():
@@ -2273,7 +2285,7 @@ func open_production_panel(building: Building) -> void:
 		var status_label := Label.new()
 		status_label.text = lock_reason if not lock_reason.is_empty() else stock_summary
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		status_label.add_theme_font_size_override("font_size", int(7 * _ui_scale))
+		status_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		status_label.add_theme_color_override("font_color", Color("#A13F35") if not lock_reason.is_empty() else (Color("#34734D") if inventory_status == "READY" else Color("#D66B55")) )
 		tile_content.add_child(status_label)
 		item_button.disabled = not lock_reason.is_empty()
@@ -2989,6 +3001,22 @@ func _close_production_panel() -> void:
 	production_panel = null
 
 
+func _production_product_tile_style(fill: Color, border: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = border
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(14)
+	style.shadow_color = Color(0.02, 0.07, 0.11, 0.38)
+	style.shadow_size = 8
+	style.shadow_offset = Vector2(0, 3)
+	style.content_margin_left = 5
+	style.content_margin_right = 5
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	return style
+
+
 func _create_production_orbit_hex(index: int, world_position: Vector3) -> Node3D:
 	return _create_world_hex_platform(_production_world_orbit, "ProductionHex_%d" % index, world_position)
 
@@ -3000,9 +3028,9 @@ func _create_world_hex_platform(parent: Node3D, node_name: String, world_positio
 	if not is_instance_valid(parent):
 		return root
 	var rim_mesh := CylinderMesh.new()
-	rim_mesh.top_radius = 0.98
-	rim_mesh.bottom_radius = 0.98
-	rim_mesh.height = 0.30
+	rim_mesh.top_radius = 1.22
+	rim_mesh.bottom_radius = 1.22
+	rim_mesh.height = 0.34
 	rim_mesh.radial_segments = 6
 	var rim_material := StandardMaterial3D.new()
 	rim_material.albedo_color = Color("#AFC6D4")
@@ -3014,9 +3042,9 @@ func _create_world_hex_platform(parent: Node3D, node_name: String, world_positio
 	rim.material_override = rim_material
 	root.add_child(rim)
 	var face_mesh := CylinderMesh.new()
-	face_mesh.top_radius = 0.88
-	face_mesh.bottom_radius = 0.88
-	face_mesh.height = 0.22
+	face_mesh.top_radius = 1.10
+	face_mesh.bottom_radius = 1.10
+	face_mesh.height = 0.24
 	face_mesh.radial_segments = 6
 	var face_material := StandardMaterial3D.new()
 	face_material.albedo_color = Color("#F7FBFF")
@@ -3041,19 +3069,31 @@ func _update_production_orbit_projection() -> void:
 	if not is_instance_valid(camera):
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
-	for button in _production_orbit_buttons:
+	var dock_top := viewport_size.y * 0.58
+	if is_instance_valid(production_panel) and production_panel.size.y > 0.0:
+		dock_top = minf(dock_top, production_panel.get_global_rect().position.y - 8.0)
+	var first_button := _production_orbit_buttons[0] as Control
+	var button_size := first_button.size if is_instance_valid(first_button) else Vector2(100.0, 112.0)
+	var gap := 8.0
+	var columns := mini(_production_orbit_buttons.size(), maxi(1, int(floor((viewport_size.x - 16.0 + gap) / (button_size.x + gap)))))
+	var rows := int(ceil(float(_production_orbit_buttons.size()) / float(columns)))
+	var row_y := clampf(viewport_size.y * 0.18, 70.0, maxf(70.0, dock_top - button_size.y - float(rows - 1) * (button_size.y + gap)))
+	var total_row_width := float(columns) * button_size.x + float(columns - 1) * gap
+	var start_x := maxf(8.0, (viewport_size.x - total_row_width) * 0.5)
+	for index in range(_production_orbit_buttons.size()):
+		var button := _production_orbit_buttons[index]
 		if not is_instance_valid(button):
 			continue
 		var world_position: Vector3 = button.get_meta("orbit_world_position", Vector3.ZERO)
-		var behind := camera.is_position_behind(world_position)
-		button.visible = not behind
-		if behind:
-			continue
 		var projected := camera.unproject_position(world_position + Vector3(0.0, 0.24, 0.0))
-		var button_size := button.custom_minimum_size
-		button.position = projected - button_size * 0.5
-		button.visible = button.visible and projected.x > -button_size.x and projected.x < viewport_size.x + button_size.x and projected.y > -button_size.y and projected.y < viewport_size.y + button_size.y
-
+		var behind := camera.is_position_behind(world_position)
+		var col := index % columns
+		var row_index := int(index / columns)
+		var fallback_position := Vector2(start_x + float(col) * (button_size.x + gap), row_y + float(row_index) * (button_size.y + gap))
+		var projected_rect := Rect2(projected - button_size * 0.5, button_size)
+		var safe_rect := Rect2(Vector2(4.0, 66.0), Vector2(viewport_size.x - 8.0, maxf(0.0, dock_top - 70.0)))
+		button.position = fallback_position if behind or not safe_rect.encloses(projected_rect) else projected - button_size * 0.5
+		button.visible = true
 
 
 func _update_residential_orbit_projection() -> void:
@@ -3063,18 +3103,27 @@ func _update_residential_orbit_projection() -> void:
 	if not is_instance_valid(camera):
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
-	for button in _residential_orbit_buttons:
+	var first_button := _residential_orbit_buttons[0] as Control
+	var button_size := first_button.size if is_instance_valid(first_button) else Vector2(108.0, 116.0)
+	var gap := 8.0
+	var columns := mini(_residential_orbit_buttons.size(), maxi(1, int(floor((viewport_size.x - 16.0 + gap) / (button_size.x + gap)))))
+	var total_row_width := float(columns) * button_size.x + float(columns - 1) * gap
+	var start_x := maxf(8.0, (viewport_size.x - total_row_width) * 0.5)
+	var row_y := clampf(viewport_size.y * 0.16, 66.0, maxf(66.0, viewport_size.y * 0.34 - button_size.y))
+	for index in range(_residential_orbit_buttons.size()):
+		var button := _residential_orbit_buttons[index]
 		if not is_instance_valid(button):
 			continue
 		var world_position: Vector3 = button.get_meta("orbit_world_position", Vector3.ZERO)
-		var behind := camera.is_position_behind(world_position)
-		button.visible = not behind
-		if behind:
-			continue
 		var projected := camera.unproject_position(world_position + Vector3(0.0, 0.24, 0.0))
-		var button_size := button.custom_minimum_size
-		button.position = projected - button_size * 0.5
-		button.visible = button.visible and projected.x > -button_size.x and projected.x < viewport_size.x + button_size.x and projected.y > -button_size.y and projected.y < viewport_size.y + button_size.y
+		var behind := camera.is_position_behind(world_position)
+		var col := index % columns
+		var row_index := int(index / columns)
+		var fallback_position := Vector2(start_x + float(col) * (button_size.x + gap), row_y + float(row_index) * (button_size.y + gap))
+		var projected_rect := Rect2(projected - button_size * 0.5, button_size)
+		var safe_rect := Rect2(Vector2(4.0, 62.0), Vector2(viewport_size.x - 8.0, viewport_size.y * 0.34))
+		button.position = fallback_position if behind or not safe_rect.encloses(projected_rect) else projected - button_size * 0.5
+		button.visible = true
 
 
 func _on_residential_material_pressed(home: Building, item_id: String) -> void:
@@ -3574,42 +3623,47 @@ func open_residential_panel(building: Building) -> void:
 			if str(home_need.get("item_id", "")) == item_id:
 				owned = int(home_need.get("stored", owned))
 				break
-		var orbit_angle := TAU * float(requirement_index) / float(maxi(1, requirements.size()))
 		var footprint_size: Vector2i = building.definition.get("size", Vector2i(2, 2))
-		var orbit_radius := maxf(3.2, float(maxi(footprint_size.x, footprint_size.y)) * 1.2 + 1.6)
-		var orbit_position := building.global_position + Vector3(cos(orbit_angle) * orbit_radius, 4.4, sin(orbit_angle) * orbit_radius)
+		var orbit_camera := get_viewport().get_camera_3d()
+		var orbit_right := orbit_camera.global_transform.basis.x.normalized() if is_instance_valid(orbit_camera) else Vector3.RIGHT
+		var orbit_up := orbit_camera.global_transform.basis.y.normalized() if is_instance_valid(orbit_camera) else Vector3.UP
+		var orbit_spacing := maxf(2.8, float(maxi(footprint_size.x, footprint_size.y)) * 0.85)
+		var orbit_horizontal_offset := (float(requirement_index) - float(requirements.size() - 1) * 0.5) * orbit_spacing
+		var orbit_position := building.global_position + orbit_right * orbit_horizontal_offset + orbit_up * 3.2
 		_create_world_hex_platform(_residential_world_orbit, "ResidentialHex_%d" % requirement_index, orbit_position)
 		var material_button := Button.new()
 		material_button.name = "ResidentialNeed_%s" % item_id
-		material_button.custom_minimum_size = Vector2(82.0, 86.0) * _ui_scale
+		material_button.custom_minimum_size = Vector2(108.0, 116.0) * _ui_scale
 		# Residential buttons are projected children of a plain Control as well;
 		# give them an explicit touch rectangle instead of only a minimum size.
 		material_button.size = material_button.custom_minimum_size
 		material_button.mouse_filter = Control.MOUSE_FILTER_STOP
-		material_button.flat = true
+		material_button.flat = false
 		material_button.focus_mode = Control.FOCUS_NONE
 		material_button.z_index = 30
-		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-			material_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		material_button.add_theme_stylebox_override("normal", _production_product_tile_style(Color("#FFFFFF"), Color("#C7D8E2")))
+		material_button.add_theme_stylebox_override("hover", _production_product_tile_style(Color("#F0FAFF"), Color("#4A9BC4")))
+		material_button.add_theme_stylebox_override("pressed", _production_product_tile_style(Color("#E1F2FA"), Color("#D8AD4A")))
+		material_button.add_theme_stylebox_override("disabled", _production_product_tile_style(Color("#EEF1F3"), Color("#C6CDD1")))
 		var material_content := VBoxContainer.new()
 		material_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		material_content.alignment = BoxContainer.ALIGNMENT_CENTER
 		material_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		material_button.add_child(material_content)
 		var material_icon_type := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
-		var material_icon := Icons.make_item_icon(material_icon_type, item_id, Vector2(42, 42) * _ui_scale)
+		var material_icon := Icons.make_item_icon(material_icon_type, item_id, Vector2(60, 60) * _ui_scale)
 		material_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		material_content.add_child(material_icon)
 		var material_name := Label.new()
 		material_name.text = CityDemandManager.get_item_name(item_id)
 		material_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		material_name.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		material_name.add_theme_font_size_override("font_size", int(12 * _ui_scale))
 		material_name.add_theme_color_override("font_color", Color("#263F4B"))
 		material_content.add_child(material_name)
 		var material_stock := Label.new()
 		material_stock.text = "%d / %d" % [owned, amount]
 		material_stock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		material_stock.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+		material_stock.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 		material_stock.add_theme_color_override("font_color", Color("#34734D") if owned >= amount else Color("#A13F35"))
 		material_content.add_child(material_stock)
 		material_button.disabled = owned >= amount
