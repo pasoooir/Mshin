@@ -519,3 +519,16 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Physical Android lighting review and draw-call/frame-time measurement.
 
 **No numeric FPS gain is claimed until measured on device.**
+
+
+## On-device performance diagnostics — per-frame render metrics — 2026-11-15
+
+- [x] Sample draw calls, rendered objects, rendered primitives, video memory and node count throughout the full device benchmark instead of reading only the final frame.
+- [x] Report average, p95, maximum and last sampled values for each render metric; preserve legacy last-frame keys for older report consumers.
+- [x] Record active graphics quality preset alongside device, viewport and frame-time metadata.
+- [x] Extend the in-game benchmark completion message with average/p95 draw-call counts.
+- [x] Add GameplaySmoke coverage for numeric metric aggregation, nearest-rank p95, maximum/last sample and empty input handling.
+- [ ] Godot static validation, import/parse, GameplaySmoke, Web/Chromium and Android APK CI.
+- [ ] Run the benchmark on physical Android hardware and capture a real report; CI cannot substitute for device measurements.
+
+**Measurement rule:** this change improves report sampling and transparency; it does not claim a performance gain by itself.
