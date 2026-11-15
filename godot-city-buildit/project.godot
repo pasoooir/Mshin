@@ -19,6 +19,7 @@ application/boot_splash/bg_color=Color(0.02, 0.06, 0.10, 1)
 
 GameManager="*res://scripts/autoload/GameManager.gd"
 EconomyManager="*res://scripts/autoload/EconomyManager.gd"
+PaymentManager="*res://scripts/autoload/PaymentManager.gd"
 StorageManager="*res://scripts/autoload/StorageManager.gd"
 LandExpansionManager="*res://scripts/autoload/LandExpansionManager.gd"
 BuildManager="*res://scripts/autoload/BuildManager.gd"
