@@ -60,6 +60,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var depot_listings: Dictionary = config.get("initial_depot_listings", {}).duplicate(true)
 	var production_log: Array[Dictionary] = []
 	var sales_total := 0
+	var delivery_order_total := 0
 	var accounting_revenue := 0
 	var accounting_cogs := 0
 	var accounting_gross_margin := 0
@@ -157,6 +158,25 @@ static func simulate(config: Dictionary) -> Dictionary:
 					_append_cost_batch(cost_batches, item_id, quantity, unit_cost, cost_known)
 					success = true
 					production_log.append({"at_seconds": second, "event": "inventory_received", "item_id": item_id, "quantity": quantity, "unit_cost": unit_cost, "cost_known": cost_known})
+			elif action_type == "delivery_order":
+				var reward := int(action.get("reward", 0))
+				var order_id := str(action.get("order_id", "delivery-order-%d" % (action_index - 1)))
+				if bool(config.get("depot_operational", false)) and reward > 0 and int(inventory.get(item_id, 0)) >= quantity:
+					_remove_inventory(inventory, {item_id: quantity})
+					var order_cost: Dictionary = _consume_cost_batches(cost_batches, {item_id: quantity})
+					delivery_order_total += reward
+					accounting_revenue += reward
+					var cost_known := bool(order_cost.get("known", false))
+					var cost_total := int(order_cost.get("total_cost", 0))
+					if cost_known:
+						accounting_cogs += cost_total
+						accounting_gross_margin += reward - cost_total
+					else:
+						unknown_cost_sale_quantity += quantity
+					accounting_sales.append({"at_seconds": second, "channel": "delivery_order", "order_id": order_id, "item_id": item_id, "quantity": quantity, "revenue": reward, "cost_known": cost_known, "cost_basis": cost_total if cost_known else null, "gross_margin": reward - cost_total if cost_known else null})
+					sale_events.append({"at_seconds": second, "type": "delivery_order_reward", "order_id": order_id, "item_id": item_id, "quantity": quantity, "amount": reward, "cost_known": cost_known, "cost_basis": cost_total if cost_known else -1})
+					success = true
+					production_log.append({"at_seconds": second, "event": "delivery_order_completed", "order_id": order_id, "item_id": item_id, "quantity": quantity, "reward": reward, "cost_known": cost_known, "cost_total": cost_total if cost_known else -1})
 			elif action_type == "depot_list":
 				var listing_id := str(action.get("listing_id", ""))
 				var unit_value := int(action.get("unit_value", config.get("item_values", {}).get(item_id, 0)))
@@ -233,6 +253,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"facility_summary": facility_summary,
 		"rejected_actions": rejected_actions,
 		"sales_total": sales_total,
+		"delivery_order_total": delivery_order_total,
 		"accounting": {"gross_revenue": accounting_revenue, "known_cogs": accounting_cogs, "known_gross_margin": accounting_gross_margin, "unknown_cost_sale_quantity": unknown_cost_sale_quantity, "gross_margin_complete": unknown_cost_sale_quantity == 0, "sales": accounting_sales},
 		"cost_batches": cost_batches,
 		"active_depot_listings": depot_listings,
