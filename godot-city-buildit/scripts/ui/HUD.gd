@@ -2590,7 +2590,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	# Crafted orders can start an automatic dependency chain even when
 	# ingredients are not yet in City Storage. The scheduler reserves each
 	# dependency when its real store/factory job is accepted.
-	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (is_factory or not recipe.is_empty())
+	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (is_factory or (not recipe.is_empty() and StorageManager.has_items(inputs)))
 
 	var detail := PanelContainer.new()
 	detail.name = "ProductionItemDetails"
@@ -2689,7 +2689,8 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			text_stack.add_child(chain_label)
 	if not lock_reason.is_empty() or not missing.is_empty() or slot_index < 0:
 		var reason := Label.new()
-		reason.text = lock_reason if not lock_reason.is_empty() else ("NO FREE PRODUCTION SLOT" if slot_index < 0 else "NEED " + missing)
+		reason.name = "ProductionBlockReason"
+		reason.text = lock_reason if not lock_reason.is_empty() else ("NO FREE PRODUCTION SLOT" if slot_index < 0 else "MISSING CITY STORAGE: " + missing)
 		reason.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		reason.add_theme_color_override("font_color", Color("#A33A36"))
 		text_stack.add_child(reason)
@@ -2816,6 +2817,17 @@ func _finish_production_touch_drag(screen_position: Vector2) -> void:
 		return
 	var component: ProductionComponent = building.production_component
 	var payload := {"kind": "production_item", "item_id": _production_touch_drag_item_id, "building_id": building.get_instance_id()}
+	# Touch dragging must be able to land on the selected building itself,
+	# not only on the queue cards. Test the projected building footprint using
+	# the exact same polygon used by native drag-and-drop hit testing.
+	if is_instance_valid(production_panel):
+		var building_target := production_panel.find_child("ProductionBuildingDropTarget", true, false) as ProductionBuildingDropTarget
+		if is_instance_valid(building_target) and building_target.get_global_rect().has_point(screen_position) and building_target._has_point(building_target.to_local(screen_position)):
+			if _can_accept_building_drop(Vector2.ZERO, payload, building):
+				_accept_building_drop(Vector2.ZERO, payload, building)
+			else:
+				status_label.text = "Cannot start this order: check missing ingredients, unlocks and free queue slots."
+			return
 	for slot_index in range(component.get_slot_count()):
 		var slot_card: Control = null
 		if is_instance_valid(production_panel):
@@ -2913,6 +2925,10 @@ func _get_production_drag_data(_at_position: Vector2, building: Building, item_i
 	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 	if not lock_reason.is_empty():
 		return null
+	if not component.is_factory:
+		var recipe := ProductionManager.get_recipe(item_id)
+		if recipe.is_empty() or not StorageManager.has_items(recipe.get("inputs", {})):
+			return null
 	# Native desktop drag can also emit Button.pressed on release; suppress the
 	# click so a successful queue drop never opens the detail capsule afterward.
 	if is_instance_valid(item_button):
@@ -2938,7 +2954,11 @@ func _can_accept_production_drop(_at_position: Vector2, data: Variant, building:
 	var recipe: Dictionary = ProductionManager.get_recipe(item_id)
 	if recipe.is_empty() or str(recipe.get("store", "")) != str(component.shop_id):
 		return false
-	return ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level).is_empty() and ProductionManager.are_recipe_inputs_unlocked(recipe)
+	if not ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level).is_empty() or not ProductionManager.are_recipe_inputs_unlocked(recipe):
+		return false
+	# A manual order is accepted only when every ingredient is physically in
+	# City Storage. Missing ingredients are never silently auto-produced.
+	return StorageManager.has_items(recipe.get("inputs", {}))
 
 
 func _accept_production_drop(_at_position: Vector2, data: Variant, building: Building, slot_index: int) -> void:
@@ -2950,8 +2970,9 @@ func _accept_production_drop(_at_position: Vector2, data: Variant, building: Bui
 	if component.is_factory:
 		started = component.start_factory(item_id, slot_index)
 	else:
-		var missing := ProductionManager.get_missing_inputs_text(item_id)
-		started = component.start_craft(item_id, slot_index) if missing.is_empty() else ProductionManager.request_automatic_chain(component, item_id, slot_index)
+		# No hidden dependency-chain start: the player must first manufacture
+		# or collect each required input into City Storage.
+		started = component.start_craft(item_id, slot_index)
 	if started:
 		status_label.text = "Production order accepted: %s." % str(ProductionManager.get_item_definition(item_id).get("name", item_id))
 	else:
