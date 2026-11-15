@@ -1025,3 +1025,18 @@ PR #518 is merged; this follow-up corrects its remaining modal and building-hit-
 Design references:
 - Figma editable screen/spec: https://www.figma.com/design/iwW3sEi5OibWEK6uCGbkk6
 - Canva art-direction board: https://canva.link/c7cn96j4twon82h
+
+
+## Production queue drag-and-drop correction — 2026-11-15
+
+- [x] Product tiles now start a pointer-captured touch drag; the floating product follows the finger even after it leaves the original hexagon.
+- [x] Releasing over an empty, unlocked queue slot submits the selected factory/store order directly; no START button is required.
+- [x] Invalid/occupied/locked queue drops do not submit an order and show a rejection hint.
+- [x] Simple product taps show recipe/material details only; they do not start production.
+- [x] Queue targets receive live hover highlighting during touch drag.
+- [x] Honeycomb clusters are positioned around the selected building rather than pinned to the far screen edges; product tiles and icons are enlarged.
+- [x] GameplaySmoke updated to exercise the global touch drag/release path and direct queue submission for factory and store orders.
+- [ ] Godot CI / GameplaySmoke on this correction branch.
+- [ ] Android landscape physical drag/drop acceptance and screenshot review.
+
+The existing Figma production studio frame was updated to match the no-START, drag-to-queue interaction and building-centered honeycomb placement. Product Design's dedicated Work-mode workflow is not available in this standard chat; implementation and design-spec edits are being handled directly in GitHub and Figma.
