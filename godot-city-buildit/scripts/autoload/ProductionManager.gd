@@ -1138,7 +1138,7 @@ func get_population_for_stage(stage: int) -> int:
 
 func can_afford_upgrade(from_stage: int) -> bool:
 	for requirement in get_upgrade_requirements(from_stage):
-		if StorageManager.get_count(str(requirement.item)) < int(requirement.amount):
+		if StorageManager.get_available_count(str(requirement.item)) < int(requirement.amount):
 			return false
 	return not get_upgrade_requirements(from_stage).is_empty()
 
