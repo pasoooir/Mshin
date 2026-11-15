@@ -2260,13 +2260,7 @@ func open_production_panel(building: Building) -> void:
 		var angle := deg_to_rad(205.0 + 150.0 * float(orbit_index) / float(maxi(1, product_count - 1)))
 		var point := orbit_center + Vector2(cos(angle), sin(angle)) * orbit_radius
 		var selector_size: Vector2 = product_node.custom_minimum_size
-		var selector_half := selector_size * 0.5
-		var max_selector_x := maxf(4.0, viewport_size.x - selector_size.x - 4.0 * _ui_scale)
-		var max_selector_y := maxf(4.0, viewport_size.y - panel_height - selector_size.y - 8.0 * _ui_scale)
-		product_node.position = Vector2(
-			clampf(point.x - selector_half.x, 4.0, max_selector_x),
-			clampf(point.y - selector_half.y - 6.0 * _ui_scale, 4.0, max_selector_y)
-		)
+		product_node.position = _get_production_orbit_tile_position(point, selector_size, viewport_size, panel_height)
 
 	var details_scroll := ScrollContainer.new()
 	details_scroll.name = "ProductionDetailsScroll"
@@ -2789,6 +2783,17 @@ func _accept_production_drop(_at_position: Vector2, data: Variant, building: Bui
 	else:
 		status_label.text = "Order not accepted. Check materials, supplier chain, building operation and slot availability."
 	open_production_panel(building)
+
+
+func _get_production_orbit_tile_position(point: Vector2, selector_size: Vector2, viewport_size: Vector2, panel_height: float) -> Vector2:
+	# Keep the complete tile above the dock and inside the horizontal viewport.
+	var selector_half := selector_size * 0.5
+	var max_selector_x := maxf(4.0, viewport_size.x - selector_size.x - 4.0 * _ui_scale)
+	var max_selector_y := maxf(4.0, viewport_size.y - panel_height - selector_size.y - 8.0 * _ui_scale)
+	return Vector2(
+		clampf(point.x - selector_half.x, 4.0, max_selector_x),
+		clampf(point.y - selector_half.y - 6.0 * _ui_scale, 4.0, max_selector_y)
+	)
 
 
 func _count_empty_production_slots(component: ProductionComponent) -> int:
