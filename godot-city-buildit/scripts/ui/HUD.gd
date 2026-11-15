@@ -135,6 +135,8 @@ var _production_progress_bars: Array[ProgressBar] = []
 var _production_building: Building = null
 var _production_world_orbit: Node3D = null
 var _production_orbit_buttons: Array[Button] = []
+var _residential_world_orbit: Node3D = null
+var _residential_orbit_buttons: Array[Button] = []
 var _touch_selected_production_item := ""
 var _touch_selected_production_building_id := 0
 var _production_touch_drag_active := false
@@ -1715,6 +1717,7 @@ func _process(delta: float) -> void:
 			_production_tick_accum = 0.0
 			_update_production_timers()
 		_update_production_orbit_projection()
+	_update_residential_orbit_projection()
 
 	if not is_instance_valid(_level_up_effect) or not is_instance_valid(_level_up_camera):
 		return
@@ -2983,10 +2986,14 @@ func _close_production_panel() -> void:
 
 
 func _create_production_orbit_hex(index: int, world_position: Vector3) -> Node3D:
+	return _create_world_hex_platform(_production_world_orbit, "ProductionHex_%d" % index, world_position)
+
+
+func _create_world_hex_platform(parent: Node3D, node_name: String, world_position: Vector3) -> Node3D:
 	var root := Node3D.new()
-	root.name = "ProductionHex_%d" % index
+	root.name = node_name
 	root.global_position = world_position
-	if not is_instance_valid(_production_world_orbit):
+	if not is_instance_valid(parent):
 		return root
 	var rim_mesh := CylinderMesh.new()
 	rim_mesh.top_radius = 0.98
@@ -3020,9 +3027,8 @@ func _create_production_orbit_hex(index: int, world_position: Vector3) -> Node3D
 	face.material_override = face_material
 	face.position.y = 0.17
 	root.add_child(face)
-	_production_world_orbit.add_child(root)
+	parent.add_child(root)
 	return root
-
 
 func _update_production_orbit_projection() -> void:
 	if _production_orbit_buttons.is_empty():
@@ -3044,6 +3050,67 @@ func _update_production_orbit_projection() -> void:
 		button.position = projected - button_size * 0.5
 		button.visible = button.visible and projected.x > -button_size.x and projected.x < viewport_size.x + button_size.x and projected.y > -button_size.y and projected.y < viewport_size.y + button_size.y
 
+
+
+func _update_residential_orbit_projection() -> void:
+	if _residential_orbit_buttons.is_empty():
+		return
+	var camera := get_viewport().get_camera_3d()
+	if not is_instance_valid(camera):
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	for button in _residential_orbit_buttons:
+		if not is_instance_valid(button):
+			continue
+		var world_position: Vector3 = button.get_meta("orbit_world_position", Vector3.ZERO)
+		var behind := camera.is_position_behind(world_position)
+		button.visible = not behind
+		if behind:
+			continue
+		var projected := camera.unproject_position(world_position + Vector3(0.0, 0.24, 0.0))
+		var button_size := button.custom_minimum_size
+		button.position = projected - button_size * 0.5
+		button.visible = button.visible and projected.x > -button_size.x and projected.x < viewport_size.x + button_size.x and projected.y > -button_size.y and projected.y < viewport_size.y + button_size.y
+
+
+func _on_residential_material_pressed(home: Building, item_id: String) -> void:
+	if not is_instance_valid(home):
+		return
+	var suppliers: Array = CityDemandManager.get_suppliers_for_item(item_id)
+	var supplier_name := ""
+	for supplier in suppliers:
+		if str(supplier.get("status", "")) != "available":
+			supplier_name = str(supplier.get("name", "Supplier"))
+			continue
+		var supplier_id := str(supplier.get("building_id", ""))
+		if supplier_id.is_empty():
+			continue
+		for candidate in BuildManager.buildings.values():
+			if not is_instance_valid(candidate) or str(candidate.building_id) != supplier_id:
+				continue
+			if not is_instance_valid(candidate.production_component):
+				continue
+			_close_residential_panel()
+			open_production_panel(candidate)
+			var component: ProductionComponent = candidate.production_component
+			var slot_index := -1
+			for index in range(component.get_slot_count()):
+				if component.get_slot(index).is_empty():
+					slot_index = index
+					break
+			var payload := {"kind":"production_item", "item_id":item_id, "building_id":candidate.get_instance_id()}
+			if slot_index >= 0 and _can_accept_production_drop(Vector2.ZERO, payload, candidate, slot_index):
+				_accept_production_drop(Vector2.ZERO, payload, candidate, slot_index)
+			else:
+				_show_production_item_details(candidate, item_id, slot_index)
+				var missing := ProductionManager.get_missing_inputs_text(item_id)
+				if not missing.is_empty():
+					status_label.text = "Missing City Storage: " + missing
+			return
+	var item_name := str(ProductionManager.get_item_definition(item_id).get("name", item_id.capitalize()))
+	if supplier_name.is_empty():
+		supplier_name = str(suppliers[0].get("name", "the required supplier")) if not suppliers.is_empty() else "a verified supplier"
+	status_label.text = "Build or complete %s to produce %s." % [supplier_name, item_name]
 
 func _on_city_needs_pressed() -> void:
 	BuildManager.cancel_placement()
@@ -3436,6 +3503,10 @@ func open_residential_panel(building: Building) -> void:
 	_close_city_needs_panel()
 	_close_production_panel()
 	_close_storage_panel()
+	_residential_orbit_buttons.clear()
+	if is_instance_valid(_residential_world_orbit):
+		_residential_world_orbit.queue_free()
+	_residential_world_orbit = null
 	if is_instance_valid(residential_overlay):
 		residential_overlay.queue_free()
 	residential_overlay = Control.new()
@@ -3480,6 +3551,66 @@ func open_residential_panel(building: Building) -> void:
 		if str(candidate.get("building_id", "")) == building.building_id:
 			home_data = candidate
 			break
+	# Home upgrade materials are shown as the same raised 3D hex tokens around
+	# the selected house. Tapping a shortage token opens its actual supplier and
+	# submits the corresponding production order when that supplier can accept it.
+	_residential_world_orbit = Node3D.new()
+	_residential_world_orbit.name = "ResidentialWorldOrbit"
+	var scene_root := get_tree().current_scene
+	if scene_root:
+		scene_root.add_child(_residential_world_orbit)
+	for requirement_index in range(requirements.size()):
+		var requirement: Dictionary = requirements[requirement_index]
+		var item_id := str(requirement.get("item", ""))
+		if item_id.is_empty():
+			continue
+		var amount := int(requirement.get("amount", 0))
+		var owned := StorageManager.get_count(item_id)
+		for home_need in home_data.get("needs", []):
+			if str(home_need.get("item_id", "")) == item_id:
+				owned = int(home_need.get("stored", owned))
+				break
+		var orbit_angle := TAU * float(requirement_index) / float(maxi(1, requirements.size()))
+		var footprint_size: Vector2i = building.definition.get("size", Vector2i(2, 2))
+		var orbit_radius := maxf(3.2, float(maxi(footprint_size.x, footprint_size.y)) * 1.2 + 1.6)
+		var orbit_position := building.global_position + Vector3(cos(orbit_angle) * orbit_radius, 4.4, sin(orbit_angle) * orbit_radius)
+		_create_world_hex_platform(_residential_world_orbit, "ResidentialHex_%d" % requirement_index, orbit_position)
+		var material_button := Button.new()
+		material_button.name = "ResidentialNeed_%s" % item_id
+		material_button.custom_minimum_size = Vector2(82.0, 86.0) * _ui_scale
+		material_button.flat = true
+		material_button.focus_mode = Control.FOCUS_NONE
+		material_button.z_index = 30
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			material_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		var material_content := VBoxContainer.new()
+		material_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		material_content.alignment = BoxContainer.ALIGNMENT_CENTER
+		material_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		material_button.add_child(material_content)
+		var material_icon_type := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
+		var material_icon := Icons.make_item_icon(material_icon_type, item_id, Vector2(42, 42) * _ui_scale)
+		material_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		material_content.add_child(material_icon)
+		var material_name := Label.new()
+		material_name.text = CityDemandManager.get_item_name(item_id)
+		material_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		material_name.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		material_name.add_theme_color_override("font_color", Color("#263F4B"))
+		material_content.add_child(material_name)
+		var material_stock := Label.new()
+		material_stock.text = "%d / %d" % [owned, amount]
+		material_stock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		material_stock.add_theme_font_size_override("font_size", int(8 * _ui_scale))
+		material_stock.add_theme_color_override("font_color", Color("#34734D") if owned >= amount else Color("#A13F35"))
+		material_content.add_child(material_stock)
+		material_button.disabled = owned >= amount
+		material_button.tooltip_text = "Already stored" if owned >= amount else "Tap to open supplier and start this material"
+		material_button.set_meta("orbit_world_position", orbit_position)
+		material_button.pressed.connect(_on_residential_material_pressed.bind(building, item_id))
+		residential_overlay.add_child(material_button)
+		_residential_orbit_buttons.append(material_button)
+	_update_residential_orbit_projection()
 	var title := Label.new()
 	title.text = "%s  ·  LEVEL %d → %d" % [str(building.definition.get("name", "Home")), stage, mini(stage + 1, 6)]
 	title.add_theme_font_size_override("font_size", int(19 * _ui_scale))
@@ -3794,6 +3925,10 @@ func _close_epic_project_panel() -> void:
 	_epic_panel_building = null
 
 func _close_residential_panel() -> void:
+	_residential_orbit_buttons.clear()
+	if is_instance_valid(_residential_world_orbit):
+		_residential_world_orbit.queue_free()
+	_residential_world_orbit = null
 	for city_building in BuildManager.buildings.values():
 		if is_instance_valid(city_building) and str(city_building.definition.get("category", "")) == "residential":
 			city_building.set_residential_plan_selected(false)
