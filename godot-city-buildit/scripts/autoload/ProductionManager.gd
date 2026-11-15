@@ -260,20 +260,28 @@ func _process(delta: float) -> void:
 func _get_active_automatic_chain_id() -> String:
 	if not is_inside_tree():
 		return ""
+	var fallback_chain_id := ""
 	for component in get_tree().get_nodes_in_group("production_components"):
 		if not is_instance_valid(component) or not component is ProductionComponent:
 			continue
 		for slot in component.slots:
+			var chain_id := str(slot.get("auto_chain_id", ""))
+			if chain_id.is_empty():
+				continue
+			if fallback_chain_id.is_empty():
+				fallback_chain_id = chain_id
 			if bool(slot.get("auto_chain_root", false)):
-				return str(slot.get("auto_chain_id", ""))
-	return ""
+				return chain_id
+	return fallback_chain_id
 
-func _can_resolve_automatic_chain_item(item_id: String, amount: int, ancestry: Dictionary) -> bool:
+func _can_resolve_automatic_chain_item(
+		item_id: String, amount: int, ancestry: Dictionary,
+		reserved_root_component: ProductionComponent = null
+	) -> bool:
 	if amount <= 0 or StorageManager.get_count(item_id) >= amount:
 		return true
 	if ancestry.has(item_id):
 		return false
-	var missing := amount - StorageManager.get_count(item_id)
 	var next_ancestry := ancestry.duplicate(true)
 	next_ancestry[item_id] = true
 	var components: Array = get_tree().get_nodes_in_group("production_components") if is_inside_tree() else []
@@ -285,9 +293,9 @@ func _can_resolve_automatic_chain_item(item_id: String, amount: int, ancestry: D
 				continue
 			if not get_factory_material_ids(str(supplier.factory_type)).has(item_id) or not supplier._owner_has_road_access():
 				continue
-			for slot_index in range(supplier.get_slot_count()):
-				if supplier.slots[slot_index].is_empty():
-					return true
+			# Busy factory slots are a scheduling delay, not a missing supplier.
+			if supplier.get_slot_count() > 0:
+				return true
 		return false
 	if not crafted_items.has(item_id):
 		return false
@@ -303,11 +311,17 @@ func _can_resolve_automatic_chain_item(item_id: String, amount: int, ancestry: D
 			continue
 		if not get_recipe_lock_reason(item_id, supplier.store_star_level).is_empty():
 			continue
-		for slot_index in range(supplier.get_slot_count()):
-			if supplier.slots[slot_index].is_empty():
-				supplier_found = true
-				break
-		if supplier_found:
+		var reserved_root_slots := 0
+		for existing_slot in supplier.slots:
+			if bool(existing_slot.get("auto_chain_root", false)):
+				reserved_root_slots += 1
+		if supplier == reserved_root_component:
+			reserved_root_slots += 1
+		# Other active/manual jobs can finish and free their slots. Root slots
+		# cannot: they are waiting for this very dependency and would deadlock
+		# a one-lane store if no other lane/building exists.
+		if supplier.get_slot_count() - reserved_root_slots > 0:
+			supplier_found = true
 			break
 	if not supplier_found:
 		return false
@@ -315,7 +329,7 @@ func _can_resolve_automatic_chain_item(item_id: String, amount: int, ancestry: D
 		var input_id := str(input_variant)
 		var required := int(recipe.inputs[input_variant])
 		var input_missing := maxi(0, required - StorageManager.get_count(input_id))
-		if input_missing > 0 and not _can_resolve_automatic_chain_item(input_id, input_missing, next_ancestry):
+		if input_missing > 0 and not _can_resolve_automatic_chain_item(input_id, input_missing, next_ancestry, reserved_root_component):
 			return false
 	return true
 
@@ -337,13 +351,11 @@ func request_automatic_chain(component: ProductionComponent, recipe_id: String, 
 		var input_id := str(input_variant)
 		var required := int(recipe.inputs[input_variant])
 		var missing := maxi(0, required - StorageManager.get_count(input_id))
-		if missing > 0 and not _can_resolve_automatic_chain_item(input_id, missing, {recipe_id: true}):
+		if missing > 0 and not _can_resolve_automatic_chain_item(input_id, missing, {recipe_id: true}, component):
 			return false
-	# Keep a single top-level automatic order active at once. This makes the
-	# shared City Storage inventory a deterministic reservation pool while
-	# preserving manual production queues on every other slot/building.
-	if not _get_active_automatic_chain_id().is_empty():
-		return false
+	# Multiple roots may run concurrently. Every recipe consumes its complete
+	# input set through StorageManager.remove_items on the main thread, while
+	# per-chain outstanding slots prevent duplicate dependency scheduling.
 	_automatic_chain_sequence += 1
 	var chain_id := "chain_%d_%d" % [int(Time.get_unix_time_from_system()), _automatic_chain_sequence]
 	component.slots[slot_index] = {
@@ -506,26 +518,40 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 			scheduled += 1
 	return scheduled > 0
 
-func get_automatic_chain_status() -> Dictionary:
-	var chain_id := _get_active_automatic_chain_id()
-	if chain_id.is_empty():
-		return {"active": false, "chain_id": "", "pending_jobs": 0, "ready_jobs": 0}
-	var pending := 0
-	var ready := 0
-	var root_item := ""
-	if is_inside_tree():
-		for component in get_tree().get_nodes_in_group("production_components"):
-			if not is_instance_valid(component) or not component is ProductionComponent:
+func get_automatic_chain_statuses() -> Array[Dictionary]:
+	var status_by_chain: Dictionary = {}
+	if not is_inside_tree():
+		return []
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		for slot in component.slots:
+			var chain_id := str(slot.get("auto_chain_id", ""))
+			if chain_id.is_empty():
 				continue
-			for slot in component.slots:
-				if str(slot.get("auto_chain_id", "")) != chain_id:
-					continue
-				pending += 1
-				if bool(slot.get("ready", false)):
-					ready += 1
-				if bool(slot.get("auto_chain_root", false)):
-					root_item = str(slot.get("item_id", ""))
-	return {"active": true, "chain_id": chain_id, "root_item": root_item, "pending_jobs": pending, "ready_jobs": ready}
+			if not status_by_chain.has(chain_id):
+				status_by_chain[chain_id] = {
+					"active": true, "chain_id": chain_id, "root_item": "",
+					"pending_jobs": 0, "ready_jobs": 0, "root_present": false
+				}
+			var status: Dictionary = status_by_chain[chain_id]
+			status["pending_jobs"] = int(status.pending_jobs) + 1
+			if bool(slot.get("ready", false)):
+				status["ready_jobs"] = int(status.ready_jobs) + 1
+			if bool(slot.get("auto_chain_root", false)):
+				status["root_item"] = str(slot.get("item_id", ""))
+				status["root_present"] = true
+			status_by_chain[chain_id] = status
+	var result: Array[Dictionary] = []
+	for status in status_by_chain.values():
+		result.append(status)
+	return result
+
+func get_automatic_chain_status() -> Dictionary:
+	var statuses := get_automatic_chain_statuses()
+	if statuses.is_empty():
+		return {"active": false, "chain_id": "", "pending_jobs": 0, "ready_jobs": 0}
+	return statuses[0]
 
 func get_available_raw() -> Array:
 	var result: Array = []

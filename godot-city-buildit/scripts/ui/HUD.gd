@@ -2523,15 +2523,32 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		if started:
 			status_label.text = "Automatic supply chain accepted: %s. Missing raw materials and intermediate goods will be produced and collected automatically." % str(data.get("name", item_id)) if not is_factory and not missing.is_empty() else "Production started: %s." % str(data.get("name", item_id))
 		else:
-			var active_chain := ProductionManager.get_automatic_chain_status()
-			if bool(active_chain.get("active", false)):
-				status_label.text = "Another automatic production chain is already active. Let it finish before starting a second chain."
-			else:
-				var latest_missing := ProductionManager.get_missing_inputs_text(item_id)
-				status_label.text = "Cannot start this production chain. Check recipe unlocks, supplier buildings, road access and free queue slots. Missing now: %s" % latest_missing
+			var latest_missing := ProductionManager.get_missing_inputs_text(item_id)
+			status_label.text = "Cannot start this production chain. Check recipe unlocks, supplier buildings, road access and production slots. Missing now: %s" % latest_missing
 		open_production_panel(building)
 	)
 	detail_row.add_child(start_button)
+	# Preserve the traditional one-click START queue when all ingredients are
+	# already stocked, while also making fully automatic collection available
+	# as an explicit player choice at every commercial store.
+	if not is_factory and missing.is_empty():
+		var auto_chain_button := Button.new()
+		auto_chain_button.name = "StartAutomaticChain"
+		auto_chain_button.text = "AUTO CHAIN"
+		auto_chain_button.custom_minimum_size = Vector2(92, 44) * _ui_scale
+		auto_chain_button.disabled = not can_start
+		auto_chain_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#4C9B83"), Color("#8ED2B6")))
+		auto_chain_button.add_theme_stylebox_override("disabled", _toolbar_style(Color("#AAB7BE"), Color("#D1D9DE")))
+		auto_chain_button.add_theme_color_override("font_color", Color("#FFFFFF"))
+		auto_chain_button.pressed.connect(func():
+			var started := ProductionManager.request_automatic_chain(component, item_id, slot_index)
+			if started:
+				status_label.text = "Automatic supply chain accepted: %s. Production, intermediate goods and collection will run automatically." % str(data.get("name", item_id))
+			else:
+				status_label.text = "Cannot start this automatic chain. Check recipe unlocks, supplier buildings, road access and production slots."
+			open_production_panel(building)
+		)
+		detail_row.add_child(auto_chain_button)
 
 
 func _count_empty_production_slots(component: ProductionComponent) -> int:

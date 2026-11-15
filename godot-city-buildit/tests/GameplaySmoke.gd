@@ -289,9 +289,49 @@ func _test_automatic_production_chain() -> void:
 			break
 	_check(StorageManager.get_count("chair") == 1, "Nested automatic scheduling must produce the requested final item after both store branches complete.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "Nested multi-store dependency jobs must all release their slots when the root product is collected.")
+
+	# Two independent roots may reserve and execute the same raw dependency
+	# concurrently. Atomic input consumption must prevent double-spending.
+	GameManager.level = 1
+	var second_factory := ProductionComponentScript.new()
+	second_factory.name = "AutomaticChainConcurrentFactoryProbe"
+	second_factory.is_factory = true
+	second_factory.factory_type = "factory_small"
+	second_factory.slot_count = 2
+	add_child(second_factory)
+	var second_store := ProductionComponentScript.new()
+	second_store.name = "AutomaticChainConcurrentStoreProbe"
+	second_store.shop_id = "building_supplies"
+	second_store.slot_count = 2
+	add_child(second_store)
+	StorageManager.from_save_dict({"capacity": 50, "items": {}})
+	_check(ProductionManager.request_automatic_chain(store, "nails", 0), "The first concurrent automatic order must be accepted.")
+	_check(ProductionManager.request_automatic_chain(second_store, "nails", 0), "A second independent automatic order must be accepted while the first chain is active.")
+	var first_chain_id := str(store.slots[0].get("auto_chain_id", ""))
+	var second_chain_id := str(second_store.slots[0].get("auto_chain_id", ""))
+	_check(not first_chain_id.is_empty() and not second_chain_id.is_empty() and first_chain_id != second_chain_id, "Concurrent automatic roots must have independent persistent chain identifiers.")
+	for _step in range(48):
+		ProductionManager._process_automatic_chains()
+		var concurrent_now := int(Time.get_unix_time_from_system())
+		for component in get_tree().get_nodes_in_group("production_components"):
+			for slot_index in range(component.slots.size()):
+				var queued_slot: Dictionary = component.slots[slot_index]
+				var queued_chain := str(queued_slot.get("auto_chain_id", ""))
+				if [first_chain_id, second_chain_id].has(queued_chain) and int(queued_slot.get("finish_unix", 0)) > 0 and not bool(queued_slot.get("ready", false)):
+					queued_slot["finish_unix"] = concurrent_now - 1
+					component.slots[slot_index] = queued_slot
+			component.refresh_slots()
+		ProductionManager._process_automatic_chains()
+		if store.slots[0].is_empty() and second_store.slots[0].is_empty() and ProductionManager.get_automatic_chain_statuses().is_empty():
+			break
+	_check(StorageManager.get_count("nails") == 2, "Concurrent automatic chains must each produce one requested item without double-consuming shared raw stock.")
+	_check(store.slots[0].is_empty() and second_store.slots[0].is_empty() and ProductionManager.get_automatic_chain_statuses().is_empty(), "Concurrent automatic chains must finish and release every root/dependency slot.")
 	GameManager.level = saved_level
 
 	factory.queue_free()
+	second_factory.queue_free()
+	store.queue_free()
+	second_store.queue_free()
 	store.queue_free()
 	hardware_store.queue_free()
 	furniture_store.queue_free()
@@ -3659,7 +3699,9 @@ func _run_gameplay_test() -> void:
 		if ingredient_label:
 			_check(ingredient_label.text.contains("Metal") and ingredient_label.text.contains("2"), "Nails detail must clearly show its Metal x2 requirement.")
 		var shop_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
+		var automatic_shop_start := production_hud.production_panel.find_child("StartAutomaticChain", true, false) as Button
 		_check(shop_start != null and not shop_start.disabled, "Nails must be startable when two Metal are in City Storage.")
+		_check(automatic_shop_start != null and not automatic_shop_start.disabled, "A fully stocked shop recipe must offer an explicit AUTO CHAIN action in addition to the manual START queue.")
 		if shop_start:
 			shop_start.emit_signal("pressed")
 	else:
