@@ -501,4 +501,21 @@ No recipe, production duration, expansion price, or item provenance was added or
 **Expected structural improvement:** one directional shadow source instead of two; no numeric FPS claim until on-device measurement.
 
 - [x] Preserve the original soft-shadow settings on the main scene key light and update static validation to assert the single-shadow-source architecture.
-- [ ] Rerun static validation and all Godot/Web/Android workflows after the validator correction.
+- [x] After correcting the stale static-validator expectation and test indentation, Godot 4.3 import/parse, GameplaySmoke, VisualPresentationSmoke, static validation, Android APK export/signature and Web/Chromium CI all passed in runs `43744225839` and `43744225717`.
+
+
+## 2026-11-15 — Single directional shadow source (PR #524)
+
+- [x] Main scene key DirectionalLight3D is the only directional shadow-map owner.
+- [x] WorldPresentation warm secondary sun remains a non-shadowing fill light.
+- [x] Preserve soft shadow opacity, blur, bias, normal bias and shadow distance on the main key light.
+- [x] Static validator now checks the main key-light contract and the non-shadowing secondary fill light.
+- [x] VisualPresentationSmoke verifies the secondary fill light policy and retained energy.
+- [x] Godot 4.3 static validation, import/parse, startup, GameplaySmoke, VisualPresentationSmoke, visual geometry and economy checks passed (run `43744225839`).
+- [x] Android Debug APK export, signature/package identity and artifact upload passed (run `43744225839`).
+- [x] Web export, GameplaySmoke, desktop/mobile Chromium, Pages configuration and artifact upload passed (run `43744225717`).
+- [x] PR #524 merged to `main` at `58ca5449dd038b8d2ca39c76b00393ce2a2a8ebd`.
+- [ ] Verify post-merge push-triggered Pages deployment.
+- [ ] Physical Android lighting review and draw-call/frame-time measurement.
+
+**No numeric FPS gain is claimed until measured on device.**
