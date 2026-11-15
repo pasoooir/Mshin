@@ -521,7 +521,15 @@ func _try_interact(world_position: Vector3) -> void:
 		if hud and hud.has_method("open_residential_panel"):
 			hud.open_residential_panel(building)
 		else:
+			if category in ["service", "park"]:
+		var hud := get_tree().current_scene.get_node_or_null("HUD")
+		if hud and hud.has_method("open_building_upgrade_panel"):
+			hud.open_building_upgrade_panel(building)
+		else:
 			_set_status(building.get_info())
+		return
+
+	_set_status(building.get_info())
 		return
 
 	# Production buildings open an explicit item/collect panel rather than
