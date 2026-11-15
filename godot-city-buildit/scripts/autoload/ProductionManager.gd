@@ -242,7 +242,7 @@ func from_save_dict(data: Dictionary) -> void:
 			var completed := int(entry.get("completed", 0))
 			if (not raw_materials.has(item_id) and not crafted_items.has(item_id)) or requested <= 0 or requested > 50:
 				continue
-			var restored := entry.duplicate(true)
+			var restored: Dictionary = entry.duplicate(true)
 			restored["completed"] = clampi(completed, 0, requested)
 			restored["status"] = "waiting" if completed < requested else "complete"
 			production_chain_orders.append(restored)
