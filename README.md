@@ -998,7 +998,10 @@ PR: https://github.com/pasoooir/Mshin/pull/518
 - [x] Block pointer input through the backdrop and explicitly guard city selection and camera gestures while the production modal is open.
 - [x] Preserve product drag/drop validation, touch select-then-tap fallback, and the existing production/automatic-chain APIs.
 - [x] Add Escape/Backspace dismissal alongside the close button.
-- [ ] Godot headless GameplaySmoke and project validation on this branch.
-- [ ] Android landscape visual and touch validation.
+- [x] Godot headless startup, GameplaySmoke, visual geometry, currency/sandbox, macro-economy and static project validation passed on CI.
+- [ ] Android landscape visual and touch validation (physical device check still pending).
 
 PR #518 is merged; this follow-up corrects its remaining modal and building-hit-area behavior. The new slice is not marked complete until CI and device checks pass.
+
+- [x] Android Debug APK export and package signature/identity verification passed in CI.
+- [ ] Web Chromium mobile/desktop launch smoke and Pages deployment are still running/pending.
