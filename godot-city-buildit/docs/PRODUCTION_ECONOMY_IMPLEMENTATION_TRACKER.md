@@ -418,8 +418,11 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] Bottom queue dock uses a dark translucent surface and high-contrast slots; existing production timers, collect actions, store queue capacity and drag/drop handlers remain in place.
 - [x] 50% dimmed city modal, modal input lock and building-footprint drop target are retained.
 - [x] GameplaySmoke covers compact panel height, nameplate placement, compact details and first honeycomb cluster.
-- [ ] Run Godot import/parse and GameplaySmoke on this redesign branch.
+- [x] Godot 4.3 import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy checks passed in CI run `43738099078`.
+- [x] Android Debug APK exported and signature/package identity verified in CI; artifact produced (available until 2026-11-29).
+- [x] Web export and desktop/mobile Chromium launch smoke passed in CI run `43738099073`.
+- [ ] Production GitHub Pages deployment is not verified by this PR run: its deploy job was skipped.
 - [ ] Validate 16:9 and Android landscape sizes; physically test touch select-then-tap and drag/drop.
 - [ ] Capture and review final Android gameplay screenshot before accepting visual completion.
 
-**Visual acceptance is not yet claimed.** Figma and Canva boards are design references; only the Godot build and device screenshots can prove the in-game result.
+**PR #520 merged into `main` at `5fbac0e3aaef34d4fb4aa96ce802c8d51a8afdd5`. CI acceptance is green, but visual acceptance is not yet claimed. Figma and Canva boards are design references; only the Godot build and device screenshots can prove the in-game result.
