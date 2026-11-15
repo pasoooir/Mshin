@@ -56,7 +56,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var consumed_inputs: Dictionary = {}
 	var collected_outputs: Dictionary = {}
 	var sale_events: Array[Dictionary] = []
-	var depot_listings: Dictionary = {}
+	var depot_listings: Dictionary = config.get("initial_depot_listings", {}).duplicate(true)
 	var production_log: Array[Dictionary] = []
 	var sales_total := 0
 
@@ -279,6 +279,7 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 		return {"capture_error": "A live SceneTree is required."}
 	var now := int(Time.get_unix_time_from_system())
 	var facilities: Array[Dictionary] = []
+	var has_automatic_chain_jobs := false
 	for component in scene_tree.get_nodes_in_group("production_components"):
 		if not is_instance_valid(component) or not component is ProductionComponent:
 			continue
@@ -291,6 +292,8 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 		var duration_overrides: Dictionary = {}
 		for slot_variant in component.slots:
 			var slot: Dictionary = slot_variant.duplicate(true)
+			if not str(slot.get("auto_chain_id", "")).is_empty():
+				has_automatic_chain_jobs = true
 			if not slot.is_empty():
 				var finish_unix := int(slot.get("finish_unix", 0))
 				var remaining := maxi(0, finish_unix - now) if finish_unix > 0 else 0
@@ -312,6 +315,24 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 			"initial_slots": initial_slots,
 			"duration_overrides": duration_overrides
 		})
+	if has_automatic_chain_jobs:
+		return {"capture_error": "Live automatic dependency chains are active; their dependency graph is not yet included in this snapshot."}
+	var depot_snapshot: Dictionary = {}
+	for listing_variant in TradeManager.sell_slots:
+		var listing: Dictionary = listing_variant.duplicate(true)
+		var listing_id := str(listing.get("listing_id", ""))
+		if listing_id.is_empty():
+			continue
+		var remaining := maxi(0, int(listing.get("finish_unix", now)) - now)
+		if bool(listing.get("ready", false)):
+			remaining = 0
+		var age := 120 - mini(120, remaining)
+		depot_snapshot[listing_id] = {
+			"item_id": str(listing.get("item_id", "")),
+			"quantity": int(listing.get("amount", 0)),
+			"unit_value": int(listing.get("price", 0)) / maxi(1, int(listing.get("amount", 1))),
+			"listed_at_seconds": -age
+		}
 	var raw_catalog: Dictionary = ProductionManager.raw_materials.duplicate(true)
 	var crafted_catalog: Dictionary = ProductionManager.crafted_items.duplicate(true)
 	return {
@@ -322,5 +343,7 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 		"crafted_items": crafted_catalog,
 		"factory_materials": ProductionManager.factory_materials.duplicate(true),
 		"facilities": facilities,
-		"actions": actions.duplicate(true)
+		"actions": actions.duplicate(true),
+		"depot_operational": TradeManager.is_depot_operational(),
+		"initial_depot_listings": depot_snapshot
 	}
