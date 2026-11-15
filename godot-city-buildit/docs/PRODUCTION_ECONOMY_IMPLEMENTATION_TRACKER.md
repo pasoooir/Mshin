@@ -241,7 +241,8 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 - [x] Smoke tests added for parallel factory slots, two queued store jobs, atomic material consumption, full-warehouse retention and production-to-cashflow integration.
 - [x] Godot Validation / Android APK export / Web Chromium CI on the final PR SHA.
 - [ ] Automatic-chain dependency replay, shared intermediate reservations and multiple concurrent roots.
-- [ ] Inventory cost-basis ledger and accounting-grade realized profit; catalog value is not silently treated as cash expenditure.
+- [x] Scenario-level FIFO inventory cost batches, COGS and gross-margin accounting with explicit acquisition costs; unknown costs remain unknown and catalog values are not substituted. Verified by MacroEconomySmoke.
+- [ ] Persisted live StorageManager cost-batch ledger, production cost propagation through live manual/AUTO CHAIN jobs, Depot realized-margin ledger and save/load integration.
 - [ ] Coupling delivery-order item consumption to production inventory and explicit market-demand modeling.
 
 **Godot evidence:** [Godot City BuildIt Validation run 43708045317 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045317). It passed Import/Parse, headless startup, GameplaySmoke (including the live-city snapshot), VisualPresentationSmoke, CurrencyEconomySmoke, MacroEconomySmoke and Android Debug APK export/signature validation. Web/Chromium desktop and mobile launch plus artifact upload passed: [run 43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318). The later commits only updated README/docs, not runtime code. PR #509 is merged to main as `dd7967dc10857b317386353d7366b42cb972569e`. Web/Chromium acceptance passed. The independent CI run on the squash merge commit remains a separate unchecked gate.
@@ -255,3 +256,18 @@ Implementation branch: `feat/production-capacity-cashflow-model`
 - [x] PR Godot Validation: [43708045317](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
 - [x] PR Web/Chromium desktop and mobile: [43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318).
 - [ ] Independent workflow evidence on the squash merge commit has not yet been verified.
+
+
+## FIFO cost basis and gross margin — PR #510
+
+- [x] Initial inventory cost batches are accepted only from explicit `initial_unit_costs`; missing cost data stays unknown.
+- [x] FIFO material cost is carried from store inputs into crafted output at queue admission.
+- [x] Depot listing reservation carries the sold batch's cost basis; gross revenue, known COGS and gross margin are reported at explicit sale collection.
+- [x] Unknown-cost sales expose null gross margin and increment `unknown_cost_sale_quantity`; no catalog reference value is used as acquisition cost.
+- [x] COGS is kept out of the Simoleons cash balance to prevent double counting.
+- [x] Regression case: revenue 80, COGS 30, gross margin 50; unknown-cost sale correctly marks gross margin incomplete.
+- [x] Godot Validation + MacroEconomySmoke + Android Debug APK: [run 43709273987](https://github.com/pasoooir/Mshin/actions/runs/43709273987).
+- [x] Web/Chromium desktop and mobile: [run 43709273970](https://github.com/pasoooir/Mshin/actions/runs/43709273970).
+- [ ] Live inventory cost-batch persistence in StorageManager and save/load.
+- [ ] Live manual/automatic production input-cost propagation and Trade Depot realized gross-margin ledger.
+- [ ] Scenario simulator replay of complete AUTO CHAIN graphs, shared dependencies and critical-path timing.
