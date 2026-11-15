@@ -204,12 +204,13 @@ func _test_automatic_production_chain() -> void:
 	_check(ProductionManager.request_automatic_chain(store, "nails", 0), "A valid Nails request must be accepted as an automatic dependency chain without pre-existing Metal.")
 	var chain_id := str(store.slots[0].get("auto_chain_id", ""))
 	_check(not chain_id.is_empty() and bool(store.slots[0].get("auto_chain_root", false)), "The target store slot must persist the root chain request.")
+	print("[AutoChainSmoke] manager_tree=", ProductionManager.is_inside_tree(), " group_components=", get_tree().get_nodes_in_group("production_components").size(), " factory=", factory.is_factory, "/", factory.factory_type, " slots=", factory.get_slot_count(), " compatible=", ProductionManager.get_factory_material_ids(factory.factory_type).has("metal"), " road=", factory._owner_has_road_access(), " root=", store.slots[0])
 	ProductionManager._process_automatic_chains()
 	var raw_slots_started := 0
 	for slot in factory.slots:
 		if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == "metal":
 			raw_slots_started += 1
-	_check(raw_slots_started == 2, "The automatic chain must reserve two independent factory slots for the two Metal inputs.")
+	_check(raw_slots_started == 2, "The automatic chain must reserve two independent factory slots for the two Metal inputs. Started=%d factory_slots=%s chain=%s" % [raw_slots_started, str(factory.slots), str(ProductionManager.get_automatic_chain_status())])
 	_check(StorageManager.get_count("metal") == 0, "Raw materials must not be fabricated into inventory before their factory jobs complete.")
 
 	var now := int(Time.get_unix_time_from_system())
