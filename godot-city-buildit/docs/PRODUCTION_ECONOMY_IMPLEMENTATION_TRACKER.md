@@ -592,7 +592,10 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Extend GameplaySmoke to assert real non-zero hitbox dimensions and pointer handling for all three target classes.
 - [x] Godot validation + GameplaySmoke + Android Debug APK CI passed (run `43755633708`).
 - [x] Web export + desktop/mobile Chromium smoke passed (run `43755633706`).
-- [ ] Merge and verify post-merge Pages deployment.
+- [x] PR #532 merged to `main` as `709583fffc4f8eb022061e23c6ae5aa7620cdfda`.
+- [x] Post-merge Godot validation + GameplaySmoke + Android Debug APK passed (run `43755844436`).
+- [x] Post-merge Web export + desktop/mobile Chromium + deploy passed (run `43755844441`).
+- [x] GitHub Pages build/deploy passed (run `43755842340`).
 - [ ] Physical Android touch validation (must not be inferred from CI).
 
 **Acceptance rule:** direct programmatic `pressed.emit()` is not evidence of a working screen tap. The projected target must have a non-zero global hit rectangle at its camera-projected screen position, and the production queue must change only after a valid user interaction.
