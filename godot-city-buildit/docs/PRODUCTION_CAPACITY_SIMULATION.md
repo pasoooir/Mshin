@@ -16,7 +16,7 @@ Smoke coverage:
 | Area | Simulated behavior | Live implementation |
 |---|---|---|
 | Factory concurrency | Every factory slot runs independently; the building's configured `production_slots` is the parallel limit | `ProductionComponent.start_factory`; `BuildManager.building_types` |
-| Store queue | One active job per store building; other slots are FIFO waiting jobs | `ProductionComponent._start_next_store_order` |
+| Store queue | One active job per store building; other slots are slot-order queue waiting jobs | `ProductionComponent._start_next_store_order` |
 | Input reservation | All recipe inputs are validated and removed atomically when a manual store order is accepted into its queue | `ProductionComponent.start_craft`; `StorageManager.remove_items` |
 | Completion | A timer makes the slot ready; it does not itself move goods into City Storage | `ProductionComponent.refresh_slots` |
 | Warehouse | Collection requires free capacity; failed collection leaves the ready job in its slot | `ProductionComponent.collect`; `StorageManager.add_item` |
