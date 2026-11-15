@@ -297,6 +297,7 @@ func _market_item_row(item_id: String) -> Control:
 	row.add_child(info)
 	for amount in [1, 5]:
 		var buy := Button.new()
+		buy.name = "MarketBuy_%s_%d" % [item_id, amount]
 		buy.text = "BUY %d\n%s" % [amount, _fmt(price * amount)]
 		buy.custom_minimum_size = Vector2(76, 48) * _scale
 		buy.add_theme_stylebox_override("normal", _button_style(Color("#2D8C70")))
