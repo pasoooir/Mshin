@@ -798,7 +798,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 
 سند فنی: [Production Capacity Simulation](godot-city-buildit/docs/PRODUCTION_CAPACITY_SIMULATION.md)
 
-**وضعیت:** Godot Validation، GameplaySmoke، MacroEconomySmoke و Android Debug APK export/signature روی SHA `bb24eb193804e38e8095b63409931095846572ed` موفق شدند. Web/Chromium هنوز در حال اجراست. موارد باز پایین بدون تیک می‌مانند.
+**وضعیت:** Godot Validation، GameplaySmoke، MacroEconomySmoke و Android Debug APK export/signature روی SHA `bb24eb193804e38e8095b63409931095846572ed` موفق شدند. Web/Chromium روی همان code SHA موفق شد: [run 43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318). موارد باز پایین بدون تیک می‌مانند.
 
 - [x] موتور بازپخش ظرفیت با اسلات‌های موازی کارخانه و محدودیت تعداد اسلات هر ساختمان.
 - [x] صف فروشگاه بر اساس ترتیب اسلات‌های واقعی با فقط یک سفارش فعال در هر ساختمان و رزرو اتمی BOM هنگام پذیرش سفارش.
@@ -807,11 +807,11 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] اتصال درآمد فروش تولیدشده به source جداگانه `production_sales` در MacroEconomySimulator.
 - [x] snapshot شهر زنده شامل مانده Simoleons، جمعیت، شادی، سطح، XP، خانه‌های اشغال‌شده، موجودی/ظرفیت انبار، کارخانه‌ها/فروشگاه‌ها، اسلات‌ها، زمان‌های باقی‌مانده و آگهی‌های فعال Depot.
 - [x] آزمون موازی‌بودن کارخانه، صف سریالی فروشگاه، مصرف مواد، انبار پر و اتصال درآمد به مانده پول.
-- [x] اجرای Godot Validation، MacroEconomySmoke، Android Debug APK export.
+- [x] اجرای Godot Validation، MacroEconomySmoke و Android Debug APK export: [run 43708045317 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
 - [ ] بازپخش کامل AUTO CHAIN، رزرو اشتراکی مواد میانی و critical path؛ snapshot زنده در صورت وجود زنجیره خودکار فعال فعلاً عمداً متوقف می‌شود.
 - [ ] دفتر بهای تمام‌شده مواد و محاسبه سود خالص واقعی؛ ارزش کاتالوگ هنوز به‌عنوان هزینه نقدی فرض نمی‌شود.
 - [ ] اتصال مصرف موجودی به سفارش‌های تحویل و تقاضای بازار؛ نرخ فروش یا تقاضا نباید حدس زده شود.
-- [ ] اجرای Web/Chromium روی SHA نهایی PR (در حال اجرا).
+- [x] Web build و اجرای دسکتاپ/موبایل در Chromium روی code SHA نهایی: [run 43708045318 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045318).
 - [ ] آزمون نصب و لمس روی گوشی Android واقعی.
 
 **شواهد Godot CI:** [run 43708045317 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
