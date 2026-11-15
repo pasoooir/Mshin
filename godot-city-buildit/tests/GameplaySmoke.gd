@@ -3913,8 +3913,8 @@ func _run_gameplay_test() -> void:
 	_check(ProductionManager.get_recipe_lock_reason("paint", shop_component.store_star_level).contains("Store Star"), "Paint must remain locked until Building Supplies reaches its sourced one-star requirement.")
 	_check(is_equal_approx(ProductionManager.get_production_time("nails", 0), 300.0) and is_equal_approx(ProductionManager.get_production_time("nails", 1), 270.0), "Building Supplies one-star timing must apply the sourced 10% reduction.")
 	production_hud.open_production_panel(supplies)
-	_check(production_hud.production_panel.find_child("StoreStarStatus", true, false) is Label, "Supported commercial stores must display their current star level.")
-	var star_upgrade_button := production_hud.production_panel.find_child("UpgradeStoreStar", true, false) as Button
+	_check(production_hud.production_overlay.find_child("StoreStarStatus", true, false) is Label, "Supported commercial stores must display their current star level.")
+	var star_upgrade_button := production_hud.production_overlay.find_child("UpgradeStoreStar", true, false) as Button
 	_check(star_upgrade_button != null and not star_upgrade_button.disabled, "Building Supplies one-star upgrade must be available at its sourced level and cost.")
 	if star_upgrade_button:
 		star_upgrade_button.emit_signal("pressed")
