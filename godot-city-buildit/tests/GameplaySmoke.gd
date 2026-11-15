@@ -3037,6 +3037,7 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(BuildManager.get_population_build_lock_reason("cargo_port").is_empty(), "Cargo Port must unlock at exactly 20,000 population.")
 	_check(TradeManager.is_cargo_ship_operational(), "A completed Cargo Port at 20,000+ population must activate the cargo ship.")
 	StorageManager.items = {"metal": 3}
+	StorageManager.item_cost_batches = {"metal": [{"quantity": 3, "total_cost": 45, "known": true}]}
 	TradeManager.ship_crates = [
 		{"item_id":"metal", "amount":1, "delivered":false},
 		{"item_id":"metal", "amount":1, "delivered":false},
@@ -3051,6 +3052,13 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(TradeManager.deliver_ship_crate(1) and TradeManager.deliver_ship_crate(2), "Cargo Ship must accept the remaining manifest crates.")
 	_check(TradeManager.ship_departed and TradeManager.ship_departures == 1, "Completing all three crates must send the ship away exactly once.")
 	_check(EconomyManager.golden_keys == keys_before_ship + 1, "A completed cargo ship manifest must grant one Golden Key.")
+
+	var cargo_realized: Dictionary = MacroEconomySimulatorScript._summarize_realized_trade_ledger(EconomyManager.transaction_ledger)
+	var non_cash: Dictionary = cargo_realized.get("non_cash_contribution", {})
+	_check(int(non_cash.get("cargo_ship_crates_delivered", 0)) == 3 and int(non_cash.get("cargo_ship_known_cogs", -1)) == 45 and int(non_cash.get("cargo_ship_unknown_cost_quantity", -1)) == 0, "Cargo Ship must report the three delivered crates and their FIFO COGS separately from cash sales.")
+	_check(int(non_cash.get("golden_keys_earned", 0)) == 1 and not bool(non_cash.get("golden_key_simoleon_value_known", true)), "Golden Key reward must be reported as non-cash and must not receive an invented Simoleon value.")
+	_check(int(cargo_realized.get("gross_revenue", 0)) == ProductionManager.get_item_value("metal") + 40, "Cargo Ship Golden Key rewards must not inflate Simoleon gross revenue.")
+
 	_check(TradeManager.ship_return_unix > int(Time.get_unix_time_from_system()), "Ship departure must persist an absolute return timestamp.")
 	TradeManager.ship_return_unix = int(Time.get_unix_time_from_system()) - 1
 	var saved_departed_ship: Dictionary = TradeManager.to_save_dict()
