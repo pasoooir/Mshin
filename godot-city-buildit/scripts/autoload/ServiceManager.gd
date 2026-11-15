@@ -57,6 +57,19 @@ const EMERGENCY_SERVICE_OPERATING_PROFILES := {
 # This is a transparent balancing parameter, not an EA-published demographic.
 const WORKFORCE_SHARE := 0.45
 
+func get_building_service_capacity(building: Node3D, capacity_key: String) -> int:
+	if not is_instance_valid(building):
+		return 0
+	var base_capacity := maxi(0, int(building.definition.get(capacity_key, 0)))
+	if str(building.definition.get("category", "")) != "service":
+		return base_capacity
+	var stage := maxi(1, int(building.get("upgrade_stage")))
+	if stage <= 1 or base_capacity <= 0:
+		return base_capacity
+	# Mshin-only service-building upgrade effect: +10% capacity per completed
+	# non-residential stage. This is a balance rule, not an EA value.
+	return maxi(base_capacity, roundi(float(base_capacity) * (1.0 + 0.10 * float(stage - 1))))
+
 func get_building_operating_profile(building: Node3D) -> Dictionary:
 	if not is_instance_valid(building):
 		return {}
@@ -231,6 +244,7 @@ func _has_nearby_emergency_facility(home: Node3D, service_group: String) -> bool
 		if not BuildManager.is_building_operational(candidate):
 			continue
 		var coverage_tiles := maxf(0.0, float(definition.get("coverage_tiles", DEFAULT_EMERGENCY_COVERAGE_TILES)))
+		coverage_tiles *= 1.0 + 0.05 * float(maxi(0, int(candidate.get("upgrade_stage")) - 1))
 		var radius := coverage_tiles * float(BuildManager.GRID_SIZE)
 		var facility_flat := Vector2(candidate.global_position.x, candidate.global_position.z)
 		if home_flat.distance_to(facility_flat) <= radius:
@@ -285,14 +299,14 @@ func recalculate_from_buildings() -> void:
 			demand_sewage += get_building_utility_demand(building, "sewage")
 			demand_waste += get_building_utility_demand(building, "waste")
 		elif service_group == "sewage" and _has_gateway_road_access(building):
-			total_sewage += int(definition.get("sewage", 0))
+			total_sewage += get_building_service_capacity(building, "sewage")
 		elif str(definition.get("service_group", "")) == "waste" and _has_gateway_road_access(building):
-			total_waste += int(definition.get("waste", 0))
+			total_waste += get_building_service_capacity(building, "waste")
 		# Capacity is operational only while the facility itself is connected
 		# to the Gateway. Disconnected plants must not inflate city totals.
 		if _has_gateway_road_access(building):
-			total_power += int(definition.get("power", 0))
-			total_water += int(definition.get("water", 0))
+			total_power += get_building_service_capacity(building, "power")
+			total_water += get_building_service_capacity(building, "water")
 
 	# Power and water keep their local-radius service model, but demand is
 	# derived from each home's explicit low/medium/high service-demand value.
