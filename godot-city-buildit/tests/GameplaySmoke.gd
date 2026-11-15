@@ -2052,6 +2052,12 @@ func _test_emergency_service_tier_happiness() -> void:
 			facility.free()
 			ServiceManager.recalculate_from_buildings()
 
+	# The per-tier assertions above intentionally used a narrow radius to
+	# separate household and station utility coverage. Restore the normal city
+	# radius for the following road-cut/workforce recovery scenario.
+	ServiceManager.coverage_radius = saved_coverage_radius
+	power_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	water_provider.global_position = Vector3(15.0, 0.0, 0.0)
 	# A home loses all local emergency coverage when its only Gateway-adjacent
 	# road tile is removed, and regains it when the road is restored.
 	var fire_facility := FireHazardTestBuilding.new()
