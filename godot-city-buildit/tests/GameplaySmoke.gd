@@ -1873,14 +1873,34 @@ func _test_emergency_service_tier_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
 	var saved_simoleons := EconomyManager.simoleons
+	var saved_coverage_radius := ServiceManager.coverage_radius
 	BuildManager.buildings.clear()
 	GameManager.level = 16
+	ServiceManager.coverage_radius = 40.0
 	var road_system = get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.seed_starter_access()
 
 	var home := _create_service_test_home("emergency_service_test_home", 1, Vector2i(1, 1))
 	var disconnected_home := _create_service_test_home("emergency_service_disconnected_home", 1, Vector2i(35, 35))
+	var power_provider := FireHazardTestBuilding.new()
+	add_child(power_provider)
+	power_provider.building_id = "emergency_test_power"
+	power_provider.building_type = "power_wind"
+	power_provider.definition = BuildManager.building_types["power_wind"]
+	power_provider.status = "completed"
+	power_provider.grid_pos = Vector2i(1, -2)
+	power_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	BuildManager.buildings[power_provider.building_id] = power_provider
+	var water_provider := FireHazardTestBuilding.new()
+	add_child(water_provider)
+	water_provider.building_id = "emergency_test_water"
+	water_provider.building_type = "water_tower"
+	water_provider.definition = BuildManager.building_types["water_tower"]
+	water_provider.status = "completed"
+	water_provider.grid_pos = Vector2i(1, -2)
+	water_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	BuildManager.buildings[water_provider.building_id] = water_provider
 	ServiceManager.recalculate_from_buildings()
 	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
 	var service_cases := {
@@ -1946,7 +1966,18 @@ func _test_emergency_service_tier_happiness() -> void:
 	fire_facility.global_position = Vector3.ZERO
 	BuildManager.buildings[fire_facility.building_id] = fire_facility
 	ServiceManager.recalculate_from_buildings()
-	_check(ServiceManager.fire_served_ids.has(home.building_id), "A connected Fire Station must cover a connected nearby home.")
+	_check(ServiceManager.fire_served_ids.has(home.building_id), "A connected, powered and staffed Fire Station must cover a connected nearby home.")
+	power_provider.status = "constructing"
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.fire_served_ids.has(home.building_id), "Emergency coverage must stop when its required power supply is lost.")
+	power_provider.status = "completed"
+	var old_home_population := home.current_population
+	home.current_population = 0
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.fire_served_ids.has(home.building_id), "Emergency coverage must stop when the station has no available workforce.")
+	home.current_population = old_home_population
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.fire_served_ids.has(home.building_id), "Restoring station workforce must restore emergency coverage.")
 	_check(ServiceManager.served_fire_homes == 1 and ServiceManager.demand_fire_homes == 2, "Emergency service HUD metrics must report covered homes against all completed homes.")
 	if road_system:
 		_check(road_system.remove_road(Vector2i(1, 0)), "Emergency coverage test must be able to cut the home's only Gateway access tile.")
@@ -1961,6 +1992,10 @@ func _test_emergency_service_tier_happiness() -> void:
 	BuildManager.buildings.erase(fire_facility.building_id)
 	remove_child(fire_facility)
 	fire_facility.free()
+	for provider in [power_provider, water_provider]:
+		BuildManager.buildings.erase(provider.building_id)
+		remove_child(provider)
+		provider.free()
 	for home_node in [home, disconnected_home]:
 		BuildManager.buildings.erase(home_node.building_id)
 		remove_child(home_node)
@@ -1968,13 +2003,16 @@ func _test_emergency_service_tier_happiness() -> void:
 	BuildManager.buildings = saved_buildings
 	GameManager.level = saved_level
 	EconomyManager.simoleons = saved_simoleons
+	ServiceManager.coverage_radius = saved_coverage_radius
 	ServiceManager.recalculate_from_buildings()
 
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_timers: Dictionary = FireHazardManager.unprotected_time.duplicate()
 	var saved_smoking: Dictionary = FireHazardManager.smoking_ids.duplicate()
+	var saved_coverage_radius := ServiceManager.coverage_radius
 	BuildManager.buildings.clear()
+	ServiceManager.coverage_radius = 40.0
 	FireHazardManager.unprotected_time.clear()
 	FireHazardManager.smoking_ids.clear()
 	var road_system = get_node_or_null("World/RoadSystem")
@@ -2000,6 +2038,22 @@ func _test_fire_hazard_state_machine() -> void:
 	station.grid_pos = Vector2i(1, -2)
 	station.global_position = Vector3(30.1, 0.0, 0.0)
 	BuildManager.buildings[station.building_id] = station
+	var power_provider := FireHazardTestBuilding.new()
+	add_child(power_provider)
+	power_provider.building_id = "fire_test_power"
+	power_provider.definition = BuildManager.building_types["power_wind"]
+	power_provider.status = "completed"
+	power_provider.grid_pos = Vector2i(1, -2)
+	power_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	BuildManager.buildings[power_provider.building_id] = power_provider
+	var water_provider := FireHazardTestBuilding.new()
+	add_child(water_provider)
+	water_provider.building_id = "fire_test_water"
+	water_provider.definition = BuildManager.building_types["water_tower"]
+	water_provider.status = "completed"
+	water_provider.grid_pos = Vector2i(1, -2)
+	water_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	BuildManager.buildings[water_provider.building_id] = water_provider
 	ServiceManager.recalculate_from_buildings()
 
 	FireHazardManager._evaluate_hazards(10.0)
@@ -2055,7 +2109,12 @@ func _test_fire_hazard_state_machine() -> void:
 	home.free()
 	remove_child(station)
 	station.free()
+	for provider in [power_provider, water_provider]:
+		BuildManager.buildings.erase(provider.building_id)
+		remove_child(provider)
+		provider.free()
 	BuildManager.buildings = saved_buildings
+	ServiceManager.coverage_radius = saved_coverage_radius
 	FireHazardManager.unprotected_time = saved_timers
 	FireHazardManager.smoking_ids = saved_smoking
 	ServiceManager.recalculate_from_buildings()
