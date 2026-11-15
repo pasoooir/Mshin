@@ -2654,7 +2654,7 @@ func _input(event: InputEvent) -> void:
 	_on_production_product_gui_input(event, source_button, source_building, str(gesture.get("item_id", "")))
 
 
-func _on_production_product_gui_input(event: InputEvent, product_button: Button, building: Building, item_id: String) -> void:
+func _on_production_product_gui_input(event: InputEvent, _product_button: Button, building: Building, item_id: String) -> void:
 	# Keep native mouse drag forwarding and provide an explicit touch pointer path
 	# for Android, where Control drag-and-drop may not receive touch drags.
 	var pointer_id := -1
@@ -2793,6 +2793,8 @@ func _accept_production_drop(_at_position: Vector2, data: Variant, building: Bui
 		var missing := ProductionManager.get_missing_inputs_text(item_id)
 		started = component.start_craft(item_id, slot_index) if missing.is_empty() else ProductionManager.request_automatic_chain(component, item_id, slot_index)
 	if started:
+		_touch_selected_production_item = ""
+		_touch_selected_production_building_id = 0
 		status_label.text = "Production order accepted: %s." % str(ProductionManager.get_item_definition(item_id).get("name", item_id))
 	else:
 		status_label.text = "Order not accepted. Check materials, supplier chain, building operation and slot availability."
