@@ -102,7 +102,7 @@ PR #509 با merge commit `dd7967dc10857b317386353d7366b42cb972569e` وارد `m
 **CI:** Godot Validation + MacroEconomySmoke + Android Debug APK: [run 43709273987](https://github.com/pasoooir/Mshin/actions/runs/43709273987). Web/Chromium desktop/mobile: [run 43709273970](https://github.com/pasoooir/Mshin/actions/runs/43709273970).
 
 
-## بهای تمام‌شدهٔ موجودی زنده و فروش تحقق‌یافته — PR در انتظار CI
+## بهای تمام‌شدهٔ موجودی زنده و فروش تحقق‌یافته — PR #511 ادغام شد
 
 StorageManager اکنون batchهای FIFO را در کنار تعداد موجودی نگه می‌دارد و آن‌ها را از طریق `to_save_dict/from_save_dict` ذخیره می‌کند. موجودی قدیمی بدون دادهٔ قابل اتکا، به‌عنوان بهای نامشخص بازیابی می‌شود. جایگزینی کامل موجودی نیز batchهای قبلی را نامعتبر می‌کند تا هزینهٔ قدیمی به موجودی جدید نچسبد.
 
@@ -113,4 +113,4 @@ StorageManager اکنون batchهای FIFO را در کنار تعداد موج�
 - snapshot شهر زنده، فروش‌های تحقق‌یافته را از دفتر تراکنش می‌خواند. سقف دفتر فعلی ۳۰۰ تراکنش است؛ اگر sequence از تعداد رکوردهای موجود بیشتر باشد، `history_complete=false` و `gross_margin_complete=false` گزارش می‌شود.
 - سفارش‌های تحویل و Cargo Ship هنوز مصرف کالا و بهای تمام‌شده را در دفتر سود متصل نمی‌کنند.
 
-این مرحله هنوز باید در CI تأیید شود. تا آن زمان هیچ checkbox مربوط به پذیرش زنده تیک نمی‌خورد.
+PR #511 با merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` در `main` ادغام شد. Godot Validation، GameplaySmoke، MacroEconomySmoke و Android Debug APK در [run 43710111735](https://github.com/pasoooir/Mshin/actions/runs/43710111735) موفق شدند؛ Web/Chromium دسکتاپ و موبایل در [run 43710111759](https://github.com/pasoooir/Mshin/actions/runs/43710111759) موفق شد. اجرای مستقل CI روی merge commit main همچنان یک گیت جداگانه است.
