@@ -6,6 +6,8 @@ func _ready() -> void:
 	var original_simoleons := EconomyManager.simoleons
 	var original_keys := EconomyManager.golden_keys
 	var original_ledger := PaymentManager.to_save_dict()
+	var original_storage := StorageManager.to_save_dict()
+	var original_level := GameManager.level
 	var failures: Array[String] = []
 
 	EconomyManager.sim_cash = 25
@@ -19,6 +21,46 @@ func _ready() -> void:
 	var converted := EconomyManager.convert_sim_cash_to_simoleons(5)
 	if not bool(converted.get("success", false)) or EconomyManager.sim_cash != 20 or EconomyManager.simoleons != 6000:
 		failures.append("valid conversion did not atomically update both balances")
+
+
+	# Simoleons material market: only unlocked catalog items, atomic debit,
+	# inventory capacity and quantity checks.
+	GameManager.level = 1
+	StorageManager.from_save_dict({"capacity": 100, "items": {}})
+	var market_price := EconomyManager.get_market_buy_price("metal")
+	var market_buy := EconomyManager.buy_market_item("metal", 5)
+	if market_price <= 0 or not bool(market_buy.get("success", false)) or StorageManager.get_count("metal") != 5 or EconomyManager.simoleons != 6000 - market_price * 5:
+		failures.append("Simoleons market did not atomically debit currency and add purchased raw materials")
+	var before_full := EconomyManager.simoleons
+	StorageManager.from_save_dict({"capacity": 5, "items": {"metal": 5}})
+	var full_buy := EconomyManager.buy_market_item("metal", 1)
+	if bool(full_buy.get("success", true)) or EconomyManager.simoleons != before_full:
+		failures.append("warehouse-full market purchase should not charge Simoleons")
+	StorageManager.from_save_dict({"capacity": 100, "items": {}})
+	var locked_buy := EconomyManager.buy_market_item("electrical", 1)
+	if bool(locked_buy.get("success", true)):
+		failures.append("locked raw material was purchasable before its unlock level")
+
+	# SimCash production acceleration uses remaining time, spends once and
+	# leaves the completed item on its production slot until collection.
+	EconomyManager.sim_cash = 10
+	var factory := ProductionComponent.new()
+	factory.is_factory = true
+	factory.factory_type = "factory_small"
+	factory.slot_count = 2
+	add_child(factory)
+	await get_tree().process_frame
+	if not factory.start_factory("metal", 0):
+		failures.append("test factory could not start a raw-material order")
+	else:
+		var speedup_quote := factory.get_slot_speedup_quote(0)
+		var speedup_result := factory.speed_up_slot(0)
+		if speedup_quote.is_empty() or not bool(speedup_result.get("success", false)) or EconomyManager.sim_cash != 9 or not bool(factory.get_slot(0).get("ready", false)):
+			failures.append("SimCash did not complete the active factory timer for the quoted cost")
+		if not factory.collect(0) or StorageManager.get_count("metal") != 1:
+			failures.append("speeded-up production did not collect exactly one item")
+	factory.queue_free()
+	await get_tree().process_frame
 
 	var catalog := PaymentManager.get_catalog()
 	if catalog.size() != 8:
@@ -55,10 +97,14 @@ func _ready() -> void:
 	await get_tree().process_frame
 	if not popup_controller.visible or popup_controller.find_child("ConfirmSimCashConversion", true, false) == null:
 		failures.append("Simoleons plus did not open the dedicated conversion popup")
+	if popup_controller.find_child("CitySupplyMarketHeading", true, false) == null or popup_controller.find_child("MarketBuy_metal_1", true, false) == null:
+		failures.append("Simoleons popup did not expose the unlocked material market")
 	popup_controller.open_store()
 	await get_tree().process_frame
 	if not popup_controller.visible or popup_controller.find_child("CurrencyPopupScroll", true, false) == null:
 		failures.append("SimCash plus did not open the dedicated store popup")
+	if popup_controller.find_child("CityProgressBoostsHeading", true, false) == null:
+		failures.append("SimCash popup did not expose city progress acceleration controls")
 	popup_controller.close_panel()
 	popup_controller.queue_free()
 
@@ -71,6 +117,8 @@ func _ready() -> void:
 		if not ResourceLoader.exists(path) or ResourceLoader.load(path) == null:
 			failures.append("3D currency icon failed to load: " + asset)
 
+	StorageManager.from_save_dict(original_storage)
+	GameManager.level = original_level
 	EconomyManager.sim_cash = original_cash
 	EconomyManager.simoleons = original_simoleons
 	EconomyManager.golden_keys = original_keys
@@ -80,5 +128,5 @@ func _ready() -> void:
 			push_error("[CurrencyEconomySmoke] " + failure)
 		get_tree().quit(1)
 		return
-	print("[CurrencyEconomySmoke] PASS: atomic conversion, sandbox order success/failure/cancel, idempotency, ledger restore and dimensional icon imports")
+	print("[CurrencyEconomySmoke] PASS: atomic conversion, Simoleons material market, SimCash production acceleration, sandbox order success/failure/cancel, idempotency, ledger restore and dimensional icon imports")
 	get_tree().quit(0)

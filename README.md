@@ -498,7 +498,7 @@ godot-city-buildit/
 
 این README نقشه راه رسمی پروژه است. هر هوش مصنوعی یا برنامه‌نویس باید طبق همین فازها جلو برود.
 
-یادداشت توسعه: تغییرات پنل ارز در PR #502 نگهداری می‌شوند و فقط پس از عبور آزمون‌های Godot تکمیل تلقی خواهند شد.
+سند اجرایی اقتصاد ارز و پیشرفت شهر: [CURRENCY_DRIVEN_CITY_PROGRESSION.md](godot-city-buildit/docs/CURRENCY_DRIVEN_CITY_PROGRESSION.md). پیاده‌سازی فعلی این بخش در PR جدید در حال بررسی CI است؛ هیچ معیار پذیرشی پیش از سبز شدن آزمون‌ها تیک نمی‌خورد.
 
 
 PR #441 با merge commit `e8ce602f2c73e280d5588e2e9f5a9962bf6505fe` وارد main شد. Godot Validation run `43499325570`، Web/Chromium + Pages deploy run `43499325445` و Pages build/deploy run `43499324239` همگی موفق شدند. تنظیمات صوتی داخل بازی فعال‌اند؛ تکمیل تنظیمات گرافیک/کنترل/زبان و شنیدن واقعی روی دستگاه فیزیکی هنوز ادعا نمی‌شود.
@@ -535,3 +535,15 @@ PR #448 با merge commit `899971802b48180df7c0bf944f62e8e2866c31bc` وارد ma
 - [x] PR #453 با squash merge commit `822ed1d15932522fde4c28f69c0ecacd084e890a` وارد `main` شد. Godot City BuildIt Validation run [43566032841](https://github.com/pasoooir/Mshin/actions/runs/43566032841) موفق شد؛ Static Validation، Import/Parse، Headless Startup، GameplaySmoke و Android Debug APK export/signature/upload سبز شدند. Mshin Playable Web run [43566032822](https://github.com/pasoooir/Mshin/actions/runs/43566032822) نیز با Web export، Chromium دسکتاپ و موبایل افقی، Pages artifact build/upload موفق شد.
 - [~] بررسی چشمی نهایی رنگ آسفالت، ظاهر چراغ‌ها و مدل احشام روی Android فیزیکی هنوز انجام نشده است؛ CI جایگزین مشاهده روی گوشی واقعی نیست.
 
+
+
+## اقتصاد عملیاتی ارز و پیشرفت شهر — در حال اعتبارسنجی
+
+- [ ] پنل Simoleons به بازار محلی خرید مواد خام و محصولات تجاری بازشده متصل شده است؛ قیمت‌گذاری بازار ضریب پیشنهادی Mshin است، نه قیمت رسمی EA.
+- [ ] اقلام خریداری‌شده با کنترل ظرفیت به انبار افزوده می‌شوند و برای BOM ساختمان، ارتقای خانه و تولید تجاری قابل استفاده‌اند.
+- [ ] پنل SimCash گزینه تسریع زمان باقی‌مانده تولید کارخانه/فروشگاه و ساخت/ارتقای ساختمان را نمایش می‌دهد؛ قاعده فعلی Mshin برابر ۱ SimCash به ازای هر دقیقه یا کسر دقیقه است.
+- [ ] اسلات صف تجاری با SimCash و جدول هزینه مرجع جامعه تا سقف ۱۱ اسلات قابل خرید است.
+- [ ] تست smoke برای بازار، ظرفیت انبار، قفل سطح، تسریع تولید و حضور کنترل‌های هر دو پنل اضافه شده است.
+- [ ] این تغییرات تا عبور CI و آزمون واقعی داخل بازی پذیرفته‌شده محسوب نمی‌شوند.
+
+جزئیات منبع، تفکیک EA-confirmed از Community-reference و قواعد پیشنهادی Mshin در [سند اقتصاد ارز](godot-city-buildit/docs/CURRENCY_DRIVEN_CITY_PROGRESSION.md) ثبت شده است.

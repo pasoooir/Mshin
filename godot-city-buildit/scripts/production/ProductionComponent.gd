@@ -235,6 +235,33 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 	slots_changed.emit()
 	return true
 
+func get_slot_speedup_quote(slot_index: int) -> Dictionary:
+	_ensure_slots()
+	if slot_index < 0 or slot_index >= slots.size() or slots[slot_index].is_empty() or bool(slots[slot_index].get("ready", false)) or not _owner_has_road_access():
+		return {}
+	var finish_unix := int(slots[slot_index].get("finish_unix", 0))
+	if finish_unix <= 0:
+		return {}
+	var remaining := maxi(0, finish_unix - int(Time.get_unix_time_from_system()))
+	if remaining <= 0:
+		refresh_slots()
+		return {}
+	return {"slot_index": slot_index, "item_id": str(slots[slot_index].get("item_id", "")), "remaining_seconds": remaining, "simcash_cost": EconomyManager.get_simcash_time_skip_cost(remaining)}
+
+func speed_up_slot(slot_index: int) -> Dictionary:
+	var quote := get_slot_speedup_quote(slot_index)
+	if quote.is_empty():
+		return {"success": false, "reason": "slot_not_speedable"}
+	var cost := int(quote.simcash_cost)
+	if not EconomyManager.spend_sim_cash(cost):
+		return {"success": false, "reason": "insufficient_simcash", "cost": cost}
+	var slot: Dictionary = slots[slot_index]
+	slot["finish_unix"] = int(Time.get_unix_time_from_system())
+	slot.erase("paused_at_unix")
+	slots[slot_index] = slot
+	refresh_slots()
+	return {"success": true, "cost": cost, "item_id": str(quote.item_id)}
+
 func collect(slot_index: int) -> bool:
 	_ensure_slots()
 	if not _owner_has_road_access() or slot_index < 0 or slot_index >= slots.size():

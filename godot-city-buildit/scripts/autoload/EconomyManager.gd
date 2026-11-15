@@ -67,6 +67,39 @@ func spend_keys(amount: int) -> bool:
 	return true
 func set_tax_income(amount: int) -> void:
 	tax_income_per_minute = maxi(0, amount)
+# Mshin market pricing is separate from EA's Global Trade HQ. Fandom lists
+# maximum sell prices, not official buy prices; this multiplier is Mshin balance.
+const MARKET_BUY_PRICE_MULTIPLIER := 1.5
+func get_market_buy_price(item_id: String) -> int:
+	var definition := ProductionManager.get_item_definition(item_id)
+	if definition.is_empty() or not bool(definition.get("unlock_level_verified", true)) or int(definition.get("level", 1)) > GameManager.level:
+		return -1
+	var reference_value := int(definition.get("value", 0))
+	return maxi(1, int(ceil(float(reference_value) * MARKET_BUY_PRICE_MULTIPLIER))) if reference_value > 0 else -1
+
+func buy_market_item(item_id: String, amount: int = 1) -> Dictionary:
+	if amount <= 0 or amount > 20:
+		return {"success": false, "reason": "invalid_quantity"}
+	var unit_price := get_market_buy_price(item_id)
+	if unit_price <= 0:
+		return {"success": false, "reason": "item_locked_or_unavailable"}
+	if StorageManager.get_free() < amount:
+		return {"success": false, "reason": "warehouse_capacity"}
+	var total_cost := unit_price * amount
+	if not spend_simoleons(total_cost):
+		return {"success": false, "reason": "insufficient_simoleons", "cost": total_cost}
+	if not StorageManager.add_item(item_id, amount):
+		add_simoleons(total_cost)
+		return {"success": false, "reason": "warehouse_capacity"}
+	transaction_completed.emit("market_item_purchase", total_cost)
+	return {"success": true, "item_id": item_id, "amount": amount, "unit_price": unit_price, "total_cost": total_cost}
+
+func get_simcash_time_skip_cost(remaining_seconds: int) -> int:
+	if remaining_seconds <= 0:
+		return 0
+	# Mshin balancing rule: 1 SimCash per started minute, not an EA price claim.
+	return maxi(1, int(ceil(float(remaining_seconds) / 60.0)))
+
 func get_formatted_simoleons() -> String:
 	if simoleons >= 1000000: return "%.1fM" % (simoleons / 1000000.0)
 	if simoleons >= 1000: return "%.1fK" % (simoleons / 1000.0)

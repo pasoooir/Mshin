@@ -143,6 +143,12 @@ func _build_conversion() -> void:
 	cancel.add_theme_stylebox_override("normal", _button_style(Color("#40566A")))
 	cancel.pressed.connect(close_panel)
 	_content.add_child(cancel)
+	var market_heading := _label("CITY SUPPLY MARKET", 16, Color("#F7D77D"))
+	market_heading.name = "CitySupplyMarketHeading"
+	_content.add_child(market_heading)
+	_content.add_child(_notice("Buy unlocked resources with Simoleons", "Purchase raw materials and crafted goods directly into your warehouse. Prices are Mshin market prices, not official EA Global Trade HQ prices."))
+	for item_id in _get_market_item_ids():
+		_content.add_child(_market_item_row(item_id))
 	if EconomyManager.sim_cash < _selected_conversion:
 		_status.text = "Not enough SimCash for this exchange."
 
@@ -164,6 +170,13 @@ func _confirm_conversion() -> void:
 func _build_store() -> void:
 	_content.add_child(_balance_panel())
 	_content.add_child(_notice("SANDBOX PAYMENT MODE", "The bank hand-off is simulated only. No card details are collected and no real money is charged. Product prices will be configured after merchant and gateway onboarding."))
+	var boosts_heading := _label("CITY PROGRESS BOOSTS", 16, Color("#F7D77D"))
+	boosts_heading.name = "CityProgressBoostsHeading"
+	_content.add_child(boosts_heading)
+	_content.add_child(_notice("Use SimCash to save time", "Finish active factory/store production, construction and upgrades. Mshin quote: 1 SimCash per started minute remaining. Access and service requirements still apply."))
+	_add_active_progress_boosts()
+	_content.add_child(_label("COMMERCIAL QUEUE SLOTS", 16, Color("#F7D77D")))
+	_add_store_slot_expansions()
 	_content.add_child(_label("SIMCASH PACKS", 16, Color("#F7D77D")))
 	for product in PaymentManager.get_catalog():
 		_content.add_child(_product_card(product))
@@ -254,6 +267,149 @@ func _finish_order(outcome: String) -> void:
 		_build_shell("PURCHASE COMPLETE", "Sandbox transaction recorded. No real money was charged.")
 		_content.add_child(_notice("SimCash added", "%s SimCash credited to your city.\nOrder: %s" % [_fmt(int(result.order.grant_amount)), _pending_order_id]))
 	_add_store_return_button()
+
+
+func _get_market_item_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for item_id in ProductionManager.raw_materials.keys():
+		if int(ProductionManager.raw_materials[item_id].get("level", 1)) <= GameManager.level:
+			ids.append(str(item_id))
+	for item_id in ProductionManager.crafted_items.keys():
+		var item: Dictionary = ProductionManager.crafted_items[item_id]
+		if int(item.get("level", 1)) <= GameManager.level and bool(item.get("unlock_level_verified", true)):
+			ids.append(str(item_id))
+	return ids
+
+func _market_item_row(item_id: String) -> Control:
+	var definition := ProductionManager.get_item_definition(item_id)
+	var price := EconomyManager.get_market_buy_price(item_id)
+	if definition.is_empty() or price <= 0:
+		return Control.new()
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _inner_style())
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	panel.add_child(row)
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_child(_label(str(definition.get("name", item_id)), 14, Color.WHITE))
+	info.add_child(_label("%s Simoleons each · Warehouse %d/%d" % [_fmt(price), StorageManager.get_used(), StorageManager.capacity], 11, Color("#B8D5E5")))
+	row.add_child(info)
+	for amount in [1, 5]:
+		var buy := Button.new()
+		buy.name = "MarketBuy_%s_%d" % [item_id, amount]
+		buy.text = "BUY %d\n%s" % [amount, _fmt(price * amount)]
+		buy.custom_minimum_size = Vector2(76, 48) * _scale
+		buy.add_theme_stylebox_override("normal", _button_style(Color("#2D8C70")))
+		buy.pressed.connect(_buy_market_item.bind(item_id, amount))
+		row.add_child(buy)
+	return panel
+
+func _buy_market_item(item_id: String, amount: int) -> void:
+	var result := EconomyManager.buy_market_item(item_id, amount)
+	if not bool(result.get("success", false)):
+		_status.text = "Purchase failed: %s" % str(result.get("reason", "unknown"))
+		return
+	_build_shell("MATERIALS PURCHASED", "Your warehouse has been updated.")
+	_content.add_child(_notice(str(ProductionManager.get_item_definition(item_id).get("name", item_id)), "%d added · %s Simoleons spent" % [amount, _fmt(int(result.total_cost))]))
+	var back := Button.new()
+	back.text = "BACK TO CITY FUNDS"
+	back.pressed.connect(open_conversion)
+	_content.add_child(back)
+	if has_node("/root/SaveManager"):
+		SaveManager.save_game()
+
+func _add_active_progress_boosts() -> void:
+	var found := false
+	for building in BuildManager.buildings.values():
+		if not is_instance_valid(building):
+			continue
+		if building.production_component is ProductionComponent:
+			var component: ProductionComponent = building.production_component
+			for index in range(component.get_slot_count()):
+				var quote := component.get_slot_speedup_quote(index)
+				if quote.is_empty():
+					continue
+				found = true
+				var item := ProductionManager.get_item_definition(str(quote.item_id))
+				var button := Button.new()
+				button.text = "Finish %s · %ds · %d SimCash" % [str(item.get("name", quote.item_id)), int(quote.remaining_seconds), int(quote.simcash_cost)]
+				button.custom_minimum_size.y = 44 * _scale
+				button.add_theme_stylebox_override("normal", _button_style(Color("#277C9B")))
+				button.pressed.connect(_speed_up_component_slot.bind(component, index))
+				_content.add_child(button)
+		else:
+			var production_quote: Dictionary = building.get_legacy_production_speedup_quote()
+			if not production_quote.is_empty():
+				found = true
+				_add_speedup_button("Finish %s production" % str(building.current_product), production_quote, building.speed_up_legacy_production)
+		var construction_quote: Dictionary = building.get_construction_speedup_quote()
+		if not construction_quote.is_empty():
+			found = true
+			_add_speedup_button("Finish %s construction" % str(building.definition.get("name", building.building_type)), construction_quote, building.speed_up_construction)
+		var upgrade_quote: Dictionary = building.get_upgrade_speedup_quote()
+		if not upgrade_quote.is_empty():
+			found = true
+			_add_speedup_button("Finish %s upgrade" % str(building.definition.get("name", building.building_type)), upgrade_quote, building.speed_up_upgrade)
+	if not found:
+		_content.add_child(_notice("No active timers", "Start production, construct a building or begin an upgrade to see instant-finish offers here."))
+
+func _add_speedup_button(label_text: String, quote: Dictionary, callback: Callable) -> void:
+	var button := Button.new()
+	button.text = "%s · %ds · %d SimCash" % [label_text, int(quote.remaining_seconds), int(quote.simcash_cost)]
+	button.custom_minimum_size.y = 44 * _scale
+	button.add_theme_stylebox_override("normal", _button_style(Color("#277C9B")))
+	button.pressed.connect(_run_building_speedup.bind(callback))
+	_content.add_child(button)
+
+func _run_building_speedup(callback: Callable) -> void:
+	var result: Dictionary = callback.call()
+	if not bool(result.get("success", false)):
+		_status.text = "Speed-up failed: %s" % str(result.get("reason", "not available"))
+		return
+	_build_shell("CITY PROGRESS BOOSTED", "SimCash was spent and the selected timer was completed.")
+	_content.add_child(_notice("Time saved", "%d SimCash spent." % int(result.get("cost", 0))))
+	_add_store_return_button()
+	if has_node("/root/SaveManager"):
+		SaveManager.save_game()
+
+func _speed_up_component_slot(component: ProductionComponent, slot_index: int) -> void:
+	var result := component.speed_up_slot(slot_index)
+	if not bool(result.get("success", false)):
+		_status.text = "Speed-up failed: %s" % str(result.get("reason", "not available"))
+		return
+	_build_shell("PRODUCTION COMPLETED", "The finished item is waiting to be collected.")
+	_content.add_child(_notice("Ready to collect", "%s · %d SimCash spent" % [str(ProductionManager.get_item_definition(str(result.get("item_id", ""))).get("name", "Item")), int(result.get("cost", 0))]))
+	_add_store_return_button()
+	if has_node("/root/SaveManager"):
+		SaveManager.save_game()
+
+func _add_store_slot_expansions() -> void:
+	var found := false
+	for building in BuildManager.buildings.values():
+		if not is_instance_valid(building) or not (building.production_component is ProductionComponent):
+			continue
+		var component: ProductionComponent = building.production_component
+		var cost := component.get_next_store_queue_slot_cost()
+		if cost <= 0:
+			continue
+		found = true
+		var button := Button.new()
+		button.text = "%s · Add slot %d · %d SimCash" % [str(building.definition.get("name", building.building_type)), component.get_slot_count() + 1, cost]
+		button.custom_minimum_size.y = 42 * _scale
+		button.add_theme_stylebox_override("normal", _button_style(Color("#277C9B")))
+		button.pressed.connect(_purchase_store_slot.bind(component, cost))
+		_content.add_child(button)
+	if not found:
+		_content.add_child(_notice("No eligible commercial stores", "Build a supported commercial building to expand its production queue."))
+
+func _purchase_store_slot(component: ProductionComponent, cost: int) -> void:
+	if not component.purchase_store_queue_slot(cost):
+		_status.text = "Slot purchase failed. Check SimCash and store capacity."
+		return
+	if has_node("/root/SaveManager"):
+		SaveManager.save_game()
+	open_store()
 
 func _show_history() -> void:
 	_build_shell("PURCHASE HISTORY", "Local sandbox order history saved with your city.")
