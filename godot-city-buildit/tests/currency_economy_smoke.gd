@@ -107,7 +107,7 @@ func _ready() -> void:
 		failures.append("Trade Depot allowed cancellation while the warehouse had no capacity for the reserved goods")
 	if StorageManager.get_all_items() != full_inventory_before_cancel or TradeManager.sell_slots.size() != listing_count_before_cancel:
 		failures.append("failed full-warehouse cancellation mutated inventory or removed the listing")
-	StorageManager.remove_item("wood", 1)
+	StorageManager.remove_item("wood", 2)
 	var cancel_inventory_before := StorageManager.get_all_items()
 	if not TradeManager.cancel_sale_listing(0):
 		failures.append("Trade Depot could not cancel a listing after enough warehouse capacity was freed")
