@@ -1568,6 +1568,66 @@ func _start_construction(saved_finish_unix: int = 0) -> void:
 	_construction_tween.tween_property(scaffold_root, "scale:y", 0.01, dismantle_time) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 
+func get_construction_speedup_quote() -> Dictionary:
+	if status != "constructing" or not BuildManager.has_road_access(grid_pos, definition.get("size", Vector2i(2, 2))):
+		return {}
+	var remaining := construction_paused_remaining_seconds if construction_paused_remaining_seconds >= 0 else maxi(0, construction_finish_unix - int(Time.get_unix_time_from_system()))
+	if remaining <= 0:
+		return {}
+	return {"remaining_seconds": remaining, "simcash_cost": EconomyManager.get_simcash_time_skip_cost(remaining)}
+
+func speed_up_construction() -> Dictionary:
+	var quote := get_construction_speedup_quote()
+	if quote.is_empty():
+		return {"success": false, "reason": "construction_not_speedable"}
+	var cost := int(quote.simcash_cost)
+	if not EconomyManager.spend_sim_cash(cost):
+		return {"success": false, "reason": "insufficient_simcash", "cost": cost}
+	construction_paused_remaining_seconds = -1
+	construction_finish_unix = int(Time.get_unix_time_from_system())
+	update_construction_access_state()
+	return {"success": status == "completed", "cost": cost}
+
+func get_upgrade_speedup_quote() -> Dictionary:
+	if not upgrade_in_progress or not BuildManager.is_building_operational(self):
+		return {}
+	var remaining := get_upgrade_remaining_seconds()
+	if remaining <= 0:
+		return {}
+	return {"remaining_seconds": remaining, "simcash_cost": EconomyManager.get_simcash_time_skip_cost(remaining)}
+
+func speed_up_upgrade() -> Dictionary:
+	var quote := get_upgrade_speedup_quote()
+	if quote.is_empty():
+		return {"success": false, "reason": "upgrade_not_speedable"}
+	var cost := int(quote.simcash_cost)
+	if not EconomyManager.spend_sim_cash(cost):
+		return {"success": false, "reason": "insufficient_simcash", "cost": cost}
+	upgrade_paused_remaining_seconds = -1
+	upgrade_finish_unix = int(Time.get_unix_time_from_system())
+	update_upgrade_access_state()
+	return {"success": not upgrade_in_progress, "cost": cost}
+
+func get_legacy_production_speedup_quote() -> Dictionary:
+	if not is_producing or has_ready_product or production_finish_unix <= 0 or not BuildManager.is_building_operational(self):
+		return {}
+	var remaining := maxi(0, production_finish_unix - int(Time.get_unix_time_from_system()))
+	if remaining <= 0:
+		return {}
+	return {"remaining_seconds": remaining, "simcash_cost": EconomyManager.get_simcash_time_skip_cost(remaining)}
+
+func speed_up_legacy_production() -> Dictionary:
+	var quote := get_legacy_production_speedup_quote()
+	if quote.is_empty():
+		return {"success": false, "reason": "production_not_speedable"}
+	var cost := int(quote.simcash_cost)
+	if not EconomyManager.spend_sim_cash(cost):
+		return {"success": false, "reason": "insufficient_simcash", "cost": cost}
+	production_finish_unix = int(Time.get_unix_time_from_system())
+	production_timer = 0.0
+	_process(0.0)
+	return {"success": has_ready_product, "cost": cost}
+
 func update_construction_access_state(now_unix: int = -1) -> void:
 	if status != "constructing":
 		return
