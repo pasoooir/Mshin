@@ -293,6 +293,12 @@ func _test_automatic_production_chain() -> void:
 	# Two independent roots may reserve and execute the same raw dependency
 	# concurrently. Atomic input consumption must prevent double-spending.
 	GameManager.level = 1
+	var second_factory := ProductionComponentScript.new()
+	second_factory.name = "AutomaticChainConcurrentFactoryProbe"
+	second_factory.is_factory = true
+	second_factory.factory_type = "factory_small"
+	second_factory.slot_count = 2
+	add_child(second_factory)
 	var second_store := ProductionComponentScript.new()
 	second_store.name = "AutomaticChainConcurrentStoreProbe"
 	second_store.shop_id = "building_supplies"
@@ -323,6 +329,7 @@ func _test_automatic_production_chain() -> void:
 	GameManager.level = saved_level
 
 	factory.queue_free()
+	second_factory.queue_free()
 	store.queue_free()
 	second_store.queue_free()
 	store.queue_free()
@@ -3692,7 +3699,9 @@ func _run_gameplay_test() -> void:
 		if ingredient_label:
 			_check(ingredient_label.text.contains("Metal") and ingredient_label.text.contains("2"), "Nails detail must clearly show its Metal x2 requirement.")
 		var shop_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
+		var automatic_shop_start := production_hud.production_panel.find_child("StartAutomaticChain", true, false) as Button
 		_check(shop_start != null and not shop_start.disabled, "Nails must be startable when two Metal are in City Storage.")
+		_check(automatic_shop_start != null and not automatic_shop_start.disabled, "A fully stocked shop recipe must offer an explicit AUTO CHAIN action in addition to the manual START queue.")
 		if shop_start:
 			shop_start.emit_signal("pressed")
 	else:
