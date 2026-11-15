@@ -51,7 +51,12 @@ const NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES := {
 const EMERGENCY_SERVICE_OPERATING_PROFILES := {
 	"fire": {"power": 1, "water": 1, "sewage": 0, "waste": 0, "workers": 1},
 	"police": {"power": 1, "water": 1, "sewage": 0, "waste": 0, "workers": 1},
-	"health": {"power": 2, "water": 2, "sewage": 0, "waste": 0, "workers": 2}
+	"health": {"power": 2, "water": 2, "sewage": 0, "waste": 0, "workers": 2},
+	# Treatment and waste facilities must be staffed before their capacity is
+	# counted. They do not consume their own sewage/waste service, avoiding a
+	# circular dependency in the city-wide capacity calculation.
+	"sewage": {"power": 0, "water": 0, "sewage": 0, "waste": 0, "workers": 1},
+	"waste": {"power": 0, "water": 0, "sewage": 0, "waste": 0, "workers": 1}
 }
 # Mshin design assumption: 45% of residents are available for city employment.
 # This is a transparent balancing parameter, not an EA-published demographic.
@@ -126,25 +131,36 @@ func is_workforce_served(building: Node3D) -> bool:
 		return true
 	return workforce_served_ids.has(building.building_id)
 
-func _recalculate_workforce(consumers: Array) -> void:
-	available_workers = maxi(0, floori(float(GameManager.population) * WORKFORCE_SHARE))
-	demand_workers = 0
-	employed_workers = 0
-	workforce_served_ids.clear()
+func _recalculate_workforce(consumers: Array, phase: String = "all") -> void:
+	if phase == "providers" or phase == "all":
+		available_workers = maxi(0, floori(float(GameManager.population) * WORKFORCE_SHARE))
+		demand_workers = 0
+		employed_workers = 0
+		workforce_served_ids.clear()
+		for consumer in consumers:
+			demand_workers += get_building_worker_demand(consumer)
+	# Treatment providers are staffed before their capacity is counted. They
+	# need road access and configured non-circular prerequisites, but never the
+	# sewage/waste service capacity that they themselves supply.
 	for consumer in consumers:
-		demand_workers += get_building_worker_demand(consumer)
-	# Only producers with road, power and water access may reserve workers.
-	# Household population is the sole workforce source; employment never
-	# creates citizens or changes residential population.
-	for consumer in consumers:
-		if not _has_gateway_road_access(consumer) or not is_building_services_served(consumer):
+		var service_group := str(consumer.definition.get("service_group", ""))
+		var is_treatment_provider := service_group in ["sewage", "waste"]
+		if phase == "providers" and not is_treatment_provider:
+			continue
+		if phase == "consumers" and is_treatment_provider:
+			continue
+		if not _has_gateway_road_access(consumer):
+			continue
+		var prerequisites_met := is_building_served(consumer) if phase == "providers" else is_building_services_served(consumer)
+		if not prerequisites_met:
 			continue
 		var required := get_building_worker_demand(consumer)
 		if required <= 0 or employed_workers + required > available_workers:
 			continue
 		employed_workers += required
 		workforce_served_ids[consumer.building_id] = true
-	workforce_changed.emit(available_workers, demand_workers, employed_workers)
+	if phase == "consumers" or phase == "all":
+		workforce_changed.emit(available_workers, demand_workers, employed_workers)
 
 func _ready() -> void:
 	print("[ServiceManager] Power/water/sewage/waste capacity network online")
@@ -304,10 +320,8 @@ func recalculate_from_buildings() -> void:
 			demand_water += get_building_utility_demand(building, "water")
 			demand_sewage += get_building_utility_demand(building, "sewage")
 			demand_waste += get_building_utility_demand(building, "waste")
-		elif service_group == "sewage" and _has_gateway_road_access(building):
-			total_sewage += get_building_service_capacity(building, "sewage")
-		elif str(definition.get("service_group", "")) == "waste" and _has_gateway_road_access(building):
-			total_waste += get_building_service_capacity(building, "waste")
+		# Sewage/waste providers are included in operating_consumers so their
+		# staff can be allocated before their capacity is counted below.
 		# Capacity is operational only while the facility itself is connected
 		# to the Gateway. Disconnected plants must not inflate city totals.
 		if _has_gateway_road_access(building):
@@ -347,6 +361,18 @@ func recalculate_from_buildings() -> void:
 				used_water += water_need
 				water_served_ids[consumer.building_id] = true
 
+	# Staff treatment and waste facilities before counting their city-wide
+	# capacity. An unstaffed/disconnected plant contributes zero capacity.
+	_recalculate_workforce(operating_consumers, "providers")
+	for provider in BuildManager.buildings.values():
+		if not is_instance_valid(provider) or provider.status != "completed":
+			continue
+		var provider_group := str(provider.definition.get("service_group", ""))
+		if provider_group == "sewage" and BuildManager.is_building_operational(provider):
+			total_sewage += get_building_service_capacity(provider, "sewage")
+		elif provider_group == "waste" and BuildManager.is_building_operational(provider):
+			total_waste += get_building_service_capacity(provider, "waste")
+
 	# Sewage and waste are city-wide capacity services. Household demand has
 	# priority; production and emergency providers consume the remaining capacity.
 	var sewage_remaining := total_sewage
@@ -383,7 +409,7 @@ func recalculate_from_buildings() -> void:
 	# before allocating the finite workforce pool to producers and stations.
 	if has_node("/root/HappinessManager"):
 		HappinessManager.recalculate_city()
-	_recalculate_workforce(operating_consumers)
+	_recalculate_workforce(operating_consumers, "consumers")
 
 	# Fire, Police and Health coverage is valid only while the provider itself
 	# capacity pools. A home and its provider must both be Gateway-connected.
