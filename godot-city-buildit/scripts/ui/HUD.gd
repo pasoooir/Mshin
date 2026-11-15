@@ -66,8 +66,6 @@ class LevelBadgeVisual extends Control:
 
 class LockGlyph extends Control:
 	func _ready() -> void:
-	if not ProductionManager.production_chain_changed.is_connected(_on_production_chain_changed):
-		ProductionManager.production_chain_changed.connect(_on_production_chain_changed)
 		name = "LockGlyph"
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 	func _draw() -> void:
@@ -140,6 +138,8 @@ var service_warning_label: Label
 var _catalog_selected_type := ""
 
 func _ready() -> void:
+	if not ProductionManager.production_chain_changed.is_connected(_on_production_chain_changed):
+		ProductionManager.production_chain_changed.connect(_on_production_chain_changed)
 	# Keep the existing gameplay signal wiring intact.
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.population_changed.connect(_on_population_changed)
