@@ -771,6 +771,6 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] علت از لاگ خام استخراج و اصلاح شد: تعریف صریح آرایهٔ ورودی `events` پیش از کپی/مرتب‌سازی رویدادها در `MacroEconomySimulator.gd`.
 - [x] در commit اصلاحی `95bd6c5ece78244757537b0d1667911db935bdfc`، Import/Parse، startup، gameplay integration، visual geometry، CurrencyEconomySmoke و **MacroEconomySmoke** همگی موفق شدند.
 - [x] Android Debug APK در همان اجرا export شد، امضای آن تأیید شد و artifact آپلود شد.
-- <badge> [Godot City BuildIt Validation — PASS](https://github.com/pasoooir/Mshin/actions/runs/43706032773)
+- [x] [Godot City BuildIt Validation — PASS](https://github.com/pasoooir/Mshin/actions/runs/43706032773)
 - [ ] Web workflow برای همین SHA هنگام ثبت این گزارش هنوز در حال اجرا بود: [run 43706032776](https://github.com/pasoooir/Mshin/actions/runs/43706032776).
 - [ ] CI سبز این شاخه به معنی تکمیل اقتصاد کلان بازار نیست؛ محدودیت‌های تقاضا، نرخ فروش، ظرفیت تولید، جمعیت پویا و تورم قیمت همچنان مطابق سند تخصصی باز هستند.
