@@ -989,10 +989,14 @@ No recipe, production duration, storage accounting, queue-slot price, or Collect
 - [x] Track touch movement/release at the HUD input layer so the finger can leave the product tile before dropping onto a queue slot.
 - [x] Validate the dragged product against the same source building, unlocked recipe/material, and exact empty queue slot using the existing production APIs.
 - [x] Clear tap-to-place selection after a successful drag order so a completed drag cannot leave a stale product selection active.
-- [x] Size radial selectors from their actual minimum dimensions and reserve the bottom dock's full height when clamping product positions.
-- [ ] Run GameplaySmoke with the new synthetic touch down/move/up gesture and 844×390, 915×412, and 1280×720 viewport-boundary/non-overlap checks.
+- [x] Extract radial tile positioning into a shared viewport-safe layout function; tile dimensions and full dock height are included in the clamp.
+- [x] Reduce compact dock vertical minimums (details card, queue strip, margins and slot cards) for short Android landscape screens.
+- [x] GameplaySmoke simulates Android touch down → move → release into the exact queue tile; pointer state is released and production starts in the selected slot.
+- [x] GameplaySmoke validates radial tile containment and no dock overlap at 844×390, 915×412 and 1280×720 using the same layout function used by production UI.
+- [x] Godot Validation + GameplaySmoke + Visual Presentation + Android Debug APK export/signature: [run 43725912825](https://github.com/pasoooir/Mshin/actions/runs/43725912825).
+- [x] Web export + gameplay integration + desktop/mobile-landscape Chromium launch + Pages artifact: [run 43725912831](https://github.com/pasoooir/Mshin/actions/runs/43725912831). Pages deployment is skipped for pull requests; this branch is not deployed to the public site.
 - [ ] Inspect actual rendered production-panel screenshots on mobile landscape; geometric assertions do not replace visual review.
 - [ ] Accept drag/drop on a physical Android device; CI simulation is not physical-device acceptance.
 - [ ] Extend actionable notifications to other systems only after a real player-pending action and its collection/claim transition are identified.
 
-**Evidence rule:** code changes above are implemented on this branch; all test/visual/device items remain unchecked until the corresponding run or inspection succeeds.
+**Evidence rule:** automated touch-gesture simulation, radial geometry assertions, Godot validation, Android APK export and Web/Chromium CI are verified. Actual rendered screenshot review and physical Android acceptance remain open.
