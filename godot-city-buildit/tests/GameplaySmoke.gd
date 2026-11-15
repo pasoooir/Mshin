@@ -3672,8 +3672,22 @@ func _run_gameplay_test() -> void:
 		var home_hex := needs_hud._residential_world_orbit.get_child(0) as Node3D
 		var home_hex_face := home_hex.get_node_or_null("WhiteHexFace") as MeshInstance3D
 		_check(home_hex_face != null and home_hex_face.mesh is CylinderMesh and (home_hex_face.mesh as CylinderMesh).radial_segments == 6, "Residential material tokens must use the same raised white six-sided 3D platform as factory/store products.")
+	# End-to-end home material tap: selecting missing Metal must resolve the
+	# actual completed factory and submit the real factory order without a drag.
+	var residential_supplier_factory = _find_building("industrial_1")
+	var home_metal_token := needs_hud.residential_overlay.find_child("ResidentialNeed_metal", true, false) as Button
+	var saved_home_supplier_slots: Array = residential_supplier_factory.production_component.to_save_array() if is_instance_valid(residential_supplier_factory) and is_instance_valid(residential_supplier_factory.production_component) else []
+	var saved_home_supplier_storage: Dictionary = StorageManager.to_save_dict()
+	_check(home_metal_token != null and not home_metal_token.disabled, "The missing Metal requirement on the home must be an active supplier shortcut.")
+	if home_metal_token and not home_metal_token.disabled and is_instance_valid(residential_supplier_factory):
+		home_metal_token.emit_signal("pressed")
+		_check(not residential_supplier_factory.production_component.get_slot(0).is_empty() and str(residential_supplier_factory.production_component.get_slot(0).get("item_id", "")) == "metal", "Tapping the home's Metal token must directly enqueue Metal at its real factory supplier.")
+		_check(needs_hud._production_building == residential_supplier_factory, "Tapping a home material must navigate to the actual supplier building.")
+		needs_hud._close_production_panel()
+		residential_supplier_factory.production_component.from_save_array(saved_home_supplier_slots)
+		StorageManager.from_save_dict(saved_home_supplier_storage)
 	needs_hud._close_residential_panel()
-	var factory = _find_building("industrial_1")
+	var factory = residential_supplier_factory
 	_check(home != null and home.status == "completed", "House construction did not finish.")
 	_check(factory != null and factory.status == "completed", "Factory construction did not finish.")
 	_check(GameManager.population > 0, "Completed house did not add any occupied population.")
