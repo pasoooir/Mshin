@@ -320,6 +320,20 @@ func _test_production_capacity_and_cashflow() -> void:
 		_fail("A sale with unknown COGS must expose null gross margin instead of inventing a cost or profit.")
 		return
 
+	var exact_batches_config: Dictionary = costed_macro_config.duplicate(true)
+	exact_batches_config["production"].erase("initial_unit_costs")
+	exact_batches_config["production"]["initial_cost_batches"] = {
+		"metal": [
+			{"quantity": 1, "total_cost": 11, "known": true},
+			{"quantity": 1, "total_cost": 19, "known": true}
+		]
+	}
+	var exact_batches_result: Dictionary = Simulator.simulate(exact_batches_config)
+	var exact_batches_accounting: Dictionary = exact_batches_result.get("production_accounting", {})
+	if not bool(exact_batches_result.get("valid", false)) or int(exact_batches_accounting.get("known_cogs", -1)) != 30 or int(exact_batches_accounting.get("known_gross_margin", -1)) != 50:
+		_fail("Exact live FIFO cost batches must preserve per-batch total cost when replayed into production COGS.")
+		return
+
 
 func _test_automatic_chain_dependency_replay() -> void:
 	var config := {
