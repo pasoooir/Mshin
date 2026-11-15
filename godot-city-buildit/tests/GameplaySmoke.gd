@@ -229,8 +229,45 @@ func _test_automatic_production_chain() -> void:
 	_check(store.slots[0].is_empty(), "The root queue slot must be released when the automatic chain finishes.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "A fully completed chain must no longer block the next automatic order.")
 
+	# Exercise a true multi-store dependency graph: Chair requires both Nails
+	# (Building Supplies) and Hammer (Hardware Store), plus shared raw inputs.
+	var saved_level := GameManager.level
+	GameManager.level = 10
+	var hardware_store := ProductionComponentScript.new()
+	hardware_store.name = "AutomaticChainHardwareProbe"
+	hardware_store.shop_id = "hardware_store"
+	hardware_store.slot_count = 2
+	add_child(hardware_store)
+	var furniture_store := ProductionComponentScript.new()
+	furniture_store.name = "AutomaticChainFurnitureProbe"
+	furniture_store.shop_id = "furniture_store"
+	furniture_store.slot_count = 2
+	add_child(furniture_store)
+	StorageManager.from_save_dict({"capacity": 50, "items": {}})
+	_check(ProductionManager.request_automatic_chain(furniture_store, "chair", 0), "A nested Chair order must be accepted when its recipe and all dependency unlocks are verified.")
+	var nested_chain_id := str(furniture_store.slots[0].get("auto_chain_id", ""))
+	var nested_stores: Array = [store, hardware_store, furniture_store]
+	for _step in range(24):
+		ProductionManager._process_automatic_chains()
+		var fast_forward_now := int(Time.get_unix_time_from_system())
+		for component in [factory, store, hardware_store, furniture_store]:
+			for slot_index in range(component.slots.size()):
+				var queued: Dictionary = component.slots[slot_index]
+				if str(queued.get("auto_chain_id", "")) == nested_chain_id and int(queued.get("finish_unix", 0)) > 0 and not bool(queued.get("ready", false)):
+					queued["finish_unix"] = fast_forward_now - 1
+					component.slots[slot_index] = queued
+			component.refresh_slots()
+		ProductionManager._process_automatic_chains()
+		if not bool(ProductionManager.get_automatic_chain_status().get("active", false)):
+			break
+	_check(StorageManager.get_count("chair") == 1, "Nested automatic scheduling must produce the requested final item after both store branches complete.")
+	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "Nested multi-store dependency jobs must all release their slots when the root product is collected.")
+	GameManager.level = saved_level
+
 	factory.queue_free()
 	store.queue_free()
+	hardware_store.queue_free()
+	furniture_store.queue_free()
 	StorageManager.from_save_dict(previous_storage)
 	await get_tree().process_frame
 
