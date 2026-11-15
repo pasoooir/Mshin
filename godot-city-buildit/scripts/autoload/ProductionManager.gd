@@ -275,6 +275,8 @@ func _pump_production_chains() -> void:
 			order["status"] = "complete"
 			production_chain_orders[index] = order
 			continue
+		var previous_status := str(order.get("status", "waiting"))
+		var previous_error := str(order.get("last_error", ""))
 		var jobs_before := _count_chain_jobs(chain_id)
 		var in_flight := _get_chain_inflight_count(item_id, chain_id, true)
 		var remaining := maxi(0, requested - completed - in_flight)
@@ -287,8 +289,17 @@ func _pump_production_chains() -> void:
 		elif scheduled:
 			order["last_error"] = ""
 		production_chain_orders[index] = order
-		if _count_chain_jobs(chain_id) > jobs_before and has_node("/root/SaveManager") and not SaveManager.is_loading:
-			SaveManager.save_game()
+		var jobs_after := _count_chain_jobs(chain_id)
+		if jobs_after > jobs_before:
+			production_chain_changed.emit(chain_id)
+			if has_node("/root/SaveManager") and not SaveManager.is_loading:
+				SaveManager.save_game()
+		elif previous_status != str(order.get("status", "")) or previous_error != str(order.get("last_error", "")):
+			production_chain_changed.emit(chain_id)
+
+func notify_chain_progress_changed(chain_id: String) -> void:
+	if not chain_id.is_empty():
+		production_chain_changed.emit(chain_id)
 
 func _count_chain_jobs(chain_id: String) -> int:
 	if not is_inside_tree():
