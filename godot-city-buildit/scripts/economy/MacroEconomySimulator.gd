@@ -22,6 +22,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var hq_multiplier := maxf(0.0, float(config.get("hq_multiplier", 2.0)))
 	var item_values: Dictionary = config.get("item_values", {})
 	var xp_table: Dictionary = config.get("xp_table", {})
+	var events: Array = config.get("events", []).duplicate(true)
 	var scheduled_events: Array[Dictionary] = []
 	for event_variant in events:
 		if not event_variant is Dictionary:
