@@ -69,6 +69,7 @@ func capture_region_snapshot() -> Dictionary:
 		})
 	return {
 		"storage": StorageManager.to_save_dict(),
+		"production": ProductionManager.to_save_dict(),
 		"roads": road_data,
 		"buildings": building_data,
 		"epic_projects": EpicProjectManager.to_save_dict(),
@@ -195,6 +196,7 @@ func load_game() -> bool:
 			restored_population += int(restored_building.definition.get("population", 0))
 	GameManager.population = maxi(0, restored_population)
 	GameManager.happiness = float(region_snapshot.get("happiness", game_data.get("happiness", 100.0)))
+	ProductionManager.from_save_dict(region_snapshot.get("production", {}))
 	RegionManager.store_active_region_snapshot(capture_region_snapshot())
 	HappinessManager.reset_transient_city_state()
 	AchievementManager.from_save_dict(parsed.get("achievements", {}))
@@ -210,6 +212,7 @@ func load_game() -> bool:
 	# Recalculate from restored buildings and current service/traffic coverage;
 	# the serialized happiness value is only a fallback, never the live authority.
 	HappinessManager.recalculate_city()
+	ProductionManager.resume_after_restore()
 	if has_node("/root/FireHazardManager"):
 		FireHazardManager.reset_for_city_load()
 	load_completed.emit(true)
@@ -355,6 +358,8 @@ func load_region_snapshot(snapshot: Dictionary) -> bool:
 	is_loading = false
 	# Re-score this region now; do not show stale cached happiness from another region.
 	HappinessManager.recalculate_city()
+	ProductionManager.from_save_dict(snapshot.get("production", {}))
+	ProductionManager.resume_after_restore()
 	return true
 
 
