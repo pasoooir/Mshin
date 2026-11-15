@@ -2322,6 +2322,7 @@ func open_production_panel(building: Building) -> void:
 		slot_card.gui_input.connect(_on_production_slot_gui_input.bind(building, slot_index))
 		queue_row.add_child(slot_card)
 		var slot_content := VBoxContainer.new()
+		slot_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot_content.alignment = BoxContainer.ALIGNMENT_CENTER
 		slot_content.add_theme_constant_override("separation", 1)
 		slot_card.add_child(slot_content)
