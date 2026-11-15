@@ -91,6 +91,7 @@ func _fail(message: String) -> void:
 func _test_production_capacity_and_cashflow() -> void:
 	var production_config := {
 		"storage_capacity": 2,
+		"depot_operational": true,
 		"initial_inventory": {},
 		"raw_materials": {"metal": {"time_sec": 60}},
 		"crafted_items": {},
@@ -103,7 +104,9 @@ func _test_production_capacity_and_cashflow() -> void:
 			{"type": "start_factory", "facility_id": "factory-a", "item_id": "metal", "at_seconds": 0},
 			{"type": "collect", "facility_id": "factory-a", "slot_index": 0, "at_seconds": 60},
 			{"type": "collect", "facility_id": "factory-a", "slot_index": 1, "at_seconds": 60},
-			{"type": "cash_sale", "item_id": "metal", "quantity": 1, "at_seconds": 61}
+			{"type": "depot_list", "listing_id": "metal-sale-1", "item_id": "metal", "quantity": 1, "at_seconds": 61},
+			{"type": "depot_collect", "listing_id": "metal-sale-1", "at_seconds": 180},
+			{"type": "depot_collect", "listing_id": "metal-sale-1", "at_seconds": 181}
 		]
 	}
 	var macro_config := {
@@ -113,7 +116,7 @@ func _test_production_capacity_and_cashflow() -> void:
 		"occupied_homes": 0,
 		"level": 1,
 		"experience": 0,
-		"horizon_seconds": 120,
+		"horizon_seconds": 240,
 		"item_values": {"metal": 10},
 		"events": [],
 		"production": production_config
@@ -127,7 +130,7 @@ func _test_production_capacity_and_cashflow() -> void:
 		_fail("Parallel factory slots did not complete and collect both outputs.")
 		return
 	if int(integrated.get("source_breakdown", {}).get("production_sales", 0)) != 10:
-		_fail("Explicit production sale did not flow into macro Simoleon income.")
+		_fail("Trade Depot collection after its 120-second timer did not flow into macro Simoleon income.")
 		return
 	if int(production.get("ending_inventory", {}).get("metal", 0)) != 1:
 		_fail("Production sale did not remove exactly one item from warehouse inventory.")
