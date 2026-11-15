@@ -3916,19 +3916,19 @@ func _run_gameplay_test() -> void:
 
 	# Reflow acceptance at common Android landscape viewports. Every radial item
 	# must remain on-screen and must not overlap the bottom production dock.
-	var original_viewport_size := get_viewport().size
+	var original_viewport_size: Vector2i = get_viewport().size
 	for mobile_size in [Vector2i(844, 390), Vector2i(915, 412), Vector2i(1280, 720)]:
 		get_viewport().size = mobile_size
 		await get_tree().process_frame
 		production_hud.open_production_panel(factory)
 		await get_tree().process_frame
 		var mobile_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
-		var mobile_dock := production_hud.production_panel
+		var mobile_dock: Control = production_hud.production_panel
 		var mobile_bounds := Rect2(Vector2.ZERO, Vector2(mobile_size))
 		_check(mobile_dock != null and mobile_dock.get_global_rect().position.y >= 0.0 and mobile_dock.get_global_rect().end.y <= float(mobile_size.y) + 1.0, "Production dock must remain inside %dx%d viewport." % [mobile_size.x, mobile_size.y])
 		if mobile_grid and mobile_dock:
 			for product_node in mobile_grid.get_children():
-				var product_rect := product_node.get_global_rect()
+				var product_rect: Rect2 = product_node.get_global_rect()
 				_check(mobile_bounds.encloses(product_rect), "Every radial product tile must remain visible inside %dx%d viewport." % [mobile_size.x, mobile_size.y])
 				_check(not product_rect.intersects(mobile_dock.get_global_rect()), "Radial product tiles must not overlap the bottom dock at %dx%d." % [mobile_size.x, mobile_size.y])
 	get_viewport().size = original_viewport_size
