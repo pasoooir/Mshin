@@ -3661,6 +3661,8 @@ func _run_gameplay_test() -> void:
 	_check(needs_hud.find_child("CityNeedsPanel", true, false) != null, "HUD must expose a city-wide needs dashboard.")
 	_check(needs_hud.find_child("CityNeed_nails", true, false) != null, "City Needs dashboard must show aggregated item shortage rows.")
 	needs_hud._close_city_needs_panel()
+	var saved_home_material_storage: Dictionary = StorageManager.to_save_dict()
+	StorageManager.items.erase("metal")
 	needs_hud.open_residential_panel(home)
 	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
 	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
@@ -3677,7 +3679,6 @@ func _run_gameplay_test() -> void:
 	var residential_supplier_factory = _find_building("industrial_1")
 	var home_metal_token := needs_hud.residential_overlay.find_child("ResidentialNeed_metal", true, false) as Button
 	var saved_home_supplier_slots: Array = residential_supplier_factory.production_component.to_save_array() if is_instance_valid(residential_supplier_factory) and is_instance_valid(residential_supplier_factory.production_component) else []
-	var saved_home_supplier_storage: Dictionary = StorageManager.to_save_dict()
 	_check(home_metal_token != null and not home_metal_token.disabled, "The missing Metal requirement on the home must be an active supplier shortcut.")
 	if home_metal_token and not home_metal_token.disabled and is_instance_valid(residential_supplier_factory):
 		home_metal_token.emit_signal("pressed")
@@ -3685,7 +3686,8 @@ func _run_gameplay_test() -> void:
 		_check(needs_hud._production_building == residential_supplier_factory, "Tapping a home material must navigate to the actual supplier building.")
 		needs_hud._close_production_panel()
 		residential_supplier_factory.production_component.from_save_array(saved_home_supplier_slots)
-		StorageManager.from_save_dict(saved_home_supplier_storage)
+		StorageManager.from_save_dict(saved_home_material_storage)
+	StorageManager.from_save_dict(saved_home_material_storage)
 	needs_hud._close_residential_panel()
 	var factory = residential_supplier_factory
 	_check(home != null and home.status == "completed", "House construction did not finish.")
