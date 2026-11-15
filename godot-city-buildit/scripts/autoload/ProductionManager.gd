@@ -415,7 +415,7 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 	if not crafted_items.has(item_id):
 		return false
 	var recipe: Dictionary = crafted_items[item_id]
-	if not get_recipe_lock_reason(item_id).is_empty() or not are_recipe_inputs_unlocked(recipe):
+	if not are_recipe_inputs_unlocked(recipe):
 		return false
 	var store_id := str(recipe.get("store", ""))
 	var scheduled := 0
@@ -425,6 +425,10 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 		if not is_instance_valid(component) or not component is ProductionComponent or component.is_factory:
 			continue
 		if str(component.shop_id) != store_id or not component._owner_has_road_access():
+			continue
+		# Required Store Stars are checked against the actual supplier selected
+		# for this dependency, not an artificial zero-star virtual store.
+		if not get_recipe_lock_reason(item_id, component.store_star_level).is_empty():
 			continue
 		for slot_index in range(component.get_slot_count()):
 			if scheduled >= needed:
