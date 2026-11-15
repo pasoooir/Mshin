@@ -3892,6 +3892,9 @@ func _run_gameplay_test() -> void:
 		production_hud._production_touch_drag_building = factory
 		production_hud._production_touch_drag_item_id = "metal"
 		var footprint_screen_position: Vector2 = direct_drop_target.get_global_transform_with_canvas() * footprint_center
+		var footprint_local_check: Vector2 = direct_drop_target.get_global_transform_with_canvas().affine_inverse() * footprint_screen_position
+		_check(direct_drop_target.hit_polygon.size() >= 3 and direct_drop_target._has_point(footprint_local_check), "The projected footprint centroid must resolve inside the building drop polygon after canvas-coordinate conversion.")
+		_check(production_hud._can_accept_building_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"metal", "building_id":factory.get_instance_id()}, factory), "A valid factory order must pass the building-target acceptance gate before the touch release.")
 		production_hud._finish_production_touch_drag(footprint_screen_position)
 		if not factory_component.get_slot(0).is_empty():
 			_check(true, "Releasing a dragged factory material on the building footprint must enqueue it without requiring a queue-slot drop.")
