@@ -81,6 +81,14 @@ func _is_road_mode() -> bool:
 	return road_system != null and road_system.is_road_mode
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Do not pan, orbit or zoom the city while a building production modal is active.
+	var scene := get_tree().current_scene
+	var hud := scene.get_node_or_null("HUD") if is_instance_valid(scene) else null
+	if is_instance_valid(hud):
+		var production_modal = hud.get("production_overlay")
+		if production_modal is Control and is_instance_valid(production_modal):
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			is_mouse_panning = event.pressed and not _is_road_mode() and not _is_building_press_pending(-1)
