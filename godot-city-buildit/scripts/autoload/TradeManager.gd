@@ -134,11 +134,17 @@ func list_for_sale(item_id: String, amount: int = 1) -> bool:
 	if not can_list_for_sale(item_id, amount):
 		return false
 	var price := ProductionManager.get_item_value(item_id) * amount
-	var requested_items: Dictionary = {}
-	requested_items[item_id] = amount
-	if price <= 0 or not StorageManager.remove_items(requested_items):
+	var requested_items: Dictionary = {item_id: amount}
+	if price <= 0:
 		return false
+	var inventory_before := StorageManager.get_all_items()
+	if not StorageManager.remove_items(requested_items):
+		return false
+	var listing_id := "listing-%d" % int(Time.get_unix_time_from_system())
+	if not sell_slots.is_empty():
+		listing_id += "-%d" % sell_slots.size()
 	sell_slots.append({
+		"listing_id": listing_id,
 		"item_id": item_id,
 		"amount": amount,
 		"price": price,
@@ -146,6 +152,26 @@ func list_for_sale(item_id: String, amount: int = 1) -> bool:
 		"finish_unix": int(Time.get_unix_time_from_system()) + int(SELL_LISTING_SECONDS),
 		"ready": false
 	})
+	EconomyManager.record_transaction("trade_listing_reserved", "items", amount, EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": listing_id, "item_id": item_id, "unit_price": ProductionManager.get_item_value(item_id), "total_price": price})
+	trade_state_changed.emit()
+	return true
+
+func cancel_sale_listing(slot_index: int) -> bool:
+	if slot_index < 0 or slot_index >= sell_slots.size():
+		return false
+	var slot: Dictionary = sell_slots[slot_index]
+	var item_id := str(slot.get("item_id", ""))
+	var amount := int(slot.get("amount", 0))
+	if item_id.is_empty() or amount <= 0 or not _item_exists(item_id):
+		return false
+	# Do not remove the listing until the full reserved quantity can be returned.
+	if StorageManager.get_free() < amount:
+		return false
+	var inventory_before := StorageManager.get_all_items()
+	if not StorageManager.add_item(item_id, amount):
+		return false
+	sell_slots.remove_at(slot_index)
+	EconomyManager.record_transaction("trade_listing_cancelled", "items", amount, EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": str(slot.get("listing_id", "")), "item_id": item_id})
 	trade_state_changed.emit()
 	return true
 
@@ -160,9 +186,12 @@ func collect_sale(slot_index: int) -> bool:
 	var price := int(slot.get("price", 0))
 	if item_id.is_empty() or amount <= 0 or price <= 0:
 		return false
+	var inventory_before := StorageManager.get_all_items()
+	var balance_before := EconomyManager.simoleons
 	EconomyManager.add_simoleons(price)
 	completed_sales += 1
 	sell_slots.remove_at(slot_index)
+	EconomyManager.record_transaction("trade_sale_collected", "simoleons", price, balance_before, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": str(slot.get("listing_id", "")), "item_id": item_id, "quantity": amount})
 	trade_completed.emit(item_id, amount, price)
 	trade_state_changed.emit()
 	return true
@@ -334,11 +363,16 @@ func buy_global_offer(offer_index: int) -> bool:
 	var price := int(offer.get("price", 0))
 	if not _item_exists(item_id) or amount <= 0 or price <= 0:
 		return false
-	if StorageManager.get_free() < amount or not EconomyManager.spend_simoleons(price):
+	if StorageManager.get_free() < amount:
+		return false
+	var inventory_before := StorageManager.get_all_items()
+	var balance_before := EconomyManager.simoleons
+	if not EconomyManager.spend_simoleons(price):
 		return false
 	if not StorageManager.add_item(item_id, amount):
 		EconomyManager.add_simoleons(price)
 		return false
+	EconomyManager.record_transaction("global_trade_purchase", "simoleons", price, balance_before, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "global_trade_hq", "item_id": item_id, "quantity": amount})
 	offer["sold"] = true
 	market_offers[offer_index] = offer
 	market_purchases += 1

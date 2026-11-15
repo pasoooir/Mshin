@@ -5,8 +5,7 @@ const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 const LandExpansionPanelScript = preload("res://scripts/ui/LandExpansionPanel.gd")
 const CurrencyPanelsScript = preload("res://scripts/ui/CurrencyPanels.gd")
 
-const STORAGE_CAPACITY_UPGRADE_COST := 500
-const STORAGE_CAPACITY_UPGRADE_GAIN := 10
+const STORAGE_CAPACITY_UPGRADE_GAIN := 5
 
 const SERVICE_GROUPS := [
 	{"id":"power", "label":"Power", "buildings":["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear"]},
@@ -3508,35 +3507,61 @@ func _show_storage_panel() -> void:
 	grid.add_theme_constant_override("v_separation", 12)
 	scroll.add_child(grid)
 
+	var special_heading := Label.new()
+	special_heading.name = "StorageSpecialItemsHeading"
+	special_heading.text = "STORAGE SPECIAL ITEMS · 18 SIMCASH EACH"
+	special_heading.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	special_heading.add_theme_color_override("font_color", Color("#28799C"))
+	layout.add_child(special_heading)
+	for item_id in StorageManager.STORAGE_ITEM_IDS:
+		var item_row := HBoxContainer.new()
+		item_row.name = "StorageSpecialItem_" + item_id
+		layout.add_child(item_row)
+		var item_label := Label.new()
+		item_label.text = "%s  ×%d" % [str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id)), StorageManager.get_count(item_id)]
+		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		item_row.add_child(item_label)
+		var buy_item := Button.new()
+		buy_item.name = "Buy_" + item_id
+		buy_item.text = "BUY · 18"
+		buy_item.custom_minimum_size = Vector2(112, 42) * _ui_scale
+		buy_item.disabled = GameManager.level < StorageManager.STORAGE_UNLOCK_LEVEL or StorageManager.get_free() < 1 or EconomyManager.sim_cash < StorageManager.STORAGE_ITEM_SIMCASH_PRICE
+		buy_item.pressed.connect(_on_buy_storage_special_item.bind(item_id))
+		item_row.add_child(buy_item)
+	var required_each := StorageManager.get_next_storage_upgrade_requirement()
+	var requirement := Label.new()
+	requirement.name = "StorageUpgradeRequirement"
+	requirement.text = "Next upgrade: +5 capacity · %d of each Storage Bar, Lock and Camera" % required_each
+	requirement.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(requirement)
 	var upgrade := Button.new()
-	upgrade.name = "StorageIncreaseCapacity"
-	upgrade.text = "INCREASE CAPACITY"
-	upgrade.custom_minimum_size = Vector2(0, 64) * _ui_scale
-	upgrade.add_theme_font_size_override("font_size", int(22 * _ui_scale))
-	upgrade.add_theme_color_override("font_color", Color.WHITE)
-	upgrade.add_theme_color_override("font_shadow_color", Color("#36520B"))
-	upgrade.add_theme_constant_override("shadow_offset_x", 1)
-	upgrade.add_theme_constant_override("shadow_offset_y", 2)
+	upgrade.name = "ConfirmStorageSpecialItemUpgrade"
+	upgrade.text = "CONFIRM CAPACITY UPGRADE (+5)"
+	upgrade.custom_minimum_size.y = 54 * _ui_scale
+	upgrade.add_theme_font_size_override("font_size", int(19 * _ui_scale))
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#83D900"), Color("#B7F44C")))
-	upgrade.add_theme_stylebox_override("hover", _toolbar_style(Color("#9BEA16"), Color("#D8FF83")))
-	upgrade.add_theme_stylebox_override("pressed", _toolbar_style(Color("#65B900"), Color("#A6E94C")))
-	upgrade.disabled = false
-	upgrade.text = "INCREASE CAPACITY  (+%d) — %d" % [STORAGE_CAPACITY_UPGRADE_GAIN, STORAGE_CAPACITY_UPGRADE_COST]
-	upgrade.tooltip_text = "Add %d storage slots for %d Simoleons." % [STORAGE_CAPACITY_UPGRADE_GAIN, STORAGE_CAPACITY_UPGRADE_COST]
+	upgrade.disabled = not StorageManager.can_upgrade_storage_with_items()
 	upgrade.pressed.connect(_on_storage_capacity_upgrade_pressed)
 	layout.add_child(upgrade)
 	_refresh_storage_panel()
 
 
+func _on_buy_storage_special_item(item_id: String) -> void:
+	var result := EconomyManager.buy_special_item_with_simcash(item_id, StorageManager.STORAGE_ITEM_SIMCASH_PRICE, StorageManager.STORAGE_UNLOCK_LEVEL)
+	if not bool(result.get("success", false)):
+		status_label.text = "Storage item purchase failed: %s" % str(result.get("reason", "unknown"))
+		return
+	SaveManager.save_game()
+	_show_storage_panel()
+
 func _on_storage_capacity_upgrade_pressed() -> void:
-	if EconomyManager.simoleons < STORAGE_CAPACITY_UPGRADE_COST:
-		status_label.text = "Not enough Simoleons. Need %d; you have %d." % [STORAGE_CAPACITY_UPGRADE_COST, EconomyManager.simoleons]
+	var result := StorageManager.upgrade_storage_with_items()
+	if not bool(result.get("success", false)):
+		status_label.text = "Storage upgrade failed: %s" % str(result.get("reason", "unknown"))
 		return
-	if not StorageManager.try_upgrade_capacity(STORAGE_CAPACITY_UPGRADE_COST, STORAGE_CAPACITY_UPGRADE_GAIN):
-		status_label.text = "Storage upgrade failed. No capacity was added."
-		return
-	# StorageManager emits capacity_changed and storage_changed; the latter refreshes this open panel.
+	SaveManager.save_game()
 	status_label.text = "Storage expanded to %d slots." % StorageManager.capacity
+	_show_storage_panel()
 
 
 func _refresh_storage_panel() -> void:
@@ -3822,6 +3847,13 @@ func _build_trade_depot_content(parent: VBoxContainer) -> void:
 		collect.disabled = not ready
 		collect.pressed.connect(_on_trade_collect_sale.bind(index))
 		row.add_child(collect)
+		var cancel := Button.new()
+		cancel.name = "TradeCancel_%d" % index
+		cancel.text = "CANCEL"
+		cancel.tooltip_text = "Return the reserved goods to City Storage and remove this listing."
+		cancel.disabled = StorageManager.get_free() < int(listing.get("amount", 0))
+		cancel.pressed.connect(_on_trade_cancel_sale.bind(index))
+		row.add_child(cancel)
 
 func _build_global_trade_content(parent: VBoxContainer) -> void:
 	if GameManager.population < TradeManager.GLOBAL_TRADE_UNLOCK_POPULATION:
@@ -4065,6 +4097,13 @@ func _on_trade_list_item(item_id: String) -> void:
 func _on_trade_collect_sale(slot_index: int) -> void:
 	if not TradeManager.collect_sale(slot_index):
 		status_label.text = "This listing is not ready to collect."
+	_show_trade_panel("depot")
+
+func _on_trade_cancel_sale(slot_index: int) -> void:
+	if not TradeManager.cancel_sale_listing(slot_index):
+		status_label.text = "Could not cancel listing. Ensure City Storage has enough free capacity."
+	else:
+		status_label.text = "Listing cancelled; reserved goods returned to City Storage."
 	_show_trade_panel("depot")
 
 func _on_trade_buy_offer(offer_index: int) -> void:

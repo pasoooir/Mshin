@@ -97,6 +97,7 @@ func save_game() -> bool:
 			"golden_keys": EconomyManager.golden_keys,
 			"sim_cash": EconomyManager.sim_cash
 		},
+		"economy_ledger": EconomyManager.to_save_dict(),
 		"payments": PaymentManager.to_save_dict(),
 		"storage": StorageManager.to_save_dict(),
 		"trade": TradeManager.to_save_dict(),
@@ -161,6 +162,7 @@ func load_game() -> bool:
 	EconomyManager.golden_keys = int(economy_data.get("golden_keys", 5))
 	EconomyManager.sim_cash = int(economy_data.get("sim_cash", 0))
 	PaymentManager.from_save_dict(parsed.get("payments", {}))
+	EconomyManager.from_save_dict(parsed.get("economy_ledger", {}))
 
 	# Prefer the active region's warehouse when present. The top-level storage
 	# field is retained only as a migration source for legacy saves; applying it

@@ -1,11 +1,85 @@
 extends Node
 
+func _audit_all_production_chains(failures: Array[String]) -> void:
+	var raw_values: Dictionary = ProductionManager.raw_materials
+	var recipes: Dictionary = ProductionManager.crafted_items
+	var rows: Array[Dictionary] = []
+	var missing_inputs: Array[String] = []
+	for item_variant in recipes.keys():
+		var item_id := str(item_variant)
+		var recipe: Dictionary = recipes[item_variant]
+		var expanded := _expand_recipe_cost(item_id, [], missing_inputs)
+		var output_value := int(recipe.get("value", 0))
+		var raw_cost := int(expanded.get("raw_cost", -1))
+		var total_work_seconds := int(expanded.get("work_seconds", 0))
+		if raw_cost < 0 or output_value <= 0:
+			failures.append("Production-chain audit could not resolve recipe economics for " + item_id)
+			continue
+		var gross_margin := output_value - raw_cost
+		var hq_buy_cost := raw_cost * 2
+		var hq_margin := output_value - hq_buy_cost
+		rows.append({
+			"item": item_id, "sale_reference": output_value, "raw_input_opportunity_cost": raw_cost,
+			"gross_margin": gross_margin, "gross_margin_percent": snappedf(float(gross_margin) / float(maxi(raw_cost, 1)) * 100.0, 0.1),
+			"total_serial_work_seconds": total_work_seconds, "hq_input_cost_at_2x": hq_buy_cost,
+			"margin_after_hq_inputs": hq_margin
+		})
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.margin_after_hq_inputs) < int(b.margin_after_hq_inputs))
+	print("[EconomyChainAudit] recipes=", rows.size(), " unresolved_inputs=", missing_inputs.size())
+	for row in rows:
+		print("[EconomyChainAudit] ", JSON.stringify(row))
+	for missing in missing_inputs:
+		failures.append("Production-chain audit found unresolved ingredient: " + missing)
+	if rows.size() != recipes.size():
+		failures.append("Production-chain audit did not cover every catalog recipe")
+	for multiplier in [1.0, 1.5, 2.0, 2.5, 3.0]:
+		var profitable_count := 0
+		var loss_count := 0
+		for row in rows:
+			var scenario_margin := float(row.sale_reference) - float(row.raw_input_opportunity_cost) * float(multiplier)
+			if scenario_margin > 0.0:
+				profitable_count += 1
+			elif scenario_margin < 0.0:
+				loss_count += 1
+		print("[EconomyChainAudit] input_cost_multiplier=", multiplier, " loss_making_recipes=", loss_count, " profitable_recipes=", profitable_count, " total=", rows.size())
+		if multiplier == 2.0 and loss_count != 12:
+			failures.append("Global Trade HQ 2x scenario changed: review all production chain prices before accepting economy balance")
+
+
+func _expand_recipe_cost(item_id: String, ancestry: Array[String], missing_inputs: Array[String]) -> Dictionary:
+	if ancestry.has(item_id):
+		missing_inputs.append("recipe cycle: " + " -> ".join(ancestry + [item_id]))
+		return {"raw_cost": -1, "work_seconds": 0}
+	var next_ancestry := ancestry.duplicate()
+	next_ancestry.append(item_id)
+	var recipe: Dictionary = ProductionManager.crafted_items.get(item_id, {})
+	if recipe.is_empty():
+		var raw: Dictionary = ProductionManager.raw_materials.get(item_id, {})
+		if raw.is_empty():
+			missing_inputs.append(item_id)
+			return {"raw_cost": -1, "work_seconds": 0}
+		return {"raw_cost": int(raw.get("value", 0)), "work_seconds": int(raw.get("time_sec", 0))}
+	var raw_cost := 0
+	var work_seconds := int(recipe.get("time_sec", 0))
+	var requires: Dictionary = recipe.get("requires", {})
+	for input_variant in requires.keys():
+		var input_id := str(input_variant)
+		var amount := int(requires[input_variant])
+		var child := _expand_recipe_cost(input_id, next_ancestry, missing_inputs)
+		if int(child.raw_cost) < 0:
+			return {"raw_cost": -1, "work_seconds": work_seconds}
+		raw_cost += int(child.raw_cost) * amount
+		work_seconds += int(child.work_seconds) * amount
+	return {"raw_cost": raw_cost, "work_seconds": work_seconds}
+
+
 func _ready() -> void:
 	await get_tree().process_frame
 	var original_cash := EconomyManager.sim_cash
 	var original_simoleons := EconomyManager.simoleons
 	var original_keys := EconomyManager.golden_keys
 	var original_ledger := PaymentManager.to_save_dict()
+	var original_economy_ledger := EconomyManager.to_save_dict()
 	var original_storage := StorageManager.to_save_dict()
 	var original_trade := TradeManager.to_save_dict()
 	var original_land := LandExpansionManager.to_save_dict()
@@ -52,11 +126,147 @@ func _ready() -> void:
 	if TradeManager.is_trade_eligible_item("electrical"):
 		failures.append("locked raw material was trade-eligible before its unlock level")
 	trade_hq.queue_free()
+
+	# Community reference-price regression checks. These are maximum Trade
+	# Depot sale values, not EA-guaranteed purchase prices or guaranteed profit.
+	var community_max_sale_prices := {
+		"metal": 10, "wood": 20, "plastic": 25, "seeds": 30,
+		"minerals": 40, "chemicals": 60, "textiles": 90,
+		"sugar_spices": 110, "glass": 120, "animal_feed": 140,
+		"electrical": 160, "nails": 80, "planks": 120,
+		"bricks": 190, "cement": 440, "glue": 440, "paint": 320,
+		"hammer": 90, "measuring_tape": 110, "shovel": 150,
+		"cooking_utensils": 250
+	}
+	for priced_item in community_max_sale_prices:
+		if ProductionManager.get_item_value(str(priced_item)) != int(community_max_sale_prices[priced_item]):
+			failures.append("Trade Depot price catalog differs from community max-sale reference for " + str(priced_item))
+	var known_recipe_margins := {
+		"nails": 60, "planks": 80, "bricks": 110,
+		"cement": 300, "glue": 295, "paint": 140,
+		"hammer": 60, "measuring_tape": 75, "shovel": 95
+	}
+	for recipe_item in known_recipe_margins:
+		var recipe: Dictionary = ProductionManager.crafted_items.get(str(recipe_item), {})
+		var input_cost := 0
+		for input_id in recipe.get("requires", {}):
+			input_cost += ProductionManager.get_item_value(str(input_id)) * int(recipe.requires[input_id])
+		var expected_margin := int(community_max_sale_prices.get(recipe_item, 0)) - input_cost
+		if expected_margin != int(known_recipe_margins[recipe_item]):
+			failures.append("Reference production margin mismatch for " + str(recipe_item))
+
+	# Full Trade Depot lifecycle: reserve on listing, block unsafe cancellation
+	# when the warehouse has no room, return goods on cancel, and pay once on collect.
+	GameManager.population = 8000
+	var depot: Variant = load("res://scenes/buildings/Building.tscn").instantiate()
+	depot.building_type = "trade_depot"
+	depot.status = "completed"
+	add_child(depot)
+	BuildManager.buildings["currency_smoke_trade_depot"] = depot
+	TradeManager.sell_slots.clear()
+	StorageManager.from_save_dict({"capacity": 3, "items": {"metal": 2}})
+	var listing_inventory_before := StorageManager.get_all_items()
+	if not TradeManager.list_for_sale("metal", 2):
+		failures.append("Trade Depot rejected a valid listing despite sufficient inventory and an operational depot")
+	if StorageManager.get_count("metal") != 0 or TradeManager.sell_slots.size() != 1:
+		failures.append("Trade Depot listing did not reserve the exact quantity from City Storage")
+	var listing_inventory_after := StorageManager.get_all_items()
+	if listing_inventory_before.get("metal", 0) != 2 or listing_inventory_after.get("metal", 0) != 0:
+		failures.append("Trade Depot reservation inventory before/after snapshot is incorrect")
+	StorageManager.add_item("wood", 3)
+	var full_inventory_before_cancel := StorageManager.get_all_items()
+	var listing_count_before_cancel := TradeManager.sell_slots.size()
+	if TradeManager.cancel_sale_listing(0):
+		failures.append("Trade Depot allowed cancellation while the warehouse had no capacity for the reserved goods")
+	if StorageManager.get_all_items() != full_inventory_before_cancel or TradeManager.sell_slots.size() != listing_count_before_cancel:
+		failures.append("failed full-warehouse cancellation mutated inventory or removed the listing")
+	StorageManager.remove_item("wood", 2)
+	var cancel_inventory_before := StorageManager.get_all_items()
+	if not TradeManager.cancel_sale_listing(0):
+		failures.append("Trade Depot could not cancel a listing after enough warehouse capacity was freed")
+	if StorageManager.get_count("metal") != 2 or not TradeManager.sell_slots.is_empty():
+		failures.append("successful Trade Depot cancellation did not return all reserved goods and remove the listing")
+	var cancel_audit := EconomyManager.get_recent_transactions(1)
+	if cancel_audit.is_empty() or str(cancel_audit[0].get("type", "")) != "trade_listing_cancelled" or cancel_audit[0].get("inventory_before", {}) != cancel_inventory_before or cancel_audit[0].get("inventory_after", {}).get("metal", 0) != 2:
+		failures.append("Trade Depot cancellation ledger is missing correct before/after inventory snapshots")
+
+	StorageManager.from_save_dict({"capacity": 3, "items": {"metal": 1}})
+	var sale_balance_before := EconomyManager.simoleons
+	if not TradeManager.list_for_sale("metal", 1):
+		failures.append("Trade Depot could not create the sale collection test listing")
+	else:
+		var sale_listing: Dictionary = TradeManager.sell_slots[0]
+		sale_listing["ready"] = true
+		TradeManager.sell_slots[0] = sale_listing
+		if not TradeManager.collect_sale(0):
+			failures.append("Trade Depot failed to collect a ready sale")
+		if EconomyManager.simoleons != sale_balance_before + ProductionManager.get_item_value("metal"):
+			failures.append("Trade Depot sale did not credit the exact configured sale value once")
+		if not TradeManager.sell_slots.is_empty():
+			failures.append("collected Trade Depot listing was not removed")
+	var sale_audit := EconomyManager.get_recent_transactions(1)
+	if sale_audit.is_empty() or str(sale_audit[0].get("type", "")) != "trade_sale_collected" or int(sale_audit[0].get("balance_after", -1)) != EconomyManager.simoleons:
+		failures.append("Trade Depot sale ledger is missing the balance after collection")
+	var economy_ledger_snapshot := EconomyManager.to_save_dict()
+	EconomyManager.transaction_ledger.clear()
+	EconomyManager.from_save_dict(economy_ledger_snapshot)
+	if EconomyManager.get_recent_transactions(10).is_empty():
+		failures.append("economy transaction ledger did not survive save-data round trip")
+	depot.queue_free()
 	BuildManager.buildings = original_buildings
+	TradeManager.from_save_dict(original_trade)
 	GameManager.population = original_population
 	TradeManager.from_save_dict(original_trade)
 	EconomyManager.simoleons = 6000
 	StorageManager.from_save_dict({"capacity": 100, "items": {}})
+
+	# City Storage uses the three actual Special Items, with 18 SimCash
+	# purchase price and a five-slot upgrade consuming equal quantities.
+	GameManager.level = StorageManager.STORAGE_UNLOCK_LEVEL
+	StorageManager.from_save_dict({"capacity": 50, "items": {}})
+	EconomyManager.sim_cash = 100
+	for storage_item_id in StorageManager.STORAGE_ITEM_IDS:
+		var storage_purchase := EconomyManager.buy_special_item_with_simcash(str(storage_item_id), StorageManager.STORAGE_ITEM_SIMCASH_PRICE, StorageManager.STORAGE_UNLOCK_LEVEL)
+		if not bool(storage_purchase.get("success", false)):
+			failures.append("could not buy City Storage Special Item " + str(storage_item_id))
+		if StorageManager.get_count(str(storage_item_id)) != 1:
+			failures.append("purchased City Storage Special Item was not stored")
+	var purchase_audit := EconomyManager.get_recent_transactions(1)
+	if purchase_audit.is_empty() or str(purchase_audit[0].get("type", "")) != "special_item_purchase" or purchase_audit[0].get("inventory_after", {}).get("storage_camera", 0) != 1:
+		failures.append("Storage Special Item purchase audit is missing its inventory before/after snapshot")
+	var capacity_before := StorageManager.capacity
+	var storage_upgrade := StorageManager.upgrade_storage_with_items()
+	if not bool(storage_upgrade.get("success", false)) or StorageManager.capacity != capacity_before + 5:
+		failures.append("City Storage upgrade did not consume the three parts and add exactly five slots")
+	for storage_item_id in StorageManager.STORAGE_ITEM_IDS:
+		if StorageManager.get_count(str(storage_item_id)) != 0:
+			failures.append("City Storage upgrade did not consume " + str(storage_item_id))
+	var upgrade_audit := EconomyManager.get_recent_transactions(1)
+	if upgrade_audit.is_empty() or str(upgrade_audit[0].get("type", "")) != "storage_capacity_upgrade" or upgrade_audit[0].get("inventory_before", {}).get("storage_bar", 0) != 1 or upgrade_audit[0].get("inventory_after", {}).get("storage_bar", 0) != 0:
+		failures.append("City Storage upgrade audit is missing exact consumed inventory snapshots")
+	# Regression-test the community-published capacity thresholds; values
+	# are quantities required of EACH of the three storage parts.
+	var expected_storage_requirements := {
+		40: 1, 50: 1, 55: 2, 70: 3, 85: 4, 105: 5, 205: 10,
+		230: 11, 455: 20, 495: 21, 520: 22, 545: 23, 570: 24, 585: 25, 995: 25
+	}
+	for capacity_key in expected_storage_requirements:
+		StorageManager.capacity = int(capacity_key)
+		if StorageManager.get_next_storage_upgrade_requirement() != int(expected_storage_requirements[capacity_key]):
+			failures.append("City Storage community threshold mismatch at capacity %d" % int(capacity_key))
+	StorageManager.capacity = capacity_before + 5
+	var no_parts_upgrade := StorageManager.upgrade_storage_with_items()
+	if bool(no_parts_upgrade.get("success", true)) or StorageManager.capacity != capacity_before + 5:
+		failures.append("City Storage upgraded without the full three-item requirement")
+	var legacy_bypass := StorageManager.try_upgrade_capacity(500, 10)
+	if legacy_bypass or StorageManager.capacity != capacity_before + 5:
+		failures.append("legacy Simoleons-only capacity bypass remains active")
+	GameManager.level = 3
+	var locked_storage_upgrade := StorageManager.upgrade_storage_with_items()
+	if bool(locked_storage_upgrade.get("success", true)):
+		failures.append("City Storage Special Item upgrade ignored level 4 unlock")
+	GameManager.level = 1
+	StorageManager.from_save_dict(original_storage)
 
 	# SimCash can buy the real expansion Special Items, but does not bypass
 	# the land tile's item requirements or Mayor Level gate.
@@ -191,6 +401,8 @@ func _ready() -> void:
 	EconomyManager.simoleons = original_simoleons
 	EconomyManager.golden_keys = original_keys
 	PaymentManager.from_save_dict(original_ledger)
+	EconomyManager.from_save_dict(original_economy_ledger)
+	_audit_all_production_chains(failures)
 	if not failures.is_empty():
 		for failure in failures:
 			push_error("[CurrencyEconomySmoke] " + failure)
