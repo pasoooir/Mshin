@@ -13,7 +13,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var horizon := maxi(0, int(config.get("horizon_seconds", 0)))
 	var capacity := maxi(0, int(config.get("storage_capacity", 50)))
 	var inventory: Dictionary = _positive_inventory(config.get("initial_inventory", {}), errors)
-	var cost_batches: Dictionary = _initialize_cost_batches(inventory, config.get("initial_unit_costs", {}), errors)
+	var cost_batches: Dictionary = _initialize_cost_batches(inventory, config.get("initial_unit_costs", {}), config.get("initial_cost_batches", {}), errors)
 	var used := _inventory_used(inventory)
 	if used > capacity:
 		errors.append("Initial inventory exceeds warehouse capacity.")
@@ -150,12 +150,24 @@ static func simulate(config: Dictionary) -> Dictionary:
 						production_log.append({"at_seconds": second, "event": "queued", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "inputs_consumed": inputs.duplicate(true)})
 						_start_store_order(facility, facility_id, second, recipes, production_log)
 					facilities[facility_id] = facility
+			elif action_type == "auto_chain":
+				if facilities.has(facility_id):
+					var facility: Dictionary = facilities[facility_id]
+					var recipe: Dictionary = recipes.get(item_id, {})
+					var requested_slot := int(action.get("slot_index", -1))
+					var slot_index := requested_slot if requested_slot >= 0 else _first_empty_slot(facility.slots)
+					if quantity == 1 and str(facility.kind) == "store" and bool(facility.operational) and str(recipe.get("store", "")) == str(facility.get("shop_id", "")) and slot_index >= 0 and slot_index < facility.slots.size() and facility.slots[slot_index].is_empty() and _recipe_unlocked(item_id, recipe, facility, raw_catalog, recipes, config) and _can_resolve_auto_chain_item(item_id, facility_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, {}):
+						var chain_id := str(action.get("chain_id", "scenario-chain-%d" % (action_index - 1)))
+						facility.slots[slot_index] = {"item_id": item_id, "start_seconds": 0, "finish_seconds": 0, "ready": false, "queued": true, "auto_chain_id": chain_id, "auto_chain_root": true, "auto_chain_started": false, "cost_known": false, "cost_total": 0}
+						success = true
+						production_log.append({"at_seconds": second, "event": "auto_chain_accepted", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "chain_id": chain_id})
+					facilities[facility_id] = facility
 			elif action_type == "receive_inventory":
 				var unit_cost := int(action.get("unit_cost", -1))
 				var cost_known := bool(action.get("cost_known", true))
 				if quantity > 0 and (raw_catalog.has(item_id) or recipes.has(item_id)) and unit_cost >= 0 and _inventory_used(inventory) + quantity <= capacity:
 					inventory[item_id] = int(inventory.get(item_id, 0)) + quantity
-					_append_cost_batch(cost_batches, item_id, quantity, unit_cost, cost_known)
+					_append_cost_batch(cost_batches, item_id, quantity, unit_cost * quantity, cost_known)
 					success = true
 					production_log.append({"at_seconds": second, "event": "inventory_received", "item_id": item_id, "quantity": quantity, "unit_cost": unit_cost, "cost_known": cost_known})
 			elif action_type == "delivery_order":
@@ -216,6 +228,8 @@ static func simulate(config: Dictionary) -> Dictionary:
 				rejected_actions += 1
 				production_log.append({"at_seconds": second, "event": "rejected", "action_type": action_type, "facility_id": facility_id, "item_id": item_id})
 
+		_advance_auto_chains(facilities, inventory, cost_batches, raw_catalog, recipes, factory_materials, config, second, production_log, consumed_inputs, collected_outputs)
+
 	var pending_jobs: Array[Dictionary] = []
 	var ready_jobs: Array[Dictionary] = []
 	var facility_summary: Array[Dictionary] = []
@@ -262,6 +276,192 @@ static func simulate(config: Dictionary) -> Dictionary:
 	}
 
 
+static func _can_resolve_auto_chain_item(item_id: String, reserved_root_facility_id: String, facilities: Dictionary, inventory: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, factory_materials: Dictionary, config: Dictionary, ancestry: Dictionary) -> bool:
+	if int(inventory.get(item_id, 0)) > 0:
+		return true
+	if ancestry.has(item_id):
+		return false
+	var next_ancestry := ancestry.duplicate(true)
+	next_ancestry[item_id] = true
+	if raw_catalog.has(item_id):
+		if int(raw_catalog[item_id].get("level", 1)) > int(config.get("mayor_level", 1)):
+			return false
+		for facility_variant in facilities.values():
+			var facility: Dictionary = facility_variant
+			if str(facility.get("kind", "")) == "factory" and bool(facility.get("operational", true)) and factory_materials.get(str(facility.get("factory_type", "")), []).has(item_id) and facility.slots.size() > 0:
+				return true
+		return false
+	if not recipes.has(item_id):
+		return false
+	var recipe: Dictionary = recipes[item_id]
+	if not bool(recipe.get("unlock_level_verified", true)) or int(recipe.get("level", 1)) > int(config.get("mayor_level", 1)):
+		return false
+	var source_text := str(recipe.get("source", "")).to_lower()
+	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
+		return false
+	var supplier_found := false
+	var shop_id := str(recipe.get("store", ""))
+	for facility_id_variant in facilities.keys():
+		var facility_id := str(facility_id_variant)
+		var facility: Dictionary = facilities[facility_id]
+		if str(facility.get("kind", "")) != "store" or str(facility.get("shop_id", "")) != shop_id or not bool(facility.get("operational", true)):
+			continue
+		var reserved_roots := 0
+		for slot in facility.slots:
+			if bool(slot.get("auto_chain_root", false)):
+				reserved_roots += 1
+		if facility_id == reserved_root_facility_id:
+			reserved_roots += 1
+		if facility.slots.size() - reserved_roots <= 0:
+			continue
+		if int(recipe.get("required_stars", 0)) > int(facility.get("store_star_level", 0)):
+			continue
+		supplier_found = true
+		break
+	if not supplier_found:
+		return false
+	for input_variant in recipe.get("requires", {}).keys():
+		var input_id := str(input_variant)
+		var required := int(recipe.requires[input_variant])
+		if required <= 0:
+			return false
+		var missing := maxi(0, required - int(inventory.get(input_id, 0)))
+		if missing > 0 and not _can_resolve_auto_chain_item(input_id, reserved_root_facility_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, next_ancestry):
+			return false
+	return true
+
+
+static func _advance_auto_chains(facilities: Dictionary, inventory: Dictionary, cost_batches: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, factory_materials: Dictionary, config: Dictionary, now: int, log: Array, consumed_inputs: Dictionary, collected_outputs: Dictionary) -> void:
+	# Match ProductionManager: collect ready automatic outputs first, then advance dependency/store jobs.
+	for facility_id_variant in facilities.keys():
+		var facility_id := str(facility_id_variant)
+		var facility: Dictionary = facilities[facility_id]
+		for slot_index in range(facility.slots.size()):
+			var slot: Dictionary = facility.slots[slot_index]
+			if slot.is_empty() or str(slot.get("auto_chain_id", "")).is_empty() or not bool(slot.get("ready", false)):
+				continue
+			if _inventory_used(inventory) + 1 > int(config.get("storage_capacity", 50)):
+				continue
+			var output_id := str(slot.get("item_id", ""))
+			inventory[output_id] = int(inventory.get(output_id, 0)) + 1
+			_append_cost_batch(cost_batches, output_id, 1, int(slot.get("cost_total", 0)), bool(slot.get("cost_known", false)))
+			collected_outputs[output_id] = int(collected_outputs.get(output_id, 0)) + 1
+			log.append({"at_seconds": now, "event": "auto_chain_collected", "facility_id": facility_id, "item_id": output_id, "slot_index": slot_index, "chain_id": str(slot.get("auto_chain_id", ""))})
+			facility.slots[slot_index] = {}
+		facilities[facility_id] = facility
+
+	for facility_id_variant in facilities.keys():
+		var facility_id := str(facility_id_variant)
+		var facility: Dictionary = facilities[facility_id]
+		if str(facility.get("kind", "")) != "store" or not bool(facility.get("operational", true)):
+			continue
+		for slot_index in range(facility.slots.size()):
+			var slot: Dictionary = facility.slots[slot_index]
+			var chain_id := str(slot.get("auto_chain_id", ""))
+			if slot.is_empty() or chain_id.is_empty() or bool(slot.get("ready", false)) or bool(slot.get("auto_chain_started", false)):
+				continue
+			var item_id := str(slot.get("item_id", ""))
+			var recipe: Dictionary = recipes.get(item_id, {})
+			var requirements: Dictionary = recipe.get("requires", {})
+			if recipe.is_empty() or str(recipe.get("store", "")) != str(facility.get("shop_id", "")) or not _recipe_unlocked(item_id, recipe, facility, raw_catalog, recipes, config) or requirements.is_empty():
+				continue
+			var missing_inputs := false
+			for input_variant in requirements.keys():
+				var input_id := str(input_variant)
+				var required := int(requirements[input_variant])
+				if required <= 0:
+					missing_inputs = true
+					break
+				var missing := maxi(0, required - int(inventory.get(input_id, 0)))
+				if missing > 0:
+					missing_inputs = true
+					_schedule_auto_chain_item(input_id, missing, chain_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, item_id, log)
+			if missing_inputs:
+				continue
+			var another_active := false
+			for other_index in range(facility.slots.size()):
+				if other_index == slot_index:
+					continue
+				var other: Dictionary = facility.slots[other_index]
+				if not other.is_empty() and not bool(other.get("ready", false)) and int(other.get("finish_seconds", 0)) > 0:
+					another_active = true
+					break
+			if another_active:
+				continue
+			if not _has_inventory(inventory, requirements):
+				continue
+			_remove_inventory(inventory, requirements)
+			var input_cost: Dictionary = _consume_cost_batches(cost_batches, requirements)
+			for input_id in requirements.keys():
+				consumed_inputs[str(input_id)] = int(consumed_inputs.get(str(input_id), 0)) + int(requirements[input_id])
+			var duration := maxi(1, int(facility.get("duration_overrides", {}).get(item_id, recipe.get("time_sec", recipe.get("time", 0)))))
+			var operating_cost := roundi(float(duration) * maxf(0.0, float(facility.get("operating_cost_per_second", 0.0))))
+			slot["cost_known"] = bool(input_cost.get("known", false))
+			slot["cost_total"] = int(input_cost.get("total_cost", 0)) + operating_cost
+			slot["start_seconds"] = now
+			slot["finish_seconds"] = now + duration
+			slot["queued"] = false
+			slot["auto_chain_started"] = true
+			facility.slots[slot_index] = slot
+			log.append({"at_seconds": now, "event": "auto_chain_started", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "chain_id": chain_id, "finish_seconds": now + duration, "inputs_consumed": requirements.duplicate(true)})
+		facilities[facility_id] = facility
+
+
+static func _schedule_auto_chain_item(item_id: String, amount: int, chain_id: String, facilities: Dictionary, inventory: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, factory_materials: Dictionary, config: Dictionary, ancestry_item: String, log: Array) -> bool:
+	if amount <= 0:
+		return true
+	if chain_id.is_empty() or item_id == ancestry_item:
+		return false
+	var outstanding := 0
+	for facility in facilities.values():
+		for slot in facility.slots:
+			if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == item_id:
+				outstanding += 1
+	var needed := maxi(0, amount - outstanding)
+	if needed <= 0:
+		return true
+	if raw_catalog.has(item_id):
+		var started := 0
+		for facility_id_variant in facilities.keys():
+			var facility_id := str(facility_id_variant)
+			var facility: Dictionary = facilities[facility_id]
+			if started >= needed:
+				break
+			if str(facility.get("kind", "")) != "factory" or not bool(facility.get("operational", true)) or not factory_materials.get(str(facility.get("factory_type", "")), []).has(item_id):
+				continue
+			for slot_index in range(facility.slots.size()):
+				if started >= needed:
+					break
+				if facility.slots[slot_index].is_empty():
+					facility.slots[slot_index] = {"item_id": item_id, "start_seconds": now_placeholder, "finish_seconds": 0, "ready": false, "queued": false, "auto_chain_id": chain_id, "auto_chain_root": false, "auto_chain_started": true, "cost_known": true, "cost_total": 0}
+					var duration := maxi(1, int(raw_catalog[item_id].get("time_sec", raw_catalog[item_id].get("time", 0))))
+					facility.slots[slot_index]["finish_seconds"] = int(config.get("_simulation_now", 0)) + duration
+					log.append({"at_seconds": int(config.get("_simulation_now", 0)), "event": "auto_chain_factory_started", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "chain_id": chain_id, "finish_seconds": int(facility.slots[slot_index].finish_seconds)})
+					started += 1
+			facilities[facility_id] = facility
+		return started > 0
+	if not recipes.has(item_id):
+		return false
+	var recipe: Dictionary = recipes[item_id]
+	var scheduled := 0
+	for facility_id_variant in facilities.keys():
+		var facility_id := str(facility_id_variant)
+		var facility: Dictionary = facilities[facility_id]
+		if scheduled >= needed:
+			break
+		if str(facility.get("kind", "")) != "store" or not bool(facility.get("operational", true)) or str(facility.get("shop_id", "")) != str(recipe.get("store", "")) or not _recipe_unlocked(item_id, recipe, facility, raw_catalog, recipes, config):
+			continue
+		for slot_index in range(facility.slots.size()):
+			if scheduled >= needed:
+				break
+			if facility.slots[slot_index].is_empty():
+				facility.slots[slot_index] = {"item_id": item_id, "start_seconds": 0, "finish_seconds": 0, "ready": false, "queued": true, "auto_chain_id": chain_id, "auto_chain_root": false, "auto_chain_started": false, "cost_known": false, "cost_total": 0}
+				log.append({"at_seconds": int(config.get("_simulation_now", 0)), "event": "auto_chain_dependency_queued", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "chain_id": chain_id})
+				scheduled += 1
+		facilities[facility_id] = facility
+	return scheduled > 0
+
+
 static func _recipe_unlocked(item_id: String, recipe: Dictionary, facility: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, config: Dictionary) -> bool:
 	var mayor_level := int(config.get("mayor_level", 1))
 	if item_id in config.get("invalid_recipe_ids", []):
@@ -291,7 +491,7 @@ static func _start_store_order(facility: Dictionary, facility_id: String, now: i
 			return
 	for slot_index in range(facility.slots.size()):
 		var slot: Dictionary = facility.slots[slot_index]
-		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_seconds", 0)) > 0:
+		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_seconds", 0)) > 0 or not str(slot.get("auto_chain_id", "")).is_empty():
 			continue
 		var recipe: Dictionary = recipes.get(str(slot.get("item_id", "")), {})
 		var duration := maxi(1, int(facility.get("duration_overrides", {}).get(str(slot.get("item_id", "")), recipe.get("time_sec", recipe.get("time", 0)))))
@@ -312,34 +512,59 @@ static func _first_empty_slot(slots: Array) -> int:
 	return -1
 
 
-static func _initialize_cost_batches(inventory: Dictionary, unit_costs: Variant, errors: Array[String]) -> Dictionary:
+static func _initialize_cost_batches(inventory: Dictionary, unit_costs: Variant, exact_batches: Variant, errors: Array[String]) -> Dictionary:
 	var result: Dictionary = {}
 	if not unit_costs is Dictionary:
 		errors.append("initial_unit_costs must be a Dictionary.")
 		unit_costs = {}
+	if not exact_batches is Dictionary:
+		errors.append("initial_cost_batches must be a Dictionary.")
+		exact_batches = {}
 	for item_id_variant in inventory.keys():
 		var item_id := str(item_id_variant)
 		var quantity := int(inventory[item_id_variant])
-		var entry: Variant = unit_costs.get(item_id, null)
-		var known := entry != null
-		var unit_cost := 0
-		if entry is Dictionary:
-			known = bool(entry.get("known", true))
-			unit_cost = int(entry.get("unit_cost", 0))
-		elif entry != null:
-			unit_cost = int(entry)
-		if unit_cost < 0:
-			errors.append("Negative initial unit cost for %s." % item_id)
-			known = false
-			unit_cost = 0
-		result[item_id] = [{"quantity": quantity, "unit_cost": unit_cost, "known": known}]
+		var normalized: Array[Dictionary] = []
+		var tracked := 0
+		var supplied: Variant = exact_batches.get(item_id, null)
+		if supplied is Array:
+			for batch_variant in supplied:
+				if not batch_variant is Dictionary:
+					errors.append("Malformed initial cost batch for %s." % item_id)
+					continue
+				var batch: Dictionary = batch_variant
+				var batch_quantity := int(batch.get("quantity", 0))
+				var batch_total := int(batch.get("total_cost", -1))
+				if batch_quantity <= 0 or batch_total < 0:
+					errors.append("Invalid initial cost batch quantity/cost for %s." % item_id)
+					continue
+				normalized.append({"quantity": batch_quantity, "total_cost": batch_total, "known": bool(batch.get("known", false))})
+				tracked += batch_quantity
+			if tracked > quantity:
+				errors.append("Initial cost batches exceed inventory quantity for %s." % item_id)
+			elif tracked < quantity:
+				normalized.append({"quantity": quantity - tracked, "total_cost": 0, "known": false})
+		else:
+			var entry: Variant = unit_costs.get(item_id, null)
+			var known := entry != null
+			var unit_cost := 0
+			if entry is Dictionary:
+				known = bool(entry.get("known", true))
+				unit_cost = int(entry.get("unit_cost", 0))
+			elif entry != null:
+				unit_cost = int(entry)
+			if unit_cost < 0:
+				errors.append("Negative initial unit cost for %s." % item_id)
+				known = false
+				unit_cost = 0
+			normalized.append({"quantity": quantity, "total_cost": unit_cost * quantity, "known": known})
+		result[item_id] = normalized
 	return result
 
-static func _append_cost_batch(cost_batches: Dictionary, item_id: String, quantity: int, unit_cost: int, known: bool) -> void:
+static func _append_cost_batch(cost_batches: Dictionary, item_id: String, quantity: int, total_cost: int, known: bool) -> void:
 	if item_id.is_empty() or quantity <= 0:
 		return
 	var batches: Array = cost_batches.get(item_id, [])
-	batches.append({"quantity": quantity, "unit_cost": maxi(0, unit_cost), "known": known})
+	batches.append({"quantity": quantity, "total_cost": maxi(0, total_cost), "known": known})
 	cost_batches[item_id] = batches
 
 static func _consume_cost_batches(cost_batches: Dictionary, requirements: Dictionary) -> Dictionary:
@@ -359,14 +584,18 @@ static func _consume_cost_batches(cost_batches: Dictionary, requirements: Dictio
 			var take := mini(remaining, int(batch.get("quantity", 0)))
 			if take <= 0:
 				continue
+			var batch_quantity := int(batch.get("quantity", 0))
+			var batch_total := int(batch.get("total_cost", 0))
+			var cost_part := roundi(float(batch_total) * float(take) / float(maxi(1, batch_quantity)))
 			if bool(batch.get("known", false)):
-				total_cost += take * int(batch.get("unit_cost", 0))
+				total_cost += cost_part
 			else:
 				all_known = false
 			remaining -= take
-			var left := int(batch.get("quantity", 0)) - take
+			var left := batch_quantity - take
 			if left > 0:
 				batch["quantity"] = left
+				batch["total_cost"] = batch_total - cost_part
 				rebuilt.append(batch)
 		if remaining > 0:
 			all_known = false
@@ -425,7 +654,6 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 		return {"capture_error": "One or more required production/economy autoloads are unavailable."}
 	var now := int(Time.get_unix_time_from_system())
 	var facilities: Array[Dictionary] = []
-	var has_automatic_chain_jobs := false
 	for component in scene_tree.get_nodes_in_group("production_components"):
 		if not is_instance_valid(component) or not component.is_in_group("production_components"):
 			continue
@@ -438,8 +666,6 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 		var duration_overrides: Dictionary = {}
 		for slot_variant in component.slots:
 			var slot: Dictionary = slot_variant.duplicate(true)
-			if not str(slot.get("auto_chain_id", "")).is_empty():
-				has_automatic_chain_jobs = true
 			if not slot.is_empty():
 				var finish_unix := int(slot.get("finish_unix", 0))
 				var remaining := maxi(0, finish_unix - now) if finish_unix > 0 else 0
@@ -461,8 +687,6 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 			"initial_slots": initial_slots,
 			"duration_overrides": duration_overrides
 		})
-	if has_automatic_chain_jobs:
-		return {"capture_error": "Live automatic dependency chains are active; their dependency graph is not yet included in this snapshot."}
 	var depot_snapshot: Dictionary = {}
 	for listing_variant in trade_manager.sell_slots:
 		var listing: Dictionary = listing_variant.duplicate(true)
@@ -485,6 +709,8 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 		"horizon_seconds": maxi(0, horizon_seconds),
 		"storage_capacity": int(storage_manager.capacity),
 		"initial_inventory": storage_manager.get_all_items(),
+		"initial_cost_batches": storage_manager.item_cost_batches.duplicate(true),
+		"initial_cost_batches": storage_manager.item_cost_batches.duplicate(true),
 		"raw_materials": raw_catalog,
 		"crafted_items": crafted_catalog,
 		"factory_materials": production_manager.factory_materials.duplicate(true),
