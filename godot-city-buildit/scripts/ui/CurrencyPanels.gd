@@ -185,6 +185,8 @@ func _build_store() -> void:
 	_add_active_progress_boosts()
 	_content.add_child(_label("COMMERCIAL QUEUE SLOTS", 16, Color("#F7D77D")))
 	_add_store_slot_expansions()
+	_content.add_child(_label("CITY EXPANSION SPECIAL ITEMS", 16, Color("#F7D77D")))
+	_add_expansion_item_shop()
 	_content.add_child(_label("SIMCASH PACKS", 16, Color("#F7D77D")))
 	for product in PaymentManager.get_catalog():
 		_content.add_child(_product_card(product))
@@ -382,6 +384,40 @@ func _speed_up_component_slot(component: ProductionComponent, slot_index: int) -
 	_add_store_return_button()
 	if has_node("/root/SaveManager"):
 		SaveManager.save_game()
+
+
+func _add_expansion_item_shop() -> void:
+	if GameManager.level < LandExpansionManager.MIN_EXPANSION_LEVEL:
+		_content.add_child(_notice("LAND EXPANSION LOCKED", "Reach Mayor Level 10 to unlock dozer parts and expand city plots."))
+		return
+	_content.add_child(_notice("Buy missing dozer parts", "Fandom reference price: 24 SimCash per Dozer Wheel, Blade or Exhaust. Purchased parts enter City Storage and are still consumed by the normal land-expansion requirements."))
+	for item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
+		var definition := LandExpansionManager.get_expansion_item_definition(item_id)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		var info := VBoxContainer.new()
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.add_child(_label(str(definition.get("name", item_id)), 14, Color.WHITE))
+		info.add_child(_label("Owned: %d · 24 SimCash each" % StorageManager.get_count(item_id), 11, Color("#B8D5E5")))
+		row.add_child(info)
+		var buy := Button.new()
+		buy.name = "BuyExpansionItem_%s" % item_id
+		buy.text = "BUY · 24"
+		buy.custom_minimum_size = Vector2(100, 48) * _scale
+		buy.disabled = EconomyManager.sim_cash < 24 or StorageManager.get_free() < 1
+		buy.add_theme_stylebox_override("normal", _button_style(Color("#277C9B")))
+		buy.pressed.connect(_buy_expansion_item.bind(item_id))
+		row.add_child(buy)
+		_content.add_child(row)
+
+func _buy_expansion_item(item_id: String) -> void:
+	var result := EconomyManager.buy_special_item_with_simcash(item_id, 24, LandExpansionManager.MIN_EXPANSION_LEVEL)
+	if not bool(result.get("success", false)):
+		_status.text = "Special-item purchase failed: %s" % str(result.get("reason", "unknown"))
+		return
+	if has_node("/root/SaveManager"):
+		SaveManager.save_game()
+	open_store()
 
 func _add_store_slot_expansions() -> void:
 	var found := false
