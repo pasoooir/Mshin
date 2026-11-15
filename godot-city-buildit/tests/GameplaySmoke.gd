@@ -2013,6 +2013,12 @@ func _test_emergency_service_tier_happiness() -> void:
 			var coverage_tiles := float(facility.definition.get("coverage_tiles", ServiceManager.DEFAULT_EMERGENCY_COVERAGE_TILES))
 			var radius := coverage_tiles * BuildManager.GRID_SIZE
 			facility.global_position = Vector3(radius - 0.1, 0.0, 0.0)
+			# Put both utility providers between the home and this station: the
+			# home stays outside the 10 m utility radius while the station remains
+			# inside it, including the larger 24-tile hospital/precinct tiers.
+			var provider_x := maxf(ServiceManager.coverage_radius + 0.5, radius - 5.0)
+			power_provider.global_position = Vector3(provider_x, 0.0, 0.0)
+			water_provider.global_position = Vector3(provider_x, 0.0, 0.0)
 			BuildManager.buildings[facility.building_id] = facility
 			ServiceManager.recalculate_from_buildings()
 			print("[GameplaySmoke] emergency tier ", service_id, " operational=", BuildManager.is_building_operational(facility), " power=", ServiceManager.power_served_ids.has(facility.building_id), " water=", ServiceManager.water_served_ids.has(facility.building_id), " workers=", ServiceManager.workforce_served_ids.has(facility.building_id), " population=", GameManager.population, " available_workers=", ServiceManager.available_workers, " road=", BuildManager.has_road_access(facility.grid_pos, facility.definition.get("size", Vector2i.ONE)))
