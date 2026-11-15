@@ -2822,8 +2822,10 @@ func _finish_production_touch_drag(screen_position: Vector2) -> void:
 	# Touch dragging must be able to land on the selected building itself,
 	# not only on the queue cards. Test the projected building footprint using
 	# the exact same polygon used by native drag-and-drop hit testing.
-	if is_instance_valid(production_panel):
-		var building_target := production_panel.find_child("ProductionBuildingDropTarget", true, false) as ProductionBuildingDropTarget
+	# The projected target is a sibling of the compact queue panel under
+	# ProductionOverlay, not a descendant of ProductionPanel.
+	if is_instance_valid(production_overlay):
+		var building_target := production_overlay.find_child("ProductionBuildingDropTarget", true, false) as ProductionBuildingDropTarget
 		if is_instance_valid(building_target):
 			# InputEventScreenTouch.position is in viewport coordinates. Convert
 			# through the full canvas transform and use the actual footprint
