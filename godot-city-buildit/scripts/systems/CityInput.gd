@@ -143,6 +143,13 @@ func _move_anchor_from_world(world_position: Vector3) -> Vector2i:
 	return BuildManager.world_to_grid(world_position - anchor_offset)
 
 func _unhandled_input(event: InputEvent) -> void:
+	# The production studio owns input while open; city taps, road tools and
+	# placement shortcuts must not leak through the modal backdrop.
+	var scene := get_tree().current_scene
+	var hud := scene.get_node_or_null("HUD") as Node if is_instance_valid(scene) else null
+	if is_instance_valid(hud) and hud.get("production_overlay") is Control and is_instance_valid(hud.get("production_overlay")):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R and BuildManager.is_placing:
 		if BuildManager.rotate_placement():
 			var ghost = get_tree().current_scene.get_node_or_null("GhostPreview") if get_tree().current_scene else null
