@@ -1642,7 +1642,7 @@ func _test_sewage_service_happiness() -> void:
 		var expected_capacity: int = expected_capacities[sewage_id]
 		_check(ServiceManager.total_sewage == expected_capacity, "Sewage tier capacity must match its catalog data: " + sewage_id)
 		_check(ServiceManager.demand_sewage == 9, "Sewage demand must be independent of facility capacity.")
-		_check(not ServiceManager.sewage_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive sewage service.")
+		_check(not ServiceManager.sewage_ServiceManager.get(served_key).has(disconnected_home.building_id), "A home without Gateway road access must not receive sewage service.")
 		if expected_capacity == 7:
 			_check(ServiceManager.used_sewage == 3, "A 7-unit sewage plant must serve the 1-unit and 2-unit homes but not the 5-unit home.")
 			_check(not ServiceManager.sewage_served_ids.has(high_home.building_id), "A high-demand home must remain unserved when capacity is insufficient.")
@@ -1727,7 +1727,7 @@ func _test_waste_service_happiness() -> void:
 		var expected_capacity: int = expected_capacities[waste_id]
 		_check(ServiceManager.total_waste == expected_capacity, "Waste tier capacity must match its catalog data: " + waste_id)
 		_check(ServiceManager.demand_waste == 19, "Waste demand must remain independent of capacity.")
-		_check(not ServiceManager.waste_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive waste service.")
+		_check(not ServiceManager.waste_ServiceManager.get(served_key).has(disconnected_home.building_id), "A home without Gateway road access must not receive waste service.")
 		if expected_capacity == 15:
 			_check(ServiceManager.used_waste == 15, "A 15-unit waste facility must serve only 15 of the 18 connected demand units.")
 			_check(ServiceManager.waste_served_ids.size() == 10, "A small waste facility must leave three connected low-demand homes unserved.")
@@ -1823,7 +1823,7 @@ func _test_power_water_gateway_access() -> void:
 	GameManager.level = 4
 	_check(is_equal_approx(HappinessManager.calculate_home_happiness(connected_home), 55.0), "Unlocked but unavailable Power and Water must apply both residential happiness penalties even when total capacity is zero.")
 	_check(is_equal_approx(HappinessManager.calculate_home_happiness(disconnected_home), 15.0), "A road-isolated home with unavailable unlocked utilities must receive road, power and water penalties.")
-	_check(not ServiceManager.power_served_ids.has(disconnected_home.building_id) and not ServiceManager.water_served_ids.has(disconnected_home.building_id), "A home without Gateway road access must not receive power or water.")
+	_check(not ServiceManager.power_ServiceManager.get(served_key).has(disconnected_home.building_id) and not ServiceManager.water_ServiceManager.get(served_key).has(disconnected_home.building_id), "A home without Gateway road access must not receive power or water.")
 
 	power_plant.grid_pos = Vector2i(1, -2)
 	water_plant.grid_pos = Vector2i(1, -2)
@@ -1834,7 +1834,7 @@ func _test_power_water_gateway_access() -> void:
 	_check(ServiceManager.total_power == int(BuildManager.building_types["power_wind"].get("power", 0)), "A Gateway-connected power plant must contribute its catalog capacity.")
 	_check(ServiceManager.total_water == int(BuildManager.building_types["water_tower"].get("water", 0)), "A Gateway-connected water facility must contribute its catalog capacity.")
 	_check(ServiceManager.power_served_ids.has(connected_home.building_id) and ServiceManager.water_served_ids.has(connected_home.building_id), "Connected local utility coverage must serve a connected nearby home.")
-	_check(not ServiceManager.power_served_ids.has(disconnected_home.building_id) and not ServiceManager.water_served_ids.has(disconnected_home.building_id), "Connected utilities must not serve a home isolated from the Gateway.")
+	_check(not ServiceManager.power_ServiceManager.get(served_key).has(disconnected_home.building_id) and not ServiceManager.water_ServiceManager.get(served_key).has(disconnected_home.building_id), "Connected utilities must not serve a home isolated from the Gateway.")
 
 	var commercial_consumer := FireHazardTestBuilding.new()
 	add_child(commercial_consumer)
@@ -1969,16 +1969,16 @@ func _test_emergency_service_tier_happiness() -> void:
 			ServiceManager.recalculate_from_buildings()
 			_check(str(facility.definition.get("service_group", "")) == service_group, "Emergency service catalog tier must belong to its declared service group: " + service_id)
 			var current_served_ids: Dictionary = ServiceManager.get(served_key)
-			_check(current_served_ids.has(home.building_id), "Every connected emergency service tier must serve a connected home inside its catalog radius: " + service_id)
+			_check(current_ServiceManager.get(served_key).has(home.building_id), "Every connected emergency service tier must serve a connected home inside its catalog radius: " + service_id)
 			var coverage_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
 			_check(int(coverage_warnings.get(service_group, -1)) == 1, "Emergency service warnings must count only the disconnected unserved home: " + service_id)
-			_check(not served_ids.has(disconnected_home.building_id), "Emergency service must not serve a home without Gateway road access: " + service_id)
+			_check(not ServiceManager.get(served_key).has(disconnected_home.building_id), "Emergency service must not serve a home without Gateway road access: " + service_id)
 			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness + bonus), "Every connected emergency service tier must provide its existing happiness bonus: " + service_id)
 			_check(HappinessManager._home_has_extra_service(home), "Every connected emergency service tier must count as an extra service: " + service_id)
 
 			facility.status = "constructing"
 			ServiceManager.recalculate_from_buildings()
-			_check(not served_ids.has(home.building_id), "An emergency facility under construction must not provide coverage: " + service_id)
+			_check(not ServiceManager.get(served_key).has(home.building_id), "An emergency facility under construction must not provide coverage: " + service_id)
 			var construction_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
 			_check(int(construction_warnings.get(service_group, -1)) == 2, "Emergency service warnings must include all homes when the provider is under construction: " + service_id)
 			_check(is_equal_approx(HappinessManager.calculate_home_happiness(home), baseline_happiness), "An emergency facility under construction must not provide happiness: " + service_id)
@@ -1986,12 +1986,12 @@ func _test_emergency_service_tier_happiness() -> void:
 			facility.status = "completed"
 			facility.global_position = Vector3(radius + 0.1, 0.0, 0.0)
 			ServiceManager.recalculate_from_buildings()
-			_check(not served_ids.has(home.building_id), "An emergency facility outside its tier coverage radius must not serve a home: " + service_id)
+			_check(not ServiceManager.get(served_key).has(home.building_id), "An emergency facility outside its tier coverage radius must not serve a home: " + service_id)
 
 			facility.global_position = Vector3.ZERO
 			facility.grid_pos = Vector2i(35, 35)
 			ServiceManager.recalculate_from_buildings()
-			_check(not served_ids.has(home.building_id), "An emergency facility disconnected from Gateway must not serve a nearby home: " + service_id)
+			_check(not ServiceManager.get(served_key).has(home.building_id), "An emergency facility disconnected from Gateway must not serve a nearby home: " + service_id)
 
 			BuildManager.buildings.erase(facility.building_id)
 			remove_child(facility)
@@ -2009,27 +2009,27 @@ func _test_emergency_service_tier_happiness() -> void:
 	fire_facility.global_position = Vector3.ZERO
 	BuildManager.buildings[fire_facility.building_id] = fire_facility
 	ServiceManager.recalculate_from_buildings()
-	_check(ServiceManager.fire_served_ids.has(home.building_id), "A connected, powered and staffed Fire Station must cover a connected nearby home.")
+	_check(ServiceManager.fire_ServiceManager.get(served_key).has(home.building_id), "A connected, powered and staffed Fire Station must cover a connected nearby home.")
 	power_provider.status = "constructing"
 	ServiceManager.recalculate_from_buildings()
-	_check(not ServiceManager.fire_served_ids.has(home.building_id), "Emergency coverage must stop when its required power supply is lost.")
+	_check(not ServiceManager.fire_ServiceManager.get(served_key).has(home.building_id), "Emergency coverage must stop when its required power supply is lost.")
 	power_provider.status = "completed"
 	var old_home_population := home.current_population
 	home.current_population = 0
 	ServiceManager.recalculate_from_buildings()
-	_check(not ServiceManager.fire_served_ids.has(home.building_id), "Emergency coverage must stop when the station has no available workforce.")
+	_check(not ServiceManager.fire_ServiceManager.get(served_key).has(home.building_id), "Emergency coverage must stop when the station has no available workforce.")
 	home.current_population = old_home_population
 	ServiceManager.recalculate_from_buildings()
-	_check(ServiceManager.fire_served_ids.has(home.building_id), "Restoring station workforce must restore emergency coverage.")
+	_check(ServiceManager.fire_ServiceManager.get(served_key).has(home.building_id), "Restoring station workforce must restore emergency coverage.")
 	_check(ServiceManager.served_fire_homes == 1 and ServiceManager.demand_fire_homes == 2, "Emergency service HUD metrics must report covered homes against all completed homes.")
 	if road_system:
 		_check(road_system.remove_road(Vector2i(1, 0)), "Emergency coverage test must be able to cut the home's only Gateway access tile.")
 		ServiceManager.recalculate_from_buildings()
-		_check(not ServiceManager.fire_served_ids.has(home.building_id), "Cutting the home's Gateway road must revoke Fire coverage.")
-		_check(not ServiceManager.police_served_ids.has(home.building_id) and not ServiceManager.health_served_ids.has(home.building_id), "Cutting the home's Gateway road must revoke every emergency service.")
+		_check(not ServiceManager.fire_ServiceManager.get(served_key).has(home.building_id), "Cutting the home's Gateway road must revoke Fire coverage.")
+		_check(not ServiceManager.police_ServiceManager.get(served_key).has(home.building_id) and not ServiceManager.health_ServiceManager.get(served_key).has(home.building_id), "Cutting the home's Gateway road must revoke every emergency service.")
 		_check(road_system.place_road(Vector2i(1, 0)), "Emergency coverage test must restore the home's Gateway access tile.")
 		ServiceManager.recalculate_from_buildings()
-		_check(ServiceManager.fire_served_ids.has(home.building_id), "Restoring Gateway road access must restore Fire coverage.")
+		_check(ServiceManager.fire_ServiceManager.get(served_key).has(home.building_id), "Restoring Gateway road access must restore Fire coverage.")
 		_check(ServiceManager.served_fire_homes == 1, "Restoring Gateway road access must restore the emergency covered-home metric.")
 
 	BuildManager.buildings.erase(fire_facility.building_id)
@@ -3681,7 +3681,7 @@ func _run_gameplay_test() -> void:
 	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
 	home._process(0.0)
 	_check(home != null and not home.upgrade_in_progress and home.upgrade_stage == 2, "Residential upgrade must complete when its finish timestamp elapses.")
-	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
+	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_ServiceManager.get(served_key).has(home.building_id)) if home else "n/a", str(ServiceManager.water_ServiceManager.get(served_key).has(home.building_id)) if home else "n/a"])
 	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > city_population_before_upgrade, "House upgrade did not increase service-adjusted population.")
 
 	# Save a second upgrade while its scaffold timer is active to verify timestamp persistence.
