@@ -2639,7 +2639,7 @@ func _input(event: InputEvent) -> void:
 	# product tile. This is essential for a genuine drag gesture on touchscreens.
 	if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
 		return
-	var pointer_id := event.index
+	var pointer_id: int = int(event.index)
 	if not _production_drag_gestures.has(pointer_id):
 		return
 	var gesture: Dictionary = _production_drag_gestures[pointer_id]
@@ -2651,7 +2651,7 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-func _on_production_product_gui_input(event: InputEvent, _product_button: Button, building: Building, item_id: String) -> void:
+func _on_production_product_gui_input(event: InputEvent, product_button: Button, building: Building, item_id: String) -> void:
 	# Keep native mouse drag forwarding and provide an explicit touch pointer path
 	# for Android, where Control drag-and-drop may not receive touch drags.
 	var pointer_id := -1
@@ -2674,7 +2674,7 @@ func _on_production_product_gui_input(event: InputEvent, _product_button: Button
 	if pressed:
 		if not is_instance_valid(building) or not is_instance_valid(building.production_component):
 			return
-		var payload := _get_production_drag_data(Vector2.ZERO, building, item_id)
+		var payload: Variant = _get_production_drag_data(Vector2.ZERO, building, item_id)
 		if payload is Dictionary:
 			_production_drag_gestures[pointer_id] = {"payload": payload, "start": pointer_position, "moved": false, "button": product_button, "building": building, "item_id": item_id}
 		return
