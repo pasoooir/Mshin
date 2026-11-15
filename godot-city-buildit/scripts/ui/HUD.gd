@@ -2178,7 +2178,7 @@ func open_production_panel(building: Building) -> void:
 
 	# Hex tiles use one responsive size per viewport, so the same honeycomb
 	# geometry is used by both the left and right material clusters.
-	var selector_edge := 76.0 if viewport_size.x > 1100.0 else 58.0
+	var selector_edge := 88.0 if viewport_size.x > 1100.0 else 66.0
 	# Reflow verified products into two symmetric honeycomb clusters.
 	for item_index in range(item_ids.size()):
 		var item_id: String = str(item_ids[item_index])
@@ -2235,7 +2235,7 @@ func open_production_panel(building: Building) -> void:
 		tile_content.add_theme_constant_override("separation", 0)
 		tile_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		item_button.add_child(tile_content)
-		var icon_edge := 42.0 if viewport_size.x > 1100.0 else 31.0
+		var icon_edge := 50.0 if viewport_size.x > 1100.0 else 40.0
 		var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(icon_edge, icon_edge) * _ui_scale)
 		item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile_content.add_child(item_icon)
@@ -2768,6 +2768,22 @@ func _create_production_touch_drag_ghost(building: Building, item_id: String) ->
 func _update_production_touch_drag_ghost(screen_position: Vector2) -> void:
 	if is_instance_valid(_production_touch_drag_ghost):
 		_production_touch_drag_ghost.position = screen_position - _production_touch_drag_ghost.custom_minimum_size * 0.5
+	if not is_instance_valid(production_panel):
+		return
+	for slot_index in range(ProductionComponent.MAX_STORE_QUEUE_SLOTS):
+		var slot_card := production_panel.find_child("QueueSlot%d" % slot_index, true, false) as PanelContainer
+		if not is_instance_valid(slot_card):
+			continue
+		var hovered := slot_card.get_global_rect().has_point(screen_position)
+		var component := _production_building.production_component if is_instance_valid(_production_building) else null
+		var slot_available := is_instance_valid(component) and slot_index < component.get_slot_count() and component.get_slot(slot_index).is_empty()
+		if hovered and slot_available:
+			slot_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#245D70"), Color("#F3C94E")))
+		else:
+			var slot_data: Dictionary = component.get_slot(slot_index) if is_instance_valid(component) and slot_index < component.get_slot_count() else {}
+			var fill := Color("#173849") if not slot_data.is_empty() else Color("#0B1C27")
+			var border := Color("#D8AD4A") if not slot_data.is_empty() else Color("#668392")
+			slot_card.add_theme_stylebox_override("panel", _toolbar_style(fill, border))
 
 
 func _finish_production_touch_drag(screen_position: Vector2) -> void:
@@ -2793,6 +2809,8 @@ func _clear_production_touch_drag() -> void:
 	_production_touch_dragged = false
 	_production_touch_drag_item_id = ""
 	_production_touch_drag_building = null
+	_touch_selected_production_item = ""
+	_touch_selected_production_building_id = 0
 	if is_instance_valid(_production_touch_drag_ghost):
 		_production_touch_drag_ghost.queue_free()
 	_production_touch_drag_ghost = null
