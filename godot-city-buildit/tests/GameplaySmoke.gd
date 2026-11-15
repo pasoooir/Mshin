@@ -3008,6 +3008,21 @@ func _test_trade_depot_and_global_market() -> void:
 	var restored_cost: Dictionary = StorageManager.get_cost_basis({"metal": 2})
 	_check(bool(restored_cost.get("known", false)) and int(restored_cost.get("total_cost", -1)) == 30, "Storage save/load must preserve FIFO cost batches and their acquisition totals.")
 	_check(bool(TradeManager.market_offers[0].get("sold", false)), "Purchased market offers must not be purchasable twice.")
+
+	TradeManager.current_orders = [{"order_id":"costed-delivery", "item_id":"metal", "amount":3, "reward":120, "completed":false}]
+	var order_balance_before := EconomyManager.simoleons
+	var order_inventory_before := StorageManager.get_all_items()
+	_check(not TradeManager.try_complete_order(0), "Delivery order must reject an amount larger than current stock without consuming any inventory.")
+	_check(EconomyManager.simoleons == order_balance_before and StorageManager.get_all_items() == order_inventory_before, "Rejected delivery order must be atomic and leave cash and inventory unchanged.")
+	TradeManager.current_orders = [{"order_id":"costed-delivery", "item_id":"metal", "amount":1, "reward":40, "completed":false}]
+	_check(TradeManager.try_complete_order(0), "A valid delivery order must consume its required inventory and pay its explicit reward.")
+	var order_entry: Dictionary = EconomyManager.transaction_ledger.back()
+	var order_metadata: Dictionary = order_entry.get("metadata", {})
+	_check(str(order_entry.get("type", "")) == "delivery_order_completed" and bool(order_metadata.get("cost_known", false)) and int(order_metadata.get("cost_basis", -1)) == 15 and int(order_metadata.get("gross_margin", -1)) == 25, "Delivery order transaction must persist FIFO COGS 15 and realized gross margin 25.")
+	var order_realized: Dictionary = MacroEconomySimulatorScript._summarize_realized_trade_ledger(EconomyManager.transaction_ledger)
+	_check(int(order_realized.get("gross_revenue", 0)) == ProductionManager.get_item_value("metal") + 40 and int(order_realized.get("known_cogs", -1)) == 30 and bool(order_realized.get("gross_margin_complete", false)), "Live realized-margin summary must include both Depot sales and completed delivery orders.")
+	_check(bool(TradeManager.current_orders[0].get("completed", false)), "Completed delivery order state must be persisted in TradeManager.")
+
 	var saved_trade := TradeManager.to_save_dict()
 	TradeManager.from_save_dict(saved_trade)
 	_check(TradeManager.market_offers.size() == 1 and bool(TradeManager.market_offers[0].get("sold", false)), "Trade save data must preserve sold market offers.")
