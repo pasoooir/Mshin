@@ -118,6 +118,7 @@ var _production_progress_bars: Array[ProgressBar] = []
 var _production_building: Building = null
 var _touch_selected_production_item := ""
 var _touch_selected_production_building_id := 0
+var _production_drag_gestures: Dictionary = {}
 var _production_tick_accum := 0.0
 var _factory_ready_scan_accum := 0.0
 var catalog_info_panel: PanelContainer
@@ -2235,6 +2236,7 @@ func open_production_panel(building: Building) -> void:
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else inventory_status
 		# Dragging a product onto a queue tile submits that exact slot order.
 		item_button.set_drag_forwarding(_get_production_drag_data.bind(building, item_id), Callable(), Callable())
+		item_button.gui_input.connect(_on_production_product_gui_input.bind(item_button, building, item_id))
 		item_button.pressed.connect(func():
 			_show_production_item_details(building, item_id, available_slot)
 		)
@@ -2624,6 +2626,74 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			open_production_panel(building)
 		)
 		detail_row.add_child(auto_chain_button)
+
+
+func _on_production_product_gui_input(event: InputEvent, product_button: Button, building: Building, item_id: String) -> void:
+	# Keep native mouse drag forwarding and provide an explicit touch pointer path
+	# for Android, where Control drag-and-drop may not receive touch drags.
+	var pointer_id := -1
+	var pointer_position := Vector2.ZERO
+	var pressed := false
+	var released := false
+	var moved_event := false
+	if event is InputEventScreenTouch:
+		pointer_id = event.index
+		pointer_position = event.position
+		pressed = event.pressed
+		released = not event.pressed
+	elif event is InputEventScreenDrag:
+		pointer_id = event.index
+		pointer_position = event.position
+		moved_event = true
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		pointer_position = event.position
+		pressed = event.pressed
+		released = not event.pressed
+	elif event is InputEventMouseMotion:
+		pointer_position = event.position
+		moved_event = true
+	else:
+		return
+
+	if pressed:
+		if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+			return
+		var payload := _get_production_drag_data(Vector2.ZERO, building, item_id)
+		if payload is Dictionary:
+			_production_drag_gestures[pointer_id] = {"payload": payload, "start": pointer_position, "moved": false}
+		return
+	if not _production_drag_gestures.has(pointer_id):
+		return
+	var gesture: Dictionary = _production_drag_gestures[pointer_id]
+	if moved_event:
+		if pointer_position.distance_to(gesture.get("start", pointer_position)) >= 14.0 * _ui_scale:
+			gesture["moved"] = true
+		_production_drag_gestures[pointer_id] = gesture
+		return
+	if not released:
+		return
+
+	_production_drag_gestures.erase(pointer_id)
+	if not bool(gesture.get("moved", false)):
+		return
+	var payload: Variant = gesture.get("payload")
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		get_viewport().set_input_as_handled()
+		return
+	var queue_row := production_panel.find_child("ProductionQueueSlots", true, false) as HBoxContainer if is_instance_valid(production_panel) else null
+	if queue_row:
+		for slot_index in range(building.production_component.get_slot_count()):
+			var target := queue_row.find_child("QueueSlot%d" % slot_index, true, false) as Control
+			if target == null or not target.get_global_rect().has_point(pointer_position):
+				continue
+			if _can_accept_production_drop(Vector2.ZERO, payload, building, slot_index):
+				_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
+			else:
+				status_label.text = "This queue slot cannot accept that product."
+			get_viewport().set_input_as_handled()
+			return
+	# A drag ending outside the queue is a no-op, never an implicit order.
+	get_viewport().set_input_as_handled()
 
 
 func _select_production_item_for_touch(building: Building, item_id: String) -> void:
