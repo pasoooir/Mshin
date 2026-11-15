@@ -78,7 +78,48 @@ func _test_construction_bom_contract() -> void:
 	_check(not BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction must be blocked when its BOM materials are missing.")
 	StorageManager.items = {"nails":1, "metal":1}
 	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction BOM must become affordable when all required materials are present.")
+	var villa_bom := BuildManager.get_construction_bom("residential_farm")
+	var apartment_bom := BuildManager.get_construction_bom("residential_apartment")
+	var large_factory_bom := BuildManager.get_construction_bom("factory_nano")
+	var sewage_bom := BuildManager.get_construction_bom("sewage_deluxe")
+	_check(villa_bom != apartment_bom, "Two residential types with different construction duration/unlock tier must resolve different exact BOMs.")
+	_check(int(apartment_bom.get("planks", 0)) > 0 and int(apartment_bom.get("nails", 0)) > int(villa_bom.get("nails", 0)), "Residential apartment BOM must scale above a starter farm by its build complexity.")
+	_check(int(large_factory_bom.get("nails", 0)) > int(BuildManager.get_construction_bom("factory_basic").get("nails", 0)), "Larger/longer factory BOM must scale with its footprint and construction duration.")
+	_check(sewage_bom.has("planks") and sewage_bom.has("bricks") and sewage_bom.has("cement"), "High-tier sewage plant BOM must include the construction materials unlocked by its building tier.")
+	var factory_upgrade_bom := BuildManager.get_non_residential_upgrade_bom("factory_small", 1)
+	_check(factory_upgrade_bom == {"nails":2, "metal":2}, "A starter factory's first non-residential upgrade must have an explicit industrial material bill.")
+	_check(BuildManager.get_non_residential_upgrade_cost("factory_small", 1) >= 100 and BuildManager.get_non_residential_upgrade_duration_seconds("factory_small", 1) >= 20, "Non-residential upgrade must define a real Simoleon cost and timed construction duration.")
+	_check(BuildManager.get_non_residential_upgrade_bom("factory_small", 6).is_empty(), "Non-residential buildings must stop at the supported Level 6 upgrade stage.")
 	StorageManager.from_save_dict(previous_storage)
+
+func _test_non_residential_upgrade_execution() -> void:
+	var wind = _find_building("power_wind")
+	_check(is_instance_valid(wind), "Non-residential upgrade smoke test requires the placed wind power building.")
+	if not is_instance_valid(wind):
+		return
+	var previous_stage := int(wind.upgrade_stage)
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_money := EconomyManager.simoleons
+	var bom := BuildManager.get_non_residential_upgrade_bom(wind.building_type, wind.upgrade_stage)
+	var additions: Dictionary = {}
+	for item_id in bom:
+		var missing := maxi(0, int(bom[item_id]) - StorageManager.get_count(str(item_id)))
+		if missing > 0:
+			additions[str(item_id)] = missing
+	if not additions.is_empty():
+		_check(StorageManager.add_items(additions), "Could not provision the non-residential upgrade's exact material bill.")
+	EconomyManager.simoleons = maxi(EconomyManager.simoleons, BuildManager.get_non_residential_upgrade_cost(wind.building_type, wind.upgrade_stage))
+	var capacity_before := ServiceManager.get_building_service_capacity(wind, "power")
+	_check(wind.try_upgrade(), "A road-connected wind power building with sufficient funds and materials must start a non-residential upgrade.")
+	_check(wind.upgrade_in_progress and wind.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Non-residential upgrade must persist a real future finish timestamp.")
+	wind.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
+	wind.update_upgrade_access_state()
+	_check(not wind.upgrade_in_progress and wind.upgrade_stage == previous_stage + 1, "Non-residential upgrade must complete at its Unix finish timestamp and advance the building stage.")
+	_check(ServiceManager.get_building_service_capacity(wind, "power") > capacity_before, "Upgrading a utility building must increase its actual service capacity.")
+	wind.upgrade_stage = previous_stage
+	ServiceManager.recalculate_from_buildings()
+	StorageManager.from_save_dict(previous_storage)
+	EconomyManager.simoleons = previous_money
 
 func _grant_construction_bom_for_test(type_id: String) -> void:
 	var requirements := BuildManager.get_construction_bom(type_id)
@@ -1066,6 +1107,34 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 		capped_vehicle.free()
 	GameManager.population = saved_traffic_population
 	var world := traffic_test_world
+	# Emergency response now depends on a staffed, powered station. Give this
+	# isolated traffic test a real occupied household and connected utilities.
+	var emergency_home := FireHazardTestBuilding.new()
+	emergency_home.building_id = "traffic-smoke-emergency-home"
+	emergency_home.definition = {"category": "residential", "size": Vector2i(2, 2), "service_demand": 1}
+	emergency_home.status = "completed"
+	emergency_home.grid_pos = Vector2i(1, 1)
+	emergency_home.global_position = Vector3.ZERO
+	emergency_home.current_population = 100
+	emergency_home.set_meta("immigration_population_initialized", true)
+	world.add_child(emergency_home)
+	BuildManager.buildings[emergency_home.building_id] = emergency_home
+	var emergency_power := FireHazardTestBuilding.new()
+	emergency_power.building_id = "traffic-smoke-emergency-power"
+	emergency_power.definition = BuildManager.building_types["power_wind"]
+	emergency_power.status = "completed"
+	emergency_power.grid_pos = Vector2i(0, 1)
+	emergency_power.global_position = BuildManager.grid_to_world(Vector2i(0, 1))
+	world.add_child(emergency_power)
+	BuildManager.buildings[emergency_power.building_id] = emergency_power
+	var emergency_water := FireHazardTestBuilding.new()
+	emergency_water.building_id = "traffic-smoke-emergency-water"
+	emergency_water.definition = BuildManager.building_types["water_tower"]
+	emergency_water.status = "completed"
+	emergency_water.grid_pos = Vector2i(0, 1)
+	emergency_water.global_position = BuildManager.grid_to_world(Vector2i(0, 1))
+	world.add_child(emergency_water)
+	BuildManager.buildings[emergency_water.building_id] = emergency_water
 	var police_station := FireHazardTestBuilding.new()
 	police_station.building_id = "traffic-smoke-police"
 	police_station.building_type = "police_station"
@@ -1074,10 +1143,11 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	police_station.status = "completed"
 	police_station.global_position = BuildManager.grid_to_world(police_station.grid_pos) + Vector3(1.0, 0.0, 1.0)
 	world.add_child(police_station)
-	_check(BuildManager.is_building_operational(police_station), "A completed police station with Gateway-connected road access must be operational.")
+	BuildManager.buildings[police_station.building_id] = police_station
+	ServiceManager.recalculate_from_buildings()
+	_check(BuildManager.is_building_operational(police_station), "A completed, powered and staffed police station with Gateway-connected road access must be operational.")
 	var police_route: Array[Vector2i] = TrafficManager.build_station_patrol_route(police_station)
 	_check(police_route.size() >= 3 and road_system.get_gateway_connected_roads().has(police_route.front()), "Police patrol route must start from the station's connected road exit.")
-	BuildManager.buildings[police_station.building_id] = police_station
 	TrafficManager._update_emergency_dispatch(TrafficManager.EMERGENCY_SPAWN_INTERVAL)
 	var police_vehicle: TrafficVehicle
 	for active_vehicle in TrafficManager._active_vehicles:
@@ -1102,6 +1172,7 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	fire_station.global_position = BuildManager.grid_to_world(fire_station.grid_pos)
 	world.add_child(fire_station)
 	BuildManager.buildings[fire_station.building_id] = fire_station
+	ServiceManager.recalculate_from_buildings()
 	TrafficManager._update_emergency_dispatch(TrafficManager.EMERGENCY_SPAWN_INTERVAL)
 	var fire_vehicle: TrafficVehicle
 	for active_vehicle in TrafficManager._active_vehicles:
@@ -1120,9 +1191,16 @@ func _test_traffic_lane_rules_and_emergency_fleet(road_system) -> void:
 	await get_tree().process_frame
 	BuildManager.buildings.erase(police_station.building_id)
 	BuildManager.buildings.erase(fire_station.building_id)
+	BuildManager.buildings.erase(emergency_home.building_id)
+	BuildManager.buildings.erase(emergency_power.building_id)
+	BuildManager.buildings.erase(emergency_water.building_id)
 	police_station.queue_free()
 	fire_station.queue_free()
+	emergency_home.queue_free()
+	emergency_power.queue_free()
+	emergency_water.queue_free()
 	await get_tree().process_frame
+	ServiceManager.recalculate_from_buildings()
 	TrafficManager.recalculate_from_roads()
 	TrafficManager.vehicle_simulation_enabled = previous_simulation_enabled
 
@@ -1758,6 +1836,26 @@ func _test_power_water_gateway_access() -> void:
 	water_plant.global_position = Vector3.ZERO
 	BuildManager.buildings[water_plant.building_id] = water_plant
 
+	var sewage_plant := FireHazardTestBuilding.new()
+	add_child(sewage_plant)
+	sewage_plant.building_id = "utility_test_sewage"
+	sewage_plant.building_type = "sewage_small"
+	sewage_plant.definition = BuildManager.building_types["sewage_small"]
+	sewage_plant.status = "completed"
+	sewage_plant.grid_pos = Vector2i(35, 35)
+	sewage_plant.global_position = Vector3.ZERO
+	BuildManager.buildings[sewage_plant.building_id] = sewage_plant
+
+	var waste_plant := FireHazardTestBuilding.new()
+	add_child(waste_plant)
+	waste_plant.building_id = "utility_test_waste"
+	waste_plant.building_type = "waste_dump_small"
+	waste_plant.definition = BuildManager.building_types["waste_dump_small"]
+	waste_plant.status = "completed"
+	waste_plant.grid_pos = Vector2i(35, 35)
+	waste_plant.global_position = Vector3.ZERO
+	BuildManager.buildings[waste_plant.building_id] = waste_plant
+
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.total_power == 0 and ServiceManager.total_water == 0, "Disconnected power and water facilities must not contribute operational city capacity.")
 	_check(not ServiceManager.power_served_ids.has(connected_home.building_id) and not ServiceManager.water_served_ids.has(connected_home.building_id), "Nearby disconnected utilities must not serve a connected home.")
@@ -1770,6 +1868,8 @@ func _test_power_water_gateway_access() -> void:
 
 	power_plant.grid_pos = Vector2i(1, -2)
 	water_plant.grid_pos = Vector2i(1, -2)
+	sewage_plant.grid_pos = Vector2i(1, -2)
+	waste_plant.grid_pos = Vector2i(1, -2)
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.total_power == int(BuildManager.building_types["power_wind"].get("power", 0)), "A Gateway-connected power plant must contribute its catalog capacity.")
 	_check(ServiceManager.total_water == int(BuildManager.building_types["water_tower"].get("water", 0)), "A Gateway-connected water facility must contribute its catalog capacity.")
@@ -1797,6 +1897,9 @@ func _test_power_water_gateway_access() -> void:
 	BuildManager.buildings[industrial_consumer.building_id] = industrial_consumer
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.demand_power >= 4 and ServiceManager.demand_water >= 3, "City utility demand must include household, commercial and industrial production consumers.")
+	_check(ServiceManager.demand_sewage == 5 and ServiceManager.demand_waste == 5, "Sewage and waste demand must include connected commercial and industrial operations and disconnected household demand.")
+	_check(ServiceManager.sewage_served_ids.has(commercial_consumer.building_id) and ServiceManager.waste_served_ids.has(commercial_consumer.building_id), "Commercial operations must receive sewage and waste capacity when the city has available capacity.")
+	_check(ServiceManager.sewage_served_ids.has(industrial_consumer.building_id) and ServiceManager.waste_served_ids.has(industrial_consumer.building_id), "Industrial operations must receive sewage and waste capacity when the city has available capacity.")
 	_check(ServiceManager.power_served_ids.has(commercial_consumer.building_id) and ServiceManager.water_served_ids.has(commercial_consumer.building_id), "A connected commercial producer must receive both power and water when local capacity is available.")
 	_check(ServiceManager.power_served_ids.has(industrial_consumer.building_id) and ServiceManager.water_served_ids.has(industrial_consumer.building_id), "A connected industrial producer must receive its higher catalog-profile power demand and water.")
 	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Connected and utility-served commercial and industrial producers must be operational.")
@@ -1819,12 +1922,23 @@ func _test_power_water_gateway_access() -> void:
 	power_plant.status = "completed"
 	ServiceManager.recalculate_from_buildings()
 	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring connected power must reactivate commercial and industrial producers.")
+	sewage_plant.status = "constructing"
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.sewage_served_ids.has(commercial_consumer.building_id) and not BuildManager.is_building_operational(commercial_consumer), "Commercial production must stop when sewage treatment capacity is lost.")
+	sewage_plant.status = "completed"
+	ServiceManager.recalculate_from_buildings()
+	waste_plant.status = "constructing"
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.waste_served_ids.has(industrial_consumer.building_id) and not BuildManager.is_building_operational(industrial_consumer), "Industrial production must stop when waste processing capacity is lost.")
+	waste_plant.status = "completed"
+	ServiceManager.recalculate_from_buildings()
+	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring sewage and waste capacity must reactivate production.")
 	for consumer in [commercial_consumer, industrial_consumer]:
 		BuildManager.buildings.erase(consumer.building_id)
 		remove_child(consumer)
 		consumer.free()
 
-	for test_building in [power_plant, water_plant, connected_home, disconnected_home]:
+	for test_building in [power_plant, water_plant, sewage_plant, waste_plant, connected_home, disconnected_home]:
 		BuildManager.buildings.erase(test_building.building_id)
 		remove_child(test_building)
 		test_building.free()
@@ -1837,14 +1951,38 @@ func _test_emergency_service_tier_happiness() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
 	var saved_simoleons := EconomyManager.simoleons
+	var saved_coverage_radius := ServiceManager.coverage_radius
 	BuildManager.buildings.clear()
 	GameManager.level = 16
+	ServiceManager.coverage_radius = 40.0
 	var road_system = get_node_or_null("World/RoadSystem")
 	if road_system:
 		road_system.seed_starter_access()
 
 	var home := _create_service_test_home("emergency_service_test_home", 1, Vector2i(1, 1))
+	home.current_population = 100
+	home.set_meta("immigration_population_initialized", true)
 	var disconnected_home := _create_service_test_home("emergency_service_disconnected_home", 1, Vector2i(35, 35))
+	disconnected_home.current_population = 0
+	disconnected_home.set_meta("immigration_population_initialized", true)
+	var power_provider := FireHazardTestBuilding.new()
+	add_child(power_provider)
+	power_provider.building_id = "emergency_test_power"
+	power_provider.building_type = "power_wind"
+	power_provider.definition = BuildManager.building_types["power_wind"]
+	power_provider.status = "completed"
+	power_provider.grid_pos = Vector2i(1, -2)
+	power_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	BuildManager.buildings[power_provider.building_id] = power_provider
+	var water_provider := FireHazardTestBuilding.new()
+	add_child(water_provider)
+	water_provider.building_id = "emergency_test_water"
+	water_provider.building_type = "water_tower"
+	water_provider.definition = BuildManager.building_types["water_tower"]
+	water_provider.status = "completed"
+	water_provider.grid_pos = Vector2i(1, -2)
+	water_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	BuildManager.buildings[water_provider.building_id] = water_provider
 	ServiceManager.recalculate_from_buildings()
 	var baseline_happiness := HappinessManager.calculate_home_happiness(home)
 	var service_cases := {
@@ -1869,6 +2007,7 @@ func _test_emergency_service_tier_happiness() -> void:
 			facility.global_position = Vector3(radius - 0.1, 0.0, 0.0)
 			BuildManager.buildings[facility.building_id] = facility
 			ServiceManager.recalculate_from_buildings()
+			print("[GameplaySmoke] emergency tier ", service_id, " operational=", BuildManager.is_building_operational(facility), " power=", ServiceManager.power_served_ids.has(facility.building_id), " water=", ServiceManager.water_served_ids.has(facility.building_id), " workers=", ServiceManager.workforce_served_ids.has(facility.building_id), " population=", GameManager.population, " available_workers=", ServiceManager.available_workers, " road=", BuildManager.has_road_access(facility.grid_pos, facility.definition.get("size", Vector2i.ONE)))
 			_check(str(facility.definition.get("service_group", "")) == service_group, "Emergency service catalog tier must belong to its declared service group: " + service_id)
 			_check(served_ids.has(home.building_id), "Every connected emergency service tier must serve a connected home inside its catalog radius: " + service_id)
 			var coverage_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
@@ -1910,7 +2049,18 @@ func _test_emergency_service_tier_happiness() -> void:
 	fire_facility.global_position = Vector3.ZERO
 	BuildManager.buildings[fire_facility.building_id] = fire_facility
 	ServiceManager.recalculate_from_buildings()
-	_check(ServiceManager.fire_served_ids.has(home.building_id), "A connected Fire Station must cover a connected nearby home.")
+	_check(ServiceManager.fire_served_ids.has(home.building_id), "A connected, powered and staffed Fire Station must cover a connected nearby home.")
+	power_provider.status = "constructing"
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.fire_served_ids.has(home.building_id), "Emergency coverage must stop when its required power supply is lost.")
+	power_provider.status = "completed"
+	var old_home_population := home.current_population
+	home.current_population = 0
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.fire_served_ids.has(home.building_id), "Emergency coverage must stop when the station has no available workforce.")
+	home.current_population = old_home_population
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.fire_served_ids.has(home.building_id), "Restoring station workforce must restore emergency coverage.")
 	_check(ServiceManager.served_fire_homes == 1 and ServiceManager.demand_fire_homes == 2, "Emergency service HUD metrics must report covered homes against all completed homes.")
 	if road_system:
 		_check(road_system.remove_road(Vector2i(1, 0)), "Emergency coverage test must be able to cut the home's only Gateway access tile.")
@@ -1925,6 +2075,10 @@ func _test_emergency_service_tier_happiness() -> void:
 	BuildManager.buildings.erase(fire_facility.building_id)
 	remove_child(fire_facility)
 	fire_facility.free()
+	for provider in [power_provider, water_provider]:
+		BuildManager.buildings.erase(provider.building_id)
+		remove_child(provider)
+		provider.free()
 	for home_node in [home, disconnected_home]:
 		BuildManager.buildings.erase(home_node.building_id)
 		remove_child(home_node)
@@ -1932,13 +2086,16 @@ func _test_emergency_service_tier_happiness() -> void:
 	BuildManager.buildings = saved_buildings
 	GameManager.level = saved_level
 	EconomyManager.simoleons = saved_simoleons
+	ServiceManager.coverage_radius = saved_coverage_radius
 	ServiceManager.recalculate_from_buildings()
 
 func _test_fire_hazard_state_machine() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_timers: Dictionary = FireHazardManager.unprotected_time.duplicate()
 	var saved_smoking: Dictionary = FireHazardManager.smoking_ids.duplicate()
+	var saved_coverage_radius := ServiceManager.coverage_radius
 	BuildManager.buildings.clear()
+	ServiceManager.coverage_radius = 40.0
 	FireHazardManager.unprotected_time.clear()
 	FireHazardManager.smoking_ids.clear()
 	var road_system = get_node_or_null("World/RoadSystem")
@@ -1953,6 +2110,8 @@ func _test_fire_hazard_state_machine() -> void:
 	home.status = "completed"
 	home.grid_pos = Vector2i(1, 1)
 	home.global_position = Vector3.ZERO
+	home.current_population = 100
+	home.set_meta("immigration_population_initialized", true)
 	BuildManager.buildings[home.building_id] = home
 
 	var station = FireHazardTestBuilding.new()
@@ -1964,6 +2123,22 @@ func _test_fire_hazard_state_machine() -> void:
 	station.grid_pos = Vector2i(1, -2)
 	station.global_position = Vector3(30.1, 0.0, 0.0)
 	BuildManager.buildings[station.building_id] = station
+	var power_provider := FireHazardTestBuilding.new()
+	add_child(power_provider)
+	power_provider.building_id = "fire_test_power"
+	power_provider.definition = BuildManager.building_types["power_wind"]
+	power_provider.status = "completed"
+	power_provider.grid_pos = Vector2i(1, -2)
+	power_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	BuildManager.buildings[power_provider.building_id] = power_provider
+	var water_provider := FireHazardTestBuilding.new()
+	add_child(water_provider)
+	water_provider.building_id = "fire_test_water"
+	water_provider.definition = BuildManager.building_types["water_tower"]
+	water_provider.status = "completed"
+	water_provider.grid_pos = Vector2i(1, -2)
+	water_provider.global_position = Vector3(15.0, 0.0, 0.0)
+	BuildManager.buildings[water_provider.building_id] = water_provider
 	ServiceManager.recalculate_from_buildings()
 
 	FireHazardManager._evaluate_hazards(10.0)
@@ -2019,7 +2194,12 @@ func _test_fire_hazard_state_machine() -> void:
 	home.free()
 	remove_child(station)
 	station.free()
+	for provider in [power_provider, water_provider]:
+		BuildManager.buildings.erase(provider.building_id)
+		remove_child(provider)
+		provider.free()
 	BuildManager.buildings = saved_buildings
+	ServiceManager.coverage_radius = saved_coverage_radius
 	FireHazardManager.unprotected_time = saved_timers
 	FireHazardManager.smoking_ids = saved_smoking
 	ServiceManager.recalculate_from_buildings()
@@ -3704,6 +3884,8 @@ func _run_gameplay_test() -> void:
 	StorageManager.storage_changed.emit()
 	StorageManager.capacity_changed.emit(StorageManager.capacity)
 	GameManager.level = previous_mayor_level
+
+	_test_non_residential_upgrade_execution()
 
 	# Livestock may graze only on the two desert fringe strips, never on asphalt,
 	# connected roads or player-owned/buildable city plots.

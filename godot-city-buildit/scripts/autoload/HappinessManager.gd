@@ -292,6 +292,9 @@ func _nearby_bonus(home: Node3D, category: String, radius: float, bonus: float) 
 		if not is_instance_valid(candidate) or candidate.status != "completed":
 			continue
 		if str(candidate.definition.get("category", "")) == category and candidate.global_position.distance_to(home.global_position) <= radius:
+			if category == "park":
+				# Mshin park upgrades add two happiness points per completed stage.
+				return bonus + 2.0 * float(maxi(0, int(candidate.upgrade_stage) - 1))
 			return bonus
 	return 0.0
 
