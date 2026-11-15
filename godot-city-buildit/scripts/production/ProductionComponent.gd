@@ -283,5 +283,9 @@ func from_save_array(saved_slots: Array) -> void:
 	_ensure_slots()
 	for index in range(slots.size()):
 		slots[index] = saved_slots[index].duplicate(true) if index < saved_slots.size() and saved_slots[index] is Dictionary else {}
-	refresh_slots()
+	# During a world restore, defer expiry/auto-collection until SaveManager has
+	# restored the matching chain-order ledger. Otherwise a completed root slot
+	# could collect before its chain ID exists and be scheduled a second time.
+	if not (has_node("/root/SaveManager") and SaveManager.is_loading):
+		refresh_slots()
 	slots_changed.emit()
