@@ -56,7 +56,39 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
-	print("[VisualPresentationSmoke] PASS: clustered canopy geometry, normals, MultiMesh batching and deterministic tree transforms")
+	var pebble_batch: MultiMeshInstance3D = presentation._create_shoreline_pebble_multimesh()
+	if pebble_batch.multimesh == null or pebble_batch.multimesh.instance_count != 38:
+		push_error("[VisualPresentationSmoke] Shoreline pebbles must be batched into exactly 38 instances")
+		pebble_batch.free()
+		tree_batch.free()
+		presentation.free()
+		get_tree().quit(1)
+		return
+	if not pebble_batch.multimesh.use_colors or pebble_batch.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+		push_error("[VisualPresentationSmoke] Shoreline batch must preserve per-instance color and avoid unnecessary pebble shadows")
+		pebble_batch.free()
+		tree_batch.free()
+		presentation.free()
+		get_tree().quit(1)
+		return
+	var pebble_first: Transform3D = presentation._shoreline_pebble_transform(0)
+	var pebble_last: Transform3D = presentation._shoreline_pebble_transform(37)
+	if pebble_first.is_equal_approx(pebble_last) or pebble_first.origin.distance_to(pebble_last.origin) < 100.0:
+		push_error("[VisualPresentationSmoke] Shoreline pebble transforms must retain the full coast distribution")
+		pebble_batch.free()
+		tree_batch.free()
+		presentation.free()
+		get_tree().quit(1)
+		return
+	if presentation._shoreline_pebble_color(0).is_equal_approx(presentation._shoreline_pebble_color(1)):
+		push_error("[VisualPresentationSmoke] Shoreline stones must retain per-instance color variation")
+		pebble_batch.free()
+		tree_batch.free()
+		presentation.free()
+		get_tree().quit(1)
+		return
+	pebble_batch.free()
+	print("[VisualPresentationSmoke] PASS: clustered canopy geometry, tree batching, deterministic transforms and 38-instance shoreline pebble batching")
 	tree_batch.free()
 	presentation.free()
 	get_tree().quit(0)
