@@ -55,7 +55,7 @@ static func simulate_live_city(config: Dictionary) -> Dictionary:
 			if str(definition.get("category", "")) == "residential" and str(building.get("status")) == "completed" and int(building.get("current_population")) > 0:
 				occupied_homes += 1
 		live_config["occupied_homes"] = occupied_homes
-	live_config["realized_trade_accounting"] = _summarize_realized_trade_ledger(economy_manager.transaction_ledger)
+	live_config["realized_trade_accounting"] = _summarize_realized_trade_ledger(economy_manager.transaction_ledger, int(economy_manager.transaction_sequence))
 	if not live_config.has("item_values"):
 		var values: Dictionary = {}
 		for item_id in production_manager.raw_materials:
@@ -66,12 +66,13 @@ static func simulate_live_city(config: Dictionary) -> Dictionary:
 	return simulate(live_config)
 
 
-static func _summarize_realized_trade_ledger(ledger: Array) -> Dictionary:
+static func _summarize_realized_trade_ledger(ledger: Array, total_sequence: int = -1) -> Dictionary:
 	var revenue := 0
 	var known_cogs := 0
 	var known_gross_margin := 0
 	var unknown_cost_quantity := 0
 	var sale_count := 0
+	var history_complete := total_sequence < 0 or total_sequence <= ledger.size()
 	for entry_variant in ledger:
 		if not entry_variant is Dictionary:
 			continue
@@ -96,7 +97,9 @@ static func _summarize_realized_trade_ledger(ledger: Array) -> Dictionary:
 		"known_cogs": known_cogs,
 		"known_gross_margin": known_gross_margin,
 		"unknown_cost_sale_quantity": unknown_cost_quantity,
-		"gross_margin_complete": unknown_cost_quantity == 0,
+		"gross_margin_complete": unknown_cost_quantity == 0 and history_complete,
+		"history_complete": history_complete,
+		"ledger_entries": ledger.size(),
 		"sale_count": sale_count
 	}
 
