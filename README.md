@@ -977,3 +977,22 @@ No recipe, production duration, storage accounting, queue-slot price, or Collect
 
 - [x] Unify actionable world-space markers: ready production shows the actual product thumbnail; blocked collection shows a warning marker; residential upgrades show an upgrade marker only while an upgrade can genuinely start.
 - [x] Avoid false completion/collect notifications for construction and non-residential upgrades because those state transitions complete automatically in the current game model.
+
+
+---
+
+## Android touch drag and production mobile-layout hardening — active
+
+**Branch:** `feat/production-touch-visual-acceptance`
+
+- [x] Add per-pointer production drag state for Android touch, preserving native mouse drag forwarding.
+- [x] Track touch movement/release at the HUD input layer so the finger can leave the product tile before dropping onto a queue slot.
+- [x] Validate the dragged product against the same source building, unlocked recipe/material, and exact empty queue slot using the existing production APIs.
+- [x] Clear tap-to-place selection after a successful drag order so a completed drag cannot leave a stale product selection active.
+- [x] Size radial selectors from their actual minimum dimensions and reserve the bottom dock's full height when clamping product positions.
+- [ ] Run GameplaySmoke with the new synthetic touch down/move/up gesture and 844×390, 915×412, and 1280×720 viewport-boundary/non-overlap checks.
+- [ ] Inspect actual rendered production-panel screenshots on mobile landscape; geometric assertions do not replace visual review.
+- [ ] Accept drag/drop on a physical Android device; CI simulation is not physical-device acceptance.
+- [ ] Extend actionable notifications to other systems only after a real player-pending action and its collection/claim transition are identified.
+
+**Evidence rule:** code changes above are implemented on this branch; all test/visual/device items remain unchecked until the corresponding run or inspection succeeds.
