@@ -76,6 +76,13 @@ jobs:
           if grep -Fq "[CurrencyEconomySmoke]" /tmp/godot-currency-economy.log && ! grep -Fq "[CurrencyEconomySmoke] PASS" /tmp/godot-currency-economy.log; then exit 1; fi
           grep -F "[CurrencyEconomySmoke] PASS" /tmp/godot-currency-economy.log
 
+      - name: Macro economy cashflow and progression simulation
+        run: |
+          set -o pipefail
+          timeout 30s godot --headless --path godot-city-buildit --script res://tests/macro_economy_smoke.gd 2>&1 | tee /tmp/godot-macro-economy.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-macro-economy.log; then exit 1; fi
+          grep -F "[MacroEconomySmoke] PASS" /tmp/godot-macro-economy.log
+
   android-debug-export:
     name: Export and verify Android Debug APK
     runs-on: ubuntu-latest
