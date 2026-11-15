@@ -3804,20 +3804,20 @@ func _run_gameplay_test() -> void:
 	var factory_queue_slot := production_hud.production_panel.find_child("QueueSlot0", true, false) as Control
 	await get_tree().process_frame
 	if metal_drag_button and factory_queue_slot:
-		var touch_down := InputEventScreenTouch.new()
-		touch_down.index = 2
-		touch_down.position = metal_drag_button.get_global_rect().get_center()
-		touch_down.pressed = true
-		production_hud._on_production_product_gui_input(touch_down, metal_drag_button, factory, "metal")
-		var touch_move := InputEventScreenDrag.new()
-		touch_move.index = 2
-		touch_move.position = factory_queue_slot.get_global_rect().get_center()
-		production_hud._input(touch_move)
-		var touch_up := InputEventScreenTouch.new()
-		touch_up.index = 2
-		touch_up.position = factory_queue_slot.get_global_rect().get_center()
-		touch_up.pressed = false
-		production_hud._input(touch_up)
+		var production_touch_down := InputEventScreenTouch.new()
+		production_touch_down.index = 2
+		production_touch_down.position = metal_drag_button.get_global_rect().get_center()
+		production_touch_down.pressed = true
+		production_hud._on_production_product_gui_input(production_touch_down, metal_drag_button, factory, "metal")
+		var production_touch_move := InputEventScreenDrag.new()
+		production_touch_move.index = 2
+		production_touch_move.position = factory_queue_slot.get_global_rect().get_center()
+		production_hud._input(production_touch_move)
+		var production_touch_up := InputEventScreenTouch.new()
+		production_touch_up.index = 2
+		production_touch_up.position = factory_queue_slot.get_global_rect().get_center()
+		production_touch_up.pressed = false
+		production_hud._input(production_touch_up)
 	else:
 		_check(false, "Touch drag fixture must find both the Metal product tile and the first production queue tile.")
 	_check(not factory_component.get_slot(0).is_empty(), "A simulated Android touch drag from Metal to queue slot zero must start that exact production slot.")
