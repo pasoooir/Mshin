@@ -175,6 +175,17 @@ func _start_next_store_order() -> bool:
 		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_unix", 0)) > 0:
 			continue
 		var item_id := str(slot.get("item_id", ""))
+		var reservation_id := str(slot.get("reservation_id", ""))
+		if not reservation_id.is_empty() and not bool(slot.get("inputs_escrowed", false)):
+			if not StorageManager.consume_reservation(reservation_id):
+				StorageManager.release_reservation(reservation_id)
+				slots[index] = {}
+				continue
+			slot["inputs_escrowed"] = true
+		elif reservation_id.is_empty():
+			# Legacy queued saves already deducted their inputs when the order was
+			# accepted; do not charge them again during migration.
+			slot["inputs_escrowed"] = true
 		var duration := int(ceil(get_item_production_time(item_id)))
 		slot["start_unix"] = int(Time.get_unix_time_from_system())
 		slot["finish_unix"] = int(slot["start_unix"]) + maxi(1, duration)
@@ -215,16 +226,21 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 	if not ProductionManager.are_recipe_inputs_unlocked(recipe):
 		return false
 	var inputs: Dictionary = recipe.get("inputs", {})
-	# Validate and deduct the complete input set atomically when the order is
-	# accepted into the store queue. Queued jobs never consume materials twice.
-	if not StorageManager.has_items(inputs) or not StorageManager.remove_items(inputs):
+	# Escrow the complete input set as soon as the order enters the queue. The
+	# materials remain visible in City Storage but cannot be spent by another
+	# building; they are physically consumed when this queued order starts.
+	var owner_id := str(owner_building.building_id) if is_instance_valid(owner_building) else shop_id
+	var reservation_id := "production:%s:%d:%d:%d" % [owner_id, slot_index, int(Time.get_unix_time_from_system()), get_instance_id()]
+	if not StorageManager.reserve_items(reservation_id, inputs):
 		return false
 	slots[slot_index] = {
 		"item_id": recipe_id,
 		"start_unix": 0,
 		"finish_unix": 0,
 		"ready": false,
-		"queued": true
+		"queued": true,
+		"reservation_id": reservation_id,
+		"inputs_escrowed": false
 	}
 	_start_next_store_order()
 	slots_changed.emit()
@@ -261,5 +277,19 @@ func from_save_array(saved_slots: Array) -> void:
 	_ensure_slots()
 	for index in range(slots.size()):
 		slots[index] = saved_slots[index].duplicate(true) if index < saved_slots.size() and saved_slots[index] is Dictionary else {}
+		if not slots[index].is_empty() and str(slots[index].get("reservation_id", "")).is_empty():
+			# Pre-reservation saves already deducted their inputs at queue time.
+			slots[index]["inputs_escrowed"] = true
 	refresh_slots()
+	slots_changed.emit()
+
+func release_queued_reservations() -> void:
+	for index in range(slots.size()):
+		var slot: Dictionary = slots[index]
+		if slot.is_empty():
+			continue
+		var reservation_id := str(slot.get("reservation_id", ""))
+		if not reservation_id.is_empty() and not bool(slot.get("inputs_escrowed", false)):
+			StorageManager.release_reservation(reservation_id)
+			slots[index] = {}
 	slots_changed.emit()
