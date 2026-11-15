@@ -341,6 +341,41 @@ func _test_automatic_production_chain() -> void:
 
 
 
+
+func _test_live_production_cost_propagation() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_level := GameManager.level
+	var previous_experience := GameManager.experience
+	GameManager.level = 1
+	StorageManager.from_save_dict({
+		"capacity": 50,
+		"items": {"metal": 2},
+		"item_cost_batches": {"metal": [{"quantity": 2, "total_cost": 30, "known": true}]}
+	})
+	var store := ProductionComponentScript.new()
+	store.name = "LiveCostBasisStoreProbe"
+	store.shop_id = "building_supplies"
+	store.slot_count = 2
+	add_child(store)
+	_check(store.start_craft("nails", 0), "Live store craft must accept a valid recipe with costed FIFO input stock.")
+	var active_slot: Dictionary = store.slots[0]
+	_check(bool(active_slot.get("cost_known", false)) and int(active_slot.get("cost_total", -1)) == 30, "Live production slot must capture the exact FIFO cost of consumed input materials.")
+	active_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	store.slots[0] = active_slot
+	store.refresh_slots()
+	_check(store.collect(0), "A completed live costed product must collect into City Storage.")
+	var product_cost: Dictionary = StorageManager.get_cost_basis({"nails": 1})
+	_check(bool(product_cost.get("known", false)) and int(product_cost.get("total_cost", -1)) == 30, "Live product collection must transfer the consumed input cost into its output inventory batch.")
+	var saved_inventory: Dictionary = StorageManager.to_save_dict()
+	StorageManager.from_save_dict(saved_inventory)
+	var restored_product_cost: Dictionary = StorageManager.get_cost_basis({"nails": 1})
+	_check(bool(restored_product_cost.get("known", false)) and int(restored_product_cost.get("total_cost", -1)) == 30, "Save/load must preserve the live crafted product's FIFO cost basis.")
+	store.queue_free()
+	StorageManager.from_save_dict(previous_storage)
+	GameManager.level = previous_level
+	GameManager.experience = previous_experience
+	await get_tree().process_frame
+
 func _test_live_macro_economy_snapshot() -> void:
 	var balance_before := EconomyManager.simoleons
 	var snapshot: Dictionary = MacroEconomySimulatorScript.simulate_live_city({
@@ -3206,6 +3241,7 @@ func _run_gameplay_test() -> void:
 	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
 	await _test_live_production_queue_eta()
+	_test_live_production_cost_propagation()
 	_test_live_macro_economy_snapshot()
 	_test_recipe_dependency_graph_validation()
 	_test_storage_and_production_chain()
