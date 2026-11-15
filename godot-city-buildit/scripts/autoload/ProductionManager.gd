@@ -321,11 +321,12 @@ func _get_chain_inflight_count(item_id: String, chain_id: String, root_only: boo
 		if not is_instance_valid(component) or not component is ProductionComponent:
 			continue
 		for slot in component.slots:
-			if slot.is_empty() or not bool(slot.get("auto_collect", false)):
+			if slot.is_empty() or not bool(slot.get("auto_collect", false)) or str(slot.get("item_id", "")) != item_id:
 				continue
-			if str(slot.get("chain_id", "")) != chain_id or str(slot.get("item_id", "")) != item_id:
-				continue
-			if root_only and not bool(slot.get("chain_output", false)):
+			# Root orders are tracked per request. Intermediate/raw jobs are
+			# shared across active chains so two orders cannot reserve duplicate
+			# batches for the same globally available output.
+			if root_only and (str(slot.get("chain_id", "")) != chain_id or not bool(slot.get("chain_output", false))):
 				continue
 			total += 1
 	return total
