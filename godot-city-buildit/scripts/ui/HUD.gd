@@ -1992,7 +1992,6 @@ func open_production_panel(building: Building) -> void:
 	production_panel.name = "BuildingProductionPanel"
 	var viewport_size := get_viewport().get_visible_rect().size
 	var compact_layout := viewport_size.x <= 900.0 or viewport_size.y <= 520.0
-	var tablet_layout := not compact_layout and viewport_size.x <= 1280.0
 	var panel_width := minf(viewport_size.x * 0.92, 1240.0 * _ui_scale)
 	var panel_height := minf((174.0 if compact_layout else 190.0) * _ui_scale, viewport_size.y * 0.42)
 	production_panel.anchor_left = 0.5
@@ -2364,7 +2363,7 @@ func open_production_panel(building: Building) -> void:
 	var details_scroll := ScrollContainer.new()
 	details_scroll.name = "ProductionDetailsScroll"
 	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	details_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	details_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details_scroll.custom_minimum_size.y = (48.0 if compact_layout else 58.0) * _ui_scale
 	layout.add_child(details_scroll)
