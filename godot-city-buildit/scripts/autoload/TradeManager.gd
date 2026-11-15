@@ -375,10 +375,10 @@ func buy_global_offer(offer_index: int) -> bool:
 	var balance_before := EconomyManager.simoleons
 	if not EconomyManager.spend_simoleons(price):
 		return false
-	if not StorageManager.add_item(item_id, amount):
+	if not StorageManager.add_item_with_cost(item_id, amount, price, true):
 		EconomyManager.add_simoleons(price)
 		return false
-	EconomyManager.record_transaction("global_trade_purchase", "simoleons", price, balance_before, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "global_trade_hq", "item_id": item_id, "quantity": amount})
+	EconomyManager.record_transaction("global_trade_purchase", "simoleons", price, balance_before, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "global_trade_hq", "item_id": item_id, "quantity": amount, "cost_known": true, "cost_basis": price, "unit_cost": float(price) / float(amount)})
 	offer["sold"] = true
 	market_offers[offer_index] = offer
 	market_purchases += 1
