@@ -375,3 +375,16 @@ No recipe, production duration, expansion price, or item provenance was added or
 
 - [x] Unify actionable world-space markers: ready production shows the actual product thumbnail; blocked collection shows a warning marker; residential upgrades show an upgrade marker only while an upgrade can genuinely start.
 - [x] Avoid false completion/collect notifications for construction and non-residential upgrades because those state transitions complete automatically in the current game model.
+
+
+## Android production touch gesture and mobile layout — active
+
+- [x] Pointer-indexed touch drag state; native desktop drag forwarding remains intact.
+- [x] Global pointer move/release tracking continues after the finger leaves the product selector.
+- [x] Drop target reuses same-building/product/slot validation and current ProductionComponent APIs.
+- [x] Clear stale touch-selection state after successful production order.
+- [x] Radial tile positions clamp using actual control dimensions and full dock height.
+- [ ] GameplaySmoke synthetic touch gesture and multi-viewport bounds/non-overlap assertions pass in CI.
+- [ ] Actual production UI screenshot review at mobile landscape sizes.
+- [ ] Physical Android touch acceptance.
+- [ ] Other actionable building markers after mapping real pending-action states.
