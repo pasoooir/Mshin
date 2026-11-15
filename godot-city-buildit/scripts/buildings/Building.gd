@@ -1836,13 +1836,23 @@ func set_residential_plan_selected(selected: bool) -> void:
 func try_upgrade() -> bool:
 	if not BuildManager.is_building_operational(self):
 		return false
-	if definition.get("category") != "residential" or status != "completed" or is_epic_building or upgrade_stage >= max_stage or upgrade_in_progress:
+	if status != "completed" or is_epic_building or upgrade_stage >= max_stage or upgrade_in_progress:
 		return false
-	if not ProductionManager.can_afford_upgrade(upgrade_stage):
-		print("[Building] Need materials for upgrade to stage ", upgrade_stage + 1)
-		return false
-	if not ProductionManager.consume_upgrade_materials(upgrade_stage):
-		return false
+	var category := str(definition.get("category", ""))
+	if category == "residential":
+		if not ProductionManager.can_afford_upgrade(upgrade_stage):
+			print("[Building] Need materials for upgrade to stage ", upgrade_stage + 1)
+			return false
+		if not ProductionManager.consume_upgrade_materials(upgrade_stage):
+			return false
+	else:
+		if not ["commercial", "industrial", "service", "park"].has(category):
+			return false
+		var upgrade_bom := BuildManager.get_building_upgrade_bom(self)
+		if upgrade_bom.is_empty() or not StorageManager.has_items(upgrade_bom):
+			return false
+		if not StorageManager.remove_items(upgrade_bom):
+			return false
 	upgrade_in_progress = true
 	upgrade_paused_remaining_seconds = -1
 	upgrade_finish_unix = int(Time.get_unix_time_from_system()) + RESIDENTIAL_UPGRADE_DURATION_SECONDS
@@ -1863,6 +1873,9 @@ func _start_residential_upgrade_animation() -> void:
 
 func _finish_residential_upgrade() -> void:
 	if not upgrade_in_progress:
+		return
+	if str(definition.get("category", "")) != "residential":
+		_finish_non_residential_upgrade()
 		return
 	var old_population := current_population
 	upgrade_stage = mini(upgrade_stage + 1, max_stage)
@@ -1885,6 +1898,26 @@ func _finish_residential_upgrade() -> void:
 	_check_upgrade_ready()
 	upgraded.emit(upgrade_stage)
 	ServiceManager.recalculate_from_buildings()
+
+func _finish_non_residential_upgrade() -> void:
+	if not upgrade_in_progress:
+		return
+	upgrade_stage = mini(upgrade_stage + 1, max_stage)
+	upgrade_in_progress = false
+	upgrade_finish_unix = 0
+	upgrade_paused_remaining_seconds = -1
+	if is_instance_valid(scaffold_root):
+		scaffold_root.visible = false
+		scaffold_root.scale = Vector3.ONE
+	_create_visual()
+	_update_stage_label()
+	_play_completion_effect()
+	GameManager.add_experience(10 * upgrade_stage)
+	EconomyManager.add_simoleons(25 * upgrade_stage)
+	upgraded.emit(upgrade_stage)
+	ServiceManager.recalculate_from_buildings()
+	if has_node("/root/SaveManager") and not SaveManager.is_loading:
+		SaveManager.save_game()
 
 func get_upgrade_remaining_seconds() -> int:
 	if not upgrade_in_progress:
@@ -1946,6 +1979,10 @@ func get_info() -> String:
 			info += needed_text
 		if upgrade_ready:
 			info += " — READY TO UPGRADE"
+	elif status == "completed" and str(definition.get("category", "")) in ["commercial", "industrial", "service", "park"]:
+		info += " [Lv%d/6]" % upgrade_stage
+		if upgrade_in_progress:
+			info += " — UPGRADING %ds" % get_upgrade_remaining_seconds()
 	if is_producing:
 		if has_ready_product:
 			info += " - Ready: " + str(ProductionManager.raw_materials.get(current_product, ProductionManager.crafted_items.get(current_product, {})).get("name", current_product))
