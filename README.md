@@ -749,7 +749,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] روی آخرین HEAD فعلی main، Web موفق شد: [run 43705462967](https://github.com/pasoooir/Mshin/actions/runs/43705462967).
 - [x] روی آخرین HEAD فعلی main، Pages موفق شد: [run 43705462428](https://github.com/pasoooir/Mshin/actions/runs/43705462428).
 - [ ] اجرای Godot Validation روی SHA مستندات `d0d54e3` مشاهده نشد؛ با این حال آخرین commit کد/ادغام‌شده `e9c819a` به‌طور مستقیم Godot Validation سبز دارد. تغییر بعد از آن فقط README بوده است.
-- [ ] اجرای CI روی شاخهٔ جدید شبیه‌سازی اقتصاد کلان هنوز در انتظار نتیجهٔ PR است.
+- [x] PR #508 ادغام شد؛ جزئیات CI و محدودیت‌های فاز اول در بخش شواهد انتهای README ثبت شده است.
 
 ### موتور جدید شبیه‌سازی اقتصاد کلان
 - [x] فایل `godot-city-buildit/scripts/economy/MacroEconomySimulator.gd` اضافه شد: بازپخش قطعی جریان پول و XP بر اساس رویدادهای زمان‌بندی‌شده.
@@ -759,7 +759,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] هزینه‌های ساخت، جاده و ارتقا به‌صورت event وارد می‌شوند تا هزینهٔ ساختگی یا تخمینی به مدل تزریق نشود.
 - [x] خروجی تفکیک source/sink، ماندهٔ روزانه، هزینهٔ ردشده و سطح نهایی را ارائه می‌دهد.
 - [x] تست مستقل `tests/macro_economy_smoke.gd` و گام CI مربوط به آن اضافه شدند.
-- [ ] PASS شدن تست جدید هنوز ادعا نمی‌شود؛ باید CI شاخهٔ PR آن را اجرا کند.
+- [x] تست مستقل MacroEconomySmoke در Godot CI روی SHA نهایی PR موفق شد: [run 43706311715](https://github.com/pasoooir/Mshin/actions/runs/43706311715).
 - [ ] این نسخه replay engine بر مبنای برنامهٔ اقدام بازیکن است؛ خودش تقاضا، نرخ فروش، تعداد سفارش روزانه، throughput کارخانه‌ها، مهاجرت و برنامهٔ ساخت شهر را حدس نمی‌زند.
 - [ ] بنابراین «تورم قیمت‌ها» یا «مدت قطعی رسیدن به سطح مشخص» هنوز خروجی معتبر این نسخه نیست؛ خروجی فعلی تغییر ماندهٔ Simoleons در یک سناریوی ورودی است.
 
@@ -772,7 +772,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] در commit اصلاحی `95bd6c5ece78244757537b0d1667911db935bdfc`، Import/Parse، startup، gameplay integration، visual geometry، CurrencyEconomySmoke و **MacroEconomySmoke** همگی موفق شدند.
 - [x] Android Debug APK در همان اجرا export شد، امضای آن تأیید شد و artifact آپلود شد.
 - [x] [Godot City BuildIt Validation — PASS](https://github.com/pasoooir/Mshin/actions/runs/43706032773)
-- [ ] Web workflow برای همین SHA هنگام ثبت این گزارش هنوز در حال اجرا بود: [run 43706032776](https://github.com/pasoooir/Mshin/actions/runs/43706032776).
+- [x] Web build و اجرای مرورگر دسکتاپ/موبایل برای SHA نهایی PR موفق شد: [run 43706311696](https://github.com/pasoooir/Mshin/actions/runs/43706311696).
 - [ ] CI سبز این شاخه به معنی تکمیل اقتصاد کلان بازار نیست؛ محدودیت‌های تقاضا، نرخ فروش، ظرفیت تولید، جمعیت پویا و تورم قیمت همچنان مطابق سند تخصصی باز هستند.
 
 
@@ -780,4 +780,15 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] بررسی کد واقعی `TradeManager` نشان داد گذشت ۱۲۰ ثانیه فقط آگهی را `ready` می‌کند؛ درآمد تا اجرای `collect_sale` توسط بازیکن پرداخت نمی‌شود.
 - [x] مدل اصلاح شد: رویداد `depot_sale` اکنون زمان ثبت آگهی (`listed_at_seconds`) و زمان جمع‌آوری (`at_seconds`) را جدا می‌گیرد؛ جمع‌آوری زودتر از ۱۲۰ ثانیه رد می‌شود.
 - [x] تست زودهنگام‌بودن جمع‌آوری نیز اضافه شد.
-- [ ] این اصلاح پس از آخرین اجرای سبز Godot CI انجام شده است؛ نتیجهٔ CI برای SHA جدید باید دوباره بررسی شود و تا آن زمان PASS برای نسخهٔ فعلی ادعا نمی‌شود.
+- [x] اصلاح semantics آگهی/جمع‌آوری در SHA نهایی PR با Godot Validation و MacroEconomySmoke سبز تأیید شد: [run 43706311715](https://github.com/pasoooir/Mshin/actions/runs/43706311715).
+
+
+### نتیجهٔ نهایی PR #508 و CI نهایی — ۱۵ نوامبر ۲۰۲۶
+- [x] PR #508 با روش squash ادغام شد.
+- [x] Merge commit روی main: `f8686cce7eb464c4f817de415af2a55916aa0ddc`.
+- [x] Godot City BuildIt Validation روی آخرین SHA کد PR شامل MacroEconomySmoke و Android Debug APK: [run 43706311715 — success](https://github.com/pasoooir/Mshin/actions/runs/43706311715).
+- [x] Mshin Playable Web شامل اجرای مرورگر دسکتاپ و موبایل: [run 43706311696 — success](https://github.com/pasoooir/Mshin/actions/runs/43706311696).
+- [x] Export و امضای Android Debug APK در Godot Validation موفق شد.
+- [ ] اجرای CI روی merge commit جدید main و ثبت نتیجهٔ آن هنوز در حال انتظار است.
+- [ ] شبیه‌سازی اقتصاد کلان هنوز فاز اول است: replay جریان پول و XP با رویدادهای ورودی. شبیه‌سازی تولید موازی و ظرفیت واقعی کارخانه/فروشگاه، نرخ فروش/تقاضا، مهاجرت جمعیت و تورم قیمت‌ها هنوز پیاده‌سازی نشده‌اند و نباید تکمیل‌شده معرفی شوند.
+- [ ] داده‌های recipe و ارزش کالاها در ممیزی فعلی از منابع جامعه‌محور هستند؛ اعداد رسمی و کامل EA برای همهٔ موارد تأیید نشده‌اند.
