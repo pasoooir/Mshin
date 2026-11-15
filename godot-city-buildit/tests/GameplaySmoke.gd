@@ -3317,6 +3317,7 @@ func _run_gameplay_test() -> void:
 	_test_wind_turbine_rotor_animation()
 	await _test_live_production_queue_eta()
 	_test_live_production_cost_propagation()
+	_test_store_recipe_requires_physical_inventory()
 	_test_live_macro_economy_snapshot()
 	_test_recipe_dependency_graph_validation()
 	_test_storage_and_production_chain()
@@ -4309,3 +4310,24 @@ func _test_performance_monitor_aggregation() -> void:
 	var empty_samples: Array[float] = []
 	var empty_summary: Dictionary = PerformanceMonitorScript.summarize_numeric_samples(empty_samples)
 	_check(int(empty_summary.get("sample_count", -1)) == 0 and is_equal_approx(float(empty_summary.get("p95", -1.0)), 0.0), "An empty render sample set must produce safe zero metrics.")
+
+
+func _test_store_recipe_requires_physical_inventory() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_level := GameManager.level
+	GameManager.level = 1
+	var store := ProductionComponentScript.new()
+	store.name = "MissingIngredientStoreProbe"
+	store.shop_id = "building_supplies"
+	store.slot_count = 2
+	add_child(store)
+	StorageManager.from_save_dict({"capacity": 50, "items": {"metal": 1}})
+	_check(not store.start_craft("nails", 0), "Store production must reject a recipe when even one required ingredient is missing from City Storage.")
+	_check(store.slots[0].is_empty(), "A rejected under-stocked order must not occupy a production queue slot.")
+	_check(ProductionManager.get_missing_inputs_text("nails").contains("1"), "Missing-input details must report the exact one-unit Nails shortage.")
+	StorageManager.from_save_dict({"capacity": 50, "items": {"metal": 2}})
+	_check(store.start_craft("nails", 0), "The same recipe must become startable immediately after all required ingredients enter City Storage.")
+	store.queue_free()
+	StorageManager.from_save_dict(previous_storage)
+	GameManager.level = previous_level
+	await get_tree().process_frame
