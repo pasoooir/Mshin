@@ -1712,14 +1712,19 @@ func _refresh_factory_ready_icons() -> void:
 			continue
 		component.refresh_slots()
 		var ready_item := ""
+		var ready_count := 0
 		for slot_index in range(component.get_slot_count()):
 			var slot: Dictionary = component.get_slot(slot_index)
 			if not slot.is_empty() and bool(slot.get("ready", false)):
-				ready_item = str(slot.get("item_id", ""))
-				break
+				if ready_item.is_empty():
+					ready_item = str(slot.get("item_id", ""))
+				ready_count += 1
+		if is_instance_valid(building.ready_item_sprite):
+			building.ready_item_sprite.texture = Icons.get_tex("raw" if component.is_factory else "crafted", ready_item) if not ready_item.is_empty() else null
+			building.ready_item_sprite.visible = not ready_item.is_empty()
 		if is_instance_valid(building.production_icon):
-			building.production_icon.text = "📦" if not ready_item.is_empty() else ""
-			building.production_icon.visible = not ready_item.is_empty()
+			building.production_icon.text = "×%d" % ready_count if ready_count > 1 else ""
+			building.production_icon.visible = ready_count > 1
 			building.production_icon.modulate = Color("#FFE06B")
 			building.production_icon.outline_size = 12
 			building.production_icon.outline_modulate = Color(0.12, 0.08, 0.02, 0.95)
