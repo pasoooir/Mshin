@@ -106,7 +106,7 @@ var _epic_panel_building: Building = null
 var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
-var currency_panels: Control
+var currency_panels
 var _last_simcash_value := -1
 var _ui_scale := 1.0
 var _level_up_queue: Array[Dictionary] = []
