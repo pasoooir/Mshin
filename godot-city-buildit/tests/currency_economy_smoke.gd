@@ -7,7 +7,10 @@ func _ready() -> void:
 	var original_keys := EconomyManager.golden_keys
 	var original_ledger := PaymentManager.to_save_dict()
 	var original_storage := StorageManager.to_save_dict()
+	var original_trade := TradeManager.to_save_dict()
 	var original_level := GameManager.level
+	var original_population := GameManager.population
+	var original_buildings := BuildManager.buildings.duplicate()
 	var failures: Array[String] = []
 
 	EconomyManager.sim_cash = 25
@@ -23,23 +26,36 @@ func _ready() -> void:
 		failures.append("valid conversion did not atomically update both balances")
 
 
-	# Simoleons material market: only unlocked catalog items, atomic debit,
-	# inventory capacity and quantity checks.
+	# Simoleons market follows the real Global Trade HQ offer system and its
+	# operational gate; it must not bypass the HQ by selling a fake direct catalog.
 	GameManager.level = 1
+	GameManager.population = 10000
 	StorageManager.from_save_dict({"capacity": 100, "items": {}})
-	var market_price := EconomyManager.get_market_buy_price("metal")
-	var market_buy := EconomyManager.buy_market_item("metal", 5)
-	if market_price <= 0 or not bool(market_buy.get("success", false)) or StorageManager.get_count("metal") != 5 or EconomyManager.simoleons != 6000 - market_price * 5:
-		failures.append("Simoleons market did not atomically debit currency and add purchased raw materials")
+	EconomyManager.simoleons = 1000
+	var trade_hq = load("res://scenes/buildings/Building.tscn").instantiate()
+	trade_hq.building_type = "global_trade_hq"
+	trade_hq.status = "completed"
+	add_child(trade_hq)
+	BuildManager.buildings["currency_smoke_global_trade_hq"] = trade_hq
+	TradeManager.market_offers = [{"item_id": "metal", "amount": 5, "price": 75, "sold": false}]
+	if not TradeManager.is_global_trade_operational():
+		failures.append("Global Trade HQ should unlock at the configured population/building gate")
+	var market_buy := TradeManager.buy_global_offer(0)
+	if not market_buy or StorageManager.get_count("metal") != 5 or EconomyManager.simoleons != 925:
+		failures.append("Global Trade HQ offer did not atomically debit Simoleons and add purchased materials")
 	var before_full := EconomyManager.simoleons
 	StorageManager.from_save_dict({"capacity": 5, "items": {"metal": 5}})
-	var full_buy := EconomyManager.buy_market_item("metal", 1)
-	if bool(full_buy.get("success", true)) or EconomyManager.simoleons != before_full:
-		failures.append("warehouse-full market purchase should not charge Simoleons")
+	TradeManager.market_offers = [{"item_id": "metal", "amount": 1, "price": 15, "sold": false}]
+	if TradeManager.buy_global_offer(0) or EconomyManager.simoleons != before_full:
+		failures.append("warehouse-full Global Trade HQ purchase should not charge Simoleons")
+	if TradeManager.is_trade_eligible_item("electrical"):
+		failures.append("locked raw material was trade-eligible before its unlock level")
+	trade_hq.queue_free()
+	BuildManager.buildings = original_buildings
+	GameManager.population = original_population
+	TradeManager.from_save_dict(original_trade)
+	EconomyManager.simoleons = 6000
 	StorageManager.from_save_dict({"capacity": 100, "items": {}})
-	var locked_buy := EconomyManager.buy_market_item("electrical", 1)
-	if bool(locked_buy.get("success", true)):
-		failures.append("locked raw material was purchasable before its unlock level")
 
 	# SimCash production acceleration uses remaining time, spends once and
 	# leaves the completed item on its production slot until collection.
@@ -122,8 +138,8 @@ func _ready() -> void:
 	await get_tree().process_frame
 	if not popup_controller.visible or popup_controller.find_child("ConfirmSimCashConversion", true, false) == null:
 		failures.append("Simoleons plus did not open the dedicated conversion popup")
-	if popup_controller.find_child("CitySupplyMarketHeading", true, false) == null or popup_controller.find_child("MarketBuy_metal_1", true, false) == null:
-		failures.append("Simoleons popup did not expose the unlocked material market")
+	if popup_controller.find_child("CitySupplyMarketHeading", true, false) == null or popup_controller.find_child("GlobalTradeMarketLocked", true, false) == null:
+		failures.append("Simoleons popup did not enforce the Global Trade HQ progression gate")
 	popup_controller.open_store()
 	await get_tree().process_frame
 	if not popup_controller.visible or popup_controller.find_child("CurrencyPopupScroll", true, false) == null:
@@ -153,5 +169,5 @@ func _ready() -> void:
 			push_error("[CurrencyEconomySmoke] " + failure)
 		get_tree().quit(1)
 		return
-	print("[CurrencyEconomySmoke] PASS: atomic conversion, Simoleons material market, SimCash production acceleration, sandbox order success/failure/cancel, idempotency, ledger restore and dimensional icon imports")
+	print("[CurrencyEconomySmoke] PASS: atomic conversion, Global Trade HQ Simoleons offers, SimCash production acceleration, sandbox order success/failure/cancel, idempotency, ledger restore and dimensional icon imports")
 	get_tree().quit(0)
