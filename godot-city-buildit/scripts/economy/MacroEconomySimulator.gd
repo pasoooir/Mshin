@@ -22,7 +22,16 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var hq_multiplier := maxf(0.0, float(config.get("hq_multiplier", 2.0)))
 	var item_values: Dictionary = config.get("item_values", {})
 	var xp_table: Dictionary = config.get("xp_table", {})
-	var events: Array = config.get("events", []).duplicate(true)
+	var scheduled_events: Array[Dictionary] = []
+	for event_variant in events:
+		if not event_variant is Dictionary:
+			errors.append("Every economy event must be a Dictionary.")
+			continue
+		var scheduled_event: Dictionary = event_variant.duplicate(true)
+		if str(scheduled_event.get("type", "")) == "depot_sale":
+			scheduled_event["at_seconds"] = int(scheduled_event.get("at_seconds", 0)) + DEPOT_LISTING_SECONDS
+		scheduled_events.append(scheduled_event)
+	events = scheduled_events
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a.get("at_seconds", 0)) < int(b.get("at_seconds", 0))
 	)
