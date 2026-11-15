@@ -298,12 +298,19 @@ func deliver_ship_crate(crate_index: int) -> bool:
 	var amount := int(crate.get("amount", 0))
 	if not _item_exists(item_id) or amount <= 0 or StorageManager.get_count(item_id) < amount:
 		return false
-	var requested_items: Dictionary = {}
-	requested_items[item_id] = amount
+	var requested_items: Dictionary = {item_id: amount}
+	var inventory_before := StorageManager.get_all_items()
+	var balance_before := EconomyManager.simoleons
+	var crate_cost: Dictionary = StorageManager.get_cost_basis(requested_items)
 	if not StorageManager.remove_items(requested_items):
 		return false
+	var cost_known := bool(crate_cost.get("known", false))
+	var cost_total := int(crate_cost.get("total_cost", 0))
 	crate["delivered"] = true
+	crate["cost_known"] = cost_known
+	crate["cost_total"] = cost_total if cost_known else -1
 	ship_crates[crate_index] = crate
+	EconomyManager.record_transaction("cargo_ship_crate_delivered", "items", amount, balance_before, balance_before, inventory_before, StorageManager.get_all_items(), {"source":"cargo_ship", "crate_index":crate_index, "item_id":item_id, "quantity":amount, "cost_known":cost_known, "cost_basis":cost_total if cost_known else -1})
 	var all_delivered := true
 	for entry in ship_crates:
 		if not bool(entry.get("delivered", false)):
@@ -314,7 +321,18 @@ func deliver_ship_crate(crate_index: int) -> bool:
 		ship_return_time_left = SHIP_RETURN_SECONDS
 		ship_return_unix = int(Time.get_unix_time_from_system()) + int(SHIP_RETURN_SECONDS)
 		ship_departures += 1
+		var manifest_cost_known := true
+		var manifest_cost_total := 0
+		var manifest_quantity := 0
+		for delivered_crate in ship_crates:
+			manifest_quantity += int(delivered_crate.get("amount", 0))
+			if bool(delivered_crate.get("cost_known", false)) and int(delivered_crate.get("cost_total", -1)) >= 0:
+				manifest_cost_total += int(delivered_crate.get("cost_total", 0))
+			else:
+				manifest_cost_known = false
+		var keys_before := EconomyManager.golden_keys
 		EconomyManager.add_keys(1)
+		EconomyManager.record_transaction("cargo_ship_manifest_completed", "golden_keys", 1, keys_before, EconomyManager.golden_keys, inventory_before, StorageManager.get_all_items(), {"source":"cargo_ship", "crate_count":ship_crates.size(), "quantity":manifest_quantity, "cost_known":manifest_cost_known, "cost_basis":manifest_cost_total if manifest_cost_known else -1, "non_cash_reward":"golden_key"})
 		_set_ship_visual_departed(true)
 	trade_state_changed.emit()
 	return true
