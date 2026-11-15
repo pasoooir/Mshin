@@ -137,6 +137,7 @@ var _touch_selected_production_item := ""
 var _touch_selected_production_building_id := 0
 var _production_touch_drag_active := false
 var _production_touch_dragged := false
+var _production_touch_drag_index := -1
 var _production_touch_drag_origin := Vector2.ZERO
 var _production_touch_drag_item_id := ""
 var _production_touch_drag_building: Building = null
@@ -2107,7 +2108,7 @@ func open_production_panel(building: Building) -> void:
 	header_center.offset_bottom = 62.0 * _ui_scale
 	header_center.z_index = 8
 	var hint := Label.new()
-	hint.text = "SELECT A PRODUCT  ·  DROP IT ON THE BUILDING"
+	hint.text = "DRAG PRODUCTS INTO AN EMPTY QUEUE SLOT  ·  BUILDING SURFACE ALSO ACCEPTS DROPS"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.visible = false
 	hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
@@ -2140,7 +2141,7 @@ func open_production_panel(building: Building) -> void:
 
 	var products_title := Label.new()
 	products_title.name = "AvailableProductsTitle"
-	products_title.text = "CHOOSE AN ITEM · DROP ON THE FACTORY" if component.is_factory else "CHOOSE A PRODUCT · DROP ON THE STORE"
+	products_title.text = "DRAG A MATERIAL INTO AN EMPTY QUEUE SLOT" if component.is_factory else "DRAG A PRODUCT INTO AN EMPTY QUEUE SLOT"
 	products_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	products_title.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	products_title.add_theme_color_override("font_color", Color("#E8F4F9"))
@@ -2697,7 +2698,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	# the product onto a real, unlocked queue slot; there is no START shortcut.
 	var drop_hint := Label.new()
 	drop_hint.name = "ProductionDropHint"
-	drop_hint.text = "DRAG THIS PRODUCT INTO AN EMPTY QUEUE SLOT"
+	drop_hint.text = "DRAG INTO AN EMPTY QUEUE SLOT  ·  TAP TO REVIEW DETAILS"
 	drop_hint.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	drop_hint.add_theme_color_override("font_color", Color("#E7BC43"))
 	detail_row.add_child(drop_hint)
@@ -2715,7 +2716,11 @@ func _on_production_item_pressed(building: Building, item_id: String, slot_index
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
 	if not (event is InputEventScreenTouch) or not event.pressed:
 		return
+	# Ignore additional fingers while one product drag is active.
+	if _production_touch_drag_active:
+		return
 	_production_touch_drag_active = true
+	_production_touch_drag_index = event.index
 	_production_touch_dragged = false
 	_production_touch_drag_origin = event.position
 	_production_touch_drag_item_id = item_id
@@ -2732,7 +2737,7 @@ func _on_production_item_gui_input(event: InputEvent, building: Building, item_i
 func _input(event: InputEvent) -> void:
 	if not _production_touch_drag_active:
 		return
-	if event is InputEventScreenDrag:
+	if event is InputEventScreenDrag and event.index == _production_touch_drag_index:
 		if not _production_touch_dragged and _production_touch_drag_origin.distance_to(event.position) >= 12.0 * _ui_scale:
 			_production_touch_dragged = true
 			if is_instance_valid(_production_touch_drag_building):
@@ -2740,13 +2745,18 @@ func _input(event: InputEvent) -> void:
 		if _production_touch_dragged:
 			_update_production_touch_drag_ghost(event.position)
 			get_viewport().set_input_as_handled()
-	elif event is InputEventScreenTouch and not event.pressed:
-		if _production_touch_dragged:
+	elif event is InputEventScreenTouch and not event.pressed and event.index == _production_touch_drag_index:
+		var was_dragged := _production_touch_dragged
+		if was_dragged:
 			_finish_production_touch_drag(event.position)
 			if is_instance_valid(_production_touch_drag_source_button):
 				_production_touch_drag_source_button.set_meta("touch_drag_consumed", true)
 			get_viewport().set_input_as_handled()
-		_clear_production_touch_drag()
+		else:
+			# Keep tap-to-select active until the next tap on a queue slot/building.
+			_touch_selected_production_item = _production_touch_drag_item_id
+			_touch_selected_production_building_id = _production_touch_drag_building.get_instance_id() if is_instance_valid(_production_touch_drag_building) else 0
+		_clear_production_touch_drag(was_dragged)
 
 
 func _create_production_touch_drag_ghost(building: Building, item_id: String) -> void:
@@ -2820,14 +2830,16 @@ func _finish_production_touch_drag(screen_position: Vector2) -> void:
 		status_label.text = "Drop the product onto an empty queue slot to place the order."
 
 
-func _clear_production_touch_drag() -> void:
+func _clear_production_touch_drag(clear_selection: bool = true) -> void:
 	_production_touch_drag_active = false
 	_production_touch_dragged = false
+	_production_touch_drag_index = -1
 	_production_touch_drag_item_id = ""
 	_production_touch_drag_building = null
 	_production_touch_drag_source_button = null
-	_touch_selected_production_item = ""
-	_touch_selected_production_building_id = 0
+	if clear_selection:
+		_touch_selected_production_item = ""
+		_touch_selected_production_building_id = 0
 	if is_instance_valid(_production_touch_drag_ghost):
 		_production_touch_drag_ghost.queue_free()
 	_production_touch_drag_ghost = null
