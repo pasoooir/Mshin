@@ -596,3 +596,19 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android touch validation (must not be inferred from CI).
 
 **Acceptance rule:** direct programmatic `pressed.emit()` is not evidence of a working screen tap. The projected target must have a non-zero global hit rectangle at its camera-projected screen position, and the production queue must change only after a valid user interaction.
+
+
+## Product orbit visibility and mobile sizing — 2026-11-15
+
+- [x] Raise projected product-orbit layers above the building backdrop, production dock and shade.
+- [x] Give product/material buttons opaque white card surfaces, border and shadow so their hit areas remain visually apparent over 3D buildings.
+- [x] Increase factory/store card dimensions to at least 100 px wide on mobile before UI scaling; increase icon and text sizes.
+- [x] Increase residential material token dimensions and icon/text sizes.
+- [x] Position world-space hex platforms in a camera-facing orbit plane to avoid placing selectable products on the hidden far side of the building.
+- [x] Add regression assertions for card hitbox size, z-order, opaque style and visibility.
+- [ ] Godot validation + GameplaySmoke + Android Debug APK CI.
+- [ ] Web export + desktop/mobile Chromium smoke.
+- [ ] Merge and verify post-merge Pages deployment.
+- [ ] Physical Android touch validation.
+
+**Acceptance:** a selected building must show all available product cards above its model; each card must be clearly visible, at least 90×100 px in the actual UI, and tappable without dragging. CI signal emission alone is not sufficient proof of device touch.
