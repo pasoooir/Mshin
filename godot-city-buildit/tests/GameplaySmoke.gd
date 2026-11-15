@@ -3665,6 +3665,13 @@ func _run_gameplay_test() -> void:
 	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
 	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
 	_check(needs_hud.find_child("ResidentialPlanStatus", true, false) is Label, "Residential plan must clearly show whether materials are missing or the home is ready.")
+	var home_material_tokens: Array = needs_hud.residential_overlay.find_children("ResidentialNeed_*", "Button", true, false)
+	_check(needs_hud._residential_world_orbit != null and needs_hud._residential_world_orbit.get_child_count() == ProductionManager.get_upgrade_requirements(home.upgrade_stage).size(), "A selected home must show its required upgrade materials as real 3D hex platforms around the building.")
+	_check(home_material_tokens.size() == ProductionManager.get_upgrade_requirements(home.upgrade_stage).size(), "Every residential upgrade material must have a tappable projected token.")
+	if home_material_tokens.size() > 0:
+		var home_hex := needs_hud._residential_world_orbit.get_child(0) as Node3D
+		var home_hex_face := home_hex.get_node_or_null("WhiteHexFace") as MeshInstance3D
+		_check(home_hex_face != null and home_hex_face.mesh is CylinderMesh and (home_hex_face.mesh as CylinderMesh).radial_segments == 6, "Residential material tokens must use the same raised white six-sided 3D platform as factory/store products.")
 	needs_hud._close_residential_panel()
 	var factory = _find_building("industrial_1")
 	_check(home != null and home.status == "completed", "House construction did not finish.")

@@ -569,3 +569,15 @@ This interaction replaces drag/drop as the primary production action. Earlier dr
 - [ ] Physical Android landscape review of camera zoom, 3D orbit spacing, and tap targets.
 
 No recipe inputs, item durations, storage rules, queue capacity, or collection semantics were changed.
+
+
+## Residential material orbit — 2026-11-15
+
+- [x] Selecting a completed home focuses and smoothly zooms the camera to the house (shared building-focus behavior).
+- [x] Current residential upgrade requirements are rendered as raised white six-sided 3D platforms around the selected home, with projected tap targets showing stored/required quantities.
+- [x] Tapping a missing material token locates its registered supplier; when a completed supplier exists, the game opens that supplier and submits the material/product directly if its real production prerequisites and queue capacity allow it.
+- [x] If no completed supplier exists, the player receives the supplier/building requirement instead of a fake order.
+- [x] GameplaySmoke verifies one 3D hex and one tap target per residential upgrade material.
+- [ ] Godot import/parse, GameplaySmoke, Android APK and Web/Chromium CI for this follow-up.
+- [ ] Physical Android landscape inspection of house-material orbit placement and tap target reachability.
+
