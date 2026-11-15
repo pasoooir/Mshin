@@ -45,7 +45,6 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var day_start_balance := balance
 	var day_sources := 0
 	var day_sinks := 0
-	var day_start := 0
 
 	for second in range(1, horizon_seconds + 1):
 		if second % TAX_TICK_SECONDS == 0:
@@ -151,7 +150,6 @@ static func simulate(config: Dictionary) -> Dictionary:
 			day_start_balance = balance
 			day_sources = 0
 			day_sinks = 0
-			day_start = second
 
 	var total_sources := 0
 	var total_sinks := 0
