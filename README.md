@@ -1138,7 +1138,7 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Regression tests exercise touch release on the projected building-footprint polygon, exact missing ingredient name/quantity, blocked drag/acceptance, unchanged inventory/queue, and successful production after stock is added.
 - [x] Root cause fixed: the touch handler searched inside `ProductionPanel`, while the projected `ProductionBuildingDropTarget` is a sibling under `ProductionOverlay`; it now resolves the target from the correct overlay and converts viewport coordinates through the full canvas transform.
 - [x] PR #526 merged at `45338f417033d4ad5222a2e0af4637121440147e`; PR #527 merged at `1934b564b31b1717b5fdb8a9c670b12840914468`.
-- [ ] Post-merge GitHub Pages push/deploy verification for the main-branch merge commit.
+- [x] Post-merge GitHub Pages push/deploy succeeded: run `43747315546` for main commit `40ee792c940b73f609b54ffb770c07cbbc8e791c` (build + deploy success).
 - [ ] Physical Android touch test: drag a raw factory material onto the factory surface and drag a store product onto its store surface.
 
 **Acceptance rule:** a store order starts only when all declared recipe inputs are already present in City Storage. Automatic supply-chain production remains an explicit separate workflow, not an implicit side effect of dragging.
