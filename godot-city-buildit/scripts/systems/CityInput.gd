@@ -534,4 +534,12 @@ func _try_interact(world_position: Vector3) -> void:
 			_set_status(building.get_info())
 		return
 
+	if category in ["service", "park"]:
+		var upgrade_hud := get_tree().current_scene.get_node_or_null("HUD")
+		if upgrade_hud and upgrade_hud.has_method("open_non_residential_upgrade_panel"):
+			upgrade_hud.open_non_residential_upgrade_panel(building)
+		else:
+			_set_status(building.get_info())
+		return
+
 	_set_status(building.get_info())
