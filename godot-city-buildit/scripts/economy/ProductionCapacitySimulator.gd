@@ -56,6 +56,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var consumed_inputs: Dictionary = {}
 	var collected_outputs: Dictionary = {}
 	var sale_events: Array[Dictionary] = []
+	var depot_listings: Dictionary = {}
 	var production_log: Array[Dictionary] = []
 	var sales_total := 0
 
@@ -139,15 +140,28 @@ static func simulate(config: Dictionary) -> Dictionary:
 						production_log.append({"at_seconds": second, "event": "queued", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "inputs_consumed": inputs.duplicate(true)})
 						_start_store_order(facility, facility_id, second, recipes, production_log)
 					facilities[facility_id] = facility
-			elif action_type == "cash_sale":
+			elif action_type == "depot_list":
+				var listing_id := str(action.get("listing_id", ""))
 				var unit_value := int(action.get("unit_value", config.get("item_values", {}).get(item_id, 0)))
-				if inventory.has(item_id) and int(inventory[item_id]) >= quantity and unit_value > 0:
+				if listing_id.is_empty():
+					listing_id = "depot-listing-%d" % (action_index - 1)
+				if bool(config.get("depot_operational", false)) and depot_listings.size() < 4 and not depot_listings.has(listing_id) and inventory.has(item_id) and int(inventory[item_id]) >= quantity and unit_value > 0:
 					_remove_inventory(inventory, {item_id: quantity})
-					var proceeds := unit_value * quantity
-					sales_total += proceeds
-					sale_events.append({"at_seconds": second, "type": "production_sale", "item_id": item_id, "quantity": quantity, "amount": proceeds})
+					depot_listings[listing_id] = {"item_id": item_id, "quantity": quantity, "unit_value": unit_value, "listed_at_seconds": second}
 					success = true
-					production_log.append({"at_seconds": second, "event": "cash_sale", "item_id": item_id, "quantity": quantity, "proceeds": proceeds})
+					production_log.append({"at_seconds": second, "event": "depot_listed", "listing_id": listing_id, "item_id": item_id, "quantity": quantity, "ready_at_seconds": second + 120})
+			elif action_type == "depot_collect":
+				var listing_id := str(action.get("listing_id", ""))
+				if depot_listings.has(listing_id):
+					var listing: Dictionary = depot_listings[listing_id]
+					if second - int(listing.get("listed_at_seconds", second)) >= 120:
+						var proceeds := int(listing.get("unit_value", 0)) * int(listing.get("quantity", 0))
+						if proceeds > 0:
+							sales_total += proceeds
+							sale_events.append({"at_seconds": second, "type": "production_sale", "item_id": str(listing.get("item_id", "")), "quantity": int(listing.get("quantity", 0)), "amount": proceeds, "listing_id": listing_id})
+							depot_listings.erase(listing_id)
+							success = true
+							production_log.append({"at_seconds": second, "event": "depot_sale_collected", "listing_id": listing_id, "proceeds": proceeds})
 			else:
 				errors.append("Unsupported production action: %s." % action_type)
 			if not success:
@@ -191,6 +205,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"facility_summary": facility_summary,
 		"rejected_actions": rejected_actions,
 		"sales_total": sales_total,
+		"active_depot_listings": depot_listings,
 		"cash_events": sale_events,
 		"production_log": production_log
 	}
