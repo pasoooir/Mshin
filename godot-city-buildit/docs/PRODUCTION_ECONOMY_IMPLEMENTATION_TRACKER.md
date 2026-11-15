@@ -535,3 +535,15 @@ No recipe, production duration, expansion price, or item provenance was added or
 
 - [x] PR #525 merged to `main` at `b8c0ccbf04af6fb71d5670a14c0baf20d6f39a74`.
 - [ ] Run the 30-second benchmark on a physical Android device and review the generated `user://performance_benchmark_latest.json` report; no measured FPS gain is claimed by this diagnostics change.
+
+## Production drag-to-building and strict ingredient availability — 2026-11-15
+
+- [x] Touch drag release now hit-tests the selected building's projected footprint polygon and submits the order to that building; it is no longer limited to queue-slot hit areas.
+- [x] Native drag-and-drop and touch drag use the same building identity, product compatibility, recipe unlock and free-slot validation.
+- [x] Store products with missing ingredients cannot be dragged or accepted; automatic dependency-chain start is not invoked by a manual drop.
+- [x] Product hexes remain tappable for explanation while showing a red shortage state and exact missing ingredient quantities in their tooltip/detail panel.
+- [x] A rejected under-stocked order leaves the queue slot and inventory unchanged; GameplaySmoke regression coverage added for Nails requiring 2 Metal.
+- [ ] Godot static validation, import/parse, GameplaySmoke, Web/Chromium and Android APK CI.
+- [ ] Physical Android touch test: drag a raw factory material onto the factory surface and drag a store product onto its store surface.
+
+**Acceptance rule:** a store order starts only when all declared recipe inputs are already present in City Storage. Automatic supply-chain production remains an explicit separate workflow, not an implicit side effect of dragging.
