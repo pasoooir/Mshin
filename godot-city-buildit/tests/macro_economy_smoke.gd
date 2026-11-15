@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Simulator = preload("res://scripts/economy/MacroEconomySimulator.gd")
+const ProductionSimulator = preload("res://scripts/economy/ProductionCapacitySimulator.gd")
 
 func _initialize() -> void:
 	var values := {"metal": 10, "nails": 80}
@@ -79,9 +80,134 @@ func _initialize() -> void:
 		_fail("level-up Simoleon reward does not match new_level × 100")
 		return
 
+	_test_production_capacity_and_cashflow()
 	print("[MacroEconomySmoke] PASS")
 	quit(0)
 
 func _fail(message: String) -> void:
 	push_error("[MacroEconomySmoke] " + message)
 	quit(1)
+
+func _test_production_capacity_and_cashflow() -> void:
+	var production_config := {
+		"storage_capacity": 2,
+		"depot_operational": true,
+		"initial_inventory": {},
+		"raw_materials": {"metal": {"time_sec": 60}},
+		"crafted_items": {},
+		"factory_materials": {"factory_small": ["metal"]},
+		"facilities": [
+			{"id": "factory-a", "kind": "factory", "factory_type": "factory_small", "slot_count": 2}
+		],
+		"actions": [
+			{"type": "start_factory", "facility_id": "factory-a", "item_id": "metal", "at_seconds": 0},
+			{"type": "start_factory", "facility_id": "factory-a", "item_id": "metal", "at_seconds": 0},
+			{"type": "collect", "facility_id": "factory-a", "slot_index": 0, "at_seconds": 60},
+			{"type": "collect", "facility_id": "factory-a", "slot_index": 1, "at_seconds": 60},
+			{"type": "depot_list", "listing_id": "metal-sale-1", "item_id": "metal", "quantity": 1, "at_seconds": 61},
+			{"type": "depot_collect", "listing_id": "metal-sale-1", "at_seconds": 180},
+			{"type": "depot_collect", "listing_id": "metal-sale-1", "at_seconds": 181}
+		]
+	}
+	var macro_config := {
+		"initial_simoleons": 100,
+		"population": 0,
+		"happiness": 100.0,
+		"occupied_homes": 0,
+		"level": 1,
+		"experience": 0,
+		"horizon_seconds": 240,
+		"item_values": {"metal": 10},
+		"events": [],
+		"production": production_config
+	}
+	var integrated: Dictionary = Simulator.simulate(macro_config)
+	if not bool(integrated.get("valid", false)):
+		_fail("Production/cashflow integration invalid: " + str(integrated.get("errors", [])))
+		return
+	var production: Dictionary = integrated.get("production", {})
+	if int(production.get("collected_outputs", {}).get("metal", 0)) != 2:
+		_fail("Parallel factory slots did not complete and collect both outputs.")
+		return
+	if int(integrated.get("source_breakdown", {}).get("production_sales", 0)) != 10:
+		_fail("Trade Depot collection after its 120-second timer did not flow into macro Simoleon income.")
+		return
+	if int(production.get("rejected_actions", 0)) != 1:
+		_fail("Trade Depot collection before 120 seconds must be rejected exactly once.")
+		return
+	if int(production.get("ending_inventory", {}).get("metal", 0)) != 1:
+		_fail("Production sale did not remove exactly one item from warehouse inventory.")
+		return
+
+	var store_config := {
+		"horizon_seconds": 600,
+		"storage_capacity": 4,
+		"initial_inventory": {"metal": 4},
+		"raw_materials": {},
+		"crafted_items": {"nails": {"time_sec": 300, "store": "building_supplies", "requires": {"metal": 2}}},
+		"factory_materials": {},
+		"facilities": [
+			{"id": "store-a", "kind": "store", "shop_id": "building_supplies", "slot_count": 2}
+		],
+		"actions": [
+			{"type": "enqueue_store", "facility_id": "store-a", "item_id": "nails", "at_seconds": 0},
+			{"type": "enqueue_store", "facility_id": "store-a", "item_id": "nails", "at_seconds": 0},
+			{"type": "collect", "facility_id": "store-a", "slot_index": 0, "at_seconds": 300},
+			{"type": "collect", "facility_id": "store-a", "slot_index": 1, "at_seconds": 600}
+		]
+	}
+	var store_result: Dictionary = ProductionSimulator.simulate(store_config)
+	if not bool(store_result.get("valid", false)):
+		_fail("Commercial queue simulation invalid: " + str(store_result.get("errors", [])))
+		return
+	if int(store_result.get("consumed_inputs", {}).get("metal", 0)) != 4:
+		_fail("Commercial queue did not atomically reserve the full inputs for both accepted orders.")
+		return
+	if int(store_result.get("collected_outputs", {}).get("nails", 0)) != 2:
+		_fail("Commercial store did not serialize two queued orders through its single active lane.")
+		return
+
+
+	var gate_config := {
+		"horizon_seconds": 0,
+		"storage_capacity": 5,
+		"initial_inventory": {"metal": 1, "wood": 1},
+		"mayor_level": 1,
+		"raw_materials": {},
+		"crafted_items": {
+			"locked_item": {"time_sec": 60, "store": "building_supplies", "level": 2, "requires": {"metal": 2, "wood": 1}},
+			"unknown_unlock": {"time_sec": 60, "store": "building_supplies", "level": 0, "unlock_level_verified": false, "requires": {"metal": 1}}
+		},
+		"factory_materials": {},
+		"facilities": [
+			{"id": "store-gates", "kind": "store", "shop_id": "building_supplies", "slot_count": 2}
+		],
+		"actions": [
+			{"type": "enqueue_store", "facility_id": "store-gates", "item_id": "locked_item", "at_seconds": 0},
+			{"type": "enqueue_store", "facility_id": "store-gates", "item_id": "unknown_unlock", "at_seconds": 0}
+		]
+	}
+	var gate_result: Dictionary = ProductionSimulator.simulate(gate_config)
+	if int(gate_result.get("rejected_actions", 0)) != 2 or gate_result.get("ending_inventory", {}) != {"metal": 1, "wood": 1}:
+		_fail("Locked or unknown-unlock recipes must be rejected without partial inventory consumption.")
+		return
+
+	var blocked_config := {
+		"horizon_seconds": 60,
+		"storage_capacity": 1,
+		"initial_inventory": {"wood": 1},
+		"raw_materials": {"metal": {"time_sec": 60}},
+		"crafted_items": {},
+		"factory_materials": {"factory_small": ["metal"]},
+		"facilities": [
+			{"id": "factory-full", "kind": "factory", "factory_type": "factory_small", "slot_count": 1}
+		],
+		"actions": [
+			{"type": "start_factory", "facility_id": "factory-full", "item_id": "metal", "at_seconds": 0},
+			{"type": "collect", "facility_id": "factory-full", "slot_index": 0, "at_seconds": 60}
+		]
+	}
+	var blocked: Dictionary = ProductionSimulator.simulate(blocked_config)
+	if blocked.get("ready_uncollected_jobs", []).size() != 1 or int(blocked.get("ending_inventory", {}).get("wood", 0)) != 1:
+		_fail("A full warehouse must keep ready production on its factory slot without losing stock.")
+		return

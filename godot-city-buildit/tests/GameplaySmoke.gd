@@ -14,6 +14,7 @@ const CameraControllerScript = preload("res://scripts/systems/CameraController.g
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
+const MacroEconomySimulatorScript = preload("res://scripts/economy/MacroEconomySimulator.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -338,6 +339,21 @@ func _test_automatic_production_chain() -> void:
 	StorageManager.from_save_dict(previous_storage)
 	await get_tree().process_frame
 
+
+
+func _test_live_macro_economy_snapshot() -> void:
+	var balance_before := EconomyManager.simoleons
+	var snapshot: Dictionary = MacroEconomySimulatorScript.simulate_live_city({
+		"horizon_seconds": 0,
+		"events": []
+	})
+	_check(bool(snapshot.get("valid", false)), "Live macro simulation must capture current city economy and production state without inventing player actions: %s" % str(snapshot.get("errors", [])))
+	if not bool(snapshot.get("valid", false)):
+		return
+	_check(int(snapshot.get("initial_simoleons", -1)) == balance_before, "Live macro snapshot must read the actual Simoleons balance from EconomyManager.")
+	var production: Dictionary = snapshot.get("production", {})
+	_check(int(production.get("storage_capacity", -1)) == StorageManager.capacity, "Live production snapshot must use the active City's real warehouse capacity.")
+	_check(production.get("ending_inventory", {}) == StorageManager.get_all_items(), "Live production snapshot must preserve the exact current City Storage inventory.")
 
 func _test_recipe_dependency_graph_validation() -> void:
 	var baseline := ProductionManager.get_recipe_validation_report()
@@ -3168,6 +3184,7 @@ func _run_gameplay_test() -> void:
 	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
 	await _test_live_production_queue_eta()
+	_test_live_macro_economy_snapshot()
 	_test_recipe_dependency_graph_validation()
 	_test_storage_and_production_chain()
 	_test_production_queue_stress()

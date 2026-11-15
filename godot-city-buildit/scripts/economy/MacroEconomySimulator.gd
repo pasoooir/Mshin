@@ -9,6 +9,60 @@ const TAX_TICK_SECONDS := 60
 const HAPPINESS_XP_TICK_SECONDS := 60
 const HAPPINESS_XP_PER_TICK := 5
 const MAX_LEVEL := 60
+const ProductionSimulator = preload("res://scripts/economy/ProductionCapacitySimulator.gd")
+
+
+# Convenience entry point for a live city. The player-action schedule remains
+# explicit; this method only snapshots current facilities, timers and inventory.
+static func simulate_live_city(config: Dictionary) -> Dictionary:
+	var live_config: Dictionary = config.duplicate(true)
+	var horizon := maxi(0, int(live_config.get("horizon_seconds", 0)))
+	var actions: Array = live_config.get("production_actions", [])
+	var production_snapshot := ProductionSimulator.capture_live_city_config(horizon, actions)
+	if production_snapshot.has("capture_error"):
+		return {"valid": false, "errors": [str(production_snapshot.get("capture_error", "Production snapshot failed."))]}
+	live_config["production"] = production_snapshot
+	var scene_tree := Engine.get_main_loop() as SceneTree
+	if scene_tree == null:
+		return {"valid": false, "errors": ["A live SceneTree is required to read city economy state."]}
+	var root := scene_tree.root
+	var production_manager = root.get_node_or_null("ProductionManager")
+	var game_manager = root.get_node_or_null("GameManager")
+	var economy_manager = root.get_node_or_null("EconomyManager")
+	var level_progression = root.get_node_or_null("LevelProgression")
+	var build_manager = root.get_node_or_null("BuildManager")
+	if production_manager == null or game_manager == null or economy_manager == null or level_progression == null or build_manager == null:
+		return {"valid": false, "errors": ["One or more required city/economy autoloads are unavailable."]}
+	if not live_config.has("initial_simoleons"):
+		live_config["initial_simoleons"] = int(economy_manager.simoleons)
+	if not live_config.has("population"):
+		live_config["population"] = int(game_manager.population)
+	if not live_config.has("happiness"):
+		live_config["happiness"] = float(game_manager.happiness)
+	if not live_config.has("level"):
+		live_config["level"] = int(game_manager.level)
+	if not live_config.has("experience"):
+		live_config["experience"] = int(game_manager.experience)
+	if not live_config.has("xp_table"):
+		live_config["xp_table"] = level_progression.xp_table.duplicate(true)
+	if not live_config.has("occupied_homes"):
+		var occupied_homes := 0
+		for building in build_manager.buildings.values():
+			if not is_instance_valid(building):
+				continue
+			var building_type := str(building.get("building_type"))
+			var definition: Dictionary = build_manager.building_types.get(building_type, {})
+			if str(definition.get("category", "")) == "residential" and str(building.get("status")) == "completed" and int(building.get("current_population")) > 0:
+				occupied_homes += 1
+		live_config["occupied_homes"] = occupied_homes
+	if not live_config.has("item_values"):
+		var values: Dictionary = {}
+		for item_id in production_manager.raw_materials:
+			values[str(item_id)] = production_manager.get_item_value(str(item_id))
+		for item_id in production_manager.crafted_items:
+			values[str(item_id)] = production_manager.get_item_value(str(item_id))
+		live_config["item_values"] = values
+	return simulate(live_config)
 
 static func simulate(config: Dictionary) -> Dictionary:
 	var errors: Array[String] = []
@@ -23,11 +77,22 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var item_values: Dictionary = config.get("item_values", {})
 	var xp_table: Dictionary = config.get("xp_table", {})
 	var events: Array = config.get("events", []).duplicate(true)
+	var production_result: Dictionary = {}
+	if config.has("production"):
+		var production_config: Dictionary = config.get("production", {}).duplicate(true)
+		production_config["horizon_seconds"] = horizon_seconds
+		production_config["item_values"] = item_values
+		production_result = ProductionSimulator.simulate(production_config)
+		if not bool(production_result.get("valid", false)):
+			for production_error in production_result.get("errors", []):
+				errors.append("Production: " + str(production_error))
+		else:
+			events.append_array(production_result.get("cash_events", []))
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a.get("at_seconds", 0)) < int(b.get("at_seconds", 0))
 	)
 
-	var sources := {"taxes": 0, "depot_sales": 0, "delivery_orders": 0, "level_rewards": 0, "other": 0}
+	var sources := {"taxes": 0, "depot_sales": 0, "delivery_orders": 0, "production_sales": 0, "level_rewards": 0, "other": 0}
 	var sinks := {"global_trade_hq": 0, "construction": 0, "roads": 0, "upgrades": 0, "other": 0}
 	var daily: Array[Dictionary] = []
 	var event_index := 0
@@ -80,6 +145,12 @@ static func simulate(config: Dictionary) -> Dictionary:
 					# The player explicitly collects a ready listing; readiness is not automatic sale.
 					flow = int(item_values[item_id]) * quantity
 					source_bucket = "depot_sales"
+				"production_sale":
+					if quantity <= 0 or amount <= 0:
+						errors.append("Invalid production_sale event for %s." % item_id)
+						continue
+					flow = amount
+					source_bucket = "production_sales"
 				"delivery_order":
 					if not item_values.has(item_id) or quantity <= 0:
 						errors.append("Invalid delivery_order event for %s." % item_id)
@@ -167,11 +238,12 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"ending_level": level,
 		"ending_experience": xp,
 		"daily": daily,
+		"production": production_result,
 		"model_notes": [
 			"Tax formula and happiness XP cadence are read from the current Mshin game rules.",
 			"Delivery order reward uses the current 2x catalog-value formula.",
 			"Global Trade HQ price multiplier is a scenario input; current game default is 2x.",
 			"Depot sales use catalog value and the current 120-second listing timer.",
-			"Action events are player-supplied; no demand, sales probability, or production capacity is fabricated."
+			"Production capacity, queue actions, input consumption and warehouse limits are replayed from explicit production configuration. Cash sales are explicit player actions; no market demand or sell-through is fabricated."
 		]
 	}

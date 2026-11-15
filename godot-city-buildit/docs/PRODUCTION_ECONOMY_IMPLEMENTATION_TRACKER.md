@@ -224,3 +224,28 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 
 - [PR #506](https://github.com/pasoooir/Mshin/pull/506) merged to `main` as `8735b7b6f8491c0f385548ad2846d03ccaf29e09`: SimCash can buy Dozer Wheel, Dozer Blade and Dozer Exhaust for the Fandom reference price of 24 SimCash each. Items enter City Storage and the normal land expansion transaction still enforces Mayor Level 10, adjacency and the full three-item BOM. Godot Validation run [43701669455](https://github.com/pasoooir/Mshin/actions/runs/43701669455) and Web/Chromium run [43701669452](https://github.com/pasoooir/Mshin/actions/runs/43701669452) passed.
 - Remaining currency progression gap: SimCash purchase of Storage Bars/Locks/Cameras and the full escalating three-item City Storage capacity upgrade table are not implemented. Do not replace that item gate with direct SimCash capacity bypass.
+
+
+## Production capacity simulator and macro cashflow integration — PR #509 Godot Validation passed
+
+Implementation branch: `feat/production-capacity-cashflow-model`
+
+- [x] Deterministic production replay engine added in `scripts/economy/ProductionCapacitySimulator.gd`; CI has not yet validated the parser/runtime.
+- [x] Factory slots execute independently using explicit facility slot counts; no hidden factory waiting queue is invented.
+- [x] Commercial stores serialize one active order per building while retaining other slots as slot-order queue entries.
+- [x] Manual store queue admission atomically consumes the full recipe input set, matching `ProductionComponent.start_craft`.
+- [x] Ready output remains in its production slot until explicit collection; full warehouse rejects collection without discarding the item.
+- [x] Trade Depot listing removes stock at listing time; up to four active listings are modeled; cash is credited only by explicit collection after the real 120-second wait.
+- [x] Collected production sales are appended as `production_sale` events and flow into the macro `production_sales` source bucket.
+- [x] Live-city snapshot captures active ordinary production slots, remaining timers, current warehouse and Depot listings. It deliberately returns a capture error if AUTO CHAIN jobs are active because their recursive dependency graph is not yet modeled.
+- [x] Smoke tests added for parallel factory slots, two queued store jobs, atomic material consumption, full-warehouse retention and production-to-cashflow integration.
+- [x] Godot Validation / Android APK export / Web Chromium CI on the final PR SHA.
+- [ ] Automatic-chain dependency replay, shared intermediate reservations and multiple concurrent roots.
+- [ ] Inventory cost-basis ledger and accounting-grade realized profit; catalog value is not silently treated as cash expenditure.
+- [ ] Coupling delivery-order item consumption to production inventory and explicit market-demand modeling.
+
+**Godot evidence:** [Godot City BuildIt Validation run 43708045317 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045317). It passed Import/Parse, headless startup, GameplaySmoke (including the live-city snapshot), VisualPresentationSmoke, CurrencyEconomySmoke, MacroEconomySmoke and Android Debug APK export/signature validation. Web/Chromium desktop and mobile launch plus artifact upload passed: [run 43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318). The later commits only updated README/docs, not runtime code. These boxes describe implementation + Godot evidence on PR #509; merge-to-main and Web/Chromium acceptance are tracked separately.
+
+
+- First PR CI exposed two real compile-time integration defects: static functions could not resolve autoload singleton identifiers, and a static type check pulled `ProductionComponent.gd` into standalone script compilation. Both were corrected by resolving autoload nodes through `SceneTree.root` and using the production group membership contract instead of a static class reference.
+- Final Godot Validation on PR SHA `bb24eb193804e38e8095b63409931095846572ed` passed: [run 43708045317](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
