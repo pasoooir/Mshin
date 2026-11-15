@@ -197,3 +197,14 @@ PR #437 added Backpack, Tennis Racket, Sports Drink, Protein Bar, Chiseled Stone
 - GameplaySmoke verifies active-to-inactive and inactive-to-active transfers, both inventories updating, and insufficient-stock rejection without mutating the active warehouse. The Regional Trade tab provides source, target, item and amount selectors with stock/capacity feedback; transfers are persisted through SaveManager.
 - CI on PR head `ee6b4ef45f201893052d15763a442d51f5dc5d3c`: Godot City BuildIt Validation run `43639351487` passed, including GameplaySmoke and Android Debug APK export/signature verification. Mshin Playable Web run `43639351492` passed, including desktop/mobile-landscape Chromium and web artifact upload.
 - Physical Android install, screenshot comparison and touch acceptance remain open.
+
+
+## Currency-driven city progression — PR in progress
+
+- [ ] **Simoleons material market:** unlocked raw and crafted items can be purchased in quantities 1/5 into City Storage. Balance debit and inventory credit are guarded by capacity and level gates. Price = community reference maximum selling value × 1.5; this is explicitly Mshin balance, not EA Global Trade buy price.
+- [ ] **SimCash time acceleration:** active factory/store production slots, building construction and building upgrades expose a quote based on remaining time; spending completes the timer but leaves produced items in Ready state for normal collection.
+- [ ] **Commercial queue expansion:** SimCash buys additional supported commercial queue slots using community reference costs; existing slot count is saved through production component serialization.
+- [ ] **Currency panel integration:** Simoleons popup includes market goods; SimCash popup includes active timer offers, commercial slot expansion and the existing sandbox pack store.
+- [ ] **Smoke coverage:** market purchases, storage-full rejection, level-lock rejection, production speed-up, collection exactly once and popup section visibility are covered by `currency_economy_smoke.gd`.
+- [ ] **Open by design:** direct SimCash purchase of land/storage Special Items is not implemented here; these remain tied to the item-based expansion/storage gates until their complete inventory workflows are in place. Real multiplayer Global Trade HQ and real payment-provider validation are also separate work.
+- Source separation: EA's beginner guide confirms currency roles, factory/store production and building plans. Fandom Building Materials supplies community recipe/value/unlock data. All new Mshin buy prices and per-minute speed-up pricing are labelled Mshin-proposed in `CURRENCY_DRIVEN_CITY_PROGRESSION.md`.
