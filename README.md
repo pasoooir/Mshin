@@ -1053,7 +1053,7 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Extend GameplaySmoke with multi-touch ownership and tap-to-queue fallback cases.
 - [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy checks passed in run `43742618056`.
 - [x] Android Debug APK export, signature/package identity verification and artifact upload passed in run `43742618056`; artifact `PasooCityBuildIt-android-debug-56cd49836727e61d64a164c96e9c7f0e152ca12b` is available until 2026-11-29.
-- [ ] Web export and Chromium/Pages workflow `43742617966` is still running.
+- [x] Web export and desktop/mobile Chromium checks passed in PR runs `43742723982` and `43743663912`; their PR-event deploy jobs were correctly skipped. A push-triggered post-merge Pages deployment remains to be verified.
 - [ ] Physical Android landscape touch acceptance and screenshot review.
 
 
@@ -1063,7 +1063,7 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Preserve the 38 pebble positions, three-color stone palette, varied radii, silhouette and natural rotation using per-instance transforms/colors.
 - [x] Disable shadow casting for tiny shoreline stones; their contact shadows are visually negligible and the batch no longer adds 38 shadow casters.
 - [x] Extend VisualPresentationSmoke to assert instance count, per-instance color support, shadow policy, coast distribution and color variation.
-- [ ] Godot import/parse, visual presentation smoke, gameplay smoke, Web/Chromium and Android APK CI.
+- [x] Godot import/parse, VisualPresentationSmoke, GameplaySmoke, Web/Chromium and Android APK CI passed in runs `43743663936` and `43743663912`.
 - [ ] Compare actual device frame-time and draw-call reports before claiming measured performance gains.
 
 
