@@ -1699,9 +1699,10 @@ func _process(delta: float) -> void:
 
 
 func _refresh_factory_ready_icons() -> void:
-	# ProductionComponent slots are independent of the legacy single-item timer.
-	# Mirror a ready slot into the building's existing billboard so it is visible
-	# above the factory without adding a permanent HUD panel over the city.
+	# One world-space action hint per building: product thumbnail for ready
+	# output, an upgrade marker when a residential upgrade can actually start.
+	# Construction and non-residential upgrades auto-complete; they must not
+	# display a fake "collect/claim" badge.
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
@@ -1709,25 +1710,29 @@ func _refresh_factory_ready_icons() -> void:
 		var building := node as Building
 		if not is_instance_valid(building) or building.status != "completed":
 			continue
+		if is_instance_valid(building.action_notification_label):
+			building.action_notification_label.text = "⬆"
+			building.action_notification_label.visible = bool(building.upgrade_ready)
 		var component = building.production_component
-		if not is_instance_valid(component):
-			continue
-		component.refresh_slots()
 		var ready_item := ""
 		var ready_count := 0
-		for slot_index in range(component.get_slot_count()):
-			var slot: Dictionary = component.get_slot(slot_index)
-			if not slot.is_empty() and bool(slot.get("ready", false)):
-				if ready_item.is_empty():
-					ready_item = str(slot.get("item_id", ""))
-				ready_count += 1
+		var storage_full := false
+		if is_instance_valid(component):
+			component.refresh_slots()
+			for slot_index in range(component.get_slot_count()):
+				var slot: Dictionary = component.get_slot(slot_index)
+				if not slot.is_empty() and bool(slot.get("ready", false)):
+					if ready_item.is_empty():
+						ready_item = str(slot.get("item_id", ""))
+					storage_full = storage_full or not StorageManager.can_add(str(slot.get("item_id", "")), 1)
+					ready_count += 1
 		if is_instance_valid(building.ready_item_sprite):
-			building.ready_item_sprite.texture = Icons.get_tex("raw" if component.is_factory else "crafted", ready_item) if not ready_item.is_empty() else null
+			building.ready_item_sprite.texture = Icons.get_tex("raw" if is_instance_valid(component) and component.is_factory else "crafted", ready_item) if not ready_item.is_empty() else null
 			building.ready_item_sprite.visible = not ready_item.is_empty()
 		if is_instance_valid(building.production_icon):
-			building.production_icon.text = "×%d" % ready_count if ready_count > 1 else ""
-			building.production_icon.visible = ready_count > 1
-			building.production_icon.modulate = Color("#FFE06B")
+			building.production_icon.text = "!" if storage_full else ("×%d" % ready_count if ready_count > 1 else "")
+			building.production_icon.visible = storage_full or ready_count > 1
+			building.production_icon.modulate = Color("#FF765E") if storage_full else Color("#FFE06B")
 			building.production_icon.outline_size = 12
 			building.production_icon.outline_modulate = Color(0.12, 0.08, 0.02, 0.95)
 
