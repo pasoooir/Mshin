@@ -587,23 +587,50 @@ func _build_tree_belts() -> void:
 	trunk_mesh.height = 2.5
 	trunk_mesh.material = bark_material
 
-	var canopy_mesh := SphereMesh.new()
-	canopy_mesh.radius = 1.35
-	canopy_mesh.height = 2.5
+	# A canopy is a connected cluster of overlapping leaf masses, not one
+	# perfect sphere. This produces a fuller, more natural silhouette while
+	# keeping every tree in the same single MultiMesh draw call.
+	var canopy_mesh := _create_clustered_canopy_mesh()
 	var canopy_material := StandardMaterial3D.new()
 	canopy_material.vertex_color_use_as_albedo = true
 	canopy_material.albedo_texture = _create_foliage_texture()
 	canopy_material.roughness = 0.96
-	canopy_mesh.material = canopy_material
 
 	var tree_shadows := _create_tree_shadow_multimesh(positions)
 	add_child(tree_shadows)
 	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
 	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.25)
 	var crowns := _create_tree_multimesh("TreeCanopies", canopy_mesh, positions, 2.55)
+	crowns.material_override = canopy_material
 	add_child(roots)
 	add_child(trunks)
 	add_child(crowns)
+
+
+func _create_clustered_canopy_mesh() -> ArrayMesh:
+	# Low-poly ellipsoids intersect deliberately to form a single coherent
+	# broadleaf crown. The mesh is authored once and instanced across the belt.
+	var lobe := SphereMesh.new()
+	lobe.radius = 1.0
+	lobe.height = 1.9
+	lobe.radial_segments = 16
+	lobe.rings = 10
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var lobes := [
+		[Vector3(0.0, 0.0, 0.0), Vector3(1.00, 0.82, 0.92)],
+		[Vector3(-0.68, -0.12, 0.02), Vector3(0.72, 0.70, 0.78)],
+		[Vector3(0.66, -0.08, 0.08), Vector3(0.76, 0.72, 0.82)],
+		[Vector3(0.02, 0.12, -0.66), Vector3(0.78, 0.74, 0.70)],
+		[Vector3(-0.04, 0.18, 0.64), Vector3(0.76, 0.76, 0.72)],
+		[Vector3(0.02, 0.68, -0.02), Vector3(0.66, 0.72, 0.66)]
+	]
+	for lobe_data in lobes:
+		var offset: Vector3 = lobe_data[0]
+		var scale: Vector3 = lobe_data[1]
+		var transform := Transform3D(Basis.IDENTITY.scaled(scale), offset)
+		surface.append_from(lobe, 0, transform)
+	return surface.commit()
 
 
 func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vector3], height_offset: float) -> MultiMeshInstance3D:
@@ -627,8 +654,12 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 	]
 	for index in range(positions.size()):
 		var scale := 0.82 + float((index * 7) % 5) * 0.09
-		var basis := Basis.IDENTITY.scaled(Vector3(scale, scale, scale))
-		var origin := positions[index] + Vector3(0.0, height_offset * scale, 0.0)
+		var width_variation := 0.88 + float((index * 3) % 5) * 0.075
+		var height_variation := 0.88 + float((index * 7) % 4) * 0.09
+		var depth_variation := 0.90 + float((index * 11) % 4) * 0.07
+		var yaw := float((index * 37) % 360) * PI / 180.0
+		var basis := Basis(Vector3.UP, yaw).scaled(Vector3(scale * width_variation, scale * height_variation, scale * depth_variation))
+		var origin := positions[index] + Vector3(0.0, height_offset * scale * height_variation, 0.0)
 		multimesh.set_instance_transform(index, Transform3D(basis, origin))
 		if node_name == "TreeCanopies":
 			multimesh.set_instance_color(index, foliage_palette[index % foliage_palette.size()])
