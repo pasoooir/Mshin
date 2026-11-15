@@ -400,7 +400,10 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] Keep the existing recipe, level, queue-capacity, stock-reservation and automatic-chain validation path for accepted drops.
 - [x] Preserve touch fallback: select a honeycomb item, then tap the selected building's actual footprint.
 - [x] Support Escape/Backspace dismissal and the existing close button.
-- [ ] Godot headless validation and GameplaySmoke on the new branch.
-- [ ] Android landscape drag/drop and visual alignment acceptance.
+- [x] Godot 4.3 import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy validation passed.
+- [x] Android Debug APK export and package signature/identity verification passed.
+- [ ] Android landscape drag/drop and visual alignment acceptance on a physical device.
 
 **Acceptance status:** implementation committed to feat/production-modal-building-drop; pending CI and real-device validation. No completion claim is made yet.
+
+- [ ] Web Chromium mobile/desktop smoke and Pages deployment — workflow still running at last check.
