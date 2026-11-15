@@ -1676,8 +1676,8 @@ func _start_next_level_up_effect() -> void:
 
 func _process(delta: float) -> void:
 	_building_action_scan_accum += delta
-	if _factory_ready_scan_accum >= 0.5:
-		_factory_ready_scan_accum = 0.0
+	if _building_action_scan_accum >= 0.5:
+		_building_action_scan_accum = 0.0
 		_refresh_building_action_notifications()
 	if is_instance_valid(production_panel):
 		_production_tick_accum += delta
