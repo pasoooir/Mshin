@@ -80,7 +80,7 @@ func _test_construction_bom_contract() -> void:
 	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction BOM must become affordable when all required materials are present.")
 	var villa_bom := BuildManager.get_construction_bom("residential_farm")
 	var apartment_bom := BuildManager.get_construction_bom("residential_apartment")
-	var large_factory_bom := BuildManager.get_construction_bom("factory_mass")
+	var large_factory_bom := BuildManager.get_construction_bom("factory_nano")
 	var sewage_bom := BuildManager.get_construction_bom("sewage_deluxe")
 	_check(villa_bom != apartment_bom, "Two residential types with different construction duration/unlock tier must resolve different exact BOMs.")
 	_check(int(apartment_bom.get("planks", 0)) > 0 and int(apartment_bom.get("nails", 0)) > int(villa_bom.get("nails", 0)), "Residential apartment BOM must scale above a starter farm by its build complexity.")
