@@ -14,7 +14,7 @@ func _initialize() -> void:
 		"horizon_seconds": 86400,
 		"item_values": values,
 		"events": [
-			{"type": "depot_sale", "item_id": "metal", "quantity": 3, "at_seconds": 0},
+			{"type": "depot_sale", "item_id": "metal", "quantity": 3, "listed_at_seconds": 0, "at_seconds": 120},
 			{"type": "hq_purchase", "item_id": "metal", "quantity": 2, "at_seconds": 60},
 			{"type": "delivery_order", "item_id": "nails", "quantity": 2, "at_seconds": 60},
 			{"type": "construction", "amount": 100, "at_seconds": 60}
@@ -34,10 +34,10 @@ func _initialize() -> void:
 		return
 
 	var too_early := base_config.duplicate(true)
-	too_early["horizon_seconds"] = 119
+	too_early["events"][0]["at_seconds"] = 119
 	var early_result: Dictionary = Simulator.simulate(too_early)
-	if int(early_result.get("source_breakdown", {}).get("depot_sales", 0)) != 0:
-		_fail("Trade Depot sale settled before the 120-second listing timer")
+	if bool(early_result.get("valid", true)) or int(early_result.get("source_breakdown", {}).get("depot_sales", 0)) != 0:
+		_fail("Trade Depot collection was accepted before the 120-second ready time")
 		return
 	if int(result_2x.get("source_breakdown", {}).get("delivery_orders", 0)) != 320:
 		_fail("delivery order reward does not match the live 2x catalog formula")
