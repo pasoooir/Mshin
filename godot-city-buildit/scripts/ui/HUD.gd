@@ -2235,13 +2235,15 @@ func open_production_panel(building: Building) -> void:
 		item_button.add_theme_color_override("font_color", Color("#243F4D"))
 		# Put every product on the camera-facing orbit plane, not on the far side
 		# of the building where its 3D hex and screen control can be occluded.
-		var orbit_angle := TAU * float(item_index) / float(maxi(1, item_ids.size()))
 		var footprint_size: Vector2i = building.definition.get("size", Vector2i(2, 2))
-		var orbit_radius := maxf(4.8, float(maxi(footprint_size.x, footprint_size.y)) * 1.5 + 2.0)
 		var orbit_camera := get_viewport().get_camera_3d()
 		var orbit_right := orbit_camera.global_transform.basis.x.normalized() if is_instance_valid(orbit_camera) else Vector3.RIGHT
 		var orbit_up := orbit_camera.global_transform.basis.y.normalized() if is_instance_valid(orbit_camera) else Vector3.UP
-		var orbit_world_position := building.global_position + orbit_right * (cos(orbit_angle) * orbit_radius) + orbit_up * (sin(orbit_angle) * orbit_radius + 2.0)
+		# A camera-facing row keeps every selectable tile in front of the building,
+		# rather than sending half the catalogue around its hidden far side.
+		var orbit_spacing := maxf(2.8, float(maxi(footprint_size.x, footprint_size.y)) * 0.85)
+		var orbit_horizontal_offset := (float(item_index) - float(item_ids.size() - 1) * 0.5) * orbit_spacing
+		var orbit_world_position := building.global_position + orbit_right * orbit_horizontal_offset + orbit_up * 3.0
 		var world_hex := _create_production_orbit_hex(item_index, orbit_world_position)
 		item_button.set_meta("orbit_world_position", orbit_world_position)
 		item_button.set_meta("orbit_world_hex", world_hex)
@@ -3067,19 +3069,31 @@ func _update_production_orbit_projection() -> void:
 	if not is_instance_valid(camera):
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
-	for button in _production_orbit_buttons:
+	var dock_top := viewport_size.y * 0.58
+	if is_instance_valid(production_panel) and production_panel.size.y > 0.0:
+		dock_top = minf(dock_top, production_panel.get_global_rect().position.y - 8.0)
+	var first_button := _production_orbit_buttons[0] as Control
+	var button_size := first_button.size if is_instance_valid(first_button) else Vector2(100.0, 112.0)
+	var gap := 8.0
+	var columns := mini(_production_orbit_buttons.size(), maxi(1, int(floor((viewport_size.x - 16.0 + gap) / (button_size.x + gap)))))
+	var rows := int(ceil(float(_production_orbit_buttons.size()) / float(columns)))
+	var row_y := clampf(viewport_size.y * 0.18, 70.0, maxf(70.0, dock_top - button_size.y - float(rows - 1) * (button_size.y + gap)))
+	var total_row_width := float(columns) * button_size.x + float(columns - 1) * gap
+	var start_x := maxf(8.0, (viewport_size.x - total_row_width) * 0.5)
+	for index in range(_production_orbit_buttons.size()):
+		var button := _production_orbit_buttons[index]
 		if not is_instance_valid(button):
 			continue
 		var world_position: Vector3 = button.get_meta("orbit_world_position", Vector3.ZERO)
-		var behind := camera.is_position_behind(world_position)
-		button.visible = not behind
-		if behind:
-			continue
 		var projected := camera.unproject_position(world_position + Vector3(0.0, 0.24, 0.0))
-		var button_size := button.size
-		button.position = projected - button_size * 0.5
-		button.visible = button.visible and projected.x > -button_size.x and projected.x < viewport_size.x + button_size.x and projected.y > -button_size.y and projected.y < viewport_size.y + button_size.y
-
+		var behind := camera.is_position_behind(world_position)
+		var col := index % columns
+		var row_index := int(index / columns)
+		var fallback_position := Vector2(start_x + float(col) * (button_size.x + gap), row_y + float(row_index) * (button_size.y + gap))
+		var projected_rect := Rect2(projected - button_size * 0.5, button_size)
+		var safe_rect := Rect2(Vector2(4.0, 66.0), Vector2(viewport_size.x - 8.0, maxf(0.0, dock_top - 70.0)))
+		button.position = fallback_position if behind or not safe_rect.encloses(projected_rect) else projected - button_size * 0.5
+		button.visible = true
 
 
 func _update_residential_orbit_projection() -> void:
@@ -3089,18 +3103,27 @@ func _update_residential_orbit_projection() -> void:
 	if not is_instance_valid(camera):
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
-	for button in _residential_orbit_buttons:
+	var first_button := _residential_orbit_buttons[0] as Control
+	var button_size := first_button.size if is_instance_valid(first_button) else Vector2(108.0, 116.0)
+	var gap := 8.0
+	var columns := mini(_residential_orbit_buttons.size(), maxi(1, int(floor((viewport_size.x - 16.0 + gap) / (button_size.x + gap)))))
+	var total_row_width := float(columns) * button_size.x + float(columns - 1) * gap
+	var start_x := maxf(8.0, (viewport_size.x - total_row_width) * 0.5)
+	var row_y := clampf(viewport_size.y * 0.16, 66.0, maxf(66.0, viewport_size.y * 0.34 - button_size.y))
+	for index in range(_residential_orbit_buttons.size()):
+		var button := _residential_orbit_buttons[index]
 		if not is_instance_valid(button):
 			continue
 		var world_position: Vector3 = button.get_meta("orbit_world_position", Vector3.ZERO)
-		var behind := camera.is_position_behind(world_position)
-		button.visible = not behind
-		if behind:
-			continue
 		var projected := camera.unproject_position(world_position + Vector3(0.0, 0.24, 0.0))
-		var button_size := button.size
-		button.position = projected - button_size * 0.5
-		button.visible = button.visible and projected.x > -button_size.x and projected.x < viewport_size.x + button_size.x and projected.y > -button_size.y and projected.y < viewport_size.y + button_size.y
+		var behind := camera.is_position_behind(world_position)
+		var col := index % columns
+		var row_index := int(index / columns)
+		var fallback_position := Vector2(start_x + float(col) * (button_size.x + gap), row_y + float(row_index) * (button_size.y + gap))
+		var projected_rect := Rect2(projected - button_size * 0.5, button_size)
+		var safe_rect := Rect2(Vector2(4.0, 62.0), Vector2(viewport_size.x - 8.0, viewport_size.y * 0.34))
+		button.position = fallback_position if behind or not safe_rect.encloses(projected_rect) else projected - button_size * 0.5
+		button.visible = true
 
 
 func _on_residential_material_pressed(home: Building, item_id: String) -> void:
@@ -3600,13 +3623,13 @@ func open_residential_panel(building: Building) -> void:
 			if str(home_need.get("item_id", "")) == item_id:
 				owned = int(home_need.get("stored", owned))
 				break
-		var orbit_angle := TAU * float(requirement_index) / float(maxi(1, requirements.size()))
 		var footprint_size: Vector2i = building.definition.get("size", Vector2i(2, 2))
-		var orbit_radius := maxf(4.8, float(maxi(footprint_size.x, footprint_size.y)) * 1.5 + 2.0)
 		var orbit_camera := get_viewport().get_camera_3d()
 		var orbit_right := orbit_camera.global_transform.basis.x.normalized() if is_instance_valid(orbit_camera) else Vector3.RIGHT
 		var orbit_up := orbit_camera.global_transform.basis.y.normalized() if is_instance_valid(orbit_camera) else Vector3.UP
-		var orbit_position := building.global_position + orbit_right * (cos(orbit_angle) * orbit_radius) + orbit_up * (sin(orbit_angle) * orbit_radius + 2.4)
+		var orbit_spacing := maxf(2.8, float(maxi(footprint_size.x, footprint_size.y)) * 0.85)
+		var orbit_horizontal_offset := (float(requirement_index) - float(requirements.size() - 1) * 0.5) * orbit_spacing
+		var orbit_position := building.global_position + orbit_right * orbit_horizontal_offset + orbit_up * 3.2
 		_create_world_hex_platform(_residential_world_orbit, "ResidentialHex_%d" % requirement_index, orbit_position)
 		var material_button := Button.new()
 		material_button.name = "ResidentialNeed_%s" % item_id
