@@ -276,13 +276,12 @@ func _get_active_automatic_chain_id() -> String:
 
 func _can_resolve_automatic_chain_item(
 		item_id: String, amount: int, ancestry: Dictionary,
-		reserved_root_component: ProductionComponent = null, reserved_root_slot_index: int = -1
+		reserved_root_component: ProductionComponent = null
 	) -> bool:
 	if amount <= 0 or StorageManager.get_count(item_id) >= amount:
 		return true
 	if ancestry.has(item_id):
 		return false
-	var missing := amount - StorageManager.get_count(item_id)
 	var next_ancestry := ancestry.duplicate(true)
 	next_ancestry[item_id] = true
 	var components: Array = get_tree().get_nodes_in_group("production_components") if is_inside_tree() else []
@@ -330,7 +329,7 @@ func _can_resolve_automatic_chain_item(
 		var input_id := str(input_variant)
 		var required := int(recipe.inputs[input_variant])
 		var input_missing := maxi(0, required - StorageManager.get_count(input_id))
-		if input_missing > 0 and not _can_resolve_automatic_chain_item(input_id, input_missing, next_ancestry, reserved_root_component, reserved_root_slot_index):
+		if input_missing > 0 and not _can_resolve_automatic_chain_item(input_id, input_missing, next_ancestry, reserved_root_component):
 			return false
 	return true
 
@@ -352,7 +351,7 @@ func request_automatic_chain(component: ProductionComponent, recipe_id: String, 
 		var input_id := str(input_variant)
 		var required := int(recipe.inputs[input_variant])
 		var missing := maxi(0, required - StorageManager.get_count(input_id))
-		if missing > 0 and not _can_resolve_automatic_chain_item(input_id, missing, {recipe_id: true}, component, slot_index):
+		if missing > 0 and not _can_resolve_automatic_chain_item(input_id, missing, {recipe_id: true}, component):
 			return false
 	# Multiple roots may run concurrently. Every recipe consumes its complete
 	# input set through StorageManager.remove_items on the main thread, while
