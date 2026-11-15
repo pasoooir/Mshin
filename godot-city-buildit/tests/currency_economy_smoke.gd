@@ -1,5 +1,74 @@
 extends Node
 
+func _audit_all_production_chains(failures: Array[String]) -> void:
+	var raw_values: Dictionary = ProductionManager.raw_materials
+	var recipes: Dictionary = ProductionManager.crafted_items
+	var rows: Array[Dictionary] = []
+	var missing_inputs: Array[String] = []
+	for item_variant in recipes.keys():
+		var item_id := str(item_variant)
+		var recipe: Dictionary = recipes[item_variant]
+		var expanded := _expand_recipe_cost(item_id, [], missing_inputs)
+		var output_value := int(recipe.get("value", 0))
+		var raw_cost := int(expanded.get("raw_cost", -1))
+		var total_work_seconds := int(expanded.get("work_seconds", 0))
+		if raw_cost < 0 or output_value <= 0:
+			failures.append("Production-chain audit could not resolve recipe economics for " + item_id)
+			continue
+		var gross_margin := output_value - raw_cost
+		var hq_buy_cost := raw_cost * 2
+		var hq_margin := output_value - hq_buy_cost
+		rows.append({
+			"item": item_id, "sale_reference": output_value, "raw_input_opportunity_cost": raw_cost,
+			"gross_margin": gross_margin, "gross_margin_percent": snappedf(float(gross_margin) / float(maxi(raw_cost, 1)) * 100.0, 0.1),
+			"total_serial_work_seconds": total_work_seconds, "hq_input_cost_at_2x": hq_buy_cost,
+			"margin_after_hq_inputs": hq_margin
+		})
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.margin_after_hq_inputs) < int(b.margin_after_hq_inputs))
+	print("[EconomyChainAudit] recipes=", rows.size(), " unresolved_inputs=", missing_inputs.size())
+	for row in rows:
+		print("[EconomyChainAudit] ", JSON.stringify(row))
+	for missing in missing_inputs:
+		failures.append("Production-chain audit found unresolved ingredient: " + missing)
+	var loss_count := 0
+	var positive_count := 0
+	for row in rows:
+		if int(row.margin_after_hq_inputs) < 0:
+			loss_count += 1
+		elif int(row.margin_after_hq_inputs) > 0:
+			positive_count += 1
+	print("[EconomyChainAudit] HQ multiplier 2.0 scenario: loss_making_recipes=", loss_count, " profitable_recipes=", positive_count, " total=", rows.size())
+	if rows.size() != recipes.size():
+		failures.append("Production-chain audit did not cover every catalog recipe")
+
+
+func _expand_recipe_cost(item_id: String, ancestry: Array[String], missing_inputs: Array[String]) -> Dictionary:
+	if ancestry.has(item_id):
+		missing_inputs.append("recipe cycle: " + " -> ".join(ancestry + [item_id]))
+		return {"raw_cost": -1, "work_seconds": 0}
+	var next_ancestry := ancestry.duplicate()
+	next_ancestry.append(item_id)
+	var recipe: Dictionary = ProductionManager.crafted_items.get(item_id, {})
+	if recipe.is_empty():
+		var raw: Dictionary = ProductionManager.raw_materials.get(item_id, {})
+		if raw.is_empty():
+			missing_inputs.append(item_id)
+			return {"raw_cost": -1, "work_seconds": 0}
+		return {"raw_cost": int(raw.get("value", 0)), "work_seconds": int(raw.get("time_sec", 0))}
+	var raw_cost := 0
+	var work_seconds := int(recipe.get("time_sec", 0))
+	var requires: Dictionary = recipe.get("requires", {})
+	for input_variant in requires.keys():
+		var input_id := str(input_variant)
+		var amount := int(requires[input_variant])
+		var child := _expand_recipe_cost(input_id, next_ancestry, missing_inputs)
+		if int(child.raw_cost) < 0:
+			return {"raw_cost": -1, "work_seconds": work_seconds}
+		raw_cost += int(child.raw_cost) * amount
+		work_seconds += int(child.work_seconds) * amount
+	return {"raw_cost": raw_cost, "work_seconds": work_seconds}
+
+
 func _ready() -> void:
 	await get_tree().process_frame
 	var original_cash := EconomyManager.sim_cash
@@ -329,6 +398,7 @@ func _ready() -> void:
 	EconomyManager.golden_keys = original_keys
 	PaymentManager.from_save_dict(original_ledger)
 	EconomyManager.from_save_dict(original_economy_ledger)
+	_audit_all_production_chains(failures)
 	if not failures.is_empty():
 		for failure in failures:
 			push_error("[CurrencyEconomySmoke] " + failure)
