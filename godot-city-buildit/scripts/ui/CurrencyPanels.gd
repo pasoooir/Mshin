@@ -186,7 +186,7 @@ func _product_card(product: Dictionary) -> Control:
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	var asset := "res://assets/icons/ui/currency/%s.svg" % str(product.id)
-	if not ResourceLoader.exists(asset): asset = "res://assets/icons/ui/currency/simcash_bundle.svg"
+	if not ResourceLoader.exists(asset): asset = "res://assets/icons/ui/currency/simcash_bundle.png"
 	icon.texture = load(asset) as Texture2D if ResourceLoader.exists(asset) else Icons.get_icon_tex("money")
 	row.add_child(icon)
 	var info := VBoxContainer.new()
