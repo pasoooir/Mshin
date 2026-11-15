@@ -338,15 +338,15 @@ func _add_active_progress_boosts() -> void:
 				button.pressed.connect(_speed_up_component_slot.bind(component, index))
 				_content.add_child(button)
 		else:
-			var production_quote := building.get_legacy_production_speedup_quote()
+			var production_quote: Dictionary = building.get_legacy_production_speedup_quote()
 			if not production_quote.is_empty():
 				found = true
 				_add_speedup_button("Finish %s production" % str(building.current_product), production_quote, building.speed_up_legacy_production)
-		var construction_quote := building.get_construction_speedup_quote()
+		var construction_quote: Dictionary = building.get_construction_speedup_quote()
 		if not construction_quote.is_empty():
 			found = true
 			_add_speedup_button("Finish %s construction" % str(building.definition.get("name", building.building_type)), construction_quote, building.speed_up_construction)
-		var upgrade_quote := building.get_upgrade_speedup_quote()
+		var upgrade_quote: Dictionary = building.get_upgrade_speedup_quote()
 		if not upgrade_quote.is_empty():
 			found = true
 			_add_speedup_button("Finish %s upgrade" % str(building.definition.get("name", building.building_type)), upgrade_quote, building.speed_up_upgrade)
