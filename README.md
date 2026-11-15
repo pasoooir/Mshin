@@ -764,3 +764,13 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [ ] بنابراین «تورم قیمت‌ها» یا «مدت قطعی رسیدن به سطح مشخص» هنوز خروجی معتبر این نسخه نیست؛ خروجی فعلی تغییر ماندهٔ Simoleons در یک سناریوی ورودی است.
 
 جزئیات قواعد، ورودی/خروجی و محدودیت‌ها: `godot-city-buildit/docs/MACRO_ECONOMY_SIMULATION.md`.
+
+
+### نتیجهٔ واقعی اصلاح خطای CI در PR #508 — ۱۵ نوامبر ۲۰۲۶
+- [x] اجرای اول Godot Validation روی `334c32184eb84158b3d74778f2f09de5c03fc61f` شکست خورد: متغیر `events` هنگام آماده‌سازی رویدادهای زمان‌بندی‌شده تعریف نشده بود. گزارش: [run 43705885086](https://github.com/pasoooir/Mshin/actions/runs/43705885086).
+- [x] علت از لاگ خام استخراج و اصلاح شد: تعریف صریح آرایهٔ ورودی `events` پیش از کپی/مرتب‌سازی رویدادها در `MacroEconomySimulator.gd`.
+- [x] در commit اصلاحی `95bd6c5ece78244757537b0d1667911db935bdfc`، Import/Parse، startup، gameplay integration، visual geometry، CurrencyEconomySmoke و **MacroEconomySmoke** همگی موفق شدند.
+- [x] Android Debug APK در همان اجرا export شد، امضای آن تأیید شد و artifact آپلود شد.
+- <badge> [Godot City BuildIt Validation — PASS](https://github.com/pasoooir/Mshin/actions/runs/43706032773)
+- [ ] Web workflow برای همین SHA هنگام ثبت این گزارش هنوز در حال اجرا بود: [run 43706032776](https://github.com/pasoooir/Mshin/actions/runs/43706032776).
+- [ ] CI سبز این شاخه به معنی تکمیل اقتصاد کلان بازار نیست؛ محدودیت‌های تقاضا، نرخ فروش، ظرفیت تولید، جمعیت پویا و تورم قیمت همچنان مطابق سند تخصصی باز هستند.
