@@ -31,14 +31,23 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Tree crowns must remain batched in a MultiMesh")
 		get_tree().quit(1)
 		return
+	# Attach the MultiMeshInstance3D before reading instance transforms. In headless
+	# Godot, the RenderingServer-backed MultiMesh state is not reliably observable
+	# until the instance enters the scene tree and one frame has been processed.
+	add_child(tree_batch)
+	await get_tree().process_frame
 	var first_transform := tree_batch.multimesh.get_instance_transform(0)
 	var second_transform := tree_batch.multimesh.get_instance_transform(1)
 	if first_transform.is_equal_approx(second_transform):
-		push_error("[VisualPresentationSmoke] Tree instances must have deterministic visual variation")
+		push_error("[VisualPresentationSmoke] Tree instances must have deterministic visual variation; first=%s second=%s" % [first_transform, second_transform])
+		tree_batch.queue_free()
+		presentation.free()
+		await get_tree().process_frame
 		get_tree().quit(1)
 		return
 
 	print("[VisualPresentationSmoke] PASS: clustered canopy geometry, normals, scale and MultiMesh variation")
+	tree_batch.queue_free()
 	presentation.free()
-	tree_batch.free()
+	await get_tree().process_frame
 	get_tree().quit(0)
