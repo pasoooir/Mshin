@@ -20,6 +20,7 @@ var last_pinch_angle: float = 0.0
 var pan_velocity: Vector2 = Vector2.ZERO
 var orbit_velocity: float = 0.0
 var focus_target: Vector3 = Vector3.ZERO
+var focus_zoom_target: float = -1.0
 var is_focus_animating := false
 
 const PAN_INERTIA_STOP_SPEED := 6.0
@@ -42,8 +43,19 @@ func _process(delta: float) -> void:
 		return
 	if is_focus_animating:
 		global_position = interpolate_focus(global_position, focus_target, delta, focus_smoothing)
-		if global_position.distance_to(focus_target) <= 0.05:
+		if focus_zoom_target > 0.0:
+			current_zoom = lerpf(current_zoom, focus_zoom_target, 1.0 - exp(-focus_smoothing * delta))
+			_update_camera_transform()
+		var position_done := global_position.distance_to(focus_target) <= 0.05
+		var zoom_done := focus_zoom_target <= 0.0 or absf(current_zoom - focus_zoom_target) <= 0.05
+		if position_done:
 			global_position = focus_target
+		if zoom_done:
+			if focus_zoom_target > 0.0:
+				current_zoom = focus_zoom_target
+				_update_camera_transform()
+			focus_zoom_target = -1.0
+		if position_done and zoom_done:
 			is_focus_animating = false
 		return
 	if not touch_points.is_empty() or is_mouse_panning:
@@ -59,11 +71,14 @@ func _process(delta: float) -> void:
 	else:
 		orbit_velocity = 0.0
 
-func focus_on(target_position: Vector3) -> void:
+func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:
 	focus_target = Vector3(target_position.x, global_position.y, target_position.z)
+	focus_zoom_target = clampf(target_zoom, min_zoom, max_zoom) if target_zoom > 0.0 else -1.0
 	pan_velocity = Vector2.ZERO
 	orbit_velocity = 0.0
-	is_focus_animating = global_position.distance_to(focus_target) > 0.05
+	var position_needs_focus := global_position.distance_to(focus_target) > 0.05
+	var zoom_needs_focus := focus_zoom_target > 0.0 and absf(current_zoom - focus_zoom_target) > 0.05
+	is_focus_animating = position_needs_focus or zoom_needs_focus
 
 static func interpolate_focus(current: Vector3, target: Vector3, delta: float, smoothing: float) -> Vector3:
 	var weight := 1.0 - exp(-maxf(0.0, smoothing) * maxf(0.0, delta))

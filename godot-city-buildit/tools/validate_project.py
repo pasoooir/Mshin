@@ -1083,7 +1083,7 @@ for contract in [
     "static func decay_orbit_velocity(",
     "pan_inertia_damping",
     "orbit_inertia_damping",
-    "func focus_on(target_position: Vector3) -> void:",
+    "func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:",
     "@export var world_limit: float = 90.0",
     "static func interpolate_focus(",
 ]:
@@ -1114,7 +1114,7 @@ for contract in [
     if contract not in save_manager_rotation_source:
         errors.append(f"SaveManager rotation persistence contract is missing: {contract}")
 
-if "camera_rig.focus_on(building.global_position)" not in city_input_source:
+if "camera_rig.focus_on(building.global_position, 18.0)" not in city_input_source:
     errors.append("Selecting a building must smoothly focus the city camera on its world position.")
 for contract in [
     "func _test_camera_focus_math()",
