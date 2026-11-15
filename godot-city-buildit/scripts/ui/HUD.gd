@@ -120,7 +120,7 @@ var _touch_selected_production_item := ""
 var _touch_selected_production_building_id := 0
 var _production_drag_gestures: Dictionary = {}
 var _production_tick_accum := 0.0
-var _factory_ready_scan_accum := 0.0
+var _building_action_scan_accum := 0.0
 var catalog_info_panel: PanelContainer
 var catalog_base_bar: PanelContainer
 var catalog_advisor: Control
@@ -1675,10 +1675,10 @@ func _start_next_level_up_effect() -> void:
 		_level_up_shake_elapsed = 0.0
 
 func _process(delta: float) -> void:
-	_factory_ready_scan_accum += delta
+	_building_action_scan_accum += delta
 	if _factory_ready_scan_accum >= 0.5:
 		_factory_ready_scan_accum = 0.0
-		_refresh_factory_ready_icons()
+		_refresh_building_action_notifications()
 	if is_instance_valid(production_panel):
 		_production_tick_accum += delta
 		if _production_tick_accum >= 0.25:
@@ -1699,7 +1699,7 @@ func _process(delta: float) -> void:
 	_level_up_camera.position = _level_up_camera_origin + shake
 
 
-func _refresh_factory_ready_icons() -> void:
+func _refresh_building_action_notifications() -> void:
 	# One world-space action hint per building: product thumbnail for ready
 	# output, an upgrade marker when a residential upgrade can actually start.
 	# Construction and non-residential upgrades auto-complete; they must not
@@ -1712,8 +1712,9 @@ func _refresh_factory_ready_icons() -> void:
 		if not is_instance_valid(building) or building.status != "completed":
 			continue
 		if is_instance_valid(building.action_notification_label):
-			building.action_notification_label.text = "⬆"
-			building.action_notification_label.visible = bool(building.upgrade_ready)
+			var action_text := _get_building_action_notification_text(building)
+			building.action_notification_label.text = action_text
+			building.action_notification_label.visible = not action_text.is_empty()
 		var component = building.production_component
 		var ready_item := ""
 		var ready_count := 0
@@ -1736,6 +1737,69 @@ func _refresh_factory_ready_icons() -> void:
 			building.production_icon.modulate = Color("#FF765E") if storage_full else Color("#FFE06B")
 			building.production_icon.outline_size = 12
 			building.production_icon.outline_modulate = Color(0.12, 0.08, 0.02, 0.95)
+
+func _get_building_action_notification_text(building: Building) -> String:
+	if not is_instance_valid(building) or building.status != "completed":
+		return ""
+	var building_id := str(building.building_id)
+	var now := int(Time.get_unix_time_from_system())
+
+	# Epic project completion is claimed on the residential target itself.
+	var project: Dictionary = EpicProjectManager.active_project
+	if not project.is_empty():
+		if bool(project.get("finished", false)) and str(project.get("building_id", "")) == building_id:
+			return "🏆" if str(project.get("tier", "none")) != "none" else "✓"
+		if not bool(project.get("finished", false)):
+			for task in project.get("tasks", []):
+				if str(task.get("building_id", "")) == building_id:
+					var task_item := str(task.get("item_id", ""))
+					var task_amount := int(task.get("amount", 0))
+					if not task_item.is_empty() and task_amount > 0 and StorageManager.get_count(task_item) >= task_amount:
+						return "📦"
+
+	# Epic buildings expose a collect action when their next token part is due.
+	if EpicProjectManager.epic_buildings.has(building_id):
+		var epic_entry: Dictionary = EpicProjectManager.epic_buildings[building_id]
+		if now >= int(epic_entry.get("next_token_part_unix", 0)):
+			return "🧩"
+
+	# Trade Depot sale slots require an explicit Collect after their timer ends.
+	if building.building_type == "trade_depot":
+		var ready_sales := 0
+		for sale in TradeManager.sell_slots:
+			if bool(sale.get("ready", false)):
+				ready_sales += 1
+		if ready_sales > 0:
+			return "💰" if ready_sales == 1 else "💰×%d" % ready_sales
+
+	# Delivery orders are actionable only when the complete requested quantity
+	# is already in City Storage; incomplete orders do not get a false badge.
+	if building.building_type == "global_trade_hq":
+		var ready_orders := 0
+		for order in TradeManager.current_orders:
+			var order_item := str(order.get("item_id", ""))
+			var order_amount := int(order.get("amount", 0))
+			if not bool(order.get("completed", false)) and not order_item.is_empty() and order_amount > 0 and StorageManager.get_count(order_item) >= order_amount:
+				ready_orders += 1
+		if ready_orders > 0:
+			return "📬" if ready_orders == 1 else "📬×%d" % ready_orders
+
+	# Cargo-port crates become actionable once their requested goods are present.
+	if building.building_type == "cargo_port" and not TradeManager.ship_departed:
+		var ready_crates := 0
+		for crate in TradeManager.ship_crates:
+			var crate_item := str(crate.get("item_id", ""))
+			var crate_amount := int(crate.get("amount", 0))
+			if not bool(crate.get("delivered", false)) and not crate_item.is_empty() and crate_amount > 0 and StorageManager.get_count(crate_item) >= crate_amount:
+				ready_crates += 1
+		if ready_crates > 0:
+			return "🚢" if ready_crates == 1 else "🚢×%d" % ready_crates
+
+	# Residential upgrade is actionable only when the existing BOM gate passes.
+	if building.upgrade_ready:
+		return "⬆"
+	return ""
+
 
 func _on_level_up_effect_finished() -> void:
 	if is_instance_valid(_level_up_camera):
