@@ -1764,7 +1764,7 @@ func _get_building_action_notification_text(building: Building) -> String:
 			return "🧩"
 
 	# Trade Depot sale slots require an explicit Collect after their timer ends.
-	if building.building_type == "trade_depot":
+	if building.building_type == "trade_depot" and TradeManager.is_depot_operational():
 		var ready_sales := 0
 		for sale in TradeManager.sell_slots:
 			if bool(sale.get("ready", false)):
@@ -1774,7 +1774,7 @@ func _get_building_action_notification_text(building: Building) -> String:
 
 	# Delivery orders are actionable only when the complete requested quantity
 	# is already in City Storage; incomplete orders do not get a false badge.
-	if building.building_type == "global_trade_hq":
+	if building.building_type == "global_trade_hq" and TradeManager.is_global_trade_operational():
 		var ready_orders := 0
 		for order in TradeManager.current_orders:
 			var order_item := str(order.get("item_id", ""))
@@ -1785,7 +1785,7 @@ func _get_building_action_notification_text(building: Building) -> String:
 			return "📬" if ready_orders == 1 else "📬×%d" % ready_orders
 
 	# Cargo-port crates become actionable once their requested goods are present.
-	if building.building_type == "cargo_port" and not TradeManager.ship_departed:
+	if building.building_type == "cargo_port" and TradeManager.is_cargo_ship_operational() and not TradeManager.ship_departed:
 		var ready_crates := 0
 		for crate in TradeManager.ship_crates:
 			var crate_item := str(crate.get("item_id", ""))
