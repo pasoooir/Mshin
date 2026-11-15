@@ -268,6 +268,57 @@ func _get_active_automatic_chain_id() -> String:
 				return str(slot.get("auto_chain_id", ""))
 	return ""
 
+func _can_resolve_automatic_chain_item(item_id: String, amount: int, ancestry: Dictionary) -> bool:
+	if amount <= 0 or StorageManager.get_count(item_id) >= amount:
+		return true
+	if ancestry.has(item_id):
+		return false
+	var missing := amount - StorageManager.get_count(item_id)
+	var next_ancestry := ancestry.duplicate(true)
+	next_ancestry[item_id] = true
+	var components: Array = get_tree().get_nodes_in_group("production_components") if is_inside_tree() else []
+	if raw_materials.has(item_id):
+		if int(raw_materials[item_id].get("level", 1)) > GameManager.level:
+			return false
+		for supplier in components:
+			if not is_instance_valid(supplier) or not supplier is ProductionComponent or not supplier.is_factory:
+				continue
+			if not get_factory_material_ids(str(supplier.factory_type)).has(item_id) or not supplier._owner_has_road_access():
+				continue
+			for slot_index in range(supplier.get_slot_count()):
+				if supplier.slots[slot_index].is_empty():
+					return true
+		return false
+	if not crafted_items.has(item_id):
+		return false
+	var recipe := get_recipe(item_id)
+	if recipe.is_empty() or not are_recipe_inputs_unlocked(recipe):
+		return false
+	var store_id := str(recipe.get("store", ""))
+	var supplier_found := false
+	for supplier in components:
+		if not is_instance_valid(supplier) or not supplier is ProductionComponent or supplier.is_factory:
+			continue
+		if str(supplier.shop_id) != store_id or not supplier._owner_has_road_access():
+			continue
+		if not get_recipe_lock_reason(item_id, supplier.store_star_level).is_empty():
+			continue
+		for slot_index in range(supplier.get_slot_count()):
+			if supplier.slots[slot_index].is_empty():
+				supplier_found = true
+				break
+		if supplier_found:
+			break
+	if not supplier_found:
+		return false
+	for input_variant in recipe.get("inputs", {}).keys():
+		var input_id := str(input_variant)
+		var required := int(recipe.inputs[input_variant])
+		var input_missing := maxi(0, required - StorageManager.get_count(input_id))
+		if input_missing > 0 and not _can_resolve_automatic_chain_item(input_id, input_missing, next_ancestry):
+			return false
+	return true
+
 func request_automatic_chain(component: ProductionComponent, recipe_id: String, slot_index: int) -> bool:
 	if not is_instance_valid(component) or component.is_factory:
 		return false
@@ -282,6 +333,12 @@ func request_automatic_chain(component: ProductionComponent, recipe_id: String, 
 		return false
 	if not are_recipe_inputs_unlocked(recipe):
 		return false
+	for input_variant in recipe.get("inputs", {}).keys():
+		var input_id := str(input_variant)
+		var required := int(recipe.inputs[input_variant])
+		var missing := maxi(0, required - StorageManager.get_count(input_id))
+		if missing > 0 and not _can_resolve_automatic_chain_item(input_id, missing, {recipe_id: true}):
+			return false
 	# Keep a single top-level automatic order active at once. This makes the
 	# shared City Storage inventory a deterministic reservation pool while
 	# preserving manual production queues on every other slot/building.
