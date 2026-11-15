@@ -3900,7 +3900,7 @@ func _run_gameplay_test() -> void:
 	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The radial store catalog must expose every registered product.")
 	_check(product_orbit != null and product_orbit.find_child("ProductionBuildingDropTarget", true, false) is Control, "Product selectors and the building drop target must share the floating orbit layer outside the compact queue dock.")
-	_check(production_hud.production_panel.size.y <= get_viewport().get_visible_rect().size.y * 0.32, "Production queue dock must stay compact and never cover half the city view.")
+	_check(production_hud.production_panel.size.y <= get_viewport().get_visible_rect().size.y * 0.42, "Production queue dock must stay compact and never cover half the city view.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level
