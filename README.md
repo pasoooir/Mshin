@@ -977,3 +977,15 @@ No recipe, production duration, storage accounting, queue-slot price, or Collect
 
 - [x] Unify actionable world-space markers: ready production shows the actual product thumbnail; blocked collection shows a warning marker; residential upgrades show an upgrade marker only while an upgrade can genuinely start.
 - [x] Avoid false completion/collect notifications for construction and non-residential upgrades because those state transitions complete automatically in the current game model.
+
+
+## Production interaction UX — PR #518
+
+- [ ] CI verification of direct factory/store surface drop target and revised product orbit.
+- [ ] Physical Android landscape validation of dragging a product onto the selected building and the select-then-tap fallback.
+- [x] Added a building-aligned drop target that routes accepted products into the first free slot through the existing production validation path.
+- [x] Preserved the existing queue-slot drop path and automatic dependency-chain behavior.
+- [x] Expanded the floating product orbit and retained the bottom production queue dock.
+- [ ] Do not mark the interaction complete until CI and real-device touch checks pass.
+
+PR: https://github.com/pasoooir/Mshin/pull/518
