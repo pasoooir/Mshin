@@ -3812,12 +3812,12 @@ func _run_gameplay_test() -> void:
 		var touch_move := InputEventScreenDrag.new()
 		touch_move.index = 2
 		touch_move.position = factory_queue_slot.get_global_rect().get_center()
-		production_hud._on_production_product_gui_input(touch_move, metal_drag_button, factory, "metal")
+		production_hud._input(touch_move)
 		var touch_up := InputEventScreenTouch.new()
 		touch_up.index = 2
 		touch_up.position = factory_queue_slot.get_global_rect().get_center()
 		touch_up.pressed = false
-		production_hud._on_production_product_gui_input(touch_up, metal_drag_button, factory, "metal")
+		production_hud._input(touch_up)
 	else:
 		_check(false, "Touch drag fixture must find both the Metal product tile and the first production queue tile.")
 	_check(not factory_component.get_slot(0).is_empty(), "A simulated Android touch drag from Metal to queue slot zero must start that exact production slot.")
@@ -3913,6 +3913,27 @@ func _run_gameplay_test() -> void:
 	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The radial store catalog must expose every registered product.")
 	_check(product_orbit != null and product_orbit.get_child_count() == 1, "Product selectors must use a floating orbit layer outside the compact queue dock.")
 	_check(production_hud.production_panel.size.y < get_viewport().get_visible_rect().size.y * 0.5, "Production interaction must use a compact bottom dock, not a full-screen modal.")
+
+	# Reflow acceptance at common Android landscape viewports. Every radial item
+	# must remain on-screen and must not overlap the bottom production dock.
+	var original_viewport_size := get_viewport().size
+	for mobile_size in [Vector2i(844, 390), Vector2i(915, 412), Vector2i(1280, 720)]:
+		get_viewport().size = mobile_size
+		await get_tree().process_frame
+		production_hud.open_production_panel(factory)
+		await get_tree().process_frame
+		var mobile_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
+		var mobile_dock := production_hud.production_panel
+		var mobile_bounds := Rect2(Vector2.ZERO, Vector2(mobile_size))
+		_check(mobile_dock != null and mobile_dock.get_global_rect().position.y >= 0.0 and mobile_dock.get_global_rect().end.y <= float(mobile_size.y) + 1.0, "Production dock must remain inside %dx%d viewport." % [mobile_size.x, mobile_size.y])
+		if mobile_grid and mobile_dock:
+			for product_node in mobile_grid.get_children():
+				var product_rect := product_node.get_global_rect()
+				_check(mobile_bounds.encloses(product_rect), "Every radial product tile must remain visible inside %dx%d viewport." % [mobile_size.x, mobile_size.y])
+				_check(not product_rect.intersects(mobile_dock.get_global_rect()), "Radial product tiles must not overlap the bottom dock at %dx%d." % [mobile_size.x, mobile_size.y])
+	get_viewport().size = original_viewport_size
+	await get_tree().process_frame
+	production_hud.open_production_panel(factory)
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level
