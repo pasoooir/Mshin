@@ -444,3 +444,16 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Confirm production Pages deployment after merge.
 
 **No CI or device acceptance is claimed until those checks pass.**
+
+
+## 2026-11-15 — Production touch gesture hardening
+
+- [x] Product drag is bound to the originating touch index; unrelated fingers cannot move or release the active drag.
+- [x] Tap-only selection persists until a subsequent tap on an unlocked queue slot or the selected building, making the non-drag fallback operational.
+- [x] Production labels consistently identify the empty queue slot as the primary drop target and the building footprint as an additional target.
+- [x] GameplaySmoke now exercises multi-touch isolation and tap-to-queue fallback.
+- [ ] Run Godot import/parse and GameplaySmoke for this change.
+- [ ] Re-verify Android APK export/signature and Web/Chromium CI.
+- [ ] Physical Android landscape drag/drop acceptance and final screenshot review.
+
+**Do not mark this hardening complete until the new CI run passes.**
