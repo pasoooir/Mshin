@@ -97,7 +97,6 @@ func save_game() -> bool:
 			"golden_keys": EconomyManager.golden_keys,
 			"sim_cash": EconomyManager.sim_cash
 		},
-		"payments": PaymentManager.to_save_dict(),
 		"storage": StorageManager.to_save_dict(),
 		"trade": TradeManager.to_save_dict(),
 		"achievements": AchievementManager.to_save_dict(),
@@ -160,7 +159,6 @@ func load_game() -> bool:
 	EconomyManager.simoleons = 100000000
 	EconomyManager.golden_keys = int(economy_data.get("golden_keys", 5))
 	EconomyManager.sim_cash = int(economy_data.get("sim_cash", 0))
-	PaymentManager.from_save_dict(parsed.get("payments", {}))
 
 	# Prefer the active region's warehouse when present. The top-level storage
 	# field is retained only as a migration source for legacy saves; applying it
@@ -207,7 +205,6 @@ func load_game() -> bool:
 	GameManager.population_changed.emit(GameManager.population)
 	GameManager.happiness_changed.emit(GameManager.happiness)
 	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
-	EconomyManager.sim_cash_changed.emit(EconomyManager.sim_cash)
 	EconomyManager.keys_changed.emit(EconomyManager.golden_keys)
 	is_loading = false
 	# Recalculate from restored buildings and current service/traffic coverage;
