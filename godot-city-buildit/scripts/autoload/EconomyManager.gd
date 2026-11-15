@@ -57,24 +57,32 @@ func convert_sim_cash_to_simoleons(simcash_amount: int) -> Dictionary:
 	if simcash_amount <= 0: return {"success": false, "reason": "invalid_amount"}
 	if sim_cash < simcash_amount: return {"success": false, "reason": "insufficient_simcash"}
 	var granted := simcash_amount * SIMCASH_TO_SIMOLEONS_RATE
+	var cash_before := sim_cash
+	var simoleons_before := simoleons
 	sim_cash -= simcash_amount
 	simoleons += granted
 	sim_cash_changed.emit(sim_cash)
 	simoleons_changed.emit(simoleons)
 	transaction_completed.emit("simcash_conversion_spend", simcash_amount)
 	transaction_completed.emit("simoleons_conversion_gain", granted)
+	record_transaction("simcash_conversion_spend", "simcash", simcash_amount, cash_before, sim_cash, {}, {}, {"source": "currency_conversion", "paired_currency": "simoleons", "paired_amount": granted})
+	record_transaction("simoleons_conversion_gain", "simoleons", granted, simoleons_before, simoleons, {}, {}, {"source": "currency_conversion", "paired_currency": "simcash", "paired_amount": simcash_amount})
 	return {"success": true, "simcash_spent": simcash_amount, "simoleons_granted": granted}
 func can_afford(amount: int) -> bool:
 	# Zero-cost bootstrap buildings (e.g. the first small factory) remain affordable.
 	return simoleons >= amount
 func add_keys(amount: int) -> void:
 	if amount <= 0: return
+	var before := golden_keys
 	golden_keys += amount
 	keys_changed.emit(golden_keys)
+	record_transaction("golden_keys_gain", "golden_keys", amount, before, golden_keys, {}, {}, {"source": "economy"})
 func spend_keys(amount: int) -> bool:
 	if amount <= 0 or golden_keys < amount: return false
+	var before := golden_keys
 	golden_keys -= amount
 	keys_changed.emit(golden_keys)
+	record_transaction("golden_keys_spend", "golden_keys", amount, before, golden_keys, {}, {}, {"source": "economy"})
 	return true
 func set_tax_income(amount: int) -> void:
 	tax_income_per_minute = maxi(0, amount)
