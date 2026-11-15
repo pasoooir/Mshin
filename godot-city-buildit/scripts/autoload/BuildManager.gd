@@ -46,38 +46,6 @@ const CONSTRUCTION_BOM_PROFILES := {
 }
 const CONSTRUCTION_BOM_BOOTSTRAP_TYPES := ["residential_1", "residential_villa", "factory_small", "industrial_1", "building_supplies", "shop_chain"]
 
-# Exact Mshin-only material bills for distinctive infrastructure tiers. These
-# values are game-balance data, not SimCity BuildIt/EA recipes. Any type not in
-# this table still receives a deterministic footprint/build-time/unlock BOM.
-const CONSTRUCTION_BOM_TYPE_PROFILES := {
-	"power_wind": {"nails": 2, "metal": 1},
-	"power_coal": {"nails": 3, "metal": 2, "planks": 1},
-	"power_wind_deluxe": {"nails": 4, "metal": 3, "planks": 2},
-	"power_solar": {"nails": 5, "metal": 4, "planks": 2, "bricks": 1, "glass": 1},
-	"power_oil": {"nails": 5, "metal": 5, "planks": 2, "bricks": 2},
-	"power_nuclear": {"nails": 8, "metal": 7, "planks": 3, "bricks": 3, "cement": 3, "glass": 2},
-	"water_tower": {"nails": 2, "metal": 1},
-	"water_pump": {"nails": 3, "metal": 2, "planks": 1},
-	"fire_station_small": {"nails": 2, "metal": 1, "planks": 1},
-	"fire_station": {"nails": 3, "metal": 2, "planks": 1},
-	"fire_station_deluxe": {"nails": 5, "metal": 4, "planks": 2},
-	"police_station": {"nails": 3, "metal": 2, "planks": 1},
-	"police_small": {"nails": 2, "metal": 1, "planks": 1},
-	"police_basic": {"nails": 3, "metal": 2, "planks": 1},
-	"police_precinct": {"nails": 6, "metal": 4, "planks": 2},
-	"clinic_small": {"nails": 3, "metal": 2, "planks": 1, "bricks": 1, "glass": 1},
-	"clinic": {"nails": 4, "metal": 3, "planks": 2, "bricks": 1, "cement": 1, "glass": 2},
-	"hospital": {"nails": 8, "metal": 6, "planks": 3, "bricks": 3, "cement": 3, "glass": 3},
-	"sewage_small": {"nails": 2, "metal": 2, "planks": 1},
-	"sewage_basic": {"nails": 4, "metal": 3, "planks": 2},
-	"sewage_deluxe": {"nails": 6, "metal": 5, "planks": 2, "bricks": 2, "cement": 2, "glass": 1},
-	"waste_dump_small": {"nails": 3, "metal": 2, "planks": 1, "bricks": 1},
-	"waste_dump": {"nails": 4, "metal": 3, "planks": 2, "bricks": 2, "cement": 1},
-	"waste_incinerator": {"nails": 5, "metal": 5, "planks": 2, "bricks": 2, "cement": 2},
-	"waste_recycling": {"nails": 7, "metal": 6, "planks": 3, "bricks": 3, "cement": 3, "glass": 2},
-	"park_small": {"nails": 1, "wood": 2}
-}
-
 var building_types: Dictionary = {
 	"residential_1": {"name":"Small House", "category":"residential", "service_demand":1, "cost":0, "size":Vector2i(2,2), "population":15, "build_time":3.0, "color":Color(0.95,0.72,0.5), "level":1},
 	"residential_2": {"name":"Apartment", "category":"residential", "service_demand":2, "cost":0, "size":Vector2i(2,2), "population":28, "build_time":5.0, "color":Color(0.88,0.62,0.68), "level":3},
@@ -153,6 +121,38 @@ var building_types: Dictionary = {
 	"global_trade_hq": {"name":"Global Trade HQ", "category":"service", "service_group":"trade", "trade_role":"market", "cost":30000, "size":Vector2i(3,3), "population":0, "population_required":10000, "build_time":10.0, "color":Color(0.32,0.48,0.76), "level":1},
 	"cargo_port": {"name":"Cargo Port", "category":"service", "service_group":"trade", "trade_role":"ship", "cost":45000, "size":Vector2i(4,3), "population":0, "population_required":20000, "build_time":12.0, "color":Color(0.25,0.55,0.67), "level":1},
 	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5}
+}
+
+# Exact Mshin-only material bills for distinctive infrastructure tiers. These
+# values are game-balance data, not SimCity BuildIt/EA recipes. Any type not in
+# this table still receives a deterministic footprint/build-time/unlock BOM.
+const CONSTRUCTION_BOM_TYPE_PROFILES := {
+	"power_wind": {"nails": 2, "metal": 1},
+	"power_coal": {"nails": 3, "metal": 2, "planks": 1},
+	"power_wind_deluxe": {"nails": 4, "metal": 3, "planks": 2},
+	"power_solar": {"nails": 5, "metal": 4, "planks": 2, "bricks": 1, "glass": 1},
+	"power_oil": {"nails": 5, "metal": 5, "planks": 2, "bricks": 2},
+	"power_nuclear": {"nails": 8, "metal": 7, "planks": 3, "bricks": 3, "cement": 3, "glass": 2},
+	"water_tower": {"nails": 2, "metal": 1},
+	"water_pump": {"nails": 3, "metal": 2, "planks": 1},
+	"fire_station_small": {"nails": 2, "metal": 1, "planks": 1},
+	"fire_station": {"nails": 3, "metal": 2, "planks": 1},
+	"fire_station_deluxe": {"nails": 5, "metal": 4, "planks": 2},
+	"police_station": {"nails": 3, "metal": 2, "planks": 1},
+	"police_small": {"nails": 2, "metal": 1, "planks": 1},
+	"police_basic": {"nails": 3, "metal": 2, "planks": 1},
+	"police_precinct": {"nails": 6, "metal": 4, "planks": 2},
+	"clinic_small": {"nails": 3, "metal": 2, "planks": 1, "bricks": 1, "glass": 1},
+	"clinic": {"nails": 4, "metal": 3, "planks": 2, "bricks": 1, "cement": 1, "glass": 2},
+	"hospital": {"nails": 8, "metal": 6, "planks": 3, "bricks": 3, "cement": 3, "glass": 3},
+	"sewage_small": {"nails": 2, "metal": 2, "planks": 1},
+	"sewage_basic": {"nails": 4, "metal": 3, "planks": 2},
+	"sewage_deluxe": {"nails": 6, "metal": 5, "planks": 2, "bricks": 2, "cement": 2, "glass": 1},
+	"waste_dump_small": {"nails": 3, "metal": 2, "planks": 1, "bricks": 1},
+	"waste_dump": {"nails": 4, "metal": 3, "planks": 2, "bricks": 2, "cement": 1},
+	"waste_incinerator": {"nails": 5, "metal": 5, "planks": 2, "bricks": 2, "cement": 2},
+	"waste_recycling": {"nails": 7, "metal": 6, "planks": 3, "bricks": 3, "cement": 3, "glass": 2},
+	"park_small": {"nails": 1, "wood": 2}
 }
 
 var is_moving: bool = false
