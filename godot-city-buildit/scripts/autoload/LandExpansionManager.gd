@@ -136,7 +136,7 @@ func get_tile_error(tile: Vector2i) -> String:
 		var missing: Array[String] = []
 		for item_id in EXPANSION_ITEM_IDS:
 			var needed := int(cost[item_id])
-			var have := StorageManager.get_count(item_id)
+			var have := StorageManager.get_available_count(item_id)
 			if have < needed:
 				var item_definition: Dictionary = StorageManager.item_definitions.get(item_id, {})
 				missing.append("%s %d/%d" % [str(item_definition.get("name", item_id)), have, needed])
