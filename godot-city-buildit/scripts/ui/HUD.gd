@@ -2599,8 +2599,13 @@ func _can_accept_production_drop(_at_position: Vector2, data: Variant, building:
 		return false
 	var item_id := str(data.get("item_id", ""))
 	if component.is_factory:
-		return ProductionManager.get_factory_material_ids(str(component.factory_type)).has(item_id)
-	return not ProductionManager.get_recipe(item_id).is_empty() and str(ProductionManager.get_recipe(item_id).get("store", "")) == str(component.shop_id)
+		if not ProductionManager.get_factory_material_ids(str(component.factory_type)).has(item_id) or not ProductionManager.raw_materials.has(item_id):
+			return false
+		return int(ProductionManager.raw_materials[item_id].get("level", 1)) <= GameManager.level
+	var recipe: Dictionary = ProductionManager.get_recipe(item_id)
+	if recipe.is_empty() or str(recipe.get("store", "")) != str(component.shop_id):
+		return false
+	return ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level).is_empty() and ProductionManager.are_recipe_inputs_unlocked(recipe)
 
 
 func _accept_production_drop(_at_position: Vector2, data: Variant, building: Building, slot_index: int) -> void:
