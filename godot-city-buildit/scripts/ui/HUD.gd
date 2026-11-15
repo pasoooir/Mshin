@@ -3,6 +3,7 @@ extends CanvasLayer
 const Icons = preload("res://scripts/ui/Icons.gd")
 const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 const LandExpansionPanelScript = preload("res://scripts/ui/LandExpansionPanel.gd")
+const CurrencyPanelsScript = preload("res://scripts/ui/CurrencyPanels.gd")
 
 const STORAGE_CAPACITY_UPGRADE_COST := 500
 const STORAGE_CAPACITY_UPGRADE_GAIN := 10
@@ -105,6 +106,7 @@ var _epic_panel_building: Building = null
 var simoleons_label: Label
 var simcash_label: Label
 var keys_label: Label
+var currency_panels: Control
 var _last_simcash_value := -1
 var _ui_scale := 1.0
 var _level_up_queue: Array[Dictionary] = []
@@ -148,6 +150,7 @@ func _ready() -> void:
 	GameManager.xp_changed.connect(_on_xp_changed)
 	GameManager.level_up_rewarded.connect(_on_level_up_rewarded)
 	EconomyManager.simoleons_changed.connect(_on_simoleons_changed)
+	EconomyManager.sim_cash_changed.connect(_on_sim_cash_changed)
 	EconomyManager.keys_changed.connect(_on_keys_changed)
 	StorageManager.storage_changed.connect(_on_storage_changed)
 	CityDemandManager.city_needs_changed.connect(_on_city_needs_changed)
@@ -431,6 +434,9 @@ func _build_top_hud() -> void:
 	simcash_label = _add_currency_bar(right_stack, "money", str(EconomyManager.sim_cash), Color("#B8E89B"), "SimCash", true, 184)
 	keys_label = _add_currency_bar(right_stack, "golden_key", str(EconomyManager.golden_keys), Color("#FFC247"), "Golden Keys", false, 184)
 
+	currency_panels = CurrencyPanelsScript.new()
+	currency_panels.name = "CurrencyPanels"
+	top_hud.add_child(currency_panels)
 	_build_context_header(top_hud)
 
 func _build_context_header(parent: Control) -> void:
@@ -1785,7 +1791,21 @@ func _format_count(value: int) -> String:
 	return str(value)
 
 func _on_currency_plus_pressed(currency: String) -> void:
-	status_label.text = currency + " purchases are not available yet."
+	if not is_instance_valid(currency_panels):
+		push_error("[HUD] Currency popup controller is missing.")
+		return
+	match currency.to_lower():
+		"simoleons":
+			currency_panels.open_conversion()
+		"simcash", "money":
+			currency_panels.open_store()
+		_:
+			push_warning("[HUD] Unknown currency plus action: " + currency)
+
+func _on_sim_cash_changed(amount: int) -> void:
+	if simcash_label:
+		simcash_label.text = str(amount)
+		_last_simcash_value = amount
 
 
 func _build_placement_controls() -> void:
