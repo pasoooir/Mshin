@@ -6,6 +6,7 @@ func _ready() -> void:
 	var original_simoleons := EconomyManager.simoleons
 	var original_keys := EconomyManager.golden_keys
 	var original_ledger := PaymentManager.to_save_dict()
+	var original_economy_ledger := EconomyManager.to_save_dict()
 	var original_storage := StorageManager.to_save_dict()
 	var original_trade := TradeManager.to_save_dict()
 	var original_land := LandExpansionManager.to_save_dict()
@@ -52,7 +53,67 @@ func _ready() -> void:
 	if TradeManager.is_trade_eligible_item("electrical"):
 		failures.append("locked raw material was trade-eligible before its unlock level")
 	trade_hq.queue_free()
+
+	# Full Trade Depot lifecycle: reserve on listing, block unsafe cancellation
+	# when the warehouse has no room, return goods on cancel, and pay once on collect.
+	GameManager.population = 8000
+	var depot := load("res://scenes/buildings/Building.tscn").instantiate()
+	depot.building_type = "trade_depot"
+	depot.status = "completed"
+	add_child(depot)
+	BuildManager.buildings["currency_smoke_trade_depot"] = depot
+	TradeManager.sell_slots.clear()
+	StorageManager.from_save_dict({"capacity": 3, "items": {"metal": 2}})
+	var listing_inventory_before := StorageManager.get_all_items()
+	if not TradeManager.list_for_sale("metal", 2):
+		failures.append("Trade Depot rejected a valid listing despite sufficient inventory and an operational depot")
+	if StorageManager.get_count("metal") != 0 or TradeManager.sell_slots.size() != 1:
+		failures.append("Trade Depot listing did not reserve the exact quantity from City Storage")
+	var listing_inventory_after := StorageManager.get_all_items()
+	if listing_inventory_before.get("metal", 0) != 2 or listing_inventory_after.get("metal", 0) != 0:
+		failures.append("Trade Depot reservation inventory before/after snapshot is incorrect")
+	StorageManager.add_item("wood", 3)
+	var full_inventory_before_cancel := StorageManager.get_all_items()
+	var listing_count_before_cancel := TradeManager.sell_slots.size()
+	if TradeManager.cancel_sale_listing(0):
+		failures.append("Trade Depot allowed cancellation while the warehouse had no capacity for the reserved goods")
+	if StorageManager.get_all_items() != full_inventory_before_cancel or TradeManager.sell_slots.size() != listing_count_before_cancel:
+		failures.append("failed full-warehouse cancellation mutated inventory or removed the listing")
+	StorageManager.remove_item("wood", 1)
+	var cancel_inventory_before := StorageManager.get_all_items()
+	if not TradeManager.cancel_sale_listing(0):
+		failures.append("Trade Depot could not cancel a listing after enough warehouse capacity was freed")
+	if StorageManager.get_count("metal") != 2 or not TradeManager.sell_slots.is_empty():
+		failures.append("successful Trade Depot cancellation did not return all reserved goods and remove the listing")
+	var cancel_audit := EconomyManager.get_recent_transactions(1)
+	if cancel_audit.is_empty() or str(cancel_audit[0].get("type", "")) != "trade_listing_cancelled" or cancel_audit[0].get("inventory_before", {}) != cancel_inventory_before or cancel_audit[0].get("inventory_after", {}).get("metal", 0) != 2:
+		failures.append("Trade Depot cancellation ledger is missing correct before/after inventory snapshots")
+
+	StorageManager.from_save_dict({"capacity": 3, "items": {"metal": 1}})
+	var sale_balance_before := EconomyManager.simoleons
+	if not TradeManager.list_for_sale("metal", 1):
+		failures.append("Trade Depot could not create the sale collection test listing")
+	else:
+		var sale_listing: Dictionary = TradeManager.sell_slots[0]
+		sale_listing["ready"] = true
+		TradeManager.sell_slots[0] = sale_listing
+		if not TradeManager.collect_sale(0):
+			failures.append("Trade Depot failed to collect a ready sale")
+		if EconomyManager.simoleons != sale_balance_before + ProductionManager.get_item_value("metal"):
+			failures.append("Trade Depot sale did not credit the exact configured sale value once")
+		if not TradeManager.sell_slots.is_empty():
+			failures.append("collected Trade Depot listing was not removed")
+	var sale_audit := EconomyManager.get_recent_transactions(1)
+	if sale_audit.is_empty() or str(sale_audit[0].get("type", "")) != "trade_sale_collected" or int(sale_audit[0].get("balance_after", -1)) != EconomyManager.simoleons:
+		failures.append("Trade Depot sale ledger is missing the balance after collection")
+	var economy_ledger_snapshot := EconomyManager.to_save_dict()
+	EconomyManager.transaction_ledger.clear()
+	EconomyManager.from_save_dict(economy_ledger_snapshot)
+	if EconomyManager.get_recent_transactions(10).is_empty():
+		failures.append("economy transaction ledger did not survive save-data round trip")
+	depot.queue_free()
 	BuildManager.buildings = original_buildings
+	TradeManager.from_save_dict(original_trade)
 	GameManager.population = original_population
 	TradeManager.from_save_dict(original_trade)
 	EconomyManager.simoleons = 6000
@@ -76,6 +137,17 @@ func _ready() -> void:
 	for storage_item_id in StorageManager.STORAGE_ITEM_IDS:
 		if StorageManager.get_count(str(storage_item_id)) != 0:
 			failures.append("City Storage upgrade did not consume " + str(storage_item_id))
+	# Regression-test the community-published capacity thresholds; values
+	# are quantities required of EACH of the three storage parts.
+	var expected_storage_requirements := {
+		40: 1, 50: 1, 55: 2, 70: 3, 85: 4, 105: 5, 205: 10,
+		230: 11, 455: 20, 495: 21, 520: 22, 545: 23, 570: 24, 585: 25, 995: 25
+	}
+	for capacity_key in expected_storage_requirements:
+		StorageManager.capacity = int(capacity_key)
+		if StorageManager.get_next_storage_upgrade_requirement() != int(expected_storage_requirements[capacity_key]):
+			failures.append("City Storage community threshold mismatch at capacity %d" % int(capacity_key))
+	StorageManager.capacity = capacity_before + 5
 	var no_parts_upgrade := StorageManager.upgrade_storage_with_items()
 	if bool(no_parts_upgrade.get("success", true)) or StorageManager.capacity != capacity_before + 5:
 		failures.append("City Storage upgraded without the full three-item requirement")
@@ -222,6 +294,7 @@ func _ready() -> void:
 	EconomyManager.simoleons = original_simoleons
 	EconomyManager.golden_keys = original_keys
 	PaymentManager.from_save_dict(original_ledger)
+	EconomyManager.from_save_dict(original_economy_ledger)
 	if not failures.is_empty():
 		for failure in failures:
 			push_error("[CurrencyEconomySmoke] " + failure)
