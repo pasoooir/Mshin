@@ -155,6 +155,7 @@ func upgrade_storage_with_items() -> Dictionary:
 	if capacity >= STORAGE_MAX_CAPACITY:
 		return {"success": false, "reason": "storage_capacity_maximum"}
 	var required := get_next_storage_upgrade_requirement()
+	var inventory_before := get_all_items()
 	var requirements: Dictionary = {}
 	for item_id in STORAGE_ITEM_IDS:
 		requirements[item_id] = required
@@ -164,6 +165,7 @@ func upgrade_storage_with_items() -> Dictionary:
 		return {"success": false, "reason": "storage_item_transaction_failed"}
 	capacity = mini(STORAGE_MAX_CAPACITY, capacity + STORAGE_UPGRADE_GAIN)
 	storage_upgrades_completed += 1
+	EconomyManager.record_transaction("storage_capacity_upgrade", "items", required * STORAGE_ITEM_IDS.size(), EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, get_all_items(), {"source": "city_storage", "required_each": required, "capacity_before": capacity - STORAGE_UPGRADE_GAIN, "capacity_after": capacity})
 	capacity_changed.emit(capacity)
 	storage_changed.emit()
 	return {"success": true, "capacity": capacity, "items_consumed_each": required}
