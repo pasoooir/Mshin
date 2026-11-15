@@ -1709,6 +1709,7 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
 	var saved_population := GameManager.population
+	var saved_population := GameManager.population
 	BuildManager.buildings.clear()
 	GameManager.level = 20
 	GameManager.population = 100
@@ -1860,6 +1861,7 @@ func _test_sewage_service_happiness() -> void:
 		home.free()
 	BuildManager.buildings = saved_buildings
 	GameManager.level = saved_level
+	GameManager.population = saved_population
 	ServiceManager.recalculate_from_buildings()
 
 func _test_power_water_coverage_preview() -> void:
