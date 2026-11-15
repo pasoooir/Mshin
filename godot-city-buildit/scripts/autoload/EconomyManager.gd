@@ -54,7 +54,8 @@ func convert_sim_cash_to_simoleons(simcash_amount: int) -> Dictionary:
 	transaction_completed.emit("simoleons_conversion_gain", granted)
 	return {"success": true, "simcash_spent": simcash_amount, "simoleons_granted": granted}
 func can_afford(amount: int) -> bool:
-	return amount > 0 and simoleons >= amount
+	# Zero-cost bootstrap buildings (e.g. the first small factory) remain affordable.
+	return simoleons >= amount
 func add_keys(amount: int) -> void:
 	if amount <= 0: return
 	golden_keys += amount
