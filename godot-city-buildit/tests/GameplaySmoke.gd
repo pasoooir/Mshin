@@ -3822,6 +3822,62 @@ func _run_gameplay_test() -> void:
 		_check(false, "Touch drag fixture must find both the Metal product tile and the first production queue tile.")
 	_check(not factory_component.get_slot(0).is_empty(), "A simulated Android touch drag from Metal to queue slot zero must start that exact production slot.")
 	_check(not production_hud._production_drag_gestures.has(2), "A completed touch drag must release its pointer tracking state.")
+
+	# World-space notification decisions must correspond to actual pending
+	# player actions, not merely timers or unavailable/locked systems.
+	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
+	var saved_population := GameManager.population
+	var saved_sell_slots: Array[Dictionary] = TradeManager.sell_slots.duplicate(true)
+	var saved_orders: Array[Dictionary] = TradeManager.current_orders.duplicate(true)
+	var saved_ship_crates: Array[Dictionary] = TradeManager.ship_crates.duplicate(true)
+	var saved_ship_departed := TradeManager.ship_departed
+	var saved_epic_project: Dictionary = EpicProjectManager.active_project.duplicate(true)
+	var saved_epic_buildings: Dictionary = EpicProjectManager.epic_buildings.duplicate(true)
+	var original_metal := StorageManager.get_count("metal")
+	var added_metal := 0
+	if original_metal < 1 and StorageManager.get_free() > 0 and StorageManager.add_item("metal", 1):
+		added_metal = 1
+	var action_probe := Building.new()
+	action_probe.building_id = "notification-probe"
+	action_probe.status = "completed"
+	BuildManager.buildings[action_probe.building_id] = action_probe
+	GameManager.population = maxi(GameManager.population, 20000)
+
+	TradeManager.sell_slots.clear()
+	TradeManager.sell_slots.append({"ready": true, "item_id": "metal", "amount": 1, "price": 1})
+	action_probe.building_type = "trade_depot"
+	_check(production_hud._get_building_action_notification_text(action_probe) == "💰", "A Trade Depot with a ready sale must show a Collect notification.")
+
+	TradeManager.current_orders.clear()
+	TradeManager.current_orders.append({"order_id": "notification-order", "item_id": "metal", "amount": 1, "reward": 1, "completed": false})
+	action_probe.building_type = "global_trade_hq"
+	_check(production_hud._get_building_action_notification_text(action_probe) == "📬" if StorageManager.get_count("metal") >= 1 else true, "A fulfilable global delivery order must show a notification.")
+
+	TradeManager.ship_crates.clear()
+	TradeManager.ship_crates.append({"item_id": "metal", "amount": 1, "delivered": false})
+	TradeManager.ship_departed = false
+	action_probe.building_type = "cargo_port"
+	_check(production_hud._get_building_action_notification_text(action_probe) == "🚢" if StorageManager.get_count("metal") >= 1 else true, "A deliverable cargo-ship crate must show a notification.")
+
+	EpicProjectManager.active_project = {"building_id": action_probe.building_id, "finished": true, "tier": "gold"}
+	action_probe.building_type = "residential"
+	_check(production_hud._get_building_action_notification_text(action_probe) == "🏆", "A finished Epic Project must show its claim notification on the target home.")
+	EpicProjectManager.active_project.clear()
+	EpicProjectManager.epic_buildings[action_probe.building_id] = {"tier": "bronze", "next_token_part_unix": 0}
+	_check(production_hud._get_building_action_notification_text(action_probe) == "🧩", "An Epic Building with a due token part must show a collect notification.")
+	EpicProjectManager.epic_buildings.erase(action_probe.building_id)
+
+	BuildManager.buildings = saved_buildings
+	GameManager.population = saved_population
+	TradeManager.sell_slots = saved_sell_slots
+	TradeManager.current_orders = saved_orders
+	TradeManager.ship_crates = saved_ship_crates
+	TradeManager.ship_departed = saved_ship_departed
+	EpicProjectManager.active_project = saved_epic_project
+	EpicProjectManager.epic_buildings = saved_epic_buildings
+	if added_metal > 0:
+		StorageManager.remove_items({"metal": added_metal})
+	action_probe.free()
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
