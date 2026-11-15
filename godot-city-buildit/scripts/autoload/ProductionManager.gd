@@ -168,6 +168,194 @@ func _ready() -> void:
 	for validation_error in _recipe_validation_report.get("errors", []):
 		push_warning("[ProductionManager] Invalid recipe catalog: " + str(validation_error))
 
+var production_chain_orders: Array[Dictionary] = []
+var _next_chain_sequence: int = 1
+signal production_chain_changed(chain_id: String)
+
+func _process(_delta: float) -> void:
+	_pump_production_chains()
+
+func request_production_chain(item_id: String, amount: int = 1) -> String:
+	if amount <= 0 or amount > 50:
+		return ""
+	if raw_materials.has(item_id):
+		if int(raw_materials[item_id].get("level", 1)) > GameManager.level:
+			return ""
+	elif crafted_items.has(item_id):
+		if not get_recipe_lock_reason(item_id).is_empty():
+			return ""
+	else:
+		return ""
+	var chain_id := "chain_%d" % _next_chain_sequence
+	_next_chain_sequence += 1
+	production_chain_orders.append({
+		"id": chain_id,
+		"item_id": item_id,
+		"requested": amount,
+		"completed": 0,
+		"created_unix": int(Time.get_unix_time_from_system()),
+		"status": "waiting",
+		"last_error": ""
+	})
+	production_chain_changed.emit(chain_id)
+	_pump_production_chains()
+	if has_node("/root/SaveManager") and not SaveManager.is_loading:
+		SaveManager.save_game()
+	return chain_id
+
+func get_production_chain_status(chain_id: String) -> Dictionary:
+	for order in production_chain_orders:
+		if str(order.get("id", "")) == chain_id:
+			var result := order.duplicate(true)
+			result["in_flight"] = _get_chain_inflight_count(str(order.get("item_id", "")), chain_id, true)
+			return result
+	return {}
+
+func to_save_dict() -> Dictionary:
+	return {
+		"next_chain_sequence": _next_chain_sequence,
+		"orders": production_chain_orders.duplicate(true)
+	}
+
+func from_save_dict(data: Dictionary) -> void:
+	_next_chain_sequence = maxi(1, int(data.get("next_chain_sequence", 1)))
+	production_chain_orders.clear()
+	var saved_orders: Variant = data.get("orders", [])
+	if saved_orders is Array:
+		for entry in saved_orders:
+			if not entry is Dictionary:
+				continue
+			var item_id := str(entry.get("item_id", ""))
+			var requested := int(entry.get("requested", 0))
+			var completed := int(entry.get("completed", 0))
+			if (not raw_materials.has(item_id) and not crafted_items.has(item_id)) or requested <= 0 or requested > 50:
+				continue
+			var restored := entry.duplicate(true)
+			restored["completed"] = clampi(completed, 0, requested)
+			restored["status"] = "waiting" if completed < requested else "complete"
+			production_chain_orders.append(restored)
+	_pump_production_chains()
+
+func notify_chain_output_collected(chain_id: String, item_id: String) -> void:
+	for index in range(production_chain_orders.size()):
+		var order: Dictionary = production_chain_orders[index]
+		if str(order.get("id", "")) != chain_id or str(order.get("item_id", "")) != item_id:
+			continue
+		order["completed"] = mini(int(order.get("requested", 0)), int(order.get("completed", 0)) + 1)
+		order["status"] = "complete" if int(order["completed"]) >= int(order.get("requested", 0)) else "running"
+		order["last_error"] = ""
+		production_chain_orders[index] = order
+		production_chain_changed.emit(chain_id)
+		if has_node("/root/SaveManager") and not SaveManager.is_loading:
+			SaveManager.save_game()
+		return
+
+func _pump_production_chains() -> void:
+	if not is_inside_tree() or production_chain_orders.is_empty():
+		return
+	for index in range(production_chain_orders.size()):
+		var order: Dictionary = production_chain_orders[index]
+		var chain_id := str(order.get("id", ""))
+		var item_id := str(order.get("item_id", ""))
+		var requested := int(order.get("requested", 0))
+		var completed := int(order.get("completed", 0))
+		if completed >= requested:
+			order["status"] = "complete"
+			production_chain_orders[index] = order
+			continue
+		var in_flight := _get_chain_inflight_count(item_id, chain_id, true)
+		var remaining := maxi(0, requested - completed - in_flight)
+		var scheduled := true
+		if remaining > 0:
+			scheduled = _schedule_chain_item(item_id, remaining, chain_id, true, {})
+		order["status"] = "running" if scheduled or in_flight > 0 else "waiting"
+		if not scheduled and str(order.get("last_error", "")).is_empty():
+			order["last_error"] = "Waiting for an operational supplier, free production slot, materials or warehouse capacity."
+		elif scheduled:
+			order["last_error"] = ""
+		production_chain_orders[index] = order
+
+func _get_chain_inflight_count(item_id: String, chain_id: String, root_only: bool = false) -> int:
+	if not is_inside_tree():
+		return 0
+	var total := 0
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		for slot in component.slots:
+			if slot.is_empty() or not bool(slot.get("auto_collect", false)):
+				continue
+			if str(slot.get("chain_id", "")) != chain_id or str(slot.get("item_id", "")) != item_id:
+				continue
+			if root_only and not bool(slot.get("chain_output", false)):
+				continue
+			total += 1
+	return total
+
+func _schedule_chain_item(item_id: String, amount: int, chain_id: String, chain_output: bool, ancestry: Dictionary) -> bool:
+	if amount <= 0:
+		return true
+	if ancestry.has(item_id):
+		return false
+	var available := StorageManager.get_count(item_id) if not chain_output else 0
+	var in_flight := _get_chain_inflight_count(item_id, chain_id, chain_output)
+	var pending := maxi(0, amount - available - in_flight)
+	if pending <= 0:
+		return true
+	if raw_materials.has(item_id):
+		if int(raw_materials[item_id].get("level", 1)) > GameManager.level:
+			return false
+		for component in get_tree().get_nodes_in_group("production_components"):
+			if not is_instance_valid(component) or not component is ProductionComponent or not component.is_factory:
+				continue
+			if not get_factory_material_ids(str(component.factory_type)).has(item_id) or not component._owner_has_road_access():
+				continue
+			for slot_index in range(component.get_slot_count()):
+				if pending <= 0:
+					break
+				if component.get_slot(slot_index).is_empty() and component.start_factory(item_id, slot_index, chain_id, chain_output):
+					pending -= 1
+		return pending <= 0
+
+	if not crafted_items.has(item_id):
+		return false
+	var recipe := get_recipe(item_id)
+	if recipe.is_empty() or not are_recipe_inputs_unlocked(recipe):
+		return false
+	var next_ancestry := ancestry.duplicate(true)
+	next_ancestry[item_id] = true
+	var requirements: Dictionary = recipe.get("inputs", {})
+	for input_id in requirements:
+		var input_key := str(input_id)
+		var required_total := int(requirements[input_id]) * pending
+		var input_available := StorageManager.get_count(input_key)
+		var input_in_flight := _get_chain_inflight_count(input_key, chain_id, false)
+		var input_missing := maxi(0, required_total - input_available - input_in_flight)
+		if input_missing > 0 and not _schedule_chain_item(input_key, input_missing, chain_id, false, next_ancestry):
+			# Continue through other inputs so independent dependency branches can
+			# start in parallel even when one supplier is temporarily unavailable.
+			pass
+
+	var supplier_found := false
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent or component.is_factory:
+			continue
+		if str(component.shop_id) != str(recipe.get("store", "")) or not component._owner_has_road_access():
+			continue
+		if not get_recipe_lock_reason(item_id, component.store_star_level).is_empty():
+			continue
+		supplier_found = true
+		for slot_index in range(component.get_slot_count()):
+			if pending <= 0:
+				break
+			if not component.get_slot(slot_index).is_empty() or not StorageManager.has_items(requirements):
+				continue
+			if component.start_craft(item_id, slot_index, chain_id, chain_output):
+				pending -= 1
+	if not supplier_found:
+		return false
+	return pending <= 0
+
 func get_recipe_validation_report() -> Dictionary:
 	# Validate the complete enabled recipe graph before any item can enter a
 	# production queue. This is structural validation, not a claim that
