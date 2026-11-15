@@ -1758,6 +1758,26 @@ func _test_power_water_gateway_access() -> void:
 	water_plant.global_position = Vector3.ZERO
 	BuildManager.buildings[water_plant.building_id] = water_plant
 
+	var sewage_plant := FireHazardTestBuilding.new()
+	add_child(sewage_plant)
+	sewage_plant.building_id = "utility_test_sewage"
+	sewage_plant.building_type = "sewage_deluxe"
+	sewage_plant.definition = BuildManager.building_types["sewage_deluxe"]
+	sewage_plant.status = "completed"
+	sewage_plant.grid_pos = Vector2i(35, 35)
+	sewage_plant.global_position = Vector3.ZERO
+	BuildManager.buildings[sewage_plant.building_id] = sewage_plant
+
+	var waste_plant := FireHazardTestBuilding.new()
+	add_child(waste_plant)
+	waste_plant.building_id = "utility_test_waste"
+	waste_plant.building_type = "waste_recycling"
+	waste_plant.definition = BuildManager.building_types["waste_recycling"]
+	waste_plant.status = "completed"
+	waste_plant.grid_pos = Vector2i(35, 35)
+	waste_plant.global_position = Vector3.ZERO
+	BuildManager.buildings[waste_plant.building_id] = waste_plant
+
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.total_power == 0 and ServiceManager.total_water == 0, "Disconnected power and water facilities must not contribute operational city capacity.")
 	_check(not ServiceManager.power_served_ids.has(connected_home.building_id) and not ServiceManager.water_served_ids.has(connected_home.building_id), "Nearby disconnected utilities must not serve a connected home.")
@@ -1770,6 +1790,8 @@ func _test_power_water_gateway_access() -> void:
 
 	power_plant.grid_pos = Vector2i(1, -2)
 	water_plant.grid_pos = Vector2i(1, -2)
+	sewage_plant.grid_pos = Vector2i(1, -2)
+	waste_plant.grid_pos = Vector2i(1, -2)
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.total_power == int(BuildManager.building_types["power_wind"].get("power", 0)), "A Gateway-connected power plant must contribute its catalog capacity.")
 	_check(ServiceManager.total_water == int(BuildManager.building_types["water_tower"].get("water", 0)), "A Gateway-connected water facility must contribute its catalog capacity.")
@@ -1797,6 +1819,9 @@ func _test_power_water_gateway_access() -> void:
 	BuildManager.buildings[industrial_consumer.building_id] = industrial_consumer
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.demand_power >= 4 and ServiceManager.demand_water >= 3, "City utility demand must include household, commercial and industrial production consumers.")
+	_check(ServiceManager.demand_sewage == 4 and ServiceManager.demand_waste == 4, "Sewage and waste demand must include connected commercial and industrial operations in addition to homes.")
+	_check(ServiceManager.sewage_served_ids.has(commercial_consumer.building_id) and ServiceManager.waste_served_ids.has(commercial_consumer.building_id), "Commercial operations must receive sewage and waste capacity when the city has available capacity.")
+	_check(ServiceManager.sewage_served_ids.has(industrial_consumer.building_id) and ServiceManager.waste_served_ids.has(industrial_consumer.building_id), "Industrial operations must receive sewage and waste capacity when the city has available capacity.")
 	_check(ServiceManager.power_served_ids.has(commercial_consumer.building_id) and ServiceManager.water_served_ids.has(commercial_consumer.building_id), "A connected commercial producer must receive both power and water when local capacity is available.")
 	_check(ServiceManager.power_served_ids.has(industrial_consumer.building_id) and ServiceManager.water_served_ids.has(industrial_consumer.building_id), "A connected industrial producer must receive its higher catalog-profile power demand and water.")
 	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Connected and utility-served commercial and industrial producers must be operational.")
@@ -1819,12 +1844,23 @@ func _test_power_water_gateway_access() -> void:
 	power_plant.status = "completed"
 	ServiceManager.recalculate_from_buildings()
 	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring connected power must reactivate commercial and industrial producers.")
+	sewage_plant.status = "constructing"
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.sewage_served_ids.has(commercial_consumer.building_id) and not BuildManager.is_building_operational(commercial_consumer), "Commercial production must stop when sewage treatment capacity is lost.")
+	sewage_plant.status = "completed"
+	ServiceManager.recalculate_from_buildings()
+	waste_plant.status = "constructing"
+	ServiceManager.recalculate_from_buildings()
+	_check(not ServiceManager.waste_served_ids.has(industrial_consumer.building_id) and not BuildManager.is_building_operational(industrial_consumer), "Industrial production must stop when waste processing capacity is lost.")
+	waste_plant.status = "completed"
+	ServiceManager.recalculate_from_buildings()
+	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring sewage and waste capacity must reactivate production.")
 	for consumer in [commercial_consumer, industrial_consumer]:
 		BuildManager.buildings.erase(consumer.building_id)
 		remove_child(consumer)
 		consumer.free()
 
-	for test_building in [power_plant, water_plant, connected_home, disconnected_home]:
+	for test_building in [power_plant, water_plant, sewage_plant, waste_plant, connected_home, disconnected_home]:
 		BuildManager.buildings.erase(test_building.building_id)
 		remove_child(test_building)
 		test_building.free()
