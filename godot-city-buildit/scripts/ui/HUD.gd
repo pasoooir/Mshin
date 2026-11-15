@@ -140,6 +140,7 @@ var _production_touch_dragged := false
 var _production_touch_drag_origin := Vector2.ZERO
 var _production_touch_drag_item_id := ""
 var _production_touch_drag_building: Building = null
+var _production_touch_drag_source_button: Button = null
 var _production_touch_drag_ghost: Control = null
 var _production_tick_accum := 0.0
 var _factory_ready_scan_accum := 0.0
@@ -2712,29 +2713,40 @@ func _on_production_item_pressed(building: Building, item_id: String, slot_index
 
 
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			_production_touch_drag_active = true
-			_production_touch_dragged = false
-			_production_touch_drag_origin = event.position
-			_production_touch_drag_item_id = item_id
-			_production_touch_drag_building = building
-			_touch_selected_production_item = item_id
-			_touch_selected_production_building_id = building.get_instance_id()
-			item_button.set_meta("touch_drag_consumed", false)
-		elif _production_touch_drag_active and _production_touch_drag_building == building:
-			if _production_touch_dragged:
-				_finish_production_touch_drag(event.position)
-				item_button.set_meta("touch_drag_consumed", true)
-			_clear_production_touch_drag()
-			get_viewport().set_input_as_handled()
-	elif event is InputEventScreenDrag and _production_touch_drag_active and _production_touch_drag_building == building:
+	if not (event is InputEventScreenTouch) or not event.pressed:
+		return
+	_production_touch_drag_active = true
+	_production_touch_dragged = false
+	_production_touch_drag_origin = event.position
+	_production_touch_drag_item_id = item_id
+	_production_touch_drag_building = building
+	_production_touch_drag_source_button = item_button
+	_touch_selected_production_item = item_id
+	_touch_selected_production_building_id = building.get_instance_id()
+	item_button.set_meta("touch_drag_consumed", false)
+
+
+# Capture the pointer globally after a touch starts on a product tile. This is
+# essential: once the finger leaves the hexagon, its GUI control no longer owns
+# the pointer, but the drag must continue all the way to the bottom queue dock.
+func _input(event: InputEvent) -> void:
+	if not _production_touch_drag_active:
+		return
+	if event is InputEventScreenDrag:
 		if not _production_touch_dragged and _production_touch_drag_origin.distance_to(event.position) >= 12.0 * _ui_scale:
 			_production_touch_dragged = true
-			_create_production_touch_drag_ghost(building, item_id)
+			if is_instance_valid(_production_touch_drag_building):
+				_create_production_touch_drag_ghost(_production_touch_drag_building, _production_touch_drag_item_id)
 		if _production_touch_dragged:
 			_update_production_touch_drag_ghost(event.position)
 			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch and not event.pressed:
+		if _production_touch_dragged:
+			_finish_production_touch_drag(event.position)
+			if is_instance_valid(_production_touch_drag_source_button):
+				_production_touch_drag_source_button.set_meta("touch_drag_consumed", true)
+			get_viewport().set_input_as_handled()
+		_clear_production_touch_drag()
 
 
 func _create_production_touch_drag_ghost(building: Building, item_id: String) -> void:
@@ -2809,6 +2821,7 @@ func _clear_production_touch_drag() -> void:
 	_production_touch_dragged = false
 	_production_touch_drag_item_id = ""
 	_production_touch_drag_building = null
+	_production_touch_drag_source_button = null
 	_touch_selected_production_item = ""
 	_touch_selected_production_building_id = 0
 	if is_instance_valid(_production_touch_drag_ghost):
