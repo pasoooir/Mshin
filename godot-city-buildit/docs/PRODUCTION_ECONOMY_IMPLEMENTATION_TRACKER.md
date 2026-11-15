@@ -355,3 +355,16 @@ PR #513 merged to main as `7bdfd777d22ff0f2eb415d713718801117ed395b`. Golden Key
 - [ ] CI and physical Android touch acceptance for this branch.
 
 No recipe, production duration, expansion price, or item provenance was added or inferred by this UI change.
+
+ 
+---
+
+## SimCity-style production interaction — compact radial UI phase
+
+- [x] Full-screen white modal replaced by compact bottom dock.
+- [x] Product catalogue moved to a floating orbit around the selected building's projected screen position.
+- [x] Compact queue cards preserve per-slot timer, ready and Collect states.
+- [x] Touch fallback: select product then tap an empty queue slot; native drag forwarding remains enabled.
+- [ ] Mobile visual spacing and physical Android touch acceptance.
+- [ ] City-wide actionable notifications for construction/upgrade/other activities where a real player action is pending.
+- [ ] Post-change GameplaySmoke, storage-full, save/load, web and Chromium CI.
