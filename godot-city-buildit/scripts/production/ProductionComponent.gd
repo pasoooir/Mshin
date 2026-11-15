@@ -266,6 +266,8 @@ func collect(slot_index: int) -> bool:
 	ProductionManager.item_produced.emit(item_id, 1)
 	if chain_output and not chain_id.is_empty():
 		ProductionManager.notify_chain_output_collected(chain_id, item_id)
+	elif not chain_id.is_empty() and has_node("/root/SaveManager") and not SaveManager.is_loading:
+		SaveManager.save_game()
 	GameManager.add_experience(2)
 	return true
 
