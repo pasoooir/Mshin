@@ -59,7 +59,17 @@ func _ready() -> void:
 	var pebble_batch: MultiMeshInstance3D = presentation._create_shoreline_pebble_multimesh()
 	if pebble_batch.multimesh == null or pebble_batch.multimesh.instance_count != 38:
 		push_error("[VisualPresentationSmoke] Shoreline pebbles must be batched into exactly 38 instances")
+		var warm_fill_light: DirectionalLight3D = presentation._create_warm_fill_light()
+	if warm_fill_light.shadow_enabled or not is_equal_approx(warm_fill_light.light_energy, 0.34):
+		push_error("[VisualPresentationSmoke] Warm secondary sunlight must remain a non-shadowing fill light; the main scene key light is the only shadow source")
+		warm_fill_light.free()
 		pebble_batch.free()
+		tree_batch.free()
+		presentation.free()
+		get_tree().quit(1)
+		return
+	warm_fill_light.free()
+	pebble_batch.free()
 		tree_batch.free()
 		presentation.free()
 		get_tree().quit(1)
