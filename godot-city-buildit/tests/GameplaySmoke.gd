@@ -3927,9 +3927,9 @@ func _run_gameplay_test() -> void:
 			_check(not live_product_rect.intersects(production_hud.production_panel.get_global_rect()), "Radial product tiles must not overlap the active bottom dock.")
 	for mobile_size in [Vector2i(844, 390), Vector2i(915, 412), Vector2i(1280, 720)]:
 		var simulated_viewport := Vector2(mobile_size)
-		var compact_mobile := mobile_size.x <= 900 or mobile_size.y <= 520
+		var compact_mobile: bool = mobile_size.x <= 900 or mobile_size.y <= 520
 		var simulated_panel_height := minf((220.0 if compact_mobile else 278.0) * production_hud._ui_scale, simulated_viewport.y * (0.48 if compact_mobile else 0.42))
-		var simulated_selector_size := Vector2(82.0, 94.0) * production_hud._ui_scale
+		var simulated_selector_size: Vector2 = Vector2(82.0, 94.0) * production_hud._ui_scale
 		var simulated_dock_rect := Rect2(Vector2(8.0 * production_hud._ui_scale, simulated_viewport.y - simulated_panel_height - 8.0 * production_hud._ui_scale), Vector2(simulated_viewport.x - 16.0 * production_hud._ui_scale, simulated_panel_height))
 		var simulated_bounds := Rect2(Vector2.ZERO, simulated_viewport)
 		for product_index in range(ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size()):
