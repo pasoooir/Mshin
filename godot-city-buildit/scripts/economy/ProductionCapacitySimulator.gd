@@ -34,9 +34,14 @@ static func simulate(config: Dictionary) -> Dictionary:
 		if not ["factory", "store"].has(kind) or slot_count <= 0:
 			errors.append("Facility %s has invalid kind or slot_count." % facility_id)
 			continue
+		var initial_slots: Array = facility.get("initial_slots", [])
 		facility["slots"] = []
-		for _slot_index in range(slot_count):
-			facility["slots"].append({})
+		for slot_index in range(slot_count):
+			if slot_index < initial_slots.size() and initial_slots[slot_index] is Dictionary:
+				facility["slots"].append(initial_slots[slot_index].duplicate(true))
+			else:
+				facility["slots"].append({})
+		facility["duration_overrides"] = facility.get("duration_overrides", {}).duplicate(true)
 		facility["operational"] = bool(facility.get("operational", true))
 		facility["kind"] = kind
 		facility["queue_limit"] = slot_count
@@ -95,7 +100,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 					var slot_index := int(action.get("slot_index", -1))
 					if slot_index >= 0 and slot_index < facility.slots.size():
 						var slot: Dictionary = facility.slots[slot_index]
-						if not slot.is_empty() and bool(slot.get("ready", false)) and _inventory_used(inventory) + 1 <= capacity:
+						if not slot.is_empty() and bool(slot.get("ready", false)) and (item_id.is_empty() or item_id == str(slot.get("item_id", ""))) and _inventory_used(inventory) + 1 <= capacity:
 							inventory[item_id if item_id != "" else str(slot.get("item_id", ""))] = int(inventory.get(item_id if item_id != "" else str(slot.get("item_id", "")), 0)) + 1
 							var collected_id := item_id if item_id != "" else str(slot.get("item_id", ""))
 							collected_outputs[collected_id] = int(collected_outputs.get(collected_id, 0)) + 1
@@ -201,7 +206,7 @@ static func _start_store_order(facility: Dictionary, facility_id: String, now: i
 		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_seconds", 0)) > 0:
 			continue
 		var recipe: Dictionary = recipes.get(str(slot.get("item_id", "")), {})
-		var duration := maxi(1, int(recipe.get("time_sec", recipe.get("time", 0))))
+		var duration := maxi(1, int(facility.get("duration_overrides", {}).get(str(slot.get("item_id", "")), recipe.get("time_sec", recipe.get("time", 0)))))
 		slot["start_seconds"] = now
 		slot["finish_seconds"] = now + duration
 		slot["queued"] = false
@@ -249,3 +254,58 @@ static func _remove_inventory(inventory: Dictionary, requirements: Dictionary) -
 			inventory.erase(key)
 		else:
 			inventory[key] = remaining
+
+# Snapshot the actual active city. The returned dictionary can be passed
+# directly as MacroEconomySimulator's "production" field. Scenario actions
+# remain explicit so this snapshot never invents player decisions or demand.
+static func capture_live_city_config(horizon_seconds: int, actions: Array = []) -> Dictionary:
+	var scene_tree := Engine.get_main_loop() as SceneTree
+	if scene_tree == null:
+		return {"capture_error": "A live SceneTree is required."}
+	var now := int(Time.get_unix_time_from_system())
+	var facilities: Array[Dictionary] = []
+	for component in scene_tree.get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		var owner = component.owner_building
+		var facility_id := str(owner.get("building_id")) if is_instance_valid(owner) else ""
+		if facility_id.is_empty():
+			facility_id = "production_component_%d" % component.get_instance_id()
+		var kind := "factory" if component.is_factory else "store"
+		var initial_slots: Array[Dictionary] = []
+		var duration_overrides: Dictionary = {}
+		for slot_variant in component.slots:
+			var slot: Dictionary = slot_variant.duplicate(true)
+			if not slot.is_empty():
+				var finish_unix := int(slot.get("finish_unix", 0))
+				var remaining := maxi(0, finish_unix - now) if finish_unix > 0 else 0
+				slot["finish_seconds"] = remaining
+				slot["start_seconds"] = 0
+				slot["ready"] = bool(slot.get("ready", false)) or (finish_unix > 0 and remaining == 0)
+			initial_slots.append(slot)
+		if not component.is_factory:
+			for recipe_id in ProductionManager.get_store_recipe_ids(str(component.shop_id)):
+				duration_overrides[str(recipe_id)] = int(ceil(component.get_item_production_time(str(recipe_id))))
+		facilities.append({
+			"id": facility_id,
+			"kind": kind,
+			"factory_type": str(component.factory_type),
+			"shop_id": str(component.shop_id),
+			"store_star_level": int(component.store_star_level),
+			"slot_count": component.get_slot_count(),
+			"operational": component._owner_has_road_access(),
+			"initial_slots": initial_slots,
+			"duration_overrides": duration_overrides
+		})
+	var raw_catalog: Dictionary = ProductionManager.raw_materials.duplicate(true)
+	var crafted_catalog: Dictionary = ProductionManager.crafted_items.duplicate(true)
+	return {
+		"horizon_seconds": maxi(0, horizon_seconds),
+		"storage_capacity": int(StorageManager.capacity),
+		"initial_inventory": StorageManager.get_all_items(),
+		"raw_materials": raw_catalog,
+		"crafted_items": crafted_catalog,
+		"factory_materials": ProductionManager.factory_materials.duplicate(true),
+		"facilities": facilities,
+		"actions": actions.duplicate(true)
+	}
