@@ -455,7 +455,7 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] GameplaySmoke now exercises multi-touch isolation and tap-to-queue fallback.
 - [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy checks passed in run `43742618056`.
 - [x] Android Debug APK exported; signature/package identity verified and artifact uploaded in run `43742618056` (artifact expires 2026-11-29).
-- [ ] Web export, Chromium and Pages workflow `43742617966` is still running.
+- [x] Web export and desktop/mobile Chromium checks passed in PR runs `43742723982` and `43743663912`; PR-event deploy jobs were skipped as designed. Post-merge push deployment remains to be verified.
 - [ ] Physical Android landscape drag/drop acceptance and final screenshot review.
 
 **Do not mark this hardening complete until the new CI run passes.**
@@ -467,8 +467,7 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] Preserve per-stone transform and color variation, full shoreline distribution and the original pebble radius palette.
 - [x] Disable shadow casting on tiny shoreline stones to remove unnecessary shadow work.
 - [x] Add visual smoke assertions for the 38-instance batch, color support, shadow policy, distribution and variation.
-- [ ] Godot import/parse and VisualPresentationSmoke.
-- [ ] GameplaySmoke, Web/Chromium and Android APK CI.
+- [x] Godot import/parse, VisualPresentationSmoke, GameplaySmoke, Web/Chromium and Android APK CI passed in runs `43743663936` and `43743663912`.
 - [ ] Measure actual draw calls/frame times on Android before claiming measured gains.
 
 **Expected structural improvement:** 38 shoreline render nodes/material instances become one MultiMeshInstance3D and one shared material. This is a draw-submission/node-count reduction by construction; actual FPS impact remains unmeasured until device profiling.
