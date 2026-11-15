@@ -34,16 +34,8 @@ var is_placing: bool = false
 var placement_rotation_quarters: int = 0
 var factory_count: int = 0
 
-# Mshin construction BOM profiles. These are explicit game-design defaults,
-# not claimed SimCity BuildIt recipes. A per-building construction_bom override
-# takes precedence. Bootstrap buildings keep the first production loop reachable.
-const CONSTRUCTION_BOM_PROFILES := {
-	"residential": {"nails": 1, "metal": 1},
-	"commercial": {"nails": 2, "metal": 1},
-	"industrial": {"nails": 2, "metal": 2},
-	"service": {"nails": 1, "metal": 1},
-	"park": {"nails": 1, "wood": 1}
-}
+# Starter buildings are exempt from construction materials so the first
+# factory/store loop remains reachable. All other BOMs are calculated per type.
 const CONSTRUCTION_BOM_BOOTSTRAP_TYPES := ["residential_1", "residential_villa", "factory_small", "industrial_1", "building_supplies", "shop_chain"]
 
 var building_types: Dictionary = {
