@@ -239,11 +239,13 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"ending_experience": xp,
 		"daily": daily,
 		"production": production_result,
+		"production_accounting": production_result.get("accounting", {}),
 		"model_notes": [
 			"Tax formula and happiness XP cadence are read from the current Mshin game rules.",
 			"Delivery order reward uses the current 2x catalog-value formula.",
 			"Global Trade HQ price multiplier is a scenario input; current game default is 2x.",
 			"Depot sales use catalog value and the current 120-second listing timer.",
-			"Production capacity, queue actions, input consumption and warehouse limits are replayed from explicit production configuration. Cash sales are explicit player actions; no market demand or sell-through is fabricated."
+			"Production capacity, queue actions, input consumption and warehouse limits are replayed from explicit production configuration. Cash sales are explicit player actions; no market demand or sell-through is fabricated.",
+			"Production gross-margin accounting uses FIFO inventory cost batches. Missing acquisition costs remain unknown; catalog sale values are never substituted as purchase costs, and COGS is reported without deducting cash a second time."
 		]
 	}

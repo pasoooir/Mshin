@@ -211,3 +211,59 @@ func _test_production_capacity_and_cashflow() -> void:
 	if blocked.get("ready_uncollected_jobs", []).size() != 1 or int(blocked.get("ending_inventory", {}).get("wood", 0)) != 1:
 		_fail("A full warehouse must keep ready production on its factory slot without losing stock.")
 		return
+
+	# FIFO cost basis is sourced from explicit acquisition costs, not the catalog's
+	# selling/reference value. COGS is an accounting measure, not a second cash sink.
+	var costed_macro_config := {
+		"initial_simoleons": 100,
+		"population": 0,
+		"happiness": 100.0,
+		"occupied_homes": 0,
+		"level": 1,
+		"experience": 0,
+		"horizon_seconds": 421,
+		"item_values": {"nails": 80},
+		"events": [],
+		"production": {
+			"storage_capacity": 10,
+			"depot_operational": true,
+			"initial_inventory": {"metal": 2},
+			"initial_unit_costs": {"metal": 15},
+			"raw_materials": {"metal": {"time_sec": 60}},
+			"crafted_items": {"nails": {"time_sec": 300, "store": "building_supplies", "requires": {"metal": 2}}},
+			"factory_materials": {},
+			"facilities": [{"id": "costed-store", "kind": "store", "shop_id": "building_supplies", "slot_count": 1}],
+			"actions": [
+				{"type": "enqueue_store", "facility_id": "costed-store", "item_id": "nails", "at_seconds": 0},
+				{"type": "collect", "facility_id": "costed-store", "slot_index": 0, "at_seconds": 300},
+				{"type": "depot_list", "listing_id": "costed-nails", "item_id": "nails", "quantity": 1, "at_seconds": 301},
+				{"type": "depot_collect", "listing_id": "costed-nails", "at_seconds": 421}
+			]
+		}
+	}
+	var costed_result: Dictionary = Simulator.simulate(costed_macro_config)
+	if not bool(costed_result.get("valid", false)):
+		_fail("Cost-basis production/cashflow simulation invalid: " + str(costed_result.get("errors", [])))
+		return
+	var accounting: Dictionary = costed_result.get("production_accounting", {})
+	if int(accounting.get("gross_revenue", -1)) != 80 or int(accounting.get("known_cogs", -1)) != 30 or int(accounting.get("known_gross_margin", -1)) != 50:
+		_fail("FIFO cost basis must carry the two Metal acquisition costs (2 × 15) into the Nails sale and report 80 revenue / 30 COGS / 50 gross margin.")
+		return
+	if not bool(accounting.get("gross_margin_complete", false)):
+		_fail("Gross margin must be marked complete when every sold unit has a known acquisition cost.")
+		return
+	if int(costed_result.get("ending_simoleons", -1)) != 180:
+		_fail("COGS must not be deducted from Simoleons a second time; the actual cash balance changes only by the collected 80-Simoleon sale.")
+		return
+
+	var unknown_cost_config: Dictionary = costed_macro_config.duplicate(true)
+	unknown_cost_config["production"].erase("initial_unit_costs")
+	var unknown_cost_result: Dictionary = Simulator.simulate(unknown_cost_config)
+	var unknown_accounting: Dictionary = unknown_cost_result.get("production_accounting", {})
+	if bool(unknown_accounting.get("gross_margin_complete", true)) or int(unknown_accounting.get("unknown_cost_sale_quantity", 0)) != 1:
+		_fail("Missing acquisition costs must remain unknown and must prevent a false complete-profit claim.")
+		return
+	var unknown_sales: Array = unknown_accounting.get("sales", [])
+	if unknown_sales.size() != 1 or unknown_sales[0].get("gross_margin", 0) != null:
+		_fail("A sale with unknown COGS must expose null gross margin instead of inventing a cost or profit.")
+		return
