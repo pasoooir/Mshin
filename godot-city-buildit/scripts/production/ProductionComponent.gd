@@ -103,10 +103,8 @@ func purchase_store_queue_slot(simcash_cost: int) -> bool:
 	_ensure_slots()
 	if is_factory or slot_count >= MAX_STORE_QUEUE_SLOTS or simcash_cost <= 0:
 		return false
-	if EconomyManager.sim_cash < simcash_cost:
+	if not EconomyManager.spend_sim_cash(simcash_cost):
 		return false
-	EconomyManager.sim_cash -= simcash_cost
-	EconomyManager.transaction_completed.emit("sim_cash_spend", simcash_cost)
 	slot_count += 1
 	_ensure_slots()
 	slots_changed.emit()
