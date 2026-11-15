@@ -2628,6 +2628,26 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		detail_row.add_child(auto_chain_button)
 
 
+func _input(event: InputEvent) -> void:
+	# Keep receiving pointer motion/release after the finger leaves the source
+	# product tile. This is essential for a genuine drag gesture on touchscreens.
+	var pointer_id := -1
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		pointer_id = event.index
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		pointer_id = -1
+	elif event is InputEventMouseMotion:
+		pointer_id = -1
+	else:
+		return
+	if not _production_drag_gestures.has(pointer_id):
+		return
+	var gesture: Dictionary = _production_drag_gestures[pointer_id]
+	var source_button := gesture.get("button") as Button
+	var source_building := gesture.get("building") as Building
+	_on_production_product_gui_input(event, source_button, source_building, str(gesture.get("item_id", "")))
+
+
 func _on_production_product_gui_input(event: InputEvent, product_button: Button, building: Building, item_id: String) -> void:
 	# Keep native mouse drag forwarding and provide an explicit touch pointer path
 	# for Android, where Control drag-and-drop may not receive touch drags.
@@ -2660,7 +2680,7 @@ func _on_production_product_gui_input(event: InputEvent, product_button: Button,
 			return
 		var payload := _get_production_drag_data(Vector2.ZERO, building, item_id)
 		if payload is Dictionary:
-			_production_drag_gestures[pointer_id] = {"payload": payload, "start": pointer_position, "moved": false}
+			_production_drag_gestures[pointer_id] = {"payload": payload, "start": pointer_position, "moved": false, "button": product_button, "building": building, "item_id": item_id}
 		return
 	if not _production_drag_gestures.has(pointer_id):
 		return
