@@ -287,29 +287,41 @@ func has_road_access(anchor: Vector2i, size: Vector2i) -> bool:
 			return true
 	return false
 
-func is_building_operational(building: Node) -> bool:
-	if not is_instance_valid(building) or str(building.get("status")) != "completed":
-		return false
+func get_building_operational_lock_reason(building: Node) -> String:
+	if not is_instance_valid(building):
+		return "Building is unavailable."
+	if str(building.get("status")) != "completed":
+		return "Construction must finish first."
 	var definition: Dictionary = building.get("definition")
 	var anchor: Vector2i = building.get("grid_pos")
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	if not has_road_access(anchor, size):
-		return false
-	# Production buildings need their catalog-defined local power and water
-	# service as well as a Gateway-connected road. Homes retain their existing
-	# happiness-penalty model instead of being hard-stopped here.
-	if has_node("/root/ServiceManager") and ServiceManager.requires_operational_utilities(building):
-		if not ServiceManager.is_building_served(building):
-			return false
-	if has_node("/root/ServiceManager") and ServiceManager.requires_operational_workforce(building):
-		if not ServiceManager.is_workforce_served(building):
-			return false
-	if has_node("/root/ServiceManager") and ServiceManager.requires_operational_sanitation(building):
-		if not ServiceManager.is_sewage_served(building) or not ServiceManager.is_waste_served(building):
-			return false
-	if has_node("/root/ServiceManager") and not ServiceManager.has_required_emergency_coverage(building):
-		return false
-	return true
+		return "No Gateway-connected road access."
+	if not has_node("/root/ServiceManager"):
+		return "City services are unavailable."
+	# Homes retain the happiness-penalty model; production buildings require
+	# every configured utility, workforce, sanitation and emergency prerequisite.
+	if ServiceManager.requires_operational_utilities(building) and not ServiceManager.is_building_served(building):
+		return "Insufficient connected power or water capacity."
+	if ServiceManager.requires_operational_workforce(building) and not ServiceManager.is_workforce_served(building):
+		return "Insufficient available city workforce."
+	if ServiceManager.requires_operational_sanitation(building):
+		if not ServiceManager.is_sewage_served(building):
+			return "Insufficient connected sewage capacity."
+		if not ServiceManager.is_waste_served(building):
+			return "Insufficient connected waste capacity."
+	var missing_emergency: Array[String] = []
+	var requirements := ServiceManager.get_required_emergency_coverage(building)
+	var coverage := ServiceManager.get_building_emergency_coverage(building)
+	for service_group in requirements:
+		if bool(requirements[service_group]) and not bool(coverage.get(str(service_group), false)):
+			missing_emergency.append(str(service_group).capitalize())
+	if not missing_emergency.is_empty():
+		return "Missing emergency coverage: " + ", ".join(missing_emergency)
+	return ""
+
+func is_building_operational(building: Node) -> bool:
+	return get_building_operational_lock_reason(building).is_empty()
 
 func _build_mshin_building_material_bom(type_id: String, stage_multiplier: int = 1) -> Dictionary:
 	if not building_types.has(type_id):
