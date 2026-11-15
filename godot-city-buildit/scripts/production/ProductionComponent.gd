@@ -280,7 +280,9 @@ func from_save_array(saved_slots: Array) -> void:
 		if not slots[index].is_empty() and str(slots[index].get("reservation_id", "")).is_empty():
 			# Pre-reservation saves already deducted their inputs at queue time.
 			slots[index]["inputs_escrowed"] = true
-	refresh_slots()
+	# Storage reservations are restored from the region snapshot after
+	# buildings are recreated. Do not start queued orders until the manager
+	# explicitly resumes production once both sides of the save are available.
 	slots_changed.emit()
 
 func release_queued_reservations() -> void:
