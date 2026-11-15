@@ -171,8 +171,6 @@ func load_game() -> bool:
 		is_loading = false
 		load_completed.emit(false)
 		return false
-	ProductionManager.from_save_dict(region_snapshot.get("production_chains", {}))
-
 	EconomyManager.simoleons = int(economy_data.get("simoleons", 5000))
 	# One-time welcome grant for cities created before the starter-economy update.
 	if not bool(parsed.get("starter_grant_claimed", false)):
@@ -214,6 +212,7 @@ func load_game() -> bool:
 	HappinessManager.recalculate_city()
 	if has_node("/root/FireHazardManager"):
 		FireHazardManager.reset_for_city_load()
+	ProductionManager.from_save_dict(region_snapshot.get("production_chains", {}))
 	load_completed.emit(true)
 	return true
 
@@ -338,7 +337,6 @@ func load_region_snapshot(snapshot: Dictionary) -> bool:
 		"items": {}
 	})
 	StorageManager.from_save_dict(regional_storage)
-	ProductionManager.from_save_dict(snapshot.get("production_chains", {}))
 	StorageManager.storage_changed.emit()
 	StorageManager.capacity_changed.emit(StorageManager.max_capacity)
 	ServiceManager.recalculate_from_buildings()
@@ -358,6 +356,7 @@ func load_region_snapshot(snapshot: Dictionary) -> bool:
 	is_loading = false
 	# Re-score this region now; do not show stale cached happiness from another region.
 	HappinessManager.recalculate_city()
+	ProductionManager.from_save_dict(snapshot.get("production_chains", {}))
 	return true
 
 
