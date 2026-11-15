@@ -278,8 +278,8 @@ func _test_automatic_production_chain() -> void:
 	var nails_chain_id := ProductionManager.request_production_chain("nails", 1)
 	var chair_chain_id := ProductionManager.request_production_chain("chair", 1)
 	var nails_jobs := 0
-	for slot in building_supplies.slots:
-		if not slot.is_empty() and str(slot.get("item_id", "")) == "nails":
+	for candidate_slot in building_supplies.slots:
+		if not candidate_slot.is_empty() and str(candidate_slot.get("item_id", "")) == "nails":
 			nails_jobs += 1
 	_check(not nails_chain_id.is_empty() and not chair_chain_id.is_empty() and nails_jobs == 1, "Concurrent chains must share one in-flight Nails dependency rather than enqueue duplicate batches.")
 	var concurrent_completed := false
