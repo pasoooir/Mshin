@@ -1051,5 +1051,7 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Make the full-screen transparent product-orbit containers ignore pointer events, allowing queue slots underneath to receive taps instead of being occluded by the catalog layer.
 - [x] Preserve tap-only product selection until the next tap on an empty queue slot/building, providing an accessible fallback when drag gestures are difficult.
 - [x] Extend GameplaySmoke with multi-touch ownership and tap-to-queue fallback cases.
-- [ ] Run Godot 4.3 import/parse and GameplaySmoke for this hardening change.
-- [ ] Re-verify Android APK and Web/Chromium CI; physical Android touch acceptance and screenshot review remain required.
+- [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy checks passed in run `43742618056`.
+- [x] Android Debug APK export, signature/package identity verification and artifact upload passed in run `43742618056`; artifact `PasooCityBuildIt-android-debug-56cd49836727e61d64a164c96e9c7f0e152ca12b` is available until 2026-11-29.
+- [ ] Web export and Chromium/Pages workflow `43742617966` is still running.
+- [ ] Physical Android landscape touch acceptance and screenshot review.
