@@ -263,6 +263,7 @@ func _test_production_capacity_and_cashflow() -> void:
 	if bool(unknown_accounting.get("gross_margin_complete", true)) or int(unknown_accounting.get("unknown_cost_sale_quantity", 0)) != 1:
 		_fail("Missing acquisition costs must remain unknown and must prevent a false complete-profit claim.")
 		return
-	if unknown_accounting.get("sales", []).size() != 1 or unknown_accounting.sales[0].get("gross_margin", 0) != null:
+	var unknown_sales: Array = unknown_accounting.get("sales", [])
+	if unknown_sales.size() != 1 or unknown_sales[0].get("gross_margin", 0) != null:
 		_fail("A sale with unknown COGS must expose null gross margin instead of inventing a cost or profit.")
 		return
