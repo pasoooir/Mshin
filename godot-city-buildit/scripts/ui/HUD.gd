@@ -4726,8 +4726,12 @@ func _on_performance_benchmark_finished(report: Dictionary) -> void:
 	var target_result := "PASS" if bool(summary.get("target_60fps_pass", false)) else "NOT MET"
 	var average_fps := float(summary.get("average_fps", 0.0))
 	var p95_frame_ms := float(summary.get("p95_frame_ms", 0.0))
+	var render_metrics: Dictionary = report.get("render_metrics", {})
+	var draw_calls: Dictionary = render_metrics.get("draw_calls", {})
+	var average_draw_calls := float(draw_calls.get("average", 0.0))
+	var p95_draw_calls := float(draw_calls.get("p95", 0.0))
 	var report_path := str(report.get("report_path", "save failed"))
-	status_label.text = "Device benchmark: %.1f avg FPS · p95 %.1f ms · 60 FPS: %s · %s" % [average_fps, p95_frame_ms, target_result, report_path]
+	status_label.text = "Device benchmark: %.1f avg FPS · frame p95 %.1f ms · draw calls %.0f avg / %.0f p95 · 60 FPS: %s · %s" % [average_fps, p95_frame_ms, average_draw_calls, p95_draw_calls, target_result, report_path]
 
 func _on_trade_pressed() -> void:
 	BuildManager.cancel_placement()
