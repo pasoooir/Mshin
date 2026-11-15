@@ -1709,7 +1709,6 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
 	var saved_population := GameManager.population
-	var saved_population := GameManager.population
 	BuildManager.buildings.clear()
 	GameManager.level = 20
 	GameManager.population = 100
