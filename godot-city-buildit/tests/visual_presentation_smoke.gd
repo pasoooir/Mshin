@@ -1,9 +1,9 @@
-extends SceneTree
+extends Node
 
 const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.gd")
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
 	var canopy: ArrayMesh = presentation._create_clustered_canopy_mesh()
 	if canopy == null or canopy.get_surface_count() != 1:
