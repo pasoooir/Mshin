@@ -9,6 +9,7 @@ const TAX_TICK_SECONDS := 60
 const HAPPINESS_XP_TICK_SECONDS := 60
 const HAPPINESS_XP_PER_TICK := 5
 const MAX_LEVEL := 60
+const ProductionSimulator = preload("res://scripts/economy/ProductionCapacitySimulator.gd")
 
 static func simulate(config: Dictionary) -> Dictionary:
 	var errors: Array[String] = []
@@ -23,11 +24,22 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var item_values: Dictionary = config.get("item_values", {})
 	var xp_table: Dictionary = config.get("xp_table", {})
 	var events: Array = config.get("events", []).duplicate(true)
+	var production_result: Dictionary = {}
+	if config.has("production"):
+		var production_config: Dictionary = config.get("production", {}).duplicate(true)
+		production_config["horizon_seconds"] = horizon_seconds
+		production_config["item_values"] = item_values
+		production_result = ProductionSimulator.simulate(production_config)
+		if not bool(production_result.get("valid", false)):
+			for production_error in production_result.get("errors", []):
+				errors.append("Production: " + str(production_error))
+		else:
+			events.append_array(production_result.get("cash_events", []))
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a.get("at_seconds", 0)) < int(b.get("at_seconds", 0))
 	)
 
-	var sources := {"taxes": 0, "depot_sales": 0, "delivery_orders": 0, "level_rewards": 0, "other": 0}
+	var sources := {"taxes": 0, "depot_sales": 0, "delivery_orders": 0, "production_sales": 0, "level_rewards": 0, "other": 0}
 	var sinks := {"global_trade_hq": 0, "construction": 0, "roads": 0, "upgrades": 0, "other": 0}
 	var daily: Array[Dictionary] = []
 	var event_index := 0
@@ -80,6 +92,12 @@ static func simulate(config: Dictionary) -> Dictionary:
 					# The player explicitly collects a ready listing; readiness is not automatic sale.
 					flow = int(item_values[item_id]) * quantity
 					source_bucket = "depot_sales"
+				"production_sale":
+					if quantity <= 0 or amount <= 0:
+						errors.append("Invalid production_sale event for %s." % item_id)
+						continue
+					flow = amount
+					source_bucket = "production_sales"
 				"delivery_order":
 					if not item_values.has(item_id) or quantity <= 0:
 						errors.append("Invalid delivery_order event for %s." % item_id)
@@ -167,11 +185,12 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"ending_level": level,
 		"ending_experience": xp,
 		"daily": daily,
+		"production": production_result,
 		"model_notes": [
 			"Tax formula and happiness XP cadence are read from the current Mshin game rules.",
 			"Delivery order reward uses the current 2x catalog-value formula.",
 			"Global Trade HQ price multiplier is a scenario input; current game default is 2x.",
 			"Depot sales use catalog value and the current 120-second listing timer.",
-			"Action events are player-supplied; no demand, sales probability, or production capacity is fabricated."
+			"Production capacity, queue actions, input consumption and warehouse limits are replayed from explicit production configuration. Cash sales are explicit player actions; no market demand or sell-through is fabricated."
 		]
 	}
