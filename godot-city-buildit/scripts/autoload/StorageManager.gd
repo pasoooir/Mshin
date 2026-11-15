@@ -134,10 +134,10 @@ const STORAGE_ITEM_REQUIREMENT_THRESHOLDS: Array[int] = [
 
 func get_next_storage_upgrade_requirement() -> int:
 	var required := 1
-	for threshold in STORAGE_ITEM_REQUIREMENT_THRESHOLDS:
-		if capacity < threshold:
+	for index in range(1, STORAGE_ITEM_REQUIREMENT_THRESHOLDS.size()):
+		if capacity < STORAGE_ITEM_REQUIREMENT_THRESHOLDS[index]:
 			break
-		required += 1
+		required = index + 1
 	return mini(required, 25)
 
 func can_upgrade_storage_with_items() -> bool:
