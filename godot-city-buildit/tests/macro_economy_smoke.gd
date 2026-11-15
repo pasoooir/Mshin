@@ -167,6 +167,31 @@ func _test_production_capacity_and_cashflow() -> void:
 		_fail("Commercial store did not serialize two queued orders through its single active lane.")
 		return
 
+
+	var gate_config := {
+		"horizon_seconds": 0,
+		"storage_capacity": 5,
+		"initial_inventory": {"metal": 1, "wood": 1},
+		"mayor_level": 1,
+		"raw_materials": {},
+		"crafted_items": {
+			"locked_item": {"time_sec": 60, "store": "building_supplies", "level": 2, "requires": {"metal": 2, "wood": 1}},
+			"unknown_unlock": {"time_sec": 60, "store": "building_supplies", "level": 0, "unlock_level_verified": false, "requires": {"metal": 1}}
+		},
+		"factory_materials": {},
+		"facilities": [
+			{"id": "store-gates", "kind": "store", "shop_id": "building_supplies", "slot_count": 2}
+		],
+		"actions": [
+			{"type": "enqueue_store", "facility_id": "store-gates", "item_id": "locked_item", "at_seconds": 0},
+			{"type": "enqueue_store", "facility_id": "store-gates", "item_id": "unknown_unlock", "at_seconds": 0}
+		]
+	}
+	var gate_result: Dictionary = ProductionSimulator.simulate(gate_config)
+	if int(gate_result.get("rejected_actions", 0)) != 2 or gate_result.get("ending_inventory", {}) != {"metal": 1, "wood": 1}:
+		_fail("Locked or unknown-unlock recipes must be rejected without partial inventory consumption.")
+		return
+
 	var blocked_config := {
 		"horizon_seconds": 60,
 		"storage_capacity": 1,
