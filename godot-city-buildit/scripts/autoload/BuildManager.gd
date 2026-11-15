@@ -323,7 +323,7 @@ func _get_building_material_complexity(type_id: String) -> int:
 	var build_time := maxf(1.0, float(definition.get("build_time", 4.0)))
 	var unlock_level := maxi(1, int(definition.get("level", 1)))
 	var area_band := maxi(0, int(ceil(float(area - 4) / 4.0)))
-	var time_band := maxi(0, int(ceil((build_time - 4.0) / 4.0)))
+	var time_band := maxi(0, int(ceil((build_time - 4.0) / 2.0)))
 	var level_band := maxi(0, int(floor(float(unlock_level - 1) / 20.0)))
 	return clampi(1 + area_band + time_band + level_band, 1, 8)
 
