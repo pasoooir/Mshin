@@ -123,6 +123,38 @@ var building_types: Dictionary = {
 	"park_small": {"name":"Small Park", "category":"park", "cost":300, "size":Vector2i(1,1), "population":0, "build_time":3.0, "color":Color(0.35,0.75,0.4), "level":3, "happiness":5}
 }
 
+# Exact Mshin-only material bills for distinctive infrastructure tiers. These
+# values are game-balance data, not SimCity BuildIt/EA recipes. Any type not in
+# this table still receives a deterministic footprint/build-time/unlock BOM.
+const CONSTRUCTION_BOM_TYPE_PROFILES := {
+	"power_wind": {"nails": 1, "metal": 1},
+	"power_coal": {"nails": 3, "metal": 2},
+	"power_wind_deluxe": {"nails": 4, "metal": 3, "planks": 2},
+	"power_solar": {"nails": 5, "metal": 4, "planks": 2, "bricks": 1},
+	"power_oil": {"nails": 5, "metal": 5, "planks": 2, "bricks": 2},
+	"power_nuclear": {"nails": 8, "metal": 7, "planks": 3, "bricks": 3, "cement": 3, "glass": 2},
+	"water_tower": {"nails": 2, "metal": 1},
+	"water_pump": {"nails": 3, "metal": 2, "planks": 1},
+	"fire_station_small": {"nails": 2, "metal": 1, "planks": 1},
+	"fire_station": {"nails": 3, "metal": 2, "planks": 1},
+	"fire_station_deluxe": {"nails": 5, "metal": 4, "planks": 2},
+	"police_station": {"nails": 3, "metal": 2, "planks": 1},
+	"police_small": {"nails": 2, "metal": 1, "planks": 1},
+	"police_basic": {"nails": 3, "metal": 2, "planks": 1},
+	"police_precinct": {"nails": 6, "metal": 4, "planks": 2},
+	"clinic_small": {"nails": 3, "metal": 2, "planks": 1, "bricks": 1},
+	"clinic": {"nails": 4, "metal": 3, "planks": 2, "bricks": 1, "cement": 1},
+	"hospital": {"nails": 8, "metal": 6, "planks": 3, "bricks": 3, "cement": 3},
+	"sewage_small": {"nails": 2, "metal": 2, "planks": 1},
+	"sewage_basic": {"nails": 4, "metal": 3, "planks": 2},
+	"sewage_deluxe": {"nails": 6, "metal": 5, "planks": 2, "bricks": 2, "cement": 2},
+	"waste_dump_small": {"nails": 3, "metal": 2, "planks": 1, "bricks": 1},
+	"waste_dump": {"nails": 4, "metal": 3, "planks": 2, "bricks": 2, "cement": 1},
+	"waste_incinerator": {"nails": 5, "metal": 5, "planks": 2, "bricks": 2, "cement": 2},
+	"waste_recycling": {"nails": 7, "metal": 6, "planks": 3, "bricks": 3, "cement": 3, "glass": 2},
+	"park_small": {"nails": 1, "wood": 2}
+}
+
 var is_moving: bool = false
 var moving_building: Building = null
 var moving_original_grid: Vector2i = Vector2i.ZERO
@@ -335,6 +367,8 @@ func get_construction_bom(type_id: String) -> Dictionary:
 		return definition.get("construction_bom", {}).duplicate(true)
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return {}
+	if CONSTRUCTION_BOM_TYPE_PROFILES.has(type_id):
+		return CONSTRUCTION_BOM_TYPE_PROFILES[type_id].duplicate(true)
 	var category := str(definition.get("category", ""))
 	var requirements: Dictionary = CONSTRUCTION_BOM_PROFILES.get(category, {}).duplicate(true)
 	if requirements.is_empty():
@@ -364,6 +398,8 @@ func get_construction_bom_source(type_id: String) -> String:
 		return str(definition.get("construction_bom_source", "Mshin building-specific design"))
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return "Mshin bootstrap exception — no material charge"
+	if CONSTRUCTION_BOM_TYPE_PROFILES.has(type_id):
+		return "Mshin exact infrastructure type profile — explicit materials; not an EA recipe"
 	return "Mshin per-building profile — footprint/build-time/unlock-tier formula; not an EA recipe"
 
 func get_construction_bom_lock_reason(type_id: String) -> String:
@@ -387,6 +423,11 @@ func get_non_residential_upgrade_bom(type_id: String, current_stage: int) -> Dic
 	var category := str(definition.get("category", ""))
 	if category == "residential" or not ["commercial", "industrial", "service", "park"].has(category):
 		return {}
+	var stage_profiles: Dictionary = definition.get("non_residential_upgrade_boms", {})
+	if stage_profiles.has(str(current_stage)):
+		return stage_profiles[str(current_stage)].duplicate(true)
+	if stage_profiles.has(current_stage):
+		return stage_profiles[current_stage].duplicate(true)
 	var base := get_construction_bom(type_id)
 	if base.is_empty():
 		base = CONSTRUCTION_BOM_PROFILES.get(category, {}).duplicate(true)
@@ -405,6 +446,81 @@ func get_non_residential_upgrade_bom(type_id: String, current_stage: int) -> Dic
 	if current_stage >= 5 and unlock_level >= 19 and not ProductionManager.get_item_definition("glass").is_empty():
 		requirements["glass"] = int(requirements.get("glass", 0)) + 1
 	return requirements
+
+func get_non_residential_upgrade_bom_source(type_id: String, current_stage: int) -> String:
+	if not building_types.has(type_id) or current_stage < 1 or current_stage >= 6:
+		return ""
+	var definition: Dictionary = building_types[type_id]
+	var stage_profiles: Dictionary = definition.get("non_residential_upgrade_boms", {})
+	if stage_profiles.has(str(current_stage)) or stage_profiles.has(current_stage):
+		return str(definition.get("non_residential_upgrade_bom_source", "Mshin exact per-building upgrade stage profile"))
+	return "Mshin per-building upgrade profile — construction BOM scaled by stage with unlock-tier materials; not an EA recipe"
+
+func get_bom_catalog_audit() -> Dictionary:
+	var errors: Array[String] = []
+	var construction_count := 0
+	var upgrade_count := 0
+	var construction_boms: Dictionary = {}
+	var construction_sources: Dictionary = {}
+	var non_residential_upgrade_boms: Dictionary = {}
+	var upgrade_sources: Dictionary = {}
+	for type_variant in building_types.keys():
+		var type_id := str(type_variant)
+		var definition: Dictionary = building_types[type_id]
+		var category := str(definition.get("category", ""))
+		var construction := get_construction_bom(type_id)
+		construction_boms[type_id] = construction.duplicate(true)
+		construction_sources[type_id] = get_construction_bom_source(type_id)
+		if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
+			if not construction.is_empty():
+				errors.append("%s: bootstrap BOM must remain empty" % type_id)
+		else:
+			if construction.is_empty():
+				errors.append("%s: missing construction BOM" % type_id)
+			for item_variant in construction.keys():
+				var item_id := str(item_variant)
+				var amount := int(construction[item_variant])
+				var item_definition := ProductionManager.get_item_definition(item_id)
+				if amount <= 0 or item_definition.is_empty():
+					errors.append("%s: invalid construction material %s ×%d" % [type_id, item_id, amount])
+				elif int(item_definition.get("level", 1)) > int(definition.get("level", 1)):
+					errors.append("%s: construction material %s unlocks after the building" % [type_id, item_id])
+			construction_count += 1
+		if category in ["commercial", "industrial", "service", "park"]:
+			var stages: Dictionary = {}
+			for stage in range(1, 6):
+				var upgrade := get_non_residential_upgrade_bom(type_id, stage)
+				stages[str(stage)] = upgrade.duplicate(true)
+				if upgrade.is_empty():
+					errors.append("%s: missing upgrade BOM at stage %d" % [type_id, stage])
+					continue
+				if get_non_residential_upgrade_cost(type_id, stage) <= 0 or get_non_residential_upgrade_duration_seconds(type_id, stage) <= 0:
+					errors.append("%s: invalid upgrade cost/duration at stage %d" % [type_id, stage])
+				for item_variant in upgrade.keys():
+					var item_id := str(item_variant)
+					if int(upgrade[item_variant]) <= 0 or ProductionManager.get_item_definition(item_id).is_empty():
+						errors.append("%s: invalid upgrade material %s at stage %d" % [type_id, item_id, stage])
+				upgrade_count += 1
+			non_residential_upgrade_boms[type_id] = stages
+			upgrade_sources[type_id] = {
+				"1": get_non_residential_upgrade_bom_source(type_id, 1),
+				"2": get_non_residential_upgrade_bom_source(type_id, 2),
+				"3": get_non_residential_upgrade_bom_source(type_id, 3),
+				"4": get_non_residential_upgrade_bom_source(type_id, 4),
+				"5": get_non_residential_upgrade_bom_source(type_id, 5)
+			}
+	return {
+		"valid": errors.is_empty(),
+		"errors": errors,
+		"building_type_count": building_types.size(),
+		"construction_bom_count": construction_count,
+		"non_residential_upgrade_bom_count": upgrade_count,
+		"exact_type_profile_count": CONSTRUCTION_BOM_TYPE_PROFILES.size(),
+		"construction_boms": construction_boms,
+		"construction_sources": construction_sources,
+		"non_residential_upgrade_boms": non_residential_upgrade_boms,
+		"upgrade_sources": upgrade_sources
+	}
 
 func get_non_residential_upgrade_cost(type_id: String, current_stage: int) -> int:
 	if not building_types.has(type_id) or current_stage < 1 or current_stage >= 6:
