@@ -263,6 +263,7 @@ func _pump_production_chains() -> void:
 			order["status"] = "complete"
 			production_chain_orders[index] = order
 			continue
+		var jobs_before := _count_chain_jobs(chain_id)
 		var in_flight := _get_chain_inflight_count(item_id, chain_id, true)
 		var remaining := maxi(0, requested - completed - in_flight)
 		var scheduled := true
@@ -274,6 +275,20 @@ func _pump_production_chains() -> void:
 		elif scheduled:
 			order["last_error"] = ""
 		production_chain_orders[index] = order
+		if _count_chain_jobs(chain_id) > jobs_before and has_node("/root/SaveManager") and not SaveManager.is_loading:
+			SaveManager.save_game()
+
+func _count_chain_jobs(chain_id: String) -> int:
+	if not is_inside_tree():
+		return 0
+	var total := 0
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		for slot in component.slots:
+			if not slot.is_empty() and bool(slot.get("auto_collect", false)) and str(slot.get("chain_id", "")) == chain_id:
+				total += 1
+	return total
 
 func _get_chain_inflight_count(item_id: String, chain_id: String, root_only: bool = false) -> int:
 	if not is_inside_tree():
