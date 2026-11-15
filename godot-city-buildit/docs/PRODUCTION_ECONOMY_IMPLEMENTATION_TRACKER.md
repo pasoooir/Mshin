@@ -472,3 +472,20 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [ ] Measure actual draw calls/frame times on Android before claiming measured gains.
 
 **Expected structural improvement:** 38 shoreline render nodes/material instances become one MultiMeshInstance3D and one shared material. This is a draw-submission/node-count reduction by construction; actual FPS impact remains unmeasured until device profiling.
+
+
+## 2026-11-15 — Shoreline draw-submission optimization (PR #523)
+
+- [x] Replace 38 standalone shoreline pebble MeshInstance3D nodes/materials with one MultiMeshInstance3D and one shared material.
+- [x] Preserve pebble positions, varied scale/yaw and the three-color palette with per-instance transforms/colors.
+- [x] Disable shadow casting for small shoreline stones.
+- [x] VisualPresentationSmoke verifies the 38-instance batch, per-instance color support, shadow policy, coast distribution and color variation.
+- [x] Godot 4.3 import/parse, startup, GameplaySmoke, VisualPresentationSmoke, visual geometry, economy and progression checks passed (run `43743663936`).
+- [x] Android Debug APK export/signature/package identity/artifact upload passed (run `43743663936`).
+- [x] Web export, GameplaySmoke, desktop/mobile Chromium launch, Pages configuration and artifact upload passed (run `43743663912`).
+- [x] PR #523 merged to `main` at `d997c695f9826039e9418998ae67d8d157880d63`.
+- [ ] Confirm actual post-merge Pages deployment; PR-triggered deployment was skipped by workflow design.
+- [ ] Capture on-device frame-time/draw-call report and compare against a baseline; do not infer FPS from node count alone.
+- [ ] Physical Android landscape visual/touch acceptance.
+
+**Structural expectation:** 38 render nodes/material instances are reduced to one batched render node and one shared material. Measured performance gain remains unverified until device profiling.
