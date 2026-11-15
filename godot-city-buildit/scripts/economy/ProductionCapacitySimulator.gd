@@ -13,6 +13,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var horizon := maxi(0, int(config.get("horizon_seconds", 0)))
 	var capacity := maxi(0, int(config.get("storage_capacity", 50)))
 	var inventory: Dictionary = _positive_inventory(config.get("initial_inventory", {}), errors)
+	var cost_batches: Dictionary = _initialize_cost_batches(inventory, config.get("initial_unit_costs", {}), errors)
 	var used := _inventory_used(inventory)
 	if used > capacity:
 		errors.append("Initial inventory exceeds warehouse capacity.")
@@ -59,6 +60,11 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var depot_listings: Dictionary = config.get("initial_depot_listings", {}).duplicate(true)
 	var production_log: Array[Dictionary] = []
 	var sales_total := 0
+	var accounting_revenue := 0
+	var accounting_cogs := 0
+	var accounting_gross_margin := 0
+	var unknown_cost_sale_quantity := 0
+	var accounting_sales: Array[Dictionary] = []
 
 	for second in range(horizon + 1):
 		# Complete timers before player actions at this timestamp.
@@ -104,6 +110,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 						if quantity == 1 and not slot.is_empty() and bool(slot.get("ready", false)) and (item_id.is_empty() or item_id == str(slot.get("item_id", ""))) and _inventory_used(inventory) + 1 <= capacity:
 							inventory[item_id if item_id != "" else str(slot.get("item_id", ""))] = int(inventory.get(item_id if item_id != "" else str(slot.get("item_id", "")), 0)) + 1
 							var collected_id := item_id if item_id != "" else str(slot.get("item_id", ""))
+							_append_cost_batch(cost_batches, collected_id, 1, int(slot.get("cost_total", 0)), bool(slot.get("cost_known", false)))
 							collected_outputs[collected_id] = int(collected_outputs.get(collected_id, 0)) + 1
 							facility.slots[slot_index] = {}
 							success = true
@@ -119,7 +126,8 @@ static func simulate(config: Dictionary) -> Dictionary:
 						var slot_index := _first_empty_slot(facility.slots)
 						if slot_index >= 0:
 							var duration := maxi(1, int(raw_catalog[item_id].get("time_sec", raw_catalog[item_id].get("time", 0))))
-							facility.slots[slot_index] = {"item_id": item_id, "start_seconds": second, "finish_seconds": second + duration, "ready": false, "queued": false}
+							var factory_cost := roundi(float(duration) * maxf(0.0, float(facility.get("operating_cost_per_second", 0.0))))
+							facility.slots[slot_index] = {"item_id": item_id, "start_seconds": second, "finish_seconds": second + duration, "ready": false, "queued": false, "cost_known": true, "cost_total": factory_cost}
 							success = true
 							production_log.append({"at_seconds": second, "event": "started", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "finish_seconds": second + duration})
 					facilities[facility_id] = facility
@@ -133,13 +141,22 @@ static func simulate(config: Dictionary) -> Dictionary:
 						# Match ProductionComponent.start_craft: reserve the entire
 						# recipe at queue admission, not when its timer begins.
 						_remove_inventory(inventory, inputs)
+						var input_cost: Dictionary = _consume_cost_batches(cost_batches, inputs)
 						for input_id in inputs:
 							consumed_inputs[str(input_id)] = int(consumed_inputs.get(str(input_id), 0)) + int(inputs[input_id])
-						facility.slots[slot_index] = {"item_id": item_id, "start_seconds": 0, "finish_seconds": 0, "ready": false, "queued": true}
+						facility.slots[slot_index] = {"item_id": item_id, "start_seconds": 0, "finish_seconds": 0, "ready": false, "queued": true, "cost_known": bool(input_cost.get("known", false)), "cost_total": int(input_cost.get("total_cost", 0))}
 						success = true
 						production_log.append({"at_seconds": second, "event": "queued", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "inputs_consumed": inputs.duplicate(true)})
 						_start_store_order(facility, facility_id, second, recipes, production_log)
 					facilities[facility_id] = facility
+			elif action_type == "receive_inventory":
+				var unit_cost := int(action.get("unit_cost", -1))
+				var cost_known := bool(action.get("cost_known", true))
+				if quantity > 0 and (raw_catalog.has(item_id) or recipes.has(item_id)) and unit_cost >= 0 and _inventory_used(inventory) + quantity <= capacity:
+					inventory[item_id] = int(inventory.get(item_id, 0)) + quantity
+					_append_cost_batch(cost_batches, item_id, quantity, unit_cost, cost_known)
+					success = true
+					production_log.append({"at_seconds": second, "event": "inventory_received", "item_id": item_id, "quantity": quantity, "unit_cost": unit_cost, "cost_known": cost_known})
 			elif action_type == "depot_list":
 				var listing_id := str(action.get("listing_id", ""))
 				var unit_value := int(action.get("unit_value", config.get("item_values", {}).get(item_id, 0)))
@@ -147,7 +164,8 @@ static func simulate(config: Dictionary) -> Dictionary:
 					listing_id = "depot-listing-%d" % (action_index - 1)
 				if bool(config.get("depot_operational", false)) and depot_listings.size() < 4 and not depot_listings.has(listing_id) and inventory.has(item_id) and int(inventory[item_id]) >= quantity and unit_value > 0:
 					_remove_inventory(inventory, {item_id: quantity})
-					depot_listings[listing_id] = {"item_id": item_id, "quantity": quantity, "unit_value": unit_value, "listed_at_seconds": second}
+					var listing_cost: Dictionary = _consume_cost_batches(cost_batches, {item_id: quantity})
+					depot_listings[listing_id] = {"item_id": item_id, "quantity": quantity, "unit_value": unit_value, "listed_at_seconds": second, "cost_known": bool(listing_cost.get("known", false)), "cost_total": int(listing_cost.get("total_cost", 0))}
 					success = true
 					production_log.append({"at_seconds": second, "event": "depot_listed", "listing_id": listing_id, "item_id": item_id, "quantity": quantity, "ready_at_seconds": second + 120})
 			elif action_type == "depot_collect":
@@ -158,7 +176,17 @@ static func simulate(config: Dictionary) -> Dictionary:
 						var proceeds := int(listing.get("unit_value", 0)) * int(listing.get("quantity", 0))
 						if proceeds > 0:
 							sales_total += proceeds
-							sale_events.append({"at_seconds": second, "type": "production_sale", "item_id": str(listing.get("item_id", "")), "quantity": int(listing.get("quantity", 0)), "amount": proceeds, "listing_id": listing_id})
+							accounting_revenue += proceeds
+							var sold_quantity := int(listing.get("quantity", 0))
+							var cost_known := bool(listing.get("cost_known", false))
+							var cost_total := int(listing.get("cost_total", 0))
+							if cost_known:
+								accounting_cogs += cost_total
+								accounting_gross_margin += proceeds - cost_total
+							else:
+								unknown_cost_sale_quantity += sold_quantity
+							accounting_sales.append({"at_seconds": second, "listing_id": listing_id, "item_id": str(listing.get("item_id", "")), "quantity": sold_quantity, "revenue": proceeds, "cost_known": cost_known, "cost_basis": cost_total if cost_known else null, "gross_margin": proceeds - cost_total if cost_known else null})
+							sale_events.append({"at_seconds": second, "type": "production_sale", "item_id": str(listing.get("item_id", "")), "quantity": sold_quantity, "amount": proceeds, "listing_id": listing_id, "cost_known": cost_known, "cost_basis": cost_total if cost_known else -1})
 							depot_listings.erase(listing_id)
 							success = true
 							production_log.append({"at_seconds": second, "event": "depot_sale_collected", "listing_id": listing_id, "proceeds": proceeds})
@@ -205,6 +233,8 @@ static func simulate(config: Dictionary) -> Dictionary:
 		"facility_summary": facility_summary,
 		"rejected_actions": rejected_actions,
 		"sales_total": sales_total,
+		"accounting": {"gross_revenue": accounting_revenue, "known_cogs": accounting_cogs, "known_gross_margin": accounting_gross_margin, "unknown_cost_sale_quantity": unknown_cost_sale_quantity, "gross_margin_complete": unknown_cost_sale_quantity == 0, "sales": accounting_sales},
+		"cost_batches": cost_batches,
 		"active_depot_listings": depot_listings,
 		"cash_events": sale_events,
 		"production_log": production_log
@@ -244,6 +274,9 @@ static func _start_store_order(facility: Dictionary, facility_id: String, now: i
 			continue
 		var recipe: Dictionary = recipes.get(str(slot.get("item_id", "")), {})
 		var duration := maxi(1, int(facility.get("duration_overrides", {}).get(str(slot.get("item_id", "")), recipe.get("time_sec", recipe.get("time", 0)))))
+		if not bool(slot.get("operating_cost_applied", false)):
+			slot["cost_total"] = int(slot.get("cost_total", 0)) + roundi(float(duration) * maxf(0.0, float(facility.get("operating_cost_per_second", 0.0))))
+			slot["operating_cost_applied"] = true
 		slot["start_seconds"] = now
 		slot["finish_seconds"] = now + duration
 		slot["queued"] = false
@@ -256,6 +289,69 @@ static func _first_empty_slot(slots: Array) -> int:
 		if slots[index].is_empty():
 			return index
 	return -1
+
+
+static func _initialize_cost_batches(inventory: Dictionary, unit_costs: Variant, errors: Array[String]) -> Dictionary:
+	var result: Dictionary = {}
+	if not unit_costs is Dictionary:
+		errors.append("initial_unit_costs must be a Dictionary.")
+		unit_costs = {}
+	for item_id_variant in inventory.keys():
+		var item_id := str(item_id_variant)
+		var quantity := int(inventory[item_id_variant])
+		var entry: Variant = unit_costs.get(item_id, null)
+		var known := entry != null
+		var unit_cost := 0
+		if entry is Dictionary:
+			known = bool(entry.get("known", true))
+			unit_cost = int(entry.get("unit_cost", 0))
+		elif entry != null:
+			unit_cost = int(entry)
+		if unit_cost < 0:
+			errors.append("Negative initial unit cost for %s." % item_id)
+			known = false
+			unit_cost = 0
+		result[item_id] = [{"quantity": quantity, "unit_cost": unit_cost, "known": known}]
+	return result
+
+static func _append_cost_batch(cost_batches: Dictionary, item_id: String, quantity: int, unit_cost: int, known: bool) -> void:
+	if item_id.is_empty() or quantity <= 0:
+		return
+	var batches: Array = cost_batches.get(item_id, [])
+	batches.append({"quantity": quantity, "unit_cost": maxi(0, unit_cost), "known": known})
+	cost_batches[item_id] = batches
+
+static func _consume_cost_batches(cost_batches: Dictionary, requirements: Dictionary) -> Dictionary:
+	var total_cost := 0
+	var all_known := true
+	var consumed: Dictionary = {}
+	for item_variant in requirements.keys():
+		var item_id := str(item_variant)
+		var remaining := int(requirements[item_variant])
+		var batches: Array = cost_batches.get(item_id, []).duplicate(true)
+		var rebuilt: Array[Dictionary] = []
+		for batch_variant in batches:
+			if remaining <= 0:
+				rebuilt.append(batch_variant.duplicate(true))
+				continue
+			var batch: Dictionary = batch_variant.duplicate(true)
+			var take := mini(remaining, int(batch.get("quantity", 0)))
+			if take <= 0:
+				continue
+			if bool(batch.get("known", false)):
+				total_cost += take * int(batch.get("unit_cost", 0))
+			else:
+				all_known = false
+			remaining -= take
+			var left := int(batch.get("quantity", 0)) - take
+			if left > 0:
+				batch["quantity"] = left
+				rebuilt.append(batch)
+		if remaining > 0:
+			all_known = false
+		cost_batches[item_id] = rebuilt
+		consumed[item_id] = int(requirements[item_variant])
+	return {"known": all_known, "total_cost": total_cost if all_known else 0, "consumed": consumed}
 
 static func _positive_inventory(source: Variant, errors: Array[String]) -> Dictionary:
 	var result: Dictionary = {}
