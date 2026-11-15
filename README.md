@@ -1093,4 +1093,20 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [ ] Verify shadow quality and lighting appearance on Android hardware; FPS gain remains unmeasured until device profiling.
 
 - [x] Preserve the original soft-shadow settings on the main scene key light and update static validation to assert the single-shadow-source architecture.
-- [ ] Rerun static validation and all Godot/Web/Android workflows after the validator correction.
+- [x] After correcting the stale static-validator expectation and test indentation, Godot 4.3 import/parse, GameplaySmoke, VisualPresentationSmoke, static validation, Android APK export/signature and Web/Chromium CI all passed in runs `43744225839` and `43744225717`.
+
+
+## Mobile lighting optimization — single directional shadow source — 2026-11-15
+
+- [x] Keep the main scene key DirectionalLight3D as the sole directional shadow-map owner.
+- [x] Retain the WorldPresentation warm secondary sun as a non-shadowing fill light, preserving its warm contribution while removing the duplicate shadow map and conflicting shadow direction.
+- [x] Move the previous soft shadow settings (opacity, blur, bias, normal bias and distance) to the main scene key light.
+- [x] Update static validation to assert the single-shadow-source contract and VisualPresentationSmoke to verify the secondary fill light.
+- [x] Godot 4.3 static validation, import/parse, startup, GameplaySmoke, VisualPresentationSmoke, visual geometry and economy checks passed in run `43744225839`.
+- [x] Android Debug APK export, signature/package identity verification and artifact upload passed in run `43744225839`.
+- [x] Web export, GameplaySmoke, desktop/mobile Chromium launch, Pages configuration and artifact upload passed in run `43744225717`.
+- [x] PR #524 merged to `main` at `58ca5449dd038b8d2ca39c76b00393ce2a2a8ebd`.
+- [ ] Verify the post-merge GitHub Pages deployment from the push-triggered workflow.
+- [ ] Confirm lighting quality and measure draw calls/frame time on physical Android hardware.
+
+**Structural result:** the world keeps one directional shadow source; the secondary warm fill light no longer requests a second shadow map. Actual FPS improvement remains unmeasured until device profiling.
