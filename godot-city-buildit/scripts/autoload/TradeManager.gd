@@ -149,6 +149,20 @@ func list_for_sale(item_id: String, amount: int = 1) -> bool:
 	trade_state_changed.emit()
 	return true
 
+func cancel_sale_listing(slot_index: int) -> bool:
+	if slot_index < 0 or slot_index >= sell_slots.size():
+		return false
+	var slot: Dictionary = sell_slots[slot_index]
+	var item_id := str(slot.get("item_id", ""))
+	var amount := int(slot.get("amount", 0))
+	if item_id.is_empty() or amount <= 0 or not _item_exists(item_id):
+		return false
+	if not StorageManager.add_item(item_id, amount):
+		return false
+	sell_slots.remove_at(slot_index)
+	trade_state_changed.emit()
+	return true
+
 func collect_sale(slot_index: int) -> bool:
 	if not is_depot_operational() or slot_index < 0 or slot_index >= sell_slots.size():
 		return false
