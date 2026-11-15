@@ -217,8 +217,10 @@ func _test_automatic_production_chain() -> void:
 	var now := int(Time.get_unix_time_from_system())
 	for component in chain_components:
 		for index in range(component.slots.size()):
-			if str(component.slots[index].get("auto_chain_id", "")) == chain_id:
-				component.slots[index]["finish_unix"] = now - 1
+			var active_slot: Dictionary = component.slots[index]
+			if str(active_slot.get("auto_chain_id", "")) == chain_id and int(active_slot.get("finish_unix", 0)) > 0:
+				active_slot["finish_unix"] = now - 1
+				component.slots[index] = active_slot
 		component.refresh_slots()
 	ProductionManager._process_automatic_chains()
 	_check(StorageManager.get_count("metal") == 2, "Completed raw factory jobs must be auto-collected into City Storage.")
