@@ -78,7 +78,48 @@ func _test_construction_bom_contract() -> void:
 	_check(not BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction must be blocked when its BOM materials are missing.")
 	StorageManager.items = {"nails":1, "metal":1}
 	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction BOM must become affordable when all required materials are present.")
+	var villa_bom := BuildManager.get_construction_bom("residential_farm")
+	var apartment_bom := BuildManager.get_construction_bom("residential_apartment")
+	var large_factory_bom := BuildManager.get_construction_bom("factory_nano")
+	var sewage_bom := BuildManager.get_construction_bom("sewage_deluxe")
+	_check(villa_bom != apartment_bom, "Two residential types with different construction duration/unlock tier must resolve different exact BOMs.")
+	_check(int(apartment_bom.get("planks", 0)) > 0 and int(apartment_bom.get("nails", 0)) > int(villa_bom.get("nails", 0)), "Residential apartment BOM must scale above a starter farm by its build complexity.")
+	_check(int(large_factory_bom.get("nails", 0)) > int(BuildManager.get_construction_bom("factory_basic").get("nails", 0)), "Larger/longer factory BOM must scale with its footprint and construction duration.")
+	_check(sewage_bom.has("planks") and sewage_bom.has("bricks") and sewage_bom.has("cement"), "High-tier sewage plant BOM must include the construction materials unlocked by its building tier.")
+	var factory_upgrade_bom := BuildManager.get_non_residential_upgrade_bom("factory_small", 1)
+	_check(factory_upgrade_bom == {"nails":2, "metal":2}, "A starter factory's first non-residential upgrade must have an explicit industrial material bill.")
+	_check(BuildManager.get_non_residential_upgrade_cost("factory_small", 1) >= 100 and BuildManager.get_non_residential_upgrade_duration_seconds("factory_small", 1) >= 20, "Non-residential upgrade must define a real Simoleon cost and timed construction duration.")
+	_check(BuildManager.get_non_residential_upgrade_bom("factory_small", 6).is_empty(), "Non-residential buildings must stop at the supported Level 6 upgrade stage.")
 	StorageManager.from_save_dict(previous_storage)
+
+func _test_non_residential_upgrade_execution() -> void:
+	var wind = _find_building("power_wind")
+	_check(is_instance_valid(wind), "Non-residential upgrade smoke test requires the placed wind power building.")
+	if not is_instance_valid(wind):
+		return
+	var previous_stage := int(wind.upgrade_stage)
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_money := EconomyManager.simoleons
+	var bom := BuildManager.get_non_residential_upgrade_bom(wind.building_type, wind.upgrade_stage)
+	var additions: Dictionary = {}
+	for item_id in bom:
+		var missing := maxi(0, int(bom[item_id]) - StorageManager.get_count(str(item_id)))
+		if missing > 0:
+			additions[str(item_id)] = missing
+	if not additions.is_empty():
+		_check(StorageManager.add_items(additions), "Could not provision the non-residential upgrade's exact material bill.")
+	EconomyManager.simoleons = maxi(EconomyManager.simoleons, BuildManager.get_non_residential_upgrade_cost(wind.building_type, wind.upgrade_stage))
+	var capacity_before := ServiceManager.get_building_service_capacity(wind, "power")
+	_check(wind.try_upgrade(), "A road-connected wind power building with sufficient funds and materials must start a non-residential upgrade.")
+	_check(wind.upgrade_in_progress and wind.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Non-residential upgrade must persist a real future finish timestamp.")
+	wind.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
+	wind.update_upgrade_access_state()
+	_check(not wind.upgrade_in_progress and wind.upgrade_stage == previous_stage + 1, "Non-residential upgrade must complete at its Unix finish timestamp and advance the building stage.")
+	_check(ServiceManager.get_building_service_capacity(wind, "power") > capacity_before, "Upgrading a utility building must increase its actual service capacity.")
+	wind.upgrade_stage = previous_stage
+	ServiceManager.recalculate_from_buildings()
+	StorageManager.from_save_dict(previous_storage)
+	EconomyManager.simoleons = previous_money
 
 func _grant_construction_bom_for_test(type_id: String) -> void:
 	var requirements := BuildManager.get_construction_bom(type_id)
@@ -3844,6 +3885,8 @@ func _run_gameplay_test() -> void:
 	StorageManager.storage_changed.emit()
 	StorageManager.capacity_changed.emit(StorageManager.capacity)
 	GameManager.level = previous_mayor_level
+
+	_test_non_residential_upgrade_execution()
 
 	# Livestock may graze only on the two desert fringe strips, never on asphalt,
 	# connected roads or player-owned/buildable city plots.
