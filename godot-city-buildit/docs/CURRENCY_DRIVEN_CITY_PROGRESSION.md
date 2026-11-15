@@ -208,3 +208,19 @@
 - EA Update 84 (6 Nov 2026): https://www.ea.com/games/simcity/simcity-buildit/news/update-84-patch-notes
 - EA Beginner Guide (Storage, inventory and Special Items): https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/
 - Community City Storage threshold table: https://simcity-buildit.fandom.com/wiki/City_Storage
+
+
+### خروجی واقعی شبیه‌سازی CI برای ۷۳ دستور تولید
+اجرای Godot Validation روی commit کد `6af320332589200b37380302854dec9e0cb584ea`، تست Currency Economy را با PASS اجرا کرد و خروجی `[EconomyChainAudit]` را ثبت نمود. ۷۳ از ۷۳ recipe با صفر ورودی ناشناخته تحلیل شدند.
+
+| ضریب فرضی هزینه ورودی خام | تعداد recipe با حاشیه مثبت از ۷۳ |
+|---:|---:|
+| 1.0× (هزینه فرصت کاتالوگ) | 71 |
+| 1.5× | 68 |
+| 2.0× (قاعده خرید HQ در Mshin) | 61 |
+| 2.5× | 50 |
+| 3.0× | 30 |
+
+در سناریوی 2×، ۱۲ دستور حاشیه منفی دارند: Sports Drink (−1,310)، Teddy Bear (−1,220)، Protein Bar (−785)، Kite (−740)، Microwave Oven (−160)، Soccer Shoes (−140)، Game Console (−120)، Cupboard (−100)، Backpack (−100)، Paint (−40)، Corn (−40)، Popcorn (−30) Simoleons به ازای واحد محصول طبق قیمت مرجع فروش. بهترین حاشیه‌های سناریو 2× در Picnic Basket (+3,300)، Mochi (+2,630)، Profiterole (+2,390)، Pavlova (+1,990) و Carved Wood (+1,340) مشاهده شدند.
+
+تفسیر درست: ضریب ۲× باعث می‌شود خرید مستقیم مواد خام برای برخی محصولات زیان‌ده باشد، اما ۶۱ زنجیره از ۷۳ زنجیره در مدل هزینه فرصت فعلی هنوز حاشیه مثبت دارند. این موضوع اثبات‌کننده تورم پولی نیست؛ خرید از HQ پول را از بازیکن خارج می‌کند و فروش کالا پول را وارد می‌کند. برای نرخ تورم کل و زمان دقیق پیشرفت، باید تمام منابع Simoleons (پاداش شهر، سفارش‌ها، فروش، مأموریت‌ها) و تمام مصارف آن (ساختمان، جاده، بازار، ارتقا و سایر sinkها) در یک شبیه‌سازی طولی سنجیده شود. همچنین مدل فعلی سقف فروش جامعه را به‌عنوان درآمد فرض می‌کند و زمان صف، تقاضا، احتمال فروش، محدودیت ظرفیت تولید موازی و هزینه فرصت زمان بازیکن را کامل مدل نمی‌کند؛ پس به‌عنوان حساب سود قطعی بازی تفسیر نشود.
