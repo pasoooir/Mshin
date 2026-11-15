@@ -81,8 +81,59 @@ func _initialize() -> void:
 		return
 
 	_test_production_capacity_and_cashflow()
+	_test_delivery_order_inventory_and_costs()
 	print("[MacroEconomySmoke] PASS")
 	quit(0)
+
+
+func _test_delivery_order_inventory_and_costs() -> void:
+	var config := {
+		"initial_simoleons": 100,
+		"population": 0,
+		"happiness": 100.0,
+		"occupied_homes": 0,
+		"level": 1,
+		"experience": 0,
+		"horizon_seconds": 1,
+		"item_values": {"nails": 80},
+		"events": [],
+		"production": {
+			"storage_capacity": 5,
+			"depot_operational": true,
+			"initial_inventory": {"nails": 1},
+			"initial_unit_costs": {"nails": 30},
+			"raw_materials": {},
+			"crafted_items": {},
+			"factory_materials": {},
+			"facilities": [],
+			"actions": [{"type": "delivery_order", "order_id": "order-1", "item_id": "nails", "quantity": 1, "reward": 80, "at_seconds": 1}]
+		}
+	}
+	var result: Dictionary = Simulator.simulate(config)
+	if not bool(result.get("valid", false)):
+		_fail("Delivery-order inventory simulation invalid: " + str(result.get("errors", [])))
+		return
+	if int(result.get("source_breakdown", {}).get("delivery_orders", -1)) != 80 or int(result.get("ending_simoleons", -1)) != 180:
+		_fail("Explicit delivery order must add its exact reward to macro cashflow.")
+		return
+	if result.get("production", {}).get("ending_inventory", {}).has("nails"):
+		_fail("Delivery order must consume the requested inventory from the production simulation.")
+		return
+	var accounting: Dictionary = result.get("production_accounting", {})
+	if int(accounting.get("gross_revenue", -1)) != 80 or int(accounting.get("known_cogs", -1)) != 30 or int(accounting.get("known_gross_margin", -1)) != 50:
+		_fail("Delivery order must propagate FIFO COGS 30 and report gross margin 50.")
+		return
+	var unknown_config: Dictionary = config.duplicate(true)
+	unknown_config["production"].erase("initial_unit_costs")
+	var unknown_result: Dictionary = Simulator.simulate(unknown_config)
+	var unknown_accounting: Dictionary = unknown_result.get("production_accounting", {})
+	var unknown_sales: Array = unknown_accounting.get("sales", [])
+	if bool(unknown_accounting.get("gross_margin_complete", true)) or int(unknown_accounting.get("unknown_cost_sale_quantity", 0)) != 1:
+		_fail("Delivery order with unknown inventory acquisition cost must not claim complete gross margin.")
+		return
+	if unknown_sales.size() != 1 or unknown_sales[0].get("gross_margin", 0) != null:
+		_fail("Delivery order with unknown COGS must report null margin rather than fabricate a cost.")
+		return
 
 func _fail(message: String) -> void:
 	push_error("[MacroEconomySmoke] " + message)
