@@ -1005,3 +1005,20 @@ PR #518 is merged; this follow-up corrects its remaining modal and building-hit-
 
 - [x] Android Debug APK export and package signature/identity verification passed in CI.
 - [ ] Web Chromium mobile/desktop launch smoke and Pages deployment are still running/pending.
+
+
+## Production Studio UI redesign — 2026-11-15
+
+- [x] Replace the scattered radial product orbit with a stable, symmetric two-sided honeycomb catalogue; products continue in the same lattice as the catalogue grows.
+- [x] Use responsive, larger hex tiles with readable item names and stock/lock states.
+- [x] Move the building nameplate to a separate top-centered header.
+- [x] Replace the oversized bottom sheet with a compact dark production dock and compact selected-item detail capsule.
+- [x] Restyle queue slots as dark translucent, high-contrast production cells while preserving timers, collect, queue capacity and drop handling.
+- [x] Preserve the 50% city scrim, modal input lock and actual selected-building footprint drop target.
+- [x] Add GameplaySmoke assertions for the separate header, compact details, queue dock height and honeycomb placement.
+- [ ] Godot CI/GameplaySmoke for this redesign.
+- [ ] Android landscape screenshots and physical touch/drag-drop acceptance.
+
+Design references:
+- Figma editable screen/spec: https://www.figma.com/design/iwW3sEi5OibWEK6uCGbkk6
+- Canva art-direction board: https://canva.link/c7cn96j4twon82h
