@@ -67,10 +67,10 @@ The macro result adds collected production sales to its normal Simoleon event le
 
 ## Known limitations — remain unchecked until implemented and tested
 
-1. Full replay of AUTO CHAIN dependency graphs, shared intermediate reservations and multiple concurrent roots.
+1. Cross-root shared intermediate reservation/merging and explicit critical-path analytics are not implemented. AUTO CHAIN replay follows the live per-chain outstanding-slot behavior; independent roots can schedule duplicate intermediate work.
 2. Dynamic operational outages during the replay horizon; live capture currently snapshots the initial operational state.
 3. Live raw/intermediate acquisition-cost history is captured as exact FIFO batches. Factory outputs retain the current game's direct Simoleon cost rule; labor, depreciation and opportunity costs remain outside this accounting model.
-4. Explicit delivery-order consumption of produced stock is not yet coupled to production inventory; current delivery-order cash events remain scenario inputs to the macro simulator.
+4. Cargo Ship COGS and Golden Key non-cash contribution are tracked separately in the live ledger; no Simoleon conversion value or complete Cargo Ship ROI is known.
 5. Demand, probability of finding a buyer, market competition and automatic sell-through remain intentionally unmodeled.
 6. Physical Android acceptance and final balance calibration.
 
@@ -86,3 +86,13 @@ No capacity, demand, sale rate, or recipe value is invented by this simulator. A
 - A target BOM is consumed atomically only after all inputs exist in inventory and the store lane is available.
 - Live snapshots now include active AUTO CHAIN slots and exact `StorageManager.item_cost_batches` instead of rejecting the snapshot.
 - `tests/macro_economy_smoke.gd` covers a nested Hammer → Nails → Metal chain, parallel raw inputs, material consumption, intermediate collection, final product collection and explicit Depot cash settlement.
+
+
+## Merge and validation evidence — PR #514
+
+PR #514 merged to `main` as `96d4dd806945929be8e57201aa4a11c1b2172517`.
+
+- Godot Validation, GameplaySmoke, MacroEconomySmoke, Android Debug APK export and signature verification: [run 43712308645 — success](https://github.com/pasoooir/Mshin/actions/runs/43712308645).
+- Web export, Chromium desktop/mobile launch and artifact upload: [run 43712308649 — success](https://github.com/pasoooir/Mshin/actions/runs/43712308649).
+
+The first strict AUTO CHAIN test exposed a real event-order boundary: the final automatic output is collected after player actions at the same simulation second. The Depot listing test now runs one second later. MacroEconomySmoke was corrected to return a failing process exit code on any assertion, preventing a later PASS message from masking an earlier failure.
