@@ -41,12 +41,18 @@ A successful depot collection emits a `production_sale` cash event which `MacroE
 `ProductionCapacitySimulator.capture_live_city_config(horizon_seconds, actions)` snapshots:
 - Current Simoleons balance, population, happiness, level, XP, XP thresholds and count of occupied residential homes (unless explicitly overridden by scenario inputs).\n- Current City Storage inventory and capacity.
 - Existing production components, actual slot counts, operational status, factory/store identity, and store-star duration overrides.
-- Existing ordinary queue/production slot states and remaining timers.
+- Existing ordinary and AUTO CHAIN queue/production slot states and remaining timers.
+- Exact live FIFO inventory cost batches, including known/unknown status and batch total costs.
 - Current Trade Depot operational status and active listing timers.
 
 `MacroEconomySimulator.simulate_live_city(config)` attaches that snapshot and replays the supplied `production_actions`.
 
-The live snapshot currently refuses to run while an AUTO CHAIN job is active. Those jobs are dependency-managed by `ProductionManager`; treating them as ordinary manual queued jobs would start them before recursively scheduled ingredients exist. This is an explicit safety gate, not a silently approximated result.
+AUTO CHAIN replay is now supported as a separate explicit action. The simulator keeps dependency slots marked with their chain id, schedules missing raw/intermediate ingredients, consumes the complete BOM only when the target store job can actually start, collects automatic outputs into City Storage subject to capacity, and replays already-active live AUTO CHAIN slots from the captured city snapshot. It does not reinterpret these slots as ordinary manual store queue entries.
+
+Scenario action:
+- `auto_chain`: `facility_id`, `item_id`, optional `slot_index` and optional stable `chain_id`. It reserves a target store slot only when the recipe is unlocked and the recursive supplier graph can be resolved. Production and collection are then automatic; no sale is implied.
+
+The replay follows the live per-chain outstanding-slot contract. Shared physical inventory is global and every BOM consumption is atomic. Independent roots are not merged into a fictitious shared dependency reservation; separate roots may schedule separate intermediate work, as the current live scheduler does.
 
 ## Output
 
@@ -63,9 +69,20 @@ The macro result adds collected production sales to its normal Simoleon event le
 
 1. Full replay of AUTO CHAIN dependency graphs, shared intermediate reservations and multiple concurrent roots.
 2. Dynamic operational outages during the replay horizon; live capture currently snapshots the initial operational state.
-3. Raw material and intermediate inventory cost-basis tracking. Current production sales affect cashflow, but catalog values are not treated as cash purchase costs. Therefore net Simoleons is not yet an accounting-grade net profit figure.
+3. Live raw/intermediate acquisition-cost history is captured as exact FIFO batches. Factory outputs retain the current game's direct Simoleon cost rule; labor, depreciation and opportunity costs remain outside this accounting model.
 4. Explicit delivery-order consumption of produced stock is not yet coupled to production inventory; current delivery-order cash events remain scenario inputs to the macro simulator.
 5. Demand, probability of finding a buyer, market competition and automatic sell-through remain intentionally unmodeled.
 6. Physical Android acceptance and final balance calibration.
 
 No capacity, demand, sale rate, or recipe value is invented by this simulator. All scenario actions and all numerical catalog inputs must be traceable to the current game data or explicitly labelled scenario assumptions.
+
+
+## AUTO CHAIN replay acceptance
+
+- The `auto_chain` action reserves the requested target slot and carries one chain id through raw factory jobs and intermediate store jobs.
+- Raw factory jobs can occupy multiple factory slots in parallel.
+- Intermediate stores keep one active timer per building; automatic dependency slots do not start through the manual queue path.
+- Ready AUTO CHAIN outputs are collected before dependent store jobs advance, but only while warehouse capacity is available.
+- A target BOM is consumed atomically only after all inputs exist in inventory and the store lane is available.
+- Live snapshots now include active AUTO CHAIN slots and exact `StorageManager.item_cost_batches` instead of rejecting the snapshot.
+- `tests/macro_economy_smoke.gd` covers a nested Hammer → Nails → Metal chain, parallel raw inputs, material consumption, intermediate collection, final product collection and explicit Depot cash settlement.
