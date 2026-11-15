@@ -143,7 +143,9 @@ func _build_conversion() -> void:
 	cancel.add_theme_stylebox_override("normal", _button_style(Color("#40566A")))
 	cancel.pressed.connect(close_panel)
 	_content.add_child(cancel)
-	_content.add_child(_label("CITY SUPPLY MARKET", 16, Color("#F7D77D")))
+	var market_heading := _label("CITY SUPPLY MARKET", 16, Color("#F7D77D"))
+	market_heading.name = "CitySupplyMarketHeading"
+	_content.add_child(market_heading)
 	_content.add_child(_notice("Buy unlocked resources with Simoleons", "Purchase raw materials and crafted goods directly into your warehouse. Prices are Mshin market prices, not official EA Global Trade HQ prices."))
 	for item_id in _get_market_item_ids():
 		_content.add_child(_market_item_row(item_id))
@@ -168,7 +170,9 @@ func _confirm_conversion() -> void:
 func _build_store() -> void:
 	_content.add_child(_balance_panel())
 	_content.add_child(_notice("SANDBOX PAYMENT MODE", "The bank hand-off is simulated only. No card details are collected and no real money is charged. Product prices will be configured after merchant and gateway onboarding."))
-	_content.add_child(_label("CITY PROGRESS BOOSTS", 16, Color("#F7D77D")))
+	var boosts_heading := _label("CITY PROGRESS BOOSTS", 16, Color("#F7D77D"))
+	boosts_heading.name = "CityProgressBoostsHeading"
+	_content.add_child(boosts_heading)
 	_content.add_child(_notice("Use SimCash to save time", "Finish active factory/store production, construction and upgrades. Mshin quote: 1 SimCash per started minute remaining. Access and service requirements still apply."))
 	_add_active_progress_boosts()
 	_content.add_child(_label("COMMERCIAL QUEUE SLOTS", 16, Color("#F7D77D")))
