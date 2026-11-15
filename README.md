@@ -1155,8 +1155,8 @@ This interaction replaces drag/drop as the primary production action. Earlier dr
 - [x] The existing ProductionComponent starts real Unix-timestamp countdowns; the queue dock immediately shows the timer/progress and keeps existing completion/Collect behavior.
 - [x] Tapping a store product with missing ingredients opens the existing detail capsule and reports the exact missing City Storage items; no inventory is consumed and no order is queued.
 - [x] Added GameplaySmoke coverage for smooth camera zoom, real 3D six-sided white hex meshes, immediate factory taps, immediate sequential store taps, and the missing-input rejection path.
-- [ ] Godot import/parse, GameplaySmoke, Android APK and Web/Chromium CI for this change.
-- [ ] Post-merge GitHub Pages deployment verification.
+- [x] Godot 4.3 import/parse, GameplaySmoke, Android Debug APK export/signature, Web export and desktop/mobile Chromium passed: validation run `43750094145`; Web run `43750094150`.
+- [x] Post-merge GitHub Pages build/deploy passed on main commit `c6409688df5c57fc0a0420cc2cb191a72242785b` (run `43750279948`).
 - [ ] Physical Android landscape review of camera zoom, 3D orbit spacing, and tap targets.
 
 No recipe inputs, item durations, storage rules, queue capacity, or collection semantics were changed.
@@ -1169,6 +1169,7 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Tapping a missing material token locates its registered supplier; when a completed supplier exists, the game opens that supplier and submits the material/product directly if its real production prerequisites and queue capacity allow it.
 - [x] If no completed supplier exists, the player receives the supplier/building requirement instead of a fake order.
 - [x] GameplaySmoke verifies one 3D hex and one tap target per residential upgrade material.
-- [ ] Godot import/parse, GameplaySmoke, Android APK and Web/Chromium CI for this follow-up.
+- [x] Godot 4.3 import/parse, GameplaySmoke, Android Debug APK export/signature, Web export and desktop/mobile Chromium passed: validation run `43750729685`; Web run `43750729686` (APK artifact uploaded).
+- [ ] Post-merge GitHub Pages deployment verification for merge commit `f873046243faa1ea400c41a9a13fec222bf66e70`.
 - [ ] Physical Android landscape inspection of house-material orbit placement and tap target reachability.
 
