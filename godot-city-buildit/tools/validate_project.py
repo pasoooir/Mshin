@@ -909,6 +909,24 @@ if "func _create_asphalt_textures" in road_source:
     if asphalt_body is None or "normal_image" not in asphalt_body.group(0) or "fine_grain" not in asphalt_body.group(0) or "image.generate_mipmaps()" not in asphalt_body.group(0) or "normal_image.generate_mipmaps()" not in asphalt_body.group(0):
         errors.append("Asphalt must include natural grain variation and a generated normal map")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
+performance_monitor_source = (ROOT / "scripts/autoload/PerformanceMonitor.gd").read_text(encoding="utf-8")
+for contract in [
+    "func _capture_render_metrics()", "func _build_render_metrics_report()",
+    "func summarize_numeric_samples(samples: Array[float]) -> Dictionary:",
+    '"draw_calls": summarize_numeric_samples(_draw_call_samples)',
+    '"rendered_primitives": summarize_numeric_samples(_rendered_primitive_samples)',
+    '"graphics_quality": GraphicsSettingsManager.quality'
+]:
+    if contract not in performance_monitor_source:
+        errors.append(f"On-device render benchmark contract is missing: {contract}")
+for contract in [
+    "func _test_performance_monitor_aggregation()",
+    "Render metrics must report the arithmetic mean across all frames.",
+    "Render metrics must report the nearest-rank p95 across all frames.",
+    "An empty render sample set must produce safe zero metrics."
+]:
+    if contract not in gameplay_smoke:
+        errors.append(f"Performance benchmark regression test is missing: {contract}")
 for road_test in [
     "three-neighbor starter-road tile", "must be an End/stub",
     "must produce a Straight tile", "must produce a T-junction",
