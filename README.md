@@ -1119,7 +1119,10 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Record active graphics quality preset alongside device, viewport and frame-time metadata.
 - [x] Extend the in-game benchmark completion message with average/p95 draw-call counts.
 - [x] Add GameplaySmoke coverage for numeric metric aggregation, nearest-rank p95, maximum/last sample and empty input handling.
-- [ ] Godot static validation, import/parse, GameplaySmoke, Web/Chromium and Android APK CI.
+- [x] Godot static validation, import/parse, GameplaySmoke, Web/Chromium and Android APK CI passed in runs `43745050332` and `43745050339`.
 - [ ] Run the benchmark on physical Android hardware and capture a real report; CI cannot substitute for device measurements.
 
 **Measurement rule:** this change improves report sampling and transparency; it does not claim a performance gain by itself.
+
+- [x] PR #525 merged to `main` at `b8c0ccbf04af6fb71d5670a14c0baf20d6f39a74`.
+- [ ] Run the 30-second benchmark on a physical Android device and review the generated `user://performance_benchmark_latest.json` report; no measured FPS gain is claimed by this diagnostics change.
