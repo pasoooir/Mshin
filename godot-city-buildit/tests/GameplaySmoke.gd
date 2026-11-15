@@ -232,6 +232,18 @@ func _test_automatic_production_chain() -> void:
 	var chain_id := ProductionManager.request_production_chain("chair", 1)
 	_check(not chain_id.is_empty(), "A valid multi-store recipe must accept an automatic production-chain request.")
 	_check(_count_test_chain_jobs([factory, building_supplies, hardware_store, furniture_store], chain_id) >= 4, "The automatic planner must schedule parallel raw inputs before the two intermediate craft dependencies become material-ready.")
+	var saved_chain_ledger := ProductionManager.to_save_dict()
+	var saved_factory_slots := factory.to_save_array()
+	var saved_supplies_slots := building_supplies.to_save_array()
+	var saved_hardware_slots := hardware_store.to_save_array()
+	var saved_furniture_slots := furniture_store.to_save_array()
+	ProductionManager.production_chain_orders.clear()
+	factory.from_save_array(saved_factory_slots)
+	building_supplies.from_save_array(saved_supplies_slots)
+	hardware_store.from_save_array(saved_hardware_slots)
+	furniture_store.from_save_array(saved_furniture_slots)
+	ProductionManager.from_save_dict(saved_chain_ledger)
+	_check(_count_test_chain_jobs([factory, building_supplies, hardware_store, furniture_store], chain_id) == 4, "Restoring the chain ledger and producer queues must not duplicate already reserved dependency jobs.")
 	var completed := false
 	for _iteration in range(24):
 		var now := int(Time.get_unix_time_from_system())
