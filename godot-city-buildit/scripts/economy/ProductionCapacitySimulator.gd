@@ -299,6 +299,13 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 	var scene_tree := Engine.get_main_loop() as SceneTree
 	if scene_tree == null:
 		return {"capture_error": "A live SceneTree is required."}
+	var root := scene_tree.root
+	var production_manager = root.get_node_or_null("ProductionManager")
+	var storage_manager = root.get_node_or_null("StorageManager")
+	var trade_manager = root.get_node_or_null("TradeManager")
+	var game_manager = root.get_node_or_null("GameManager")
+	if production_manager == null or storage_manager == null or trade_manager == null or game_manager == null:
+		return {"capture_error": "One or more required production/economy autoloads are unavailable."}
 	var now := int(Time.get_unix_time_from_system())
 	var facilities: Array[Dictionary] = []
 	var has_automatic_chain_jobs := false
@@ -324,7 +331,7 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 				slot["ready"] = bool(slot.get("ready", false)) or (finish_unix > 0 and remaining == 0)
 			initial_slots.append(slot)
 		if not component.is_factory:
-			for recipe_id in ProductionManager.get_store_recipe_ids(str(component.shop_id)):
+			for recipe_id in production_manager.get_store_recipe_ids(str(component.shop_id)):
 				duration_overrides[str(recipe_id)] = int(ceil(component.get_item_production_time(str(recipe_id))))
 		facilities.append({
 			"id": facility_id,
@@ -340,7 +347,7 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 	if has_automatic_chain_jobs:
 		return {"capture_error": "Live automatic dependency chains are active; their dependency graph is not yet included in this snapshot."}
 	var depot_snapshot: Dictionary = {}
-	for listing_variant in TradeManager.sell_slots:
+	for listing_variant in trade_manager.sell_slots:
 		var listing: Dictionary = listing_variant.duplicate(true)
 		var listing_id := str(listing.get("listing_id", ""))
 		if listing_id.is_empty():
@@ -355,19 +362,19 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 			"unit_value": int(listing.get("price", 0)) / maxi(1, int(listing.get("amount", 1))),
 			"listed_at_seconds": -age
 		}
-	var raw_catalog: Dictionary = ProductionManager.raw_materials.duplicate(true)
-	var crafted_catalog: Dictionary = ProductionManager.crafted_items.duplicate(true)
+	var raw_catalog: Dictionary = production_manager.raw_materials.duplicate(true)
+	var crafted_catalog: Dictionary = production_manager.crafted_items.duplicate(true)
 	return {
 		"horizon_seconds": maxi(0, horizon_seconds),
-		"storage_capacity": int(StorageManager.capacity),
-		"initial_inventory": StorageManager.get_all_items(),
+		"storage_capacity": int(storage_manager.capacity),
+		"initial_inventory": storage_manager.get_all_items(),
 		"raw_materials": raw_catalog,
 		"crafted_items": crafted_catalog,
-		"factory_materials": ProductionManager.factory_materials.duplicate(true),
-		"mayor_level": int(GameManager.level),
-		"invalid_recipe_ids": ProductionManager.get_recipe_validation_report().get("invalid_recipe_ids", []),
+		"factory_materials": production_manager.factory_materials.duplicate(true),
+		"mayor_level": int(game_manager.level),
+		"invalid_recipe_ids": production_manager.get_recipe_validation_report().get("invalid_recipe_ids", []),
 		"facilities": facilities,
 		"actions": actions.duplicate(true),
-		"depot_operational": TradeManager.is_depot_operational(),
+		"depot_operational": trade_manager.is_depot_operational(),
 		"initial_depot_listings": depot_snapshot
 	}
