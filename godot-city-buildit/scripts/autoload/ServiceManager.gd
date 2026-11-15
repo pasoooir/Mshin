@@ -274,6 +274,13 @@ func _has_nearby_emergency_facility(home: Node3D, service_group: String) -> bool
 	return false
 
 func recalculate_from_buildings() -> void:
+	# Synchronize occupied household population against the previous completed
+	# service snapshot before allocating staff. This prevents workforce from
+	# using a stale GameManager.population during a same-frame service outage or
+	# household occupancy change. Final happiness is recalculated after the new
+	# service/coverage maps are committed below.
+	if has_node("/root/HappinessManager"):
+		HappinessManager.recalculate_city()
 	total_power = 0
 	demand_power = 0
 	used_power = 0
@@ -405,10 +412,8 @@ func recalculate_from_buildings() -> void:
 				used_waste += waste_need
 				waste_served_ids[consumer.building_id] = true
 
-	# Update household occupancy from the newly calculated basic services
-	# before allocating the finite workforce pool to producers and stations.
-	if has_node("/root/HappinessManager"):
-		HappinessManager.recalculate_city()
+	# Staff remaining producers and emergency facilities after their complete
+	# road, utility, sewage and waste service prerequisites have been allocated.
 	_recalculate_workforce(operating_consumers, "consumers")
 
 	# Fire, Police and Health coverage is valid only while the provider itself
