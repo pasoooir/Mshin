@@ -2172,8 +2172,10 @@ func open_production_panel(building: Building) -> void:
 		empty_catalog.add_theme_color_override("font_color", Color("#F5DFA0"))
 		product_grid.add_child(empty_catalog)
 
-	# Reflow verified products into touch-friendly columns; vertical scrolling
-	# exposes every product without clipping a second row on compact screens.
+	# Hex tiles use one responsive size per viewport, so the same honeycomb
+	# geometry is used by both the left and right material clusters.
+	var selector_edge := 76.0 if viewport_size.x > 1100.0 else 58.0
+	# Reflow verified products into two symmetric honeycomb clusters.
 	for item_index in range(item_ids.size()):
 		var item_id: String = str(item_ids[item_index])
 		var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
@@ -2186,7 +2188,6 @@ func open_production_panel(building: Building) -> void:
 
 		var item_button := Button.new()
 		item_button.name = "Slot%d_%s" % [available_slot, item_id]
-		var selector_edge := 76.0 if viewport_size.x > 1100.0 else 58.0
 		item_button.custom_minimum_size = Vector2(selector_edge, selector_edge + 12.0) * _ui_scale
 		item_button.focus_mode = Control.FOCUS_NONE
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
