@@ -1194,7 +1194,9 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Increase mobile product card and item-icon sizes; enlarge residential material cards as well.
 - [x] Place 3D material platforms on the camera-facing orbit plane so products are not hidden on the far side of the building.
 - [x] Extend GameplaySmoke to check card size, z-order, opaque surface and visibility.
-- [ ] Run Godot validation, GameplaySmoke, Android APK export, and desktop/mobile Chromium smoke on this revision.
+- [x] Godot validation + GameplaySmoke + Android Debug APK export passed (run `43755633708`).
+- [x] Web export + desktop/mobile Chromium smoke passed (run `43755633706`).
+- [ ] Merge and verify post-merge Pages deployment.
 - [ ] Verify actual touch behavior on a physical Android device.
 
 **Scope:** this addresses the reported case where material/product icons appeared behind the building and were too small to tap. It is not marked delivered until the new CI revision passes and Pages is redeployed.
