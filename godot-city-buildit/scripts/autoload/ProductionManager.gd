@@ -874,7 +874,7 @@ func _process(delta: float) -> void:
 		return
 	_automatic_chain_tick_elapsed = 0.0
 	if _advance_automatic_chain_orders():
-		if has_node("/root/SaveManager"):
+		if has_node("/root/SaveManager") and not SaveManager.is_loading:
 			SaveManager.save_game()
 
 func start_automatic_chain(item_id: String, quantity: int = 1) -> String:
@@ -900,7 +900,7 @@ func start_automatic_chain(item_id: String, quantity: int = 1) -> String:
 		"last_error": ""
 	})
 	automatic_chain_changed.emit(order_id)
-	if has_node("/root/SaveManager"):
+	if has_node("/root/SaveManager") and not SaveManager.is_loading:
 		SaveManager.save_game()
 	return order_id
 
@@ -942,7 +942,19 @@ func from_save_dict(data: Dictionary) -> void:
 	automatic_chain_changed.emit("")
 
 func resume_after_restore() -> void:
-	for component in _get_live_production_components():
+	var valid_reservations: Dictionary = {}
+	var components := _get_live_production_components()
+	for component in components:
+		for slot in component.slots:
+			if slot.is_empty():
+				continue
+			var reservation_id := str(slot.get("reservation_id", ""))
+			if not reservation_id.is_empty() and not bool(slot.get("inputs_escrowed", false)):
+				valid_reservations[reservation_id] = true
+	for reservation_id in StorageManager.reservations.keys():
+		if not valid_reservations.has(str(reservation_id)):
+			StorageManager.release_reservation(str(reservation_id))
+	for component in components:
 		component.refresh_slots()
 
 func _get_live_production_components() -> Array:
