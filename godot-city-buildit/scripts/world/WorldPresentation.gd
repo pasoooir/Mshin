@@ -633,6 +633,19 @@ func _create_clustered_canopy_mesh() -> ArrayMesh:
 	return surface.commit()
 
 
+func _tree_instance_transform(index: int, position: Vector3, height_offset: float) -> Transform3D:
+	# Keep transform generation independent of RenderingServer so it can be
+	# validated in headless CI; the exact result is also written to MultiMesh.
+	var scale := 0.82 + float((index * 7) % 5) * 0.09
+	var width_variation := 0.88 + float((index * 3) % 5) * 0.075
+	var height_variation := 0.88 + float((index * 7) % 4) * 0.09
+	var depth_variation := 0.90 + float((index * 11) % 4) * 0.07
+	var yaw := float((index * 37) % 360) * PI / 180.0
+	var basis := Basis(Vector3.UP, yaw).scaled(Vector3(scale * width_variation, scale * height_variation, scale * depth_variation))
+	var origin := position + Vector3(0.0, height_offset * scale * height_variation, 0.0)
+	return Transform3D(basis, origin)
+
+
 func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vector3], height_offset: float) -> MultiMeshInstance3D:
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
@@ -653,14 +666,7 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 		Color(0.72, 0.79, 0.40), Color(0.42, 0.62, 0.25)
 	]
 	for index in range(positions.size()):
-		var scale := 0.82 + float((index * 7) % 5) * 0.09
-		var width_variation := 0.88 + float((index * 3) % 5) * 0.075
-		var height_variation := 0.88 + float((index * 7) % 4) * 0.09
-		var depth_variation := 0.90 + float((index * 11) % 4) * 0.07
-		var yaw := float((index * 37) % 360) * PI / 180.0
-		var basis := Basis(Vector3.UP, yaw).scaled(Vector3(scale * width_variation, scale * height_variation, scale * depth_variation))
-		var origin := positions[index] + Vector3(0.0, height_offset * scale * height_variation, 0.0)
-		multimesh.set_instance_transform(index, Transform3D(basis, origin))
+		multimesh.set_instance_transform(index, _tree_instance_transform(index, positions[index], height_offset))
 		if node_name == "TreeCanopies":
 			multimesh.set_instance_color(index, foliage_palette[index % foliage_palette.size()])
 		elif node_name == "TreeTrunks":
