@@ -15,6 +15,7 @@ const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
 const MacroEconomySimulatorScript = preload("res://scripts/economy/MacroEconomySimulator.gd")
+const ProductionCapacitySimulatorScript = preload("res://scripts/economy/ProductionCapacitySimulator.gd")
 
 class FireHazardTestBuilding extends Node3D:
 	var building_id: String = ""
@@ -393,6 +394,35 @@ func _test_live_macro_economy_snapshot() -> void:
 	var production: Dictionary = snapshot.get("production", {})
 	_check(int(production.get("storage_capacity", -1)) == StorageManager.capacity, "Live production snapshot must use the active City's real warehouse capacity.")
 	_check(production.get("ending_inventory", {}) == StorageManager.get_all_items(), "Live production snapshot must preserve the exact current City Storage inventory.")
+
+	var auto_chain_probe := ProductionComponentScript.new()
+	auto_chain_probe.name = "LiveAutoChainSnapshotProbe"
+	auto_chain_probe.shop_id = "building_supplies"
+	auto_chain_probe.slot_count = 2
+	add_child(auto_chain_probe)
+	auto_chain_probe.slots[0] = {
+		"item_id": "nails",
+		"start_unix": 0,
+		"finish_unix": 0,
+		"ready": false,
+		"queued": true,
+		"auto_chain_id": "snapshot-chain-probe",
+		"auto_chain_root": true,
+		"auto_chain_started": false
+	}
+	var production_capture: Dictionary = ProductionCapacitySimulatorScript.capture_live_city_config(0, [])
+	_check(not production_capture.has("capture_error"), "Live production snapshot must accept active AUTO CHAIN slots rather than refusing the entire city capture.")
+	var found_auto_chain := false
+	for facility_variant in production_capture.get("facilities", []):
+		var facility: Dictionary = facility_variant
+		for slot_variant in facility.get("initial_slots", []):
+			var slot: Dictionary = slot_variant
+			if str(slot.get("auto_chain_id", "")) == "snapshot-chain-probe":
+				found_auto_chain = true
+	_check(found_auto_chain, "Live production capture must preserve AUTO CHAIN root identity and queued state.")
+	_check(production_capture.get("initial_cost_batches", {}) == StorageManager.item_cost_batches, "Live production capture must carry the exact FIFO batch ledger from City Storage.")
+	auto_chain_probe.queue_free()
+	await get_tree().process_frame
 
 	var previous_ledger: Array[Dictionary] = EconomyManager.transaction_ledger.duplicate(true)
 	var previous_sequence := EconomyManager.transaction_sequence
