@@ -310,7 +310,7 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 	var facilities: Array[Dictionary] = []
 	var has_automatic_chain_jobs := false
 	for component in scene_tree.get_nodes_in_group("production_components"):
-		if not is_instance_valid(component) or not component is ProductionComponent:
+		if not is_instance_valid(component) or not component.is_in_group("production_components"):
 			continue
 		var owner = component.owner_building
 		var facility_id := str(owner.get("building_id")) if is_instance_valid(owner) else ""
