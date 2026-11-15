@@ -446,3 +446,12 @@ README با سه وضعیت انجام‌شده/ناقص/انجام‌نشده �
 - `SaveManager.capture_region_snapshot()` وضعیت construction را پیش از ثبت ذخیره می‌کند و `construction_paused_remaining_seconds` را کنار زمان پایان ثبت می‌کند؛ restore نیز ساختمان ذخیره‌شده بدون دسترسی جاده را تکمیل نمی‌کند.
 - `GameplaySmoke.gd::_test_road_gateway_connectivity` توقف تایمر، عدم مصرف زمان در قطعی طولانی، ذخیره snapshot و ادامه با دو ثانیه پس از اتصال را بررسی می‌کند؛ آزمون ارتقای مسکونی PR #448 نیز حفظ زمان ارتقا را پوشش می‌دهد.
 - محدودیت: این تغییر ساخت اولیه و ارتقای مسکونی را از نظر تایمر پوشش می‌دهد؛ تمام تعاملات همه ساختمان‌ها/تأسیسات و اعتبارسنجی فیزیکی هنوز کامل نیستند.
+
+
+### Production chains, per-building BOMs and service gates — PR #490
+- `ProductionManager.request_production_chain()` exposes the player-facing AUTO CHAIN action. It recursively schedules missing raw and crafted dependencies on actual built, unlocked, operational factory/store components; no virtual suppliers are created.
+- Shared in-flight intermediate jobs are counted across active chains. Store inputs are atomically deducted when a queue slot accepts the order and recorded as `reserved_inputs`; chain slots and per-region order progress survive save/load. Intermediate and final outputs auto-collect into City Storage, while a full warehouse leaves the ready item on its producer.
+- Construction BOMs are resolved per building type using Mshin footprint/economic/unlock data. Non-residential commercial, industrial, service and park buildings support material-gated stage upgrades and persisted timers.
+- Production gates cover Gateway road, power/water, workforce, sewage/waste once each service unlocks, and configured emergency coverage. Advanced factories require fire coverage; advanced retail requires police coverage. HUD shows the exact blocking prerequisite.
+- GameplaySmoke now verifies a multi-stage Chair chain, concurrent shared-intermediate reuse, no duplicate in-flight dependency batches after restore, per-building BOM material unlock compatibility, non-residential upgrade transactions and sanitation/emergency gates.
+- Recipe provenance boundary remains: unresolved community recipe quantities are not EA-certified and remain blocked where conflicting or unverified.
