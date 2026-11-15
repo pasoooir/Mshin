@@ -3839,6 +3839,9 @@ func _run_gameplay_test() -> void:
 	StorageManager.items = {}
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
 	production_hud.open_production_panel(supplies)
+	var visible_store_queue := production_hud.production_panel.find_child("ProductionQueueSlots", true, false) as HBoxContainer
+	_check(visible_store_queue != null and visible_store_queue.get_child_count() >= 6, "Commercial production dock must always render six visible queue tiles, with unpurchased capacity clearly locked.")
+	_check(production_hud.production_panel.find_child("QueueSlot2", true, false) != null and production_hud.production_panel.find_child("QueueSlot2", true, false).find_child("LockedQueueLabel", true, false) is Label, "Store queue tiles beyond the paid capacity must be visibly locked, not silently usable or shown as free empty slots.")
 	var nails_button_0 := production_hud.production_overlay.find_child("Slot0_nails", true, false) as Button
 	_check(nails_button_0 != null and nails_button_0.find_child("HexagonBackground", true, false) is Polygon2D, "Production choices must use floating hexagonal item tiles like SimCity BuildIt.")
 	if nails_button_0:
