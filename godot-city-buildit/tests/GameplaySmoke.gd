@@ -244,7 +244,11 @@ func _test_automatic_production_chain() -> void:
 		if str(state.get("status", "")) == "complete":
 			completed = true
 			break
-	_check(completed, "The automatic scheduler must finish a multi-stage Chair chain without manual intervention.")
+	var final_chain_state := ProductionManager.get_production_chain_status(chain_id)
+	_check(completed, "The automatic scheduler must finish a multi-stage Chair chain without manual intervention. State=%s Storage=%s Factory=%s Supplies=%s Hardware=%s Furniture=%s" % [
+		str(final_chain_state), str(StorageManager.items), str(factory.slots),
+		str(building_supplies.slots), str(hardware_store.slots), str(furniture_store.slots)
+	])
 	_check(StorageManager.get_count("chair") == 1, "The root product must be automatically collected into City Storage.")
 	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Raw materials must be consumed exactly once across shared dependency branches.")
 	_check(StorageManager.get_count("nails") == 0 and StorageManager.get_count("hammer") == 0, "Intermediate crafted materials must be consumed by the downstream order, not duplicated.")
