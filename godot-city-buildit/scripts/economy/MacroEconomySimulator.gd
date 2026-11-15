@@ -85,10 +85,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 					if not item_values.has(item_id) or quantity <= 0:
 						errors.append("Invalid depot_sale event for %s." % item_id)
 						continue
-					# A listing becomes collectible after the actual 120-second Depot timer.
-					var ready_at := int(event.get("at_seconds", 0)) + DEPOT_LISTING_SECONDS
-					if ready_at > horizon_seconds:
-						continue
+					# The event timestamp was shifted by the 120-second listing timer above.
 					flow = int(item_values[item_id]) * quantity
 					source_bucket = "depot_sales"
 				"delivery_order":
