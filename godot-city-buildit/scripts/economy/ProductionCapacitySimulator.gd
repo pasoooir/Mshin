@@ -7,7 +7,7 @@ class_name ProductionCapacitySimulator
 #   acting as a FIFO queue;
 # - commercial inputs are consumed atomically when an order is accepted;
 # - collection is blocked by warehouse capacity and never discards output;
-# - cash is generated only by an explicit cash_sale action (never by crafting).
+# - cash is generated only by explicit Trade Depot collection after its listing timer (never by crafting).
 static func simulate(config: Dictionary) -> Dictionary:
 	var errors: Array[String] = []
 	var horizon := maxi(0, int(config.get("horizon_seconds", 0)))
@@ -101,7 +101,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 					var slot_index := int(action.get("slot_index", -1))
 					if slot_index >= 0 and slot_index < facility.slots.size():
 						var slot: Dictionary = facility.slots[slot_index]
-						if not slot.is_empty() and bool(slot.get("ready", false)) and (item_id.is_empty() or item_id == str(slot.get("item_id", ""))) and _inventory_used(inventory) + 1 <= capacity:
+						if quantity == 1 and not slot.is_empty() and bool(slot.get("ready", false)) and (item_id.is_empty() or item_id == str(slot.get("item_id", ""))) and _inventory_used(inventory) + 1 <= capacity:
 							inventory[item_id if item_id != "" else str(slot.get("item_id", ""))] = int(inventory.get(item_id if item_id != "" else str(slot.get("item_id", "")), 0)) + 1
 							var collected_id := item_id if item_id != "" else str(slot.get("item_id", ""))
 							collected_outputs[collected_id] = int(collected_outputs.get(collected_id, 0)) + 1
@@ -115,7 +115,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 				if facilities.has(facility_id):
 					var facility: Dictionary = facilities[facility_id]
 					var allowed: Array = factory_materials.get(str(facility.get("factory_type", "")), [])
-					if bool(facility.operational) and str(facility.kind) == "factory" and raw_catalog.has(item_id) and allowed.has(item_id) and int(raw_catalog[item_id].get("level", 1)) <= int(config.get("mayor_level", 1)):
+					if quantity == 1 and bool(facility.operational) and str(facility.kind) == "factory" and raw_catalog.has(item_id) and allowed.has(item_id) and int(raw_catalog[item_id].get("level", 1)) <= int(config.get("mayor_level", 1)):
 						var slot_index := _first_empty_slot(facility.slots)
 						if slot_index >= 0:
 							var duration := maxi(1, int(raw_catalog[item_id].get("time_sec", raw_catalog[item_id].get("time", 0))))
@@ -129,7 +129,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 					var recipe: Dictionary = recipes.get(item_id, {})
 					var inputs: Dictionary = recipe.get("requires", {})
 					var slot_index := _first_empty_slot(facility.slots)
-					if bool(facility.operational) and str(facility.kind) == "store" and str(recipe.get("store", "")) == str(facility.get("shop_id", "")) and _recipe_unlocked(item_id, recipe, facility, raw_catalog, recipes, config) and not inputs.is_empty() and slot_index >= 0 and _has_inventory(inventory, inputs):
+					if quantity == 1 and bool(facility.operational) and str(facility.kind) == "store" and str(recipe.get("store", "")) == str(facility.get("shop_id", "")) and _recipe_unlocked(item_id, recipe, facility, raw_catalog, recipes, config) and not inputs.is_empty() and slot_index >= 0 and _has_inventory(inventory, inputs):
 						# Match ProductionComponent.start_craft: reserve the entire
 						# recipe at queue admission, not when its timer begins.
 						_remove_inventory(inventory, inputs)
@@ -154,7 +154,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 				var listing_id := str(action.get("listing_id", ""))
 				if depot_listings.has(listing_id):
 					var listing: Dictionary = depot_listings[listing_id]
-					if bool(config.get("depot_operational", false)) and second - int(listing.get("listed_at_seconds", second)) >= 120:
+					if quantity == 1 and bool(config.get("depot_operational", false)) and second - int(listing.get("listed_at_seconds", second)) >= 120:
 						var proceeds := int(listing.get("unit_value", 0)) * int(listing.get("quantity", 0))
 						if proceeds > 0:
 							sales_total += proceeds
