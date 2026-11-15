@@ -1699,6 +1699,12 @@ func _create_service_test_home(building_id: String, service_demand: int, grid_po
 	return home
 
 func _test_producer_sanitation_and_emergency_gates() -> void:
+	var advanced_factory := FireHazardTestBuilding.new()
+	advanced_factory.definition = BuildManager.building_types["factory_basic"]
+	var advanced_retail := FireHazardTestBuilding.new()
+	advanced_retail.definition = BuildManager.building_types["sports_shop"]
+	_check(bool(ServiceManager.get_required_emergency_coverage(advanced_factory).get("fire", false)), "Advanced industrial tiers must declare fire-station coverage as an operating prerequisite.")
+	_check(bool(ServiceManager.get_required_emergency_coverage(advanced_retail).get("police", false)), "Advanced retail tiers must declare police-station coverage as an operating prerequisite.")
 	var saved_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var saved_level := GameManager.level
 	var saved_population := GameManager.population
