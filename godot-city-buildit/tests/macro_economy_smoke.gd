@@ -82,6 +82,7 @@ func _initialize() -> void:
 
 	_test_production_capacity_and_cashflow()
 	_test_delivery_order_inventory_and_costs()
+	_test_automatic_chain_dependency_replay()
 	print("[MacroEconomySmoke] PASS")
 	quit(0)
 
@@ -318,3 +319,61 @@ func _test_production_capacity_and_cashflow() -> void:
 	if unknown_sales.size() != 1 or unknown_sales[0].get("gross_margin", 0) != null:
 		_fail("A sale with unknown COGS must expose null gross margin instead of inventing a cost or profit.")
 		return
+
+
+func _test_automatic_chain_dependency_replay() -> void:
+	var config := {
+		"initial_simoleons": 100,
+		"population": 0,
+		"happiness": 100.0,
+		"occupied_homes": 0,
+		"level": 1,
+		"experience": 0,
+		"horizon_seconds": 171,
+		"item_values": {"hammer": 90},
+		"events": [],
+		"production": {
+			"storage_capacity": 8,
+			"depot_operational": true,
+			"initial_inventory": {},
+			"raw_materials": {
+				"metal": {"time_sec": 10, "level": 1},
+				"wood": {"time_sec": 10, "level": 1}
+			},
+			"crafted_items": {
+				"nails": {"time_sec": 20, "store": "building_supplies", "level": 1, "requires": {"metal": 2}},
+				"hammer": {"time_sec": 20, "store": "hardware_store", "level": 1, "requires": {"nails": 1, "wood": 1}}
+			},
+			"factory_materials": {"factory_small": ["metal", "wood"]},
+			"facilities": [
+				{"id": "factory-auto", "kind": "factory", "factory_type": "factory_small", "slot_count": 3},
+				{"id": "supplies-auto", "kind": "store", "shop_id": "building_supplies", "slot_count": 2},
+				{"id": "hardware-auto", "kind": "store", "shop_id": "hardware_store", "slot_count": 2}
+			],
+			"actions": [
+				{"type": "auto_chain", "facility_id": "hardware-auto", "item_id": "hammer", "chain_id": "hammer-root", "at_seconds": 0},
+				{"type": "depot_list", "listing_id": "hammer-sale", "item_id": "hammer", "quantity": 1, "at_seconds": 51},
+				{"type": "depot_collect", "listing_id": "hammer-sale", "at_seconds": 171}
+			]
+		}
+	}
+	var result: Dictionary = Simulator.simulate(config)
+	if not bool(result.get("valid", false)):
+		_fail("Nested AUTO CHAIN replay invalid: " + str(result.get("errors", [])))
+		return
+	var production: Dictionary = result.get("production", {})
+	var outputs: Dictionary = production.get("collected_outputs", {})
+	if int(outputs.get("metal", 0)) != 2 or int(outputs.get("wood", 0)) != 1 or int(outputs.get("nails", 0)) != 1 or int(outputs.get("hammer", 0)) != 1:
+		_fail("Nested AUTO CHAIN must produce/collect raw materials, intermediate Nails and the requested Hammer.")
+		return
+	var consumed: Dictionary = production.get("consumed_inputs", {})
+	if int(consumed.get("metal", 0)) != 2 or int(consumed.get("nails", 0)) != 1 or int(consumed.get("wood", 0)) != 1:
+		_fail("Nested AUTO CHAIN must consume each BOM input exactly once.")
+		return
+	if int(result.get("source_breakdown", {}).get("production_sales", 0)) != 90 or int(result.get("ending_simoleons", 0)) != 190:
+		_fail("AUTO CHAIN output must flow through explicit Depot collection into macro Simoleon cashflow.")
+		return
+	if not production.get("pending_jobs", []).is_empty() or not production.get("ready_uncollected_jobs", []).is_empty():
+		_fail("Completed AUTO CHAIN scenario must leave no pending or uncollected production slots.")
+		return
+
