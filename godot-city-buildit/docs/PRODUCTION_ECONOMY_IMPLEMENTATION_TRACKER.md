@@ -577,7 +577,7 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Current residential upgrade requirements are rendered as raised white six-sided 3D platforms around the selected home, with projected tap targets showing stored/required quantities.
 - [x] Tapping a missing material token locates its registered supplier; when a completed supplier exists, the game opens that supplier and submits the material/product directly if its real production prerequisites and queue capacity allow it.
 - [x] If no completed supplier exists, the player receives the supplier/building requirement instead of a fake order.
-- [x] GameplaySmoke verifies one 3D hex and one tap target per residential upgrade material.
+- [x] GameplaySmoke verifies one 3D hex and tap target per home material, then taps the missing Metal token end-to-end, confirms the real factory receives the order, and restores test queue/storage state (PR #530 merged; validation run `43751114166`, Web/Chromium run `43751114061`).
 - [x] Godot 4.3 import/parse, GameplaySmoke, Android Debug APK export/signature, Web export and desktop/mobile Chromium passed: validation run `43750729685`; Web run `43750729686` (APK artifact uploaded).
 - [ ] Post-merge GitHub Pages deployment verification for merge commit `f873046243faa1ea400c41a9a13fec222bf66e70`.
 - [ ] Physical Android landscape inspection of house-material orbit placement and tap target reachability.
