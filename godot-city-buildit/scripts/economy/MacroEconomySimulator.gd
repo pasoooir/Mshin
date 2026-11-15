@@ -23,16 +23,6 @@ static func simulate(config: Dictionary) -> Dictionary:
 	var item_values: Dictionary = config.get("item_values", {})
 	var xp_table: Dictionary = config.get("xp_table", {})
 	var events: Array = config.get("events", []).duplicate(true)
-	var scheduled_events: Array[Dictionary] = []
-	for event_variant in events:
-		if not event_variant is Dictionary:
-			errors.append("Every economy event must be a Dictionary.")
-			continue
-		var scheduled_event: Dictionary = event_variant.duplicate(true)
-		if str(scheduled_event.get("type", "")) == "depot_sale":
-			scheduled_event["at_seconds"] = int(scheduled_event.get("at_seconds", 0)) + DEPOT_LISTING_SECONDS
-		scheduled_events.append(scheduled_event)
-	events = scheduled_events
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a.get("at_seconds", 0)) < int(b.get("at_seconds", 0))
 	)
@@ -82,10 +72,12 @@ static func simulate(config: Dictionary) -> Dictionary:
 
 			match event_type:
 				"depot_sale":
-					if not item_values.has(item_id) or quantity <= 0:
-						errors.append("Invalid depot_sale event for %s." % item_id)
+					var listed_at := int(event.get("listed_at_seconds", -1))
+					var collected_at := int(event.get("at_seconds", 0))
+					if not item_values.has(item_id) or quantity <= 0 or listed_at < 0 or collected_at - listed_at < DEPOT_LISTING_SECONDS:
+						errors.append("Invalid or premature depot_sale collection for %s." % item_id)
 						continue
-					# The event timestamp was shifted by the 120-second listing timer above.
+					# The player explicitly collects a ready listing; readiness is not automatic sale.
 					flow = int(item_values[item_id]) * quantity
 					source_bucket = "depot_sales"
 				"delivery_order":
