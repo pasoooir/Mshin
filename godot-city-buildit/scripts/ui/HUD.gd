@@ -2215,6 +2215,8 @@ func open_production_panel(building: Building) -> void:
 		tile_content.add_child(status_label)
 		item_button.disabled = not lock_reason.is_empty()
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else inventory_status
+		# Dragging a product onto a queue tile submits that exact slot order.
+		item_button.set_drag_forwarding(_get_production_drag_data.bind(building, item_id), Callable(), Callable())
 		item_button.pressed.connect(func():
 			_show_production_item_details(building, item_id, available_slot)
 		)
@@ -2277,6 +2279,8 @@ func open_production_panel(building: Building) -> void:
 		var slot_fill := Color("#FFFFFF") if not slot.is_empty() else Color("#E7EEF2")
 		var slot_border := Color("#A9C0CC") if slot.is_empty() else Color("#D8AD4A")
 		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
+		# Empty and occupied tiles accept a product drop only when this slot is free.
+		slot_card.set_drag_forwarding(Callable(), _can_accept_production_drop.bind(building, slot_index), _accept_production_drop.bind(building, slot_index))
 		queue_row.add_child(slot_card)
 		var slot_content := VBoxContainer.new()
 		slot_content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -2570,6 +2574,55 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			open_production_panel(building)
 		)
 		detail_row.add_child(auto_chain_button)
+
+
+func _get_production_drag_data(_at_position: Vector2, building: Building, item_id: String) -> Variant:
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return null
+	var component: ProductionComponent = building.production_component
+	var data: Dictionary = ProductionManager.raw_materials.get(item_id, ProductionManager.get_store_item_definition(str(component.shop_id), item_id))
+	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not component.is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
+	if not lock_reason.is_empty():
+		return null
+	var preview := PanelContainer.new()
+	preview.custom_minimum_size = Vector2(72, 72)
+	preview.add_child(Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(60, 60)))
+	set_drag_preview(preview)
+	return {"kind": "production_item", "item_id": item_id, "building_id": building.get_instance_id()}
+
+
+func _can_accept_production_drop(_at_position: Vector2, data: Variant, building: Building, slot_index: int) -> bool:
+	if not (data is Dictionary) or str(data.get("kind", "")) != "production_item":
+		return false
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return false
+	if int(data.get("building_id", 0)) != building.get_instance_id():
+		return false
+	var component: ProductionComponent = building.production_component
+	if slot_index < 0 or slot_index >= component.get_slot_count() or not component.get_slot(slot_index).is_empty():
+		return false
+	var item_id := str(data.get("item_id", ""))
+	if component.is_factory:
+		return ProductionManager.get_factory_material_ids(str(component.factory_type)).has(item_id)
+	return not ProductionManager.get_recipe(item_id).is_empty() and str(ProductionManager.get_recipe(item_id).get("store", "")) == str(component.shop_id)
+
+
+func _accept_production_drop(_at_position: Vector2, data: Variant, building: Building, slot_index: int) -> void:
+	if not _can_accept_production_drop(Vector2.ZERO, data, building, slot_index):
+		return
+	var component: ProductionComponent = building.production_component
+	var item_id := str(data.get("item_id", ""))
+	var started := false
+	if component.is_factory:
+		started = component.start_factory(item_id, slot_index)
+	else:
+		var missing := ProductionManager.get_missing_inputs_text(item_id)
+		started = component.start_craft(item_id, slot_index) if missing.is_empty() else ProductionManager.request_automatic_chain(component, item_id, slot_index)
+	if started:
+		status_label.text = "Production order accepted: %s." % str(ProductionManager.get_item_definition(item_id).get("name", item_id))
+	else:
+		status_label.text = "Order not accepted. Check materials, supplier chain, building operation and slot availability."
+	open_production_panel(building)
 
 
 func _count_empty_production_slots(component: ProductionComponent) -> int:
