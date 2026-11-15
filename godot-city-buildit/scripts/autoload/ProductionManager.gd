@@ -941,6 +941,10 @@ func from_save_dict(data: Dictionary) -> void:
 			_next_automatic_chain_id = maxi(_next_automatic_chain_id, numeric_id + 1)
 	automatic_chain_changed.emit("")
 
+func resume_after_restore() -> void:
+	for component in _get_live_production_components():
+		component.refresh_slots()
+
 func _get_live_production_components() -> Array:
 	var result: Array = []
 	if not is_inside_tree():
