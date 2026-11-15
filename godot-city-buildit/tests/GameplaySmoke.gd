@@ -3914,28 +3914,31 @@ func _run_gameplay_test() -> void:
 	_check(product_orbit != null and product_orbit.get_child_count() == 1, "Product selectors must use a floating orbit layer outside the compact queue dock.")
 	_check(production_hud.production_panel.size.y < get_viewport().get_visible_rect().size.y * 0.5, "Production interaction must use a compact bottom dock, not a full-screen modal.")
 
-	# Reflow acceptance at common Android landscape viewports. Every radial item
-	# must remain on-screen and must not overlap the bottom production dock.
-	var original_window_size: Vector2i = get_window().size
+	# Verify the exact production orbit positioning function for common Android
+	# landscape sizes without resizing the OS Window (headless Window ignores
+	# requested dimensions on some CI runners).
+	var live_viewport_bounds: Rect2 = get_viewport().get_visible_rect()
+	_check(live_viewport_bounds.encloses(production_hud.production_panel.get_global_rect()), "Production dock must remain inside the active viewport.")
+	var live_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
+	if live_grid:
+		for live_product in live_grid.get_children():
+			var live_product_rect: Rect2 = live_product.get_global_rect()
+			_check(live_viewport_bounds.encloses(live_product_rect), "Radial product tiles must remain visible in the active viewport.")
+			_check(not live_product_rect.intersects(production_hud.production_panel.get_global_rect()), "Radial product tiles must not overlap the active bottom dock.")
 	for mobile_size in [Vector2i(844, 390), Vector2i(915, 412), Vector2i(1280, 720)]:
-		get_window().size = mobile_size
-		await get_tree().process_frame
-		await get_tree().process_frame
-		production_hud.open_production_panel(factory)
-		await get_tree().process_frame
-		var mobile_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
-		var mobile_dock: Control = production_hud.production_panel
-		var mobile_bounds: Rect2 = get_viewport().get_visible_rect()
-		_check(mobile_dock != null and mobile_bounds.encloses(mobile_dock.get_global_rect()), "Production dock must remain inside %dx%d viewport; dock=%s viewport=%s." % [mobile_size.x, mobile_size.y, mobile_dock.get_global_rect(), mobile_bounds])
-		if mobile_grid and mobile_dock:
-			for product_node in mobile_grid.get_children():
-				var product_rect: Rect2 = product_node.get_global_rect()
-				_check(mobile_bounds.encloses(product_rect), "Every radial product tile must remain visible inside %dx%d viewport; tile=%s viewport=%s." % [mobile_size.x, mobile_size.y, product_rect, mobile_bounds])
-				_check(not product_rect.intersects(mobile_dock.get_global_rect()), "Radial product tiles must not overlap the bottom dock at %dx%d." % [mobile_size.x, mobile_size.y])
-	get_window().size = original_window_size
-	await get_tree().process_frame
-	await get_tree().process_frame
-	production_hud.open_production_panel(factory)
+		var simulated_viewport := Vector2(mobile_size)
+		var compact_mobile := mobile_size.x <= 900 or mobile_size.y <= 520
+		var simulated_panel_height := minf((220.0 if compact_mobile else 278.0) * production_hud._ui_scale, simulated_viewport.y * (0.48 if compact_mobile else 0.42))
+		var simulated_selector_size := Vector2(82.0, 94.0) * production_hud._ui_scale
+		var simulated_dock_rect := Rect2(Vector2(8.0 * production_hud._ui_scale, simulated_viewport.y - simulated_panel_height - 8.0 * production_hud._ui_scale), Vector2(simulated_viewport.x - 16.0 * production_hud._ui_scale, simulated_panel_height))
+		var simulated_bounds := Rect2(Vector2.ZERO, simulated_viewport)
+		for product_index in range(ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size()):
+			var simulated_angle := deg_to_rad(205.0 + 150.0 * float(product_index) / float(maxi(1, ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size() - 1)))
+			var simulated_center := Vector2(simulated_viewport.x * 0.5, simulated_viewport.y * 0.40) + Vector2(cos(simulated_angle), sin(simulated_angle)) * clampf(simulated_viewport.x * 0.22, 105.0, 190.0)
+			var simulated_position: Vector2 = production_hud._get_production_orbit_tile_position(simulated_center, simulated_selector_size, simulated_viewport, simulated_panel_height)
+			var simulated_tile_rect := Rect2(simulated_position, simulated_selector_size)
+			_check(simulated_bounds.encloses(simulated_tile_rect), "Radial product tile must fit %dx%d viewport; tile=%s." % [mobile_size.x, mobile_size.y, simulated_tile_rect])
+			_check(not simulated_tile_rect.intersects(simulated_dock_rect), "Radial product tile must not overlap the dock at %dx%d; tile=%s dock=%s." % [mobile_size.x, mobile_size.y, simulated_tile_rect, simulated_dock_rect])
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level
