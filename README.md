@@ -1185,3 +1185,16 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android touch acceptance.
 
 **Root cause found:** the buttons were children of plain `Control` nodes and had only `custom_minimum_size`; because no Container laid them out, their actual `size`/hit rectangle could remain zero. The code fix is on PR #531; it is not considered delivered until CI and deployment are verified.
+
+
+## Product orbit visibility and mobile sizing — 2026-11-15
+
+- [x] Move factory/store product cards to a higher CanvasLayer z-order than the selected building and bottom queue.
+- [x] Render opaque white product cards with visible borders and shadows instead of transparent buttons.
+- [x] Increase mobile product card and item-icon sizes; enlarge residential material cards as well.
+- [x] Place 3D material platforms on the camera-facing orbit plane so products are not hidden on the far side of the building.
+- [x] Extend GameplaySmoke to check card size, z-order, opaque surface and visibility.
+- [ ] Run Godot validation, GameplaySmoke, Android APK export, and desktop/mobile Chromium smoke on this revision.
+- [ ] Verify actual touch behavior on a physical Android device.
+
+**Scope:** this addresses the reported case where material/product icons appeared behind the building and were too small to tap. It is not marked delivered until the new CI revision passes and Pages is redeployed.
