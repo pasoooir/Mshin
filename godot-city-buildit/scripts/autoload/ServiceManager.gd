@@ -352,8 +352,10 @@ func recalculate_from_buildings() -> void:
 				used_waste += waste_need
 				waste_served_ids[consumer.building_id] = true
 
-	# Workforce is allocated only after utility and sewage/waste capacity is
-	# committed. Emergency coverage below reads this current allocation.
+	# Update household occupancy from the newly calculated basic services
+	# before allocating the finite workforce pool to producers and stations.
+	if has_node("/root/HappinessManager"):
+		HappinessManager.recalculate_city()
 	_recalculate_workforce(operating_consumers)
 
 	# Fire, Police and Health coverage is valid only while the provider itself
@@ -380,9 +382,8 @@ func recalculate_from_buildings() -> void:
 	water_changed.emit(total_water, demand_water)
 	sewage_changed.emit(total_sewage, demand_sewage)
 	waste_changed.emit(total_waste, demand_waste)
+	if has_node("/root/HappinessManager"):
+		# Apply the newly established emergency coverage to final home scores.
+		HappinessManager.recalculate_city()
 	if has_node("/root/FireHazardManager"):
 		FireHazardManager.on_city_changed()
-	if has_node("/root/HappinessManager"):
-		HappinessManager.recalculate_city()
-	# Recalculate after household scoring updates GameManager.population so
-	# workforce availability always uses the latest occupied residential count.
