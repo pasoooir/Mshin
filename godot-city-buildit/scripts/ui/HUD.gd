@@ -1972,7 +1972,7 @@ func open_production_panel(building: Building) -> void:
 	var compact_layout := viewport_size.x <= 900.0 or viewport_size.y <= 520.0
 	var tablet_layout := not compact_layout and viewport_size.x <= 1280.0
 	var panel_width := viewport_size.x - 16.0 * _ui_scale
-	var panel_height := minf((250.0 if compact_layout else 278.0) * _ui_scale, viewport_size.y * 0.42)
+	var panel_height := minf((220.0 if compact_layout else 278.0) * _ui_scale, viewport_size.y * (0.48 if compact_layout else 0.42))
 	production_panel.anchor_left = 0.0
 	production_panel.anchor_right = 1.0
 	production_panel.anchor_top = 1.0
@@ -2070,6 +2070,7 @@ func open_production_panel(building: Building) -> void:
 	var hint := Label.new()
 	hint.text = "SELECT A PRODUCT  ·  REVIEW MATERIALS AND STOCK  ·  START PRODUCTION"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.visible = not compact_layout
 	hint.add_theme_font_size_override("font_size", int((10 if not compact_layout else 8) * _ui_scale))
 	hint.add_theme_color_override("font_color", Color("#577487"))
 	layout.add_child(hint)
@@ -2087,7 +2088,13 @@ func open_production_panel(building: Building) -> void:
 	building_upgrade_button.disabled = building.upgrade_in_progress or not upgrade_lock.is_empty() or upgrade_bom.is_empty()
 	building_upgrade_button.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 	building_upgrade_button.pressed.connect(_start_non_residential_upgrade.bind(building))
-	layout.add_child(building_upgrade_button)
+	if compact_layout:
+		building_upgrade_button.text = "⬆"
+		building_upgrade_button.custom_minimum_size = Vector2(34, 34) * _ui_scale
+		building_upgrade_button.add_theme_font_size_override("font_size", int(18 * _ui_scale))
+		header_row.add_child(building_upgrade_button)
+	else:
+		layout.add_child(building_upgrade_button)
 
 	var available_slot := -1
 	for slot_index in range(component.get_slot_count()):
@@ -2101,6 +2108,7 @@ func open_production_panel(building: Building) -> void:
 	products_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	products_title.add_theme_font_size_override("font_size", int(10 * _ui_scale))
 	products_title.add_theme_color_override("font_color", Color("#E8F4F9"))
+	products_title.visible = not compact_layout
 	layout.add_child(products_title)
 
 	# Floating product orbit stays over the live city; no opaque full-screen sheet.
@@ -2147,14 +2155,15 @@ func open_production_panel(building: Building) -> void:
 
 		var item_button := Button.new()
 		item_button.name = "Slot%d_%s" % [available_slot, item_id]
-		item_button.custom_minimum_size = Vector2(82, 94) * _ui_scale
+		var selector_edge := 82.0 if item_ids.size() <= 6 else 66.0
+		item_button.custom_minimum_size = Vector2(selector_edge, selector_edge + 12.0) * _ui_scale
 		item_button.focus_mode = Control.FOCUS_NONE
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			item_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 
 		# Six-sided white tile with a subtle blue rim, matching the reference's
 		# floating hexagonal item selectors rather than generic rectangular cards.
-		var hex_size := Vector2(78, 86) * _ui_scale
+		var hex_size := Vector2(selector_edge - 4.0, selector_edge + 2.0) * _ui_scale
 		var hex := Polygon2D.new()
 		hex.name = "HexagonBackground"
 		hex.position = Vector2(5, 4) * _ui_scale
@@ -2190,7 +2199,8 @@ func open_production_panel(building: Building) -> void:
 		tile_content.add_theme_constant_override("separation", 0)
 		tile_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		item_button.add_child(tile_content)
-		var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(48, 48) * _ui_scale)
+		var icon_edge := 48.0 if item_ids.size() <= 6 else 38.0
+		var item_icon := Icons.make_item_icon("raw" if component.is_factory else "crafted", item_id, Vector2(icon_edge, icon_edge) * _ui_scale)
 		item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile_content.add_child(item_icon)
 		var item_name := Label.new()
@@ -2247,18 +2257,19 @@ func open_production_panel(building: Building) -> void:
 		var product_count := maxi(1, product_grid.get_child_count())
 		var angle := deg_to_rad(205.0 + 150.0 * float(orbit_index) / float(maxi(1, product_count - 1)))
 		var point := orbit_center + Vector2(cos(angle), sin(angle)) * orbit_radius
-		product_node.position = Vector2(clampf(point.x - 41.0, 4.0, viewport_size.x - 86.0), clampf(point.y - 47.0, 4.0, viewport_size.y - panel_height - 100.0))
+		var selector_half := 41.0 if product_grid.get_child_count() <= 6 else 33.0
+		product_node.position = Vector2(clampf(point.x - selector_half, 4.0, viewport_size.x - selector_half * 2.0 - 4.0), clampf(point.y - selector_half - 6.0, 4.0, maxf(4.0, viewport_size.y - panel_height - selector_half * 2.0 - 8.0)))
 
 	var details_scroll := ScrollContainer.new()
 	details_scroll.name = "ProductionDetailsScroll"
 	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	details_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	details_scroll.custom_minimum_size.y = (108.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
+	details_scroll.custom_minimum_size.y = (42.0 if compact_layout else (132.0 if tablet_layout else 150.0)) * _ui_scale
 	layout.add_child(details_scroll)
 	var details_host := Control.new()
 	details_host.name = "ProductionDetailsHost"
-	details_host.custom_minimum_size = Vector2(maxf(240.0, panel_width - 70.0 * _ui_scale), (166.0 if compact_layout else 180.0) * _ui_scale)
+	details_host.custom_minimum_size = Vector2(maxf(240.0, panel_width - 70.0 * _ui_scale), (54.0 if compact_layout else 180.0) * _ui_scale)
 	details_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details_scroll.add_child(details_host)
 
