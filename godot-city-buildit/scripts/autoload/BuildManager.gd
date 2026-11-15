@@ -319,6 +319,54 @@ func is_building_operational(building: Node) -> bool:
 		return false
 	return true
 
+func _build_mshin_building_material_bom(type_id: String, stage_multiplier: int = 1) -> Dictionary:
+	if not building_types.has(type_id):
+		return {}
+	var definition: Dictionary = building_types[type_id]
+	var category := str(definition.get("category", ""))
+	var footprint: Vector2i = definition.get("size", Vector2i(2, 2))
+	var footprint_units := maxi(1, ceili(float(maxi(1, footprint.x * footprint.y)) / 4.0))
+	var cost_tier := 0
+	var cost := int(definition.get("cost", 0))
+	if cost >= 100000:
+		cost_tier = 3
+	elif cost >= 25000:
+		cost_tier = 2
+	elif cost >= 5000:
+		cost_tier = 1
+	var level_tier := mini(2, maxi(0, int(definition.get("level", 1)) / 25))
+	var scale := clampi(footprint_units + cost_tier + level_tier, 1, 5) * maxi(1, stage_multiplier)
+	var base: Dictionary = {}
+	match category:
+		"residential":
+			base = {"nails": 1, "metal": 1, "wood": 1}
+		"commercial":
+			base = {"nails": 2, "metal": 1, "glass": 1}
+		"industrial":
+			base = {"nails": 2, "metal": 2, "cement": 1}
+		"park":
+			base = {"nails": 1, "wood": 2, "planks": 1}
+		"service":
+			match str(definition.get("service_group", "")):
+				"power":
+					base = {"nails": 1, "metal": 2, "electrical": 1}
+				"water":
+					base = {"nails": 1, "metal": 2, "plastic": 1}
+				"sewage":
+					base = {"cement": 2, "bricks": 1, "metal": 1}
+				"waste":
+					base = {"cement": 1, "bricks": 1, "metal": 1}
+				"fire", "police", "health":
+					base = {"nails": 2, "metal": 1, "bricks": 1, "glass": 1}
+				_:
+					base = {"nails": 1, "metal": 1, "wood": 1}
+		_:
+			return {}
+	var result: Dictionary = {}
+	for item_id in base:
+		result[item_id] = int(base[item_id]) * scale
+	return result
+
 func get_construction_bom(type_id: String) -> Dictionary:
 	if not building_types.has(type_id):
 		return {}
@@ -327,8 +375,7 @@ func get_construction_bom(type_id: String) -> Dictionary:
 		return definition.get("construction_bom", {}).duplicate(true)
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return {}
-	var category := str(definition.get("category", ""))
-	return CONSTRUCTION_BOM_PROFILES.get(category, {}).duplicate(true)
+	return _build_mshin_building_material_bom(type_id)
 
 func get_construction_bom_source(type_id: String) -> String:
 	if not building_types.has(type_id):
@@ -338,7 +385,35 @@ func get_construction_bom_source(type_id: String) -> String:
 		return str(definition.get("construction_bom_source", "Mshin building-specific design"))
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return "Mshin bootstrap exception — no material charge"
-	return "Mshin category profile — design/balance value, not an EA recipe"
+	return "Mshin per-building footprint/economic-tier formula — game-design values, not EA recipes"
+
+func get_building_upgrade_bom(building: Node, next_stage: int = -1) -> Dictionary:
+	if not is_instance_valid(building) or not building_types.has(str(building.building_type)):
+		return {}
+	var target_stage := next_stage if next_stage > 0 else int(building.upgrade_stage) + 1
+	if target_stage <= 1 or target_stage > int(building.max_stage):
+		return {}
+	var definition: Dictionary = building.definition
+	if definition.has("upgrade_bom"):
+		var configured: Variant = definition.get("upgrade_bom", {})
+		if configured is Dictionary and configured.has(str(target_stage)):
+			return configured[str(target_stage)].duplicate(true)
+	return _build_mshin_building_material_bom(str(building.building_type), target_stage - 1)
+
+func get_building_upgrade_bom_lock_reason(building: Node) -> String:
+	var requirements := get_building_upgrade_bom(building)
+	if requirements.is_empty():
+		return "No verified upgrade BOM is configured for this building."
+	var missing: Array[String] = []
+	for item_id in requirements:
+		var required := int(requirements[item_id])
+		if required <= 0 or ProductionManager.get_item_definition(str(item_id)).is_empty():
+			return "Invalid upgrade BOM for " + str(building.building_type) + ": " + str(item_id)
+		var available := StorageManager.get_count(str(item_id))
+		if available < required:
+			missing.append("%s ×%d" % [str(item_id), required - available])
+	return "" if missing.is_empty() else "Missing upgrade materials: " + ", ".join(missing)
+
 
 func get_construction_bom_lock_reason(type_id: String) -> String:
 	var requirements := get_construction_bom(type_id)
