@@ -39,9 +39,9 @@ var served_health_homes: int = 0
 
 const DEFAULT_EMERGENCY_COVERAGE_TILES := 15.0
 
-# Mshin operating-cost profiles: commercial production buildings require one
-# unit each of power/water; industrial producers require two power and one
-# water. Per-building operating_*_demand values override these design defaults.
+# Mshin operating profiles: commercial and industrial production draw
+# power, water, sewage, waste and workforce. Sewage/waste are gated only after
+# their unlock levels; per-building operating_*_demand values override defaults.
 const NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES := {
 	"commercial": {"power": 1, "water": 1, "sewage": 1, "waste": 1, "workers": 1},
 	"industrial": {"power": 2, "water": 1, "sewage": 2, "waste": 2, "workers": 2}
