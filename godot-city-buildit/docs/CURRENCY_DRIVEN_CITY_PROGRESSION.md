@@ -1,6 +1,6 @@
 # اقتصاد پیشرفت شهر با Simoleons و SimCash
 
-**وضعیت:** پیاده‌سازی اولیه در شاخه `feat/currency-driven-city-progression`؛ تا عبور CI و بازبینی داخل بازی تیک پذیرش نمی‌خورد.
+**وضعیت:** PR #503 با commit `4c6b5be6a922b2a3a483f5af7f52db7c9690d5c5` در `main` ادغام شد. Godot Validation، Android Debug APK export/signature و Web/Chromium Desktop+Mobile CI موفق‌اند؛ آزمون فیزیکی Android و بالانس نهایی هنوز باز است.
 **مرجع رسمی:** EA Beginner Guide — https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/
 **مرجع جامعه:** Building Materials — https://simcity-buildit.fandom.com/wiki/Building_Materials
 
@@ -74,8 +74,8 @@
 
 ## ۵. شکاف‌های باقیمانده و گیت پذیرش
 
-- [ ] اجرای Godot CI و رفع تمام خطاهای parser/runtime/test.
-- [ ] آزمون UI در مرورگر موبایل افقی و Android واقعی.
+- [x] اجرای Godot CI و رفع تمام خطاهای parser/runtime/test؛ run `43700782340` موفق شد.
+- [x] اجرای Web/Chromium در دسکتاپ و موبایل افقی؛ run `43700782353` موفق شد. [ ] آزمون لمس و نمایش روی Android فیزیکی.
 - [ ] بررسی توازن ضریب قیمت بازار و هزینه SimCash با داده‌های واقعی بازی؛ این اعداد فعلاً Mshin-proposed هستند.
 - [ ] افزودن/تکمیل فروش کالا و Trade Depot واقعی در اقتصاد Simoleons؛ Global Trade چندبازیکنه و قیمت‌گذاری پویا هنوز وجود ندارد.
 - [ ] خرید ویژه‌اقلام انبار و توسعه زمین با SimCash از مسیر آیتم‌های اختصاصی؛ تا وقتی زنجیره Special Items و قفل زمین کامل نشده، پرداخت مستقیم SimCash نباید این گیت‌ها را دور بزند.
