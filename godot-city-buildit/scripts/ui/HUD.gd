@@ -2512,16 +2512,16 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 
 	var start_button := Button.new()
 	start_button.name = "StartProduction"
-	start_button.text = "START" if is_factory else "START CHAIN"
+	start_button.text = "START" if is_factory or missing.is_empty() else "START CHAIN"
 	start_button.custom_minimum_size = Vector2(92, 44) * _ui_scale
 	start_button.disabled = not can_start
 	start_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E7BC43"), Color("#FFE18A")))
 	start_button.add_theme_stylebox_override("disabled", _toolbar_style(Color("#AAB7BE"), Color("#D1D9DE")))
 	start_button.add_theme_color_override("font_color", Color("#34280B"))
 	start_button.pressed.connect(func():
-		var started: bool = component.start_factory(item_id, slot_index) if is_factory else ProductionManager.request_automatic_chain(component, item_id, slot_index)
+		var started: bool = component.start_factory(item_id, slot_index) if is_factory else (component.start_craft(item_id, slot_index) if missing.is_empty() else ProductionManager.request_automatic_chain(component, item_id, slot_index))
 		if started:
-			status_label.text = "Automatic supply chain accepted: %s. Raw materials and intermediate goods will be produced and collected automatically." % str(data.get("name", item_id)) if not is_factory else "Production started: %s." % str(data.get("name", item_id))
+			status_label.text = "Automatic supply chain accepted: %s. Missing raw materials and intermediate goods will be produced and collected automatically." % str(data.get("name", item_id)) if not is_factory and not missing.is_empty() else "Production started: %s." % str(data.get("name", item_id))
 		else:
 			var active_chain := ProductionManager.get_automatic_chain_status()
 			if bool(active_chain.get("active", false)):
