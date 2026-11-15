@@ -655,6 +655,11 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 	if production_manager == null or storage_manager == null or trade_manager == null or game_manager == null:
 		return {"capture_error": "One or more required production/economy autoloads are unavailable."}
 	var now := int(Time.get_unix_time_from_system())
+	var initial_inventory: Dictionary = storage_manager.get_all_items()
+	for item_id_variant in initial_inventory.keys():
+		var item_id := str(item_id_variant)
+		storage_manager.get_cost_basis({item_id: int(initial_inventory[item_id_variant])})
+	var initial_cost_batches: Dictionary = storage_manager.item_cost_batches.duplicate(true)
 	var facilities: Array[Dictionary] = []
 	for component in scene_tree.get_nodes_in_group("production_components"):
 		if not is_instance_valid(component) or not component.is_in_group("production_components"):
@@ -710,8 +715,8 @@ static func capture_live_city_config(horizon_seconds: int, actions: Array = []) 
 	return {
 		"horizon_seconds": maxi(0, horizon_seconds),
 		"storage_capacity": int(storage_manager.capacity),
-		"initial_inventory": storage_manager.get_all_items(),
-		"initial_cost_batches": storage_manager.item_cost_batches.duplicate(true),
+		"initial_inventory": initial_inventory,
+		"initial_cost_batches": initial_cost_batches,
 		"raw_materials": raw_catalog,
 		"crafted_items": crafted_catalog,
 		"factory_materials": production_manager.factory_materials.duplicate(true),
