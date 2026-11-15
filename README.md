@@ -498,7 +498,7 @@ godot-city-buildit/
 
 این README نقشه راه رسمی پروژه است. هر هوش مصنوعی یا برنامه‌نویس باید طبق همین فازها جلو برود.
 
-سند اجرایی اقتصاد ارز و پیشرفت شهر: [CURRENCY_DRIVEN_CITY_PROGRESSION.md](godot-city-buildit/docs/CURRENCY_DRIVEN_CITY_PROGRESSION.md). پیاده‌سازی این بخش با PR #503 و commit `4c6b5be6a922b2a3a483f5af7f52db7c9690d5c5` ادغام شد. Godot Validation run `43700782340` و Web/Chromium run `43700782353` موفق شدند. APK نیز در CI ساخته و امضای آن بررسی شد. معیار پذیرش فیزیکی Android و بالانس نهایی هنوز تیک نمی‌خورند.
+سند اجرایی اقتصاد ارز و پیشرفت شهر: [CURRENCY_DRIVEN_CITY_PROGRESSION.md](godot-city-buildit/docs/CURRENCY_DRIVEN_CITY_PROGRESSION.md). پیاده‌سازی این بخش با PR #503 و commit `4c6b5be6a922b2a3a483f5af7f52db7c9690d5c5` ادغام شد و PR #505 با commit `84329766109cab4760317d37c2f645337f0b616e` خرید Simoleons را به Global Trade HQ قفل‌شده و پیشنهادهای چرخشی موجود متصل کرد. Godot Validation run `43700782340` و Web/Chromium run `43700782353` موفق شدند. APK نیز در CI ساخته و امضای آن بررسی شد. معیار پذیرش فیزیکی Android و بالانس نهایی هنوز تیک نمی‌خورند.
 
 
 PR #441 با merge commit `e8ce602f2c73e280d5588e2e9f5a9962bf6505fe` وارد main شد. Godot Validation run `43499325570`، Web/Chromium + Pages deploy run `43499325445` و Pages build/deploy run `43499324239` همگی موفق شدند. تنظیمات صوتی داخل بازی فعال‌اند؛ تکمیل تنظیمات گرافیک/کنترل/زبان و شنیدن واقعی روی دستگاه فیزیکی هنوز ادعا نمی‌شود.
