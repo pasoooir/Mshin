@@ -375,7 +375,7 @@ func get_construction_bom_lock_reason(type_id: String) -> String:
 		var required := int(requirements[item_id])
 		if required <= 0 or ProductionManager.get_item_definition(str(item_id)).is_empty():
 			return "Invalid construction BOM for " + type_id + ": " + str(item_id)
-		var available := StorageManager.get_count(str(item_id))
+		var available := StorageManager.get_available_count(str(item_id))
 		if available < required:
 			missing.append("%s ×%d" % [str(item_id), required - available])
 	return "" if missing.is_empty() else "Missing construction materials: " + ", ".join(missing)
