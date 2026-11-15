@@ -96,7 +96,7 @@ func _test_non_residential_upgrade_bom() -> void:
 		road_system.seed_starter_access()
 	BuildManager.buildings.clear()
 	StorageManager.items = {}
-	var probe := Building.new()
+	var probe := BuildingScene.instantiate() as Building
 	probe.building_id = "non_residential_upgrade_bom_probe"
 	probe.building_type = "power_wind"
 	probe.definition = BuildManager.building_types["power_wind"].duplicate(true)
