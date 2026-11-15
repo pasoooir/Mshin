@@ -409,7 +409,7 @@ func _append_recipe_dependency_lines(item_id: String, amount: int, depth: int, l
 		lines.append("%s• %s ×%d — definition unavailable" % ["  ".repeat(depth), item_id, amount])
 		return
 	var item_name := str(definition.get("name", item_id))
-	var stock_available := int(remaining_stock.get(item_id, StorageManager.get_count(item_id)))
+	var stock_available := int(remaining_stock.get(item_id, StorageManager.get_available_count(item_id)))
 	var used_from_stock := mini(amount, stock_available)
 	var missing_amount := maxi(0, amount - used_from_stock)
 	remaining_stock[item_id] = maxi(0, stock_available - used_from_stock)
@@ -578,7 +578,7 @@ func _estimate_item_chain_seconds(
 		return 0.0
 	if ancestry.has(item_id):
 		return -1.0
-	var stock_available := int(remaining_stock.get(item_id, StorageManager.get_count(item_id)))
+	var stock_available := int(remaining_stock.get(item_id, StorageManager.get_available_count(item_id)))
 	var used_from_stock := mini(amount, stock_available)
 	var missing_amount := maxi(0, amount - used_from_stock)
 	remaining_stock[item_id] = maxi(0, stock_available - used_from_stock)
