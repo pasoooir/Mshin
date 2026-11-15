@@ -127,7 +127,7 @@ func _select_tile(tile: Vector2i) -> void:
 	selection_label.text = "Selected plot (%d, %d)" % [tile.x, tile.y]
 	requirement_label.text = "Required: %d Dozer Wheels · %d Dozer Blades · %d Dozer Exhausts\nIn storage: %d · %d · %d" % [
 		int(cost["dozer_wheel"]), int(cost["dozer_blade"]), int(cost["dozer_exhaust"]),
-		StorageManager.get_count("dozer_wheel"), StorageManager.get_count("dozer_blade"), StorageManager.get_count("dozer_exhaust")
+		StorageManager.get_available_count("dozer_wheel"), StorageManager.get_available_count("dozer_blade"), StorageManager.get_available_count("dozer_exhaust")
 	]
 	var error := LandExpansionManager.get_tile_error(tile)
 	if error.is_empty():
