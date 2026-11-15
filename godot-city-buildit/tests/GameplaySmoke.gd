@@ -1829,6 +1829,7 @@ func _test_power_water_gateway_access() -> void:
 	water_plant.grid_pos = Vector2i(1, -2)
 	sewage_plant.grid_pos = Vector2i(1, -2)
 	waste_plant.grid_pos = Vector2i(1, -2)
+	GameManager.level = 15
 	ServiceManager.recalculate_from_buildings()
 	_check(ServiceManager.total_power == int(BuildManager.building_types["power_wind"].get("power", 0)), "A Gateway-connected power plant must contribute its catalog capacity.")
 	_check(ServiceManager.total_water == int(BuildManager.building_types["water_tower"].get("water", 0)), "A Gateway-connected water facility must contribute its catalog capacity.")
@@ -1952,7 +1953,7 @@ func _test_emergency_service_tier_happiness() -> void:
 	for service_group in service_cases:
 		var service_case: Dictionary = service_cases[service_group]
 		var bonus := float(service_case["bonus"])
-		var served_ids: Dictionary = ServiceManager.get(str(service_case["served_key"]))
+		var served_key := str(service_case["served_key"])
 		for service_id in service_case["ids"]:
 			var facility := FireHazardTestBuilding.new()
 			add_child(facility)
@@ -1966,9 +1967,9 @@ func _test_emergency_service_tier_happiness() -> void:
 			facility.global_position = Vector3(radius - 0.1, 0.0, 0.0)
 			BuildManager.buildings[facility.building_id] = facility
 			ServiceManager.recalculate_from_buildings()
-			print("[GameplaySmoke] emergency tier ", service_id, " operational=", BuildManager.is_building_operational(facility), " power=", ServiceManager.power_served_ids.has(facility.building_id), " water=", ServiceManager.water_served_ids.has(facility.building_id), " workers=", ServiceManager.workforce_served_ids.has(facility.building_id), " population=", GameManager.population, " available_workers=", ServiceManager.available_workers, " road=", BuildManager.has_road_access(facility.grid_pos, facility.definition.get("size", Vector2i.ONE)))
 			_check(str(facility.definition.get("service_group", "")) == service_group, "Emergency service catalog tier must belong to its declared service group: " + service_id)
-			_check(served_ids.has(home.building_id), "Every connected emergency service tier must serve a connected home inside its catalog radius: " + service_id)
+			var current_served_ids: Dictionary = ServiceManager.get(served_key)
+			_check(current_served_ids.has(home.building_id), "Every connected emergency service tier must serve a connected home inside its catalog radius: " + service_id)
 			var coverage_warnings: Dictionary = HappinessManager.get_city_service_warnings().get("counts", {})
 			_check(int(coverage_warnings.get(service_group, -1)) == 1, "Emergency service warnings must count only the disconnected unserved home: " + service_id)
 			_check(not served_ids.has(disconnected_home.building_id), "Emergency service must not serve a home without Gateway road access: " + service_id)
