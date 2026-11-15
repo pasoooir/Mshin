@@ -39,7 +39,7 @@ A successful depot collection emits a `production_sale` cash event which `MacroE
 ## Live city capture
 
 `ProductionCapacitySimulator.capture_live_city_config(horizon_seconds, actions)` snapshots:
-- Current City Storage inventory and capacity.
+- Current Simoleons balance, population, happiness, level, XP, XP thresholds and count of occupied residential homes (unless explicitly overridden by scenario inputs).\n- Current City Storage inventory and capacity.
 - Existing production components, actual slot counts, operational status, factory/store identity, and store-star duration overrides.
 - Existing ordinary queue/production slot states and remaining timers.
 - Current Trade Depot operational status and active listing timers.
