@@ -368,8 +368,25 @@ func _build_mshin_building_material_bom(type_id: String, stage_multiplier: int =
 		_:
 			return {}
 	var result: Dictionary = {}
+	var building_level := int(definition.get("level", 1))
+	var preferred_fallback := "metal"
+	if category in ["residential", "park"] or (category == "service" and str(definition.get("service_group", "")) in ["fire", "police", "health"]):
+		preferred_fallback = "nails"
+	elif category == "commercial":
+		preferred_fallback = "nails"
 	for item_id in base:
-		result[item_id] = int(base[item_id]) * scale
+		var material_id := str(item_id)
+		var material_definition := ProductionManager.get_item_definition(material_id)
+		if material_definition.is_empty() or int(material_definition.get("level", 1)) > building_level:
+			material_id = preferred_fallback
+			var fallback_definition := ProductionManager.get_item_definition(material_id)
+			if fallback_definition.is_empty() or int(fallback_definition.get("level", 1)) > building_level:
+				for fallback_id in ["nails", "metal", "wood"]:
+					var candidate := ProductionManager.get_item_definition(fallback_id)
+					if not candidate.is_empty() and int(candidate.get("level", 1)) <= building_level:
+						material_id = fallback_id
+						break
+		result[material_id] = int(result.get(material_id, 0)) + int(base[item_id]) * scale
 	return result
 
 func get_construction_bom(type_id: String) -> Dictionary:
