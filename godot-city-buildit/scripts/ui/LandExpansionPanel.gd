@@ -40,14 +40,17 @@ func _rebuild_panel() -> void:
 	panel.offset_bottom = 0.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#142C3A")
-	style.border_color = Color("#E5B95C")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
+	style.bg_color = Color("#F7FAFC")
+	style.border_color = Color("#D7B45A")
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(24)
+	style.shadow_color = Color(0.005, 0.025, 0.055, 0.58)
+	style.shadow_size = 22
+	style.shadow_offset = Vector2(0, 8)
+	style.content_margin_left = 26
+	style.content_margin_right = 26
+	style.content_margin_top = 20
+	style.content_margin_bottom = 20
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 
@@ -59,19 +62,22 @@ func _rebuild_panel() -> void:
 	var title := Label.new()
 	title.text = "CITY LAND EXPANSION"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", Color("#F6D58A"))
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#17364A"))
 	header.add_child(title)
 	var close := Button.new()
 	close.text = "×"
-	close.custom_minimum_size = Vector2(42, 38)
+	close.custom_minimum_size = Vector2(58, 54)
+	close.add_theme_font_size_override("font_size", 36)
+	close.add_theme_color_override("font_color", Color("#17364A"))
 	close.pressed.connect(hide)
 	header.add_child(close)
 
 	var hint := Label.new()
 	hint.text = "Choose a plot connected to your current city limits. Each plot has its own equipment cost."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_color_override("font_color", Color("#E2EDF2"))
+	hint.add_theme_color_override("font_color", Color("#405B6C"))
+	hint.add_theme_font_size_override("font_size", 17)
 	layout.add_child(hint)
 
 	var scroll := ScrollContainer.new()
@@ -90,7 +96,8 @@ func _rebuild_panel() -> void:
 		var cost: Dictionary = LandExpansionManager.get_tile_cost(tile)
 		var plot := Button.new()
 		plot.name = "ExpansionPlot_%d_%d" % [tile.x, tile.y]
-		plot.custom_minimum_size = Vector2(145, 76)
+		plot.custom_minimum_size = Vector2(190, 92)
+		plot.add_theme_font_size_override("font_size", 16)
 		plot.text = "PLOT %d, %d\nW %d · B %d · E %d" % [tile.x, tile.y, int(cost["dozer_wheel"]), int(cost["dozer_blade"]), int(cost["dozer_exhaust"])]
 		plot.tooltip_text = "Select this adjacent plot to inspect its expansion requirements."
 		plot.pressed.connect(_select_tile.bind(tile))
@@ -100,23 +107,27 @@ func _rebuild_panel() -> void:
 	selection_label.name = "ExpansionSelection"
 	selection_label.text = "Select a highlighted adjacent plot."
 	selection_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selection_label.add_theme_color_override("font_color", Color("#FFFFFF"))
+	selection_label.add_theme_color_override("font_color", Color("#17364A"))
+	selection_label.add_theme_font_size_override("font_size", 17)
 	layout.add_child(selection_label)
 	requirement_label = Label.new()
 	requirement_label.name = "ExpansionRequirements"
 	requirement_label.text = "Mayor Level 10 is required. Expansion parts are available through Global Trade."
 	requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	requirement_label.add_theme_color_override("font_color", Color("#F4DFAF"))
+	requirement_label.add_theme_color_override("font_color", Color("#526D7D"))
+	requirement_label.add_theme_font_size_override("font_size", 16)
 	layout.add_child(requirement_label)
 	status_label = Label.new()
 	status_label.name = "ExpansionStatus"
 	status_label.text = "Owned plots: %d" % LandExpansionManager.get_owned_tile_count()
-	status_label.add_theme_color_override("font_color", Color("#A9D6E8"))
+	status_label.add_theme_color_override("font_color", Color("#28799C"))
+	status_label.add_theme_font_size_override("font_size", 16)
 	layout.add_child(status_label)
 	confirm_button = Button.new()
 	confirm_button.name = "ConfirmLandExpansion"
 	confirm_button.text = "CONFIRM EXPANSION"
-	confirm_button.custom_minimum_size = Vector2(0, 48)
+	confirm_button.custom_minimum_size = Vector2(0, 58)
+	confirm_button.add_theme_font_size_override("font_size", 18)
 	confirm_button.disabled = true
 	confirm_button.pressed.connect(_confirm_expansion)
 	layout.add_child(confirm_button)

@@ -344,7 +344,7 @@ func _build_top_hud() -> void:
 	xp_row.add_theme_constant_override("separation", 8)
 	xp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	left_stack.add_child(xp_row)
-	xp_text = _make_hud_value("0 / %d XP" % GameManager.get_xp_needed(), int(16 * _ui_scale))
+	xp_text = _make_hud_value("0 / %d XP" % GameManager.get_xp_needed(), int(20 * _ui_scale))
 	xp_text.custom_minimum_size = Vector2(105, 24) * _ui_scale
 	xp_text.tooltip_text = "XP raises your Mayor Level. Earn it by placing/completing buildings, collecting production, unlocking achievements, and keeping average city happiness at 80 percent or higher for 60 seconds."
 	xp_row.add_child(xp_text)
@@ -372,7 +372,7 @@ func _build_top_hud() -> void:
 	xp_info_panel = PanelContainer.new()
 	xp_info_panel.name = "MayorLevelInfoPanel"
 	xp_info_panel.position = Vector2(14, 194) * _ui_scale
-	xp_info_panel.custom_minimum_size = Vector2(390, 154) * _ui_scale
+	xp_info_panel.custom_minimum_size = Vector2(520, 220) * _ui_scale
 	xp_info_panel.size = xp_info_panel.custom_minimum_size
 	xp_info_panel.z_index = 45
 	xp_info_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -380,11 +380,11 @@ func _build_top_hud() -> void:
 	xp_panel_style.bg_color = Color(0.055, 0.09, 0.14, 0.96)
 	xp_panel_style.border_color = Color("#79C9F2")
 	xp_panel_style.set_border_width_all(2)
-	xp_panel_style.set_corner_radius_all(12)
-	xp_panel_style.content_margin_left = 12
-	xp_panel_style.content_margin_right = 12
-	xp_panel_style.content_margin_top = 9
-	xp_panel_style.content_margin_bottom = 9
+	xp_panel_style.set_corner_radius_all(20)
+	xp_panel_style.content_margin_left = 22
+	xp_panel_style.content_margin_right = 22
+	xp_panel_style.content_margin_top = 18
+	xp_panel_style.content_margin_bottom = 18
 	xp_info_panel.add_theme_stylebox_override("panel", xp_panel_style)
 	top_hud.add_child(xp_info_panel)
 	var xp_panel_content := VBoxContainer.new()
@@ -396,12 +396,13 @@ func _build_top_hud() -> void:
 	xp_panel_title.text = "MAYOR LEVEL PROGRESS"
 	xp_panel_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	xp_panel_title.add_theme_color_override("font_color", Color("#FFE28A"))
-	xp_panel_title.add_theme_font_size_override("font_size", int(15 * _ui_scale))
+	xp_panel_title.add_theme_font_size_override("font_size", int(19 * _ui_scale))
 	xp_panel_header.add_child(xp_panel_title)
 	var xp_panel_close := Button.new()
 	xp_panel_close.name = "MayorLevelInfoClose"
 	xp_panel_close.text = "×"
-	xp_panel_close.custom_minimum_size = Vector2(30, 26) * _ui_scale
+	xp_panel_close.custom_minimum_size = Vector2(48, 44) * _ui_scale
+	xp_panel_close.add_theme_font_size_override("font_size", int(30 * _ui_scale))
 	xp_panel_close.focus_mode = Control.FOCUS_NONE
 	xp_panel_close.pressed.connect(func() -> void: xp_info_panel.hide())
 	xp_panel_header.add_child(xp_panel_close)
@@ -409,7 +410,7 @@ func _build_top_hud() -> void:
 	xp_info_label.name = "MayorLevelInfoText"
 	xp_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	xp_info_label.add_theme_color_override("font_color", Color.WHITE)
-	xp_info_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	xp_info_label.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	xp_panel_content.add_child(xp_info_label)
 	xp_info_panel.hide()
 	_refresh_xp_info_panel()
@@ -473,7 +474,7 @@ func _build_context_header(parent: Control) -> void:
 	context_header_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	context_header_subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	context_header_subtitle.add_theme_color_override("font_color", Color("#DCEAF3"))
-	context_header_subtitle.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	context_header_subtitle.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	stack.add_child(context_header_subtitle)
 	context_header_icons = HBoxContainer.new()
 	context_header_icons.name = "ContextIconRow"
@@ -852,7 +853,7 @@ func _make_category_button(icon_name: String, label_text: String, button_size: V
 	label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.30))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
-	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	label.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 	content.add_child(label)
 	return button
 
@@ -1079,7 +1080,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 		lock.offset_right = -3 * _ui_scale
 		lock.offset_top = 2 * _ui_scale
 		lock.offset_bottom = 25 * _ui_scale
-		lock.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		lock.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		lock.add_theme_color_override("font_color", Color("#A66A16"))
 		art.add_child(lock)
 	var label := Label.new()
@@ -1089,7 +1090,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.y = 34 * _ui_scale
 	label.add_theme_color_override("font_color", Color("#344B5B") if not level_locked else Color("#84929B"))
-	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	label.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 	content.add_child(label)
 	var count := Label.new()
 	count.name = "BuildingCount"
@@ -1097,7 +1098,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	count.text = "%d/1" % _count_existing_buildings(option_id)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	count.add_theme_color_override("font_color", Color("#748795"))
-	count.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	count.add_theme_font_size_override("font_size", int(15 * _ui_scale))
 	content.add_child(count)
 	button.mouse_entered.connect(_set_submenu_icon_scale.bind(icon, 1.06))
 	button.mouse_exited.connect(_set_submenu_icon_scale.bind(icon, 1.0))
@@ -1176,11 +1177,11 @@ func _build_catalog_info_panel() -> void:
 	catalog_info_panel.anchor_top = 1.0
 	catalog_info_panel.anchor_bottom = 1.0
 	catalog_info_panel.anchor_left = 0.15
-	catalog_info_panel.anchor_right = 0.39
+	catalog_info_panel.anchor_right = 0.46
 	catalog_info_panel.offset_left = 10 * _ui_scale
 	catalog_info_panel.offset_right = -8 * _ui_scale
-	catalog_info_panel.offset_top = -430 * _ui_scale
-	catalog_info_panel.offset_bottom = -218 * _ui_scale
+	catalog_info_panel.offset_top = -500 * _ui_scale
+	catalog_info_panel.offset_bottom = -150 * _ui_scale
 	catalog_info_panel.z_index = 65
 	catalog_info_panel.add_theme_stylebox_override("panel", _catalog_bar_style())
 	add_child(catalog_info_panel)
@@ -1210,12 +1211,13 @@ func _show_building_info(type_id: String) -> void:
 	title.text = str(definition.get("name", type_id))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_color_override("font_color", Color("#263746"))
-	title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	title.add_theme_font_size_override("font_size", int(21 * _ui_scale))
 	heading.add_child(title)
 	var close := Button.new()
 	close.name = "BuildingInfoClose"
 	close.text = "×"
-	close.custom_minimum_size = Vector2(30, 30) * _ui_scale
+	close.custom_minimum_size = Vector2(48, 44) * _ui_scale
+	close.add_theme_font_size_override("font_size", int(30 * _ui_scale))
 	close.pressed.connect(_hide_building_info)
 	heading.add_child(close)
 	var footprint: Vector2i = definition.get("size", Vector2i.ONE)
@@ -1818,7 +1820,7 @@ func _build_placement_controls() -> void:
 	rotate_button.text = "↻ Rotate"
 	rotate_button.tooltip_text = "Rotate building 90 degrees"
 	rotate_button.custom_minimum_size = Vector2(126, 54) * _ui_scale
-	rotate_button.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	rotate_button.add_theme_font_size_override("font_size", int(21 * _ui_scale))
 	rotate_button.add_theme_color_override("font_color", Color("#102B3B"))
 	rotate_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#8AD7F5"), Color("#D8F4FF")))
 	rotate_button.add_theme_stylebox_override("hover", _toolbar_style(Color("#B2E8FA"), Color.WHITE))
@@ -1830,7 +1832,7 @@ func _build_placement_controls() -> void:
 	cancel_button.text = "✕ Cancel"
 	cancel_button.tooltip_text = "Cancel building placement"
 	cancel_button.custom_minimum_size = Vector2(104, 54) * _ui_scale
-	cancel_button.add_theme_font_size_override("font_size", int(16 * _ui_scale))
+	cancel_button.add_theme_font_size_override("font_size", int(20 * _ui_scale))
 	cancel_button.add_theme_color_override("font_color", Color("#FFFFFF"))
 	cancel_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#D94E56"), Color("#FFB7B7")))
 	cancel_button.add_theme_stylebox_override("hover", _toolbar_style(Color("#EC6870"), Color.WHITE))
@@ -1956,10 +1958,10 @@ func open_production_panel(building: Building) -> void:
 	studio_style.shadow_color = Color(0.0, 0.015, 0.035, 0.62)
 	studio_style.shadow_size = 20
 	studio_style.shadow_offset = Vector2(0, 8)
-	studio_style.content_margin_left = 14
-	studio_style.content_margin_right = 14
-	studio_style.content_margin_top = 10
-	studio_style.content_margin_bottom = 10
+	studio_style.content_margin_left = 26
+	studio_style.content_margin_right = 26
+	studio_style.content_margin_top = 20
+	studio_style.content_margin_bottom = 20
 	production_panel.add_theme_stylebox_override("panel", studio_style)
 	production_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	production_overlay.add_child(production_panel)
@@ -2017,7 +2019,7 @@ func open_production_panel(building: Building) -> void:
 		var star_note := ProductionManager.get_store_star_status_note(str(component.shop_id), component.store_star_level)
 		if not star_note.is_empty():
 			star_status.text += " · " + star_note
-		star_status.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		star_status.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		star_status.add_theme_color_override("font_color", Color("#E4A82F"))
 		header_row.add_child(star_status)
 		var star_offer := ProductionManager.get_store_star_offer(str(component.shop_id), component.store_star_level)
@@ -2029,7 +2031,7 @@ func open_production_panel(building: Building) -> void:
 			star_button.text = "UPGRADE · %d¢" % star_cost
 			star_button.disabled = GameManager.level < required_level or EconomyManager.simoleons < star_cost
 			star_button.tooltip_text = "Unlocks at Level %d · reduces production time by %d%%" % [required_level, int(star_offer.get("reduction", 0))]
-			star_button.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			star_button.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 			star_button.pressed.connect(_upgrade_store_star.bind(building))
 			header_row.add_child(star_button)
 	header_row.add_child(close)
@@ -2052,7 +2054,7 @@ func open_production_panel(building: Building) -> void:
 	building_upgrade_button.text = "BUILDING UPGRADE · Lv%d → %d · §%d" % [upgrade_stage, upgrade_stage + 1, upgrade_cost]
 	building_upgrade_button.tooltip_text = "Materials: " + str(upgrade_bom)
 	building_upgrade_button.disabled = building.upgrade_in_progress or not upgrade_lock.is_empty() or upgrade_bom.is_empty()
-	building_upgrade_button.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	building_upgrade_button.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 	building_upgrade_button.pressed.connect(_start_non_residential_upgrade.bind(building))
 	layout.add_child(building_upgrade_button)
 
@@ -2066,7 +2068,7 @@ func open_production_panel(building: Building) -> void:
 	products_title.name = "AvailableProductsTitle"
 	products_title.text = "RAW MATERIALS  ·  PARALLEL FACTORY SLOTS" if component.is_factory else "STORE CATALOG  ·  ADD PRODUCTS TO THE QUEUE"
 	products_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	products_title.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	products_title.add_theme_font_size_override("font_size", int(16 * _ui_scale))
 	products_title.add_theme_color_override("font_color", Color("#244B62"))
 	layout.add_child(products_title)
 
@@ -2167,7 +2169,7 @@ func open_production_panel(building: Building) -> void:
 		var item_name := Label.new()
 		item_name.text = str(data.get("name", item_id.capitalize()))
 		item_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		item_name.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+		item_name.add_theme_font_size_override("font_size", int(15 * _ui_scale))
 		item_name.add_theme_color_override("font_color", Color("#263F4B"))
 		tile_content.add_child(item_name)
 		if not lock_reason.is_empty():
@@ -2189,7 +2191,7 @@ func open_production_panel(building: Building) -> void:
 		var status_label := Label.new()
 		status_label.text = lock_reason if not lock_reason.is_empty() else stock_summary
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		status_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		status_label.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		status_label.add_theme_color_override("font_color", Color("#A13F35") if not lock_reason.is_empty() else (Color("#34734D") if inventory_status == "READY" else Color("#A36B12")))
 		tile_content.add_child(status_label)
 		item_button.disabled = not lock_reason.is_empty()
@@ -2218,12 +2220,12 @@ func open_production_panel(building: Building) -> void:
 	var queue_title := Label.new()
 	queue_title.text = "PRODUCTION QUEUE"
 	queue_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_title.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	queue_title.add_theme_font_size_override("font_size", int(16 * _ui_scale))
 	queue_title.add_theme_color_override("font_color", Color("#244B62"))
 	queue_heading.add_child(queue_title)
 	var queue_count := Label.new()
 	queue_count.text = "%d / %d" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
-	queue_count.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	queue_count.add_theme_font_size_override("font_size", int(16 * _ui_scale))
 	queue_count.add_theme_color_override("font_color", Color("#547286"))
 	queue_heading.add_child(queue_count)
 	if not component.is_factory:
@@ -2233,7 +2235,7 @@ func open_production_panel(building: Building) -> void:
 		add_slot.text = ("+ SLOT · %d SC" % next_slot_cost) if next_slot_cost > 0 else ("MAX SLOTS" if component.get_slot_count() >= ProductionComponent.MAX_STORE_QUEUE_SLOTS else "UNAVAILABLE")
 		add_slot.disabled = next_slot_cost <= 0 or EconomyManager.sim_cash < next_slot_cost
 		add_slot.tooltip_text = "Add one queue slot. SimCash cost is from the commercial-building reference." if next_slot_cost > 0 else ("Maximum 11 queue slots." if component.get_slot_count() >= ProductionComponent.MAX_STORE_QUEUE_SLOTS else "No verified queue-slot price is configured for this custom store.")
-		add_slot.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		add_slot.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		add_slot.pressed.connect(_purchase_store_queue_slot.bind(building))
 		queue_heading.add_child(add_slot)
 
@@ -2274,7 +2276,7 @@ func open_production_panel(building: Building) -> void:
 			empty_label.text = "EMPTY"
 			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			empty_label.add_theme_color_override("font_color", Color("#587487"))
-			empty_label.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+			empty_label.add_theme_font_size_override("font_size", int(15 * _ui_scale))
 			slot_content.add_child(empty_label)
 		else:
 			var queued_item_id := str(slot.get("item_id", ""))
@@ -2285,7 +2287,7 @@ func open_production_panel(building: Building) -> void:
 			queue_item_row.add_child(Icons.make_item_icon(item_category, queued_item_id, Vector2(36, 36) * _ui_scale))
 			var queue_item_name := Label.new()
 			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
-			queue_item_name.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+			queue_item_name.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 			queue_item_name.add_theme_color_override("font_color", Color("#23465A"))
 			queue_item_row.add_child(queue_item_name)
 			if bool(slot.get("ready", false)):
@@ -2296,7 +2298,7 @@ func open_production_panel(building: Building) -> void:
 				collect_button.disabled = not storage_has_room
 				collect_button.tooltip_text = "Collect into City Storage." if storage_has_room else "Free at least one storage slot; this completed item will remain here."
 				collect_button.custom_minimum_size.y = 27 * _ui_scale
-				collect_button.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+				collect_button.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 				collect_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E6B93E"), Color("#FFE18A")))
 				collect_button.add_theme_color_override("font_color", Color("#34280B"))
 				collect_button.pressed.connect(func():
@@ -2314,7 +2316,7 @@ func open_production_panel(building: Building) -> void:
 					queued_label.name = "QueuedSlot%d" % slot_index
 					queued_label.text = "IN QUEUE"
 					queued_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-					queued_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+					queued_label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 					queued_label.add_theme_color_override("font_color", Color("#A36B12"))
 					slot_content.add_child(queued_label)
 				else:
@@ -2331,7 +2333,7 @@ func open_production_panel(building: Building) -> void:
 					timer_label.set_meta("slot_index", slot_index)
 					timer_label.text = _format_clock_duration(remaining)
 					timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-					timer_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+					timer_label.add_theme_font_size_override("font_size", int(16 * _ui_scale))
 					timer_label.add_theme_color_override("font_color", Color("#A36B12"))
 					slot_content.add_child(timer_label)
 					var progress := ProgressBar.new()
@@ -2353,7 +2355,7 @@ func open_production_panel(building: Building) -> void:
 	footer.text = "Completed goods are collected into City Storage."
 	footer.visible = not compact_layout
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	footer.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	footer.add_theme_color_override("font_color", Color("#587487"))
 	layout.add_child(footer)
 
@@ -2425,7 +2427,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	detail_row.add_child(text_stack)
 	var selected_name := Label.new()
 	selected_name.text = str(data.get("name", item_id.capitalize()))
-	selected_name.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	selected_name.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 	selected_name.add_theme_color_override("font_color", Color("#173746"))
 	text_stack.add_child(selected_name)
 	var production_time := Label.new()
@@ -2438,7 +2440,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		production_time.text = "PRODUCTION TIME  NOT VERIFIED"
 	else:
 		production_time.text = "PRODUCTION TIME  " + _format_duration(int(ceil(component.get_item_production_time(item_id))))
-	production_time.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	production_time.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 	production_time.add_theme_color_override("font_color", Color("#315C70"))
 	text_stack.add_child(production_time)
 	var provenance := str(data.get("source", ""))
@@ -2447,13 +2449,13 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		provenance_warning.name = "RecipeDataWarning"
 		provenance_warning.text = "REFERENCE DATA DISAGREES · VERIFY RECIPE BEFORE FINAL BALANCE" if provenance.to_lower().contains("conflict") else "MAYOR LEVEL GATE NOT VERIFIED · PRODUCTION LOCKED"
 		provenance_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		provenance_warning.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		provenance_warning.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		provenance_warning.add_theme_color_override("font_color", Color("#A13F35"))
 		text_stack.add_child(provenance_warning)
 	if is_factory:
 		var storage_label := Label.new()
 		storage_label.text = "IN CITY STORAGE  %d" % StorageManager.get_count(item_id)
-		storage_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		storage_label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		storage_label.add_theme_color_override("font_color", Color("#315C70"))
 		text_stack.add_child(storage_label)
 	else:
@@ -2482,7 +2484,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			ingredients_label.text = "CONFLICTING REFERENCE INPUTS — NOT CRAFTABLE\n" + "\n".join(candidate_lines)
 		else:
 			ingredients_label.text = ("REQUIRED ITEMS  " + "   •   ".join(ingredient_lines)) if not inputs.is_empty() else "RECIPE INPUTS NOT VERIFIED — PRODUCTION DISABLED"
-		ingredients_label.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		ingredients_label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		ingredients_label.add_theme_color_override("font_color", Color("#315C70") if can_start else Color("#A33A36"))
 		text_stack.add_child(ingredients_label)
 		if int(data.get("value", 0)) > 0:
@@ -2490,7 +2492,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			reference_value.name = "ReferenceTradeValue"
 			reference_value.text = "REFERENCE MAX TRADE VALUE  %s SIMOLEONS" % _format_count(int(data.value))
 			reference_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			reference_value.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			reference_value.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 			reference_value.add_theme_color_override("font_color", Color("#587487"))
 			text_stack.add_child(reference_value)
 		if not inputs.is_empty():
@@ -2506,7 +2508,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	if not lock_reason.is_empty() or not missing.is_empty() or slot_index < 0:
 		var reason := Label.new()
 		reason.text = lock_reason if not lock_reason.is_empty() else ("NO FREE PRODUCTION SLOT" if slot_index < 0 else "NEED " + missing)
-		reason.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		reason.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		reason.add_theme_color_override("font_color", Color("#A33A36"))
 		text_stack.add_child(reason)
 
@@ -2632,37 +2634,40 @@ func _on_city_needs_changed(_snapshot: Dictionary) -> void:
 			refreshed_scroll_node.scroll_vertical = previous_scroll
 
 func _city_panel_style() -> StyleBoxFlat:
+	# Shared premium strategy-game window frame: warm ivory surface, deep blue
+	# outer rim, gold accent and generous content inset for touch-first play.
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#F4F9FD")
-	style.border_color = Color("#D3E7F4")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(18)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
-	style.shadow_size = 12
-	style.shadow_offset = Vector2(0, 5)
-	style.content_margin_left = 14
-	style.content_margin_right = 14
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
+	style.bg_color = Color("#F7FAFC")
+	style.border_color = Color("#D7B45A")
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(24)
+	style.shadow_color = Color(0.005, 0.025, 0.055, 0.58)
+	style.shadow_size = 22
+	style.shadow_offset = Vector2(0, 8)
+	style.content_margin_left = 26
+	style.content_margin_right = 26
+	style.content_margin_top = 22
+	style.content_margin_bottom = 22
 	return style
 
 func _city_panel_heading(parent: VBoxContainer, title_text: String, close_callback: Callable) -> void:
 	var heading := HBoxContainer.new()
-	heading.add_theme_constant_override("separation", 8)
+	heading.add_theme_constant_override("separation", 16)
 	parent.add_child(heading)
 	var title := Label.new()
 	title.text = title_text
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", int(23 * _ui_scale))
+	title.add_theme_font_size_override("font_size", int(30 * _ui_scale))
 	title.add_theme_color_override("font_color", Color("#17364A"))
 	heading.add_child(title)
 	var close := Button.new()
+	close.name = "WindowCloseButton"
 	close.text = "×"
-	close.custom_minimum_size = Vector2(42, 42) * _ui_scale
-	close.add_theme_font_size_override("font_size", int(30 * _ui_scale))
+	close.custom_minimum_size = Vector2(58, 54) * _ui_scale
+	close.add_theme_font_size_override("font_size", int(38 * _ui_scale))
 	close.add_theme_color_override("font_color", Color("#17364A"))
-	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#DCECF5"), Color("#A8C9DA")))
+	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#E8F0F5"), Color("#B6C9D6")))
 	close.pressed.connect(close_callback)
 	heading.add_child(close)
 
@@ -2685,8 +2690,8 @@ func open_city_needs_panel() -> void:
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	city_needs_overlay.add_child(shade)
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(820.0 * _ui_scale, viewport_size.x * 0.92)
-	var panel_height := minf(650.0 * _ui_scale, viewport_size.y * 0.90)
+	var panel_width := minf(1080.0 * _ui_scale, viewport_size.x * 0.96)
+	var panel_height := minf(830.0 * _ui_scale, viewport_size.y * 0.94)
 	var panel := PanelContainer.new()
 	panel.name = "CityNeedsPanel"
 	panel.anchor_left = 0.5
@@ -2719,7 +2724,7 @@ func open_city_needs_panel() -> void:
 	]
 	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary_label.custom_minimum_size.y = 28 * _ui_scale
-	summary_label.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	summary_label.add_theme_font_size_override("font_size", int(15 * _ui_scale))
 	summary_label.add_theme_color_override("font_color", Color("#31566B"))
 	layout.add_child(summary_label)
 	var tabs := HBoxContainer.new()
@@ -2739,7 +2744,7 @@ func open_city_needs_panel() -> void:
 		var metric_label := Label.new()
 		metric_label.text = str(metric[0]) + "\n" + str(metric[1])
 		metric_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		metric_label.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+		metric_label.add_theme_font_size_override("font_size", int(15 * _ui_scale))
 		metric_label.add_theme_color_override("font_color", Color("#1C4358"))
 		badge.add_child(metric_label)
 	var scroll := ScrollContainer.new()
@@ -2754,7 +2759,7 @@ func open_city_needs_panel() -> void:
 	scroll.add_child(content)
 	var inventory_title := Label.new()
 	inventory_title.text = "CITY STORAGE INVENTORY  ·  %d ITEM TYPES" % snapshot.get("inventory", []).size()
-	inventory_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	inventory_title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	inventory_title.add_theme_color_override("font_color", Color("#17364A"))
 	content.add_child(inventory_title)
 	var inventory_grid := GridContainer.new()
@@ -2766,7 +2771,7 @@ func open_city_needs_panel() -> void:
 	if snapshot.get("inventory", []).is_empty():
 		var empty_inventory := Label.new()
 		empty_inventory.text = "City Storage is currently empty."
-		empty_inventory.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		empty_inventory.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		empty_inventory.add_theme_color_override("font_color", Color("#617A88"))
 		inventory_grid.add_child(empty_inventory)
 	for inventory_item in snapshot.get("inventory", []):
@@ -2791,12 +2796,12 @@ func open_city_needs_panel() -> void:
 		var inventory_count := Label.new()
 		inventory_count.text = "× %d" % int(inventory_item.get("count", 0))
 		inventory_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		inventory_count.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		inventory_count.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		inventory_count.add_theme_color_override("font_color", Color("#34734D"))
 		inventory_layout.add_child(inventory_count)
 	var items_title := Label.new()
 	items_title.text = "CITY-WIDE MATERIAL SHORTAGES"
-	items_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	items_title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	items_title.add_theme_color_override("font_color", Color("#17364A"))
 	content.add_child(items_title)
 	if snapshot.get("items", []).is_empty():
@@ -2822,7 +2827,7 @@ func open_city_needs_panel() -> void:
 		row_layout.add_child(text_stack)
 		var item_title := Label.new()
 		item_title.text = str(item.get("name", item_id))
-		item_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+		item_title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 		item_title.add_theme_color_override("font_color", Color("#18394D"))
 		text_stack.add_child(item_title)
 		var counts := Label.new()
@@ -2830,7 +2835,7 @@ func open_city_needs_panel() -> void:
 			int(item.get("stored", 0)), int(item.get("required", 0)), int(item.get("producing", 0)),
 			int(item.get("ready", 0)), int(item.get("deficit", 0)), (_city_needs_duration(int(item.get("eta_seconds", -1))) if int(item.get("eta_seconds", -1)) >= 0 else "—")
 		]
-		counts.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		counts.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		counts.add_theme_color_override("font_color", Color("#A13F35") if int(item.get("deficit", 0)) > 0 else Color("#34734D"))
 		text_stack.add_child(counts)
 		var supplier_list: Array = item.get("suppliers", [])
@@ -2842,7 +2847,7 @@ func open_city_needs_panel() -> void:
 			supplier_name += " · RECIPE PENDING"
 		var supplier_text := Label.new()
 		supplier_text.text = "SUPPLIER  " + supplier_name
-		supplier_text.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		supplier_text.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		supplier_text.add_theme_color_override("font_color", Color("#607989"))
 		text_stack.add_child(supplier_text)
 		var action := Button.new()
@@ -2858,13 +2863,13 @@ func open_city_needs_panel() -> void:
 		row_layout.add_child(action)
 	var orders_title := Label.new()
 	orders_title.text = "ACTIVE PRODUCTION QUEUE"
-	orders_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	orders_title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	orders_title.add_theme_color_override("font_color", Color("#17364A"))
 	content.add_child(orders_title)
 	if snapshot.get("orders", []).is_empty():
 		var no_orders := Label.new()
 		no_orders.text = "No active factory or store orders."
-		no_orders.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		no_orders.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		no_orders.add_theme_color_override("font_color", Color("#617A88"))
 		content.add_child(no_orders)
 	for order in snapshot.get("orders", []):
@@ -2883,7 +2888,7 @@ func open_city_needs_panel() -> void:
 		var order_timer := "READY TO COLLECT" if order_ready else _city_needs_duration(int(order.get("remaining", 0)))
 		order_info.text = "%s  ·  %s  ·  SLOT %d  ·  %s" % [CityDemandManager.get_item_name(order_item_id), str(order.get("building_name", "Factory / Store")), int(order.get("slot", 0)) + 1, order_timer]
 		order_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		order_info.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		order_info.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		order_info.add_theme_color_override("font_color", Color("#9A6B1D") if order_ready else Color("#315C8A"))
 		order_layout.add_child(order_info)
 		var order_action := Button.new()
@@ -2893,12 +2898,12 @@ func open_city_needs_panel() -> void:
 		order_layout.add_child(order_action)
 	var homes_title := Label.new()
 	homes_title.text = "RESIDENTIAL UPGRADE PLANS"
-	homes_title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	homes_title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	homes_title.add_theme_color_override("font_color", Color("#17364A"))
 	content.add_child(homes_title)
 	var note := Label.new()
 	note.text = "Shared stock is allocated once across home plans in this view. Producing and ready-to-collect batches stay separate until collected into City Storage."
-	note.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	note.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	note.add_theme_color_override("font_color", Color("#617A88"))
 	content.add_child(note)
 	for home in snapshot.get("homes", []):
@@ -2913,7 +2918,7 @@ func open_city_needs_panel() -> void:
 		var home_title := Label.new()
 		home_title.text = "%s  ·  LEVEL %d → %d" % [str(home.get("name", "Home")), int(home.get("stage", 1)), int(home.get("next_stage", 6))]
 		home_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		home_title.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+		home_title.add_theme_font_size_override("font_size", int(15 * _ui_scale))
 		home_title.add_theme_color_override("font_color", Color("#24485B"))
 		home_header.add_child(home_title)
 		var home_button := Button.new()
@@ -2940,7 +2945,7 @@ func open_city_needs_panel() -> void:
 			need_line.text = "%s   %d / %d   ·   %s" % [
 				str(need.get("name", need.get("item_id", ""))), int(need.get("stored", 0)), int(need.get("required", 0)), need_status
 			]
-			need_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			need_line.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 			need_line.add_theme_color_override("font_color", need_color)
 			home_layout.add_child(need_line)
 
@@ -3047,27 +3052,27 @@ func open_residential_panel(building: Building) -> void:
 			break
 	var title := Label.new()
 	title.text = "%s  ·  LEVEL %d → %d" % [str(building.definition.get("name", "Home")), stage, mini(stage + 1, 6)]
-	title.add_theme_font_size_override("font_size", int(15 * _ui_scale))
+	title.add_theme_font_size_override("font_size", int(19 * _ui_scale))
 	title.add_theme_color_override("font_color", Color("#24485B"))
 	layout.add_child(title)
 	var population_gain := ProductionManager.get_population_for_stage(mini(stage + 1, 6)) - int(building.current_population)
 	var reward := Label.new()
 	reward.text = "POPULATION +%d   ·   XP +%d   ·   SIMOLEONS +%d" % [maxi(0, population_gain), maxi(0, population_gain) + 10, 50 * (stage + 1)]
-	reward.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+	reward.add_theme_font_size_override("font_size", int(15 * _ui_scale))
 	reward.add_theme_color_override("font_color", Color("#34734D"))
 	layout.add_child(reward)
 	var plan_note := Label.new()
 	plan_note.name = "ResidentialPlanDataNote"
 	plan_note.text = ProductionManager.get_upgrade_plan_note(stage)
 	plan_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	plan_note.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	plan_note.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 	plan_note.add_theme_color_override("font_color", Color("#8A672B"))
 	layout.add_child(plan_note)
 	if is_upgrading:
 		var upgrade_status := Label.new()
 		upgrade_status.name = "ResidentialUpgradeInProgress"
 		upgrade_status.text = "SCAFFOLDING IN PROGRESS  ·  %d SECONDS REMAINING" % building.get_upgrade_remaining_seconds()
-		upgrade_status.add_theme_font_size_override("font_size", int(11 * _ui_scale))
+		upgrade_status.add_theme_font_size_override("font_size", int(15 * _ui_scale))
 		upgrade_status.add_theme_color_override("font_color", Color("#315C8A"))
 		layout.add_child(upgrade_status)
 	var all_available := not requirements.is_empty() and not is_upgrading
@@ -3107,13 +3112,13 @@ func open_residential_panel(building: Building) -> void:
 		var item_label := Label.new()
 		item_label.text = "%s   ·   %d / %d   ·   %s" % [CityDemandManager.get_item_name(item_id), owned, amount, need_status]
 		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		item_label.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+		item_label.add_theme_font_size_override("font_size", int(16 * _ui_scale))
 		item_label.add_theme_color_override("font_color", need_color)
 		row.add_child(item_label)
 		var supplier_rows: Array = CityDemandManager.get_suppliers_for_item(item_id)
 		var supplier_line := Label.new()
 		supplier_line.text = "SUPPLIER  " + (str(supplier_rows[0].get("name", "Unknown")) if not supplier_rows.is_empty() else "No registered supplier")
-		supplier_line.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		supplier_line.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		supplier_line.add_theme_color_override("font_color", Color("#607989"))
 		layout.add_child(supplier_line)
 	var plan_status := Label.new()
@@ -3132,7 +3137,7 @@ func open_residential_panel(building: Building) -> void:
 	else:
 		plan_status.text = "MATERIALS MISSING · " + (", ".join(shortage_lines) if not shortage_lines.is_empty() else "CHECK REQUIRED ITEMS")
 		plan_status.add_theme_color_override("font_color", Color("#A13F35"))
-	plan_status.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	plan_status.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 	layout.add_child(plan_status)
 	if is_upgrading:
 		var upgrade_progress := ProgressBar.new()
@@ -3195,8 +3200,8 @@ func _open_epic_project_panel(building: Building) -> void:
 	shade.color = Color(0.015, 0.025, 0.035, 0.68)
 	epic_project_overlay.add_child(shade)
 	var viewport_size := get_viewport().get_visible_rect().size
-	var width := minf(620.0 * _ui_scale, viewport_size.x * 0.92)
-	var height := minf(590.0 * _ui_scale, viewport_size.y * 0.90)
+	var width := minf(900.0 * _ui_scale, viewport_size.x * 0.96)
+	var height := minf(770.0 * _ui_scale, viewport_size.y * 0.94)
 	var panel := PanelContainer.new()
 	panel.name = "EpicProjectPanel"
 	panel.anchor_left = 0.5
@@ -3215,7 +3220,7 @@ func _open_epic_project_panel(building: Building) -> void:
 	_city_panel_heading(layout, "EPIC PROJECTS", _close_epic_project_panel)
 	var subtitle := Label.new()
 	subtitle.text = str(building.definition.get("name", "Residential Building"))
-	subtitle.add_theme_font_size_override("font_size", int(15 * _ui_scale))
+	subtitle.add_theme_font_size_override("font_size", int(19 * _ui_scale))
 	subtitle.add_theme_color_override("font_color", Color("#24485B"))
 	layout.add_child(subtitle)
 
@@ -3224,7 +3229,7 @@ func _open_epic_project_panel(building: Building) -> void:
 		var tier_name: String = tier_names[clampi(building.epic_tier, 1, 3)]
 		var tier_label := Label.new()
 		tier_label.text = "EPIC BUILDING  ·  " + tier_name
-		tier_label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+		tier_label.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 		tier_label.add_theme_color_override("font_color", Color("#A87522"))
 		layout.add_child(tier_label)
 		var parts := Label.new()
@@ -3272,7 +3277,7 @@ func _open_epic_project_panel(building: Building) -> void:
 	var tier := str(active.get("tier", "none")).to_upper()
 	var project_status := Label.new()
 	project_status.text = "EPIC POINTS  ·  %d / 200  ·  %s" % [points, tier]
-	project_status.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	project_status.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	project_status.add_theme_color_override("font_color", Color("#A87522"))
 	layout.add_child(project_status)
 	var progress := ProgressBar.new()
@@ -3401,19 +3406,7 @@ func _show_storage_panel() -> void:
 	storage_panel.offset_bottom = panel_height * 0.5
 	storage_panel.z_index = 1
 	storage_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#F1F8FE")
-	panel_style.border_color = Color("#D7EAF7")
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(20)
-	panel_style.shadow_color = Color(0.0, 0.0, 0.0, 0.42)
-	panel_style.shadow_size = 14
-	panel_style.shadow_offset = Vector2(0, 7)
-	panel_style.content_margin_left = 18
-	panel_style.content_margin_right = 18
-	panel_style.content_margin_top = 12
-	panel_style.content_margin_bottom = 12
-	storage_panel.add_theme_stylebox_override("panel", panel_style)
+	storage_panel.add_theme_stylebox_override("panel", _city_panel_style())
 	storage_overlay.add_child(storage_panel)
 
 	var layout := VBoxContainer.new()
@@ -3551,7 +3544,7 @@ func _refresh_storage_panel() -> void:
 		empty_label.custom_minimum_size = Vector2(0, 120) * _ui_scale
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		empty_label.add_theme_font_size_override("font_size", int(18 * _ui_scale))
+		empty_label.add_theme_font_size_override("font_size", int(22 * _ui_scale))
 		empty_label.add_theme_color_override("font_color", Color("#526C7C"))
 		grid.add_child(empty_label)
 		return
@@ -3620,8 +3613,8 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	trade_overlay.add_child(backdrop)
 
-	var panel_width := minf(660.0 * _ui_scale, viewport_size.x * 0.92)
-	var panel_height := minf(610.0 * _ui_scale, viewport_size.y * 0.90)
+	var panel_width := minf(920.0 * _ui_scale, viewport_size.x * 0.96)
+	var panel_height := minf(790.0 * _ui_scale, viewport_size.y * 0.94)
 	trade_panel = PanelContainer.new()
 	trade_panel.name = "TradePanel"
 	trade_panel.anchor_left = 0.5
@@ -3633,18 +3626,7 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	trade_panel.offset_top = -panel_height * 0.5
 	trade_panel.offset_bottom = panel_height * 0.5
 	trade_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#F1F8FE")
-	panel_style.border_color = Color("#D7EAF7")
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(20)
-	panel_style.shadow_color = Color(0.0, 0.0, 0.0, 0.42)
-	panel_style.shadow_size = 14
-	panel_style.content_margin_left = 16
-	panel_style.content_margin_right = 16
-	panel_style.content_margin_top = 12
-	panel_style.content_margin_bottom = 12
-	trade_panel.add_theme_stylebox_override("panel", panel_style)
+	trade_panel.add_theme_stylebox_override("panel", _city_panel_style())
 	trade_overlay.add_child(trade_panel)
 
 	var layout := VBoxContainer.new()
@@ -3746,7 +3728,7 @@ func _trade_message(parent: VBoxContainer, message: String) -> void:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.y = 70 * _ui_scale
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	label.add_theme_font_size_override("font_size", int(21 * _ui_scale))
 	label.add_theme_color_override("font_color", Color("#526C7C"))
 	parent.add_child(label)
 
@@ -3763,7 +3745,7 @@ func _build_trade_depot_content(parent: VBoxContainer) -> void:
 	parent.add_child(title_row)
 	var heading := Label.new()
 	heading.text = "LIST PRODUCTS · 4 MARKET SLOTS"
-	heading.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	heading.add_theme_font_size_override("font_size", int(21 * _ui_scale))
 	heading.add_theme_color_override("font_color", Color("#24465A"))
 	title_row.add_child(heading)
 	var items := StorageManager.get_all_items()
@@ -3793,7 +3775,7 @@ func _build_trade_depot_content(parent: VBoxContainer) -> void:
 
 	var listings_heading := Label.new()
 	listings_heading.text = "YOUR LISTINGS"
-	listings_heading.add_theme_font_size_override("font_size", int(17 * _ui_scale))
+	listings_heading.add_theme_font_size_override("font_size", int(21 * _ui_scale))
 	listings_heading.add_theme_color_override("font_color", Color("#24465A"))
 	parent.add_child(listings_heading)
 	var listings := TradeManager.get_sell_slots()
@@ -4096,8 +4078,8 @@ func _show_settings_panel() -> void:
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	settings_overlay.add_child(backdrop)
 
-	var panel_width := minf(540.0 * _ui_scale, viewport_size.x * 0.92)
-	var panel_height := minf(590.0 * _ui_scale, viewport_size.y * 0.90)
+	var panel_width := minf(900.0 * _ui_scale, viewport_size.x * 0.96)
+	var panel_height := minf(770.0 * _ui_scale, viewport_size.y * 0.94)
 	var panel := PanelContainer.new()
 	panel.name = "SettingsPanel"
 	panel.anchor_left = 0.5
@@ -4109,16 +4091,7 @@ func _show_settings_panel() -> void:
 	panel.offset_top = -panel_height * 0.5
 	panel.offset_bottom = panel_height * 0.5
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#F1F8FE")
-	panel_style.border_color = Color("#D7EAF7")
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(20)
-	panel_style.content_margin_left = 18
-	panel_style.content_margin_right = 18
-	panel_style.content_margin_top = 12
-	panel_style.content_margin_bottom = 12
-	panel.add_theme_stylebox_override("panel", panel_style)
+	panel.add_theme_stylebox_override("panel", _city_panel_style())
 	settings_overlay.add_child(panel)
 
 	var layout := VBoxContainer.new()
@@ -4145,7 +4118,7 @@ func _show_settings_panel() -> void:
 
 	var section := Label.new()
 	section.text = "AUDIO"
-	section.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	section.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 	section.add_theme_color_override("font_color", Color("#28799C"))
 	layout.add_child(section)
 
@@ -4175,7 +4148,7 @@ func _show_settings_panel() -> void:
 	_add_audio_setting_slider(sliders, "SfxVolumeSlider", "Sound effects volume", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
 	var graphics_section := Label.new()
 	graphics_section.text = "3D GRAPHICS"
-	graphics_section.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	graphics_section.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 	graphics_section.add_theme_color_override("font_color", Color("#28799C"))
 	sliders.add_child(graphics_section)
 	var graphics_row := HBoxContainer.new()
@@ -4198,13 +4171,13 @@ func _show_settings_panel() -> void:
 	graphics_row.add_child(graphics_select)
 	var performance_section := Label.new()
 	performance_section.text = "DEVICE PERFORMANCE"
-	performance_section.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	performance_section.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 	performance_section.add_theme_color_override("font_color", Color("#28799C"))
 	sliders.add_child(performance_section)
 	var performance_note := Label.new()
 	performance_note.text = "Run a 30-second test during normal gameplay. The report is saved locally on this device."
 	performance_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	performance_note.add_theme_font_size_override("font_size", int(12 * _ui_scale))
+	performance_note.add_theme_font_size_override("font_size", int(16 * _ui_scale))
 	performance_note.add_theme_color_override("font_color", Color("#526A78"))
 	sliders.add_child(performance_note)
 	var performance_button := Button.new()
@@ -4230,7 +4203,7 @@ func _add_audio_setting_toggle(parent: GridContainer, node_name: String, label_t
 	toggle.text = label_text
 	toggle.button_pressed = initial_value
 	toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	toggle.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+	toggle.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 	toggle.toggled.connect(func(enabled: bool) -> void: setter.call(enabled))
 	parent.add_child(toggle)
 
@@ -4245,7 +4218,7 @@ func _add_audio_setting_slider(parent: VBoxContainer, node_name: String, label_t
 	label.text = label_text
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.add_theme_color_override("font_color", Color("#243C4B"))
-	label.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	label.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 	header.add_child(label)
 	var value_label := Label.new()
 	value_label.name = node_name + "Value"
@@ -4389,8 +4362,8 @@ func open_regions_panel() -> void:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.015, 0.025, 0.035, 0.70)
 	regions_overlay.add_child(shade)
-	var width := minf(660.0 * _ui_scale, viewport_size.x * 0.92)
-	var height := minf(610.0 * _ui_scale, viewport_size.y * 0.90)
+	var width := minf(920.0 * _ui_scale, viewport_size.x * 0.96)
+	var height := minf(790.0 * _ui_scale, viewport_size.y * 0.94)
 	var panel := PanelContainer.new()
 	panel.name = "RegionsPanel"
 	panel.anchor_left = 0.5
@@ -4432,23 +4405,23 @@ func open_regions_panel() -> void:
 		row.add_child(details)
 		var title := Label.new()
 		title.text = str(region.get("name", "Region"))
-		title.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+		title.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 		title.add_theme_color_override("font_color", Color("#A87522") if bool(region.get("active", false)) else Color("#24485B"))
 		details.add_child(title)
 		var climate := Label.new()
 		climate.text = "%s climate  ·  Mayor Level %d+" % [str(region.get("climate", "temperate")).capitalize(), int(region.get("unlock_level", 1))]
-		climate.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		climate.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		details.add_child(climate)
 		var population := Label.new()
 		population.text = "Saved regional population: %s" % str(int(region.get("population", 0)))
-		population.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		population.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		population.add_theme_color_override("font_color", Color("#526D7D"))
 		details.add_child(population)
 		if str(region.get("id", "")) != "capital":
 			var regional_content := Label.new()
 			regional_content.text = "Regional resource: %s  ·  Building: %s" % [str(region.get("signature_material", "—")), str(region.get("signature_building", "—"))]
 			regional_content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			regional_content.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+			regional_content.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 			regional_content.add_theme_color_override("font_color", Color("#8A672B"))
 			details.add_child(regional_content)
 		var action := Button.new()
@@ -4503,8 +4476,8 @@ func open_achievements_panel() -> void:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.015, 0.025, 0.035, 0.68)
 	achievements_overlay.add_child(shade)
-	var width := minf(650.0 * _ui_scale, viewport_size.x * 0.92)
-	var height := minf(620.0 * _ui_scale, viewport_size.y * 0.90)
+	var width := minf(910.0 * _ui_scale, viewport_size.x * 0.96)
+	var height := minf(800.0 * _ui_scale, viewport_size.y * 0.94)
 	var panel := PanelContainer.new()
 	panel.name = "AchievementsPanel"
 	panel.anchor_left = 0.5
@@ -4524,7 +4497,7 @@ func open_achievements_panel() -> void:
 	var summary := Label.new()
 	summary.name = "AchievementSummary"
 	summary.text = "UNLOCKED  ·  %d / %d" % [AchievementManager.get_unlocked_count(), AchievementManager.get_total_count()]
-	summary.add_theme_font_size_override("font_size", int(14 * _ui_scale))
+	summary.add_theme_font_size_override("font_size", int(18 * _ui_scale))
 	summary.add_theme_color_override("font_color", Color("#9A6A20"))
 	layout.add_child(summary)
 	var scroll := ScrollContainer.new()
@@ -4547,18 +4520,18 @@ func open_achievements_panel() -> void:
 		var title := Label.new()
 		title.text = str(entry.get("title", "Achievement"))
 		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		title.add_theme_font_size_override("font_size", int(13 * _ui_scale))
+		title.add_theme_font_size_override("font_size", int(17 * _ui_scale))
 		title.add_theme_color_override("font_color", Color("#A87522") if bool(entry.get("unlocked", false)) else Color("#24485B"))
 		header.add_child(title)
 		var state := Label.new()
 		state.text = "UNLOCKED" if bool(entry.get("unlocked", false)) else "%d / %d" % [int(entry.get("progress", 0)), int(entry.get("target", 1))]
-		state.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		state.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		state.add_theme_color_override("font_color", Color("#34734D") if bool(entry.get("unlocked", false)) else Color("#607989"))
 		header.add_child(state)
 		var description := Label.new()
 		description.text = str(entry.get("description", ""))
 		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		description.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+		description.add_theme_font_size_override("font_size", int(14 * _ui_scale))
 		description.add_theme_color_override("font_color", Color("#526D7D"))
 		content.add_child(description)
 		var progress_bar := ProgressBar.new()
@@ -4570,7 +4543,7 @@ func open_achievements_panel() -> void:
 		content.add_child(progress_bar)
 		var reward := Label.new()
 		reward.text = "REWARD  ·  +%d SIMOLEONS  ·  +%d XP" % [int(entry.get("simoleons", 0)), int(entry.get("xp", 0))]
-		reward.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+		reward.add_theme_font_size_override("font_size", int(13 * _ui_scale))
 		reward.add_theme_color_override("font_color", Color("#8A672B"))
 		content.add_child(reward)
 
