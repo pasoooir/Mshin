@@ -54,6 +54,34 @@ func _ready() -> void:
 		failures.append("locked raw material was trade-eligible before its unlock level")
 	trade_hq.queue_free()
 
+	# Community reference-price regression checks. These are maximum Trade
+	# Depot sale values, not EA-guaranteed purchase prices or guaranteed profit.
+	var community_max_sale_prices := {
+		"metal": 10, "wood": 20, "plastic": 25, "seeds": 30,
+		"minerals": 40, "chemicals": 60, "textiles": 90,
+		"sugar_spices": 110, "glass": 120, "animal_feed": 140,
+		"electrical": 160, "nails": 80, "planks": 120,
+		"bricks": 190, "cement": 440, "glue": 440, "paint": 320,
+		"hammer": 90, "measuring_tape": 110, "shovel": 150,
+		"cooking_utensils": 250
+	}
+	for priced_item in community_max_sale_prices:
+		if ProductionManager.get_item_value(str(priced_item)) != int(community_max_sale_prices[priced_item]):
+			failures.append("Trade Depot price catalog differs from community max-sale reference for " + str(priced_item))
+	var known_recipe_margins := {
+		"nails": 60, "planks": 80, "bricks": 110,
+		"cement": 300, "glue": 295, "paint": 140,
+		"hammer": 60, "measuring_tape": 75, "shovel": 95
+	}
+	for recipe_item in known_recipe_margins:
+		var recipe: Dictionary = ProductionManager.crafted_items.get(str(recipe_item), {})
+		var input_cost := 0
+		for input_id in recipe.get("requires", {}):
+			input_cost += ProductionManager.get_item_value(str(input_id)) * int(recipe.requires[input_id])
+		var expected_margin := int(community_max_sale_prices.get(recipe_item, 0)) - input_cost
+		if expected_margin != int(known_recipe_margins[recipe_item]):
+			failures.append("Reference production margin mismatch for " + str(recipe_item))
+
 	# Full Trade Depot lifecycle: reserve on listing, block unsafe cancellation
 	# when the warehouse has no room, return goods on cancel, and pay once on collect.
 	GameManager.population = 8000
