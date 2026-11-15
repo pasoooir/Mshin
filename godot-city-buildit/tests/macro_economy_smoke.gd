@@ -132,6 +132,9 @@ func _test_production_capacity_and_cashflow() -> void:
 	if int(integrated.get("source_breakdown", {}).get("production_sales", 0)) != 10:
 		_fail("Trade Depot collection after its 120-second timer did not flow into macro Simoleon income.")
 		return
+	if int(production.get("rejected_actions", 0)) != 1:
+		_fail("Trade Depot collection before 120 seconds must be rejected exactly once.")
+		return
 	if int(production.get("ending_inventory", {}).get("metal", 0)) != 1:
 		_fail("Production sale did not remove exactly one item from warehouse inventory.")
 		return
