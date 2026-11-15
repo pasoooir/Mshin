@@ -78,5 +78,8 @@
 - [x] فروش Depot فقط پس از ۱۲۰ ثانیه و جمع‌آوری صریح به `production_sales` و جریان Simoleons متصل شد.
 - [x] snapshot شهر زنده در GameplaySmoke موجودی/ظرفیت واقعی، ساختمان‌های تولیدی، سطح ستاره فروشگاه، تایمرها، مانده پول، جمعیت، شادی، سطح و XP را از Autoloadها خواند.
 - [x] Godot Validation روی PR SHA `bb24eb193804e38e8095b63409931095846572ed` موفق شد: [run 43708045317](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
-- [ ] Web/Chromium روی همان SHA در حال بررسی است؛ نتیجه آن هنوز ثبت نشده.
+- [x] Web build و اجرای مرورگر دسکتاپ/موبایل در Chromium روی code SHA نهایی موفق شد: [run 43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318).
 - [ ] AUTO CHAIN کامل، cost basis مواد، سود خالص حسابداری، اتصال اقلام سفارش تحویل به انبار، تقاضای بازار و پذیرش فیزیکی Android همچنان باز هستند.
+
+
+PR #509 با merge commit `dd7967dc10857b317386353d7366b42cb972569e` وارد `main` شد. شواهد CI شاخه PR ثبت شده‌اند؛ اجرای مستقل روی merge commit هنوز یک گیت جداگانه و باز است.
