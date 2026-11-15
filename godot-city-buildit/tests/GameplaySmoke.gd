@@ -284,13 +284,13 @@ func _test_automatic_production_chain() -> void:
 	_check(not nails_chain_id.is_empty() and not chair_chain_id.is_empty() and nails_jobs == 1, "Concurrent chains must share one in-flight Nails dependency rather than enqueue duplicate batches.")
 	var concurrent_completed := false
 	for _iteration in range(18):
-		var now := int(Time.get_unix_time_from_system())
+		var now_concurrent := int(Time.get_unix_time_from_system())
 		for component in [factory, building_supplies, hardware_store, furniture_store]:
 			for slot_index in range(component.get_slot_count()):
-				var slot: Dictionary = component.get_slot(slot_index)
-				if not slot.is_empty() and not bool(slot.get("ready", false)) and int(slot.get("finish_unix", 0)) > 0:
-					slot["finish_unix"] = now - 1
-					component.slots[slot_index] = slot
+				var slot_concurrent: Dictionary = component.get_slot(slot_index)
+				if not slot_concurrent.is_empty() and not bool(slot_concurrent.get("ready", false)) and int(slot_concurrent.get("finish_unix", 0)) > 0:
+					slot_concurrent["finish_unix"] = now_concurrent - 1
+					component.slots[slot_index] = slot_concurrent
 			component.refresh_slots()
 		ProductionManager._pump_production_chains()
 		if str(ProductionManager.get_production_chain_status(nails_chain_id).get("status", "")) == "complete" and str(ProductionManager.get_production_chain_status(chair_chain_id).get("status", "")) == "complete":
