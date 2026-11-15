@@ -18,14 +18,14 @@
 | پاداش ارتقای سطح | `new_level × 100` Simoleons و یک Golden Key | `GameManager.add_experience` |
 | سفارش تحویل | `catalog_value × quantity × 2` | `TradeManager._generate_orders` |
 | خرید Global Trade HQ | `catalog_value × quantity × hq_multiplier`؛ ضریب پیش‌فرض سناریو ۲ است | `TradeManager._generate_market_offers` با مقدار پایهٔ دوبرابر |
-| فروش Trade Depot | `catalog_value × quantity`؛ وصول پس از ۱۲۰ ثانیه | `TradeManager.list_for_sale` و `SELL_LISTING_SECONDS` |
+| فروش Trade Depot | `catalog_value × quantity`؛ آگهی پس از ۱۲۰ ثانیه آماده می‌شود و درآمد فقط با رویداد جمع‌آوری بازیکن ثبت می‌شود | `TradeManager.list_for_sale`، `_process` و `collect_sale` |
 | ساخت، جاده و ارتقا | هزینهٔ واقعی هر اقدام به‌عنوان رویداد ورودی سناریو ثبت می‌شود | هزینه‌ها از داده‌های همان اقدام به موتور داده می‌شوند |
 
 ## قالب رویدادهای سناریو
 
 هر رویداد شامل `at_seconds` و `type` است. بسته به نوع رویداد، فیلدهای `item_id`، `quantity` یا `amount` نیز لازم‌اند:
 
-- `depot_sale`: شروع آگهی؛ وصول در ۱۲۰ ثانیه بعد، مشروط به قرار داشتن زمان وصول در افق شبیه‌سازی.
+- `depot_sale`: جمع‌آوری درآمد توسط بازیکن؛ باید `listed_at_seconds` زمان ایجاد آگهی و `at_seconds` زمان جمع‌آوری را بدهد و فاصلهٔ آن‌ها حداقل ۱۲۰ ثانیه باشد. آماده‌شدن آگهی به‌تنهایی درآمد ایجاد نمی‌کند.
 - `delivery_order`: تکمیل سفارش و دریافت پاداش کاتالوگی دوبرابر.
 - `hq_purchase`: خرید کالا با ضریب قابل‌تغییر برای تحلیل حساسیت.
 - `construction`، `road`، `upgrade`: هزینهٔ واقعی اقدام.
@@ -56,4 +56,4 @@
 
 ## پذیرش
 
-تست `macro_economy_smoke.gd` باید موارد زیر را کنترل کند: مالیات ۲۴ساعته بر مبنای فرمول جاری، وصول Depot پس از ۱۲۰ ثانیه، پاداش سفارش، اثر سناریویی ضریب HQ، sink ساخت، و XP/پاداش ارتقای سطح. نتیجهٔ نهایی تنها پس از اجرای CI روی PR ثبت می‌شود.
+تست `macro_economy_smoke.gd` باید موارد زیر را کنترل کند: مالیات ۲۴ساعته بر مبنای فرمول جاری، جمع‌آوری دستی Depot پس از آماده‌شدن ۱۲۰ ثانیه‌ای، پاداش سفارش، اثر سناریویی ضریب HQ، sink ساخت، و XP/پاداش ارتقای سطح. نتیجهٔ نهایی تنها پس از اجرای CI روی PR ثبت می‌شود.
