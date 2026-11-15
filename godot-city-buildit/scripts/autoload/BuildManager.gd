@@ -649,6 +649,9 @@ func unregister_building(building_id: String) -> void:
 	if building == null:
 		return
 	var definition: Dictionary = building.definition
+	var production_component = building.get("production_component")
+	if is_instance_valid(production_component) and production_component.has_method("release_queued_reservations"):
+		production_component.release_queued_reservations()
 	if building.has_method("set_fire_smoke"):
 		building.set_fire_smoke(false)
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
