@@ -2478,6 +2478,23 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		open_production_panel(building)
 	)
 	detail_row.add_child(start_button)
+	var chain_button := Button.new()
+	chain_button.name = "StartAutomaticProductionChain"
+	chain_button.text = "AUTO CHAIN"
+	chain_button.custom_minimum_size = Vector2(104, 44) * _ui_scale
+	chain_button.disabled = not lock_reason.is_empty()
+	chain_button.tooltip_text = "Automatically produce missing raw and crafted inputs, queue this product, and collect every output into City Storage."
+	chain_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#5CA9C5"), Color("#A7DCEB")))
+	chain_button.add_theme_color_override("font_color", Color("#12394B"))
+	chain_button.pressed.connect(func():
+		var chain_id := ProductionManager.request_production_chain(item_id, 1)
+		if chain_id.is_empty():
+			status_label.text = "Automatic chain unavailable: check recipe verification, supplier building and service access."
+		else:
+			status_label.text = "Automatic production chain queued: %s." % str(data.get("name", item_id))
+		open_production_panel(building)
+	)
+	detail_row.add_child(chain_button)
 
 
 func _count_empty_production_slots(component: ProductionComponent) -> int:
