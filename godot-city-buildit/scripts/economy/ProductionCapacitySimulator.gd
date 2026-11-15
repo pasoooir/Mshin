@@ -375,7 +375,7 @@ static func _advance_auto_chains(facilities: Dictionary, inventory: Dictionary, 
 				var missing := maxi(0, required - int(inventory.get(input_id, 0)))
 				if missing > 0:
 					missing_inputs = true
-					_schedule_auto_chain_item(input_id, missing, chain_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, item_id, log)
+					_schedule_auto_chain_item(input_id, missing, chain_id, facilities, inventory, raw_catalog, recipes, factory_materials, config, item_id, now, log)
 			if missing_inputs:
 				continue
 			var another_active := false
@@ -407,7 +407,7 @@ static func _advance_auto_chains(facilities: Dictionary, inventory: Dictionary, 
 		facilities[facility_id] = facility
 
 
-static func _schedule_auto_chain_item(item_id: String, amount: int, chain_id: String, facilities: Dictionary, inventory: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, factory_materials: Dictionary, config: Dictionary, ancestry_item: String, log: Array) -> bool:
+static func _schedule_auto_chain_item(item_id: String, amount: int, chain_id: String, facilities: Dictionary, inventory: Dictionary, raw_catalog: Dictionary, recipes: Dictionary, factory_materials: Dictionary, config: Dictionary, ancestry_item: String, now: int, log: Array) -> bool:
 	if amount <= 0:
 		return true
 	if chain_id.is_empty() or item_id == ancestry_item:
@@ -433,10 +433,10 @@ static func _schedule_auto_chain_item(item_id: String, amount: int, chain_id: St
 				if started >= needed:
 					break
 				if facility.slots[slot_index].is_empty():
-					facility.slots[slot_index] = {"item_id": item_id, "start_seconds": now_placeholder, "finish_seconds": 0, "ready": false, "queued": false, "auto_chain_id": chain_id, "auto_chain_root": false, "auto_chain_started": true, "cost_known": true, "cost_total": 0}
+					facility.slots[slot_index] = {"item_id": item_id, "start_seconds": now, "finish_seconds": 0, "ready": false, "queued": false, "auto_chain_id": chain_id, "auto_chain_root": false, "auto_chain_started": true, "cost_known": true, "cost_total": 0}
 					var duration := maxi(1, int(raw_catalog[item_id].get("time_sec", raw_catalog[item_id].get("time", 0))))
-					facility.slots[slot_index]["finish_seconds"] = int(config.get("_simulation_now", 0)) + duration
-					log.append({"at_seconds": int(config.get("_simulation_now", 0)), "event": "auto_chain_factory_started", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "chain_id": chain_id, "finish_seconds": int(facility.slots[slot_index].finish_seconds)})
+					facility.slots[slot_index]["finish_seconds"] = now + duration
+					log.append({"at_seconds": now, "event": "auto_chain_factory_started", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "chain_id": chain_id, "finish_seconds": int(facility.slots[slot_index].finish_seconds)})
 					started += 1
 			facilities[facility_id] = facility
 		return started > 0
@@ -456,7 +456,7 @@ static func _schedule_auto_chain_item(item_id: String, amount: int, chain_id: St
 				break
 			if facility.slots[slot_index].is_empty():
 				facility.slots[slot_index] = {"item_id": item_id, "start_seconds": 0, "finish_seconds": 0, "ready": false, "queued": true, "auto_chain_id": chain_id, "auto_chain_root": false, "auto_chain_started": false, "cost_known": false, "cost_total": 0}
-				log.append({"at_seconds": int(config.get("_simulation_now", 0)), "event": "auto_chain_dependency_queued", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "chain_id": chain_id})
+				log.append({"at_seconds": now, "event": "auto_chain_dependency_queued", "facility_id": facility_id, "item_id": item_id, "slot_index": slot_index, "chain_id": chain_id})
 				scheduled += 1
 		facilities[facility_id] = facility
 	return scheduled > 0
