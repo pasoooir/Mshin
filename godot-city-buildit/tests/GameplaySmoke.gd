@@ -3797,9 +3797,12 @@ func _run_gameplay_test() -> void:
 		metal_button.emit_signal("pressed")
 		var factory_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
 		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must open its detail card with an enabled Start action.")
-		if factory_start:
-			factory_start.emit_signal("pressed")
-	_check(not factory_component.get_slot(0).is_empty(), "Confirming Metal production must start the first factory slot.")
+		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must keep the detail-card Start action available.")
+	var factory_drag_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
+	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
+	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 6), "A product drop must reject a queue slot outside the factory capacity.")
+	production_hud._accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0)
+	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into factory slot zero must start that exact production slot.")
 	production_hud.open_production_panel(factory)
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "Active factory production must show a live countdown label.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "Active factory production must show a live progress bar.")
