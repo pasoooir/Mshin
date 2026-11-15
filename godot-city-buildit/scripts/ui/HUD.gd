@@ -1867,6 +1867,48 @@ func _on_roads_pressed() -> void:
 		road_system.set_road_mode(true)
 		status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile)"
 
+func open_building_upgrade_panel(building: Building) -> void:
+	if not is_instance_valid(building) or building.status != "completed":
+		return
+	var stage := int(building.upgrade_stage)
+	var cost := BuildManager.get_non_residential_upgrade_cost(building.building_type, stage)
+	var duration := BuildManager.get_non_residential_upgrade_duration_seconds(building.building_type, stage)
+	var requirements := BuildManager.get_non_residential_upgrade_bom(building.building_type, stage)
+	var material_lines: Array[String] = []
+	for item_id in requirements:
+		material_lines.append("%s ×%d" % [str(item_id).capitalize(), int(requirements[item_id])])
+	var lock_reason := BuildManager.get_non_residential_upgrade_lock_reason(building.building_type, stage)
+	if not BuildManager.is_building_operational(building):
+		lock_reason = "Restore Gateway road access and required operating services before upgrading."
+	var dialog := ConfirmationDialog.new()
+	dialog.name = "NonResidentialUpgradeDialog"
+	dialog.title = "%s · UPGRADE" % str(building.definition.get("name", "Building"))
+	if building.upgrade_in_progress:
+		dialog.dialog_text = "Upgrade to Level %d is in progress. Remaining: %ds." % [stage + 1, building.get_upgrade_remaining_seconds()]
+	else:
+		dialog.dialog_text = "Level %d → %d\nCost: §%d\nConstruction time: %ds\nMaterials: %s" % [
+			stage, stage + 1, cost, duration, ", ".join(material_lines)
+		]
+		if not lock_reason.is_empty():
+			dialog.dialog_text += "\n\n" + lock_reason
+	dialog.get_ok_button().text = "START UPGRADE"
+	dialog.get_ok_button().disabled = building.upgrade_in_progress or not lock_reason.is_empty() or requirements.is_empty()
+	dialog.confirmed.connect(_start_non_residential_upgrade.bind(building))
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(480, 340))
+
+func _start_non_residential_upgrade(building: Building) -> void:
+	if not is_instance_valid(building) or not building.try_upgrade():
+		if is_instance_valid(status_label):
+			status_label.text = "Upgrade could not start. Check materials, funds and operating services."
+		return
+	if is_instance_valid(status_label):
+		status_label.text = "%s upgrade to Level %d started." % [str(building.definition.get("name", "Building")), int(building.upgrade_stage) + 1]
+	if is_instance_valid(_production_building) and _production_building == building:
+		open_production_panel(building)
+
 func open_production_panel(building: Building) -> void:
 	if not is_instance_valid(building) or building.status != "completed":
 		return
@@ -1998,6 +2040,21 @@ func open_production_panel(building: Building) -> void:
 	hint.add_theme_font_size_override("font_size", int((10 if not compact_layout else 8) * _ui_scale))
 	hint.add_theme_color_override("font_color", Color("#577487"))
 	layout.add_child(hint)
+
+	var building_upgrade_button := Button.new()
+	building_upgrade_button.name = "UpgradeNonResidentialBuilding"
+	var upgrade_stage := int(building.upgrade_stage)
+	var upgrade_cost := BuildManager.get_non_residential_upgrade_cost(building.building_type, upgrade_stage)
+	var upgrade_bom := BuildManager.get_non_residential_upgrade_bom(building.building_type, upgrade_stage)
+	var upgrade_lock := BuildManager.get_non_residential_upgrade_lock_reason(building.building_type, upgrade_stage)
+	if not BuildManager.is_building_operational(building):
+		upgrade_lock = "Restore road access and required services before upgrading."
+	building_upgrade_button.text = "BUILDING UPGRADE · Lv%d → %d · §%d" % [upgrade_stage, upgrade_stage + 1, upgrade_cost]
+	building_upgrade_button.tooltip_text = "Materials: " + str(upgrade_bom)
+	building_upgrade_button.disabled = building.upgrade_in_progress or not upgrade_lock.is_empty() or upgrade_bom.is_empty()
+	building_upgrade_button.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	building_upgrade_button.pressed.connect(_start_non_residential_upgrade.bind(building))
+	layout.add_child(building_upgrade_button)
 
 	var available_slot := -1
 	for slot_index in range(component.get_slot_count()):
