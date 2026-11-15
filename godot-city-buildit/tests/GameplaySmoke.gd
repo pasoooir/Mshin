@@ -186,6 +186,112 @@ func _test_live_production_queue_eta() -> void:
 	queue_probe.queue_free()
 	await get_tree().process_frame
 
+func _test_automatic_production_chain() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	StorageManager.from_save_dict({"capacity": 50, "items": {}})
+	var factory := ProductionComponentScript.new()
+	factory.name = "AutomaticChainFactoryProbe"
+	factory.is_factory = true
+	factory.factory_type = "factory_small"
+	factory.slot_count = 2
+	add_child(factory)
+	var store := ProductionComponentScript.new()
+	store.name = "AutomaticChainStoreProbe"
+	store.shop_id = "building_supplies"
+	store.slot_count = 2
+	add_child(store)
+
+	_check(ProductionManager.request_automatic_chain(store, "nails", 0), "A valid Nails request must be accepted as an automatic dependency chain without pre-existing Metal.")
+	var chain_id := str(store.slots[0].get("auto_chain_id", ""))
+	_check(not chain_id.is_empty() and bool(store.slots[0].get("auto_chain_root", false)), "The target store slot must persist the root chain request.")
+	ProductionManager._process_automatic_chains()
+	var chain_components: Array = get_tree().get_nodes_in_group("production_components")
+	var raw_slots_started := 0
+	for component in chain_components:
+		for slot in component.slots:
+			if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == "metal":
+				raw_slots_started += 1
+	_check(raw_slots_started == 2, "The automatic chain must reserve two independent factory slots for the two Metal inputs across the available factory pool.")
+	_check(StorageManager.get_count("metal") == 0, "Raw materials must not be fabricated into inventory before their factory jobs complete.")
+
+	var now := int(Time.get_unix_time_from_system())
+	for component in chain_components:
+		for index in range(component.slots.size()):
+			var active_slot: Dictionary = component.slots[index]
+			if str(active_slot.get("auto_chain_id", "")) == chain_id and int(active_slot.get("finish_unix", 0)) > 0:
+				active_slot["finish_unix"] = now - 1
+				component.slots[index] = active_slot
+		component.refresh_slots()
+	ProductionManager._process_automatic_chains()
+	var remaining_raw_chain_slots := 0
+	for component in chain_components:
+		for slot in component.slots:
+			if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == "metal":
+				remaining_raw_chain_slots += 1
+	_check(remaining_raw_chain_slots == 0 and bool(store.slots[0].get("auto_chain_started", false)), "Completed raw factory outputs must auto-collect into City Storage and be consumed by the dependent target order in the same scheduler pass.")
+	_check(store.slots[0].get("auto_chain_started", false), "The target store order must start automatically after its complete input set is available.")
+	_check(StorageManager.get_count("metal") == 0, "The target craft must atomically reserve and consume its two Metal inputs when it starts.")
+
+	store.slots[0]["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	store.refresh_slots()
+	ProductionManager._process_automatic_chains()
+	_check(StorageManager.get_count("nails") == 1, "The completed target product must be auto-collected into City Storage.")
+	_check(store.slots[0].is_empty(), "The root queue slot must be released when the automatic chain finishes.")
+	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "A fully completed chain must no longer block the next automatic order.")
+
+	# A catalog-only item with no verified recipe or factory source must fail
+	# preflight instead of leaving a permanently stuck automatic chain.
+	var saved_level := GameManager.level
+	GameManager.level = 90
+	var fruit_store := ProductionComponentScript.new()
+	fruit_store.name = "AutomaticChainUnresolvableProbe"
+	fruit_store.shop_id = "farmers_market"
+	fruit_store.slot_count = 1
+	add_child(fruit_store)
+	_check(not ProductionManager.request_automatic_chain(fruit_store, "fruit_berries", 0) and fruit_store.slots[0].is_empty(), "Automatic chain preflight must reject an unresolved catalog-only dependency without reserving a production slot.")
+	fruit_store.queue_free()
+
+	# Exercise a true multi-store dependency graph: Chair requires both Nails
+	# (Building Supplies) and Hammer (Hardware Store), plus shared raw inputs.
+	GameManager.level = 10
+	var hardware_store := ProductionComponentScript.new()
+	hardware_store.name = "AutomaticChainHardwareProbe"
+	hardware_store.shop_id = "hardware_store"
+	hardware_store.slot_count = 2
+	add_child(hardware_store)
+	var furniture_store := ProductionComponentScript.new()
+	furniture_store.name = "AutomaticChainFurnitureProbe"
+	furniture_store.shop_id = "furniture_store"
+	furniture_store.slot_count = 2
+	add_child(furniture_store)
+	StorageManager.from_save_dict({"capacity": 50, "items": {}})
+	_check(ProductionManager.request_automatic_chain(furniture_store, "chair", 0), "A nested Chair order must be accepted when its recipe and all dependency unlocks are verified.")
+	var nested_chain_id := str(furniture_store.slots[0].get("auto_chain_id", ""))
+	for _step in range(40):
+		ProductionManager._process_automatic_chains()
+		var fast_forward_now := int(Time.get_unix_time_from_system())
+		for component in get_tree().get_nodes_in_group("production_components"):
+			for slot_index in range(component.slots.size()):
+				var queued: Dictionary = component.slots[slot_index]
+				if str(queued.get("auto_chain_id", "")) == nested_chain_id and int(queued.get("finish_unix", 0)) > 0 and not bool(queued.get("ready", false)):
+					queued["finish_unix"] = fast_forward_now - 1
+					component.slots[slot_index] = queued
+			component.refresh_slots()
+		ProductionManager._process_automatic_chains()
+		if not bool(ProductionManager.get_automatic_chain_status().get("active", false)):
+			break
+	_check(StorageManager.get_count("chair") == 1, "Nested automatic scheduling must produce the requested final item after both store branches complete.")
+	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "Nested multi-store dependency jobs must all release their slots when the root product is collected.")
+	GameManager.level = saved_level
+
+	factory.queue_free()
+	store.queue_free()
+	hardware_store.queue_free()
+	furniture_store.queue_free()
+	StorageManager.from_save_dict(previous_storage)
+	await get_tree().process_frame
+
+
 func _test_recipe_dependency_graph_validation() -> void:
 	var baseline := ProductionManager.get_recipe_validation_report()
 	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
@@ -3905,6 +4011,7 @@ func _run_gameplay_test() -> void:
 	StorageManager.capacity_changed.emit(StorageManager.capacity)
 	GameManager.level = previous_mayor_level
 
+	_test_automatic_production_chain()
 	_test_non_residential_upgrade_execution()
 
 	# Livestock may graze only on the two desert fringe strips, never on asphalt,

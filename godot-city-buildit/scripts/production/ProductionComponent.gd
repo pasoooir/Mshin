@@ -174,6 +174,10 @@ func _start_next_store_order() -> bool:
 		var slot: Dictionary = slots[index]
 		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_unix", 0)) > 0:
 			continue
+		# Automatic chain jobs are advanced by ProductionManager only after all
+		# recursively required ingredients have been produced and reserved.
+		if not str(slot.get("auto_chain_id", "")).is_empty():
+			continue
 		var item_id := str(slot.get("item_id", ""))
 		var duration := int(ceil(get_item_production_time(item_id)))
 		slot["start_unix"] = int(Time.get_unix_time_from_system())
@@ -183,7 +187,7 @@ func _start_next_store_order() -> bool:
 		return true
 	return false
 
-func start_factory(item_id: String, slot_index: int) -> bool:
+func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "") -> bool:
 	_ensure_slots()
 	if not is_factory or not _owner_has_road_access() or slot_index < 0 or slot_index >= slots.size() or not slots[slot_index].is_empty():
 		return false
@@ -198,7 +202,8 @@ func start_factory(item_id: String, slot_index: int) -> bool:
 		"item_id": item_id,
 		"start_unix": now,
 		"finish_unix": now + int(definition.get("time_sec", 60)),
-		"ready": false
+		"ready": false,
+		"auto_chain_id": auto_chain_id
 	}
 	slots_changed.emit()
 	return true

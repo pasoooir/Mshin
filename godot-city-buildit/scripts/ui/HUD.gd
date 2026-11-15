@@ -2403,7 +2403,10 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	var inputs: Dictionary = recipe.get("inputs", {})
 	var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level) if not is_factory else ("Unlocks at Level %d" % int(data.get("level", 1)) if int(data.get("level", 1)) > GameManager.level else "")
 	var missing := "" if is_factory else ProductionManager.get_missing_inputs_text(item_id)
-	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (is_factory or missing.is_empty())
+	# Crafted orders can start an automatic dependency chain even when
+	# ingredients are not yet in City Storage. The scheduler reserves each
+	# dependency when its real store/factory job is accepted.
+	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (is_factory or not recipe.is_empty())
 
 	var detail := PanelContainer.new()
 	detail.name = "ProductionItemDetails"
@@ -2509,19 +2512,23 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 
 	var start_button := Button.new()
 	start_button.name = "StartProduction"
-	start_button.text = "START"
+	start_button.text = "START" if is_factory or missing.is_empty() else "START CHAIN"
 	start_button.custom_minimum_size = Vector2(92, 44) * _ui_scale
 	start_button.disabled = not can_start
 	start_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E7BC43"), Color("#FFE18A")))
 	start_button.add_theme_stylebox_override("disabled", _toolbar_style(Color("#AAB7BE"), Color("#D1D9DE")))
 	start_button.add_theme_color_override("font_color", Color("#34280B"))
 	start_button.pressed.connect(func():
-		var started: bool = component.start_factory(item_id, slot_index) if is_factory else component.start_craft(item_id, slot_index)
+		var started: bool = component.start_factory(item_id, slot_index) if is_factory else (component.start_craft(item_id, slot_index) if missing.is_empty() else ProductionManager.request_automatic_chain(component, item_id, slot_index))
 		if started:
-			status_label.text = "Production started: %s." % str(data.get("name", item_id))
+			status_label.text = "Automatic supply chain accepted: %s. Missing raw materials and intermediate goods will be produced and collected automatically." % str(data.get("name", item_id)) if not is_factory and not missing.is_empty() else "Production started: %s." % str(data.get("name", item_id))
 		else:
-			var latest_missing := ProductionManager.get_missing_inputs_text(item_id)
-			status_label.text = "Not enough materials: %s" % latest_missing if not latest_missing.is_empty() else "Cannot start this production."
+			var active_chain := ProductionManager.get_automatic_chain_status()
+			if bool(active_chain.get("active", false)):
+				status_label.text = "Another automatic production chain is already active. Let it finish before starting a second chain."
+			else:
+				var latest_missing := ProductionManager.get_missing_inputs_text(item_id)
+				status_label.text = "Cannot start this production chain. Check recipe unlocks, supplier buildings, road access and free queue slots. Missing now: %s" % latest_missing
 		open_production_panel(building)
 	)
 	detail_row.add_child(start_button)
