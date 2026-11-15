@@ -3813,11 +3813,11 @@ func _run_gameplay_test() -> void:
 	var product_touch_drag := InputEventScreenDrag.new()
 	product_touch_drag.position = empty_factory_slot.get_global_rect().get_center()
 	product_touch_drag.relative = product_touch_drag.position - product_touch_down.position
-	production_hud._on_production_item_gui_input(product_touch_drag, factory, "metal", 0, metal_button)
+	production_hud._input(product_touch_drag)
 	var product_touch_up := InputEventScreenTouch.new()
 	product_touch_up.pressed = false
 	product_touch_up.position = empty_factory_slot.get_global_rect().get_center()
-	production_hud._on_production_item_gui_input(product_touch_up, factory, "metal", 0, metal_button)
+	production_hud._input(product_touch_up)
 	_check(not production_hud._production_touch_drag_active and not is_instance_valid(production_hud._production_touch_drag_ghost), "Touch drag must clean up its floating product ghost and pointer state after release.")
 	_check(not factory_component.get_slot(0).is_empty(), "Dropping Metal into the first empty factory queue slot must immediately enqueue production without START.")
 	production_hud.open_production_panel(factory)
