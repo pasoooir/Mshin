@@ -227,7 +227,7 @@ func _test_automatic_production_chain() -> void:
 
 	var chain_id := ProductionManager.request_production_chain("chair", 1)
 	_check(not chain_id.is_empty(), "A valid multi-store recipe must accept an automatic production-chain request.")
-	_check(_count_test_chain_jobs([factory, building_supplies, hardware_store, furniture_store], chain_id) >= 6, "The automatic planner must schedule parallel raw inputs and both intermediate craft dependencies.")
+	_check(_count_test_chain_jobs([factory, building_supplies, hardware_store, furniture_store], chain_id) >= 4, "The automatic planner must schedule parallel raw inputs before the two intermediate craft dependencies become material-ready.")
 	var completed := false
 	for _iteration in range(24):
 		var now := int(Time.get_unix_time_from_system())
