@@ -22,13 +22,40 @@ static func simulate_live_city(config: Dictionary) -> Dictionary:
 	if production_snapshot.has("capture_error"):
 		return {"valid": false, "errors": [str(production_snapshot.get("capture_error", "Production snapshot failed."))]}
 	live_config["production"] = production_snapshot
+	var scene_tree := Engine.get_main_loop() as SceneTree
+	if scene_tree == null:
+		return {"valid": false, "errors": ["A live SceneTree is required to read city economy state."]}
+	var root := scene_tree.root
+	var production_manager = root.get_node_or_null("ProductionManager")
+	var game_manager = root.get_node_or_null("GameManager")
+	var economy_manager = root.get_node_or_null("EconomyManager")
+	var level_progression = root.get_node_or_null("LevelProgression")
+	var build_manager = root.get_node_or_null("BuildManager")
+	if production_manager == null or game_manager == null or economy_manager == null or level_progression == null or build_manager == null:
+		return {"valid": false, "errors": ["One or more required city/economy autoloads are unavailable."]}
+	if not live_config.has("initial_simoleons"):
+		live_config["initial_simoleons"] = int(economy_manager.simoleons)
+	if not live_config.has("population"):
+		live_config["population"] = int(game_manager.population)
+	if not live_config.has("happiness"):
+		live_config["happiness"] = float(game_manager.happiness)
+	if not live_config.has("level"):
+		live_config["level"] = int(game_manager.level)
+	if not live_config.has("experience"):
+		live_config["experience"] = int(game_manager.experience)
+	if not live_config.has("xp_table"):
+		live_config["xp_table"] = level_progression.xp_table.duplicate(true)
+	if not live_config.has("occupied_homes"):
+		var occupied_homes := 0
+		for building in build_manager.buildings.values():
+			if not is_instance_valid(building):
+				continue
+			var building_type := str(building.get("building_type"))
+			var definition: Dictionary = build_manager.building_types.get(building_type, {})
+			if str(definition.get("category", "")) == "residential" and str(building.get("status")) == "completed" and int(building.get("current_population")) > 0:
+				occupied_homes += 1
+		live_config["occupied_homes"] = occupied_homes
 	if not live_config.has("item_values"):
-		var scene_tree := Engine.get_main_loop() as SceneTree
-		if scene_tree == null:
-			return {"valid": false, "errors": ["A live SceneTree is required to read the item catalog."]}
-		var production_manager = scene_tree.root.get_node_or_null("ProductionManager")
-		if production_manager == null:
-			return {"valid": false, "errors": ["ProductionManager autoload is unavailable."]}
 		var values: Dictionary = {}
 		for item_id in production_manager.raw_materials:
 			values[str(item_id)] = production_manager.get_item_value(str(item_id))
