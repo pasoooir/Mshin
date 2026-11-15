@@ -1998,6 +1998,15 @@ func open_production_panel(building: Building) -> void:
 	hint.add_theme_font_size_override("font_size", int((10 if not compact_layout else 8) * _ui_scale))
 	hint.add_theme_color_override("font_color", Color("#577487"))
 	layout.add_child(hint)
+	var operational_reason := BuildManager.get_building_operational_lock_reason(building)
+	var operational_status := Label.new()
+	operational_status.name = "ProductionOperationalStatus"
+	operational_status.text = "OPERATING · ALL SERVICE GATES MET" if operational_reason.is_empty() else "PRODUCTION PAUSED · " + operational_reason
+	operational_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	operational_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	operational_status.add_theme_font_size_override("font_size", int(10 * _ui_scale))
+	operational_status.add_theme_color_override("font_color", Color("#287449") if operational_reason.is_empty() else Color("#A33A36"))
+	layout.add_child(operational_status)
 	var building_upgrade_bom := BuildManager.get_building_upgrade_bom(building)
 	var building_upgrade_lock := BuildManager.get_building_upgrade_bom_lock_reason(building)
 	var building_upgrade := Button.new()
@@ -2008,6 +2017,17 @@ func open_production_panel(building: Building) -> void:
 	building_upgrade.custom_minimum_size.y = 34 * _ui_scale
 	building_upgrade.pressed.connect(_upgrade_non_residential_from_panel.bind(building))
 	layout.add_child(building_upgrade)
+	var upgrade_material_lines: Array[String] = []
+	for material_id in building_upgrade_bom:
+		var material_definition := ProductionManager.get_item_definition(str(material_id))
+		upgrade_material_lines.append("%s ×%d · stock %d" % [str(material_definition.get("name", material_id)), int(building_upgrade_bom[material_id]), StorageManager.get_count(str(material_id))])
+	var upgrade_materials_label := Label.new()
+	upgrade_materials_label.name = "NonResidentialUpgradeMaterials"
+	upgrade_materials_label.text = "UPGRADE MATERIALS · " + (" · ".join(upgrade_material_lines) if not upgrade_material_lines.is_empty() else "MAX LEVEL")
+	upgrade_materials_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	upgrade_materials_label.add_theme_font_size_override("font_size", int(9 * _ui_scale))
+	upgrade_materials_label.add_theme_color_override("font_color", Color("#526F7D"))
+	layout.add_child(upgrade_materials_label)
 
 	var available_slot := -1
 	for slot_index in range(component.get_slot_count()):
@@ -3154,8 +3174,13 @@ func open_non_residential_upgrade_panel(building: Building) -> void:
 	_city_panel_heading(layout, str(building.definition.get("name", "Building")).to_upper(), func(): overlay.queue_free())
 	var bom := BuildManager.get_building_upgrade_bom(building)
 	var missing := BuildManager.get_building_upgrade_bom_lock_reason(building)
+	var material_lines: Array[String] = []
+	for material_id in bom:
+		var material_definition := ProductionManager.get_item_definition(str(material_id))
+		material_lines.append("%s ×%d · stock %d" % [str(material_definition.get("name", material_id)), int(bom[material_id]), StorageManager.get_count(str(material_id))])
 	var materials := Label.new()
-	materials.text = "NEXT UPGRADE · LV %d\n%s\n\n%s" % [building.upgrade_stage + 1, str(bom), missing if not missing.is_empty() else "Materials available"]
+	var operational_reason := BuildManager.get_building_operational_lock_reason(building)
+	materials.text = "NEXT UPGRADE · LV %d\n%s\n%s\n%s" % [building.upgrade_stage + 1, " · ".join(material_lines), missing if not missing.is_empty() else "Materials available", operational_reason if not operational_reason.is_empty() else "Operating normally"]
 	materials.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(materials)
 	var upgrade := Button.new()
