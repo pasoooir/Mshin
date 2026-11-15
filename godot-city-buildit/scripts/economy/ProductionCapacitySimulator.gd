@@ -242,7 +242,7 @@ static func simulate(config: Dictionary) -> Dictionary:
 			var slot: Dictionary = facility.slots[slot_index]
 			if slot.is_empty():
 				continue
-			var snapshot := {"facility_id": facility_id, "slot_index": slot_index, "item_id": str(slot.get("item_id", "")), "ready": bool(slot.get("ready", false)), "queued": bool(slot.get("queued", false)), "finish_seconds": int(slot.get("finish_seconds", 0))}
+			var snapshot := {"facility_id": facility_id, "slot_index": slot_index, "item_id": str(slot.get("item_id", "")), "ready": bool(slot.get("ready", false)), "queued": bool(slot.get("queued", false)), "finish_seconds": int(slot.get("finish_seconds", 0)), "auto_chain_id": str(slot.get("auto_chain_id", "")), "auto_chain_root": bool(slot.get("auto_chain_root", false))}
 			if bool(slot.get("ready", false)):
 				ready_jobs.append(snapshot)
 			else:
