@@ -735,3 +735,49 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - Special Items (Community Reference): https://simcity-buildit.fandom.com/wiki/Special_Items
 
 **قاعده نگهداری وضعیت:** [x] فقط برای کار انجام‌شده با شواهد کد/تست/لاگ؛ [ ] برای کار باز، نیازمند دستگاه، داده نسخه‌دار، یا اجرای CI تأییدنشده. ادغام PR به‌تنهایی اثبات صحت runtime یا بالانس کامل اقتصاد نیست.
+
+
+## به‌روزرسانی شواهد CI و اقتصاد کلان — ۱۵ نوامبر ۲۰۲۶
+
+این بخش وضعیت قبلی CI را که پیش از مشاهدهٔ runهای main ثبت شده بود، به‌روزرسانی می‌کند.
+
+### CI روی main پس از ادغام PR #507
+- [x] HEAD شاخهٔ `main` در زمان بررسی: `d0d54e396c353433c490d03938c5405e6db1c9b7`.
+- [x] اجرای Godot City BuildIt Validation روی merge commit کد `e9c819a8578364411409ae52fea3194913414c05` موفق شد: [run 43705287977](https://github.com/pasoooir/Mshin/actions/runs/43705287977).
+- [x] اجرای Mshin Playable Web روی همان merge commit موفق شد: [run 43705287956](https://github.com/pasoooir/Mshin/actions/runs/43705287956).
+- [x] GitHub Pages روی merge commit موفق شد: [run 43705287389](https://github.com/pasoooir/Mshin/actions/runs/43705287389).
+- [x] روی آخرین HEAD فعلی main، Web موفق شد: [run 43705462967](https://github.com/pasoooir/Mshin/actions/runs/43705462967).
+- [x] روی آخرین HEAD فعلی main، Pages موفق شد: [run 43705462428](https://github.com/pasoooir/Mshin/actions/runs/43705462428).
+- [ ] اجرای Godot Validation روی SHA مستندات `d0d54e3` مشاهده نشد؛ با این حال آخرین commit کد/ادغام‌شده `e9c819a` به‌طور مستقیم Godot Validation سبز دارد. تغییر بعد از آن فقط README بوده است.
+- [ ] اجرای CI روی شاخهٔ جدید شبیه‌سازی اقتصاد کلان هنوز در انتظار نتیجهٔ PR است.
+
+### موتور جدید شبیه‌سازی اقتصاد کلان
+- [x] فایل `godot-city-buildit/scripts/economy/MacroEconomySimulator.gd` اضافه شد: بازپخش قطعی جریان پول و XP بر اساس رویدادهای زمان‌بندی‌شده.
+- [x] مالیات شهر از فرمول جاری جمعیت/شادی و cadence یک‌دقیقه‌ای محاسبه می‌شود.
+- [x] XP شادی، جدول XP سطح و پاداش `level × 100` به قواعد موجود متصل شده‌اند.
+- [x] پاداش سفارش، قیمت خرید HQ با ضریب سناریویی و آماده‌شدن آگهی Depot پس از ۱۲۰ ثانیه و جمع‌آوری دستی درآمد به‌صورت دو مفهوم جدا مدل شده‌اند.
+- [x] هزینه‌های ساخت، جاده و ارتقا به‌صورت event وارد می‌شوند تا هزینهٔ ساختگی یا تخمینی به مدل تزریق نشود.
+- [x] خروجی تفکیک source/sink، ماندهٔ روزانه، هزینهٔ ردشده و سطح نهایی را ارائه می‌دهد.
+- [x] تست مستقل `tests/macro_economy_smoke.gd` و گام CI مربوط به آن اضافه شدند.
+- [ ] PASS شدن تست جدید هنوز ادعا نمی‌شود؛ باید CI شاخهٔ PR آن را اجرا کند.
+- [ ] این نسخه replay engine بر مبنای برنامهٔ اقدام بازیکن است؛ خودش تقاضا، نرخ فروش، تعداد سفارش روزانه، throughput کارخانه‌ها، مهاجرت و برنامهٔ ساخت شهر را حدس نمی‌زند.
+- [ ] بنابراین «تورم قیمت‌ها» یا «مدت قطعی رسیدن به سطح مشخص» هنوز خروجی معتبر این نسخه نیست؛ خروجی فعلی تغییر ماندهٔ Simoleons در یک سناریوی ورودی است.
+
+جزئیات قواعد، ورودی/خروجی و محدودیت‌ها: `godot-city-buildit/docs/MACRO_ECONOMY_SIMULATION.md`.
+
+
+### نتیجهٔ واقعی اصلاح خطای CI در PR #508 — ۱۵ نوامبر ۲۰۲۶
+- [x] اجرای اول Godot Validation روی `334c32184eb84158b3d74778f2f09de5c03fc61f` شکست خورد: متغیر `events` هنگام آماده‌سازی رویدادهای زمان‌بندی‌شده تعریف نشده بود. گزارش: [run 43705885086](https://github.com/pasoooir/Mshin/actions/runs/43705885086).
+- [x] علت از لاگ خام استخراج و اصلاح شد: تعریف صریح آرایهٔ ورودی `events` پیش از کپی/مرتب‌سازی رویدادها در `MacroEconomySimulator.gd`.
+- [x] در commit اصلاحی `95bd6c5ece78244757537b0d1667911db935bdfc`، Import/Parse، startup، gameplay integration، visual geometry، CurrencyEconomySmoke و **MacroEconomySmoke** همگی موفق شدند.
+- [x] Android Debug APK در همان اجرا export شد، امضای آن تأیید شد و artifact آپلود شد.
+- [x] [Godot City BuildIt Validation — PASS](https://github.com/pasoooir/Mshin/actions/runs/43706032773)
+- [ ] Web workflow برای همین SHA هنگام ثبت این گزارش هنوز در حال اجرا بود: [run 43706032776](https://github.com/pasoooir/Mshin/actions/runs/43706032776).
+- [ ] CI سبز این شاخه به معنی تکمیل اقتصاد کلان بازار نیست؛ محدودیت‌های تقاضا، نرخ فروش، ظرفیت تولید، جمعیت پویا و تورم قیمت همچنان مطابق سند تخصصی باز هستند.
+
+
+### دقت بیشتر در مدل Trade Depot
+- [x] بررسی کد واقعی `TradeManager` نشان داد گذشت ۱۲۰ ثانیه فقط آگهی را `ready` می‌کند؛ درآمد تا اجرای `collect_sale` توسط بازیکن پرداخت نمی‌شود.
+- [x] مدل اصلاح شد: رویداد `depot_sale` اکنون زمان ثبت آگهی (`listed_at_seconds`) و زمان جمع‌آوری (`at_seconds`) را جدا می‌گیرد؛ جمع‌آوری زودتر از ۱۲۰ ثانیه رد می‌شود.
+- [x] تست زودهنگام‌بودن جمع‌آوری نیز اضافه شد.
+- [ ] این اصلاح پس از آخرین اجرای سبز Godot CI انجام شده است؛ نتیجهٔ CI برای SHA جدید باید دوباره بررسی شود و تا آن زمان PASS برای نسخهٔ فعلی ادعا نمی‌شود.
