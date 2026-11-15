@@ -375,3 +375,17 @@ No recipe, production duration, expansion price, or item provenance was added or
 
 - [x] Unify actionable world-space markers: ready production shows the actual product thumbnail; blocked collection shows a warning marker; residential upgrades show an upgrade marker only while an upgrade can genuinely start.
 - [x] Avoid false completion/collect notifications for construction and non-residential upgrades because those state transitions complete automatically in the current game model.
+
+
+## 2026-11-15 — Building-surface production interaction (PR #518)
+
+- [x] Add a visible drop target projected over the selected factory/store building.
+- [x] Route building-surface drops to the first free slot through the existing production-drop validation and acceptance functions; recipe ownership, level unlocks, storage reservation and automatic-chain rules remain authoritative.
+- [x] Add touch fallback: select a catalog item, then tap the building target.
+- [x] Broaden the floating product orbit around the selected building while keeping the production queue dock below.
+- [x] Extend GameplaySmoke.gd to assert the building target, validate the surface-drop path and start a factory order through it.
+- [ ] CI run for PR #518 — no passing run has been observed yet.
+- [ ] Physical Android landscape screenshot and touch acceptance.
+- [ ] Visual confirmation that the projected target aligns with the actual building on supported mobile aspect ratios.
+
+**Acceptance note:** code and regression assertions are committed on feat/building-surface-production-drop; PR #518 is open. The implementation is not yet declared complete because CI and physical Android verification remain pending.
