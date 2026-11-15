@@ -5,7 +5,11 @@ const CATALOG: Array[Dictionary] = [
 	{"id":"simcash_pocketful","name":"Pocketful of SimCash","base_amount":250,"bonus_amount":25,"total_amount":275,"tier":"starter","featured":false},
 	{"id":"simcash_little_stack","name":"Little Stack of SimCash","base_amount":550,"bonus_amount":55,"total_amount":605,"tier":"popular","featured":true},
 	{"id":"simcash_nice_pile","name":"Nice Pile of SimCash","base_amount":1300,"bonus_amount":130,"total_amount":1430,"tier":"value","featured":false},
-	{"id":"simcash_briefcase","name":"Briefcase of SimCash","base_amount":2625,"bonus_amount":265,"total_amount":2890,"tier":"premium","featured":false}
+	{"id":"simcash_briefcase","name":"Briefcase of SimCash","base_amount":2625,"bonus_amount":265,"total_amount":2890,"tier":"premium","featured":false},
+	{"id":"simcash_big_sack","name":"Big Sack of SimCash","base_amount":4000,"bonus_amount":400,"total_amount":4400,"tier":"premium","featured":false},
+	{"id":"simcash_huge_vault","name":"Huge Vault of SimCash","base_amount":8500,"bonus_amount":850,"total_amount":9350,"tier":"premium","featured":false},
+	{"id":"simcash_plentiful","name":"Plentiful of SimCash","base_amount":22455,"bonus_amount":2245,"total_amount":24700,"tier":"special","featured":false},
+	{"id":"simcash_flood","name":"Flood of SimCash","base_amount":47545,"bonus_amount":4755,"total_amount":52300,"tier":"special","featured":false}
 ]
 const SANDBOX_PROVIDER := "mshin_mock_gateway"
 var orders: Array[Dictionary] = []
@@ -25,6 +29,7 @@ func create_order(product_id: String) -> Dictionary:
 	var order := {"order_id":order_id,"product_id":product_id,"product_name":str(product.name),"currency":"SIMCASH","base_amount":int(product.base_amount),"bonus_amount":int(product.bonus_amount),"grant_amount":int(product.total_amount),"price_minor":0,"price_currency":"TBD","payment_provider":SANDBOX_PROVIDER,"payment_mode":"SANDBOX_NO_REAL_CHARGE","status":"pending","created_at":int(Time.get_unix_time_from_system()),"completed_at":0}
 	orders.append(order)
 	order_updated.emit(order.duplicate(true))
+	_persist_if_possible()
 	return {"success":true,"order":order.duplicate(true)}
 func complete_sandbox_order(order_id: String, outcome: String = "success") -> Dictionary:
 	if processed_order_ids.has(order_id): return {"success":false,"reason":"already_processed","order":get_order(order_id)}
