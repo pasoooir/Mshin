@@ -108,6 +108,7 @@ func _test_non_residential_upgrade_bom() -> void:
 	BuildManager.buildings[probe.building_id] = probe
 	var upgrade_bom := BuildManager.get_building_upgrade_bom(probe)
 	_check(not upgrade_bom.is_empty(), "Every supported non-residential building must resolve a stage-specific upgrade BOM.")
+	SaveManager.is_loading = true
 	_check(not probe.try_upgrade(), "A non-residential upgrade must be rejected when any required material is missing.")
 	var full_materials := upgrade_bom.duplicate(true)
 	StorageManager.items = full_materials
