@@ -400,15 +400,24 @@ func try_complete_order(order_index: int) -> bool:
 	var order: Dictionary = current_orders[order_index]
 	var item_id := str(order.get("item_id", ""))
 	var amount := int(order.get("amount", 0))
-	if bool(order.get("completed", false)) or amount <= 0 or StorageManager.get_count(item_id) < amount:
+	var reward := int(order.get("reward", 0))
+	if bool(order.get("completed", false)) or item_id.is_empty() or amount <= 0 or reward <= 0 or StorageManager.get_count(item_id) < amount:
 		return false
-	var requested_items: Dictionary = {}
-	requested_items[item_id] = amount
+	var requested_items: Dictionary = {item_id: amount}
+	var inventory_before := StorageManager.get_all_items()
+	var balance_before := EconomyManager.simoleons
+	var order_cost: Dictionary = StorageManager.get_cost_basis(requested_items)
 	if not StorageManager.remove_items(requested_items):
 		return false
-	var reward := int(order.get("reward", 0))
 	EconomyManager.add_simoleons(reward)
+	var cost_known := bool(order_cost.get("known", false))
+	var cost_total := int(order_cost.get("total_cost", 0))
+	var order_id := str(order.get("order_id", "delivery-order-%d" % order_index))
+	var order_metadata := {"source": "delivery_order", "order_id": order_id, "item_id": item_id, "quantity": amount, "cost_known": cost_known, "cost_basis": cost_total if cost_known else -1, "gross_margin": reward - cost_total if cost_known else -1}
+	EconomyManager.record_transaction("delivery_order_completed", "simoleons", reward, balance_before, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), order_metadata)
 	order["completed"] = true
+	order["cost_known"] = cost_known
+	order["cost_total"] = cost_total if cost_known else -1
 	current_orders[order_index] = order
 	order_completed.emit(reward)
 	trade_state_changed.emit()
