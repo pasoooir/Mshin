@@ -1,6 +1,6 @@
 # اقتصاد پیشرفت شهر با Simoleons و SimCash
 
-**وضعیت:** PR #503 با commit `4c6b5be6a922b2a3a483f5af7f52db7c9690d5c5` و اصلاح منبع‌محور PR #505 با commit `84329766109cab4760317d37c2f645337f0b616e` در `main` ادغام شدند. Godot Validation، Android Debug APK export/signature و Web/Chromium Desktop+Mobile CI موفق‌اند؛ آزمون فیزیکی Android و بالانس نهایی هنوز باز است. PR #505 مسیر خرید را از کاتالوگ مستقیم به پیشنهادهای چرخشی Global Trade HQ منتقل کرد تا قفل پیشرفت بازی دور زده نشود.
+**وضعیت:** PR #503 با commit `4c6b5be6a922b2a3a483f5af7f52db7c9690d5c5` و اصلاح منبع‌محور PR #505 با commit `84329766109cab4760317d37c2f645337f0b616e` و PR #506 با commit `8735b7b6f8491c0f385548ad2846d03ccaf29e09` نیز در `main` ادغام شدند. Godot Validation، Android Debug APK export/signature و Web/Chromium Desktop+Mobile CI موفق‌اند؛ آزمون فیزیکی Android و بالانس نهایی هنوز باز است. PR #505 مسیر خرید را از کاتالوگ مستقیم به پیشنهادهای چرخشی Global Trade HQ منتقل کرد تا قفل پیشرفت بازی دور زده نشود.
 **مرجع رسمی:** EA Beginner Guide — https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/
 **مرجع جامعه:** Building Materials — https://simcity-buildit.fandom.com/wiki/Building_Materials
 
@@ -80,13 +80,16 @@
 - [x] اجرای Web/Chromium در دسکتاپ و موبایل افقی؛ run `43700782353` موفق شد. [ ] آزمون لمس و نمایش روی Android فیزیکی.
 - [ ] بررسی توازن قیمت پیشنهادهای TradeManager و هزینه‌های SimCash با داده‌های واقعی بازی؛ هزینه ۲۴ SimCash برای Dozer Special Item از مرجع جامعه آمده است.
 - [ ] افزودن/تکمیل فروش کالا و Trade Depot واقعی در اقتصاد Simoleons؛ Global Trade چندبازیکنه و قیمت‌گذاری پویا هنوز وجود ندارد.
-- [ ] خرید Special Itemهای انبار با SimCash و اتصال کامل آن‌ها به فرمول ارتقای ظرفیت City Storage؛ خرید مستقیم نباید جایگزین نیاز سه‌قلمی شود.
+- [ ] خرید Storage Bar/Lock/Camera با SimCash و اتصال کامل آن‌ها به فرمول ارتقای ظرفیت City Storage؛ خرید مستقیم نباید جایگزین نیاز سه‌قلمی شود.
 - [ ] درگاه واقعی: اعتبارسنجی سمت سرور و callback/webhook امضاشده پیش از اعطای ارز.
 - [ ] گزارش تراکنش کامل برای بازار کالا و هزینه‌های SimCash، شامل شناسه، زمان، منبع و موجودی قبل/بعد.
+
+- [x] خرید Dozer Wheel/Blade/Exhaust با SimCash به قیمت مرجع جامعه ۲۴ SimCash برای هر قلم؛ آیتم در انبار ذخیره می‌شود و `LandExpansionManager.expand_tile()` همچنان قفل سطح، مجاورت و BOM سه‌قلمی را اعمال می‌کند. PR #506 Godot Validation run `43701669455` و Web/Chromium run `43701669452` هر دو موفق شدند.
 
 ## ۶. منابع
 - EA Beginner Guide: https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/
 - Fandom Building Materials: https://simcity-buildit.fandom.com/wiki/Building_Materials
+- Fandom Special Items: https://simcity-buildit.fandom.com/wiki/Special_Items
 - Fandom Commercial Buildings: https://simcity-buildit.fandom.com/wiki/Commercial_Buildings
 - Fandom Industrial Buildings: https://simcity-buildit.fandom.com/wiki/Industrial_Buildings
 - Fandom SimCash: https://simcity-buildit.fandom.com/wiki/Simcash
