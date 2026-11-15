@@ -3578,7 +3578,7 @@ func _run_gameplay_test() -> void:
 	var supplies = _find_building("building_supplies")
 	var shop_component = supplies.production_component
 	_check(shop_component != null and shop_component.get_slot_count() == 2, "Building Supplies must expose two craft queue slots.")
-	await _test_automatic_production_chain(factory, supplies)
+	_test_automatic_production_chain(factory, supplies)
 	StorageManager.items = {}
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
 	production_hud.open_production_panel(supplies)
