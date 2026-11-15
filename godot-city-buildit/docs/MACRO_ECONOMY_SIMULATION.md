@@ -116,7 +116,7 @@ StorageManager اکنون batchهای FIFO را در کنار تعداد موج�
 PR #511 با merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` در `main` ادغام شد. Godot Validation، GameplaySmoke، MacroEconomySmoke و Android Debug APK در [run 43710111735](https://github.com/pasoooir/Mshin/actions/runs/43710111735) موفق شدند؛ Web/Chromium دسکتاپ و موبایل در [run 43710111759](https://github.com/pasoooir/Mshin/actions/runs/43710111759) موفق شد. اجرای مستقل CI روی merge commit main همچنان یک گیت جداگانه است.
 
 
-## سفارش تحویل و مصرف موجودی — PR در انتظار CI
+## سفارش تحویل و مصرف موجودی — PR #512 ادغام شد
 
 دو مسیر از هم تفکیک شده‌اند:
 
@@ -126,3 +126,6 @@ PR #511 با merge commit `72d54bd28741320a5376fc58fbd0c89e52d5326c` در `main`
 خلاصه‌ساز live، هر دو نوع `trade_sale_collected` و `delivery_order_completed` را در درآمد/COGS محقق‌شده لحاظ می‌کند. سفارش تحویل بدون داده بهای خرید، margin نامشخص دارد. رویداد ساده `delivery_order` قدیمی در بخش macro-only همچنان فقط reward را مدل می‌کند؛ برای محاسبه COGS باید action موجودی در بخش `production.actions` استفاده شود.
 
 Cargo Ship crates هنوز به دفتر COGS وصل نیستند؛ Golden Key نیز به‌عنوان Simoleon درآمد محسوب نمی‌شود.
+
+
+PR #512 با merge commit `2ed1cc42c8eb9e5a1eb1d6e85dc09600fd7ae09b` ادغام شد. Godot Validation و Android Debug APK در [run 43710739261](https://github.com/pasoooir/Mshin/actions/runs/43710739261) و Web/Chromium دسکتاپ و موبایل در [run 43710739262](https://github.com/pasoooir/Mshin/actions/runs/43710739262) موفق شدند. اجرای مستقل CI روی merge commit main هنوز یک گیت جداگانه است.
