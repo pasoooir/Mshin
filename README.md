@@ -1196,7 +1196,10 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Extend GameplaySmoke to check card size, z-order, opaque surface and visibility.
 - [x] Godot validation + GameplaySmoke + Android Debug APK export passed (run `43755633708`).
 - [x] Web export + desktop/mobile Chromium smoke passed (run `43755633706`).
-- [ ] Merge and verify post-merge Pages deployment.
+- [x] PR #532 merged to `main` as `709583fffc4f8eb022061e23c6ae5aa7620cdfda`.
+- [x] Post-merge Godot validation + GameplaySmoke + Android Debug APK passed (run `43755844436`).
+- [x] Post-merge Web export + desktop/mobile Chromium + deploy passed (run `43755844441`).
+- [x] GitHub Pages build/deploy passed (run `43755842340`).
 - [ ] Verify actual touch behavior on a physical Android device.
 
 **Scope:** this addresses the reported case where material/product icons appeared behind the building and were too small to tap. It is not marked delivered until the new CI revision passes and Pages is redeployed.
