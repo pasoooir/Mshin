@@ -439,7 +439,7 @@ No recipe, production duration, expansion price, or item provenance was added or
 - [x] GameplaySmoke updated for direct touch drag/release and queue-based factory/store order acceptance.
 - [x] Godot 4.3 static validation, import/parse, headless startup, GameplaySmoke, visual geometry, currency/sandbox and macro-economy checks passed in run `43741503047`.
 - [x] Android Debug APK exported; signature and package identity verified; artifact upload succeeded in run `43741503047`.
-- [x] Web export, desktop/mobile Chromium smoke, Pages configuration and website artifact upload passed in run `43741621986`; production deployment still awaits merge to `main`.
+- [x] Web export, desktop/mobile Chromium smoke, Pages configuration and website artifact upload passed in run `43741621986`; PR #521 merged to `main` at `fc603ee42468b60cfacb4144fed6b274e218b3d2`; post-merge production Pages deployment remains unverified.
 - [ ] Validate Android landscape touch drag/drop and review actual in-game screenshot.
 - [ ] Confirm production Pages deployment after merge.
 
