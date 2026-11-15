@@ -10,9 +10,20 @@ const STORAGE_UNLOCK_LEVEL := 4
 const STORAGE_UPGRADE_GAIN := 5
 const STORAGE_MAX_CAPACITY := 1000
 var capacity: int = DEFAULT_CAPACITY
-var items: Dictionary = {}
 # FIFO acquisition-cost batches per item. Legacy inventory without batch history is explicitly unknown.
 var item_cost_batches: Dictionary = {}
+var _items: Dictionary = {}
+var items: Dictionary:
+	get:
+		return _items
+	set(value):
+		# Replacing the whole inventory (legacy callers/tests) cannot retain stale costs.
+		_items = value.duplicate(true)
+		item_cost_batches.clear()
+		for item_id in _items:
+			var quantity := maxi(0, int(_items[item_id]))
+			if quantity > 0:
+				item_cost_batches[str(item_id)] = [{"quantity": quantity, "total_cost": 0, "known": false}]
 
 # Display metadata is registered by ProductionManager from its authoritative catalog.
 var item_definitions: Dictionary = {}
