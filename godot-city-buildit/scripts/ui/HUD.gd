@@ -2256,21 +2256,23 @@ func open_production_panel(building: Building) -> void:
 			tile_content.add_child(lock_label)
 		var inventory_status := "READY" if component.is_factory or StorageManager.has_items(inputs) else "MATERIALS NEEDED"
 		var stock_summary := "READY TO MAKE"
+		var missing_detail := ""
 		if component.is_factory:
 			stock_summary = "STOCK %d" % StorageManager.get_count(item_id)
 		elif not inputs.is_empty():
+			missing_detail = ProductionManager.get_missing_inputs_text(item_id)
 			var missing_count := 0
 			for input_id in inputs:
 				missing_count += maxi(0, int(inputs[input_id]) - StorageManager.get_count(str(input_id)))
-			stock_summary = "MATERIALS READY" if missing_count == 0 else "%d MATERIALS NEEDED" % missing_count
+			stock_summary = "MATERIALS READY" if missing_count == 0 else "%d MISSING" % missing_count
 		var status_label := Label.new()
 		status_label.text = lock_reason if not lock_reason.is_empty() else stock_summary
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		status_label.add_theme_font_size_override("font_size", int(7 * _ui_scale))
-		status_label.add_theme_color_override("font_color", Color("#A13F35") if not lock_reason.is_empty() else (Color("#34734D") if inventory_status == "READY" else Color("#A36B12")))
+		status_label.add_theme_color_override("font_color", Color("#A13F35") if not lock_reason.is_empty() else (Color("#34734D") if inventory_status == "READY" else Color("#D66B55")) )
 		tile_content.add_child(status_label)
 		item_button.disabled = not lock_reason.is_empty()
-		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else inventory_status
+		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else (("MISSING: " + missing_detail) if not missing_detail.is_empty() else inventory_status)
 		# Dragging a product onto a queue tile submits that exact slot order.
 		item_button.set_drag_forwarding(_get_production_drag_data.bind(building, item_id, item_button), Callable(), Callable())
 		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
