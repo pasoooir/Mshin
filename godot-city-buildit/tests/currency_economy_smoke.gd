@@ -97,10 +97,14 @@ func _ready() -> void:
 	await get_tree().process_frame
 	if not popup_controller.visible or popup_controller.find_child("ConfirmSimCashConversion", true, false) == null:
 		failures.append("Simoleons plus did not open the dedicated conversion popup")
+	if popup_controller.find_child("CitySupplyMarketHeading", true, false) == null or popup_controller.find_child("MarketBuy_metal_1", true, false) == null:
+		failures.append("Simoleons popup did not expose the unlocked material market")
 	popup_controller.open_store()
 	await get_tree().process_frame
 	if not popup_controller.visible or popup_controller.find_child("CurrencyPopupScroll", true, false) == null:
 		failures.append("SimCash plus did not open the dedicated store popup")
+	if popup_controller.find_child("CityProgressBoostsHeading", true, false) == null:
+		failures.append("SimCash popup did not expose city progress acceleration controls")
 	popup_controller.close_panel()
 	popup_controller.queue_free()
 
