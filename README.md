@@ -1007,7 +1007,7 @@ PR #518 is merged; this follow-up corrects its remaining modal and building-hit-
 - [ ] Web Chromium mobile/desktop launch smoke and Pages deployment are still running/pending.
 
 
-## Production Studio UI redesign — 2026-11-15
+## Production Studio UI redesign — 2026-11-15 (PR #520 merged)
 
 - [x] Replace the scattered radial product orbit with a stable, symmetric two-sided honeycomb catalogue; products continue in the same lattice as the catalogue grows.
 - [x] Use responsive, larger hex tiles with readable item names and stock/lock states.
@@ -1016,7 +1016,10 @@ PR #518 is merged; this follow-up corrects its remaining modal and building-hit-
 - [x] Restyle queue slots as dark translucent, high-contrast production cells while preserving timers, collect, queue capacity and drop handling.
 - [x] Preserve the 50% city scrim, modal input lock and actual selected-building footprint drop target.
 - [x] Add GameplaySmoke assertions for the separate header, compact details, queue dock height and honeycomb placement.
-- [ ] Godot CI/GameplaySmoke for this redesign.
+- [x] Godot 4.3 import/parse, headless startup, GameplaySmoke, visual geometry and economy validation passed (workflow run #1501; run ID `43738099078`).
+- [x] Android Debug APK export and package signature/identity verification passed; CI artifact `PasooCityBuildIt-android-debug-b9feac159bf17f79410b053f3a3600e4a12461db` was produced.
+- [x] Web export and desktop/mobile Chromium launch smoke passed (workflow run #1516; run ID `43738099073`).
+- [ ] Pages production deployment is not yet verified: the deploy job was skipped in the pull-request workflow.
 - [ ] Android landscape screenshots and physical touch/drag-drop acceptance.
 
 Design references:
