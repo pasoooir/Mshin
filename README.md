@@ -1091,3 +1091,6 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Add VisualPresentationSmoke coverage for the warm fill light's non-shadowing policy and retained fill energy.
 - [ ] Godot import/parse, visual presentation smoke, gameplay smoke, Web/Chromium and Android APK CI.
 - [ ] Verify shadow quality and lighting appearance on Android hardware; FPS gain remains unmeasured until device profiling.
+
+- [x] Preserve the original soft-shadow settings on the main scene key light and update static validation to assert the single-shadow-source architecture.
+- [ ] Rerun static validation and all Godot/Web/Android workflows after the validator correction.
