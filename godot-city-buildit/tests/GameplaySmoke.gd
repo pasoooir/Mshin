@@ -3796,7 +3796,6 @@ func _run_gameplay_test() -> void:
 	if metal_button:
 		metal_button.emit_signal("pressed")
 		var factory_start := production_hud.production_panel.find_child("StartProduction", true, false) as Button
-		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must open its detail card with an enabled Start action.")
 		_check(factory_start != null and not factory_start.disabled, "Selecting a factory material must keep the detail-card Start action available.")
 	var factory_drag_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
 	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_drag_payload, factory, 0), "A product dragged from the selected factory must be accepted by its empty queue slot.")
