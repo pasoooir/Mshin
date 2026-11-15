@@ -3847,6 +3847,13 @@ func _build_trade_depot_content(parent: VBoxContainer) -> void:
 		collect.disabled = not ready
 		collect.pressed.connect(_on_trade_collect_sale.bind(index))
 		row.add_child(collect)
+		var cancel := Button.new()
+		cancel.name = "TradeCancel_%d" % index
+		cancel.text = "CANCEL"
+		cancel.tooltip_text = "Return the reserved goods to City Storage and remove this listing."
+		cancel.disabled = StorageManager.get_free() < int(listing.get("amount", 0))
+		cancel.pressed.connect(_on_trade_cancel_sale.bind(index))
+		row.add_child(cancel)
 
 func _build_global_trade_content(parent: VBoxContainer) -> void:
 	if GameManager.population < TradeManager.GLOBAL_TRADE_UNLOCK_POPULATION:
@@ -4090,6 +4097,13 @@ func _on_trade_list_item(item_id: String) -> void:
 func _on_trade_collect_sale(slot_index: int) -> void:
 	if not TradeManager.collect_sale(slot_index):
 		status_label.text = "This listing is not ready to collect."
+	_show_trade_panel("depot")
+
+func _on_trade_cancel_sale(slot_index: int) -> void:
+	if not TradeManager.cancel_sale_listing(slot_index):
+		status_label.text = "Could not cancel listing. Ensure City Storage has enough free capacity."
+	else:
+		status_label.text = "Listing cancelled; reserved goods returned to City Storage."
 	_show_trade_panel("depot")
 
 func _on_trade_buy_offer(offer_index: int) -> void:
