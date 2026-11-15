@@ -312,6 +312,11 @@ func is_building_operational(building: Node) -> bool:
 	if has_node("/root/ServiceManager") and ServiceManager.requires_operational_workforce(building):
 		if not ServiceManager.is_workforce_served(building):
 			return false
+	if has_node("/root/ServiceManager") and ServiceManager.requires_operational_sanitation(building):
+		if not ServiceManager.is_sewage_served(building) or not ServiceManager.is_waste_served(building):
+			return false
+	if has_node("/root/ServiceManager") and not ServiceManager.has_required_emergency_coverage(building):
+		return false
 	return true
 
 func get_construction_bom(type_id: String) -> Dictionary:
