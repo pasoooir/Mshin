@@ -1780,11 +1780,11 @@ func _test_producer_sanitation_and_emergency_gates() -> void:
 	fire.building_type = "fire_station_small"
 	fire.definition = BuildManager.building_types["fire_station_small"]
 	fire.status = "completed"
-	fire.grid_pos = Vector2i(1, -4)
+	fire.grid_pos = Vector2i(1, -2)
 	fire.global_position = Vector3.ZERO
 	BuildManager.buildings[fire.building_id] = fire
 	ServiceManager.recalculate_from_buildings()
-	_check(ServiceManager.has_required_emergency_coverage(producer), "Configured fire coverage must become available from a connected operational fire station.")
+	_check(ServiceManager.has_required_emergency_coverage(producer), "Configured fire coverage must become available from a connected operational fire station. Required: %s; Coverage: %s" % [str(ServiceManager.get_required_emergency_coverage(producer)), str(ServiceManager.get_building_emergency_coverage(producer))])
 	_check(BuildManager.is_building_operational(producer), "A producer must resume once every configured operating-service gate is satisfied.")
 	producer.definition["operating_emergency_services"] = {"police": true}
 	_check(not BuildManager.is_building_operational(producer), "Unknown or missing police coverage must block only when explicitly configured.")
@@ -2028,7 +2028,7 @@ func _test_power_water_gateway_access() -> void:
 	_check(ServiceManager.demand_power >= 4 and ServiceManager.demand_water >= 3, "City utility demand must include household, commercial and industrial production consumers.")
 	_check(ServiceManager.power_served_ids.has(commercial_consumer.building_id) and ServiceManager.water_served_ids.has(commercial_consumer.building_id), "A connected commercial producer must receive both power and water when local capacity is available.")
 	_check(ServiceManager.power_served_ids.has(industrial_consumer.building_id) and ServiceManager.water_served_ids.has(industrial_consumer.building_id), "A connected industrial producer must receive its higher catalog-profile power demand and water.")
-	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Connected and utility-served commercial and industrial producers must be operational.")
+	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Connected and utility-served commercial and industrial producers must be operational. Commercial: %s; Industrial: %s" % [BuildManager.get_building_operational_lock_reason(commercial_consumer), BuildManager.get_building_operational_lock_reason(industrial_consumer)])
 	_check(ServiceManager.demand_workers == 3 and ServiceManager.employed_workers == 3 and ServiceManager.workforce_served_ids.has(commercial_consumer.building_id) and ServiceManager.workforce_served_ids.has(industrial_consumer.building_id), "Commercial and industrial production must reserve their catalog-profile workforce from occupied residents.")
 	var saved_connected_population := connected_home.current_population
 	var saved_disconnected_population := disconnected_home.current_population
@@ -2040,14 +2040,14 @@ func _test_power_water_gateway_access() -> void:
 	connected_home.current_population = saved_connected_population
 	disconnected_home.current_population = saved_disconnected_population
 	ServiceManager.recalculate_from_buildings()
-	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring occupied residents must restore the workforce supply.")
+	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring occupied residents must restore the workforce supply. Commercial: %s; Industrial: %s" % [BuildManager.get_building_operational_lock_reason(commercial_consumer), BuildManager.get_building_operational_lock_reason(industrial_consumer)])
 	power_plant.status = "constructing"
 	ServiceManager.recalculate_from_buildings()
 	_check(not ServiceManager.power_served_ids.has(commercial_consumer.building_id) and not BuildManager.is_building_operational(commercial_consumer), "A commercial producer must stop operating when its required power service is lost.")
 	_check(not ServiceManager.power_served_ids.has(industrial_consumer.building_id) and not BuildManager.is_building_operational(industrial_consumer), "An industrial producer must stop operating when its required power service is lost.")
 	power_plant.status = "completed"
 	ServiceManager.recalculate_from_buildings()
-	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring connected power must reactivate commercial and industrial producers.")
+	_check(BuildManager.is_building_operational(commercial_consumer) and BuildManager.is_building_operational(industrial_consumer), "Restoring connected power must reactivate commercial and industrial producers. Commercial: %s; Industrial: %s" % [BuildManager.get_building_operational_lock_reason(commercial_consumer), BuildManager.get_building_operational_lock_reason(industrial_consumer)])
 	for consumer in [commercial_consumer, industrial_consumer]:
 		BuildManager.buildings.erase(consumer.building_id)
 		remove_child(consumer)
