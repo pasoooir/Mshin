@@ -957,11 +957,11 @@ func _get_pending_automatic_output_count(item_id: String, order_id: String = "",
 		for slot in component.slots:
 			if slot.is_empty() or str(slot.get("item_id", "")) != item_id or not slot.has("auto_chain_order_id"):
 				continue
-		if not order_id.is_empty() and str(slot.get("auto_chain_order_id", "")) != order_id:
+			if not order_id.is_empty() and str(slot.get("auto_chain_order_id", "")) != order_id:
 				continue
-		if final_only and not bool(slot.get("auto_chain_final", false)):
+			if final_only and not bool(slot.get("auto_chain_final", false)):
 				continue
-		total += 1
+			total += 1
 	return total
 
 func _get_automatic_order_index(order_id: String) -> int:
