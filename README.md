@@ -817,3 +817,14 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 **شواهد Godot CI:** [run 43708045317 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
 
 **قاعده:** درآمد فقط هنگام جمع‌آوری آگهی Depot ثبت می‌شود. تولید یا آماده‌شدن کالا به‌تنهایی درآمد نیست. سود خالص تا زمان پیاده‌سازی cost basis و هزینه‌های واقعی ورودی، تأییدشده محسوب نمی‌شود.
+
+
+## ادغام ظرفیت تولید و جریان پول — PR #509
+
+- [x] PR #509 با روش squash در `main` ادغام شد.
+- [x] Merge commit: `dd7967dc10857b317386353d7366b42cb972569e`.
+- [x] Godot Validation، GameplaySmoke، MacroEconomySmoke و Android Debug APK export/signature روی code SHA نهایی PR موفق شدند: [run 43708045317](https://github.com/pasoooir/Mshin/actions/runs/43708045317).
+- [x] Web export، اجرای دسکتاپ و موبایل در Chromium و آپلود artifact موفق شدند: [run 43708045318](https://github.com/pasoooir/Mshin/actions/runs/43708045318).
+- [ ] اجرای مستقل CI روی merge commit جدید `dd7967d` و ثبت شواهد main هنوز تأیید نشده است؛ اجرای موفق PR جایگزین این گیت نیست.
+
+موارد باز بدون تیک: AUTO CHAIN کامل و چندزنجیره‌ای، بهای تمام‌شده و سود خالص حسابداری، مصرف موجودی توسط سفارش تحویل، تقاضا و نرخ فروش بازار، و پذیرش فیزیکی روی Android.
