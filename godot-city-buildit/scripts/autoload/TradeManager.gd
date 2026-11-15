@@ -155,7 +155,7 @@ func list_for_sale(item_id: String, amount: int = 1) -> bool:
 		"cost_known": bool(listing_cost.get("known", false)),
 		"cost_total": int(listing_cost.get("total_cost", 0))
 	})
-	EconomyManager.record_transaction("trade_listing_reserved", "items", amount, EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": listing_id, "item_id": item_id, "unit_price": ProductionManager.get_item_value(item_id), "total_price": price})
+	EconomyManager.record_transaction("trade_listing_reserved", "items", amount, EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": listing_id, "item_id": item_id, "unit_price": ProductionManager.get_item_value(item_id), "total_price": price, "cost_known": bool(listing_cost.get("known", false)), "cost_basis": int(listing_cost.get("total_cost", 0)) if bool(listing_cost.get("known", false)) else -1})
 	trade_state_changed.emit()
 	return true
 
@@ -174,7 +174,7 @@ func cancel_sale_listing(slot_index: int) -> bool:
 	if not StorageManager.add_item_with_cost(item_id, amount, int(slot.get("cost_total", 0)), bool(slot.get("cost_known", false))):
 		return false
 	sell_slots.remove_at(slot_index)
-	EconomyManager.record_transaction("trade_listing_cancelled", "items", amount, EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": str(slot.get("listing_id", "")), "item_id": item_id})
+	EconomyManager.record_transaction("trade_listing_cancelled", "items", amount, EconomyManager.simoleons, EconomyManager.simoleons, inventory_before, StorageManager.get_all_items(), {"source": "trade_depot", "listing_id": str(slot.get("listing_id", "")), "item_id": item_id, "cost_known": bool(slot.get("cost_known", false)), "cost_basis": int(slot.get("cost_total", 0)) if bool(slot.get("cost_known", false)) else -1})
 	trade_state_changed.emit()
 	return true
 
