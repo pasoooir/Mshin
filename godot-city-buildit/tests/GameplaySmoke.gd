@@ -394,6 +394,19 @@ func _test_live_macro_economy_snapshot() -> void:
 	_check(int(production.get("storage_capacity", -1)) == StorageManager.capacity, "Live production snapshot must use the active City's real warehouse capacity.")
 	_check(production.get("ending_inventory", {}) == StorageManager.get_all_items(), "Live production snapshot must preserve the exact current City Storage inventory.")
 
+	var previous_ledger: Array[Dictionary] = EconomyManager.transaction_ledger.duplicate(true)
+	var previous_sequence := EconomyManager.transaction_sequence
+	EconomyManager.transaction_ledger.clear()
+	EconomyManager.record_transaction("trade_sale_collected", "simoleons", 80, balance_before, balance_before, {}, {}, {"source":"trade_depot", "quantity":1, "cost_known":true, "cost_basis":30, "gross_margin":50})
+	EconomyManager.record_transaction("trade_sale_collected", "simoleons", 40, balance_before, balance_before, {}, {}, {"source":"trade_depot", "quantity":1, "cost_known":false, "cost_basis":-1, "gross_margin":-1})
+	var ledger_snapshot: Dictionary = MacroEconomySimulatorScript.simulate_live_city({"horizon_seconds": 0, "events": []})
+	var realized: Dictionary = ledger_snapshot.get("realized_trade_accounting", {})
+	_check(int(realized.get("gross_revenue", -1)) == 120 and int(realized.get("known_cogs", -1)) == 30 and int(realized.get("known_gross_margin", -1)) == 50, "Live macro snapshot must aggregate actual realized trade ledger revenue, known COGS and margin.")
+	_check(int(realized.get("unknown_cost_sale_quantity", -1)) == 1 and not bool(realized.get("gross_margin_complete", true)), "Live macro snapshot must preserve incomplete historical cost data instead of claiming full profit.")
+	EconomyManager.transaction_ledger = previous_ledger
+	EconomyManager.transaction_sequence = previous_sequence
+
+
 func _test_recipe_dependency_graph_validation() -> void:
 	var baseline := ProductionManager.get_recipe_validation_report()
 	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
