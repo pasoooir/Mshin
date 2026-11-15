@@ -1,6 +1,13 @@
 extends Node
 
 signal item_produced(item_id: String, amount: int)
+signal automatic_chain_changed(order_id: String)
+
+var automatic_chain_orders: Array = []
+var _next_automatic_chain_id: int = 1
+var _automatic_chain_tick_elapsed: float = 0.0
+const AUTOMATIC_CHAIN_TICK_SECONDS: float = 0.5
+const MAX_AUTOMATIC_CHAIN_QUANTITY: int = 10
 
 var _recipe_validation_report: Dictionary = {}
 
@@ -851,6 +858,276 @@ func get_upgrade_plan_note(from_stage: int) -> String:
 	if from_stage == 1:
 		return "MSHIN STARTER TEMPLATE — Nails + Metal; exact SCBI material quantities, population, XP, and Simoleon rewards are not independently verified."
 	return "MSHIN FALLBACK TEMPLATE — SCBI plan slots, material quantities, population tiers, and reward ranges vary; exact values are not verified."
+
+
+
+# Player-requested automatic chains. Each finished dependency is collected into
+# shared City Storage, then the next recipe is queued. Store inputs are escrowed
+# by ProductionComponent before a queued job can start.
+func _process(delta: float) -> void:
+	if not is_inside_tree() or get_tree().paused:
+		return
+	if has_node("/root/SaveManager") and SaveManager.is_loading:
+		return
+	_automatic_chain_tick_elapsed += delta
+	if _automatic_chain_tick_elapsed < AUTOMATIC_CHAIN_TICK_SECONDS:
+		return
+	_automatic_chain_tick_elapsed = 0.0
+	if _advance_automatic_chain_orders():
+		if has_node("/root/SaveManager"):
+			SaveManager.save_game()
+
+func start_automatic_chain(item_id: String, quantity: int = 1) -> String:
+	if not raw_materials.has(item_id) and not crafted_items.has(item_id):
+		return ""
+	var definition := get_item_definition(item_id)
+	if definition.is_empty() or int(definition.get("level", 1)) > GameManager.level:
+		return ""
+	if crafted_items.has(item_id):
+		var recipe := get_recipe(item_id)
+		if recipe.is_empty() or not are_recipe_inputs_unlocked(recipe):
+			return ""
+	quantity = clampi(quantity, 1, MAX_AUTOMATIC_CHAIN_QUANTITY)
+	var order_id := "auto_chain_%d" % _next_automatic_chain_id
+	_next_automatic_chain_id += 1
+	automatic_chain_orders.append({
+		"id": order_id,
+		"item_id": item_id,
+		"quantity": quantity,
+		"completed_count": 0,
+		"status": "running",
+		"created_at_unix": int(Time.get_unix_time_from_system()),
+		"last_error": ""
+	})
+	automatic_chain_changed.emit(order_id)
+	if has_node("/root/SaveManager"):
+		SaveManager.save_game()
+	return order_id
+
+func get_automatic_chain_order(order_id: String) -> Dictionary:
+	for order in automatic_chain_orders:
+		if str(order.get("id", "")) == order_id:
+			return order.duplicate(true)
+	return {}
+
+func get_automatic_chain_orders() -> Array:
+	return automatic_chain_orders.duplicate(true)
+
+func to_save_dict() -> Dictionary:
+	return {
+		"next_order_id": _next_automatic_chain_id,
+		"orders": automatic_chain_orders.duplicate(true)
+	}
+
+func from_save_dict(data: Dictionary) -> void:
+	_next_automatic_chain_id = maxi(1, int(data.get("next_order_id", 1)))
+	automatic_chain_orders.clear()
+	var saved_orders: Variant = data.get("orders", [])
+	if saved_orders is Array:
+		for saved_order in saved_orders:
+			if not saved_order is Dictionary:
+				continue
+			var order_id := str(saved_order.get("id", ""))
+			var item_id := str(saved_order.get("item_id", ""))
+			var quantity := clampi(int(saved_order.get("quantity", 1)), 1, MAX_AUTOMATIC_CHAIN_QUANTITY)
+			if order_id.is_empty() or (not raw_materials.has(item_id) and not crafted_items.has(item_id)):
+				continue
+			var order := saved_order.duplicate(true)
+			order["quantity"] = quantity
+			order["completed_count"] = clampi(int(order.get("completed_count", 0)), 0, quantity)
+			order["status"] = "complete" if int(order["completed_count"]) >= quantity else "running"
+			automatic_chain_orders.append(order)
+			var numeric_id := int(order_id.trim_prefix("auto_chain_"))
+			_next_automatic_chain_id = maxi(_next_automatic_chain_id, numeric_id + 1)
+	automatic_chain_changed.emit("")
+
+func _get_live_production_components() -> Array:
+	var result: Array = []
+	if not is_inside_tree():
+		return result
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if is_instance_valid(component) and component is ProductionComponent:
+			component.get_slot_count()
+			result.append(component)
+	return result
+
+func _get_pending_automatic_output_count(item_id: String, order_id: String = "", final_only: bool = false) -> int:
+	var total := 0
+	for component in _get_live_production_components():
+		for slot in component.slots:
+			if slot.is_empty() or str(slot.get("item_id", "")) != item_id or not slot.has("auto_chain_order_id"):
+				continue
+		if not order_id.is_empty() and str(slot.get("auto_chain_order_id", "")) != order_id:
+				continue
+		if final_only and not bool(slot.get("auto_chain_final", false)):
+				continue
+		total += 1
+	return total
+
+func _get_automatic_order_index(order_id: String) -> int:
+	for index in range(automatic_chain_orders.size()):
+		if str(automatic_chain_orders[index].get("id", "")) == order_id:
+			return index
+	return -1
+
+func _set_automatic_order_error(order_id: String, message: String) -> void:
+	var index := _get_automatic_order_index(order_id)
+	if index < 0:
+		return
+	var order: Dictionary = automatic_chain_orders[index]
+	order["last_error"] = message
+	automatic_chain_orders[index] = order
+
+func _mark_automatic_final_output_collected(order_id: String) -> void:
+	var index := _get_automatic_order_index(order_id)
+	if index < 0:
+		return
+	var order: Dictionary = automatic_chain_orders[index]
+	order["completed_count"] = mini(int(order.get("quantity", 1)), int(order.get("completed_count", 0)) + 1)
+	order["last_error"] = ""
+	if int(order["completed_count"]) >= int(order.get("quantity", 1)):
+		order["status"] = "complete"
+	automatic_chain_orders[index] = order
+	automatic_chain_changed.emit(order_id)
+
+func _advance_automatic_chain_orders() -> bool:
+	var changed := false
+	var components := _get_live_production_components()
+	# Automatically collect only outputs explicitly owned by an active chain.
+	for component in components:
+		for slot_index in range(component.slots.size()):
+			var slot: Dictionary = component.slots[slot_index]
+			if slot.is_empty() or not slot.has("auto_chain_order_id") or not bool(slot.get("ready", false)):
+				continue
+			var order_id := str(slot.get("auto_chain_order_id", ""))
+			var is_final := bool(slot.get("auto_chain_final", false))
+			if component.collect(slot_index):
+				changed = true
+				if is_final:
+					_mark_automatic_final_output_collected(order_id)
+	for order_index in range(automatic_chain_orders.size()):
+		var order: Dictionary = automatic_chain_orders[order_index]
+		if str(order.get("status", "running")) != "running":
+			continue
+		var order_id := str(order.get("id", ""))
+		var item_id := str(order.get("item_id", ""))
+		var remaining := int(order.get("quantity", 1)) - int(order.get("completed_count", 0))
+		var pending_final := _get_pending_automatic_output_count(item_id, order_id, true)
+		remaining -= pending_final
+		if remaining <= 0:
+			continue
+		if _schedule_automatic_item(order_id, item_id, remaining, true, [], components):
+			changed = true
+	return changed
+
+func _schedule_automatic_item(
+		order_id: String, item_id: String, quantity: int, is_final: bool,
+		ancestry: Array, components: Array
+	) -> bool:
+	if quantity <= 0:
+		return false
+	if ancestry.has(item_id):
+		_set_automatic_order_error(order_id, "Recipe dependency cycle detected at " + item_id)
+		return false
+	var pending := _get_pending_automatic_output_count(item_id)
+	if is_final:
+		pending = _get_pending_automatic_output_count(item_id, order_id, true)
+	var available := StorageManager.get_available_count(item_id)
+	var missing := maxi(0, quantity - pending - (0 if is_final else available))
+	if missing <= 0:
+		return false
+	var next_ancestry := ancestry.duplicate()
+	next_ancestry.append(item_id)
+
+	if raw_materials.has(item_id):
+		var scheduled := 0
+		var has_factory := false
+		for component in components:
+			if not bool(component.is_factory) or not get_factory_material_ids(str(component.factory_type)).has(item_id):
+				continue
+			has_factory = true
+			if not component._owner_has_road_access():
+				continue
+			for slot_index in range(component.get_slot_count()):
+				if scheduled >= missing:
+					break
+				if not component.slots[slot_index].is_empty():
+					continue
+				if component.start_factory(item_id, slot_index):
+					var slot: Dictionary = component.slots[slot_index]
+					slot["auto_chain_order_id"] = order_id
+					slot["auto_chain_final"] = is_final
+					component.slots[slot_index] = slot
+					component.slots_changed.emit()
+					scheduled += 1
+		if not has_factory:
+			_set_automatic_order_error(order_id, "No factory in the active region can produce " + item_id)
+		return scheduled > 0
+
+	if not crafted_items.has(item_id):
+		_set_automatic_order_error(order_id, "No verified production recipe for " + item_id)
+		return false
+	var recipe := get_recipe(item_id)
+	if recipe.is_empty() or not are_recipe_inputs_unlocked(recipe):
+		_set_automatic_order_error(order_id, get_recipe_lock_reason(item_id))
+		return false
+	var store_id := str(recipe.get("store", ""))
+	var required_stars := int(recipe.get("required_stars", 0))
+	var suppliers: Array = []
+	for component in components:
+		if bool(component.is_factory) or str(component.shop_id) != store_id or int(component.store_star_level) < required_stars:
+			continue
+		suppliers.append(component)
+	if suppliers.is_empty():
+		_set_automatic_order_error(order_id, "Build and complete a %s to produce %s" % [store_id.replace("_", " ").capitalize(), item_id])
+		return false
+	var operational_supplier := false
+	for supplier in suppliers:
+		if supplier._owner_has_road_access() and get_recipe_lock_reason(item_id, int(supplier.store_star_level)).is_empty():
+			operational_supplier = true
+			break
+	if not operational_supplier:
+		_set_automatic_order_error(order_id, "The %s supplier is not operational or lacks the required store star level" % store_id)
+		return false
+
+	var inputs: Dictionary = recipe.get("inputs", {})
+	if inputs.is_empty():
+		_set_automatic_order_error(order_id, "Recipe has no verified input materials: " + item_id)
+		return false
+	var dependencies_scheduled := false
+	var dependencies_ready := true
+	for input_id in inputs:
+		var dependency_id := str(input_id)
+		var required_amount := int(inputs[input_id]) * missing
+		var dependency_available := StorageManager.get_available_count(dependency_id)
+		var dependency_pending := _get_pending_automatic_output_count(dependency_id)
+		var dependency_missing := maxi(0, required_amount - dependency_available - dependency_pending)
+		if dependency_missing > 0:
+			if _schedule_automatic_item(order_id, dependency_id, dependency_missing, false, next_ancestry, components):
+				dependencies_scheduled = true
+			dependencies_ready = false
+			else:
+				dependencies_ready = false
+	if not dependencies_ready:
+		return dependencies_scheduled
+
+	var scheduled_crafts := 0
+	for supplier in suppliers:
+		if not supplier._owner_has_road_access() or not get_recipe_lock_reason(item_id, int(supplier.store_star_level)).is_empty():
+			continue
+		for slot_index in range(supplier.get_slot_count()):
+			if scheduled_crafts >= missing:
+				break
+			if not supplier.slots[slot_index].is_empty() or not StorageManager.has_items(inputs):
+				continue
+			if supplier.start_craft(item_id, slot_index):
+				var slot: Dictionary = supplier.slots[slot_index]
+				slot["auto_chain_order_id"] = order_id
+				slot["auto_chain_final"] = is_final
+				supplier.slots[slot_index] = slot
+				supplier.slots_changed.emit()
+				scheduled_crafts += 1
+	return scheduled_crafts > 0
 
 func get_population_for_stage(stage: int) -> int:
 	return residential_population.get(clampi(stage,1,6),15)
