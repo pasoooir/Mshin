@@ -2876,6 +2876,9 @@ func _test_trade_depot_and_global_market() -> void:
 	var previous_keys := EconomyManager.golden_keys
 	var previous_storage: Dictionary = StorageManager.to_save_dict()
 	var previous_trade: Dictionary = TradeManager.to_save_dict()
+	var previous_ledger: Array[Dictionary] = EconomyManager.transaction_ledger.duplicate(true)
+	var previous_ledger_sequence := EconomyManager.transaction_sequence
+	EconomyManager.transaction_ledger.clear()
 	var depot := FireHazardTestBuilding.new()
 	depot.building_id = "smoke_trade_depot"
 	depot.building_type = "trade_depot"
@@ -2905,11 +2908,17 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(BuildManager.get_population_build_lock_reason("global_trade_hq").is_empty(), "Global Trade HQ must unlock at exactly 10,000 population.")
 	StorageManager.capacity = 50
 	StorageManager.items = {"metal": 2}
+	StorageManager.item_cost_batches = {"metal": [{"quantity": 2, "total_cost": 30, "known": true}]}
 	TradeManager.from_save_dict({})
 	_check(TradeManager.is_depot_operational(), "A completed Trade Depot at 8,000+ population must activate selling.")
 	_check(TradeManager.is_global_trade_operational(), "A completed Global Trade HQ at 10,000+ population must activate the market.")
 	_check(TradeManager.list_for_sale("metal", 1), "Trade Depot must accept a valid item listing.")
 	_check(StorageManager.get_count("metal") == 1, "Listing an item must remove it from City Storage exactly once.")
+	_check(bool(TradeManager.sell_slots[0].get("cost_known", false)) and int(TradeManager.sell_slots[0].get("cost_total", -1)) == 15, "Depot listing must reserve the FIFO acquisition cost of the exact Metal batch.")
+	_check(TradeManager.cancel_sale_listing(0), "Cancelling a Depot listing must return its reserved goods.")
+	var returned_cost: Dictionary = StorageManager.get_cost_basis({"metal": 2})
+	_check(StorageManager.get_count("metal") == 2 and bool(returned_cost.get("known", false)) and int(returned_cost.get("total_cost", -1)) == 30, "Cancelling a sale must restore the original FIFO cost basis without losing or duplicating cost.")
+	_check(TradeManager.list_for_sale("metal", 1), "Trade Depot must accept the restored item for a second listing.")
 	_check(not TradeManager.collect_sale(0), "A listing must not pay out before its sale timer completes.")
 	_check(int(TradeManager.sell_slots[0].get("finish_unix", 0)) > int(Time.get_unix_time_from_system()), "A sale listing must persist an absolute completion timestamp.")
 	TradeManager.sell_slots[0]["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
@@ -2923,6 +2932,11 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(TradeManager.completed_sales == sales_before_collection + 1, "A collected sale must increment the persistent trade achievement counter.")
 	_check(EconomyManager.simoleons == coins_before_collection + ProductionManager.get_item_value("metal"), "Collecting a sale must pay its exact listed price.")
 	_check(TradeManager.sell_slots.is_empty(), "Collected listings must release their depot slot.")
+	var sale_entry: Dictionary = EconomyManager.transaction_ledger.back()
+	var sale_metadata: Dictionary = sale_entry.get("metadata", {})
+	_check(bool(sale_metadata.get("cost_known", false)) and int(sale_metadata.get("cost_basis", -1)) == 15 and int(sale_metadata.get("gross_margin", -1)) == ProductionManager.get_item_value("metal") - 15, "Live sale transaction must persist its actual FIFO COGS and realized gross margin.")
+	var realized: Dictionary = MacroEconomySimulatorScript._summarize_realized_trade_ledger(EconomyManager.transaction_ledger)
+	_check(int(realized.get("gross_revenue", 0)) == ProductionManager.get_item_value("metal") and int(realized.get("known_cogs", -1)) == 15 and bool(realized.get("gross_margin_complete", false)), "Live macro accounting must summarize the actual Trade Depot transaction ledger.")
 
 	TradeManager.market_offers = [{"item_id":"metal", "amount":1, "price":15, "sold":false}]
 	var coins_before_purchase := EconomyManager.simoleons
@@ -2931,6 +2945,12 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(TradeManager.market_purchases == purchases_before + 1, "A completed Global Trade purchase must increment its achievement counter.")
 	_check(StorageManager.get_count("metal") == 2, "Global market purchase must add the offered goods to storage.")
 	_check(EconomyManager.simoleons == coins_before_purchase - 15, "Global market purchase must deduct the exact offer price.")
+	var purchased_cost: Dictionary = StorageManager.get_cost_basis({"metal": 2})
+	_check(bool(purchased_cost.get("known", false)) and int(purchased_cost.get("total_cost", -1)) == 30, "Global Trade HQ purchase must add the exact paid price to the acquired inventory cost basis.")
+	var saved_cost_storage: Dictionary = StorageManager.to_save_dict()
+	StorageManager.from_save_dict(saved_cost_storage)
+	var restored_cost: Dictionary = StorageManager.get_cost_basis({"metal": 2})
+	_check(bool(restored_cost.get("known", false)) and int(restored_cost.get("total_cost", -1)) == 30, "Storage save/load must preserve FIFO cost batches and their acquisition totals.")
 	_check(bool(TradeManager.market_offers[0].get("sold", false)), "Purchased market offers must not be purchasable twice.")
 	var saved_trade := TradeManager.to_save_dict()
 	TradeManager.from_save_dict(saved_trade)
@@ -2988,6 +3008,8 @@ func _test_trade_depot_and_global_market() -> void:
 	GameManager.population = previous_population
 	EconomyManager.simoleons = previous_simoleons
 	EconomyManager.golden_keys = previous_keys
+	EconomyManager.transaction_ledger = previous_ledger
+	EconomyManager.transaction_sequence = previous_ledger_sequence
 	StorageManager.from_save_dict(previous_storage)
 	TradeManager.from_save_dict(previous_trade)
 
