@@ -2392,6 +2392,7 @@ func open_production_panel(building: Building) -> void:
 		var order_card := PanelContainer.new()
 		order_card.name = "QueueSlot%d" % slot_index
 		order_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		order_card.custom_minimum_size = Vector2(100.0, 90.0) * _ui_scale
 		var order_style := StyleBoxFlat.new()
 		order_style.bg_color = Color("#E8F5FA") if is_ready else Color("#F3F8FB")
 		order_style.border_color = Color("#D6AE4B") if is_ready else Color("#8CC9DE")
