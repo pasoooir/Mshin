@@ -127,7 +127,11 @@ test("development identity returns its configured numeric player id", async t =>
 });
 
 test("dev identity endpoint is unavailable when disabled or in production", async t => {
-  const f = await fixture({ devAuthEnabled: true, nodeEnv: "production" }); t.after(f.close);
+  const f = await fixture({
+    devAuthEnabled: true,
+    nodeEnv: "production",
+    jsonStore: { kind: "github-private-json", readJson: async () => null, writeMany: async () => {} }
+  }); t.after(f.close);
   const result = await json(f.base + "/v1/dev/session", null, "POST", { identity: "admin" });
   assert.equal(result.status, 404);
 });
