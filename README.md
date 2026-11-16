@@ -1249,6 +1249,12 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Increase 3D hex platform radius/depth to visually match the enlarged selectable cards.
 - [x] Add GameplaySmoke assertions for popup font floor and production/residential touch-card dimensions.
 - [x] PR #535 merged to main as `6dd3b959f94fb751e73e1f95b273dc0ee7cc0ca9`.
+- [x] PR #536 merged to `main` as `40ea31b59f45f7f83e7cab8bf5e1ddf50c9b1758`; queue cards, queue viewport and collect controls enlarged to fit the 16 px popup typography.
+- [x] PR #536 Godot validation + GameplaySmoke + visual/economy tests + Android Debug APK export/signature passed (run `43789385635`).
+- [x] PR #536 Web export + desktop/mobile Chromium smoke passed (run `43789385639`).
+- [x] Post-merge main Godot validation + Android Debug APK export/signature passed (run `43789569589`).
+- [x] Post-merge GitHub Pages build/deployment passed (run `43789568536`).
+
 - [x] Godot validation, GameplaySmoke, visual geometry, currency/economy tests and Android Debug APK export/signature passed on PR run `43789000739`; post-merge main run `43789166317` also passed.
 - [x] Web build, Gameplay integration and desktop/mobile Chromium smoke passed on PR run `43789000759`.
 - [x] GitHub Pages build and deployment passed for the merged main commit (run `43789166083`).
