@@ -3393,9 +3393,14 @@ func _test_tutorial_guide_contract() -> void:
 					_check(villa_button != null and not villa_button.disabled and villa_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The first residential catalog choice must be an enabled button that consumes its own touch events.")
 					if villa_button != null:
 						await _tap_native_control(villa_button)
-						_check(BuildManager.is_placing and BuildManager.selected_building_type == "residential_villa", "A real touch on the Villa House catalog item must start placement mode.")
-					BuildManager.cancel_placement()
-					hud._on_cancel_pressed()
+						_check(hud.catalog_info_panel.visible, "A real touch on the Villa House catalog item must open its information card.")
+						var catalog_build_button := hud.find_child("CatalogBuildButton", true, false) as Button
+						_check(catalog_build_button != null and not catalog_build_button.disabled, "The Villa House information card must expose an enabled BUILD action.")
+						if catalog_build_button != null:
+							await _tap_native_control(catalog_build_button)
+							_check(BuildManager.is_placing and BuildManager.selected_building_type == "residential_villa", "A real touch on BUILD must start Villa House placement mode.")
+				BuildManager.cancel_placement()
+				hud._on_cancel_pressed()
 
 
 func _test_city_name_contract() -> void:
