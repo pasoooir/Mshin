@@ -1312,3 +1312,12 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Verify the interaction with a real Android screen touch; automated tests do not replace device acceptance.
 
 **Acceptance:** one tap on an eligible product tile must immediately place that item in the first currently empty queue square. Blocked products must remain unqueued and explain the actual blocker without displaying a second-step “START” prompt.
+
+## Blocked production prerequisite details retained — 2026-11-16
+
+- [x] Restore the explanatory product-details panel only on rejected/blocked product taps, preserving exact missing City Storage ingredients and quantities.
+- [x] Keep eligible product taps on the direct path: submit to the first live empty queue slot and return without opening the details panel.
+- [ ] Re-run the full Godot GameplaySmoke gate and Web/Android workflows after the correction.
+- [ ] Confirm Pages deployment and perform physical Android touch acceptance.
+
+**Regression found and corrected:** the previous direct-tap change removed the blocked-product details panel as well as the unwanted second-step prompt. GameplaySmoke correctly caught the lost missing-ingredient disclosure. The panel is now retained for blocked products only; the prompt asking the player to start a valid product is not restored.
