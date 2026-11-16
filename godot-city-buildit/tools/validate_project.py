@@ -893,7 +893,7 @@ if lighting_body is None or "for side in [-1.0, 1.0]" not in lighting_body.group
 livestock_body = re.search(r"func _build_meadow_livestock\(\).*?(?=\nfunc |\Z)", world_source, re.S)
 if livestock_body is None or "SheepWoolBodies" not in livestock_body.group(0) or "CattleBodies" not in livestock_body.group(0):
     errors.append("Natural meadow must contain both sheep and cattle visual groups")
-if lane_body is None or "MultiMesh" not in lane_body.group(0) or "range(-15, 16)" not in lane_body.group(0):
+if lane_body is None or "MultiMesh" not in lane_body.group(0) or "range(-55, 56)" not in lane_body.group(0):
     errors.append("Highway lane markings must be batched and repeated along the full road")
 
 build_icon_paths = {
