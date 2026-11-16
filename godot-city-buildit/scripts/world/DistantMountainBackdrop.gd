@@ -11,10 +11,15 @@ const RIDGE_SEGMENTS := 64
 const RIDGE_DEPTH_STEPS := 14
 const SHRUB_COUNT := 320
 const GRASS_COUNT := 760
+const TUNNEL_CENTER_X := -55.0
+const TUNNEL_CUTOUT_HALF_WIDTH := 28.0
+const TUNNEL_OPENING_WIDTH := 42.0
+const TUNNEL_WALL_HEIGHT := 13.0
 
 func _ready() -> void:
 	_build_backdrop_land()
 	_build_mountain_ridges()
+	_build_highway_tunnels()
 	_build_mountain_shrubs()
 	_build_mountain_grass()
 
@@ -60,6 +65,8 @@ func _build_mountain_ridges() -> void:
 		for along_index in range(RIDGE_SEGMENTS):
 			var t0 := lerpf(-RIDGE_HALF_LENGTH, RIDGE_HALF_LENGTH, float(along_index) / RIDGE_SEGMENTS)
 			var t1 := lerpf(-RIDGE_HALF_LENGTH, RIDGE_HALF_LENGTH, float(along_index + 1) / RIDGE_SEGMENTS)
+			if _ridge_segment_crosses_tunnel(side, t0, t1):
+				continue
 			for depth_index in range(RIDGE_DEPTH_STEPS):
 				var d0 := float(depth_index) / RIDGE_DEPTH_STEPS
 				var d1 := float(depth_index + 1) / RIDGE_DEPTH_STEPS
@@ -80,6 +87,16 @@ func _build_mountain_ridges() -> void:
 		ridge.material_override = material
 		ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(ridge)
+
+
+func _ridge_segment_crosses_tunnel(side: int, start_along: float, end_along: float) -> bool:
+	if side > 1:
+		return false
+	return start_along <= TUNNEL_CENTER_X + TUNNEL_CUTOUT_HALF_WIDTH and end_along >= TUNNEL_CENTER_X - TUNNEL_CUTOUT_HALF_WIDTH
+
+
+func _is_tunnel_cutout(side: int, along: float) -> bool:
+	return side <= 1 and absf(along - TUNNEL_CENTER_X) <= TUNNEL_CUTOUT_HALF_WIDTH
 
 
 func _add_ridge_vertex(surface: SurfaceTool, side: int, along: float, depth: float) -> void:
@@ -119,6 +136,51 @@ func _ridge_color(along: float, depth: float, side: int) -> Color:
 	return color.lerp(Color("#5B8544"), variation * slope * 0.20)
 
 
+func _build_highway_tunnels() -> void:
+	var concrete := StandardMaterial3D.new()
+	concrete.albedo_color = Color("#777E78")
+	concrete.roughness = 0.94
+	var interior := StandardMaterial3D.new()
+	interior.albedo_color = Color("#202723")
+	interior.roughness = 1.0
+	var road_edge := StandardMaterial3D.new()
+	road_edge.albedo_color = Color("#B5B9AE")
+	road_edge.roughness = 0.9
+	for side in [0, 1]:
+		var side_sign := -1.0 if side == 0 else 1.0
+		var tunnel_name := "NorthHighwayTunnel" if side == 0 else "SouthHighwayTunnel"
+		var tunnel := Node3D.new()
+		tunnel.name = tunnel_name
+		var center_z := side_sign * (RIDGE_INNER_RADIUS + RIDGE_OUTER_RADIUS) * 0.5
+		var length := RIDGE_OUTER_RADIUS - RIDGE_INNER_RADIUS
+		for wall_side in [-1.0, 1.0]:
+			_make_tunnel_box(tunnel, "InteriorSideWall", Vector3(2.0, TUNNEL_WALL_HEIGHT, length), Vector3(TUNNEL_CENTER_X + wall_side * (TUNNEL_OPENING_WIDTH * 0.5), TUNNEL_WALL_HEIGHT * 0.5, center_z), interior)
+		_make_tunnel_box(tunnel, "InteriorCeiling", Vector3(TUNNEL_OPENING_WIDTH + 2.0, 2.0, length), Vector3(TUNNEL_CENTER_X, TUNNEL_WALL_HEIGHT + 1.0, center_z), interior)
+		_make_tunnel_box(tunnel, "TunnelRoadEdgeNorth", Vector3(0.45, 0.16, length), Vector3(TUNNEL_CENTER_X - TUNNEL_OPENING_WIDTH * 0.5 + 1.0, 0.12, center_z), road_edge)
+		_make_tunnel_box(tunnel, "TunnelRoadEdgeSouth", Vector3(0.45, 0.16, length), Vector3(TUNNEL_CENTER_X + TUNNEL_OPENING_WIDTH * 0.5 - 1.0, 0.12, center_z), road_edge)
+		for portal_index in range(2):
+			var portal_radius := RIDGE_INNER_RADIUS if portal_index == 0 else RIDGE_OUTER_RADIUS
+			var portal_z := side_sign * portal_radius
+			var portal_prefix := "InnerPortal" if portal_index == 0 else "OuterPortal"
+			for frame_side in [-1.0, 1.0]:
+				_make_tunnel_box(tunnel, portal_prefix + "Pillar", Vector3(3.0, TUNNEL_WALL_HEIGHT + 1.0, 4.0), Vector3(TUNNEL_CENTER_X + frame_side * (TUNNEL_OPENING_WIDTH * 0.5 + 1.5), (TUNNEL_WALL_HEIGHT + 1.0) * 0.5, portal_z), concrete)
+			_make_tunnel_box(tunnel, portal_prefix + "Lintel", Vector3(TUNNEL_OPENING_WIDTH + 7.0, 3.0, 4.0), Vector3(TUNNEL_CENTER_X, TUNNEL_WALL_HEIGHT + 0.5, portal_z), concrete)
+		add_child(tunnel)
+
+
+func _make_tunnel_box(parent: Node3D, node_name: String, dimensions: Vector3, position: Vector3, material: Material) -> MeshInstance3D:
+	var instance := MeshInstance3D.new()
+	instance.name = node_name
+	var box := BoxMesh.new()
+	box.size = dimensions
+	instance.mesh = box
+	instance.position = position
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(instance)
+	return instance
+
+
 func _build_mountain_shrubs() -> void:
 	var shrub_mesh := SphereMesh.new()
 	shrub_mesh.radius = 1.0
@@ -136,6 +198,8 @@ func _build_mountain_shrubs() -> void:
 		var row := int(index / 4)
 		var along := -RIDGE_HALF_LENGTH * 0.88 + fposmod(float(row) * 37.17, RIDGE_HALF_LENGTH * 1.76)
 		var depth := 0.18 + float((row * 7) % 58) / 100.0
+		if _is_tunnel_cutout(side, along):
+			continue
 		var point := _ridge_point(side, along, depth)
 		var scale := 1.0 + float((index * 13) % 11) * 0.13
 		var basis := Basis(Vector3.UP, float((index * 29) % 360) * PI / 180.0).scaled(Vector3(scale, scale * 0.72, scale))
@@ -166,6 +230,8 @@ func _build_mountain_grass() -> void:
 		var row := int(index / 4)
 		var along := -RIDGE_HALF_LENGTH * 0.91 + fposmod(float(row) * 19.73, RIDGE_HALF_LENGTH * 1.82)
 		var depth := 0.12 + float((row * 11) % 72) / 100.0
+		if _is_tunnel_cutout(side, along):
+			continue
 		var point := _ridge_point(side, along, depth)
 		var scale := 0.55 + float((index * 5) % 9) * 0.12
 		var yaw := float((index * 47) % 360) * PI / 180.0
