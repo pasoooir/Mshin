@@ -38,7 +38,7 @@ void vertex() {
 }
 void fragment() {
 	// Keep the existing coastal water visible through the green backdrop.
-	if (world_position.x > 49.0 && world_position.x < 160.0 && abs(world_position.z) < 96.0) {
+	if (world_position.x >= 49.0 && world_position.x <= 159.0 && abs(world_position.z) <= 95.0) {
 		discard;
 	}
 	float grain = sin(world_position.x * 0.12 + world_position.z * 0.08) * cos(world_position.z * 0.11 - world_position.x * 0.06);
