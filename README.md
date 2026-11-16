@@ -1216,7 +1216,7 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Android Debug APK export, signature and package identity verification passed (run `43787436360`).
 - [x] Web export, Gameplay integration and desktop/mobile Chromium launch passed (run `43787436379`).
 - [x] PR #533 merged to `main` as `a9c9cb41b545cbf40077c280119b30287a8479fd`.
-- [ ] Post-merge GitHub Pages deployment verification.
+- [x] Post-merge GitHub Pages deployment verification (latest successful deploy run `43789166083`).
 - [ ] Physical Android touch/visual acceptance; CI and mobile Chromium are not a substitute for a real device test.
 
 **Root cause:** the residential overlay had a higher z-index than the production overlay, while the production-opening path did not close the residential overlay. Production entry also lacked category/component ownership guards, and product callbacks could outlive the panel that created them.
@@ -1235,7 +1235,7 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Android Debug APK export + signature/package verification passed (run `43788170846`).
 - [x] Web export + Gameplay integration + desktop/mobile Chromium launch passed (run `43788170903`).
 - [x] PR #534 merged to `main` as `36e727d7c242c2bae1fe895cac78de683d84cd3a`.
-- [ ] Post-merge GitHub Pages deployment verification.
+- [x] Post-merge GitHub Pages deployment verification (latest successful deploy run `43789166083`).
 - [ ] Physical Android touch/visual acceptance; CI and mobile Chromium are not a substitute for a real device test.
 
 **Additional root cause:** residential detail UI was not registered as a blocking modal in `CityInput`, and its long-press state was not cleared while the home panel was active. The production modal also did not validate that a component's catalog key still matched its owner building.
@@ -1243,12 +1243,15 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 
 ## Senior-friendly mobile popup accessibility — 2026-11-16
 
-- [ ] Enlarge factory/store product diamond cards and their artwork for low-vision readability.
-- [ ] Enlarge residential material diamond cards and their artwork.
-- [ ] Enforce a 16 px minimum font size in popup/detail windows, including production, inventory, residential, trade and service panels.
-- [ ] Increase 3D hex platform radius/depth to visually match the enlarged selectable cards.
-- [ ] Add GameplaySmoke assertions for popup font floor and production/residential touch-card dimensions.
-- [ ] Run Godot validation, full GameplaySmoke, Android Debug APK export, Web build and desktop/mobile Chromium smoke.
-- [ ] Verify GitHub Pages deployment and request physical Android accessibility acceptance.
+- [x] Enlarge factory/store product diamond cards and their artwork for low-vision readability.
+- [x] Enlarge residential material diamond cards and their artwork.
+- [x] Enforce a 16 px minimum font size in popup/detail windows, including production, inventory, residential, trade and service panels.
+- [x] Increase 3D hex platform radius/depth to visually match the enlarged selectable cards.
+- [x] Add GameplaySmoke assertions for popup font floor and production/residential touch-card dimensions.
+- [x] PR #535 merged to main as `6dd3b959f94fb751e73e1f95b273dc0ee7cc0ca9`.
+- [x] Godot validation, GameplaySmoke, visual geometry, currency/economy tests and Android Debug APK export/signature passed on PR run `43789000739`; post-merge main run `43789166317` also passed.
+- [x] Web build, Gameplay integration and desktop/mobile Chromium smoke passed on PR run `43789000759`.
+- [x] GitHub Pages build and deployment passed for the merged main commit (run `43789166083`).
+- [ ] Physical Android touch/visual acceptance and direct low-vision readability check.
 
-**Acceptance:** no popup text override may render below 16 px at the game UI scale; production and residential projected material/product controls must be at least 120 × 130 px before UI scaling. Physical-device readability remains a separate acceptance step.
+**Acceptance:** no popup text override may render below 16 px at the game UI scale; production and residential projected material/product controls must be at least 120 × 130 px before UI scaling. Automated CI is not a substitute for physical-device accessibility acceptance.
