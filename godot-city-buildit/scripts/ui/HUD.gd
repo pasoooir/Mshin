@@ -4549,6 +4549,13 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	regional_tab.pressed.connect(_show_trade_panel.bind("regional"))
 	tabs.add_child(regional_tab)
 
+	var players_tab := Button.new()
+	players_tab.name = "PlayerMarketTab"
+	players_tab.text = "PLAYER MARKET"
+	players_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	players_tab.pressed.connect(_show_trade_panel.bind("players"))
+	tabs.add_child(players_tab)
+
 	var scroll := ScrollContainer.new()
 	scroll.name = "TradeContentScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -4560,16 +4567,20 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	body.add_theme_constant_override("separation", 8)
 	scroll.add_child(body)
 
-	_trade_active_tab = tab if tab in ["depot", "market", "ship", "regional"] else "depot"
+	_trade_active_tab = tab if tab in ["depot", "market", "ship", "regional", "players"] else "depot"
 	if _trade_active_tab == "market":
 		market_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	elif _trade_active_tab == "ship":
 		ship_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	elif _trade_active_tab == "regional":
 		regional_tab.add_theme_stylebox_override("normal", _catalog_action_style())
+	elif _trade_active_tab == "players":
+		players_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	else:
 		depot_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	_refresh_trade_panel_content()
+	if _trade_active_tab == "players":
+		call_deferred("_refresh_player_market")
 
 func _refresh_trade_panel_content() -> void:
 	if not is_instance_valid(trade_panel):
@@ -4586,6 +4597,8 @@ func _refresh_trade_panel_content() -> void:
 		_build_cargo_ship_content(body)
 	elif _trade_active_tab == "regional":
 		_build_regional_trade_content(body)
+	elif _trade_active_tab == "players":
+		_build_player_market_content(body)
 	else:
 		_build_trade_depot_content(body)
 
@@ -4931,6 +4944,152 @@ func _on_trade_cancel_sale(slot_index: int) -> void:
 	else:
 		status_label.text = "Listing cancelled; reserved goods returned to City Storage."
 	_show_trade_panel("depot")
+
+func _build_player_market_content(parent: VBoxContainer) -> void:
+	if not PlayerAccountManager.is_authenticated():
+		_trade_message(parent, "Sign in to a player account to buy and sell with other mayors.")
+		return
+	var refresh_row := HBoxContainer.new()
+	parent.add_child(refresh_row)
+	var refresh_label := Label.new()
+	refresh_label.text = "PLAYER-TO-PLAYER MARKET · Simoleons"
+	refresh_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	refresh_label.add_theme_font_size_override("font_size", _popup_font_size(20))
+	refresh_label.add_theme_color_override("font_color", Color("#24465A"))
+	refresh_row.add_child(refresh_label)
+	var refresh_button := Button.new()
+	refresh_button.text = "REFRESH"
+	refresh_button.pressed.connect(_refresh_player_market)
+	refresh_row.add_child(refresh_button)
+
+	var market_heading := Label.new()
+	market_heading.text = "AVAILABLE FROM OTHER PLAYERS"
+	market_heading.add_theme_font_size_override("font_size", _popup_font_size(17))
+	market_heading.add_theme_color_override("font_color", Color("#28799C"))
+	parent.add_child(market_heading)
+	if PlayerMarketManager.public_listings.is_empty():
+		_trade_message(parent, "No player listings are available. Refresh later or list goods from your warehouse.")
+	for listing in PlayerMarketManager.public_listings:
+		var listing_id := str(listing.get("listing_id", ""))
+		var item_id := str(listing.get("item_id", ""))
+		var quantity := int(listing.get("quantity", 0))
+		var total_price := int(listing.get("total_price", 0))
+		var row := HBoxContainer.new()
+		row.custom_minimum_size.y = 48 * _ui_scale
+		parent.add_child(row)
+		var info := Label.new()
+		info.text = "%s ×%d · §%d · Mayor #%d" % [str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id.capitalize())), quantity, total_price, int(listing.get("seller_id", 0))]
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		info.add_theme_color_override("font_color", Color("#263746"))
+		row.add_child(info)
+		var buy := Button.new()
+		buy.text = "BUY"
+		buy.disabled = EconomyManager.simoleons < total_price or StorageManager.get_free() < quantity
+		buy.pressed.connect(_buy_player_market_listing.bind(listing_id))
+		row.add_child(buy)
+
+	var shop_heading := Label.new()
+	shop_heading.text = "MY SHOP · RESERVED GOODS"
+	shop_heading.add_theme_font_size_override("font_size", _popup_font_size(17))
+	shop_heading.add_theme_color_override("font_color", Color("#28799C"))
+	parent.add_child(shop_heading)
+	for item_variant in StorageManager.get_all_items().keys():
+		var item_id := str(item_variant)
+		var count := StorageManager.get_count(item_id)
+		var row := HBoxContainer.new()
+		row.custom_minimum_size.y = 44 * _ui_scale
+		parent.add_child(row)
+		var item_label := Label.new()
+		item_label.text = "%s ×%d" % [str(StorageManager.item_definitions.get(item_id, {}).get("name", item_id.capitalize())), count]
+		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		item_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(item_label)
+		var sell := Button.new()
+		sell.text = "SELL 1 · §%d" % ProductionManager.get_item_value(item_id)
+		sell.disabled = not TradeManager.is_trade_eligible_item(item_id) or count < 1 or ProductionManager.get_item_value(item_id) <= 0
+		sell.pressed.connect(_list_player_market_item.bind(item_id))
+		row.add_child(sell)
+
+	for listing in PlayerMarketManager.my_listings:
+		var listing_status := str(listing.get("status", ""))
+		var row := HBoxContainer.new()
+		row.custom_minimum_size.y = 44 * _ui_scale
+		parent.add_child(row)
+		var info := Label.new()
+		info.text = "%s ×%d · §%d each · %s" % [
+			str(listing.get("item_id", "Item")).capitalize(),
+			int(listing.get("quantity", 0)),
+			int(listing.get("unit_price", 0)),
+			listing_status.to_upper()
+		]
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(info)
+		if listing_status == "active":
+			var cancel := Button.new()
+			cancel.text = "CANCEL"
+			cancel.pressed.connect(_cancel_player_market_listing.bind(str(listing.get("listing_id", ""))))
+			row.add_child(cancel)
+
+	var orders_heading := Label.new()
+	orders_heading.text = "MY RECENT MARKET ORDERS"
+	orders_heading.add_theme_font_size_override("font_size", _popup_font_size(17))
+	orders_heading.add_theme_color_override("font_color", Color("#28799C"))
+	parent.add_child(orders_heading)
+	var market_transactions: Array[Dictionary] = []
+	for transaction in EconomyManager.get_recent_transactions(30):
+		var transaction_type := str(transaction.get("type", ""))
+		if transaction_type in ["player_market_purchase", "player_market_sale", "player_market_listing_reserved", "player_market_listing_cancelled"]:
+			market_transactions.append(transaction)
+	market_transactions.reverse()
+	if market_transactions.is_empty():
+		_trade_message(parent, "Your player-market activity will appear here.")
+	for transaction in market_transactions.slice(0, 10):
+		var metadata: Dictionary = transaction.get("metadata", {})
+		var order_row := HBoxContainer.new()
+		order_row.custom_minimum_size.y = 36 * _ui_scale
+		parent.add_child(order_row)
+		var order_label := Label.new()
+		var action_label := str(transaction.get("type", "")).replace("player_market_", "").replace("_", " ").to_upper()
+		order_label.text = "%s · %s ×%d · §%d" % [
+			action_label,
+			str(metadata.get("item_id", "Goods")).capitalize(),
+			int(metadata.get("quantity", transaction.get("amount", 0))),
+			int(transaction.get("amount", 0)) if str(transaction.get("currency", "")) == "simoleons" else 0
+		]
+		order_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		order_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		order_row.add_child(order_label)
+
+func _refresh_player_market() -> void:
+	await PlayerMarketManager.refresh_market()
+	await PlayerMarketManager.refresh_my_shop()
+	_refresh_trade_panel_content()
+
+func _list_player_market_item(item_id: String) -> void:
+	var result := await PlayerMarketManager.create_listing(item_id, 1, ProductionManager.get_item_value(item_id))
+	if not bool(result.get("success", false)):
+		status_label.text = "Could not list item: %s" % str(result.get("reason", "unknown error"))
+	else:
+		status_label.text = "Item listed. It is reserved until sold or cancelled."
+	_show_trade_panel("players")
+
+func _buy_player_market_listing(listing_id: String) -> void:
+	var result := await PlayerMarketManager.buy_listing(listing_id)
+	if not bool(result.get("success", false)):
+		status_label.text = "Purchase failed: %s" % str(result.get("reason", "unknown error"))
+	else:
+		status_label.text = "Purchase complete. Goods and Simoleons were transferred."
+	_show_trade_panel("players")
+
+func _cancel_player_market_listing(listing_id: String) -> void:
+	var result := await PlayerMarketManager.cancel_listing(listing_id)
+	if not bool(result.get("success", false)):
+		status_label.text = "Could not cancel listing: %s" % str(result.get("reason", "unknown error"))
+	else:
+		status_label.text = "Listing cancelled; reserved goods returned to your warehouse."
+	_show_trade_panel("players")
 
 func _on_trade_buy_offer(offer_index: int) -> void:
 	if not TradeManager.buy_global_offer(offer_index):

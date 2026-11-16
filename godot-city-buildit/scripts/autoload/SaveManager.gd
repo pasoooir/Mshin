@@ -129,13 +129,20 @@ func save_game() -> bool:
 			"graphics": GraphicsSettingsManager.to_save_dict()
 		}
 	}
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var active_save_path := get_active_save_path()
+	var absolute_save_directory := ProjectSettings.globalize_path(active_save_path.get_base_dir())
+	if DirAccess.make_dir_recursive_absolute(absolute_save_directory) != OK and not DirAccess.dir_exists_absolute(absolute_save_directory):
+		push_error("Could not create player save directory: " + active_save_path.get_base_dir())
+		return false
+	var file := FileAccess.open(active_save_path, FileAccess.WRITE)
 	if file == null:
 		push_error("Could not write city save file: %s" % FileAccess.get_open_error())
 		return false
 	file.store_string(JSON.stringify(payload))
 	file.close()
-	save_completed.emit(SAVE_PATH)
+	if has_node("/root/PlayerAccountManager") and PlayerAccountManager.is_authenticated():
+		PlayerAccountManager.queue_profile_save(payload)
+	save_completed.emit(active_save_path)
 	return true
 
 func _apply_saved_region_storage(region_snapshot: Dictionary, legacy_storage: Dictionary) -> void:
