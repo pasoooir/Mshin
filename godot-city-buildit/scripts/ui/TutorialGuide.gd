@@ -364,7 +364,8 @@ func _layout_guide_panel() -> void:
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
 	var panel_width := minf(430.0, maxf(280.0, viewport_size.x - 24.0))
-	var panel_height := minf(205.0, maxf(150.0, viewport_size.y - 100.0))
+	var desired_height := 300.0 if current_step == 0 and not completed else 205.0
+	var panel_height := minf(desired_height, maxf(220.0, viewport_size.y - 100.0))
 	_panel.anchor_left = 0.0
 	_panel.anchor_right = 0.0
 	_panel.anchor_top = 0.0
@@ -429,12 +430,39 @@ func _update_finger_pointer() -> void:
 		if is_instance_valid(hud):
 			var target_name := str(STEP_DATA[current_step].get("target", ""))
 			target = hud.find_child(target_name, true, false) as Control if not target_name.is_empty() else null
-	if not is_instance_valid(target) or not target.is_visible_in_tree():
+	if is_instance_valid(target) and target.is_visible_in_tree():
+		var target_rect := target.get_global_rect()
+		_finger_pointer.position = Vector2(target_rect.position.x + target_rect.size.x * 0.72, target_rect.position.y + target_rect.size.y + 2.0 + sin(_finger_elapsed * 5.0) * 5.0)
+		_finger_pointer.show()
+		return
+	# When the next action is on a 3D building, point to the real building
+	# projected into screen space; once its detail panel opens, prefer its UI card.
+	var wanted_category := ""
+	match str(STEP_DATA[current_step].get("id", "")):
+		"raw": wanted_category = "industrial"
+		"crafted": wanted_category = "commercial"
+		"upgrade": wanted_category = "residential"
+	if wanted_category.is_empty():
 		_finger_pointer.hide()
 		return
-	var target_rect := target.get_global_rect()
-	_finger_pointer.position = Vector2(target_rect.position.x + target_rect.size.x * 0.72, target_rect.position.y + target_rect.size.y + 2.0 + sin(_finger_elapsed * 5.0) * 5.0)
-	_finger_pointer.show()
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		_finger_pointer.hide()
+		return
+	for building in BuildManager.buildings.values():
+		if not is_instance_valid(building) or str(building.get("status")) != "completed":
+			continue
+		var definition: Dictionary = building.get("definition") if building.get("definition") is Dictionary else {}
+		if str(definition.get("category", "")) != wanted_category:
+			continue
+		var world_target: Vector3 = building.global_position + Vector3(0.0, 5.0, 0.0)
+		if camera.is_position_behind(world_target):
+			continue
+		var screen_target := camera.unproject_position(world_target)
+		_finger_pointer.position = screen_target + Vector2(20.0, 12.0 + sin(_finger_elapsed * 5.0) * 5.0)
+		_finger_pointer.show()
+		return
+	_finger_pointer.hide()
 
 func _show_completion() -> void:
 	if not is_instance_valid(_panel):
