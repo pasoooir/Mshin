@@ -141,3 +141,11 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Added periodic reconciliation against the live building registry and City Storage as a recovery path when a gameplay event occurs before the guide connects; milestone completion still depends on real city state and collected inventory.
 - [ ] Run Godot GameplaySmoke and playable-web CI against this commit; inspect the coach at common Android landscape resolutions.
 - [ ] Verify click-through behavior, text wrapping, touch targets and HUD overlap on a physical Android device.
+
+
+## City coach input propagation correction — 2026-11-16
+
+- [x] Changed the floating coach container from input-ignore to input-pass so child guide actions can receive taps while taps on the coach background continue to underlying HUD controls.
+- [x] Set the guide layout containers to input-pass and the Later, Skip/Close and HELP buttons explicitly to input-stop.
+- [ ] Verify guide buttons and every primary HUD category/action button with automated browser pointer/touch interaction tests.
+- [ ] Verify on a physical Android device in landscape; CI/browser success is not a substitute for device acceptance.
