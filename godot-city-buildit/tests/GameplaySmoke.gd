@@ -3308,7 +3308,7 @@ func _test_tutorial_guide_contract() -> void:
 		var save_name_button := guide.find_child("SaveCityNameButton", true, false) as Button
 		var finger := guide.find_child("ActionFingerPointer", true, false) as Label
 		_check(name_input != null and save_name_button != null, "The city-name instruction must have a real editable field and a real SAVE CITY button.")
-		_check(finger != null and finger.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The moving finger pointer must be visible guidance only and must never intercept touch input.")
+		_check(finger != null and finger.mouse_filter == Control.MOUSE_FILTER_IGNORE and finger.size.x >= 48.0 and finger.size.y >= 48.0, "The moving finger pointer must have a visible touch-sized rect and must never intercept touch input.")
 		if name_input != null and finger != null:
 			var previous_step := int(guide.current_step)
 			var previous_completed := bool(guide.completed)
@@ -3354,7 +3354,7 @@ func _test_tutorial_guide_contract() -> void:
 				guide._panel.show()
 				await _tap_native_control(later_button)
 				var reopen_button := guide.find_child("ReopenTutorial", true, false) as Button
-				_check(not guide._panel.visible and reopen_button != null, "A real touch on Later must hide the coach and expose HELP.")
+				_check(not guide._panel.visible and reopen_button != null and reopen_button.get_global_rect().intersects(get_viewport().get_visible_rect()), "A real touch on Later must hide the coach and expose an on-screen HELP button.")
 				if reopen_button != null:
 					await _tap_native_control(reopen_button)
 					_check(guide._panel.visible, "A real touch on HELP must reopen the coach.")
