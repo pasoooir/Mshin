@@ -3,7 +3,7 @@ extends Node
 ## Central audio service. All sounds are generated locally at runtime, so the
 ## game has no remote audio dependency and remains playable offline.
 const SAMPLE_RATE := 22050
-const SETTINGS_PATH := "user://audio_settings.cfg"
+var settings_path := "user://audio_settings.cfg"
 const EFFECT_POOL_SIZE := 4
 
 var music_enabled := true
@@ -278,9 +278,54 @@ func get_audio_status() -> Dictionary:
 	}
 
 
+func set_player_scope(path: String) -> void:
+	settings_path = path
+	music_enabled = true
+	ambient_enabled = true
+	sfx_enabled = true
+	master_volume = 0.8
+	music_volume = 0.42
+	ambient_volume = 0.24
+	sfx_volume = 0.72
+	_load_settings()
+	if audio_ready:
+		_apply_volumes()
+
+func to_save_dict() -> Dictionary:
+	return {
+		"music_enabled": music_enabled,
+		"ambient_enabled": ambient_enabled,
+		"sfx_enabled": sfx_enabled,
+		"master_volume": master_volume,
+		"music_volume": music_volume,
+		"ambient_volume": ambient_volume,
+		"sfx_volume": sfx_volume
+	}
+
+func from_save_dict(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	music_enabled = bool(data.get("music_enabled", true))
+	ambient_enabled = bool(data.get("ambient_enabled", true))
+	sfx_enabled = bool(data.get("sfx_enabled", true))
+	master_volume = clampf(float(data.get("master_volume", 0.8)), 0.0, 1.0)
+	music_volume = clampf(float(data.get("music_volume", 0.42)), 0.0, 1.0)
+	ambient_volume = clampf(float(data.get("ambient_volume", 0.24)), 0.0, 1.0)
+	sfx_volume = clampf(float(data.get("sfx_volume", 0.72)), 0.0, 1.0)
+	if audio_ready:
+		_apply_volumes()
+		if music_enabled and is_instance_valid(_music_player) and not _music_player.playing:
+			_music_player.play()
+		elif not music_enabled and is_instance_valid(_music_player):
+			_music_player.stop()
+		if ambient_enabled and is_instance_valid(_ambient_player) and not _ambient_player.playing:
+			_ambient_player.play()
+		elif not ambient_enabled and is_instance_valid(_ambient_player):
+			_ambient_player.stop()
+
 func _load_settings() -> void:
 	var config := ConfigFile.new()
-	if config.load(SETTINGS_PATH) != OK:
+	if config.load(settings_path) != OK:
 		return
 	music_enabled = bool(config.get_value("audio", "music_enabled", music_enabled))
 	ambient_enabled = bool(config.get_value("audio", "ambient_enabled", ambient_enabled))
@@ -300,6 +345,10 @@ func _save_settings() -> void:
 	config.set_value("audio", "music_volume", music_volume)
 	config.set_value("audio", "ambient_volume", ambient_volume)
 	config.set_value("audio", "sfx_volume", sfx_volume)
-	var error := config.save(SETTINGS_PATH)
+	var directory := ProjectSettings.globalize_path(settings_path.get_base_dir())
+	DirAccess.make_dir_recursive_absolute(directory)
+	var error := config.save(settings_path)
 	if error != OK:
 		push_warning("Audio settings could not be saved: %s" % error)
+	elif SaveManager.persistence_ready:
+		SaveManager.save_game()

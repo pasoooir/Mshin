@@ -11,6 +11,12 @@ const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
 var is_loading: bool = false
+var persistence_ready: bool = false
+
+func get_active_save_path() -> String:
+	if has_node("/root/PlayerAccountManager") and PlayerAccountManager.is_authenticated():
+		return PlayerAccountManager.get_local_save_path()
+	return SAVE_PATH
 
 func _process(delta: float) -> void:
 	if is_loading:
@@ -77,6 +83,15 @@ func capture_region_snapshot() -> Dictionary:
 		"city_name": GameManager.city_name
 	}
 
+func _capture_tutorial_state() -> Dictionary:
+	var scene = get_tree().current_scene
+	if scene == null:
+		return {}
+	var tutorial = scene.get_node_or_null("TutorialGuide")
+	if tutorial != null and tutorial.has_method("to_save_dict"):
+		return tutorial.to_save_dict()
+	return {}
+
 func save_game() -> bool:
 	var region_snapshot := capture_region_snapshot()
 	if region_snapshot.is_empty():
@@ -106,7 +121,13 @@ func save_game() -> bool:
 		"achievements": AchievementManager.to_save_dict(),
 		"regions": RegionManager.to_save_dict(),
 		"roads": road_data,
-		"buildings": building_data
+		"buildings": building_data,
+		"tutorial": _capture_tutorial_state(),
+		"preferences": {
+			"audio": AudioManager.to_save_dict(),
+			"haptics": HapticsManager.to_save_dict(),
+			"graphics": GraphicsSettingsManager.to_save_dict()
+		}
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -125,11 +146,12 @@ func _apply_saved_region_storage(region_snapshot: Dictionary, legacy_storage: Di
 
 
 func load_game() -> bool:
-	if not FileAccess.file_exists(SAVE_PATH):
+	var active_save_path := get_active_save_path()
+	if not FileAccess.file_exists(active_save_path):
 		load_completed.emit(false)
 		return false
 
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var file := FileAccess.open(active_save_path, FileAccess.READ)
 	if file == null:
 		push_error("Could not read city save file: %s" % FileAccess.get_open_error())
 		load_completed.emit(false)
@@ -205,6 +227,13 @@ func load_game() -> bool:
 	RegionManager.store_active_region_snapshot(capture_region_snapshot())
 	HappinessManager.reset_transient_city_state()
 	AchievementManager.from_save_dict(parsed.get("achievements", {}))
+	var tutorial = scene.get_node_or_null("TutorialGuide")
+	if tutorial != null and tutorial.has_method("from_save_dict") and parsed.get("tutorial", {}) is Dictionary:
+		tutorial.from_save_dict(parsed.get("tutorial", {}))
+	var preferences: Dictionary = parsed.get("preferences", {})
+	AudioManager.from_save_dict(preferences.get("audio", {}))
+	HapticsManager.from_save_dict(preferences.get("haptics", {}))
+	GraphicsSettingsManager.from_save_dict(preferences.get("graphics", {}))
 	GameManager.level_changed.emit(GameManager.level)
 	# Loading a save changes XP without calling add_experience(); notify the HUD
 	# explicitly so its numeric label, progress bar and level ring cannot stay stale.

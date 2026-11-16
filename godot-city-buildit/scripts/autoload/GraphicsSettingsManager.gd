@@ -4,7 +4,7 @@ extends Node
 
 signal quality_changed(quality: String, settings: Dictionary)
 
-const SETTINGS_PATH := "user://graphics_settings.cfg"
+var settings_path := "user://graphics_settings.cfg"
 const QUALITY_PRESETS := {
 	"low": {"label": "Low", "scale": 0.70, "msaa": Viewport.MSAA_DISABLED},
 	"balanced": {"label": "Balanced", "scale": 0.85, "msaa": Viewport.MSAA_2X},
@@ -40,9 +40,26 @@ func _apply_quality() -> void:
 	viewport.scaling_3d_scale = float(preset.get("scale", 0.85))
 	viewport.msaa_3d = int(preset.get("msaa", Viewport.MSAA_2X))
 
+func set_player_scope(path: String) -> void:
+	settings_path = path
+	quality = "balanced"
+	_load_settings()
+	_apply_quality()
+
+func to_save_dict() -> Dictionary:
+	return {"quality": quality}
+
+func from_save_dict(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	var saved_quality := str(data.get("quality", "balanced"))
+	if QUALITY_PRESETS.has(saved_quality):
+		quality = saved_quality
+		_apply_quality()
+
 func _load_settings() -> void:
 	var config := ConfigFile.new()
-	if config.load(SETTINGS_PATH) != OK:
+	if config.load(settings_path) != OK:
 		return
 	var saved_quality := str(config.get_value("graphics", "quality", "balanced"))
 	if QUALITY_PRESETS.has(saved_quality):
@@ -51,9 +68,13 @@ func _load_settings() -> void:
 func _save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("graphics", "quality", quality)
-	var error := config.save(SETTINGS_PATH)
+	var directory := ProjectSettings.globalize_path(settings_path.get_base_dir())
+	DirAccess.make_dir_recursive_absolute(directory)
+	var error := config.save(settings_path)
 	if error != OK:
 		push_warning("[GraphicsSettingsManager] Could not save graphics quality: %s" % error_string(error))
+	elif SaveManager.persistence_ready:
+		SaveManager.save_game()
 
 static func get_quality_preset(value: String) -> Dictionary:
 	if not QUALITY_PRESETS.has(value):

@@ -39,6 +39,7 @@ AudioManager="*res://scripts/autoload/AudioManager.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
 PerformanceMonitor="*res://scripts/autoload/PerformanceMonitor.gd"
 GraphicsSettingsManager="*res://scripts/autoload/GraphicsSettingsManager.gd"
+PlayerAccountManager="*res://scripts/autoload/PlayerAccountManager.gd"
 
 [display]
 
@@ -60,3 +61,7 @@ renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=0
 environment/defaults/default_clear_color=Color(0.42, 0.7, 0.95, 1)
+
+[mshin/account]
+api_base_url = ""
+auth_url = ""

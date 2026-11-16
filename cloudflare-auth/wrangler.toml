@@ -1,0 +1,16 @@
+name = "mshin-player-auth"
+main = "src/worker.js"
+compatibility_date = "2026-11-16"
+
+# Bind only the identity mapping database. Game profiles, inventory, wallet,
+# production queues and marketplace state are stored by the independent JSON API.
+[[d1_databases]]
+binding = "IDENTITIES"
+database_name = "mshin-player-identities"
+database_id = "REPLACE_WITH_REAL_D1_DATABASE_ID"
+
+[vars]
+GOOGLE_CLIENT_ID = "REPLACE_WITH_GOOGLE_WEB_CLIENT_ID"
+GAME_ORIGIN = "https://pasoooir.github.io"
+
+# Set AUTH_TOKEN_SECRET with: wrangler secret put AUTH_TOKEN_SECRET
