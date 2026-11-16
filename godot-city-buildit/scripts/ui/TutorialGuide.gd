@@ -635,8 +635,9 @@ func _load_progress() -> void:
 	current_step = clampi(int(config.get_value("tutorial", "current_step", 0)), 0, STEP_DATA.size())
 	completed = bool(config.get_value("tutorial", "completed", false))
 	var saved_milestones: Variant = config.get_value("tutorial", "milestones", {})
-	var has_city_name_history := saved_milestones is Dictionary and saved_milestones.has("city_name")
+	var has_city_name_history: bool = false
 	if saved_milestones is Dictionary:
+		has_city_name_history = saved_milestones.has("city_name")
 		for key in milestones:
 			milestones[key] = bool(saved_milestones.get(key, false))
 	# A pre-city-name save must not silently skip the new real input step,
