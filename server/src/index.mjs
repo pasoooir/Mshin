@@ -229,7 +229,7 @@ export function createApp({
       const playerId = session.playerId;
       if (request.method === "GET") {
         try {
-          const profile = await readProfile(playerId);
+          const profile = await withPlayerLock(0, async () => await readProfile(playerId));
           send(response, 200, profile, { etag: '"' + profile.revision + '"' });
         } catch {
           send(response, 500, { error: "profile_read_failed" });
