@@ -1203,3 +1203,20 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Verify actual touch behavior on a physical Android device.
 
 **Scope:** this addresses the reported case where material/product icons appeared behind the building and were too small to tap. It is not marked delivered until the new CI revision passes and Pages is redeployed.
+
+
+## Factory, store and home detail-panel isolation — 2026-11-16
+
+- [x] Fix the modal ownership bug: opening a factory/store now closes the residential plan and competing detail overlays; opening a home closes production and competing detail overlays.
+- [x] Validate that production panels only open for completed industrial/commercial buildings with a production component owned by that exact building and a matching factory/store type.
+- [x] Bind product-card actions to the currently active production building; stale cards from a previously selected factory/store cannot enqueue work.
+- [x] Keep the residential detail panel bound to the selected home and reject non-residential buildings.
+- [x] Add GameplaySmoke regressions for home → factory → store switching, exact catalogue isolation, wrong-category rejection and stale factory callback rejection.
+- [x] Godot 4.3 validation, headless startup, full Gameplay integration, visual geometry, currency and macro-economy tests passed (run `43787436360`).
+- [x] Android Debug APK export, signature and package identity verification passed (run `43787436360`).
+- [x] Web export, Gameplay integration and desktop/mobile Chromium launch passed (run `43787436379`).
+- [x] PR #533 merged to `main` as `a9c9cb41b545cbf40077c280119b30287a8479fd`.
+- [ ] Post-merge GitHub Pages deployment verification.
+- [ ] Physical Android touch/visual acceptance; CI and mobile Chromium are not a substitute for a real device test.
+
+**Root cause:** the residential overlay had a higher z-index than the production overlay, while the production-opening path did not close the residential overlay. Production entry also lacked category/component ownership guards, and product callbacks could outlive the panel that created them.
