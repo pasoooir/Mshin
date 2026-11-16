@@ -648,14 +648,16 @@ toolbar_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
 if not all(f'"{name}"' in toolbar_smoke for name in smoke_order):
     errors.append("Gameplay smoke test is missing the canonical right-toolbar category order")
 
-# Side rails and catalog cards must remain transparent in every interaction state.
+# Layout containers pass unused taps through; actionable toolbar/catalog buttons consume their own touches while remaining visually transparent.
 for contract in [
     'category_scroll.scroll_deadzone = 4',
     'category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO',
     'category_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
     'submenu_scroll.scroll_deadzone = 4',
     'submenu_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
-    'button.mouse_filter = Control.MOUSE_FILTER_PASS',
+    'button.mouse_filter = Control.MOUSE_FILTER_STOP',
+    'land_button.mouse_filter = Control.MOUSE_FILTER_STOP',
+    'back.mouse_filter = Control.MOUSE_FILTER_STOP',
     'button.add_theme_stylebox_override(state, StyleBoxEmpty.new())'
 ]:
     if contract not in hud:
