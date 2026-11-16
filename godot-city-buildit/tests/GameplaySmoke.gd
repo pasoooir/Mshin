@@ -180,6 +180,14 @@ func _test_building_notification_system_contract() -> void:
 	_check(ready.priority > storage_full.priority and storage_full.priority > upgrade.priority and upgrade.priority > needs.priority and needs.priority > idle.priority, "Building notification priority must be ProductionReady > StorageFull > UpgradeReady > NeedsMaterials > Idle.")
 	_check(ready.item_id == "metal" and ready.count == 2, "ProductionReady notification must preserve the actual product ID and grouped ready quantity.")
 	_check(needs.detail.contains("Metal 0/2"), "NeedsMaterials notification must retain the exact missing material and quantity detail.")
+	var previous_storage := StorageManager.to_save_dict()
+	StorageManager.items = {}
+	var store_probe := ProductionComponentScript.new()
+	store_probe.shop_id = "building_supplies"
+	var notification_layer = BuildingNotificationLayerScript.new()
+	var calculated_missing: Dictionary = notification_layer._find_missing_store_materials(store_probe)
+	_check(str(calculated_missing.get("item_id", "")) == "nails" and str(calculated_missing.get("detail", "")).contains("Metal 0/2"), "NeedsMaterials must be calculated from the real unlocked store recipe and exact City Storage quantity.")
+	StorageManager.from_save_dict(previous_storage)
 
 	var anchor := BuildingNotificationAnchorScript.new()
 	anchor.name = "NotificationAnchorContractProbe"
@@ -193,6 +201,12 @@ func _test_building_notification_system_contract() -> void:
 	_check(tap_area != null and tap_area.input_ray_pickable and tap_area.collision_layer > 0, "Every world-space notification must expose a physics-pickable 3D tap target.")
 	var first_icon := first_visual.get_node_or_null("Icon") as Sprite3D
 	_check(first_icon != null and first_icon.billboard == BaseMaterial3D.BILLBOARD_ENABLED, "Notification product icons must billboard toward the active camera.")
+	var pressed_notifications: Array[BuildingNotification] = []
+	anchor.notification_pressed.connect(func(value: BuildingNotification) -> void: pressed_notifications.append(value))
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	anchor._on_area_input_event(null, touch, Vector3.ZERO, Vector3.UP, 0, 0)
+	_check(pressed_notifications.size() == 1 and pressed_notifications[0].type == BuildingNotification.Type.IDLE, "A touch on a world-space notification must dispatch exactly its selected notification.")
 	_check(is_equal_approx(anchor.position.y, 8.0), "World-space notification anchor must retain its configured roof height while bobbing.")
 	anchor.queue_free()
 
