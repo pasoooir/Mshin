@@ -6,7 +6,7 @@ This service is the only game-data API. It stores one private JSON document per 
 
 - Node.js 20+
 - Persistent local disk or a mounted persistent volume
-- One active writer instance for a data directory (the service serializes writes per player in-process)
+- One active writer process for a data directory (profile and market reads/writes share an in-process lock)
 - HTTPS reverse proxy in production
 
 Run:
@@ -42,7 +42,8 @@ Production requests must carry a short-lived HS256 bearer token issued by the Cl
 - Player JSON contains a numeric `user_id`, `market_account` and `game_state`; email-shaped fields are rejected recursively.
 - Simoleons are held in `market_account` and reconciled into the game state on reads/writes. Normal city inventory remains part of the Godot save payload so factory/shop production can continue to synchronize.
 - Shared listings are stored in `market/listings.json`, not in Cloudflare or D1.
-- Profile and market mutations share a process-wide write lock. Each JSON file is written through a temporary file and rename; multi-profile commits attempt rollback if a later write fails.
+- Profile and market reads/mutations share a process-wide lock. Each JSON file is written through a temporary file and rename; multi-profile commits attempt rollback if a later write fails.
+- Listing creation requires an idempotency key; retries with the same key and payload return the original listing without reserving stock again.
 - `expected_revision` prevents stale profile saves from silently overwriting newer saves (HTTP 409).
 - The game state is size-limited to 4 MiB.
 - The service must run as a dedicated unprivileged user. Back up the data directory and test restores.
