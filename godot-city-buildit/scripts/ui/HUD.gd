@@ -2388,7 +2388,7 @@ func open_production_panel(building: Building) -> void:
 		var item_definition: Dictionary = ProductionManager.get_item_definition(queued_item_id)
 		var item_name := str(item_definition.get("name", queued_item_id.capitalize()))
 		var is_ready := bool(slot.get("ready", false))
-		var is_waiting := not is_ready and not component.is_factory and int(slot.get("finish_unix", 0)) <= 0
+		var is_waiting: bool = not is_ready and not component.is_factory and int(slot.get("finish_unix", 0)) <= 0
 		var order_card := PanelContainer.new()
 		order_card.name = "QueueSlot%d" % slot_index
 		order_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -3165,7 +3165,7 @@ func _update_production_timers() -> void:
 		var slot_state: Dictionary = component.get_slot(slot_index)
 		if slot_state.is_empty():
 			continue
-		var should_show_timer := not bool(slot_state.get("ready", false)) and (component.is_factory or int(slot_state.get("finish_unix", 0)) > 0)
+		var should_show_timer: bool = not bool(slot_state.get("ready", false)) and (component.is_factory or int(slot_state.get("finish_unix", 0)) > 0)
 		var existing_timer := production_panel.find_child("TimerSlot%d" % slot_index, true, false)
 		if should_show_timer != is_instance_valid(existing_timer):
 			need_rebuild = true
