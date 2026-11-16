@@ -205,7 +205,7 @@ export function createApp({
 
     if (url.pathname === "/v1/market" || url.pathname.startsWith("/v1/market/")) {
       const authorization = request.headers.authorization || "";
-      const match = authorization.match(/^Bearer\\s+(.+)$/i);
+      const match = authorization.match(/^Bearer\s+(.+)$/i);
       const session = match ? verifyAccessToken(match[1], authSecret) : null;
       if (!session) {
         send(response, 401, { error: "unauthorized" });
