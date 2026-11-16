@@ -318,6 +318,10 @@ func _build_guide_panel() -> void:
 	_finger_pointer = Label.new()
 	_finger_pointer.name = "ActionFingerPointer"
 	_finger_pointer.text = "👆"
+	_finger_pointer.size = Vector2(64, 64)
+	_finger_pointer.custom_minimum_size = Vector2(64, 64)
+	_finger_pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_finger_pointer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_finger_pointer.add_theme_font_size_override("font_size", 42)
 	_finger_pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_finger_pointer.z_index = 220
