@@ -152,8 +152,10 @@ export async function handleMarketRequest({
       const itemId = String(body.item_id || "");
       const quantity = Number(body.quantity);
       const unitPrice = Number(body.unit_price);
+      const requestId = String(body.request_id || "").trim();
       const item = ITEM_CATALOG[itemId];
-      if (!item || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY ||
+      if (!/^[A-Za-z0-9._:-]{8,128}$/.test(requestId) || !item ||
+          !Number.isSafeInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY ||
           !Number.isSafeInteger(unitPrice) || unitPrice < 1 || unitPrice > item.value * 10 ||
           quantity * unitPrice > MAX_TOTAL) {
         send(response, 400, { error: "invalid_listing" });
@@ -163,6 +165,17 @@ export async function handleMarketRequest({
         const profile = await readProfile(session.playerId);
         const originalProfile = structuredClone(profile);
         const state = gameState(profile);
+        const market = await readListings(listingsFile);
+        const originalMarket = structuredClone(market);
+        const previousRequest = market.listings.find(x => x.seller_id === session.playerId && x.request_id === requestId);
+        if (previousRequest) {
+          return {
+            status: 200, replayed: true,
+            listing: { ...previousRequest, total_price: previousRequest.quantity * previousRequest.unit_price },
+            revision: profile.revision, seller_balance: balance(state),
+            seller_storage: structuredClone(state.storage)
+          };
+        }
         if (Number(state.game?.level || 1) < item.level) return { status: 409, error: "item_locked" };
         const items = state.storage.items;
         if (!Number.isSafeInteger(Number(items[itemId])) || Number(items[itemId]) < quantity) return { status: 409, error: "insufficient_inventory" };
@@ -170,13 +183,11 @@ export async function handleMarketRequest({
         const cost = quantity * unitPrice;
         items[itemId] -= quantity;
         if (items[itemId] === 0) delete items[itemId];
-        const market = await readListings(listingsFile);
-        const originalMarket = structuredClone(market);
         const activeCount = market.listings.filter(x => x.seller_id === session.playerId && x.status === "active").length;
         if (activeCount >= 20) return { status: 409, error: "seller_listing_limit" };
         const listing = {
           listing_id: randomUUID(), seller_id: session.playerId, item_id: itemId,
-          quantity, unit_price: unitPrice, status: "active",
+          quantity, unit_price: unitPrice, request_id: requestId, status: "active",
           created_at: new Date().toISOString()
         };
         market.listings.push(listing);
