@@ -141,11 +141,12 @@ func _apply_saved_region_storage(region_snapshot: Dictionary, legacy_storage: Di
 
 
 func load_game() -> bool:
-	if not FileAccess.file_exists(SAVE_PATH):
+	var active_save_path := get_active_save_path()
+	if not FileAccess.file_exists(active_save_path):
 		load_completed.emit(false)
 		return false
 
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var file := FileAccess.open(active_save_path, FileAccess.READ)
 	if file == null:
 		push_error("Could not read city save file: %s" % FileAccess.get_open_error())
 		load_completed.emit(false)
