@@ -1440,3 +1440,63 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android acceptance remains outstanding; automated viewport input does not prove hardware touch behavior.
 
 **No test was skipped or weakened:** the blocked-item explanation, two sequential queue orders, material deduction, sequential timer, ready state and collection assertions remain active.
+
+
+## Mobile city camera — SimCity BuildIt-style controls and performance
+
+**Implementation branch:** `feat/mobile-city-camera-orbit-performance`  
+**Scope:** Godot `CameraController.gd`, camera regression smoke tests and this acceptance specification. Production, inventory, economy, building placement and tutorial flows remain outside this change.
+
+### Camera interaction standard
+
+The camera rig origin is the active horizontal orbit target. Rotation is applied to the rig, so the camera travels around the target instead of rotating in place.
+
+| Gesture | Required behavior |
+| --- | --- |
+| One-finger drag | Pan across the city; building tap/long-press remains owned by `CityInput` |
+| One-finger tap | Select/interact with the building or plot under the pointer |
+| Two-finger parallel movement | Pan using the midpoint (centroid) of both touches |
+| Pinch inward | Zoom in |
+| Pinch outward | Zoom out |
+| Two-finger twist | Orbit around the current target; full 360° horizontal rotation |
+| Combined two-finger movement | Pan + pinch + twist can be composed without dropping the centroid baseline |
+| Mouse wheel / drag | Desktop fallback with the same camera rig and zoom limits |
+
+The two-finger baseline is built from stable pointer-ID ordering and records centroid, distance and angle. Small movement thresholds suppress touch jitter. Zoom is clamped, yaw is wrapped to prevent unbounded angle growth, and focus transitions preserve the rig's ground height. Selecting a building can use `focus_on(building.global_position, zoom)` to establish that building as the orbit target.
+
+### Mobile smoothness and frame-time safeguards
+
+- Camera pan sensitivity is derived from camera FOV, zoom distance and viewport height. Equivalent normalized drags therefore behave consistently on different phone resolutions and aspect ratios.
+- Pan and orbit inertia use exponential, delta-time-based damping; a capped camera integration step prevents a long frame hitch from producing a large camera teleport.
+- The camera node disables its idle `_process` callback and wakes only for active touch/mouse input, focus animation or remaining inertia.
+- Camera transform updates occur on zoom/focus changes, not as unconditional per-frame work.
+- Gesture state is limited to the active pointer set; no physics raycast or building-wide collision scan is added to each camera frame.
+- Production/residential detail overlays, road editing and building relocation retain input ownership and must not move the city camera behind their UI/tool interaction.
+- The existing `PerformanceMonitor` benchmark remains the device-level source of truth for frame time, p95, draw calls, rendered objects/primitives, video memory and node count. Do not label CI timings as physical-device performance.
+
+### Rendering performance acceptance
+
+The camera change must be assessed together with the city renderer. The following are required before declaring mobile smoothness complete:
+
+- [ ] Capture a 30-second benchmark on a representative lower-mid-range Android phone while continuously panning, orbiting and zooming through the densest available neighborhood.
+- [ ] Capture a second 30-second benchmark on a mid-range Android phone at the same viewport and graphics preset.
+- [ ] Record average FPS, p95 frame time, worst frame time, draw-call p95/max, rendered-object p95/max, rendered-primitive p95/max and video-memory use before/after.
+- [ ] Target 60 FPS where the device supports it (16.7 ms frame budget); maintain a stable 30 FPS floor on lower-end devices (33.3 ms frame budget). Report actual measurements rather than assuming either target passed.
+- [ ] Inspect GPU/CPU bottlenecks before changing shadow distance, material quality or visible object counts. Apply distance-based LOD, visibility culling, shared materials/meshes and shadow range reductions only where profiling proves they help and visual acceptance remains intact.
+- [ ] Confirm no input regression: tap selection, long-press move, road drawing, building placement, production/residential panels and tutorial pointer all retain their intended touch ownership.
+- [ ] Run Godot import/parse, full GameplaySmoke, project validation, Android APK export/signature checks and Web/Chromium smoke.
+- [ ] Verify the immutable commit-specific GitHub Pages build on an Android browser. Automated touch injection is not a substitute for a physical-device test.
+
+### Implementation evidence
+
+- [x] Replace the raw-pixel pan multiplier with a FOV/zoom/viewport-derived world-units-per-pixel calculation.
+- [x] Add two-finger centroid pan while retaining pinch zoom and twist orbit.
+- [x] Keep the camera rig origin as the orbit target and wrap yaw during continuous rotation.
+- [x] Add gesture deadzones, stable pointer ordering and a capped frame-time integration step.
+- [x] Disable idle camera per-frame processing; wake it only for interaction, focus or inertia.
+- [x] Add GameplaySmoke assertions for pinch direction, two-finger centroid and resolution-independent pan scaling.
+- [ ] Godot/GameplaySmoke/Android/Web CI evidence for this camera milestone.
+- [ ] Physical Android performance benchmark and touch acceptance.
+- [ ] Tune rendering bottlenecks from recorded device measurements; no unmeasured visual-quality reductions are permitted.
+
+**Status honesty:** code and regression assertions are committed to the feature branch, but the milestone is not complete until the unchecked CI, deployed Web and physical Android performance checks pass.
