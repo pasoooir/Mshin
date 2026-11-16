@@ -24,8 +24,8 @@ const STEP_DATA: Array[Dictionary] = [
 		"id": "factory",
 		"target": "Tool_Industrial",
 		"title": "Build a factory",
-		"description": "Open Industrial, choose Small Factory, and place it on an empty plot connected to your road network.",
-		"hint": "TAP PATH  Industrial  →  Small Factory  →  Empty plot",
+		"description": "Tap Industrial, choose Small Factory, then tap BUILD in its information card. Follow the finger to a valid empty plot beside a connected road.",
+		"hint": "👆 TAP  Industrial  →  Small Factory  →  BUILD  →  Highlighted plot",
 		"result": "YOU SHOULD SEE  Your factory appear and begin its construction timer."
 	},
 	{
@@ -40,8 +40,8 @@ const STEP_DATA: Array[Dictionary] = [
 		"id": "store",
 		"target": "Tool_Commercial",
 		"title": "Build a supply store",
-		"description": "Open Commercial and place a Building Supplies store on an empty plot beside a connected road.",
-		"hint": "TAP PATH  Commercial  →  Building Supplies  →  Empty plot",
+		"description": "Tap Commercial, choose Building Supplies, then tap BUILD in its information card. Follow the finger to a valid empty plot beside a connected road.",
+		"hint": "👆 TAP  Commercial  →  Building Supplies  →  BUILD  →  Highlighted plot",
 		"result": "YOU SHOULD SEE  The store finish construction and become selectable."
 	},
 	{
@@ -174,6 +174,11 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(_panel):
 		return
 	_finger_elapsed += delta
+	if is_instance_valid(_finger_pointer) and _finger_pointer.visible:
+		# A gentle compress/release makes the hand read as a tap, not a static icon.
+		var tap_phase := fposmod(_finger_elapsed, 1.15)
+		var tap_scale := 0.86 if tap_phase >= 0.42 and tap_phase <= 0.58 else 1.0
+		_finger_pointer.scale = Vector2.ONE * tap_scale
 	_update_finger_pointer()
 	if bool(milestones.get("home", false)) and not bool(milestones.get("upgrade", false)):
 		for building in BuildManager.buildings.values():
@@ -326,6 +331,7 @@ func _build_guide_panel() -> void:
 	_finger_pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_finger_pointer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_finger_pointer.add_theme_font_size_override("font_size", 42)
+	_finger_pointer.pivot_offset = Vector2(32.0, 32.0)
 	_finger_pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_finger_pointer.z_index = 220
 	add_child(_finger_pointer)
