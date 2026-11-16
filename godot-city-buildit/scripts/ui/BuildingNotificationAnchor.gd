@@ -19,6 +19,10 @@ var _signature := ""
 func _ready() -> void:
 	_base_y = position.y
 
+func set_anchor_position(value: Vector3) -> void:
+	position = value
+	_base_y = value.y
+
 func set_notifications(notifications: Array[BuildingNotification]) -> void:
 	var ordered := notifications.duplicate()
 	ordered.sort_custom(func(a: BuildingNotification, b: BuildingNotification) -> bool:
@@ -28,7 +32,7 @@ func set_notifications(notifications: Array[BuildingNotification]) -> void:
 		ordered.resize(MAX_VISIBLE)
 	var next_signature := ""
 	for notification in ordered:
-		next_signature += "%s:%s:%d:%d|" % [notification.type, notification.item_id, notification.count, notification.priority]
+		next_signature += "%s:%s:%d:%d:%s|" % [notification.type, notification.item_id, notification.count, notification.priority, notification.detail]
 	if next_signature == _signature:
 		return
 	_signature = next_signature
@@ -85,7 +89,7 @@ func _rebuild_visuals() -> void:
 		var area := Area3D.new()
 		area.name = "TapArea"
 		area.input_ray_pickable = true
-		area.collision_layer = 0
+		area.collision_layer = 1
 		area.collision_mask = 0
 		var collision := CollisionShape3D.new()
 		var sphere := SphereShape3D.new()
