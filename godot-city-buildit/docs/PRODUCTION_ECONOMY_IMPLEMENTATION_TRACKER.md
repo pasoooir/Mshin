@@ -632,3 +632,22 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android landscape touch acceptance.
 
 **Root cause:** production and residential overlays were not mutually exclusive. The residential overlay's higher z-order could remain over a newly opened production panel; stale product buttons were also not checked against the active panel owner.
+
+
+## Building detail panels: second isolation pass — 2026-11-16 (PR #534)
+
+- [x] CityInput recognizes both residential and production detail overlays as blocking modal states.
+- [x] CityInput clears pending pointer/long-press state while either detail modal is active.
+- [x] Escape/Backspace closes the active residential or production modal.
+- [x] Reopening a different home closes the old residential panel before assigning the new owner.
+- [x] Stale residential upgrade/Epic actions are rejected unless the same home still owns the active panel.
+- [x] Factory panel requires exact `factory_type == building_type`; store panel requires exact `shop_id` match to the building definition.
+- [x] GameplaySmoke verifies modal ownership, exact catalog identity, home → factory → store transitions and stale production callback safety.
+- [x] Godot Validation + full Gameplay integration passed (run `43788170846`).
+- [x] Android Debug APK export + signature/package verification passed (run `43788170846`).
+- [x] Web export + desktop/mobile Chromium launch passed (run `43788170903`).
+- [x] PR #534 merged as `36e727d7c242c2bae1fe895cac78de683d84cd3a`.
+- [ ] Post-merge Pages deployment.
+- [ ] Physical Android landscape touch acceptance.
+
+**Additional root cause:** `CityInput` guarded the production overlay but not the residential overlay, and did not clear pending pointer state while a residential modal was open. Catalog identity checks now prevent a production component from being displayed under the wrong factory or store.
