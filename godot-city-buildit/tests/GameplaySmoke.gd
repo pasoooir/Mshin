@@ -3847,6 +3847,7 @@ func _run_gameplay_test() -> void:
 	_check(not is_instance_valid(production_hud.residential_overlay) and is_instance_valid(production_hud.production_overlay), "Opening a factory must close the home modal before showing production.")
 	_check(city_input._has_building_detail_modal_open(), "CityInput must recognize the production panel as a blocking modal.")
 	_check(production_hud._production_building == factory, "Factory production modal must be bound to the exact selected factory.")
+	_check(is_equal_approx(production_hud.production_panel.anchor_top, 1.0) and is_equal_approx(production_hud.production_panel.anchor_bottom, 1.0), "Production queue dock must be anchored to the bottom edge of the viewport.")
 	_check(str(factory_component.factory_type) == factory.building_type, "Factory component catalog must match the selected factory type.")
 	_check(production_hud.production_overlay.find_child("Slot0_metal", true, false) is Button, "Factory modal must expose the selected factory's own raw-material catalogue.")
 	production_hud.open_production_panel(home)
@@ -3903,12 +3904,8 @@ func _run_gameplay_test() -> void:
 		metal_touch_down.pressed = true
 		metal_touch_down.position = metal_button.get_global_rect().get_center()
 		metal_button.gui_input.emit(metal_touch_down)
-		var metal_touch_up := InputEventScreenTouch.new()
-		metal_touch_up.index = 0
-		metal_touch_up.pressed = false
-		metal_touch_up.position = metal_touch_down.position
-		production_hud._input(metal_touch_up)
-	_check(not factory_component.get_slot(0).is_empty(), "One mobile tap release on Metal must immediately enqueue production without a second tap, drag or queue-slot interaction.")
+		_check(not factory_component.get_slot(0).is_empty(), "A single product touch-down must synchronously enqueue production; touch-up, drag and queue-slot interaction are not prerequisites.")
+	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "A tap-started factory order must immediately show its progress bar.")
