@@ -137,6 +137,7 @@ var _production_world_orbit: Node3D = null
 var _production_orbit_buttons: Array[Button] = []
 var _residential_world_orbit: Node3D = null
 var _residential_orbit_buttons: Array[Button] = []
+var _residential_building: Building = null
 var _touch_selected_production_item := ""
 var _touch_selected_production_building_id := 0
 var _production_touch_drag_active := false
@@ -1980,7 +1981,24 @@ func _start_non_residential_upgrade(building: Building) -> void:
 func open_production_panel(building: Building) -> void:
 	if not is_instance_valid(building) or building.status != "completed":
 		return
-	_clear_production_timer_tracking()
+	var category := str(building.definition.get("category", ""))
+	if category not in ["industrial", "commercial"]:
+		return
+	var component = building.production_component
+	if not is_instance_valid(component) or component.owner_building != building:
+		return
+	if bool(component.is_factory) != (category == "industrial"):
+		return
+
+	# Only one building-detail modal may own input at a time. The residential
+	# overlay has a higher z-index than production, so leaving it alive would
+	# make a newly opened factory/store appear unresponsive or show stale data.
+	_close_residential_panel()
+	_close_city_needs_panel()
+	_close_storage_panel()
+	_close_trade_panel()
+	_close_epic_project_panel()
+	_close_production_panel()
 	_production_building = building
 	_production_orbit_buttons.clear()
 	if is_instance_valid(_production_world_orbit):
@@ -2635,6 +2653,10 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 
 
 func _on_production_item_pressed(building: Building, item_id: String, slot_index: int, item_button: Button) -> void:
+	# A card from a previous modal session must never enqueue work on a
+	# different building after the player has switched factories/stores.
+	if not is_instance_valid(_production_building) or _production_building != building or not is_instance_valid(production_overlay):
+		return
 	if item_button.has_meta("touch_drag_consumed") and bool(item_button.get_meta("touch_drag_consumed")):
 		item_button.set_meta("touch_drag_consumed", false)
 		return
@@ -3549,14 +3571,20 @@ func _close_city_needs_panel() -> void:
 func open_residential_panel(building: Building) -> void:
 	if not is_instance_valid(building) or building.status != "completed":
 		return
+	if str(building.definition.get("category", "")) != "residential":
+		return
 	for city_building in BuildManager.buildings.values():
 		if is_instance_valid(city_building) and str(city_building.definition.get("category", "")) == "residential":
 			city_building.set_residential_plan_selected(false)
 	building.set_residential_plan_selected(true)
+	# Switching to a home always tears down every competing building modal.
 	_close_city_needs_panel()
 	_close_production_panel()
 	_close_storage_panel()
+	_close_trade_panel()
+	_close_epic_project_panel()
 	_residential_orbit_buttons.clear()
+	_residential_building = building
 	if is_instance_valid(_residential_world_orbit):
 		_residential_world_orbit.queue_free()
 	_residential_world_orbit = null
@@ -3987,6 +4015,7 @@ func _close_epic_project_panel() -> void:
 	_epic_panel_building = null
 
 func _close_residential_panel() -> void:
+	_residential_building = null
 	_residential_orbit_buttons.clear()
 	if is_instance_valid(_residential_world_orbit):
 		_residential_world_orbit.queue_free()
