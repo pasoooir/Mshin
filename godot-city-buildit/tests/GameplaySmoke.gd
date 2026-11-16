@@ -4086,11 +4086,11 @@ func _run_gameplay_test() -> void:
 	_check(production_details_scroll != null and production_details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Selected-item details must remain a compact capsule, not a vertically expanding white sheet.")
 	_check(production_hud.production_overlay.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must show a separate top-centered building nameplate outside the queue dock.")
 	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must clearly separate the lower production queue from the product catalog.")
-	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
-	var queue_slot_card := production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
-	var queue_scroll_region := production_hud.production_panel.find_child("ProductionQueueScroll", true, false) as ScrollContainer
-	_check(queue_slot_card != null and queue_slot_card.custom_minimum_size.x >= 100.0 and queue_slot_card.custom_minimum_size.y >= 90.0, "Production queue cards must be enlarged to fit 16 px labels, timers and collection controls without clipping.")
-	_check(queue_scroll_region != null and queue_scroll_region.custom_minimum_size.y >= 96.0, "Production queue scroll region must reserve enough vertical space for the enlarged readable queue cards.")
+	var empty_factory_state := production_hud.production_panel.find_child("ProductionOrdersEmptyState", true, false) as PanelContainer
+	_check(empty_factory_state != null, "An empty factory queue must show one helpful empty-state panel.")
+	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) == null, "An empty factory queue must not render fake empty-slot cards.")
+	var queue_scroll_region := production_hud.production_panel.find_child("ProductionOrdersScroll", true, false) as ScrollContainer
+	_check(queue_scroll_region != null and queue_scroll_region.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and queue_scroll_region.custom_minimum_size.y >= 96.0, "The live orders list must reserve enough vertical space and scroll when real orders overflow.")
 	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	_check(not bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", true)), "Mobile production must use native ScreenTouch events without a parallel synthetic mouse event.")
@@ -4235,9 +4235,10 @@ func _run_gameplay_test() -> void:
 	_check(shop_component.get_slot(0).is_empty() and StorageManager.get_count("metal") == 0, "Inspecting a blocked product must not queue an order or mutate inventory.")
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
 	production_hud.open_production_panel(supplies)
-	var visible_store_queue := production_hud.production_panel.find_child("ProductionQueueSlots", true, false) as HBoxContainer
-	_check(visible_store_queue != null and visible_store_queue.get_child_count() >= 6, "Commercial production dock must always render six visible queue tiles, with unpurchased capacity clearly locked.")
-	_check(production_hud.production_panel.find_child("QueueSlot2", true, false) != null and production_hud.production_panel.find_child("QueueSlot2", true, false).find_child("LockedQueueLabel", true, false) is Label, "Store queue tiles beyond the paid capacity must be visibly locked, not silently usable or shown as free empty slots.")
+	var visible_store_orders := production_hud.production_panel.find_child("ProductionOrdersList", true, false) as VBoxContainer
+	_check(visible_store_orders != null and visible_store_orders.get_child_count() == 1 and visible_store_orders.get_child(0).name == "ProductionOrdersEmptyState", "An empty commercial queue must show one friendly empty state instead of six fake or locked tiles.")
+	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) == null and production_hud.production_panel.find_child("QueueSlot2", true, false) == null, "No unoccupied or out-of-capacity queue placeholder may be rendered.")
+	_check(shop_component.get_slot_count() == 2 and not production_hud._can_accept_production_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"nails", "building_id":supplies.get_instance_id()}, supplies, 2), "Paid store capacity must remain enforced by the real production component, not by decorative locked tiles.")
 	var nails_button_0 := production_hud.production_overlay.find_child("Slot0_nails", true, false) as Button
 	_check(nails_button_0 != null, "Production catalog must offer the verified Nails recipe.")
 	if nails_button_0:
