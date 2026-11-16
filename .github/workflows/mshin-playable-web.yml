@@ -83,11 +83,22 @@ jobs:
             echo "Default Godot loading shell unexpectedly exported."
             exit 1
           fi
+          # Launch the immutable build directory, not the mutable /latest/
+          # alias. Android browsers and GitHub Pages can retain cached PCK/JS
+          # assets under a stable URL; a SHA URL guarantees a new game payload
+          # after every deployment.
           mkdir -p "$GITHUB_WORKSPACE/site/game/latest"
-          cp -a "$VERSIONED_GAME_DIR/." "$GITHUB_WORKSPACE/site/game/latest/"
+          cat > "$GITHUB_WORKSPACE/site/game/latest/index.html" <<EOF
+          <!doctype html>
+          <html lang="en">
+          <head><meta charset="utf-8"><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0; url=../$GITHUB_SHA/"><title>Opening latest Mshin build</title></head>
+          <body><p>Opening latest Mshin build… <a href="../$GITHUB_SHA/">Continue</a></p><script>location.replace("../$GITHUB_SHA/" + location.search + location.hash);</script></body>
+          </html>
+          EOF
           cp godot-city-buildit/web/launcher.html "$GITHUB_WORKSPACE/site/index.html"
-          sed -i "s|__GAME_BUILD__|latest|g" "$GITHUB_WORKSPACE/site/index.html"
-          grep -Fq "./game/latest/" "$GITHUB_WORKSPACE/site/index.html"
+          sed -i "s|__GAME_BUILD__|$GITHUB_SHA|g" "$GITHUB_WORKSPACE/site/index.html"
+          grep -Fq "./game/$GITHUB_SHA/" "$GITHUB_WORKSPACE/site/index.html"
+          grep -Fq "../$GITHUB_SHA/" "$GITHUB_WORKSPACE/site/game/latest/index.html"
           if grep -Fq "__GAME_BUILD__" "$GITHUB_WORKSPACE/site/index.html"; then exit 1; fi
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 

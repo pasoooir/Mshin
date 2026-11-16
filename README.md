@@ -1323,3 +1323,15 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Confirm Pages deployment and perform physical Android touch acceptance.
 
 **Regression found and corrected:** the previous direct-tap change removed the blocked-product details panel as well as the unwanted second-step prompt. GameplaySmoke correctly caught the lost missing-ingredient disclosure. The panel is now retained for blocked products only; the prompt asking the player to start a valid product is not restored.
+
+## Production tap deployment/cache correction — 2026-11-16
+
+- [x] Confirm the source on `main` no longer contains the old `TAP TO START` prompt and that a valid product-button press calls the direct queue-submit handler.
+- [x] Confirm PR #539 was merged and the post-merge Web workflow completed Chromium desktop/mobile launch checks and GitHub Pages deployment successfully.
+- [x] Root cause of the persistent old screen: the published game was addressed through the mutable `/game/latest/` URL. Mobile browsers/GitHub Pages can reuse cached Godot HTML/PCK resources at that stable URL even after a successful deployment.
+- [x] Change the main launcher to open the immutable `/game/<commit-sha>/` export for each deployment.
+- [x] Turn `/game/latest/` into a redirect to the same commit-specific build, so bookmarks migrate to the immutable URL.
+- [ ] Run Web/Chromium and Android/Godot CI on this cache-busting deployment change.
+- [ ] Verify the new commit-specific Pages URL after deployment and test a real product tap on Android.
+
+**Acceptance:** the current public launcher and `/game/latest/` must resolve to the current commit's immutable Godot export. On an eligible product tap, the first empty queue square must display the selected item; no `TAP TO START` intermediate step is allowed. The previous post-merge CI passed, but it did not prove that an already-open mobile browser had fetched a fresh build from the mutable `latest` URL.
