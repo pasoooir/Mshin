@@ -1,16 +1,52 @@
 extends CanvasLayer
-## First-session onboarding for the core city-building loop.
-## Milestones are completed by real gameplay events; the guide never grants items
-## or changes city state. Progress is stored separately from the city save.
+## Clear, mobile-first onboarding for the first city-building loop.
+## Milestones are completed only by real gameplay events; this guide never
+## grants items or mutates city state.
 
 const SAVE_PATH := "user://tutorial_progress.cfg"
 const STEP_DATA: Array[Dictionary] = [
-	{"id":"home", "title":"Place your first home", "description":"Open Residential on the right, choose the starter home, then place it beside the connected road.", "hint":"Residential → Small House → tap a free plot"},
-	{"id":"factory", "title":"Build a factory", "description":"Open Industrial and place a Small Factory on a free plot connected to your road network.", "hint":"Industrial → Small Factory"},
-	{"id":"raw", "title":"Collect a raw material", "description":"Select your factory, start producing an available raw material, then collect it when the timer finishes.", "hint":"Factory → choose Metal → Collect"},
-	{"id":"store", "title":"Build a commercial store", "description":"Build a Building Supplies store. It turns raw materials into useful construction products.", "hint":"Commercial → Building Supplies"},
-	{"id":"crafted", "title":"Collect a crafted product", "description":"Open the store, start a product whose ingredients you have, and collect it when it is ready.", "hint":"Store → select an available product → Collect"},
-	{"id":"upgrade", "title":"Upgrade your home", "description":"Select your completed home. Deliver the required materials to begin its next construction stage.", "hint":"Select home → Deliver Materials & Upgrade"}
+	{
+		"id": "home",
+		"title": "Build your first home",
+		"description": "Open the Residential menu on the right. Choose Small House, then tap an empty plot beside a road.",
+		"hint": "TAP PATH  Residential  →  Small House  →  Empty plot",
+		"result": "YOU SHOULD SEE  A house construction site appear on the selected plot."
+	},
+	{
+		"id": "factory",
+		"title": "Build a factory",
+		"description": "Open Industrial, choose Small Factory, and place it on an empty plot connected to your road network.",
+		"hint": "TAP PATH  Industrial  →  Small Factory  →  Empty plot",
+		"result": "YOU SHOULD SEE  Your factory appear and begin its construction timer."
+	},
+	{
+		"id": "raw",
+		"title": "Make and collect Metal",
+		"description": "Tap the completed factory. Tap the Metal product card once to place an order in the first empty production slot. Wait for the countdown, then collect the ready Metal.",
+		"hint": "TAP PATH  Factory  →  Metal card  →  Wait  →  Collect",
+		"result": "YOU SHOULD SEE  Metal in a queue slot, a seconds countdown, then Metal added to City Storage after Collect."
+	},
+	{
+		"id": "store",
+		"title": "Build a supply store",
+		"description": "Open Commercial and place a Building Supplies store on an empty plot beside a connected road.",
+		"hint": "TAP PATH  Commercial  →  Building Supplies  →  Empty plot",
+		"result": "YOU SHOULD SEE  The store finish construction and become selectable."
+	},
+	{
+		"id": "crafted",
+		"title": "Craft and collect a product",
+		"description": "Tap the Building Supplies store. Choose a product whose ingredients are available in City Storage. Wait for its timer, then collect it.",
+		"hint": "TAP PATH  Building Supplies  →  Available product  →  Wait  →  Collect",
+		"result": "YOU SHOULD SEE  The product added to City Storage. Products with missing ingredients stay unavailable."
+	},
+	{
+		"id": "upgrade",
+		"title": "Upgrade your home",
+		"description": "Select your completed home. Review the required materials, then deliver them to start the next construction stage.",
+		"hint": "TAP PATH  Select home  →  Review materials  →  Deliver",
+		"result": "YOU SHOULD SEE  The home enter construction and its upgrade stage advance when complete."
+	}
 ]
 
 var milestones: Dictionary = {
@@ -28,6 +64,7 @@ var _panel: PanelContainer
 var _title: Label
 var _description: Label
 var _hint: Label
+var _result: Label
 var _progress: ProgressBar
 var _counter: Label
 var _skip_button: Button
@@ -37,6 +74,7 @@ var _dismissed := false
 func _ready() -> void:
 	if not tutorial_enabled:
 		return
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	call_deferred("_initialize_after_city_restore")
 
 func _initialize_after_city_restore() -> void:
@@ -111,6 +149,180 @@ func _process(_delta: float) -> void:
 				_advance_completed_steps()
 				break
 
+func _build_guide_panel() -> void:
+	_panel = PanelContainer.new()
+	_panel.name = "FirstCityTutorial"
+	_panel.z_index = 110
+	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_panel.add_theme_stylebox_override("panel", _make_panel_style())
+	add_child(_panel)
+
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 10)
+	_panel.add_child(layout)
+
+	var header := HBoxContainer.new()
+	layout.add_child(header)
+	var eyebrow := Label.new()
+	eyebrow.text = "CITY GUIDE  •  YOUR NEXT TASK"
+	eyebrow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	eyebrow.add_theme_color_override("font_color", Color("#8AD7F5"))
+	eyebrow.add_theme_font_size_override("font_size", 15)
+	header.add_child(eyebrow)
+
+	_counter = Label.new()
+	_counter.add_theme_color_override("font_color", Color("#F5FAFF"))
+	_counter.add_theme_font_size_override("font_size", 17)
+	header.add_child(_counter)
+
+	_title = Label.new()
+	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_title.add_theme_color_override("font_color", Color.WHITE)
+	_title.add_theme_font_size_override("font_size", 26)
+	layout.add_child(_title)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(scroll)
+
+	var body := VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 12)
+	scroll.add_child(body)
+
+	_description = Label.new()
+	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_description.add_theme_color_override("font_color", Color("#F0F6FA"))
+	_description.add_theme_font_size_override("font_size", 21)
+	body.add_child(_description)
+
+	_hint = Label.new()
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint.add_theme_color_override("font_color", Color("#A8E7B0"))
+	_hint.add_theme_font_size_override("font_size", 19)
+	body.add_child(_hint)
+
+	_result = Label.new()
+	_result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_result.add_theme_color_override("font_color", Color("#D5E8FF"))
+	_result.add_theme_font_size_override("font_size", 18)
+	body.add_child(_result)
+
+	_progress = ProgressBar.new()
+	_progress.min_value = 0
+	_progress.max_value = STEP_DATA.size()
+	_progress.show_percentage = false
+	_progress.custom_minimum_size.y = 12
+	_progress.add_theme_stylebox_override("background", _make_progress_style(Color("#24465A")))
+	_progress.add_theme_stylebox_override("fill", _make_progress_style(Color("#45C5A0")))
+	layout.add_child(_progress)
+
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("separation", 10)
+	layout.add_child(actions)
+
+	_later_button = _make_action_button("Later", Color("#29485B"), Color.WHITE, 112)
+	_later_button.pressed.connect(_hide_for_later)
+	actions.add_child(_later_button)
+
+	_skip_button = _make_action_button("Skip guide", Color("#D9F2FF"), Color("#123348"), 142)
+	_skip_button.pressed.connect(_skip_tutorial)
+	actions.add_child(_skip_button)
+
+	_layout_guide_panel()
+
+func _make_panel_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#102B3B")
+	style.border_color = Color("#72CBEF")
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(22)
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 20
+	style.content_margin_bottom = 18
+	style.shadow_color = Color(0, 0, 0, 0.35)
+	style.shadow_size = 12
+	return style
+
+func _make_progress_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.set_corner_radius_all(8)
+	return style
+
+func _make_action_button(label: String, background: Color, foreground: Color, width: float) -> Button:
+	var button := Button.new()
+	button.text = label
+	button.custom_minimum_size = Vector2(width, 50)
+	button.add_theme_font_size_override("font_size", 19)
+	button.add_theme_color_override("font_color", foreground)
+	button.add_theme_color_override("font_hover_color", foreground)
+	button.add_theme_stylebox_override("normal", _make_button_style(background))
+	button.add_theme_stylebox_override("hover", _make_button_style(background.lightened(0.10)))
+	button.add_theme_stylebox_override("pressed", _make_button_style(background.darkened(0.10)))
+	return button
+
+func _make_button_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.set_corner_radius_all(14)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	return style
+
+func _layout_guide_panel() -> void:
+	if not is_instance_valid(_panel):
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	var panel_width := minf(600.0, maxf(300.0, viewport_size.x - 24.0))
+	var panel_height := minf(340.0, maxf(250.0, viewport_size.y - 24.0))
+	_panel.anchor_left = 0.0
+	_panel.anchor_right = 0.0
+	_panel.anchor_top = 0.0
+	_panel.anchor_bottom = 0.0
+	_panel.offset_left = (viewport_size.x - panel_width) * 0.5
+	_panel.offset_right = _panel.offset_left + panel_width
+	_panel.offset_top = maxf(12.0, (viewport_size.y - panel_height) * 0.5)
+	_panel.offset_bottom = _panel.offset_top + panel_height
+
+func _on_viewport_size_changed() -> void:
+	_layout_guide_panel()
+
+func _refresh_guide() -> void:
+	if not is_instance_valid(_panel):
+		return
+	if current_step >= STEP_DATA.size():
+		_show_completion()
+		return
+	var step: Dictionary = STEP_DATA[current_step]
+	_title.text = str(step.get("title", ""))
+	_description.text = str(step.get("description", ""))
+	_hint.text = str(step.get("hint", ""))
+	_result.text = str(step.get("result", ""))
+	_counter.text = "STEP %d OF %d" % [current_step + 1, STEP_DATA.size()]
+	_progress.value = current_step
+
+func _show_completion() -> void:
+	if not is_instance_valid(_panel):
+		return
+	_title.text = "Your city is taking shape!"
+	_description.text = "You have completed the starter guide. Keep building, producing goods, upgrading homes and improving city services."
+	_hint.text = "OPEN ANY TIME  Tap the GUIDE button to review this guide."
+	_result.text = "NEXT  Expand your road network and grow your city."
+	_counter.text = "ALL STEPS DONE"
+	_progress.value = STEP_DATA.size()
+	_skip_button.text = "Close guide"
+	if _skip_button.pressed.is_connected(_skip_tutorial):
+		_skip_button.pressed.disconnect(_skip_tutorial)
+	if not _skip_button.pressed.is_connected(_close_guide):
+		_skip_button.pressed.connect(_close_guide)
+	_build_reopen_button()
+
 func _advance_completed_steps() -> void:
 	var old_step := current_step
 	while current_step < STEP_DATA.size():
@@ -127,115 +339,6 @@ func _advance_completed_steps() -> void:
 		_save_progress()
 		if is_instance_valid(_panel):
 			_show_completion()
-
-func _build_guide_panel() -> void:
-	_panel = PanelContainer.new()
-	_panel.name = "FirstCityTutorial"
-	_panel.anchor_left = 0.0
-	_panel.anchor_right = 0.0
-	_panel.anchor_top = 0.0
-	_panel.anchor_bottom = 0.0
-	var viewport_size := get_viewport().get_visible_rect().size
-	_panel.offset_left = 12.0
-	_panel.offset_right = minf(432.0, viewport_size.x * 0.49)
-	_panel.offset_top = minf(180.0, viewport_size.y * 0.43)
-	_panel.offset_bottom = viewport_size.y - 12.0
-	_panel.z_index = 110
-	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#102B3B")
-	style.border_color = Color("#8AD7F5")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(18)
-	style.content_margin_left = 18
-	style.content_margin_right = 18
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
-	_panel.add_theme_stylebox_override("panel", style)
-	add_child(_panel)
-
-	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 5)
-	_panel.add_child(layout)
-
-	var header := HBoxContainer.new()
-	layout.add_child(header)
-	var eyebrow := Label.new()
-	eyebrow.text = "MAYOR'S FIRST STEPS"
-	eyebrow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	eyebrow.add_theme_color_override("font_color", Color("#8AD7F5"))
-	eyebrow.add_theme_font_size_override("font_size", 12)
-	header.add_child(eyebrow)
-	_counter = Label.new()
-	_counter.add_theme_color_override("font_color", Color("#D8EAF3"))
-	_counter.add_theme_font_size_override("font_size", 12)
-	header.add_child(_counter)
-
-	_title = Label.new()
-	_title.add_theme_color_override("font_color", Color.WHITE)
-	_title.add_theme_font_size_override("font_size", 20)
-	layout.add_child(_title)
-
-	_description = Label.new()
-	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_description.add_theme_color_override("font_color", Color("#E0EDF4"))
-	_description.add_theme_font_size_override("font_size", 14)
-	layout.add_child(_description)
-
-	_hint = Label.new()
-	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hint.add_theme_color_override("font_color", Color("#9DE0A5"))
-	_hint.add_theme_font_size_override("font_size", 12)
-	layout.add_child(_hint)
-
-	_progress = ProgressBar.new()
-	_progress.min_value = 0
-	_progress.max_value = STEP_DATA.size()
-	_progress.show_percentage = false
-	_progress.custom_minimum_size.y = 8
-	layout.add_child(_progress)
-
-	var actions := HBoxContainer.new()
-	actions.alignment = BoxContainer.ALIGNMENT_END
-	layout.add_child(actions)
-	_later_button = Button.new()
-	_later_button.text = "Later"
-	_later_button.custom_minimum_size = Vector2(86, 38)
-	_later_button.pressed.connect(_hide_for_later)
-	actions.add_child(_later_button)
-	_skip_button = Button.new()
-	_skip_button.text = "Skip tutorial"
-	_skip_button.custom_minimum_size = Vector2(130, 38)
-	_skip_button.pressed.connect(_skip_tutorial)
-	actions.add_child(_skip_button)
-
-func _refresh_guide() -> void:
-	if not is_instance_valid(_panel):
-		return
-	if current_step >= STEP_DATA.size():
-		_show_completion()
-		return
-	var step: Dictionary = STEP_DATA[current_step]
-	_title.text = str(step.get("title", ""))
-	_description.text = str(step.get("description", ""))
-	_hint.text = str(step.get("hint", ""))
-	_counter.text = "%d / %d" % [current_step + 1, STEP_DATA.size()]
-	_progress.value = current_step
-
-func _show_completion() -> void:
-	if not is_instance_valid(_panel):
-		return
-	_title.text = "Your city is taking shape!"
-	_description.text = "You completed the core tutorial. Keep expanding, producing, trading and improving city services."
-	_hint.text = "You can reopen this guide with the ? button."
-	_counter.text = "Complete"
-	_progress.value = STEP_DATA.size()
-	_skip_button.text = "Close"
-	if _skip_button.pressed.is_connected(_skip_tutorial):
-		_skip_button.pressed.disconnect(_skip_tutorial)
-	if not _skip_button.pressed.is_connected(_close_guide):
-		_skip_button.pressed.connect(_close_guide)
-	_build_reopen_button()
 
 func _skip_tutorial() -> void:
 	completed = true
@@ -257,17 +360,21 @@ func _build_reopen_button() -> void:
 		return
 	var reopen := Button.new()
 	reopen.name = "ReopenTutorial"
-	reopen.text = "?"
-	reopen.tooltip_text = "Open city tutorial"
-	reopen.custom_minimum_size = Vector2(48, 48)
+	reopen.text = "?  GUIDE"
+	reopen.tooltip_text = "Open the city guide"
+	reopen.custom_minimum_size = Vector2(132, 54)
+	reopen.add_theme_font_size_override("font_size", 19)
+	reopen.add_theme_color_override("font_color", Color("#123348"))
+	reopen.add_theme_stylebox_override("normal", _make_button_style(Color("#D9F2FF")))
+	reopen.add_theme_stylebox_override("hover", _make_button_style(Color("#FFFFFF")))
 	reopen.anchor_left = 0.0
 	reopen.anchor_right = 0.0
 	reopen.anchor_top = 1.0
 	reopen.anchor_bottom = 1.0
-	reopen.offset_left = 12
-	reopen.offset_right = 64
-	reopen.offset_top = -64
-	reopen.offset_bottom = -12
+	reopen.offset_left = 14
+	reopen.offset_right = 146
+	reopen.offset_top = -70
+	reopen.offset_bottom = -14
 	reopen.z_index = 111
 	reopen.pressed.connect(_reopen_guide)
 	add_child(reopen)
@@ -276,6 +383,7 @@ func _reopen_guide() -> void:
 	_dismissed = false
 	if is_instance_valid(_panel):
 		_panel.show()
+		_layout_guide_panel()
 		if completed:
 			_show_completion()
 		else:
