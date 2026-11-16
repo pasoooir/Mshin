@@ -189,9 +189,8 @@ func _build_guide_panel() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "FirstCityTutorial"
 	_panel.z_index = 110
-	# PASS is intentional: IGNORE on a parent can bypass its child controls in
-	# GUI hit-testing on some Godot paths. The panel background must pass taps
-	# through to HUD controls underneath, while its own Buttons remain clickable.
+	# This full-screen shell is visual only. IGNORE removes it from GUI hit-testing
+	# without disabling child controls; its LineEdit and Buttons keep their own filters.
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	add_child(_panel)
