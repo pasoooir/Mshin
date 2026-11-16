@@ -33,7 +33,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"target": "ProductionProductCards",
 		"title": "Make and collect Metal",
 		"description": "Tap the completed factory. Tap the Metal product card once to place an order in the first empty production slot. Wait for the countdown, then collect the ready Metal.",
-		"hint": "TAP PATH  Factory  →  Metal card  →  Wait  →  Collect",
+		"hint": "TAP IN ORDER  Factory  →  Metal card  →  Wait  →  Collect",
 		"result": "YOU SHOULD SEE  Metal in a queue slot, a seconds countdown, then Metal added to City Storage after Collect."
 	},
 	{
@@ -49,7 +49,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"target": "ProductionProductCards",
 		"title": "Craft and collect a product",
 		"description": "Tap the Building Supplies store. Choose a product whose ingredients are available in City Storage. Wait for its timer, then collect it.",
-		"hint": "TAP PATH  Building Supplies  →  Available product  →  Wait  →  Collect",
+		"hint": "TAP IN ORDER  Building Supplies  →  Available product  →  Wait  →  Collect",
 		"result": "YOU SHOULD SEE  The product added to City Storage. Products with missing ingredients stay unavailable."
 	},
 	{
@@ -57,7 +57,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"target": "ResidentialUpgradeButton",
 		"title": "Upgrade your home",
 		"description": "Select your completed home. Review the required materials, then deliver them to start the next construction stage.",
-		"hint": "TAP PATH  Select home  →  Review materials  →  Deliver",
+		"hint": "TAP IN ORDER  Select home  →  Review materials  →  Deliver",
 		"result": "YOU SHOULD SEE  The home enter construction and its upgrade stage advance when complete."
 	}
 ]
@@ -478,8 +478,10 @@ func _update_finger_pointer() -> void:
 					has_world_target = bool(placement.get("valid", false))
 					world_target = placement.get("position", Vector3.ZERO)
 				elif str(hud.get("active_category")) == category:
-					var submenu := hud.get_node_or_null("ToolSubmenu")
-					if submenu != null and submenu.visible:
+					# ToolSubmenu is nested inside ToolSubmenuScroll, not a direct HUD child.
+					# Search recursively so the pointer advances from the category icon to its real card.
+					var submenu := hud.find_child("ToolSubmenu", true, false) as Control
+					if is_instance_valid(submenu) and submenu.is_visible_in_tree():
 						target = hud.find_child(option_id, true, false) as Control
 				if not is_instance_valid(target) and not has_world_target:
 					target = hud.find_child("Tool_" + category.capitalize(), true, false) as Control
@@ -518,8 +520,11 @@ func _point_to_control(target: Control) -> void:
 	if not is_instance_valid(target) or not target.is_visible_in_tree():
 		_finger_pointer.hide()
 		return
-	var target_rect := target.get_global_rect()
-	_finger_pointer.position = Vector2(target_rect.position.x + target_rect.size.x * 0.72, target_rect.position.y + target_rect.size.y + 2.0 + sin(_finger_elapsed * 5.0) * 5.0)
+	# HUD and coach live on separate CanvasLayers. Convert the target's
+	# viewport-space anchor into this guide layer before positioning the finger;
+	# mixing get_global_rect() with local Control.position drifts on scaled/mobile canvases.
+	var target_anchor_in_viewport := target.get_global_transform_with_canvas() * Vector2(target.size.x * 0.72, target.size.y + 2.0 + sin(_finger_elapsed * 5.0) * 5.0)
+	_finger_pointer.position = get_final_transform().affine_inverse() * target_anchor_in_viewport
 	_finger_pointer.show()
 
 func _point_to_world_position(world_position: Vector3) -> void:
@@ -527,7 +532,8 @@ func _point_to_world_position(world_position: Vector3) -> void:
 	if camera == null or camera.is_position_behind(world_position):
 		_finger_pointer.hide()
 		return
-	_finger_pointer.position = camera.unproject_position(world_position) + Vector2(20.0, 12.0 + sin(_finger_elapsed * 5.0) * 5.0)
+	var world_anchor_in_viewport := camera.unproject_position(world_position) + Vector2(20.0, 12.0 + sin(_finger_elapsed * 5.0) * 5.0)
+	_finger_pointer.position = get_final_transform().affine_inverse() * world_anchor_in_viewport
 	_finger_pointer.show()
 
 func _get_valid_placement_world_target() -> Dictionary:
