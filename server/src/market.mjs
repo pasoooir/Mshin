@@ -49,21 +49,16 @@ function gameState(profile) {
   state.storage.capacity = Math.max(0, Number(state.storage.capacity) || 0);
   if (profile.market_account && typeof profile.market_account === "object") {
     state.economy.simoleons = Number(profile.market_account.simoleons);
-    state.storage = structuredClone(profile.market_account.storage);
   } else {
     profile.market_account = {
-      simoleons: Number.isSafeInteger(Number(state.economy.simoleons)) && Number(state.economy.simoleons) >= 0 ? Number(state.economy.simoleons) : 0,
-      storage: structuredClone(state.storage)
+      simoleons: Number.isSafeInteger(Number(state.economy.simoleons)) && Number(state.economy.simoleons) >= 0 ? Number(state.economy.simoleons) : 0
     };
   }
   return state;
 }
 
 function syncMarketAccount(profile, state) {
-  profile.market_account = {
-    simoleons: balance(state),
-    storage: structuredClone(state.storage)
-  };
+  profile.market_account = { simoleons: balance(state) };
 }
 
 function balance(state) {
