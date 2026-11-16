@@ -824,7 +824,9 @@ for visual_contract in [
     "TreeContactShadows", "_create_tree_shadow_multimesh",
     "_create_bark_texture", "_create_foliage_texture",
     "SHADOW_CASTING_SETTING_ON", "sun.shadow_enabled = false",
-    "sun.light_specular = 0.35"
+    "sun.light_specular = 0.35",
+    "DistantMountainBackdropScript",
+    "mountain_backdrop.name = \"DistantMountainBackdrop\""
 ]:
     if visual_contract not in world_source:
         errors.append(f"World visual contract is missing: {visual_contract}")
@@ -1099,6 +1101,10 @@ for fire_id, (expected_coverage, expected_size, expected_cost) in fire_contracts
 fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text(encoding="utf-8")
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
+mountain_backdrop_source = (ROOT / "scripts/world/DistantMountainBackdrop.gd").read_text(encoding="utf-8")
+for contract in ["RIDGE_INNER_RADIUS := 170.0", "RIDGE_OUTER_RADIUS := 330.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D"]:
+    if contract not in mountain_backdrop_source:
+        errors.append(f"Natural mountain horizon contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
 for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_tiles", COVERAGE_TILES)', "ServiceManager.fire_served_ids.has(building_id)"]:
     if contract not in fire_manager_source:
@@ -1112,7 +1118,8 @@ for contract in [
     "pan_inertia_damping",
     "orbit_inertia_damping",
     "func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:",
-    "@export var world_limit: float = 90.0",
+    "@export var world_limit: float = 130.0",
+    "@export var max_zoom: float = 150.0",
     "static func interpolate_focus(",
     "static func screen_pan_scale(",
     "static func pinch_zoom_delta(",

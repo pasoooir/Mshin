@@ -1,15 +1,16 @@
 # Pasoo City BuildIt 🏙️
 
-**نسخه بازی: 1.0.1 — اصلاح ورودی لمس و صف تولید**
+**نسخه بازی: 1.0.2 — نمای گسترده شهر و افق طبیعی کوهستانی**
 
-[![PLAY MSHIN](https://img.shields.io/badge/▶%20PLAY-MSHIN-19b77a?style=for-the-badge)](https://pasoooir.github.io/Mshin/game/latest/) [![Version](https://img.shields.io/badge/version-1.0.1-blue)](https://github.com/pasoooir/Mshin/releases/tag/v1.0.1)
+[![PLAY MSHIN](https://img.shields.io/badge/▶%20PLAY-MSHIN-19b77a?style=for-the-badge)](https://pasoooir.github.io/Mshin/game/latest/) [![Version](https://img.shields.io/badge/version-1.0.2-blue)](https://github.com/pasoooir/Mshin/releases/tag/v1.0.2)
 
-### آخرین تغییر قابل مشاهده — نسخه 1.0.1
+### آخرین تغییر قابل مشاهده — نسخه 1.0.2
 
-- مسیر لمس بومی صفحه روی کارت محصول کارخانه مستقیماً به کنترل ورودی رابط متصل شد؛ ثبت سفارش به شبیه‌سازی کلیک ماوس وابسته نیست.
-- تست خودکار اکنون رویدادهای `InputEventScreenTouch` را از مسیر واقعی `Viewport` عبور می‌دهد و ثبت دقیقاً یک سفارش را بررسی می‌کند.
-- پس از لمس محصول، سفارش باید در نخستین خانه خالی صف ظاهر شود؛ تایمر و پیشرفت تولید و سپس جمع‌آوری محصول در انبار بررسی می‌شوند.
-- اعتبارسنجی Godot، خروجی APK و اجرای وب/Chromium برای این تغییر موفق بوده‌اند. **آزمایش لمس روی گوشی فیزیکی هنوز تأیید نشده است.**
+- حداکثر فاصله دوربین از ۵۵ به ۱۵۰ متر افزایش یافت تا بازیکن بتواند نمای بازتری از شهر ساخته‌شده داشته باشد.
+- مرز حرکت دوربین به ۱۳۰ متر گسترش یافت و نمای نزدیک ساختمان‌ها همچنان حفظ شد.
+- یک بستر سبز پیوسته و چهار رشته‌کوه پیرامونی با بوته‌های همیشه‌سبز و چمن تیره به محیط اضافه شد تا در لبه‌های نقشه فضای خاکستری خارج از بازی دیده نشود.
+- پوشش کوهستان با MultiMesh دسته‌بندی شده است تا هزینه رندر روی موبایل کنترل شود؛ نمای ساحلی موجود نیز حفظ شده است.
+- **آزمون‌های CI و بررسی روی گوشی فیزیکی برای این نسخه هنوز در حال انجام است.**
 
 ### اجرای بازی با یک کلیک
 روی دکمه **PLAY MSHIN** بالا بزن؛ لینک مستقیماً نسخه مرورگری بازی را اجرا می‌کند و برای اجرای آن نیازی به نصب Godot نیست. بازی در همان لحظه ورود، به‌صورت خودکار درخواست حالت تمام‌صفحه و قفل افقی (Landscape) می‌دهد. این قابلیت به مجوز و پشتیبانی مرورگر وابسته است؛ در مرورگرهایی که آن را مسدود می‌کنند، بازی بدون توقف در حالت قابل‌نمایش اجرا می‌شود و اولین لمس/کلیک داخل بازی نیز دوباره درخواست را امتحان می‌کند.
@@ -1500,3 +1501,18 @@ The camera change must be assessed together with the city renderer. The followin
 - [ ] Tune rendering bottlenecks from recorded device measurements; no unmeasured visual-quality reductions are permitted.
 
 **Status honesty:** PR #560 is merged into `main` as `a250b123`; Godot, Android and desktop/mobile Chromium CI passed. The milestone remains open only for the deployed Pages URL check and physical Android performance/touch acceptance.
+
+
+## Expanded city overview and natural mountain horizon — 2026-11-16
+
+- [x] Increase the camera's maximum zoom distance from 55 m to 150 m so players can pull back for a much wider city overview without reducing the existing close-up zoom.
+- [x] Expand the camera pan boundary to 130 m while keeping the playable city and building interaction rules unchanged.
+- [x] Add a continuous 1,000 m green ground backdrop behind the playable terrain so camera movement cannot expose the empty grey world background.
+- [x] Build a distant four-sided mountain rim with rolling green ridges, dark evergreen shrub clusters and dark green grass.
+- [x] Batch mountain shrubs and grass with MultiMesh and disable their shadow casting to keep the distant scenery inexpensive on mobile GPUs.
+- [x] Keep the mountain backdrop local and procedural: no CDN, runtime download or third-party asset dependency.
+- [x] Add source-level validation contracts for the expanded zoom range and the natural horizon geometry.
+- [ ] Run Godot import/parse, full GameplaySmoke, Android APK export and desktop/mobile Chromium checks for this milestone.
+- [ ] Verify the deployed immutable Pages build and inspect all four map edges at maximum zoom on a physical Android device.
+
+**Visual acceptance:** at maximum zoom and at every reachable pan edge, the player must see continuous natural ground and green mountain scenery rather than an exposed grey void. The whole currently built city should fit comfortably in the overview where its unlocked footprint allows it. Existing close zoom, production interactions, building placement and road editing must remain unchanged.

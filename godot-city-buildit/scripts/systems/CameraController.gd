@@ -7,8 +7,8 @@ extends Node3D
 
 @export var zoom_speed: float = 0.045
 @export var min_zoom: float = 12.0
-@export var max_zoom: float = 55.0
-@export var world_limit: float = 90.0
+@export var max_zoom: float = 150.0
+@export var world_limit: float = 130.0
 @export_range(20.0, 75.0, 1.0) var camera_pitch_degrees: float = 48.0
 @export var pan_inertia_damping: float = 8.0
 @export var orbit_inertia_damping: float = 10.0

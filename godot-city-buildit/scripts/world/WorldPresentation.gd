@@ -2,6 +2,7 @@ extends Node3D
 
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
+const DistantMountainBackdropScript = preload("res://scripts/world/DistantMountainBackdrop.gd")
 
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -90.0
@@ -32,6 +33,9 @@ func _ready() -> void:
 	LandExpansionManager.land_changed.connect(_on_land_expansion_changed)
 	_build_environment()
 	_build_terrain()
+	var mountain_backdrop := DistantMountainBackdropScript.new()
+	mountain_backdrop.name = "DistantMountainBackdrop"
+	add_child(mountain_backdrop)
 	_build_land_expansion_markers()
 	_build_city_grid()
 	_build_coastal_highway()
@@ -1105,7 +1109,7 @@ func _create_warm_fill_light() -> DirectionalLight3D:
 func _add_headless_test_markers() -> void:
 	# These names are part of the smoke-test scene contract; they intentionally
 	# contain no MeshInstance3D nodes and therefore allocate no render meshes.
-	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "MeadowLivestock", "CargoShipVisual"]:
+	for marker_name in ["NaturalTerrain", "DistantMountainBackdrop", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "MeadowLivestock", "CargoShipVisual"]:
 		var marker := Node3D.new()
 		marker.name = marker_name
 		add_child(marker)
