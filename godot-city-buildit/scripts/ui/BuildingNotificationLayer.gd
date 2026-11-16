@@ -108,8 +108,8 @@ func _create_button(data: Dictionary) -> Button:
 	button.add_theme_stylebox_override("hover", hover)
 	var icon := Icons.make_item_icon("raw" if data.building.production_component.is_factory else "crafted", str(data.item_id), Vector2(52, 52)) if str(data.kind) == "product" else Icons.make_icon("hard_hat", Vector2(52, 52))
 	icon.name = "NotificationIcon"
-	icon.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	icon.position = Vector2(-26, -27)
+	icon.size = Vector2(52, 52)
+	icon.position = Vector2(15, 10)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(icon)
 	if str(data.kind) == "product":
@@ -163,12 +163,16 @@ func _update_positions() -> void:
 				entry.button.hide()
 			continue
 		var screen := camera.unproject_position(anchor)
-		var total_width := entries.size() * PRODUCT_BUTTON_SIZE.x + maxf(0, entries.size() - 1) * BUTTON_GAP
+		var columns := mini(4, entries.size())
+		var rows := int(ceil(float(entries.size()) / 4.0))
+		var total_width := columns * PRODUCT_BUTTON_SIZE.x + maxf(0, columns - 1) * BUTTON_GAP
 		var start_x := screen.x - total_width * 0.5
 		for index in range(entries.size()):
 			var button: Control = entries[index].button
-			var x := clampf(start_x + index * (PRODUCT_BUTTON_SIZE.x + BUTTON_GAP), 6.0, maxf(6.0, viewport_size.x - PRODUCT_BUTTON_SIZE.x - 6.0))
-			var y := clampf(screen.y - PRODUCT_BUTTON_SIZE.y - 8.0, 6.0, maxf(6.0, viewport_size.y - PRODUCT_BUTTON_SIZE.y - 6.0))
+			var column := index % 4
+			var row := int(index / 4)
+			var x := clampf(start_x + column * (PRODUCT_BUTTON_SIZE.x + BUTTON_GAP), 6.0, maxf(6.0, viewport_size.x - PRODUCT_BUTTON_SIZE.x - 6.0))
+			var y := clampf(screen.y - PRODUCT_BUTTON_SIZE.y - 8.0 - float(rows - row - 1) * (PRODUCT_BUTTON_SIZE.y + BUTTON_GAP), 6.0, maxf(6.0, viewport_size.y - PRODUCT_BUTTON_SIZE.y - 6.0))
 			button.position = Vector2(x, y)
 			button.size = PRODUCT_BUTTON_SIZE
 			button.show()
