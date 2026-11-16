@@ -1484,7 +1484,7 @@ The camera change must be assessed together with the city renderer. The followin
 - [ ] Target 60 FPS where the device supports it (16.7 ms frame budget); maintain a stable 30 FPS floor on lower-end devices (33.3 ms frame budget). Report actual measurements rather than assuming either target passed.
 - [ ] Inspect GPU/CPU bottlenecks before changing shadow distance, material quality or visible object counts. Apply distance-based LOD, visibility culling, shared materials/meshes and shadow range reductions only where profiling proves they help and visual acceptance remains intact.
 - [ ] Confirm no input regression: tap selection, long-press move, road drawing, building placement, production/residential panels and tutorial pointer all retain their intended touch ownership.
-- [ ] Run Godot import/parse, full GameplaySmoke, project validation, Android APK export/signature checks and Web/Chromium smoke.
+- [x] Godot import/parse, full GameplaySmoke, project validation, Android APK export/signature checks and desktop/mobile Web/Chromium smoke passed in PR #560 (Godot validation run 1701; Web run 1736).
 - [ ] Verify the immutable commit-specific GitHub Pages build on an Android browser. Automated touch injection is not a substitute for a physical-device test.
 
 ### Implementation evidence
@@ -1495,8 +1495,8 @@ The camera change must be assessed together with the city renderer. The followin
 - [x] Add gesture deadzones, stable pointer ordering and a capped frame-time integration step.
 - [x] Disable idle camera per-frame processing; wake it only for interaction, focus or inertia.
 - [x] Add GameplaySmoke assertions for pinch direction, two-finger centroid and resolution-independent pan scaling.
-- [ ] Godot/GameplaySmoke/Android/Web CI evidence for this camera milestone.
+- [x] Godot/GameplaySmoke/Android/Web CI passed for PR #560; Android APK export/signature and desktop/mobile Chromium checks succeeded.
 - [ ] Physical Android performance benchmark and touch acceptance.
 - [ ] Tune rendering bottlenecks from recorded device measurements; no unmeasured visual-quality reductions are permitted.
 
-**Status honesty:** code and regression assertions are committed to the feature branch, but the milestone is not complete until the unchecked CI, deployed Web and physical Android performance checks pass.
+**Status honesty:** PR #560 is merged into `main` as `a250b123`; Godot, Android and desktop/mobile Chromium CI passed. The milestone remains open only for the deployed Pages URL check and physical Android performance/touch acceptance.
