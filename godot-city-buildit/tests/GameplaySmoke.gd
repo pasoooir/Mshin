@@ -3981,7 +3981,39 @@ func _run_gameplay_test() -> void:
 	factory_component.slots[1] = {}
 	factory_component.slots_changed.emit()
 
-	# Product taps are the sole UI order action; no drag target is required.
+	# Exercise the real mobile product-card -> lower EMPTY queue-slot gesture.
+	# Touch-down must capture the pointer without starting production; release
+	# over the queue square must enqueue exactly once and start its real timer.
+	production_hud.open_production_panel(factory)
+	var drag_source := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
+	var drag_target := production_hud.production_panel.find_child("QueueSlot0", true, false) as Control
+	_check(is_instance_valid(drag_source) and is_instance_valid(drag_target), "Touch drag regression requires a visible Metal card and lower EMPTY queue square.")
+	if is_instance_valid(drag_source) and is_instance_valid(drag_target):
+		var drag_start := InputEventScreenTouch.new()
+		drag_start.index = 0
+		drag_start.pressed = true
+		drag_start.position = drag_source.get_global_rect().get_center()
+		drag_source.gui_input.emit(drag_start)
+		_check(production_hud._production_touch_drag_active and not production_hud._production_touch_dragged, "Touch-down on the material card must capture a pending drag, not submit the order.")
+		_check(factory_component.get_slot(0).is_empty(), "Touch-down alone must not fill the production queue.")
+		var drag_move := InputEventScreenDrag.new()
+		drag_move.index = 0
+		drag_move.position = drag_target.get_global_rect().get_center()
+		drag_move.relative = drag_move.position - drag_start.position
+		production_hud._input(drag_move)
+		_check(production_hud._production_touch_dragged, "Moving the captured finger must activate the drag gesture.")
+		var drag_release := InputEventScreenTouch.new()
+		drag_release.index = 0
+		drag_release.pressed = false
+		drag_release.position = drag_target.get_global_rect().get_center()
+		production_hud._input(drag_release)
+		_check(not production_hud._production_touch_drag_active, "Releasing the product over the queue must clear the captured pointer state.")
+		_check(str(factory_component.get_slot(0).get("item_id", "")) == "metal", "Dropping Metal on the lower EMPTY queue square must enqueue it in that square.")
+		_check(int(factory_component.get_slot(0).get("finish_unix", 0)) > int(Time.get_unix_time_from_system()), "A successful queue drop must start a real countdown timestamp.")
+		var rebuilt_timer := production_hud.production_panel.find_child("TimerSlot0", true, false) as Label
+		_check(is_instance_valid(rebuilt_timer), "A successful queue drop must render the live countdown in the lower queue square.")
+		factory_component.slots[0] = {}
+		factory_component.slots_changed.emit()
 
 	var supplies = _find_building("building_supplies")
 	var shop_component = supplies.production_component
