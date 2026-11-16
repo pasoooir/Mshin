@@ -304,11 +304,13 @@ func _build_guide_panel() -> void:
 	layout.add_child(actions)
 
 	_later_button = _make_action_button("Later", Color("#29485B"), Color.WHITE, 112)
+	_later_button.name = "TutorialLaterButton"
 	_later_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	_later_button.pressed.connect(_hide_for_later)
 	actions.add_child(_later_button)
 
 	_skip_button = _make_action_button("Skip guide", Color("#D9F2FF"), Color("#123348"), 142)
+	_skip_button.name = "TutorialSkipButton"
 	_skip_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	_skip_button.pressed.connect(_skip_tutorial)
 	actions.add_child(_skip_button)
