@@ -1415,3 +1415,16 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android acceptance remains required; simulated viewport touch is not a device test.
 
 **Boundary:** production and inventory logic are unchanged. This correction makes the regression test exercise the same native input contract as the revised product cards instead of bypassing it through the removed `pressed` signal.
+
+
+## PR #553 — native touch dispatch root-cause correction — 2026-11-16
+
+- [x] Re-read the failed Godot and Web GameplaySmoke logs: both still had 15 failures, beginning with the missing-material detail tap and followed by both Nails queue taps/timers/collection. APK export was successful but does not validate touch dispatch.
+- [x] Corrected the actual input route: native `InputEventScreenTouch` is now handled in HUD `_input()` before GUI dispatch, using viewport-space `Control.get_global_rect()` hit-testing against the active product cards. The hit is consumed before `CityInput._unhandled_input()` can see it.
+- [x] Added explicit product/building identity metadata to each card so stale cards cannot submit to a different building.
+- [x] Kept `gui_input` as the desktop mouse path only; mobile touch no longer depends on Control receiving ScreenTouch through its GUI callback, nor on mouse emulation.
+- [x] Corrected the smoke-test event injection: card positions are already in viewport coordinates, so `Viewport.push_input()` must receive them in viewport space (default `in_local_coords=false`), not transform them a second time.
+- [ ] Re-run both CI gameplay tests and confirm all 15 prior store failures are gone.
+- [ ] Physical Android tap and drag acceptance remains outstanding; CI event injection is not a physical-device test.
+
+**Honesty note:** the prior test helper passed viewport coordinates as local coordinates and the prior input fix relied on `gui_input` for native touch. Both assumptions are corrected here; no test pass is claimed until the new CI runs complete.
