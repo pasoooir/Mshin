@@ -6,13 +6,16 @@ func _initialize() -> void:
 func _run() -> void:
 	var account = root.get_node_or_null("PlayerAccountManager")
 	var save_manager = root.get_node_or_null("SaveManager")
-	if account == null or save_manager == null:
+	var audio = root.get_node_or_null("AudioManager")
+	var haptics = root.get_node_or_null("HapticsManager")
+	var graphics = root.get_node_or_null("GraphicsSettingsManager")
+	if account == null or save_manager == null or audio == null or haptics == null or graphics == null:
 		push_error("[PlayerAccountSmoke] Required autoload is missing.")
 		quit(1)
 		return
 	account._activate_session({"user_id": 100001, "access_token": "test-token-a"}, "admin")
 	var path_a: String = save_manager.get_active_save_path()
-	if AudioManager.settings_path != "user://players/100001/audio_settings.cfg" or HapticsManager.settings_path != "user://players/100001/haptics_settings.cfg" or GraphicsSettingsManager.settings_path != "user://players/100001/graphics_settings.cfg":
+	if str(audio.get("settings_path")) != "user://players/100001/audio_settings.cfg" or str(haptics.get("settings_path")) != "user://players/100001/haptics_settings.cfg" or str(graphics.get("settings_path")) != "user://players/100001/graphics_settings.cfg":
 		push_error("[PlayerAccountSmoke] Player A preferences are not account-scoped.")
 		quit(1)
 		return
@@ -22,7 +25,7 @@ func _run() -> void:
 		return
 	account._activate_session({"user_id": 100002, "access_token": "test-token-b"}, "player2")
 	var path_b: String = save_manager.get_active_save_path()
-	if AudioManager.settings_path != "user://players/100002/audio_settings.cfg" or HapticsManager.settings_path != "user://players/100002/haptics_settings.cfg" or GraphicsSettingsManager.settings_path != "user://players/100002/graphics_settings.cfg":
+	if str(audio.get("settings_path")) != "user://players/100002/audio_settings.cfg" or str(haptics.get("settings_path")) != "user://players/100002/haptics_settings.cfg" or str(graphics.get("settings_path")) != "user://players/100002/graphics_settings.cfg":
 		push_error("[PlayerAccountSmoke] Player B preferences reused another account.")
 		quit(1)
 		return
@@ -31,7 +34,7 @@ func _run() -> void:
 		quit(1)
 		return
 	account.logout()
-	if AudioManager.settings_path != "user://audio_settings.cfg" or HapticsManager.settings_path != "user://haptics_settings.cfg" or GraphicsSettingsManager.settings_path != "user://graphics_settings.cfg":
+	if str(audio.get("settings_path")) != "user://audio_settings.cfg" or str(haptics.get("settings_path")) != "user://haptics_settings.cfg" or str(graphics.get("settings_path")) != "user://graphics_settings.cfg":
 		push_error("[PlayerAccountSmoke] Guest preference paths did not reset.")
 		quit(1)
 		return
