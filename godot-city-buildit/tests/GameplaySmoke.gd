@@ -156,6 +156,7 @@ func _tap_native_control(control: Control) -> void:
 		_check(false, "Native touch test target must remain inside the active scene tree.")
 		return
 	var touch_position: Vector2 = control.get_global_transform_with_canvas() * (control.size * 0.5)
+	print("[NativeProductionTouchTest] target=", control.name, " pos=", touch_position, " rect=", control.get_global_rect())
 	var touch_down := InputEventScreenTouch.new()
 	touch_down.index = 0
 	touch_down.pressed = true
