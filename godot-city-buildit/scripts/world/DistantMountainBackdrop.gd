@@ -6,7 +6,7 @@ extends Node3D
 const LAND_SIZE := Vector2(1000.0, 1000.0)
 const RIDGE_INNER_RADIUS := 170.0
 const RIDGE_OUTER_RADIUS := 330.0
-const RIDGE_HALF_LENGTH := 330.0
+const RIDGE_HALF_LENGTH := 470.0
 const RIDGE_SEGMENTS := 64
 const RIDGE_DEPTH_STEPS := 14
 const SHRUB_COUNT := 320
@@ -104,19 +104,19 @@ func _ridge_point(side: int, along: float, depth: float) -> Vector3:
 
 
 func _ridge_height(along: float, depth: float, side: int) -> float:
-	var end_fade := smoothstep(0.0, 1.0, clampf((RIDGE_HALF_LENGTH - absf(along)) / 72.0, 0.0, 1.0))
+	var end_fade := smoothstep(0.0, 1.0, clampf((RIDGE_HALF_LENGTH - absf(along)) / 42.0, 0.0, 1.0))
 	var rolling_peaks := 0.5 + 0.5 * sin(along * 0.031 + float(side) * 1.7) + 0.16 * cos(along * 0.073 - float(side))
-	var peak_height := 34.0 + rolling_peaks * 23.0
+	var peak_height := 52.0 + rolling_peaks * 36.0
 	return peak_height * pow(maxf(0.0, sin(PI * depth)), 0.82) * end_fade
 
 
 func _ridge_color(along: float, depth: float, side: int) -> Color:
 	var slope := sin(PI * depth)
 	var variation := 0.5 + 0.5 * sin(along * 0.11 + float(side) * 2.3)
-	var dark_green := Color("#1D4027")
-	var meadow_green := Color("#315B35")
+	var dark_green := Color("#15351F")
+	var meadow_green := Color("#376B3A")
 	var color := dark_green.lerp(meadow_green, 0.24 + slope * 0.46)
-	return color.lerp(Color("#426B3A"), variation * slope * 0.12)
+	return color.lerp(Color("#5B8544"), variation * slope * 0.20)
 
 
 func _build_mountain_shrubs() -> void:
