@@ -3158,6 +3158,21 @@ func _update_production_timers() -> void:
 	component.refresh_slots()
 	var now := int(Time.get_unix_time_from_system())
 	var need_rebuild := false
+	# A queued commercial order may become the active job after the previous
+	# order completes. Detect that transition even though waiting cards have no
+	# timer label yet, then rebuild the card with its live countdown.
+	for slot_index in range(component.get_slot_count()):
+		var slot_state: Dictionary = component.get_slot(slot_index)
+		if slot_state.is_empty():
+			continue
+		var should_show_timer := not bool(slot_state.get("ready", false)) and (component.is_factory or int(slot_state.get("finish_unix", 0)) > 0)
+		var existing_timer := production_panel.find_child("TimerSlot%d" % slot_index, true, false)
+		if should_show_timer != is_instance_valid(existing_timer):
+			need_rebuild = true
+			break
+	if need_rebuild:
+		open_production_panel(_production_building)
+		return
 	for label in _production_timer_labels:
 		if not is_instance_valid(label):
 			continue
