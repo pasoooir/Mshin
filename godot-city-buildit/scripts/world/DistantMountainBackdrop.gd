@@ -65,8 +65,6 @@ func _build_mountain_ridges() -> void:
 		for along_index in range(RIDGE_SEGMENTS):
 			var t0 := lerpf(-RIDGE_HALF_LENGTH, RIDGE_HALF_LENGTH, float(along_index) / RIDGE_SEGMENTS)
 			var t1 := lerpf(-RIDGE_HALF_LENGTH, RIDGE_HALF_LENGTH, float(along_index + 1) / RIDGE_SEGMENTS)
-			if _ridge_segment_crosses_tunnel(side, t0, t1):
-				continue
 			for depth_index in range(RIDGE_DEPTH_STEPS):
 				var d0 := float(depth_index) / RIDGE_DEPTH_STEPS
 				var d1 := float(depth_index + 1) / RIDGE_DEPTH_STEPS
@@ -89,14 +87,10 @@ func _build_mountain_ridges() -> void:
 		add_child(ridge)
 
 
-func _ridge_segment_crosses_tunnel(side: int, start_along: float, end_along: float) -> bool:
-	if side > 1:
+func _is_tunnel_portal_vegetation_exclusion(side: int, along: float, depth: float) -> bool:
+	if side > 1 or absf(along - TUNNEL_CENTER_X) > TUNNEL_CUTOUT_HALF_WIDTH:
 		return false
-	return start_along <= TUNNEL_CENTER_X + TUNNEL_CUTOUT_HALF_WIDTH and end_along >= TUNNEL_CENTER_X - TUNNEL_CUTOUT_HALF_WIDTH
-
-
-func _is_tunnel_cutout(side: int, along: float) -> bool:
-	return side <= 1 and absf(along - TUNNEL_CENTER_X) <= TUNNEL_CUTOUT_HALF_WIDTH
+	return depth <= 0.12 or depth >= 0.88
 
 
 func _add_ridge_vertex(surface: SurfaceTool, side: int, along: float, depth: float) -> void:
@@ -165,6 +159,11 @@ func _build_highway_tunnels() -> void:
 			for frame_side in [-1.0, 1.0]:
 				_make_tunnel_box(tunnel, portal_prefix + "Pillar", Vector3(3.0, TUNNEL_WALL_HEIGHT + 1.0, 4.0), Vector3(TUNNEL_CENTER_X + frame_side * (TUNNEL_OPENING_WIDTH * 0.5 + 1.5), (TUNNEL_WALL_HEIGHT + 1.0) * 0.5, portal_z), concrete)
 			_make_tunnel_box(tunnel, portal_prefix + "Lintel", Vector3(TUNNEL_OPENING_WIDTH + 7.0, 3.0, 4.0), Vector3(TUNNEL_CENTER_X, TUNNEL_WALL_HEIGHT + 0.5, portal_z), concrete)
+			if portal_index == 0:
+				var dark_mouth := StandardMaterial3D.new()
+				dark_mouth.albedo_color = Color("#101713")
+				dark_mouth.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				_make_tunnel_box(tunnel, portal_prefix + "DarkInteriorMouth", Vector3(TUNNEL_OPENING_WIDTH - 2.0, TUNNEL_WALL_HEIGHT - 1.5, 0.18), Vector3(TUNNEL_CENTER_X, (TUNNEL_WALL_HEIGHT - 1.5) * 0.5, portal_z + side_sign * 1.8), dark_mouth)
 		add_child(tunnel)
 
 
@@ -198,7 +197,7 @@ func _build_mountain_shrubs() -> void:
 		var row := int(index / 4)
 		var along := -RIDGE_HALF_LENGTH * 0.88 + fposmod(float(row) * 37.17, RIDGE_HALF_LENGTH * 1.76)
 		var depth := 0.18 + float((row * 7) % 58) / 100.0
-		if _is_tunnel_cutout(side, along):
+		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
 			continue
 		var point := _ridge_point(side, along, depth)
 		var scale := 1.0 + float((index * 13) % 11) * 0.13
@@ -230,7 +229,7 @@ func _build_mountain_grass() -> void:
 		var row := int(index / 4)
 		var along := -RIDGE_HALF_LENGTH * 0.91 + fposmod(float(row) * 19.73, RIDGE_HALF_LENGTH * 1.82)
 		var depth := 0.12 + float((row * 11) % 72) / 100.0
-		if _is_tunnel_cutout(side, along):
+		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
 			continue
 		var point := _ridge_point(side, along, depth)
 		var scale := 0.55 + float((index * 5) % 9) * 0.12
