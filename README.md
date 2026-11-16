@@ -1294,6 +1294,30 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 
 **Implementation note:** the existing world-space `Sprite3D` thumbnail was not a complete SimCity-style interaction: it had no reliable screen-space tap target and the notification logic was limited to one visible product thumbnail per building. The new layer supplies persistent, accessible tap targets and groups all ready queue slots without changing the production/economy state machine. CI and Chromium tests do not replace physical-device acceptance.
 
+## World-space Building Notification System — 2026-11-16
+
+This implementation supersedes the earlier projected HUD bubbles with true 3D building-attached notification anchors. Notification state is derived from saved production slots, upgrade state and live City Storage state; duplicate notification state is not written to the save file.
+
+- [x] Add typed, extensible `BuildingNotification` data with ProductionReady, Idle, UpgradeReady, StorageFull and NeedsMaterials kinds and explicit priority ordering.
+- [x] Add a real `Node3D` notification anchor parented to each building, using local item/status textures, billboard-facing sprites, grouped quantity labels, gentle bobbing and distance-based scale/LOD.
+- [x] Enforce a maximum of two visible notifications per building while retaining hidden lower-priority state for later refresh.
+- [x] Derive ProductionReady groups from actual ready `ProductionComponent` slots; never remove a ready product from its queue because a notification was dismissed.
+- [x] Show StorageFull while ready products are blocked by zero warehouse capacity; preserve product slots until `ProductionComponent.collect` successfully commits the item to City Storage.
+- [x] Derive NeedsMaterials from the first currently unlocked store recipe and report exact available/required input quantities.
+- [x] Show Idle only when a completed, operational production building has no active/ready order and no eligible missing-material warning.
+- [x] Preserve actionable UpgradeReady notifications and route them to the existing residential/non-residential upgrade panels.
+- [x] Connect production slot and warehouse change signals to notification refresh; keep a periodic reconciliation pass for restored/late-created buildings.
+- [x] Make a normal tap on a building collect all currently ready production slots through the same production component transaction; blocked items remain on the building.
+- [x] Add GameplaySmoke checks for type priorities, product/count payload, missing-material detail and the two-visible-notification limit.
+- [ ] Godot 4.3 import/parse and full GameplaySmoke on this PR head.
+- [ ] Android Debug APK export/signature and Web export + desktop/mobile Chromium smoke on this PR head.
+- [ ] Merge and verify GitHub Pages deployment for the merged commit.
+- [ ] Physical Android acceptance: tap each floating 3D icon and the building model; verify bob/LOD, persistent Ready after reload, full-storage retention, two simultaneous ready product types, Idle, UpgradeReady and NeedsMaterials.
+
+**Persistence contract:** production queue slot dictionaries and upgrade timestamps are already serialized by `SaveManager`. On load, `ProductionComponent.from_save_array()` reconciles timestamps and emits `slots_changed`; the notification manager reconstructs the visual state from those authoritative sources. Notification visuals are intentionally not separately saved, avoiding stale or duplicated alerts.
+
+**Validation honesty:** implementation and regression tests are committed to this branch; CI, Pages deployment and physical-device acceptance remain unchecked until their respective evidence exists.
+
 ## Production Queue tap-routing correction — 2026-11-16
 
 - [x] Re-resolve the first currently empty production slot at the instant a product card is tapped; do not trust the slot index captured when the orbit/catalogue was first built.
