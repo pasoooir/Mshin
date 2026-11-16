@@ -615,3 +615,20 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android touch validation.
 
 **Acceptance:** a selected building must show all available product cards above its model; each card must be clearly visible, at least 90×100 px in the actual UI, and tappable without dragging. CI signal emission alone is not sufficient proof of device touch.
+
+
+## Factory, store and residential panel isolation — 2026-11-16 (PR #533)
+
+- [x] Production and residential detail panels now close competing building-detail overlays before opening.
+- [x] Production entry validates completed industrial/commercial category, exact ProductionComponent owner and matching factory/store mode.
+- [x] Residential entry rejects non-residential buildings and stores the selected home as panel owner.
+- [x] Product-card callbacks from an old panel session are ignored after the selected factory/store changes.
+- [x] GameplaySmoke verifies home → factory → store modal switching, factory Metal versus store Nails catalogue separation, category rejection and stale callback safety.
+- [x] Godot validation + full Gameplay integration + visual/economy tests passed (run `43787436360`).
+- [x] Android Debug APK export and package/signature verification passed (run `43787436360`).
+- [x] Web export + Gameplay integration + desktop/mobile Chromium launch passed (run `43787436379`).
+- [x] PR #533 merged as `a9c9cb41b545cbf40077c280119b30287a8479fd`.
+- [ ] Post-merge Pages deployment.
+- [ ] Physical Android landscape touch acceptance.
+
+**Root cause:** production and residential overlays were not mutually exclusive. The residential overlay's higher z-order could remain over a newly opened production panel; stale product buttons were also not checked against the active panel owner.
