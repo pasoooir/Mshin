@@ -2312,6 +2312,9 @@ func open_production_panel(building: Building) -> void:
 		# This is the single authoritative input path; no parallel gui_input /
 		# global touch-up handler can swallow or duplicate the order.
 		item_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		# Handle native touch directly at the product Control. Do not depend on
+		# browser/device touch-to-mouse emulation for the primary mobile action.
+		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
 		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
 		item_button.set_meta("orbit_index", item_index)
