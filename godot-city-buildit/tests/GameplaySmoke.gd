@@ -3809,6 +3809,7 @@ func _run_gameplay_test() -> void:
 	# Production acceptance uses real SCBI durations and advances timestamps in
 	# the test fixture rather than sleeping for minutes.
 	var production_hud = get_node("HUD")
+	var city_input = get_node("CityInput")
 	var factory_component = factory.production_component
 	_check(factory_component != null and factory_component.get_slot_count() == 6, "Small Factory must expose six independent production queue slots.")
 	# Regression: switching between home, factory and shop must replace the
@@ -3816,9 +3817,12 @@ func _run_gameplay_test() -> void:
 	production_hud.open_residential_panel(home)
 	_check(is_instance_valid(production_hud.residential_overlay) and not is_instance_valid(production_hud.production_overlay), "Opening a home must leave only the residential detail modal active.")
 	_check(production_hud._residential_building == home, "Residential modal must retain the exact selected home as its owner.")
+	_check(city_input._has_building_detail_modal_open(), "CityInput must recognize the residential panel as a blocking modal.")
 	production_hud.open_production_panel(factory)
 	_check(not is_instance_valid(production_hud.residential_overlay) and is_instance_valid(production_hud.production_overlay), "Opening a factory must close the home modal before showing production.")
+	_check(city_input._has_building_detail_modal_open(), "CityInput must recognize the production panel as a blocking modal.")
 	_check(production_hud._production_building == factory, "Factory production modal must be bound to the exact selected factory.")
+	_check(str(factory_component.factory_type) == factory.building_type, "Factory component catalog must match the selected factory type.")
 	_check(production_hud.production_overlay.find_child("Slot0_metal", true, false) is Button, "Factory modal must expose the selected factory's own raw-material catalogue.")
 	production_hud.open_production_panel(home)
 	_check(production_hud._production_building == factory and is_instance_valid(production_hud.production_overlay), "A residential building must never replace or masquerade as a production building.")
@@ -3894,6 +3898,7 @@ func _run_gameplay_test() -> void:
 	StorageManager.items = {}
 	production_hud.open_production_panel(supplies)
 	_check(production_hud._production_building == supplies, "Store modal must replace the previous factory owner with the selected store.")
+	_check(str(shop_component.shop_id) == str(supplies.definition.get("shop_id", "building_supplies" if supplies.building_type == "shop_chain" else supplies.building_type)), "Store component catalog must match the selected store definition.")
 	_check(production_hud.production_overlay.find_child("Slot0_nails", true, false) is Button, "Building Supplies modal must show its own Nails catalogue item.")
 	_check(production_hud.production_overlay.find_child("Slot0_metal", true, false) == null, "Store modal must not retain the previous factory's Metal card.")
 	var factory_slots_before_stale_press: Array = factory_component.to_save_array()

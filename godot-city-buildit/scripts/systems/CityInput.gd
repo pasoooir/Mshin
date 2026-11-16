@@ -39,6 +39,15 @@ func _clear_emulated_mouse_pointer() -> void:
 	road_stroke_last_cell.erase(-1)
 
 func _process(delta: float) -> void:
+	# Modal detail views own the whole pointer session. This also clears a
+	# touch/mouse-down that began on the city immediately before a panel opened.
+	if _has_building_detail_modal_open():
+		pointer_start.clear()
+		pointer_moved.clear()
+		pointer_hold_elapsed.clear()
+		pointer_last_position.clear()
+		placement_rotate_pointer.clear()
+		return
 	if BuildManager.is_moving or bulldoze_mode or bulldoze_road_mode or _is_road_mode():
 		return
 	if pointer_start.size() != 1:
@@ -142,19 +151,33 @@ func _move_anchor_from_world(world_position: Vector3) -> Vector2i:
 	var anchor_offset := Vector3((footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
 	return BuildManager.world_to_grid(world_position - anchor_offset)
 
-func _unhandled_input(event: InputEvent) -> void:
-	# The production studio owns input while open; city taps, road tools and
-	# placement shortcuts must not leak through the modal backdrop.
+func _has_building_detail_modal_open() -> bool:
 	var scene := get_tree().current_scene
-	var production_hud := scene.get_node_or_null("HUD") if is_instance_valid(scene) else null
-	if is_instance_valid(production_hud):
-		var production_modal = production_hud.get("production_overlay")
-		if production_modal is Control and is_instance_valid(production_modal):
-			if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_BACKSPACE]:
-				if production_hud.has_method("_close_production_panel"):
-					production_hud.call("_close_production_panel")
-			get_viewport().set_input_as_handled()
-			return
+	var detail_hud := scene.get_node_or_null("HUD") if is_instance_valid(scene) else null
+	if not is_instance_valid(detail_hud):
+		return false
+	for property_name in ["production_overlay", "residential_overlay"]:
+		var modal = detail_hud.get(property_name)
+		if modal is Control and is_instance_valid(modal):
+			return true
+	return false
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Factory, store and residential detail views own the whole input layer.
+	# Never let a background city tap or keyboard shortcut leak through them.
+	var scene := get_tree().current_scene
+	var detail_hud := scene.get_node_or_null("HUD") if is_instance_valid(scene) else null
+	if _has_building_detail_modal_open():
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_BACKSPACE]:
+			if is_instance_valid(detail_hud):
+				var residential_modal = detail_hud.get("residential_overlay")
+				if residential_modal is Control and is_instance_valid(residential_modal):
+					detail_hud.call("_close_residential_panel")
+				elif detail_hud.has_method("_close_production_panel"):
+					detail_hud.call("_close_production_panel")
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R and BuildManager.is_placing:
 		if BuildManager.rotate_placement():
 			var ghost = get_tree().current_scene.get_node_or_null("GhostPreview") if get_tree().current_scene else null
