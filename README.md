@@ -2,7 +2,7 @@
 
 **نسخه بازی: 1.0.3 — رشته‌کوه پیوسته و تونل بزرگراه**
 
-[![PLAY MSHIN](https://img.shields.io/badge/▶%20PLAY-MSHIN-19b77a?style=for-the-badge)](https://pasoooir.github.io/Mshin/game/latest/) [![Version](https://img.shields.io/badge/version-1.0.2-blue)](https://github.com/pasoooir/Mshin/tree/feat/continuous-mountain-tunnel-gateway)
+[![PLAY MSHIN](https://img.shields.io/badge/▶%20PLAY-MSHIN-19b77a?style=for-the-badge)](https://pasoooir.github.io/Mshin/game/latest/) [![Version](https://img.shields.io/badge/version-1.0.3-blue)](https://github.com/pasoooir/Mshin/pull/565)
 
 ### آخرین تغییر قابل مشاهده — نسخه 1.0.3
 
