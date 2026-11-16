@@ -3330,6 +3330,7 @@ func _test_tutorial_guide_contract() -> void:
 			guide.current_step = 0
 			guide.completed = false
 			guide._dismissed = false
+			guide._panel.show()
 			guide.milestones["city_name"] = false
 			name_input.text = "Coach Touch Test"
 			guide._refresh_guide()
