@@ -11,13 +11,13 @@ func _run() -> void:
 		quit(1)
 		return
 	account._activate_session({"user_id": 100001, "access_token": "test-token-a"}, "admin")
-	var path_a := save_manager.get_active_save_path()
+	var path_a: String = save_manager.get_active_save_path()
 	if path_a != "user://players/100001/pasoo_city_buildit_save.json":
 		push_error("[PlayerAccountSmoke] Player A save path is not isolated: " + path_a)
 		quit(1)
 		return
 	account._activate_session({"user_id": 100002, "access_token": "test-token-b"}, "player2")
-	var path_b := save_manager.get_active_save_path()
+	var path_b: String = save_manager.get_active_save_path()
 	if path_b != "user://players/100002/pasoo_city_buildit_save.json" or path_a == path_b:
 		push_error("[PlayerAccountSmoke] Player B reused Player A save path.")
 		quit(1)
