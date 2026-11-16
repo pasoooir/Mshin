@@ -53,6 +53,13 @@ jobs:
           godot --headless --path godot-city-buildit --quit-after 10 2>&1 | tee /tmp/godot-startup.log
           if grep -q "SCRIPT ERROR" /tmp/godot-startup.log; then exit 1; fi
 
+      - name: Player account save-path isolation smoke test
+        run: |
+          set -o pipefail
+          godot --headless --path godot-city-buildit --script res://tests/player_account_smoke.gd 2>&1 | tee /tmp/godot-player-account.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-player-account.log; then exit 1; fi
+          grep -F "[PlayerAccountSmoke] PASS" /tmp/godot-player-account.log
+
       - name: End-to-end gameplay integration test
         run: |
           set -o pipefail
@@ -203,3 +210,18 @@ jobs:
           path: godot-city-buildit/build/android/PasooCityBuildIt.apk
           if-no-files-found: error
           retention-days: 14
+
+  json-profile-service:
+    name: Independent JSON profile service tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test isolated JSON profiles, revision conflicts and auth boundaries
+        working-directory: server
+        run: npm test

@@ -3,7 +3,8 @@ extends CanvasLayer
 ## Milestones are completed only by real gameplay events; this guide never
 ## grants items or mutates city state.
 
-const SAVE_PATH := "user://tutorial_progress.cfg"
+var save_path := "user://tutorial_progress.cfg"
+var _profile_progress_loaded := false
 const STEP_DATA: Array[Dictionary] = [
 	{
 		"id": "city_name",
@@ -645,9 +646,45 @@ func _reopen_guide() -> void:
 		else:
 			_refresh_guide()
 
+func set_player_scope(path: String) -> void:
+	save_path = path
+	if not _profile_progress_loaded:
+		_load_progress()
+		if is_instance_valid(_panel):
+			_refresh_guide()
+
+func to_save_dict() -> Dictionary:
+	return {
+		"current_step": current_step,
+		"completed": completed,
+		"tutorial_enabled": tutorial_enabled,
+		"milestones": milestones.duplicate(true)
+	}
+
+func from_save_dict(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	_profile_progress_loaded = true
+	current_step = clampi(int(data.get("current_step", 0)), 0, STEP_DATA.size())
+	completed = bool(data.get("completed", false))
+	tutorial_enabled = bool(data.get("tutorial_enabled", true))
+	var saved_milestones: Variant = data.get("milestones", {})
+	if saved_milestones is Dictionary:
+		for key in milestones:
+			milestones[key] = bool(saved_milestones.get(key, false))
+	if completed:
+		current_step = STEP_DATA.size()
+	if is_instance_valid(_panel):
+		if completed:
+			_show_completion()
+		else:
+			_refresh_guide()
+
 func _load_progress() -> void:
+	if _profile_progress_loaded:
+		return
 	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
+	if config.load(save_path) != OK:
 		return
 	current_step = clampi(int(config.get_value("tutorial", "current_step", 0)), 0, STEP_DATA.size())
 	completed = bool(config.get_value("tutorial", "completed", false))
@@ -671,9 +708,13 @@ func _save_progress() -> void:
 	config.set_value("tutorial", "current_step", current_step)
 	config.set_value("tutorial", "completed", completed)
 	config.set_value("tutorial", "milestones", milestones)
-	var error := config.save(SAVE_PATH)
+	var directory := ProjectSettings.globalize_path(save_path.get_base_dir())
+	DirAccess.make_dir_recursive_absolute(directory)
+	var error := config.save(save_path)
 	if error != OK:
 		push_warning("[TutorialGuide] Could not save tutorial progress: %s" % error_string(error))
+	elif SaveManager.persistence_ready:
+		SaveManager.save_game()
 
 static func get_step_count() -> int:
 	return STEP_DATA.size()
