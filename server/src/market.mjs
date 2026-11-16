@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 const MAX_QUANTITY = 500;
 const MAX_TOTAL = 2_000_000;
 const ITEM_CATALOG = Object.freeze({
+  dozer_wheel:{value:800,level:10}, dozer_blade:{value:800,level:10}, dozer_exhaust:{value:800,level:10},
   metal:{value:10,level:1}, wood:{value:20,level:2}, plastic:{value:25,level:5},
   seeds:{value:30,level:7}, minerals:{value:40,level:11}, chemicals:{value:60,level:13},
   textiles:{value:90,level:15}, sugar_spices:{value:110,level:17}, glass:{value:120,level:19},
