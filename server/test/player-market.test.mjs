@@ -28,7 +28,7 @@ async function fixture() {
     assert.equal(response.status, 200);
   };
   return {
-    directory, json, seed,
+    directory, base, json, seed,
     close: async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await rm(directory, { recursive: true, force: true }); }
   };
 }
