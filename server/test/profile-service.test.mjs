@@ -41,12 +41,12 @@ test("profile files are isolated by numeric player id", async t => {
 
 test("optimistic revision rejects stale concurrent writes", async t => {
   const f = await fixture(); t.after(f.close);
-  const first = await json(f.base + "/v1/profile", f.token(100001), "PUT", { expected_revision: 0, game_state: { coins: 1 } });
-  assert.equal(first.status, 200);
-  const stale = await json(f.base + "/v1/profile", f.token(100001), "PUT", { expected_revision: 0, game_state: { coins: 999 } });
-  assert.equal(stale.status, 409);
-  assert.equal(stale.body.revision, 1);
-  assert.equal((await json(f.base + "/v1/profile", f.token(100001))).body.game_state.coins, 1);
+  const writes = await Promise.all([
+    json(f.base + "/v1/profile", f.token(100001), "PUT", { expected_revision: 0, game_state: { coins: 1 } }),
+    json(f.base + "/v1/profile", f.token(100001), "PUT", { expected_revision: 0, game_state: { coins: 999 } })
+  ]);
+  assert.deepEqual(writes.map(result => result.status).sort(), [200, 409]);
+  assert.equal((await json(f.base + "/v1/profile", f.token(100001))).body.revision, 1);
 });
 
 test("email fields are rejected and never written to JSON", async t => {
@@ -56,6 +56,14 @@ test("email fields are rejected and never written to JSON", async t => {
   });
   assert.equal(result.status, 400);
   await assert.rejects(readFile(path.join(f.directory, "players", "100001.json")));
+});
+
+test("development identity returns its configured numeric player id", async t => {
+  const f = await fixture(); t.after(f.close);
+  const result = await json(f.base + "/v1/dev/session", null, "POST", { identity: "admin" });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.user_id, 100001);
+  assert.ok(result.body.access_token);
 });
 
 test("dev identity endpoint is unavailable when disabled or in production", async t => {

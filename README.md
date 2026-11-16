@@ -39,7 +39,7 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 ## حساب چندبازیکنه و ذخیره‌سازی JSON مستقل
 
 - کد اولیه سرور JSON مستقل در `server/` و Cloudflare Auth Worker در `cloudflare-auth/` قرار دارد.
-- SaveManager برای حساب واردشده از مسیر محلی مجزای هر شناسه استفاده می‌کند؛ پیشرفت Tutorial نیز در payload ذخیره بازی قرار گرفته است.
+- SaveManager برای حساب واردشده از مسیر محلی مجزای هر شناسه استفاده می‌کند؛ پیشرفت Tutorial و تنظیمات صدا، لرزش و گرافیک نیز در JSON همان بازیکن ذخیره می‌شوند.
 - این کد هنوز به سرور production یا Google Cloud واقعی متصل نیست؛ جزئیات ممیزی و وضعیت اجرا در [مستند حساب بازیکن](godot-city-buildit/docs/PLAYER_ACCOUNT_AND_JSON_STORAGE.md) ثبت می‌شود.
 
 ## راهبرد بازار آنلاین بازیکن‌به‌بازیکن (Pasoo Market)

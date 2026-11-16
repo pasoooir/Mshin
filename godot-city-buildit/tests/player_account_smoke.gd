@@ -12,17 +12,29 @@ func _run() -> void:
 		return
 	account._activate_session({"user_id": 100001, "access_token": "test-token-a"}, "admin")
 	var path_a: String = save_manager.get_active_save_path()
+	if AudioManager.settings_path != "user://players/100001/audio_settings.cfg" or HapticsManager.settings_path != "user://players/100001/haptics_settings.cfg" or GraphicsSettingsManager.settings_path != "user://players/100001/graphics_settings.cfg":
+		push_error("[PlayerAccountSmoke] Player A preferences are not account-scoped.")
+		quit(1)
+		return
 	if path_a != "user://players/100001/pasoo_city_buildit_save.json":
 		push_error("[PlayerAccountSmoke] Player A save path is not isolated: " + path_a)
 		quit(1)
 		return
 	account._activate_session({"user_id": 100002, "access_token": "test-token-b"}, "player2")
 	var path_b: String = save_manager.get_active_save_path()
+	if AudioManager.settings_path != "user://players/100002/audio_settings.cfg" or HapticsManager.settings_path != "user://players/100002/haptics_settings.cfg" or GraphicsSettingsManager.settings_path != "user://players/100002/graphics_settings.cfg":
+		push_error("[PlayerAccountSmoke] Player B preferences reused another account.")
+		quit(1)
+		return
 	if path_b != "user://players/100002/pasoo_city_buildit_save.json" or path_a == path_b:
 		push_error("[PlayerAccountSmoke] Player B reused Player A save path.")
 		quit(1)
 		return
 	account.logout()
+	if AudioManager.settings_path != "user://audio_settings.cfg" or HapticsManager.settings_path != "user://haptics_settings.cfg" or GraphicsSettingsManager.settings_path != "user://graphics_settings.cfg":
+		push_error("[PlayerAccountSmoke] Guest preference paths did not reset.")
+		quit(1)
+		return
 	if save_manager.get_active_save_path() != "user://pasoo_city_buildit_save.json":
 		push_error("[PlayerAccountSmoke] Guest fallback path changed unexpectedly.")
 		quit(1)
