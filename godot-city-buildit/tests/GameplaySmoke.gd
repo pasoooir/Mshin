@@ -894,6 +894,17 @@ func _test_camera_inertia_math() -> void:
 	var damped_orbit := CameraControllerScript.decay_orbit_velocity(initial_orbit, 0.1, 10.0)
 	_check(absf(damped_orbit) < absf(initial_orbit), "Camera orbit inertia must decay over time.")
 	_check(damped_orbit > 0.0, "Camera orbit inertia must preserve the rotation direction while decaying.")
+	var pinch_in := CameraControllerScript.pinch_zoom_delta(180.0, 120.0, 0.045)
+	var pinch_out := CameraControllerScript.pinch_zoom_delta(120.0, 180.0, 0.045)
+	_check(pinch_in > 0.0 and pinch_out < 0.0, "Pinch distance changes must produce opposite zoom directions.")
+	var centroid := CameraControllerScript.touch_centroid(Vector2(100.0, 120.0), Vector2(300.0, 220.0))
+	_check(centroid.is_equal_approx(Vector2(200.0, 170.0)), "Two-finger pan must use the midpoint between active touches.")
+	var pan_scale_720 := CameraControllerScript.screen_pan_scale(30.0, 46.0, 720.0)
+	var pan_scale_1440 := CameraControllerScript.screen_pan_scale(30.0, 46.0, 1440.0)
+	_check(pan_scale_720 > 0.0 and is_equal_approx(pan_scale_720, pan_scale_1440 * 2.0), "Camera pan sensitivity must scale with viewport height rather than raw device pixels.")
+	var normalized_pan_720 := pan_scale_720 * 100.0
+	var normalized_pan_1440 := pan_scale_1440 * 200.0
+	_check(is_equal_approx(normalized_pan_720, normalized_pan_1440), "Equivalent normalized touch drags must move the same world distance on different resolutions.")
 
 func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "The seeded highway gateway tile must belong to the connected road network.")

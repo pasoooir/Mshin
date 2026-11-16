@@ -1105,8 +1105,8 @@ for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_ti
         errors.append(f"FireHazardManager dynamic coverage contract is missing: {contract}")
 for contract in [
     "func _process(delta: float) -> void:",
-    "pan_velocity * delta",
-    "rotation_degrees.y += rad_to_deg(orbit_velocity * delta)",
+    "_pan(pan_velocity * step_delta)",
+    "rotation_degrees.y = wrapf(rotation_degrees.y + rad_to_deg(orbit_velocity * step_delta)",
     "static func decay_pan_velocity(",
     "static func decay_orbit_velocity(",
     "pan_inertia_damping",
@@ -1114,6 +1114,17 @@ for contract in [
     "func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:",
     "@export var world_limit: float = 90.0",
     "static func interpolate_focus(",
+    "static func screen_pan_scale(",
+    "static func pinch_zoom_delta(",
+    "static func touch_centroid(",
+    "func _ordered_touch_positions() -> Array:",
+    "last_pinch_centroid",
+    "TWO_FINGER_PAN_DEADZONE",
+    "PINCH_DEADZONE",
+    "TWIST_DEADZONE",
+    "set_process(false)",
+    "func _refresh_processing() -> void:",
+    "MAX_CAMERA_STEP",
 ]:
     if contract not in camera_controller_source:
         errors.append(f"Camera inertia implementation contract is missing: {contract}")
@@ -1156,6 +1167,9 @@ for contract in [
     "func _test_camera_inertia_math()",
     "Camera pan inertia must decay over time",
     "Camera orbit inertia must decay over time",
+    "Pinch distance changes must produce opposite zoom directions",
+    "Two-finger pan must use the midpoint between active touches",
+    "Equivalent normalized touch drags must move the same world distance on different resolutions",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Camera inertia regression test is missing: {contract}")
