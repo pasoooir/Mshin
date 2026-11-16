@@ -185,7 +185,8 @@ func _test_building_notification_system_contract() -> void:
 	anchor.name = "NotificationAnchorContractProbe"
 	add_child(anchor)
 	anchor.set_anchor_position(Vector3(0.0, 8.0, 0.0))
-	anchor.set_notifications([idle, ready, upgrade])
+	var visible_notifications: Array[BuildingNotification] = [idle, ready, upgrade]
+	anchor.set_notifications(visible_notifications)
 	_check(anchor.get_child_count() == 2, "World-space notification anchor must enforce the two-visible-notification limit.")
 	_check(is_equal_approx(anchor.position.y, 8.0), "World-space notification anchor must retain its configured roof height while bobbing.")
 	anchor.queue_free()
