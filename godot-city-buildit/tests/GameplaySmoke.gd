@@ -3323,6 +3323,55 @@ func _test_tutorial_guide_contract() -> void:
 			else:
 				guide._refresh_guide()
 
+			# Exercise the actual touch event path, not only pressed.emit().
+			var previous_name := GameManager.city_name
+			var previous_milestones: Dictionary = guide.milestones.duplicate(true)
+			var previous_dismissed := bool(guide._dismissed)
+			guide.current_step = 0
+			guide.completed = false
+			guide._dismissed = false
+			guide.milestones["city_name"] = false
+			name_input.text = "Coach Touch Test"
+			guide._refresh_guide()
+			await _tap_native_control(save_name_button)
+			_check(GameManager.city_name == "Coach Touch Test", "A real touch on SAVE CITY must submit the city name and advance the guide.")
+			GameManager.city_name = previous_name
+			guide.milestones = previous_milestones
+			guide.current_step = previous_step
+			guide.completed = previous_completed
+			guide._dismissed = previous_dismissed
+			guide._save_progress()
+			if guide.completed:
+				guide._show_completion()
+			else:
+				guide._refresh_guide()
+
+			var later_button := guide.find_child("TutorialLaterButton", true, false) as Button
+			_check(later_button != null, "The coach must expose its Later action as a real button.")
+			if later_button != null:
+				guide._dismissed = false
+				guide._panel.show()
+				await _tap_native_control(later_button)
+				var reopen_button := guide.find_child("ReopenTutorial", true, false) as Button
+				_check(not guide._panel.visible and reopen_button != null, "A real touch on Later must hide the coach and expose HELP.")
+				if reopen_button != null:
+					await _tap_native_control(reopen_button)
+					_check(guide._panel.visible, "A real touch on HELP must reopen the coach.")
+				guide._dismissed = previous_dismissed
+				if previous_dismissed:
+					guide._panel.hide()
+				else:
+					guide._panel.show()
+
+			var hud := get_node_or_null("HUD")
+			if is_instance_valid(hud):
+				var residential_button := hud.find_child("Tool_Residential", true, false) as Button
+				_check(residential_button != null, "The primary Residential HUD action must exist.")
+				if residential_button != null:
+					await _tap_native_control(residential_button)
+					_check(str(hud.active_category) == "residential" and is_instance_valid(hud.submenu_scroll) and hud.submenu_scroll.visible, "A real touch on Residential must open its building submenu.")
+					hud._on_cancel_pressed()
+
 func _test_city_name_contract() -> void:
 	var previous_name := GameManager.city_name
 	_check(not GameManager.set_city_name("   "), "City name must reject blank input.")
