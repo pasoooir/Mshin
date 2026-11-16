@@ -64,6 +64,10 @@ test("development identity returns its configured numeric player id", async t =>
   assert.equal(result.status, 200);
   assert.equal(result.body.user_id, 100001);
   assert.ok(result.body.access_token);
+  const second = await json(f.base + "/v1/dev/session", null, "POST", { identity: "player2" });
+  assert.equal(second.status, 200);
+  assert.equal(second.body.user_id, 100002);
+  assert.ok(second.body.access_token);
 });
 
 test("dev identity endpoint is unavailable when disabled or in production", async t => {
