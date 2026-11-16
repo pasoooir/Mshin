@@ -2812,7 +2812,7 @@ func _input(event: InputEvent) -> void:
 
 func _route_native_ui_touch(event: InputEvent) -> bool:
 	if event is InputEventScreenTouch:
-		var touch_index := event.index
+		var touch_index: int = event.index
 		if event.pressed:
 			if _native_ui_touch_excluded.has(touch_index):
 				return true
@@ -2844,7 +2844,7 @@ func _route_native_ui_touch(event: InputEvent) -> bool:
 		return true
 
 	if event is InputEventScreenDrag:
-		var drag_index := event.index
+		var drag_index: int = event.index
 		if not _native_ui_touch_targets.has(drag_index):
 			return false
 		var origin: Vector2 = _native_ui_touch_origins.get(drag_index, event.position)
