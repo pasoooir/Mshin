@@ -2311,6 +2311,8 @@ func open_production_panel(building: Building) -> void:
 		# ScreenTouch on phones and a real MouseButton on desktop; do not also
 		# connect BaseButton.pressed, which can fire during the same GUI event
 		# and rebuild the modal while Godot is still dispatching that pointer.
+		item_button.set_meta("production_item_id", item_id)
+		item_button.set_meta("production_building_id", building.get_instance_id())
 		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
 		item_button.set_meta("orbit_index", item_index)
@@ -2729,12 +2731,10 @@ func _on_production_item_gui_input(event: InputEvent, building: Building, item_i
 	# Accept the native mobile touch event directly. A real desktop mouse click
 	# uses the same single handler, without converting phone touches into mouse
 	# events or depending on BaseButton.pressed signal ordering.
-	var activate := false
-	if event is InputEventScreenTouch:
-		activate = event.pressed
-	elif event is InputEventMouseButton:
-		activate = event.pressed and event.button_index == MOUSE_BUTTON_LEFT
-	if not activate:
+	# Native touch is routed centrally in _input() using viewport-space
+	# hit testing. Keep this GUI callback for desktop mouse only, avoiding a
+	# second activation path for the same phone touch.
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
 	if not is_instance_valid(building) or building != _production_building:
 		return
@@ -2754,6 +2754,22 @@ func _on_production_item_gui_input(event: InputEvent, building: Building, item_i
 # essential: once the finger leaves the hexagon, its GUI control no longer owns
 # the pointer, but the drag must continue all the way to the bottom queue dock.
 func _input(event: InputEvent) -> void:
+	# Godot delivers native ScreenTouch through the viewport input pipeline
+	# before Control.gui_input. Route taps here with viewport-space hit tests;
+	# this remains reliable when touch-to-mouse emulation is disabled.
+	if event is InputEventScreenTouch and event.pressed:
+		if is_instance_valid(production_overlay) and production_overlay.visible and is_instance_valid(_production_building):
+			for button in _production_orbit_buttons:
+				if not is_instance_valid(button) or not button.visible or button.disabled:
+					continue
+				if not button.get_global_rect().has_point(event.position):
+					continue
+				var target_building := _production_building
+				var target_item_id := str(button.get_meta("production_item_id", ""))
+				if not target_item_id.is_empty() and int(button.get_meta("production_building_id", 0)) == target_building.get_instance_id():
+					_on_production_item_pressed(target_building, target_item_id, -1, button)
+					get_viewport().set_input_as_handled()
+					return
 	if not _production_touch_drag_active:
 		return
 	if event is InputEventScreenDrag and event.index == _production_touch_drag_index:
