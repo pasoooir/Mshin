@@ -171,5 +171,5 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Construction steps point to the actual BUILD action before guiding the player to a valid road-connected plot; factory and store instructions now describe the same tap sequence.
 - [x] The finger cue uses a small press/release pulse so it reads as an action pointer rather than a static decoration.
 - [x] Building notification polling ignores non-Building test/migration fixtures before reading Building-only fields; the integration smoke test explicitly refreshes notifications while such a fixture is registered.
-- [ ] Verify the latest main-branch Godot Validation and Playable Web workflows after merge.
-- [ ] Verify the deployed Pages build on a physical Android device in landscape; CI browser smoke is not a substitute for device testing.
+- [x] Main-branch verification passed after merge: Godot City BuildIt Validation [run 43842039456](https://github.com/pasoooir/Mshin/actions/runs/43842039456), including GameplaySmoke and Android Debug APK export; Playable Web [run 43842039295](https://github.com/pasoooir/Mshin/actions/runs/43842039295), including desktop/mobile Chromium launch and GitHub Pages deployment.
+- [ ] Physical Android acceptance in landscape remains outstanding; CI touch simulation and Chromium mobile viewport are not a substitute for testing on the user's phone.
