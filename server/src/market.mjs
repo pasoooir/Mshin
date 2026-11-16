@@ -114,7 +114,7 @@ export async function handleMarketRequest({
         send(response, 400, { error: "invalid_listing" });
         return true;
       }
-      const result = await withPlayerLock(session.playerId, async () => {
+      const result = await withPlayerLock(0, async () => {
         const profile = await readProfile(session.playerId);
         const state = gameState(profile);
         if (Number(state.game?.level || 1) < item.level) return { status: 409, error: "item_locked" };
