@@ -3895,13 +3895,14 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_click_payload, factory), "The selected factory must accept a valid tap order when a production slot is free.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 6), "A production order must reject a queue slot outside factory capacity.")
 	if metal_button:
-		# Exercise the real touch lifecycle rather than emitting Button.pressed:
-		# touch-down on the projected product, then release without dragging.
+		# Exercise the connected GUI signal, not the handler directly. This
+		# catches a missing signal connection that a direct function call hides.
+		_check(metal_button.gui_input.get_connections().size() > 0, "The actual Metal product button must be wired to the production touch handler.")
 		var metal_touch_down := InputEventScreenTouch.new()
 		metal_touch_down.index = 0
 		metal_touch_down.pressed = true
 		metal_touch_down.position = metal_button.get_global_rect().get_center()
-		production_hud._on_production_item_gui_input(metal_touch_down, factory, "metal", 0, metal_button)
+		metal_button.gui_input.emit(metal_touch_down)
 		var metal_touch_up := InputEventScreenTouch.new()
 		metal_touch_up.index = 0
 		metal_touch_up.pressed = false
