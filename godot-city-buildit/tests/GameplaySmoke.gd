@@ -3373,6 +3373,21 @@ func _test_tutorial_guide_contract() -> void:
 					_check(str(hud.active_category) == "residential" and is_instance_valid(hud.submenu_scroll) and hud.submenu_scroll.visible, "A real touch on Residential must open its building submenu.")
 					hud._on_cancel_pressed()
 
+				# Verify that the coach's translucent background does not eat taps
+				# intended for controls beneath it.
+				var underlay_button := Button.new()
+				underlay_button.name = "CoachPassThroughProbe"
+				underlay_button.text = "UNDERLAY"
+				underlay_button.size = Vector2(76, 40)
+				var panel_rect: Rect2 = guide._panel.get_global_rect()
+				underlay_button.position = Vector2(panel_rect.end.x - 82.0, panel_rect.position.y + panel_rect.size.y * 0.5 - 20.0)
+				hud.add_child(underlay_button)
+				var underlay_tapped := [false]
+				underlay_button.pressed.connect(func() -> void: underlay_tapped[0] = true)
+				await _tap_native_control(underlay_button)
+				_check(bool(underlay_tapped[0]), "A real touch on an underlying HUD control must pass through the coach background.")
+				underlay_button.queue_free()
+
 func _test_city_name_contract() -> void:
 	var previous_name := GameManager.city_name
 	_check(not GameManager.set_city_name("   "), "City name must reject blank input.")
