@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { createHmac, timingSafeEqual, randomBytes } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createFilesystemJsonStore, GitHubJsonStore } from "./json-store.mjs";
 import { handleMarketRequest } from "./market.mjs";
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
@@ -102,10 +102,20 @@ export function createApp({
   devAuthEnabled = process.env.DEV_AUTH_ENABLED === "true",
   nodeEnv = process.env.NODE_ENV || "development",
   devIdentities = parseDevIdentities(process.env.DEV_IDENTITIES),
-  allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://pasoooir.github.io").split(",").map(x => x.trim()).filter(Boolean)
+  allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://pasoooir.github.io").split(",").map(x => x.trim()).filter(Boolean),
+  jsonStore = null
 } = {}) {
   if (authSecret.length < 32) throw new Error("AUTH_TOKEN_SECRET must contain at least 32 characters");
-  const playersDir = path.resolve(dataDir, "players");
+  const storage = jsonStore || (process.env.GITHUB_JSON_REPOSITORY
+    ? new GitHubJsonStore({
+        repository: process.env.GITHUB_JSON_REPOSITORY,
+        token: process.env.GITHUB_JSON_TOKEN,
+        branch: process.env.GITHUB_JSON_BRANCH || "main"
+      })
+    : createFilesystemJsonStore(dataDir));
+  if (nodeEnv === "production" && storage.kind !== "github-private-json") {
+    throw new Error("Production requires a dedicated private GitHub JSON repository; filesystem fallback is disabled.");
+  }
   const locks = new Map();
 
   async function withPlayerLock(playerId, operation) {
@@ -121,20 +131,9 @@ export function createApp({
     }
   }
 
-  function profilePath(playerId) {
-    return path.join(playersDir, String(playerId) + ".json");
-  }
-
   async function readProfile(playerId) {
-    try {
-      const text = await readFile(profilePath(playerId), "utf8");
-      const profile = JSON.parse(text);
-      if (profile.user_id !== playerId || containsForbiddenEmailField(profile)) {
-        throw new Error("stored_profile_invalid");
-      }
-      return profile;
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error;
+    const profile = await storage.readJson("players/" + playerId + ".json");
+    if (profile === null) {
       return {
         schema_version: 1,
         user_id: playerId,
@@ -144,14 +143,14 @@ export function createApp({
         game_state: null
       };
     }
+    if (profile.user_id !== playerId || containsForbiddenEmailField(profile)) {
+      throw new Error("stored_profile_invalid");
+    }
+    return profile;
   }
 
   async function writeProfile(playerId, profile) {
-    await mkdir(playersDir, { recursive: true });
-    const target = profilePath(playerId);
-    const temporary = target + "." + process.pid + "." + randomBytes(6).toString("hex") + ".tmp";
-    await writeFile(temporary, JSON.stringify(profile), { encoding: "utf8", flag: "wx", mode: 0o600 });
-    await rename(temporary, target);
+    await storage.writeMany([{ path: "players/" + playerId + ".json", value: profile }]);
   }
 
   const server = createServer(async (request, response) => {
@@ -173,7 +172,7 @@ export function createApp({
 
     const url = new URL(request.url, "http://localhost");
     if (request.method === "GET" && url.pathname === "/healthz") {
-      send(response, 200, { ok: true, service: "mshin-json-profile-service", storage: "filesystem-json" });
+      send(response, 200, { ok: true, service: "mshin-json-profile-service", storage: storage.kind });
       return;
     }
 
@@ -212,7 +211,7 @@ export function createApp({
         return;
       }
       await handleMarketRequest({
-        request, response, url, session, dataDir, readProfile, writeProfile,
+        request, response, url, session, storage, readProfile, writeProfile,
         withPlayerLock, readJsonBody, send
       });
       return;
@@ -301,7 +300,7 @@ if (import.meta.url === new URL(process.argv[1] || "", "file:").href) {
   const server = createApp();
   server.listen(port, "0.0.0.0", () => {
     console.log("[Mshin JSON API] listening on " + port);
-    console.log("[Mshin JSON API] data directory: " + path.resolve(process.env.MSHIN_DATA_DIR || "./data"));
+    console.log("[Mshin JSON API] storage: " + (process.env.GITHUB_JSON_REPOSITORY ? "private GitHub JSON repository " + process.env.GITHUB_JSON_REPOSITORY : "local JSON directory " + path.resolve(process.env.MSHIN_DATA_DIR || "./data")));
     console.log("[Mshin JSON API] development auth: " + (process.env.DEV_AUTH_ENABLED === "true" && process.env.NODE_ENV !== "production" ? "enabled" : "disabled"));
   });
 }

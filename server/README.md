@@ -1,25 +1,42 @@
 # Mshin independent JSON profile service
 
-This service is the only game-data API. It stores one private JSON document per numeric player ID under `MSHIN_DATA_DIR/players/<player_id>.json`. It does not use Cloudflare, D1, R2, or another database for game state.
+This service is the only game-data API. Production game data is stored as JSON files in a **separate private GitHub repository**, not in the public Mshin Pages repository. Cloudflare is limited to authentication and issuing the numeric player ID; it does not store game state, inventory, wallet or market data.
 
-## Runtime
+## GitHub JSON storage
 
-- Node.js 20+
-- Persistent local disk or a mounted persistent volume
-- One active writer process for a data directory (profile and market reads/writes share an in-process lock)
-- HTTPS reverse proxy in production
+Configure a dedicated private repository, for example `pasoooir/mshin-player-data`. It must be private, have an initialized default branch, and must never be made public. Create a fine-grained GitHub token restricted to that one repository with **Contents: Read and write** only. Store the token only as a secret on the independent API host.
 
-Run:
+Required environment:
 
 ```sh
-npm test
-AUTH_TOKEN_SECRET='replace-with-at-least-32-random-bytes' \
-MSHIN_DATA_DIR='/var/lib/mshin' \
-ALLOWED_ORIGINS='https://pasoooir.github.io' \
-NODE_ENV=production PORT=8788 npm start
+GITHUB_JSON_REPOSITORY='pasoooir/mshin-player-data'
+GITHUB_JSON_BRANCH='main'
+GITHUB_JSON_TOKEN='server-side-secret'
+AUTH_TOKEN_SECRET='same-secret-used-by-auth-worker-at-least-32-bytes'
+ALLOWED_ORIGINS='https://pasoooir.github.io'
+NODE_ENV=production
+PORT=8788
+npm start
 ```
 
-The directory must be on persistent storage and included in the host's backup plan. Do not deploy this service on an ephemeral filesystem. Do not expose the data directory through a static web server.
+Initialize the two test accounts and shared market document once:
+
+```sh
+GITHUB_JSON_REPOSITORY='pasoooir/mshin-player-data' \
+GITHUB_JSON_BRANCH='main' \
+GITHUB_JSON_TOKEN='server-side-secret' npm run seed:github
+```
+
+The initializer creates only missing files and never overwrites existing player data:
+- `players/100001.json` — admin
+- `players/100002.json` — player2
+- `market/listings.json` — shared active and historical listings
+
+The GitHub adapter reads JSON through the Contents API and writes a complete transaction through GitHub's Git Blobs, Trees and Commits APIs. Buyer profile, seller profile and market listings are placed in one Git commit, so readers see the transaction as one repository revision. The API token is never sent to Godot or the browser.
+
+**Important operating limits:** GitHub is versioned file storage, not a high-throughput database. Each save/market mutation creates a Git commit and API reads consume the token's GitHub API quota. This implementation is intentionally an initial two-account/test deployment. Before opening the market to many players or frequent autosaves, add a server-side write queue/cache and measure GitHub API quota and latency; do not silently fall back to public files or Cloudflare storage.
+
+For local automated tests only, the service continues to use filesystem JSON when `GITHUB_JSON_REPOSITORY` is absent. Production must be configured with the private repository and token.
 
 ## API
 
@@ -42,7 +59,8 @@ Production requests must carry a short-lived HS256 bearer token issued by the Cl
 - Player JSON contains a numeric `user_id`, `market_account` and `game_state`; email-shaped fields are rejected recursively.
 - Simoleons are held in `market_account` and reconciled into the game state on reads/writes. Normal city inventory remains part of the Godot save payload so factory/shop production can continue to synchronize.
 - Shared listings are stored in `market/listings.json`, not in Cloudflare or D1.
-- Profile and market reads/mutations share a process-wide lock. Each JSON file is written through a temporary file and rename; multi-profile commits attempt rollback if a later write fails.
+- Profile and market reads/mutations share a process-wide lock. GitHub-backed multi-file transactions are published as one Git tree/commit and one branch-ref update.
+- Run exactly one API writer instance against this repository. The in-process lock is not a distributed lock; multiple independent API instances can race on stale profile snapshots.
 - Listing creation requires an idempotency key; retries with the same key and payload return the original listing without reserving stock again.
 - `expected_revision` prevents stale profile saves from silently overwriting newer saves (HTTP 409).
 - The game state is size-limited to 4 MiB.
@@ -54,6 +72,6 @@ Production requests must carry a short-lived HS256 bearer token issued by the Cl
 - The server validates item IDs, verified unlock levels, quantity, unit price ceiling, seller ownership, buyer balance, buyer warehouse capacity and duplicate purchase attempts.
 - Listings reserve goods; cancellation returns them; successful purchase transfers goods and money and records ledger entries for both players.
 - The current Godot production/inventory save path still accepts the player's game-state payload. The market wallet is protected server-side, but complete anti-cheat protection for inventory requires moving production, collection and all inventory mutations to server-authoritative commands. Do not treat this test-market slice as production-hardened against a modified client.
-- The filesystem locking model assumes one active writer process for the data directory. A multi-instance deployment needs a shared lock or a transactional storage layer. The rollback path handles ordinary write failures, not a power loss between multiple file renames.
+- The GitHub adapter retries branch-ref conflicts, but it does not provide distributed application-level locking across multiple API instances. Keep one writer instance until a shared transactional lock/storage layer is implemented.
 
 Do not expose direct filesystem writes to clients.
