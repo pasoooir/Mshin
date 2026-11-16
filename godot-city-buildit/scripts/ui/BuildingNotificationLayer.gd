@@ -103,7 +103,7 @@ func _build_notifications(building: Building) -> Array[BuildingNotification]:
 				"", 1, "City Storage is full. Free space before collecting."
 			))
 
-	if bool(building.get("upgrade_ready")):
+	if building.upgrade_ready:
 		result.append(NotificationScript.make(
 			building_id,
 			NotificationScript.Type.UPGRADE_READY,
@@ -111,7 +111,7 @@ func _build_notifications(building: Building) -> Array[BuildingNotification]:
 		))
 
 	if is_instance_valid(component) and ready_groups.is_empty() and not has_queued_work:
-		var missing := _find_missing_store_materials(component) if not bool(component.is_factory) else {}
+		var missing := _find_missing_store_materials(component) if not component.is_factory else {}
 		if not missing.is_empty():
 			var product_id := str(missing.get("item_id", ""))
 			result.append(NotificationScript.make(
@@ -193,7 +193,7 @@ func _collect_product(building_id: String, item_id: String) -> void:
 	var blocked := false
 	for slot_index in range(component.get_slot_count()):
 		var slot: Dictionary = component.get_slot(slot_index)
-		if slot.is_empty() or not bool(slot.get("ready", false)) or str(slot.get("item_id", "")) != item_id:
+		if slot.is_empty() or not slot.get("ready", false) or str(slot.get("item_id", "")) != item_id:
 			continue
 		if component.collect(slot_index):
 			collected += 1
