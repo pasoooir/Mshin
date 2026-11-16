@@ -3895,10 +3895,24 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_click_payload, factory), "The selected factory must accept a valid tap order when a production slot is free.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 6), "A production order must reject a queue slot outside factory capacity.")
 	if metal_button:
-		metal_button.emit_signal("pressed")
-	_check(not factory_component.get_slot(0).is_empty(), "A single tap on Metal must immediately enqueue factory production without dragging or tapping a queue slot.")
+		# Exercise the real touch lifecycle rather than emitting Button.pressed:
+		# touch-down on the projected product, then release without dragging.
+		var metal_touch_down := InputEventScreenTouch.new()
+		metal_touch_down.index = 0
+		metal_touch_down.pressed = true
+		metal_touch_down.position = metal_button.get_global_rect().get_center()
+		production_hud._on_production_item_gui_input(metal_touch_down, factory, "metal", 0, metal_button)
+		var metal_touch_up := InputEventScreenTouch.new()
+		metal_touch_up.index = 0
+		metal_touch_up.pressed = false
+		metal_touch_up.position = metal_touch_down.position
+		production_hud._input(metal_touch_up)
+	_check(not factory_component.get_slot(0).is_empty(), "One mobile tap release on Metal must immediately enqueue production without a second tap, drag or queue-slot interaction.")
+	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "A tap-started factory order must immediately show its progress bar.")
+	var queued_metal_icon := production_hud.production_panel.find_child("QueueItemIcon0", true, false) as TextureRect
+	_check(queued_metal_icon != null and queued_metal_icon.texture != null and queued_metal_icon.custom_minimum_size.x >= 40.0, "The occupied black queue square must immediately show the actual Metal artwork at a readable size.")
 	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must offer the next available slot after the first tap order.")
 	if second_metal_button:

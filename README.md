@@ -1347,3 +1347,14 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Confirm the published Pages build and perform a real Android touch-to-warehouse acceptance test.
 
 **Test timing note:** the smoke test first verifies the real catalog duration (Metal and Nails), then shortens only the test slot finish timestamps to a few seconds. It does not change production catalog data or shipped gameplay durations. This allows CI to exercise real timer ticks, readiness transitions, collection UI and City Storage transfer without waiting several minutes.
+
+
+## Mobile production queue: one-tap submission and visible item tile — 2026-11-16
+
+- [x] Touch release on a product card now submits the order immediately to the first free production slot; it no longer leaves a selected item waiting for a second tap on the queue/building.
+- [x] Suppress the follow-up Button.pressed event for the same touch so one physical tap cannot enqueue twice.
+- [x] Increase the queue-slot item artwork from 28 px to 42 px and give it a stable node name for visual regression checks; the existing per-slot countdown and progress display remain tied to the same persisted production timestamps.
+- [x] GameplaySmoke now drives InputEventScreenTouch down/up on the actual projected Metal product target and checks that the first slot fills, the latent selection clears, a live timer/progress bar appears, and the Metal texture is rendered inside the occupied queue square.
+- [ ] Godot validation, GameplaySmoke, Android APK export and Web/mobile Chromium CI for this correction.
+- [ ] Verify the Pages deployment for the resulting main-branch commit.
+- [ ] Physical Android touch/screenshot acceptance; automated touch-event simulation is not a physical-device test.
