@@ -168,6 +168,10 @@ func _test_building_notification_grouping() -> void:
 	groups = BuildingNotificationLayerScript.get_ready_product_groups(component)
 	_check(groups.get("nails", []).size() == 1, "A collected queue slot must immediately reduce the matching product notification count.")
 	component.queue_free()
+	var priority_order := BuildingNotificationLayerScript.select_notification_kinds_by_priority(["idle", "needs_materials", "upgrade", "product", "storage_full"], 2)
+	_check(priority_order.size() == 2 and priority_order[0] == "product" and priority_order[1] == "storage_full", "Building notifications must enforce the configurable two-entry limit in priority order, keeping ready production above all other states.")
+	_check(BuildingNotificationLayerScript.get_notification_priority("upgrade") > BuildingNotificationLayerScript.get_notification_priority("needs_materials"), "Upgrade-ready notifications must outrank non-blocking material/idle hints.")
+	_check(BuildingNotificationLayerScript.get_notification_priority("needs_materials") > BuildingNotificationLayerScript.get_notification_priority("idle"), "Missing-material notifications must outrank idle hints.")
 
 func _test_live_production_queue_eta() -> void:
 	var queue_probe = ProductionComponentScript.new()

@@ -1366,3 +1366,24 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Web export + desktop/mobile Chromium launch checks passed in run `43808044974` (PR-event Pages deploy was correctly skipped).
 - [ ] Verify the Pages deployment for the resulting main-branch commit.
 - [ ] Physical Android touch/screenshot acceptance; automated touch-event simulation is not a physical-device test.
+
+
+## Building Notification System — persistent multi-state notices — 2026-11-16
+
+- [x] Extend the existing notification layer instead of creating a parallel production/inventory state machine.
+- [x] Add an extensible `BuildingNotification` data model with explicit priorities: ProductionReady, StorageFull, UpgradeReady, NeedsMaterials and Idle.
+- [x] Keep ready product notifications tied to the exact ready queue slots; group identical products and display the actual batch count.
+- [x] Show StorageFull with the actual ready product icon/count when City Storage cannot accept it; collection remains blocked in `ProductionComponent.collect`, so the product stays in its original queue slot.
+- [x] Derive NeedsMaterials from the store's unlocked recipe catalogue and the current City Storage inputs; tapping opens that exact store's production panel.
+- [x] Derive Idle only when the operational factory/store has no occupied production slots and no actionable missing-material recipe.
+- [x] Preserve UpgradeReady hard-hat action and route it to the correct residential/upgrade panel.
+- [x] Limit each building to two visible notices and sort by explicit priority; multiple ready product types remain independently actionable when within the cap.
+- [x] Add subtle bobbing, distance-based scale LOD and camera-facing projected UI tap targets anchored to each building's rendered roof bounds.
+- [x] Refresh from ProductionComponent.slots_changed and StorageManager inventory/capacity signals, with a low-frequency reconciliation pass as a safety net.
+- [x] Notifications are reconstructed from persisted production slots, upgrade state and storage after load; no duplicate notification save data can drift from the authoritative model.
+- [x] GameplaySmoke covers priority ordering and the two-notice cap while retaining ready-product grouping/quantity assertions.
+- [ ] Godot 4.3 parse/import + full GameplaySmoke, Android APK export/signature and Web/Chromium validation for this PR.
+- [ ] Verify GitHub Pages deployment for the merged commit.
+- [ ] Physical Android acceptance: test idle Zzz, material shortage, ready product tap, full storage retention, upgrade-ready hard hat, camera distance LOD and save/reload.
+
+**Implementation boundary:** the notification buttons are CanvasLayer controls continuously projected from 3D roof anchors. They face the camera by screen projection and provide reliable mobile touch targets; the underlying building model remains 3D. This intentionally avoids fragile Sprite3D hit-testing while preserving a world-anchored visual result. StorageFull is a distinct notification state but retains the real product icon and queue item identity. The product is never removed from its queue unless City Storage accepts it.
