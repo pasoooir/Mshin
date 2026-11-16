@@ -3811,6 +3811,17 @@ func _run_gameplay_test() -> void:
 	var production_hud = get_node("HUD")
 	var factory_component = factory.production_component
 	_check(factory_component != null and factory_component.get_slot_count() == 6, "Small Factory must expose six independent production queue slots.")
+	# Regression: switching between home, factory and shop must replace the
+	# active modal and its owner, never leave a higher-z stale panel intercepting taps.
+	production_hud.open_residential_panel(home)
+	_check(is_instance_valid(production_hud.residential_overlay) and not is_instance_valid(production_hud.production_overlay), "Opening a home must leave only the residential detail modal active.")
+	_check(production_hud._residential_building == home, "Residential modal must retain the exact selected home as its owner.")
+	production_hud.open_production_panel(factory)
+	_check(not is_instance_valid(production_hud.residential_overlay) and is_instance_valid(production_hud.production_overlay), "Opening a factory must close the home modal before showing production.")
+	_check(production_hud._production_building == factory, "Factory production modal must be bound to the exact selected factory.")
+	_check(production_hud.production_overlay.find_child("Slot0_metal", true, false) is Button, "Factory modal must expose the selected factory's own raw-material catalogue.")
+	production_hud.open_production_panel(home)
+	_check(production_hud._production_building == factory and is_instance_valid(production_hud.production_overlay), "A residential building must never replace or masquerade as a production building.")
 	production_hud.open_production_panel(factory)
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
 	var production_backdrop := production_hud.production_overlay.find_child("ProductionBackdrop", true, false) as ColorRect
@@ -3882,6 +3893,14 @@ func _run_gameplay_test() -> void:
 	_check(shop_component != null and shop_component.get_slot_count() == 2, "Building Supplies must expose two craft queue slots.")
 	StorageManager.items = {}
 	production_hud.open_production_panel(supplies)
+	_check(production_hud._production_building == supplies, "Store modal must replace the previous factory owner with the selected store.")
+	_check(production_hud.production_overlay.find_child("Slot0_nails", true, false) is Button, "Building Supplies modal must show its own Nails catalogue item.")
+	_check(production_hud.production_overlay.find_child("Slot0_metal", true, false) == null, "Store modal must not retain the previous factory's Metal card.")
+	var factory_slots_before_stale_press: Array = factory_component.to_save_array()
+	var stale_factory_card := Button.new()
+	production_hud._on_production_item_pressed(factory, "metal", 0, stale_factory_card)
+	_check(factory_component.to_save_array() == factory_slots_before_stale_press, "A stale factory card must not enqueue production after switching to a store.")
+	stale_factory_card.free()
 	var unavailable_nails_button := production_hud.production_overlay.find_child("Slot0_nails", true, false) as Button
 	_check(unavailable_nails_button != null and not unavailable_nails_button.disabled, "A recipe with missing ingredients must remain selectable so the player can inspect its shortage.")
 	if unavailable_nails_button:
