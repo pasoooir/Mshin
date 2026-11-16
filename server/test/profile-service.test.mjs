@@ -77,6 +77,14 @@ test("GitHub JSON storage rejects path traversal and duplicate paths", async () 
   ]), /duplicate_json_storage_path/);
 });
 
+test("production refuses filesystem JSON storage", () => {
+  assert.throws(() => createApp({
+    authSecret: secret,
+    nodeEnv: "production",
+    jsonStore: { kind: "filesystem-json", readJson: async () => null, writeMany: async () => {} }
+  }), /Production requires a dedicated private GitHub JSON repository/);
+});
+
 test("profile files are isolated by numeric player id", async t => {
   const f = await fixture(); t.after(f.close);
   const a = await json(f.base + "/v1/profile", f.token(100001), "PUT", { expected_revision: 0, game_state: { city: "A", coins: 900 } });
