@@ -205,6 +205,7 @@ func _build_guide_panel() -> void:
 	layout.add_child(header)
 	var eyebrow := Label.new()
 	eyebrow.text = "☁ CITY COACH  •  YOUR NEXT TASK"
+	eyebrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	eyebrow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	eyebrow.add_theme_color_override("font_color", Color("#8AD7F5"))
 	eyebrow.add_theme_font_size_override("font_size", 15)
@@ -290,6 +291,7 @@ func _build_guide_panel() -> void:
 	body.add_child(_result)
 
 	_progress = ProgressBar.new()
+	_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_progress.min_value = 0
 	_progress.max_value = STEP_DATA.size()
 	_progress.show_percentage = false
