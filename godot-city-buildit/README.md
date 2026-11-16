@@ -156,6 +156,7 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Added a real **Name your city** first step with an editable field and SAVE CITY action; players are no longer told to enter a name without an actual input.
 - [x] Added a moving finger pointer that points at the city-name field and resolves named HUD targets for later guide steps when those controls are visible.
 - [x] Persisted the city name in the game save; legacy saves without a city name migrate to **Pasoo City**.
-- [x] Expanded the gameplay smoke contract to require the city-name step and validate blank-name rejection, accepted names and the 28-character limit.
+- [x] Expanded GameplaySmoke to require the city-name step, validate blank-name rejection and the 28-character limit, and simulate real screen touches on SAVE CITY, Later, HELP and the Residential HUD action.
+- [ ] Confirm the new synthetic-touch assertions pass on the latest PR head; passing launch-only browser smoke is not sufficient.
 - [ ] Run Godot GameplaySmoke and playable-web Chromium interaction checks against this change.
 - [ ] Verify the pointer target alignment, keyboard behavior and touch interaction on a physical Android landscape device. Physical-device acceptance is not claimed.
