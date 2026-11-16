@@ -1335,3 +1335,15 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Verify the new commit-specific Pages URL after deployment and test a real product tap on Android.
 
 **Acceptance:** the current public launcher and `/game/latest/` must resolve to the current commit's immutable Godot export. On an eligible product tap, the first empty queue square must display the selected item; no `TAP TO START` intermediate step is allowed. The previous post-merge CI passed, but it did not prove that an already-open mobile browser had fetched a fresh build from the mutable `latest` URL.
+
+## End-to-end production lifecycle verification — 2026-11-16
+
+- [x] Preserve the catalog-defined production duration assertion for factory Metal and store Nails at the moment their tap-created orders are accepted.
+- [x] Replace the previous instant time-travel-only completion assertions with elapsed-time integration coverage: the test waits for real process frames and verifies that the visible countdown text changes.
+- [x] Verify factory Metal orders automatically become ready after the countdown, expose enabled Collect actions, transfer exactly one item per collection into City Storage, and clear only the collected queue slot.
+- [x] Verify sequential Nails orders: the first countdown completes, the next queued order starts automatically, both expose Collect only after completion, and each collection transfers its output to City Storage.
+- [x] Keep existing missing-input rejection, inventory deduction, queue-capacity, storage-full, save/load and automatic dependency-chain tests intact.
+- [ ] Run full Godot GameplaySmoke and Android/Web CI with the elapsed-time lifecycle tests.
+- [ ] Confirm the published Pages build and perform a real Android touch-to-warehouse acceptance test.
+
+**Test timing note:** the smoke test first verifies the real catalog duration (Metal and Nails), then shortens only the test slot finish timestamps to a few seconds. It does not change production catalog data or shipped gameplay durations. This allows CI to exercise real timer ticks, readiness transitions, collection UI and City Storage transfer without waiting several minutes.
