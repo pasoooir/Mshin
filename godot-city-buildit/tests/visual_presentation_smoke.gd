@@ -6,6 +6,7 @@ const DistantMountainBackdropScript = preload("res://scripts/world/DistantMounta
 
 func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
+	add_child(presentation)
 	var backdrop := DistantMountainBackdropScript.new()
 	presentation.add_child(backdrop)
 	if backdrop.get_node_or_null("NorthMountainRidge") == null or backdrop.get_node_or_null("SouthMountainRidge") == null or backdrop.get_node_or_null("WestMountainRidge") == null or backdrop.get_node_or_null("EastMountainRidge") == null:
@@ -16,8 +17,8 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] The regional highway must pass through north and south mountain tunnels")
 		get_tree().quit(1)
 		return
-	if not backdrop._is_tunnel_cutout(0, -55.0) or not backdrop._is_tunnel_cutout(1, -55.0) or backdrop._is_tunnel_cutout(2, -55.0):
-		push_error("[VisualPresentationSmoke] Tunnel openings must cut only the two road-crossed mountain ridges")
+	if not backdrop._is_tunnel_portal_vegetation_exclusion(0, -55.0, 0.05) or not backdrop._is_tunnel_portal_vegetation_exclusion(1, -55.0, 0.95) or backdrop._is_tunnel_portal_vegetation_exclusion(2, -55.0, 0.05) or backdrop._is_tunnel_portal_vegetation_exclusion(0, -55.0, 0.5):
+		push_error("[VisualPresentationSmoke] Only the actual north/south tunnel mouths must exclude obstructing vegetation; the mountain crown stays continuous")
 		get_tree().quit(1)
 		return
 	if not is_equal_approx(WorldPresentationScript.HIGHWAY_LENGTH, 700.0) or not is_equal_approx(WorldPresentationScript.HIGHWAY_CENTER_X, -55.0):
