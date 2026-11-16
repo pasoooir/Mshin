@@ -156,9 +156,7 @@ func _finger_points_to_control(finger: Control, target: Control) -> bool:
 		return false
 	var finger_anchor_in_viewport := finger.get_global_transform_with_canvas().origin
 	var expected_anchor_in_viewport := target.get_global_transform_with_canvas() * Vector2(target.size.x * 0.72, target.size.y + 2.0)
-	var distance := finger_anchor_in_viewport.distance_to(expected_anchor_in_viewport)
-	print("[CoachPointerTest] target=", target.name, " finger=", finger_anchor_in_viewport, " expected=", expected_anchor_in_viewport, " distance=", distance, " target_size=", target.size, " visible=", target.is_visible_in_tree())
-	return distance <= 8.0
+	return finger_anchor_in_viewport.distance_to(expected_anchor_in_viewport) <= 8.0
 
 
 func _tap_native_control(control: Control) -> void:
