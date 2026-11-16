@@ -3287,6 +3287,8 @@ func _test_audio_manager_contract() -> void:
 
 
 func _test_tutorial_guide_contract() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
 	_check(TutorialGuideScript.get_step_count() == 7, "First-session tutorial must begin with city naming, then cover the six core city-building milestones.")
 	var expected_ids := ["city_name", "home", "factory", "raw", "store", "crafted", "upgrade"]
 	var seen_ids: Dictionary = {}
@@ -3378,7 +3380,7 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_mayor_xp_progression()
 	_test_audio_manager_contract()
-	_test_tutorial_guide_contract()
+	await _test_tutorial_guide_contract()
 	_test_city_name_contract()
 	_test_mobile_haptics_contract()
 	_test_performance_benchmark_contract()
