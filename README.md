@@ -1220,3 +1220,22 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android touch/visual acceptance; CI and mobile Chromium are not a substitute for a real device test.
 
 **Root cause:** the residential overlay had a higher z-index than the production overlay, while the production-opening path did not close the residential overlay. Production entry also lacked category/component ownership guards, and product callbacks could outlive the panel that created them.
+
+
+## Building detail panels: second isolation pass — 2026-11-16
+
+- [x] Deeper review found the input lifecycle was only explicitly modal-aware for production; residential detail panels were missing from the CityInput modal guard.
+- [x] CityInput now blocks city tap/long-press/move processing while either residential or production detail modal is active and clears pending pointer state.
+- [x] Escape/Backspace closes the active home or production panel.
+- [x] Switching between homes closes the previous residential panel before assigning the next selected home.
+- [x] Residential upgrade and Epic Project callbacks reject stale actions unless their exact home still owns the active residential panel.
+- [x] Production panel opening verifies that the component's factory type or store ID exactly matches the selected building definition.
+- [x] GameplaySmoke now checks modal input ownership and exact factory/store catalog identity in addition to home → factory → store switching and stale product-card rejection.
+- [x] Godot Validation + full Gameplay integration passed (run `43788170846`).
+- [x] Android Debug APK export + signature/package verification passed (run `43788170846`).
+- [x] Web export + Gameplay integration + desktop/mobile Chromium launch passed (run `43788170903`).
+- [x] PR #534 merged to `main` as `36e727d7c242c2bae1fe895cac78de683d84cd3a`.
+- [ ] Post-merge GitHub Pages deployment verification.
+- [ ] Physical Android touch/visual acceptance; CI and mobile Chromium are not a substitute for a real device test.
+
+**Additional root cause:** residential detail UI was not registered as a blocking modal in `CityInput`, and its long-press state was not cleared while the home panel was active. The production modal also did not validate that a component's catalog key still matched its owner building.
