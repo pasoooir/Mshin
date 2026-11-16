@@ -2048,7 +2048,7 @@ func open_production_panel(building: Building) -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var compact_layout := viewport_size.x <= 900.0 or viewport_size.y <= 520.0
 	var panel_width := minf(viewport_size.x * 0.92, 1240.0 * _ui_scale)
-	var panel_height := minf((220.0 if compact_layout else 232.0) * _ui_scale, viewport_size.y * 0.46)
+	var panel_height := minf((270.0 if compact_layout else 290.0) * _ui_scale, viewport_size.y * 0.52)
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
 	production_panel.anchor_top = 1.0
@@ -2374,7 +2374,7 @@ func open_production_panel(building: Building) -> void:
 	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = (64.0 if compact_layout else 72.0) * _ui_scale
+	queue_scroll.custom_minimum_size.y = (108.0 if compact_layout else 112.0) * _ui_scale
 	layout.add_child(queue_scroll)
 	var queue_row := HBoxContainer.new()
 	queue_row.name = "ProductionQueueSlots"
@@ -2385,7 +2385,7 @@ func open_production_panel(building: Building) -> void:
 		var slot: Dictionary = component.get_slot(slot_index) if slot_index < component.get_slot_count() else {}
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
-		slot_card.custom_minimum_size = Vector2(82 if viewport_size.x > 1100.0 else 66, 62 if compact_layout else 68) * _ui_scale
+		slot_card.custom_minimum_size = Vector2(122 if viewport_size.x > 1100.0 else 114, 104 if compact_layout else 110) * _ui_scale
 		var slot_fill := Color("#173849") if not slot.is_empty() else Color("#0B1C27")
 		var slot_border := Color("#D8AD4A") if not slot.is_empty() else Color("#668392")
 		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
@@ -2441,7 +2441,7 @@ func open_production_panel(building: Building) -> void:
 				collect_button.text = "COLLECT" if storage_has_room else "STORAGE FULL"
 				collect_button.disabled = not storage_has_room
 				collect_button.tooltip_text = "Collect into City Storage." if storage_has_room else "Free at least one storage slot; this completed item will remain here."
-				collect_button.custom_minimum_size.y = 22 * _ui_scale
+				collect_button.custom_minimum_size.y = 34 * _ui_scale
 				collect_button.add_theme_font_size_override("font_size", _popup_font_size(9))
 				collect_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E6B93E"), Color("#FFE18A")))
 				collect_button.add_theme_color_override("font_color", Color("#34280B"))
