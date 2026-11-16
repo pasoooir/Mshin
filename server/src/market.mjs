@@ -190,7 +190,6 @@ export async function handleMarketRequest({
           inventory_before: inventoryBefore, inventory_after: { ...items }
         });
         syncMarketAccount(profile, state);
-        syncMarketAccount(profile, state);
         profile.revision += 1;
         profile.updated_at = new Date().toISOString();
         await commitMutation({
@@ -286,6 +285,7 @@ export async function handleMarketRequest({
         });
         listing.status = "cancelled";
         listing.cancelled_at = new Date().toISOString();
+        syncMarketAccount(profile, state);
         profile.revision += 1;
         profile.updated_at = new Date().toISOString();
         await commitMutation({
