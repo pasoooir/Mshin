@@ -1183,7 +1183,7 @@ for contract in [
 
 for contract in [
     "WorldPresentation/DistantMountainBackdrop",
-    "The distant green mountain horizon was not generated.",
+    "WorldPresentation must reserve the distant mountain horizon node.",
     "The green ground backdrop must cover the complete camera travel area.",
     "The green ground must preserve the coastal water opening.",
     "NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge",
