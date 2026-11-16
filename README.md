@@ -2,7 +2,7 @@
 
 **نسخه بازی: 1.0.2 — نمای گسترده شهر و افق طبیعی کوهستانی**
 
-[![PLAY MSHIN](https://img.shields.io/badge/▶%20PLAY-MSHIN-19b77a?style=for-the-badge)](https://pasoooir.github.io/Mshin/game/latest/) [![Version](https://img.shields.io/badge/version-1.0.2-blue)](https://github.com/pasoooir/Mshin/releases/tag/v1.0.2)
+[![PLAY MSHIN](https://img.shields.io/badge/▶%20PLAY-MSHIN-19b77a?style=for-the-badge)](https://pasoooir.github.io/Mshin/game/latest/) [![Version](https://img.shields.io/badge/version-1.0.2-blue)](https://github.com/pasoooir/Mshin/commit/9e55e64357825c8353888a582d49af4cfc921096)
 
 ### آخرین تغییر قابل مشاهده — نسخه 1.0.2
 
@@ -10,7 +10,7 @@
 - مرز حرکت دوربین به ۱۳۰ متر گسترش یافت و نمای نزدیک ساختمان‌ها همچنان حفظ شد.
 - یک بستر سبز پیوسته و چهار رشته‌کوه پیرامونی با بوته‌های همیشه‌سبز و چمن تیره به محیط اضافه شد تا در لبه‌های نقشه فضای خاکستری خارج از بازی دیده نشود.
 - پوشش کوهستان با MultiMesh دسته‌بندی شده است تا هزینه رندر روی موبایل کنترل شود؛ نمای ساحلی موجود نیز حفظ شده است.
-- **آزمون‌های CI و بررسی روی گوشی فیزیکی برای این نسخه هنوز در حال انجام است.**
+- **اعتبارسنجی Godot، GameplaySmoke، خروجی و امضای APK و اجرای Web/Chromium در CI موفق‌اند؛ بررسی روی گوشی فیزیکی و تأیید انتشار Pages همچنان باقی است.**
 
 ### اجرای بازی با یک کلیک
 روی دکمه **PLAY MSHIN** بالا بزن؛ لینک مستقیماً نسخه مرورگری بازی را اجرا می‌کند و برای اجرای آن نیازی به نصب Godot نیست. بازی در همان لحظه ورود، به‌صورت خودکار درخواست حالت تمام‌صفحه و قفل افقی (Landscape) می‌دهد. این قابلیت به مجوز و پشتیبانی مرورگر وابسته است؛ در مرورگرهایی که آن را مسدود می‌کنند، بازی بدون توقف در حالت قابل‌نمایش اجرا می‌شود و اولین لمس/کلیک داخل بازی نیز دوباره درخواست را امتحان می‌کند.
@@ -1512,7 +1512,7 @@ The camera change must be assessed together with the city renderer. The followin
 - [x] Batch mountain shrubs and grass with MultiMesh and disable their shadow casting to keep the distant scenery inexpensive on mobile GPUs.
 - [x] Keep the mountain backdrop local and procedural: no CDN, runtime download or third-party asset dependency.
 - [x] Add source-level validation contracts for the expanded zoom range and the natural horizon geometry.
-- [ ] Run Godot import/parse, full GameplaySmoke, Android APK export and desktop/mobile Chromium checks for this milestone.
+- [x] Godot import/parse, full GameplaySmoke, Android Debug APK export/signature verification and desktop/mobile Chromium checks passed (runs `1703` and `1739`).
 - [ ] Verify the deployed immutable Pages build and inspect all four map edges at maximum zoom on a physical Android device.
 
 **Visual acceptance:** at maximum zoom and at every reachable pan edge, the player must see continuous natural ground and green mountain scenery rather than an exposed grey void. The whole currently built city should fit comfortably in the overview where its unlocked footprint allows it. Existing close zoom, production interactions, building placement and road editing must remain unchanged.
