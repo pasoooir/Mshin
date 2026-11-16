@@ -163,3 +163,13 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [ ] Merge and confirm the GitHub Pages deployment before calling the live-site fix complete.
 - [ ] Run Godot GameplaySmoke and playable-web Chromium interaction checks against this change.
 - [ ] Verify the pointer target alignment, keyboard behavior and touch interaction on a physical Android landscape device. Physical-device acceptance is not claimed.
+
+
+## City coach: actionable touch guidance and fixture safety — 2026-11-16
+
+- [x] First onboarding step provides a real city-name field and SAVE CITY action; the animated finger points to that field.
+- [x] Construction steps point to the actual BUILD action before guiding the player to a valid road-connected plot; factory and store instructions now describe the same tap sequence.
+- [x] The finger cue uses a small press/release pulse so it reads as an action pointer rather than a static decoration.
+- [x] Building notification polling ignores non-Building test/migration fixtures before reading Building-only fields; the integration smoke test explicitly refreshes notifications while such a fixture is registered.
+- [ ] Verify the latest main-branch Godot Validation and Playable Web workflows after merge.
+- [ ] Verify the deployed Pages build on a physical Android device in landscape; CI browser smoke is not a substitute for device testing.

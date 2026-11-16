@@ -47,7 +47,10 @@ func _process(delta: float) -> void:
 func _sync_notifications() -> void:
 	var candidates: Dictionary = {}
 	for building in BuildManager.buildings.values():
-		if not is_instance_valid(building) or str(building.status) != "completed":
+		# BuildManager normally stores Building nodes, but integration tests and
+		# migration tools may temporarily register lightweight Node3D fixtures.
+		# Ignore those instead of reading Building-only properties on them.
+		if not is_instance_valid(building) or not building is Building or str(building.status) != "completed":
 			continue
 		var building_id := str(building.building_id)
 		var component = building.production_component
