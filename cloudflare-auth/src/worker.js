@@ -40,7 +40,7 @@ async function verifyGoogleIdToken(idToken, expectedAudience, expectedNonce) {
   const header = decodeJsonPart(parts[0]);
   const claims = decodeJsonPart(parts[1]);
   if (header.alg !== "RS256" || !header.kid) throw new Error("invalid_google_signature");
-  if (!GOOGLE_ISSUERS.has(claims.iss) || claims.aud !== expectedAudience) throw new Error("invalid_google_audience");
+  if (!GOOGLE_ISSUERS.has(claims.iss) || claims.aud !== expectedAudience || (claims.azp && claims.azp !== expectedAudience)) throw new Error("invalid_google_audience");
   const now = Math.floor(Date.now() / 1000);
   if (!Number.isInteger(claims.exp) || !Number.isInteger(claims.iat) || claims.exp <= now || claims.iat > now + 60) throw new Error("expired_google_token");
   if (typeof claims.sub !== "string" || !claims.sub || claims.sub.length > 255) throw new Error("invalid_google_subject");

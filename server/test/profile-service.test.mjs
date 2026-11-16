@@ -66,6 +66,8 @@ test("dev identity endpoint is unavailable when disabled or in production", asyn
 
 test("invalid or expired tokens cannot read profiles", async t => {
   const f = await fixture(); t.after(f.close);
-  const result = await json(f.base + "/v1/profile", "not-a-token");
-  assert.equal(result.status, 401);
+  const invalid = await json(f.base + "/v1/profile", "not-a-token");
+  const expired = await json(f.base + "/v1/profile", signAccessToken(100001, secret, 1));
+  assert.equal(invalid.status, 401);
+  assert.equal(expired.status, 401);
 });

@@ -41,7 +41,7 @@ function verifyAccessToken(token, secret, now = Math.floor(Date.now() / 1000)) {
     const id = Number(claims.player_id);
     if (header.alg !== "HS256" || claims.iss !== TOKEN_ISSUER || claims.aud !== TOKEN_AUDIENCE) return null;
     if (!Number.isSafeInteger(id) || id < 1 || claims.sub !== String(id)) return null;
-    if (!Number.isInteger(claims.exp) || claims.exp <= now || claims.iat > now + 30) return null;
+    if (!Number.isInteger(claims.iat) || !Number.isInteger(claims.exp) || claims.iat > now + 30 || claims.exp <= now || claims.exp <= claims.iat || claims.exp - claims.iat > 86400) return null;
     return { playerId: id };
   } catch { return null; }
 }

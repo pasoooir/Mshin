@@ -60,7 +60,7 @@ func _request_json(url: String, method: int, headers: PackedStringArray = Packed
 func bootstrap() -> bool:
 	# Synthetic identities exist only in the editor and only when explicitly enabled
 	# by the developer's local environment. They are never a production login path.
-	if not OS.has_feature("editor") or OS.get_environment("MSHIN_DEV_AUTH") != "1":
+	if not OS.has_feature("editor") or OS.get_environment("MSHIN_DEV_AUTH") != "1" or _api_base().is_empty():
 		return false
 	var identity := OS.get_environment("MSHIN_DEV_IDENTITY")
 	if identity.is_empty():
@@ -81,7 +81,7 @@ func bootstrap() -> bool:
 	return true
 
 func sign_in_with_google_id_token(id_token: String, nonce: String) -> bool:
-	if id_token.is_empty() or nonce.is_empty():
+	if id_token.is_empty() or nonce.is_empty() or _auth_url().is_empty():
 		return false
 	var response := await _request_json(
 		_auth_url() + "/v1/auth/google",
@@ -112,7 +112,7 @@ func _activate_session(data: Dictionary, label: String) -> void:
 	session_changed.emit(player_id, true)
 
 func fetch_remote_profile() -> bool:
-	if not is_authenticated():
+	if not is_authenticated() or _api_base().is_empty():
 		return false
 	var headers := PackedStringArray(["Authorization: Bearer " + access_token])
 	var response := await _request_json(_api_base() + "/v1/profile", HTTPClient.METHOD_GET, headers)
