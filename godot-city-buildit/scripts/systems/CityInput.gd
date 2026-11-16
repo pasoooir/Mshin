@@ -564,7 +564,10 @@ func _try_interact(world_position: Vector3) -> void:
 				var summary: Array[String] = []
 				for item_id in collected_items:
 					summary.append("%s ×%d" % [str(ProductionManager.get_item_definition(item_id).get("name", item_id)), int(collected_items[item_id])])
-				_set_status("Collected %s from %s." % [", ".join(summary), building.building_id])
+				var collected_message := "Collected %s from %s." % [", ".join(summary), building.building_id]
+				if blocked:
+					collected_message += " Warehouse is now full; remaining products stay on this building."
+				_set_status(collected_message)
 			elif blocked:
 				_set_status("City Storage is full. Ready products remain on this building; free space and tap again.")
 			if blocked or not collected_items.is_empty():
