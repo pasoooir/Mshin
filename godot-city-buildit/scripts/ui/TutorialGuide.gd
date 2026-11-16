@@ -242,6 +242,8 @@ func _build_guide_panel() -> void:
 	_city_name_input.name = "CityNameInput"
 	_city_name_input.placeholder_text = "Enter your city name"
 	_city_name_input.max_length = 28
+	_city_name_input.virtual_keyboard_enabled = true
+	_city_name_input.text_submitted.connect(func(_submitted: String) -> void: _submit_city_name())
 	_city_name_input.custom_minimum_size = Vector2(0, 48)
 	_city_name_input.add_theme_font_size_override("font_size", 19)
 	_city_name_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
