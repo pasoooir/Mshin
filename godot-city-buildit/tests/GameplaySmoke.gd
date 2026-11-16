@@ -3287,8 +3287,8 @@ func _test_audio_manager_contract() -> void:
 
 
 func _test_tutorial_guide_contract() -> void:
-	_check(TutorialGuideScript.get_step_count() == 6, "First-session tutorial must cover the six core city-building milestones.")
-	var expected_ids := ["home", "factory", "raw", "store", "crafted", "upgrade"]
+	_check(TutorialGuideScript.get_step_count() == 7, "First-session tutorial must begin with city naming, then cover the six core city-building milestones.")
+	var expected_ids := ["city_name", "home", "factory", "raw", "store", "crafted", "upgrade"]
 	var seen_ids: Dictionary = {}
 	for index in range(TutorialGuideScript.get_step_count()):
 		var step: Dictionary = TutorialGuideScript.get_step_definition(index)
@@ -3298,6 +3298,28 @@ func _test_tutorial_guide_contract() -> void:
 		_check(not seen_ids.has(step_id), "Tutorial milestone identifiers must be unique.")
 		seen_ids[step_id] = true
 	_check(TutorialGuideScript.get_step_definition(-1).is_empty() and TutorialGuideScript.get_step_definition(7).is_empty(), "Tutorial step lookup must reject indexes outside the guide.")
+
+	var guide := get_node_or_null("TutorialGuide")
+	_check(is_instance_valid(guide), "The main scene must include the live city coach instance.")
+	if is_instance_valid(guide):
+		var name_input := guide.find_child("CityNameInput", true, false) as LineEdit
+		var save_name_button := guide.find_child("SaveCityNameButton", true, false) as Button
+		var finger := guide.find_child("ActionFingerPointer", true, false) as Label
+		_check(name_input != null and save_name_button != null, "The city-name instruction must have a real editable field and a real SAVE CITY button.")
+		_check(finger != null and finger.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The moving finger pointer must be visible guidance only and must never intercept touch input.")
+		if name_input != null and finger != null:
+			var previous_step := int(guide.current_step)
+			var previous_completed := bool(guide.completed)
+			guide.current_step = 0
+			guide.completed = false
+			guide._refresh_guide()
+			_check(name_input.is_visible_in_tree() and finger.is_visible_in_tree(), "The city-name field and its finger pointer must both be visible during the first step.")
+			guide.current_step = previous_step
+			guide.completed = previous_completed
+			if guide.completed:
+				guide._show_completion()
+			else:
+				guide._refresh_guide()
 
 func _test_city_name_contract() -> void:
 	var previous_name := GameManager.city_name
