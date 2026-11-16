@@ -1355,6 +1355,7 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Suppress the follow-up Button.pressed event for the same touch so one physical tap cannot enqueue twice.
 - [x] Increase the queue-slot item artwork from 28 px to 42 px and give it a stable node name for visual regression checks; the existing per-slot countdown and progress display remain tied to the same persisted production timestamps.
 - [x] GameplaySmoke now drives InputEventScreenTouch down/up on the actual projected Metal product target and checks that the first slot fills, the latent selection clears, a live timer/progress bar appears, and the Metal texture is rendered inside the occupied queue square.
-- [ ] Godot validation, GameplaySmoke, Android APK export and Web/mobile Chromium CI for this correction.
+- [x] Godot validation + GameplaySmoke passed in run `43808044946`; Android Debug APK export/signature verification passed in the same run.
+- [x] Web export + desktop/mobile Chromium launch checks passed in run `43808044974` (PR-event Pages deploy was correctly skipped).
 - [ ] Verify the Pages deployment for the resulting main-branch commit.
 - [ ] Physical Android touch/screenshot acceptance; automated touch-event simulation is not a physical-device test.
