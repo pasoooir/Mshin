@@ -3896,7 +3896,7 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._production_building == supplies, "Store modal must replace the previous factory owner with the selected store.")
 	_check(production_hud.production_overlay.find_child("Slot0_nails", true, false) is Button, "Building Supplies modal must show its own Nails catalogue item.")
 	_check(production_hud.production_overlay.find_child("Slot0_metal", true, false) == null, "Store modal must not retain the previous factory's Metal card.")
-	var factory_slots_before_stale_press := factory_component.to_save_array()
+	var factory_slots_before_stale_press: Array = factory_component.to_save_array()
 	var stale_factory_card := Button.new()
 	production_hud._on_production_item_pressed(factory, "metal", 0, stale_factory_card)
 	_check(factory_component.to_save_array() == factory_slots_before_stale_press, "A stale factory card must not enqueue production after switching to a store.")
