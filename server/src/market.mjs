@@ -47,7 +47,23 @@ function gameState(profile) {
   state.storage ??= {};
   state.storage.items ??= {};
   state.storage.capacity = Math.max(0, Number(state.storage.capacity) || 0);
+  if (profile.market_account && typeof profile.market_account === "object") {
+    state.economy.simoleons = Number(profile.market_account.simoleons);
+    state.storage = structuredClone(profile.market_account.storage);
+  } else {
+    profile.market_account = {
+      simoleons: Number.isSafeInteger(Number(state.economy.simoleons)) && Number(state.economy.simoleons) >= 0 ? Number(state.economy.simoleons) : 0,
+      storage: structuredClone(state.storage)
+    };
+  }
   return state;
+}
+
+function syncMarketAccount(profile, state) {
+  profile.market_account = {
+    simoleons: balance(state),
+    storage: structuredClone(state.storage)
+  };
 }
 
 function balance(state) {
@@ -173,6 +189,8 @@ export async function handleMarketRequest({
           listing_id: listing.listing_id, item_id: itemId, quantity, unit_price: unitPrice,
           inventory_before: inventoryBefore, inventory_after: { ...items }
         });
+        syncMarketAccount(profile, state);
+        syncMarketAccount(profile, state);
         profile.revision += 1;
         profile.updated_at = new Date().toISOString();
         await commitMutation({
@@ -226,6 +244,8 @@ export async function handleMarketRequest({
         listing.status = "sold";
         listing.buyer_id = session.playerId;
         listing.sold_at = new Date().toISOString();
+        syncMarketAccount(seller, sellerState);
+        syncMarketAccount(buyer, buyerState);
         seller.revision += 1;
         buyer.revision += 1;
         const now = new Date().toISOString();
