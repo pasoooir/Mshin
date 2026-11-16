@@ -1181,6 +1181,20 @@ for contract in [
     if contract not in gameplay_smoke_source:
         errors.append(f"Camera inertia regression test is missing: {contract}")
 
+for contract in [
+    "WorldPresentation/DistantMountainBackdrop",
+    "WorldPresentation must reserve the distant mountain horizon node.",
+    "The green ground backdrop must cover the complete camera travel area.",
+    "The green ground must preserve the coastal water opening.",
+    "NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge",
+    "Mountain shrubs must be generated in one 320-instance batch.",
+    "Mountain grass must be generated in one 760-instance batch.",
+    "The city camera must expose the expanded 150 m overview zoom.",
+    "The city camera travel boundary must remain inside the green world backdrop.",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"City backdrop runtime regression test is missing: {contract}")
+
 for contract in ["EmergencyCoveragePreview", "CoverageArea", "CoverageBoundary", "FireHazardManager.get_coverage_radius_world(definition)", 'int(definition.get("police", 0)) > 0', 'int(definition.get("health", 0)) > 0', "Color(0.18, 0.38, 0.98, 0.95)", "Color(0.20, 0.96, 0.62, 0.96)"]:
     if contract not in ghost_preview_source:
         errors.append(f"Fire placement coverage preview contract is missing: {contract}")
