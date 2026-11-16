@@ -1301,3 +1301,14 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 
 **Scope and honesty:** this corrects stale queue-slot routing and the mismatch between UI pre-validation and the production component's operational gate. Store orders still correctly require every recipe ingredient to exist in City Storage; tapping a blocked product must explain the missing quantity and must not create an order or consume inventory.
 
+
+## Direct production product tap — 2026-11-16
+
+- [x] Remove the misleading “TAP TO START” details prompt; a valid product tap submits directly to the first live empty queue slot.
+- [x] Keep blocked-order feedback in the status line only; do not open a product-details step that implies another click is required.
+- [x] Extend GameplaySmoke to verify the tapped Metal item is stored in the free queue slot and no intermediate details card is opened.
+- [ ] Run Godot import/parse and GameplaySmoke CI for this correction.
+- [ ] Run Android APK export and Web/Chromium validation; verify the deployed Pages build.
+- [ ] Verify the interaction with a real Android screen touch; automated tests do not replace device acceptance.
+
+**Acceptance:** one tap on an eligible product tile must immediately place that item in the first currently empty queue square. Blocked products must remain unqueued and explain the actual blocker without displaying a second-step “START” prompt.
