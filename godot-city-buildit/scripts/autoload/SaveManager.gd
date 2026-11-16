@@ -73,7 +73,8 @@ func capture_region_snapshot() -> Dictionary:
 		"buildings": building_data,
 		"epic_projects": EpicProjectManager.to_save_dict(),
 		"land_expansion": LandExpansionManager.to_save_dict(),
-		"happiness": GameManager.happiness
+		"happiness": GameManager.happiness,
+		"city_name": GameManager.city_name
 	}
 
 func save_game() -> bool:
@@ -90,7 +91,8 @@ func save_game() -> bool:
 			"level": GameManager.level,
 			"experience": GameManager.experience,
 			"population": GameManager.population,
-			"happiness": GameManager.happiness
+			"happiness": GameManager.happiness,
+			"city_name": GameManager.city_name
 		},
 		"economy": {
 			"simoleons": EconomyManager.simoleons,
@@ -146,6 +148,7 @@ func load_game() -> bool:
 
 	is_loading = true
 	var game_data: Dictionary = parsed.get("game", {})
+	GameManager.city_name = str(game_data.get("city_name", "Pasoo City"))
 	var economy_data: Dictionary = parsed.get("economy", {})
 	var storage_data: Dictionary = parsed.get("storage", {})
 
