@@ -149,6 +149,13 @@ var _production_touch_drag_item_id := ""
 var _production_touch_drag_building: Building = null
 var _production_touch_drag_source_button: Button = null
 var _production_touch_drag_ghost: Control = null
+var _native_ui_touch_targets: Dictionary = {}
+var _native_ui_touch_origins: Dictionary = {}
+var _native_ui_touch_last_positions: Dictionary = {}
+var _native_ui_touch_scrolls: Dictionary = {}
+var _native_ui_touch_dragged: Dictionary = {}
+var _native_ui_touch_excluded: Dictionary = {}
+const NATIVE_UI_TOUCH_DRAG_THRESHOLD := 12.0
 var _production_tick_accum := 0.0
 var _factory_ready_scan_accum := 0.0
 var _building_notification_layer: Control
@@ -2754,9 +2761,8 @@ func _on_production_item_gui_input(event: InputEvent, building: Building, item_i
 # essential: once the finger leaves the hexagon, its GUI control no longer owns
 # the pointer, but the drag must continue all the way to the bottom queue dock.
 func _input(event: InputEvent) -> void:
-	# Godot delivers native ScreenTouch through the viewport input pipeline
-	# before Control.gui_input. Route taps here with viewport-space hit tests;
-	# this remains reliable when touch-to-mouse emulation is disabled.
+	# Production product cards keep their dedicated native-touch route so one
+	# touch can never submit twice through both the item orbit and a generic UI path.
 	if event is InputEventScreenTouch and event.pressed:
 		if is_instance_valid(production_overlay) and production_overlay.is_visible_in_tree() and is_instance_valid(_production_building):
 			for button in _production_orbit_buttons:
@@ -2769,39 +2775,132 @@ func _input(event: InputEvent) -> void:
 				var target_item_id := str(button.get_meta("production_item_id", ""))
 				if not target_item_id.is_empty() and int(button.get_meta("production_building_id", 0)) == target_building.get_instance_id():
 					_on_production_item_pressed(target_building, target_item_id, -1, button)
+					_native_ui_touch_excluded[event.index] = true
 					get_viewport().set_input_as_handled()
 					return
-	if not _production_touch_drag_active:
-		return
-	if event is InputEventScreenDrag and event.index == _production_touch_drag_index:
-		if not _production_touch_dragged and _production_touch_drag_origin.distance_to(event.position) >= 12.0 * _ui_scale:
-			_production_touch_dragged = true
-			if is_instance_valid(_production_touch_drag_building):
-				_create_production_touch_drag_ghost(_production_touch_drag_building, _production_touch_drag_item_id)
-		if _production_touch_dragged:
-			_update_production_touch_drag_ghost(event.position)
-			get_viewport().set_input_as_handled()
-	elif event is InputEventScreenTouch and not event.pressed and event.index == _production_touch_drag_index:
-		var was_dragged := _production_touch_dragged
-		if was_dragged:
-			_finish_production_touch_drag(event.position)
-			if is_instance_valid(_production_touch_drag_source_button):
-				_production_touch_drag_source_button.set_meta("touch_drag_consumed", true)
-			get_viewport().set_input_as_handled()
-		else:
-			# A tap is a complete production action on touch devices. Submit on
-			# touch release instead of leaving a latent selection that requires
-			# a second tap on the queue/building. The Button.pressed signal may
-			# also fire for this gesture, so mark it consumed after submission.
-			var tapped_building := _production_touch_drag_building
-			var tapped_item_id := _production_touch_drag_item_id
-			var tapped_button := _production_touch_drag_source_button
-			if is_instance_valid(tapped_building) and is_instance_valid(tapped_button):
-				_on_production_item_pressed(tapped_building, tapped_item_id, -1, tapped_button)
-				if is_instance_valid(tapped_button):
-					tapped_button.set_meta("touch_drag_consumed", true)
-		_clear_production_touch_drag(true)
 
+	if _production_touch_drag_active:
+		if event is InputEventScreenDrag and event.index == _production_touch_drag_index:
+			if not _production_touch_dragged and _production_touch_drag_origin.distance_to(event.position) >= 12.0 * _ui_scale:
+				_production_touch_dragged = true
+				if is_instance_valid(_production_touch_drag_building):
+					_create_production_touch_drag_ghost(_production_touch_drag_building, _production_touch_drag_item_id)
+			if _production_touch_dragged:
+				_update_production_touch_drag_ghost(event.position)
+				get_viewport().set_input_as_handled()
+				return
+		elif event is InputEventScreenTouch and not event.pressed and event.index == _production_touch_drag_index:
+			var was_dragged := _production_touch_dragged
+			if was_dragged:
+				_finish_production_touch_drag(event.position)
+				if is_instance_valid(_production_touch_drag_source_button):
+					_production_touch_drag_source_button.set_meta("touch_drag_consumed", true)
+				get_viewport().set_input_as_handled()
+			else:
+				var tapped_building := _production_touch_drag_building
+				var tapped_item_id := _production_touch_drag_item_id
+				var tapped_button := _production_touch_drag_source_button
+				if is_instance_valid(tapped_building) and is_instance_valid(tapped_button):
+					_on_production_item_pressed(tapped_building, tapped_item_id, -1, tapped_button)
+					if is_instance_valid(tapped_button):
+						tapped_button.set_meta("touch_drag_consumed", true)
+				_clear_production_touch_drag(true)
+			return
+
+	if _route_native_ui_touch(event):
+		get_viewport().set_input_as_handled()
+
+func _route_native_ui_touch(event: InputEvent) -> bool:
+	if event is InputEventScreenTouch:
+		var touch_index := event.index
+		if event.pressed:
+			if _native_ui_touch_excluded.has(touch_index):
+				return true
+			var target := _find_native_ui_touch_target(event.position)
+			if not is_instance_valid(target):
+				return false
+			_native_ui_touch_targets[touch_index] = target
+			_native_ui_touch_origins[touch_index] = event.position
+			_native_ui_touch_last_positions[touch_index] = event.position
+			_native_ui_touch_scrolls[touch_index] = target as ScrollContainer if target is ScrollContainer else _find_native_ui_scroll_ancestor(target)
+			_native_ui_touch_dragged[touch_index] = false
+			if target is LineEdit:
+				(target as LineEdit).grab_focus()
+			return true
+		if _native_ui_touch_excluded.has(touch_index):
+			_native_ui_touch_excluded.erase(touch_index)
+			return true
+		if not _native_ui_touch_targets.has(touch_index):
+			return false
+		var target := _native_ui_touch_targets[touch_index] as Control
+		var dragged := bool(_native_ui_touch_dragged.get(touch_index, false))
+		if not dragged and is_instance_valid(target) and target.is_visible_in_tree() and target.get_global_rect().has_point(event.position) and target is BaseButton:
+			var button := target as BaseButton
+			if not button.disabled:
+				if button.toggle_mode:
+					button.button_pressed = not button.button_pressed
+				button.emit_signal("pressed")
+		_clear_native_ui_touch(touch_index)
+		return true
+
+	if event is InputEventScreenDrag:
+		var drag_index := event.index
+		if not _native_ui_touch_targets.has(drag_index):
+			return false
+		var origin: Vector2 = _native_ui_touch_origins.get(drag_index, event.position)
+		var last_position: Vector2 = _native_ui_touch_last_positions.get(drag_index, event.position)
+		if not bool(_native_ui_touch_dragged.get(drag_index, false)) and origin.distance_to(event.position) >= NATIVE_UI_TOUCH_DRAG_THRESHOLD * _ui_scale:
+			_native_ui_touch_dragged[drag_index] = true
+		if bool(_native_ui_touch_dragged.get(drag_index, false)):
+			var scroll := _native_ui_touch_scrolls.get(drag_index) as ScrollContainer
+			if is_instance_valid(scroll):
+				_scroll_native_ui_container(scroll, last_position - event.position)
+		_native_ui_touch_last_positions[drag_index] = event.position
+		return true
+	return false
+
+func _find_native_ui_touch_target(screen_position: Vector2) -> Control:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	var controls := scene.find_children("*", "Control", true, false)
+	for index in range(controls.size() - 1, -1, -1):
+		var control := controls[index] as Control
+		if not is_instance_valid(control) or not control.is_visible_in_tree() or not control.get_global_rect().has_point(screen_position):
+			continue
+		var ancestor: Node = control
+		while ancestor != null:
+			if ancestor is BaseButton or ancestor is LineEdit or ancestor is ScrollContainer:
+				return ancestor as Control
+			ancestor = ancestor.get_parent()
+		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+			continue
+		if control.mouse_filter == Control.MOUSE_FILTER_STOP:
+			return control
+	return null
+
+func _find_native_ui_scroll_ancestor(control: Control) -> ScrollContainer:
+	var ancestor := control.get_parent()
+	while ancestor != null:
+		if ancestor is ScrollContainer:
+			return ancestor as ScrollContainer
+		ancestor = ancestor.get_parent()
+	return null
+
+func _scroll_native_ui_container(scroll: ScrollContainer, delta: Vector2) -> void:
+	var horizontal := scroll.get_h_scroll_bar()
+	if horizontal.max_value > horizontal.page:
+		horizontal.value = clampf(horizontal.value + delta.x, horizontal.min_value, maxf(horizontal.min_value, horizontal.max_value - horizontal.page))
+	var vertical := scroll.get_v_scroll_bar()
+	if vertical.max_value > vertical.page:
+		vertical.value = clampf(vertical.value + delta.y, vertical.min_value, maxf(vertical.min_value, vertical.max_value - vertical.page))
+
+func _clear_native_ui_touch(touch_index: int) -> void:
+	_native_ui_touch_targets.erase(touch_index)
+	_native_ui_touch_origins.erase(touch_index)
+	_native_ui_touch_last_positions.erase(touch_index)
+	_native_ui_touch_scrolls.erase(touch_index)
+	_native_ui_touch_dragged.erase(touch_index)
 
 func _create_production_touch_drag_ghost(building: Building, item_id: String) -> void:
 	if not is_instance_valid(production_overlay):
