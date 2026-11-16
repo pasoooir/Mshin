@@ -3933,6 +3933,9 @@ func _run_gameplay_test() -> void:
 	if metal_slot_1_button:
 		production_hud._on_production_item_pressed(factory, "metal", 0, metal_slot_1_button)
 	_check(not factory_component.get_slot(0).is_empty() and not factory_component.get_slot(1).is_empty(), "Product tap must ignore a stale slot hint and enqueue into the current free factory slot.")
+	_check(str(factory_component.get_slot(1).get("item_id", "")) == "metal", "The tapped Metal product must be written directly into the free queue square.")
+	var production_details_host := production_hud.production_panel.find_child("ProductionDetailsHost", true, false) as Control
+	_check(production_details_host != null and production_details_host.find_child("ProductionItemDetails", true, false) == null, "A successful product tap must not open the intermediate product-details panel.")
 	factory_component.slots[0] = {}
 	factory_component.slots[1] = {}
 	factory_component.slots_changed.emit()

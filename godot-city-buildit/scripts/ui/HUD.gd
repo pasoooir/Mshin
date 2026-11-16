@@ -2651,14 +2651,8 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		reason.add_theme_color_override("font_color", Color("#A33A36"))
 		text_stack.add_child(reason)
 
-	# Product selection is informational only. Orders are committed by dropping
-	# the product onto a real, unlocked queue slot; there is no START shortcut.
-	var drop_hint := Label.new()
-	drop_hint.name = "ProductionDropHint"
-	drop_hint.text = "TAP TO START  ·  MISSING INGREDIENTS ARE SHOWN HERE"
-	drop_hint.add_theme_font_size_override("font_size", _popup_font_size(10))
-	drop_hint.add_theme_color_override("font_color", Color("#E7BC43"))
-	detail_row.add_child(drop_hint)
+	# Orders are started directly by tapping a valid product tile. This
+	# informational panel must never ask the player for a second START action.
 
 
 func _find_first_available_production_slot(component: ProductionComponent) -> int:
@@ -2694,8 +2688,9 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 		_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
 		return
 
-	# A blocked tap remains inspectable, but it must state the real blocker and
-	# must never consume ingredients or create a phantom queue entry.
+	# Only blocked products open the explanatory details panel. Eligible
+	# products returned above directly into the queue on this same tap.
+	# Keep this path so missing BOM ingredients and quantities remain visible.
 	_show_production_item_details(building, item_id, slot_index)
 	if slot_index < 0:
 		status_label.text = "All production slots are occupied. Collect a finished item or wait for a free slot."
