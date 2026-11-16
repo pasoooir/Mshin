@@ -1,5 +1,3 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 const MAX_QUANTITY = 500;
@@ -84,47 +82,30 @@ function appendLedger(state, type, currency, amount, before, after, metadata) {
   if (ledger.transaction_ledger.length > 300) ledger.transaction_ledger.splice(0, ledger.transaction_ledger.length - 300);
 }
 
-async function readListings(file) {
-  try {
-    const parsed = JSON.parse(await readFile(file, "utf8"));
-    return Array.isArray(parsed.listings) ? parsed : { schema_version: 1, listings: [] };
-  } catch (error) {
-    if (error.code === "ENOENT") return { schema_version: 1, listings: [] };
-    throw error;
-  }
+async function readListings(storage) {
+  const parsed = await storage.readJson("market/listings.json");
+  return parsed && Array.isArray(parsed.listings) ? parsed : { schema_version: 1, listings: [] };
 }
 
-async function writeAtomic(file, value) {
-  await mkdir(path.dirname(file), { recursive: true });
-  const temporary = file + "." + randomUUID() + ".tmp";
-  await writeFile(temporary, JSON.stringify(value), { encoding: "utf8", flag: "wx", mode: 0o600 });
-  await rename(temporary, file);
-}
-
-async function commitMutation({ profiles, marketFile, market, previousMarket, writeProfile }) {
-  const originals = profiles.map(entry => ({ playerId: entry.playerId, profile: structuredClone(entry.original) }));
-  try {
-    for (const entry of profiles) await writeProfile(entry.playerId, entry.next);
-    await writeAtomic(marketFile, market);
-  } catch (error) {
-    for (const entry of originals) {
-      try { await writeProfile(entry.playerId, entry.profile); } catch {}
-    }
-    try { await writeAtomic(marketFile, previousMarket); } catch {}
-    throw error;
-  }
+async function commitMutation({ profiles, market, storage }) {
+  const entries = profiles.map(entry => ({
+    path: "players/" + entry.playerId + ".json",
+    value: entry.next
+  }));
+  entries.push({ path: "market/listings.json", value: market });
+  // One Git tree/commit makes the buyer, seller and market update visible together.
+  await storage.writeMany(entries);
 }
 
 export async function handleMarketRequest({
-  request, response, url, session, dataDir, readProfile, writeProfile, withPlayerLock, readJsonBody, send
+  request, response, url, session, storage, readProfile, writeProfile, withPlayerLock, readJsonBody, send
 }) {
-  const listingsFile = path.join(dataDir, "market", "listings.json");
   const route = url.pathname;
   const method = request.method;
 
   if (method === "GET" && route === "/v1/market") {
     try {
-      const data = await withPlayerLock(0, async () => await readListings(listingsFile));
+      const data = await withPlayerLock(0, async () => await readListings(storage));
       send(response, 200, { listings: data.listings.filter(x => x.status === "active" && x.seller_id !== session.playerId).map(x => ({
         listing_id: x.listing_id, seller_id: x.seller_id, item_id: x.item_id,
         quantity: x.quantity, unit_price: x.unit_price, total_price: x.quantity * x.unit_price,
@@ -138,7 +119,7 @@ export async function handleMarketRequest({
 
   if (method === "GET" && route === "/v1/market/mine") {
     try {
-      const data = await withPlayerLock(0, async () => await readListings(listingsFile));
+      const data = await withPlayerLock(0, async () => await readListings(storage));
       send(response, 200, { listings: data.listings.filter(x => x.seller_id === session.playerId) });
     } catch {
       send(response, 500, { error: "market_read_failed" });
@@ -165,7 +146,7 @@ export async function handleMarketRequest({
         const profile = await readProfile(session.playerId);
         const originalProfile = structuredClone(profile);
         const state = gameState(profile);
-        const market = await readListings(listingsFile);
+        const market = await readListings(storage);
         const originalMarket = structuredClone(market);
         const previousRequest = market.listings.find(x => x.seller_id === session.playerId && x.request_id === requestId);
         if (previousRequest) {
@@ -203,7 +184,7 @@ export async function handleMarketRequest({
         profile.updated_at = new Date().toISOString();
         await commitMutation({
           profiles: [{ playerId: session.playerId, original: originalProfile, next: profile }],
-          marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
+          market, storage
         });
         return {
           status: 201, listing: { ...listing, total_price: cost }, revision: profile.revision,
@@ -222,7 +203,7 @@ export async function handleMarketRequest({
     try {
       const listingId = decodeURIComponent(buyMatch[1]);
       const result = await withPlayerLock(0, async () => {
-        const market = await readListings(listingsFile);
+        const market = await readListings(storage);
         const listing = market.listings.find(x => x.listing_id === listingId && x.status === "active");
         if (!listing) return { status: 404, error: "listing_not_available" };
         if (listing.seller_id === session.playerId) return { status: 409, error: "cannot_buy_own_listing" };
@@ -270,7 +251,7 @@ export async function handleMarketRequest({
             { playerId: listing.seller_id, original: originalSeller, next: seller },
             { playerId: session.playerId, original: originalBuyer, next: buyer }
           ],
-          marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
+          market, storage
         });
         return {
           status: 200, listing_id: listingId, item_id: listing.item_id, quantity: listing.quantity, total_paid: total,
@@ -291,7 +272,7 @@ export async function handleMarketRequest({
     try {
       const listingId = decodeURIComponent(cancelMatch[1]);
       const result = await withPlayerLock(0, async () => {
-        const market = await readListings(listingsFile);
+        const market = await readListings(storage);
         const listing = market.listings.find(x => x.listing_id === listingId && x.status === "active");
         if (!listing) return { status: 404, error: "listing_not_available" };
         if (listing.seller_id !== session.playerId) return { status: 403, error: "not_listing_owner" };
@@ -313,7 +294,7 @@ export async function handleMarketRequest({
         profile.updated_at = new Date().toISOString();
         await commitMutation({
           profiles: [{ playerId: session.playerId, original: originalProfile, next: profile }],
-          marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
+          market, storage
         });
         return {
           status: 200, listing_id: listingId, returned_item_id: listing.item_id,
