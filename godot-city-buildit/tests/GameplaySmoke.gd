@@ -3418,6 +3418,10 @@ func _test_tutorial_guide_contract() -> void:
 					var villa_button := hud.find_child("residential_villa", true, false) as Button
 					_check(villa_button != null and not villa_button.disabled and villa_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The first residential catalog choice must be an enabled button that consumes its own touch events.")
 					if villa_button != null:
+						# The submenu is created during the touch callback; allow Container layout
+						# to assign its final viewport rect before asserting pointer alignment.
+						await get_tree().process_frame
+						await get_tree().process_frame
 						guide._update_finger_pointer()
 						_check(_finger_points_to_control(finger, villa_button), "After opening Residential, the finger must move to the actual Villa House catalog card.")
 						await _tap_native_control(villa_button)
