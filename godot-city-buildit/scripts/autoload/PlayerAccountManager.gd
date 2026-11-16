@@ -179,6 +179,7 @@ func _flush_pending_save() -> void:
 	if _save_in_flight or not is_authenticated():
 		return
 	_save_in_flight = true
+	var revision_conflict_retries := 0
 	while not _pending_game_state.is_empty() and is_authenticated():
 		var snapshot := _pending_game_state.duplicate(true)
 		_pending_game_state.clear()
@@ -191,6 +192,31 @@ func _flush_pending_save() -> void:
 		)
 		if response.ok:
 			profile_revision = int(response.body.get("revision", profile_revision + 1))
+			revision_conflict_retries = 0
+		elif int(response.status) == 409:
+			# A marketplace transaction or another save may have advanced the
+			# profile while this snapshot was in flight. Refresh the revision and
+			# preserve the server-owned wallet/warehouse before retrying the save.
+			var latest := await _request_json(_api_base() + "/v1/profile", HTTPClient.METHOD_GET, headers)
+			if latest.ok and latest.body.get("game_state", {}) is Dictionary:
+				profile_revision = maxi(0, int(latest.body.get("revision", profile_revision)))
+				var server_state: Dictionary = latest.body.get("game_state", {})
+				var server_economy: Dictionary = server_state.get("economy", {})
+				var merged_economy: Dictionary = snapshot.get("economy", {}).duplicate(true)
+				if server_economy.has("simoleons"):
+					merged_economy["simoleons"] = server_economy.simoleons
+				snapshot["economy"] = merged_economy
+				if server_state.get("storage", {}) is Dictionary:
+					snapshot["storage"] = server_state.storage.duplicate(true)
+				_pending_game_state = snapshot
+				revision_conflict_retries += 1
+				if revision_conflict_retries <= 3:
+					continue
+			if _pending_game_state.is_empty():
+				_pending_game_state = snapshot
+			profile_save_failed.emit("revision_conflict")
+			push_warning("Online save conflicted with a newer profile; latest wallet and inventory were preserved.")
+			break
 		else:
 			if _pending_game_state.is_empty():
 				_pending_game_state = snapshot
