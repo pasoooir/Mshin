@@ -3304,6 +3304,8 @@ func _test_tutorial_guide_contract() -> void:
 	var guide := get_node_or_null("TutorialGuide")
 	_check(is_instance_valid(guide), "The main scene must include the live city coach instance.")
 	if is_instance_valid(guide):
+		_check(guide._panel.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The full-screen coach shell must ignore input so it cannot intercept the underlying HUD.")
+	if is_instance_valid(guide):
 		var name_input := guide.find_child("CityNameInput", true, false) as LineEdit
 		var save_name_button := guide.find_child("SaveCityNameButton", true, false) as Button
 		var finger := guide.find_child("ActionFingerPointer", true, false) as Label
