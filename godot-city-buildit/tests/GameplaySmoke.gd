@@ -3906,6 +3906,14 @@ func _run_gameplay_test() -> void:
 		get_viewport().push_input(metal_touch_down)
 		await get_tree().process_frame
 		_check(not factory_component.get_slot(0).is_empty(), "A real viewport-routed product touch-down must enqueue production without synthetic gui_input emission or touch-up.")
+		_check(factory_component.get_slot(1).is_empty(), "A single touch-down must enqueue exactly one order, not duplicate it.")
+		var metal_touch_up := InputEventScreenTouch.new()
+		metal_touch_up.index = 0
+		metal_touch_up.pressed = false
+		metal_touch_up.position = metal_touch_down.position
+		get_viewport().push_input(metal_touch_up)
+		await get_tree().process_frame
+		_check(factory_component.get_slot(1).is_empty(), "The matching touch-up must not enqueue a second copy of the same product.")
 	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
