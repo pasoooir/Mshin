@@ -2307,11 +2307,12 @@ func open_production_panel(building: Building) -> void:
 		tile_content.add_child(status_label)
 		item_button.disabled = not lock_reason.is_empty()
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else (("MISSING: " + missing_detail) if not missing_detail.is_empty() else inventory_status)
-		# One tap submits the order to the first available production slot.
+		# BaseButton normally emits pressed on release. Use BUTTON_PRESS so a
+		# touchscreen tap and a mouse click both submit immediately on pointer-down.
+		# This is the single authoritative input path; no parallel gui_input /
+		# global touch-up handler can swallow or duplicate the order.
+		item_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
-		# Wire touch-down into the global touch lifecycle. Without this connection,
-		# _input never receives an active product gesture and mobile taps cannot submit.
-		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
 		item_button.set_meta("orbit_index", item_index)
 		_production_orbit_buttons.append(item_button)

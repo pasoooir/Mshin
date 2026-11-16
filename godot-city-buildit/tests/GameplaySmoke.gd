@@ -3896,15 +3896,43 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_click_payload, factory), "The selected factory must accept a valid tap order when a production slot is free.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 6), "A production order must reject a queue slot outside factory capacity.")
 	if metal_button:
-		# Exercise the connected GUI signal, not the handler directly. This
-		# catches a missing signal connection that a direct function call hides.
-		_check(metal_button.gui_input.get_connections().size() > 0, "The actual Metal product button must be wired to the production touch handler.")
-		var metal_touch_down := InputEventScreenTouch.new()
-		metal_touch_down.index = 0
-		metal_touch_down.pressed = true
-		metal_touch_down.position = metal_button.get_global_rect().get_center()
-		metal_button.gui_input.emit(metal_touch_down)
-		_check(not factory_component.get_slot(0).is_empty(), "A single product touch-down must synchronously enqueue production; touch-up, drag and queue-slot interaction are not prerequisites.")
+		# Godot's web/mobile compatibility path translates touchscreen contact
+		# into mouse-button events when emulate_mouse_from_touch is enabled.
+		# Exercise the real Viewport -> Control -> BaseButton route with that
+		# translated event; raw ScreenTouch injection bypasses this platform
+		# emulation layer in headless CI and is not a valid browser-touch test.
+		_check(metal_button.action_mode == BaseButton.ACTION_MODE_BUTTON_PRESS, "Product buttons must use BUTTON_PRESS so a mobile tap submits on pointer-down.")
+		_check(bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", false)), "Mobile/web touch must be translated to GUI mouse events by Godot.")
+		var metal_click_position := metal_button.get_global_rect().get_center()
+		# get_global_rect() returns coordinates in the Control canvas. Tell
+		# Viewport.push_input explicitly that the injected pointer is already in
+		# this Viewport's local coordinate space; the default treats it as
+		# window/global coordinates and can miss CanvasLayer controls in headless
+		# runs even when the point is visibly inside their hit rectangle.
+		var metal_pointer_motion := InputEventMouseMotion.new()
+		metal_pointer_motion.position = metal_click_position
+		metal_pointer_motion.global_position = metal_click_position
+		get_viewport().push_input(metal_pointer_motion, true)
+		await get_tree().process_frame
+		var hovered_production_control := get_viewport().gui_get_hovered_control()
+		_check(hovered_production_control == metal_button, "The product card center must hit the actual Metal Button through the Viewport GUI router; hovered=%s rect=%s position=%s" % [str(hovered_production_control.get_path()) if is_instance_valid(hovered_production_control) else "<none>", str(metal_button.get_global_rect()), str(metal_click_position)])
+		var metal_pointer_down := InputEventMouseButton.new()
+		metal_pointer_down.button_index = MOUSE_BUTTON_LEFT
+		metal_pointer_down.pressed = true
+		metal_pointer_down.position = metal_click_position
+		metal_pointer_down.global_position = metal_click_position
+		get_viewport().push_input(metal_pointer_down, true)
+		await get_tree().process_frame
+		_check(not factory_component.get_slot(0).is_empty(), "A viewport-routed mobile-compatible pointer-down must enqueue production immediately.")
+		_check(factory_component.get_slot(1).is_empty(), "One pointer-down must enqueue exactly one order.")
+		var metal_pointer_up := InputEventMouseButton.new()
+		metal_pointer_up.button_index = MOUSE_BUTTON_LEFT
+		metal_pointer_up.pressed = false
+		metal_pointer_up.position = metal_click_position
+		metal_pointer_up.global_position = metal_click_position
+		get_viewport().push_input(metal_pointer_up, true)
+		await get_tree().process_frame
+		_check(factory_component.get_slot(1).is_empty(), "The pointer-up following one tap must not enqueue a duplicate order.")
 	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
