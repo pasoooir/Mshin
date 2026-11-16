@@ -206,7 +206,7 @@ func _test_building_notification_system_contract() -> void:
 	var touch := InputEventScreenTouch.new()
 	touch.pressed = true
 	anchor._on_area_input_event(null, touch, Vector3.ZERO, Vector3.UP, 0, 0)
-	_check(pressed_notifications.size() == 1 and pressed_notifications[0].type == BuildingNotification.Type.IDLE, "A touch on a world-space notification must dispatch exactly its selected notification.")
+	_check(pressed_notifications.size() == 1 and pressed_notifications[0].type == BuildingNotification.Type.PRODUCTION_READY, "A touch on a world-space notification must dispatch exactly its selected notification.")
 	_check(is_equal_approx(anchor.position.y, 8.0), "World-space notification anchor must retain its configured roof height while bobbing.")
 	anchor.queue_free()
 
