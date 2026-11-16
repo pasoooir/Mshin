@@ -4579,6 +4579,8 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	else:
 		depot_tab.add_theme_stylebox_override("normal", _catalog_action_style())
 	_refresh_trade_panel_content()
+	if _trade_active_tab == "players":
+		call_deferred("_refresh_player_market")
 
 func _refresh_trade_panel_content() -> void:
 	if not is_instance_valid(trade_panel):
