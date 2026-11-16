@@ -161,13 +161,13 @@ func _tap_native_control(control: Control) -> void:
 	touch_down.index = 0
 	touch_down.pressed = true
 	touch_down.position = touch_position
-	get_viewport().push_input(touch_down)
+	get_viewport().push_input(touch_down, true)
 	await get_tree().process_frame
 	var touch_up := InputEventScreenTouch.new()
 	touch_up.index = 0
 	touch_up.pressed = false
 	touch_up.position = touch_position
-	get_viewport().push_input(touch_up)
+	get_viewport().push_input(touch_up, true)
 	await get_tree().process_frame
 
 
