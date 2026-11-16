@@ -20,6 +20,18 @@ func _request_market(path: String, method: int, payload: Dictionary = {}) -> Dic
 	var headers := PackedStringArray(["Authorization: Bearer " + PlayerAccountManager.access_token])
 	return await PlayerAccountManager._request_json(base + path, method, headers, payload)
 
+func _apply_authoritative_state(result: Dictionary, balance_key: String, storage_key: String, revision_key: String) -> void:
+	if result.has(revision_key):
+		PlayerAccountManager.profile_revision = maxi(0, int(result.get(revision_key, PlayerAccountManager.profile_revision)))
+	if result.has(balance_key):
+		EconomyManager.simoleons = maxi(0, int(result.get(balance_key, EconomyManager.simoleons)))
+		EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
+	var storage_snapshot: Variant = result.get(storage_key, {})
+	if storage_snapshot is Dictionary and not storage_snapshot.is_empty():
+		StorageManager.from_save_dict(storage_snapshot)
+	if has_node("/root/SaveManager"):
+		SaveManager.save_game()
+
 func refresh_market() -> bool:
 	var response := await _request_market("/v1/market", HTTPClient.METHOD_GET)
 	if not response.ok:
@@ -58,6 +70,7 @@ func create_listing(item_id: String, quantity: int, unit_price: int) -> Dictiona
 	await refresh_my_shop()
 	await refresh_market()
 	var result: Dictionary = response.body
+	_apply_authoritative_state(result, "seller_balance", "seller_storage", "revision")
 	result["success"] = true
 	market_transaction_completed.emit(result)
 	return result
@@ -74,6 +87,7 @@ func buy_listing(listing_id: String) -> Dictionary:
 	await refresh_market()
 	await refresh_my_shop()
 	var result: Dictionary = response.body
+	_apply_authoritative_state(result, "buyer_balance", "buyer_storage", "buyer_revision")
 	result["success"] = true
 	market_transaction_completed.emit(result)
 	return result
@@ -90,6 +104,7 @@ func cancel_listing(listing_id: String) -> Dictionary:
 	await refresh_my_shop()
 	await refresh_market()
 	var result: Dictionary = response.body
+	_apply_authoritative_state(result, "seller_balance", "seller_storage", "revision")
 	result["success"] = true
 	market_transaction_completed.emit(result)
 	return result
