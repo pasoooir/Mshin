@@ -147,7 +147,11 @@ func _process(_delta: float) -> void:
 	scale = Vector3.ONE * scale_factor
 
 func _on_area_input_event(_camera: Camera3D, event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int, index: int) -> void:
-	var activated := event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed
-	activated = activated or (event is InputEventScreenTouch and event.pressed)
+	var activated: bool = false
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		activated = mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed
+	elif event is InputEventScreenTouch:
+		activated = (event as InputEventScreenTouch).pressed
 	if activated and index >= 0 and index < _notifications.size():
 		notification_pressed.emit(_notifications[index])
