@@ -3396,6 +3396,11 @@ func _test_tutorial_guide_contract() -> void:
 			if is_instance_valid(hud):
 				var residential_button := hud.find_child("Tool_Residential", true, false) as Button
 				_check(residential_button != null and residential_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The primary Residential HUD action must exist and consume its own touch events.")
+				hud._on_cancel_pressed()
+				if is_instance_valid(hud.catalog_info_panel):
+					hud.catalog_info_panel.hide()
+				await get_tree().process_frame
+				await get_tree().process_frame
 				var saved_guide_step := int(guide.current_step)
 				var saved_guide_completed := bool(guide.completed)
 				var saved_guide_dismissed := bool(guide._dismissed)
