@@ -151,6 +151,14 @@ func _find_building(type_id: String):
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
+func _finger_points_to_control(finger: Control, target: Control) -> bool:
+	if not is_instance_valid(finger) or not is_instance_valid(target) or not target.is_visible_in_tree() or not finger.visible:
+		return false
+	var target_rect := target.get_global_rect()
+	var finger_tip := finger.position + Vector2(finger.size.x * 0.5, 0.0)
+	return finger_tip.x >= target_rect.position.x + target_rect.size.x * 0.5 and finger_tip.x <= target_rect.end.x and finger.position.y >= target_rect.position.y + target_rect.size.y - 8.0 and finger.position.y <= target_rect.end.y + 10.0
+
+
 func _tap_native_control(control: Control) -> void:
 	if not is_instance_valid(control) or not control.is_inside_tree():
 		_check(false, "Native touch test target must remain inside the active scene tree.")
@@ -3388,7 +3396,16 @@ func _test_tutorial_guide_contract() -> void:
 			if is_instance_valid(hud):
 				var residential_button := hud.find_child("Tool_Residential", true, false) as Button
 				_check(residential_button != null and residential_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The primary Residential HUD action must exist and consume its own touch events.")
+				var saved_guide_step := int(guide.current_step)
+				var saved_guide_completed := bool(guide.completed)
+				var saved_guide_dismissed := bool(guide._dismissed)
+				guide.current_step = 1
+				guide.completed = false
+				guide._dismissed = false
+				guide._panel.show()
 				if residential_button != null:
+					guide._update_finger_pointer()
+					_check(_finger_points_to_control(finger, residential_button), "During the home step, the animated finger must point to the actual Residential toolbar button.")
 					await get_tree().process_frame
 					await get_tree().process_frame
 					await _tap_native_control(residential_button)
@@ -3396,15 +3413,26 @@ func _test_tutorial_guide_contract() -> void:
 					var villa_button := hud.find_child("residential_villa", true, false) as Button
 					_check(villa_button != null and not villa_button.disabled and villa_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The first residential catalog choice must be an enabled button that consumes its own touch events.")
 					if villa_button != null:
+						guide._update_finger_pointer()
+						_check(_finger_points_to_control(finger, villa_button), "After opening Residential, the finger must move to the actual Villa House catalog card.")
 						await _tap_native_control(villa_button)
 						_check(hud.catalog_info_panel.visible, "A real touch on the Villa House catalog item must open its information card.")
 						var catalog_build_button := hud.find_child("CatalogBuildButton", true, false) as Button
 						_check(catalog_build_button != null and not catalog_build_button.disabled, "The Villa House information card must expose an enabled BUILD action.")
 						if catalog_build_button != null:
+							guide._update_finger_pointer()
+							_check(_finger_points_to_control(finger, catalog_build_button), "After choosing Villa House, the finger must point to the real BUILD action.")
 							await _tap_native_control(catalog_build_button)
 							_check(BuildManager.is_placing and BuildManager.selected_building_type == "residential_villa", "A real touch on BUILD must start Villa House placement mode.")
 				BuildManager.cancel_placement()
 				hud._on_cancel_pressed()
+				guide.current_step = saved_guide_step
+				guide.completed = saved_guide_completed
+				guide._dismissed = saved_guide_dismissed
+				if guide.completed:
+					guide._show_completion()
+				else:
+					guide._refresh_guide()
 
 
 func _test_city_name_contract() -> void:
