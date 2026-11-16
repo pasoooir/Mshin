@@ -122,7 +122,12 @@ func save_game() -> bool:
 		"regions": RegionManager.to_save_dict(),
 		"roads": road_data,
 		"buildings": building_data,
-		"tutorial": _capture_tutorial_state()
+		"tutorial": _capture_tutorial_state(),
+		"preferences": {
+			"audio": AudioManager.to_save_dict(),
+			"haptics": HapticsManager.to_save_dict(),
+			"graphics": GraphicsSettingsManager.to_save_dict()
+		}
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -225,6 +230,10 @@ func load_game() -> bool:
 	var tutorial = scene.get_node_or_null("TutorialGuide")
 	if tutorial != null and tutorial.has_method("from_save_dict") and parsed.get("tutorial", {}) is Dictionary:
 		tutorial.from_save_dict(parsed.get("tutorial", {}))
+	var preferences: Dictionary = parsed.get("preferences", {})
+	AudioManager.from_save_dict(preferences.get("audio", {}))
+	HapticsManager.from_save_dict(preferences.get("haptics", {}))
+	GraphicsSettingsManager.from_save_dict(preferences.get("graphics", {}))
 	GameManager.level_changed.emit(GameManager.level)
 	# Loading a save changes XP without calling add_experience(); notify the HUD
 	# explicitly so its numeric label, progress bar and level ring cannot stay stale.

@@ -8,10 +8,6 @@ func _restore_city() -> void:
 	var account_ready: bool = await PlayerAccountManager.bootstrap()
 	if account_ready and PlayerAccountManager.is_authenticated() and status:
 		status.text = "Welcome back, Mayor #%d" % PlayerAccountManager.player_id
-	if PlayerAccountManager.is_authenticated():
-		var tutorial = get_node_or_null("TutorialGuide")
-		if tutorial != null and tutorial.has_method("set_player_scope"):
-			tutorial.set_player_scope(PlayerAccountManager.get_player_file_path("tutorial_progress.cfg"))
 	SaveManager.load_game()
 	var road_system = get_node_or_null("World/RoadSystem")
 

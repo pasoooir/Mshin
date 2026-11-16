@@ -5,7 +5,7 @@ extends Node
 const PLACE_DURATION_MS := 18
 const COLLECT_DURATION_MS := 26
 const MAX_PULSE_DURATION_MS := 40
-const SETTINGS_PATH := "user://haptics_settings.cfg"
+var settings_path := "user://haptics_settings.cfg"
 
 var enabled := true
 
@@ -58,14 +58,30 @@ static func get_backend_for_features(features: PackedStringArray) -> String:
 		return "ios_native"
 	return "unsupported"
 
+func set_player_scope(path: String) -> void:
+	settings_path = path
+	enabled = true
+	_load_settings()
+
+func to_save_dict() -> Dictionary:
+	return {"enabled": enabled}
+
+func from_save_dict(data: Dictionary) -> void:
+	if not data.is_empty():
+		enabled = bool(data.get("enabled", true))
+
 func _load_settings() -> void:
 	var config := ConfigFile.new()
-	if config.load(SETTINGS_PATH) == OK:
+	if config.load(settings_path) == OK:
 		enabled = bool(config.get_value("haptics", "enabled", true))
 
 func _save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("haptics", "enabled", enabled)
-	var error := config.save(SETTINGS_PATH)
+	var directory := ProjectSettings.globalize_path(settings_path.get_base_dir())
+	DirAccess.make_dir_recursive_absolute(directory)
+	var error := config.save(settings_path)
 	if error != OK:
 		push_warning("[HapticsManager] Could not save haptic settings: %s" % error_string(error))
+	elif SaveManager.persistence_ready:
+		SaveManager.save_game()

@@ -109,7 +109,21 @@ func _activate_session(data: Dictionary, label: String) -> void:
 	player_id = new_id
 	access_token = new_token
 	identity_label = label
+	_apply_player_scope()
 	session_changed.emit(player_id, true)
+
+func _apply_player_scope() -> void:
+	if has_node("/root/AudioManager"):
+		AudioManager.set_player_scope(get_player_file_path("audio_settings.cfg"))
+	if has_node("/root/HapticsManager"):
+		HapticsManager.set_player_scope(get_player_file_path("haptics_settings.cfg"))
+	if has_node("/root/GraphicsSettingsManager"):
+		GraphicsSettingsManager.set_player_scope(get_player_file_path("graphics_settings.cfg"))
+	var scene = get_tree().current_scene
+	if scene != null:
+		var tutorial = scene.get_node_or_null("TutorialGuide")
+		if tutorial != null and tutorial.has_method("set_player_scope"):
+			tutorial.set_player_scope(get_player_file_path("tutorial_progress.cfg"))
 
 func fetch_remote_profile() -> bool:
 	if not is_authenticated() or _api_base().is_empty():
@@ -191,4 +205,5 @@ func logout() -> void:
 	profile_revision = 0
 	identity_label = ""
 	_pending_game_state.clear()
+	_apply_player_scope()
 	session_changed.emit(0, false)
