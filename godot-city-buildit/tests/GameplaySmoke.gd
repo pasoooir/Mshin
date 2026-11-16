@@ -3904,19 +3904,36 @@ func _run_gameplay_test() -> void:
 		_check(metal_button.action_mode == BaseButton.ACTION_MODE_BUTTON_PRESS, "Product buttons must use BUTTON_PRESS so a mobile tap submits on pointer-down.")
 		_check(bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", false)), "Mobile/web touch must be translated to GUI mouse events by Godot.")
 		var metal_click_position := metal_button.get_global_rect().get_center()
+		# get_global_rect() returns coordinates in the Control canvas. Tell
+		# Viewport.push_input explicitly that the injected pointer is already in
+		# this Viewport's local coordinate space; the default treats it as
+		# window/global coordinates and can miss CanvasLayer controls in headless
+		# runs even when the point is visibly inside their hit rectangle.
+		var metal_pointer_motion := InputEventMouseMotion.new()
+		metal_pointer_motion.position = metal_click_position
+		metal_pointer_motion.global_position = metal_click_position
+		get_viewport().push_input(metal_pointer_motion, true)
+		await get_tree().process_frame
+		var hovered_production_control := get_viewport().gui_get_hovered_control()
+		_check(hovered_production_control == metal_button, "The product card center must hit the actual Metal Button through the Viewport GUI router; hovered=%s rect=%s position=%s" % [str(hovered_production_control.get_path()) if is_instance_valid(hovered_production_control) else "<none>", str(metal_button.get_global_rect()), str(metal_click_position)])
+		var metal_button_down_count := 0
+		metal_button.button_down.connect(func(): metal_button_down_count += 1)
 		var metal_pointer_down := InputEventMouseButton.new()
 		metal_pointer_down.button_index = MOUSE_BUTTON_LEFT
 		metal_pointer_down.pressed = true
 		metal_pointer_down.position = metal_click_position
-		get_viewport().push_input(metal_pointer_down)
+		metal_pointer_down.global_position = metal_click_position
+		get_viewport().push_input(metal_pointer_down, true)
 		await get_tree().process_frame
+		_check(metal_button_down_count == 1, "The real product Button must receive exactly one pointer-down through Viewport GUI routing.")
 		_check(not factory_component.get_slot(0).is_empty(), "A viewport-routed mobile-compatible pointer-down must enqueue production immediately.")
 		_check(factory_component.get_slot(1).is_empty(), "One pointer-down must enqueue exactly one order.")
 		var metal_pointer_up := InputEventMouseButton.new()
 		metal_pointer_up.button_index = MOUSE_BUTTON_LEFT
 		metal_pointer_up.pressed = false
 		metal_pointer_up.position = metal_click_position
-		get_viewport().push_input(metal_pointer_up)
+		metal_pointer_up.global_position = metal_click_position
+		get_viewport().push_input(metal_pointer_up, true)
 		await get_tree().process_frame
 		_check(factory_component.get_slot(1).is_empty(), "The pointer-up following one tap must not enqueue a duplicate order.")
 	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
