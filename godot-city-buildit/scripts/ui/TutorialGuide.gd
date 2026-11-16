@@ -166,16 +166,20 @@ func _build_guide_panel() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "FirstCityTutorial"
 	_panel.z_index = 110
-	# Visual overlay only: clicks on the city pass through the coach.
-	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# PASS is intentional: IGNORE on a parent can bypass its child controls in
+	# GUI hit-testing on some Godot paths. The panel background must pass taps
+	# through to HUD controls underneath, while its own Buttons remain clickable.
+	_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	add_child(_panel)
 
 	var layout := VBoxContainer.new()
+	layout.mouse_filter = Control.MOUSE_FILTER_PASS
 	layout.add_theme_constant_override("separation", 10)
 	_panel.add_child(layout)
 
 	var header := HBoxContainer.new()
+	header.mouse_filter = Control.MOUSE_FILTER_PASS
 	layout.add_child(header)
 	var eyebrow := Label.new()
 	eyebrow.text = "☁ CITY COACH  •  YOUR NEXT TASK"
@@ -206,11 +210,13 @@ func _build_guide_panel() -> void:
 	layout.add_child(_title)
 
 	var scroll := ScrollContainer.new()
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	layout.add_child(scroll)
 
 	var body := VBoxContainer.new()
+	body.mouse_filter = Control.MOUSE_FILTER_PASS
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 12)
 	scroll.add_child(body)
@@ -246,15 +252,18 @@ func _build_guide_panel() -> void:
 	layout.add_child(_progress)
 
 	var actions := HBoxContainer.new()
+	actions.mouse_filter = Control.MOUSE_FILTER_PASS
 	actions.alignment = BoxContainer.ALIGNMENT_END
 	actions.add_theme_constant_override("separation", 10)
 	layout.add_child(actions)
 
 	_later_button = _make_action_button("Later", Color("#29485B"), Color.WHITE, 112)
+	_later_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	_later_button.pressed.connect(_hide_for_later)
 	actions.add_child(_later_button)
 
 	_skip_button = _make_action_button("Skip guide", Color("#D9F2FF"), Color("#123348"), 142)
+	_skip_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	_skip_button.pressed.connect(_skip_tutorial)
 	actions.add_child(_skip_button)
 
@@ -403,6 +412,7 @@ func _build_reopen_button() -> void:
 	reopen.offset_top = 14
 	reopen.offset_bottom = 62
 	reopen.z_index = 111
+	reopen.mouse_filter = Control.MOUSE_FILTER_STOP
 	reopen.pressed.connect(_reopen_guide)
 	add_child(reopen)
 
