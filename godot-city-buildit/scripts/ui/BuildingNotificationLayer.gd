@@ -136,7 +136,7 @@ func _build_notifications(building: Building) -> Array[BuildingNotification]:
 	return result
 
 func _find_missing_store_materials(component: Node) -> Dictionary:
-	if not is_instance_valid(component) or bool(component.is_factory):
+	if not is_instance_valid(component) or component.is_factory:
 		return {}
 	var recipe_ids: Array = ProductionManager.crafted_items.keys()
 	recipe_ids.sort()
@@ -206,7 +206,7 @@ func _collect_product(building_id: String, item_id: String) -> void:
 
 func _open_upgrade(building_id: String) -> void:
 	var building = BuildManager.buildings.get(building_id)
-	if not is_instance_valid(building) or not bool(building.upgrade_ready) or not is_instance_valid(_hud):
+	if not is_instance_valid(building) or not building.upgrade_ready or not is_instance_valid(_hud):
 		return
 	if str(building.definition.get("category", "")) == "residential" and _hud.has_method("open_residential_panel"):
 		_hud.call("open_residential_panel", building)
@@ -243,7 +243,7 @@ static func get_ready_product_groups(component: Node) -> Dictionary:
 		return groups
 	for slot_index in range(component.get_slot_count()):
 		var slot: Dictionary = component.get_slot(slot_index)
-		if slot.is_empty() or not bool(slot.get("ready", false)):
+		if slot.is_empty() or not slot.get("ready", false):
 			continue
 		var item_id := str(slot.get("item_id", ""))
 		if item_id.is_empty():
