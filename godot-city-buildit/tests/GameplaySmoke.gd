@@ -3181,6 +3181,10 @@ func _test_citizen_feedback_bubbles() -> void:
 	home.definition = {"category":"residential", "size":Vector2i(2, 2)}
 	add_child(home)
 	BuildManager.buildings[home.building_id] = home
+	var notifications := get_node_or_null("BuildingNotifications")
+	_check(notifications != null and notifications.has_method("refresh_now"), "Building notification layer must be present for non-Building fixture regression coverage.")
+	if notifications != null:
+		notifications.refresh_now()
 	var feedback: Dictionary = feedback_manager.get_feedback_for_home(home) if feedback_manager else {}
 	_check(str(feedback.get("kind", "")) == "road", "A residential home without connected road access must produce a road feedback bubble.")
 	_check(str(feedback.get("message", "")).contains("Road"), "Citizen feedback must explain the missing road access in readable text.")
