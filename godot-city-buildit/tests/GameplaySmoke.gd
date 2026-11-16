@@ -3848,6 +3848,10 @@ func _run_gameplay_test() -> void:
 	_check(production_hud.production_overlay.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must show a separate top-centered building nameplate outside the queue dock.")
 	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must clearly separate the lower production queue from the product catalog.")
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) != null, "Factory panel must show the production queue with empty slots.")
+	var queue_slot_card := production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
+	var queue_scroll_region := production_hud.production_panel.find_child("ProductionQueueScroll", true, false) as ScrollContainer
+	_check(queue_slot_card != null and queue_slot_card.custom_minimum_size.x >= 100.0 and queue_slot_card.custom_minimum_size.y >= 90.0, "Production queue cards must be enlarged to fit 16 px labels, timers and collection controls without clipping.")
+	_check(queue_scroll_region != null and queue_scroll_region.custom_minimum_size.y >= 96.0, "Production queue scroll region must reserve enough vertical space for the enlarged readable queue cards.")
 	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	if metal_button:
