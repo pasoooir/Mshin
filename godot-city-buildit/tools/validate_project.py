@@ -666,10 +666,12 @@ if '_toolbar_style(Color(0.08, 0.16, 0.21, 0.97)' in hud:
     errors.append("Build selection must not apply dark backgrounds to submenu cards")
 
 
-# Tutorial and transient celebration overlays must never become full-screen touch shields.
+# Native mobile touch must reach Godot Controls; tutorial and transient celebration overlays must not become full-screen touch shields.
+project_settings = (ROOT / "project.godot").read_text(encoding="utf-8")
 tutorial_source = (ROOT / "scripts/ui/TutorialGuide.gd").read_text(encoding="utf-8")
 level_up_source = (ROOT / "scripts/ui/LevelUpEffect.gd").read_text(encoding="utf-8")
 for contract in [
+    'emulate_mouse_from_touch=true',
     '_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE',
     'layout.mouse_filter = Control.MOUSE_FILTER_IGNORE',
     'header.mouse_filter = Control.MOUSE_FILTER_IGNORE',
