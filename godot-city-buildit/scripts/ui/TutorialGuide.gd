@@ -192,17 +192,17 @@ func _build_guide_panel() -> void:
 	# PASS is intentional: IGNORE on a parent can bypass its child controls in
 	# GUI hit-testing on some Godot paths. The panel background must pass taps
 	# through to HUD controls underneath, while its own Buttons remain clickable.
-	_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	add_child(_panel)
 
 	var layout := VBoxContainer.new()
-	layout.mouse_filter = Control.MOUSE_FILTER_PASS
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_theme_constant_override("separation", 10)
 	_panel.add_child(layout)
 
 	var header := HBoxContainer.new()
-	header.mouse_filter = Control.MOUSE_FILTER_PASS
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(header)
 	var eyebrow := Label.new()
 	eyebrow.text = "☁ CITY COACH  •  YOUR NEXT TASK"
@@ -235,7 +235,7 @@ func _build_guide_panel() -> void:
 	_city_name_row = HBoxContainer.new()
 	_city_name_row.name = "CityNameEntryRow"
 	_city_name_row.add_theme_constant_override("separation", 8)
-	_city_name_row.mouse_filter = Control.MOUSE_FILTER_PASS
+	_city_name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(_city_name_row)
 
 	_city_name_input = LineEdit.new()
@@ -258,13 +258,13 @@ func _build_guide_panel() -> void:
 	_city_name_row.add_child(_city_name_button)
 
 	var scroll := ScrollContainer.new()
-	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
+	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	layout.add_child(scroll)
 
 	var body := VBoxContainer.new()
-	body.mouse_filter = Control.MOUSE_FILTER_PASS
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 12)
 	scroll.add_child(body)
@@ -300,7 +300,7 @@ func _build_guide_panel() -> void:
 	layout.add_child(_progress)
 
 	var actions := HBoxContainer.new()
-	actions.mouse_filter = Control.MOUSE_FILTER_PASS
+	actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	actions.alignment = BoxContainer.ALIGNMENT_END
 	actions.add_theme_constant_override("separation", 10)
 	layout.add_child(actions)
