@@ -540,6 +540,42 @@ func _try_interact(world_position: Vector3) -> void:
 		_set_status("Still under construction…")
 		return
 
+	# A normal tap on a building with completed goods is a direct collect action.
+	# Keep the same ProductionComponent.collect transaction used by the floating
+	# notification; a full warehouse leaves the ready slot untouched.
+	var production_component = building.production_component
+	if is_instance_valid(production_component):
+		var ready_slots: Array[int] = []
+		for slot_index in range(production_component.get_slot_count()):
+			var production_slot: Dictionary = production_component.get_slot(slot_index)
+			if not production_slot.is_empty() and bool(production_slot.get("ready", false)):
+				ready_slots.append(slot_index)
+		if not ready_slots.is_empty():
+			var collected_items: Dictionary = {}
+			var blocked := false
+			for slot_index in ready_slots:
+				var item_id := str(production_component.get_slot(slot_index).get("item_id", ""))
+				if production_component.collect(slot_index):
+					collected_items[item_id] = int(collected_items.get(item_id, 0)) + 1
+				else:
+					blocked = true
+					break
+			if not collected_items.is_empty():
+				var summary: Array[String] = []
+				for item_id in collected_items:
+					summary.append("%s ×%d" % [str(ProductionManager.get_item_definition(item_id).get("name", item_id)), int(collected_items[item_id])])
+				var collected_message := "Collected %s from %s." % [", ".join(summary), building.building_id]
+				if blocked:
+					collected_message += " Warehouse is now full; remaining products stay on this building."
+				_set_status(collected_message)
+			elif blocked:
+				_set_status("City Storage is full. Ready products remain on this building; free space and tap again.")
+			if blocked or not collected_items.is_empty():
+				var notification_layer = get_tree().current_scene.get_node_or_null("HUD/BuildingNotificationLayer")
+				if is_instance_valid(notification_layer) and notification_layer.has_method("refresh_now"):
+					notification_layer.refresh_now()
+				return
+
 	var category := str(building.definition.get("category", ""))
 
 	var trade_role := str(building.definition.get("trade_role", ""))

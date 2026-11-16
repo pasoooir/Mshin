@@ -11,6 +11,8 @@ const BuildingScene = preload("res://scenes/buildings/Building.tscn")
 const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
 const CitizenFeedbackBubblesScript = preload("res://scripts/ui/CitizenFeedbackBubbles.gd")
 const BuildingNotificationLayerScript = preload("res://scripts/ui/BuildingNotificationLayer.gd")
+const BuildingNotificationScript = preload("res://scripts/ui/BuildingNotification.gd")
+const BuildingNotificationAnchorScript = preload("res://scripts/ui/BuildingNotificationAnchor.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
@@ -168,6 +170,47 @@ func _test_building_notification_grouping() -> void:
 	groups = BuildingNotificationLayerScript.get_ready_product_groups(component)
 	_check(groups.get("nails", []).size() == 1, "A collected queue slot must immediately reduce the matching product notification count.")
 	component.queue_free()
+
+func _test_building_notification_system_contract() -> void:
+	var ready := BuildingNotificationScript.make("factory_test", BuildingNotificationScript.Type.PRODUCTION_READY, "metal", 2, "Ready")
+	var storage_full := BuildingNotificationScript.make("factory_test", BuildingNotificationScript.Type.STORAGE_FULL, "", 1, "Warehouse full")
+	var upgrade := BuildingNotificationScript.make("factory_test", BuildingNotificationScript.Type.UPGRADE_READY)
+	var needs := BuildingNotificationScript.make("store_test", BuildingNotificationScript.Type.NEEDS_MATERIALS, "nails", 1, "Needs Metal 0/2")
+	var idle := BuildingNotificationScript.make("factory_test", BuildingNotificationScript.Type.IDLE)
+	_check(ready.priority > storage_full.priority and storage_full.priority > upgrade.priority and upgrade.priority > needs.priority and needs.priority > idle.priority, "Building notification priority must be ProductionReady > StorageFull > UpgradeReady > NeedsMaterials > Idle.")
+	_check(ready.item_id == "metal" and ready.count == 2, "ProductionReady notification must preserve the actual product ID and grouped ready quantity.")
+	_check(needs.detail.contains("Metal 0/2"), "NeedsMaterials notification must retain the exact missing material and quantity detail.")
+	var previous_storage := StorageManager.to_save_dict()
+	StorageManager.items = {}
+	var store_probe := ProductionComponentScript.new()
+	store_probe.shop_id = "building_supplies"
+	var notification_layer = BuildingNotificationLayerScript.new()
+	var calculated_missing: Dictionary = notification_layer._find_missing_store_materials(store_probe)
+	_check(str(calculated_missing.get("item_id", "")) == "nails" and str(calculated_missing.get("detail", "")).contains("Metal 0/2"), "NeedsMaterials must be calculated from the real unlocked store recipe and exact City Storage quantity.")
+	StorageManager.from_save_dict(previous_storage)
+
+	var anchor := BuildingNotificationAnchorScript.new()
+	anchor.name = "NotificationAnchorContractProbe"
+	add_child(anchor)
+	anchor.set_anchor_position(Vector3(0.0, 8.0, 0.0))
+	var visible_notifications: Array[BuildingNotification] = [idle, ready, upgrade]
+	anchor.set_notifications(visible_notifications)
+	_check(anchor.get_visible_notification_count() == 2, "World-space notification anchor must enforce the two-visible-notification limit.")
+	if DisplayServer.get_name() != "headless":
+		_check(anchor.get_child_count() == 2, "Each visible notification must have its own 3D visual root.")
+		var first_visual: Node3D = anchor.get_child(0) as Node3D
+		var tap_area := first_visual.get_node_or_null("TapArea") as Area3D
+		_check(tap_area != null and tap_area.input_ray_pickable and tap_area.collision_layer > 0, "Every world-space notification must expose a physics-pickable 3D tap target.")
+		var first_icon := first_visual.get_node_or_null("Icon") as Sprite3D
+		_check(first_icon != null and first_icon.billboard == BaseMaterial3D.BILLBOARD_ENABLED, "Notification product icons must billboard toward the active camera.")
+		var pressed_notifications: Array[BuildingNotification] = []
+		anchor.notification_pressed.connect(func(value: BuildingNotification) -> void: pressed_notifications.append(value))
+		var touch := InputEventScreenTouch.new()
+		touch.pressed = true
+		anchor._on_area_input_event(null, touch, Vector3.ZERO, Vector3.UP, 0, 0)
+		_check(pressed_notifications.size() == 1 and pressed_notifications[0].type == BuildingNotification.Type.PRODUCTION_READY, "A touch on a world-space notification must dispatch exactly its selected notification.")
+	_check(is_equal_approx(anchor.position.y, 8.0), "World-space notification anchor must retain its configured roof height while bobbing.")
+	anchor.queue_free()
 
 func _test_live_production_queue_eta() -> void:
 	var queue_probe = ProductionComponentScript.new()
@@ -3336,6 +3379,8 @@ func _run_gameplay_test() -> void:
 	_test_citizen_feedback_bubbles()
 	_test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
+	_test_building_notification_grouping()
+	_test_building_notification_system_contract()
 	await _test_build_menu_visibility()
 	await _test_settings_panel_contract()
 	_test_wind_turbine_rotor_animation()
