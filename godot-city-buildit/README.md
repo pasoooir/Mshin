@@ -131,3 +131,14 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Restored the six visible production queue tiles required by the commercial production dock contract; smaller purchased capacity remains visibly locked rather than disappearing.
 - [x] Kept the redesigned blue queue styling while restoring the six-tile layout.
 - [ ] Re-run both Godot validation and playable-web workflows; confirm they pass before merge.
+
+## City guide redesign — 2026-11-16
+
+- [x] Reframed the side hint as a named **City Guide** with one active, numbered task at a time.
+- [x] Each task now explains the action, the exact tap path, and the visible result the player should expect.
+- [x] Production guidance explicitly explains tapping a product card, the first empty queue slot, the seconds countdown, and collecting into City Storage.
+- [x] Replaced the tall left-side strip with a centered, responsive, rounded high-contrast panel; the guide body scrolls when the available screen height is limited.
+- [x] Increased guide typography to 26 px title, 21 px main instructions, 19 px tap path and buttons, and 18 px expected result.
+- [x] Enlarged the persistent reopen control and labelled it **? GUIDE** so its purpose is visible.
+- [ ] Run Godot GameplaySmoke and playable-web CI against this commit; inspect the guide at common Android landscape resolutions.
+- [ ] Verify text wrapping, touch target sizes, and overlap with the live HUD on a physical Android device.
