@@ -666,6 +666,27 @@ if '_toolbar_style(Color(0.08, 0.16, 0.21, 0.97)' in hud:
     errors.append("Build selection must not apply dark backgrounds to submenu cards")
 
 
+# Tutorial and transient celebration overlays must never become full-screen touch shields.
+tutorial_source = (ROOT / "scripts/ui/TutorialGuide.gd").read_text(encoding="utf-8")
+level_up_source = (ROOT / "scripts/ui/LevelUpEffect.gd").read_text(encoding="utf-8")
+for contract in [
+    '_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    'layout.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    'header.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    '_city_name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    'scroll.mouse_filter = Control.MOUSE_FILTER_STOP',
+    '_city_name_input.mouse_filter = Control.MOUSE_FILTER_STOP',
+    '_city_name_button.mouse_filter = Control.MOUSE_FILTER_STOP',
+]:
+    if contract not in tutorial_source:
+        errors.append(f"City coach input contract is missing: {contract}")
+for contract in [
+    'mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    'card.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+]:
+    if contract not in level_up_source:
+        errors.append(f"Level-up celebration must remain input-transparent: {contract}")
+
 # Visual-quality contracts: local Build SVGs, hidden roof labels, grounded trees and shared shadows.
 building_source = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")
 # The Building Supplies shop is the first detailed, colour-separated commercial hero asset.
