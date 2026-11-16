@@ -2045,12 +2045,12 @@ func open_production_panel(building: Building) -> void:
 	var panel_height := minf((238.0 if compact_layout else 258.0) * _ui_scale, viewport_size.y * 0.48)
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
-	production_panel.anchor_top = 0.0
-	production_panel.anchor_bottom = 0.0
+	production_panel.anchor_top = 1.0
+	production_panel.anchor_bottom = 1.0
 	production_panel.offset_left = -panel_width * 0.5
 	production_panel.offset_right = panel_width * 0.5
-	production_panel.offset_top = 10.0 * _ui_scale
-	production_panel.offset_bottom = panel_height + 10.0 * _ui_scale
+	production_panel.offset_top = -panel_height - 10.0 * _ui_scale
+	production_panel.offset_bottom = -10.0 * _ui_scale
 	var studio_style := StyleBoxFlat.new()
 	studio_style.bg_color = Color(0.035, 0.20, 0.31, 0.94)
 	studio_style.border_color = Color("#8ED8F5")
@@ -2726,12 +2726,10 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 
 
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
-	# This handler is connected to the actual product Button.gui_input signal.
-	# Only the first finger may own a product gesture; mouse clicks remain on
-	# Button.pressed and do not enter this touch-only path.
+	# Touch is a complete action on touch-down. Do not wait for touch-up, drag,
+	# a second tap, or a queue-slot tap: those intermediate states caused the
+	# mobile product selection to remain visually selected but never queued.
 	if not (event is InputEventScreenTouch) or not event.pressed:
-		return
-	if _production_touch_drag_active:
 		return
 	if not is_instance_valid(building) or building != _production_building:
 		return
@@ -2739,16 +2737,15 @@ func _on_production_item_gui_input(event: InputEvent, building: Building, item_i
 		return
 	if not is_instance_valid(building.production_component) or not is_instance_valid(production_overlay):
 		return
-	_production_touch_drag_active = true
-	_production_touch_drag_index = event.index
-	_production_touch_dragged = false
-	_production_touch_drag_origin = event.position
-	_production_touch_drag_item_id = item_id
-	_production_touch_drag_building = building
-	_production_touch_drag_source_button = item_button
-	_touch_selected_production_item = item_id
-	_touch_selected_production_building_id = building.get_instance_id()
+	if _production_touch_drag_active:
+		return
+	# The Button.pressed signal may also arrive on touch release. Mark it as
+	# consumed only after direct submission, preventing a duplicate order.
 	item_button.set_meta("touch_drag_consumed", false)
+	_on_production_item_pressed(building, item_id, -1, item_button)
+	if is_instance_valid(item_button):
+		item_button.set_meta("touch_drag_consumed", true)
+	get_viewport().set_input_as_handled()
 
 
 # Capture the pointer globally after a touch starts on a product tile. This is
