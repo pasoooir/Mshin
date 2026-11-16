@@ -4139,8 +4139,14 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "A tap-started factory order must immediately show its progress bar.")
+	var live_order_card := production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
+	_check(live_order_card != null and live_order_card.custom_minimum_size.x >= 100.0 and live_order_card.custom_minimum_size.y >= 90.0, "A real production order must render as an enlarged readable card.")
+	var live_order_state := production_hud.production_panel.find_child("OrderState0", true, false) as Label
+	_check(live_order_state != null and live_order_state.text == "IN PRODUCTION", "An active order card must expose its current production state.")
+	var live_order_timer := production_hud.production_panel.find_child("TimerSlot0", true, false) as Label
+	_check(live_order_timer != null and live_order_timer.text.contains(":") and live_order_timer.text.split(":").size() == 2, "Production countdown must use a readable MM:SS clock rather than raw seconds.")
 	var queued_metal_icon := production_hud.production_panel.find_child("QueueItemIcon0", true, false) as TextureRect
-	_check(queued_metal_icon != null and queued_metal_icon.texture != null and queued_metal_icon.custom_minimum_size.x >= 40.0, "The occupied black queue square must immediately show the actual Metal artwork at a readable size.")
+	_check(queued_metal_icon != null and queued_metal_icon.texture != null and queued_metal_icon.custom_minimum_size.x >= 40.0, "The live order card must immediately show the actual Metal artwork at a readable size.")
 	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must offer the next available slot after the first tap order.")
 	if second_metal_button:
