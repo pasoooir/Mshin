@@ -26,6 +26,10 @@ godot --path godot-city-buildit
 
 Main scene: `res://scenes/main.tscn`.
 
+## Godot quality and acceptance contract
+
+The mandatory engineering rules for mobile/web compatibility, rendering, input, production UI, asset pipeline, dependency selection and CI acceptance are documented in [Godot Quality & Acceptance Contract (FA)](docs/GODOT_QUALITY_AND_ACCEPTANCE_CONTRACT_FA.md). Treat this as the implementation gate for all future Godot work.
+
 ## Production economy and city-needs design
 
 The detailed gameplay design contract is maintained in the [Persian Production Economy & City Needs Specification](docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC_FA.md), with a [technical English companion](docs/PRODUCTION_ECONOMY_AND_CITY_NEEDS_SPEC.md). These documents distinguish EA-confirmed behaviour, community-reference item data, and existing Mshin-specific rules.
