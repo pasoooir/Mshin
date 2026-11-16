@@ -3345,9 +3345,9 @@ func _test_tutorial_guide_contract() -> void:
 			guide._refresh_guide()
 			await get_tree().process_frame
 			await get_tree().process_frame
-			print("[CoachTouchDebug] panel=", guide._panel.get_global_rect(), " input=", name_input.get_global_rect(), " input_visible=", name_input.is_visible_in_tree(), " save=", save_name_button.get_global_rect(), " save_visible=", save_name_button.is_visible_in_tree(), " save_disabled=", save_name_button.disabled, " finger=", finger.get_global_rect())
+			await _tap_native_control(name_input)
+			_check(get_viewport().gui_get_focus_owner() == name_input, "A native touch on the city-name field must focus it so the mobile keyboard can open.")
 			await _tap_native_control(save_name_button)
-			print("[CoachTouchDebug] after SAVE CITY name=", GameManager.city_name, " step=", guide.current_step)
 			_check(GameManager.city_name == "Coach Touch Test", "A real touch on SAVE CITY must submit the city name and advance the guide.")
 			GameManager.city_name = previous_name
 			guide.milestones = previous_milestones
@@ -3367,9 +3367,7 @@ func _test_tutorial_guide_contract() -> void:
 				guide._panel.show()
 				await get_tree().process_frame
 				await get_tree().process_frame
-				print("[CoachTouchDebug] later=", later_button.get_global_rect(), " visible=", later_button.is_visible_in_tree(), " disabled=", later_button.disabled, " panel=", guide._panel.get_global_rect())
 				await _tap_native_control(later_button)
-				print("[CoachTouchDebug] after LATER panel_visible=", guide._panel.visible)
 				var reopen_button := guide.find_child("ReopenTutorial", true, false) as Button
 				_check(not guide._panel.visible and reopen_button != null and reopen_button.get_global_rect().intersects(get_viewport().get_visible_rect()), "A real touch on Later must hide the coach and expose an on-screen HELP button.")
 				if reopen_button != null:
@@ -3389,9 +3387,7 @@ func _test_tutorial_guide_contract() -> void:
 				if residential_button != null:
 					await get_tree().process_frame
 					await get_tree().process_frame
-					print("[CoachTouchDebug] residential=", residential_button.get_global_rect(), " visible=", residential_button.is_visible_in_tree(), " disabled=", residential_button.disabled, " filter=", residential_button.mouse_filter)
 					await _tap_native_control(residential_button)
-					print("[CoachTouchDebug] after Residential category=", hud.active_category, " submenu=", hud.submenu_scroll.visible)
 					_check(str(hud.active_category) == "residential" and is_instance_valid(hud.submenu_scroll) and hud.submenu_scroll.visible, "A real touch on Residential must open its building submenu.")
 					var villa_button := hud.find_child("residential_villa", true, false) as Button
 					_check(villa_button != null and not villa_button.disabled and villa_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The first residential catalog choice must be an enabled button that consumes its own touch events.")
