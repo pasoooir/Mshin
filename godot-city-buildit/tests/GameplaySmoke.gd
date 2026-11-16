@@ -3900,25 +3900,34 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_click_payload, factory), "The selected factory must accept a valid tap order when a production slot is free.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 6), "A production order must reject a queue slot outside factory capacity.")
 	if metal_button:
-		# Exercise a native touchscreen event through the real Viewport GUI router.
-		# A synthetic mouse click only proves desktop input and can miss the exact
-		# mobile path that users reported as broken.
-		var metal_touch_position := metal_button.get_global_rect().get_center()
+		# Route a real mobile finger gesture through the Viewport: touch the
+		# product card, drag to the lower EMPTY queue square, then release.
+		var metal_touch_position: Vector2 = metal_button.get_global_transform_with_canvas() * (metal_button.size * 0.5)
 		var metal_touch_down := InputEventScreenTouch.new()
 		metal_touch_down.index = 0
 		metal_touch_down.pressed = true
 		metal_touch_down.position = metal_touch_position
 		get_viewport().push_input(metal_touch_down, true)
 		await get_tree().process_frame
-		_check(not factory_component.get_slot(0).is_empty(), "A native Viewport-routed touchscreen-down on the product card must enqueue production immediately.")
-		_check(factory_component.get_slot(1).is_empty(), "One native touchscreen-down must enqueue exactly one order.")
-		var metal_touch_up := InputEventScreenTouch.new()
-		metal_touch_up.index = 0
-		metal_touch_up.pressed = false
-		metal_touch_up.position = metal_touch_position
-		get_viewport().push_input(metal_touch_up, true)
-		await get_tree().process_frame
-		_check(factory_component.get_slot(1).is_empty(), "Touch-up following one native tap must not enqueue a duplicate order.")
+		_check(production_hud._production_touch_drag_active and factory_component.get_slot(0).is_empty(), "Touch-down on the product card must capture the finger without prematurely starting production.")
+		var native_queue_target := production_hud.production_panel.find_child("QueueSlot0", true, false) as Control
+		_check(is_instance_valid(native_queue_target), "Native mobile drag test must find the lower EMPTY queue square.")
+		if is_instance_valid(native_queue_target):
+			var native_drag_position: Vector2 = native_queue_target.get_global_transform_with_canvas() * (native_queue_target.size * 0.5)
+			var metal_touch_drag := InputEventScreenDrag.new()
+			metal_touch_drag.index = 0
+			metal_touch_drag.position = native_drag_position
+			metal_touch_drag.relative = native_drag_position - metal_touch_position
+			get_viewport().push_input(metal_touch_drag, true)
+			await get_tree().process_frame
+			var metal_touch_up := InputEventScreenTouch.new()
+			metal_touch_up.index = 0
+			metal_touch_up.pressed = false
+			metal_touch_up.position = native_drag_position
+			get_viewport().push_input(metal_touch_up, true)
+			await get_tree().process_frame
+		_check(not factory_component.get_slot(0).is_empty(), "A native Viewport-routed drag released on the lower EMPTY square must enqueue production.")
+		_check(factory_component.get_slot(1).is_empty(), "One native product drag must enqueue exactly one order.")
 	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
