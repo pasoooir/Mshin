@@ -651,3 +651,14 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android landscape touch acceptance.
 
 **Additional root cause:** `CityInput` guarded the production overlay but not the residential overlay, and did not clear pending pointer state while a residential modal was open. Catalog identity checks now prevent a production component from being displayed under the wrong factory or store.
+
+
+## Live production orders panel — 2026-11-16
+
+- [x] Removed the minimum-six visible queue placeholder behavior from the production HUD.
+- [x] Render only occupied internal queue slots as responsive order cards; an empty queue shows one instructional empty state, never `EMPTY SLOT` cards.
+- [x] Order cards display the real item icon/name, waiting/producing/ready state, live `MM:SS` countdown, progress bar, and storage-aware Collect action.
+- [x] Product taps continue to submit orders directly to the first available internal slot; production capacity, recipe/input validation, scheduler, and storage transfer remain authoritative and unchanged.
+- [x] Store queue-capacity purchase remains a real, connected action.
+- [ ] Godot GameplaySmoke, web/mobile Chromium smoke, and Android APK export for this UI change.
+- [ ] Physical Android landscape touch/visual acceptance.

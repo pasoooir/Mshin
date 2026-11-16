@@ -2366,146 +2366,135 @@ func open_production_panel(building: Building) -> void:
 		queue_heading.add_child(add_slot)
 
 	var queue_scroll := ScrollContainer.new()
-	queue_scroll.name = "ProductionQueueScroll"
-	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	queue_scroll.name = "ProductionOrdersScroll"
+	queue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	queue_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	queue_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	queue_scroll.custom_minimum_size.y = (108.0 if compact_layout else 112.0) * _ui_scale
+	queue_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	queue_scroll.custom_minimum_size.y = (104.0 if compact_layout else 122.0) * _ui_scale
 	layout.add_child(queue_scroll)
-	var queue_row := HBoxContainer.new()
-	queue_row.name = "ProductionQueueSlots"
-	queue_row.add_theme_constant_override("separation", 5)
-	queue_scroll.add_child(queue_row)
-	var visible_queue_slots := maxi(6, component.get_slot_count())
-	for slot_index in range(visible_queue_slots):
-		var slot: Dictionary = component.get_slot(slot_index) if slot_index < component.get_slot_count() else {}
-		var slot_card := PanelContainer.new()
-		slot_card.name = "QueueSlot%d" % slot_index
-		slot_card.custom_minimum_size = Vector2(132 if viewport_size.x > 1100.0 else 116, 112 if compact_layout else 120) * _ui_scale
-		var slot_style := StyleBoxFlat.new()
+	var orders_list := VBoxContainer.new()
+	orders_list.name = "ProductionOrdersList"
+	orders_list.add_theme_constant_override("separation", 7)
+	orders_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	queue_scroll.add_child(orders_list)
+	var visible_order_count := 0
+	for slot_index in range(component.get_slot_count()):
+		var slot: Dictionary = component.get_slot(slot_index)
 		if slot.is_empty():
-			slot_style.bg_color = Color(0.025, 0.12, 0.19, 0.72)
-			slot_style.border_color = Color("#E7F7FF")
-			slot_style.set_border_width_all(3)
-		else:
-			slot_style.bg_color = Color("#CDEEFF")
-			slot_style.border_color = Color("#7DD2F5")
-			slot_style.set_border_width_all(3)
-		slot_style.set_corner_radius_all(22)
-		slot_style.content_margin_left = 5
-		slot_style.content_margin_right = 5
-		slot_style.content_margin_top = 4
-		slot_style.content_margin_bottom = 4
-		slot_card.add_theme_stylebox_override("panel", slot_style)
-		# Native drag/drop plus tap-product-then-tap-slot fallback for touchscreens.
-		slot_card.set_drag_forwarding(Callable(), _can_accept_production_drop.bind(building, slot_index), _accept_production_drop.bind(building, slot_index))
-		slot_card.gui_input.connect(_on_production_slot_gui_input.bind(building, slot_index))
-		queue_row.add_child(slot_card)
-		var slot_content := VBoxContainer.new()
-		slot_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slot_content.alignment = BoxContainer.ALIGNMENT_CENTER
-		slot_content.add_theme_constant_override("separation", 1)
-		slot_card.add_child(slot_content)
-		if slot_index >= component.get_slot_count():
-			var locked_label := Label.new()
-			locked_label.name = "LockedQueueLabel"
-			locked_label.text = "🔒\nLOCKED"
-			locked_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			locked_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			locked_label.add_theme_font_size_override("font_size", _popup_font_size(9))
-			locked_label.add_theme_color_override("font_color", Color("#83949C"))
-			slot_content.add_child(locked_label)
-		elif slot.is_empty():
-			var empty_icon := Label.new()
-			empty_icon.name = "EmptyQueuePlus"
-			empty_icon.text = "+"
-			empty_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			empty_icon.add_theme_color_override("font_color", Color("#DDF5FF"))
-			empty_icon.add_theme_font_size_override("font_size", _popup_font_size(46))
-			slot_content.add_child(empty_icon)
-			var empty_label := Label.new()
-			empty_label.name = "EmptyQueueLabel"
-			empty_label.text = "EMPTY SLOT"
-			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			empty_label.add_theme_color_override("font_color", Color("#D6F0FC"))
-			empty_label.add_theme_font_size_override("font_size", _popup_font_size(10))
-			slot_content.add_child(empty_label)
-		else:
-			var queued_item_id := str(slot.get("item_id", ""))
-			var item_category := "raw" if component.is_factory else "crafted"
-			var queue_item_row := HBoxContainer.new()
-			queue_item_row.name = "QueueItemRow%d" % slot_index
-			queue_item_row.alignment = BoxContainer.ALIGNMENT_CENTER
-			slot_content.add_child(queue_item_row)
-			var queue_item_icon := Icons.make_item_icon(item_category, queued_item_id, Vector2(64, 64) * _ui_scale)
-			queue_item_icon.name = "QueueItemIcon%d" % slot_index
-			queue_item_icon.custom_minimum_size = Vector2(64, 64) * _ui_scale
-			queue_item_row.add_child(queue_item_icon)
-			var queue_item_name := Label.new()
-			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
-			queue_item_name.add_theme_font_size_override("font_size", _popup_font_size(9))
-			queue_item_name.add_theme_color_override("font_color", Color("#153D55"))
-			queue_item_row.add_child(queue_item_name)
-			if bool(slot.get("ready", false)):
-				var collect_button := Button.new()
-				collect_button.name = "CollectSlot%d" % slot_index
-				var storage_has_room := StorageManager.can_add(queued_item_id, 1)
-				collect_button.text = "COLLECT" if storage_has_room else "STORAGE FULL"
-				collect_button.disabled = not storage_has_room
-				collect_button.tooltip_text = "Collect into City Storage." if storage_has_room else "Free at least one storage slot; this completed item will remain here."
-				collect_button.custom_minimum_size.y = 34 * _ui_scale
-				collect_button.add_theme_font_size_override("font_size", _popup_font_size(9))
-				collect_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E6B93E"), Color("#FFE18A")))
-				collect_button.add_theme_color_override("font_color", Color("#34280B"))
-				collect_button.pressed.connect(func():
-					if component.collect(slot_index):
-						status_label.text = "Collected %s into City Storage." % queued_item_id.capitalize()
-					else:
-						status_label.text = "Storage full — collect space in City Storage first."
-					open_production_panel(building)
-				)
-				slot_content.add_child(collect_button)
-			else:
-				var queued_waiting: bool = (not bool(component.is_factory)) and int(slot.get("finish_unix", 0)) <= 0 and not bool(slot.get("ready", false))
-				if queued_waiting:
-					var queued_label := Label.new()
-					queued_label.name = "QueuedSlot%d" % slot_index
-					queued_label.text = "IN QUEUE"
-					queued_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-					queued_label.add_theme_font_size_override("font_size", _popup_font_size(14))
-					queued_label.add_theme_color_override("font_color", Color("#A36B12"))
-					slot_content.add_child(queued_label)
+			continue
+		visible_order_count += 1
+		var queued_item_id := str(slot.get("item_id", ""))
+		var item_definition: Dictionary = ProductionManager.get_item_definition(queued_item_id)
+		var item_name := str(item_definition.get("name", queued_item_id.capitalize()))
+		var is_ready := bool(slot.get("ready", false))
+		var is_waiting: bool = not is_ready and not component.is_factory and int(slot.get("finish_unix", 0)) <= 0
+		var order_card := PanelContainer.new()
+		order_card.name = "QueueSlot%d" % slot_index
+		order_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		order_card.custom_minimum_size = Vector2(100.0, 90.0) * _ui_scale
+		var order_style := StyleBoxFlat.new()
+		order_style.bg_color = Color("#E8F5FA") if is_ready else Color("#F3F8FB")
+		order_style.border_color = Color("#D6AE4B") if is_ready else Color("#8CC9DE")
+		order_style.set_border_width_all(2)
+		order_style.set_corner_radius_all(15)
+		order_style.content_margin_left = 9
+		order_style.content_margin_right = 9
+		order_style.content_margin_top = 6
+		order_style.content_margin_bottom = 6
+		order_card.add_theme_stylebox_override("panel", order_style)
+		orders_list.add_child(order_card)
+		var order_row := HBoxContainer.new()
+		order_row.name = "OrderRow%d" % slot_index
+		order_row.add_theme_constant_override("separation", 10)
+		order_card.add_child(order_row)
+		var item_category := "raw" if component.is_factory else "crafted"
+		var order_icon := Icons.make_item_icon(item_category, queued_item_id, Vector2(52, 52) * _ui_scale)
+		order_icon.name = "QueueItemIcon%d" % slot_index
+		order_icon.custom_minimum_size = Vector2(52, 52) * _ui_scale
+		order_row.add_child(order_icon)
+		var order_details := VBoxContainer.new()
+		order_details.name = "OrderDetails%d" % slot_index
+		order_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		order_details.add_theme_constant_override("separation", 2)
+		order_row.add_child(order_details)
+		var order_name := Label.new()
+		order_name.text = item_name
+		order_name.add_theme_font_size_override("font_size", _popup_font_size(15))
+		order_name.add_theme_color_override("font_color", Color("#173D52"))
+		order_details.add_child(order_name)
+		var state_label := Label.new()
+		state_label.name = "OrderState%d" % slot_index
+		state_label.add_theme_font_size_override("font_size", _popup_font_size(11))
+		state_label.add_theme_color_override("font_color", Color("#28734A") if is_ready else Color("#587487"))
+		state_label.text = "READY TO COLLECT" if is_ready else ("WAITING IN QUEUE" if is_waiting else "IN PRODUCTION")
+		order_details.add_child(state_label)
+		if not is_ready and not is_waiting:
+			var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
+			var timer_label := Label.new()
+			timer_label.name = "TimerSlot%d" % slot_index
+			timer_label.set_meta("slot_index", slot_index)
+			timer_label.text = _format_clock_duration(remaining)
+			timer_label.add_theme_font_size_override("font_size", _popup_font_size(19))
+			timer_label.add_theme_color_override("font_color", Color("#B47716"))
+			order_details.add_child(timer_label)
+			var progress := ProgressBar.new()
+			progress.name = "ProgressSlot%d" % slot_index
+			progress.set_meta("slot_index", slot_index)
+			progress.show_percentage = false
+			progress.custom_minimum_size.y = 7.0 * _ui_scale
+			progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			progress.max_value = 1.0
+			var total_seconds := maxf(1.0, component.get_item_production_time(queued_item_id))
+			var started_unix := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total_seconds)))
+			progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
+			progress.set_meta("start_unix", started_unix)
+			progress.set_meta("finish_unix", int(slot.get("finish_unix", 0)))
+			order_details.add_child(progress)
+			_production_timer_labels.append(timer_label)
+			_production_progress_bars.append(progress)
+		if is_ready:
+			var storage_has_room := StorageManager.can_add(queued_item_id, 1)
+			var collect_button := Button.new()
+			collect_button.name = "CollectSlot%d" % slot_index
+			collect_button.text = "COLLECT" if storage_has_room else "STORAGE FULL"
+			collect_button.disabled = not storage_has_room
+			collect_button.tooltip_text = "Transfer this finished item into City Storage." if storage_has_room else "Free at least one storage slot before collecting."
+			collect_button.custom_minimum_size = Vector2(112, 46) * _ui_scale
+			collect_button.add_theme_font_size_override("font_size", _popup_font_size(12))
+			collect_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#E6B93E"), Color("#FFE18A")))
+			collect_button.add_theme_stylebox_override("hover", _toolbar_style(Color("#F4D36C"), Color.WHITE))
+			collect_button.add_theme_color_override("font_color", Color("#34280B"))
+			collect_button.pressed.connect(func():
+				if component.collect(slot_index):
+					status_label.text = "Collected %s into City Storage." % item_name
 				else:
-					if not component.is_factory:
-						var producing_label := Label.new()
-						producing_label.text = "PRODUCING"
-						producing_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-						producing_label.add_theme_font_size_override("font_size", _popup_font_size(8))
-						producing_label.add_theme_color_override("font_color", Color("#315C8A"))
-						slot_content.add_child(producing_label)
-					var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
-					var timer_label := Label.new()
-					timer_label.name = "TimerSlot%d" % slot_index
-					timer_label.set_meta("slot_index", slot_index)
-					timer_label.text = "%ds" % remaining
-					timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-					timer_label.add_theme_font_size_override("font_size", _popup_font_size(10))
-					timer_label.add_theme_color_override("font_color", Color("#A36B12"))
-					slot_content.add_child(timer_label)
-					var progress := ProgressBar.new()
-					progress.name = "ProgressSlot%d" % slot_index
-					progress.set_meta("slot_index", slot_index)
-					progress.show_percentage = false
-					progress.custom_minimum_size.y = 4.0 * _ui_scale
-					progress.max_value = 1.0
-					var total_seconds := maxf(1.0, component.get_item_production_time(queued_item_id))
-					var started_unix := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total_seconds)))
-					progress.value = clampf(1.0 - float(remaining) / total_seconds, 0.0, 1.0)
-					progress.set_meta("start_unix", started_unix)
-					progress.set_meta("finish_unix", int(slot.get("finish_unix", 0)))
-					slot_content.add_child(progress)
-					_production_timer_labels.append(timer_label)
-					_production_progress_bars.append(progress)
+					status_label.text = "Storage full — free space in City Storage first."
+				open_production_panel(building)
+			)
+			order_row.add_child(collect_button)
+	if visible_order_count == 0:
+		var empty_state := PanelContainer.new()
+		empty_state.name = "ProductionOrdersEmptyState"
+		empty_state.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		empty_state.add_theme_stylebox_override("panel", _toolbar_style(Color("#EAF4F8"), Color("#9CC9DA")))
+		orders_list.add_child(empty_state)
+		var empty_message := VBoxContainer.new()
+		empty_message.add_theme_constant_override("separation", 3)
+		empty_state.add_child(empty_message)
+		var empty_title := Label.new()
+		empty_title.text = "NO ACTIVE ORDERS"
+		empty_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_title.add_theme_font_size_override("font_size", _popup_font_size(14))
+		empty_title.add_theme_color_override("font_color", Color("#214B60"))
+		empty_message.add_child(empty_title)
+		var empty_hint := Label.new()
+		empty_hint.text = "Tap a product above to place an order. Your live countdowns will appear here."
+		empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty_hint.add_theme_font_size_override("font_size", _popup_font_size(11))
+		empty_hint.add_theme_color_override("font_color", Color("#587487"))
+		empty_message.add_child(empty_hint)
 
 	var footer := Label.new()
 	footer.text = "Completed goods are collected into City Storage."
@@ -2992,7 +2981,7 @@ func _finish_production_touch_drag(screen_position: Vector2) -> void:
 				status_label.text = "This queue slot cannot accept that product. Choose an empty unlocked slot."
 			return
 	if is_instance_valid(status_label):
-		status_label.text = "Drop the product onto an empty queue slot to place the order."
+		status_label.text = "Tap a product to place the order. No empty queue slot is needed."
 
 
 func _clear_production_touch_drag(clear_selection: bool = true) -> void:
@@ -3170,6 +3159,21 @@ func _update_production_timers() -> void:
 	component.refresh_slots()
 	var now := int(Time.get_unix_time_from_system())
 	var need_rebuild := false
+	# A queued commercial order may become the active job after the previous
+	# order completes. Detect that transition even though waiting cards have no
+	# timer label yet, then rebuild the card with its live countdown.
+	for slot_index in range(component.get_slot_count()):
+		var slot_state: Dictionary = component.get_slot(slot_index)
+		if slot_state.is_empty():
+			continue
+		var should_show_timer: bool = not bool(slot_state.get("ready", false)) and (component.is_factory or int(slot_state.get("finish_unix", 0)) > 0)
+		var existing_timer := production_panel.find_child("TimerSlot%d" % slot_index, true, false)
+		if should_show_timer != is_instance_valid(existing_timer):
+			need_rebuild = true
+			break
+	if need_rebuild:
+		open_production_panel(_production_building)
+		return
 	for label in _production_timer_labels:
 		if not is_instance_valid(label):
 			continue
@@ -3182,7 +3186,7 @@ func _update_production_timers() -> void:
 			break
 		var item_id := str(slot.get("item_id", ""))
 		var remaining := maxi(0, int(slot.get("finish_unix", 0)) - now)
-		label.text = "%ds" % remaining
+		label.text = _format_clock_duration(remaining)
 		for progress in _production_progress_bars:
 			if is_instance_valid(progress) and int(progress.get_meta("slot_index", -1)) == slot_index:
 				var total_seconds := maxf(1.0, _production_building.production_component.get_item_production_time(item_id))

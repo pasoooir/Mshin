@@ -26,6 +26,10 @@ godot --path godot-city-buildit
 
 Main scene: `res://scenes/main.tscn`.
 
+## Latest production UI update (2026-11-16)
+
+The production queue now presents only real orders in a live, touch-friendly order panel. Empty queue placeholders are hidden; product taps place an order into the first available internal slot. Each active order shows its state, live countdown, progress, and a storage-aware Collect action. Queue capacity, production scheduling, recipe validation, and City Storage transfers remain backed by the existing gameplay systems.
+
 ## Godot quality and acceptance contract
 
 The mandatory engineering rules for mobile/web compatibility, rendering, input, production UI, asset pipeline, dependency selection and CI acceptance are documented in [Godot Quality & Acceptance Contract (FA)](docs/GODOT_QUALITY_AND_ACCEPTANCE_CONTRACT_FA.md). Treat this as the implementation gate for all future Godot work.
